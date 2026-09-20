@@ -490,6 +490,18 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   Same pattern as "Your words", which pairs its window opener with a real link.
   Guard: `__tests__/a-way-in-is-a-door-not-a-handler.test.tsx`, proven red
   against the old plain button.
+- 2026-09-19 — **The Encore bench panel says when the ORGANIZATION read failed,
+  instead of loading forever (R37, the fourth state).** `EncoreRunPage` gated on
+  `organizationRequired` / the legacy `resolving`, and under a failed
+  organization read the first is false and the second stays true by design — so
+  the panel held `{ status: "loading" }` and the admin reloading mid-trial
+  watched a skeleton that would never resolve. The page now reads
+  `organizationState` and the fourth state gets its own sentence,
+  `ORGANIZATION_UNAVAILABLE` in `encore/benchProof.ts`: it says the read failed,
+  says plainly that picking an organization is NOT the remedy, and names the one
+  this panel offers. Proof:
+  `encore/__tests__/the-bench-panel-says-the-organization-read-failed.organization-context.test.tsx`
+  (red on the prior bytes). Class guard: `pnpm check:org-three-states` rule 4.
 
 - 2026-09-17 — **Removed a double `decodeURIComponent` on `sourceKey`** in `masterwork/[id]/sources/kept/[sourceKey]/page.tsx` — the App Router already decodes the value React's `use(params)` returns, so a source key carrying a literal `%` threw `URIError` on the second decode. Part of the repo-wide `pnpm check:route-param-decode` census/guard; see `lib/detail/FEATURE.md` Change Log.
 - 2026-09-18 (a pile launches whole, or not at all) — **THE FIFTEEN FILES THAT

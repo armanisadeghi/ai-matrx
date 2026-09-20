@@ -29,6 +29,29 @@ import type { ConnectorAccount, ConnectorCapabilityRollout } from "../health";
 
 const toastInfo = jest.fn();
 
+/**
+ * THE FIXTURE LAW (F-107) — the slice builds its own state and the REAL
+ * selectors read it. This file used to hand-write
+ * `selectShouldPromptForOrganization` in the slice stand-in; the organization
+ * gate now reads that rule from a pure leaf nobody mocks
+ * (`lib/organizations/shouldPromptForOrganization.ts`), so a hand-written copy
+ * is dead code that silently stops being consulted — and an empty state handed
+ * to the real leaf reads as "boot has not answered yet", which is how the Tasks
+ * import control's suite went red on 2026-09-19. One fixture, no re-implemented
+ * rule, nothing to go stale.
+ */
+const { makeAppContextState } = jest.requireActual<
+  typeof import("@/lib/redux/slices/appContextSlice")
+>("@/lib/redux/slices/appContextSlice");
+
+
+// The literal, not the `ORGANIZATION_ID` const below: this fixture is built
+// above the mock factories that need it, and a `const` cannot be read that early.
+const appContext = makeAppContextState({
+  organization_id: "org-77",
+  orgBootstrapResolved: true,
+});
+
 jest.mock("@/lib/toast", () => ({
   toast: {
     info: (...args: unknown[]) => toastInfo(...args),
@@ -40,7 +63,7 @@ jest.mock("@/lib/toast", () => ({
 const dispatch = jest.fn();
 
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
+  useAppSelector: (selector: (state: unknown) => unknown) => selector({ appContext }),
   useAppDispatch: () => dispatch,
 }));
 
@@ -52,10 +75,6 @@ const ORGANIZATION_ID = "org-77";
 // The organization gate the surface reads (VERIFY-R7-FIX-WAVE NEW-1): three
 // states, not two. Stood in here with "settled, and this is the selection", so
 // the case under test is unchanged.
-jest.mock("@/lib/redux/slices/appContextSlice", () => ({
-  selectOrganizationId: () => ORGANIZATION_ID,
-  selectShouldPromptForOrganization: () => false,
-}));
 
 jest.mock("@/features/scopes/redux/selectors/tree", () => ({
   selectOrganizationsList: () => [],

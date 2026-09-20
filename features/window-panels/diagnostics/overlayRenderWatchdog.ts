@@ -53,6 +53,7 @@ import { getStaticEntryByOverlayId } from "@/features/window-panels/registry/win
 import { safeViewportDims } from "@/features/window-panels/utils/rectClamp";
 import type { WindowRect } from "@/features/window-panels/window-panel.types";
 import { toast } from "@/lib/toast";
+import { LAZY_WINDOW_MOUNT_DEADLINE_MS } from "@/features/window-panels/constants/lazyWindowMount";
 
 // Action types emitted by overlaySlice (createSlice name: "overlays"). The
 // public `openOverlay` / `toggleOverlay` creators wrap the raw reducers, so we
@@ -77,9 +78,10 @@ const ACK_SETTLE_MS = 300;
 const ACK_SETTLE_RETRY_MS = 700;
 /** Hard ceiling on waiting for a lazy chunk: no WindowPanel ack by this long
  *  after open means the panel genuinely never mounted. Dev chunk compiles are
- *  the slow case; prod chunk fetches are network-bound but far quicker. */
-const NO_MOUNT_DEADLINE_MS =
-  process.env.NODE_ENV === "production" ? 12_000 : 45_000;
+ *  the slow case; prod chunk fetches are network-bound but far quicker. ONE
+ *  constant for every subsystem that waits on a lazily-mounted window — the
+ *  URL deep-link manager waits on the same physical event. */
+const NO_MOUNT_DEADLINE_MS = LAZY_WINDOW_MOUNT_DEADLINE_MS;
 /** How long the failure toast stays up, and how often the post-scream watcher
  *  re-checks so it can auto-dismiss if the panel shows up after the fact. */
 const TOAST_DURATION_MS = 8000;

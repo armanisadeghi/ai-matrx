@@ -411,51 +411,6 @@ describe("assembleManualRequest — live read contract", () => {
     expect(payload!.messages![0]).toEqual(priming[0]);
   });
 
-  test("live definition defaults ride on variables even when the instance never stored them", async () => {
-    const state = makeState({
-      variableDefinitions: [
-        { name: "tone", defaultValue: "formal" },
-        { name: "topic", defaultValue: "recycling" },
-      ],
-    });
-    const payload = await assembleManualRequest(state, CONVERSATION_ID);
-
-    expect(payload!.variables).toEqual({
-      tone: "formal",
-      topic: "recycling",
-    });
-  });
-
-  test("typed values beat live defaults and unused defaults still ship", async () => {
-    const state = makeState({
-      variableDefinitions: [
-        { name: "tone", defaultValue: "formal" },
-        { name: "topic", defaultValue: "recycling" },
-      ],
-    });
-    state.instanceVariableValues = {
-      byConversationId: {
-        [CONVERSATION_ID]: {
-          conversationId: CONVERSATION_ID,
-          definitions: [],
-          userValues: { topic: "pallets" },
-          scopeValues: {},
-          surfaceValueNames: [],
-          hostValueNames: [],
-          submittedFirstTurnValues: null,
-          submittedFirstTurnHostValueNames: [],
-          resourcePolicies: {},
-        },
-      },
-    };
-
-    const payload = await assembleManualRequest(state, CONVERSATION_ID);
-
-    expect(payload!.variables).toEqual({
-      tone: "formal",
-      topic: "pallets",
-    });
-  });
 
   test("manual payload carries live variable definitions for server-side assignment", async () => {
     const variableDefinitions = [

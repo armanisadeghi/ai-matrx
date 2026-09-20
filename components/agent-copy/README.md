@@ -42,6 +42,7 @@ Source/package evidence does not establish deployed behavior. The current releas
 
 ## Change log
 
+- 2026-09-20 — `sendRowsToSheetOutcome` returns kit 0.16.0's first-class `queued` outcome (sentence + remedy + the approval row as target) for a write the organization reviews first; the `success` + `delivered: "action"` workaround from F-99 is gone, and so is the one-line sentence helper only it read.
 - 2026-09-12 — Reconciled the adapter contract with the package menu and the approved table defaults; removed retired two-icon and all-rows claims.
 
 ## Export rows carry unique ids (2026-09-18)

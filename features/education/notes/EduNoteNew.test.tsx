@@ -6,12 +6,15 @@ const replace = jest.fn();
 const create = jest.fn();
 let organizationId: string | null = null;
 let organizationBootstrapResolved = false;
+/** THE FOURTH STATE (R37): why the organization read has no answer at all. */
+let organizationReadFailure: string | null = null;
 
 const reduxState = () =>
   ({
     appContext: makeAppContextState({
       organization_id: organizationId,
       orgBootstrapResolved: organizationBootstrapResolved,
+      orgBootstrapFailure: organizationReadFailure,
     }),
     scopesTree: {
       organizations: {},
@@ -45,6 +48,7 @@ describe("EduNoteNew organization hydration", () => {
   beforeEach(() => {
     organizationId = null;
     organizationBootstrapResolved = false;
+    organizationReadFailure = null;
     replace.mockReset();
     create.mockReset().mockResolvedValue({ id: "note-after-hydration" });
     host = document.createElement("div");
@@ -92,6 +96,32 @@ describe("EduNoteNew organization hydration", () => {
 
     expect(host.querySelector('[data-testid="organization-required-notice"]')).not.toBeNull();
     expect(host.textContent).toContain("new education note need an organization");
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  /**
+   * 🚨 THE FOREVER SPINNER (R37, the fourth state). This page's only other
+   * content is a spinner reading "Creating your note…", and the boolean pair it
+   * used to gate on could not name a FAILED organization read: with
+   * `orgBootstrapFailure` set, `organizationRequired` is false (the nudge is a
+   * claim about memberships nobody read) and `canLoad` is false, so no note was
+   * ever created and the page said it was creating one — for as long as the tab
+   * stayed open. On the prior bytes this test finds that spinner and no notice.
+   */
+  it("says we could not check when the organization read FAILED — never 'Creating your note…' forever", async () => {
+    organizationBootstrapResolved = true;
+    organizationReadFailure = "the organization read failed: Failed to fetch";
+
+    await act(async () => {
+      root.render(<EduNoteNew />);
+    });
+
+    expect(host.querySelector('[data-testid="organization-unavailable-notice"]')).not.toBeNull();
+    expect(host.textContent).toContain("We could not check your organization");
+    // Not the refusal — nobody read this person's memberships.
+    expect(host.querySelector('[data-testid="organization-required-notice"]')).toBeNull();
+    // And not the lie that work is in progress.
+    expect(host.textContent).not.toContain("Creating your note…");
     expect(create).not.toHaveBeenCalled();
   });
 });

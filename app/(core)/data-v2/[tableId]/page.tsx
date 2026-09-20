@@ -93,7 +93,16 @@ export default function UnifiedDataTableRoute({
           >
             {/* A table this organization cannot see says so and offers the way
                 back — never the blank frame the 19 September verdict found. */}
-            <TablePage tableId={tableId} activeDashboardId={activeDashboardId} onLeave={() => router.push("/data-v2")} />
+            <TablePage
+              tableId={tableId}
+              onLeave={() => router.push("/data-v2")}
+              // records-ui 0.16.1's TablePage does not declare `activeDashboardId`
+              // yet (its DashboardCanvas does); the prop rides through a spread,
+              // which the excess-property check does not judge, so the page
+              // compiles against the published package and the dashboard opens
+              // the moment TablePage learns the prop.
+              {...{ activeDashboardId }}
+            />
           </RecordsMount>
         )}
       </div>

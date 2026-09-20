@@ -16,7 +16,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import {
+  useOrganizationRequired,
+  type OrganizationState,
+} from "@/features/organizations/useOrganizationRequired";
 import {
   accountHealth,
   preferredAccountId,
@@ -74,32 +77,26 @@ export interface AgendaValue {
   /** True once the connector state is known and no account can serve Calendar. */
   noAccount: boolean;
   /**
-   * True ONLY once boot has settled with no organization selected — the honest,
-   * terminal "choose an organization" state (`useOrganizationRequired`).
+   * The organization question's answer, as ONE value the panel switches on:
+   * `resolving` (still being asked), `required` (settled with nothing
+   * selected), `unavailable` (the read FAILED — nobody looked, R37) or `ready`.
    * `readAgendaEvents` / `refreshCalendarWindow` fail closed
    * (`requireOrganizationContext`) with no organization to send, so this panel
-   * never calls them while this is true — it shows the notice instead of a
-   * screen that would otherwise render "your calendar is connected and empty",
+   * never calls them outside `ready` — it renders the ONE notice instead of a
+   * screen that would otherwise say "your calendar is connected and empty",
    * which is a confident and wrong claim for a person who has not picked an
-   * organization at all.
-   */
-  organizationRequired: boolean;
-  /**
-   * True while the organization question is still being ANSWERED — boot has not
-   * settled on a selection and has not settled on "none", so neither the
-   * agenda nor the notice is the truth yet.
+   * organization at all, and doubly wrong for one whose memberships nobody
+   * managed to read.
    *
-   * 🚨 Why this is separate from `organizationRequired` (2026-09-18). F-76
-   * forwarded only `organizationRequired`, which `useOrganizationRequired`
-   * documents as true ONLY once boot has settled. During boot both it and
-   * `isLoading` read false — `isLoading` required an `organizationId` that did
-   * not exist yet — so `AgendaBody` fell straight through to "Your Google
-   * Calendar is connected and there is nothing on it": the exact sentence F-76
-   * set out to close, now shown for the seconds before anyone knows. It is
-   * folded into `isLoading` below so the skeleton covers it, and exposed here
-   * because it is a different fact from "reading the rows".
+   * 🚨 It replaces the `organizationRequired` / `organizationResolving` pair
+   * (F-76, then 2026-09-18). Each fix in turn closed one state and left the
+   * next open: forwarding only `organizationRequired` showed "nothing on it"
+   * during boot, and the pair that followed could not see the fourth state at
+   * all — under a failed read `organizationRequired` was false while the legacy
+   * `resolving` stayed true, so `isLoading` held the agenda skeleton up for as
+   * long as the panel was open. Four states, one value, one `switch`.
    */
-  organizationResolving: boolean;
+  organizationState: OrganizationState;
   /**
    * True when a knob row did not answer and a documented default is in use —
    * the surface SAYS so rather than pretending an administrator chose it.
@@ -119,14 +116,11 @@ export function useAgenda(options?: {
   /** Skip the refresh-on-open call (a panel that is not the primary surface). */
   refreshOnOpen?: boolean;
 }): AgendaValue {
-  // All THREE states, from the one hook that reads them: loadable, settled with
-  // none (the honest terminal notice), and still resolving (the skeleton).
-  // Taking only two of the three is what made the agenda lie during boot.
-  const {
-    organizationId,
-    organizationRequired,
-    resolving: organizationResolving,
-  } = useOrganizationRequired();
+  // All FOUR states, from the one hook that reads them: loadable, settled with
+  // none (the honest terminal notice), still resolving (the skeleton), and the
+  // read that FAILED (its own screen, with Try again). Taking a subset is what
+  // made the agenda lie during boot and then hang forever under a failed read.
+  const { organizationId, organizationState } = useOrganizationRequired();
   const userId = useAppSelector(selectUserId);
   const connector = useGoogleConnectorState();
 
@@ -286,7 +280,8 @@ export function useAgenda(options?: {
     // which is the same law-4 defect pointing the other way. `resolving` ends
     // either way: boot either lands on a selection or on "none".
     isLoading:
-      organizationResolving || (events === null && Boolean(organizationId && userId)),
+      organizationState === "resolving" ||
+      (events === null && Boolean(organizationId && userId)),
     isRefreshing,
     days,
     timeZone,
@@ -297,8 +292,7 @@ export function useAgenda(options?: {
     productHealth,
     connectionId,
     noAccount,
-    organizationRequired,
-    organizationResolving,
+    organizationState,
     usingDefaultKnobs,
     refresh,
     reload,

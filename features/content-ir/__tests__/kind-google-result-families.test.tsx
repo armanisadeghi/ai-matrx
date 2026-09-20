@@ -2293,3 +2293,84 @@ describe("V-24 NEW-2 (nested): an empty answer is empty at every depth", () => {
     expect(isSubstantiveValue([[], [{}], [{ x: null }]])).toBe(false);
   });
 });
+
+/**
+ * 🚨 AN EMPTY COLLECTION IS NOT "ALSO RETURNED" (the F-109 class, finished).
+ *
+ * F-109 made `isSubstantiveValue` recursive so the empty-read sentence would
+ * fire on `rows: []` — but the very same payload then printed that key back
+ * under "Also returned", because `LeftoverFields` listed every non-null OBJECT
+ * regardless of whether it held a fact. The card therefore said "This read
+ * returned no rows" and, one line below, listed `rows` as something returned:
+ * the same two-voices defect F-104 and F-109 each fixed one layer of.
+ *
+ * The fix is the SAME predicate, in the ONE pass every family's leftovers are
+ * rendered from and asked about (`leftoverEntries` in `result-kind-shared`), so
+ * it cannot hold for the Google families and drift for `platform_record` or the
+ * four runtime-result families that share the component.
+ */
+describe("an empty collection is never listed as a leftover field", () => {
+  const framed = {
+    __kind: MARKETING_KIND,
+    action: "traffic_summary",
+    site: "example.com",
+    start_date: "2026-09-01",
+    end_date: "2026-09-15",
+  };
+
+  it("the marketing card does not print an empty leftover under the empty-read sentence", () => {
+    const markup = mount(
+      <GoogleMarketingResultBlock
+        content={JSON.stringify({ ...framed, segments: [], breakdown: {} })}
+        metadata={undefined}
+      />,
+    );
+    expect(markup).toContain("This read returned no rows");
+    expect(markup).not.toContain("Also returned");
+    expect(markup).not.toContain("Segments");
+    expect(markup).not.toContain("Breakdown");
+  });
+
+  it("a nested-only-containers leftover is empty at every depth too", () => {
+    const markup = mount(
+      <GoogleMarketingResultBlock
+        content={JSON.stringify({ ...framed, breakdown: { by_device: { rows: [] } } })}
+        metadata={undefined}
+      />,
+    );
+    expect(markup).toContain("This read returned no rows");
+    expect(markup).not.toContain("Also returned");
+  });
+
+  it("a leftover holding one real fact is still printed — HIDE NOTHING stands", () => {
+    const markup = mount(
+      <GoogleMarketingResultBlock
+        content={JSON.stringify({
+          ...framed,
+          segments: [],
+          breakdown: { by_device: { desktop: 12 } },
+        })}
+        metadata={undefined}
+      />,
+    );
+    expect(markup).toContain("Also returned");
+    expect(markup).toContain("12");
+    expect(markup).not.toContain("This read returned no rows");
+  });
+
+  it("the workspace family inherits it from the same pass", () => {
+    const markup = mount(
+      <GoogleWorkspaceResultBlock
+        content={JSON.stringify({
+          __kind: WORKSPACE_KIND,
+          action: "list_files",
+          attachments: [],
+          labels: {},
+        })}
+        metadata={undefined}
+      />,
+    );
+    expect(markup).not.toContain("Also returned");
+    expect(markup).not.toContain("Attachments");
+  });
+});

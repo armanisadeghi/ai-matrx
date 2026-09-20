@@ -24,6 +24,8 @@ const state = {
   readCalls: 0,
   refreshCalls: 0,
   organizationRequired: false,
+  /** THE FOURTH STATE (R37): the organization read itself failed. */
+  organizationUnavailable: false,
   organizationId: null as string | null,
   /**
    * A CONNECTED account, which the boot-resolving case needs: with no account
@@ -56,12 +58,26 @@ jest.mock("@/features/google-workspace/calendar/service", () => ({
 // The one honest gate `useAgenda` reads instead of `selectOrganizationId`
 // directly — mocked here to drive the terminal "none selected" state without
 // standing up the whole redux store.
+const organizationState = (): string => {
+  if (state.organizationId != null) return "ready";
+  if (state.organizationUnavailable) return "unavailable";
+  if (state.organizationRequired) return "required";
+  return "resolving";
+};
+
 jest.mock("@/features/organizations/useOrganizationRequired", () => ({
   useOrganizationRequired: () => ({
     organizationId: state.organizationId,
     canLoad: state.organizationId != null,
     organizationRequired: state.organizationRequired,
+    // The legacy pair keeps the CHECKING posture through `unavailable` — see
+    // the field's note in the hook.
     resolving: state.organizationId == null && !state.organizationRequired,
+    organizationState: organizationState(),
+    unavailableReason: state.organizationUnavailable
+      ? "the organization read failed: Failed to fetch"
+      : null,
+    retry: () => {},
   }),
 }));
 
@@ -131,6 +147,17 @@ jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () =
   OrganizationRequiredNotice: ({ what }: { what?: string }) => (
     <div data-organization-required-notice>{`Choose an organization to see ${what}`}</div>
   ),
+  // The state-driven notice the panel actually renders. The stand-in carries
+  // the STATE it was handed, because which of the four it shows is the whole
+  // point of the assertions below.
+  OrganizationContextNotice: ({ state: which, what }: { state: string; what?: string }) =>
+    which === "unavailable" ? (
+      <div data-organization-unavailable-notice>
+        We could not check your organization
+      </div>
+    ) : (
+      <div data-organization-required-notice>{`Choose an organization to see ${what}`}</div>
+    ),
 }));
 
 jest.mock("@/lib/detail/useOpenDetail", () => ({
@@ -171,6 +198,7 @@ beforeEach(() => {
   state.readCalls = 0;
   state.refreshCalls = 0;
   state.organizationId = null;
+  state.organizationUnavailable = false;
   state.accounts = [];
 });
 
@@ -227,6 +255,51 @@ describe("while the organization question is still being answered", () => {
   it("calls no network door while the answer is unknown", async () => {
     state.organizationRequired = false;
     state.organizationId = null;
+    state.accounts = [{ id: "acct-1" }];
+    const m = await mount(<AgendaPanel />);
+    try {
+      expect(state.readCalls).toBe(0);
+      expect(state.refreshCalls).toBe(0);
+    } finally {
+      m.unmount();
+    }
+  });
+});
+
+describe("when the organization read FAILED (the fourth state, R37)", () => {
+  /**
+   * 🚨 THE FOREVER SKELETON. `useAgenda` forwarded the boolean pair, and under
+   * a failed read BOTH readings point at "keep waiting": `organizationRequired`
+   * is false (the nudge is a claim about memberships nobody read) and the
+   * legacy `resolving` stays true, so `isLoading` held the agenda skeleton up
+   * for as long as the panel was open — a screen that never resolves, which is
+   * law 4's dead screen. On the prior bytes this case rendered the skeleton and
+   * no notice at all; now it says we could not check, with Try again.
+   */
+  it("says we could not check — never the refusal, never the skeleton forever", async () => {
+    state.organizationRequired = false;
+    state.organizationUnavailable = true;
+    state.accounts = [{ id: "acct-1" }];
+    const m = await mount(<AgendaPanel />);
+    try {
+      expect(
+        m.container.querySelector("[data-organization-unavailable-notice]"),
+      ).not.toBeNull();
+      // Not the refusal: nobody read this person's memberships.
+      expect(
+        m.container.querySelector("[data-organization-required-notice]"),
+      ).toBeNull();
+      // And not the skeleton that used to sit there forever.
+      expect(m.container.querySelector('[aria-label="Reading your agenda"]')).toBeNull();
+      expect(m.text).not.toContain("there is nothing on it");
+    } finally {
+      m.unmount();
+    }
+  });
+
+  it("calls no network door — the organization it would send is unknown", async () => {
+    state.organizationRequired = false;
+    state.organizationUnavailable = true;
     state.accounts = [{ id: "acct-1" }];
     const m = await mount(<AgendaPanel />);
     try {

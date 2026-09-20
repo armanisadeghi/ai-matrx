@@ -91,10 +91,10 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { SiteTopicalMapButton } from "@/features/marketing/seo/topical-map/linkins/SiteTopicalMapButton";
 import {
   parseInitialization,
-  siteConnectionStatuses,
   type SiteConnectionState,
   type SiteConnectionStatus,
 } from "@/features/marketing/lib/site-status";
+import { useSiteConnectionStatuses } from "@/features/marketing/tracking/hooks";
 import type {
   MarketingSite,
   SiteOverviewMetrics,
@@ -123,6 +123,10 @@ export function SiteOverview() {
   // access-errors: ok — discovery-inbox count chip; absence only hides the number
   const pendingDiscovered = usePendingDiscoveredCount(site.brand_id);
   const { getBaseValues } = useMarketingSiteSurfaceBase();
+  // 🚨 THE ONE DERIVATION, for the Connections board AND the agent context below it. It carries
+  // the tracking snapshot and the staleness knob's state — including the reason the knob could
+  // not be read, which this board printed nowhere until 2026-09-20 (V-28 NEW-1).
+  const statuses = useSiteConnectionStatuses(site);
   const queryClient = useQueryClient();
   const [initPhase, setInitPhase] = useState<InitPhase>("idle");
   const [initError, setInitError] = useState<string | null>(null);
@@ -250,7 +254,6 @@ export function SiteOverview() {
   }
 
   const metrics = overview.data;
-  const statuses = siteConnectionStatuses(site);
   // One source for "is GSC usable here" — the KPI cell and the traffic-class
   // strip must never disagree about whether this site has Search Console.
   const gscConnected = statuses.some(
@@ -371,7 +374,9 @@ export function SiteOverview() {
   // is rebuilt WITH counts + crawl freshness — richer than the base version.
   const getOverviewScope = () => {
     const liveMetrics = overview.data;
-    const liveStatuses = siteConnectionStatuses(site);
+    // The same derivation the board above renders — one read of the snapshot and the knob for
+    // this screen, so the agent's context and the person's screen cannot disagree (V-28 NEW-1).
+    const liveStatuses = statuses;
     const liveInit = parseInitialization(site);
     const lastCrawlAt = liveMetrics?.latestCrawl?.started_at ?? undefined;
     return createMarketingSiteScope({

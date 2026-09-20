@@ -537,6 +537,14 @@ if $STRICT; then
         # No baseline: the tree was brought to zero on adoption (2026-09-10, 200
         # literals across 76 files), so any finding is NEW.
         "Hand-typed mandate keys (vocabulary not adopted)|pnpm check:mandate-keys"
+        # ONE GOOGLE AUTHORIZATION WINDOW PER PERSON (V-23 NEW-3). "One window
+        # at a time" used to be a `useRef` inside ONE component and a `useState`
+        # read from a stale closure, over 19 call sites: two presses opened two
+        # Google consent windows for one intent. The gate is module scope and
+        # `useGoogleAuthorizationWindow` is the one door to it; this fails on any
+        # file outside providers/google-provider/ naming a raw provider
+        # authorization primitive. Static, offline, no credentials.
+        "Google authorization windows (a raw provider call bypassing the one-window gate)|pnpm check:google-auth-gate"
         # THE DISCLOSURE LAW (Arman, 2026-08-25) — a surface that RUNS an agent
         # registers its fixed jobs in the top Agents menu. Advisory: backlog is 40
         # surfaces deep and a release must not stall on someone else's page.
@@ -570,6 +578,20 @@ if $STRICT; then
         # is the same either way — `pnpm sync-types`.
         # `pnpm check:api-types-fresh:self-test` proves it can still fail.
         "Generated API types are fresh, not hand-edited|pnpm check:api-types-fresh"
+        # COMPLETE-LIST READS — PostgREST caps a plain `.select()` at 1000 rows
+        # and says so only in a header, so a list turned into an EXISTENCE,
+        # DIFF or COMPLETENESS verdict starts answering confidently wrong the
+        # moment its table crosses the cap (D190; the knob catalogue shipped it
+        # at ~870 rows). The sweep exits 0 BY DESIGN — a finding is a question,
+        # "is this list allowed to be short?" — so it is advisory in BOTH lanes
+        # and its backlog is triage, not a stop. The self-test beside it is the
+        # part that can actually go red: it is the only thing proving the
+        # detector still separates the real pre-fix knob reader (bare .select()
+        # → Map → `=== undefined`, in one function or across one helper's
+        # return) from the readAllRows fix. Until 2026-09-20 this guard was
+        # invoked by NOTHING — no CI job, no gate (V-28 NEW-8).
+        "Unbounded reads: the detector can still fail (self-test)|pnpm check:unbounded-reads --self-test"
+        "Complete-list reads PostgREST silently caps at 1000|pnpm check:unbounded-reads"
         # UNIFIED SETTINGS PLATFORM — five guards for ONE defect class: a
         # settings screen that accepts a value the system does not honour
         # (common-docs/projects/unified-settings-platform/REGISTER.md). Orphans
@@ -915,6 +937,14 @@ else
         # No baseline: the tree was brought to zero on adoption (2026-09-10, 200
         # literals across 76 files), so any finding is NEW.
         "Hand-typed mandate keys (vocabulary not adopted)|pnpm check:mandate-keys"
+        # ONE GOOGLE AUTHORIZATION WINDOW PER PERSON (V-23 NEW-3). "One window
+        # at a time" used to be a `useRef` inside ONE component and a `useState`
+        # read from a stale closure, over 19 call sites: two presses opened two
+        # Google consent windows for one intent. The gate is module scope and
+        # `useGoogleAuthorizationWindow` is the one door to it; this fails on any
+        # file outside providers/google-provider/ naming a raw provider
+        # authorization primitive. Static, offline, no credentials.
+        "Google authorization windows (a raw provider call bypassing the one-window gate)|pnpm check:google-auth-gate"
         # THE DISCLOSURE LAW (Arman, 2026-08-25) — a surface that RUNS an agent
         # registers its fixed jobs in the top Agents menu. Advisory: backlog is 40
         # surfaces deep and a release must not stall on someone else's page.
@@ -936,6 +966,20 @@ else
         # 2026-09-12 (DD-128). Full story in the strict list above; advisory in
         # both lanes, remedy `pnpm sync-types`.
         "Generated API types are fresh, not hand-edited|pnpm check:api-types-fresh"
+        # COMPLETE-LIST READS — PostgREST caps a plain `.select()` at 1000 rows
+        # and says so only in a header, so a list turned into an EXISTENCE,
+        # DIFF or COMPLETENESS verdict starts answering confidently wrong the
+        # moment its table crosses the cap (D190; the knob catalogue shipped it
+        # at ~870 rows). The sweep exits 0 BY DESIGN — a finding is a question,
+        # "is this list allowed to be short?" — so it is advisory in BOTH lanes
+        # and its backlog is triage, not a stop. The self-test beside it is the
+        # part that can actually go red: it is the only thing proving the
+        # detector still separates the real pre-fix knob reader (bare .select()
+        # → Map → `=== undefined`, in one function or across one helper's
+        # return) from the readAllRows fix. Until 2026-09-20 this guard was
+        # invoked by NOTHING — no CI job, no gate (V-28 NEW-8).
+        "Unbounded reads: the detector can still fail (self-test)|pnpm check:unbounded-reads --self-test"
+        "Complete-list reads PostgREST silently caps at 1000|pnpm check:unbounded-reads"
         # UNIFIED SETTINGS PLATFORM — five guards for ONE defect class: a
         # settings screen that accepts a value the system does not honour
         # (common-docs/projects/unified-settings-platform/REGISTER.md). Orphans

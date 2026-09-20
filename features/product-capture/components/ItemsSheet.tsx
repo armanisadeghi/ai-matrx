@@ -27,7 +27,8 @@ import {
 } from "@/components/ui/drawer";
 import { Loader2 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrgBootstrapResolved } from "@/lib/redux/slices/appContextSlice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { toast } from "@/lib/toast";
 
 import type { CaptureFile, CaptureItem } from "../types";
@@ -57,7 +58,14 @@ export function ItemsSheet({
   // the spinner, so a sheet opened with no organization spun FOREVER with no
   // remedy. Before the bootstrap resolves, loading is the truth; once it has
   // resolved with no organization, that is a settled fact and it is said.
-  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  // 🚨 THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved` is
+  // set TRUE by `setOrgBootstrapFailure` as well, so "resolved and still no
+  // id" was ALSO the failed read — and this screen told a member of thirteen
+  // organizations to pick one. The gate's discriminant separates them and the
+  // ONE notice renders each, the failed one with its Retry.
+  const { organizationState } = useOrganizationRequired();
+  const organizationUnanswered =
+    organizationState === "required" || organizationState === "unavailable";
   const [filesByItem, setFilesByItem] = useState<Map<string, CaptureFile[]>>(
     new Map(),
   );
@@ -155,15 +163,13 @@ export function ItemsSheet({
             </DrawerDescription>
           </DrawerHeader>
           <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4">
-            {!organizationId && orgBootstrapResolved ? (
-              <p
-                role="status"
-                className="py-10 text-center text-sm text-muted-foreground"
-              >
-                No organization is selected, so captured items cannot be read —
-                choose one from the organization picker in the header and this
-                fills in.
-              </p>
+            {organizationUnanswered ? (
+              <OrganizationContextNotice
+                state={organizationState}
+                compact
+                className="py-10"
+                description="No organization is selected, so captured items cannot be read — choose one from the organization picker in the header and this fills in."
+              />
             ) : items === null ? (
               <div className="flex justify-center py-10">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />

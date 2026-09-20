@@ -27,6 +27,7 @@
 
 import type { KindDefinition, KindSchema } from "@ai-matrx/content-ir";
 
+import type { MasterworkResult } from "./generated/kinds.generated";
 import { makeCompleteEnvelopeBridge } from "./legacy-bridge-utils";
 import {
   additionalDetailsSection,
@@ -64,12 +65,20 @@ export const masterworkResultKindSchema: KindSchema = {
   },
 };
 
-/** What `MasterworkResultBlock` receives. Every field is markdown. */
-export interface MasterworkResultData extends Record<string, unknown> {
-  deliverable: string | null;
-  approach: string | null;
-  ruling: string;
-}
+/**
+ * What `MasterworkResultBlock` receives. Every field is markdown. The shape is
+ * the generated kind type — the ONE declaration — narrowed to what the bridge
+ * below guarantees: a ruling is always a string (empty when absent), and the
+ * two optional fields are coerced to `null` rather than left absent.
+ */
+export type MasterworkResultData = Omit<
+  MasterworkResult,
+  "deliverable" | "approach" | "ruling"
+> & {
+  deliverable: NonNullable<MasterworkResult["deliverable"]> | null;
+  approach: NonNullable<MasterworkResult["approach"]> | null;
+  ruling: NonNullable<MasterworkResult["ruling"]>;
+} & Record<string, unknown>;
 
 function markdownField(value: unknown): string | null {
   return typeof value === "string" && value.trim() !== "" ? value : null;

@@ -330,7 +330,22 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.contactsReadonly],
       attachableResourceTypes: [],
       stopsOnRevoke: "importing a contact from this Google account",
-      firstAction: { kind: "route", label: "Import a contact", href: "/crm/import" },
+      // The Google Contacts import window (`features/overlays/openers/
+      // googleImportWindows.tsx`, `useOpenGoogleContactsImport`) is the real
+      // door — the same shape Tasks' row already uses for its own import.
+      // `/crm/import` is the NATIVE CSV/vCard wizard (`app/(core)/crm/
+      // import/page.tsx`); routing here sent a person who just connected
+      // Google Contacts to the wrong wizard (R27, common-docs/projects/
+      // google-native/REGISTER.md; F-51 first-action sweep). Its body
+      // (`GoogleContactsImportPanel`, wrapped by `GoogleContactsImportWindow`)
+      // reads `organizationId` off overlay data the same way Tasks' does —
+      // `needs` is how this button carries it.
+      firstAction: {
+        kind: "overlay",
+        label: "Import a contact",
+        overlayId: "googleContactsImportWindow",
+        needs: ["organizationId"],
+      },
     },
     {
       key: "tasks",
@@ -398,14 +413,28 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.tagManagerReadonly],
       attachableResourceTypes: [],
       stopsOnRevoke: "your tracking health line from updating",
-      // Tag Manager surfaces as a line inside the tracking health of a site that
-      // is already bound; there is no Tag Manager screen of its own to open, and
-      // pointing at a site's settings would be a guess about which site. Open
-      // with the chair (lane F-51).
+      // U-M2 closed the gap F-51 left open here: Tag Manager's first action is THE
+      // `SiteTrackingPanel` — the site's Integrations settings section and the
+      // `siteTrackingWindow` (`?panels=site_tracking:<siteId>`) mount the same component.
+      //
+      // 🚨 IT IS A ROUTE AND NOT AN OVERLAY BECAUSE THE DOOR NEEDS A SITE, AND THIS
+      // SURFACE HAS NONE. Tasks and Contacts declare `needs: ["organizationId"]` because
+      // the consent dialog genuinely holds the active organization; nothing here holds a
+      // `siteId`, so an overlay action would either open an empty frame or — with `siteId`
+      // added to `needs` — resolve as missing and render no control at all, which is the
+      // row offering nothing again. A tracking verdict is per site, and picking one for the
+      // person would be a guess about which of their sites they meant.
+      //
+      // So the row goes to the surface a site is actually chosen from. There is no flat site
+      // list any more (`/marketing/sites` permanently redirects here): a website belongs to a
+      // client, so the roster is the door and each client carries its own Websites section
+      // whose rows open the tracking panel. The label says PICK, because that is what this
+      // link lands on — it does not promise one site's tracking and deliver a roster
+      // (V-27 NEW-1).
       firstAction: {
-        kind: "none",
-        because:
-          "Nothing to open yet — Tag Manager shows up inside a site's tracking health, and no surface of its own exists.",
+        kind: "route",
+        label: "Pick a site to check",
+        href: "/marketing/brands",
       },
     },
     {
@@ -426,13 +455,20 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       ],
       attachableResourceTypes: ["youtube_channel"],
       stopsOnRevoke: "your channel's videos and reports from loading here",
-      // A channel must be bound before anything loads, and the binding surface
-      // for YouTube is not built the way it is for Search Console and Analytics.
-      // Open with the chair (lane F-51).
+      // 🚨 THE BINDING SURFACE EXISTS NOW (U-M3), so this row stops saying it does not.
+      // `BrandChannelPanel` binds the client's owned channel IN PLACE — the brand Analytics
+      // route mounts it and the `brandChannelWindow` wraps the same component
+      // (`?panels=brand_channel:<brandId>`) — which is exactly the door F-51 said was
+      // missing when Search Console and Analytics had one and YouTube did not.
+      //
+      // Like Tag Manager above it is a ROUTE, for the same reason and a different id: the
+      // panel's subject is a BRAND, and this surface holds no `brandId` to hand an overlay
+      // action. The client roster is where a brand is chosen, and its Analytics section is
+      // where the channel is bound (V-27 NEW-1).
       firstAction: {
-        kind: "none",
-        because:
-          "Nothing to open yet — a YouTube channel has no binding surface here, unlike Search Console and Analytics.",
+        kind: "route",
+        label: "Pick a client to bind its channel",
+        href: "/marketing/brands",
       },
     },
   ],

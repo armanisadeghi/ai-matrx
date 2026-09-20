@@ -17,6 +17,7 @@
  */
 
 import { OVERLAY_CATALOGUE, isOverlayId, type OverlayId } from "@/features/overlays/catalogue";
+import { routeAnswerFor } from "@/lib/route-manifest/match";
 
 import {
   GOOGLE_CONNECTOR_PROVIDER,
@@ -70,13 +71,24 @@ const WINDOW_REQUIRED_CONTEXT_KEYS: Readonly<
  * The rows that have NOTHING to offer yet, each with a reason in the config.
  *
  * 🚨 THIS LIST ONLY EVER SHRINKS. It is not permission — it is the visible debt
- * lane F-51 escalated to the chair: Gmail has no compose surface, Tag Manager has
- * no surface of its own, and YouTube has no channel-binding surface the way
- * Search Console and Analytics do. Adding a name here is a decision somebody
- * makes on purpose; forgetting to decide fails this file.
+ * lane F-51 escalated to the chair. Gmail is what is left: a send begins with an
+ * agent's draft in the approval queue, not with a screen a person visits.
+ *
+ * Struck since:
+ *   * `tag_manager` — U-M2 built `SiteTrackingPanel` and the `siteTrackingWindow`,
+ *     so the row goes to the surface a site is picked from. Its commit `d0c6e56f`
+ *     changed the config and left the name here, which made THIS suite red at head
+ *     for two days while two later commits edited the file and shipped it red
+ *     (V-27 NEW-1).
+ *   * `youtube` — U-M3 built `BrandChannelPanel`, which binds the client's owned
+ *     channel in place; that IS the binding surface whose absence was the reason.
+ *
+ * Adding a name here is a decision somebody makes on purpose; forgetting to
+ * decide fails this file — and so does leaving a name here after the door is
+ * built, which is the direction that actually happened.
  */
 const OFFERS_NOTHING_YET: Readonly<Record<string, readonly string[]>> = {
-  google: ["gmail", "tag_manager", "youtube"],
+  google: ["gmail"],
 };
 
 describe("every product a person can switch on offers its first useful action", () => {
@@ -101,6 +113,12 @@ describe("every product a person can switch on offers its first useful action", 
         // The product this lane was escalated for. If Calendar ever loses its
         // agenda door again, this line is the one that says so.
         expect(overlays.map((entry) => entry.key)).toContain("calendar");
+        // Contacts' real door is the `googleContactsImportWindow` panel — the
+        // same overlay Tasks' row opens for its own import — never a route to
+        // the native CSV/vCard wizard at `/crm/import` (Contacts' PREVIOUS,
+        // wrong `firstAction`: R27 / F-51 first-action sweep). If Contacts
+        // ever loses this door again, this line is the one that says so.
+        expect(overlays.map((entry) => entry.key)).toContain("contacts");
         for (const entry of overlays) {
           expect(isOverlayId(entry.action.overlayId)).toBe(true);
           expect(OVERLAY_CATALOGUE[entry.action.overlayId].isWindow).toBe(true);
@@ -124,12 +142,89 @@ describe("every product a person can switch on offers its first useful action", 
         expect(dead).toEqual([]);
       });
 
-      it("points a route action at a real in-app path", () => {
+      /**
+       * 🚨 A ROUTE ACTION LANDS ON A ROUTE THAT ANSWERS — not on one that merely
+       * RESOLVES (V-27 NEW-1, tightened by V-28 NEW-4). `startsWith("/")` was the
+       * whole check, so a row could have advertised `/marketing/sites/tracking`
+       * forever: it reads like a destination and is a 404. The truth is the
+       * derived route manifest (`lib/route-manifest/`), which also separates a
+       * live surface from a registered coming-soon PLACEHOLDER — a 200 that is
+       * still a dead end.
+       *
+       * And a `live` status was still not enough. `/marketing/sites/tracking` —
+       * the exact href this feature's doc names as the defect — resolves to
+       * `/marketing/sites/[siteId]`, so the first version of this guard PASSED
+       * it: Next.js serves that page, the page looks up the site whose id is the
+       * word "tracking", and refuses. A connector row carries no ids (that is why
+       * `tag_manager` and `youtube` point at rosters rather than at one site), so
+       * every href here is STATIC and may only be served by a pattern with no
+       * dynamic segments. `routeAnswerFor` is the check that knows the
+       * difference; it takes the params a caller supplies, and this config
+       * supplies none.
+       */
+      it("points a route action at a route that ANSWERS, never a plausible path", () => {
+        const dead = provider.products
+          .flatMap((product) =>
+            product.firstAction.kind === "route"
+              ? [
+                  {
+                    key: product.key,
+                    href: product.firstAction.href,
+                    // No params: a connector row's href is a fixed string in the
+                    // config, so anything a dynamic segment swallows is a literal
+                    // word being read as somebody's id.
+                    problem: routeAnswerFor(product.firstAction.href).problem,
+                  },
+                ]
+              : [],
+          )
+          .filter((row) => row.problem !== null);
+        expect(dead).toEqual([]);
         for (const product of provider.products) {
           if (product.firstAction.kind !== "route") continue;
           expect(product.firstAction.href.startsWith("/")).toBe(true);
           expect(product.firstAction.label.trim().length).toBeGreaterThan(0);
         }
+      });
+
+      /**
+       * The guard proving itself: the plant is the href the doc names, and it
+       * must fail HERE, in the same census, with the site named in the sentence
+       * — not only in `lib/route-manifest`'s own suite. A future edit that
+       * loosens the matcher back to "does something serve this" turns this red.
+       */
+      it("would refuse the door-to-nowhere href this guard was written for", () => {
+        const planted = routeAnswerFor("/marketing/sites/tracking");
+        expect(planted.status).toBe("live");
+        expect(planted.problem).toBe(
+          "`/marketing/sites/tracking` is served by `/marketing/sites/[siteId]` — it would open the site named 'tracking'.",
+        );
+      });
+
+      /**
+       * 🚨 AND A ROW MAY NOT DECLARE ITS WAY PAST THE GUARD (V-29 NEW-6), NOR
+       * POINT AT AN ABSOLUTE ADDRESS AND BE CALLED A 404 (V-29 NEW-9). Today
+       * every row's href is a fixed static string, so neither hole is in use —
+       * which is exactly when to nail them shut. A `params` DECLARATION used to
+       * switch the check off for that segment, literal and all; an absolute URL
+       * used to come back "it is a 404", sending the reader to hunt for a route
+       * that was never missing.
+       */
+      it("would refuse a declared param that the href does not carry, and call an absolute href external", () => {
+        const declared = routeAnswerFor("/marketing/sites/tracking", {
+          params: { siteId: "8f1c0d2e-site" },
+        });
+        expect(declared.answers).toBe(false);
+        expect(declared.problem).toContain("does not name what the caller says it does");
+
+        const named = routeAnswerFor("/marketing/sites/tracking", { params: ["siteId"] });
+        expect(named.answers).toBe(false);
+        expect(named.problem).toContain("supplies no value for it");
+
+        const external = routeAnswerFor("https://aimatrx.com/marketing/sites/tracking");
+        expect(external.external).toBe(true);
+        expect(external.problem).toContain("an external address is never a route door");
+        expect(external.problem).not.toContain("404");
       });
 
       it("offers something on every row except the ones deliberately named, each with a reason", () => {

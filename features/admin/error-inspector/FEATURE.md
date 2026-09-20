@@ -149,6 +149,13 @@ second symptom instead of deduping the incident.
   definite state onto that same entry via `resolveCapturedError`. A handled
   `denied` result is yellow/Silent; unresolved, missing, deleted, signed-out,
   and access-`ok` transient failures remain red.
+- **Deep links** — `features/window-panels/url-sync/UrlPanelManager.tsx`
+  (`url-panel-unopened`). A `?panels=` token was hydrated but no window ever
+  registered a urlSync entry for it, so the link opened nothing. The token is
+  KEPT in the address bar and the person is told; this row is the diagnostic.
+  `relation` = `?panels=<keys>`. Firing means either a window whose registry
+  `urlSync.key` and hydrator disagree, or a lazy chunk slower than the shared
+  lazy-mount deadline.
 - **Layout** — `lib/layout/useClippedContentGuard.ts` (`layout-scroll-chain`).
   Measures a bounded scroll surface against the nearest ancestor that
   constrains overflow: content hanging past a CLIPPING ancestor is
@@ -382,6 +389,14 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 - New downgrade → edit `DOWNGRADE_RULES` only.
 
 ## Change Log
+
+- 2026-09-20 — **New `url-panel-unopened` source: a deep-linked window that never
+  opened is now a row, not a silently deleted URL.** `?panels=` tokens used to be
+  stripped from the address bar when a 5 s timer expired, with nothing anywhere
+  but a console warning. `UrlPanelManager` now keeps the token, shows an honest
+  notice through `toastErrorAlreadyCaptured` (so the toast does not add a second
+  `user-toast` row), and files this capture with the unresolved keys and the
+  deadline it waited. Red tier, so it persists to `public.system_error`.
 
 - 2026-09-17 — **New source `feature-knob-vocabulary`: an enum knob set to a value this build does not implement.** Captured inline by `features/marketing/seo/topical-map/knobs.ts`'s `enumKnob`, carrying the knob address as `relation`, the offending value and its row's `allowed_values` in `raw`, and `code=knob_value_not_implemented`. It exists because that reader used to THROW, which blanked every map screen over one legal admin choice; it now falls back to the row's own `default_value` and screams here instead. Red tier, so it also reaches `public.system_error`.
 

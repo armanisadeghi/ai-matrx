@@ -60,10 +60,11 @@ describe("sendRowsToSheetOutcome — the approval-queue reply (F-99)", () => {
       "Pipeline",
     );
 
-    expect(outcome.status).not.toBe("error");
+    // kit 0.16.0: the first-class state, neither a delivery nor a failure.
+    expect(outcome.status).toBe("queued");
     expect(JSON.stringify(outcome)).not.toContain("Created");
-    // Whatever the host prints, it states that nothing is in Google yet.
-    expect("message" in outcome ? outcome.message : "").toContain(NOTHING_CHANGED_YET);
+    // The remedy is the half the server's sentence never states.
+    expect("remedy" in outcome ? outcome.remedy : "").toContain(NOTHING_CHANGED_YET);
     // And the receipt is the queue row that really exists — never a Google file.
     expect("target" in outcome ? outcome.target?.href : undefined).toBe(
       PROPOSED.queueHref,

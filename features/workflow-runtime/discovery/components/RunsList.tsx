@@ -27,6 +27,7 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { formatElapsed } from "@/components/official-candidate/elapsed-time/ElapsedTime";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { ListX } from "lucide-react";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
@@ -73,9 +74,27 @@ function Muted({ children }: { children: React.ReactNode }) {
 export function RunsList({ definitionId }: { definitionId?: string }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const { rows, loading, error } = useRunsList({ definitionId });
+  const { rows, loading, error, organizationState } = useRunsList({
+    definitionId,
+  });
   const facts = useWorkflowFacts(rows.map((row) => row.definitionId));
   const [clickedRow, setClickedRow] = useState<RunRowView | null>(null);
+
+  // 🚨 THE ORGANIZATION QUESTION COMES FIRST, AND IT HAS FOUR ANSWERS. `/runs`
+  // is read per organization and refuses before networking without one, so with
+  // no answer there is nothing to show — and this table's `isLoading` skeleton
+  // used to stand in for all three non-ready answers, forever. The ONE notice
+  // says which it is: checking, choose one, or "we could not check" with Try
+  // again (R37).
+  if (organizationState !== "ready") {
+    return (
+      <OrganizationContextNotice
+        state={organizationState}
+        what="Runs"
+        description="Runs are listed per organization, and none is selected for this session. Pick one and this list loads."
+      />
+    );
+  }
 
   const view: RunRowView[] = rows.map((row) => {
     const fact = row.definitionId ? facts.get(row.definitionId) : undefined;

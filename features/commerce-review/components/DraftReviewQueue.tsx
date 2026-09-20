@@ -31,12 +31,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
-import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectOrganizationId,
-  selectOrgBootstrapResolved,
-} from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { toast } from "@/lib/toast";
 
 import type { DraftItem, ReviewVerdict } from "../types";
@@ -51,7 +49,14 @@ export function DraftReviewQueue() {
   const organizationId = useAppSelector(selectOrganizationId);
   // "No org yet" is not "no org": until the bootstrap resolves, loading is the
   // truth and the picker must not flash over a screen that is about to fill.
-  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  // 🚨 THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved` is
+  // set TRUE by `setOrgBootstrapFailure` as well, so "resolved and still no
+  // id" was ALSO the failed read — and this screen told a member of thirteen
+  // organizations to pick one. The gate's discriminant separates them and the
+  // ONE notice renders each, the failed one with its Retry.
+  const { organizationState } = useOrganizationRequired();
+  const organizationUnanswered =
+    organizationState === "required" || organizationState === "unavailable";
   const [items, setItems] = useState<DraftItem[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -142,10 +147,15 @@ export function DraftReviewQueue() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  if (!organizationId && orgBootstrapResolved)
-    // The canonical honest state — it carries the picker, so this is a remedy
-    // and not a dead end.
-    return <OrganizationRequiredNotice title="Draft review needs an organization" />;
+  if (organizationUnanswered)
+    // The canonical honest state — the refusal carries the picker and the
+    // failed read carries Retry, so neither is a dead end.
+    return (
+      <OrganizationContextNotice
+        state={organizationState}
+        title="Draft review needs an organization"
+      />
+    );
   if (loadError)
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3">

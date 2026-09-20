@@ -27,7 +27,6 @@ import {
   AudioLines,
   File as FileIcon,
   MessagesSquare,
-  MonitorPlay,
   Table2,
   ListChecks,
   BookOpen,
@@ -45,6 +44,7 @@ import type { DetailRecordType } from "@/lib/detail/types";
 import { GOOGLE_DOCUMENT_ITEM_TYPE } from "@/features/google-workspace/documents/itemType";
 import { CALENDAR_EVENT_ITEM_TYPE } from "@/features/google-workspace/calendar/itemType";
 import { WEB_SITE_ITEM_TYPE } from "@/features/marketing/site-item-type";
+import { WEB_YOUTUBE_VIDEO_ITEM_TYPE } from "@/features/marketing/youtube/itemType";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { refinePartyDetail } from "@/features/crm/party-detail";
 import { partyKindWord } from "@/features/crm/party-words";
@@ -798,53 +798,24 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
   // the platform learns about it. The key is the canonical entity token
   // (`web_site`), so no `entityToken` alias is needed and no twin exists.
   web_site: WEB_SITE_ITEM_TYPE,
-  // 🚨 V-22 NEW-6 — THE THIRD GOOGLE MIRROR TABLE IS A RECORD THAT OPENS.
-  // `web.youtube_video` is a live, active, `is_listed` entity
-  // (`platform.entity_types.token = 'web_youtube_video'`) and the third mirror
-  // beside `communication.calendar_event` and `workbench.google_document`: same
-  // shape (`external_id`, `external_url`, `synced_at`, `sync_status`), and its
-  // connection side is `channel_resource_id →
-  // users.integration_connection_resources` (read live 2026-09-18). It had no
-  // entry here and none in the entity registry, so a YouTube video had no door
-  // in any form — `/detail/web_youtube_video/<id>`, a URL anyone can build,
-  // showed nothing about a fully stored record.
+  // 🚨 V-22 NEW-6, HANDED OVER BY U-M3 — THE THIRD GOOGLE MIRROR TABLE IS A
+  // RECORD THAT OPENS. `web.youtube_video` is a live, active, `is_listed`
+  // entity (`platform.entity_types.token = 'web_youtube_video'`, aidream
+  // migration 0767) and the third mirror beside `communication.calendar_event`
+  // and `workbench.google_document`: same shape (`external_id`, `external_url`,
+  // `synced_at`, `sync_status`), its connection side `channel_resource_id →
+  // users.integration_connection_resources`. It had no entry here at all, so a
+  // YouTube video had no door in any form — `/detail/web_youtube_video/<id>`, a
+  // URL anyone can build, showed nothing about a fully stored record.
   //
-  // It is registered INLINE rather than beside a feature because no feature owns
-  // this table in this repo yet: `/marketing/tools/youtube/videos/<id>` is keyed
-  // on YouTube's own external id via `/research/youtube/videos/{video_id}`, a
-  // different identity. When a YouTube surface lands it takes this entry over,
-  // the way `features/marketing/site-item-type.ts` did for a site.
-  web_youtube_video: {
-    type: "web_youtube_video",
-    label: "YouTube video",
-    icon: MonitorPlay,
-    accent: {
-      text: "text-red-600 dark:text-red-400",
-      bg: "bg-red-500/10",
-      ring: "ring-red-500/20",
-    },
-    // No bespoke window exists, so it opens the Detail primitive — window by
-    // default, docked or page per the person's own setting.
-    open: { kind: "web_youtube_video" },
-    detailSource: { table: "youtube_video", schemaName: "web", titleField: "title" },
-    enrich: (s, id) =>
-      fetchRow(
-        s,
-        "youtube_video",
-        id,
-        "title, description, external_url, sync_status",
-        (r) => ({
-          name: clip(r.title, 80),
-          about: clip(r.description),
-          details: [
-            r.sync_status
-              ? { label: "Sync", value: titleCase(r.sync_status) ?? String(r.sync_status) }
-              : null,
-          ].filter(Boolean) as EnrichedItem["details"],
-        }),
-        "web",
-      ),
-  },
+  // V-22 registered it INLINE because no feature owned the table in this repo,
+  // and said the entry moves beside the feature the day a YouTube surface
+  // lands. That is `features/marketing/youtube/` (U-M3), so the entry lives
+  // there now — and it is no longer the generic registration: a typed loader,
+  // a curated field list, a health strip that speaks about the VIDEO, and the
+  // read-only sections all arrive through `refineDetail`, the same seam U-W1
+  // and U-W2 use.
+  web_youtube_video: WEB_YOUTUBE_VIDEO_ITEM_TYPE,
 };
 
 async function enrichFile(

@@ -120,6 +120,14 @@ side panel) and the `/detail/[type]/[id]` route. Presentation is the person's
 
 ## Change Log
 
+- 2026-09-20 — **V-30 NEW-4 / NEW-5: canonicalising a token rewrote the instance id the person pasted, and two tokens sharing a canonical key silently ate each other.** (1) `?panels=files:root` settled as `cloud_files:cloudFilesWindow` — the key corrected AND the pasted instance id replaced by the window's own singleton id, so the address became a second thing that does not use what the person typed. An alias is a 1:1 KEY substitution, so the new `canonicalizeTokenKey` in `url-sync/panelKeyAliases.ts` rewrites the key and carries the rest of the token across untouched (`files:root:v-fc` → `cloud_files:root:v-fc`); the manager only applies it when the canonical key ALSO has a hydrator, because a rewritten address this build could not reload would be a worse link than the one the person had. The window's own entry still wins the moment it registers, instance id and all — `cloud_files:cloudFilesWindow` once Cloud Files is up. (2) The pending record was stored as `unresolvedTokens.current.set(canonicalKey, pending)`, so a link carrying BOTH `files:a` and `cloud_files:b` kept only the second: the first pasted token was forgotten with no warning, and if neither window ever registered the notice named one key instead of two. The map is now keyed by canonical key **plus instance id** while the settle SWEEP still runs on `pending.canonicalKey`, so one registration settles every token that canonicalises to it and no pasted token is dropped by another; the verbatim token also rides WITH its panel by position rather than through a type-key map, which could not survive two tokens sharing one key either. Guard: three new cases in `__tests__/deepLinkedWindowKeepsItsAddress.test.tsx`, RED on the HEAD bytes (`0a66db43`) — `Expected: "cloud_files:root" / Received: "files:root"` and `Expected: "cloud_files:a,cloud_files:b" / Received: "cloud_files:b"` — GREEN after, with a third case proving the window that publishes its own instance id still wins and never alarms. F-127's contract is untouched: an alias whose canonical key has no hydrator keeps `files:root` verbatim and is still announced by the pasted key. Evidence: `npx jest lib/route-manifest features/connectors features/window-panels` → 105 suites / 748 passed 1 skipped, `pnpm check:parse` OK, scoped `tsc` clean in every changed file.
+
+- 2026-09-20 — **V-29 NEW-1: an alias is SETTLED by the window it opens — a false alarm is a lie too.** `?panels=files:<id>` is a legacy alias (its hydrator opens `cloudFilesWindow`), but that window registers its address under the canonical key `cloud_files`. `UrlPanelManager` compared RAW token keys, so `files` could never be satisfied by the registration it had itself caused: live on `/tasks?panels=files:root` the Cloud Files window was on screen at t=10 s, the address was rewritten to `cloud_files:cloudFilesWindow,files:root` — two tokens for ONE window, with the pasted instance id surviving only in the ghost half — and at t≈45 s the V-28 recovery layer screamed, filed a `url-panel-unopened` capture (no `errorTierRules` entry ⇒ `DEFAULT_TIER` red ⇒ durable `public.system_error`) and toasted *"This link names a window this build could not open: files."* about a window plainly in front of the person. Every visit and every reload re-ran it. **Fixed at the class:** alias → canonical mappings are declared once in the new `url-sync/panelKeyAliases.ts`, and every key comparison in the manager runs through `resolveCanonicalTypeKey(...)` — the unresolved map is KEYED canonically (so it is emptied by the canonical registration), the observed-entries sweep and `withUnresolvedTokens`' already-represented check both canonicalise, and the map's value carries the pasted `tokenKey` so the sentence a person reads still names what THEY typed, never a canonical key they have never seen. **Census:** all 49 hydrator keys were resolved against their dispatched `overlayId` and that overlay's registry `urlSync.key` — `files` → `cloud_files` is the ONLY alias; `agent` and `detail` dispatch through their own primitives (`initInstanceUIState`, `openDetailSingleton`) and their windows register under their own keys; the other 46 match exactly. The dev-only integrity check in `initUrlHydration.ts` now also refuses a declared alias with no hydrator, one whose canonical target is not a registry `urlSync.key`, and one whose key a window already publishes. F-127's contract is untouched: a token that never registers still keeps its address and still alarms. Guard: two new cases in `__tests__/deepLinkedWindowKeepsItsAddress.test.tsx`, RED on the prior bytes (`Expected: "cloud_files:cloudFilesWindow"` / `Received: "cloud_files:cloudFilesWindow,files:root"`, plus the toast and capture that should not exist), GREEN after — and the second case proves an alias whose window never registers still keeps `files:root` and is announced by the pasted key.
+
+- 2026-09-20 — **V-28 NEW-5: a `?panels=` deep link may never erase itself, and a wall clock is never the signal that a window failed.** `?panels=brand_channel:<brandId>` failed to open in four of eight fresh loads, and every failing load printed `UrlPanelManager`'s 5000 ms "hydrated but never registered a urlSync entry" warning and then DELETED its own token from the address bar in silence; the `site_tracking` twin failed once too, and one run opened the panel and still lost the address. The cause was not the `urlSyncId` prop F-121 fixed: it was the 5000 ms deadline racing a lazily-compiled window. `initUrlHydration()` is fully synchronous (no `await`, no `import()`), so hydrator registration is never late — what is late is the WindowPanel mount, which sits behind `lazyOverlay(() => import(…))`, i.e. a Turbopack chunk COMPILE in dev. Measured on the preview box (Next reports `cpus: 1`): a warm `/api/dev-login` round trip took **10.3 s inside Next**, a cold `/tasks` took **21.2 s**, and a cold `/` compile did not finish inside the preview watchdog's **300 s** window. A 5 s deadline cannot survive that, and prod chunk fetches only make it rarer, never durable. **Three changes, at the class:** (1) the manager now waits on the REGISTRATION SIGNAL — a key leaves the unresolved set the moment its window's `urlSyncSlice` entry appears, however long that took — and never gates a URL write on it; (2) an unresolved token is written back into `?panels=` VERBATIM, so the address survives the wait, survives a never-opening window, and survives a token with no hydrator at all (which used to be stripped just as silently); (3) when the deadline does expire the manager screams in console, files a `url-panel-unopened` capture (new `CapturedErrorSource`, red tier → `public.system_error`) and puts an honest sentence on screen through `toastErrorAlreadyCaptured`: *"This link names a window this build could not open: <key>. The link is unchanged in your address bar — reload to try again, or report it if it keeps failing."* The deadline itself is now ONE number shared with the only other subsystem waiting on the same physical event, `diagnostics/overlayRenderWatchdog.ts` — `constants/lazyWindowMount.ts` (`LAZY_WINDOW_MOUNT_DEADLINE_MS`, 12 s prod / 45 s dev). Guard: `__tests__/deepLinkedWindowKeepsItsAddress.test.tsx`, RED on the prior bytes (3 of its 4 cases fail: the late registration loses the token, the never-registering window loses the token, the hydrator-less token loses the token), GREEN after, with the fourth case proving a window that actually CLOSES still drops its token.
+
+- 2026-09-19 — **U-M2: `siteTrackingWindow` — one site's Tag Manager tracking, and the frame is only a frame.** `windows/marketing/SiteTrackingWindow.tsx` wraps the canonical `SiteTrackingPanel` `variant="bare"`; a bespoke body here would be a second renderer of a VERDICT, and the part a copy always drops is the container-versus-live-page reconciliation — so the copy would print a confident grade of a container the site does not use. It shipped WITH its `registry/windowRegistryMetadata.ts` row and a `urlSync.key: "site_tracking"` hydrator (`?panels=site_tracking:<siteId>`, `urlSyncId={siteId}` on the panel), so it is in neither baseline in `window-address-baseline.json` — new debt is refused, and this window adds none. Guard: `__tests__/siteTrackingWindowWrapsThePanel.test.tsx` asserts the canonical component is the body, that `variant="bare"` is passed, and that the panel is overlay-bound and carries its subject in the address.
+
 - 2026-09-18 — **F-100: the three organization states, not a bare nullable id.** `windows/marketing/TopicalMapWindow.tsx`'s `MapPicker` read `selectOrganizationId` directly and rendered its "No organization is active" refusal whenever the id was null — which is also true for several seconds on every cold load while boot is still resolving the selection, so a person who belongs to an organization saw a false refusal (R36 / the F-89 class; the module arrived from main after the guard existed, so `check-org-three-states` caught it on first run). Fixed to read `useOrganizationRequired()`'s `organizationState` and render `OrganizationContextNotice` — `"resolving"` shows the shared checking beat, `"required"` shows the same wording as the honest terminal refusal, `"ready"` runs the maps query. Not added to `scripts/org-three-states-census.json` (that census only shrinks) or to the allowlist.
 - 2026-09-18 — **F-88: ONE PANEL FOR THE WINDOW'S WHOLE LIFE — the body swaps, the panel never does.** `windows/marketing/SiteQuickViewWindow.tsx` (F-87) rendered an `overlayId="siteQuickViewWindow"` panel while its site read was in flight and then returned the canonical `SitePeekWindow`, which renders its OWN standalone panel with no `overlayId`. So at the instant the read resolved the overlay-bound panel unmounted: the overlay stopped owning the window on screen — `onCollectData` (workspace persistence), the tray row, restore and close-from-the-`OverlayController` all pointed at a panel that no longer existed — and the chrome blinked out while the lazy peek module loaded. The fix is the SLOTS contract read literally, and it is the shape a panel that wraps a canonical component must take: the canonical surface's CONTENT becomes a component (`features/marketing/components/sites/SitePeekBody.tsx`, no `WindowPanel` import), and each panel host mounts it as `children` — the inline host for callers that already hold the row, the overlay-bound host for an id-only caller, whose `id`, `overlayId` and `onCollectData` are constant from the first paint while `children` swaps loading → error → content. Same shape as the Detail primitive (`detail/shells/DetailWindowShell.tsx` owns one panel; the presentation fills it, loading state included). Never pass a panel identity down into a canonical window as props — hosts own chrome, bodies own content. Guard: `__tests__/siteQuickViewWindowOnePanel.test.tsx` asserts the SAME panel DOM node survives loading → loaded, still bound to the same overlay and still answering `onCollectData` (red on 306edaf2: the node was gone). **And the same pass gave `siteQuickViewWindow` its `registry/windowRegistryMetadata.ts` entry** — `preservationEnabled` is false without one, so its `onCollectData` was never called and "Save window state" wrote nothing: a prop that looked like persistence and was inert (`defaultData` + `preservation.dataKeys: ["siteId", "siteLabel"]`, `requiredDataKeys: ["siteId"]` so a restored Quick view always has its subject, `mobilePresentation: "drawer"`). No screen was seen.
 
@@ -442,7 +450,7 @@ interface WindowRegistryEntry {
 1. Every metadata entry has `kind`; every overlay id has one lazy renderer in `OverlayController`.
 2. Every `kind: "window"` has `mobilePresentation`.
 3. `slug` and `overlayId` are each unique across the registry.
-4. Every `urlSync.key` has a hydrator in `initUrlHydration.ts` (dev-time assertion), and every hydrator key has a registry `urlSync.key` — a hydrator without one opens from the URL but never writes back, and the writer then waits 5 s for a registration that never comes.
+4. Every `urlSync.key` has a hydrator in `initUrlHydration.ts` (dev-time assertion), and every hydrator key has a registry `urlSync.key` — a hydrator without one opens from the URL but never writes back, and the deep link then ends at the honest "could not open" notice below rather than opening anything.
 5. **A window nobody opened may only open itself where it lives.** Any code that raises a window UNBIDDEN (a timer, a once-a-day mount, a boot-time check — anything that is not a person clicking) must ask `mayRaiseUnbidden(overlayId, pathname)` in `utils/mayRaiseUnbidden.ts` first, and the answer comes from `unbiddenHome` on that window's registry entry. Default deny: no `unbiddenHome`, no self-raising anywhere, and the refusal is warned on the console naming the window. Away from home it is a DEFERRAL, so a raiser must not spend its own once-a-day bookkeeping on a refusal — the window raises on the viewer's next visit to a home route. This governs unbidden raises ONLY: clicking an opener works on every route, always. (D11, 2026-09-17: the daily spend window opened over the `/exports` drop zone. The fix is the primitive, never a route blocklist.)
 
 ### How to add a new overlay
@@ -646,36 +654,73 @@ Instance id auto-falls-back to `overlayId` for singletons — URL reads like `?p
 
 Every enabled registry `urlSync.key` must have a hydrator in [`url-sync/initUrlHydration.ts`](./url-sync/initUrlHydration.ts). A dev-only assertion logs missing mappings when `UrlPanelManager` mounts.
 
-### 🚨 THE HYDRATOR OPENS THE WINDOW, AND THE ADDRESS IS NEVER ERASED
+### 🚨 THE ADDRESS IS NEVER DESTROYED BY A CLOCK (V-28 NEW-5)
 
-Two laws, both learned from one report (Arman, 2026-09-19: an agent deep link
-"goes to this and then it clears it and just loads this and the component is
-never loaded"). They are the whole contract between a `?panels=` token and a
-window on screen.
+A `?panels=` token whose window has not registered yet is not evidence that the
+token is wrong. Every window enters through `lazyOverlay(() => import(…))`, so
+between the hydrator dispatching the open and the `WindowPanel` calling
+`useUrlSync` there is a chunk to fetch — or, in dev, to COMPILE. `UrlPanelManager`
+therefore:
 
-**1. A hydrator OPENS the window.** Seeding a feature's state is not restoring a
+- **waits on the registration SIGNAL, not a timer** — a key leaves the unresolved
+  set the moment its `urlSyncSlice` entry appears, seconds or a minute later;
+- **writes an unresolved token back into `?panels=` verbatim**, so nothing is
+  ever removed from the address bar because a wait was long, or because this
+  build has no hydrator for the key;
+- **announces**, once the shared lazy-mount deadline
+  (`constants/lazyWindowMount.ts`, 12 s prod / 45 s dev — the same constant
+  `overlayRenderWatchdog` waits on) expires with a key still unresolved: a
+  console scream, a `url-panel-unopened` capture, and an on-screen sentence
+  saying the window did not open and the link is still good.
+
+Only a window that actually registered and then UNregistered — i.e. was closed —
+removes its token. Guard:
+[`__tests__/deepLinkedWindowKeepsItsAddress.test.tsx`](./__tests__/deepLinkedWindowKeepsItsAddress.test.tsx).
+
+#### An ALIAS is settled by the window it opens (V-29 NEW-1)
+
+Some `?panels=` keys are not a window's own address: `files` is the legacy key
+whose hydrator opens `cloudFilesWindow`, and that window publishes `cloud_files`.
+Those mappings are declared in ONE place,
+[`url-sync/panelKeyAliases.ts`](./url-sync/panelKeyAliases.ts), and every key
+comparison in `UrlPanelManager` — the unresolved set, the "already represented"
+check in `withUnresolvedTokens`, and the observed-entry sweep — runs on
+`resolveCanonicalTypeKey(...)`. So an alias leaves the unresolved set the moment
+its canonical key registers, and the address carries the canonical token ONCE.
+Only the sentence a person reads names the key they pasted.
+
+Before this, keys were compared raw: `?panels=files:root` opened the Cloud Files
+window, rewrote the address to `cloud_files:cloudFilesWindow,files:root` — two
+tokens for one window — and then, at the deadline, screamed, toasted *"this
+build could not open: files"* and filed a RED-tier durable `url-panel-unopened`
+capture about a window that was on screen, on every visit and every reload. Law
+4 inverted: a false alarm is a lie too.
+
+The census is small and closed: of 49 registered hydrators, `files` is the only
+key whose target window declares a different `urlSync.key`; `agent` and `detail`
+open through their own primitives and register under their own keys; every other
+hydrator key equals its window's registry key. The dev-only integrity check at
+the end of `initUrlHydration.ts` now refuses an alias with no hydrator, an alias
+whose canonical target is not a registry `urlSync.key`, and an alias key that a
+window already publishes. **A never-registering token still keeps its address and
+still alarms** — the contract above is untouched.
+### 🚨 THE HYDRATOR OPENS THE WINDOW
+
+Learned from one report (Arman, 2026-09-19: an agent deep link "goes to this and
+then it clears it and just loads this and the component is never loaded"). Its
+second half — the address is never erased — is the section above; this is the
+first half.
+
+**A hydrator OPENS the window.** Seeding a feature's state is not restoring a
 panel. A hydrator dispatches the same open the click dispatches — `openOverlay`
 (or the feature's one opener primitive) — and then fetches whatever the panel
 needs, because a floating panel is not a route and no page owns it. The `agent`
 hydrator dispatched `initInstanceUIState` and nothing else: it wrote how a
 conversation would be displayed and never opened the shell, never read the
 conversation, and so never registered a `urlSync` entry. Every agent deep link
-in the product landed on the bare route with nothing open.
-
-**2. `UrlPanelManager` never deletes a token the URL arrived with.** The
-Redux→URL writer serializes the windows that are open RIGHT NOW, so any token
-whose window has not registered — or cannot — is simply absent from what it
-writes back, and the address is destroyed. That is the "then it clears it" half:
-the one copy of the link is gone from the bar, from history, and from anything
-the person was about to paste, and a refresh cannot even retry it. Tokens the
-URL arrived with are now carried verbatim (`withUnclaimedTokens`) until the key
-they name registers; from that moment the live entries govern, so closing the
-window still clears its token. Matching is by `typeKey`, never the whole
-`typeKey:instanceId`, because a window legitimately registers under an identity
-the link did not carry (a vault link names an ITEM; the vault window registers
-its singleton id). A token still unclaimed after 5 s is a `console.error` naming
-the key and the remedy — it is never silently dropped, and it never freezes the
-other windows' URL sync (the old bounded-wait guard did exactly that).
+in the product landed on the bare route with nothing open. Guard: the "an agent
+deep link opens the agent" cases in
+[`__tests__/urlHydrationRegistry.test.ts`](./__tests__/urlHydrationRegistry.test.ts).
 
 **Two windows may share one key only if their tokens tell them apart.**
 `agentRunWindow` (the Chat window, which HOSTS conversations) and the
@@ -686,6 +731,18 @@ window, addressed by its own instance and carrying the agent and open chat in
 anything else is a conversation shell, addressed by the conversation id, with
 `m` naming the display mode through the ONE map both the live launch and the
 hydrator read ([`features/agents/redux/execution-system/display-mode-overlay.ts`](../agents/redux/execution-system/display-mode-overlay.ts)).
+
+**Merge note (2026-09-20).** Main's fix for the report above carried its own
+never-erase implementation (`withUnclaimedTokens`, matched by raw `typeKey`, a
+5 s console notice). This branch's `withUnresolvedTokens` states the same law
+and was verified live across V-28…V-30, so the merge kept it: keys are judged
+in canonical space, tokens are tracked by canonical key + instance id, the
+notice rides the shared lazy-mount deadline and reaches the screen. Main's
+helper tests now run against `withUnresolvedTokens`. Main also deleted the
+legacy `files` hydrator under no-legacy; it stays here because links carrying
+it are in the wild (docs, chats, the extension) and the alias contract above
+is built on it — delete the alias and its hydrator together, with the
+`deepLinkedWindowKeepsItsAddress` cases, once those minters are gone.
 
 ### 🚨 A WINDOW WITH NO ADDRESS CANNOT BE REACHED — the address census (R35)
 
@@ -994,6 +1051,8 @@ A re-entry into the viewport resets the dwell timer — a glance outside doesn't
 ---
 
 ## Change log
+
+- **2026-09-20** — **V-27 NEW-2: `?panels=brand_channel:<brandId>` destroyed its own address on first render, and the census could not see it.** `BrandChannelWindow` (U-M3) had a registry row, a `urlSync` key and a hydrator, and passed no `urlSyncId` — so `WindowPanel` fell back to the singleton overlay id, the URL rewrote itself to `?panels=brand_channel%3AbrandChannelWindow`, and reloading THAT opened nothing ("names no brand"). Its `SiteTrackingWindow` twin passed `urlSyncId={siteId}` and round-tripped perfectly, which is what made the difference visible. Fixed with `urlSyncId={brandId}`. **The class is now guarded, not the instance:** `everyWindowHasAnAddress.test.ts` gained a SOURCE census — every window whose registry row declares an address over a durable subject must pass `urlSyncId` in the component that renders it, read out of every `.tsx` under `features/`, `components/` and `app/` (both the literal `overlayId="x"` and the `OVERLAY_ID` constant spelling, so the agent variable editor is measured rather than skipped), with comments stripped first, because the fix's own explanatory comment contains the word and left the first cut of the case green. A window it cannot locate FAILS as unmeasured. Six pre-existing offenders are baselined as DEBT in `window-address-baseline.json` under `subjectlessAddresses`, each naming the subject its address drops (`quickTasksWindow`, `userPreferencesWindow`, `credentialVaultWindow`, `markdownEditorWindow`, `cropStudioWindow`, `keywordWindow`); the list only shrinks. Also new: `__tests__/brandChannelWindowCarriesItsAddress.test.tsx`, the twin of `siteTrackingWindowWrapsThePanel.test.tsx`. RED on the prior bytes (`urlSyncId` → `undefined`, and `brandChannelWindow` named in the census list), GREEN after; whole suite 46 suites / 299 tests.
 
 - **2026-09-18** — **Every window V-23 could not reach now has an address, and a census guards the class (F-105).** Six windows got a `urlSync` key, a hydrator and — where the window has a subject — a `urlSyncId`: `googleAgendaWindow` → `?panels=agenda`, `approvalsWindow` → `?panels=approvals` (both of which had **no registry row at all**, so they could not have declared one), `googleContactsImportWindow` → `?panels=google_contacts_import:<externalId>:o-<orgId>`, `googleTasksImportWindow` → `?panels=google_tasks_import:<projectId>:o-<orgId>`, `googleConnectWindow` → `?panels=google_connect`, `siteQuickViewWindow` → `?panels=site_quick_view:<siteId>`. Also fixed `topicalMapTopicPanel`: it declared `urlSync: { key: "topic" }` when it shipped with **no hydrator** (the link opened nothing) and with no `urlSyncId`, so every open topic wrote one colliding token; the address is now `?panels=topic:<mapId>|<slug>:s-<siteId>`. New guard `__tests__/everyWindowHasAnAddress.test.ts` + `registry/window-address-baseline.json` — see [`## URL sync`](#url-sync); the baseline stands at 8 windows with no registry row and 65 with a durable subject and no address, and it only shrinks.
 

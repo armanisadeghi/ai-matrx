@@ -13,6 +13,11 @@
  * (`providers/google-provider/googleAuthorizationGate.ts`), reached through the
  * one door `useGoogleAuthorizationWindow()`. This check keeps it the ONE door:
  *
+ * The provider's TOKEN-window openers — `signIn` and `requestScopes` — take the
+ * same gate INSIDE the provider (2026-09-19), so a direct call to either cannot
+ * open a second window and they are deliberately not scanned for here; the
+ * primitives below are the ones a surface must never name.
+ *
  * WHAT THIS FLAGS: any file outside `providers/google-provider/` that names
  * `requestAuthorizationCode` or `startAuthorizationCodeRedirect` — the raw
  * provider primitives. Surfaces call `openAuthorizationWindow` /
