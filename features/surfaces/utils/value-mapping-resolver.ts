@@ -19,20 +19,16 @@
  * once every shortcut migrates to the new shape.
  */
 
-import type {
-  ApplicationScope,
-} from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import type {
   ContextObjectType,
   ContextPolicy,
 } from "@/features/agents/types/agent-api-types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type {
-  ValueMapping,
-  ValueMappingMap,
-} from "@/features/surfaces/types";
+import type { ValueMapping, ValueMappingMap } from "@/features/surfaces/types";
 import { isValueMappingMap } from "@/features/surfaces/types";
+import { assertNativeContextValue } from "./context-value-contract";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -101,7 +97,10 @@ function inferContextType(value: unknown): ContextObjectType {
 function classifyTarget(
   name: string,
   variableNames: Set<string>,
-  policyMap: Map<string, ContextPolicy | { key: string; type?: ContextObjectType; label?: string }>,
+  policyMap: Map<
+    string,
+    ContextPolicy | { key: string; type?: ContextObjectType; label?: string }
+  >,
 ): "variable" | "context_slot" | "unknown" {
   if (variableNames.has(name)) return "variable";
   if (policyMap.has(name)) return "context_slot";
@@ -112,9 +111,13 @@ function pushContextEntry(
   out: InstanceContextEntry[],
   targetName: string,
   value: unknown,
-  policyMap: Map<string, ContextPolicy | { key: string; type?: ContextObjectType; label?: string }>,
+  policyMap: Map<
+    string,
+    ContextPolicy | { key: string; type?: ContextObjectType; label?: string }
+  >,
 ): void {
   const policy = policyMap.get(targetName);
+  assertNativeContextValue(targetName, value);
   out.push({
     key: targetName,
     value,
@@ -143,9 +146,10 @@ export function resolveValueMappings(
   const defs = variableDefinitions ?? [];
   const slots = contextPolicies ?? [];
   const variableNames = new Set(defs.map((v) => v.name));
-  const policyMap = new Map<string, { key: string; type?: ContextObjectType; label?: string }>(
-    slots.map((s) => [s.key, s]),
-  );
+  const policyMap = new Map<
+    string,
+    { key: string; type?: ContextObjectType; label?: string }
+  >(slots.map((s) => [s.key, s]));
 
   const variableValues: Record<string, unknown> = {};
   const contextEntries: InstanceContextEntry[] = [];
@@ -154,7 +158,9 @@ export function resolveValueMappings(
   const warnings: string[] = [];
   const errors: string[] = [];
 
-  const mappings: ValueMappingMap = isValueMappingMap(valueMappings) ? valueMappings : {};
+  const mappings: ValueMappingMap = isValueMappingMap(valueMappings)
+    ? valueMappings
+    : {};
 
   // --- Pass 1: explicit mappings ------------------------------------------
   for (const [targetName, mapping] of Object.entries(mappings)) {
@@ -216,7 +222,10 @@ function resolveOne(
   mapping: ValueMapping,
   applicationScope: ApplicationScope,
   variableNames: Set<string>,
-  policyMap: Map<string, { key: string; type?: ContextObjectType; label?: string }>,
+  policyMap: Map<
+    string,
+    { key: string; type?: ContextObjectType; label?: string }
+  >,
   variableValues: Record<string, unknown>,
   contextEntries: InstanceContextEntry[],
   pendingPrompts: PendingPrompt[],
@@ -307,7 +316,10 @@ function writeResolvedValue(
   value: unknown,
   variableValues: Record<string, unknown>,
   contextEntries: InstanceContextEntry[],
-  policyMap: Map<string, { key: string; type?: ContextObjectType; label?: string }>,
+  policyMap: Map<
+    string,
+    { key: string; type?: ContextObjectType; label?: string }
+  >,
 ): void {
   if (targetKind === "variable") {
     variableValues[targetName] = value;
@@ -335,9 +347,10 @@ export function applyResolvedPrompts(
     | null
     | undefined,
 ): ValueMappingResolveResult {
-  const policyMap = new Map<string, { key: string; type?: ContextObjectType; label?: string }>(
-    (contextPolicies ?? []).map((s) => [s.key, s]),
-  );
+  const policyMap = new Map<
+    string,
+    { key: string; type?: ContextObjectType; label?: string }
+  >((contextPolicies ?? []).map((s) => [s.key, s]));
   for (const prompt of result.pendingPrompts) {
     const v = answers[prompt.targetName];
     if (v === undefined) continue;

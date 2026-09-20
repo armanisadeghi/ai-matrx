@@ -101,10 +101,9 @@ export const setLockedAgent = createAsyncThunk<
       return;
     }
 
-    await Promise.allSettled([
-      dispatch(fetchFullAgent(agentId)).unwrap(),
-      dispatch(fetchAgentVersionHistory({ agentId, limit: 100 })).unwrap(),
-    ]);
+    // Do not replace the current comparison when the chosen agent cannot load.
+    // The input section loads version history independently with visible errors.
+    await dispatch(fetchFullAgent(agentId)).unwrap();
 
     dispatch(
       setLocked({

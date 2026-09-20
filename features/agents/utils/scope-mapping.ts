@@ -24,6 +24,7 @@ import {
   resolveValueMappings,
   type PendingPrompt,
 } from "@/features/surfaces/utils/value-mapping-resolver";
+import { assertNativeContextValue } from "@/features/surfaces/utils/context-value-contract";
 
 export type { ApplicationScope } from "@/features/agents/types/scope.types";
 export type { PendingPrompt } from "@/features/surfaces/utils/value-mapping-resolver";
@@ -52,6 +53,21 @@ function inferContextType(value: unknown): ContextObjectType {
     }
   }
   return "json";
+}
+
+function createContextEntry(
+  key: string,
+  value: unknown,
+  policy: { key: string; type?: ContextObjectType; label?: string } | undefined,
+): InstanceContextEntry {
+  assertNativeContextValue(key, value);
+  return {
+    key,
+    value,
+    slotMatched: !!policy,
+    type: policy?.type ?? inferContextType(value),
+    label: policy?.label ?? key,
+  };
 }
 
 export function mapScopeToInstance(
@@ -91,13 +107,7 @@ export function mapScopeToInstance(
         variableValues[targetName] = value;
       } else {
         const policy = policyMap.get(targetName);
-        contextEntries.push({
-          key: targetName,
-          value,
-          slotMatched: !!policy,
-          type: policy?.type ?? inferContextType(value),
-          label: policy?.label ?? targetName,
-        });
+        contextEntries.push(createContextEntry(targetName, value, policy));
       }
     }
   }
@@ -116,13 +126,7 @@ export function mapScopeToInstance(
       mappedScopeKeys.add(sourceKey);
 
       const policy = policyMap.get(policyKey);
-      contextEntries.push({
-        key: policyKey,
-        value,
-        slotMatched: !!policy,
-        type: policy?.type ?? inferContextType(value),
-        label: policy?.label ?? policyKey,
-      });
+      contextEntries.push(createContextEntry(policyKey, value, policy));
     }
   }
 
@@ -136,25 +140,13 @@ export function mapScopeToInstance(
       )) {
         if (ctxVal === undefined) continue;
         const policy = policyMap.get(ctxKey);
-        contextEntries.push({
-          key: ctxKey,
-          value: ctxVal,
-          slotMatched: !!policy,
-          type: policy?.type ?? inferContextType(ctxVal),
-          label: policy?.label ?? ctxKey,
-        });
+        contextEntries.push(createContextEntry(ctxKey, ctxVal, policy));
       }
       continue;
     }
 
     const policy = policyMap.get(key);
-    contextEntries.push({
-      key,
-      value,
-      slotMatched: !!policy,
-      type: policy?.type ?? inferContextType(value),
-      label: policy?.label ?? key,
-    });
+    contextEntries.push(createContextEntry(key, value, policy));
   }
 
   return { variableValues, contextEntries };
@@ -236,7 +228,9 @@ export function mapScopeToInstanceWithSurface(
       ...Object.keys(contextMappings ?? {}),
       ...Object.keys(surfaceValueMappings ?? {}),
     ]);
-    const declaredSlots = new Set((contextPolicies ?? []).map((policy) => policy.key));
+    const declaredSlots = new Set(
+      (contextPolicies ?? []).map((policy) => policy.key),
+    );
     const redundantKeys = new Set([
       "full_document_text",
       "content",

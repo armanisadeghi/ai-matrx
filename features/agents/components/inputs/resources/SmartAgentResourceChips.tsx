@@ -294,10 +294,13 @@ function wrapWithPreview(
 
 interface SmartAgentResourceChipsProps {
   conversationId: string;
+  /** Optional Locate anchor supplied by the owning surface. */
+  surfaceValueName?: string;
 }
 
 export function SmartAgentResourceChips({
   conversationId,
+  surfaceValueName,
 }: SmartAgentResourceChipsProps) {
   const dispatch = useAppDispatch();
   const resources = useAppSelector(selectInstanceResources(conversationId));
@@ -380,7 +383,10 @@ export function SmartAgentResourceChips({
   if (resources.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-1.5 px-2 pt-1.5 pb-0.5 shrink-0">
+    <div
+      className="flex flex-wrap gap-1.5 px-2 pt-1.5 pb-0.5 shrink-0"
+      data-surface-value={surfaceValueName}
+    >
       <AnimatePresence mode="popLayout">
         {resources.map((resource) =>
           resource.blockType === "processed_document" ? (

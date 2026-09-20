@@ -3,6 +3,7 @@ import React from "react";
 import { PublicHeader } from "@/components/matrx/PublicHeader";
 import { PublicFooter } from "@/components/matrx/PublicFooter";
 import { CanvasSideSheet } from "@/features/canvas/core/CanvasSideSheet";
+import { ElevatedShellUserMenuRoot } from "@/components/matrx/resizable/ElevatedShellUserMenu";
 import { Providers } from "@/app/Providers";
 
 export default function PublicLayout({
@@ -25,6 +26,7 @@ export default function PublicLayout({
           statically import CanvasSideSheetImpl here (build-graph leak on
           every anonymous page; eslint bans it). */}
       <CanvasSideSheet />
+      <ElevatedShellUserMenuRoot />
     </Providers>
   );
 }

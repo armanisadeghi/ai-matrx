@@ -8,26 +8,35 @@
  */
 
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
+import type { SmartAgentInputSurfaceValueAnchors } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
 
 interface SharedBattleInputProps {
   conversationId: string | null | undefined;
   surfaceKey: string;
   description?: string;
+  showHeading?: boolean;
+  surfaceValueAnchors?: SmartAgentInputSurfaceValueAnchors;
 }
 
 export function SharedBattleInput({
   conversationId,
   surfaceKey,
   description = "Use Submit All in the toolbar to run every column.",
+  showHeading = true,
+  surfaceValueAnchors,
 }: SharedBattleInputProps) {
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-[11px] font-semibold text-foreground">
-          Shared request
-        </span>
-        <span className="text-[10px] text-muted-foreground">{description}</span>
-      </div>
+      {showHeading && (
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[11px] font-semibold text-foreground">
+            Shared request
+          </span>
+          <span className="text-[10px] text-muted-foreground">
+            {description}
+          </span>
+        </div>
+      )}
       <SmartAgentInput
         conversationId={conversationId}
         surfaceKey={surfaceKey}
@@ -36,6 +45,7 @@ export function SharedBattleInput({
         showSubmitOnEnterToggle={false}
         disableSend
         variablesPanelStyle="inline"
+        surfaceValueAnchors={surfaceValueAnchors}
       />
     </div>
   );

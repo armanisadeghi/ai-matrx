@@ -56,9 +56,10 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { isJsonObject } from "@/types/json";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import {
+  selectOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
 import {
   selectAccessToken,
   selectAuthReady,
@@ -312,11 +313,7 @@ export function MandatesConsole() {
     [navPending, router],
   );
   const selectedOrganizationId = useAppSelector(selectOrganizationId);
-  // 🚨 THE FOURTH STATE (R37). This used to read `orgBootstrapResolved` and
-  // call resolved-with-no-id the refusal — but `setOrgBootstrapFailure` sets
-  // resolved TRUE, so a failed read told a member of thirteen organizations to
-  // pick one. The gate's discriminant keeps the two terminal answers apart.
-  const { organizationState } = useOrganizationRequired();
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
   const accessToken = useAppSelector(selectAccessToken);
   const authReady = useAppSelector(selectAuthReady);
   const [data, setData] = useState<MandateConsoleData | null>(null);
@@ -337,10 +334,7 @@ export function MandatesConsole() {
     useState<MandateCoverageBucket | null>(null);
   const [loading, setLoading] = useState(true);
   /** Settled fact: the bootstrap resolved and no organization is selected. */
-  // Derived at render, never set in the effect: the two terminal organization
-  // answers, each rendered by the ONE notice (the failed one carries Retry).
-  const organizationUnanswered =
-    organizationState === "required" || organizationState === "unavailable";
+  const [noOrganization, setNoOrganization] = useState<string | null>(null);
   /**
    * The list door's own words when it refuses this caller the system home.
    * The (admin) route tree admits ANY Matrx admin level, while the door
@@ -510,18 +504,22 @@ export function MandatesConsole() {
     // state; this surface waits until its Redux auth authority is settled.
     if (!authReady || !accessToken) return;
     if (!selectedOrganizationId) {
-      if (organizationState !== "resolving") {
+      if (orgBootstrapResolved) {
         setLoading(false);
         setFetching(false);
+        setNoOrganization(
+          "No organization is selected, so the mandate console cannot read anything — choose one from the organization picker in the header and this fills in.",
+        );
       }
       return;
     }
+    setNoOrganization(null);
     fetchData();
   }, [
     accessToken,
     authReady,
     fetchData,
-    organizationState,
+    orgBootstrapResolved,
     selectedOrganizationId,
   ]);
 
@@ -1595,13 +1593,10 @@ export function MandatesConsole() {
           {/* The settled "nothing is selected" fact, in words with its remedy —
               a skeleton that simply stops is indistinguishable from a screen
               that is still working. */}
-          {organizationUnanswered ? (
-            <OrganizationContextNotice
-              state={organizationState}
-              compact
-              className="rounded-md border border-amber-500/40 bg-amber-500/10"
-              description="No organization is selected, so the mandate console cannot read anything — choose one from the organization picker in the header and this fills in."
-            />
+          {noOrganization ? (
+            <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[12px] leading-snug text-amber-700 dark:text-amber-400">
+              {noOrganization}
+            </p>
           ) : null}
           {/* THE DOOR'S REFUSAL, IN ITS OWN WORDS. Not a toast that vanishes over
               an empty table: a refusal is a settled fact about this account, and

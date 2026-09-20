@@ -1087,24 +1087,39 @@ export function describeBatch(counts: BatchTierCounts): string {
   return `${head}: ${piles.join(" / ")}`;
 }
 
-/**
- * The post-edit badge's sentence (I6). ACTIONABLE FIRST, then the reach —
- * the Renovate/Dependabot reference: a notification leads with what the
- * person can do now, and the blast radius follows. "4 pins can advance now
- * (1 to check, 2 red) · reaches 26 mandates, 39 rungs not movable here".
- * The not-movable count stays visible (R31): a rung the edit reaches but
- * this person cannot move is still reached.
- */
+/** The counts a person reads after a save — labels only, never a sentence. */
+export interface ReachFacts {
+  advance: number;
+  check: number;
+  red: number;
+  mandates: number;
+  blocked: number;
+  current: number;
+}
+
+export function reachFactsOf(counts: BatchTierCounts): ReachFacts {
+  return {
+    advance: counts.byTier.safe,
+    check: counts.byTier.drift,
+    red: counts.byTier.red,
+    mandates: counts.mandates,
+    blocked: counts.byTier.blocked,
+    current: counts.byTier.current,
+  };
+}
+
+/** Compact fact line for aria-labels and tests. The toast renders the same facts as rows. */
 export function describeReach(counts: BatchTierCounts): string {
-  const safe = counts.byTier.safe;
-  const head = `${safe} pin${safe === 1 ? "" : "s"} can advance now (${counts.byTier.drift} to check, ${counts.byTier.red} red)`;
-  const reach = `reaches ${counts.mandates} mandate${counts.mandates === 1 ? "" : "s"}`;
-  const tail: string[] = [];
-  if (counts.byTier.blocked > 0) {
-    tail.push(`${counts.byTier.blocked} rung${counts.byTier.blocked === 1 ? "" : "s"} not movable here`);
-  }
-  if (counts.byTier.current > 0) tail.push(`${counts.byTier.current} already current`);
-  return `${head} · ${reach}${tail.length > 0 ? `, ${tail.join(", ")}` : ""}`;
+  const facts = reachFactsOf(counts);
+  const parts = [
+    `${facts.mandates} mandate${facts.mandates === 1 ? "" : "s"}`,
+    `${facts.advance} advance`,
+    `${facts.check} check`,
+    `${facts.red} red`,
+  ];
+  if (facts.blocked > 0) parts.push(`${facts.blocked} blocked`);
+  if (facts.current > 0) parts.push(`${facts.current} current`);
+  return parts.join(" · ");
 }
 
 /** Verdicts grouped by mandate key: the mandate's own default rung, then its bindings. */

@@ -27,7 +27,15 @@ export type ComposerDraftRestoreOutcome =
   /** A send, another tab or a destroy invalidated the token. */
   | "superseded"
   /** The composer already holds something — never overwrite what is on screen. */
-  | "occupied";
+  | "occupied"
+  /**
+   * The input entry is not there yet. Restore must not create it — that is
+   * `createInstanceFull` / `initInstanceUserInput`. Writing through
+   * `setUserInputText` here was the PRE-INIT scream (a 125-char draft on
+   * `/agents/…/build` reload looked like lost work). The hook retries when
+   * the entry lands.
+   */
+  | "not_ready";
 
 export function applyComposerDraft(token: ComposerDraftToken) {
   return (
@@ -46,10 +54,14 @@ export function applyComposerDraft(token: ComposerDraftToken) {
 
     const entry =
       state.instanceUserInput.byConversationId[token.conversationId];
+    // Restore is a sanctioned write, not a keystroke. Creating the entry here
+    // fired `smart-input-pre-init-capture` on every reload that still had a
+    // draft while the launcher's agent fetch was in flight. Wait.
+    if (!entry) return "not_ready";
     // Never overwrite something the user can already see, and never land on a
     // composer whose submit is in flight — its text is the message being sent.
-    if ((entry?.text.length ?? 0) > 0) return "occupied";
-    if (entry && entry.submissionPhase !== "idle") return "occupied";
+    if (entry.text.length > 0) return "occupied";
+    if (entry.submissionPhase !== "idle") return "occupied";
 
     dispatch(
       setUserInputText({

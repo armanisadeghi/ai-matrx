@@ -10,7 +10,6 @@ import type {
   ShellNavChild,
   ShellNavItem,
 } from "@/features/shell/constants/nav-data";
-import { useShellNavGates } from "@/features/shell/navigation/useShellNavGates";
 import {
   NAV_WINDOW_PANEL_ICON,
   partitionNavChildren,
@@ -22,11 +21,10 @@ import ShellIcon from "../ShellIcon";
 import MobileRouteMenuSlot from "./MobileRouteMenuSlot";
 import MobileSheetNavLink from "./MobileSheetNavLink";
 import AdminMobileMenuItem from "../sidebar/admin-menu/AdminMobileMenuItem";
-import MobileDrawerUserRow from "../user-block/MobileDrawerUserRow";
 import { isUserSettingsPath } from "@/features/settings/route-shell/settings-route-path";
 import {
   findActiveNavChild,
-  isNavGroupActive,
+  isExclusiveNavGroupActive,
   isOnRoute,
 } from "@/features/shell/utils/is-nav-group-active";
 
@@ -80,13 +78,15 @@ function searchResults(items: ShellNavItem[], query: string): SearchResult[] {
 
 function GroupButton({
   item,
+  candidates,
   onOpen,
 }: {
   item: ShellNavItem;
+  candidates: readonly ShellNavItem[];
   onOpen: () => void;
 }) {
   const pathname = usePathname();
-  const isActive = isNavGroupActive(pathname ?? "", item);
+  const isActive = isExclusiveNavGroupActive(pathname ?? "", item, candidates);
   const closeAfterNavigationStarts = () => {
     window.setTimeout(closeShellMobileMenu, 0);
   };
@@ -154,8 +154,6 @@ export default function MobileNavigationDrawer({
   const navActions = useNavActions();
   const navPanelActions = useNavPanelActions();
   const pathname = usePathname() ?? "";
-  // Which gated destinations exist for this person right now.
-  const gates = useShellNavGates();
   const settingsRoute = isUserSettingsPath(pathname);
 
   const allItems = [...items, settingsItem];
@@ -255,6 +253,7 @@ export default function MobileNavigationDrawer({
           <GroupButton
             key={navItemIdentity(item)}
             item={item}
+            candidates={allItems}
             onOpen={() => setActiveGroupId(navItemIdentity(item))}
           />
         ) : (
@@ -273,6 +272,7 @@ export default function MobileNavigationDrawer({
       {settingsItem.children?.length ? (
         <GroupButton
           item={settingsItem}
+          candidates={allItems}
           onOpen={() => setActiveGroupId(navItemIdentity(settingsItem))}
         />
       ) : (
@@ -283,17 +283,12 @@ export default function MobileNavigationDrawer({
         />
       )}
       <AdminMobileMenuItem />
-
-      {/* The person, at the end of the navigation — mobile's bottom-left. */}
-      <div className="shell-mobile-section-divider" />
-      <MobileDrawerUserRow />
     </div>
   );
 
   const renderGroup = (group: ShellNavItem) => {
     const { sections, panels, actions } = partitionNavChildren(
       group.children ?? [],
-      gates,
     );
     const activeChild = findActiveNavChild(pathname, group);
     const overviewActive =

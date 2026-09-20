@@ -34,6 +34,7 @@ import { selectAllResourcesResolved } from "@/features/agents/redux/execution-sy
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
+import type { SmartAgentInputSurfaceValueAnchors } from "./SmartAgentInput";
 interface SmartAgentInputStackedProps {
   conversationId: string | null | undefined;
   presentation?: "default" | "ambient";
@@ -51,6 +52,7 @@ interface SmartAgentInputStackedProps {
   contextRailPresentation?: "default" | "overflow-only";
   contextRailAttachedItems?: readonly AttachedContextRailItem[];
   extraRightControls?: React.ReactNode;
+  surfaceValueAnchors?: SmartAgentInputSurfaceValueAnchors;
 }
 
 export function SmartAgentInputStacked({
@@ -70,6 +72,7 @@ export function SmartAgentInputStacked({
   contextRailPresentation = "default",
   contextRailAttachedItems,
   extraRightControls,
+  surfaceValueAnchors,
 }: SmartAgentInputStackedProps) {
   const dispatch = useAppDispatch();
   const isAmbient = presentation === "ambient";
@@ -170,12 +173,14 @@ export function SmartAgentInputStacked({
           className="px-3 pt-2"
           presentation={contextRailPresentation}
           attachedItems={contextRailAttachedItems}
+          surfaceValueName={surfaceValueAnchors?.context}
         />
         <SmartAgentVariables
           conversationId={conversationId}
           compact={compact}
           onSubmit={handleSubmit}
           styleOverride={variablesPanelStyle}
+          surfaceValueName={surfaceValueAnchors?.variables}
         />
         <div className="flex items-center justify-end gap-2 px-3 py-2 border-t border-border/40">
           {extraRightControls}
@@ -220,6 +225,7 @@ export function SmartAgentInputStacked({
         conversationId={conversationId}
         presentation={contextRailPresentation}
         attachedItems={contextRailAttachedItems}
+        surfaceValueName={surfaceValueAnchors?.context}
       />
 
       {/* Variable inputs — scrolls internally, never pushes textarea/toolbar off screen */}
@@ -228,10 +234,14 @@ export function SmartAgentInputStacked({
         compact={compact}
         onSubmit={handleSubmit}
         styleOverride={variablesPanelStyle}
+        surfaceValueName={surfaceValueAnchors?.variables}
       />
 
       {/* Resource chips — pinned, never scrolls away */}
-      <SmartAgentResourceChips conversationId={conversationId} />
+      <SmartAgentResourceChips
+        conversationId={conversationId}
+        surfaceValueName={surfaceValueAnchors?.resources}
+      />
       {/* Durable document attachments (association edges) — persist across turns/reloads */}
       <AttachedDocumentChips conversationId={conversationId} />
 

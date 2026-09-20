@@ -123,6 +123,8 @@ interface ConversationContextRailProps {
   presentation?: "default" | "overflow-only";
   /** Display-only mirrors of real agent inputs delivered outside instanceContext. */
   attachedItems?: readonly AttachedContextRailItem[];
+  /** Optional Locate anchor supplied by the owning surface. */
+  surfaceValueName?: string;
 }
 
 export interface AttachedContextRailItem {
@@ -172,6 +174,7 @@ export function ConversationContextRail({
   className,
   presentation = "default",
   attachedItems = [],
+  surfaceValueName,
 }: ConversationContextRailProps) {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
@@ -602,6 +605,7 @@ export function ConversationContextRail({
   return (
     <div
       className={cn("flex min-w-0 items-center gap-1.5 px-0.5 pb-1", className)}
+      data-surface-value={surfaceValueName}
     >
       <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
         {showSetScopeCta && (

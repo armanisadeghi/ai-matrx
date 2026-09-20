@@ -62,7 +62,6 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 - **Do not force every route menu into one row component.** Consumers use different elements, state, groupings, and specialized rows; share the visual contract unless behavior also becomes identical.
 - **Keep Admin Launchpad directly reachable.** It is a real new-tab anchor in the admin-only footer, not another level inside the Administration cascade.
 - **Selected means the current route.** Global groups, flyout children, mobile drill-ins, Large Route menus, and alternate module sidebars use the same blue selected treatment and choose the single most-specific route owner (`findOwningNavItem`). A group may claim a route from its own href, its first path segment, or a declared `ownedRoutePrefixes` alias — never from a flyout child that points into another module. When two groups still claim the same path (a placeholder borrowing another module's href), only the most-specific owner lights up. New-tab launchers such as Admin Launchpad stay neutral. A module with a legacy/alternate namespace declares it once through `ownedRoutePrefixes`; consumers must not duplicate pathname heuristics.
-- **Selected means the current route.** Global groups, flyout children, mobile drill-ins, Large Route menus, and alternate module sidebars use the same blue selected treatment and choose the single most-specific route owner. New-tab launchers such as Admin Launchpad stay neutral. A module with a legacy/alternate namespace declares it once through `ownedRoutePrefixes`; consumers must not duplicate pathname heuristics.
 - **Phone navigation is a solid bottom drawer.** Tablet widths use the same drawer primitive as a bounded left edge panel, while phones retain the fixed-height bottom drawer. Do not restore glass, inline primary-group accordions, or an adaptive-height panel.
 - **Keep one mobile scroll area.** `BottomSheetBody` owns scrolling; drill-in screens and search results flow inside it.
 - **Keep iOS interaction minimums.** Rows are at least 48px and the search input is 16px.
@@ -87,13 +86,14 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 
 ## Change log
 
+- `2026-09-19` — Cursor: group highlight is ownership-only. A flyout shortcut into another module (AI Work → `/chat/new`) no longer lights the parent beside the real owner; Agents declares `/agent-connections` as its alternate namespace.
+
 - `2026-09-15` — Codex: unified active-route ownership and the blue selected treatment across desktop groups, flyout children, mobile drill-ins, Administration, and alternate module sidebars; added explicit alternate namespaces for Knowledge's `/rag/*` routes; kept the Admin Launchpad launcher neutral.
 
 - `2026-09-11` — Browser verification: removed the desktop checkbox dependency from portaled route-menu styles and the inherited bottom-sheet top margin on tablets; verified visible 48px rows in a 352px-wide panel at 834×1112 with the desktop sidebar expanded.
 
 - `2026-09-11` — Codex: made every global parent label/icon a real module-home link and moved submenu opening to a separate disclosure control; restored portaled route-menu labels and 48px touch rows; tablet navigation now presents as a bounded edge panel rather than a phone-height drawer.
 
-- `2026-09-19` — Cursor: group highlight is ownership-only. A flyout shortcut into another module (AI Work → `/chat/new`) no longer lights the parent beside the real owner; Agents declares `/agent-connections` as its alternate namespace.
 - `2026-09-08` — Codex: made the Administration Large Route consume one
   persistent icon-led tree at both sidebar widths, eliminating mode-specific
   row replacement and collapse-time spatial reordering.
@@ -102,4 +102,3 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 - `2026-08-24` — Codex: replaced the glass left mobile sheet and inline primary-group accordions with a solid, searchable, fixed-height bottom drawer with drill-in and Back navigation.
 - `2026-08-15` — Codex: added the prominent admin-only new-tab Launchpad door to the persistent sidebar footer.
 - `2026-08-15` — Codex: Preserved mode-switch meaning in the collapsed rail and centralized the route-menu row visual contract.
-- `2026-09-19` — **The person is at the end of the navigation.** The profile/avatar menu moved from the header to the bottom-left `ShellUserBlock` (a fixed sibling of the sidebar, rail-width, expanding with it; `features/shell/components/user-block/`); `.shell-sidebar-footer` reserves its height so Settings never sits under it, and the mobile drawer ends in `MobileDrawerUserRow`. Header set + user block law: `features/shell/FEATURE.md`.

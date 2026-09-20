@@ -30,7 +30,8 @@
 import {
   asRung,
   asStopCause,
-  isRung,
+  asTrailRung,
+  lastOrderedRung,
   RUNG_LABEL,
   STOP_CAUSE_SENTENCE,
   type LadderOutcome,
@@ -46,11 +47,21 @@ function num(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-/** One trail entry, or `null` when it is not one. Never throws. */
+/**
+ * One trail entry, or `null` when it is not one. Never throws.
+ *
+ * 🚨 READS {@link asTrailRung}, NOT `asRung`. An optional entry (residential
+ * egress) is a lawful part of a trail, and narrowing to the four rungs here
+ * dropped it from the rendered trail WITHOUT a word — on the one screen whose
+ * stated law is "the rung trail is shown, not summarised". A trail that went
+ * `http → residential → browser` was shown as `http → browser`, which is a
+ * quieter version of exactly the silent-skip defect this module exists to
+ * prevent.
+ */
 function readTrailEntry(value: unknown): RungTrailEntry | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;
-  const rung = asRung(raw.rung);
+  const rung = asTrailRung(raw.rung);
   if (!rung) return null;
   return {
     rung,
@@ -109,12 +120,17 @@ export function readLadderOutcome(
   };
 }
 
-/** The last rung actually attempted, or `null` when the trail is empty. */
+/**
+ * The last RUNG actually attempted, or `null` when no rung was.
+ *
+ * Steps back over optional entries — `lastOrderedRung`, the same question
+ * `matrx_scraper.ladder.last_ordered_rung` answers on the server. Reading
+ * `trail[trail.length - 1]` was wrong the moment a trail could end in a
+ * residential entry: it answered `null` ("we do not know what this page did")
+ * for a page whose ladder position was perfectly well known.
+ */
 export function lastRungAttempted(outcome: LadderOutcome | null): Rung | null {
-  const trail = outcome?.rung_trail;
-  if (!trail || trail.length === 0) return null;
-  const last = trail[trail.length - 1];
-  return isRung(last.rung) ? last.rung : null;
+  return lastOrderedRung(outcome?.rung_trail ?? null);
 }
 
 /**

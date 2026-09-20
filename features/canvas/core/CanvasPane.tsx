@@ -60,6 +60,7 @@ import { CanvasSourceView } from "./CanvasSourceView";
 import { canvasTypeHasSource } from "./canvasSource";
 import { CanvasNavigation } from "./CanvasNavigation";
 import { shouldShowCanvasSwitcher } from "./canvasSwitcher";
+import { CanvasPaneUserMenu } from "./CanvasPaneHeaderChrome";
 import { CanvasPanePutAwayToggle } from "./CanvasHeaderToggle";
 import { syncCanvasItemToCloud } from "@/features/canvas/materialization/syncCanvasItemToCloud";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
@@ -228,7 +229,7 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <header
         className={cn(
-          "shrink-0 flex h-11 items-center gap-1 px-0.5",
+          "relative z-30 shrink-0 flex h-11 items-center gap-1 px-0.5",
           "border-b border-border/70",
         )}
       >
@@ -403,11 +404,12 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
             />
           )}
 
-          {/* Put away (primary pane) — far right of this header row. The
-              profile menu no longer lives in any header; it is bottom-left
-              (ShellUserBlock), which the canvas never covers. */}
+          {/* Put away (primary pane) + user menu — far right of this header row */}
           {showShellChrome && (
-            <CanvasPanePutAwayToggle onPutAway={handleCloseAll} />
+            <>
+              <CanvasPanePutAwayToggle onPutAway={handleCloseAll} />
+              <CanvasPaneUserMenu />
+            </>
           )}
 
           {/* Bottom split pane: collapse only */}

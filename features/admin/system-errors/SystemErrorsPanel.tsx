@@ -13,6 +13,11 @@
  * Deep-linkable by design: `?kind=…&hours=…` is what an alarm chip links to.
  * `kind` (not `error_type`) is the stable family name a producer records under —
  * `error_type` is the exception class and changes when the code changes.
+ *
+ * `?request_id=…` narrows to the rows ONE producer run filed. The mandate
+ * reference board links here that way so a patrol run's "59 filed" cell lands on
+ * that run's own 59 rows; a link that carried the id and landed on an unfiltered
+ * list would be a screen claiming to show evidence it is not showing.
  */
 
 import { useMemo, useState } from "react";
@@ -82,6 +87,9 @@ export default function SystemErrorsPanel() {
   const searchParams = useSearchParams();
   const linkedHours = Number(searchParams.get("hours"));
   const [kind, setKind] = useState(() => searchParams.get("kind") ?? "");
+  // Read once from the link, and not editable in the filter bar: it identifies
+  // ONE producer run, so a half-typed value would be a filter matching nothing.
+  const [requestId] = useState(() => searchParams.get("request_id") ?? "");
   const [hours, setHours] = useState(() =>
     Number.isFinite(linkedHours) && linkedHours > 0
       ? Math.min(linkedHours, 720)
@@ -97,7 +105,7 @@ export default function SystemErrorsPanel() {
     error: queryError,
     refetch,
   } = useQuery({
-    queryKey: ["system-errors", trimmedKind, hours, unresolvedOnly],
+    queryKey: ["system-errors", trimmedKind, hours, unresolvedOnly, requestId],
     queryFn: async (): Promise<RecentResponse> => {
       const since = new Date(Date.now() - hours * 3600_000).toISOString();
       const query: Record<string, string | number | boolean> = {
@@ -105,6 +113,7 @@ export default function SystemErrorsPanel() {
         limit: 200,
       };
       if (trimmedKind) query.kind = trimmedKind;
+      if (requestId) query.request_id = requestId;
       if (unresolvedOnly) query.unresolved_only = true;
       const result = await apiGet("/admin/system-errors/recent", { query });
       return result.data as unknown as RecentResponse;

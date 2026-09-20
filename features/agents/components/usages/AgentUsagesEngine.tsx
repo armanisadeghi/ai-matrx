@@ -8,8 +8,9 @@
  *      person never wonders whether a dimension is empty or unshown;
  *   2. one status line — red flags in words, the withheld count, bulk doors;
  *   3. ONE table (the canonical `MatrxDataTable`) with one row per usage —
- *      name (with doors), type, pinned → newest, risk, what changed, owner,
- *      actions — and a side detail pane for the grader's own findings.
+ *      name, holder, type, pinned → newest, risk, changed, owner, actions —
+ *      and a side detail pane for the grader's own findings. Selection only
+ *      when a visible row can be moved.
  *
  * Two graders feed it and neither is re-derived here: the `agx_usage_scan`
  * RPC (shortcuts, apps, derived agents, …) and the server's mandate impact
@@ -262,6 +263,19 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
       cell: (row) => <UsageNameCell row={row} />,
     },
     {
+      id: "holder",
+      accessorFn: (row) => row.holderLabel ?? "",
+      header: "Holder",
+      filter: "select",
+      width: 90,
+      cell: (row) =>
+        row.holderLabel ? (
+          <span className="text-xs text-muted-foreground">{row.holderLabel}</span>
+        ) : (
+          <span className="text-xs text-muted-foreground/50">—</span>
+        ),
+    },
+    {
       id: "dimension",
       accessorFn: (row) => dimensionMeta(row.dimension).label,
       header: "Type",
@@ -324,11 +338,11 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
     {
       id: "whatChanged",
       accessorKey: "whatChanged",
-      header: "What changed",
+      header: "Changed",
       filter: "text",
-      minWidth: 200,
+      width: 140,
       cell: (row) => (
-        <span className="line-clamp-2 text-xs text-muted-foreground" title={row.whatChanged}>
+        <span className="truncate text-xs text-muted-foreground" title={row.whatChanged}>
           {row.whatChanged}
         </span>
       ),
@@ -495,7 +509,7 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
           data={visibleRows}
           columns={columns}
           getRowId={(row) => row.id}
-          searchText={(row) => `${row.name} ${row.subtitle ?? ""} ${row.whatChanged}`}
+          searchText={(row) => `${row.name} ${row.holderLabel ?? ""} ${row.subtitle ?? ""} ${row.whatChanged}`}
           isLoading={scanLoading && mandatesLoading && rows.length === 0}
           isFetching={scanLoading || mandatesLoading}
           defaultSort={{ id: "risk", direction: "asc" }}
@@ -524,7 +538,9 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
             width: 560,
             height: 520,
           }}
-          selection={{
+          selection={
+            visibleRows.some(isRowSelectable)
+              ? {
             selectedIds: selected,
             onSelectedIdsChange: setSelected,
             noun: "usage",
@@ -571,7 +587,9 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
                 </div>
               );
             },
-          }}
+          }
+            : undefined
+          }
           rowActions={(row) => (
             <RowActions
               row={row}

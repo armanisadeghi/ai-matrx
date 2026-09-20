@@ -13,6 +13,7 @@ import {
   SETTINGS_ITEMS,
 } from "./userMenuItems.constants";
 import { USER_MENU_PANEL_CLASS } from "./menuItemClass";
+import { MenuCheckboxIdProvider } from "./menuCheckboxId";
 
 const divider = (
   <div className="h-px my-1 mx-2 bg-[var(--matrx-glass-border-color)]" />
@@ -35,13 +36,31 @@ export default function GuestUserMenuPanel({
   useResetMenuGroupsOnOpen(panelRef, menuCheckboxId);
 
   return (
-    <div ref={panelRef} className={USER_MENU_PANEL_CLASS}>
-      <GuestHeroCard />
+    <MenuCheckboxIdProvider id={menuCheckboxId}>
+      <div ref={panelRef} className={USER_MENU_PANEL_CLASS}>
+        <GuestHeroCard />
 
-      {divider}
+        {divider}
 
-      <MenuGroup id="quick" icon="Rocket" label="Quick Access">
-        {QUICK_ACCESS_ITEMS.map((item) =>
+        <MenuGroup id="quick" icon="Rocket" label="Quick Access">
+          {QUICK_ACCESS_ITEMS.map((item) =>
+            item.requiresAuth ? (
+              <GuestOverlayMenuItem
+                key={item.overlayId}
+                icon={item.icon}
+                label={item.label}
+                description={item.guestDescription}
+                className={item.className}
+              />
+            ) : (
+              <OverlayMenuItem key={item.overlayId} {...item} />
+            ),
+          )}
+        </MenuGroup>
+
+        {divider}
+
+        {COMMUNICATION_ITEMS.map((item) =>
           item.requiresAuth ? (
             <GuestOverlayMenuItem
               key={item.overlayId}
@@ -54,40 +73,24 @@ export default function GuestUserMenuPanel({
             <OverlayMenuItem key={item.overlayId} {...item} />
           ),
         )}
-      </MenuGroup>
 
-      {divider}
+        {divider}
 
-      {COMMUNICATION_ITEMS.map((item) =>
-        item.requiresAuth ? (
-          <GuestOverlayMenuItem
-            key={item.overlayId}
-            icon={item.icon}
-            label={item.label}
-            description={item.guestDescription}
-            className={item.className}
-          />
-        ) : (
-          <OverlayMenuItem key={item.overlayId} {...item} />
-        ),
-      )}
-
-      {divider}
-
-      <ThemeToggleMenuItem />
-      {SETTINGS_ITEMS.map((item) =>
-        item.requiresAuth ? (
-          <GuestOverlayMenuItem
-            key={item.overlayId}
-            icon={item.icon}
-            label={item.label}
-            description={item.guestDescription}
-            className={item.className}
-          />
-        ) : (
-          <OverlayMenuItem key={item.overlayId} {...item} />
-        ),
-      )}
-    </div>
+        <ThemeToggleMenuItem />
+        {SETTINGS_ITEMS.map((item) =>
+          item.requiresAuth ? (
+            <GuestOverlayMenuItem
+              key={item.overlayId}
+              icon={item.icon}
+              label={item.label}
+              description={item.guestDescription}
+              className={item.className}
+            />
+          ) : (
+            <OverlayMenuItem key={item.overlayId} {...item} />
+          ),
+        )}
+      </div>
+    </MenuCheckboxIdProvider>
   );
 }

@@ -22,6 +22,34 @@ export const RUNGS = ["http", "browser", "own_browser", "human_drive"] as const;
 
 export type Rung = (typeof RUNGS)[number];
 
+/**
+ * Entries a TRAIL may carry that the ladder ORDER does not reason about —
+ * this repo's import of `matrx_scraper.ladder.OPTIONAL_RUNGS`.
+ *
+ * Residential egress is the person's own computer used as the internet exit
+ * after our own address was blocked: the same `http`/`browser` work run again
+ * from somewhere else, NOT a fifth rung. A trail may contain one at any
+ * position; a trail without one is complete; nothing about which rung may
+ * follow changes. Contract:
+ * `common-docs/systems/platform/residential-egress/FEATURE.md`.
+ *
+ * 🚨 IT IS LISTED HERE BECAUSE OF WHAT HAPPENED WITHOUT IT. The ingress parse
+ * in `captureHandoffTable.ts` validates every trail entry against this
+ * vocabulary, so between the first residential capture and this constant
+ * existing, EVERY row whose trail carried one — ten of them on the live
+ * database — failed the parse and was dropped from the tray and from
+ * `/capture/needs-you`. The pages were real and waiting; the web surface
+ * simply did not list them. matrx-extend hit the identical defect on caption
+ * hand-offs and fixed it in its own `src/lib/capture-ladder/types.ts`; this
+ * file is that fix, carried across.
+ */
+export const OPTIONAL_RUNGS = ["residential"] as const;
+
+export type OptionalRung = (typeof OPTIONAL_RUNGS)[number];
+
+/** Anything a `rung_trail` entry may legally be: a rung, or an optional entry. */
+export type TrailRung = Rung | OptionalRung;
+
 export function isRung(value: unknown): value is Rung {
   return (
     typeof value === "string" && (RUNGS as readonly string[]).includes(value)
@@ -32,9 +60,43 @@ export function asRung(value: unknown): Rung | null {
   return isRung(value) ? value : null;
 }
 
+export function isOptionalRung(value: unknown): value is OptionalRung {
+  return (
+    typeof value === "string" &&
+    (OPTIONAL_RUNGS as readonly string[]).includes(value)
+  );
+}
+
+/** A trail entry's key: one of the four rungs, or a legal optional entry. */
+export function isTrailRung(value: unknown): value is TrailRung {
+  return isRung(value) || isOptionalRung(value);
+}
+
+export function asTrailRung(value: unknown): TrailRung | null {
+  return isTrailRung(value) ? value : null;
+}
+
 /** 0-based position on the ladder. `-1` for anything that is not a rung. */
 export function rungIndex(rung: string): number {
   return (RUNGS as readonly string[]).indexOf(rung);
+}
+
+/**
+ * The last ORDERED rung a trail actually reached, or `null`.
+ *
+ * THE ONE WAY to ask a trail "where did this get to" — mirrors
+ * `matrx_scraper.ladder.last_ordered_rung`. The tail of the array is NOT that
+ * question: an optional entry can sit last and is not a rung.
+ */
+export function lastOrderedRung(
+  trail: readonly { rung: string }[] | null | undefined,
+): Rung | null {
+  if (!trail) return null;
+  for (let i = trail.length - 1; i >= 0; i--) {
+    const rung = asRung(trail[i]?.rung);
+    if (rung) return rung;
+  }
+  return null;
 }
 
 /**
@@ -58,6 +120,27 @@ export const RUNG_EXPLANATION: Record<Rung, string> = {
   human_drive:
     "The extension shows you the page and gets out of the way. You sign in or click through, then press “I'm done, capture it”.",
 };
+
+/**
+ * The optional entries in the person's words. Same law as the rungs: a screen
+ * renders a sentence, never the key. A trail that shows `residential` as a
+ * bare code is a machine word on a person's screen.
+ */
+export const OPTIONAL_RUNG_LABEL: Record<OptionalRung, string> = {
+  residential: "Tried again from your own connection",
+};
+
+export const OPTIONAL_RUNG_EXPLANATION: Record<OptionalRung, string> = {
+  residential:
+    "The site refused our address, so we asked the same way again through your own internet connection. It is the same step, from somewhere else — not a further one.",
+};
+
+/** The label for any trail entry, rung or optional. Never a bare key. */
+export function trailRungLabel(rung: string): string {
+  if (isRung(rung)) return RUNG_LABEL[rung];
+  if (isOptionalRung(rung)) return OPTIONAL_RUNG_LABEL[rung];
+  return rung;
+}
 
 // ---------------------------------------------------------------------------
 // THE LADDER LAW (§1) — never silently skip a rung
@@ -85,24 +168,39 @@ export class SkippedRungError extends Error {
  * assert it again on every trail we are handed, because a client that renders a
  * jump as if it were normal is how a silent skip survives.
  *
- * @param trail the ordered rung keys, oldest first — `rung_trail.map(e => e.rung)`
- *              or any sequence of rung keys.
+ * OPTIONAL ENTRIES ARE STEPPED OVER, exactly as `assert_no_skipped_rung` does
+ * on the Python side. `residential` is the same work from a different address,
+ * not a rung, so `http → residential → browser` is a LAWFUL trail and the one
+ * the live database actually carries. Judging it against the four rungs — as
+ * this function did before — turns a legal trail into a fabricated skipped-rung
+ * accusation, which is the same lie as missing a real skip, pointed the other
+ * way.
+ *
+ * @param trail the ordered trail keys, oldest first — `rung_trail.map(e => e.rung)`
+ *              or any sequence of trail keys.
  * @throws {SkippedRungError} on a jump, a repeat, a backwards step, or a key
- *         that is not a rung at all.
+ *         that is neither a rung nor a legal optional entry.
  */
 export function assertNoSkippedRung(trail: readonly string[]): void {
+  // An unknown key is still a defect and is still named — but it is named
+  // against the whole legal vocabulary, not against the four rungs alone.
   for (let i = 0; i < trail.length; i++) {
-    const current = trail[i];
+    if (isTrailRung(trail[i])) continue;
+    throw new SkippedRungError(
+      `“${trail[i]}” is not one of the four rungs (${RUNGS.join(
+        ", ",
+      )}) nor an optional trail entry (${OPTIONAL_RUNGS.join(", ")}).`,
+      i === 0 ? "(start)" : trail[i - 1],
+      trail[i],
+    );
+  }
+
+  const ordered = trail.filter((key): key is Rung => isRung(key));
+  for (let i = 0; i < ordered.length; i++) {
+    const current = ordered[i];
     const at = rungIndex(current);
-    if (at === -1) {
-      throw new SkippedRungError(
-        `“${current}” is not one of the four rungs (${RUNGS.join(", ")}).`,
-        i === 0 ? "(start)" : trail[i - 1],
-        current,
-      );
-    }
     if (i === 0) continue;
-    const previous = trail[i - 1];
+    const previous = ordered[i - 1];
     const before = rungIndex(previous);
     if (at !== before + 1) {
       throw new SkippedRungError(
@@ -135,9 +233,15 @@ export function skippedRungReason(trail: readonly string[]): string | null {
 // §2 — the trail
 // ---------------------------------------------------------------------------
 
-/** One entry per rung attempted. CONTRACT.md §2. */
+/**
+ * One entry per rung attempted. CONTRACT.md §2.
+ *
+ * `rung` is a {@link TrailRung}, not a {@link Rung}: a trail may legally carry
+ * an optional entry, and typing this field as the narrower union is what let
+ * every reader below quietly assume it could not.
+ */
 export interface RungTrailEntry {
-  rung: Rung;
+  rung: TrailRung;
   ok: boolean;
   /** Machine class; `null` when ok. */
   reason: string | null;

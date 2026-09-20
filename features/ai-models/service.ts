@@ -80,7 +80,10 @@ function requireString(value: unknown, path: string): string {
 }
 
 function requireStringArray(value: unknown, path: string): string[] {
-  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
+  if (
+    !Array.isArray(value) ||
+    value.some((entry) => typeof entry !== "string")
+  ) {
     throw boundaryError(path, "an array of strings");
   }
   return value as string[];
@@ -168,6 +171,7 @@ type AgentUsageRow = {
   id: string;
   name: string | null;
   model_id: string | null;
+  settings: Record<string, unknown> | null;
 };
 type AgentBuiltinUsageRow = {
   id: string;
@@ -468,10 +472,10 @@ function parseProviderModelsCache(
 function withValidatedCapabilities(row: AiModelRow): Omit<AiModel, "maker"> {
   return {
     ...row,
-    capabilities: requireCanonicalCapabilities(
-      row.capabilities,
-      { modelId: row.id, modelName: row.name },
-    ),
+    capabilities: requireCanonicalCapabilities(row.capabilities, {
+      modelId: row.id,
+      modelName: row.name,
+    }),
   };
 }
 
@@ -628,13 +632,14 @@ export const aiModelService = {
     // alongside models and map by id so every row carries a display brand.
     const [models, providers, adminCatalogRes] = await Promise.all([
       readAllRows<AiModelRow>(
-        ({ from, to }) => supabase
-          .schema("ai")
-          .from("model_definition")
-          .select("*", { count: "exact" })
-          .order("common_name", { ascending: true, nullsFirst: false })
-          .order("id", { ascending: true })
-          .range(from, to),
+        ({ from, to }) =>
+          supabase
+            .schema("ai")
+            .from("model_definition")
+            .select("*", { count: "exact" })
+            .order("common_name", { ascending: true, nullsFirst: false })
+            .order("id", { ascending: true })
+            .range(from, to),
         { label: "ai.model_definition" },
       ),
       this.fetchProviders(),
@@ -762,14 +767,15 @@ export const aiModelService = {
    *  its read-only consumers simply use fewer fields. */
   async fetchAllProviders(): Promise<AiProvider[]> {
     const rows = await readAllRows<AiProviderRow>(
-      ({ from, to }) => supabase
-        .schema("ai")
-        .from("provider")
-        .select("*", { count: "exact" })
-        .is("deleted_at", null)
-        .order("name", { ascending: true })
-        .order("id", { ascending: true })
-        .range(from, to),
+      ({ from, to }) =>
+        supabase
+          .schema("ai")
+          .from("provider")
+          .select("*", { count: "exact" })
+          .is("deleted_at", null)
+          .order("name", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to),
       { label: "ai.provider" },
     );
     return rows.map(parseProvider);
@@ -1206,7 +1212,7 @@ export const aiModelService = {
         supabase
           .schema("agent")
           .from("definition")
-          .select("id, name, model_id")
+          .select("id, name, model_id, settings")
           .or(
             `model_id.eq.${modelId},settings->>model_id.eq.${modelId},model_tiers->>default.eq.${modelId}`,
           )
@@ -1214,7 +1220,7 @@ export const aiModelService = {
         supabase
           .schema("agent")
           .from("template")
-          .select("id, name, model_id")
+          .select("id, name, model_id, settings")
           .or(
             `model_id.eq.${modelId},settings->>model_id.eq.${modelId},model_tiers->>default.eq.${modelId}`,
           )
@@ -1233,18 +1239,21 @@ export const aiModelService = {
       name: b.name ?? b.id,
       table: "agent.definition" as const,
       source_prompt_id: b.source_agent_id ?? null,
+      settings: b.settings,
     }));
 
     const agents = (agentsResult.data ?? []).map((a) => ({
       id: a.id,
       name: a.name ?? a.id,
       table: "agent.definition" as const,
+      settings: a.settings,
     }));
 
     const agentTemplates = (agentTemplatesResult.data ?? []).map((t) => ({
       id: t.id,
       name: t.name ?? t.id,
       table: "agent.template" as const,
+      settings: t.settings,
     }));
 
     return { prompts, promptBuiltins, agents, agentTemplates };

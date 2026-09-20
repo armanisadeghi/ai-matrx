@@ -38,13 +38,19 @@ export function findActiveNavChild(
     )[0];
 }
 
-/** True when the current route belongs under this nav group (parent or any child). */
+/**
+ * True when this group owns the current route.
+ *
+ * Ownership is the group's own href, its declared `ownedRoutePrefixes`, or
+ * the same first path segment as the group's href. A flyout child that
+ * points into another module (a shortcut / launcher) must not light this
+ * group — that other module is the single selected owner.
+ */
 export function isNavGroupActive(
   pathname: string,
   item: ShellNavItem,
 ): boolean {
   if (item.external || item.openInNewTab) return false;
-  if (findActiveNavChild(pathname, item)) return true;
   if (isOnRoute(pathname, item.href)) return true;
   if (
     (item.ownedRoutePrefixes ?? []).some((prefix) =>
@@ -65,6 +71,54 @@ export function isNavGroupActive(
   }
 
   return false;
+}
+
+export function navGroupIdentity(item: ShellNavItem): string {
+  return `${item.label}::${item.iconName}`;
+}
+
+function ownershipSpecificity(pathname: string, item: ShellNavItem): number {
+  let best = 0;
+  if (isOnRoute(pathname, item.href)) {
+    best = Math.max(best, normalizeRoutePath(item.href).length);
+  }
+  for (const prefix of item.ownedRoutePrefixes ?? []) {
+    if (isOnRoute(pathname, prefix)) {
+      best = Math.max(best, normalizeRoutePath(prefix).length);
+    }
+  }
+  if (best === 0) {
+    const segment = item.href.split("/").filter(Boolean)[0];
+    if (segment) best = segment.length;
+  }
+  // Real modules win ties against placeholder twins that share an href.
+  if ((item.children?.length ?? 0) > 0) best += 0.5;
+  return best;
+}
+
+/** The one most-specific group that owns the current route. */
+export function findOwningNavItem(
+  pathname: string,
+  items: readonly ShellNavItem[],
+): ShellNavItem | undefined {
+  const owners = items.filter((item) => isNavGroupActive(pathname, item));
+  if (owners.length <= 1) return owners[0];
+  return [...owners].sort((a, b) => {
+    const spec =
+      ownershipSpecificity(pathname, b) - ownershipSpecificity(pathname, a);
+    if (spec !== 0) return spec;
+    return a.label.localeCompare(b.label);
+  })[0];
+}
+
+/** True when this item is the single selected owner among `candidates`. */
+export function isExclusiveNavGroupActive(
+  pathname: string,
+  item: ShellNavItem,
+  candidates: readonly ShellNavItem[],
+): boolean {
+  const owner = findOwningNavItem(pathname, candidates);
+  return owner != null && navGroupIdentity(owner) === navGroupIdentity(item);
 }
 
 /** @deprecated Use the presentation-neutral name. */
