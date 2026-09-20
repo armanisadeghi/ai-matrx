@@ -307,7 +307,53 @@ begin
   end if;
   raise notice 'PART 9 PASSED — one in-app notification for the one answer that became a record';
 
-  raise notice 'ALL PARTS PASSED (0 seat, 1 rules that are rules, 2 a question with nowhere to land, 3 closed by default, 4 the publish act, 5 the public face, 6 the write and its three refusals, 7 the provenance, 8 the list and the wall, 9 the notification)';
+  -- ══ PART 10 — the notification can be SEEN and SWITCHED OFF ═══════════════════
+  perform set_config('request.jwt.claims', c_admin_j, true);
+  perform set_config('role', 'authenticated', true);
+
+  select count(*) into v_n from custom.subscriptions(v_org, v_table) s
+   where s.rule_id = v_notify and s.mine and s.i_may_mute and not s.muted;
+  if v_n <> 1 then
+    raise exception '10: the recipient cannot see their own subscription (% row(s))', v_n;
+  end if;
+
+  -- A member who is not the recipient and holds no admin on the Table sees nothing,
+  -- although she CAN open the Table — a subscription list is not a roster.
+  perform set_config('request.jwt.claims', c_dana_j, true);
+  select count(*) into v_n from custom.subscriptions(v_org, v_table) s;
+  if v_n <> 0 then
+    raise exception '10: a member who is neither the recipient nor an admin sees % subscription(s)', v_n;
+  end if;
+  begin
+    perform custom.subscription_mute(v_org, v_notify, true);
+    raise exception '10: a member switched off somebody else''s notification';
+  exception when insufficient_privilege then
+    get stacked diagnostics v_txt = message_text;
+  end;
+  raise notice 'PART 10a PASSED — the recipient sees it; a bystander sees none and is refused: "%"', v_txt;
+
+  -- OFF MEANS OFF, and the proof is that the ONE reader every consumer goes through
+  -- stops returning it. Nothing else has to be taught.
+  perform set_config('request.jwt.claims', c_admin_j, true);
+  perform custom.subscription_mute(v_org, v_notify, true);
+  perform set_config('role', v_boss, true);
+  select count(*) into v_n from custom.agg_subscriptions(v_org, null, 'immediate') s where s.rule_id = v_notify;
+  if v_n <> 0 then
+    raise exception '10: a muted subscription is still live to DOOR-18''s own reader';
+  end if;
+
+  -- And a second answer tells nobody.
+  perform set_config('request.jwt.claims', '', true);
+  perform 1 from custom.form_submit(v_form, 'https://www.aimatrx.com',
+            '{"full_name":"Second Person","mobile":"+1 512 555 0999"}'::jsonb, '203.0.113.11');
+  select count(*) into v_n from communication.notification n
+   where n.organization_id = v_org and n.event_key = 'custom.form.response';
+  if v_n <> 1 then
+    raise exception '10: a muted subscription sent a notification anyway (% now)', v_n;
+  end if;
+  raise notice 'PART 10b PASSED — muted, so DOOR-18''s reader drops it and the next answer tells nobody';
+
+  raise notice 'ALL PARTS PASSED (0 seat, 1 rules that are rules, 2 a question with nowhere to land, 3 closed by default, 4 the publish act, 5 the public face, 6 the write and its three refusals, 7 the provenance, 8 the list and the wall, 9 the notification, 10 seen and switched off)';
 end;
 $suite$;
 
