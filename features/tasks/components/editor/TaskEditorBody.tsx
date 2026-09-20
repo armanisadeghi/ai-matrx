@@ -504,6 +504,7 @@ export function TaskEditorBody({
                 assigneeId={effective.assigneeId ?? null}
                 onChange={(id) => patch("assignee_id", id)}
                 size={compact ? "sm" : "md"}
+                {...(orgId ? { organizationId: orgId } : {})}
                 className={
                   compact
                     ? "h-6 border-0 bg-transparent px-1 shadow-none hover:bg-accent/40"
