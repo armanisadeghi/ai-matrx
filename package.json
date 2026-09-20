@@ -548,7 +548,8 @@
     "check:suites-take-the-seat": "tsx scripts/check-campaign-suites-take-the-seat.ts",
     "check:suites-take-the-seat:self-test": "tsx scripts/check-campaign-suites-take-the-seat.ts --self-test",
     "check:store-doors-decide": "tsx scripts/check-store-doors-decide.ts",
-    "check:store-doors-decide:self-test": "tsx scripts/check-store-doors-decide.ts --self-test"
+    "check:store-doors-decide:self-test": "tsx scripts/check-store-doors-decide.ts --self-test",
+    "check:store-doors-decide:exhaustive": "tsx scripts/check-store-doors-decide.ts --exhaustive"
   },
   "dependencies": {
     "@ai-matrx/agents": "latest",
