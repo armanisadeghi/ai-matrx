@@ -38,7 +38,11 @@ import { AuditionDialog } from "./AuditionDialog";
 import { CompareTwoDialog } from "./CompareTwoDialog";
 import { MasterworkDriftDialog } from "./MasterworkDriftDialog";
 import { TryMasterworkBox } from "./TryMasterworkBox";
-import { MasterworkRulesProvider } from "../../rules-context/MasterworkRulesContext";
+import {
+  MasterworkRulesProvider,
+  useRuleCitationIndex,
+} from "../../rules-context/MasterworkRulesContext";
+import { deliverableLine } from "../../ruleCitations";
 import {
   computeMasterworkKpis,
   MasterworkKpiStrip,
@@ -107,10 +111,21 @@ const RUN_STATUS_LABELS: Record<string, string> = {
  */
 export function MasterworkRunRow({
   run,
+  href,
   onFeedback,
   trailing,
 }: {
   run: MasterworkRun;
+  /**
+   * Where this row opens — walk 13, N10.
+   *
+   * The default is the in-app run permalink, which is the right door for the
+   * Expert standing in the Studio. It is the WRONG one for an Operator on
+   * Encore: they clicked their own finished work and landed on a page headed
+   * THE PLAN and LIVE ACTIVITY with Pause / Resume / Stop / Cancel. So the
+   * address is the host's to name, and Encore names its own.
+   */
+  href?: string;
   onFeedback?: (run: MasterworkRun) => void;
   /**
    * A host's own control for this run, right of the door. It STACKS below
@@ -121,6 +136,10 @@ export function MasterworkRunRow({
   trailing?: React.ReactNode;
 }) {
   const duration = runDuration(run);
+  const rules = useRuleCitationIndex();
+  const preview = run.deliverable_preview
+    ? deliverableLine(run.deliverable_preview, rules)
+    : null;
   return (
     <div className="group flex flex-col items-start gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 sm:flex-row sm:items-start">
       {/* THE DOOR IS IN THIS APP (wall W36). This row used to open
@@ -129,7 +148,7 @@ export function MasterworkRunRow({
           could not read the answer anywhere in the product. `/workflows/runs/
           {id}` rebuilds the finished run, showcase and all, right here. */}
       <Link
-        href={runHref(run.id)}
+        href={href ?? runHref(run.id)}
         className="flex w-full min-w-0 flex-col gap-0.5 hover:text-foreground sm:w-auto sm:flex-1"
       >
         <span className="flex min-w-0 items-center gap-2">
@@ -162,9 +181,16 @@ export function MasterworkRunRow({
           <span className="line-clamp-2 pl-3.5 text-destructive">
             {run.error_message}
           </span>
-        ) : run.deliverable_preview ? (
+        ) : preview ? (
+          // The preview is the deliverable's own words, and the deliverable is
+          // markdown — so this line used to read "## The Ruling This letter is
+          // a verdict rendered from a telephone…" with the heading marks
+          // intact, and named the Expert's rules by their raw ids (walk 13,
+          // N10 and N3). One line, marks off, ids resolved to the rule names
+          // the reader knows. Deliberately NOT a markdown renderer: a row that
+          // draws headings and bold is the shape of the defect.
           <span className="line-clamp-2 pl-3.5 text-foreground/80">
-            {run.deliverable_preview}
+            {preview}
           </span>
         ) : null}
       </Link>
