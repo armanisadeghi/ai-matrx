@@ -66,6 +66,60 @@ const reviewVerificationSchema = z.object({
   verified_by: z.string().min(1).optional(),
 });
 
+// The runner writes this optional envelope through the atomic operator.  It is
+// preserved by UI classification writes, while the UI remains unable to create
+// or change it.
+const reviewRunnerSchema = z.object({
+  run_id: z.string().min(1),
+  instruction_hash: z.string().regex(/^[a-f0-9]{64}$/),
+  checklist_hash: z.string().regex(/^[a-f0-9]{64}$/),
+  prior_status: z.string().min(1),
+  prior_assignment: z.unknown(),
+  route: z.string().startsWith("/"),
+  fixture: z.object({
+    id: z.string().min(1),
+    owner_id: z.string().uuid(),
+    owner_email: z.literal("admin@admin.com"),
+    proof: z.string().min(1),
+  }),
+  checklist: z
+    .array(z.object({
+      id: z.string().min(1),
+      action: z.string().min(1),
+      requires_popup: z.literal(true).optional(),
+    }))
+    .min(1),
+  candidate: z
+    .object({
+      instruction_hash: z.string().regex(/^[a-f0-9]{64}$/),
+      checklist: z.array(z.object({ id: z.string().min(1), action: z.string().min(1) })).min(1),
+      evidence: z.array(z.unknown()).min(1),
+      evidence_hash: z.string().regex(/^[a-f0-9]{64}$/),
+      reviewer: z.string().min(1),
+      run_id: z.string().min(1),
+      recorded_at: z.string().datetime({ offset: true }),
+    })
+    .optional(),
+  acceptance: z
+    .object({
+      evidence_hash: z.string().regex(/^[a-f0-9]{64}$/),
+      verdicts: z
+        .array(
+          z.object({
+            role: z.enum(["functional_coverage", "quality"]),
+            reviewer: z.string().min(1),
+            verdict: z.literal("pass"),
+            evidence_hash: z.string().regex(/^[a-f0-9]{64}$/),
+            receipt: z.string().min(1),
+            reviewed_at: z.string().datetime({ offset: true }),
+          }),
+        )
+        .length(2),
+      accepted_at: z.string().datetime({ offset: true }),
+    })
+    .optional(),
+});
+
 export const reviewTriageSchema = z.object({
   version: z.literal(1),
   lane: z.enum(REVIEW_LANES),
@@ -74,6 +128,7 @@ export const reviewTriageSchema = z.object({
   priority: z.enum(REVIEW_PRIORITIES),
   assignment: reviewAssignmentSchema,
   verification: reviewVerificationSchema,
+  runner: reviewRunnerSchema.optional(),
 });
 
 const reviewMetadataSchema = z
@@ -317,4 +372,3 @@ export function metadataWithReviewTriage(
   }
   return { ...metadata, triage };
 }
-
