@@ -41,16 +41,17 @@
 // automatically dropped between users. `clearPersonalOrgIdCache()` exists for
 // tests and any future in-place auth swap.
 //
-// The one exception that must NOT use this primitive is
-// `lib/scheduler-client/claim.ts`, which resolves the org for an ARBITRARY task
-// owner (not `auth.uid()`) and so still needs the parameterized RPC.
+// `lib/scheduler-client/claim.ts` was once listed here as an exception that
+// "still needs the parameterized RPC" for an arbitrary task owner. It does
+// not, and has not for some time: it reads the persisted task's OWN
+// `organization_id` and refuses to claim a task without one
+// (`claim.ts:90-96`). That is the shape the 2026-09-19 ruling asks for --
+// carry the organization, never re-derive it -- so there is no exception
+// left to name. Verified 2026-09-19 in review.
 
 import { supabase } from "@/utils/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import {
-  organizationRequired,
-  OrganizationRequiredServerError,
-} from "@/lib/organizations/organizationRequiredServerError";
+import { organizationRequired } from "@/lib/organizations/organizationRequiredServerError";
 import { getActiveOrgId } from "@/lib/organizations/activeOrg";
 // Cycle-free leaf (same constraint as activeOrg.ts) — never `@/lib/redux/store`.
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
@@ -241,55 +242,37 @@ export async function ensureOrgIdServer(
   );
 }
 
-/**
- * The organization for a write made on behalf of an ARBITRARY user by an
- * admin/secret-key client that has no `auth.uid()` of its own — the Twilio
- * webhook lane (`lib/sms/receive.ts`, `send.ts`, `numbers.ts`). There is no
- * session, no selection and nobody to ask: an inbound text arrives whether or
- * not anyone is looking at a screen.
- *
- * 🚨 THE SYSTEM-ORG FALLBACK IS GONE (2026-09-19 ruling). It used to answer
- * "the named user's personal org, and when there is no user at all, the global
- * system org" — so an unrouted inbound SMS was filed into the platform's own
- * organization, which is a substitution by another name. A row nobody can name
- * an organization for is ORG-LESS, and the honest thing is to say so and stop,
- * not to pick one.
- *
- * What remains resolves the org of a NAMED person's own workspace, which is
- * not a default and not a preference: it is the identity of the only workspace
- * a message addressed to that person can belong to. It is deliberately the
- * narrowest surviving case, it is called from exactly three webhook sites, and
- * `userId` is REQUIRED — no user, no answer.
- *
- * ⚠️ LEFT BEHIND, ON PURPOSE (see docs/handoffs/default-org-annihilation.md).
- * The org-less case cannot be expressed yet: every `communication.*` table
- * declares `organization_id NOT NULL` (verified live, 2026-09-19), so an
- * unrouted inbound SMS has nowhere to land as an org-less row. Rather than
- * substitute silently, this THROWS and the caller must decide visibly.
- */
-export async function resolveOrgIdForUserServer(
-  client: SupabaseClient,
-  userId: string | null | undefined,
-  orgId?: string | null | undefined,
-): Promise<string> {
-  if (orgId) return orgId;
-  if (!userId) {
-    throw new OrganizationRequiredServerError(
-      "This write names no user and no organization, so it belongs to no " +
-        "organization. Nothing is substituted: give the row an organization " +
-        "or store it org-less.",
-    );
-  }
-  const { data, error } = await client.rpc("ensure_personal_organization", {
-    p_user_id: userId,
-  });
-  if (error || !data) {
-    throw (
-      error ??
-      new Error(
-        `ensure_personal_organization() returned no personal organization for user ${userId}`,
-      )
-    );
-  }
-  return data as string;
-}
+// ---------------------------------------------------------------------------
+// GONE: `resolveOrgIdForUserServer` (deleted 2026-09-19, in review)
+// ---------------------------------------------------------------------------
+//
+// It answered "which organization does this webhook write belong to?" with
+// `ensure_personal_organization(userId)` — the named person's PERSONAL
+// workspace — and, until earlier the same day, with the platform's own system
+// organization when no person could be named at all. It was the last
+// substitution left in this repo, and it was allowlisted past the guard
+// (`scripts/no-default-organization.allowlist.json`, rule 2) on the reasoning
+// that "a Twilio webhook has no session and nobody to ask, and every
+// `communication.*` table declares `organization_id NOT NULL`, so the
+// ruling's org-less shape cannot be expressed."
+//
+// THAT REASONING WAS WRONG, and the allowlist entry hid it rather than
+// tracking it. It assumed the organization had to be resolved from a PERSON.
+// It does not: a phone number is REGISTERED, and the registration already
+// carries the organization —
+// `communication.sms_phone_numbers.organization_id` and
+// `communication.sms_notification_preferences.organization_id` are both NOT
+// NULL (verified live, 2026-09-19). The answer was sitting in the database the
+// whole time. Nothing needed to be chosen, so nothing may be.
+//
+// The three call sites now read the organization off the registration:
+//   • `lib/sms/receive.ts`  — the number the text was sent TO, then the
+//     sender's enrolment; neither resolving is an `SmsInboundRoutingFailure`
+//     (`lib/sms/routingFailure.ts`), logged and surfaced, never filed.
+//   • `lib/sms/send.ts`     — the notified person's own enrolment row.
+//   • `lib/sms/numbers.ts`  — the CALLER names it; `app/api/sms/numbers`
+//     refuses with the `organization_required` envelope when it does not.
+//
+// The allowlist entry is retired with it. Do not bring either back: a helper
+// whose whole job is to answer an organization question on the person's behalf
+// is the class this campaign exists to close.

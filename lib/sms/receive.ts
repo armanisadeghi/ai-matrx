@@ -6,7 +6,7 @@
  */
 
 import { createAdminClient } from "@/utils/supabase/adminClient";
-import { resolveOrgIdForUserServer } from "@/lib/organizations/personalOrg";
+import { resolveInboundSmsOrganization } from "@/lib/sms/routingFailure";
 import type { InboundSmsPayload, TwilioMediaAttachment } from "./types";
 import {
   normalizeSmsEndpoint,
@@ -580,34 +580,58 @@ export async function findOrCreateConversation(
     };
   }
 
-  // Look up user by assigned phone number (our number -> user mapping)
-  // or by the external number matching a user's registered phone
+  // 🚨 THE ORGANIZATION COMES FROM THE PHONE NUMBER'S REGISTRATION, NOT FROM
+  // A PERSON'S WORKSPACE (2026-09-19 ruling; corrected 2026-09-19 review).
+  //
+  // Until this review the org was `resolveOrgIdForUserServer(supabase, userId)`
+  // — the routed person's PERSONAL workspace, and before that the platform's
+  // own system organization when nothing routed. Both are the forbidden
+  // substitution: an organization nobody chose, picked by the server, on the
+  // one side of the wire nobody can see. A customer texts a team's number and
+  // the thread is filed in whichever individual happened to be matched.
+  //
+  // A phone number is REGISTERED to an organization and always has been:
+  // `communication.sms_phone_numbers.organization_id` and
+  // `communication.sms_notification_preferences.organization_id` are both NOT
+  // NULL (verified live 2026-09-19). So the routing answer already exists as
+  // DATA — it never had to be guessed. Preference order:
+  //
+  //   1. OUR number's own registration (`sms_phone_numbers`). This is the
+  //      strongest answer: the organization that owns the number the message
+  //      was sent TO is, by definition, the organization the message is for.
+  //   2. The sender's enrolment (`sms_notification_preferences`), which is
+  //      itself an org-scoped row — an org-less notification preference cannot
+  //      exist.
+  //
+  // If NEITHER resolves, this message is a ROUTING FAILURE: a text arrived on
+  // a number no organization has registered. That is a real defect in our
+  // provisioning, and the honest thing is to say so loudly and stop — never to
+  // invent a home for it. See `lib/sms/routingFailure.ts`.
   const { data: phoneOwner } = await supabase
     .schema("communication")
     .from("sms_phone_numbers")
-    .select("user_id")
+    .select("user_id, organization_id")
     .eq("phone_number", toNumber)
     .eq("is_active", true)
     .limit(1)
     .single();
 
-  // Also check if the sender's number matches any user's notification preferences
   const { data: senderUser } = await supabase
     .schema("communication")
     .from("sms_notification_preferences")
-    .select("user_id")
+    .select("user_id, organization_id")
     .eq("phone_number", fromNumber)
     .limit(1)
     .single();
 
   const userId = senderUser?.user_id || phoneOwner?.user_id || null;
 
-  // Resolve the org from the routed user (or the system org for an unrouted
-  // inbound number).
-  // org-fallback-deliberate: an inbound SMS arrives on a Twilio webhook with
-  //   no session and no selected organization: the thread belongs to the routed
-  //   person, or to the platform when nothing routes
-  const organizationId = await resolveOrgIdForUserServer(supabase, userId);
+  const organizationId = resolveInboundSmsOrganization({
+    fromNumber,
+    toNumber,
+    phoneOwner,
+    senderUser,
+  });
 
   // Create new conversation
   const { data: newConv, error } = await supabase

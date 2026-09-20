@@ -1,3 +1,6 @@
+-- OPERATOR CENSUS, not a product suite: the red twin of readperf_green.sql, over the same
+-- server-only parity helpers platform.client_callable_door names this file as a caller of — so it
+-- cannot run as the seat `authenticated`, and pnpm check:suites-take-the-seat does not count it.
 -- READ-PERF — THE RED TWIN of `readperf_green.sql`.
 --
 -- Five blocks, each inside ONE transaction that ROLLS BACK. Each one breaks exactly one thing
@@ -13,7 +16,7 @@
 --
 -- RUN IT (against the MAIN database):
 --   "$PSQL" "<the five SUPABASE_MATRIX_* values>" -v ON_ERROR_STOP=1 \
---     -f scripts/campaign-tests/readperf_red.sql
+--     -f scripts/operator-censuses/readperf_red.sql
 
 \set ON_ERROR_STOP on
 \timing off

@@ -12,6 +12,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
+import { plainFromDeleteRefusal } from "./service/organizationStoreContents";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import {
@@ -285,6 +286,12 @@ export async function deleteOrganization(
           "Deleting this organization is taking longer than the database allows, so it was stopped part-way. Nothing was lost — reload the page to see whether it was removed, and tell us if it is still here.",
       };
     }
+    // A FOREIGN KEY IS NOT A SENTENCE (bug 8500bd65). The store's own data is
+    // cleared through `clearOrganizationStore` before we ever get here; anything
+    // else that still holds on is turned into words a person can act on rather
+    // than the constraint's name.
+    const plain = plainFromDeleteRefusal(err.message ?? "");
+    if (plain) return { success: false, error: plain };
     return {
       success: false,
       error: err.message || "Failed to delete organization",
