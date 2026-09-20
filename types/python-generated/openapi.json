@@ -1860,6 +1860,58 @@
         }
       }
     },
+    "/notifications/self": {
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Submit Self Notification",
+        "operationId": "submit_self_notification_notifications_self_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelfNotificationSendRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSubmissionReceipt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/legal/webhooks/courtlistener": {
       "post": {
         "tags": [
@@ -125104,6 +125156,7 @@
               "$ref": "#/components/schemas/SystemOneEntry"
             },
             "type": "object",
+            "maxProperties": 255,
             "minProperties": 2,
             "title": "Criteria"
           }
@@ -205828,6 +205881,138 @@
         ],
         "title": "NotesnookPublicRelease"
       },
+      "NotificationChannelReceipt": {
+        "properties": {
+          "notification_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Id"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "in_app",
+              "sms"
+            ],
+            "title": "Channel"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "deferred",
+              "delivered",
+              "failed",
+              "queued",
+              "skipped"
+            ],
+            "title": "State"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 240
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "delivered_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivered At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "channel",
+          "state"
+        ],
+        "title": "NotificationChannelReceipt"
+      },
+      "NotificationSubmissionReceipt": {
+        "properties": {
+          "submission_id": {
+            "type": "string",
+            "title": "Submission Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "refused"
+            ],
+            "title": "State"
+          },
+          "notification_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notification Ids"
+          },
+          "refusal": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 240
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refusal"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "channels": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationChannelReceipt"
+            },
+            "type": "array",
+            "title": "Channels"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "submission_id",
+          "organization_id",
+          "state",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "NotificationSubmissionReceipt"
+      },
       "NoulAnswer": {
         "properties": {
           "type": {
@@ -246406,6 +246591,7 @@
               "$ref": "#/components/schemas/SystemOneEntry"
             },
             "type": "array",
+            "maxItems": 10,
             "minItems": 2,
             "title": "Criteria"
           }
@@ -248188,6 +248374,54 @@
         "type": "object",
         "title": "SelectionFilter",
         "description": "A selection expressed as a filter, so \"all 1,000\" never travels as 1,000 ids."
+      },
+      "SelfNotificationSendRequest": {
+        "properties": {
+          "event_key": {
+            "type": "string",
+            "enum": [
+              "agent.action_required",
+              "agent.work_completed",
+              "agent.work_failed"
+            ],
+            "title": "Event Key"
+          },
+          "caller_key": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Caller Key"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Message"
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event_key",
+          "caller_key",
+          "title",
+          "message",
+          "source"
+        ],
+        "title": "SelfNotificationSendRequest"
       },
       "SemanticScholarPaperResult": {
         "properties": {

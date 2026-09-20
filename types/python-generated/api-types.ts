@@ -982,6 +982,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/notifications/self": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit Self Notification */
+        post: operations["submit_self_notification_notifications_self_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/legal/webhooks/courtlistener": {
         parameters: {
             query?: never;
@@ -90645,6 +90662,53 @@ export interface components {
             /** Published At */
             published_at: string;
         };
+        /** NotificationChannelReceipt */
+        NotificationChannelReceipt: {
+            /** Notification Id */
+            notification_id?: string | null;
+            /**
+             * Channel
+             * @enum {string}
+             */
+            channel: "in_app" | "sms";
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "accepted" | "deferred" | "delivered" | "failed" | "queued" | "skipped";
+            /** Reason */
+            reason?: string | null;
+            /** Delivered At */
+            delivered_at?: string | null;
+        };
+        /** NotificationSubmissionReceipt */
+        NotificationSubmissionReceipt: {
+            /** Submission Id */
+            submission_id: string;
+            /** Organization Id */
+            organization_id: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "accepted" | "refused";
+            /** Notification Ids */
+            notification_ids?: string[];
+            /** Refusal */
+            refusal?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Channels */
+            channels?: components["schemas"]["NotificationChannelReceipt"][];
+        };
         /** NoulAnswer */
         NoulAnswer: {
             /**
@@ -109454,6 +109518,22 @@ export interface components {
             action_key?: string | null;
             /** Action Status */
             action_status?: ("failed" | "ready" | "running" | "skipped")[] | null;
+        };
+        /** SelfNotificationSendRequest */
+        SelfNotificationSendRequest: {
+            /**
+             * Event Key
+             * @enum {string}
+             */
+            event_key: "agent.action_required" | "agent.work_completed" | "agent.work_failed";
+            /** Caller Key */
+            caller_key: string;
+            /** Title */
+            title: string;
+            /** Message */
+            message: string;
+            /** Source */
+            source: string;
         };
         /**
          * SemanticScholarPaperResult
@@ -133292,6 +133372,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContentBlockDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_self_notification_notifications_self_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SelfNotificationSendRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationSubmissionReceipt"];
                 };
             };
             /** @description Validation Error */
