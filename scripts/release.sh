@@ -553,6 +553,11 @@ else
     WATCH_PID=$!
 fi
 
+# ── Worktree janitor: every release sweeps the abandoned agent worktrees and
+# branches (no worktrees, no branches — Arman, 2026-09-20). It only cleans and
+# screams; it always exits 0 and can never affect the release.
+bash "$SCRIPT_DIR/worktree-janitor.sh" >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1 || true
+
 # ── Checks: ONE parallel runner, ONE table, findings as JSON (scripts/checks/run.mjs)
 # Rows come from scripts/run-release-gates.sh --list plus the checks the old
 # script used to run before the push (matrx-packages, organization-context,
