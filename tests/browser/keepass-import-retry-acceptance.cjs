@@ -51,8 +51,9 @@ function assertPreviewAttestation(lease, config, expected, deps = {}) {
     lease.OWNER_HOST === new URL(config.frontend).hostname,
     "preview_host_mismatch",
   );
+  const configuredPort = new URL(config.frontend).port;
   assert(
-    lease.PORT === "3001" && /^\d+$/.test(lease.PID || ""),
+    lease.PORT === configuredPort && /^\d+$/.test(lease.PID || ""),
     "preview_lease_invalid",
   );
   const alive =
@@ -74,10 +75,29 @@ function assertPreviewAttestation(lease, config, expected, deps = {}) {
         .split("\n")
         .find((line) => line.startsWith("n"))
         ?.slice(1));
+  const ownsListener =
+    deps.ownsListener ||
+    ((pid, port) => {
+      try {
+        return new RegExp(`:${port}\\s+\\(LISTEN\\)`).test(
+          execFileSync(
+            "lsof",
+            ["-nP", "-a", "-p", String(pid), `-iTCP:${port}`, "-sTCP:LISTEN"],
+            { encoding: "utf8" },
+          ),
+        );
+      } catch {
+        return false;
+      }
+    });
   assert(alive(lease.PID), "preview_pid_not_live");
   assert(
     processCwd(lease.PID) === expected.worktree,
     "preview_process_checkout_mismatch",
+  );
+  assert(
+    ownsListener(lease.PID, lease.PORT),
+    "preview_process_listener_mismatch",
   );
 }
 function previewLeasePath(env = process.env) {
@@ -105,6 +125,30 @@ async function readPreviewAttestation(config, env = process.env) {
 }
 function assertVaultOrigin(url, config) {
   assert(new URL(url).origin === config.api, "foreign_vault_origin_refused");
+}
+function createVaultRouteGuard(config, state) {
+  return async (route) => {
+    let request, url;
+    try {
+      request = route.request();
+      url = new URL(request.url());
+    } catch (error) {
+      state.routeFailure ||= error;
+      return route.abort("blockedbyclient");
+    }
+    if (url.origin !== config.api) return route.abort("blockedbyclient");
+    state.observedAllowedVaultRequest = true;
+    if (request.method() !== "POST" || url.pathname !== "/api/vault/items")
+      return route.continue();
+    if (!state.actor || !state.handleCreate)
+      return route.abort("blockedbyclient");
+    try {
+      return await state.handleCreate(route);
+    } catch (error) {
+      state.routeFailure ||= error;
+      return route.abort("blockedbyclient");
+    }
+  };
 }
 function requestDigest(bodyText) {
   return crypto.createHash("sha256").update(bodyText).digest("hex");
@@ -240,15 +284,34 @@ async function listOwned(config, actor, names) {
 }
 async function reconcile(config, actor, ledger, names, deps = {}) {
   const items = await listOwned(config, actor, names);
+  const failures = [];
   for (const item of items) {
-    assert(typeof item.id === "string", "owned_reconciliation_id_required");
+    if (typeof item.id !== "string") {
+      failures.push(new Error("owned_reconciliation_id_required"));
+      continue;
+    }
     const attempt = ledger.attempts.find(
       (candidate) => candidate.name === item.display_name,
     );
-    assert(attempt, "owned_reconciliation_attempt_required");
+    if (!attempt) {
+      failures.push(new Error("owned_reconciliation_attempt_required"));
+      continue;
+    }
     if (!attempt.itemIds.includes(item.id)) attempt.itemIds.push(item.id);
   }
-  await (deps.save || save)(ledger);
+  try {
+    await (deps.save || save)(ledger);
+  } catch (error) {
+    failures.push(error);
+  }
+  if (failures.length) {
+    const error = new AggregateError(
+      failures,
+      "owned_reconciliation_mapping_failed",
+    );
+    error.items = items;
+    throw error;
+  }
   return items;
 }
 function bodyIdentity(body) {
@@ -281,13 +344,16 @@ async function recordAttempt(ledger, name, key, body, bodyText, deps = {}) {
 }
 async function cleanup(config, actor, ledger, names, deps = {}) {
   const failures = [];
-  if (!actor?.token || !actor.orgId)
+  if (!actor?.token || !actor.orgId) {
+    if ((ledger.attempts || []).length === 0) return failures;
     return [new Error("owned_cleanup_context_unavailable")];
+  }
   let items = [];
   try {
     items = await reconcile(config, actor, ledger, names, deps);
   } catch (error) {
     failures.push(error);
+    if (Array.isArray(error?.items)) items = error.items;
   }
   const ids = new Set([
     ...items.map((item) => item.id),
@@ -340,6 +406,38 @@ async function removeArtifact(remove, target, code, failures) {
     failures.push(new Error(code));
   }
 }
+async function runFinalizer({
+  primaryFailure,
+  cleanup: runCleanup,
+  logout,
+  close,
+  removeFixture,
+  removeProfile,
+  removeLedger,
+  shouldRemoveLedger,
+}) {
+  const failures = [];
+  const stage = async (work, code) => {
+    if (!work) return;
+    try {
+      await work();
+    } catch (error) {
+      failures.push(error?.message === code ? error : new Error(code));
+    }
+  };
+  try {
+    failures.push(...(await runCleanup()));
+  } catch (error) {
+    failures.push(error);
+  }
+  await stage(logout, "browser_logout_required");
+  await stage(close, "browser_close_required");
+  await stage(removeFixture, "fixture_removal_required");
+  await stage(removeProfile, "profile_removal_required");
+  if (failures.length === 0 && shouldRemoveLedger?.())
+    await stage(removeLedger, "ledger_removal_required");
+  return finalFailure(primaryFailure, failures);
+}
 
 async function main() {
   const config = runtimeConfig();
@@ -383,14 +481,65 @@ async function main() {
   let page;
   let actor;
   let primaryFailure;
+  let first;
+  let cancelReached;
+  let signalCancelReached;
+  let releaseCancel;
+  const cancelReachedPromise = new Promise((resolve) => {
+    signalCancelReached = resolve;
+  });
+  const releaseCancelPromise = new Promise((resolve) => {
+    releaseCancel = resolve;
+  });
+  let cancellationPhase = false;
+  let resolveActorBound;
+  const actorBound = new Promise((resolve) => {
+    resolveActorBound = resolve;
+  });
+  const guardState = {
+    actor: null,
+    handleCreate: null,
+    observedAllowedVaultRequest: false,
+    routeFailure: null,
+  };
   try {
-    context = await chromium.launchPersistentContext(PROFILE, {
-      headless: true,
-    });
-    page = await context.newPage();
     const preview = await readPreviewAttestation(config);
     ledger.sourceHead = preview.sourceHead;
     await save(ledger);
+    context = await chromium.launchPersistentContext(PROFILE, {
+      headless: true,
+    });
+    // This is the sole Vault route handler and is deliberately registered
+    // before a page exists: all foreign requests and anonymous creates fail
+    // before transport, including anything triggered by login/navigation.
+    await context.route(
+      "**/api/vault/**",
+      createVaultRouteGuard(config, guardState),
+    );
+    context.on("request", (request) => {
+      try {
+        const url = new URL(request.url());
+        if (
+          url.origin !== config.api ||
+          !url.pathname.startsWith("/api/vault/")
+        )
+          return;
+        const boundActor = guardState.actor;
+        const headers = request.headers();
+        if (
+          boundActor &&
+          headers.authorization === `Bearer ${boundActor.token}` &&
+          /^[0-9a-f-]{36}$/i.test(headers["x-organization-id"] || "")
+        ) {
+          boundActor.orgId = headers["x-organization-id"];
+          resolveActorBound();
+        }
+      } catch {
+        // Observation is intentionally non-authoritative and cannot bypass
+        // the route guard or turn a network violation into an uncaught error.
+      }
+    });
+    page = await context.newPage();
     const login = page.waitForResponse(
       (response) =>
         response.url().includes("/auth/v1/token") &&
@@ -420,37 +569,8 @@ async function main() {
       token: session.access_token,
       orgId: undefined,
     };
-    let first;
-    let cancelReached;
-    let signalCancelReached;
-    let releaseCancel;
-    const cancelReachedPromise = new Promise((resolve) => {
-      signalCancelReached = resolve;
-    });
-    const releaseCancelPromise = new Promise((resolve) => {
-      releaseCancel = resolve;
-    });
-    let cancellationPhase = false;
-    let resolveActorBound;
-    const actorBound = new Promise((resolve) => {
-      resolveActorBound = resolve;
-    });
-    let observedAllowedVaultRequest = false;
-    context.on("request", (request) => {
-      const url = new URL(request.url());
-      if (!url.pathname.startsWith("/api/vault/")) return;
-      assertVaultOrigin(request.url(), config);
-      observedAllowedVaultRequest = true;
-      const headers = request.headers();
-      if (
-        headers.authorization === `Bearer ${actor.token}` &&
-        /^[0-9a-f-]{36}$/i.test(headers["x-organization-id"] || "")
-      ) {
-        actor.orgId = headers["x-organization-id"];
-        resolveActorBound();
-      }
-    });
-    await context.route("**/api/vault/**", async (route) => {
+    guardState.actor = actor;
+    guardState.handleCreate = async (route) => {
       const request = route.request(),
         url = new URL(request.url());
       if (url.origin !== config.api) return route.abort("blockedbyclient");
@@ -509,7 +629,7 @@ async function main() {
         return route.fulfill({ response });
       }
       return route.fulfill({ response });
-    });
+    };
     await page
       .getByRole("button", { name: "Import passwords", exact: true })
       .click();
@@ -528,7 +648,11 @@ async function main() {
         ),
       ),
     ]);
-    assert(observedAllowedVaultRequest, "allowed_vault_request_not_observed");
+    assert(
+      guardState.observedAllowedVaultRequest,
+      "allowed_vault_request_not_observed",
+    );
+    assert(!guardState.routeFailure, "vault_route_guard_required");
     const baseline = await listOwned(config, actor, names);
     assert.equal(baseline.length, 0, "owned_baseline_required");
     ledger.baseline = {
@@ -662,67 +786,44 @@ async function main() {
   } catch (error) {
     primaryFailure = error;
   } finally {
-    let cleanupFailures;
-    try {
-      cleanupFailures = await cleanup(config, actor, ledger, names);
-    } catch (error) {
-      cleanupFailures = [error];
-    }
-    if (page) {
-      try {
-        await page.goto(`${config.frontend}/sign-out`, {
-          waitUntil: "domcontentloaded",
-          timeout: 15_000,
-        });
-        await page
-          .getByRole("button", { name: "Sign Out", exact: true })
-          .click();
-        const first = page.getByRole("button", {
-          name: "I understand, continue",
-          exact: true,
-        });
-        if (await first.isVisible().catch(() => false)) {
-          await first.click();
-          await page
-            .getByRole("button", { name: /^I am .+\. Sign me out$/ })
-            .click();
-        }
-        await page.waitForURL((url) => url.pathname === "/login", {
-          timeout: 15_000,
-        });
-      } catch {
-        cleanupFailures.push(new Error("browser_logout_required"));
-      }
-    }
-    if (context) {
-      try {
-        await context.clearCookies();
-        await context.close();
-      } catch {
-        cleanupFailures.push(new Error("browser_close_required"));
-      }
-    }
-    await removeArtifact(
-      (target) => fs.rm(target, { force: true }),
-      FIXTURE,
-      "fixture_removal_required",
-      cleanupFailures,
-    );
-    await removeArtifact(
-      (target) => fs.rm(target, { recursive: true, force: true }),
-      PROFILE,
-      "profile_removal_required",
-      cleanupFailures,
-    );
-    if (cleanupFailures.length === 0 && ledger.cleaned) {
-      await removeArtifact(
-        (target) => fs.rm(target, { force: true }),
-        LEDGER,
-        "ledger_removal_required",
-        cleanupFailures,
-      );
-    }
-    const failure = finalFailure(primaryFailure, cleanupFailures);
+    const failure = await runFinalizer({
+      primaryFailure,
+      cleanup: () => cleanup(config, actor, ledger, names),
+      logout: page
+        ? async () => {
+            await page.goto(`${config.frontend}/sign-out`, {
+              waitUntil: "domcontentloaded",
+              timeout: 15_000,
+            });
+            await page
+              .getByRole("button", { name: "Sign Out", exact: true })
+              .click();
+            const confirmation = page.getByRole("button", {
+              name: "I understand, continue",
+              exact: true,
+            });
+            if (await confirmation.isVisible().catch(() => false)) {
+              await confirmation.click();
+              await page
+                .getByRole("button", { name: /^I am .+\. Sign me out$/ })
+                .click();
+            }
+            await page.waitForURL((url) => url.pathname === "/login", {
+              timeout: 15_000,
+            });
+          }
+        : undefined,
+      close: context
+        ? async () => {
+            await context.clearCookies();
+            await context.close();
+          }
+        : undefined,
+      removeFixture: () => fs.rm(FIXTURE, { force: true }),
+      removeProfile: () => fs.rm(PROFILE, { recursive: true, force: true }),
+      removeLedger: () => fs.rm(LEDGER, { force: true }),
+      shouldRemoveLedger: () => ledger.cleaned,
+    });
     if (failure) throw failure;
   }
   process.stdout.write(
@@ -744,6 +845,8 @@ module.exports = {
   finalFailure,
   recordAttempt,
   removeArtifact,
+  createVaultRouteGuard,
+  runFinalizer,
 };
 if (require.main === module) {
   if (process.env.MATRX_KEEPASS_IMPORT_CANARY !== ARM)

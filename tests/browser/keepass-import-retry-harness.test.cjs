@@ -16,6 +16,8 @@ const {
   finalFailure,
   recordAttempt,
   removeArtifact,
+  createVaultRouteGuard,
+  runFinalizer,
 } = require("./keepass-import-retry-acceptance.cjs");
 test("refuses unarmed or remote-origin runs before browser launch", () => {
   const base = {
@@ -47,7 +49,11 @@ test("refuses a lease whose live process checkout or hostname differs", () => {
   const lease = parsePreviewLease(
     "ROOT=/worktree\nOWNER_HOST=vault-task3.localhost\nPORT=3001\nPID=123",
   );
-  const live = { isAlive: () => true, processCwd: () => "/worktree" };
+  const live = {
+    isAlive: () => true,
+    processCwd: () => "/worktree",
+    ownsListener: () => true,
+  };
   assert.doesNotThrow(() =>
     assertPreviewAttestation(lease, config, { worktree: "/worktree" }, live),
   );
@@ -79,7 +85,11 @@ test("refuses a lease whose live process checkout or hostname differs", () => {
         lease,
         config,
         { worktree: "/worktree" },
-        { isAlive: () => false, processCwd: () => "/worktree" },
+        {
+          isAlive: () => false,
+          processCwd: () => "/worktree",
+          ownsListener: () => true,
+        },
       ),
     /preview_pid_not_live/,
   );
@@ -89,9 +99,27 @@ test("refuses a lease whose live process checkout or hostname differs", () => {
         lease,
         config,
         { worktree: "/worktree" },
-        { isAlive: () => true, processCwd: () => "/foreign" },
+        {
+          isAlive: () => true,
+          processCwd: () => "/foreign",
+          ownsListener: () => true,
+        },
       ),
     /preview_process_checkout_mismatch/,
+  );
+  assert.throws(
+    () =>
+      assertPreviewAttestation(
+        lease,
+        config,
+        { worktree: "/worktree" },
+        {
+          isAlive: () => true,
+          processCwd: () => "/worktree",
+          ownsListener: () => false,
+        },
+      ),
+    /preview_process_listener_mismatch/,
   );
   assert.doesNotThrow(() =>
     assertVaultOrigin("http://127.0.0.1:8027/api/vault/items", config),
@@ -260,6 +288,151 @@ test("records a value-free attempt mapping before a response can be dropped", as
     /attempt_mapping_mismatch/,
   );
   assert.equal(requestDigest(JSON.stringify(body)).length, 64);
+});
+test("context-wide route guard aborts foreign and anonymous creates before transport", async () => {
+  const calls = [];
+  const state = {
+    actor: null,
+    handleCreate: null,
+    observedAllowedVaultRequest: false,
+  };
+  const guard = createVaultRouteGuard({ api: "http://127.0.0.1:8027" }, state);
+  const fakeRoute = (url, method = "GET") => ({
+    request: () => ({ url: () => url, method: () => method }),
+    abort: async () => calls.push(`abort:${url}`),
+    continue: async () => calls.push(`continue:${url}`),
+  });
+  await guard(fakeRoute("https://server.app.matrxserver.com/api/vault/items"));
+  await guard(fakeRoute("http://127.0.0.1:8027/api/vault/items", "POST"));
+  await guard(
+    fakeRoute("http://127.0.0.1:8027/api/vault/items?principal_type=user"),
+  );
+  assert.deepEqual(
+    calls.map((call) => call.split(":")[0]),
+    ["abort", "abort", "continue"],
+  );
+  assert.equal(state.observedAllowedVaultRequest, true);
+});
+test("cleanup preserves mapping defects while deleting duplicate and unreceipted exact names", async () => {
+  const priorFetch = global.fetch;
+  const deleted = [];
+  let listCalls = 0;
+  global.fetch = async (url, init = {}) => {
+    if (init.method === "DELETE") {
+      deleted.push(String(url).split("/").pop());
+      return new Response(null, { status: 204 });
+    }
+    listCalls += 1;
+    return new Response(
+      JSON.stringify({
+        items:
+          listCalls === 1
+            ? [
+                { id: "same-1", display_name: "same" },
+                { id: "same-2", display_name: "same" },
+                { id: "unknown-1", display_name: "unknown" },
+              ]
+            : [],
+      }),
+      { status: 200 },
+    );
+  };
+  const actor = {
+    token: "token",
+    orgId: "11111111-1111-4111-8111-111111111111",
+    email: "admin@admin.com",
+  };
+  try {
+    const failures = await cleanup(
+      { api: "http://127.0.0.1:8027" },
+      actor,
+      {
+        attempts: [
+          { name: "same", key: "k", digest: "d", body: {}, itemIds: [] },
+        ],
+      },
+      new Set(["same", "unknown"]),
+      { save: async () => undefined },
+    );
+    assert.deepEqual(deleted.sort(), ["same-1", "same-2", "unknown-1"]);
+    assert(
+      failures.some(
+        (error) => error.message === "owned_reconciliation_mapping_failed",
+      ),
+    );
+  } finally {
+    global.fetch = priorFetch;
+  }
+});
+test("preflight cleanup does not mask its failure before any attempt can dispatch", async () => {
+  assert.deepEqual(
+    await cleanup(
+      { api: "http://127.0.0.1:8027" },
+      undefined,
+      { attempts: [] },
+      new Set(),
+    ),
+    [],
+  );
+  const failures = await cleanup(
+    { api: "http://127.0.0.1:8027" },
+    undefined,
+    { attempts: [{ name: "possible-write", itemIds: [] }] },
+    new Set(["possible-write"]),
+  );
+  assert.deepEqual(
+    failures.map((error) => error.message),
+    ["owned_cleanup_context_unavailable"],
+  );
+});
+test("production finalizer runs every outer stage after cleanup ledger-save failure", async () => {
+  const priorFetch = global.fetch;
+  const stages = [];
+  global.fetch = async () =>
+    new Response(JSON.stringify({ items: [] }), { status: 200 });
+  try {
+    const failure = await runFinalizer({
+      primaryFailure: new Error("preflight_failed"),
+      cleanup: () =>
+        cleanup(
+          { api: "http://127.0.0.1:8027" },
+          {
+            token: "token",
+            orgId: "11111111-1111-4111-8111-111111111111",
+            email: "admin@admin.com",
+          },
+          { attempts: [] },
+          new Set(),
+          {
+            save: async () => {
+              throw new Error("ledger_save_required");
+            },
+          },
+        ),
+      logout: async () => stages.push("logout"),
+      close: async () => stages.push("close"),
+      removeFixture: async () => stages.push("fixture"),
+      removeProfile: async () => stages.push("profile"),
+      removeLedger: async () => stages.push("ledger"),
+      shouldRemoveLedger: () => true,
+    });
+    assert.deepEqual(stages, ["logout", "close", "fixture", "profile"]);
+    assert(failure instanceof AggregateError);
+    assert(
+      failure.errors.some(
+        (error) =>
+          error.message === "ledger_save_required" ||
+          error.errors?.some(
+            (nested) => nested.message === "ledger_save_required",
+          ),
+      ),
+    );
+    assert(
+      failure.errors.some((error) => error.message === "preflight_failed"),
+    );
+  } finally {
+    global.fetch = priorFetch;
+  }
 });
 test("continues artifact cleanup after each independent removal failure", async () => {
   const attempted = [];
