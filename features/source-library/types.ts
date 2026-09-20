@@ -154,6 +154,27 @@ export interface LibraryMetrics {
     /** Sources no Action has ever touched. */
     untouched: number;
     stale: boolean;
+    /**
+     * §5, server contract 0.6.0 — WHOSE NUMBERS THESE ARE.
+     *
+     * `GET …/metrics` declared `fresh` and nothing else until aidream
+     * `d7093434f6`, so the ten §4.2 filters this screen sends were dropped and
+     * the header described the ENTIRE Library while a filtered table sat under
+     * it, 200, no sign. The server now computes over the selection when one is
+     * present and says so: `filtered` is true, `filtered_total` is what the
+     * filter matched, `library_total` is the whole shelf.
+     *
+     * ABSENT IS UNFILTERED, NOT A ZERO. An unfiltered read — which is what the
+     * header itself asks for — sends none of these keys, and a server older
+     * than 0.6.0 sends none of them either. Both mean "these are the whole
+     * Library's numbers", which is exactly what `filtered: false` says, so the
+     * default is safe for both and no caller has to tell them apart.
+     */
+    filtered: boolean;
+    /** Sources the filter matched. Null when the read was not filtered. */
+    filtered_total: number | null;
+    /** Sources in the whole Library. Null when the read was not filtered. */
+    library_total: number | null;
 }
 
 /** §3.1 — the Library row. The frontend can render entirely from this. */

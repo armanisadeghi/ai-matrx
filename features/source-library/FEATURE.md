@@ -168,23 +168,32 @@ nothing moves; the claim is gone. The day the server publishes a word count,
 
 ## Change log
 
-- `2026-09-20` — **D343 filed, not fixed: three of this surface's controls are
-  decorative because the live endpoint takes neither of the parameters they
-  send.** `GET /media/libraries` in aidream (`media_catalog.py`, `list_libraries`,
-  read on `origin/main`) declares only `limit` and `offset`. `API-CONTRACT.md` §3
-  publishes `visibility`, `adapter` and `q`, `browse/service.ts` sends two of
-  them, and FastAPI drops an undeclared parameter without a word — 200, whole
-  unfiltered list. So the search box does not narrow (measured on screen,
-  `common-docs/projects/acquisition-frontier/acquisition-console/screens/v1/`),
-  the four lane tabs serve the same rows, and D10's per-lane counts are four
-  IDENTICAL totals rather than four zeros. It is the surviving sibling of the
-  class aidream already closed on `GET /media/libraries/{id}/videos`. Nothing in
-  this repo can close it: `urlState: true` here and a filtered link from the
-  Acquisition Console both wait on the server half, because a `?q=` the
-  destination cannot honour is a worse lie than no parameter. Exact server
-  change in `FOUND_DEFECTS.md` D343; the two comments that asserted the
-  parameters worked are corrected in place.
-
+- `2026-09-20` — **D343 closed on both sides: the search box, the four lane
+  tabs and the Acquisition Console's Library links are one query now.**
+  `GET /media/libraries` published `visibility`, `adapter` and `q` in
+  API-CONTRACT.md §3 and DECLARED none of them, so FastAPI dropped all three and
+  answered 200 with the whole unfiltered list — the search box did not narrow,
+  the four lanes served identical rows, and D10's per-lane counts were four
+  IDENTICAL totals rather than four zeros. Server half: aidream `d7093434f6`
+  (one `apply_library_filter`, an unknown value refused 400 with the accepted
+  set named, `total` counting the filtered set; contract 0.6.0, and the
+  `…/metrics` and `…/videos` siblings swept with it). This repo: `urlState:
+  true` on `createLibraryListConfig` so `?q=`/`?scope=`/`?page=` survive a
+  reload; `browse/service.ts` sends `adapter` from the shell's own `filters` bag
+  and runs the lane counts under the SAME narrowing as the list (a tab reading
+  "Mine 33" that becomes eleven rows when pressed is the tile-vs-list defect
+  with the numbers swapped); `LibraryListQuery.adapter` widened to `string[]`
+  deliberately, because the client's `MediaAdapter` union names ten adapters and
+  the live shelf carries more — the server owns that vocabulary. §5's new
+  `filtered` / `filtered_total` / `library_total` are read in `contract.ts` with
+  ABSENT meaning unfiltered, never zero. The catalog's `fetchFacets` now asks
+  UNNARROWED on purpose: with the server honouring filters, counting each
+  dimension inside its own selection would drop every unpicked chip to zero and
+  delete the section, leaving a person narrowed with no control to widen by.
+  Guard proven failing-then-passing:
+  `__tests__/the-libraries-link-is-a-query-the-list-runs.test.ts` — 11 cases
+  walking console row → href → URL → reader → wire; 8 go red against the
+  pre-fix behaviour.
 - `2026-09-20` — **Four defects from the twelfth cold walk (D6, D6b, D10, D11),
   fixed and guarded.** D6: the Sources table used to render its empty state
   from the very first (pre-sync) row read and never re-asked when

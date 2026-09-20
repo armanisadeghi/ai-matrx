@@ -244,6 +244,57 @@ export function parseHandoffs(items: unknown[]): NarrowedList<BlockedRow> {
 // ── The roll-ups Section 1 renders ─────────────────────────────────────────
 
 /**
+ * The console's lane → the Libraries list's scope tab.
+ *
+ * Both vocabularies are already on the platform and neither is invented here:
+ * the console's lane IS `media.source_library.visibility`, and the destination's
+ * four tabs are the four list scopes `lib/list-scope/types.ts` defines, mapped
+ * to those same lanes by `features/source-library/browse/service.ts`. This is
+ * that one mapping read backwards.
+ *
+ * `shared-with-you` is the console's OWN refinement — someone else's `personal`
+ * Library reaching this seat through a share — and the destination has no tab
+ * for it, because the server has no lane for it either. It therefore addresses
+ * the lane the row actually carries (`personal` → `mine`), which is where that
+ * Library is listed; the console keeps the finer distinction, the link does not
+ * pretend to.
+ */
+const LANE_TO_LIST_SCOPE: Record<string, string> = {
+  personal: "mine",
+  "shared-with-you": "mine",
+  internal: "orgs",
+  link: "shared",
+  public: "public",
+};
+
+/**
+ * A "What we have" Library row's door, addressed down to the kind it counted.
+ *
+ * 🚨 IT SPEAKS THE SHELL'S OWN QUERY ENCODING, NOT A SECOND ONE.
+ * `?scope=` and `?filters=` are `lib/entity-list/urlQuery.ts`'s params, and
+ * `filters` carries the adapter in the very `select` bag a column header or the
+ * filter panel produces — so this link, a chip click and a typed filter are the
+ * identical query. Inventing `?kind=` or `?adapter=` here would have been a
+ * third spelling of a vocabulary the platform already has twice.
+ *
+ * THE SCOPE IS ALWAYS WRITTEN, never left to the default. The destination's
+ * default scope can be decided late (the entity-type registry answers after the
+ * first render, `lib/entity-list/useEntityList.ts`), so a link that omits it is
+ * a link whose landing tab depends on a race.
+ *
+ * Until 2026-09-20 this was a bare `/libraries` and deliberately so (D343): the
+ * server declared none of the three filters API-CONTRACT.md §3 published, so a
+ * parameter the destination could not honour would have been a worse lie than
+ * no parameter. aidream `d7093434f6` closed that; the link is now exact.
+ */
+export function librariesHref(adapter: string, lane: string): string {
+  const params = new URLSearchParams();
+  params.set("scope", LANE_TO_LIST_SCOPE[lane] ?? "mine");
+  params.set("filters", JSON.stringify({ adapter: { kind: "select", values: [adapter] } }));
+  return `/libraries?${params.toString()}`;
+}
+
+/**
  * Group Libraries into one row per KIND AND LANE.
  *
  * Not per adapter alone: a person's own YouTube channels and the workspace's shared
@@ -309,17 +360,7 @@ export function rollUpLibraries(
       lastAdded,
       yield: yieldSentence,
       yieldCount,
-      // 🚨 DELIBERATELY BARE, AND NOT AN OVERSIGHT (D343, 2026-09-20). This
-      // row knows its own adapter and lane, and `/libraries?q=…` is the
-      // obvious deep link — but `GET /media/libraries` in aidream declares
-      // only `limit` and `offset`, so `q`, `visibility` and `adapter` are all
-      // dropped by FastAPI and answered 200 with the whole unfiltered list.
-      // A parameter the destination cannot honour is a worse lie than no
-      // parameter: the URL would claim a narrowing the screen does not do.
-      // The day the server half lands, this becomes the filtered link and
-      // `createLibraryListConfig` takes `urlState: true`. See FOUND_DEFECTS
-      // D343 for the exact server change.
-      href: "/libraries",
+      href: librariesHref(adapter, lane),
     };
   });
 }
