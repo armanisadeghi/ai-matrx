@@ -416,10 +416,10 @@ function GmailApprovalBody({
           `[approvals] a Gmail send resolved for proposal version ${callId}, which is no longer on screen — the proposal was NOT recorded as approved`,
         );
         toast.error(
-          "A message was sent from a draft this queue has since replaced, so it was NOT recorded as approved and nothing was written to the record's timeline.",
+          "Message sent, but approval was not recorded.",
           {
             description:
-              "Check the sent folder for that message and log it by hand; the proposal is still waiting on you.",
+              "Check Sent Mail and add it to the timeline manually.",
           },
         );
       });

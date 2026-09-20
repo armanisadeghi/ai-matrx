@@ -307,7 +307,7 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
         await inventory.refetch();
         toast.info("YouTube access changed", {
           description:
-            "That channel is no longer available to this account. The Google connection list has been refreshed; reconnect the account if you still need it.",
+            "Channel unavailable. Reconnect the Google account to use it again.",
         });
         return;
       }

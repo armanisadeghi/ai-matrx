@@ -16,7 +16,7 @@
 
 /** The live `visibility` enum, in plain English. */
 const VISIBILITY_WORDS: Record<string, string> = {
-  personal: "Only you can see this",
+  personal: "Personal",
   internal: "Everyone in this organization can see it",
   link: "Anyone with the link can see it",
   public: "Public — anyone can see it",

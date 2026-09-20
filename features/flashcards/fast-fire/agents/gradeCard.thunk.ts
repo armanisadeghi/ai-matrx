@@ -338,7 +338,7 @@ function noticeClipRejected(reason: ClipRejection): void {
     reason === "too-large"
       ? "That recording was too long to keep offline — the answer was saved, but it will stay ungraded."
       : reason === "budget-full"
-        ? "Your offline recordings have filled the space this device allows. This answer was saved, but its recording was not — reconnect to sync and free it up."
+        ? "Offline storage is full. Your answer was saved without its recording. Reconnect to free space."
         : "This device can't store recordings offline. The answer was saved, but it will stay ungraded.",
   );
 }
