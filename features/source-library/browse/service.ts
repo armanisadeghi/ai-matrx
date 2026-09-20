@@ -129,6 +129,16 @@ export function createLibraryListService(
             // already proves `listLibraries({ visibility, limit }).total` is
             // real and reliable for one lane at a time — this is that identical
             // call, once per lane, run in parallel. One derivation, two callers.
+            //
+            // 🚨 D343 (2026-09-20): "real and reliable for one lane at a time"
+            // is NOT true today, and this comment asserting it is part of how
+            // the hole survived. `list_libraries` in aidream declares only
+            // `limit` and `offset` — `visibility` is dropped by FastAPI without
+            // a word — so these four calls cannot disagree and the tabs read
+            // four IDENTICAL totals rather than four zeros. One derivation, two
+            // callers is still the right shape; it becomes a true count the
+            // moment the server accepts the parameter both callers already
+            // send. Nothing in this repo can fix it — see FOUND_DEFECTS D343.
             const lanes = Object.keys(SCOPE_TO_VISIBILITY) as (keyof typeof SCOPE_TO_VISIBILITY)[];
             const results = await Promise.allSettled(
                 lanes.map((kind) =>

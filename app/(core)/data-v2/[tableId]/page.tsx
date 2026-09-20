@@ -10,7 +10,7 @@
 
 import { use, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { RecordsMount, TablePage, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
@@ -32,6 +32,12 @@ export default function UnifiedDataTableRoute({
 }) {
   const { tableId } = use(params);
   const router = useRouter();
+  // AN AGENT'S ANSWER ENDS IN A LINK, AND THE LINK HAS TO LAND. `dashboard_propose`
+  // builds the whole canvas in one call and hands back `?dashboard=<id>`; without this
+  // line the person arrives at the records, has to find the Dashboards button, and then
+  // has to guess which of several dashboards the agent meant — which is the link not
+  // finishing the sentence the agent started. Absent, the page opens exactly as before.
+  const activeDashboardId = useSearchParams().get("dashboard");
   const userId = useAppSelector(selectUserId);
   const { organizationId, organizationState } = useOrganizationRequired();
   // ONE SWITCH: does THIS organization keep its data in the record store? Set
@@ -87,7 +93,7 @@ export default function UnifiedDataTableRoute({
           >
             {/* A table this organization cannot see says so and offers the way
                 back — never the blank frame the 19 September verdict found. */}
-            <TablePage tableId={tableId} onLeave={() => router.push("/data-v2")} />
+            <TablePage tableId={tableId} activeDashboardId={activeDashboardId} onLeave={() => router.push("/data-v2")} />
           </RecordsMount>
         )}
       </div>
