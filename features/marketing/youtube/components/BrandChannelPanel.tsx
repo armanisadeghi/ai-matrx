@@ -71,6 +71,11 @@ import {
   writeBrandChannelBinding,
 } from "../binding";
 import {
+  candidateIdentity,
+  channelBindCandidates,
+  type ChannelBindCandidate,
+} from "../candidates";
+import {
   CHANNEL_WINDOW_DAYS,
   YOUTUBE_ANALYTICS_CAPABILITY_KEY,
   channelWindowTotals,
@@ -202,6 +207,19 @@ function VideoRow({ video }: { video: YouTubeVideoRow }) {
  * accept, and one that cannot be picked is honestly absent rather than a
  * refusal met three clicks later. With no discovered channel at all, the door
  * is the connect window, opened IN PLACE.
+ *
+ * 🚨 EVERY CANDIDATE IS TELLABLE APART, AND THE PRESS STATES ITS CONSEQUENCE
+ * (V-27 NEW-6). This door used to render one bare `Bind ${display_name}` button
+ * per resource row: on a real seat that was seven buttons, FOUR of them reading
+ * exactly "Bind Arman Sadeghi", with nothing saying which Google account each
+ * came through or whether two of them were the same channel — and the press
+ * wrote the binding the whole panel then reads from, with no confirmation, while
+ * the Refresh control two inches away carefully names what it spends. So each
+ * row now carries the channel's title, its handle or id and the account it was
+ * discovered through (`../candidates.ts`, which also collapses one channel seen
+ * through several accounts into one row that says so), and the press names what
+ * binding makes the refresh read and write, and on whose account
+ * (`common-docs/policies/destructive-and-expensive-actions.md`).
  */
 function ChannelBindControl({
   brandId,
@@ -218,17 +236,29 @@ function ChannelBindControl({
     queryKey: ["marketing", "google", "inventory", "youtube"] as const,
     queryFn: ({ signal }) => listGoogleConnectionInventory(signal),
   });
-  const channels = (inventory.data?.resources ?? []).filter(
-    (resource) => resource.resource_type === "youtube_channel",
-  );
+  const candidates = channelBindCandidates(inventory.data);
 
-  async function bind(resource: {
-    id: string;
-    connection_id: string;
-    resource_ref: string;
-    display_name: string;
-  }): Promise<void> {
-    setSaving(resource.id);
+  async function bind(candidate: ChannelBindCandidate): Promise<void> {
+    // 🚨 THE CONSEQUENCE FIRST, NOT A GENERIC "ARE YOU SURE?" — this press is
+    // what makes every later refresh read and overwrite under THIS client, on
+    // THIS account's quota, and a wrong pick is silent afterwards.
+    const ok = await confirm({
+      title: `Bind ${candidate.title} to this client`,
+      description:
+        `Every refresh for this client will then read ${candidate.title} ` +
+        `(${candidateIdentity(candidate)}) through ${candidate.account}, spending a call on that ` +
+        `account, and will overwrite the stored analytics for the last ${MAX_REFRESH_WINDOW_DAYS} days ` +
+        "plus the channel's most recent uploads (up to 50) with what YouTube reports then. " +
+        "Nothing is published, changed or removed on YouTube — our permission there is read-only. " +
+        "You can bind a different channel later; the numbers already stored stay under this client." +
+        (candidate.alsoDiscoveredThrough.length > 0
+          ? ` This channel was also discovered through ${candidate.alsoDiscoveredThrough.join(", ")}; ` +
+            `binding uses ${candidate.account}, the account that discovered it first.`
+          : ""),
+      confirmLabel: `Bind ${candidate.title}`,
+    });
+    if (!ok) return;
+    setSaving(candidate.resourceId);
     try {
       await writeBrandChannelBinding({
         brandId,
@@ -240,11 +270,11 @@ function ChannelBindControl({
           resourceRef: "",
         },
         next: channelBindingDraft({
-          connectionId: resource.connection_id,
-          channelId: resource.resource_ref,
+          connectionId: candidate.connectionId,
+          channelId: candidate.channelId,
         }),
       });
-      toast.success(`${resource.display_name} is now this client's channel.`);
+      toast.success(`${candidate.title} is now this client's channel.`);
       onBound();
     } catch (error) {
       toast.error(extractErrorMessage(error));
@@ -267,7 +297,7 @@ function ChannelBindControl({
           error={inventory.error}
           onRetry={() => void inventory.refetch()}
         />
-      ) : channels.length === 0 ? (
+      ) : candidates.length === 0 ? (
         <>
           <p className="text-xs leading-5 text-muted-foreground">
             None of your connected Google accounts owns a YouTube channel we can
@@ -290,20 +320,42 @@ function ChannelBindControl({
           </div>
         </>
       ) : (
-        <div className="flex flex-wrap gap-1.5">
-          {channels.map((resource) => (
-            <Button
-              key={resource.id}
-              size="sm"
-              variant="outline"
-              className="h-6 px-2 text-[11px]"
-              disabled={saving !== null}
-              onClick={() => void bind(resource)}
+        <ul className="flex flex-col gap-1.5">
+          {candidates.map((candidate) => (
+            <li
+              key={candidate.channelId}
+              className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-card px-2 py-1.5"
             >
-              {saving === resource.id ? "Binding…" : `Bind ${resource.display_name}`}
-            </Button>
+              <div className="min-w-0">
+                <p className="truncate text-xs font-medium text-foreground">
+                  {candidate.title}
+                </p>
+                <p className="text-[11px] leading-4 text-muted-foreground">
+                  {candidateIdentity(candidate)} · discovered through{" "}
+                  {candidate.account}
+                </p>
+                {candidate.alsoDiscoveredThrough.length > 0 ? (
+                  // The same channel id seen through more than one connected
+                  // account is ONE channel, and the row says which account the
+                  // binding will actually use rather than hiding the choice.
+                  <p className="text-[11px] leading-4 text-muted-foreground">
+                    {`The same channel is also visible through ${candidate.alsoDiscoveredThrough.join(", ")} — binding uses ${candidate.account}, which discovered it first.`}
+                  </p>
+                ) : null}
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 shrink-0 px-2 text-[11px]"
+                disabled={saving !== null}
+                aria-label={`Bind ${candidate.title} (${candidateIdentity(candidate)}) through ${candidate.account}`}
+                onClick={() => void bind(candidate)}
+              >
+                {saving === candidate.resourceId ? "Binding…" : "Bind"}
+              </Button>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );

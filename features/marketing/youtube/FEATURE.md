@@ -90,6 +90,27 @@ binding's three answers, and the panel in every state.
 
 ## Change log
 
+- 2026-09-20 — **V-27 NEW-6: the bind door showed seven candidates, four reading
+  exactly "Bind Arman Sadeghi", and the press wrote the binding with no
+  consequence stated.** Nothing on the row said which Google account a channel
+  came through, what its handle or id was, or whether two rows were the SAME
+  channel seen through two accounts — while the Refresh control two inches away
+  carefully names what it spends. New `candidates.ts` derives one row per CHANNEL
+  from the discovered `youtube_channel` resources: the channel's title, its
+  `@handle` (from `metadata.custom_url`, else its `UC…` id — never nothing) and
+  the account it was discovered through, with identical channel ids collapsed
+  into one row that names the other accounts and says which one the binding uses
+  (the earliest discovery, because the binding stores exactly one
+  `connection_id`). The press now goes through `confirm()` and states, before
+  anything is written, what every later refresh will read, on whose account, and
+  what it overwrites — `common-docs/policies/destructive-and-expensive-actions.md`.
+  The button's accessible name carries all three facts. Guards: new
+  `__tests__/the-bind-candidates-are-tellable-apart.test.ts` over the derivation,
+  plus four cases in `the-panel-is-honest-in-every-state.test.tsx` (distinct
+  labels, the collapsed row, the consequence text, and nothing written when the
+  dialog is declined) — all four RED on the prior bytes, green after; suite 7
+  suites / 60 tests.
+
 - 2026-09-19 — Created (U-M3). The panel, the window, the pre-upload check, the
   registration handover from the item-presentation registry's inline entry
   (V-22 NEW-6), the brand binding, the knob and the migration file. Neither

@@ -40,6 +40,7 @@ const NOW = new Date();
 
 const world = {
   binding: { state: "unbound", brandVersion: 1 } as BrandChannelBinding,
+  connections: [] as Record<string, unknown>[],
   resources: [] as Record<string, unknown>[],
   videos: [] as Record<string, unknown>[],
   days: [] as Record<string, unknown>[],
@@ -76,7 +77,7 @@ jest.mock("../service", () => ({
 
 jest.mock("@/features/marketing/google/service", () => ({
   listGoogleConnectionInventory: async () => ({
-    connections: [],
+    connections: world.connections,
     resources: world.resources,
   }),
   listGoogleCapabilities: async () => world.capabilities,
@@ -102,6 +103,18 @@ jest.mock("@/components/dialogs/clipboard-fallback/ClipboardFallbackDialog", () 
   ClipboardFallbackDialog: () => null,
 }));
 
+/**
+ * The consequence dialog is captured, never auto-accepted: these tests assert
+ * WHAT it says before anything is written (V-27 NEW-6).
+ */
+const confirmCalls: Array<Record<string, unknown>> = [];
+jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({
+  confirm: jest.fn(async (options: Record<string, unknown>) => {
+    confirmCalls.push(options);
+    return false;
+  }),
+}));
+
 // The freshness line's own rule and wording are proven by its own suite; here
 // it only has to be PRESENT with the day it was handed.
 jest.mock("@/features/marketing/components/shared/DataFreshnessLine", () => ({
@@ -113,6 +126,7 @@ jest.mock("@/features/marketing/components/shared/DataFreshnessLine", () => ({
 }));
 
 import { BrandChannelPanel } from "../components/BrandChannelPanel";
+import { writeBrandChannelBinding } from "../binding";
 
 function isoDay(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -207,7 +221,9 @@ async function mount() {
 }
 
 beforeEach(() => {
+  confirmCalls.length = 0;
   world.binding = { state: "unbound", brandVersion: 1 };
+  world.connections = [];
   world.resources = [];
   world.videos = [];
   world.days = [];
@@ -227,21 +243,162 @@ describe("the column has not been applied", () => {
   });
 });
 
+const SECOND_CONNECTION_ID = "99999999-2222-4333-8444-555555555555";
+const SECOND_RESOURCE_ID = "88888888-1111-2222-3333-444444444444";
+const OTHER_CHANNEL_ID = "UCabcdefghijklmnopqrstuv";
+
+function connection(id: string, email: string) {
+  return { id, provider: "google", account_email: email, account_name: null };
+}
+
+function channelResource(args: {
+  id: string;
+  connectionId: string;
+  channelId: string;
+  displayName: string;
+  customUrl?: string;
+  discoveredAt?: string;
+}) {
+  return {
+    id: args.id,
+    connection_id: args.connectionId,
+    resource_type: "youtube_channel",
+    resource_ref: args.channelId,
+    display_name: args.displayName,
+    permission_level: "owner",
+    discovered_at: args.discoveredAt ?? "2026-09-01T00:00:00Z",
+    metadata: args.customUrl ? { custom_url: args.customUrl } : {},
+  };
+}
+
 describe("no channel is bound", () => {
-  it("is a DOOR, never a dead panel — and the door is the discovered channel", async () => {
+  it("is a DOOR, never a dead panel — and the door names the channel, its handle and its account", async () => {
+    world.connections = [connection(CONNECTION_ID, "owner@allgreen.com")];
     world.resources = [
-      {
+      channelResource({
         id: RESOURCE_ID,
-        connection_id: CONNECTION_ID,
-        resource_type: "youtube_channel",
-        resource_ref: CHANNEL_ID,
-        display_name: "All Green Recycling",
-      },
+        connectionId: CONNECTION_ID,
+        channelId: CHANNEL_ID,
+        displayName: "All Green Recycling",
+        customUrl: "@allgreen",
+      }),
     ];
     const m = await mount();
     try {
       expect(m.text).toContain("No YouTube channel is bound");
-      expect(m.text).toContain("Bind All Green Recycling");
+      expect(m.text).toContain("All Green Recycling");
+      expect(m.text).toContain("@allgreen");
+      expect(m.text).toContain("owner@allgreen.com");
+    } finally {
+      m.unmount();
+    }
+  });
+
+  /**
+   * 🚨 V-27 NEW-6: seven buttons, four reading exactly "Bind Arman Sadeghi".
+   * Two channels with the SAME title must still be tellable apart, or the press
+   * is a guess.
+   */
+  it("keeps two same-named channels distinguishable", async () => {
+    world.connections = [
+      connection(CONNECTION_ID, "arman@armansadeghi.com"),
+      connection(SECOND_CONNECTION_ID, "arman@titaniumsuccess.com"),
+    ];
+    world.resources = [
+      channelResource({
+        id: RESOURCE_ID,
+        connectionId: CONNECTION_ID,
+        channelId: CHANNEL_ID,
+        displayName: "Arman Sadeghi",
+        customUrl: "@armansadeghi",
+      }),
+      channelResource({
+        id: SECOND_RESOURCE_ID,
+        connectionId: SECOND_CONNECTION_ID,
+        channelId: OTHER_CHANNEL_ID,
+        displayName: "Arman Sadeghi",
+      }),
+    ];
+    const m = await mount();
+    try {
+      const labels = [...m.container.querySelectorAll("[aria-label^='Bind ']")].map(
+        (node) => node.getAttribute("aria-label"),
+      );
+      expect(labels).toHaveLength(2);
+      expect(new Set(labels).size).toBe(2);
+      // The handle for the one that has it; the channel id for the one that
+      // does not — never nothing, and never a guess.
+      expect(m.text).toContain("@armansadeghi");
+      expect(m.text).toContain(OTHER_CHANNEL_ID);
+      expect(m.text).toContain("arman@titaniumsuccess.com");
+    } finally {
+      m.unmount();
+    }
+  });
+
+  it("collapses ONE channel seen through two accounts into one row that says so", async () => {
+    world.connections = [
+      connection(CONNECTION_ID, "first@example.com"),
+      connection(SECOND_CONNECTION_ID, "second@example.com"),
+    ];
+    world.resources = [
+      channelResource({
+        id: SECOND_RESOURCE_ID,
+        connectionId: SECOND_CONNECTION_ID,
+        channelId: CHANNEL_ID,
+        displayName: "All Green Recycling",
+        discoveredAt: "2026-09-05T00:00:00Z",
+      }),
+      channelResource({
+        id: RESOURCE_ID,
+        connectionId: CONNECTION_ID,
+        channelId: CHANNEL_ID,
+        displayName: "All Green Recycling",
+        discoveredAt: "2026-09-01T00:00:00Z",
+      }),
+    ];
+    const m = await mount();
+    try {
+      expect(
+        m.container.querySelectorAll("[aria-label^='Bind ']"),
+      ).toHaveLength(1);
+      expect(m.text).toContain("also visible through second@example.com");
+      expect(m.text).toContain("first@example.com");
+    } finally {
+      m.unmount();
+    }
+  });
+
+  it("🚨 states the consequence BEFORE it writes, and writes nothing when declined", async () => {
+    world.connections = [connection(CONNECTION_ID, "owner@allgreen.com")];
+    world.resources = [
+      channelResource({
+        id: RESOURCE_ID,
+        connectionId: CONNECTION_ID,
+        channelId: CHANNEL_ID,
+        displayName: "All Green Recycling",
+        customUrl: "@allgreen",
+      }),
+    ];
+    const m = await mount();
+    try {
+      const button = m.container.querySelector<HTMLButtonElement>(
+        "[aria-label^='Bind ']",
+      );
+      expect(button).not.toBeNull();
+      await act(async () => {
+        button!.click();
+      });
+      await settle();
+      expect(confirmCalls).toHaveLength(1);
+      const description = String(confirmCalls[0].description ?? "");
+      // What the refresh will READ, on WHOSE account, and what it OVERWRITES.
+      expect(description).toContain("owner@allgreen.com");
+      expect(description).toContain("spending a call");
+      expect(description).toContain("overwrite");
+      expect(description).toContain("read-only");
+      // Declined — the binding writer was never called.
+      expect(writeBrandChannelBinding).not.toHaveBeenCalled();
     } finally {
       m.unmount();
     }
@@ -251,7 +408,7 @@ describe("no channel is bound", () => {
     const m = await mount();
     try {
       expect(m.text).toContain("Connect the account that owns the channel");
-      expect(m.text).not.toContain("Bind ");
+      expect(m.container.querySelector("[aria-label^='Bind ']")).toBeNull();
     } finally {
       m.unmount();
     }
