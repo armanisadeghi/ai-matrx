@@ -552,11 +552,24 @@ function SyncStrip({
     sync,
     elapsedMs,
     onBringUpToDate,
+    rowUnavailable,
+    onRetryRow,
 }: {
     library: LibraryRow | null;
     sync: SyncState;
     elapsedMs: number;
     onBringUpToDate: () => void;
+    /**
+     * D5 (jobs-bar cold-walk-12): true when the most recent read of THIS
+     * Library's row failed (a CORS block, a dropped connection, anything) —
+     * never "we asked and the server said no sync has ever run". This is the
+     * only signal that tells the idle branch below apart from a genuinely
+     * fresh "never brought up to date" answer; without it, a failed read and
+     * an honest empty answer render byte-identical, and the false sentence
+     * sat directly above a metrics block computed moments earlier.
+     */
+    rowUnavailable: boolean;
+    onRetryRow: () => void;
 }): ReactNode {
     const running = sync.phase === "starting" || sync.phase === "listing";
 
@@ -831,6 +844,38 @@ function SyncStrip({
         );
     }
 
+    // 🚨 A FAILED READ IS NEVER THE EMPTY ANSWER (D5). `rowUnavailable` means
+    // the LATEST attempt to read this Library's row did not succeed — the
+    // `library` object on screen, if any, is left over from an earlier read
+    // (or from nothing at all) and its `last_synced_at` cannot be trusted
+    // either way. Printing "This Library has never been brought up to date."
+    // here would be a straight-up guess dressed as a fact — exactly what
+    // happened live when a CORS-blocked `GET .../libraries/{id}` left
+    // `last_synced_at` unpopulated and this branch reported it as an answer
+    // rather than as the unknown it was.
+    if (rowUnavailable) {
+        return (
+            <div className="flex min-h-[52px] flex-col justify-center gap-1 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2">
+                <div className="flex items-start gap-2">
+                    <CircleAlert
+                        className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
+                        aria-hidden="true"
+                    />
+                    <p className="text-sm text-foreground">
+                        We could not check whether this Library has been brought up to
+                        date, so the last-synced line below cannot be trusted right now.
+                    </p>
+                </div>
+                <div className="flex h-8 items-center pl-6">
+                    <Button size="sm" variant="outline" onClick={onRetryRow}>
+                        <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                        Try again
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
     // idle
     return (
         <div className="flex min-h-[52px] items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2">
@@ -868,6 +913,10 @@ export function LibraryMetricsHeader(props: {
     onBringUpToDate: () => void;
     onOpenVideo?: (videoId: string) => void;
     bringUpToDateDisabled?: boolean;
+    /** D5: the most recent Library-ROW read failed — see `SyncStrip`. */
+    rowUnavailable?: boolean;
+    /** Re-run that one row read. Required when `rowUnavailable` can be true. */
+    onRetryRow?: () => void;
 }): ReactNode {
     const { library, metrics, sync, elapsedMs, onBringUpToDate, onOpenVideo } = props;
     const running = sync.phase === "starting" || sync.phase === "listing";
@@ -962,6 +1011,8 @@ export function LibraryMetricsHeader(props: {
                 sync={sync}
                 elapsedMs={elapsedMs}
                 onBringUpToDate={onBringUpToDate}
+                rowUnavailable={props.rowUnavailable === true}
+                onRetryRow={props.onRetryRow ?? (() => {})}
             />
 
             {metricsError && (

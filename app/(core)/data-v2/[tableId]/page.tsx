@@ -22,10 +22,8 @@ import { useOrganizationRequired } from "@/features/organizations/useOrganizatio
 import { getOrganizationMembers } from "@/features/organizations/service";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { createClient } from "@/utils/supabase/client";
-import {
-  UNIFIED_DATA_CAMPAIGN,
-  useUnifiedDataCampaign,
-} from "@/lib/knobs/unifiedDataCampaign";
+import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
+import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 
 export default function UnifiedDataTableRoute({
   params,

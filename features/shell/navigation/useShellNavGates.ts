@@ -36,7 +36,8 @@ import { useMemo } from "react";
 import type { ShellNavGates } from "@/features/shell/constants/nav-data";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { UNIFIED_DATA_CAMPAIGN, useUnifiedDataCampaign } from "@/lib/knobs/unifiedDataCampaign";
+import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
+import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 
 export function useShellNavGates(): ShellNavGates {
   // THE ORGANIZATION ON SCREEN, subscribed — never a one-shot read. A member of

@@ -160,9 +160,21 @@ jest.mock("@/lib/toast", () => ({
   recordToast: { success: jest.fn(), error: jest.fn() },
 }));
 
+// D1 fix-out: `NewRulebookFlow` now also reads `selectShouldPromptForOrganization`
+// via `useOrganizationRequired` (the shared organization gate). This mock's
+// `{...actual}` spread does not carry the module's `default` reducer export
+// through Jest's CJS interop, so `appContext` silently drops out of
+// `combineReducers`'s result and any REAL selector reading `state.appContext`
+// throws — invisible before D1 because `selectOrganizationId` was the only
+// selector this suite exercised and it never touches `state`. Organization is
+// fixed and known here, so "never prompt" is simply true.
 jest.mock("@/lib/redux/slices/appContextSlice", () => {
   const actual = jest.requireActual("@/lib/redux/slices/appContextSlice");
-  return { ...actual, selectOrganizationId: () => ORG_ID };
+  return {
+    ...actual,
+    selectOrganizationId: () => ORG_ID,
+    selectShouldPromptForOrganization: () => false,
+  };
 });
 
 import { NewRulebookFlow } from "../NewRulebookFlow";
