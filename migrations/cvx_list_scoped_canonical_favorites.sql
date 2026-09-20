@@ -1,3 +1,4 @@
+-- retired: its public.cvx_list_scoped body was replaced many times since; the live one comes from cvx_audience_derives_from_the_lane_classifier.sql
 -- Q11: make cvx_list_scoped read the same canonical per-user favorite ledger
 -- that every conversation star writes through public.ues_set.
 --

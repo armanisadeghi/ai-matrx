@@ -20,6 +20,7 @@ import { fetchTopicExperts } from "@/features/crm/service";
 import { parseManifest } from "../resources/manifest";
 import type {
   ManifestExpert,
+  ManifestPageEntities,
   BundleBinding,
   BundleBudget,
   ContextBundle,
@@ -53,9 +54,10 @@ export async function getResourceManifest(
   // and the manifest RPC is a research-schema function. It is two small reads
   // (edges + parties) and only for what a topic actually promoted, so the
   // manifest keeps its "one payload, no bodies" character.
-  const [manifest, experts] = await Promise.all([
+  const [manifest, experts, entities] = await Promise.all([
     supabase.rpc("research_topic_resource_manifest", { p_topic_id: topicId }),
     loadTopicExperts(topicId),
+    loadTopicPageEntities(topicId),
   ]);
   if (manifest.error) {
     // P0002 is the RPC's honest "this topic is not available to you" — RLS hid
@@ -72,7 +74,75 @@ export async function getResourceManifest(
     }
     throw manifest.error;
   }
-  return parseManifest(manifest.data, topicId, experts);
+  return parseManifest(manifest.data, topicId, experts, entities);
+}
+
+/**
+ * The entities every analysed page named, read beside the manifest. A SECOND
+ * read on purpose, like the experts: `rs_source.page_analysis` is a body, and
+ * the manifest RPC carries no bodies. Only rows that HAVE an analysis are
+ * read (a few dozen on a real topic, never the whole source table).
+ */
+async function loadTopicPageEntities(
+  topicId: string,
+): Promise<ManifestPageEntities[]> {
+  const strings = (value: unknown): string[] => {
+    if (!Array.isArray(value)) return [];
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const entry of value) {
+      if (typeof entry !== "string") continue;
+      const text = entry.replace(/\s+/g, " ").trim();
+      const key = text.toLowerCase();
+      if (text && !seen.has(key)) {
+        seen.add(key);
+        out.push(text);
+      }
+    }
+    return out;
+  };
+  try {
+    const { data, error } = await supabase
+      .schema("research")
+      .from("rs_source")
+      .select("id,url,hostname,is_included,page_analysis,final_source_score")
+      .eq("topic_id", topicId)
+      .not("page_analysis", "is", null);
+    if (error) throw error;
+    const rows: ManifestPageEntities[] = [];
+    for (const row of data ?? []) {
+      const analysis = isJsonObject(row.page_analysis)
+        ? row.page_analysis
+        : null;
+      if (!analysis) continue;
+      const mentioned = isJsonObject(analysis.entities_mentioned)
+        ? analysis.entities_mentioned
+        : null;
+      rows.push({
+        sourceId: row.id,
+        url: row.url ?? "",
+        hostname: row.hostname,
+        included: row.is_included ?? true,
+        analysisStatus:
+          typeof analysis.analysis_status === "string"
+            ? analysis.analysis_status
+            : null,
+        pageType:
+          typeof analysis.page_type === "string" ? analysis.page_type : null,
+        finalScore: row.final_source_score,
+        products: strings(mentioned?.products),
+        organizations: strings(mentioned?.organizations),
+        locations: strings(mentioned?.locations),
+      });
+    }
+    return rows;
+  } catch (e) {
+    console.error(
+      "[research] could not load the pages' named entities for the resource manifest — the Named offerings resource will render empty:",
+      e,
+    );
+    return [];
+  }
 }
 
 /**

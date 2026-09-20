@@ -1,3 +1,4 @@
+-- retired: it defines the PRE-lane public.cvx_audience (plus cvx_list_scoped and cvx_list_facets); all three were replaced by cvx_audience_derives_from_the_lane_classifier.sql, where cvx_audience DERIVES from chat.conversation_lane instead of restating the rules
 -- Q12: the three buckets a person actually thinks in, as ONE derived axis.
 --
 -- Arman's ruling (2026-09-07): the top of /work/conversations splits into

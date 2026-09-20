@@ -309,6 +309,16 @@ export function rollUpLibraries(
       lastAdded,
       yield: yieldSentence,
       yieldCount,
+      // 🚨 DELIBERATELY BARE, AND NOT AN OVERSIGHT (D343, 2026-09-20). This
+      // row knows its own adapter and lane, and `/libraries?q=…` is the
+      // obvious deep link — but `GET /media/libraries` in aidream declares
+      // only `limit` and `offset`, so `q`, `visibility` and `adapter` are all
+      // dropped by FastAPI and answered 200 with the whole unfiltered list.
+      // A parameter the destination cannot honour is a worse lie than no
+      // parameter: the URL would claim a narrowing the screen does not do.
+      // The day the server half lands, this becomes the filtered link and
+      // `createLibraryListConfig` takes `urlState: true`. See FOUND_DEFECTS
+      // D343 for the exact server change.
       href: "/libraries",
     };
   });

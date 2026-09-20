@@ -1,3 +1,4 @@
+-- retired: its public.cvx_audience and public.cvx_list_facets bodies were replaced by cvx_audience_derives_from_the_lane_classifier.sql, which derives the audience from chat.conversation_lane
 -- External chips break down by TOOL again (2026-09-18).
 --
 -- Arman's ruling (2026-09-18): every conversation from an outside coding tool is

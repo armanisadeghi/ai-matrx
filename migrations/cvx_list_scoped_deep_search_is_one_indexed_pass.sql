@@ -1,3 +1,4 @@
+-- retired: its public.cvx_list_scoped body was replaced since; the live one comes from cvx_audience_derives_from_the_lane_classifier.sql
 -- cvx_list_scoped_deep_search_is_one_indexed_pass — 2026-09-18
 -- based-on: public.cvx_list_scoped(text, uuid, text, boolean, text, text, boolean, text, jsonb, integer, integer) fffcd8458bf38fcefbe7a946dfab97d2b8f18b1fdb76072b096583b87127892b
 --
