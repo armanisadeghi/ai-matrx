@@ -45,6 +45,7 @@ import {
     FormBuilder,
     FormsPanel,
     HistoryPanel,
+    laneFor,
     NotifyRuleEditor,
     RecordsMount,
     ShareControl,
@@ -183,7 +184,16 @@ function Bench({
     // The working table: whichever the person picked, else the first one the
     // store returned, so every section below has something real to act on the
     // moment there IS a table. Never a fabricated id.
-    const rows: Table[] = useMemo(() => tables.data ?? [], [tables.data]);
+    // THE PERSON'S OWN TABLES, never the package's housekeeping ones. The
+    // first walk defaulted the whole page to a table called "Dashboards" that
+    // `DashboardCanvas` had made for itself two minutes earlier, and then said
+    // truthfully that it had no records. A table in the `app` lane is the
+    // product's own bookkeeping; it is not what "the table these sections work
+    // on" means.
+    const rows: Table[] = useMemo(
+        () => (tables.data ?? []).filter((t) => laneFor(t) !== "app" && laneFor(t) !== "system"),
+        [tables.data],
+    );
     const workingTable = useMemo(
         () => rows.find((t) => t.id === workingTableId) ?? rows[0] ?? null,
         [rows, workingTableId],
@@ -286,27 +296,37 @@ function Bench({
                 <NeedsTable table={workingTable}>
                     {(table) => (
                         <>
-                            <TryIt hint={`writes a real, publishable form on ${tableName(table)}`}>
-                                <div className="space-y-3 rounded-md border border-border p-3">
-                                    <FormBuilder tableId={table.id} />
+                            <TryIt hint={`the forms already published on ${tableName(table)}`}>
+                                <div className="rounded-md border border-border p-3">
                                     <FormsPanel tableId={table.id} />
                                 </div>
                             </TryIt>
-                            <Aside>
-                                Publish a form and the panel gives you its public link; open it in a private
-                                window, answer it, and the answer is a row in this table with the form named in
-                                its provenance.
-                            </Aside>
+                            <WritesItsOwnTable
+                                what="the form builder"
+                                whatHappens={
+                                    "It keeps your forms in a table of its own called Forms, and it makes that " +
+                                    "table the first time it runs — in this organization, under \"Kept by the app\"."
+                                }
+                                measured={
+                                    "At the screens version this deployment serves it cannot finish making that " +
+                                    "table: it stores the table's own columns through the wrong door and the store " +
+                                    "refuses them. You will see a red box saying the value was not accepted and to " +
+                                    "change it — you changed nothing, and there is nothing for you to change."
+                                }
+                            >
+                                <FormBuilder tableId={table.id} />
+                            </WritesItsOwnTable>
                             <NotBuiltYet
                                 today={
-                                    "Building a form by hand, publishing it, answering it as a stranger and seeing the " +
-                                    "responses all work today, and so does the whole thing written in one shot by the " +
-                                    "agent (the records tool's form_propose, proven end to end on 20 September)."
+                                    "A form written by the agent works end to end: it makes the table, the questions " +
+                                    "and the published link in one go, a stranger answers it with no account, the " +
+                                    "answer lands as a row here, and the person who asked for it is notified."
                                 }
                                 waitingFor={
-                                    "the one-sentence path from THIS page. Saying \"make me an intake form for new patients\" " +
-                                    "goes through the agent, and this page has no chat box of its own on purpose — use the " +
-                                    "agent in section 7 and the form appears in the panel above."
+                                    "two things. The builder above needs the screens package fix that is in flight " +
+                                    "(it writes a column through the record door instead of the column door). And the " +
+                                    "one-sentence path is the agent — this page has no chat box of its own on purpose, " +
+                                    "so ask the agent in section 7 and the form appears in the panel above."
                                 }
                             />
                         </>
@@ -371,19 +391,29 @@ function Bench({
                 <NeedsTable table={workingTable}>
                     {(table) => (
                         <>
-                            <TryIt hint={`charts the real records of ${tableName(table)}`}>
-                                <div className="rounded-md border border-border p-3">
-                                    <DashboardCanvas tableId={table.id} />
-                                </div>
-                            </TryIt>
+                            <WritesItsOwnTable
+                                what="the dashboard canvas"
+                                whatHappens={
+                                    "It keeps your charts in a table of its own called Dashboards, and it makes " +
+                                    "that table the first time it runs — in this organization, under \"Kept by the app\"."
+                                }
+                                measured={
+                                    "At the screens version this deployment serves it cannot finish making that " +
+                                    "table, for the same reason as the form builder above, and it shows the same " +
+                                    "red box. The grouping-and-totalling door underneath it IS live."
+                                }
+                            >
+                                <DashboardCanvas tableId={table.id} />
+                            </WritesItsOwnTable>
                             <NotBuiltYet
                                 today={
-                                    "The grouping-and-totalling door is live on the database and the chart blocks " +
-                                    "above are the real ones, so a chart you build here reads real records."
+                                    "The door that groups and totals real records is live and a browser may call " +
+                                    "it, so the numbers a chart would draw are real. Nothing else here is."
                                 }
                                 waitingFor={
-                                    "a home of their own. There is no dashboard route yet — a dashboard lives on the " +
-                                    "table it is about, and cannot be put on a page beside charts from other tables."
+                                    "the same screens fix as the form builder, and then a home of their own — there " +
+                                    "is no dashboard page, so a dashboard lives on the one table it is about and " +
+                                    "cannot sit beside charts from another."
                                 }
                             />
                         </>
@@ -435,13 +465,15 @@ function Bench({
                             </TryIt>
                             <NotBuiltYet
                                 today={
-                                    "Writing a template and rendering it for a record both work through the store's " +
-                                    "own doors, and a rendered document is frozen so a signature can seal it."
+                                    "Nothing you can reach from a browser. The doors that save a template, render " +
+                                    "one and seal it with a signature are all live on the database, but the panel " +
+                                    "above lists your templates by reading a view the browser is refused — it says " +
+                                    "so above, in its own words, and it is not about you or this table."
                                 }
                                 waitingFor={
-                                    "the place a finished document goes. There is no document route, no letterhead, " +
-                                    "and nothing yet joins a render to the file store, so what you make here stays " +
-                                    "inside this panel."
+                                    "that one read being opened to a signed-in person, and then a home: there is no " +
+                                    "documents page, no letterhead, and nothing yet joins a finished document to " +
+                                    "your files."
                                 }
                             />
                         </>
@@ -470,13 +502,14 @@ function Bench({
                             </Aside>
                             <NotBuiltYet
                                 today={
-                                    "Switching a notification ON works, it fires, and it arrives in the bell."
+                                    "A notification an agent or a published form switches on for you does fire, and " +
+                                    "it arrives in the bell at the top of the window. The panel above cannot show " +
+                                    "you the list: it reads the store's subscription door and the browser is " +
+                                    "refused, which it says above in its own words."
                                 }
                                 waitingFor={
-                                    "@ai-matrx/records-ui 0.18.0. The panel that lists what you are being told about " +
-                                    "and lets you switch one OFF is written and on the main branch, and this " +
-                                    "deployment resolves " +
-                                    `${recordsUiPkg.version}, so it is not here yet.`
+                                    "two things. That read being opened to a signed-in person. And, to switch one " +
+                                    `OFF, the screens package at 0.18.0 — this deployment serves ${recordsUiPkg.version}.`
                                 }
                             />
                         </>
@@ -523,8 +556,13 @@ function StatusStrip({
         let cancelled = false;
         setWaiting(undefined);
         setWaitingProblem(null);
-        void recordsDataSource(createClient())
-            .rpc("work_inbox", { p_organization_id: organizationId, p_limit: 200 }, { schema: "custom" })
+        void Promise.resolve(
+            recordsDataSource(createClient()).rpc(
+                "work_inbox",
+                { p_organization_id: organizationId, p_limit: 200 },
+                { schema: "custom" },
+            ),
+        )
             .then(({ data, error }) => {
                 if (cancelled) return;
                 if (error) {
@@ -532,6 +570,15 @@ function StatusStrip({
                     return;
                 }
                 setWaiting(Array.isArray(data) ? data.length : 0);
+            })
+            // A THROWN read is still a read that failed. Without this the strip
+            // would sit on "Reading…" for ever, which is the one thing a status
+            // line may never do.
+            .catch((error: unknown) => {
+                if (cancelled) return;
+                setWaitingProblem(
+                    `Could not read your queue — ${error instanceof Error ? error.message : String(error)}`,
+                );
             });
         return () => {
             cancelled = true;
@@ -715,6 +762,49 @@ function WorkingTableBar({
                     <ExternalLink className="ml-1 h-3.5 w-3.5" aria-hidden />
                 </Button>
             ) : null}
+        </div>
+    );
+}
+
+/**
+ * A LIVE PANEL THAT WRITES SOMETHING THE MOMENT IT MOUNTS.
+ *
+ * Three of the screens in this package keep their own bookkeeping in a table of
+ * their own and MAKE that table the first time they run. Opening a section to
+ * read about it should not put a table in somebody's organization, and at the
+ * version this deployment serves those tables come out half-made — so the panel
+ * sits behind its own button, and the button says what pressing it does before
+ * it does it (the destructive-and-expensive-click law).
+ */
+function WritesItsOwnTable({
+    what,
+    whatHappens,
+    measured,
+    children,
+}: {
+    /** "the form builder" — used in the button's own sentence. */
+    what: string;
+    /** What mounting it writes, in plain words. */
+    whatHappens: string;
+    /** What we measured it actually doing at THIS version. Never a guess. */
+    measured: string;
+    children: ReactNode;
+}) {
+    const [opened, setOpened] = useState(false);
+    if (opened) {
+        return (
+            <TryIt hint="this panel is live and is writing into this organization">
+                <div className="rounded-md border border-border p-3">{children}</div>
+            </TryIt>
+        );
+    }
+    return (
+        <div className="space-y-2 rounded-md border border-amber-600/40 bg-amber-500/5 p-3 dark:border-amber-400/40">
+            <p className="text-sm leading-relaxed text-foreground/90">{whatHappens}</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">{measured}</p>
+            <Button variant="outline" size="sm" onClick={() => setOpened(true)}>
+                Open {what} anyway
+            </Button>
         </div>
     );
 }
