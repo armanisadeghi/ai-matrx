@@ -4,10 +4,22 @@
  * The saved Libraries list — the bottom half of the front door.
  *
  * Columns declare `sortable: false` and `filter: false` where the server
- * publishes no ordering or filtering for them (the contract's
- * `GET /media/libraries` takes `visibility`, `adapter` and `q` only). The
- * column policy's escape hatch exists for exactly this: an explicit refusal is
- * honest, a client-side sort over the page in hand is a lie.
+ * publishes no ordering or filtering for them. The column policy's escape hatch
+ * exists for exactly this: an explicit refusal is honest, a client-side sort
+ * over the page in hand is a lie.
+ *
+ * 🚨 D343 — THE CONTRACT PUBLISHES THREE PARAMETERS THE LIVE SERVER DOES NOT
+ * TAKE. `API-CONTRACT.md` §3 says `GET /media/libraries` accepts `visibility`,
+ * `adapter` and `q`; `aidream/api/routers/media_catalog.py`'s `list_libraries`
+ * declares only `limit` and `offset` (read on `origin/main`, 2026-09-20), and
+ * FastAPI drops an undeclared parameter silently — so all three come back 200
+ * with the whole unfiltered list. That is why the search box does not narrow,
+ * why the four lane tabs serve the same rows, and why D10's per-lane counts are
+ * four identical totals. It is the surviving sibling of the class aidream
+ * already closed on `GET /media/libraries/{id}/videos`. This surface therefore
+ * stays OFF `urlState` and the Acquisition Console still links bare
+ * `/libraries`: a `?q=` the destination cannot honour is a worse lie than no
+ * parameter. Both land the day the server half does — see FOUND_DEFECTS D343.
  */
 
 import { useCallback } from "react";
