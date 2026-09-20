@@ -1,4 +1,4 @@
-// The compact conversation-history header is ONE row.
+// The compact conversation-history header shares ONE row while the names fit.
 //
 // The lane toggles ARE the filter statement, so they belong beside the refresh
 // and source-tree controls, not on a row of their own under a "FILTERED CHATS"
@@ -6,10 +6,16 @@
 // second row cost ~28px of list height, and that rail is already squeezed by
 // the admin menu below it.
 //
+// Measured live on the /chat rail (195px): sharing the row squeezed the five
+// names to 109px and clipped every one of them, so the row now WRAPS — the
+// toggles carry a min width that holds all five labels and drop to their own
+// line below it. Verified in the browser at 195/240/280/360/420px: nothing
+// clips at any width, and 280px and up share one row.
+//
 // Source-level guard, matching this repo's idiom (no @testing-library/react):
 // the header is JSX structure, so the proof is that the toggles and the
-// controls live inside the SAME container element and that the standalone
-// toggles row under the compact header is gone.
+// controls live inside the SAME container element, that it can wrap, that the
+// toggles keep their min width, and that the standalone toggles row is gone.
 //
 // Proven RED against the pre-change file (the version with
 // `<div className="shrink-0 px-2 pb-1"><ConversationLaneToggles /></div>`
@@ -35,6 +41,8 @@ function compactHeaderBlock(): string {
 describe("compact conversation-history header", () => {
   it("keeps the lane toggles in the same row as the refresh and source-tree controls", () => {
     const block = compactHeaderBlock();
+    // It may wrap, but a narrow rail must never clip the five names.
+    expect(block).toContain("flex-wrap");
     expect(block).toContain("<ConversationLaneToggles");
     expect(block).toContain("<ConversationSourceFilterTree");
     expect(block).toMatch(/RefreshCwTapButton/);
@@ -46,7 +54,7 @@ describe("compact conversation-history header", () => {
     // the row (it carries the flex sizing), never a wrapper div of its own.
     const togglesRow = /<div className="shrink-0 px-2 pb-1">\s*<ConversationLaneToggles \/>/;
     expect(togglesRow.test(block)).toBe(false);
-    expect(block).toContain('<ConversationLaneToggles className="min-w-0 flex-1" />');
+    expect(block).toContain('<ConversationLaneToggles className="min-w-[168px] flex-1" />');
   });
 
   it("lets the label yield to the toggles on a narrow rail", () => {

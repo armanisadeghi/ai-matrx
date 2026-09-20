@@ -888,17 +888,22 @@ const ConsumerView: React.FC<
     >
       {headerSlot}
 
-      {/* ONE row: the lane toggles ARE the filter statement, so they sit beside
-          the refresh and source-tree controls instead of costing a second row.
-          The label only earns its space when the rail is wide enough for it —
-          on a ~260px chat sidebar it yields to the toggles (a container query,
-          so it answers to THIS rail, never the viewport). */}
+      {/* The lane toggles ARE the filter statement, so they share the row with
+          the refresh and source-tree controls and save a row of list height —
+          but only while the five names still FIT. Measured live on the /chat
+          rail (195px): sharing squeezed the group to 109px and clipped every
+          label, which is worse than the row it saved. So the row WRAPS: the
+          toggles carry a min width that holds all five names at their smallest
+          legible size, and below that they drop to their own line at full
+          width. The label yields first, since it only repeats what the sidebar
+          already is. Both are container queries — they answer to THIS rail,
+          never the viewport, so the agent-run window keeps its label. */}
       {surfaceId && (
-        <div className="@container/histhead flex shrink-0 items-center gap-1.5 px-2 pt-2 pb-1">
+        <div className="@container/histhead flex shrink-0 flex-wrap items-center gap-1.5 px-2 pt-2 pb-1">
           <span className="hidden shrink-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70 @min-[360px]/histhead:block">
             {historyLabel}
           </span>
-          <ConversationLaneToggles className="min-w-0 flex-1" />
+          <ConversationLaneToggles className="min-w-[168px] flex-1" />
           <div className="flex shrink-0 items-center gap-1">
             {status === "loading" ? (
               <LoadingTapButton
