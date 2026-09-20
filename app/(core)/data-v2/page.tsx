@@ -16,7 +16,7 @@
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { RecordsMount, TablesHome, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { ActionInbox, RecordsMount, TablesHome, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import PageHeader from "@/features/shell/components/header/PageHeader";
@@ -79,6 +79,15 @@ export default function UnifiedDataPage() {
             }}
             host={{ Link, density: "condensed", members, share: recordStoreShare }}
           >
+            {/* WHAT IS WAITING ON THIS PERSON, above the tables — one inbox for
+                what they were assigned, what needs their approval and what an
+                agent has proposed (PRODUCTS.md row 6). It is the store's own
+                queue (`custom.work_inbox`), so an approval raised anywhere in
+                the platform arrives here. */}
+            <ActionInbox
+              className="mb-4 max-h-64"
+              onOpenRecord={(recordId, tableId) => router.push(`/data-v2/${tableId}?record=${recordId}`)}
+            />
             <TablesHome onOpenTable={(tableId) => router.push(`/data-v2/${tableId}`)} />
           </RecordsMount>
         )}

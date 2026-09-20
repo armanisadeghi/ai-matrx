@@ -188,6 +188,22 @@ export function judge(
         // name instead — a file that does not end `.red.test.ts(x)` cannot claim the
         // word, so "red_twin" can never be used to walk served code past the
         // `runtime` rule above.
+        // DOOR-GATED code is served to people with NO ACCOUNT, so it cannot call
+        // a switch that needs a person and an organization to resolve. The switch
+        // is read one layer down, inside the door, for the organization the
+        // subject belongs to. The kind is held to its name the way `red_twin` is:
+        // the reason must NAME the door that reads it, so the word can never
+        // become "this code reads no switch at all".
+        if (entry.kind === "door_gated" && !/custom\.[a-z_]+/.test(entry.why)) {
+            violations.push({
+                file: entry.file,
+                message:
+                    `${entry.id}: registered "door_gated" but its reason names no door. ` +
+                    `Say which custom.* door reads custom/system_enabled for this code — ` +
+                    `that sentence is what keeps this kind from becoming a way to ship ` +
+                    `code that reads no switch anywhere.`,
+            });
+        }
         if (entry.kind === "red_twin" && !/\.red\.test\.tsx?$/.test(entry.file)) {
             violations.push({
                 file: entry.file,
@@ -198,7 +214,7 @@ export function judge(
                     `runtime code.`,
             });
         }
-        if (entry.kind !== "runtime" && entry.kind !== "red_twin" && gated) {
+        if (entry.kind !== "runtime" && entry.kind !== "red_twin" && entry.kind !== "door_gated" && gated) {
             violations.push({
                 file: entry.file,
                 message:

@@ -9,10 +9,5 @@ export interface Notification {
     isRead?: boolean;
 }
 
-export interface NotificationDropdownProps {
-    notifications: Notification[];
-    onMarkAsRead?: (id: string) => void;
-    onMarkAllAsRead?: () => void;
-    onClearAll?: () => void;
-    onNotificationClick?: (notification: Notification) => void;
-}
+// `NotificationDropdownProps` is gone: the bell reads its own data through
+// `features/notifications/` and is no longer fed an array by the shell.
