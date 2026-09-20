@@ -221,11 +221,27 @@ begin
   perform set_config('role', 'authenticated', true);
   perform custom.record_update(v_org, v_red, '{"hex":"#ff0000"}'::jsonb);
 
-  -- NOTHING MIGRATED. Both Paints still point at the SAME Red and Blue, by id.
-  v_txt := (custom.read_record(v_org, v_p1, true) ->> 'shade');
-  if v_txt <> v_red::text then raise exception 'T4: the barn door now points at % and Red is %', v_txt, v_red; end if;
-  v_txt := (custom.read_record(v_org, v_p2, true) ->> 'shade');
-  if v_txt <> v_blue::text then raise exception 'T4 second input: the sky panel now points at %, and Blue is %', v_txt, v_blue; end if;
+  -- NOTHING MIGRATED. Both Paints still point at the SAME Red and Blue.
+  -- UPDATED 2026-09-20 by lane CHOICE-VALUE. These two clauses used to compare the read door's
+  -- answer to the option RECORD'S ID, because that was the stored form when this suite was
+  -- written. The seventh independent pass failed T8 on exactly that ("the record stores the word
+  -- the person typed as an internal id"), so a cell now holds the option's own stable key and
+  -- every door resolves it to the label. What T4 is ABOUT is unchanged and is what is asserted:
+  -- the same option, not a migrated copy - checked through the read door's `_choices` block,
+  -- which names the option id behind the word.
+  v_j := custom.read_record(v_org, v_p1, true);
+  if (v_j -> '_choices' -> 'shade' ->> 'id') is distinct from v_red::text then
+    raise exception 'T4: the barn door now points at % and Red is %',
+      coalesce(v_j -> '_choices' -> 'shade' ->> 'id', v_j ->> 'shade'), v_red;
+  end if;
+  if (v_j ->> 'shade') is distinct from 'Red' then
+    raise exception 'T4: the barn door''s shade reads "%" and a person picked Red', v_j ->> 'shade';
+  end if;
+  v_j := custom.read_record(v_org, v_p2, true);
+  if (v_j -> '_choices' -> 'shade' ->> 'id') is distinct from v_blue::text then
+    raise exception 'T4 second input: the sky panel now points at %, and Blue is %',
+      coalesce(v_j -> '_choices' -> 'shade' ->> 'id', v_j ->> 'shade'), v_blue;
+  end if;
   v_txt := (custom.read_record(v_org, v_color, true) ->> 'display');
   if v_txt <> 'page' then raise exception 'T4: Color still shows as a %', v_txt; end if;
   v_txt := (custom.read_record(v_org, v_red, true) ->> 'hex');
@@ -467,7 +483,12 @@ begin
     raise exception 'REC-51 options: a Paint took a Paint as its Shade';
   exception when check_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'Shade was given a choice that is not one of its choices' then
+    -- UPDATED 2026-09-20 by lane CHOICE-VALUE. The refusal moved one layer earlier and got
+    -- better: `custom._resolve_choice_words` now catches a value that names no choice BEFORE the
+    -- validator sees it, names the thing that was given, and hints with the choices themselves.
+    -- The clause REC-51 is about — a Paint cannot be a Shade — is unchanged and still asserted.
+    if v_msg not like 'Shade does not have a choice called %'
+       and v_msg <> 'Shade was given a choice that is not one of its choices' then
       raise exception 'REC-51 options: the refusal said "%"', v_msg;
     end if;
   end;
