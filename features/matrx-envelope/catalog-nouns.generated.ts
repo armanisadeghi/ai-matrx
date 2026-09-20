@@ -653,6 +653,66 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Working Documents",
   "family": "Conversations"
  },
+ "anon_form": {
+  "label": "Public form",
+  "family": "Custom Data"
+ },
+ "anon_hit": {
+  "label": "Anonymous rate window",
+  "family": "Custom Data"
+ },
+ "anon_inbound": {
+  "label": "Inbound address",
+  "family": "Custom Data"
+ },
+ "anon_replay": {
+  "label": "Offline capture ledger",
+  "family": "Custom Data"
+ },
+ "anon_submission": {
+  "label": "Quarantined submission",
+  "family": "Custom Data"
+ },
+ "anon_token": {
+  "label": "Embed token",
+  "family": "Custom Data"
+ },
+ "doc_render": {
+  "label": "Rendered Document",
+  "family": "Custom Data"
+ },
+ "doc_signature": {
+  "label": "Document Signature",
+  "family": "Custom Data"
+ },
+ "external_link": {
+  "label": "External Link",
+  "family": "Custom Data"
+ },
+ "external_source": {
+  "label": "External Source",
+  "family": "Custom Data"
+ },
+ "io_comment": {
+  "label": "Record comment",
+  "family": "Custom Data"
+ },
+ "io_import": {
+  "label": "Import run",
+  "family": "Custom Data"
+ },
+ "io_outbox": {
+  "label": "Record change outbox",
+  "family": "Custom Data"
+ },
+ "merge_field_provenance": {
+  "label": "Merge Field Provenance",
+  "family": "Custom Data"
+ },
+ "record": {
+  "label": "Record",
+  "family": "Custom Data"
+ },
  "rulebook": {
   "label": "Rulebook",
   "family": "Knowledge"
@@ -917,6 +977,18 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Keyword Topic Assignment",
   "family": "seo"
  },
+ "seo_map_facet": {
+  "label": "Topical map facet",
+  "family": "seo"
+ },
+ "seo_map_facet_value": {
+  "label": "Topical map facet value",
+  "family": "seo"
+ },
+ "seo_map_topic": {
+  "label": "Topical map topic",
+  "family": "seo"
+ },
  "seo_rank_target": {
   "label": "SEO Rank Target",
   "family": "seo"
@@ -933,8 +1005,48 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "SEO Topic",
   "family": "seo"
  },
+ "seo_topical_map": {
+  "label": "Topical map",
+  "family": "seo"
+ },
+ "access_delta_probe": {
+  "label": "Access Delta Probe",
+  "family": "Other"
+ },
+ "access_delta_run": {
+  "label": "Access Delta Run",
+  "family": "Other"
+ },
+ "account_addon": {
+  "label": "Account Addon",
+  "family": "Other"
+ },
+ "acquisition_block": {
+  "label": "Acquisition Block",
+  "family": "Other"
+ },
  "activity": {
   "label": "Activity Log Entry",
+  "family": "Other"
+ },
+ "admin_audit_log": {
+  "label": "Admin audit log",
+  "family": "Other"
+ },
+ "admin_email_log": {
+  "label": "Admin email log",
+  "family": "Other"
+ },
+ "admin_markdown_sample": {
+  "label": "Admin markdown sample",
+  "family": "Other"
+ },
+ "admin_user": {
+  "label": "Platform admin",
+  "family": "Other"
+ },
+ "admission_config": {
+  "label": "Admission Config",
   "family": "Other"
  },
  "agent_card": {
@@ -959,6 +1071,14 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "agent_run_stage": {
   "label": "Agent Run Stage",
+  "family": "Other"
+ },
+ "agent_schedule": {
+  "label": "Agent Schedule",
+  "family": "Other"
+ },
+ "agent_schedule_claim": {
+  "label": "Agent Schedule Claim",
   "family": "Other"
  },
  "ai_api": {
@@ -989,12 +1109,44 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "AI Setting",
   "family": "Other"
  },
+ "analysis_result": {
+  "label": "Analysis Result",
+  "family": "Other"
+ },
+ "anon_function_birth_grandfather": {
+  "label": "Anon Function Birth Grandfather",
+  "family": "Other"
+ },
+ "api_field_warning": {
+  "label": "API field warning",
+  "family": "Other"
+ },
+ "api_request_log": {
+  "label": "API request log",
+  "family": "Other"
+ },
+ "app_config": {
+  "label": "App config",
+  "family": "Other"
+ },
+ "app_config_history": {
+  "label": "App Config History",
+  "family": "Other"
+ },
  "app_instance": {
   "label": "App Instance",
   "family": "Other"
  },
  "app_log": {
   "label": "App Log",
+  "family": "Other"
+ },
+ "app_log_muted_pattern": {
+  "label": "Muted log pattern",
+  "family": "Other"
+ },
+ "app_log_norm_exception": {
+  "label": "Log normalisation exception",
   "family": "Other"
  },
  "app_setting": {
@@ -1025,6 +1177,70 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Assessment Result",
   "family": "Other"
  },
+ "assignment_session": {
+  "label": "Assignment session",
+  "family": "Other"
+ },
+ "assist_producer_policy": {
+  "label": "Assist producer policy",
+  "family": "Other"
+ },
+ "assist_producer_policy_history": {
+  "label": "Assist Producer Policy History",
+  "family": "Other"
+ },
+ "association_type": {
+  "label": "Association type",
+  "family": "Other"
+ },
+ "assurance_level": {
+  "label": "Assurance level",
+  "family": "Other"
+ },
+ "attempt": {
+  "label": "Attempt",
+  "family": "Other"
+ },
+ "audit_broken_functions": {
+  "label": "Broken functions",
+  "family": "Other"
+ },
+ "audit_canonical_findings": {
+  "label": "Canonical findings",
+  "family": "Other"
+ },
+ "audit_exemption": {
+  "label": "Audit exemption",
+  "family": "Other"
+ },
+ "audit_function_deps": {
+  "label": "Function dependencies",
+  "family": "Other"
+ },
+ "audit_function_runtime_probe": {
+  "label": "Function runtime probe",
+  "family": "Other"
+ },
+ "audit_m2m_candidates": {
+  "label": "M2M candidates",
+  "family": "Other"
+ },
+ "audit_refresh_log": {
+  "label": "Audit refresh log",
+  "family": "Other"
+ },
+ "audit_stale_registry": {
+  "label": "Stale registry",
+  "family": "Other"
+ },
+ "audit_unregistered_candidates": {
+  "label": "Unregistered candidates",
+  "family": "Other"
+ },
+ "base_entity_template": {
+  "label": "Base entity template",
+  "family": "Other"
+ },
  "batch_cost_event": {
   "label": "Batch Cost Event",
   "family": "Other"
@@ -1035,6 +1251,58 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "batch_work_item": {
   "label": "Batch Work Item",
+  "family": "Other"
+ },
+ "billing_capability": {
+  "label": "Billing capability",
+  "family": "Other"
+ },
+ "billing_capability_limit": {
+  "label": "Billing capability limit",
+  "family": "Other"
+ },
+ "billing_connect_account": {
+  "label": "Billing connect account",
+  "family": "Other"
+ },
+ "billing_customer": {
+  "label": "Billing customer",
+  "family": "Other"
+ },
+ "billing_plan": {
+  "label": "Billing plan",
+  "family": "Other"
+ },
+ "billing_plan_limit": {
+  "label": "Billing plan limit",
+  "family": "Other"
+ },
+ "billing_price": {
+  "label": "Billing price",
+  "family": "Other"
+ },
+ "billing_product": {
+  "label": "Billing product",
+  "family": "Other"
+ },
+ "billing_spend_guardrail": {
+  "label": "Spend Guardrail",
+  "family": "Other"
+ },
+ "billing_stripe_event": {
+  "label": "Stripe webhook event",
+  "family": "Other"
+ },
+ "billing_subscription": {
+  "label": "Billing subscription",
+  "family": "Other"
+ },
+ "billing_usage_ledger": {
+  "label": "Usage ledger",
+  "family": "Other"
+ },
+ "billing_user_plan": {
+  "label": "User plan",
   "family": "Other"
  },
  "browser_account_binding": {
@@ -1093,6 +1361,14 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Browser Stream Ticket",
   "family": "Other"
  },
+ "build_lock": {
+  "label": "Build Lock",
+  "family": "Other"
+ },
+ "calendar_event": {
+  "label": "Calendar event",
+  "family": "Other"
+ },
  "canvas_comment": {
   "label": "Canvas Comment",
   "family": "Other"
@@ -1121,8 +1397,56 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Canvas View",
   "family": "Other"
  },
+ "capture_window": {
+  "label": "Capture Window",
+  "family": "Other"
+ },
+ "carrying_rule": {
+  "label": "Carrying Rule",
+  "family": "Other"
+ },
+ "catalog_entries_history": {
+  "label": "Catalog Entries History",
+  "family": "Other"
+ },
+ "catalog_entry": {
+  "label": "Catalog entry",
+  "family": "Other"
+ },
  "category": {
   "label": "Category",
+  "family": "Other"
+ },
+ "change_type_default": {
+  "label": "Change type default",
+  "family": "Other"
+ },
+ "chat_user_usage_summary": {
+  "label": "Chat usage summary",
+  "family": "Other"
+ },
+ "citations": {
+  "label": "Citations",
+  "family": "Other"
+ },
+ "class_purchase": {
+  "label": "Class Purchase",
+  "family": "Other"
+ },
+ "classifier_revision_ledger": {
+  "label": "Classifier Revision Ledger",
+  "family": "Other"
+ },
+ "client_callable_door": {
+  "label": "Client Callable Door",
+  "family": "Other"
+ },
+ "client_callable_door_retirement": {
+  "label": "Client Callable Door Retirement",
+  "family": "Other"
+ },
+ "client_excluded_column_unregistered": {
+  "label": "Client Excluded Column Unregistered",
   "family": "Other"
  },
  "cmp_entry": {
@@ -1191,6 +1515,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "commerce_asset_unknown": {
   "label": "Asset Unknown",
+  "family": "Other"
+ },
+ "commerce_certified_printer": {
+  "label": "Certified Printer",
   "family": "Other"
  },
  "commerce_cloud_sync_connection": {
@@ -1369,6 +1697,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Contact Submission",
   "family": "Other"
  },
+ "content_certification": {
+  "label": "Content certification",
+  "family": "Other"
+ },
  "content_ir_kind": {
   "label": "Content-IR Kind",
   "family": "Other"
@@ -1401,6 +1733,14 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Kind Surface",
   "family": "Other"
  },
+ "content_lane": {
+  "label": "Content Lane",
+  "family": "Other"
+ },
+ "context_access_log": {
+  "label": "Context access log",
+  "family": "Other"
+ },
  "context_item": {
   "label": "Context Item",
   "family": "Other"
@@ -1409,8 +1749,32 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Context Item Suggestion",
   "family": "Other"
  },
+ "context_item_value": {
+  "label": "Record Value",
+  "family": "Other"
+ },
+ "context_value_refs": {
+  "label": "Context Value Refs",
+  "family": "Other"
+ },
  "conversation_value": {
   "label": "Conversation Value",
+  "family": "Other"
+ },
+ "courts": {
+  "label": "Courts",
+  "family": "Other"
+ },
+ "credential_attachment": {
+  "label": "Credential attachment",
+  "family": "Other"
+ },
+ "credential_item": {
+  "label": "Credential item",
+  "family": "Other"
+ },
+ "credential_mutation_receipt": {
+  "label": "Credential Mutation Receipt",
   "family": "Other"
  },
  "crm_address": {
@@ -1505,16 +1869,60 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Custom Record",
   "family": "Other"
  },
+ "data_rights_event": {
+  "label": "Data rights event",
+  "family": "Other"
+ },
  "data_store": {
   "label": "Data Store",
+  "family": "Other"
+ },
+ "data_store_members": {
+  "label": "Data Store Members",
   "family": "Other"
  },
  "dataset": {
   "label": "Dataset",
   "family": "Other"
  },
+ "ddl_guard_log": {
+  "label": "DDL guard log",
+  "family": "Other"
+ },
+ "deck_suggestion": {
+  "label": "Deck Suggestion",
+  "family": "Other"
+ },
+ "definer_class_exemption": {
+  "label": "Definer Class Exemption",
+  "family": "Other"
+ },
+ "definer_client_grant_grandfather": {
+  "label": "Definer Client Grant Grandfather",
+  "family": "Other"
+ },
+ "definer_grant_baseline": {
+  "label": "Definer Grant Baseline",
+  "family": "Other"
+ },
+ "deprecated_relation": {
+  "label": "Deprecated relation",
+  "family": "Other"
+ },
  "derive_run": {
   "label": "Derive Run",
+  "family": "Other"
+ },
+ "dev_login_audit": {
+  "label": "Dev login audit",
+  "family": "Other"
+ },
+ "dict_entry": {
+  "label": "Dictionary entry",
+  "family": "Other"
+ },
+ "dict_provider_publication": {
+  "label": "Dict Provider Publication",
   "family": "Other"
  },
  "dict_setting": {
@@ -1533,8 +1941,72 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "DM Conversation Participant",
   "family": "Other"
  },
+ "dockets": {
+  "label": "Dockets",
+  "family": "Other"
+ },
  "domain_classification": {
   "label": "Domain Classification",
+  "family": "Other"
+ },
+ "edge_payload_kind": {
+  "label": "Edge payload kind",
+  "family": "Other"
+ },
+ "egress_device": {
+  "label": "Home connection computer",
+  "family": "Other"
+ },
+ "egress_pairing": {
+  "label": "Home connection pairing",
+  "family": "Other"
+ },
+ "egress_ticket": {
+  "label": "Home connection ticket",
+  "family": "Other"
+ },
+ "emails": {
+  "label": "Emails",
+  "family": "Other"
+ },
+ "embedding_cache": {
+  "label": "Embedding Cache",
+  "family": "Other"
+ },
+ "embeddings_google_gemini_2_1536": {
+  "label": "Embeddings Google Gemini 2 1536",
+  "family": "Other"
+ },
+ "embeddings_oai_3_small_1536": {
+  "label": "Embeddings Oai 3 Small 1536",
+  "family": "Other"
+ },
+ "embeddings_voyage_4_large_1024": {
+  "label": "Embeddings Voyage 4 Large 1024",
+  "family": "Other"
+ },
+ "embeddings_voyage_code_3_1024": {
+  "label": "Embeddings Voyage Code 3 1024",
+  "family": "Other"
+ },
+ "endpoint_family_sweep_state": {
+  "label": "Endpoint Family Sweep State",
+  "family": "Other"
+ },
+ "engine_owner_task": {
+  "label": "Engine Owner Task",
+  "family": "Other"
+ },
+ "entity_grant": {
+  "label": "Entity grant",
+  "family": "Other"
+ },
+ "entity_relationship": {
+  "label": "Entity relationship",
+  "family": "Other"
+ },
+ "entity_type": {
+  "label": "Entity type",
   "family": "Other"
  },
  "esign_campaign": {
@@ -1585,6 +2057,18 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "E-sign certificate signing key",
   "family": "Other"
  },
+ "execution_event_cursor": {
+  "label": "Execution event cursor",
+  "family": "Other"
+ },
+ "extension_auth_code": {
+  "label": "Extension auth code",
+  "family": "Other"
+ },
+ "extract_sweep_state": {
+  "label": "Extract sweep state",
+  "family": "Other"
+ },
  "fc_card": {
   "label": "Flashcard",
   "family": "Other"
@@ -1595,6 +2079,18 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "fc_set": {
   "label": "Flashcard Set",
+  "family": "Other"
+ },
+ "feature_knob": {
+  "label": "Feature Knob",
+  "family": "Other"
+ },
+ "feedback_comments": {
+  "label": "Feedback Comments",
+  "family": "Other"
+ },
+ "feedback_user_messages": {
+  "label": "Feedback User Messages",
   "family": "Other"
  },
  "file_analysis": {
@@ -1617,8 +2113,32 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "File Page",
   "family": "Other"
  },
+ "file_rag_job": {
+  "label": "File RAG job",
+  "family": "Other"
+ },
+ "files_account_tier": {
+  "label": "File account tier",
+  "family": "Other"
+ },
+ "files_machine_written_prefix": {
+  "label": "Machine-Written Prefix",
+  "family": "Other"
+ },
+ "files_sync_mapping": {
+  "label": "Sync Mapping",
+  "family": "Other"
+ },
+ "files_user_account": {
+  "label": "File account",
+  "family": "Other"
+ },
  "flexible_data": {
   "label": "Flexible Data",
+  "family": "Other"
+ },
+ "function_contract": {
+  "label": "Function Contract",
   "family": "Other"
  },
  "game_badge": {
@@ -1641,6 +2161,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Runtime Checkpoint",
   "family": "Other"
  },
+ "global_execution_control": {
+  "label": "Global execution control",
+  "family": "Other"
+ },
  "global_execution_event": {
   "label": "Runtime Event",
   "family": "Other"
@@ -1657,8 +2181,28 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Runtime Request",
   "family": "Other"
  },
+ "google_document": {
+  "label": "Google document",
+  "family": "Other"
+ },
  "growth_loop_run": {
   "label": "Growth Loop Run",
+  "family": "Other"
+ },
+ "guardian_link": {
+  "label": "Guardian link",
+  "family": "Other"
+ },
+ "guest_conversion_audit": {
+  "label": "Guest conversion audit",
+  "family": "Other"
+ },
+ "guest_execution_log": {
+  "label": "Guest Execution Log",
+  "family": "Other"
+ },
+ "guest_executions": {
+  "label": "Guest Executions",
   "family": "Other"
  },
  "guided_checklist_run": {
@@ -2213,12 +2757,56 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Workweek",
   "family": "Other"
  },
+ "html_extraction": {
+  "label": "HTML extraction",
+  "family": "Other"
+ },
+ "iam_access_audit": {
+  "label": "Access audit",
+  "family": "Other"
+ },
  "iam_api_key": {
   "label": "API Key",
   "family": "Other"
  },
+ "iam_emergency_door_request": {
+  "label": "Emergency access request",
+  "family": "Other"
+ },
+ "idempotency": {
+  "label": "Idempotency",
+  "family": "Other"
+ },
+ "industry": {
+  "label": "Industry",
+  "family": "Other"
+ },
  "industry_curator": {
   "label": "Industry Curator",
+  "family": "Other"
+ },
+ "infra_status": {
+  "label": "Infra status",
+  "family": "Other"
+ },
+ "ingest_runs": {
+  "label": "Ingest Runs",
+  "family": "Other"
+ },
+ "integration_connection": {
+  "label": "Integration connection",
+  "family": "Other"
+ },
+ "integration_connection_resource": {
+  "label": "Integration connection resource",
+  "family": "Other"
+ },
+ "interview_decision_interview": {
+  "label": "Decision Interview",
+  "family": "Other"
+ },
+ "interview_decision_question": {
+  "label": "Decision Question",
   "family": "Other"
  },
  "interview_document_revision": {
@@ -2253,6 +2841,14 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Invitation Request",
   "family": "Other"
  },
+ "io_contract": {
+  "label": "Io Contract",
+  "family": "Other"
+ },
+ "item": {
+  "label": "Item",
+  "family": "Other"
+ },
  "item_mastery": {
   "label": "Item Mastery",
   "family": "Other"
@@ -2261,8 +2857,40 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Judge Verdict",
   "family": "Other"
  },
+ "jurisdiction_policy": {
+  "label": "Jurisdiction policy",
+  "family": "Other"
+ },
+ "keyword_classification_queue": {
+  "label": "Keyword Classification Queue",
+  "family": "Other"
+ },
  "kg_alert": {
   "label": "KG Alert",
+  "family": "Other"
+ },
+ "kg_chunk_entities": {
+  "label": "Kg Chunk Entities",
+  "family": "Other"
+ },
+ "kg_chunks": {
+  "label": "Kg Chunks",
+  "family": "Other"
+ },
+ "kg_clusters": {
+  "label": "Kg Clusters",
+  "family": "Other"
+ },
+ "kg_edges": {
+  "label": "Kg Edges",
+  "family": "Other"
+ },
+ "kg_entities": {
+  "label": "Kg Entities",
+  "family": "Other"
+ },
+ "kg_entity_aliases": {
+  "label": "Kg Entity Aliases",
   "family": "Other"
  },
  "kg_suggestion_ack": {
@@ -2285,6 +2913,26 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "KG Value Match",
   "family": "Other"
  },
+ "knob_override": {
+  "label": "Knob Override",
+  "family": "Other"
+ },
+ "knob_override_audit": {
+  "label": "Knob override audit",
+  "family": "Other"
+ },
+ "knob_rung_lock": {
+  "label": "Knob Rung Lock",
+  "family": "Other"
+ },
+ "knob_scope_kind": {
+  "label": "Knob scope kind",
+  "family": "Other"
+ },
+ "knob_write_door": {
+  "label": "Knob write door",
+  "family": "Other"
+ },
  "league_membership": {
   "label": "League Membership",
   "family": "Other"
@@ -2297,12 +2945,64 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Library Document",
   "family": "Other"
  },
+ "lifecycle_archive": {
+  "label": "Lifecycle archive",
+  "family": "Other"
+ },
+ "lifecycle_archive_row": {
+  "label": "Lifecycle archive row",
+  "family": "Other"
+ },
+ "lifecycle_audit": {
+  "label": "Lifecycle audit",
+  "family": "Other"
+ },
+ "lifecycle_entity_plan": {
+  "label": "Lifecycle entity plan",
+  "family": "Other"
+ },
+ "lifecycle_map_build": {
+  "label": "Lifecycle map build",
+  "family": "Other"
+ },
+ "lifecycle_reference_map": {
+  "label": "Lifecycle reference map",
+  "family": "Other"
+ },
+ "lifecycle_run": {
+  "label": "Lifecycle run",
+  "family": "Other"
+ },
+ "lifecycle_tier_ledger": {
+  "label": "Lifecycle tier ledger",
+  "family": "Other"
+ },
+ "location": {
+  "label": "Location",
+  "family": "Other"
+ },
  "mandate": {
   "label": "Mandate Definition (new)",
   "family": "Other"
  },
+ "mandate_advance_batch_row": {
+  "label": "Pin advance batch row",
+  "family": "Other"
+ },
  "mandate_binding": {
   "label": "Mandate Binding (new)",
+  "family": "Other"
+ },
+ "mandate_observation": {
+  "label": "Mandate Observation",
+  "family": "Other"
+ },
+ "mandate_reference": {
+  "label": "Mandate Reference",
+  "family": "Other"
+ },
+ "mandate_scan": {
+  "label": "Mandate Scan",
   "family": "Other"
  },
  "mandate_treatment": {
@@ -2317,8 +3017,92 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Masterwork Corpus Piece",
   "family": "Other"
  },
+ "masterwork_run_kind": {
+  "label": "Masterwork Run Kind",
+  "family": "Other"
+ },
+ "masterwork_source": {
+  "label": "Masterwork Source",
+  "family": "Other"
+ },
+ "math_course_structure": {
+  "label": "Math Course Structure",
+  "family": "Other"
+ },
+ "math_problem": {
+  "label": "Math problem",
+  "family": "Other"
+ },
+ "matrx_action_ledger": {
+  "label": "Action ledger",
+  "family": "Other"
+ },
+ "mcp_config": {
+  "label": "MCP config",
+  "family": "Other"
+ },
+ "mcp_server": {
+  "label": "MCP server",
+  "family": "Other"
+ },
+ "mcp_user_conn": {
+  "label": "MCP user connection",
+  "family": "Other"
+ },
+ "media_capture_handoff": {
+  "label": "Capture Handoff",
+  "family": "Other"
+ },
+ "media_catalog_setting": {
+  "label": "Media Catalog Setting",
+  "family": "Other"
+ },
+ "media_library_item": {
+  "label": "Library Item",
+  "family": "Other"
+ },
+ "media_selection_item": {
+  "label": "Selection Item",
+  "family": "Other"
+ },
+ "media_selection_job": {
+  "label": "Selection Job",
+  "family": "Other"
+ },
+ "media_source_library": {
+  "label": "Source Library",
+  "family": "Other"
+ },
+ "meet_call_invite": {
+  "label": "Call Invite",
+  "family": "Other"
+ },
+ "meet_meeting": {
+  "label": "Meeting",
+  "family": "Other"
+ },
+ "meet_note": {
+  "label": "Meeting Note",
+  "family": "Other"
+ },
+ "meet_participant": {
+  "label": "Meeting Participant",
+  "family": "Other"
+ },
+ "meet_recording": {
+  "label": "Meeting Recording",
+  "family": "Other"
+ },
+ "meet_transcript_segment": {
+  "label": "Meeting Transcript Segment",
+  "family": "Other"
+ },
  "membership": {
   "label": "Membership",
+  "family": "Other"
+ },
+ "membership_grant": {
+  "label": "Membership Grant",
   "family": "Other"
  },
  "message": {
@@ -2327,6 +3111,30 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "message_template": {
   "label": "Message Template",
+  "family": "Other"
+ },
+ "meta_excluded_schema": {
+  "label": "Excluded schema",
+  "family": "Other"
+ },
+ "meta_table_stats_history": {
+  "label": "Table stats history",
+  "family": "Other"
+ },
+ "metadata_reserved_keys": {
+  "label": "Metadata Reserved Keys",
+  "family": "Other"
+ },
+ "migration_log": {
+  "label": "Migration Log",
+  "family": "Other"
+ },
+ "mtx_media_heal_queue": {
+  "label": "Mtx Media Heal Queue",
+  "family": "Other"
+ },
+ "mtx_public_url_guard": {
+  "label": "Public URL guard",
   "family": "Other"
  },
  "ner_shadow": {
@@ -2357,6 +3165,26 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Notification Preference",
   "family": "Other"
  },
+ "notify_outsider_door_baseline": {
+  "label": "Notify Outsider Door Baseline",
+  "family": "Other"
+ },
+ "oauth_handoff_claim": {
+  "label": "Oauth Handoff Claim",
+  "family": "Other"
+ },
+ "opinion_clusters": {
+  "label": "Opinion Clusters",
+  "family": "Other"
+ },
+ "opinions": {
+  "label": "Opinions",
+  "family": "Other"
+ },
+ "ops_issue_class": {
+  "label": "Ops Issue Class",
+  "family": "Other"
+ },
  "ops_issue_event": {
   "label": "Ops Issue Event",
   "family": "Other"
@@ -2373,12 +3201,52 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Proof Scenario",
   "family": "Other"
  },
+ "org_admin_audit": {
+  "label": "Org admin audit",
+  "family": "Other"
+ },
+ "org_change_policy": {
+  "label": "Org Change Policy",
+  "family": "Other"
+ },
+ "org_context_ledger": {
+  "label": "Org Context Ledger",
+  "family": "Other"
+ },
+ "org_industries": {
+  "label": "Org Industries",
+  "family": "Other"
+ },
+ "org_member_control": {
+  "label": "Org member control",
+  "family": "Other"
+ },
+ "org_module_config": {
+  "label": "Organization module configuration",
+  "family": "Other"
+ },
+ "org_plan": {
+  "label": "Org Plan",
+  "family": "Other"
+ },
  "organization": {
   "label": "Organization",
   "family": "Other"
  },
+ "organization_preferences": {
+  "label": "Organization Preferences",
+  "family": "Other"
+ },
+ "organization_visibility_version": {
+  "label": "Organization Visibility Version",
+  "family": "Other"
+ },
  "output_feedback": {
   "label": "Output Feedback",
+  "family": "Other"
+ },
+ "outreach_acceptance": {
+  "label": "Outreach Acceptance",
   "family": "Other"
  },
  "page_extraction_job": {
@@ -2389,12 +3257,40 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Page Extraction Page Run",
   "family": "Other"
  },
+ "page_extraction_results": {
+  "label": "Page Extraction Results",
+  "family": "Other"
+ },
+ "page_extraction_runs": {
+  "label": "Page Extraction Runs",
+  "family": "Other"
+ },
+ "page_intent_queue": {
+  "label": "Page Intent Queue",
+  "family": "Other"
+ },
+ "page_mapping_queue": {
+  "label": "Page Mapping Queue",
+  "family": "Other"
+ },
+ "part_config": {
+  "label": "Part Config",
+  "family": "Other"
+ },
+ "part_config_sub": {
+  "label": "Part Config Sub",
+  "family": "Other"
+ },
  "party": {
   "label": "Entity",
   "family": "Other"
  },
  "party_contact_point": {
   "label": "Contact Point",
+  "family": "Other"
+ },
+ "passkey_credential": {
+  "label": "Passkey credential",
   "family": "Other"
  },
  "pc_article": {
@@ -2417,8 +3313,20 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Podcast Studio Run Asset",
   "family": "Other"
  },
+ "pdf_consolidation_log": {
+  "label": "Pdf Consolidation Log",
+  "family": "Other"
+ },
  "pdf_redaction_audit": {
   "label": "PDF Redaction Audit",
+  "family": "Other"
+ },
+ "pdf_redaction_key_escrow": {
+  "label": "Pdf Redaction Key Escrow",
+  "family": "Other"
+ },
+ "permission_grant": {
+  "label": "Permission grant",
   "family": "Other"
  },
  "plan_entity": {
@@ -2465,8 +3373,32 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Outsider consumer",
   "family": "Other"
  },
+ "platform_reachability": {
+  "label": "Reachability",
+  "family": "Other"
+ },
+ "platform_reference_category": {
+  "label": "Reference category",
+  "family": "Other"
+ },
+ "platform_reference_declaration": {
+  "label": "Reference declaration",
+  "family": "Other"
+ },
+ "platform_repo": {
+  "label": "Repository",
+  "family": "Other"
+ },
  "platform_saved_view": {
   "label": "Saved view",
+  "family": "Other"
+ },
+ "platform_schema": {
+  "label": "Schema",
+  "family": "Other"
+ },
+ "platform_share_link": {
+  "label": "Share link",
   "family": "Other"
  },
  "podcast_race": {
@@ -2501,8 +3433,52 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Product Capture Question",
   "family": "Other"
  },
+ "provider_account": {
+  "label": "Provider operating account",
+  "family": "Other"
+ },
+ "provider_account_credential": {
+  "label": "Provider account credential association",
+  "family": "Other"
+ },
  "provision": {
   "label": "Mandate Provision (new)",
+  "family": "Other"
+ },
+ "provision_generate_target": {
+  "label": "Provision Generate Target",
+  "family": "Other"
+ },
+ "provision_grant": {
+  "label": "Provision Grant",
+  "family": "Other"
+ },
+ "provision_marker": {
+  "label": "Provision Marker",
+  "family": "Other"
+ },
+ "provision_rule_message": {
+  "label": "Provision Rule Message",
+  "family": "Other"
+ },
+ "provision_schema": {
+  "label": "Provision Schema",
+  "family": "Other"
+ },
+ "provision_shape_debt": {
+  "label": "Provision Shape Debt",
+  "family": "Other"
+ },
+ "provision_spec": {
+  "label": "Provision Spec",
+  "family": "Other"
+ },
+ "provision_spec_grandfather": {
+  "label": "Provision Spec Grandfather",
+  "family": "Other"
+ },
+ "provision_vocabulary": {
+  "label": "Provision Vocabulary",
   "family": "Other"
  },
  "purpose": {
@@ -2515,6 +3491,22 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "rag_ingest_run": {
   "label": "Ingest Run",
+  "family": "Other"
+ },
+ "rag_library_audit_log": {
+  "label": "Library audit log",
+  "family": "Other"
+ },
+ "rate_limit_buckets": {
+  "label": "Rate Limit Buckets",
+  "family": "Other"
+ },
+ "recompute_queue": {
+  "label": "Recompute Queue",
+  "family": "Other"
+ },
+ "record_alias": {
+  "label": "Record Alias",
   "family": "Other"
  },
  "redaction_mapping": {
@@ -2531,6 +3523,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "research_document": {
   "label": "Research Document",
+  "family": "Other"
+ },
+ "research_intent": {
+  "label": "Research Intent",
   "family": "Other"
  },
  "research_keyword": {
@@ -2561,8 +3557,32 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Research Topic",
   "family": "Other"
  },
+ "retention_policy": {
+  "label": "Retention policy",
+  "family": "Other"
+ },
+ "retrieval_audit": {
+  "label": "Retrieval audit",
+  "family": "Other"
+ },
+ "review_queue": {
+  "label": "Review Queue",
+  "family": "Other"
+ },
  "route_manifest_entry": {
   "label": "Route Manifest Entry",
+  "family": "Other"
+ },
+ "row_version": {
+  "label": "Row version",
+  "family": "Other"
+ },
+ "runtime_operation_stream": {
+  "label": "Operation stream",
+  "family": "Other"
+ },
+ "runtime_operation_stream_batch": {
+  "label": "Operation stream batch",
   "family": "Other"
  },
  "sandbox_instance": {
@@ -2585,12 +3605,40 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Task Trigger",
   "family": "Other"
  },
+ "schema_client_exposure": {
+  "label": "Schema Client Exposure",
+  "family": "Other"
+ },
+ "schema_migration_ledger": {
+  "label": "Migration ledger",
+  "family": "Other"
+ },
+ "schema_migration_legacy": {
+  "label": "Legacy migration ledger",
+  "family": "Other"
+ },
+ "schema_migration_slot_grandfather": {
+  "label": "Schema Migration Slot Grandfather",
+  "family": "Other"
+ },
+ "schema_templates": {
+  "label": "Schema Templates",
+  "family": "Other"
+ },
  "scope": {
   "label": "Scope",
   "family": "Other"
  },
  "scope_association_suggestion": {
   "label": "Scope Association Suggestion",
+  "family": "Other"
+ },
+ "scope_dataset_instance": {
+  "label": "Scope dataset instance",
+  "family": "Other"
+ },
+ "scope_door_registry": {
+  "label": "Scope Door Registry",
   "family": "Other"
  },
  "scope_item_value_suggestion": {
@@ -2603,6 +3651,38 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "scope_type": {
   "label": "Scope Type",
+  "family": "Other"
+ },
+ "scrape_domain": {
+  "label": "Scrape Domain",
+  "family": "Other"
+ },
+ "scrape_domain_settings": {
+  "label": "Scrape Domain Settings",
+  "family": "Other"
+ },
+ "scrape_failure_log": {
+  "label": "Scrape Failure Log",
+  "family": "Other"
+ },
+ "scrape_parsed_page": {
+  "label": "Parsed page",
+  "family": "Other"
+ },
+ "scrape_path_override": {
+  "label": "Scrape Path Override",
+  "family": "Other"
+ },
+ "scrape_path_pattern": {
+  "label": "Scrape Path Pattern",
+  "family": "Other"
+ },
+ "scrape_retry_queue": {
+  "label": "Scrape Retry Queue",
+  "family": "Other"
+ },
+ "seo_ai_capability": {
+  "label": "SEO AI capability",
   "family": "Other"
  },
  "seo_ai_visibility_panel": {
@@ -2697,6 +3777,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "SEO Story Angle",
   "family": "Other"
  },
+ "shareable_resource_registry": {
+  "label": "Shareable resource registry",
+  "family": "Other"
+ },
  "shared_canvas_item": {
   "label": "Shared Canvas Item",
   "family": "Other"
@@ -2733,12 +3817,56 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "SMS Phone Number",
   "family": "Other"
  },
+ "sms_rate_limits": {
+  "label": "Sms Rate Limits",
+  "family": "Other"
+ },
+ "sms_webhook_logs": {
+  "label": "Sms Webhook Logs",
+  "family": "Other"
+ },
+ "soft_delete_edge": {
+  "label": "Soft Delete Edge",
+  "family": "Other"
+ },
+ "source_authority": {
+  "label": "Source authority",
+  "family": "Other"
+ },
+ "stage_ref_kind": {
+  "label": "Stage reference kind",
+  "family": "Other"
+ },
+ "stamped_write_table": {
+  "label": "Stamped Write Table",
+  "family": "Other"
+ },
+ "structure": {
+  "label": "Structure",
+  "family": "Other"
+ },
  "structured_list": {
   "label": "Structured List",
   "family": "Other"
  },
+ "studio_cleaned_segments": {
+  "label": "Studio Cleaned Segments",
+  "family": "Other"
+ },
+ "studio_concept_items": {
+  "label": "Studio Concept Items",
+  "family": "Other"
+ },
  "studio_documents": {
   "label": "Studio Document",
+  "family": "Other"
+ },
+ "studio_module_segments": {
+  "label": "Studio Module Segments",
+  "family": "Other"
+ },
+ "studio_raw_segments": {
+  "label": "Studio Raw Segments",
   "family": "Other"
  },
  "studio_recording_chunks": {
@@ -2797,8 +3925,28 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Study Session",
   "family": "Other"
  },
+ "study_source_chunk": {
+  "label": "Study Source Chunk",
+  "family": "Other"
+ },
+ "study_streak": {
+  "label": "Study streak",
+  "family": "Other"
+ },
+ "study_structured_section": {
+  "label": "Study Structured Section",
+  "family": "Other"
+ },
+ "superseded_policy": {
+  "label": "Superseded Policy",
+  "family": "Other"
+ },
  "surface": {
   "label": "UI Surface",
+  "family": "Other"
+ },
+ "system_announcement": {
+  "label": "System announcement",
   "family": "Other"
  },
  "system_context_item": {
@@ -2809,6 +3957,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "System Error",
   "family": "Other"
  },
+ "system_orgs": {
+  "label": "System Orgs",
+  "family": "Other"
+ },
  "system_personal_org_failure": {
   "label": "System Personal Org Failure",
   "family": "Other"
@@ -2817,40 +3969,132 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "System Write Failure",
   "family": "Other"
  },
+ "task_user_state": {
+  "label": "Task user state",
+  "family": "Other"
+ },
+ "taxonomy_node": {
+  "label": "Taxonomy node",
+  "family": "Other"
+ },
+ "template_context_items": {
+  "label": "Template Context Items",
+  "family": "Other"
+ },
+ "template_scope_types": {
+  "label": "Template Scope Types",
+  "family": "Other"
+ },
+ "templates": {
+  "label": "Templates",
+  "family": "Other"
+ },
  "thread": {
   "label": "Thread",
+  "family": "Other"
+ },
+ "tool_binding": {
+  "label": "Tool binding",
   "family": "Other"
  },
  "tool_call": {
   "label": "Tool Call",
   "family": "Other"
  },
+ "tool_executor": {
+  "label": "Tool executor",
+  "family": "Other"
+ },
+ "tool_surface_defaults": {
+  "label": "Tool surface defaults",
+  "family": "Other"
+ },
+ "topic_placement_queue": {
+  "label": "Topic Placement Queue",
+  "family": "Other"
+ },
+ "trigger_event": {
+  "label": "Trigger Event",
+  "family": "Other"
+ },
  "udt_dataset_fields": {
   "label": "Dataset Field",
+  "family": "Other"
+ },
+ "udt_dataset_row_versions": {
+  "label": "Udt Dataset Row Versions",
   "family": "Other"
  },
  "udt_dataset_rows": {
   "label": "Dataset Row",
   "family": "Other"
  },
+ "udt_dataset_template": {
+  "label": "Dataset template",
+  "family": "Other"
+ },
+ "udt_dataset_template_fields": {
+  "label": "Udt Dataset Template Fields",
+  "family": "Other"
+ },
  "udt_document": {
   "label": "Document",
+  "family": "Other"
+ },
+ "udt_document_snapshot": {
+  "label": "Document snapshot",
   "family": "Other"
  },
  "udt_structured_list_items": {
   "label": "Structured List Item",
   "family": "Other"
  },
+ "udt_workbook_snapshot": {
+  "label": "Workbook snapshot",
+  "family": "Other"
+ },
+ "ui_client": {
+  "label": "UI client",
+  "family": "Other"
+ },
  "ui_surface_agent_pref": {
   "label": "UI Surface Agent Pref",
+  "family": "Other"
+ },
+ "ui_surface_agent_role": {
+  "label": "UI surface agent role",
+  "family": "Other"
+ },
+ "ui_surface_client_tool": {
+  "label": "UI surface client tool",
   "family": "Other"
  },
  "ui_surface_config": {
   "label": "UI Surface Config",
   "family": "Other"
  },
+ "ui_surface_value": {
+  "label": "UI surface value",
+  "family": "Other"
+ },
+ "ui_surface_write_target": {
+  "label": "UI surface write target",
+  "family": "Other"
+ },
+ "unsubscribe_token": {
+  "label": "Unsubscribe Token",
+  "family": "Other"
+ },
+ "uploads_inflight": {
+  "label": "Uploads Inflight",
+  "family": "Other"
+ },
  "user_achievement": {
   "label": "User Achievement",
+  "family": "Other"
+ },
+ "user_active_context": {
+  "label": "Active context",
   "family": "Other"
  },
  "user_analysis_preference": {
@@ -2865,8 +4109,16 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "User Email Preference",
   "family": "Other"
  },
+ "user_entity_state": {
+  "label": "User entity state",
+  "family": "Other"
+ },
  "user_feedback": {
   "label": "User Feedback",
+  "family": "Other"
+ },
+ "user_follows": {
+  "label": "User Follows",
   "family": "Other"
  },
  "user_form_profile": {
@@ -2889,12 +4141,36 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "User Profile",
   "family": "Other"
  },
+ "user_secret": {
+  "label": "User secret",
+  "family": "Other"
+ },
+ "user_secret_audit": {
+  "label": "Secret audit",
+  "family": "Other"
+ },
+ "user_secret_grant": {
+  "label": "Secret grant",
+  "family": "Other"
+ },
  "user_stat": {
   "label": "User Stats",
   "family": "Other"
  },
+ "user_storage_usage": {
+  "label": "Storage usage",
+  "family": "Other"
+ },
  "user_surface_state": {
   "label": "User Surface State",
+  "family": "Other"
+ },
+ "visibility_cache": {
+  "label": "Visibility Cache",
+  "family": "Other"
+ },
+ "visibility_epoch": {
+  "label": "Visibility Epoch",
   "family": "Other"
  },
  "voice": {
@@ -2909,6 +4185,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Extension Web Capture",
   "family": "Other"
  },
+ "wbx_demo": {
+  "label": "Extension demo record",
+  "family": "Other"
+ },
  "wbx_guidance": {
   "label": "Extension Guidance",
   "family": "Other"
@@ -2919,6 +4199,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "wbx_pattern": {
   "label": "Extension Scrape Pattern",
+  "family": "Other"
+ },
+ "wbx_recipe": {
+  "label": "Extension recipe",
   "family": "Other"
  },
  "wbx_screenshot": {
@@ -2967,6 +4251,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "web_business_location": {
   "label": "Business Location",
+  "family": "Other"
+ },
+ "web_channel_analytics_daily": {
+  "label": "Channel analytics (daily)",
   "family": "Other"
  },
  "web_crawl_event": {
@@ -3073,8 +4361,32 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Snapshot",
   "family": "Other"
  },
+ "web_tag_manager_snapshot": {
+  "label": "Tag Manager snapshot",
+  "family": "Other"
+ },
+ "web_youtube_video": {
+  "label": "YouTube video",
+  "family": "Other"
+ },
+ "webhook_deliveries": {
+  "label": "Webhook Deliveries",
+  "family": "Other"
+ },
+ "webhook_dispatch_state": {
+  "label": "Webhook Dispatch State",
+  "family": "Other"
+ },
+ "webhooks": {
+  "label": "Webhooks",
+  "family": "Other"
+ },
  "wf_node_data_slot": {
   "label": "Workflow Node Data Slot",
+  "family": "Other"
+ },
+ "work_claim": {
+  "label": "Work Claim",
   "family": "Other"
  },
  "work_item": {
@@ -3083,6 +4395,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "workbook": {
   "label": "Workbook",
+  "family": "Other"
+ },
+ "worker_heartbeat": {
+  "label": "Worker Heartbeat",
   "family": "Other"
  },
  "workflow": {
@@ -3159,6 +4475,18 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "workflow_trigger_fire": {
   "label": "Workflow Trigger Fire",
+  "family": "Other"
+ },
+ "workflow_work_item": {
+  "label": "Work Item",
+  "family": "Other"
+ },
+ "write_guard_key": {
+  "label": "Write Guard Key",
+  "family": "Other"
+ },
+ "youtube_quota_day": {
+  "label": "Youtube Quota Day",
   "family": "Other"
  },
  "youtube_search": {
