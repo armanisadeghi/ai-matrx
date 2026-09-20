@@ -285,6 +285,20 @@ const sourceLibrarySlice = createSlice({
                         entry.library.sync_status = "idle";
                         entry.library.sync_error = null;
                         entry.library.item_count = event.total_listed;
+                        // 🚨 D5 (jobs-bar cold-walk-12): this event flips
+                        // `sync_status` OUT of "syncing" but never used to
+                        // touch `last_synced_at` — so a Library that had never
+                        // been read successfully by `GET .../libraries/{id}`
+                        // before this run went idle with `last_synced_at`
+                        // still null, and the freshness banner in
+                        // `LibraryMetricsHeader` read that as "This Library
+                        // has never been brought up to date" the instant after
+                        // a run it just watched succeed. This tab watched the
+                        // event arrive, so "now" is an honest timestamp for
+                        // it — no less honest than the value a following
+                        // `GET` of the same row would report a moment later.
+                        entry.library.last_synced_at = new Date().toISOString();
+                        entry.library.last_sync_duration_ms = event.elapsed_ms;
                     }
                     break;
                 case "library.sync.unavailable":

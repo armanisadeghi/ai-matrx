@@ -41,6 +41,13 @@ export const GUARDS_AND_TESTS = new Set([
     "lib/knobs/unifiedDataCampaign.ts",
     "lib/knobs/unifiedDataCampaign.test.ts",
     "lib/knobs/unifiedDataCampaign.register.ts",
+    // The switch's CLIENT half (lane RSC-FIX, 19 September): the React hook
+    // moved here so `unifiedDataCampaign.ts` stays importable from Server
+    // Components. It IS the switch, split across two files for that reason
+    // alone — not a consumer of it — so it is exempt the same way its sibling
+    // is, and every real consumer still registers itself the way it always
+    // has (this file gates nothing on its own).
+    "lib/knobs/useUnifiedDataCampaignGate.ts",
     "scripts/check-campaign-entry-points.ts",
     "scripts/lib/campaign-entry-points.ts",
 ]);
