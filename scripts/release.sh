@@ -646,6 +646,22 @@ else
     SOURCE_ATTRIBUTION_FAILED=false
 fi
 
+# The other half of the same axis: origin_class. Our own screens must DECLARE
+# `initiation` at the AI run door, or the server can only class a person's
+# click as an unattested API caller ('api'). BLOCKING: unlike a mis-typed slug,
+# a missing attestation is invisible in the code and only shows up as wrongly
+# classed conversations weeks later (live census 2026-09-20).
+info "Validating client run-door initiation attestations..."
+if ! pnpm check:client-initiation; then
+    echo "" >&2
+    echo -e "${RED}  A first-party run door does not say how the run began.${NC}" >&2
+    echo -e "${YELLOW}    Add initiation: \"user\" (a person's gesture) or \"auto\"${NC}" >&2
+    echo -e "${YELLOW}    (client code) to each body listed above, then re-run:${NC}" >&2
+    echo -e "${YELLOW}    pnpm check:client-initiation${NC}" >&2
+    fail "Client run-door provenance is undeclared."
+fi
+ok "Every first-party run door declares its initiation."
+
 # ── Read current version ─────────────────────────────────────────────────────
 CURRENT_VERSION=$(node -p "require('./package.json').version" 2>/dev/null) \
     || fail "Could not read version from $VERSION_FILE."
