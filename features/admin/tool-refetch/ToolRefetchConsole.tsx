@@ -45,11 +45,14 @@ import { Button } from "@/components/ui/button";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import {
+  MatrxDataTable,
+  useTableUrlState,
+} from "@ai-matrx/design-system/data-table";
+import { filterAndSortRows } from "@ai-matrx/design-system/data-table/filter-engine";
 import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,
-  SortState,
 } from "@ai-matrx/design-system/data-table/types";
 
 import {
@@ -226,36 +229,22 @@ function rowsToHumanText(rows: ToolRefetchSummaryRow[], win: RefetchWindow): str
   return [header, "", ...lines].join("\n");
 }
 
-export function sortToolRefetchRows(
+export function projectToolRefetchRows(
   rows: ToolRefetchSummaryRow[],
-  sort: SortState | null,
+  columns: MatrxColumnDef<ToolRefetchSummaryRow>[],
+  state: MatrxDataTableQueryState,
 ): ToolRefetchSummaryRow[] {
-  if (!sort) return rows;
-  const key = sort.id as SortKey;
-  if (!COLUMNS.some((column) => column.key === key)) return rows;
-  return [...rows].sort((a, b) => {
-    if (key === "toolName") {
-      return sort.direction === "asc"
-        ? a.toolName.localeCompare(b.toolName)
-        : b.toolName.localeCompare(a.toolName);
-    }
-    const left = a[key] as number | null;
-    const right = b[key] as number | null;
-    if (left === null && right === null) return 0;
-    if (left === null) return 1;
-    if (right === null) return -1;
-    return sort.direction === "asc" ? left - right : right - left;
-  });
+  return filterAndSortRows(
+    rows,
+    columns,
+    state.columnFilters,
+    state.sort,
+    state.search,
+    undefined,
+    state.layeredFilters,
+    state.searchMatchMode,
+  );
 }
-
-const INITIAL_TABLE_STATE: MatrxDataTableQueryState = {
-  page: 1,
-  pageSize: 50,
-  search: "",
-  anyOf: "",
-  columnFilters: {},
-  sort: { id: "sameDataRepeats", direction: "desc" },
-};
 
 /* ── drill-down ────────────────────────────────────────────────────────────── */
 
@@ -427,9 +416,11 @@ function ToolDetail({
 
 export function ToolRefetchConsole() {
   const [win, setWin] = useState<RefetchWindow>("30d");
-  const [tableState, setTableState] = useState<MatrxDataTableQueryState>(
-    INITIAL_TABLE_STATE,
-  );
+  const table = useTableUrlState({
+    tableId: "tool-refetch",
+    defaultSort: { id: "sameDataRepeats", direction: "desc" },
+    defaultPageSize: 50,
+  });
   const copySubset = useCopySubsetVariant();
 
   const report = useQuery({
@@ -452,13 +443,6 @@ export function ToolRefetchConsole() {
       : null;
 
   const rows = report.data?.rows ?? [];
-  const copiedRows = useMemo(
-    () => sortToolRefetchRows(rows, tableState.sort),
-    [rows, tableState.sort],
-  );
-  const sortKey = tableState.sort?.id ?? "unsorted";
-  const sortAsc = tableState.sort?.direction === "asc";
-
   const columns = useMemo((): MatrxColumnDef<ToolRefetchSummaryRow>[] => [
     { id: "toolName", accessorKey: "toolName", header: "Tool", width: 240, cell: (row) => <span className="font-medium">{row.toolName}</span> },
     { id: "totalCalls", accessorKey: "totalCalls", header: "Calls", filter: "number", width: 90, cell: (row) => <span className="tabular-nums">{fmtCount(row.totalCalls)}</span> },
@@ -475,6 +459,12 @@ export function ToolRefetchConsole() {
     { id: "conversations", accessorKey: "conversations", header: "Convos", filter: "number", width: 90, cell: (row) => <span className="tabular-nums">{fmtCount(row.conversations)}</span> },
     { id: "lastRepeatAt", accessorKey: "lastRepeatAt", header: "Last repeat", width: 145, cell: (row) => <span className="whitespace-nowrap text-xs text-muted-foreground">{fmtWhen(row.lastRepeatAt)}</span> },
   ], []);
+  const copiedRows = useMemo(
+    () => projectToolRefetchRows(rows, columns, table.state),
+    [rows, columns, table.state],
+  );
+  const sortKey = table.state.sort?.id ?? "unsorted";
+  const sortAsc = table.state.sort?.direction === "asc";
 
   const totals = useMemo(() => {
     const src = report.data?.rows ?? [];
@@ -636,7 +626,7 @@ export function ToolRefetchConsole() {
       )}
 
       <MatrxDataTable
-        query={{ mode: "controlled-local", state: tableState, onStateChange: setTableState }}
+        query={{ mode: "controlled-local", state: table.state, onStateChange: table.onStateChange }}
         data={rows}
         columns={columns}
         getRowId={(row) => row.toolName}

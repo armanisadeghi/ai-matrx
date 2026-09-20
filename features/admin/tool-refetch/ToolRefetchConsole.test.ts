@@ -1,6 +1,5 @@
-import { describe, expect, it } from "vitest";
 import type { ToolRefetchSummaryRow } from "./service";
-import { sortToolRefetchRows } from "./ToolRefetchConsole";
+import { projectToolRefetchRows } from "./ToolRefetchConsole";
 
 const row = (
   toolName: string,
@@ -8,20 +7,30 @@ const row = (
 ): ToolRefetchSummaryRow =>
   ({ toolName, sameDataRepeats } as ToolRefetchSummaryRow);
 
-describe("sortToolRefetchRows", () => {
-  it("keeps copy/export rows aligned with the canonical current sort", () => {
+describe("projectToolRefetchRows", () => {
+  it("keeps copy/export rows aligned with the canonical filtered and sorted view", () => {
     const rows = [row("zeta", 2), row("alpha", 9)];
+    const columns = [
+      { id: "toolName", accessorKey: "toolName" as const, header: "Tool" },
+      {
+        id: "sameDataRepeats",
+        accessorKey: "sameDataRepeats" as const,
+        header: "Same-data",
+        filter: "number" as const,
+      },
+    ];
 
     expect(
-      sortToolRefetchRows(rows, {
-        id: "sameDataRepeats",
-        direction: "desc",
-      }).map((item) => item.toolName),
-    ).toEqual(["alpha", "zeta"]);
-    expect(
-      sortToolRefetchRows(rows, { id: "toolName", direction: "asc" }).map(
+      projectToolRefetchRows(rows, columns, {
+        page: 1,
+        pageSize: 50,
+        search: "alpha",
+        anyOf: "",
+        columnFilters: { sameDataRepeats: { kind: "number", min: 5 } },
+        sort: { id: "toolName", direction: "asc" },
+      }).map(
         (item) => item.toolName,
       ),
-    ).toEqual(["alpha", "zeta"]);
+    ).toEqual(["alpha"]);
   });
 });
