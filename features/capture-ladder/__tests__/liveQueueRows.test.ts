@@ -193,20 +193,24 @@ describe("the real queue rows survive the tray's ingress parse", () => {
   });
 
   it("the assist's title and body for this exact queue read like English", () => {
-    expect(needsYouTitle(handoffs.length, "admin's Workspace")).toBe(
-      "2 pages in admin's Workspace are waiting for your browser",
+    // These rows were read before `handoff_kind` existed on the table, so this
+    // build cannot say WHAT they are — and the contract's answer to that is
+    // "item", never a confident "page". Both sentences below are the honest
+    // unknown-kind wording, which is exactly what a client this old should say.
+    expect(needsYouTitle(handoffs, "admin's Workspace")).toBe(
+      "2 items in admin's Workspace are waiting for your browser",
     );
     // The body names WHAT is waiting and nothing else. What the button does is
     // said once, by the action descriptor, one line above the button — saying
     // it again here is what made the old tray a novel (Arman, 2026-09-18).
     expect(needsYouBody(handoffs, { extensionInstalled: true })).toBe(
-      "instagram.com and nytimes.com — these only open for someone who is signed in, and our servers are not.",
+      "instagram.com and nytimes.com — sites hand these to an ordinary browser like yours and refuse our servers.",
     );
   });
 
   it("says the extension is missing rather than offering a button that cannot work", () => {
     expect(needsYouBody(handoffs, { extensionInstalled: false })).toBe(
-      "instagram.com and nytimes.com — these only open for someone who is signed in, and our servers are not. " +
+      "instagram.com and nytimes.com — sites hand these to an ordinary browser like yours and refuse our servers. " +
         "Your own Chrome could read them, but the Matrx extension is not installed in this browser yet.",
     );
   });

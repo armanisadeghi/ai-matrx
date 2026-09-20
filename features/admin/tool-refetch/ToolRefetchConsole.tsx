@@ -20,7 +20,7 @@
  * copyable — never an inert string, never a button that 404s.
  */
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -45,6 +45,15 @@ import { Button } from "@/components/ui/button";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import {
+  MatrxDataTable,
+  useTableUrlState,
+} from "@ai-matrx/design-system/data-table";
+import { filterAndSortRows } from "@ai-matrx/design-system/data-table/filter-engine";
+import type {
+  MatrxColumnDef,
+  MatrxDataTableQueryState,
+} from "@ai-matrx/design-system/data-table/types";
 
 import {
   DETAIL_PAGE_SIZE,
@@ -220,15 +229,21 @@ function rowsToHumanText(rows: ToolRefetchSummaryRow[], win: RefetchWindow): str
   return [header, "", ...lines].join("\n");
 }
 
-function compare(a: ToolRefetchSummaryRow, b: ToolRefetchSummaryRow, key: SortKey): number {
-  if (key === "toolName") return a.toolName.localeCompare(b.toolName);
-  const av = a[key] as number | null;
-  const bv = b[key] as number | null;
-  // Nulls sort last in either direction — an unknown is never "the smallest".
-  if (av === null && bv === null) return 0;
-  if (av === null) return 1;
-  if (bv === null) return -1;
-  return av - bv;
+export function projectToolRefetchRows(
+  rows: ToolRefetchSummaryRow[],
+  columns: MatrxColumnDef<ToolRefetchSummaryRow>[],
+  state: MatrxDataTableQueryState,
+): ToolRefetchSummaryRow[] {
+  return filterAndSortRows(
+    rows,
+    columns,
+    state.columnFilters,
+    state.sort,
+    state.search,
+    undefined,
+    state.layeredFilters,
+    state.searchMatchMode,
+  );
 }
 
 /* ── drill-down ────────────────────────────────────────────────────────────── */
@@ -401,9 +416,11 @@ function ToolDetail({
 
 export function ToolRefetchConsole() {
   const [win, setWin] = useState<RefetchWindow>("30d");
-  const [sortKey, setSortKey] = useState<SortKey>("sameDataRepeats");
-  const [sortAsc, setSortAsc] = useState(false);
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const table = useTableUrlState({
+    tableId: "tool-refetch",
+    defaultSort: { id: "sameDataRepeats", direction: "desc" },
+    defaultPageSize: 50,
+  });
   const copySubset = useCopySubsetVariant();
 
   const report = useQuery({
@@ -425,23 +442,29 @@ export function ToolRefetchConsole() {
         : "Failed to load the re-fetch report"
       : null;
 
-  const rows = useMemo(() => {
-    const list = [...(report.data?.rows ?? [])];
-    list.sort((a, b) => (sortAsc ? compare(a, b, sortKey) : -compare(a, b, sortKey)));
-    return list;
-  }, [report.data, sortKey, sortAsc]);
-
-  const onSort = useCallback(
-    (key: SortKey) => {
-      if (key === sortKey) {
-        setSortAsc((v) => !v);
-      } else {
-        setSortKey(key);
-        setSortAsc(key === "toolName");
-      }
-    },
-    [sortKey],
+  const rows = report.data?.rows ?? [];
+  const columns = useMemo((): MatrxColumnDef<ToolRefetchSummaryRow>[] => [
+    { id: "toolName", accessorKey: "toolName", header: "Tool", width: 240, cell: (row) => <span className="font-medium">{row.toolName}</span> },
+    { id: "totalCalls", accessorKey: "totalCalls", header: "Calls", filter: "number", width: 90, cell: (row) => <span className="tabular-nums">{fmtCount(row.totalCalls)}</span> },
+    { id: "repeats", accessorKey: "repeats", header: "Repeats", filter: "number", width: 90, cell: (row) => <span className="tabular-nums">{fmtCount(row.repeats)}</span> },
+    { id: "repeatRate", accessorKey: "repeatRate", header: "Repeat %", filter: "number", width: 100, cell: (row) => <span className="tabular-nums">{fmtPct(row.repeatRate)}</span> },
+    { id: "sameDataRepeats", accessorKey: "sameDataRepeats", header: "Same-data", filter: "number", width: 115, cell: (row) => <span className="font-semibold tabular-nums">{fmtCount(row.sameDataRepeats)}</span> },
+    { id: "sameDataRate", accessorKey: "sameDataRate", header: "Same-data %", filter: "number", width: 125, cell: (row) => <span className={cn("tabular-nums", (row.sameDataRate ?? 0) >= 0.05 && "font-semibold text-rose-600 dark:text-rose-400")}>{fmtPct(row.sameDataRate)}</span> },
+    { id: "newDataRepeats", accessorKey: "newDataRepeats", header: "New-data", filter: "number", width: 105, cell: (row) => <span className="tabular-nums text-muted-foreground">{fmtCount(row.newDataRepeats)}</span> },
+    { id: "unknownDataRepeats", accessorKey: "unknownDataRepeats", header: "Unknown", filter: "number", width: 105, cell: (row) => <span className="tabular-nums text-muted-foreground">{fmtCount(row.unknownDataRepeats)}</span> },
+    { id: "afterTrimRepeats", accessorKey: "afterTrimRepeats", header: "After trim", filter: "number", width: 105, cell: (row) => <span className="tabular-nums">{fmtCount(row.afterTrimRepeats)}</span> },
+    { id: "medianGapCalls", accessorKey: "medianGapCalls", header: "Gap calls", filter: "number", width: 105, cell: (row) => <span className="tabular-nums">{fmtGapCalls(row.medianGapCalls)}</span> },
+    { id: "medianGapSecs", accessorKey: "medianGapSecs", header: "Gap", filter: "number", width: 100, cell: (row) => <span className="tabular-nums">{fmtDuration(row.medianGapSecs)}</span> },
+    { id: "charsRefetchedSameData", accessorKey: "charsRefetchedSameData", header: "Chars re-fetched", filter: "number", width: 135, cell: (row) => <span className="tabular-nums">{fmtCount(row.charsRefetchedSameData)}</span> },
+    { id: "conversations", accessorKey: "conversations", header: "Convos", filter: "number", width: 90, cell: (row) => <span className="tabular-nums">{fmtCount(row.conversations)}</span> },
+    { id: "lastRepeatAt", accessorKey: "lastRepeatAt", header: "Last repeat", width: 145, cell: (row) => <span className="whitespace-nowrap text-xs text-muted-foreground">{fmtWhen(row.lastRepeatAt)}</span> },
+  ], []);
+  const copiedRows = useMemo(
+    () => projectToolRefetchRows(rows, columns, table.state),
+    [rows, columns, table.state],
   );
+  const sortKey = table.state.sort?.id ?? "unsorted";
+  const sortAsc = table.state.sort?.direction === "asc";
 
   const totals = useMemo(() => {
     const src = report.data?.rows ?? [];
@@ -486,15 +509,15 @@ export function ToolRefetchConsole() {
             <CopyButtons
               size="sm"
               label="Tool re-fetch report"
-              disabled={rows.length === 0}
-              human={() => rowsToHumanText(rows, win)}
-              json={() => rows}
+              disabled={copiedRows.length === 0}
+              human={() => rowsToHumanText(copiedRows, win)}
+              json={() => copiedRows}
               agent={() => ({
                 kind: "tool-refetch-report",
                 location: TOOL_REFETCH_AI_LOCATION,
                 description: `Tool re-fetch report for the ${win} window: ${rows.length} tools, sorted by ${sortKey} ${sortAsc ? "ascending" : "descending"}.`,
-                data: rows,
-                summary: rowsToHumanText(rows, win),
+                data: copiedRows,
+                summary: rowsToHumanText(copiedRows, win),
                 attributes: {
                   window: win,
                   tool_count: rows.length,
@@ -511,16 +534,16 @@ export function ToolRefetchConsole() {
                   label: `Tool re-fetch report (${win})`,
                   location: TOOL_REFETCH_AI_LOCATION,
                   kind: "tool-refetch-report",
-                  rows,
+                  rows: copiedRows,
                   columns: SUBSET_COLUMNS,
                   getRowId: (row) => row.toolName,
                 })),
               ]}
               export={{
                 items: [
-                  jsonExportItem(() => rows),
+                  jsonExportItem(() => copiedRows),
                   csvExportItem(
-                    () => rows as unknown as Array<Record<string, unknown>>,
+                    () => copiedRows as unknown as Array<Record<string, unknown>>,
                     "CSV",
                     COLUMNS.map((c) => ({ key: c.key, header: c.label })),
                   ),
@@ -543,7 +566,6 @@ export function ToolRefetchConsole() {
               variant={w.key === win ? "default" : "outline"}
               onClick={() => {
                 setWin(w.key);
-                setExpanded(null);
               }}
             >
               {w.label}
@@ -603,120 +625,18 @@ export function ToolRefetchConsole() {
         </div>
       )}
 
-      <section className="overflow-x-auto rounded-lg border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-            <tr>
-              <th className="w-6 px-2 py-2" />
-              {COLUMNS.map((c) => (
-                <th
-                  key={c.key}
-                  className={cn("px-3 py-2", c.align === "right" ? "text-right" : "text-left")}
-                >
-                  <button
-                    type="button"
-                    title={c.title}
-                    className={cn(
-                      "inline-flex items-center gap-1 uppercase hover:text-foreground",
-                      sortKey === c.key && "text-foreground",
-                    )}
-                    onClick={() => onSort(c.key)}
-                  >
-                    {c.label}
-                    {sortKey === c.key && <span aria-hidden>{sortAsc ? "▲" : "▼"}</span>}
-                  </button>
-                </th>
-              ))}
-              <th className="px-3 py-2 text-right">Last repeat</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr>
-                <td colSpan={COLUMNS.length + 2} className="px-3 py-8 text-center text-muted-foreground">
-                  Reading the re-fetch views…
-                </td>
-              </tr>
-            )}
-
-            {/* An empty table after a failed read would claim "no repeats" — it is not empty, it is unknown. */}
-            {!loading && (error || timedOut) && rows.length === 0 && (
-              <tr>
-                <td colSpan={COLUMNS.length + 2} className="px-3 py-8 text-center text-muted-foreground">
-                  Nothing is shown because the read above failed — this is not &ldquo;no repeats&rdquo;.
-                </td>
-              </tr>
-            )}
-
-            {!loading && !error && !timedOut && rows.length === 0 && (
-              <tr>
-                <td colSpan={COLUMNS.length + 2} className="px-3 py-8 text-center text-muted-foreground">
-                  No tool was called twice with identical arguments in this window. Try a longer
-                  window.
-                </td>
-              </tr>
-            )}
-
-            {!loading &&
-              rows.map((r) => {
-                const open = expanded === r.toolName;
-                return (
-                  <React.Fragment key={r.toolName}>
-                    <tr
-                      className={cn(
-                        "cursor-pointer border-t hover:bg-muted/40",
-                        open && "bg-muted/40",
-                      )}
-                      onClick={() => setExpanded(open ? null : r.toolName)}
-                    >
-                      <td className="px-2 py-1.5 text-muted-foreground">
-                        {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                      </td>
-                      <td className="px-3 py-1.5 font-medium">{r.toolName}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums">{fmtCount(r.totalCalls)}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums">{fmtCount(r.repeats)}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums">{fmtPct(r.repeatRate)}</td>
-                      <td className="px-3 py-1.5 text-right font-semibold tabular-nums">
-                        {fmtCount(r.sameDataRepeats)}
-                      </td>
-                      <td
-                        className={cn(
-                          "px-3 py-1.5 text-right tabular-nums",
-                          (r.sameDataRate ?? 0) >= 0.05 && "font-semibold text-rose-600 dark:text-rose-400",
-                        )}
-                      >
-                        {fmtPct(r.sameDataRate)}
-                      </td>
-                      <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">
-                        {fmtCount(r.newDataRepeats)}
-                      </td>
-                      <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">
-                        {fmtCount(r.unknownDataRepeats)}
-                      </td>
-                      <td className="px-3 py-1.5 text-right tabular-nums">{fmtCount(r.afterTrimRepeats)}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums">{fmtGapCalls(r.medianGapCalls)}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums">{fmtDuration(r.medianGapSecs)}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums">
-                        {fmtCount(r.charsRefetchedSameData)}
-                      </td>
-                      <td className="px-3 py-1.5 text-right tabular-nums">{fmtCount(r.conversations)}</td>
-                      <td className="whitespace-nowrap px-3 py-1.5 text-right text-xs text-muted-foreground">
-                        {fmtWhen(r.lastRepeatAt)}
-                      </td>
-                    </tr>
-                    {open && (
-                      <tr className="border-t bg-muted/20">
-                        <td colSpan={COLUMNS.length + 2} className="p-0">
-                          <ToolDetail toolName={r.toolName} window={win} expectedRepeats={r.repeats} />
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-          </tbody>
-        </table>
-      </section>
+      <MatrxDataTable
+        query={{ mode: "controlled-local", state: table.state, onStateChange: table.onStateChange }}
+        data={rows}
+        columns={columns}
+        getRowId={(row) => row.toolName}
+        isLoading={loading}
+        isFetching={refreshing}
+        pageSize={50}
+        emptyState={{ title: error || timedOut ? "The report could not be read" : "No repeated tool calls in this window" }}
+        toolbar={{ search: true, searchPlaceholder: "Search tools…" }}
+        detail={{ title: (row) => row.toolName, description: (row) => `${fmtCount(row.repeats)} repeats in the ${win} window`, render: (row) => <ToolDetail toolName={row.toolName} window={win} expectedRepeats={row.repeats} /> }}
+      />
 
       <p className="text-xs text-muted-foreground">
         Sources: <code>chat.vw_tool_refetch_summary</code> (all-time rollup) and{" "}
