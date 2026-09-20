@@ -73,7 +73,20 @@ export function usePodcastRun(): UsePodcastRun {
           callApi({
             path: "/podcast/generate",
             method: "POST",
-            body,
+            // PROVENANCE. Without these three the row is unattributed: it
+            // cannot be costed or filtered, `chat.conversation_lane(...)`
+            // drops it into the 'matrx' lane so it appears in the person's
+            // chat sidebar as something they started, and the server can only
+            // honestly class an `initiation`-less body as `api` — an
+            // unattested HTTP caller, which this never is. `podcasts` is a
+            // registered slug (aidream services/conversation_context/
+            // source_attribution.py); this hook only ever runs off a click.
+            body: {
+              ...body,
+              source_app: "matrx-frontend",
+              source_feature: "podcasts",
+              initiation: "user",
+            },
             stream: true,
             signal: controller.signal,
             onStreamEvent: (event) => {
