@@ -17,7 +17,7 @@
  */
 
 import { OVERLAY_CATALOGUE, isOverlayId, type OverlayId } from "@/features/overlays/catalogue";
-import { routeStatusFor } from "@/lib/route-manifest/match";
+import { routeAnswerFor } from "@/lib/route-manifest/match";
 
 import {
   GOOGLE_CONNECTOR_PROVIDER,
@@ -144,31 +144,61 @@ describe("every product a person can switch on offers its first useful action", 
 
       /**
        * 🚨 A ROUTE ACTION LANDS ON A ROUTE THAT ANSWERS — not on one that merely
-       * looks plausible (V-27 NEW-1). `startsWith("/")` was the whole check, so a
-       * row could have advertised `/marketing/sites/tracking` forever: it reads
-       * like a destination and is a 404. The truth is the derived route manifest
-       * (`lib/route-manifest/`), which also separates a live surface from a
-       * registered coming-soon PLACEHOLDER — a 200 that is still a dead end, and
-       * exactly what a "first useful action" must never be.
+       * RESOLVES (V-27 NEW-1, tightened by V-28 NEW-4). `startsWith("/")` was the
+       * whole check, so a row could have advertised `/marketing/sites/tracking`
+       * forever: it reads like a destination and is a 404. The truth is the
+       * derived route manifest (`lib/route-manifest/`), which also separates a
+       * live surface from a registered coming-soon PLACEHOLDER — a 200 that is
+       * still a dead end.
+       *
+       * And a `live` status was still not enough. `/marketing/sites/tracking` —
+       * the exact href this feature's doc names as the defect — resolves to
+       * `/marketing/sites/[siteId]`, so the first version of this guard PASSED
+       * it: Next.js serves that page, the page looks up the site whose id is the
+       * word "tracking", and refuses. A connector row carries no ids (that is why
+       * `tag_manager` and `youtube` point at rosters rather than at one site), so
+       * every href here is STATIC and may only be served by a pattern with no
+       * dynamic segments. `routeAnswerFor` is the check that knows the
+       * difference; it takes the params a caller supplies, and this config
+       * supplies none.
        */
       it("points a route action at a route that ANSWERS, never a plausible path", () => {
-        const dead = provider.products.flatMap((product) =>
-          product.firstAction.kind === "route"
-            ? [
-                {
-                  key: product.key,
-                  href: product.firstAction.href,
-                  status: routeStatusFor(product.firstAction.href),
-                },
-              ]
-            : [],
-        ).filter((row) => row.status !== "live");
+        const dead = provider.products
+          .flatMap((product) =>
+            product.firstAction.kind === "route"
+              ? [
+                  {
+                    key: product.key,
+                    href: product.firstAction.href,
+                    // No params: a connector row's href is a fixed string in the
+                    // config, so anything a dynamic segment swallows is a literal
+                    // word being read as somebody's id.
+                    problem: routeAnswerFor(product.firstAction.href).problem,
+                  },
+                ]
+              : [],
+          )
+          .filter((row) => row.problem !== null);
         expect(dead).toEqual([]);
         for (const product of provider.products) {
           if (product.firstAction.kind !== "route") continue;
           expect(product.firstAction.href.startsWith("/")).toBe(true);
           expect(product.firstAction.label.trim().length).toBeGreaterThan(0);
         }
+      });
+
+      /**
+       * The guard proving itself: the plant is the href the doc names, and it
+       * must fail HERE, in the same census, with the site named in the sentence
+       * — not only in `lib/route-manifest`'s own suite. A future edit that
+       * loosens the matcher back to "does something serve this" turns this red.
+       */
+      it("would refuse the door-to-nowhere href this guard was written for", () => {
+        const planted = routeAnswerFor("/marketing/sites/tracking");
+        expect(planted.status).toBe("live");
+        expect(planted.problem).toBe(
+          "`/marketing/sites/tracking` is served by `/marketing/sites/[siteId]` — it would open the site named 'tracking'.",
+        );
       });
 
       it("offers something on every row except the ones deliberately named, each with a reason", () => {
