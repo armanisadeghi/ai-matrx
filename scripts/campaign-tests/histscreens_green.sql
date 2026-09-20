@@ -158,6 +158,15 @@ begin
   if (r.changes -> 0 ->> 'label') <> 'Price' then
     raise exception '2c: the change is labelled "%" rather than the Field''s own label', r.changes -> 0 ->> 'label';
   end if;
+  -- A VALUE THAT DID NOT MOVE IS NOT A CHANGE. This write touched the price and nothing
+  -- else; until 2026-09-20 every version of every record on this platform reported EVERY
+  -- field, because `at`, `actor` and `on_behalf_of` are re-stamped on every value on every
+  -- write and the envelope was compared whole.
+  if jsonb_array_length(r.changes) <> 1 then
+    raise exception '2c: a write that changed ONE field reports % of them: %',
+      jsonb_array_length(r.changes),
+      (select string_agg(c ->> 'label', ', ') from jsonb_array_elements(r.changes) c);
+  end if;
   raise notice '2 PASSED — newest version: % by %, for %, and it says %: % -> %.',
     r.operation_label, r.actor ->> 'kind', r.actor -> 'on_behalf_of' ->> 'name',
     r.changes -> 0 ->> 'label', r.changes -> 0 -> 'before', r.changes -> 0 -> 'after';

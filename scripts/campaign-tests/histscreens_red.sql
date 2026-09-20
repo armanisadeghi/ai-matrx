@@ -7,7 +7,7 @@
 --
 -- Run FROM THE REPO ROOT:  <scratchpad>/p.sh -f scripts/campaign-tests/histscreens_red.sql
 --
--- FIVE BLOCKS ARE RED WHEN THE LANE IS LANDED, AND THEY ARE:
+-- SIX BLOCKS ARE RED WHEN THE LANE IS LANDED, AND THEY ARE:
 --   1. `custom.record_restore_preview` reads BACKWARDS.
 --   2. …and calls every key changed, including keys that did not move.
 --   3. `custom.io_restore` returns NULL to every caller, on a restore that worked.
@@ -15,6 +15,9 @@
 --   5. There is no way to ask WHO changed what — `custom.io_revisions` answers a raw uuid,
 --      never `user`/`agent`/`system`, never the person an agent acted for, and never a
 --      before or an after.
+--   6. EVERY VERSION SAYS EVERY FIELD CHANGED, because the value envelope carries `at`,
+--      `actor` and `on_behalf_of` — re-stamped on every value on every write — and the
+--      whole envelope was compared.
 
 \set ON_ERROR_STOP on
 begin;
@@ -142,7 +145,69 @@ end;
 $red$;
 
 -- ════════════════════════════════════════════════════════════════════════════
--- THE REAL BYTES, part two: take the whole lane away.
+-- THE REAL BYTES, part two: put the whole-envelope comparison back.
+-- ════════════════════════════════════════════════════════════════════════════
+reset role;
+\i migrations/inverse/histscreens_a_value_that_did_not_move_is_not_a_change_down.sql
+set local role authenticated;
+
+do $red$
+declare
+  v_org uuid;
+  v_job uuid;
+  v_red integer;
+  r     record;
+begin
+  select v::uuid into v_org from hs_red where k = 'org';
+  select v::uuid into v_job from hs_red where k = 'job';
+  select v::int  into v_red from hs_red where k = 'red';
+
+  -- BLOCK 6 — the write that moved ONE field says it moved all of them.
+  --
+  -- VERSIONS 3 AND 4, which is the AGENT's write: it changed the price only. `at` is the
+  -- TRANSACTION timestamp, so inside this suite's one transaction every write stamps the
+  -- same moment and only the author change exposes the defect — in the product, where
+  -- every write is its own transaction, `at` moves on every one and EVERY field of EVERY
+  -- version was reported. Either way the cause is the same three keys.
+  --
+  -- Asked of `custom.io_changed_keys` DIRECTLY, over two real consecutive versions of this
+  -- record, because that function is what the inverse put back and an IMMUTABLE SQL
+  -- function is INLINED into its callers' plans — so going through the door would be
+  -- asking a plan that may still hold the new body.
+  declare
+    v_old jsonb;
+    v_new jsonb;
+    v_keys text[];
+  begin
+    select v.row_data -> 'data' into v_old from history.row_versions v
+     where v.entity_type = 'custom.record' and v.organization_id = v_org
+       and v.row_id = v_job and v.version = 3 limit 1;
+    select v.row_data -> 'data' into v_new from history.row_versions v
+     where v.entity_type = 'custom.record' and v.organization_id = v_org
+       and v.row_id = v_job and v.version = 4 limit 1;
+    -- STEPS OUT, and says why: `custom.io_changed_keys` is an INTERNAL with no client
+    -- grant, and this clause is about the function's own answer rather than about what a
+    -- person may reach. No product clause is asserted while out.
+    perform set_config('role', (select v from hs_red where k = 'boss'), true);
+    v_keys := custom.io_changed_keys(v_old, v_new);
+    perform set_config('role', 'authenticated', true);
+    if coalesce(array_length(v_keys, 1), 0) < 2 then
+      raise exception '6: the old comparison did not over-report (% key(s)) — the inverse did not take',
+        coalesce(array_length(v_keys, 1), 0);
+    end if;
+    if not ('title' = any (v_keys)) then
+      raise exception '6: the old comparison did not call the untouched title a change: %', v_keys;
+    end if;
+    v_red := v_red + 1;
+    update hs_red set v = v_red::text where k = 'red';
+    raise notice '6 RED — the agent's write changed the price and nothing else, and the old comparison lists %: %.',
+      array_length(v_keys, 1), array_to_string(v_keys, ', ');
+  end;
+end;
+$red$;
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- THE REAL BYTES, part three: take the whole lane away.
 -- ════════════════════════════════════════════════════════════════════════════
 reset role;
 \i migrations/inverse/histscreens_a_record_can_say_who_changed_it_down.sql
@@ -198,9 +263,9 @@ begin
   raise notice '5 RED — all a person can ask for is "% … %", and the agent that wrote version 4 for another person is nowhere in it.',
     r.changed_by, left(r.summary, 60);
 
-  raise notice '=== % of 5 blocks are RED (the defects this lane closed are all back), and both inverses executed. ===', v_red;
-  if v_red <> 5 then
-    raise exception 'the red twin proved % of 5', v_red;
+  raise notice '=== % of 6 blocks are RED (the defects this lane closed are all back), and all three inverses executed. ===', v_red;
+  if v_red <> 6 then
+    raise exception 'the red twin proved % of 6', v_red;
   end if;
 end;
 $red$;
