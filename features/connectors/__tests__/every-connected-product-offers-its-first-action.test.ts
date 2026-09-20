@@ -17,6 +17,7 @@
  */
 
 import { OVERLAY_CATALOGUE, isOverlayId, type OverlayId } from "@/features/overlays/catalogue";
+import { routeStatusFor } from "@/lib/route-manifest/match";
 
 import {
   GOOGLE_CONNECTOR_PROVIDER,
@@ -70,13 +71,24 @@ const WINDOW_REQUIRED_CONTEXT_KEYS: Readonly<
  * The rows that have NOTHING to offer yet, each with a reason in the config.
  *
  * 🚨 THIS LIST ONLY EVER SHRINKS. It is not permission — it is the visible debt
- * lane F-51 escalated to the chair: Gmail has no compose surface, Tag Manager has
- * no surface of its own, and YouTube has no channel-binding surface the way
- * Search Console and Analytics do. Adding a name here is a decision somebody
- * makes on purpose; forgetting to decide fails this file.
+ * lane F-51 escalated to the chair. Gmail is what is left: a send begins with an
+ * agent's draft in the approval queue, not with a screen a person visits.
+ *
+ * Struck since:
+ *   * `tag_manager` — U-M2 built `SiteTrackingPanel` and the `siteTrackingWindow`,
+ *     so the row goes to the surface a site is picked from. Its commit `d0c6e56f`
+ *     changed the config and left the name here, which made THIS suite red at head
+ *     for two days while two later commits edited the file and shipped it red
+ *     (V-27 NEW-1).
+ *   * `youtube` — U-M3 built `BrandChannelPanel`, which binds the client's owned
+ *     channel in place; that IS the binding surface whose absence was the reason.
+ *
+ * Adding a name here is a decision somebody makes on purpose; forgetting to
+ * decide fails this file — and so does leaving a name here after the door is
+ * built, which is the direction that actually happened.
  */
 const OFFERS_NOTHING_YET: Readonly<Record<string, readonly string[]>> = {
-  google: ["gmail", "tag_manager", "youtube"],
+  google: ["gmail"],
 };
 
 describe("every product a person can switch on offers its first useful action", () => {
@@ -130,7 +142,28 @@ describe("every product a person can switch on offers its first useful action", 
         expect(dead).toEqual([]);
       });
 
-      it("points a route action at a real in-app path", () => {
+      /**
+       * 🚨 A ROUTE ACTION LANDS ON A ROUTE THAT ANSWERS — not on one that merely
+       * looks plausible (V-27 NEW-1). `startsWith("/")` was the whole check, so a
+       * row could have advertised `/marketing/sites/tracking` forever: it reads
+       * like a destination and is a 404. The truth is the derived route manifest
+       * (`lib/route-manifest/`), which also separates a live surface from a
+       * registered coming-soon PLACEHOLDER — a 200 that is still a dead end, and
+       * exactly what a "first useful action" must never be.
+       */
+      it("points a route action at a route that ANSWERS, never a plausible path", () => {
+        const dead = provider.products.flatMap((product) =>
+          product.firstAction.kind === "route"
+            ? [
+                {
+                  key: product.key,
+                  href: product.firstAction.href,
+                  status: routeStatusFor(product.firstAction.href),
+                },
+              ]
+            : [],
+        ).filter((row) => row.status !== "live");
+        expect(dead).toEqual([]);
         for (const product of provider.products) {
           if (product.firstAction.kind !== "route") continue;
           expect(product.firstAction.href.startsWith("/")).toBe(true);
