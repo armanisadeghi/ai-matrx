@@ -197,6 +197,8 @@ export function summarizeColumnFilter(
       return null;
     }
   }
+  // Preserve newer package filter contracts in agent context instead of omitting them.
+  return JSON.stringify(filter);
 }
 
 /**
