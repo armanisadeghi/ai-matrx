@@ -6,7 +6,6 @@
 
 import { getTwilioClient, getAppBaseUrl } from './client';
 import { createAdminClient } from '@/utils/supabase/adminClient';
-import { resolveOrgIdForUserServer } from '@/lib/organizations/personalOrg';
 import type { PhoneNumberPurchaseOptions, PhoneNumberInfo } from './types';
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -50,8 +49,24 @@ export async function searchAvailableNumbers(options: PhoneNumberPurchaseOptions
 
 /**
  * Purchase a phone number and optionally assign it to a user.
+ *
+ * 🚨 THE CALLER NAMES THE ORGANIZATION (2026-09-19 ruling; corrected in the
+ * 2026-09-19 review). This used to end in
+ * `resolveOrgIdForUserServer(supabase, userId)` — the buyer's PERSONAL
+ * workspace — and before that in the platform's own system organization for an
+ * unassigned number. A phone number is a tenant asset: which organization owns
+ * it is a decision, and a decision is the person's to make, never the server's
+ * to substitute. It matters more here than almost anywhere else, because this
+ * registration is what routes every inbound text on the number
+ * (`lib/sms/receive.ts`) — a number registered to the wrong organization
+ * delivers a customer's conversation to the wrong tenant, for as long as the
+ * number lives.
+ *
+ * `organizationId` is therefore REQUIRED, and FIRST, so a call site cannot
+ * forget it the way a trailing optional argument gets forgotten.
  */
 export async function purchasePhoneNumber(
+  organizationId: string,
   phoneNumber: string,
   userId?: string,
   friendlyName?: string
@@ -81,12 +96,7 @@ export async function purchasePhoneNumber(
       },
     };
 
-    // Store in database — owned by the assigned user's org, or the system org
-    // for a platform-owned (unassigned) number.
-    // org-fallback-deliberate: a Twilio number belongs to the assigned person
-    //   (their own workspace) or, unassigned, to the platform — this write has no
-    //   request context at all
-    const organizationId = await resolveOrgIdForUserServer(supabase, userId);
+    // Store in database — registered to the organization the caller named.
     const { error: dbError } = await supabase.schema('communication').from('sms_phone_numbers').insert({
       organization_id: organizationId,
       user_id: userId || null,
