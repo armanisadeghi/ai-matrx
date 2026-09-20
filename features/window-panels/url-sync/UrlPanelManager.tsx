@@ -10,16 +10,31 @@ import {
 } from "@/lib/redux/slices/urlSyncSlice";
 import { getHydrator } from "./UrlPanelRegistry";
 import { initUrlHydration } from "./initUrlHydration";
+import { LAZY_WINDOW_MOUNT_DEADLINE_MS } from "../constants/lazyWindowMount";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { toastErrorAlreadyCaptured } from "@/lib/toast";
 
 type UrlSyncEntries = ReturnType<typeof selectUrlSyncEntries>;
 
 /**
- * How long the Redux -> URL writer waits for a URL-hydrated window to register
- * itself in `urlSyncSlice` before canonicalizing `?panels=`. Long enough for a
- * lazily-chunked overlay to load on a cold cache; bounded so a key that never
- * registers cannot freeze URL sync for the session.
+ * 🚨 THE ADDRESS IS NEVER DESTROYED BY A CLOCK (V-28 NEW-5, 2026-09-20).
+ *
+ * A `?panels=` token whose window has not registered yet is NOT evidence that
+ * the token is wrong — every window arrives through a lazy chunk, and on a
+ * cold dev compile that chunk can take tens of seconds. This manager therefore
+ * waits on the REAL signal (the window's own `urlSyncSlice` entry, which
+ * arrives whenever it arrives) and keeps the token in the address the whole
+ * time. This deadline decides ONE thing and only one: when to stop waiting
+ * SILENTLY and tell the person on screen that the window has not opened. The
+ * token stays in the URL either way, so a shared link is still a good link and
+ * a reload still has something to reload.
+ *
+ * Before this, a 5000 ms timer expiring caused the token to be dropped from
+ * `?panels=` with no notice at all: the measured result was a deep link that
+ * opened nothing in four of eight fresh loads and erased itself from the
+ * address bar every time.
  */
-const OBSERVE_GRACE_MS = 5000;
+const REGISTRATION_NOTICE_DEADLINE_MS = LAZY_WINDOW_MOUNT_DEADLINE_MS;
 
 interface UrlPanelManagerProps {
   /**
@@ -68,6 +83,95 @@ export function mergeManagedPanelParams(
   return [...unmanagedTokens, ...nextManagedTokens].join(",");
 }
 
+/**
+ * Re-attaches the raw `?panels=` tokens whose windows have not registered a
+ * urlSync entry (yet, or ever). Serialization can only speak for windows that
+ * exist; without this, a window that is still compiling — or one this build
+ * genuinely cannot open — silently loses its address on the next URL write.
+ *
+ * A token is skipped when its type key is already represented by a live entry,
+ * so a late registration replaces the placeholder instead of duplicating it.
+ */
+export function withUnresolvedTokens(
+  managedParam: string,
+  unresolvedTokens: readonly string[],
+): string {
+  if (unresolvedTokens.length === 0) return managedParam;
+
+  const managedTokens = managedParam.split(",").filter(Boolean);
+  const represented = new Set(
+    managedTokens.map((token) => token.split(":")[0]),
+  );
+  const kept = unresolvedTokens.filter(
+    (token) => Boolean(token) && !represented.has(token.split(":")[0]),
+  );
+
+  return [...managedTokens, ...kept].join(",");
+}
+
+/**
+ * The honest notice for a link naming a window that did not open. It names the
+ * keys, says the link is intact, and gives the two things a person can
+ * actually do. Exported so the wording is testable without a DOM.
+ */
+export function unopenedWindowNotice(typeKeys: readonly string[]): string {
+  const keys = typeKeys.join(", ");
+  return (
+    `This link names a window this build could not open: ${keys}. ` +
+    `The link is unchanged in your address bar — reload to try again, or report it if it keeps failing.`
+  );
+}
+
+/**
+ * The loud recovery layer for a `?panels=` token whose window never showed up.
+ * It screams in the console, files a structured diagnostic the admin Error
+ * Inspector (and, at red tier, `public.system_error`) can read, and — the part
+ * that matters to a person — puts an honest sentence on screen instead of
+ * quietly rewriting their address bar.
+ */
+function announceUnopenedWindows(
+  candidateKeys: readonly string[],
+  alreadyAnnounced: Set<string>,
+  reason: "no-hydrator" | "never-registered",
+): void {
+  const typeKeys = candidateKeys.filter((key) => !alreadyAnnounced.has(key));
+  if (typeKeys.length === 0) return;
+  typeKeys.forEach((key) => alreadyAnnounced.add(key));
+
+  const keys = typeKeys.join(", ");
+  const why =
+    reason === "no-hydrator"
+      ? `no hydrator is registered for ${typeKeys.length > 1 ? "them" : "it"}`
+      : `hydrated, but no window registered a urlSync entry within ${REGISTRATION_NOTICE_DEADLINE_MS}ms`;
+  const message =
+    `[UrlPanelManager] ?panels= token(s) [${keys}]: ${why}. The token is KEPT in the URL. ` +
+    `Give the overlay a matching registry \`urlSync.key\` and a hydrator in initUrlHydration.ts, or stop publishing the link.`;
+
+  console.error(message);
+
+  try {
+    captureError({
+      source: "url-panel-unopened",
+      operation: "unknown",
+      relation: `?panels=${keys}`,
+      message,
+      userMessage: unopenedWindowNotice(typeKeys),
+      code: reason,
+      raw: { typeKeys, reason, deadlineMs: REGISTRATION_NOTICE_DEADLINE_MS },
+    });
+  } catch {
+    // Capture never breaks the caller.
+  }
+
+  try {
+    toastErrorAlreadyCaptured(unopenedWindowNotice(typeKeys), {
+      duration: 12000,
+    });
+  } catch {
+    // A missing toaster must not take the page with it.
+  }
+}
+
 export function parseParams(paramString: string | null) {
   if (!paramString) return [];
   return paramString.split(",").map((part) => {
@@ -114,17 +218,18 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
   const isHydrated = useAppSelector(selectIsUrlHydrated);
 
   const initialLoadDone = useRef(false);
-  const pendingInitialTypeKeys = useRef<Set<string>>(new Set());
-  const hasObservedInitialEntries = useRef(false);
-  // Deadlock breaker for the "wait for the restored window to register"
-  // guard below. A hydrated overlay does NOT always register a urlSync entry
-  // under the key that opened it — legacy alias keys (`files` opens
-  // `cloudFilesWindow`, whose registry key is `cloud_files`) and overlays that
-  // are not WindowPanels never will. Without a bound, one such token froze
-  // URL sync for the whole page session: every OTHER window's open/close
-  // stopped reaching the URL, silently. This flips the wait off after a grace
-  // period and says which keys never showed up.
-  const [waitExpired, setWaitExpired] = useState(false);
+  // typeKey -> the VERBATIM token that opened it. A key sits here from
+  // hydration until the window it opened registers its own urlSync entry —
+  // which may be seconds later on a lazy chunk, or never (a legacy alias key
+  // such as `files`, which opens `cloudFilesWindow` whose registry key is
+  // `cloud_files`, and overlays that are not WindowPanels at all). While it
+  // sits here the raw token is written straight back into `?panels=`, so the
+  // address the person pasted survives the wait and survives the failure.
+  const unresolvedTokens = useRef<Map<string, string>>(new Map());
+  const announcedKeys = useRef<Set<string>>(new Set());
+  // Fires once, long after any legitimate lazy mount, and does exactly one
+  // thing: turn a silent wait into a visible, honest notice.
+  const [noticeDue, setNoticeDue] = useState(false);
 
   // 1. HYDRATION (URL -> Redux)
   useEffect(() => {
@@ -136,7 +241,12 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
     const panelsParam = searchParams.get("panels");
     if (panelsParam) {
       const managedKeys = managedTypeKeys ? new Set(managedTypeKeys) : null;
+      const rawTokens = panelsParam.split(",");
       const allPanels = parseParams(panelsParam);
+      const rawTokenFor = new Map<string, string>();
+      allPanels.forEach((panel, index) => {
+        if (panel.typeKey) rawTokenFor.set(panel.typeKey, rawTokens[index]);
+      });
       const panels = allPanels.filter(
         (panel) => !managedKeys || managedKeys.has(panel.typeKey),
       );
@@ -153,30 +263,47 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
           }
         }
       }
+      const noHydrator: string[] = [];
       panels.forEach((panel) => {
         const hydrator = getHydrator(panel.typeKey);
         if (hydrator) {
-          pendingInitialTypeKeys.current.add(panel.typeKey);
+          unresolvedTokens.current.set(
+            panel.typeKey,
+            rawTokenFor.get(panel.typeKey) ?? panel.typeKey,
+          );
           hydrator(dispatch, panel.instanceId, panel.args || {});
         } else {
+          // Law 4: the link named a window this build has no way to open. Keep
+          // the address, say so out loud — never strip it on the next write.
+          unresolvedTokens.current.set(
+            panel.typeKey,
+            rawTokenFor.get(panel.typeKey) ?? panel.typeKey,
+          );
+          noHydrator.push(panel.typeKey);
           console.warn(
             `[UrlPanelManager] No hydrator registered for panel type: ${panel.typeKey}`,
           );
         }
       });
-    }
 
-    hasObservedInitialEntries.current =
-      pendingInitialTypeKeys.current.size === 0;
+      if (noHydrator.length > 0) {
+        announceUnopenedWindows(noHydrator, announcedKeys.current, "no-hydrator");
+      }
+    }
 
     // Mark hydration complete so subsequent URL writes can begin
     dispatch(setHydrated());
   }, [searchParams, dispatch, managedTypeKeys]);
 
-  // Grace timer for the registration wait above.
+  // The notice deadline. Never gates a URL write — the token is preserved
+  // whether this has fired or not; it only decides when a still-unopened
+  // window stops being a silent wait.
   useEffect(() => {
-    if (!isHydrated || hasObservedInitialEntries.current) return undefined;
-    const timer = setTimeout(() => setWaitExpired(true), OBSERVE_GRACE_MS);
+    if (!isHydrated || unresolvedTokens.current.size === 0) return undefined;
+    const timer = setTimeout(
+      () => setNoticeDue(true),
+      REGISTRATION_NOTICE_DEADLINE_MS,
+    );
     return () => clearTimeout(timer);
   }, [isHydrated]);
 
@@ -184,26 +311,32 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
   useEffect(() => {
     if (!isHydrated) return;
 
-    if (!hasObservedInitialEntries.current) {
-      const observedTypeKeys = new Set(
-        Object.values(entries).map((entry) => entry.typeKey),
-      );
-      const unobserved = Array.from(pendingInitialTypeKeys.current).filter(
-        (typeKey) => !observedTypeKeys.has(typeKey),
-      );
+    // The SIGNAL, not a clock: a key leaves the unresolved set the moment its
+    // window registers, however long that took.
+    const observedTypeKeys = new Set(
+      Object.values(entries).map((entry) => entry.typeKey),
+    );
+    for (const typeKey of Array.from(unresolvedTokens.current.keys())) {
+      if (observedTypeKeys.has(typeKey)) unresolvedTokens.current.delete(typeKey);
+    }
+    const unresolved = Array.from(unresolvedTokens.current.keys());
 
-      if (unobserved.length > 0) {
-        if (!waitExpired) return;
-        console.warn(
-          `[UrlPanelManager] ?panels= token(s) [${unobserved.join(", ")}] hydrated but never registered a urlSync entry within ${OBSERVE_GRACE_MS}ms. ` +
-            `Proceeding with URL sync so other windows are not frozen. Give the overlay a matching registry \`urlSync.key\`, or drop the hydrator.`,
-        );
-      }
-      hasObservedInitialEntries.current = true;
+    if (noticeDue && unresolved.length > 0) {
+      announceUnopenedWindows(
+        unresolved,
+        announcedKeys.current,
+        "never-registered",
+      );
     }
 
     const currentParam = searchParams.get("panels") || "";
-    const nextManagedParam = serializeParams(entries, managedTypeKeys);
+    // Windows that exist speak for themselves; windows that have not
+    // registered keep their verbatim token. Nothing is ever dropped because a
+    // timer ran out.
+    const nextManagedParam = withUnresolvedTokens(
+      serializeParams(entries, managedTypeKeys),
+      Array.from(unresolvedTokens.current.values()),
+    );
     const nextParam = mergeManagedPanelParams(
       currentParam,
       nextManagedParam,
@@ -231,7 +364,7 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
     pathname,
     router,
     searchParams,
-    waitExpired,
+    noticeDue,
   ]);
 
   return null;

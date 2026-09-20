@@ -120,6 +120,8 @@ side panel) and the `/detail/[type]/[id]` route. Presentation is the person's
 
 ## Change Log
 
+- 2026-09-20 — **V-28 NEW-5: a `?panels=` deep link may never erase itself, and a wall clock is never the signal that a window failed.** `?panels=brand_channel:<brandId>` failed to open in four of eight fresh loads, and every failing load printed `UrlPanelManager`'s 5000 ms "hydrated but never registered a urlSync entry" warning and then DELETED its own token from the address bar in silence; the `site_tracking` twin failed once too, and one run opened the panel and still lost the address. The cause was not the `urlSyncId` prop F-121 fixed: it was the 5000 ms deadline racing a lazily-compiled window. `initUrlHydration()` is fully synchronous (no `await`, no `import()`), so hydrator registration is never late — what is late is the WindowPanel mount, which sits behind `lazyOverlay(() => import(…))`, i.e. a Turbopack chunk COMPILE in dev. Measured on the preview box (Next reports `cpus: 1`): a warm `/api/dev-login` round trip took **10.3 s inside Next**, a cold `/tasks` took **21.2 s**, and a cold `/` compile did not finish inside the preview watchdog's **300 s** window. A 5 s deadline cannot survive that, and prod chunk fetches only make it rarer, never durable. **Three changes, at the class:** (1) the manager now waits on the REGISTRATION SIGNAL — a key leaves the unresolved set the moment its window's `urlSyncSlice` entry appears, however long that took — and never gates a URL write on it; (2) an unresolved token is written back into `?panels=` VERBATIM, so the address survives the wait, survives a never-opening window, and survives a token with no hydrator at all (which used to be stripped just as silently); (3) when the deadline does expire the manager screams in console, files a `url-panel-unopened` capture (new `CapturedErrorSource`, red tier → `public.system_error`) and puts an honest sentence on screen through `toastErrorAlreadyCaptured`: *"This link names a window this build could not open: <key>. The link is unchanged in your address bar — reload to try again, or report it if it keeps failing."* The deadline itself is now ONE number shared with the only other subsystem waiting on the same physical event, `diagnostics/overlayRenderWatchdog.ts` — `constants/lazyWindowMount.ts` (`LAZY_WINDOW_MOUNT_DEADLINE_MS`, 12 s prod / 45 s dev). Guard: `__tests__/deepLinkedWindowKeepsItsAddress.test.tsx`, RED on the prior bytes (3 of its 4 cases fail: the late registration loses the token, the never-registering window loses the token, the hydrator-less token loses the token), GREEN after, with the fourth case proving a window that actually CLOSES still drops its token.
+
 - 2026-09-19 — **U-M2: `siteTrackingWindow` — one site's Tag Manager tracking, and the frame is only a frame.** `windows/marketing/SiteTrackingWindow.tsx` wraps the canonical `SiteTrackingPanel` `variant="bare"`; a bespoke body here would be a second renderer of a VERDICT, and the part a copy always drops is the container-versus-live-page reconciliation — so the copy would print a confident grade of a container the site does not use. It shipped WITH its `registry/windowRegistryMetadata.ts` row and a `urlSync.key: "site_tracking"` hydrator (`?panels=site_tracking:<siteId>`, `urlSyncId={siteId}` on the panel), so it is in neither baseline in `window-address-baseline.json` — new debt is refused, and this window adds none. Guard: `__tests__/siteTrackingWindowWrapsThePanel.test.tsx` asserts the canonical component is the body, that `variant="bare"` is passed, and that the panel is overlay-bound and carries its subject in the address.
 
 - 2026-09-18 — **F-100: the three organization states, not a bare nullable id.** `windows/marketing/TopicalMapWindow.tsx`'s `MapPicker` read `selectOrganizationId` directly and rendered its "No organization is active" refusal whenever the id was null — which is also true for several seconds on every cold load while boot is still resolving the selection, so a person who belongs to an organization saw a false refusal (R36 / the F-89 class; the module arrived from main after the guard existed, so `check-org-three-states` caught it on first run). Fixed to read `useOrganizationRequired()`'s `organizationState` and render `OrganizationContextNotice` — `"resolving"` shows the shared checking beat, `"required"` shows the same wording as the honest terminal refusal, `"ready"` runs the maps query. Not added to `scripts/org-three-states-census.json` (that census only shrinks) or to the allowlist.
@@ -442,7 +444,7 @@ interface WindowRegistryEntry {
 1. Every metadata entry has `kind`; every overlay id has one lazy renderer in `OverlayController`.
 2. Every `kind: "window"` has `mobilePresentation`.
 3. `slug` and `overlayId` are each unique across the registry.
-4. Every `urlSync.key` has a hydrator in `initUrlHydration.ts` (dev-time assertion), and every hydrator key has a registry `urlSync.key` — a hydrator without one opens from the URL but never writes back, and the writer then waits 5 s for a registration that never comes.
+4. Every `urlSync.key` has a hydrator in `initUrlHydration.ts` (dev-time assertion), and every hydrator key has a registry `urlSync.key` — a hydrator without one opens from the URL but never writes back, and the deep link then ends at the honest "could not open" notice below rather than opening anything.
 5. **A window nobody opened may only open itself where it lives.** Any code that raises a window UNBIDDEN (a timer, a once-a-day mount, a boot-time check — anything that is not a person clicking) must ask `mayRaiseUnbidden(overlayId, pathname)` in `utils/mayRaiseUnbidden.ts` first, and the answer comes from `unbiddenHome` on that window's registry entry. Default deny: no `unbiddenHome`, no self-raising anywhere, and the refusal is warned on the console naming the window. Away from home it is a DEFERRAL, so a raiser must not spend its own once-a-day bookkeeping on a refusal — the window raises on the viewer's next visit to a home route. This governs unbidden raises ONLY: clicking an opener works on every route, always. (D11, 2026-09-17: the daily spend window opened over the `/exports` drop zone. The fix is the primitive, never a route blocklist.)
 
 ### How to add a new overlay
@@ -645,6 +647,29 @@ To give a window a deep link, set `urlSync: { key: "..." }` on its registry entr
 Instance id auto-falls-back to `overlayId` for singletons — URL reads like `?panels=notes:notesWindow`.
 
 Every enabled registry `urlSync.key` must have a hydrator in [`url-sync/initUrlHydration.ts`](./url-sync/initUrlHydration.ts). A dev-only assertion logs missing mappings when `UrlPanelManager` mounts.
+
+### 🚨 THE ADDRESS IS NEVER DESTROYED BY A CLOCK (V-28 NEW-5)
+
+A `?panels=` token whose window has not registered yet is not evidence that the
+token is wrong. Every window enters through `lazyOverlay(() => import(…))`, so
+between the hydrator dispatching the open and the `WindowPanel` calling
+`useUrlSync` there is a chunk to fetch — or, in dev, to COMPILE. `UrlPanelManager`
+therefore:
+
+- **waits on the registration SIGNAL, not a timer** — a key leaves the unresolved
+  set the moment its `urlSyncSlice` entry appears, seconds or a minute later;
+- **writes an unresolved token back into `?panels=` verbatim**, so nothing is
+  ever removed from the address bar because a wait was long, or because this
+  build has no hydrator for the key;
+- **announces**, once the shared lazy-mount deadline
+  (`constants/lazyWindowMount.ts`, 12 s prod / 45 s dev — the same constant
+  `overlayRenderWatchdog` waits on) expires with a key still unresolved: a
+  console scream, a `url-panel-unopened` capture, and an on-screen sentence
+  saying the window did not open and the link is still good.
+
+Only a window that actually registered and then UNregistered — i.e. was closed —
+removes its token. Guard:
+[`__tests__/deepLinkedWindowKeepsItsAddress.test.tsx`](./__tests__/deepLinkedWindowKeepsItsAddress.test.tsx).
 
 ### 🚨 A WINDOW WITH NO ADDRESS CANNOT BE REACHED — the address census (R35)
 
