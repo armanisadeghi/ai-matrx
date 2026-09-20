@@ -204,6 +204,31 @@ Fresh dirty files after this point with no real conflict are committed on
 the ordinary cadence. Real conflicts go to Arman immediately, one at a time,
 with one recommendation.
 
+### 7. The hours after: keep local equal to remote while lanes write
+
+The folder is clean, but dozens of sessions write into it every minute, and
+the next usage pause or crash strands their half-finished files as dirty
+paths nobody owns. Do not let that pile grow back. Every 30 minutes:
+
+- Fetch, `pull --no-rebase`, push. If the pull is refused because an
+  untracked file "would be overwritten", a lane pushed that file from its
+  own worktree and left a copy here: if the copy is byte-identical to
+  `origin/main`, delete it; if it differs, move it aside and land the
+  unique hunk later. Never a blanket clean.
+- Classify the dirty set again with the step 2 table. Files older than 30
+  minutes with no writer are cut-off work: commit them in coherent clusters
+  with explicit paths and plain messages, pull, push. Files touched in the
+  last few minutes belong to a live writer: leave them.
+- Type-check GitHub main in an intake worktree after every batch. A blind
+  batch that breaks the build is undone the same hour, one file at a time,
+  never by reverting the batch.
+- Remove idle worktrees whose tip is on `origin/main` and whose tree is
+  clean. A slow filesystem makes `worktree remove` hang: unregister it under
+  `.git/worktrees/` and delete the directory in the background.
+- The shared-checkout guard reads the whole command line. One `checkout -- .`
+  or `add -A` anywhere in a chained command refuses the entire chain before
+  any of it runs. Name every path.
+
 ## Done means
 
 1. The shared folder is a clean match of `origin/main`.

@@ -123,18 +123,16 @@ export function ConversationBattlePage() {
     >
       <ModePicker />
 
-      <div className="shrink-0 flex items-center gap-2 border-b border-border bg-card px-2 py-1.5">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="shrink-0 flex h-10 items-center gap-2 border-b border-border bg-card px-3">
+        <div className="flex min-w-0 items-center gap-1.5">
           <MessagesSquare className="size-4 text-primary shrink-0" />
-          <div className="min-w-0">
-            <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-              Source conversation
-            </div>
-            <div className="text-xs font-medium truncate max-w-[360px]">
-              {source?.title?.trim() ||
-                (source ? "Untitled chat" : "None selected")}
-            </div>
-          </div>
+          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Source
+          </span>
+          <span className="min-w-0 max-w-[360px] truncate text-xs font-medium text-foreground">
+            {source?.title?.trim() ||
+              (source ? "Untitled chat" : "None selected")}
+          </span>
           {source && (
             <EntityDoorControls
               token="conversation"
@@ -207,12 +205,6 @@ export function ConversationBattlePage() {
         )}
       </div>
 
-      <div className="shrink-0 border-b border-border bg-muted/20 px-3 py-1.5 text-[11px] text-muted-foreground">
-        The source stays untouched. Every column is a durable fork with the full
-        normal chat composer, so its message, attachments, resources, variables,
-        context, and follow-up turns can diverge independently.
-      </div>
-
       <div className="flex-1 min-h-0 overflow-hidden">
         {forks.length === 0 ? (
           <EmptyState
@@ -231,7 +223,7 @@ export function ConversationBattlePage() {
         onClose={() => setPickerOpen(false)}
         onSelect={selectSource}
         scopeId="conversation-battle-source"
-        title="Choose the conversation to fork"
+        title="Choose conversation"
         activeConversationId={source?.conversationId ?? null}
       />
 
@@ -302,22 +294,13 @@ function EmptyState({
 }) {
   return (
     <div className="h-full flex items-center justify-center p-8 text-center">
-      <div className="max-w-lg space-y-4">
+      <div className="space-y-3">
         <div className="mx-auto size-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
           <Split className="size-6" />
         </div>
-        <div>
-          <h2 className="text-base font-semibold">
-            {hasSource
-              ? "Ready to branch the conversation"
-              : "Start every contender from the same history"}
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {hasSource
-              ? "Create two independent copies, then send a different normal chat message in each column."
-              : "Choose an existing chat. Conversation Battle will fork it instead of modifying the original."}
-          </p>
-        </div>
+        <h2 className="text-sm font-semibold">
+          {hasSource ? "Ready to fork" : "Choose a source conversation"}
+        </h2>
         <Button onClick={hasSource ? onCreate : onChoose} disabled={isForking}>
           {isForking ? (
             <Loader2 className="size-4 animate-spin" />

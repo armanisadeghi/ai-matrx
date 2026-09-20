@@ -43,6 +43,12 @@ interface ShareModalProps {
   resourceId: string;
   resourceName: string;
   /**
+   * The organization this resource belongs to. Pass it whenever the caller knows: it scopes
+   * the contact picker to that organization's members (FIX-7B). It is NOT used for any write —
+   * the store still resolves a record's organization off the row itself.
+   */
+  organizationId?: string;
+  /**
    * OPTIONAL override. Leave it out — the modal resolves ownership itself.
    *
    * Only pass this when the caller already holds an authoritative, resolved
@@ -78,6 +84,7 @@ export function ShareModal({
   resourceType,
   resourceId,
   resourceName,
+  organizationId,
   isOwner: isOwnerOverride,
 }: ShareModalProps) {
   const [activeTab, setActiveTab] = useState<
@@ -367,6 +374,7 @@ export function ShareModal({
                     onSuccess={refresh}
                     resourceType={resourceType}
                     resourceId={resourceId}
+                    {...(organizationId ? { organizationId } : {})}
                   />
                 ) : (
                   manageBlockedNotice

@@ -79,7 +79,11 @@ export function NewConversationDialog({
   const user = useAppSelector(selectUser);
   const currentUserId = user?.id;
 
-  const { connections, isLoading: connectionsLoading } = useUserConnections();
+  // THE ONE surface that is about conversations, so it is the one that folds in the people you
+  // have had conversations with. Every other picker names its organization instead (FIX-7B).
+  const { connections, isLoading: connectionsLoading } = useUserConnections({
+    includeConversations: true,
+  });
 
   const userSearchCandidates: UserSearchCandidate[] = (() => {
     const byId = new Map<string, UserSearchCandidate>();

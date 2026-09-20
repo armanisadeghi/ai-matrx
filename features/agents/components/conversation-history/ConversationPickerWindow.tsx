@@ -24,8 +24,6 @@
 
 import { useCallback } from "react";
 import dynamic from "next/dynamic";
-import { MessagesSquare } from "lucide-react";
-
 import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 
@@ -57,7 +55,7 @@ export interface ConversationPickerWindowProps {
    * pickers don't stomp each other's search/filter.
    */
   scopeId: string;
-  /** Header title. Default "Add a chat". */
+  /** Compact draggable-header title. Default "Choose conversation". */
   title?: string;
   /** Highlighted row (the container's currently-active chat). */
   activeConversationId?: string | null;
@@ -68,7 +66,7 @@ export function ConversationPickerWindow({
   onClose,
   onSelect,
   scopeId,
-  title = "Add a chat",
+  title = "Choose conversation",
   activeConversationId,
 }: ConversationPickerWindowProps) {
   if (!open) return null;
@@ -104,19 +102,14 @@ function ConversationPickerWindowInner({
     <WindowPanel
       id={`conversation-picker:${scopeId}`}
       title={title}
-      titleNode={
-        <span className="flex items-center gap-1.5">
-          <MessagesSquare className="size-3.5 text-primary" />
-          {title}
-        </span>
-      }
       onClose={onClose}
-      width={420}
-      height={560}
-      minWidth={320}
-      minHeight={360}
+      width={460}
+      height={480}
+      minWidth={340}
+      minHeight={320}
       position="center"
       bodyClassName="p-0"
+      hidePopOutButton
     >
       <ConversationHistorySidebar
         variant="consumer"
@@ -126,6 +119,8 @@ function ConversationPickerWindowInner({
         activeConversationId={activeConversationId ?? null}
         onOpenConversation={handleOpenConversation}
         openInPlace
+        historyLabel="Conversations"
+        initialSearchOpen
         className="h-full bg-transparent"
       />
     </WindowPanel>

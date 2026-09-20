@@ -38,9 +38,11 @@ import { ShareModal } from "./ShareModal";
 /**
  * Bind as `host={{ share: recordStoreShare }}` on `<RecordsMount>`.
  *
- * `organizationId` rides along on the subject and is deliberately NOT passed
- * down: the store resolves a record's organization off the row itself, so a
- * caller can never name one it is not in.
+ * `organizationId` rides along on the subject. It is NOT used for any write — the store
+ * resolves a record's organization off the row itself, so a caller can never name one it is not
+ * in — but it IS passed down for the contact picker, which must offer the people in THIS
+ * organization and nobody else (FIX-7B: a brand-new organization's share dialog was listing
+ * people from every other organization the viewer belonged to).
  */
 export function recordStoreShare(subject: ShareSubject) {
   return (
@@ -50,6 +52,7 @@ export function recordStoreShare(subject: ShareSubject) {
       resourceType="record"
       resourceId={subject.subjectId}
       resourceName={subject.name}
+      organizationId={subject.organizationId}
     />
   );
 }

@@ -55,6 +55,9 @@ export function InvitationManager({
     loading: operationLoading,
   } = useInvitationOperations(organizationId);
   const { connections, isLoading: connectionsLoading } = useUserConnections({
+    // The people already in THIS organization, never everybody in every organization the
+    // inviter happens to belong to (FIX-7B).
+    organizationId,
     invitationOrganizationId: organizationId,
   });
   // The honest state when the invitation row exists but its email did not go

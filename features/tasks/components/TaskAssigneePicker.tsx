@@ -32,6 +32,12 @@ interface TaskAssigneePickerProps {
   onChange: (userId: string | null) => void;
   /** Controlled size. "sm" for inline chip, "md" for form row. */
   size?: "sm" | "md";
+  /**
+   * The organization this task belongs to. With it, the list is that organization's members —
+   * the people who could actually be given this task (FIX-7B). Without it, it is every
+   * organization the viewer belongs to.
+   */
+  organizationId?: string;
   className?: string;
 }
 
@@ -39,9 +45,12 @@ export default function TaskAssigneePicker({
   assigneeId,
   onChange,
   size = "md",
+  organizationId,
   className,
 }: TaskAssigneePickerProps) {
-  const { connections, isLoading } = useUserConnections();
+  const { connections, isLoading } = useUserConnections(
+    organizationId ? { organizationId } : {},
+  );
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 

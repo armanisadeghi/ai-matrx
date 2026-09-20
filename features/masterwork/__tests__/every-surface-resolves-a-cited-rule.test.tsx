@@ -178,6 +178,12 @@ describe("the surfaces that show a deliverable publish the rules", () => {
     expect(text).toMatch(/<MasterworkRulesProvider[^>]*runId=\{runId\}/);
   });
 
+  // 🚨 THIS LEG IS ABOUT THE ADDRESS ONLY, AND THAT IS ITS LIMIT (walk 14,
+  // defect A). A source grep proved the href string was written and could not
+  // see that the page never RENDERED anything for it, so it stayed green
+  // through a completely dead click. What the address actually opens is
+  // guarded by rendering the real page at it:
+  // `features/masterwork/encore/__tests__/the-run-address-opens-the-deliverable.test.tsx`.
   it("the Encore row opens the Encore detail, never the developer run page", () => {
     const text = source("features/masterwork/encore/EncoreRunPage.tsx");
     expect(text).toContain("/masterwork/encore/${masterworkId}?run=${run.id}");

@@ -4,11 +4,28 @@
  * useUserConnections Hook
  *
  * Aggregates "connections" from multiple sources:
- * 1. Past conversations - Users you've messaged before
+ * 1. Past conversations - Users you've messaged before (OPT IN, see below)
  * 2. Organization members - Members of your organizations
  * 3. Invitation-related users - People in pending invitations (sent to your orgs)
  *
  * Returns deduplicated, alphabetically sorted list of connected users.
+ *
+ * 🚨 A PEOPLE LIST IS SCOPED TO THE ORGANIZATION THE SURFACE IS ABOUT (FIX-7B, 2026-09-20).
+ *
+ * The seventh-pass verdict opened a share dialog in a brand-new organization with exactly two
+ * people in it and was offered "people from all over the database - including four of your own
+ * personal email addresses and named contacts belonging to other companies". Both halves of
+ * that were this hook:
+ *
+ *   · it read EVERY organization the caller belongs to, whatever organization the thing being
+ *     shared, assigned or invited into actually lives in, and
+ *   · it folded in every participant of every conversation the caller has ever had, which is
+ *     bounded by NO organization at all.
+ *
+ * So: a caller that names an `organizationId` gets THAT organization's members and nobody else,
+ * and past conversations are OPT IN (`includeConversations`) rather than always on. The one
+ * surface that legitimately wants people-you-have-talked-to is the one about conversations.
+ * Every other caller - share, assign, invite, approve - names its organization.
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
@@ -63,6 +80,20 @@ interface UseUserConnectionsReturn {
 
 interface UseUserConnectionsOptions {
   /**
+   * THE ORGANIZATION THIS SURFACE IS ABOUT. Naming it makes the list exactly that
+   * organization's members — the people the thing being shared, assigned or invited into is
+   * actually with. Omitting it falls back to every organization the caller belongs to, which
+   * is correct only for a surface that belongs to no single organization.
+   */
+  organizationId?: string;
+  /**
+   * Fold in everyone the caller has ever been in a conversation with. OFF by default: a
+   * conversation is bounded by no organization, so this source puts people from anywhere into
+   * a list that is supposed to be about one organization. Only a surface ABOUT conversations
+   * turns it on.
+   */
+  includeConversations?: boolean;
+  /**
    * Include existing users found through pending invitations for this exact
    * organization. Omit this for ordinary contact pickers. The hook also checks
    * the caller's organization role and excludes personal organizations before
@@ -74,7 +105,7 @@ interface UseUserConnectionsOptions {
 export function useUserConnections(
   options: UseUserConnectionsOptions = {},
 ): UseUserConnectionsReturn {
-  const { invitationOrganizationId } = options;
+  const { organizationId, includeConversations = false, invitationOrganizationId } = options;
   const [connections, setConnections] = useState<ConnectionUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +125,8 @@ export function useUserConnections(
 
   // Extract unique users from conversations
   const conversationUsers = useMemo((): ConnectionUser[] => {
+    // OFF unless the surface asked for it — see the note at the top of this file.
+    if (!includeConversations) return [];
     if (!currentUserId || !conversations) return [];
 
     const usersMap = new Map<string, ConnectionUser>();
@@ -114,7 +147,7 @@ export function useUserConnections(
     });
 
     return Array.from(usersMap.values());
-  }, [conversations, currentUserId]);
+  }, [conversations, currentUserId, includeConversations]);
 
   // Fetch organization members and invitations
   const fetchOrgConnections = useCallback(async (): Promise<
@@ -126,8 +159,15 @@ export function useUserConnections(
 
     const usersMap = new Map<string, ConnectionUser>();
 
+    // THE ONE ORGANIZATION, when the surface named one. `organizations` is the caller's own
+    // membership list, so narrowing to a named id can only ever REMOVE other organizations'
+    // people — it can never reach an organization the caller is not in.
+    const inScope = organizationId
+      ? organizations.filter((org) => org.id === organizationId)
+      : organizations;
+
     // Fetch members for each organization
-    for (const org of organizations) {
+    for (const org of inScope) {
       try {
         // Fetch members via RPC
         const { data: members, error: membersError } = await supabase.rpc(
@@ -221,7 +261,7 @@ export function useUserConnections(
     }
 
     return Array.from(usersMap.values());
-  }, [currentUserId, invitationOrganizationId, organizations, supabase]);
+  }, [currentUserId, invitationOrganizationId, organizationId, organizations, supabase]);
 
   // Main aggregation effect
   useEffect(() => {
@@ -234,8 +274,9 @@ export function useUserConnections(
         return;
       }
 
-      // Wait for conversations and orgs to load
-      if (convoLoading || orgsLoading) {
+      // Wait for orgs to load — and for conversations only when this surface uses them, so a
+      // share dialog never sits on the messaging engine's spinner for a list it will not show.
+      if ((includeConversations && convoLoading) || orgsLoading) {
         return;
       }
 
@@ -300,6 +341,7 @@ export function useUserConnections(
     fetchOrgConnections,
     convoLoading,
     orgsLoading,
+    includeConversations,
   ]);
 
   // Refresh function

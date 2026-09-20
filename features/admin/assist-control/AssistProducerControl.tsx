@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import {
   listAssistProducerPolicies,
   updateAssistProducerPolicy,
@@ -45,6 +47,72 @@ export function AssistProducerControl() {
     }
   };
 
+  const columns: MatrxColumnDef<AssistProducerPolicy>[] = [
+    {
+      id: "producer",
+      header: "Producer",
+      accessorFn: (row) => `${row.display_name} ${row.source_pattern} ${row.rationale}`,
+      width: 360,
+      cell: (row) => (
+        <div className="min-w-0">
+          <div className="truncate font-medium">{row.display_name}</div>
+          <code className="block truncate text-[10px] text-muted-foreground">
+            {row.source_pattern}{row.match_kind === "prefix" ? "*" : ""}
+          </code>
+          <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-muted-foreground">
+            {row.rationale}
+          </p>
+        </div>
+      ),
+    },
+    {
+      id: "disposition",
+      accessorKey: "disposition",
+      header: "Destination",
+      filter: "select",
+      width: 130,
+      cell: (row) => <Badge variant="outline">{row.disposition}</Badge>,
+    },
+    {
+      id: "audit_status",
+      accessorKey: "audit_status",
+      header: "Audit",
+      filter: "select",
+      width: 150,
+      cell: (row) => <span className="inline-flex items-center gap-1"><History className="h-3 w-3" />{row.audit_status}</span>,
+    },
+    {
+      id: "production_enabled",
+      accessorKey: "production_enabled",
+      header: "Produce",
+      filter: "boolean",
+      width: 105,
+      cell: (row) => {
+        const busy = saving === row.id;
+        return <Switch checked={row.production_enabled} disabled={busy} aria-label={`Allow ${row.display_name} to produce`} onCheckedChange={(checked) => void update(row, { production_enabled: checked })} />;
+      },
+    },
+    {
+      id: "presentation_enabled",
+      accessorKey: "presentation_enabled",
+      header: "Present",
+      filter: "boolean",
+      width: 105,
+      cell: (row) => {
+        const busy = saving === row.id;
+        return <Switch checked={row.presentation_enabled} disabled={busy || row.disposition !== "assist"} aria-label={`Allow ${row.display_name} in ambient presentation`} onCheckedChange={(checked) => void update(row, { presentation_enabled: checked })} />;
+      },
+    },
+    {
+      id: "max_pending_per_user",
+      accessorKey: "max_pending_per_user",
+      header: "Pending cap",
+      filter: "number",
+      width: 120,
+      cell: (row) => <span className="tabular-nums">{row.max_pending_per_user}</span>,
+    },
+  ];
+
   return (
     <section className="space-y-3 rounded-lg border border-border p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -79,71 +147,18 @@ export function AssistProducerControl() {
         </p>
       )}
 
-      <div className="overflow-x-auto rounded-md border border-border">
-        <table className="w-full text-xs">
-          <thead className="bg-muted/50 text-muted-foreground">
-            <tr>
-              <th className="px-3 py-2 text-left">Producer</th>
-              <th className="px-3 py-2 text-left">Destination</th>
-              <th className="px-3 py-2 text-left">Audit</th>
-              <th className="px-3 py-2 text-center">Produce</th>
-              <th className="px-3 py-2 text-center">Present</th>
-              <th className="px-3 py-2 text-right">Pending cap</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(policies.data ?? []).map((row) => {
-              const busy = saving === row.id;
-              return (
-                <tr key={row.id} className="border-t border-border align-top">
-                  <td className="px-3 py-2">
-                    <div className="font-medium">{row.display_name}</div>
-                    <code className="text-[10px] text-muted-foreground">
-                      {row.source_pattern}
-                      {row.match_kind === "prefix" ? "*" : ""}
-                    </code>
-                    <p className="mt-1 max-w-lg text-[11px] leading-snug text-muted-foreground">
-                      {row.rationale}
-                    </p>
-                  </td>
-                  <td className="px-3 py-2">
-                    <Badge variant="outline">{row.disposition}</Badge>
-                  </td>
-                  <td className="px-3 py-2">
-                    <span className="inline-flex items-center gap-1">
-                      <History className="h-3 w-3" />
-                      {row.audit_status}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-center">
-                    <Switch
-                      checked={row.production_enabled}
-                      disabled={busy}
-                      aria-label={`Allow ${row.display_name} to produce`}
-                      onCheckedChange={(checked) =>
-                        void update(row, { production_enabled: checked })
-                      }
-                    />
-                  </td>
-                  <td className="px-3 py-2 text-center">
-                    <Switch
-                      checked={row.presentation_enabled}
-                      disabled={busy || row.disposition !== "assist"}
-                      aria-label={`Allow ${row.display_name} in ambient presentation`}
-                      onCheckedChange={(checked) =>
-                        void update(row, { presentation_enabled: checked })
-                      }
-                    />
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">
-                    {row.max_pending_per_user}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <MatrxDataTable
+        urlState={{ id: "assist-producer-controls" }}
+        data={policies.data ?? []}
+        columns={columns}
+        getRowId={(row) => row.id}
+        isLoading={policies.isPending}
+        isFetching={policies.isFetching}
+        pageSize={25}
+        emptyState={{ title: "No Assist producer controls" }}
+        toolbar={{ search: true, searchPlaceholder: "Search producer controls…" }}
+        detail={{ enabled: false }}
+      />
     </section>
   );
 }

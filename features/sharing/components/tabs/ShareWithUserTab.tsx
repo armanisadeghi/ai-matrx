@@ -56,6 +56,13 @@ interface ShareWithUserTabProps {
   onSuccess: () => void;
   resourceType: ResourceType;
   resourceId: string;
+  /**
+   * THE ORGANIZATION THIS THING BELONGS TO (FIX-7B). With it, the contact list is that
+   * organization's members and nobody else. Without it the list is every organization the
+   * viewer belongs to, which is what a brand-new organization's share dialog looked like when
+   * the seventh pass found it offering "people from all over the database".
+   */
+  organizationId?: string;
   /** Identity + the page's leading KPIs, mirrored into the failure payload. */
   copy?: SharingCopyContext;
 }
@@ -89,6 +96,7 @@ export function ShareWithUserTab({
   onSuccess,
   resourceType,
   resourceId,
+  organizationId,
   copy,
 }: ShareWithUserTabProps) {
   const [email, setEmail] = useState("");
@@ -101,7 +109,12 @@ export function ShareWithUserTab({
   );
   const { toast } = useToast();
 
-  const { connections, isLoading: connectionsLoading } = useUserConnections();
+  // Scoped: this dialog is about ONE thing, in ONE organization, and the people it offers are
+  // the people in that organization. Past conversations are not folded in — a conversation is
+  // bounded by no organization (FIX-7B).
+  const { connections, isLoading: connectionsLoading } = useUserConnections(
+    organizationId ? { organizationId } : {},
+  );
 
   const filteredConnections = useMemo(() => {
     if (!searchQuery.trim()) return connections;
