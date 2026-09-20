@@ -46,11 +46,26 @@ be read here as "everything is fine".
 The server declares what its read cannot see — three sentences, named ONCE at
 `aidream/services/google_sync/kinds.py::TAG_MANAGER_READ_CAVEATS`, carried on the snapshot payload
 as `caveats` and on the `tracking_health` tool answer as the same list. **The panel prints all of
-them, verbatim, and selects among them never.** The one that matters most is *"tracking installed
-outside Tag Manager … is invisible here, so a missing tag means missing from this container, not
-missing from the site"*: without it the headline *"GA4 not installed · conversion not tracked"*
-reads as a verdict on the whole site, which is the exact misread this feature exists to prevent
-(V-27 NEW-3).
+them, verbatim, and selects among them never.** The second one is the one that matters most:
+without it the headline *"GA4 not installed · conversion not tracked"* reads as a verdict on the
+whole site rather than on one container, which is the exact misread this feature exists to
+prevent (V-27 NEW-3).
+
+**This repo authors no caveat sentence, not even a paraphrase and not even in a comment**
+(V-28 NEW-3). The freshness line's provider-lag slot used to hold a frontend-written summary of
+caveat #1 for `tag_manager`, printed directly above the server's own list — a fourth copy that
+drifts the moment the server edits its words. `PROVIDER_LAG_SENTENCE` now has no `tag_manager`
+entry at all; the panel hands `DataFreshnessLine` the finding's own `caveats`, and its first
+sentence takes that slot verbatim. `trackingSurfaces.test.ts` greps every non-test source file
+under `features/marketing` for the caveats' words and fails on any copy.
+
+**A payload whose caveats were never declared says so** (V-28 NEW-2). A pre-2026-09-20 row
+carries a singular `caveat` string, or none at all; reading either as `[]` renders no caveat
+block and hands the reader a confident grade with its limits silently removed. `parseCaveats`
+keeps whatever words the payload has and appends `CAVEATS_NOT_DECLARED` — *"The server did not
+declare its caveats for this snapshot … re-check to refresh it."* — so the list is never empty
+and absence is never silence. That stand-in is not a caveat: it says nothing about what the read
+can see.
 
 ## Files
 
@@ -59,17 +74,23 @@ reads as a verdict on the whole site, which is the exact misread this feature ex
 | `types.ts` | The `tag_manager_findings` payload parser. `__kind` is kept, never stripped; a payload that does not declare it returns `null` and the panel says it cannot read that snapshot. |
 | `health.ts` | **THE ONE tracking verdict.** Pure, no clock of its own. The chip, the status board and the panel all read it, so they cannot disagree. It also carries `thresholdUnavailable` — the knob reader's own sentence when the staleness threshold could not be read — so every surface prints the same stand-in through ONE channel. |
 | `service.ts` | The two doors: the direct Supabase read of the newest `web.tag_manager_snapshot`, and `POST /google-sync/tag-manager/snapshot` through `postGoogleBackend`. |
-| `hooks.ts` | ONE query key, so the chip on a row and the panel in a window make the same read. |
+| `hooks.ts` | ONE query key, so the chip on a row and the panel in a window make the same read — and **`useSiteConnectionStatuses`, the ONE way any surface gets the six connection statuses**. The snapshot read is gated on the container binding, so a portfolio of unbound sites costs no queries. |
 | `knobs.ts` | `google.tracking.snapshot_max_age_hours` (168). A missing row raises by design; this turns the raise into a printed stand-in. The reason travels with the value — `useSiteTrackingStatus` passes both into the verdict, so the chip can never read as a silent "never stale". |
 | `components/SiteTrackingPanel.tsx` | **THE canonical panel.** Every surface renders this — the settings card and the window body both wrap it. |
 | `__tests__/` | 41 tests over the derivation, the panel in each graded state, and the three shared primitives U-M2 extended. |
 
 ## Where it surfaces
 
-- **The sixth connection chip.** `lib/site-status.ts` gained the key `tracking`, derived through
-  `trackingHealth`. It is optional data: a caller that has not read the snapshot still gets the
-  honest binding-only answer ("bound but never checked" / "not connected"), never a chip that
-  reads "off" on a bound, passing site. `SitePeekBody` passes the real snapshot.
+- **The sixth connection chip, on five surfaces.** `lib/site-status.ts` gained the key
+  `tracking`, derived through `trackingHealth`. 🚨 **The tracking input is REQUIRED and is read
+  where the statuses are derived** — `useSiteConnectionStatuses` — so the site record's
+  Connections board, the brand's site table and cards, the brand workspace's site list, the site
+  peek and the site surface's agent context all carry the same verdict and the same reason when
+  the staleness knob cannot be read. It was an optional second argument until 2026-09-20 and four
+  of those five never passed it, so `thresholdUnavailable` was `null` by construction and an
+  unreadable knob announced itself on the panel alone (V-28 NEW-1). A surface that renders no
+  tracking verdict at all (the Search Console checklist, the intake wizard) calls
+  `siteProviderStatuses`, which returns the five and cannot silently omit the sixth.
 - **The settings card.** `components/settings/SiteTrackingCard.tsx` — a pure
   `<SiteTrackingPanel />`, mounted in `SiteIntegrationsWorkspace`.
 - **The window.** `features/window-panels/windows/marketing/SiteTrackingWindow.tsx`, overlay
@@ -89,7 +110,13 @@ reads as a verdict on the whole site, which is the exact misread this feature ex
   does not use. `SiteTrackingCard` and `SiteTrackingWindow` are doors, never bodies.
 - **The freshness line's third provider is a POINT IN TIME.** A snapshot has no "data through"
   day, so `describeFreshness` contributes no range clause for `tag_manager`; printing "no data
-  stored yet" beside a snapshot we are holding would be a lie about a record in hand.
+  stored yet" beside a snapshot we are holding would be a lie about a record in hand. Its lag
+  slot holds the SERVER's first caveat when one is declared and **nothing at all** when none is —
+  never a frontend guess at what the read does not cover.
+- **The chips need a React Query client.** They read the snapshot and the knob themselves, so a
+  host that renders them outside `QueryClientProvider` throws rather than quietly showing a chip
+  derived from nothing. Every route has one; a test that renders a list presentation must supply
+  one (`site-list-presentation.test.tsx` does).
 - **Re-check is expensive and says so.** It spends a Tag Manager API request AND fetches the
   customer's own homepage. The confirm names both before it runs.
 - **The rollout sentence is only said when the rollout is what is blocking.** A product can be
@@ -109,6 +136,28 @@ reads as a verdict on the whole site, which is the exact misread this feature ex
   jest over fixtures and on reading the live table's generated types.
 
 ## Change log
+
+- **2026-09-20** — **V-28 NEW-1, NEW-2 and NEW-3 closed, at the class.**
+  (1) **NEW-1, shipped:** `siteConnectionStatuses(site, tracking?)` took the tracking input as an
+  OPTIONAL second argument and four of the five chip surfaces never passed it, so the knob's
+  failure reason reached the panel and nothing else — on the site record's Connections board, the
+  brand's site table and cards and the brand workspace list, `thresholdUnavailable` was `null` by
+  construction. The argument is required now; `siteProviderStatuses` serves the two surfaces that
+  render no tracking verdict; and every UI caller goes through the new
+  `useSiteConnectionStatuses`, which does the snapshot and knob reads where the statuses are
+  derived. Caller census (before → after): `SiteConnectionChips` (was the only one passing it,
+  now reads it itself so no host can forget), `SiteOverview` ×2 (board + agent scope, both on the
+  hook), `site-surface-base` (hook), `siteSetupChecklist` + `SiteIntakeWizard`
+  (`siteProviderStatuses`), `SitePeekBody` (the prop is gone). (2) **NEW-2:** a payload with no
+  `caveats` key — including a pre-`dba5c976` row's singular `caveat` — parsed to `[]` and printed
+  no caveat block at all; it now keeps what words it has and appends `CAVEATS_NOT_DECLARED`.
+  (3) **NEW-3:** the fourth frontend copy of caveat #1
+  (`google/freshness.ts::PROVIDER_LAG_SENTENCE.tag_manager`) is deleted; the lag slot reads the
+  server's own caveats off the same finding, and a grep guard in `trackingSurfaces.test.ts` fails
+  on any caveat wording authored under `features/marketing`.
+  Red first: **12 tests failed** on the pre-change source (the chip surfaces with an unreadable
+  knob; the absent and singular caveat cases; the deleted lag sentence; both grep guards), all
+  green after.
 
 - **2026-09-20** — **V-27 NEW-3 and NEW-5 closed.** (1) The panel printed ONE of the server's
   three caveats because the payload hardcoded one sentence. `caveat: string | null` is now

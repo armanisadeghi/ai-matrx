@@ -3,13 +3,17 @@
  * extension were done carelessly:
  *
  *  1. `FreshnessProvider` gained a third member. A snapshot is a POINT IN TIME, so the line must
- *     not print "no data stored yet" beside a snapshot we are holding — and its lag sentence must
- *     be the Tag Manager caveat, not a reporting delay Tag Manager does not have.
+ *     not print "no data stored yet" beside a snapshot we are holding — and the clause in the
+ *     Tag Manager provider's lag slot is the SERVER's own first caveat, read off the finding.
+ *     The frontend authors no caveat sentence of its own (V-28 NEW-3).
  *  2. `site-status.ts` gained a sixth chip. It must derive through the ONE tracking derivation,
  *     so the chip and the panel can never disagree.
  *  3. `integrations-schema.ts` gained the `googleTagManager` binding. The container reference is
  *     the PUBLIC id, because that is the only id the live page carries.
  */
+
+import fs from "node:fs";
+import path from "node:path";
 
 import type { Json } from "@/types/database.types";
 import {
@@ -28,11 +32,41 @@ import { trackingKnobStandIn } from "@/features/marketing/tracking/knobs";
 const NOW = new Date("2026-09-19T12:00:00Z");
 const CONNECTION = "11111111-1111-4111-8111-111111111111";
 
+const SERVER_CAVEATS = [
+  "Read from the container's current Tag Manager workspace draft, which can differ from what is published on the live site.",
+  "Tracking installed outside Tag Manager — a hard-coded Google tag, a plugin, or server-side tagging — is invisible here, so a missing tag means missing from this container, not missing from the site.",
+];
+
 describe("the freshness line's third provider", () => {
-  it("says the Tag Manager caveat, not a reporting lag Tag Manager does not have", () => {
-    expect(PROVIDER_LAG_SENTENCE.tag_manager).toBe(
-      "Tag Manager shows the container's workspace draft, not what is published",
-    );
+  it("🚨 authors NO lag sentence for Tag Manager — the server owns that sentence (V-28 NEW-3)", () => {
+    expect(PROVIDER_LAG_SENTENCE.tag_manager).toBeUndefined();
+    expect(Object.keys(PROVIDER_LAG_SENTENCE).sort()).toEqual([
+      "analytics",
+      "search_console",
+    ]);
+  });
+
+  it("🚨 prints the SERVER's own first caveat, verbatim, in the lag slot", () => {
+    const line = describeFreshness({
+      provider: "tag_manager",
+      dataThrough: null,
+      pulledAt: "2026-09-19T11:20:00Z",
+      warningAfterHours: 168,
+      serverCaveats: SERVER_CAVEATS,
+      now: NOW,
+    });
+    expect(line.sentence).toContain(SERVER_CAVEATS[0]);
+  });
+
+  it("says nothing about coverage when the server declared no caveat — never a frontend guess", () => {
+    const line = describeFreshness({
+      provider: "tag_manager",
+      dataThrough: null,
+      pulledAt: "2026-09-19T11:20:00Z",
+      warningAfterHours: 168,
+      now: NOW,
+    });
+    expect(line.sentence).toBe("pulled 40 minutes ago");
   });
 
   it("🚨 prints no range clause for a snapshot — 'no data stored yet' beside a real snapshot lies", () => {
@@ -41,11 +75,11 @@ describe("the freshness line's third provider", () => {
       dataThrough: null,
       pulledAt: "2026-09-19T11:20:00Z",
       warningAfterHours: 168,
+      serverCaveats: SERVER_CAVEATS,
       now: NOW,
     });
     expect(line.sentence).not.toContain("no data stored yet");
     expect(line.sentence).toContain("pulled 40 minutes ago");
-    expect(line.sentence).toContain("workspace draft");
     expect(line.stale).toBe(false);
   });
 
@@ -98,7 +132,17 @@ const BOUND: Json = {
   },
 };
 
-function trackingChip(integrations: Json, tracking?: Parameters<typeof siteConnectionStatuses>[1]) {
+const NO_TRACKING_DATA = {
+  snapshot: null,
+  maxAgeHours: 168,
+  thresholdUnavailable: null,
+  now: NOW,
+} as const;
+
+function trackingChip(
+  integrations: Json,
+  tracking: Parameters<typeof siteConnectionStatuses>[1] = NO_TRACKING_DATA,
+) {
   const statuses = siteConnectionStatuses(siteRow(integrations), tracking);
   const chip = statuses.find((status) => status.key === "tracking");
   if (!chip) throw new Error("no tracking chip");
@@ -270,5 +314,85 @@ describe("the googleTagManager binding", () => {
     expect(
       issues.some((issue) => issue.field === "googleTagManager.resourceRef"),
     ).toBe(true);
+  });
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// V-28 NEW-1 and NEW-3: two grep guards over the source itself. Both close a class that a
+// unit test over one module cannot see — a SECOND place that derives the chip without the
+// tracking input, and a SECOND authority on a caveat sentence.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const REPO_ROOT = path.resolve(__dirname, "../../../..");
+
+function marketingSourceFiles(): string[] {
+  const out: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === "__tests__" || entry.name === "node_modules") continue;
+        walk(full);
+        continue;
+      }
+      if (!/\.tsx?$/.test(entry.name)) continue;
+      if (/\.test\.tsx?$/.test(entry.name)) continue;
+      out.push(full);
+    }
+  };
+  walk(path.join(REPO_ROOT, "features/marketing"));
+  return out;
+}
+
+describe("🚨 no caveat sentence is authored in the frontend (V-28 NEW-3)", () => {
+  // The server declares the caveats (aidream `google_sync/kinds.py::TAG_MANAGER_READ_CAVEATS`)
+  // and every client prints them verbatim. A frontend copy — even a paraphrase, even in a
+  // comment — is a second authority that drifts the moment the server edits its own words.
+  const CAVEAT_FINGERPRINTS = [
+    /workspace draft/i,
+    /not what is published/i,
+    /invisible here/i,
+    /consent banner/i,
+    /declared consent settings/i,
+  ];
+
+  it("finds no copy of the server's caveat words anywhere under features/marketing", () => {
+    const offenders: string[] = [];
+    for (const file of marketingSourceFiles()) {
+      const text = fs.readFileSync(file, "utf8");
+      for (const pattern of CAVEAT_FINGERPRINTS) {
+        if (pattern.test(text)) {
+          offenders.push(`${path.relative(REPO_ROOT, file)} :: ${pattern}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("🚨 every tracking-chip surface derives through the ONE input (V-28 NEW-1)", () => {
+  it("nobody outside the derivation and its one hook calls siteConnectionStatuses()", () => {
+    // Four of five chip surfaces called it with no tracking argument, so `thresholdUnavailable`
+    // was null BY CONSTRUCTION and the knob's failure reason reached only the panel. The
+    // argument is required now, and the UI reaches it through `useSiteConnectionStatuses`
+    // alone — so no surface can be built that forgets the snapshot or the knob again.
+    const allowed = new Set([
+      "features/marketing/lib/site-status.ts",
+      "features/marketing/tracking/hooks.ts",
+    ]);
+    const offenders = marketingSourceFiles()
+      .filter((file) => /siteConnectionStatuses\s*\(/.test(fs.readFileSync(file, "utf8")))
+      .map((file) => path.relative(REPO_ROOT, file))
+      .filter((rel) => !allowed.has(rel));
+    expect(offenders).toEqual([]);
+  });
+
+  it("every renderer of the chip component lets the component read the tracking input", () => {
+    const offenders = marketingSourceFiles()
+      .filter((file) => /<SiteConnectionChips[\s>]/.test(fs.readFileSync(file, "utf8")))
+      .filter((file) => /<SiteConnectionChips[^>]*\btracking=/.test(fs.readFileSync(file, "utf8")))
+      .map((file) => path.relative(REPO_ROOT, file));
+    expect(offenders).toEqual([]);
   });
 });

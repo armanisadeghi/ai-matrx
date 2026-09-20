@@ -31,7 +31,7 @@ import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { extractErrorMessage } from "@/utils/errors";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { siteConnectionStatuses } from "@/features/marketing/lib/site-status";
+import { siteProviderStatuses } from "@/features/marketing/lib/site-status";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   useGscBackfillStatus,
@@ -135,7 +135,7 @@ export function SiteIntakeWizard() {
   const organizationId = site.organization_id ?? null;
 
   // ── Connect + import state (server truth, refresh-proof) ─────────────────
-  const gscStatus = siteConnectionStatuses(site).find(
+  const gscStatus = siteProviderStatuses(site).find(
     (status) => status.key === "search_console",
   );
   const gscBound = gscStatus?.state !== "off";

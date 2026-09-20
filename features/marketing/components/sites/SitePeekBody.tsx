@@ -53,7 +53,6 @@ import {
   type GscPeekMetric,
 } from "@/features/marketing/components/sites/SiteKpiPeeks";
 import { siteKpiDelta } from "@/features/marketing/analytics/gsc-delta";
-import { useSiteTrackingStatus } from "@/features/marketing/tracking/hooks";
 
 const CHART_METRICS: Array<{ key: GscPeekMetric; label: string }> = [
   { key: "clicks", label: "Clicks" },
@@ -71,10 +70,6 @@ export default function SitePeekBody({ site }: SitePeekBodyProps) {
   const daily = useSiteGscDaily(site.id, 90);
   // access-errors: ok — decorative top-pages peek under the same list-row data
   const topPages = useSiteGscTopPages(site.id, 90, 10);
-  // The sixth chip's real verdict. Same query key as the tracking panel's, so the Quick view and
-  // the panel can never show two different answers for one site.
-  const tracking = useSiteTrackingStatus(site);
-
   // ONE judge for the delta, on BOTH windows' coverage (round-3 verdict B-N1).
   const clicksDelta = siteKpiDelta(site, "clicks");
   const impressionsDelta = siteKpiDelta(site, "impressions");
@@ -246,7 +241,7 @@ export default function SitePeekBody({ site }: SitePeekBodyProps) {
       )}
     </div>
 
-    <SiteConnectionChips site={site} tracking={tracking} />
+    <SiteConnectionChips site={site} />
 
     <div className="flex items-center justify-between border-t border-border/60 pt-2 text-[10px] text-muted-foreground">
       <span className="capitalize">

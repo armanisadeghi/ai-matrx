@@ -265,10 +265,13 @@ describe("SiteTrackingPanel", () => {
     expect(text).toContain(
       "Consent is read from each tag's own declared consent settings. A consent banner that blocks tags without declaring it in Tag Manager does not show up.",
     );
-    // …and the freshness line says the same thing in its own words, on every surface.
+    // …and the freshness line's lag slot holds the SERVER's own first caveat, off the same
+    // finding — the frontend paraphrase that used to sit there was a fourth copy of a sentence
+    // this repo must never author (V-28 NEW-3).
     expect(text).toContain(
-      "Tag Manager shows the container's workspace draft, not what is published",
+      "pulled 1 hour ago · Read from the container's current Tag Manager workspace draft,",
     );
+    expect(text).not.toContain("Tag Manager shows the container's");
   });
 
   it("🚨 says plainly when the container is NOT on the live page", () => {

@@ -1,10 +1,26 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
+import type { ReactElement } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { MatrxDataTableMobileCardControls } from "@ai-matrx/design-system/data-table/types";
 import type { SiteListRow } from "@/features/marketing/types";
 import {
   renderSiteListMobileCard,
   SITE_LIST_COLUMNS,
 } from "./site-list-presentation";
+
+/**
+ * The connection chips read the site's tracking snapshot and the staleness knob themselves now
+ * (V-28 NEW-1), so a caller cannot render them without that input — which means these list
+ * presentations render inside the app's query client, exactly as the routes do.
+ */
+function renderToStaticMarkup(node: ReactElement): string {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  return renderMarkup(
+    <QueryClientProvider client={client}>{node}</QueryClientProvider>,
+  );
+}
 
 const row: SiteListRow = {
   brand_id: "brand-1",

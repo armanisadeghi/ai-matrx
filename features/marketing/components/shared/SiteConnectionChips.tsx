@@ -5,11 +5,8 @@ import { Globe2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MarketingSite } from "@/features/marketing/types";
 import { secureImageUrl } from "@/features/marketing/lib/website-url";
-import {
-  siteConnectionStatuses,
-  type SiteConnectionState,
-  type SiteTrackingStatusInput,
-} from "@/features/marketing/lib/site-status";
+import type { SiteConnectionState } from "@/features/marketing/lib/site-status";
+import { useSiteConnectionStatuses } from "@/features/marketing/tracking/hooks";
 
 const stateDotClass: Record<SiteConnectionState, string> = {
   connected: "bg-emerald-500",
@@ -25,15 +22,16 @@ const stateTextClass: Record<SiteConnectionState, string> = {
 
 /**
  * The six big-picture connection chips (Init / GSC / GA4 / PSI / CMS / Tracking),
- * derived exclusively through lib/site-status.ts so every surface agrees.
+ * derived exclusively through `useSiteConnectionStatuses` so every surface agrees.
  *
- * `tracking` is optional: a caller that has already read the site's newest Tag Manager snapshot
- * passes it and the chip carries the real verdict; one that has not still gets the honest
- * binding-only answer (never a chip that reads "off" on a bound, passing site).
+ * 🚨 THE COMPONENT READS THE TRACKING INPUT ITSELF — there is no prop for it, so no host can
+ * forget it. Three of the four hosts did (V-28 NEW-1), and on those the staleness knob's
+ * failure reason was `null` by construction: an unreadable knob meant nothing was called stale
+ * and nothing said so. The reads are keyed queries, so several chips over one site make one
+ * request.
  */
 export function SiteConnectionChips({
   site,
-  tracking,
   className,
 }: {
   // `domain` / `root_url` are part of the status derivation now: a Search
@@ -41,6 +39,8 @@ export function SiteConnectionChips({
   // can say "does not match this site" instead of "Connected".
   site: Pick<
     MarketingSite,
+    | "id"
+    | "organization_id"
     | "initialized_at"
     | "initialization"
     | "integrations"
@@ -48,10 +48,9 @@ export function SiteConnectionChips({
     | "domain"
     | "root_url"
   >;
-  tracking?: SiteTrackingStatusInput;
   className?: string;
 }) {
-  const statuses = siteConnectionStatuses(site, tracking);
+  const statuses = useSiteConnectionStatuses(site);
   return (
     <div className={cn("flex flex-wrap items-center gap-1", className)}>
       {statuses.map((status) => (

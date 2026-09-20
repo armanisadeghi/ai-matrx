@@ -16,9 +16,17 @@ import type { TagManagerSnapshotRow } from "@/features/marketing/tracking/types"
  * The sixth, `tracking`, is the Tag Manager verdict (google-native PLAN §4.10 Plane A). Its
  * derivation lives in `features/marketing/tracking/health.ts` — the same one the
  * `SiteTrackingPanel` renders — so the chip and the panel can never disagree either. It needs
- * the site's newest snapshot row, which this pure function cannot read, so the caller passes it;
- * with nothing passed the chip still tells the truth from the BINDING alone ("bound but never
- * checked" / "not connected"), never a grey blank.
+ * the site's newest snapshot row and the staleness knob's state, which this pure function
+ * cannot read, so the caller passes them.
+ *
+ * 🚨 THE TRACKING INPUT IS REQUIRED, and there is ONE place UI gets it:
+ * `useSiteConnectionStatuses` (`features/marketing/tracking/hooks.ts`). It was optional until
+ * 2026-09-20, and four of the five surfaces that render the tracking chip simply did not pass
+ * it — so `thresholdUnavailable` was `null` BY CONSTRUCTION on the site record's Connections
+ * board, the brand's site table, its cards and the brand workspace list, and an unreadable
+ * staleness knob announced itself on the panel alone while four screens quietly called nothing
+ * stale (V-28 NEW-1). A surface that renders no tracking verdict at all calls
+ * `siteProviderStatuses` instead, which cannot silently omit one.
  */
 export type SiteConnectionState = "connected" | "attention" | "off";
 
@@ -136,14 +144,14 @@ export function parseInitialization(
  */
 function trackingStatus(
   containerBound: boolean,
-  tracking: SiteTrackingStatusInput | undefined,
+  tracking: SiteTrackingStatusInput,
 ): SiteConnectionStatus {
   const health = trackingHealth({
-    snapshot: tracking?.snapshot ?? null,
+    snapshot: tracking.snapshot,
     containerBound,
-    maxAgeHours: tracking?.maxAgeHours ?? null,
-    thresholdUnavailable: tracking?.thresholdUnavailable ?? null,
-    now: tracking?.now ?? new Date(),
+    maxAgeHours: tracking.maxAgeHours,
+    thresholdUnavailable: tracking.thresholdUnavailable ?? null,
+    now: tracking.now ?? new Date(),
   });
   const detail = health.stale
     ? `${health.detail} — last checked more than your organization allows before a tracking check is called stale.`
@@ -177,18 +185,45 @@ export interface SiteTrackingStatusInput {
   now?: Date;
 }
 
+/** The columns every status derivation reads. Pure; no fetching. */
+export type SiteStatusInput = Pick<
+  MarketingSite,
+  | "initialized_at"
+  | "initialization"
+  | "integrations"
+  | "gsc_synced_at"
+  | "domain"
+  | "root_url"
+>;
+
+/** True when this site has a Tag Manager container bound — the gate on reading a snapshot. */
+export function siteHasTagManagerContainer(
+  site: Pick<MarketingSite, "integrations">,
+): boolean {
+  const binding = parseSiteIntegrations(site.integrations).googleTagManager;
+  return binding.enabled && Boolean(binding.resourceRef.trim());
+}
+
+/**
+ * The five statuses that need nothing but the row. For a surface that renders NO tracking
+ * verdict (the Search Console checklist, the intake wizard) — it cannot forget an input it is
+ * never handed, and it cannot accidentally print a tracking chip derived from nothing.
+ */
+export function siteProviderStatuses(site: SiteStatusInput): SiteConnectionStatus[] {
+  return deriveStatuses(site, null);
+}
+
 /** Derive the six connection statuses from a site row. Pure; no fetching. */
 export function siteConnectionStatuses(
-  site: Pick<
-    MarketingSite,
-    | "initialized_at"
-    | "initialization"
-    | "integrations"
-    | "gsc_synced_at"
-    | "domain"
-    | "root_url"
-  >,
-  tracking?: SiteTrackingStatusInput,
+  site: SiteStatusInput,
+  tracking: SiteTrackingStatusInput,
+): SiteConnectionStatus[] {
+  return deriveStatuses(site, tracking);
+}
+
+function deriveStatuses(
+  site: SiteStatusInput,
+  tracking: SiteTrackingStatusInput | null,
 ): SiteConnectionStatus[] {
   const init = parseInitialization(site);
   const integrations = parseSiteIntegrations(site.integrations);
@@ -312,7 +347,14 @@ export function siteConnectionStatuses(
         ? "Configured kind, not connected"
         : "Not configured",
     ),
-    trackingStatus(integrations.googleTagManager.enabled &&
-      Boolean(integrations.googleTagManager.resourceRef.trim()), tracking),
+    ...(tracking
+      ? [
+          trackingStatus(
+            integrations.googleTagManager.enabled &&
+              Boolean(integrations.googleTagManager.resourceRef.trim()),
+            tracking,
+          ),
+        ]
+      : []),
   ];
 }

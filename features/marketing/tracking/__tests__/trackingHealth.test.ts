@@ -12,6 +12,7 @@ import {
   trackingSentence,
 } from "@/features/marketing/tracking/health";
 import {
+  CAVEATS_NOT_DECLARED,
   parseTrackingFindings,
   type TagManagerSnapshotRow,
 } from "@/features/marketing/tracking/types";
@@ -276,12 +277,35 @@ describe("parseTrackingFindings", () => {
     expect(parsed?.caveats[2]).toContain("consent banner");
   });
 
-  it("reads a payload with no caveats as an empty list, never as a crash", () => {
+  it("🚨 a payload with NO caveats key prints an honest stand-in, never silence (V-28 NEW-2)", () => {
+    // A row written by a server that did not declare its caveats used to parse to `[]`, and the
+    // panel then rendered no caveat block at all — LESS honest than before the caveats existed,
+    // and silent about it. Law 4: the stand-in announces itself with its remedy.
     const parsed = parseTrackingFindings({
       __kind: "tag_manager_findings",
       checks: [],
     } as unknown as Json);
-    expect(parsed?.caveats).toEqual([]);
+    expect(parsed?.caveats).toEqual([CAVEATS_NOT_DECLARED]);
+    expect(CAVEATS_NOT_DECLARED).toContain("did not declare its caveats");
+    expect(CAVEATS_NOT_DECLARED).toContain("re-check");
+  });
+
+  it("🚨 folds a pre-2026-09-20 singular `caveat` into the list AND still says the rest are missing", () => {
+    const parsed = parseTrackingFindings({
+      __kind: "tag_manager_findings",
+      checks: [],
+      caveat: "Read from the container's current Tag Manager workspace draft.",
+    } as unknown as Json);
+    expect(parsed?.caveats).toEqual([
+      "Read from the container's current Tag Manager workspace draft.",
+      CAVEATS_NOT_DECLARED,
+    ]);
+  });
+
+  it("says nothing extra when the server DID declare its caveats", () => {
+    expect(parseTrackingFindings(findings())?.caveats).not.toContain(
+      CAVEATS_NOT_DECLARED,
+    );
   });
 
   it("keeps __kind on the parsed shape — the marker is part of the data", () => {

@@ -29,16 +29,21 @@ export const FRESHNESS_WARNING_HOURS_KNOB = "freshness_warning_hours";
 
 export type FreshnessProvider = "search_console" | "analytics" | "tag_manager";
 
-/** What Google itself does, in plain words — never a guess per surface. */
-export const PROVIDER_LAG_SENTENCE: Record<FreshnessProvider, string> = {
+/**
+ * What Google itself does, in plain words — never a guess per surface.
+ *
+ * 🚨 A PROVIDER IS HERE ONLY IF WE ARE THE AUTHOR OF THE SENTENCE. Search Console and Analytics
+ * have a reporting lag that is ours to state. Tag Manager has none: what it has is a set of
+ * caveats the SERVER declares with the snapshot
+ * (`aidream/services/google_sync/kinds.py::TAG_MANAGER_READ_CAVEATS`), and a frontend paraphrase
+ * of one of them was a fourth copy of a sentence that can drift the moment the server edits its
+ * own words (V-28 NEW-3). So `tag_manager` is deliberately absent, and the caller hands the
+ * describer the server's own caveats through `serverCaveats` — read off the same finding the
+ * panel prints, one source.
+ */
+export const PROVIDER_LAG_SENTENCE: Partial<Record<FreshnessProvider, string>> = {
   search_console: "Google runs about three days behind",
   analytics: "Google runs about a day behind",
-  // Tag Manager has no reporting lag at all — its caveat is a different one, and it is the whole
-  // reason this line exists on a tracking snapshot: the read API exposes the container's current
-  // WORKSPACE DRAFT, which can differ from what is published on the live site. A reader who
-  // takes a Tag Manager verdict as "what the site does" is reading a draft as production.
-  tag_manager:
-    "Tag Manager shows the container's workspace draft, not what is published",
 };
 
 /**
@@ -58,6 +63,12 @@ export interface FreshnessInput {
   pulledAt: string | null;
   /** From the knob; `null` when the knob is unreadable (see `useFreshnessWarningHours`). */
   warningAfterHours: number | null;
+  /**
+   * The SERVER's own caveats for this record, verbatim, for a provider whose limits we do not
+   * author (`tag_manager`). The first one takes the lag slot; with none declared the line says
+   * nothing there rather than inventing a sentence about coverage.
+   */
+  serverCaveats?: readonly string[];
   /** Injectable for tests. */
   now?: Date;
 }
@@ -142,7 +153,12 @@ export function describeFreshness(
           // NEW-B7 could not be proven at all. The same instant now says both.
           `pulled ${formatRelativeTime(input.pulledAt, { style: "long", now: now.getTime() })}`
       : "never pulled",
-    PROVIDER_LAG_SENTENCE[input.provider],
+    // Ours when we are the author, the server's own first caveat when it is not, and nothing
+    // at all when neither exists — never a frontend guess at what a read does not cover.
+    ...(() => {
+      const note = PROVIDER_LAG_SENTENCE[input.provider] ?? input.serverCaveats?.[0];
+      return note ? [note] : [];
+    })(),
   ];
   return {
     sentence: parts.join(" · "),

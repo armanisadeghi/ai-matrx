@@ -11,8 +11,8 @@
  *   · the container inventory (accounts → containers → workspaces) the read-only scope allows;
  *   · the graded checks, each with the evidence that produced it and the remedy that fixes it;
  *   · 🚨 the reconciliation: whether the container is actually ON the live page. Everything above
- *     it grades the container's WORKSPACE DRAFT. A verdict that skips this is the exact defect
- *     this feature exists to prevent;
+ *     it grades what the container holds, not what the site runs. A verdict that skips this is
+ *     the exact defect this feature exists to prevent;
  *   · how old the check is, and EVERY one of the server's own caveats, printed verbatim and
  *     in full — the caveats are DATA the server declares, never a sentence this panel picks.
  *
@@ -270,8 +270,9 @@ export function SiteTrackingPanel({
               ? `${VERDICT_WORD[reconciliation.verdict]} — ${reconciliation.evidence}`
               : "not checked",
           ],
-          // THE CAVEATS TRAVEL WITH THE VERDICT — all of them. A copied grade missing "tracking
-          // outside Tag Manager is invisible here" reads as a verdict on the whole site.
+          // THE CAVEATS TRAVEL WITH THE VERDICT — all of them. A copied grade missing the
+          // server's second caveat reads as a verdict on the whole site rather than on one
+          // container. Their words are the server's (`google_sync/kinds.py`), never quoted here.
           [
             "Caveats",
             findings.caveats.length
@@ -330,6 +331,9 @@ export function SiteTrackingPanel({
           provider="tag_manager"
           dataThrough={null}
           pulledAt={snapshotQuery.data?.taken_at ?? null}
+          // ONE SOURCE FOR THE SENTENCE (V-28 NEW-3). The lag slot holds the server's own first
+          // caveat, off the same finding the list below prints — this repo authors none.
+          {...(findings ? { serverCaveats: findings.caveats } : {})}
           {...(now ? { now } : {})}
         />
       </div>
@@ -409,10 +413,10 @@ export function SiteTrackingPanel({
           </ul>
 
           {/* 🚨 EVERY one of the server's own words about what this read can and cannot see,
-              verbatim and in full. Printing one of three is how "tracking installed outside Tag
-              Manager is invisible here" — the sentence that stops a reader concluding a
-              correctly instrumented site is untracked — never reached a screen (V-27 NEW-3).
-              The panel never edits, summarises or selects among them. */}
+              verbatim and in full. Printing one of three is how the caveat that stops a reader
+              concluding a correctly instrumented site is untracked never reached a screen
+              (V-27 NEW-3). The panel never edits, summarises, quotes or selects among them —
+              which is why no caveat's words appear in this file (V-28 NEW-3). */}
           {findings.caveats.length ? (
             <ul className="space-y-1 rounded-md border border-warning/40 bg-warning/5 p-2">
               {findings.caveats.map((caveat) => (

@@ -44,13 +44,32 @@ export interface TrackingFindings {
    * 🚨 EVERY caveat the server declared, in its order, printed VERBATIM and in full. The server
    * owns this list (`google_sync/kinds.py::TAG_MANAGER_READ_CAVEATS`); this client never
    * authors a caveat, never edits one and never chooses among them. Printing one of three is
-   * how "tracking installed outside Tag Manager is invisible here" stopped reaching the screen
-   * — the exact misread the feature exists to prevent (V-27 NEW-3).
+   * how the caveat about tracking installed outside Tag Manager stopped reaching the screen —
+   * the exact misread the feature exists to prevent (V-27 NEW-3).
+   *
+   * Never empty: a payload whose server declared no usable caveat list carries
+   * `CAVEATS_NOT_DECLARED` instead, so a reader is told the limits are unknown rather than
+   * shown a grade with its limits silently removed (V-28 NEW-2).
    */
   caveats: string[];
   /** The container-versus-live-page check, also present inside `checks`. */
   pageReconciliation: TrackingCheck | null;
 }
+
+/**
+ * 🚨 THE STAND-IN FOR A SNAPSHOT WHOSE SERVER DECLARED NO CAVEATS (Law 4; V-28 NEW-2).
+ *
+ * A stored payload written before 2026-09-20 carries a singular `caveat` string, or no caveat
+ * key at all. Under the no-legacy policy this client reads only the new shape — but reading the
+ * old one as `[]` renders NO caveat block, which is a confident grade with its limits silently
+ * removed: strictly less honest than the screen before the caveats existed. So the absence
+ * announces itself, with the remedy that fixes it.
+ *
+ * It is NOT a caveat: it says nothing about what the read can or cannot see. The server remains
+ * the only author of a caveat sentence, which `trackingSurfaces.test.ts` guards.
+ */
+export const CAVEATS_NOT_DECLARED =
+  "The server did not declare its caveats for this snapshot, so what this read cannot see is not stated here — re-check to refresh it.";
 
 /** The id the server gives the container-versus-live-page check. */
 export const PAGE_RECONCILIATION_CHECK_ID = "container_on_the_page" as const;
@@ -115,6 +134,27 @@ function parseCheck(value: unknown): TrackingCheck | null {
 }
 
 /**
+ * The caveat list, which is never empty.
+ *
+ * `caveats: string[]` is the declared shape and the only one the server writes today. A payload
+ * that does not carry it — including a pre-2026-09-20 row with a singular `caveat` string — has
+ * its own words kept and `CAVEATS_NOT_DECLARED` appended, so the screen says what it has AND
+ * that the rest were never declared. Silence is the one answer this never gives.
+ */
+function parseCaveats(value: Record<string, unknown>): string[] {
+  const declared = Array.isArray(value.caveats)
+    ? value.caveats.flatMap((entry) =>
+        typeof entry === "string" && entry ? [entry] : [],
+      )
+    : // A pre-2026-09-20 row carries its one caveat under the singular key. Its words are kept;
+      // the ones that server never wrote are reported as missing rather than imagined.
+      [...(nullableText(value.caveat) ? [nullableText(value.caveat) as string] : [])];
+  return declared.length && Array.isArray(value.caveats)
+    ? declared
+    : [...declared, CAVEATS_NOT_DECLARED];
+}
+
+/**
  * Parse a stored `findings` payload. A payload that is not the declared kind returns `null` —
  * the panel then says it cannot read this snapshot rather than rendering a blank grade.
  */
@@ -139,11 +179,7 @@ export function parseTrackingFindings(value: Json): TrackingFindings | null {
     workspaceId: nullableText(value.workspace_id),
     workspaceName: nullableText(value.workspace_name),
     truncated: value.truncated === true,
-    caveats: Array.isArray(value.caveats)
-      ? value.caveats.flatMap((entry) =>
-          typeof entry === "string" && entry ? [entry] : [],
-        )
-      : [],
+    caveats: parseCaveats(value),
     pageReconciliation: reconciliation,
   };
 }
