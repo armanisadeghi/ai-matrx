@@ -6,8 +6,8 @@ import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useOpenCanvasItem } from "@/features/canvas/hooks/useOpenCanvasItem";
 import { useCanvasArtifactUrlState } from "@/features/canvas/hooks/useCanvasArtifactUrlState";
-import { fetchUserArtifactsThunk } from "@/lib/redux/thunks/artifactThunks";
 import {
+  fetchUserArtifactsThunk,
   deleteArtifactThunk,
   archiveArtifactThunk,
 } from "@/lib/redux/thunks/artifactThunks";
@@ -16,7 +16,6 @@ import {
   selectArtifactFetchStatus,
   selectArtifactFetchError,
 } from "@/lib/redux/selectors/artifactSelectors";
-import { makeSelectFilteredArtifacts } from "@/lib/redux/selectors/artifactSelectors";
 import type {
   ArtifactType,
   ArtifactStatus,
@@ -48,11 +47,10 @@ import {
   X,
   AlertCircle,
   RefreshCw,
+  MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,7 +58,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-// ── Icon map ──────────────────────────────────────────────────────────────────
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
 
 const ARTIFACT_ICONS: Record<ArtifactType, React.FC<{ className?: string }>> = {
   html_page: Globe,
@@ -80,25 +80,11 @@ const ARTIFACT_ICONS: Record<ArtifactType, React.FC<{ className?: string }>> = {
   other: FileText,
 };
 
-const STATUS_VARIANT: Record<
-  ArtifactStatus,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  published: "default",
-  draft: "secondary",
-  archived: "outline",
-  failed: "destructive",
-};
-
-// ── Filter types ──────────────────────────────────────────────────────────────
-
 type FilterState = {
   type: ArtifactType | "all";
   status: ArtifactStatus | "all";
   search: string;
 };
-
-// ── Artifact type filter tabs ─────────────────────────────────────────────────
 
 const TYPE_FILTERS: Array<{ label: string; value: ArtifactType | "all" }> = [
   { label: "All", value: "all" },
@@ -109,22 +95,36 @@ const TYPE_FILTERS: Array<{ label: string; value: ArtifactType | "all" }> = [
   { label: "Other", value: "other" },
 ];
 
-// ── ArtifactCard ──────────────────────────────────────────────────────────────
+function formatUpdatedAt(iso: string): string {
+  const date = new Date(iso);
+  const sameYear = date.getFullYear() === new Date().getFullYear();
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: sameYear ? undefined : "numeric",
+  });
+}
 
-interface ArtifactCardProps {
+function statusTone(status: ArtifactStatus): string {
+  if (status === "failed") return "text-destructive";
+  if (status === "draft" || status === "archived") {
+    return "text-muted-foreground";
+  }
+  return "text-muted-foreground";
+}
+
+interface ArtifactRowProps {
   artifact: CxArtifactRecord;
   isNavigating: boolean;
   isAnyNavigating: boolean;
-  /** Default click: open the artifact in the canvas (falls back to the page). */
   onOpen: (artifact: CxArtifactRecord) => void;
-  /** Explicit "go to the dedicated page" — cmd-click, menu, detail button. */
   onNavigate: (id: string) => void;
-  onDelete: (id: string) => void;
-  onArchive: (id: string) => void;
+  onDelete: (artifact: CxArtifactRecord) => void;
+  onArchive: (artifact: CxArtifactRecord) => void;
   onOpenEditor: (artifact: CxArtifactRecord) => void;
 }
 
-function ArtifactCard({
+function ArtifactRow({
   artifact,
   isNavigating,
   isAnyNavigating,
@@ -133,190 +133,172 @@ function ArtifactCard({
   onDelete,
   onArchive,
   onOpenEditor,
-}: ArtifactCardProps) {
+}: ArtifactRowProps) {
   const Icon = ARTIFACT_ICONS[artifact.artifactType] ?? FileText;
-
   const isDisabled = isNavigating || isAnyNavigating;
-  const label =
+  const title = artifact.title?.trim() || "Untitled";
+  const kind =
     ARTIFACT_TYPE_LABELS[artifact.artifactType] ?? artifact.artifactType;
   const statusLabel =
     ARTIFACT_STATUS_LABELS[artifact.status] ?? artifact.status;
-  const statusVariant = STATUS_VARIANT[artifact.status] ?? "outline";
 
-  const handleCardClick = (e: React.MouseEvent) => {
+  const handleRowActivate = (e: React.MouseEvent | React.KeyboardEvent) => {
     if ((e.target as HTMLElement).closest("[data-no-nav]")) return;
-    if (e.metaKey || e.ctrlKey) {
+    if ("metaKey" in e && (e.metaKey || e.ctrlKey)) {
       window.open(`/artifacts/${artifact.id}`, "_blank");
       return;
     }
-    if (!isDisabled) {
-      onOpen(artifact);
-    }
+    if (!isDisabled) onOpen(artifact);
   };
 
   return (
-    <Card
-      className={`relative group cursor-pointer transition-all hover:shadow-md hover:border-primary/30 ${isDisabled ? "opacity-60" : ""}`}
-      onClick={handleCardClick}
-    >
-      {isNavigating && (
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-20 flex items-center justify-center rounded-lg">
-          <Loader2 className="w-6 h-6 text-primary animate-spin" />
-        </div>
+    <tr
+      className={cn(
+        "group border-b border-border/60 last:border-b-0",
+        isDisabled
+          ? "opacity-60"
+          : "cursor-pointer hover:bg-accent/50",
       )}
-
-      <CardContent className="p-4 pb-2">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-9 h-9 rounded-md bg-primary/10 flex items-center justify-center mt-0.5">
-            <Icon className="w-4 h-4 text-primary" />
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2 mb-1">
-              <h3 className="text-sm font-medium text-foreground truncate leading-tight">
-                {artifact.title ?? "Untitled"}
-              </h3>
-              <div data-no-nav>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      disabled={isDisabled}
-                    >
-                      <span className="sr-only">Actions</span>
-                      <span className="text-muted-foreground text-lg leading-none">
-                        ⋯
-                      </span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-44">
-                    {artifact.externalUrl && (
-                      <DropdownMenuItem asChild>
-                        <a
-                          href={artifact.externalUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                          View Live
-                        </a>
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem
-                      className="flex items-center gap-2"
-                      onClick={() => onNavigate(artifact.id)}
-                    >
-                      <FileText className="h-3.5 w-3.5" />
-                      Open full page
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="flex items-center gap-2"
-                      onClick={() => onOpenEditor(artifact)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                      Edit Content
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="flex items-center gap-2 text-muted-foreground"
-                      onClick={() => onArchive(artifact.id)}
-                    >
-                      <ArchiveIcon className="h-3.5 w-3.5" />
-                      Archive
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="flex items-center gap-2 text-destructive"
-                      onClick={() => onDelete(artifact.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+      onClick={handleRowActivate}
+      aria-label={title}
+    >
+      <td className="py-2 pr-3 pl-2">
+        <div className="flex min-w-0 items-start gap-2.5">
+          <Icon
+            className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+            aria-hidden
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-start gap-2">
+              <span className="min-w-0 flex-1 text-sm font-medium leading-snug text-foreground break-words [overflow-wrap:anywhere] line-clamp-2">
+                {title}
+              </span>
+              {artifact.status !== "published" && (
+                <span
+                  className={cn(
+                    "shrink-0 text-xs leading-snug",
+                    statusTone(artifact.status),
+                  )}
+                >
+                  {statusLabel}
+                </span>
+              )}
             </div>
-
             {artifact.description && (
-              <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+              <p className="mt-0.5 line-clamp-1 break-words text-xs text-muted-foreground">
                 {artifact.description}
               </p>
             )}
-
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
-                {label}
-              </Badge>
-              <Badge
-                variant={statusVariant}
-                className="text-[10px] px-1.5 py-0 h-4"
-              >
-                {statusLabel}
-              </Badge>
-            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground sm:hidden">
+              {kind} · {formatUpdatedAt(artifact.updatedAt)}
+            </p>
           </div>
+          {isNavigating && (
+            <Loader2 className="mt-0.5 size-4 shrink-0 animate-spin text-primary" />
+          )}
         </div>
-      </CardContent>
-
-      <CardFooter className="p-4 pt-2 flex items-center justify-between">
-        <span className="text-[10px] text-muted-foreground">
-          {new Date(artifact.updatedAt).toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </span>
-
-        <div className="flex items-center gap-1" data-no-nav>
+      </td>
+      <td className="hidden px-3 py-2 text-xs text-muted-foreground md:table-cell">
+        {kind}
+      </td>
+      <td className="hidden whitespace-nowrap px-3 py-2 text-xs text-muted-foreground sm:table-cell">
+        <time dateTime={artifact.updatedAt} title={new Date(artifact.updatedAt).toLocaleString()}>
+          {formatUpdatedAt(artifact.updatedAt)}
+        </time>
+      </td>
+      <td className="w-10 px-1 py-2" data-no-nav onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-end gap-0.5">
           {artifact.externalUrl && (
             <Link
               href={artifact.externalUrl}
               target="_blank"
               rel="noopener noreferrer"
               tabIndex={-1}
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
+              className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground opacity-0 hover:bg-accent hover:text-foreground group-hover:opacity-100 group-focus-within:opacity-100"
+              title="View live"
+              onClick={(e) => e.stopPropagation()}
             >
+              <ExternalLink className="size-3.5" />
+              <span className="sr-only">View live</span>
+            </Link>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6"
-                title="View live"
+                className="size-7 text-muted-foreground opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 data-[state=open]:opacity-100"
+                disabled={isDisabled}
               >
-                <ExternalLink className="h-3 w-3" />
+                <MoreHorizontal className="size-4" />
+                <span className="sr-only">Actions</span>
               </Button>
-            </Link>
-          )}
-          <Link
-            href={`/artifacts/${artifact.id}`}
-            tabIndex={-1}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (e.metaKey || e.ctrlKey) return;
-              e.preventDefault();
-              if (!isDisabled) onNavigate(artifact.id);
-            }}
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              disabled={isDisabled}
-              title={isDisabled ? "Please wait…" : "Open detail"}
-            >
-              <Pencil className="h-3 w-3" />
-            </Button>
-          </Link>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              {artifact.externalUrl && (
+                <DropdownMenuItem asChild>
+                  <a
+                    href={artifact.externalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2"
+                  >
+                    <ExternalLink className="size-3.5" />
+                    View live
+                  </a>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                className="flex items-center gap-2"
+                onClick={() => onNavigate(artifact.id)}
+              >
+                <FileText className="size-3.5" />
+                Open full page
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="flex items-center gap-2"
+                onClick={() => onOpenEditor(artifact)}
+              >
+                <Pencil className="size-3.5" />
+                Edit content
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="flex items-center gap-2 text-muted-foreground"
+                onClick={() => onArchive(artifact)}
+              >
+                <ArchiveIcon className="size-3.5" />
+                Archive
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="flex items-center gap-2 text-destructive"
+                onClick={() => onDelete(artifact)}
+              >
+                <Trash2 className="size-3.5" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      </CardFooter>
-    </Card>
+      </td>
+    </tr>
   );
 }
 
-// ── CmsArtifactList ───────────────────────────────────────────────────────────
+function ArtifactListSkeleton() {
+  return (
+    <div className="divide-y divide-border/60" aria-hidden>
+      {Array.from({ length: 8 }, (_, i) => (
+        <div key={i} className="flex items-center gap-2.5 px-2 py-2.5">
+          <div className="size-4 shrink-0 animate-pulse rounded bg-muted" />
+          <div className="h-3.5 flex-1 max-w-[280px] animate-pulse rounded bg-muted" />
+          <div className="ml-auto hidden h-3 w-24 animate-pulse rounded bg-muted md:block" />
+          <div className="hidden h-3 w-16 animate-pulse rounded bg-muted sm:block" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function CmsArtifactList() {
   const dispatch = useAppDispatch();
@@ -330,7 +312,7 @@ export function CmsArtifactList() {
   useCanvasArtifactUrlState();
   const router = useRouter();
   const pathname = usePathname();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
   const navigationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -343,7 +325,6 @@ export function CmsArtifactList() {
     }
   };
 
-  // Reset the navigation lock when the route actually changes (or on unmount).
   useEffect(() => {
     setNavigatingId(null);
     clearNavigationTimeout();
@@ -360,35 +341,43 @@ export function CmsArtifactList() {
     search: "",
   });
 
-  // Fetch on mount
   useEffect(() => {
     if (fetchStatus === "idle") {
       dispatch(fetchUserArtifactsThunk(undefined));
     }
   }, [dispatch, fetchStatus]);
 
-  // Client-side filter
-  const filtered = allArtifacts.filter((a) => {
-    if (filters.type !== "all" && a.artifactType !== filters.type) return false;
-    if (filters.status !== "all" && a.status !== filters.status) return false;
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      const title = (a.title ?? "").toLowerCase();
-      const desc = (a.description ?? "").toLowerCase();
-      if (!title.includes(q) && !desc.includes(q)) return false;
-    }
-    return true;
-  });
+  const filtered = allArtifacts
+    .filter((a) => {
+      if (filters.type !== "all" && a.artifactType !== filters.type) return false;
+      if (filters.status === "all") {
+        if (a.status === "archived") return false;
+      } else if (a.status !== filters.status) {
+        return false;
+      }
+      if (filters.search) {
+        const q = filters.search.toLowerCase();
+        const title = (a.title ?? "").toLowerCase();
+        const desc = (a.description ?? "").toLowerCase();
+        if (!title.includes(q) && !desc.includes(q)) return false;
+      }
+      return true;
+    })
+    .slice()
+    .sort(
+      (a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    );
 
   /**
    * Clicking an artifact opens it IN THE CANVAS, the same as clicking it in a
    * note or a chat message — one artifact, one behaviour, wherever it appears.
-   * The dedicated page stays reachable (cmd-click, the card menu, and the
+   * The dedicated page stays reachable (cmd-click, the row menu, and the
    * pane's own "Open full page"), because it is where an artifact's metadata
    * and destructive actions live.
    *
-   * Rows with no `canvasItemId` (external-system artifacts such as html_page,
-   * ~23 of 665 today) have no canvas row to point at, so they still navigate.
+   * Rows with no `canvasItemId` (external-system artifacts such as html_page)
+   * have no canvas row to point at, so they still navigate.
    */
   const handleOpen = (artifact: CxArtifactRecord) => {
     if (artifact.canvasItemId) {
@@ -404,8 +393,6 @@ export function CmsArtifactList() {
   const handleNavigate = (id: string) => {
     if (navigatingId) return;
     setNavigatingId(id);
-    // Hard fallback: if the navigation no-ops or fails (pathname never
-    // changes), release the lock so the list can't stay wedged (D73).
     clearNavigationTimeout();
     navigationTimeoutRef.current = setTimeout(() => {
       navigationTimeoutRef.current = null;
@@ -414,180 +401,216 @@ export function CmsArtifactList() {
     startTransition(() => router.push(`/artifacts/${id}`));
   };
 
-  const handleDelete = (id: string) => {
-    dispatch(deleteArtifactThunk(id));
+  const handleDelete = async (artifact: CxArtifactRecord) => {
+    const title = artifact.title?.trim() || "Untitled";
+    const liveNote = artifact.externalUrl
+      ? " Any live URL for this item will stop working."
+      : "";
+    const ok = await confirm({
+      title: `Permanently delete ${title}?`,
+      description: `This removes it from the Content Library.${liveNote} This cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    try {
+      await dispatch(deleteArtifactThunk(artifact.id)).unwrap();
+      toast.success(`${title} deleted`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Delete failed");
+    }
   };
 
-  const handleArchive = (id: string) => {
-    dispatch(archiveArtifactThunk(id));
+  const handleArchive = async (artifact: CxArtifactRecord) => {
+    const title = artifact.title?.trim() || "Untitled";
+    try {
+      await dispatch(archiveArtifactThunk(artifact.id)).unwrap();
+      toast.success(`${title} archived`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Archive failed");
+    }
   };
 
   const handleOpenEditor = (artifact: CxArtifactRecord) => {
     if (artifact.artifactType === "html_page" && artifact.externalId) {
-      // We don't have the original markdown here — open the detail page instead
       handleNavigate(artifact.id);
     }
   };
 
   const isLoading = fetchStatus === "loading";
+  const statusButtonLabel =
+    filters.status === "all"
+      ? "Active"
+      : ARTIFACT_STATUS_LABELS[filters.status];
 
   return (
-    <div className="space-y-6">
-      {/* Type filter tabs + refresh */}
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none flex-1">
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto border-b border-border scrollbar-none">
           {TYPE_FILTERS.map((f) => (
-            <Button
+            <button
               key={f.value}
-              variant={filters.type === f.value ? "default" : "outline"}
-              size="sm"
-              className="flex-shrink-0 h-8 text-xs"
+              type="button"
+              className={cn(
+                "h-8 shrink-0 border-b-2 px-2.5 text-sm -mb-px",
+                filters.type === f.value
+                  ? "border-foreground font-medium text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
               onClick={() => setFilters((prev) => ({ ...prev, type: f.value }))}
             >
               {f.label}
-            </Button>
+            </button>
           ))}
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 flex-shrink-0"
-          onClick={() => dispatch(fetchUserArtifactsThunk(undefined))}
-          disabled={isLoading}
-          title="Refresh"
-        >
-          {isLoading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <RefreshCw className="h-3.5 w-3.5" />
-          )}
-          <span className="sr-only">Refresh</span>
-        </Button>
-      </div>
 
-      {/* Search + status filter */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Search by title or description…"
-            value={filters.search}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, search: e.target.value }))
-            }
-            className="pl-8 h-8 text-sm"
-          />
-          {filters.search && (
-            <button
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              onClick={() => setFilters((prev) => ({ ...prev, search: "" }))}
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative min-w-0 flex-1 lg:w-64 lg:flex-none">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search"
+              value={filters.search}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, search: e.target.value }))
+              }
+              className="h-8 pl-8 text-sm"
+            />
+            {filters.search && (
+              <button
+                type="button"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                onClick={() => setFilters((prev) => ({ ...prev, search: "" }))}
+                aria-label="Clear search"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 text-xs gap-1.5 flex-shrink-0"
-            >
-              Status:{" "}
-              {filters.status === "all"
-                ? "All"
-                : ARTIFACT_STATUS_LABELS[filters.status as ArtifactStatus]}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-36">
-            {(["all", "published", "draft", "archived", "failed"] as const).map(
-              (s) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 shrink-0 px-2 text-xs text-muted-foreground"
+              >
+                {statusButtonLabel}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-36">
+              {(
+                ["all", "published", "draft", "archived", "failed"] as const
+              ).map((s) => (
                 <DropdownMenuItem
                   key={s}
                   onClick={() => setFilters((prev) => ({ ...prev, status: s }))}
                   className={filters.status === s ? "font-medium" : ""}
                 >
-                  {s === "all" ? "All statuses" : ARTIFACT_STATUS_LABELS[s]}
+                  {s === "all" ? "Active" : ARTIFACT_STATUS_LABELS[s]}
                 </DropdownMenuItem>
-              ),
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 shrink-0"
+            onClick={() => dispatch(fetchUserArtifactsThunk(undefined))}
+            disabled={isLoading}
+            title="Refresh"
+          >
+            {isLoading ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="size-3.5" />
             )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+            <span className="sr-only">Refresh</span>
+          </Button>
+        </div>
       </div>
 
-      {/* Content */}
       {isLoading && allArtifacts.length === 0 ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="flex flex-col items-center gap-3 text-muted-foreground">
-            <Loader2 className="h-8 w-8 animate-spin" />
-            <p className="text-sm">Loading your content…</p>
-          </div>
-        </div>
+        <ArtifactListSkeleton />
       ) : fetchError ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="flex flex-col items-center gap-3 text-destructive">
-            <AlertCircle className="h-8 w-8" />
-            <p className="text-sm font-medium">Failed to load content</p>
-            <p className="text-xs text-muted-foreground">{fetchError}</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => dispatch(fetchUserArtifactsThunk(undefined))}
-            >
-              Retry
-            </Button>
+        <div className="flex flex-col items-start gap-2 py-10 text-destructive">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="size-4" />
+            <p className="text-sm font-medium">Could not load your content</p>
           </div>
+          <p className="text-xs text-muted-foreground">{fetchError}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => dispatch(fetchUserArtifactsThunk(undefined))}
+          >
+            Retry
+          </Button>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="flex flex-col items-center gap-3 text-muted-foreground">
-            <FileText className="h-10 w-10 opacity-30" />
-            <p className="text-sm font-medium">
-              {allArtifacts.length === 0
-                ? "No generated content yet"
-                : "No results match your filters"}
-            </p>
-            <p className="text-xs text-center max-w-xs">
-              {allArtifacts.length === 0
-                ? "Use the HTML Preview action on any AI message to generate and publish content."
-                : "Try adjusting your search or filters."}
-            </p>
-            {allArtifacts.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  setFilters({ type: "all", status: "all", search: "" })
-                }
-              >
-                Clear filters
-              </Button>
-            )}
-          </div>
+        <div className="flex flex-col items-start gap-2 py-10 text-muted-foreground">
+          <p className="text-sm font-medium text-foreground">
+            {allArtifacts.length === 0
+              ? "Nothing here yet"
+              : "No matches"}
+          </p>
+          <p className="max-w-md text-xs">
+            {allArtifacts.length === 0
+              ? "Content you generate from a conversation lands here."
+              : "Try a different search or filter."}
+          </p>
+          {allArtifacts.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() =>
+                setFilters({ type: "all", status: "all", search: "" })
+              }
+            >
+              Clear filters
+            </Button>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {filtered.map((artifact) => (
-            <ArtifactCard
-              key={artifact.id}
-              artifact={artifact}
-              isNavigating={navigatingId === artifact.id}
-              isAnyNavigating={navigatingId !== null}
-              onOpen={handleOpen}
-              onNavigate={handleNavigate}
-              onDelete={handleDelete}
-              onArchive={handleArchive}
-              onOpenEditor={handleOpenEditor}
-            />
-          ))}
-        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border text-xs font-medium text-muted-foreground">
+              <th className="px-2 py-1.5 text-left font-medium">Name</th>
+              <th className="hidden px-3 py-1.5 text-left font-medium md:table-cell">
+                Kind
+              </th>
+              <th className="hidden px-3 py-1.5 text-left font-medium sm:table-cell">
+                Updated
+              </th>
+              <th className="w-10" />
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((artifact) => (
+              <ArtifactRow
+                key={artifact.id}
+                artifact={artifact}
+                isNavigating={navigatingId === artifact.id}
+                isAnyNavigating={navigatingId !== null}
+                onOpen={handleOpen}
+                onNavigate={handleNavigate}
+                onDelete={handleDelete}
+                onArchive={handleArchive}
+                onOpenEditor={handleOpenEditor}
+              />
+            ))}
+          </tbody>
+        </table>
       )}
 
-      {/* Count footer */}
       {filtered.length > 0 && (
-        <p className="text-xs text-muted-foreground text-center pb-4">
-          Showing {filtered.length} of {allArtifacts.length} items
+        <p className="px-2 pb-2 text-xs text-muted-foreground">
+          {filtered.length}
+          {filtered.length !== allArtifacts.length
+            ? ` of ${allArtifacts.length}`
+            : ""}{" "}
+          {filtered.length === 1 ? "item" : "items"}
         </p>
       )}
     </div>
