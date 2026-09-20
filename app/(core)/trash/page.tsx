@@ -63,6 +63,8 @@ import {
 } from "@/features/trash/lifecycleService";
 import {
   itemCount,
+  groupScheduleText,
+  isScheduleOverdue,
   lifecycleLabel,
   longDate,
   whenPhrase,
@@ -95,26 +97,23 @@ function PendingGroup({
   item,
   busy,
   restoreIndividually,
+  noticeAsOf,
   onKeep,
 }: {
   item: LifecyclePending;
   busy: boolean;
   restoreIndividually: boolean;
+  noticeAsOf: string | null;
   onKeep: () => void;
 }) {
   const label = lifecycleLabel(item.entity_token, item.label);
-  const date = longDate(item.wipe_on);
   const soon = item.in_warning_window;
-  const when = whenPhrase(item.days_left);
-  const lead = item.rows === 1 ? "Deleted for good" : "The first goes for good";
-  const schedule =
-    item.days_left !== null && item.days_left < 0
-      ? date
-        ? `Eligible for deletion since ${date}.`
-        : "Eligible for deletion."
-      : date
-        ? `${lead} on ${date} (${when}).`
-        : `${lead} ${when}.`;
+  const schedule = groupScheduleText({
+    wipeOn: item.wipe_on,
+    asOf: noticeAsOf,
+    daysLeft: item.days_left,
+    rows: item.rows,
+  });
 
   return (
     <div
@@ -473,6 +472,7 @@ export default function TrashPage() {
                 item={group}
                 busy={keeping === group.entity_token}
                 restoreIndividually={isVaultOwnedTrashToken(group.entity_token)}
+                noticeAsOf={notice?.as_of ?? null}
                 onKeep={() => void keepAll(group)}
               />
             ))}
@@ -519,6 +519,9 @@ export default function TrashPage() {
             {items.map((item) => {
               const Icon = getResourceIcon(item.entity_token);
               const clock = pendingByToken.get(item.entity_token);
+              const overdue = clock
+                ? isScheduleOverdue(clock.wipe_on, notice?.as_of ?? null)
+                : false;
               return (
                 <li
                   key={`${item.entity_token}:${item.id}`}
@@ -550,7 +553,7 @@ export default function TrashPage() {
                           : undefined
                       }
                     >
-                      Group schedule: {whenPhrase(clock.days_left)}
+                      Group schedule: {overdue ? "eligible for deletion" : whenPhrase(clock.days_left)}
                     </span>
                   )}
                   <span className="text-muted-foreground hidden shrink-0 text-xs sm:inline">
