@@ -96,75 +96,171 @@ chair step. Verified live first: that trigger was the only user of the function.
 
 ---
 
-## STILL OPEN — with file:line
+---
 
-1. **`public._stamp_org_default()` on ~250 tables.** Same class: an org-less
-   insert is stamped with `ensure_personal_organization(actor)`. **Owner: the
-   aidream lane**, which is dropping it in this same campaign — deliberately NOT
-   double-dropped here. `communication.dm_conversations` carries both triggers,
-   so until that lands an org-less DM insert is still stamped.
-   Live census: `information_schema.triggers where trigger_name='_stamp_org_default'`.
+## Round 2 — the adversarial review (2026-09-19)
 
-2. **`resolveOrgIdForUserServer` still resolves a named person's personal org.**
-   `lib/organizations/personalOrg.ts:~283`. The system-org fallback for "no user
-   at all" IS deleted and now throws. The remaining personal rung serves three
-   Twilio webhook writes with no session and nobody to ask —
-   `lib/sms/receive.ts:610`, `lib/sms/send.ts:183`, `lib/sms/numbers.ts:89`.
-   **Blocker:** the ruling's org-less shape cannot be expressed. Every
-   `communication.*` table declares `organization_id NOT NULL` (verified live
-   2026-09-19, all 23). Allowlisted for rule 2 only, with this reason, in
-   `scripts/no-default-organization.allowlist.json`. Retire the entry when the
-   NOT NULL work lands.
+An independent pass attacked the landed work and finished F1, F2, F4 and F5.
+**Verdict: PASS-WITH-FIXES.** The frontend work above holds up. What it missed
+is that the class was still fully alive in SQL, where the guard could not look.
 
-3. **`iam.default_organization_id(p_user_id)` still exists and still substitutes.**
-   Its rung (c) returns "the oldest organization the person is an active member
-   of" — a pick nobody made. Read by the billing migration
-   `migrations/w1_org_billing_owner_columns_move_to_the_organization.sql:181,239,284`.
-   NOT changed here: rewriting live billing filters needs the aidream lane's
-   coordination and a billing-side verification this lane could not run.
+### The one that mattered: billing was still substituting, live
 
-4. **Signup still writes `default_organization_id`.**
-   `migrations/w1_org_one_organization_at_signup_and_never_the_last.sql:211-215`.
-   Harmless while unread by any ladder (it is now), but it is the seed of rung
-   (a) growing back. Not changed here.
+`billing.entitlement_consume(text,integer,uuid)` filled the usage ledger's
+`organization_id` with `public.ensure_personal_organization(auth.uid())`. The
+frontend called it with three arguments and no organization, so **every metered
+action taken in the browser — by a person working inside a team organization
+they had explicitly selected — was billed to a personal workspace nobody
+chose.** Not in the census, not in the handoff, and invisible to
+`check:no-default-organization`, because the frontend call site is an innocent
+RPC call and the substitution is in the function body.
 
-5. **Seed migrations still name Arman personally.**
-   `migrations/iam_containment_never_carries_personal_dd171d_gate.sql:59,61`
-   (arman@titaniumsuccess.com / arman@armansadeghi.com as org_admin/owner) and
-   `migrations/files_account_tier_uuid_identity_dd173.sql:78` (his hardcoded
-   uuid). Should resolve `admin@admin.com` by email at run time. Not changed
-   here — both are already-applied frozen history, so this needs a NEW migration
-   rather than an edit, and it is a separate, independently verifiable change.
+`billing.resolve_tier` and `billing.tier_no_downgrade` likewise decided
+**entitlements** from `iam.default_organization_id` — a pick nobody made.
 
-6. **`default_organization_is_a_membership` trigger on `users.user_preferences`**
-   is still installed (`iam._default_organization_is_a_membership`). It is inert:
-   it returns early unless the `custom/signup_provisioning_guard` knob resolves
-   true, and that knob is false on both databases. Left in place — it blocks
-   nothing and constrains rather than substitutes.
+Root cause of the MISS, fixed as a class: the guard read only `.ts`/`.tsx` under
+six directories. A guard that reads only the language the defect is easy to spot
+in certifies the half of the system that was never the problem. There is now a
+SQL guard (below).
 
-7. **Backstop / inherit triggers not audited one by one.** The named ones
-   (`org_backstop_triggers_sweep.sql`, `d232_org_backstop_*.sql`,
-   `rag_library_docs_org_backstop.sql`,
-   `seo_site_vocabulary_geo_area_org_inherit_backstop.sql`,
-   `working_documents_stale_inherit_org_trigger.sql`) were not individually
-   classified into substitute-vs-parent-inherit. Parent-inherit is fine;
-   personal/default stamping is not. Needs a live pass over
-   `information_schema.triggers`.
+### Corrections to the claims above
 
-8. **`lib/organizations/organizationRefusalToast.ts`** still says "pick the one
-   you are working in from the avatar menu". Correct today — after this change a
-   refusal only reaches that toast when the gate could not ask at all — but
-   worth re-reading once the remaining surfaces are gated.
+* **"aidream's envelope, field for field."** It is not. aidream's
+  `OrganizationRequired` carries the choices at `details.organizations`
+  (`aidream/services/organizations/org_hold.py:38-52`), with `hold`,
+  `can_choose`, `set_on`, `remedy` and `memberships_url`. This repo's envelope
+  puts them at top-level `memberships`. The shared `code` is what the client
+  recogniser actually matches on, so a refusal from either server IS recognised
+  — but the two shapes are not the same and the claim should not be repeated.
+  **Still open**, see below.
+* **`readCallerMemberships` did not read memberships.** It selected
+  `iam.organizations`, whose live `org_select_policy` is
+  `is_platform_admin() OR created_by = auth.uid() OR id IN (iam.my_orgs())`. For
+  `admin@admin.com` that returned **501 organizations** against **27** genuine
+  active memberships — every organization on the platform, by name, in an error
+  body. Fixed: it reads `iam.memberships` filtered to the caller. 501 → 27,
+  verified live.
+* **Item 5 of the old list was wrong.** `iam_containment_never_carries_personal_dd171d_gate.sql:59,61`
+  and `files_account_tier_uuid_identity_dd173.sql:78` are **not seeds and grant
+  nothing**. They are RLS containment probes; `'org_admin'` and `'owner'` at
+  :59/:61 are string LABELS in a temp table of test principals, and dd173:78 is
+  a probe identity. Their only writes are to `iam.dd171_containment_baseline`
+  (an audit table) and a temp table. **There is nothing to re-seed and no grant
+  to remove — writing the F4 migration as briefed would have fabricated grants
+  that do not exist.** Verified live. The real residue is hardcoded personal
+  identities in frozen history, which cannot be edited (applied files) and is
+  now prevented going forward, not retroactively rewritten.
+* **Item 2's allowlist entry was a wrong reason in the wrong place.** It said an
+  inbound SMS "cannot be expressed org-less, so the personal org stands". The
+  organization never had to come from a person: a phone number is REGISTERED,
+  and `sms_phone_numbers.organization_id` / `sms_notification_preferences.organization_id`
+  are both NOT NULL. The answer was in the database the whole time.
+  **`resolveOrgIdForUserServer` is deleted and the allowlist is now empty.**
 
-9. **Census correction.** `app/(core)/documents/page.tsx:117` and
-   `app/(core)/workbooks/page.tsx:141` were listed as hard refusals with no
-   prompt. They already call `ensureOrganizationContext`. Only
-   `app/(core)/cms/page.tsx` was one. `providers/usePreferenceSync.ts:42` is not
-   silent data loss either — it captures loudly via `captureError`; it inherits
-   the new prompt through `ensureOrgId`, but its flush runs in an effect cleanup,
-   so in practice no picker is mounted and it degrades to the existing loud
-   capture. Also: aidream's `organization_for_request` envelope carries NO
-   `memberships` field today — this repo's envelope adds it.
+### What round 2 changed
 
-10. **Not verified by this lane:** the localhost seat check (gate dialog appears,
-    set an org, write completes) and the slow-bootstrap cold-boot check.
+**Frontend**
+* `lib/sms/receive.ts` + `lib/sms/routingFailure.ts` (new) — an inbound text
+  takes its organization from the number it was sent TO, else the sender's
+  enrolment; neither resolving throws `SmsInboundRoutingFailure`, logged with a
+  remedy and filed nowhere.
+* `lib/sms/send.ts` — the notified person's own enrolment row names the
+  organization (the preferences read moved above it).
+* `lib/sms/numbers.ts` + `app/api/sms/numbers/route.ts` — `purchasePhoneNumber`
+  takes `organizationId` first and required; the route refuses with the
+  `organization_required` envelope **before** the Twilio purchase, so a refusal
+  never costs money.
+* `lib/organizations/personalOrg.ts` — `resolveOrgIdForUserServer` DELETED
+  (zero callers left), with a tombstone comment saying why it must not return.
+  The stale "scheduler-client/claim.ts still needs the parameterized RPC" note
+  is corrected: it reads the task's own `organization_id` and refuses without
+  one.
+* `lib/organizations/organizationRequiredServerError.ts` — memberships read
+  fixed (above).
+* `features/entitlements/service.ts` — `consumeEntitlement` names the
+  organization and calls the four-argument RPC. With none selected it skips the
+  write and screams rather than opening a picker on an action that already
+  finished (the gate's own non-interactive rule).
+
+**Database (applied 2026-09-20, ledgered)**
+* `w1_org_signup_stops_writing_a_default_organization.sql` — **F1.** Signup no
+  longer writes `users.user_preferences.default_organization_id`. The
+  preferences ROW is still seeded; only the column is left alone.
+* `w1_org_billing_is_organization_keyed.sql` — **F2**, a named chair step. Drops
+  the three-argument `entitlement_consume` and its door row; the survivor
+  REFUSES (23502, with a hint) instead of substituting; `resolve_tier` returns
+  `free` explicitly with a notice when it has no organization in scope;
+  `tier_no_downgrade` compares against real memberships. No new tier resolver
+  was added — `billing.resolve_effective_tier(p_user, p_org)` already is the
+  organization-keyed door and is what aidream actually calls.
+* Both carry `-- based-on:` headers and in-transaction proofs, and both have
+  inverses.
+
+**Guards / tests**
+* `scripts/check-no-default-organization-sql.ts` (new, wired into
+  `check:organization-context`) — three SQL rules over `migrations/**`: reading
+  a default organization, calling the personal-org RPC, attaching
+  `_stamp_org_default`. Comments, non-`execute` string literals and `COMMENT ON`
+  are stripped so a migration that FIXES one of these shapes can still name it.
+  Proven RED (44 violations) then GREEN; 42 historical files pinned as a
+  **ratchet that only shrinks**. Self-test plants a new violating migration per
+  rule and proves each is caught.
+* `lib/sms/__tests__/the-number-names-the-organization.test.ts` — binds to the
+  real `resolveInboundSmsOrganization`, not a copy. Mutation-proven:
+  reintroducing a substitution turns it red.
+* `scripts/no-default-organization.allowlist.json` is now `{}`.
+
+### F5 — the trigger census, classified live
+
+| Class | Trigger function | Triggers | Verdict |
+|---|---|---|---|
+| Parent-inherit | `platform.inherit_org_from_parent` | 117 (`_0_inherit_org` 27, `_inherit_org` 31, `trg_inherit_org` 55, `_inherit_org_from_scope` 2, 2 named ones) | **KEEP** — copies the PARENT ROW's organization and leaves NULL for the NOT NULL constraint. Carries, never chooses. |
+| Personal-org stamping | `public._stamp_org_default` | **328** | **DROP class** — calls `ensure_personal_organization(actor)`. |
+
+**Not dropped here, deliberately — and the aidream lane's drop LANDED mid-review.**
+Checked live before touching anything: at the start of this review the function
+and all 328 triggers were present, so the coordination rule applied and this
+lane did not double-drop. Re-checked at the end of the review: **0 triggers, 0
+function** — the aidream lane's drop went in while this work was in flight. The
+117 parent-inherit triggers are untouched at 117.
+
+That is the coordination rule paying for itself: had this lane dropped it too,
+the second drop would have collided with theirs mid-flight. The groundwork this
+lane confirmed still stands and is why the drop was safe to land: **all 328
+carrying tables already declare `organization_id NOT NULL`** (verified live: 0
+nullable, 0 missing the column), so an org-less insert now raises 23502 —
+loudly, at the caller — instead of being silently stamped with somebody's
+personal workspace. The refusing constraint the ruling asks to be "left behind"
+was already in place on every one of them; no new constraint work was needed.
+
+## STILL OPEN
+
+1. ~~**`_stamp_org_default` on 328 tables.**~~ **CLOSED** — the aidream lane's
+   drop landed 2026-09-20, during this review. Verified live at the end of it:
+   0 triggers, 0 function, 117 parent-inherit triggers untouched. The new SQL
+   guard's rule 8 keeps it from being re-attached.
+2. **Envelope shape differs from aidream's** (`memberships` vs
+   `details.organizations`). Worth converging on one shape; until then the
+   `code` match is what carries the recogniser. Nothing currently READS
+   `memberships` — the picker renders from its own list — so the field is
+   correct but unconsumed. Either wire it up or drop it; do not leave it
+   described as something the client uses.
+3. **`iam.default_organization_id(uuid)` still exists**, now with a comment
+   saying it is display-only. Its only remaining caller is
+   `iam._default_organization_is_a_membership`, which CONSTRAINS the stated
+   preference rather than substituting. Correct as-is.
+4. **`resolveSystemOrgId` has ~20 call sites** (`app/api/contact`,
+   `diagnostics/client-error`, admin catalog routes, `apply-scope-to-insert`).
+   Reviewed and NOT changed: each writes genuinely platform-owned content into
+   the platform's own organization, which is naming a real owner rather than
+   substituting for a user's choice. Each already carries a reasoned
+   `org-fallback-deliberate` marker. Flagged here so the next pass does not
+   re-litigate it silently — if the ruling is meant to reach these, it is a new
+   decision, not a missed sweep.
+5. **The TS guard's SCAN_DIRS** still exclude `scripts/`, `packages/` and the
+   repo root. The SQL guard now covers `migrations/`; the remaining roots are
+   uncovered.
+6. **Not verified by this lane:** the localhost seat check (gate dialog appears,
+   set an org, write completes) and the slow-bootstrap cold-boot check. The
+   database-side changes above ARE verified live, by probe, in a rolled-back
+   transaction.

@@ -1,10 +1,14 @@
+-- OPERATOR CENSUS, not a product suite: it calls custom.visible_set, custom.read_door_carried_ids,
+-- custom.read_door_granted_ids and custom.read_door_parity, which platform.client_callable_door
+-- declares server-only and names this file as a legitimate caller of — so it cannot run as the
+-- seat `authenticated`, and pnpm check:suites-take-the-seat does not count this directory.
 -- READ-PERF — THE GREEN SUITE. The read door answers Visibility once per call, and the answers
 -- are the same ones.
 --
 -- RUN IT (against the MAIN database — this is where the store lives):
 --   PSQL="$(pnpm -s exec tsx scripts/lib/psql-path.ts --print)"
 --   "$PSQL" "<the five SUPABASE_MATRIX_* values>" -v ON_ERROR_STOP=1 \
---     -f scripts/campaign-tests/readperf_green.sql
+--     -f scripts/operator-censuses/readperf_green.sql
 --
 -- IT IS NOT A MIGRATION and never becomes one: it lives outside `migrations/`, is discovered by
 -- no sweep, and its single transaction ends in ROLLBACK.

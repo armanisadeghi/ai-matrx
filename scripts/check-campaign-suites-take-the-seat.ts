@@ -50,22 +50,26 @@ const TESTS_BASELINE = 0;
 
 /**
  * The number of suites that call schema `custom` and do NOT take the seat. It may only ever go
- * DOWN. 57 when this guard was written (2026-09-20); 20 after lane SEAT-SUITES converted 37 of
- * them — every clause moved onto the doors a signed-in person reaches, which turned up nine
- * real defects in those doors, each fixed on the main database.
+ * DOWN, and it is now ZERO: every campaign suite in this directory runs as the role PostgREST
+ * gives a signed-in person, through the doors that person reaches. 57 when this guard was
+ * written (2026-09-20); 20 after lane SEAT-SUITES converted 37 of them; 0 after the last eight
+ * were converted (lane ORG-DELETE) — which between them turned up more than a dozen real
+ * defects in those doors, every one of them invisible from the seat that owns `custom.record`.
  *
- * WHAT THE REMAINING 26 ARE, so nobody has to re-derive it:
- *   - 16 are the remaining W1 field/rule and W3 document/workflow/migration/history suites,
- *     plus w4_agg_green and w4_query_green, still in conversion.
- *   - `readperf_green`, `readperf_red` and `readperf_parity_20_pairs` are OPERATOR PARITY
- *     CENSUSES over live data, not product suites: `platform.client_callable_door` names them
- *     explicitly as legitimate callers of the server-only helpers (`custom.visible_set`,
- *     `custom.read_door_carried_ids`, `custom.read_door_granted_ids`, `custom.read_door_parity`),
- *     the same lane as `pnpm check:store-doors-decide`. They are NOT excused here — an excuse
- *     list is how a ratchet dies — so they stay in the count and stay visible.
- *   - `sharedonly_red` belongs to lane SHARED-ONLY and landed after this guard did.
+ * THE THREE READ-PERF FILES ARE NOT EXCUSED, THEY MOVED. `readperf_green`, `readperf_red` and
+ * `readperf_parity_20_pairs` are OPERATOR PARITY CENSUSES over live data, not product suites:
+ * `platform.client_callable_door` names them explicitly as legitimate callers of the
+ * server-only helpers (`custom.visible_set`, `custom.read_door_carried_ids`,
+ * `custom.read_door_granted_ids`, `custom.read_door_parity`), the same lane as
+ * `pnpm check:store-doors-decide`, so they cannot sit down and there is no defect in that.
+ * They live in `scripts/operator-censuses/` now, each stating its server-only reason on its
+ * first line. That is a different KIND of file, not an exception inside this one — an excuse
+ * list is how a ratchet dies, and there is still no excuse list here.
+ *
+ * At zero this guard has become what it was always meant to be: a suite written without the
+ * seat is refused on the day it is written, in either directory.
  */
-const BASELINE = 20;
+const BASELINE = 0;
 
 /** Taking the seat, in either of the two spellings psql and plpgsql use. */
 const TAKES_THE_SEAT = /set\s+local\s+role\s+authenticated|set_config\(\s*'role'\s*,\s*'authenticated'/i;

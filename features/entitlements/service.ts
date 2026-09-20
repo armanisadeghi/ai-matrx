@@ -12,6 +12,7 @@
 // so client and server agree.
 
 import { createClient } from "@/utils/supabase/client";
+import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { getCapability, isCapability, type Capability } from "./registry";
 import type {
   EntitlementCheckResult,
@@ -182,6 +183,50 @@ export async function consumeEntitlement(
   capability: Capability,
   opts?: { quantity?: number; checkId?: string | null },
 ): Promise<EntitlementConsumeResult | null> {
+  // 🚨 THE METER NAMES THE ORGANIZATION IT IS CHARGING (2026-09-19 ruling;
+  // added in the 2026-09-19 review). This used to call the THREE-argument
+  // `billing.entitlement_consume`, which has no organization parameter at all
+  // and filled the ledger row's `organization_id` with
+  // `public.ensure_personal_organization(auth.uid())` inside the function. So
+  // every metered action a person took from the browser — while working
+  // inside a team organization they had explicitly selected — was billed to a
+  // personal workspace nobody chose. A billing query picking an organization
+  // is precisely what the ruling names, and it survived the first pass because
+  // the substitution lives in SQL, where no TypeScript guard was looking.
+  //
+  // The four-argument overload takes `p_org` and CHECKS it
+  // (`iam.has_org_access_for`, DD-208), so the claim cannot be forged.
+  //
+  // With no organization selected we do NOT open the picker: this runs on the
+  // success path of an action that already completed, so a dialog would appear
+  // with nothing behind it to explain itself (the gate's own
+  // `interactive: false` rule). We skip the write and scream instead — the
+  // same loud-recovery contract this function already has for an RPC failure.
+  // An under-counted meter is recoverable; a ledger row filed against the
+  // wrong tenant is not.
+  //
+  // "NOBODY HAS LOOKED YET" IS NOT "THERE IS NONE". Reading `getActiveOrgId()`
+  // and skipping on null would under-count every metered action taken in the
+  // seconds before boot resolves the organization — a false refusal, which is
+  // as dishonest as a false success and is the exact race
+  // `check:org-three-states` exists to catch (it caught this line).
+  // `awaitEffectiveOrganizationId` joins the answer boot is already fetching,
+  // bounded by the workspace knob, and then tells the three states apart.
+  const resolution = await awaitEffectiveOrganizationId();
+  if (resolution.status !== "ready") {
+    warnConsumeFailed(
+      capability,
+      new Error(
+        `no organization to charge (${resolution.cause}): ${resolution.reason} ` +
+          "Nothing was substituted — the ledger row is skipped rather than " +
+          "billed to a workspace nobody chose. The next metered action records " +
+          "normally once an organization is selected.",
+      ),
+    );
+    return null;
+  }
+  const organizationId = resolution.organizationId;
+
   try {
     const supabase = createClient();
     const { data, error } = await supabase
@@ -192,6 +237,7 @@ export async function consumeEntitlement(
         // Omit when absent (the RPC defaults it to NULL); the generated arg type
         // is `string | undefined`, so undefined — not null — is the "no id" value.
         p_check_id: opts?.checkId ?? undefined,
+        p_org: organizationId,
       });
     if (error || !data) {
       warnConsumeFailed(capability, error);
