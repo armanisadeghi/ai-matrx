@@ -541,6 +541,15 @@ export const primaryNavItems: ShellNavItem[] = [
           "Compare agents side by side — models, prompts, and outputs",
       },
       {
+        // Moved out of admin on Arman's ruling (2026-09-20): a playground is
+        // normal UI, never an admin page.
+        label: "Decisions",
+        href: "/decisions",
+        iconName: "Scale",
+        description:
+          "Ask a typed decision model named Choice, Score, and Noul questions",
+      },
+      {
         label: "Agent Settings Window",
         href: "/agents/all",
         iconName: NAV_WINDOW_PANEL_ICON,

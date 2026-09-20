@@ -12,6 +12,8 @@
 //      named "Anthropic Sonnet 5" style from the AI catalog, through the ladder
 //   4. Default voice                  — media.listening.voice through the ladder,
 //      with pick-and-instantly-hear preview
+//   Below the fold: the agent-builder model and the default DECISION model
+//   (agents.model_prefs.decision_default_model, decision-contract picker only).
 //
 // The two ladder rows are the ONE editor (KnobOverrideRow) at the user rung,
 // so this screen is the proof the whole system works end to end: value, origin
@@ -40,6 +42,7 @@ export const FIRST_SCREEN_VOICE_KEY = "media.listening.voice";
 /** Below the fold: the second example (building agents), still on the first screen. */
 export const FIRST_SCREEN_MORE_KEYS = [
   "agents.model_prefs.agent_authoring_default_model",
+  "agents.model_prefs.decision_default_model",
 ] as const;
 
 export default function FirstScreenTab() {
