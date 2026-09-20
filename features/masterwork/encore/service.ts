@@ -270,23 +270,42 @@ export async function listMyEncoreRuns(
  * through the registered kind component — no second renderer, no developer
  * chrome, and a `?run=` address anyone can link to.
  *
- * Null when the run produced no `masterwork_result`: the panel then says so
- * rather than drawing an empty card.
+ * 🚨 THE ANSWER IS TYPED, NOT A NULLABLE PAYLOAD (walk 14, defect A). The old
+ * signature collapsed three different truths — the read was refused, the run
+ * kept nothing, the row is not a deliverable — into one `null`, and a caller
+ * holding `null` cannot say an honest sentence about any of them. Law 4: a
+ * screen is absent or honest, never blank. Each outcome is named here so the
+ * panel can print the one that is actually true.
+ *
+ * 🚨 AND THE KIND IS THE KEY, NOT THE NODE NAME. This read used to be
+ * `.eq("node_id", "show")` — the terminal node's name in today's Masterwork
+ * shape, which is a compile detail and not a contract. Asking for the declared
+ * kind is asking the question we actually mean, and it survives a shape that
+ * names its last step anything else.
  */
+export type EncoreRunResultRead =
+  | { status: "ready"; result: Record<string, unknown> }
+  /** The read itself failed or was refused — we do not know what is there. */
+  | { status: "unreadable" }
+  /** The run is readable and simply kept no `masterwork_result`. */
+  | { status: "kept-nothing" };
+
 export async function getEncoreRunResult(
   runId: string,
-): Promise<Record<string, unknown> | null> {
+): Promise<EncoreRunResultRead> {
   const { data, error } = await supabase
     .schema("workflow")
     .from("node_outcome")
     .select("output")
+    // The kind is the contract: a payload that does not declare itself is not
+    // something this panel knows how to show, and guessing is how a run box
+    // starts printing envelopes at people.
+    .eq("output->>__kind", MASTERWORK_RESULT_KIND)
     .eq("run_id", runId)
-    .eq("node_id", "show")
+    .limit(1)
     .maybeSingle();
-  if (error || !data?.output) return null;
-  const output = data.output as Record<string, unknown>;
-  // The kind is the contract: a payload that does not declare itself is not
-  // something this panel knows how to show, and guessing is how a run box
-  // starts printing envelopes at people.
-  return output.__kind === MASTERWORK_RESULT_KIND ? output : null;
+  if (error) return { status: "unreadable" };
+  const output = data?.output as Record<string, unknown> | null | undefined;
+  if (!output) return { status: "kept-nothing" };
+  return { status: "ready", result: output };
 }
