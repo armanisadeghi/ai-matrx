@@ -87,17 +87,19 @@ comment on column custom.anon_form.capture_opened_at is
 comment on column custom.anon_form.capture_opened_by is
   'CAPTURE: the person who opened this sheet to the crew. Kept for the audit trail beside created_by, because opening a write path into a Table is an act, not a property.';
 
--- NOT VALID is not a softening here: every existing row of custom.anon_form has audience
--- `public` by the default above, so there is nothing to validate, and the constraint is
--- enforced on every INSERT and UPDATE from this statement onward — which is the only place
--- a crew sheet could ever be published.
-alter table custom.anon_form
-  add constraint anon_form_crew_is_never_public
-  check (not (audience = 'crew' and published_at is not null)) not valid;
-
-alter table custom.anon_form
-  add constraint anon_form_audience_is_a_closed_set
-  check (audience in ('public', 'crew')) not valid;
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'anon_form_crew_is_never_public') then
+    alter table custom.anon_form
+      add constraint anon_form_crew_is_never_public
+      check (not (audience = 'crew' and published_at is not null));
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'anon_form_audience_is_a_closed_set') then
+    alter table custom.anon_form
+      add constraint anon_form_audience_is_a_closed_set
+      check (audience in ('public', 'crew'));
+  end if;
+end $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- custom.capture_sheet_declare — the crew's view on a Table, declared by its admin
@@ -110,7 +112,7 @@ alter table custom.anon_form
 -- rather than a constraint violation.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.capture_sheet_declare(p_organization_id uuid,
+create or replace function custom.capture_sheet_declare(p_organization_id uuid,
                                                         p_table_id uuid,
                                                         p_title text,
                                                         p_questions jsonb,
@@ -171,7 +173,7 @@ on conflict do nothing;
 -- custom.capture_publish — the one act that lets a crew start capturing
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.capture_publish(p_organization_id uuid,
+create or replace function custom.capture_publish(p_organization_id uuid,
                                                    p_sheet_id uuid,
                                                    p_open boolean default true)
 returns timestamptz
@@ -228,7 +230,7 @@ on conflict do nothing;
 -- custom.capture_sheets — what a foreman sees: the sheets and what came in through them
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.capture_sheets(p_organization_id uuid,
+create or replace function custom.capture_sheets(p_organization_id uuid,
                                                   p_table_id uuid default null)
 returns table (sheet_id uuid, table_id uuid, title text, slug text, state text,
                opened_at timestamptz, captures bigint, replays bigint,
@@ -300,7 +302,7 @@ on conflict do nothing;
 -- refusal is in `may_capture` and in words; the WALL is in custom.capture_submit.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.capture_open(p_organization_id uuid, p_sheet_id uuid)
+create or replace function custom.capture_open(p_organization_id uuid, p_sheet_id uuid)
 returns table (sheet_id uuid, organization_id uuid, table_id uuid, title text,
                presentation jsonb, fields jsonb, state text, may_capture boolean,
                message text)
@@ -401,7 +403,7 @@ on conflict do nothing;
 -- still in flight.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.capture_submit(p_organization_id uuid,
+create or replace function custom.capture_submit(p_organization_id uuid,
                                                   p_sheet_id uuid,
                                                   p_client_key text,
                                                   p_payload jsonb,
@@ -607,3 +609,13 @@ values ('custom', 'capture_submit',
         'capture_a_sheet_a_crew_fills_on_a_phone.sql',
         null, true, false)
 on conflict do nothing;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- THE GRANTS — these are SIGNED-IN doors, unlike the public form's two
+-- ─────────────────────────────────────────────────────────────────────────────
+
+grant execute on function custom.capture_sheet_declare(uuid, uuid, text, jsonb, jsonb, uuid, uuid) to authenticated;
+grant execute on function custom.capture_publish(uuid, uuid, boolean) to authenticated;
+grant execute on function custom.capture_sheets(uuid, uuid) to authenticated;
+grant execute on function custom.capture_open(uuid, uuid) to authenticated;
+grant execute on function custom.capture_submit(uuid, uuid, text, jsonb, jsonb, text, timestamptz, jsonb) to authenticated;
