@@ -235,11 +235,21 @@ begin
   v_f_w := custom.field_declare(v_open, v_sh_t, jsonb_build_object(
     'label','Width','plain','number','applies_to_types', jsonb_build_array('Rectangle','Square')));
 
-  -- 4a. THE WORD, not the id.
+  -- 4a. THE WORD, not the id — AND THE WORD IS WHAT COMES BACK.
+  -- UPDATED 2026-09-20 by lane CHOICE-VALUE. This clause used to assert that the read door
+  -- answers a UUID, because that was the contract when STORE-T wrote it: a person could type
+  -- "Circle" and the store turned it into the option record's id. The seventh independent pass
+  -- then failed T8 on exactly that — "the record stores the word the person typed as an
+  -- internal id" — so the stored form is now the option's own stable key and every door
+  -- resolves it to the label. The old assertion is now the RED one and lives in
+  -- `choiceval_red.sql` RED 1.
   v_s1 := custom.record_write(v_open, v_sh_t, jsonb_build_object('shname','S1','kind','Circle','parent_id',v_h2::text));
   v_doc := custom.read_record(v_open, v_s1, true);
-  if (v_doc ->> 'kind') !~* '^[0-9a-f]{8}-' then
-    raise exception '4a: the choice was stored as %, and the store keeps a choice as the option record''s id', v_doc ->> 'kind';
+  if (v_doc ->> 'kind') ~* '^[0-9a-f]{8}-' then
+    raise exception '4a: the read door answers %, and a person reads a word', v_doc ->> 'kind';
+  end if;
+  if (v_doc ->> 'kind') is distinct from 'Circle' then
+    raise exception '4a: the choice reads back as %, and the person picked Circle', coalesce(v_doc ->> 'kind','nothing');
   end if;
   -- 4b. A word that is not a choice is refused WITH THE CHOICES.
   begin
@@ -267,7 +277,7 @@ begin
     raise exception '4d: custom.table_type_field answers % for a table whose type field is kind',
       coalesce(custom.table_type_field(v_open, v_sh_t), 'nothing');
   end if;
-  raise notice 'PART 4 PASSED (T8) — "Circle" is written as a word and stored as its option record; "Trapezoid" is refused naming the three choices; a Circle offers Radius and not Width.';
+  raise notice 'PART 4 PASSED (T8) — "Circle" is written as a word and read back as a word; "Trapezoid" is refused naming the three choices; a Circle offers Radius and not Width.';
 
   -- ══════════════════════════════════════════════════════════════════════════════════════
   -- PART 5 — T9. A RECORD IS RETYPED TO ANOTHER TABLE, FROM A SEAT.
