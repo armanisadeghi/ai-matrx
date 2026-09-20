@@ -29,6 +29,13 @@ jest.mock(
   }),
 );
 jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => dispatch }));
+jest.mock("@/features/ai-models/hooks/useModels", () => ({
+  useModels: () => ({ models: [], isLoading: false, error: null, isReady: false }),
+}));
+jest.mock("@/features/ai-models/preferredDecisionModel", () => ({
+  resolvePreferredDecisionModel: jest.fn().mockResolvedValue(null),
+  firstDecisionModelId: () => null,
+}));
 jest.mock("@/components/ui/button", () => ({
   Button: ({
     children,
