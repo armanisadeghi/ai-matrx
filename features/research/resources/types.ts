@@ -48,6 +48,7 @@ export type ResourceKey =
   | "page.scoring"
   | "page.links"
   | "page.images"
+  | "page.entities"
   // Synthesis
   | "synthesis.keyword"
   | "synthesis.tag"
@@ -186,6 +187,27 @@ export interface ResourceManifest {
    * nothing has been promoted — which is the common case and not an error.
    */
   experts: ManifestExpert[];
+  /**
+   * What each analysed, curation-kept page NAMED — products/services,
+   * organisations, locations — read beside the manifest (`rs_source.page_analysis`
+   * is a body the manifest RPC deliberately does not carry). Feeds the derived
+   * `page.entities` kind; the server resolver (`aidream research/context_bundles.py`)
+   * derives the same block from the same rows.
+   */
+  entities: ManifestPageEntities[];
+}
+
+export interface ManifestPageEntities {
+  sourceId: string;
+  url: string;
+  hostname: string | null;
+  included: boolean;
+  analysisStatus: string | null;
+  pageType: string | null;
+  finalScore: number | null;
+  products: string[];
+  organizations: string[];
+  locations: string[];
 }
 
 /** One promoted expert, flattened to what the derived resource renders. */
