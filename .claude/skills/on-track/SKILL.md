@@ -2,7 +2,7 @@
 name: on-track
 type: Skill
 title: "on-track — is this work still what he asked for? Find the conversation, extract his words, judge against reality, plan the remedy, bring him the choice"
-description: "Run the full on-track check for a conversation, project, or keyword the owner names: locate the sessions, extract exactly what he typed (script), get a fresh summary, dispatch independent judges who go to the live product as him and report what was missed, dispatch a planner for the remedy, and return one page — what he will see, what is missing, the plan — with three offers: fix it all here, message the agent working on it, or something else. Use when told to check whether work is on track, audit a project that has drifted, 'run the on-track check on X', or when a long campaign is about to freeze, hand off, or claim done."
+description: "Run the full on-track check on a conversation, project, or keyword the owner names: find the sessions, extract exactly what he typed, dispatch independent judges who go to the live product as him and report what was missed, plan the remedy, and return one page — what he will see, what is missing, the plan. Use when told to check whether work is on track, to audit a project that has drifted, on 'run the on-track check on X', or when a long campaign is about to freeze, hand off, or claim done."
 tags: [agents, verification, drift, audit, ground-truth, orchestration]
 timestamp: 2026-09-16T00:00:00Z
 ---

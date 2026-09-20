@@ -136,6 +136,12 @@ needed (*"you are focused on the wrong things"*), and otherwise did not interfer
    exists, that missing seam is itself the finding (`forcing-function-tests`). Every stand-in
    screams (loud-patches law); every opinion-shaped decision becomes an org knob; every capability
    is built as a platform primitive, never a feature-local patch.
+   **Type errors at any gate** (frontend `pnpm type-check`, `@ai-matrx/*`
+   `pnpm typecheck`, dashboard `tsc`) are a fan-out under the frontend
+   `type-safety` skill: one file per small agent, they never run `tsc`,
+   they commit each assigned file locally as they finish, the
+   coordinator verifies centrally, at most six at a time. They are
+   not a release halt and not a cast sweep.
 5. **Bank lessons as laws.** Method traps (liveness oracles, session traps, seam classes) go into
    durable memory/docs the moment they bite, so they bite once. At each gate, and whenever a
    verifier overturns a builder, run a short retro and put each lesson where it bites cheapest:

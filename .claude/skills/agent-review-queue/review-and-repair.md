@@ -227,6 +227,10 @@ select * from claimed;
 
 If this returns zero rows, another worker got there first or no eligible item is ready. Never
 take an already claimed row unless a coordinator deliberately reassigns it.
+If the claim times out or its result is unclear, re-read the unique run owner before any retry.
+When no row was claimed, re-read the highest-priority eligible candidate and retry atomically
+with that exact `id` plus every eligibility predicate above and `for update skip locked`.
+Re-read the owner and claim event after the retry; never treat a timeout as an empty queue.
 
 ## PASS, FAIL, and repair evidence
 
