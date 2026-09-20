@@ -22,6 +22,7 @@ import {
   createReaders,
   mapListRows,
 } from "@/lib/contract/narrow";
+import { providerErrorSentence } from "@/lib/progress/failureSentence";
 import {
   connectionAction,
   labelFor,
@@ -191,14 +192,26 @@ export function parseBlockRow(entry: unknown, index: number): BlockedRow {
   const label = r.optStr(row.input_label, `blocks[${index}].input_label`);
   const unblock = r.optStr(row.unblock_note, `blocks[${index}].unblock_note`);
   const lawful = r.optStr(row.lawful_route, `blocks[${index}].lawful_route`);
+  const errorSentence = r.optStr(
+    row.error_sentence,
+    `blocks[${index}].error_sentence`,
+  );
+  // No `error_sentence` — the only thing left is `error_class`, a raw
+  // provider/exception token (`LOGIN_REQUIRED`, `ProxyError`) rather than a
+  // sentence. Map it through the failure-sentence helper rather than
+  // printing it: cold-walk-13 caught this token sitting inside an otherwise
+  // excellent person-facing row.
+  const errorClass = errorSentence
+    ? null
+    : providerErrorSentence(
+        r.optStr(row.error_class, `blocks[${index}].error_class`),
+      );
   return {
     id: `block:${id}`,
     origin: "block",
     what: label?.trim() || ref.replace(/^https?:\/\//, ""),
-    where:
-      r.optStr(row.error_sentence, `blocks[${index}].error_sentence`) ??
-      r.optStr(row.error_class, `blocks[${index}].error_class`) ??
-      "It refused without saying why",
+    where: errorSentence ?? errorClass?.text ?? "It refused without saying why",
+    whereDetail: errorClass?.detail,
     since:
       r.optStr(row.first_seen_at, `blocks[${index}].first_seen_at`) ??
       r.str(row.last_seen_at, `blocks[${index}].last_seen_at`),

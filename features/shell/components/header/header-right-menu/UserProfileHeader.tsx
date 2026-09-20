@@ -8,8 +8,14 @@ interface UserProfileHeaderProps {
 }
 
 export function UserProfileHeader({ userData }: UserProfileHeaderProps) {
-  const displayName = userData.userMetadata.name ?? userData.email ?? "You";
+  const name = userData.userMetadata.name;
+  const displayName = name ?? userData.email ?? "You";
   const initial = displayName.charAt(0).toUpperCase() || "?";
+  // Only show the email as a second line when it's genuinely additional
+  // information — a name-less account already shows its email as the
+  // display name above, and repeating it below prints `admin@admin.com`
+  // twice (cold-walk-13 friction item).
+  const showEmailBelow = Boolean(name && userData.email);
   return (
     <label htmlFor="shell-user-menu" className="block">
       <AppLink
@@ -33,7 +39,7 @@ export function UserProfileHeader({ userData }: UserProfileHeaderProps) {
           <span className="text-base font-medium text-foreground truncate">
             {displayName}
           </span>
-          {userData.email && (
+          {showEmailBelow && (
             <span className="text-xs text-foreground truncate">
               {userData.email}
             </span>
