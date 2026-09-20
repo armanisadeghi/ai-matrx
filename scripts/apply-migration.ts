@@ -165,6 +165,7 @@ import {
 } from "./lib/migration-target";
 import { confirmChairStep } from "./lib/chair-step";
 import { basedOnCheck, findReplaceOccurrences, type Query } from "./migration-based-on";
+import { judgeTexts as judgeKernelPairing } from "./check-kernel-rerecord-pairing";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const MIGRATIONS_DIR = resolve(ROOT, "migrations");
@@ -623,6 +624,9 @@ function usage(): void {
       `                                     release path, sweep, CI job or scheduled job scans\n` +
       `  pnpm db:apply --self-test          prove RED/GREEN against the live database\n` +
       `  pnpm db:apply --target-self-test   prove the --target refusal RED/GREEN on the rehearsal branch\n` +
+      `  --pair <file.sql>                  a sibling file of THIS apply; the only thing it can do is\n` +
+      `                                     carry the iam.entity_read_kernel_expected() re-record a\n` +
+      `                                     file replacing an access-kernel body must land with\n` +
       `  --target defaults to production, so every file written before --target existed behaves\n` +
       `  exactly as it did. --target branch needs the file to be headed \`-- target: branch\`.\n` +
       `  Applies the WHOLE file in one transaction on a direct Postgres connection and\n` +
@@ -646,6 +650,10 @@ interface ApplyOpts {
   /** `--confirm-chair-step <file>` — the basenames this command NAMED. A chair step at
    *  `--target production` runs only when its own basename is here (scripts/lib/chair-step.ts). */
   confirmedChairSteps?: readonly string[];
+  /** `--pair <file.sql>` — sibling file(s) of THIS apply whose bytes carry the D249
+   *  re-record. Judged together with the file being applied; see the kernel pairing
+   *  refusal in applyFile. */
+  pairedWith?: readonly string[];
 }
 
 /** Apply ONE file. The whole of db:apply lives here so --self-test exercises
@@ -803,6 +811,57 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         `A skip-marked file is never applied by any path. Remove the marker if it must run.`,
     );
     return 1;
+  }
+
+  // 🚨 D249 KERNEL PAIRING — the class that shut the provisioner down for 2.5 hours on
+  // 2026-09-20 (P2-00f). Three landings — LEVELFIX, VIS2 and LADDER-PERF — CREATE OR
+  // REPLACE'd bodies that `iam.entity_read_kernel_fingerprint()` hashes and re-recorded
+  // nothing, so `iam.entity_read_kernel_expected()` went stale and `platform.provision`
+  // refused EVERY spec with `preflight.read_kernel`. A guard for exactly this existed in
+  // both repos on the day LADDER-PERF landed — and was wired into nothing. This is the
+  // wire: the judgement happens HERE, on the bytes about to execute, before a connection
+  // exists, at every target, and it is not softened by --dry-run or --reapply. `--pair`
+  // is the sibling-file form the guard has always accepted (a re-record in a file applied
+  // in the same command sequence); the file it names is read and judged, not taken on trust.
+  {
+    const paired: Record<string, string> = { [filename]: sql };
+    for (const raw of opts.pairedWith ?? []) {
+      const pairPath = existsSync(resolve(process.cwd(), raw))
+        ? resolve(process.cwd(), raw)
+        : resolve(MIGRATIONS_DIR, raw);
+      if (!existsSync(pairPath)) {
+        console.error(`${TAG.fail}--pair ${raw}: no such file. A pairing file is read and judged, never assumed.`);
+        return 1;
+      }
+      paired[relative(ROOT, pairPath)] = readFileSync(pairPath, "utf8");
+    }
+    const pairing = judgeKernelPairing(paired);
+    if (!pairing.ok) {
+      const bodies = [
+        ...new Set(pairing.kernelHits.map(({ rep }) => `${rep.schema ? `${rep.schema}.` : ""}${rep.name}`)),
+      ].sort();
+      console.error(
+        `${TAG.fail}${filename} replaces the access-kernel ${bodies.length === 1 ? "body" : "bodies"} ` +
+          `${C.bold}${bodies.join(", ")}${C.reset}, which ${C.bold}iam.entity_read_kernel_fingerprint()${C.reset} ` +
+          `hashes, and nothing in this apply re-records ${C.bold}iam.entity_read_kernel_expected()${C.reset} — ` +
+          `so the moment it lands the provisioner refuses every spec with \`preflight.read_kernel\` and no ` +
+          `table can be created on this database.\n` +
+          `  Fix it one of two ways, and neither of them is a blind stamp (AD242): prove the bodies still ` +
+          `admit what they admitted, then\n` +
+          `    1. add \`CREATE OR REPLACE FUNCTION iam.entity_read_kernel_expected()\` to ${filename} itself, or\n` +
+          `    2. write that re-record as its own file and name it in THIS SAME command:\n` +
+          `         pnpm db:apply ${filename} … --pair migrations/<the re-record file>.sql\n` +
+          `  Refused at every target; --dry-run and --reapply do not soften it.`,
+      );
+      return 1;
+    }
+    if (pairing.kernelHits.length > 0) {
+      console.log(
+        `${TAG.ok}kernel rerecord pairing ${C.dim}— this apply replaces ` +
+          `${pairing.kernelHits.length} fingerprinted kernel body/bodies AND re-records ` +
+          `iam.entity_read_kernel_expected() (${[...new Set(pairing.rerecordHits.map((h) => h.path))].join(", ")})${C.reset}`,
+      );
+    }
   }
 
   const stripped = stripForDetection(sql);
@@ -1996,10 +2055,19 @@ function judgeOnly(paths: readonly string[]): number {
     // the corpus could not see them at all (the autocommit detector read a function's
     // HINT text as DDL and nothing went red).
     const facts = statementFacts(sql);
+    // The D249 kernel pairing is judged on the file's OWN bytes here — `--judge-only`
+    // has no invocation to look across, so a file that re-records in a sibling shows
+    // `kernel_rerecord: "unpaired"` and the apply's `--pair` is what resolves it.
+    const pairing = judgeKernelPairing({ [name]: sql });
     const detectors = {
       autocommit: facts.autocommit,
       txn_control: facts.txnControl,
       self_ledger: facts.selfLedger,
+      kernel_rerecord: pairing.kernelHits.length === 0
+        ? "untouched"
+        : pairing.ok
+          ? "paired"
+          : "unpaired",
     };
     for (const target of TARGETS) {
       let line: Record<string, unknown>;
@@ -2153,6 +2221,18 @@ async function main(): Promise<number> {
       confirmedChairSteps.push(basename(tok.slice("--confirm-chair-step=".length).trim()));
     }
   });
+  // `--pair <file.sql>` (repeatable, or `=` form): the sibling file(s) of THIS apply.
+  // The ONLY thing it can do is satisfy the D249 kernel-rerecord pairing above — it
+  // never changes what executes, and the named file is read from disk and judged.
+  const pairedWith: string[] = [];
+  argv.forEach((tok, i) => {
+    if (tok === "--pair" && argv[i + 1] && !argv[i + 1]!.startsWith("--")) {
+      valueIdxs.add(i + 1);
+      pairedWith.push(argv[i + 1]!.trim());
+    } else if (tok.startsWith("--pair=")) {
+      pairedWith.push(tok.slice("--pair=".length).trim());
+    }
+  });
   const positional = argv.filter((a, i) => !a.startsWith("--") && !valueIdxs.has(i));
 
   if (positional.length !== 1) {
@@ -2176,6 +2256,7 @@ async function main(): Promise<number> {
     lane,
     branchRefPath: branchRefOverride(argv),
     confirmedChairSteps,
+    pairedWith,
   });
 }
 
