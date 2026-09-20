@@ -242,8 +242,8 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "agent_json",
     label: "Agent as JSON",
     description:
-      "Full agent definition serialized as a JSON string. Lets a judge / improve / refactor agent see EVERYTHING about the agent being edited in a single input. Empty when no agent is open.",
-    valueType: "string",
+      "Full agent definition as a native structured object. Lets a judge / improve / refactor agent see EVERYTHING about the agent being edited in a single input. Empty when no agent is open.",
+    valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 8000,
     autoContext: false,
@@ -573,8 +573,8 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "variable_json",
     label: "Focused variable as JSON",
     description:
-      "Full live variable definition serialized as JSON so an agent can inspect and propose edits against the exact variable being edited. Empty when no variable is focused.",
-    valueType: "string",
+      "Full live variable definition as a native structured object so an agent can inspect and propose edits against the exact variable being edited. Empty when no variable is focused.",
+    valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 1000,
     autoContext: false,
@@ -718,7 +718,13 @@ replace it: \`system_instruction\` and \`agent_tags\` are full replacements.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
-    pickBaseline("selection", "text_before", "text_after", "content", "context"),
+    pickBaseline(
+      "selection",
+      "text_before",
+      "text_after",
+      "content",
+      "context",
+    ),
     surfaceSpecific,
   ),
   writeTargets,
@@ -745,7 +751,7 @@ export function createAgentBuilderScope(values: {
   agent_output_schema?: Record<string, unknown>;
   agent_settings?: Record<string, unknown>;
   agent_ui_gates?: Record<string, unknown>;
-  agent_json?: string;
+  agent_json?: object;
   agent_tools?: string[];
   agent_custom_tools?: unknown[];
   agent_mcp_servers?: string[];
@@ -774,7 +780,7 @@ export function createAgentBuilderScope(values: {
   variable_required?: boolean;
   variable_custom_component?: unknown;
   variable_binding?: unknown;
-  variable_json?: string;
+  variable_json?: object;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;
 }

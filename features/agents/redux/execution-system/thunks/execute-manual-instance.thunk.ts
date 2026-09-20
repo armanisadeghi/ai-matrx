@@ -104,9 +104,13 @@ import {
 import {
   selectHostVariableNames,
   selectRuntimeVariableResourcePolicies,
-  selectVariablesForRequest,
 } from "../instance-variable-values/instance-variable-values.selectors";
-import { restoreVariableValues } from "../instance-variable-values/instance-variable-values.slice";
+import { resolveVariablesForRequest } from "../instance-variable-values/resolve-variables-for-request";
+import {
+  restoreVariableValues,
+  stampSubmittedFirstTurnValues,
+  clearSubmittedFirstTurnValues,
+} from "../instance-variable-values/instance-variable-values.slice";
 import { isFirstTurn } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
 import {
   selectContextPayload,
@@ -351,7 +355,18 @@ export async function assembleManualRequest(
     (agent.settings ?? {}) as Record<string, unknown>,
   );
 
-  const variables = selectVariablesForRequest(conversationId)(state);
+  const instanceVariables =
+    state.instanceVariableValues.byConversationId[conversationId];
+  const variables = resolveVariablesForRequest({
+    // Builder contract: the test run reads the LIVE agent definition, not a
+    // snapshot taken when the instance was minted. Defaults the person left
+    // alone still go to the server — they must also appear in this dict so
+    // the first-turn strip cannot lie about them.
+    definitions:
+      agent.variableDefinitions ?? instanceVariables?.definitions ?? [],
+    userValues: instanceVariables?.userValues ?? {},
+    scopeValues: instanceVariables?.scopeValues ?? {},
+  });
   const variableResourceContext =
     selectRuntimeVariableResourcePolicies(conversationId)(state);
   const ordinaryContext = selectContextPayload(conversationId)(state);
@@ -613,6 +628,8 @@ export const executeManualInstance = createAsyncThunk<
       );
     let recoveryId: string | null = null;
 
+    let firstTurnSnapshotStamped = false;
+    let streamStarted = false;
     try {
       const state = getState() as RootState;
       const instance = state.conversations.byConversationId[conversationId];
@@ -631,11 +648,24 @@ export const executeManualInstance = createAsyncThunk<
       const userMessageParts = userInputEntry?.messageParts ?? undefined;
 
       // First-turn variables strip (`FirstTurnVariables` on the user bubble)
-      // reads `userValues`, not definition defaults. Mirror executeInstance:
-      // stamp the exact resolved payload we're about to send so the live
-      // bubble matches a reload from `cx_conversation.variables`.
+      // must freeze the exact resolved payload the server will apply — including
+      // definition defaults the person left alone. The Builder's test run
+      // reads the LIVE agent definition (same as assembleManualRequest), not
+      // a stale instance snapshot, so a default edited on the left is what
+      // the history on the right reports.
+      const sourceId = instance.initialAgentVersionId ?? instance.agentId;
+      const liveAgent = state.agentDefinition.agents?.[sourceId];
+      const instanceVariables =
+        state.instanceVariableValues.byConversationId[conversationId];
       const firstTurnVariables = isFirstTurn(state, conversationId)
-        ? selectVariablesForRequest(conversationId)(state)
+        ? resolveVariablesForRequest({
+            definitions:
+              liveAgent?.variableDefinitions ??
+              instanceVariables?.definitions ??
+              [],
+            userValues: instanceVariables?.userValues ?? {},
+            scopeValues: instanceVariables?.scopeValues ?? {},
+          })
         : null;
       const hasFirstTurnVariables = Boolean(
         firstTurnVariables && Object.keys(firstTurnVariables).length > 0,
@@ -644,13 +674,22 @@ export const executeManualInstance = createAsyncThunk<
       // `execute-instance.thunk.ts` — `setUserVariableValues` released the
       // launcher's authorship and put the host's values back in her bubble.
       if (hasFirstTurnVariables && firstTurnVariables) {
+        const hostNamesAtSubmit = selectHostVariableNames(conversationId)(state);
         dispatch(
           restoreVariableValues({
             conversationId,
             values: firstTurnVariables,
-            hostValueNames: selectHostVariableNames(conversationId)(state),
+            hostValueNames: hostNamesAtSubmit,
           }),
         );
+        dispatch(
+          stampSubmittedFirstTurnValues({
+            conversationId,
+            values: firstTurnVariables,
+            hostValueNames: hostNamesAtSubmit,
+          }),
+        );
+        firstTurnSnapshotStamped = true;
       }
 
       // ─────────────────────────────────────────────────────────────────────
@@ -962,6 +1001,7 @@ export const executeManualInstance = createAsyncThunk<
       const currentUiState = (getState() as RootState).instanceUIState
         ?.byConversationId[conversationId];
 
+      streamStarted = true;
       await processStream({
         requestId,
         conversationId,
@@ -996,6 +1036,9 @@ export const executeManualInstance = createAsyncThunk<
       }
       return { requestId, conversationId };
     } catch (error) {
+      if (firstTurnSnapshotStamped && !streamStarted) {
+        dispatch(clearSubmittedFirstTurnValues(conversationId));
+      }
       unregisterAbortController(conversationId);
 
       if (error instanceof Error && error.name === "AbortError") {

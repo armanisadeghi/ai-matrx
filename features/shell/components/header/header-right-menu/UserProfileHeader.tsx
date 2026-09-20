@@ -1,23 +1,22 @@
 import AppLink from "@/components/navigation/AppLink";
-import { tabIdToHref, SETTINGS_BASE } from "@/features/settings/route-shell/routing";
+import {
+  tabIdToHref,
+  SETTINGS_BASE,
+} from "@/features/settings/route-shell/routing";
 import { UserData } from "@/utils/userDataMapper";
 import { ShellUserAvatarImage } from "./ShellUserAvatarImage";
+import { useMenuCheckboxId } from "./menuCheckboxId";
 
 interface UserProfileHeaderProps {
   userData: UserData;
 }
 
 export function UserProfileHeader({ userData }: UserProfileHeaderProps) {
-  const name = userData.userMetadata.name;
-  const displayName = name ?? userData.email ?? "You";
+  const displayName = userData.userMetadata.name ?? userData.email ?? "You";
   const initial = displayName.charAt(0).toUpperCase() || "?";
-  // Only show the email as a second line when it's genuinely additional
-  // information — a name-less account already shows its email as the
-  // display name above, and repeating it below prints `admin@admin.com`
-  // twice (cold-walk-13 friction item).
-  const showEmailBelow = Boolean(name && userData.email);
+  const menuCheckboxId = useMenuCheckboxId();
   return (
-    <label htmlFor="shell-user-menu" className="block">
+    <label htmlFor={menuCheckboxId} className="block">
       <AppLink
         href={tabIdToHref(SETTINGS_BASE, "account.identity")}
         className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-[var(--matrx-glass-bg-hover)] transition-colors"
@@ -39,7 +38,7 @@ export function UserProfileHeader({ userData }: UserProfileHeaderProps) {
           <span className="text-base font-medium text-foreground truncate">
             {displayName}
           </span>
-          {showEmailBelow && (
+          {userData.email && (
             <span className="text-xs text-foreground truncate">
               {userData.email}
             </span>

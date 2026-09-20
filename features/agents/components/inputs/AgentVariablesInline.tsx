@@ -46,6 +46,8 @@ interface AgentVariablesInlineProps {
   /** Called when Enter is pressed on the last variable, or always on Enter if submitOnEnter */
   onSubmit?: () => void;
   submitOnEnter?: boolean;
+  /** Optional Locate anchor supplied by the owning surface. */
+  surfaceValueName?: string;
 }
 
 export function AgentVariablesInline({
@@ -53,6 +55,7 @@ export function AgentVariablesInline({
   compact = false,
   onSubmit,
   submitOnEnter = true,
+  surfaceValueName,
 }: AgentVariablesInlineProps) {
   const dispatch = useAppDispatch();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -228,7 +231,11 @@ export function AgentVariablesInline({
     return null;
 
   return (
-    <div className="w-full shrink-0" ref={rootRef}>
+    <div
+      className="w-full shrink-0"
+      ref={rootRef}
+      data-surface-value={surfaceValueName}
+    >
       <BoundVariableChips conversationId={conversationId} />
       <div
         className="max-h-72 overflow-y-auto w-full divide-y divide-border/40"

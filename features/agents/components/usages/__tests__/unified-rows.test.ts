@@ -1,4 +1,4 @@
-// Find Usages — the ONE risk ladder and the one-phrase "what changed".
+// Find Usages — the ONE risk ladder and the one-fact "Changed" cell.
 //
 // Two graders feed the table; this pins how each verdict lands on Arman's
 // ranking (variables / context slots = red; output shape = orange; model or
@@ -111,7 +111,7 @@ describe("what changed — one phrase", () => {
       }),
       "agent-1",
     );
-    expect(row.whatChanged).toBe("A variable was removed: topic (+1 more)");
+    expect(row.whatChanged).toBe("A variable was removed: topic +1");
   });
 
   it("says a tracks-latest rung follows the newest version, not the server's paragraph", () => {
@@ -132,9 +132,8 @@ describe("what changed — one phrase", () => {
       }),
       "agent-1",
     );
-    expect(row.whatChanged).toBe(
-      "Follows the newest version — your change already applies · the model changed (still Google)",
-    );
+    expect(row.whatChanged).toBe("Follows latest");
+    expect(row.holderLabel).toBe("Default");
     expect(row.behind).toBe(false);
     expect(row.pinnedLabel).toBe("latest");
   });
@@ -144,7 +143,7 @@ describe("what changed — one phrase", () => {
       verdict({ settings_drift: { capability_checked: false, capability: [], keys: [] } }),
       "agent-1",
     );
-    expect(row.whatChanged).toContain("settings unmeasured");
+    expect(row.whatChanged).toBe("Unmeasured");
   });
 
   it("names the duplicate a mandate was reached through", () => {
@@ -159,7 +158,8 @@ describe("what changed — one phrase", () => {
       }),
       "agent-1",
     );
-    expect(row.subtitle).toBe("default · on duplicate “Agent (copy)”");
+    expect(row.holderLabel).toBe("Default");
+    expect(row.subtitle).toBe("via Agent (copy)");
   });
 });
 

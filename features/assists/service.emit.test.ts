@@ -49,9 +49,9 @@ describe("emitAssist write door", () => {
       schema: () => ({ rpc, from }),
     } as never);
 
-    await expect(
-      emitAssist("user-1", input(), "org-1"),
-    ).resolves.toBe("assist-row-1");
+    await expect(emitAssist("user-1", input(), "org-1")).resolves.toBe(
+      "assist-row-1",
+    );
 
     expect(from).not.toHaveBeenCalled();
     expect(rpc).toHaveBeenCalledWith("emit_pending_assist", {
@@ -88,7 +88,9 @@ describe("emitAssist write door", () => {
       schema: () => ({
         rpc,
         from: () => {
-          throw new Error("emitAssist must not touch platform.assists directly");
+          throw new Error(
+            "emitAssist must not touch platform.assists directly",
+          );
         },
       }),
     } as never);

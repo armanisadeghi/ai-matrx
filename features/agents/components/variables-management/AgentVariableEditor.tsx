@@ -229,7 +229,7 @@ export function AgentVariableEditor({
         variable_required: !!variable.required,
         variable_custom_component: variable.customComponent ?? null,
         variable_binding: variable.binding ?? null,
-        variable_json: JSON.stringify(variable),
+        variable_json: variable,
         editable_target: {
           kind: "agent_variable",
           agentId,

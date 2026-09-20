@@ -24,11 +24,13 @@
 import { configureStore } from "@reduxjs/toolkit";
 import instanceUserInputReducer, {
   clearUserInput,
+  initInstanceUserInput,
   markInputPersisted,
   markInputSubmitted,
   resetSubmissionPhase,
   setUserInputText,
 } from "../instance-user-input.slice";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
   composerDraftMiddleware,
   __discardComposerDraftWritesForTest,
@@ -57,9 +59,7 @@ function makeStore(restoreUnsentDrafts: boolean | undefined = true) {
   return configureStore({
     reducer: {
       instanceUserInput: instanceUserInputReducer,
-      userPreferences: (
-        state = { prompts: { restoreUnsentDrafts } },
-      ) => state,
+      userPreferences: (state = { prompts: { restoreUnsentDrafts } }) => state,
     },
     middleware: (getDefault) =>
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -102,18 +102,26 @@ beforeEach(() => {
 });
 afterEach(() => {
   jest.restoreAllMocks();
+  (captureError as jest.Mock).mockClear();
 });
 
 describe("the composer draft survives a reload", () => {
   it("type → reload → the text is back", () => {
     let store = makeStore();
+    store.dispatch(initInstanceUserInput({ conversationId: CID }));
     store.dispatch(setUserInputText({ conversationId: CID, text: LONG_DRAFT }));
 
     store = reload();
     expect(textIn(store)).toBe("");
+    // THE BREAK: applying before the input entry exists used to create it
+    // through setUserInputText and scream `smart-input-pre-init-capture`.
+    expect(restoreInto(store)).toBe("not_ready");
+    expect(captureError).not.toHaveBeenCalled();
 
+    store.dispatch(initInstanceUserInput({ conversationId: CID }));
     expect(restoreInto(store)).toBe("restored");
     expect(textIn(store)).toBe(LONG_DRAFT);
+    expect(captureError).not.toHaveBeenCalled();
   });
 
   it("type → send → reload → the composer is empty", () => {
@@ -121,9 +129,7 @@ describe("the composer draft survives a reload", () => {
     store.dispatch(setUserInputText({ conversationId: CID, text: LONG_DRAFT }));
     // The real send order: snapshot-and-tombstone first, server acknowledges
     // the reservation second.
-    store.dispatch(
-      markInputSubmitted({ conversationId: CID, userValues: {} }),
-    );
+    store.dispatch(markInputSubmitted({ conversationId: CID, userValues: {} }));
     store.dispatch(markInputPersisted(CID));
 
     store = reload();
@@ -143,9 +149,7 @@ describe("the composer draft survives a reload", () => {
 
     // …and before it applies, the user sends. Clear-before-send bumps the
     // generation and lays the tombstone.
-    store.dispatch(
-      markInputSubmitted({ conversationId: CID, userValues: {} }),
-    );
+    store.dispatch(markInputSubmitted({ conversationId: CID, userValues: {} }));
     store.dispatch(markInputPersisted(CID));
     expect(textIn(store)).toBe("");
 
@@ -168,14 +172,13 @@ describe("the composer draft survives a reload", () => {
   it("a FAILED send keeps the draft restorable (the tombstone is not the end)", () => {
     let store = makeStore();
     store.dispatch(setUserInputText({ conversationId: CID, text: LONG_DRAFT }));
-    store.dispatch(
-      markInputSubmitted({ conversationId: CID, userValues: {} }),
-    );
+    store.dispatch(markInputSubmitted({ conversationId: CID, userValues: {} }));
     // The request died. `resetSubmissionPhase` is the error/abort path: the
     // slice keeps the text, so storage must keep it too.
     store.dispatch(resetSubmissionPhase(CID));
 
     store = reload();
+    store.dispatch(initInstanceUserInput({ conversationId: CID }));
     expect(restoreInto(store)).toBe("restored");
     expect(textIn(store)).toBe(LONG_DRAFT);
   });
@@ -185,15 +188,14 @@ describe("the composer draft survives a reload", () => {
     // invariant). Storage must follow the slice, never the action's intent.
     let store = makeStore();
     store.dispatch(setUserInputText({ conversationId: CID, text: "sent one" }));
-    store.dispatch(
-      markInputSubmitted({ conversationId: CID, userValues: {} }),
-    );
+    store.dispatch(markInputSubmitted({ conversationId: CID, userValues: {} }));
     store.dispatch(markInputPersisted(CID));
     store.dispatch(setUserInputText({ conversationId: CID, text: LONG_DRAFT }));
     store.dispatch(clearUserInput(CID));
     expect(textIn(store)).toBe(LONG_DRAFT);
 
     store = reload();
+    store.dispatch(initInstanceUserInput({ conversationId: CID }));
     expect(restoreInto(store)).toBe("restored");
     expect(textIn(store)).toBe(LONG_DRAFT);
   });
@@ -209,12 +211,15 @@ describe("the composer draft survives a reload", () => {
 
     let store = makeStore();
     registerComposerDraftAlias(FIRST, SURFACE);
-    store.dispatch(setUserInputText({ conversationId: FIRST, text: LONG_DRAFT }));
+    store.dispatch(
+      setUserInputText({ conversationId: FIRST, text: LONG_DRAFT }),
+    );
     __flushComposerDraftWritesForTest();
     __resetComposerDraftGenerationsForTest();
 
     store = makeStore();
     registerComposerDraftAlias(SECOND, SURFACE);
+    store.dispatch(initInstanceUserInput({ conversationId: SECOND }));
     expect(peekComposerDraft(SECOND)).toBeNull(); // the id is gone…
     const token = peekComposerDraft(SECOND, SURFACE); // …the surface is not
     expect(token?.value).toBe(LONG_DRAFT);
@@ -231,7 +236,9 @@ describe("the composer draft survives a reload", () => {
 
     let store = makeStore();
     registerComposerDraftAlias(FIRST, SURFACE);
-    store.dispatch(setUserInputText({ conversationId: FIRST, text: LONG_DRAFT }));
+    store.dispatch(
+      setUserInputText({ conversationId: FIRST, text: LONG_DRAFT }),
+    );
     store.dispatch(
       markInputSubmitted({ conversationId: FIRST, userValues: {} }),
     );
@@ -255,6 +262,7 @@ describe("the composer draft survives a reload", () => {
     __flushComposerDraftWritesForTest();
     __resetComposerDraftGenerationsForTest();
     store = makeStore(undefined);
+    store.dispatch(initInstanceUserInput({ conversationId: CID }));
     expect(restoreInto(store)).toBe("restored");
     expect(textIn(store)).toBe(LONG_DRAFT);
   });

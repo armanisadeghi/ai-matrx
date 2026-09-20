@@ -80,6 +80,10 @@ export interface InstanceVariableValuesEntry {
    */
   hostValueNames: string[];
 
+  /** Immutable payload rendered only with the first submitted user turn. */
+  submittedFirstTurnValues: Record<string, unknown> | null;
+  submittedFirstTurnHostValueNames: string[];
+
   /** Per-conversation overrides for media-variable resource-family policy. */
   resourcePolicies: Record<string, VariableResourceContextConfig>;
 }
@@ -139,6 +143,8 @@ const instanceVariableValuesSlice = createSlice({
         scopeValues,
         surfaceValueNames: [],
         hostValueNames: [],
+        submittedFirstTurnValues: null,
+        submittedFirstTurnHostValueNames: [],
         resourcePolicies: {},
       };
     },
@@ -247,6 +253,31 @@ const instanceVariableValuesSlice = createSlice({
         if (name in values && !host.includes(name)) host.push(name);
       }
       entry.hostValueNames = host;
+    },
+
+    /** Freeze the exact first-turn payload before mutable draft cleanup runs. */
+    stampSubmittedFirstTurnValues(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        values: Record<string, unknown>;
+        hostValueNames?: readonly string[];
+      }>,
+    ) {
+      const entry = state.byConversationId[action.payload.conversationId];
+      if (!entry || entry.submittedFirstTurnValues !== null) return;
+      entry.submittedFirstTurnValues = { ...action.payload.values };
+      entry.submittedFirstTurnHostValueNames = [
+        ...(action.payload.hostValueNames ?? []),
+      ].filter((name) => name in action.payload.values);
+    },
+
+    /** Release an unaccepted first-submit snapshot so a corrected retry can freeze anew. */
+    clearSubmittedFirstTurnValues(state, action: PayloadAction<string>) {
+      const entry = state.byConversationId[action.payload];
+      if (!entry) return;
+      entry.submittedFirstTurnValues = null;
+      entry.submittedFirstTurnHostValueNames = [];
     },
 
     /**
@@ -420,6 +451,8 @@ const instanceVariableValuesSlice = createSlice({
         scopeValues: variables?.scopeValues ?? {},
         surfaceValueNames: [],
         hostValueNames: [],
+        submittedFirstTurnValues: null,
+        submittedFirstTurnHostValueNames: [],
         resourcePolicies: {},
       };
     });
@@ -436,6 +469,8 @@ export const {
   setUserVariableValues,
   setHostVariableValues,
   restoreVariableValues,
+  stampSubmittedFirstTurnValues,
+  clearSubmittedFirstTurnValues,
   clearUserVariableValue,
   setScopeVariableValues,
   setRuntimeVariableResourcePolicy,

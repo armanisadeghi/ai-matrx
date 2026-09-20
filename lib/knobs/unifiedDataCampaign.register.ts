@@ -222,6 +222,12 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "THE TEST BENCH at /data-v2/try-everything: one page that mounts the real screens of every part of the store — tables and grid, sharing and the Access tab, relations and rollups, custom fields on a CRM contact, forms, the approval inbox, the agent's door, history, dashboards, documents and notify rules — against this organization's live data, with an honest note on each unfinished part. It is served to users and it reads the switch itself; its frames and labels live in TestBenchChrome.tsx, which reaches nothing and is deliberately not registered.",
     },
     {
+        id: "rendered-document-page",
+        file: "app/(core)/d/[renderId]/page.tsx",
+        kind: "runtime",
+        why: "PRODUCTS row 5. ONE rendered document at its own address — where the link document_propose hands a person actually lands. It reads custom.doc_render_read, which decides whether this person may see the record the document is about, and shows that door's own refusal sentence verbatim; the bytes are the frozen ones a signature seals, so there is no refresh-from-the-record control and must never be one. It opens in RichDocument, the platform's one rich document, so print and save-as-PDF come with it. Served to users, so it reads the switch and shows the off sentence when it is off.",
+    },
+    {
         id: "data-v2-table",
         file: "app/(core)/data-v2/[tableId]/page.tsx",
         kind: "runtime",

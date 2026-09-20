@@ -25,7 +25,10 @@ import {
   flushComposerDraftWrite,
   isDraftRestoreEnabled,
 } from "./composer-draft.middleware";
-import { selectUserInputText } from "./instance-user-input.selectors";
+import {
+  selectUserInputEntryExists,
+  selectUserInputText,
+} from "./instance-user-input.selectors";
 
 export type ComposerDraftRestoreState = {
   /** A draft was put back just now — say so on screen. */
@@ -55,6 +58,12 @@ export function useComposerDraftRestore(
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const text = useAppSelector(selectUserInputText(conversationId));
+  // Same gate ChatRoomClient uses for draft transfer. The composer is typeable
+  // the moment the client UUID exists; the input ENTRY lands only after
+  // `createInstanceFull` finishes its agent fetch. Applying a stored draft
+  // before that entry exists was a one-shot 100+ char `setUserInputText` —
+  // captured, nothing lost, but the Error Inspector went red on every reload.
+  const entryReady = useAppSelector(selectUserInputEntryExists(conversationId));
   // THE HANDOFF LINE. No messages = the id is client-only and will be re-minted
   // on reload, so the surface alias is the only findable key. With messages the
   // conversation is real and its own id is the only correct key.
@@ -96,6 +105,10 @@ export function useComposerDraftRestore(
     // Once per conversation id per mount. A second pass could only re-restore
     // something the user has since deleted on purpose.
     if (attemptedRef.current === conversationId) return;
+    // Do NOT mark attempted while the entry is missing — createInstanceFull
+    // will land, this effect re-runs, and then we apply. Marking now would
+    // skip the real restore forever.
+    if (!entryReady) return;
     attemptedRef.current = conversationId;
     setRestoredValue(null);
     setStorageAvailable(isComposerDraftStorageAvailable());
@@ -107,7 +120,7 @@ export function useComposerDraftRestore(
     if (dispatch(applyComposerDraft(token)) === "restored") {
       setRestoredValue(token.value);
     }
-  }, [conversationId, liveAlias, dispatch, enabled]);
+  }, [conversationId, liveAlias, dispatch, enabled, entryReady]);
 
   // The notice belongs to the restored text and nothing else: the moment the
   // person edits it, it has stopped being news.

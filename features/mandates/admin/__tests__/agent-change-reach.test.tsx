@@ -1,8 +1,8 @@
 // Agent Change Impact — the post-edit badge (I6).
 //
 // What a PERSON sees after saving an agent: nothing when the change reaches
-// no job they can see; a "reaches N" badge and a toast with a Review door when
-// it does; an honest notice carrying the server's sentence when the read
+// no job they can see; an icon + count and a Review toast of facts when it
+// does; an honest notice carrying the server's sentence when the read
 // failed. Every fixture is the CONTRACT's shape.
 
 import React, { act } from "react";
@@ -210,14 +210,14 @@ describe("the badge and the toast", () => {
       "[data-testid=agent-change-reach-badge]",
     );
     expect(badge).not.toBeNull();
-    expect(badge!.textContent).toContain("reaches 2");
+    expect(badge!.textContent?.replace(/\s/g, "")).toBe("2");
     expect(badge!.getAttribute("aria-label")).toBe(
-      "1 pin can advance now (0 to check, 1 red) · reaches 2 mandates",
+      "2 mandates · 1 advance · 0 check · 1 red",
     );
 
     expect(toastInfoMock).toHaveBeenCalledTimes(1);
     const [sentence, options] = toastInfoMock.mock.calls[0] as [string, { action: { label: string; onClick: () => void } }];
-    expect(sentence).toBe("1 pin can advance now (0 to check, 1 red) · reaches 2 mandates");
+    expect(sentence).toBe("2 mandates");
     expect(options.action.label).toBe("Review");
 
     // The knob is off by default, so nothing opened on its own.
@@ -248,10 +248,11 @@ describe("the badge and the toast", () => {
       await latest!.announce("Quick Test Agent");
     });
     expect(toastErrorMock).toHaveBeenCalledTimes(1);
-    expect(String(toastErrorMock.mock.calls[0][0])).toContain(
-      "impact_requires_caller: sign in and try again",
-    );
-    expect(container!.textContent).toContain("reach unknown");
+    expect(toastErrorMock.mock.calls[0][0]).toBe("Reach unknown");
+    expect(
+      (toastErrorMock.mock.calls[0][1] as { description: string }).description,
+    ).toBe("impact_requires_caller: sign in and try again");
+    expect(container!.querySelector("button[aria-label='Dismiss the reach notice']")).not.toBeNull();
     // Dismissible.
     const dismiss = container!.querySelector<HTMLButtonElement>(
       "button[aria-label='Dismiss the reach notice']",
@@ -269,7 +270,7 @@ describe("the sentence and the companion's inputs", () => {
       verdict({ row_id: "r3", mandate_key: "probe.i6_c", blocker: "tracks_latest" }),
     ]);
     expect(describeReach(counts)).toBe(
-      "1 pin can advance now (1 to check, 0 red) · reaches 3 mandates, 1 rung not movable here",
+      "3 mandates · 1 advance · 1 check · 0 red · 1 blocked",
     );
   });
 
@@ -307,7 +308,7 @@ describe("the sentence and the companion's inputs", () => {
     expect(batchTierOf(own)).toBe("blocked");
     // The badge counts the same way: the owner's pin is actionable for them.
     expect(describeReach(countBatchTiers([own, theirs], { context: mine }))).toBe(
-      "1 pin can advance now (0 to check, 0 red) · reaches 1 mandate, 1 rung not movable here",
+      "1 mandate · 1 advance · 0 check · 0 red · 1 blocked",
     );
   });
 

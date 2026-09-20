@@ -26,6 +26,7 @@ import { smartExecute } from "@/features/agents/redux/execution-system/thunks/sm
 import { selectAllResourcesResolved } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
+import type { SmartAgentInputSurfaceValueAnchors } from "./SmartAgentInput";
 
 interface SmartAgentInputSingleRowProps {
   conversationId: string | null | undefined;
@@ -42,6 +43,7 @@ interface SmartAgentInputSingleRowProps {
   contextRailPresentation?: "default" | "overflow-only";
   contextRailAttachedItems?: readonly AttachedContextRailItem[];
   extraRightControls?: React.ReactNode;
+  surfaceValueAnchors?: SmartAgentInputSurfaceValueAnchors;
 }
 
 export function SmartAgentInputSingleRow({
@@ -59,6 +61,7 @@ export function SmartAgentInputSingleRow({
   contextRailPresentation = "default",
   contextRailAttachedItems,
   extraRightControls,
+  surfaceValueAnchors,
 }: SmartAgentInputSingleRowProps) {
   const dispatch = useAppDispatch();
   // Gate send (button + Enter) while the mic is recording or finishing a
@@ -98,6 +101,7 @@ export function SmartAgentInputSingleRow({
           conversationId={conversationId}
           presentation={contextRailPresentation}
           attachedItems={contextRailAttachedItems}
+          surfaceValueName={surfaceValueAnchors?.context}
         />
       ) : null}
 
@@ -108,12 +112,16 @@ export function SmartAgentInputSingleRow({
           compact
           onSubmit={handleSubmit}
           styleOverride={variablesPanelStyle}
+          surfaceValueName={surfaceValueAnchors?.variables}
         />
       ) : null}
 
       {/* Resource chips (stacked above the row when present) */}
       {!isAmbient ? (
-        <SmartAgentResourceChips conversationId={conversationId} />
+        <SmartAgentResourceChips
+          conversationId={conversationId}
+          surfaceValueName={surfaceValueAnchors?.resources}
+        />
       ) : null}
       {/* Durable document attachments (association edges) — persist across turns/reloads */}
       {!isAmbient ? (
