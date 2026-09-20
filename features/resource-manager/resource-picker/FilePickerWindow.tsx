@@ -28,6 +28,8 @@ import {
 } from "./FilesResourcePicker";
 import { InlineUploadArea, type UploadedFile } from "./InlineUploadArea";
 
+// Public window contract retained for existing picker hosts.
+// eslint-disable-next-line no-barrel-files/no-barrel-files
 export type { FileSelection };
 
 export interface FilePickerWindowProps {
@@ -136,7 +138,7 @@ export function FilePickerWindow({
         onSelect={(selection) => void handleSelect(selection)}
         initialFilter={initialFilter}
         fillHost
-        topSlot={<InlineUploadArea onSelect={handleUpload} />}
+        topSlot={<InlineUploadArea onSelect={handleUpload} selectionMode="single" />}
       />
     </WindowPanel>
   );

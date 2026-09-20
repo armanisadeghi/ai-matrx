@@ -93,7 +93,11 @@ export type VaultVerifiedExportActor = VaultExpectedActor & {
 
 export type VaultRestoreResult = Pick<
   components["schemas"]["VaultRestoreResponse"],
-  "restored_fields" | "restored_attachments" | "already_restored" | "notice"
+  | "restored_fields"
+  | "restored_attachments"
+  | "restored_native_passkeys"
+  | "already_restored"
+  | "notice"
 >;
 
 export class VaultIdentityConfirmationError extends Error {
@@ -113,6 +117,7 @@ export class VaultRestoreTransportError extends Error {
       | "recent_auth_required"
       | "context_changed"
       | "retryable"
+      | "native_recovery_unavailable"
       | "request_rejected",
   ) {
     super(
@@ -122,7 +127,9 @@ export class VaultRestoreTransportError extends Error {
           ? "Your account or request organization changed. Review this credential again."
           : code === "retryable"
             ? "We could not confirm whether this credential was restored. Retry with this same recovery record."
-            : "This credential could not be restored. Review its recovery details and try again.",
+            : code === "native_recovery_unavailable"
+              ? "Native passkey recovery is currently unavailable. Reload Trash and try again; your retained recovery data is preserved."
+              : "This credential could not be restored. Review its recovery details and try again.",
     );
   }
 }
@@ -449,6 +456,18 @@ function restoreFailureCode(
   ) {
     return "recent_auth_required";
   }
+  if (
+    status === 503 &&
+    body &&
+    typeof body === "object" &&
+    "detail" in body &&
+    body.detail &&
+    typeof body.detail === "object" &&
+    "code" in body.detail &&
+    body.detail.code === "native_passkeys_unavailable"
+  ) {
+    return "native_recovery_unavailable";
+  }
   return "request_rejected";
 }
 
@@ -458,6 +477,8 @@ function isVaultRestoreResult(value: unknown): value is VaultRestoreResult {
     "restored_fields" in value ? value.restored_fields : null;
   const restoredAttachments =
     "restored_attachments" in value ? value.restored_attachments : null;
+  const restoredNativePasskeys =
+    "restored_native_passkeys" in value ? value.restored_native_passkeys : null;
   const alreadyRestored =
     "already_restored" in value ? value.already_restored : null;
   const notice = "notice" in value ? value.notice : null;
@@ -468,6 +489,7 @@ function isVaultRestoreResult(value: unknown): value is VaultRestoreResult {
     typeof restoredAttachments === "number" &&
     Number.isInteger(restoredAttachments) &&
     restoredAttachments >= 0 &&
+    (restoredNativePasskeys === 0 || restoredNativePasskeys === 1) &&
     typeof alreadyRestored === "boolean" &&
     notice === "sharing_and_automatic_use_off"
   );
@@ -505,6 +527,16 @@ export async function restoreVaultItem(
   await assertVaultRestoreActor(expectedActor);
   if (!response.ok) {
     if ([408, 429, 500, 502, 503, 504].includes(response.status)) {
+      let body: unknown = null;
+      try {
+        body = await response.json();
+      } catch {
+        // The status remains enough to distinguish a safe exact retry.
+      }
+      const code = restoreFailureCode(response.status, body);
+      if (code === "native_recovery_unavailable") {
+        throw new VaultRestoreTransportError(code);
+      }
       throw new VaultRestoreTransportError("retryable");
     }
     let body: unknown = null;
@@ -513,7 +545,9 @@ export async function restoreVaultItem(
     } catch {
       // The HTTP status still provides the safe retry distinction above.
     }
-    throw new VaultRestoreTransportError(restoreFailureCode(response.status, body));
+    throw new VaultRestoreTransportError(
+      restoreFailureCode(response.status, body),
+    );
   }
   const body: unknown = await response.json();
   if (!isVaultRestoreResult(body)) {
@@ -522,6 +556,7 @@ export async function restoreVaultItem(
   return {
     restored_fields: body.restored_fields,
     restored_attachments: body.restored_attachments,
+    restored_native_passkeys: body.restored_native_passkeys,
     already_restored: body.already_restored,
     notice: body.notice,
   };

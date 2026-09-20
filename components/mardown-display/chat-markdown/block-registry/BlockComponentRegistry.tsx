@@ -27,6 +27,7 @@ import PageBriefBlock from "../../blocks/page-brief/PageBriefBlock";
 import CmsHtmlPageResultBlock from "../../blocks/cms-html-page-result/CmsHtmlPageResultBlock";
 import EpisodeTitleOptionsBlock from "../../blocks/episode-title-options/EpisodeTitleOptionsBlock";
 import MasterworkCheckupFindingBlock from "../../blocks/masterwork-checkup/MasterworkCheckupFindingBlock";
+import MasterworkResultBlock from "../../blocks/masterwork/MasterworkResultBlock";
 import SerialObservationTimelineBlock from "../../blocks/masterwork-timeline/SerialObservationTimelineBlock";
 import CaseDisclosureBlock from "../../blocks/masterwork-unfolding/CaseDisclosureBlock";
 import RefusalBlock from "../../blocks/refusal/RefusalBlock";
@@ -466,6 +467,13 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <MasterworkCheckupFindingBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  MasterworkResultBlock: (
+    props: React.ComponentProps<typeof MasterworkResultBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <MasterworkResultBlock {...props} />
     </LazyBlockWrapper>
   ),
   SerialObservationTimelineBlock: (

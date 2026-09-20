@@ -2,10 +2,10 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { createAdminClient } from "@/utils/supabase/adminClient";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { requireAdmin } from "@/utils/auth/adminUtils";
 import { buildSearchOr } from "@/utils/supabase-search";
+import { parseSemver } from "@/features/admin/applications/version";
 
 export async function GET(request: NextRequest) {
   try {
@@ -64,9 +64,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await requireAdmin();
-    // tool.definition has RLS with a read-only (SELECT) policy and no write policy,
-    // so inserts must go through the admin client after the admin gate above.
-    const supabase = createAdminClient();
+    // Keep the verified user's cookie-backed JWT on the write. The canonical
+    // RLS/provenance lane derives a human actor from auth.uid().
+    const supabase = await createClient();
     const body = await request.json();
 
     // Validate required fields
@@ -97,6 +97,69 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const version = body.version ?? 1;
+    if (!Number.isInteger(version) || version < 1) {
+      return NextResponse.json(
+        { error: "Version must be a positive integer" },
+        { status: 400 },
+      );
+    }
+    const semver = body.semver ?? "1.0.0";
+    if (typeof semver !== "string" || !parseSemver(semver)) {
+      return NextResponse.json(
+        { error: "Semantic version must use major.minor.patch format" },
+        { status: 400 },
+      );
+    }
+    if (body.gating !== undefined && !Array.isArray(body.gating)) {
+      return NextResponse.json(
+        { error: "Gating must be a JSON array" },
+        { status: 400 },
+      );
+    }
+    for (const field of [
+      "admin_only",
+      "dedupe_exempt",
+      "validation_exempt",
+    ] as const) {
+      if (body[field] !== undefined && typeof body[field] !== "boolean") {
+        return NextResponse.json(
+          { error: `${field} must be a boolean` },
+          { status: 400 },
+        );
+      }
+    }
+    if (
+      body.tool_group !== undefined &&
+      (typeof body.tool_group !== "string" || !body.tool_group.trim())
+    ) {
+      return NextResponse.json(
+        { error: "Tool group must be a non-empty string" },
+        { status: 400 },
+      );
+    }
+    if (
+      body.side_effect_class !== undefined &&
+      body.side_effect_class !== null &&
+      (typeof body.side_effect_class !== "string" ||
+        !body.side_effect_class.trim())
+    ) {
+      return NextResponse.json(
+        { error: "Side effect class must be a non-empty string or null" },
+        { status: 400 },
+      );
+    }
+    const visibilityValues = ["personal", "internal", "link", "public"];
+    if (
+      body.visibility !== undefined &&
+      !visibilityValues.includes(body.visibility)
+    ) {
+      return NextResponse.json(
+        { error: "Visibility must be personal, internal, link, or public" },
+        { status: 400 },
+      );
+    }
+
     const toolData = {
       name: body.name,
       description: body.description,
@@ -109,7 +172,19 @@ export async function POST(request: NextRequest) {
       tags: body.tags || [],
       icon: body.icon === "" ? null : body.icon || null,
       is_active: body.is_active !== undefined ? body.is_active : true,
-      version: body.version || 1,
+      semver: semver.trim(),
+      version,
+      tool_group:
+        typeof body.tool_group === "string" ? body.tool_group.trim() : "core",
+      side_effect_class:
+        typeof body.side_effect_class === "string"
+          ? body.side_effect_class.trim()
+          : null,
+      admin_only: body.admin_only ?? false,
+      gating: body.gating ?? [],
+      dedupe_exempt: body.dedupe_exempt ?? false,
+      validation_exempt: body.validation_exempt ?? false,
+      visibility: body.visibility ?? "public",
       // Admin-authored platform tools are builtin/shipped content with no
       // individual owner — home them in the global system org (tool.definition
       // org is NOT NULL with no inherit trigger).

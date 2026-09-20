@@ -35,7 +35,7 @@ function AddButtonsSkeleton() {
 export function AgentBuilderLeftPanel({ agentId }: AgentBuilderLeftPanelProps) {
   return (
     <div className="flex flex-col h-full">
-      <div className="flex flex-col gap-2 shrink-0 pt-0.5 pb-2">
+      <div className="flex flex-col gap-2 shrink-0 py-3">
         <AgentModelConfiguration agentId={agentId} />
         <AgentVariablesManager agentId={agentId} />
         {/* Tools reads as a row, like Variables and Resources — not only as the
@@ -52,7 +52,7 @@ export function AgentBuilderLeftPanel({ agentId }: AgentBuilderLeftPanelProps) {
         <AgentBuilderMessagesArea agentId={agentId} />
       </Suspense>
 
-      <div className="flex items-center justify-end gap-1 shrink-0 py-2 border-t border-border bg-background">
+      <div className="flex items-center justify-end gap-1 shrink-0 border-t border-border bg-card py-3">
         <Suspense fallback={<AddButtonsSkeleton />}>
           <AddMessageButtons agentId={agentId} />
         </Suspense>
