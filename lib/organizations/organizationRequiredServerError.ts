@@ -20,14 +20,39 @@
 // personal workspace for a choice nobody made. That is the exact shape the
 // ruling forbids, on the one side of the wire the client cannot see.
 //
-// THE ENVELOPE. The shape matches what the Python server's
-// `organization_for_request` (aidream/services/organizations/request_scope.py)
-// emits, field for field — `error`, `code`, `message`, `user_message` — so one
-// client recogniser handles a refusal from either server. This adds the one
-// field the ruling requires and aidream does not yet carry: `memberships`,
-// the caller's OWN organizations, so the client can render the picker from the
-// refusal itself instead of making a second round trip to find out what the
-// person may choose.
+// THE ENVELOPE IS BYTE-FOR-BYTE AIDREAM'S (2026-09-19 unification).
+// -------------------------------------------------------------------------
+// Until this unification the Next side answered a DIFFERENT shape — a
+// top-level `memberships` field — while aidream's `organization_hold_detail`
+// (canonical builder: `matrx_connect/org_hold.py`, re-exported by
+// `aidream/services/organizations/org_hold.py`) nests the caller's choices
+// under `details.organizations`. Two shapes meant `isOrganizationRequiredError`
+// had to know which server it was reading, and a client-side helper written
+// against one silently mis-parsed the other. There is now ONE shape, emitted
+// here field-for-field against that Python builder's own output:
+//
+//   {
+//     error: "organization_required",
+//     code: "organization_required",
+//     message: "<developer/agent-facing sentence>",
+//     user_message: "<plain English for the person>",
+//     details: {
+//       hold: "organization_required",
+//       can_choose: true,
+//       set_on: "request" | "mcp_connection" | "coding_session",
+//       remedy: "<plain English: exactly what to do>",
+//       organizations: [{ id, name, abbreviation }] | null,
+//       memberships_url: "/auth/organizations",
+//     },
+//   }
+//
+// `set_on` is always `"request"` here — a Next route handler refuses the same
+// way `matrx-connect`'s auth boundary does for an ordinary HTTP request; the
+// other two values (`mcp_connection`, `coding_session`) belong to surfaces
+// this repo does not have. `memberships_url` is aidream's own literal
+// (`/auth/organizations`, reachable on the Python server) rather than an
+// invented Next path, because the value is informational parity with the
+// canonical envelope, not a route this repo serves.
 //
 // Status is 400, the same status and the same `code` aidream answers with.
 
@@ -37,9 +62,24 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export interface OrganizationMembershipSummary {
   id: string;
   name: string;
+  abbreviation?: string;
 }
 
 export const ORGANIZATION_REQUIRED_CODE = "organization_required" as const;
+
+/** aidream's `matrx_connect.org_hold.MEMBERSHIPS_URL` — the ONE reachable
+ * endpoint for the caller's own membership list (on aidream's server). Kept
+ * as the literal aidream itself emits so the envelope is identical on both
+ * servers, not a Next-side invention. */
+export const MEMBERSHIPS_URL = "/auth/organizations" as const;
+
+/** aidream's `HoldSurface` (`matrx_connect/org_hold.py`) — only `"request"`
+ * applies to a Next API route; the other two values name an MCP connection
+ * or a coding session, neither of which this repo answers on. */
+export type OrganizationHoldSetOn =
+  | "request"
+  | "mcp_connection"
+  | "coding_session";
 
 /**
  * The refusal, as a throwable. Route handlers let it reach their catch and
@@ -49,9 +89,17 @@ export const ORGANIZATION_REQUIRED_CODE = "organization_required" as const;
 export class OrganizationRequiredServerError extends Error {
   override name = "OrganizationRequiredServerError" as const;
   readonly code = ORGANIZATION_REQUIRED_CODE;
-  readonly memberships: OrganizationMembershipSummary[];
+  /**
+   * `null` only when the list could not be read on this path (mirrors
+   * aidream's own `organizations` field) — the honest "we could not ask"
+   * distinct from "you belong to nothing" (`[]`).
+   */
+  readonly memberships: OrganizationMembershipSummary[] | null;
 
-  constructor(message: string, memberships: OrganizationMembershipSummary[] = []) {
+  constructor(
+    message: string,
+    memberships: OrganizationMembershipSummary[] | null = null,
+  ) {
     super(message);
     this.memberships = memberships;
   }
@@ -91,38 +139,47 @@ export function isOrganizationRequiredServerError(
  * `iam.provision_signup_organization` and the picker treat as authoritative):
  * container_type 'organization', status 'active', not soft-deleted.
  *
- * Returns an empty list on any failure: the refusal is still the honest
- * answer, it simply cannot offer the choices inline, and the client falls back
- * to the picker's own list.
+ * Returns `null` (not `[]`) on any failure — no user, a read error, an
+ * unexpected throw — so a client can tell "you belong to nothing" (`[]`) from
+ * "we could not ask" (`null`), exactly as aidream's own `membership_choices`
+ * does. The refusal is still the honest answer either way; the client falls
+ * back to the picker's own list.
  */
 export async function readCallerMemberships(
   client: SupabaseClient,
-): Promise<OrganizationMembershipSummary[]> {
+): Promise<OrganizationMembershipSummary[] | null> {
   try {
     const { data: auth } = await client.auth.getUser();
     const userId = auth?.user?.id;
-    if (!userId) return [];
+    if (!userId) return null;
     const { data, error } = await client
       .schema("iam")
       .from("memberships")
-      .select("organization_id, organizations:organization_id(id,name)")
+      .select("organization_id, organizations:organization_id(id,name,abbreviation)")
       .eq("user_id", userId)
       .eq("container_type", "organization")
       .eq("status", "active")
       .is("deleted_at", null);
-    if (error || !data) return [];
+    if (error || !data) return null;
     const rows = data as unknown as {
       organization_id: string;
-      organizations: { id: string; name: string | null } | null;
+      organizations: {
+        id: string;
+        name: string | null;
+        abbreviation: string | null;
+      } | null;
     }[];
     return rows
       .map((row) => ({
         id: row.organizations?.id ?? row.organization_id,
         name: row.organizations?.name ?? "Untitled organization",
+        ...(row.organizations?.abbreviation
+          ? { abbreviation: row.organizations.abbreviation }
+          : {}),
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -140,15 +197,32 @@ export async function organizationRequired(
   );
 }
 
+/** aidream's `matrx_connect.org_hold.organization_hold_detail`'s `details`,
+ * emitted here field-for-field (see the module header). */
+export interface OrganizationHoldDetails {
+  hold: typeof ORGANIZATION_REQUIRED_CODE;
+  can_choose: true;
+  set_on: OrganizationHoldSetOn;
+  remedy: string;
+  organizations: OrganizationMembershipSummary[] | null;
+  memberships_url: string;
+}
+
 export interface OrganizationRequiredEnvelope {
   error: typeof ORGANIZATION_REQUIRED_CODE;
   code: typeof ORGANIZATION_REQUIRED_CODE;
   message: string;
   user_message: string;
-  memberships: OrganizationMembershipSummary[];
+  details: OrganizationHoldDetails;
 }
 
-/** The wire body, matching aidream's `organization_for_request` field names. */
+/**
+ * The wire body — aidream's `organization_hold_detail` output, field for
+ * field (source of truth: `aidream/services/organizations/org_hold.py`, which
+ * re-exports the pure builder in `packages/matrx-connect/matrx_connect/org_hold.py`).
+ * A Next route handler is always a `"request"`-surface refusal, the same as
+ * `matrx-connect`'s own HTTP door.
+ */
 export function organizationRequiredEnvelope(
   error: OrganizationRequiredServerError,
 ): OrganizationRequiredEnvelope {
@@ -158,6 +232,15 @@ export function organizationRequiredEnvelope(
     message: error.message,
     user_message:
       "Choose the organization you're working in, then try again.",
-    memberships: error.memberships,
+    details: {
+      hold: ORGANIZATION_REQUIRED_CODE,
+      can_choose: true,
+      set_on: "request",
+      remedy:
+        "Choose the organization you're working in and send it with the " +
+        "request (the X-Organization-Id header), then try again.",
+      organizations: error.memberships,
+      memberships_url: MEMBERSHIPS_URL,
+    },
   };
 }
