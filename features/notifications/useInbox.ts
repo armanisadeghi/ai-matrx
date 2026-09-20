@@ -83,6 +83,7 @@ export function useInboxCounts(): InboxCounts {
 
 export interface InboxList {
   rows: InboxNotification[];
+  /** False until the person is known (query disabled) or while fetching. */
   isLoading: boolean;
   error: Error | null;
   refetch: () => void;
@@ -136,7 +137,8 @@ export function useInboxList(enabled: boolean): InboxList {
 
   return {
     rows: list.data ?? [],
-    isLoading: list.isLoading,
+    // A disabled query (no user id yet) is "not loaded", never "empty".
+    isLoading: list.isLoading || (enabled && userId === null),
     error: list.error,
     refetch: () => {
       void list.refetch();

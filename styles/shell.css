@@ -2402,6 +2402,7 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
 /* Chat incognito — visually mute identity chrome (sidebar + avatar). */
 .shell-root[data-chat-incognito="true"] .shell-sidebar,
 .shell-root[data-chat-incognito="true"] .shell-user-menu-wrapper,
+.shell-root[data-chat-incognito="true"] .shell-user-block,
 .shell-root[data-chat-incognito="true"] .shell-mobile-sheet {
   filter: brightness(0);
   opacity: 0.35;

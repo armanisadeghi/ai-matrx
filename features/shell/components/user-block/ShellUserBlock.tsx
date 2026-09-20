@@ -37,7 +37,7 @@ export default function ShellUserBlock({
   const displayName =
     userData.userMetadata?.name ?? userData.email ?? "Your account";
   return (
-    <div className="shell-user-block shell-user-menu-wrapper" data-shell-user-block>
+    <div className="shell-user-block" data-shell-user-block>
       <div className="shell-user-block-trigger">
         {isAuthenticated ? (
           <UserMenuTrigger userData={userData} />
