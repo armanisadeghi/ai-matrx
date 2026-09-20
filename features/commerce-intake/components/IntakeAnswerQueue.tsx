@@ -35,10 +35,9 @@ import { transcribeAudioFile } from "@/features/audio/services/speechApi";
 import { toAudioFile } from "@ai-matrx/browser-audio/core";
 import { VoiceNoteButton } from "@/features/product-capture/components/VoiceNoteButton";
 import { useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectOrganizationId,
-  selectOrgBootstrapResolved,
-} from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { toast } from "@/lib/toast";
 
 import type { AssetQuestion, IntakeAsset } from "../types";
@@ -71,7 +70,14 @@ export function IntakeAnswerQueue() {
   // spinning FOREVER with no remedy. Before the bootstrap resolves, loading is
   // the truth; once it has resolved with no organization, that is a settled
   // fact and it is said, with the action that fixes it.
-  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  // 🚨 THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved` is
+  // set TRUE by `setOrgBootstrapFailure` as well, so "resolved and still no
+  // id" was ALSO the failed read — and this screen told a member of thirteen
+  // organizations to pick one. The gate's discriminant separates them and the
+  // ONE notice renders each, the failed one with its Retry.
+  const { organizationState } = useOrganizationRequired();
+  const organizationUnanswered =
+    organizationState === "required" || organizationState === "unavailable";
   const [answeredCount, setAnsweredCount] = useState(0);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -206,14 +212,14 @@ export function IntakeAnswerQueue() {
     })();
   }, []);
 
-  if (!organizationId && orgBootstrapResolved) {
+  if (organizationUnanswered) {
     return (
-      <p
-        role="status"
-        className="px-6 py-16 text-center text-sm text-muted-foreground"
-      >
-        No organization is selected, so the question queue cannot be read — choose one from the organization picker in the header and this fills in.
-      </p>
+      <OrganizationContextNotice
+        state={organizationState}
+        compact
+        className="px-6 py-16"
+        description="No organization is selected, so the question queue cannot be read — choose one from the organization picker in the header and this fills in."
+      />
     );
   }
 

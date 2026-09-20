@@ -189,7 +189,7 @@ export function useAgentSaveAction(
     setShowModelWarning,
     readOnlySavePrompt,
     duplicateDialog,
-    /** The post-save "reaches N" badge (Agent Change Impact I6), or null. */
+    /** The post-save reach icon + count (Agent Change Impact I6), or null. */
     reachBadge,
     /** The same badge as one 44pt tap target, for the mobile header. */
     reachTapBadge,

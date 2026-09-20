@@ -59,6 +59,7 @@ a faux in-body header bar.
 
 ## Change Log
 
+- 2026-09-19 — **THE FOURTH ORGANIZATION STATE (R37).** `AttentionQueue`, `DraftReviewQueue` and `TriageQueue` rendered `OrganizationRequiredNotice` from `!organizationId && orgBootstrapResolved` — true for a FAILED read too, since `setOrgBootstrapFailure` sets that flag. Each now reads `useOrganizationRequired().organizationState` and renders `OrganizationContextNotice`, so a failed read gets "We could not check your organization" with Try again instead of a pick nobody verified was needed. Guard: `pnpm check:org-three-states` rule 5.
 - 2026-09-17 — **The active organization, never the "effective" one.** The triage, drafts and
   attention queues and the store-connect shell read `selectOrganizationId` instead of
   `selectEffectiveOrganizationId`: with no organization selected they no longer review (and write

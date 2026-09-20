@@ -61,6 +61,7 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 - **Never depend on animation events for the view flip.** Hidden pages may not emit them.
 - **Do not force every route menu into one row component.** Consumers use different elements, state, groupings, and specialized rows; share the visual contract unless behavior also becomes identical.
 - **Keep Admin Launchpad directly reachable.** It is a real new-tab anchor in the admin-only footer, not another level inside the Administration cascade.
+- **Selected means the current route.** Global groups, flyout children, mobile drill-ins, Large Route menus, and alternate module sidebars use the same blue selected treatment and choose the single most-specific route owner (`findOwningNavItem`). A group may claim a route from its own href, its first path segment, or a declared `ownedRoutePrefixes` alias — never from a flyout child that points into another module. When two groups still claim the same path (a placeholder borrowing another module's href), only the most-specific owner lights up. New-tab launchers such as Admin Launchpad stay neutral. A module with a legacy/alternate namespace declares it once through `ownedRoutePrefixes`; consumers must not duplicate pathname heuristics.
 - **Selected means the current route.** Global groups, flyout children, mobile drill-ins, Large Route menus, and alternate module sidebars use the same blue selected treatment and choose the single most-specific route owner. New-tab launchers such as Admin Launchpad stay neutral. A module with a legacy/alternate namespace declares it once through `ownedRoutePrefixes`; consumers must not duplicate pathname heuristics.
 - **Phone navigation is a solid bottom drawer.** Tablet widths use the same drawer primitive as a bounded left edge panel, while phones retain the fixed-height bottom drawer. Do not restore glass, inline primary-group accordions, or an adaptive-height panel.
 - **Keep one mobile scroll area.** `BottomSheetBody` owns scrolling; drill-in screens and search results flow inside it.
@@ -92,6 +93,7 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 
 - `2026-09-11` — Codex: made every global parent label/icon a real module-home link and moved submenu opening to a separate disclosure control; restored portaled route-menu labels and 48px touch rows; tablet navigation now presents as a bounded edge panel rather than a phone-height drawer.
 
+- `2026-09-19` — Cursor: group highlight is ownership-only. A flyout shortcut into another module (AI Work → `/chat/new`) no longer lights the parent beside the real owner; Agents declares `/agent-connections` as its alternate namespace.
 - `2026-09-08` — Codex: made the Administration Large Route consume one
   persistent icon-led tree at both sidebar widths, eliminating mode-specific
   row replacement and collapse-time spatial reordering.

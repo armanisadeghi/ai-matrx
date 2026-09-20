@@ -1,6 +1,8 @@
-import type { ShellNavItem } from "../constants/nav-data";
+import { primaryNavItems, type ShellNavItem } from "../constants/nav-data";
 import {
   findActiveNavChild,
+  findOwningNavItem,
+  isExclusiveNavGroupActive,
   isNavGroupActive,
   isOnRoute,
 } from "./is-nav-group-active";
@@ -59,5 +61,62 @@ describe("shell navigation route ownership", () => {
     expect(findActiveNavChild("/rag/data-stores/one", nested)?.label).toBe(
       "Data stores",
     );
+  });
+
+  it("does not activate a group from a shortcut child in another module", () => {
+    const aiWork = primaryNavItems.find((item) => item.label === "AI Work");
+    const chat = primaryNavItems.find((item) => item.label === "Chat");
+    expect(aiWork).toBeDefined();
+    expect(chat).toBeDefined();
+
+    expect(isNavGroupActive("/chat/new", aiWork!)).toBe(false);
+    expect(isNavGroupActive("/chat/new", chat!)).toBe(true);
+    expect(isNavGroupActive("/chat", aiWork!)).toBe(false);
+    expect(isNavGroupActive("/chat", chat!)).toBe(true);
+    expect(isNavGroupActive("/work", aiWork!)).toBe(true);
+    expect(isNavGroupActive("/work", chat!)).toBe(false);
+  });
+
+  it("keeps at most one primary group selected for every listed destination", () => {
+    const hrefs = new Set<string>();
+    for (const item of primaryNavItems) {
+      if (item.href.startsWith("/")) hrefs.add(item.href);
+      for (const child of item.children ?? []) {
+        if (child.href.startsWith("/")) hrefs.add(child.href);
+      }
+    }
+
+    const collisions: string[] = [];
+    const unexpected: string[] = [];
+    for (const href of hrefs) {
+      const exclusiveOwners = primaryNavItems.filter((item) =>
+        isExclusiveNavGroupActive(href, item, primaryNavItems),
+      );
+      if (exclusiveOwners.length > 1) {
+        collisions.push(
+          `${href} → ${exclusiveOwners.map((item) => item.label).join(", ")}`,
+        );
+      }
+
+      const owner = findOwningNavItem(href, primaryNavItems);
+      if (href.startsWith("/chat")) {
+        if (owner?.label !== "Chat") {
+          unexpected.push(`${href} owner ${owner?.label ?? "none"}`);
+        }
+      }
+      if (href === "/work" || href.startsWith("/work/")) {
+        if (owner?.label !== "AI Work") {
+          unexpected.push(`${href} owner ${owner?.label ?? "none"}`);
+        }
+      }
+      if (href === "/education" || href.startsWith("/education/")) {
+        if (owner?.label !== "Education Hub") {
+          unexpected.push(`${href} owner ${owner?.label ?? "none"}`);
+        }
+      }
+    }
+
+    expect(collisions).toEqual([]);
+    expect(unexpected).toEqual([]);
   });
 });

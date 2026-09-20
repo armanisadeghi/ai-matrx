@@ -1,0 +1,53 @@
+-- scfg_83_a_deliberate_baseline_is_not_a_broken_promise.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- 🚨 MY OWN CENSUS HAD A FALSE POSITIVE, AND ACTING ON IT WOULD HAVE BROKEN A CORRECT ERROR
+-- MESSAGE. This is the more important half of this record.
+--
+-- `platform.knob_org_blind_reader` (scfg_71) flags every `knob_resolve(feature, key, null)`
+-- against a delegated key as a broken promise. `custom._containment_guard` contains one, and it
+-- is deliberate:
+--
+--     select platform.knob_resolve('custom','containment_depth_ceiling', new.organization_id)
+--              is distinct from
+--            platform.knob_resolve('custom','containment_depth_ceiling', null)
+--       into v_org_set;
+--
+-- It resolves the SAME key twice in ONE statement — once with the row's organization and once
+-- with null — and compares them, purely to decide whether the ORGANISATION set the limit. That
+-- decides which of two refusals a person gets: one quotes the number, because somebody here
+-- chose it and can raise it; the other deliberately quotes nothing, because no one here chose
+-- anything and a platform number would read as this organization's decision. The null read is
+-- the baseline of a comparison, not a value being applied to anybody.
+--
+-- Threading an organization into it would have made both sides of `is distinct from` identical,
+-- `v_org_set` permanently false, and the better of the two error messages unreachable.
+--
+-- THE FIX IS TO THE CENSUS, NOT THE FUNCTION. The view gains `same_key_scoped_read`: true when
+-- the same body also resolves that same key WITH a scope. One row in the whole database is true
+-- (this one); the other 17 are false and genuine.
+--
+-- 🚨 AND THE ROW IS STILL REPORTED, NOT HIDDEN. Dropping what the census cannot judge would make
+-- it a check that cannot fail in that direction — the same defect as a fallback component that
+-- always passes, one layer up. It reports, flags, and says read the body. The flag is also
+-- deliberately narrow: it is SAME-key only, so it could not have masked hr_kiosk_authenticate,
+-- where the scoped read and the blind one were of DIFFERENT keys and the blind one was real.
+--
+-- ── the genuine one in the same pass ────────────────────────────────────────────────────────
+-- `hr._timecard_reject_reopen` — attestation_statement.
+--   When a manager rejects a timecard the row reopens and the employee is asked to attest again.
+--   The statement they are shown comes from the ROW (hr_l3_112: an edit is never retroactive, so
+--   the wording the row was attested against comes forward), and the knob is ONLY the fallback
+--   for a row that somehow carries nothing. That fallback was resolving the platform rung, so an
+--   organization that wrote its own attestation wording would have had a stranger's sentence put
+--   in front of its employee in exactly the case where the row had no wording of its own. It now
+--   resolves from `v_ppe.organization_id`, which the trigger already read.
+--   It is a trigger function taking no arguments; its door row says so, and server-only status
+--   was verified against the `authenticated` and `anon` roles rather than assumed.
+--
+-- VERIFIED AFTER: census 19 → 18 rows over 11 functions — 17 genuine plus the one flagged
+-- baseline; `_timecard_reject_reopen` no longer appears; `_containment_guard` still appears and
+-- is now marked `same_key_scoped_read = true`.

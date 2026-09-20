@@ -1,0 +1,79 @@
+-- migrate: skip: RECORD ONLY. These six index changes were applied live through
+-- the Supabase MCP on 2026-09-20 (Arman's preference, 2026-09-18: change the
+-- database directly through the MCP; such a change has no file and needs no
+-- ledger row). This file exists so the reasoning is greppable next to the
+-- scopes precedent it follows. Do not apply.
+--
+-- soft_delete_partial_unique_indexes_kg_chunks_and_passkeys.sql
+--
+-- THE DEFECT, same class as soft_delete_partial_unique_indexes_context.sql:
+-- six unique indexes counted rows the user cannot see. `deleted_at IS NULL`
+-- means live (db-rules FEATURE.md §8), so removing a thing and creating it
+-- again failed against a row nobody can find. Surfaced by
+-- `pnpm check:soft-delete-unique` as 6 NEW findings (253 live vs the frozen
+-- 2026-09-12 census of 248).
+--
+-- PROVEN RED on the live database 2026-09-20, each inside one rolled-back
+-- transaction (take a live row -> set deleted_at -> re-create it):
+--   kg_chunks_content_sha_idx            RED  duplicate key ... "kg_chunks_content_sha_idx"
+--   kg_chunks_derivation_set_uidx        RED  duplicate key ... "kg_chunks_derivation_set_uidx"
+--   passkey_credentials_item_uq          RED  duplicate key ... "passkey_credentials_item_uq"
+-- The other three are the same shape and the same fix:
+--   passkey_credentials_source_field_uq  — 1:1 link, identical argument
+--   passkey_credentials_rp_credential_uq — identical argument
+--   kg_chunks_source_kind_source_id_field_id_chunk_index_chunke_key
+--       LATENT, not red today: field_id is NULL on all 24,347 rows and NULLs
+--       do not collide, so it cannot fire until a field_id is written. It was
+--       fixed anyway rather than left to surface later.
+--
+-- AND PROVEN GREEN after the change, in the same rolled-back shape: the
+-- re-create SUCCEEDS, and a SECOND LIVE duplicate is still REFUSED. Uniqueness
+-- among live rows is unchanged; only removed rows stop blocking.
+--
+-- TWO THINGS THIS TURNED UP that a "just add WHERE deleted_at IS NULL" pass
+-- would have got wrong:
+--
+-- 1. THREE OF THE SIX WERE CONSTRAINTS, NOT INDEXES. Postgres has no partial
+--    UNIQUE CONSTRAINT: `DROP INDEX` is refused ("constraint ... requires it").
+--    Each had to be dropped with ALTER TABLE ... DROP CONSTRAINT and recreated
+--    as a partial unique INDEX. The truncated auto-name
+--    kg_chunks_source_kind_source_id_field_id_chunk_index_chunke_key became
+--    kg_chunks_source_field_chunk_uidx.
+--
+-- 2. 🚨 A PARTIAL INDEX CHANGES `ON CONFLICT` INFERENCE, AND matrx-rag INFERS
+--    TWO OF THESE. Postgres can only infer a partial index when the ON CONFLICT
+--    specification's predicate implies the index predicate, so a bare column
+--    list stops matching the moment the index gains a WHERE. Proven live after
+--    the change: the old bare target now raises
+--        there is no unique or exclusion constraint matching the ON CONFLICT specification  (42P10)
+--    while the new one reports INFERRED OK. So the DDL does NOT stand alone —
+--    it ships with matrx-rag's two conflict targets, both now carrying
+--    `where_is_null=("deleted_at",)`:
+--      ingestion.py   KgChunks.bulk_insert_ignore  (kg_chunks_content_sha_idx)
+--      derivation.py  _CHUNK_CONFLICT_TARGET       (kg_chunks_derivation_set_uidx)
+--    A deployed server running the previous code raises 42P10 on chunk inserts
+--    until it picks the change up.
+--
+-- THE LIVE SHAPE NOW:
+--   kg_chunks_content_sha_idx          (source_kind, source_id, content_sha256, chunker_version)
+--                                        WHERE deleted_at IS NULL
+--   kg_chunks_derivation_set_uidx      (processed_document_id, chunk_index, derivation_kind)
+--                                        WHERE derivation_kind <> 'initial_extract' AND deleted_at IS NULL
+--   kg_chunks_source_field_chunk_uidx  (source_kind, source_id, field_id, chunk_index, chunker_version)
+--                                        WHERE deleted_at IS NULL
+--   passkey_credentials_item_uq          (credential_item_id)      WHERE deleted_at IS NULL
+--   passkey_credentials_source_field_uq  (source_field_id)         WHERE deleted_at IS NULL
+--   passkey_credentials_rp_credential_uq (rp_id, credential_id)    WHERE deleted_at IS NULL
+--
+-- NOT TAKEN: the census exception. The gate offers "if it genuinely must stay
+-- unique across removed rows (an idempotency key, an external system's id),
+-- say so and add the entry BY HAND". passkey_credentials.credential_id is an
+-- external (authenticator) id and was the one candidate, but uniqueness there
+-- de-duplicates the user's OWN saved passkey material; it is not an
+-- authentication ceiling, and the private key is what grants anything. Holding
+-- the id forever would only mean a user who removes a passkey can never save
+-- that same one again. So all six are partial and the census is untouched.
+--
+-- Zero rows were soft-deleted on either table when this was applied
+-- (0 of 2 passkey rows, 0 of 24,347 kg_chunks rows), so no uniqueness
+-- violation was possible during the change and nothing had to be reconciled.

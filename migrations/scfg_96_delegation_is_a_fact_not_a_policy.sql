@@ -1,0 +1,74 @@
+-- scfg_96_delegation_is_a_fact_not_a_policy.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-20. This file is the RECORD.
+--
+-- Arman, 2026-09-20, on prompt_preflight.context_window_trip_fraction: "we would need a
+-- way to mark this setting as being non-configurable at the org level… it doesn't make
+-- sense to give the admin the ability to modify that behavior because we know it won't
+-- work so we just need to have a way to track that in admin."
+--
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- THE PRIMITIVE: `overridable_by` IS A POLICY. DELEGABILITY IS A FACT.
+-- ═══════════════════════════════════════════════════════════════════════════════════
+--
+-- The register already had `overridable_by`, which answers WHO MAY override. It is a
+-- CHOICE, and a platform admin may lawfully change their mind about it tomorrow.
+--
+-- What it could not express is a different kind of statement: that an organization value
+-- COULD NOT BE HONOURED even if someone set one. That is not a choice — it is a property
+-- of the code path. And because the register could not say it, the only way to express
+-- "do not delegate this" was `overridable_by = '{}'`, which reads as a policy an admin is
+-- invited to revisit. Revisiting it would have produced a control that writes a row and
+-- changes nothing.
+--
+-- Two new columns on platform.feature_knob:
+--
+--   delegable             boolean NOT NULL DEFAULT true
+--   not_delegable_reason  text
+--
+-- and ONE constraint, feature_knob_undelegable_is_locked_and_explained:
+--
+--   when delegable      -> not_delegable_reason IS NULL
+--   when not delegable  -> overridable_by = '{}' AND the reason is >= 30 characters
+--
+-- 🚨 THE CONSTRAINT IS THE ENFORCEMENT, AND THAT IS THE WHOLE POINT. Arman asked for a
+-- way to stop admin turning this on. A UI that hides the toggle is not that: the next
+-- surface, the next script, the next agent writing the row directly all bypass it. A
+-- CHECK cannot be bypassed by anything that speaks SQL. The admin screen reads `delegable`
+-- and renders the control disabled with the reason, but the screen is the COURTESY and
+-- the constraint is the guarantee.
+--
+-- Proven live, both directions, rather than asserted (the DO block raises if either
+-- attempt succeeds):
+--   · UPDATE … SET overridable_by = '{organization}' on a non-delegable knob -> REFUSED
+--     (check_violation).
+--   · UPDATE … SET delegable = true while the reason still stands             -> REFUSED.
+-- The second matters as much as the first: without it, "make it delegable" is a two-step
+-- that launders the claim, and the reason would outlive the fact it describes.
+--
+-- WHY A REASON IS MANDATORY AND 30 CHARACTERS LONG. `delegable = false` is a claim about
+-- the architecture, and an unexplained claim is indistinguishable from an opinion someone
+-- had once. The reason must name what blocks it AND what would have to change, so the day
+-- somebody wants the capability they find the answer instead of the wall. This is the same
+-- shape as `non_client_lane` on platform.client_callable_door, for the same reason.
+--
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- FIRST CONSUMER: prompt_preflight.context_window_trip_fraction
+-- ═══════════════════════════════════════════════════════════════════════════════════
+--
+-- It was declared `overridable_by = {organization}`, and its admin copy described tuning
+-- it. apply_prompt_preflight_knob() reads it ONCE at boot and hands it to
+-- matrx_ai.config.context_preflight.configure_context_preflight() — process-global package
+-- state shared by every tenant on the server. An organization row could be written and
+-- would change nothing.
+--
+-- Now `overridable_by = '{}'`, `delegable = false`, with the reason naming the injected
+-- per-call resolver (the shape matrx_seo.budget.set_account_ceiling_resolver already uses)
+-- that would make it delegable for real. Zero override rows existed, so nothing was lost.
+--
+-- 🚨 THIS IS A CLASS, NOT AN INSTANCE. Any knob read once into process-global state, or
+-- resolved where no tenant is in scope, is a candidate. The census that finds them is the
+-- next piece of work: a delegated knob whose only reader is a startup path is exactly this
+-- defect, and today nothing reports it.

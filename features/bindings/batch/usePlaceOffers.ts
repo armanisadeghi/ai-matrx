@@ -22,10 +22,11 @@ import { useEffect, useRef, useState } from "react";
 
 import { callApi } from "@/lib/api/call-api";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
-  selectOrganizationId,
-  selectOrgBootstrapResolved,
-} from "@/lib/redux/slices/appContextSlice";
+  ORGANIZATION_UNAVAILABLE_DESCRIPTION,
+  useOrganizationRequired,
+} from "@/features/organizations/useOrganizationRequired";
 import { fetchProvision } from "@/features/mandates/provisions";
 import {
   describeInputSurfaceFailure,
@@ -52,23 +53,26 @@ export function usePlaceOffers(
   // place saying "Reading this place…" forever while the grid went on to
   // assert facts about maps it had never read. Once the bootstrap has resolved
   // and there is still no org, each place says the real reason and the remedy.
-  const orgResolved = useAppSelector(selectOrgBootstrapResolved);
+  // 🚨 AND THE FOURTH STATE IS NOT THE REFUSAL (R37): `orgBootstrapResolved`
+  // is TRUE when the read FAILED too, so a blip made every place say "choose
+  // an organization" to someone who had one all along.
+  const { organizationState } = useOrganizationRequired();
   const [byKey, setByKey] = useState<Record<string, PlaceOfferState>>({});
   const startedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!organizationId) {
-      if (!orgResolved) return;
+      if (organizationState === "resolving") return;
+      const message =
+        organizationState === "unavailable"
+          ? ORGANIZATION_UNAVAILABLE_DESCRIPTION
+          : "No organization is selected, so this place's offer cannot be read — choose one from the organization picker in the header.";
       setByKey((prev) => {
         const next = { ...prev };
         for (const place of places) {
           const key = place.mandate_key;
           if (next[key]?.status === "ready") continue;
-          next[key] = {
-            status: "error",
-            message:
-              "No organization is selected, so this place's offer cannot be read — choose one from the organization picker in the header.",
-          };
+          next[key] = { status: "error", message };
         }
         return next;
       });
@@ -160,7 +164,7 @@ export function usePlaceOffers(
     return () => {
       live = false;
     };
-  }, [places, organizationId, orgResolved, dispatch]);
+  }, [places, organizationId, organizationState, dispatch]);
 
   return (key: string) => byKey[key] ?? LOADING;
 }

@@ -14,12 +14,10 @@ import { Camera, ChevronRight, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
-import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectOrganizationId,
-  selectOrgBootstrapResolved,
-} from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import {
   selectAccessToken,
   selectAuthReady,
@@ -65,7 +63,14 @@ export function AssetsList() {
   // the spinner, so the load effect's early return would spin forever. Before
   // the bootstrap resolves, loading is the truth; after it, the absence is a
   // settled fact and it is said, with the remedy.
-  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  // 🚨 THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved` is
+  // set TRUE by `setOrgBootstrapFailure` as well, so "resolved and still no
+  // id" was ALSO the failed read — and this screen told a member of thirteen
+  // organizations to pick one. The gate's discriminant separates them and the
+  // ONE notice renders each, the failed one with its Retry.
+  const { organizationState } = useOrganizationRequired();
+  const organizationUnanswered =
+    organizationState === "required" || organizationState === "unavailable";
   const authReady = useAppSelector(selectAuthReady);
   const userId = useAppSelector(selectUserId);
   const accessToken = useAppSelector(selectAccessToken);
@@ -118,10 +123,15 @@ export function AssetsList() {
     };
   }, [loadKey, organizationId]);
 
-  if (!organizationId && orgBootstrapResolved) {
-    // The canonical honest state — it carries the picker, so this is a remedy
-    // and not a dead end.
-    return <OrganizationRequiredNotice what="Intake assets" />;
+  if (organizationUnanswered) {
+    // The canonical honest state — the refusal carries the picker and the
+    // failed read carries Retry, so neither is a dead end.
+    return (
+      <OrganizationContextNotice
+        state={organizationState}
+        what="Intake assets"
+      />
+    );
   }
 
   if (rows === null) {

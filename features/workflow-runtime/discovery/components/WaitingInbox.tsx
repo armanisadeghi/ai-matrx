@@ -29,7 +29,7 @@ import {
   type WaitingRunRow,
 } from "../waiting";
 import { useWaitingRuns } from "../useWaitingRuns";
-import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 
 function WaitingRowCard({ row }: { row: WaitingRunRow }) {
   const summary = waitingSummary(row);
@@ -109,12 +109,16 @@ function WaitingRowCard({ row }: { row: WaitingRunRow }) {
 }
 
 export function WaitingInbox() {
-  const { rows, loading, error, organizationRequired } = useWaitingRuns();
+  const { rows, loading, error, organizationState } = useWaitingRuns();
 
-  // Terminal, not pending: this used to hold the skeleton forever.
-  if (organizationRequired) {
+  // Terminal, not pending: this used to hold the skeleton forever. ALL FOUR
+  // states go to the ONE notice — including `unavailable`, where the read
+  // failed and the honest screen is "we could not check", with Try again, never
+  // a request to pick an organization nobody looked for (R37).
+  if (organizationState !== "ready") {
     return (
-      <OrganizationRequiredNotice
+      <OrganizationContextNotice
+        state={organizationState}
         what="Waiting runs"
         description="What is waiting on you is read per organization, and none is selected for this session. Pick one and this list loads."
       />

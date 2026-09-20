@@ -26,7 +26,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { registerChecklist } from "@/lib/guided-setup/registry";
 import type { CheckResult } from "@/lib/guided-setup/types";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { siteConnectionStatuses } from "@/features/marketing/lib/site-status";
+import { siteProviderStatuses } from "@/features/marketing/lib/site-status";
 import { parseSiteIntegrations } from "@/features/marketing/data/integrations-schema";
 import { preflightGscProperty } from "@/features/marketing/google/gsc-property";
 import {
@@ -97,7 +97,7 @@ export const siteSetupChecklist = registerChecklist<SiteSetupContext>({
         "This is where Google tells us what people searched for before they found you.",
       dependsOn: ["address"],
       check: async ({ site }): Promise<CheckResult> => {
-        const status = siteConnectionStatuses(site).find(
+        const status = siteProviderStatuses(site).find(
           (entry) => entry.key === "search_console",
         );
         if (!status || status.state === "off") {

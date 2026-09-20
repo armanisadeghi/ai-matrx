@@ -48,6 +48,7 @@ const SURFACE_SLUG_TO_FEATURE: Record<string, SourceFeature> = {
   "agent-builder": "agent-builder",
   "agent-run": "agent-runner",
   "agent-run-history": "agent-runner",
+  "agent-comparison-model": "agent-comparison",
   "agent-advanced-editor": "agent-builder",
   agents: "agent-runner",
   "agent-apps": "agent-app",

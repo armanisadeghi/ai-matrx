@@ -1,0 +1,64 @@
+-- scfg_73_worker_class_shape_converged.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- `punch_enabled_worker_classes` existed TWICE and the two shapes disagreed:
+--
+--   * a json composite ["employee","intern","seasonal"], read ORG-AWARE by the punch gate
+--     itself (hr.punch_record, hr.clock_state) through hr._punch_knob(key, default, org);
+--   * four `punch_enabled_worker_class_<class>` booleans carrying volunteer=false, read
+--     ORG-BLIND by hr._time_punch_enabled_worker_classes(), a zero-argument function that
+--     had no organization to pass and built its keys by concatenation — which is why no
+--     substring census over pg_proc ever found them.
+--
+-- The composite omits `volunteer` entirely. An organization that enabled volunteers on the
+-- composite would have had punches ACCEPTED and timesheet enrollment REFUSED.
+--
+-- WHY THE CONVERGENCE WAS SAFE: measured first, zero organizations had set either shape, so
+-- both resolved their platform defaults — and those defaults AGREE (employee, intern and
+-- seasonal true; volunteer false and absent). The two shapes were identical in effect at the
+-- moment they were merged, so no tenant's behaviour changed.
+--
+-- THE COMPOSITE IS THE SURVIVOR because it is what the enforcement path already reads.
+-- hr._time_punch_enabled_worker_classes now takes an organization and reads that one key.
+--
+-- Six callers repointed, each with the organization expression already in scope at the call
+-- site, never a newly resolved default:
+--     hr._enroll_pay_period_rows          v_org
+--     hr.ot_preapproval_wf_validate       inst.organization_id
+--     hr.pay_period_transition            (select pp.organization_id from hr.pay_period pp …)
+--     hr.timesheet_period_grid            (select pp.organization_id from hr.pay_period pp …)
+--     hr.timecards_never_asked_to_attest  em.organization_id
+--     hr.punch_write_path_conformance     em.organization_id
+--
+-- The last two are cross-organization censuses: they resolve PER ROW, which is the only
+-- correct answer for a sweep that spans tenants.
+--
+-- All seven functions were verified server-only against the `authenticated` and `anon` roles
+-- inside the migration rather than assumed, and each carries a platform.client_callable_door
+-- row declaring that lane (provision_shape_guard refuses a SECURITY DEFINER replacement
+-- without one). Creating a NEW signature needs no prior door row; only a REPLACE does.
+--
+-- Then: the zero-argument helper dropped, and the four boolean register rows deleted.
+--
+-- 🚨 WHAT WENT WRONG, AND THE GUARD IT BOUGHT (scfg_74)
+-- The delete was written `where key like 'punch_enabled_worker_class_%'`. In LIKE, `_` matches
+-- ANY single character, so the pattern intended for four booleans also matched
+-- `punch_enabled_worker_classes` — the composite the punch gate reads. platform.knob_resolve
+-- RAISES on a key it cannot find, so for roughly three minutes hr.punch_record would have
+-- refused every punch with P0001. The row was restored from its original seed
+-- (scfg_10_hr_seed_and_overridability.sql) with its description corrected, and
+-- hr.punch_knobs_missing() reports nothing missing.
+--
+-- The class fix is scfg_74: platform.feature_knob now REFUSES a delete whose key is still
+-- named by a live function body. Escape the underscores (`like 'punch\_enabled\_worker\_class%'`)
+-- or, better, enumerate the keys.
+--
+-- VERIFIED AFTER: helper carries exactly one signature (p_organization_id uuid); zero
+-- functions call the zero-argument form; register holds one worker-class row, the composite;
+-- hr._time_punch_enabled_worker_classes resolves ["employee","intern","seasonal"] at the
+-- platform rung and for a real organization; hr.punch_knobs_missing() returns no rows;
+-- hr.timecards_never_asked_to_attest() and hr.punch_write_path_conformance() both execute
+-- (0 and 39 rows), proving the per-row organization expressions resolve.

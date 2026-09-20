@@ -66,5 +66,5 @@ export default function FavoritesNavGroup() {
 
   // Favorites is a launcher, not a route — never show it as the active item
   // (its pins duplicate other nav entries that already highlight).
-  return <NavFlyoutGroup item={item} suppressActive />;
+  return <NavFlyoutGroup item={item} candidates={[]} suppressActive />;
 }

@@ -1107,6 +1107,34 @@ async function main(): Promise<void> {
         : []),
     ];
 
+    // CENSUS 14 AND 15 — THE ONE LADDER PLANS ONCE (lane LADDER-PERF, 2026-09-20).
+    //
+    // A door that decides on the one ladder is only as good as what the ladder costs, and the
+    // ladder cost TEN TIMES the kernel it wraps for one reason: nothing in it kept a plan.
+    // A non-inlined SQL-language function re-plans its body on EVERY CALL (its plan cache lives
+    // for the calling query), and plpgsql's `EXECUTE` never caches one at all — so a question
+    // about one (member, record) planned a sixteen-partition Append over `custom.record` half a
+    // dozen times. Measured: 16.5 ms a call against 1.5 ms for `iam.has_access_for`, and
+    // 7.24 ms -> 1.36 ms on `custom.carrying_edges_of` from moving the identical body into
+    // plpgsql. These two censuses are what keep it closed: the first walks the ladder's own
+    // call graph, the second says every PARTITIONED entity table still has its generated,
+    // plan-cached row probe.
+    const mark14 = Date.now();
+    const replanners = (
+      await client.query<Row>(
+        `select f.fn as function_name, f.lang as identity_args, f.why || ' ' || f.remedy as why
+           from custom.ladder_replanners() f order by f.fn`,
+      )
+    ).rows;
+    const staleProbes = (
+      await client.query<Row>(
+        `select s.what as function_name, 'generated probe' as identity_args,
+                s.detail || ' ' || s.remedy as why
+           from platform.static_row_probes_stale() s order by s.what`,
+      )
+    ).rows;
+    console.log(`[TIME] censuses 14+15 - the ladder plans once: ${since(mark14)}`);
+
     const ok = [
       report("client doors taking an organization id that never decide the caller", callers),
       report("client doors that write a record without deciding that row", records),
@@ -1141,6 +1169,16 @@ async function main(): Promise<void> {
       report(
         "doors that refuse by telling the caller they may read a record the door never asked about",
         refusals,
+      ),
+      report(
+        "functions the one ladder reaches that re-plan their body on every call",
+        replanners,
+        true,
+      ),
+      report(
+        "partitioned entity or registry tables with no current plan-cached row probe",
+        staleProbes,
+        true,
       ),
     ].every(Boolean);
 

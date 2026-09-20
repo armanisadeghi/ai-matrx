@@ -6,6 +6,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { setMode } from "@/styles/themes/themeSlice";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
+import { useMenuCheckboxId } from "./menuCheckboxId";
 
 /**
  * Theme toggle menu entry. Sets the opposite resolved mode — the sync engine handles
@@ -23,6 +24,7 @@ import { MENU_ITEM_CLASS } from "./menuItemClass";
 export function ThemeToggleMenuItem() {
   const dispatch = useAppDispatch();
   const isDark = useThemeMode() === "dark";
+  const menuCheckboxId = useMenuCheckboxId();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -34,7 +36,7 @@ export function ThemeToggleMenuItem() {
   const displayIsDark = mounted ? isDark : true;
 
   return (
-    <label htmlFor="shell-user-menu" className="block">
+    <label htmlFor={menuCheckboxId} className="block">
       <button
         className={MENU_ITEM_CLASS}
         onClick={() => dispatch(setMode(isDark ? "light" : "dark"))}

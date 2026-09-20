@@ -32,7 +32,7 @@ import {
   buildBrandContextXml,
   buildSiteContextXml,
 } from "@/features/marketing/lib/surface-context";
-import { siteConnectionStatuses } from "@/features/marketing/lib/site-status";
+import { useSiteConnectionStatuses } from "@/features/marketing/tracking/hooks";
 import {
   parseBrandProfile,
   type BrandAsset,
@@ -75,6 +75,7 @@ export function useMarketingSiteSurfaceBase(): {
   // access-errors: ok — MarketingSiteLayoutClient gates web_brand for this same brandId (the 2026-08-12 swallowed-brand fix); embedded hosts use this read only as opportunistic scope enrichment
   const brand = useBrand(brandId);
   const brandRow = brand.data ?? null;
+  const statuses = useSiteConnectionStatuses(site);
   const queryClient = useQueryClient();
 
   const getBaseValues = useCallback((): MarketingSiteBaseValues => {
@@ -123,11 +124,13 @@ export function useMarketingSiteSurfaceBase(): {
       site_description: site.description ?? undefined,
       site_context: buildSiteContextXml({
         site,
-        statuses: siteConnectionStatuses(site),
+        // The same six statuses the screen shows, tracking included — an agent must not be
+        // handed a connection picture the person cannot see (V-28 NEW-1).
+        statuses,
       }),
       gsc_synced_at: site.gsc_synced_at ?? undefined,
     };
-  }, [site, brandRow, brandId, queryClient]);
+  }, [site, statuses, brandRow, brandId, queryClient]);
 
   return { brandId, siteId: site.id, getBaseValues };
 }

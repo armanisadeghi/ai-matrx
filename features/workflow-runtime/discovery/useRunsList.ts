@@ -15,8 +15,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import {
+  useOrganizationRequired,
+  type OrganizationState,
+} from "@/features/organizations/useOrganizationRequired";
 import { callApi } from "@/lib/api/call-api";
 
 import { applyAnnouncement, parseRunListRows, type RunListRow } from "./runs";
@@ -32,6 +35,19 @@ export interface RunsListState {
   rows: RunListRow[];
   loading: boolean;
   error: string | null;
+  /**
+   * The organization question's answer, as ONE value: `resolving`, `required`,
+   * `unavailable` (the read FAILED — nobody looked, R37) or `ready`. `/runs` is
+   * read per organization and refuses before networking without one, so the
+   * caller renders `OrganizationContextNotice` with this in every state but
+   * `ready`.
+   *
+   * 🚨 It exists because `loading` starts TRUE and the effect returned on a
+   * falsy id: with no organization — settled OR unreadable — this list held its
+   * skeleton for as long as the tab stayed open, which is law 4's dead screen.
+   * The sibling defect `useWaitingRuns` carried, found by the same census.
+   */
+  organizationState: OrganizationState;
   refresh: () => void;
 }
 
@@ -42,8 +58,9 @@ export interface UseRunsListOptions {
 
 export function useRunsList({ definitionId }: UseRunsListOptions = {}): RunsListState {
   const dispatch = useAppDispatch();
-  // The hydration race — see useWaitingRuns / useResultSchema.
-  const organizationId = useAppSelector(selectOrganizationId);
+  // The hydration race — see useWaitingRuns / useResultSchema — read through
+  // the ONE gate, which also names the two terminal answers a bare id cannot.
+  const { organizationId, canLoad, organizationState } = useOrganizationRequired();
   const [rows, setRows] = useState<RunListRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +69,14 @@ export function useRunsList({ definitionId }: UseRunsListOptions = {}): RunsList
   const refresh = useCallback(() => setGeneration((n) => n + 1), []);
 
   useEffect(() => {
-    if (!organizationId) return undefined;
+    // Terminal, not pending: boot settled with nothing selected, or the read
+    // that would have told us FAILED. Stop the skeleton for both so the caller
+    // can say which it is instead of spinning forever.
+    if (organizationState === "required" || organizationState === "unavailable") {
+      setLoading(false);
+      return undefined;
+    }
+    if (!canLoad) return undefined;
     let live = true;
     void (async () => {
       const result = definitionId
@@ -86,7 +110,7 @@ export function useRunsList({ definitionId }: UseRunsListOptions = {}): RunsList
     return () => {
       live = false;
     };
-  }, [dispatch, organizationId, definitionId, generation]);
+  }, [dispatch, canLoad, organizationState, organizationId, definitionId, generation]);
 
   /** Coalesced refetch — a burst of transitions is one read, not one each. */
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -124,5 +148,5 @@ export function useRunsList({ definitionId }: UseRunsListOptions = {}): RunsList
     },
   });
 
-  return { rows, loading, error, refresh };
+  return { rows, loading, error, organizationState, refresh };
 }

@@ -26,6 +26,7 @@ import {
   getSnapshot,
   type CapturedError,
 } from "@/lib/diagnostics/errorCaptureStore";
+import { sourceFeatureForRoute } from "@/lib/diagnostics/errorSourceFeature";
 import type { Json } from "@/types/database.types";
 
 const UUID_RE =
@@ -238,6 +239,13 @@ async function flush(): Promise<void> {
         // long-lived tab whose session lapsed.
         session_state: e.sessionState ?? null,
       });
+      // DD-115 named the APP. The app alone was still one bucket for the whole
+      // web client: a CMS failure and an education-tutor failure were the same
+      // row. `source_app` / `source_feature` are ONE two-level categorization,
+      // so the surface that failed — derived from the captured route — rides
+      // with it. An unmapped route becomes the loud `client-unmapped` sentinel,
+      // never a guess.
+      const sourceFeature = sourceFeatureForRoute(e.route || e.url || null);
       if (isAuthenticated) {
         await supabase.rpc("log_client_error", {
           // DD-115: every client names itself. The RPC used to stamp
@@ -259,6 +267,7 @@ async function flush(): Promise<void> {
           p_stack: e.stack ?? e.callSite ?? undefined,
           p_payload: toJson(e.raw),
           p_context: context,
+          p_source_feature: sourceFeature,
         });
       } else {
         await fetch("/api/diagnostics/client-error", {
@@ -267,6 +276,7 @@ async function flush(): Promise<void> {
           body: JSON.stringify({
             fingerprint,
             source: e.source,
+            source_feature: sourceFeature,
             message: e.message,
             code: e.code ?? null,
             route: e.route || null,

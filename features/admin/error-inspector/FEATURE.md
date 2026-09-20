@@ -149,6 +149,13 @@ second symptom instead of deduping the incident.
   definite state onto that same entry via `resolveCapturedError`. A handled
   `denied` result is yellow/Silent; unresolved, missing, deleted, signed-out,
   and access-`ok` transient failures remain red.
+- **Deep links** — `features/window-panels/url-sync/UrlPanelManager.tsx`
+  (`url-panel-unopened`). A `?panels=` token was hydrated but no window ever
+  registered a urlSync entry for it, so the link opened nothing. The token is
+  KEPT in the address bar and the person is told; this row is the diagnostic.
+  `relation` = `?panels=<keys>`. Firing means either a window whose registry
+  `urlSync.key` and hydrator disagree, or a lazy chunk slower than the shared
+  lazy-mount deadline.
 - **Layout** — `lib/layout/useClippedContentGuard.ts` (`layout-scroll-chain`).
   Measures a bounded scroll surface against the nearest ancestor that
   constrains overflow: content hanging past a CLIPPING ancestor is
@@ -224,6 +231,46 @@ from a successful one. Now:
   itself is NOT NULL and is stamped by `ops._stamp_capture_org`);
 - **insert failures raise.** This adapter already ignores its own RPC failure by
   relation name, so it cannot loop; every other caller decides how to degrade.
+
+**Every client names its FEATURE too, and no error row is app-only any more
+(applied live 2026-09-20).** `source_app` / `source_feature` are ONE two-level
+categorization: the app, then the feature inside it (Arman, 2026-09-18).
+`ops.system_error` gained `source_feature` that morning and every Python writer
+started stamping both halves — but this RPC, the door EVERY client app writes
+through, could still only say the app, so a CMS failure and an education-tutor
+failure were the same row across the whole platform.
+`migrations/log_client_error_names_the_feature_too.sql`:
+
+- the RPC takes a twelfth parameter **`p_source_feature`**, and the old
+  ELEVEN-argument signature is GONE. It had to be: Postgres cannot add a
+  parameter in place, and with both live PostgREST refuses the eleven named
+  arguments every current client sends as ambiguous (PGRST203) — an outage of
+  the error channel itself. One function survives, `p_source_feature` DEFAULTS to
+  null, and a Chrome-extension or desktop build a user has not updated keeps
+  working unchanged. The pre-DD-115 ten-argument shim is untouched and now
+  delegates to the twelve-argument door;
+- **a missing feature is never stored as null.** It becomes the registered
+  sentinel **`client-unmapped`** plus a `context.source_feature_note` saying the
+  client named no feature. Every `client-unmapped` row in the dashboard is a
+  request for one more line in a client's route map, not a shrug;
+- **a malformed slug is refused with `22023`**, the same way an unknown app is.
+  The registry itself lives in Python
+  (`aidream/services/conversation_context/source_attribution.py`, mirrored to
+  `types/python-generated/source-attribution.ts`), so the function validates the
+  SHAPE of a slug and the TypeScript `SourceFeature` type keeps an unregistered
+  value from compiling;
+- **this repo derives the feature from the route that failed** —
+  `lib/diagnostics/errorSourceFeature.ts` (`sourceFeatureForRoute`), used by both
+  the authenticated RPC lane and the guest endpoint, which writes
+  `source_feature` on its direct insert too. matrx-extend maps the failing table
+  (`src/lib/supabase/db-failure.ts`), matrx-local maps its route
+  (`desktop/src/lib/error-outbox.ts`);
+- **SQL cannot reopen this.** The six in-database maintenance functions that file
+  error rows now carry `source_app='database'` and their subsystem's feature
+  (`migrations/db_maintenance_errors_name_their_feature.sql`), and aidream's
+  `scripts/check_error_capture_attribution.py` grew a `.sql` arm and a LIVE
+  `pg_proc` arm that fail on any function body inserting an error row without a
+  feature.
 
 **Explicit organization IDs are assertions, never fallback hints** (applied live
 2026-09-15). Matrx Local's durable outbox sends the organization captured at the
@@ -382,6 +429,14 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 - New downgrade → edit `DOWNGRADE_RULES` only.
 
 ## Change Log
+
+- 2026-09-20 — **New `url-panel-unopened` source: a deep-linked window that never
+  opened is now a row, not a silently deleted URL.** `?panels=` tokens used to be
+  stripped from the address bar when a 5 s timer expired, with nothing anywhere
+  but a console warning. `UrlPanelManager` now keeps the token, shows an honest
+  notice through `toastErrorAlreadyCaptured` (so the toast does not add a second
+  `user-toast` row), and files this capture with the unresolved keys and the
+  deadline it waited. Red tier, so it persists to `public.system_error`.
 
 - 2026-09-17 — **New source `feature-knob-vocabulary`: an enum knob set to a value this build does not implement.** Captured inline by `features/marketing/seo/topical-map/knobs.ts`'s `enumKnob`, carrying the knob address as `relation`, the offending value and its row's `allowed_values` in `raw`, and `code=knob_value_not_implemented`. It exists because that reader used to THROW, which blanked every map screen over one legal admin choice; it now falls back to the row's own `default_value` and screams here instead. Red tier, so it also reaches `public.system_error`.
 

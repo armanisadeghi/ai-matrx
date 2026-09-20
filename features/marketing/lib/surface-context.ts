@@ -190,11 +190,15 @@ const CONNECTION_ATTR_BY_KEY: Record<SiteConnectionStatus["key"], string> = {
   analytics: "ga4",
   pagespeed: "psi",
   cms: "cms",
+  // U-M2 — the Tag Manager verdict. The map is exhaustive over the status union on purpose: a
+  // sixth chip that reached the site page and never reached an agent's context would be a fact
+  // the screen shows and the agent cannot see.
+  tracking: "tracking",
 };
 
 /**
  * Build the `site_context` XML: site identity, connection statuses
- * (Init/GSC/GA4/PSI/CMS), initialization state, registry counts, and crawl
+ * (Init/GSC/GA4/PSI/CMS/Tracking), initialization state, registry counts, and crawl
  * freshness. Unknown/empty parts are omitted entirely.
  */
 export function buildSiteContextXml(input: SiteContextInput): string {

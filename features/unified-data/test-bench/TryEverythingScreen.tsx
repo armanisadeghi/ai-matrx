@@ -1050,6 +1050,9 @@ function AgentTry({ organizationId }: { organizationId: string }) {
             .select("id,name,updated_at")
             .eq("organization_id", organizationId)
             .is("deleted_at", null)
+            // archived-items-law-exempt: an agent PICKER for the test bench —
+            // it offers live agents to try, it is not a browse list of the
+            // person's agents, and an archived agent is never offered to run.
             .eq("is_archived", false)
             .order("updated_at", { ascending: false })
             .limit(6)

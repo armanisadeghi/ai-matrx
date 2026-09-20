@@ -1691,7 +1691,6 @@ export function fetchHrMyIncidentReports(
  */
 export function fetchHrMyVerificationConsents(): Promise<
   HrResult<{
-    consent_expiry_days: number;
     requests: HrMyVerificationConsent[];
   }>
 > {
@@ -1715,7 +1714,12 @@ export type HrMyVerificationConsent = {
   request_source: string;
   employer_name: string;
   requested_at: string;
-  /** The clock the knob `hr.employees.verification_consent_expiry_days` sets. */
+  /**
+   * The clock the knob `hr.employees.verification_consent_expiry_days` sets, resolved for
+   * THIS request's employer. The envelope used to carry one `consent_expiry_days` for the
+   * whole list, but the list spans employers, so one number could not be right for all of
+   * them; scfg_82 removed it and made this per row.
+   */
   expires_at: string;
   employee_consent_at: string | null;
   decided: boolean;

@@ -963,7 +963,7 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       url: "/marketing/[brandId]/analytics",
       label: "Analytics",
       description:
-        "BrandAnalyticsWorkspace — this client's websites with their 28-day Google Analytics headline numbers, each opening the canonical SiteAnalyticsPanel in the siteAnalyticsWindow. Reads seo.web_analytics_daily directly, deduped to the newest collection run per day. The unbuilt cross-channel join is printed under the live panel (coming-soon id marketing.analytics.cross-channel).",
+        "BrandAnalyticsWorkspace — this client's websites with their 28-day Google Analytics headline numbers, each opening the canonical SiteAnalyticsPanel in the siteAnalyticsWindow. Reads seo.web_analytics_daily directly, deduped to the newest collection run per day. The unbuilt cross-channel join is printed under the live panel (coming-soon id marketing.analytics.cross-channel). The brand's own YouTube channel sits below it: BrandChannelPanel (U-M3), the other channel this section's promise already named.",
       filePath: "app/(core)/marketing/[brandId]/analytics/page.tsx",
       status: "Live",
     },
@@ -1296,6 +1296,16 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
         "Google Analytics for one site, beside whatever the reader was looking at. The window is the frame only: it wraps the canonical SiteAnalyticsPanel (the same component the brand Analytics route and the site's Google Analytics settings section mount). Opened via useOpenSiteAnalyticsWindow.",
     },
     {
+      overlayId: "brandChannelWindow",
+      description:
+        "One client's owned YouTube channel (U-M3), beside whatever the reader was looking at. The window is the frame only: it wraps the canonical BrandChannelPanel, the same component the brand Analytics route mounts, variant=\"bare\". Opened via useOpenBrandChannelWindow.",
+    },
+    {
+      overlayId: "siteTrackingWindow",
+      description:
+        "Tag Manager tracking for one site (U-M2), beside whatever the reader was looking at. The window is the frame only: it wraps the canonical SiteTrackingPanel, the same component the site's Integrations settings section mounts. Addressed: ?panels=site_tracking:<siteId>. Opened via useOpenSiteTrackingWindow.",
+    },
+    {
       overlayId: "gscDrilldownWindow",
       description:
         "Search Console drill-down panel (multi-instance): any (site, dimension, filters, period) slice as KPI band + mini chart + dimension table; panel rows re-drill into further panels for side-by-side comparison. Opened from Search Console rows and Keyword Value topic rows via useOpenGscDrilldownWindow.",
@@ -1314,6 +1324,20 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       filePath: "features/marketing/analytics/components/SiteAnalyticsPanel.tsx",
       description:
         "THE site Analytics panel — the one component behind the brand Analytics route, the site's Google Analytics settings section and the siteAnalyticsWindow. Reads seo.web_analytics_daily through features/marketing/analytics/window.ts (winning-run dedup per day; users are summed and say so), prints only the caveats Google actually reported (analytics/caveats.ts over extras.ga4_collection_metadata), and turns quota exhaustion or a refused grant into a named state with the site's one Reconnect door (analytics/failures.ts). The trend is hand-drawn SVG, not recharts (the panel mounts inside statically imported chrome). DataFreshnessLine is the ONE freshness line, shared with the Search Console header and portfolio cards.",
+      tier: "official",
+    },
+    {
+      name: "SiteTrackingPanel / SiteTrackingCard / trackingHealth",
+      filePath: "features/marketing/tracking/components/SiteTrackingPanel.tsx",
+      description:
+        "THE site tracking panel (PLAN \u00a74.10) \u2014 the one component behind the site's Integrations settings section and the siteTrackingWindow. Reads the newest web.tag_manager_snapshot directly and grades through features/marketing/tracking/health.ts, the ONE derivation the sixth site-status chip also reads. The server declares what its own read does and does not cover, and the panel prints those caveats verbatim off the same finding — this repo authors none of them (a frontend paraphrase is a second authority that drifts the moment the server edits its words). Re-check states its consequence first (a Tag Manager request plus one fetch of the customer's homepage). Staleness comes from the knob google.tracking.snapshot_max_age_hours (168); a missing row prints a named stand-in, never a silent default.",
+      tier: "official",
+    },
+    {
+      name: "BrandChannelPanel / PreUploadCheck / ScoredChecklist / ThumbnailAtMobileSize",
+      filePath: "features/marketing/youtube/components/BrandChannelPanel.tsx",
+      description:
+        "THE brand YouTube panel — the one component behind the brand Analytics route and the brandChannelWindow overlay (wrapped variant=\"bare\"; the window file holds zero channel logic). Reads web.youtube_video and web.channel_analytics_daily directly through features/marketing/youtube/service.ts and refreshes through the ONE compute call POST /google-sync/youtube/refresh, which states its consequence before it runs and publishes nothing (both YouTube grants are read-only). The 30-day delta goes through judgeGscWindowDelta — the platform's one comparison judge — so a refused comparison prints its label with both day counts instead of a percentage. youtube_analytics is internal-test gated and the panel prints the server's own limitation over the ANALYTICS section only; the per-video lane is unwritten by the server and says so. PreUploadCheck grades a draft against a target keyword and publishes nothing (its scoring module imports nothing at all); ScoredChecklist and ThumbnailAtMobileSize live in components/shared/ because neither is YouTube-shaped.",
       tier: "official",
     },
     {

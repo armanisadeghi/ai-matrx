@@ -242,6 +242,7 @@ never become an answer, and absent means the declaration gave none — never inv
 
 ## Change Log
 
+- 2026-09-19 — **THE FOURTH ORGANIZATION STATE (R37) in `usePlaceOffers`.** Every place's offer said "No organization is selected … choose one from the organization picker" as soon as `orgBootstrapResolved` went true with no id — which `setOrgBootstrapFailure` also does, so a failed read blamed the person. The hook now reads `useOrganizationRequired().organizationState` and says plainly that the organization could not be checked when that is what happened. Guard: `pnpm check:org-three-states` rule 5.
 - 2026-09-17 — **Moving onto the organization rung no longer lands on `organizations[0]`.**
   `OneBindingWorkspace`'s `onRungChange` seeded the org rung with the first organization in the
   membership list when the bar named none — a binding decided for whichever org sorted first. It now

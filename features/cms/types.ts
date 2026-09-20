@@ -371,9 +371,13 @@ export interface ClientComponent {
 
 // ─── Validation exceptions (F3 escape hatch — C3, owned by P3/P1) ────────
 // Mirrors `matrx_content_guard.models.Violation` + `ContentException`
-// (aidream `packages/matrx-content-guard`). The store (`client_content_exceptions`)
-// had not been created by P1 as of 2026-07-09 — `/api/cms/approvals` degrades
-// gracefully (returns `available: false`) until it exists.
+// (aidream `packages/matrx-content-guard`). The store
+// (`client_content_exceptions`) lives in the CMS product database and stays
+// there: an approved row is the standing suppression policy eight CMS write
+// paths read. Review happens in THE ONE platform approval queue (kind
+// `cms_content_exception`) and the decision is made by aidream's door
+// (`POST /cms/exceptions/{id}/approve|reject`) — nothing in this repo writes
+// `status` / `reviewed_by` / `reviewed_at` (register Q-1, 2026-09-19).
 export type ContentExceptionStatus = "pending" | "approved" | "rejected";
 
 export interface ContentException {

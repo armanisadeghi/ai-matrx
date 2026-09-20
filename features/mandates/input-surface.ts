@@ -34,10 +34,11 @@ import {
   type DoorApiError,
 } from "@/lib/api/door-refusal";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
-  selectOrganizationId,
-  selectOrgBootstrapResolved,
-} from "@/lib/redux/slices/appContextSlice";
+  ORGANIZATION_UNAVAILABLE_DESCRIPTION,
+  useOrganizationRequired,
+} from "@/features/organizations/useOrganizationRequired";
 import {
   parseServedInput,
   type ServedInput,
@@ -202,7 +203,12 @@ export function useMandateInputSurface(
   // no org, that is a settled fact about this session, and it is said out loud
   // with the action that fixes it. Before the bootstrap resolves, "loading" is
   // the truth and no error flashes.
-  const orgResolved = useAppSelector(selectOrgBootstrapResolved);
+  // 🚨 AND THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved`
+  // is set TRUE by `setOrgBootstrapFailure` too, so reading it alone told a
+  // member of thirteen organizations to pick one after a single failed read.
+  // The gate's discriminant keeps "you have not chosen" apart from "we could
+  // not check", and each says its own sentence.
+  const { organizationState } = useOrganizationRequired();
   const [state, setState] = useState<MandateInputSurfaceState>({
     status: "loading",
   });
@@ -210,11 +216,16 @@ export function useMandateInputSurface(
   useEffect(() => {
     if (!mandateKey) return;
     if (!organizationId) {
-      if (orgResolved) {
+      if (organizationState === "required") {
         setState({
           status: "error",
           message:
             "No organization is selected, so this job's inputs cannot be read — choose one from the organization picker in the header and this fills in.",
+        });
+      } else if (organizationState === "unavailable") {
+        setState({
+          status: "error",
+          message: ORGANIZATION_UNAVAILABLE_DESCRIPTION,
         });
       }
       return;
@@ -249,7 +260,7 @@ export function useMandateInputSurface(
     return () => {
       live = false;
     };
-  }, [dispatch, mandateKey, organizationId, orgResolved]);
+  }, [dispatch, mandateKey, organizationId, organizationState]);
 
   return state;
 }

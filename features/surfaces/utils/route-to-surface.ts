@@ -35,6 +35,10 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/agents/settings", surface: "matrx-user/agent-settings" },
   { prefix: "/agents/gate", surface: "matrx-user/agent-gate" },
   { prefix: "/agents/shortcuts", surface: "matrx-user/agent-shortcuts" },
+  {
+    prefix: "/agents/battle/model",
+    surface: "matrx-user/agent-comparison-model",
+  },
   { prefix: "/agents", surface: "matrx-user/agents" },
   // Real routes for the connections/apps hubs (old /agents/* paths were fiction).
   {

@@ -199,7 +199,56 @@ export function metaStripEntries(
   ) as [string, string | number | boolean][];
 }
 
-/** The same pass for {@link LeftoverFields} — the non-scalar residue. */
+/**
+ * 🚨 A STATED VALUE IS NOT AUTOMATICALLY A STATED FACT (F-109, V-24 NEW-2).
+ *
+ * An empty collection is the SHAPE of an answer with nothing in it, and a blank
+ * string is nothing at all. Counting either as content is how `rows: []` — the
+ * literal thing a GA4 read with no rows returns — made a card believe something
+ * came back. A number or a boolean IS a stated fact, however small.
+ *
+ * 🚨 AND IT IS RECURSIVE (Cursor Bugbot on `11aaca7c`). The first version asked
+ * only whether a record had KEYS, so `data: { rows: [] }` — the same empty read
+ * with the wrapper the tool actually sends — read as content: four spellings
+ * fixed, the class not. A record is substantive only when one of its own values
+ * is, an array only when one of its elements is, to a bounded depth.
+ *
+ * 🚨 AND IT LIVES HERE, not in the Google substrate, because {@link
+ * leftoverEntries} below is the pass EVERY family's residue is rendered from
+ * and asked about — the two Google families, `platform_record`, and the four
+ * runtime-result families. A predicate that held for one of them and not the
+ * others is the drift these shared passes exist to make impossible.
+ */
+export function isSubstantiveValue(item: unknown, depth = 0): boolean {
+  if (item === null || item === undefined) return false;
+  if (typeof item === "string") return item.trim() !== "";
+  if (Array.isArray(item) || isRecord(item)) {
+    // A container that is only containers all the way down carries no fact. The
+    // bound stops a cyclic or pathological value from hanging the render; at the
+    // bound we say "substantive" rather than "empty", because a payload this
+    // deep is never the empty read this predicate exists to recognise, and the
+    // safe answer is the one that does not claim nothing came back.
+    if (depth >= MAX_SUBSTANCE_DEPTH) return true;
+    const children = Array.isArray(item) ? item : Object.values(item);
+    return children.some((child) => isSubstantiveValue(child, depth + 1));
+  }
+  return true;
+}
+
+/** How far down {@link isSubstantiveValue} looks for one real fact. */
+const MAX_SUBSTANCE_DEPTH = 8;
+
+/**
+ * The same pass for {@link LeftoverFields} — the non-scalar residue, minus the
+ * containers that hold no fact.
+ *
+ * 🚨 AN EMPTY COLLECTION IS NOT "ALSO RETURNED". `rows: []` printed under the
+ * heading "Also returned" tells the reader something came back, one line under
+ * a footer saying nothing did — and a `1 field did not apply — show` toggle is
+ * the reader's only way to discover it was empty all along. The emptiness
+ * question and the printing run the SAME filter here, so neither can say a
+ * thing the other contradicts.
+ */
 export function leftoverEntries(
   value: Record<string, unknown>,
   omit: readonly string[],
@@ -207,7 +256,11 @@ export function leftoverEntries(
   const skip = new Set<string>([...omit, KIND_KEY]);
   return Object.entries(value).filter(
     ([key, item]) =>
-      !skip.has(key) && item !== null && item !== undefined && typeof item === "object",
+      !skip.has(key) &&
+      item !== null &&
+      item !== undefined &&
+      typeof item === "object" &&
+      isSubstantiveValue(item),
   );
 }
 

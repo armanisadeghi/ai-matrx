@@ -1,0 +1,44 @@
+-- scfg_82_the_consent_window_is_per_employer.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- public.hr_set_employment_pin(p_employment_id, p_pin) — kiosk_pin_length
+--   The straightforward one. p_employment_id IS an authorization input and is checked as one:
+--   hr.capability(caller, 'working_record.write', p_employment_id), or the employment is one of
+--   the caller's own; neither and the door returns a governance refusal without writing. The
+--   organization is derived from that employment BEFORE the gate, and an id matching no live
+--   employment raises P0002 rather than proceeding with a null — so v_org is never null at the
+--   knob read.
+--
+-- public.hr_my_verification_consents() — verification_consent_expiry_days
+--   🚨 THIS ONE IS NOT A SCOPING FIX. IT IS A CORRECTNESS FIX, and it is the first case in this
+--   sweep where threading an organization through was the WRONG answer.
+--
+--   The door takes no arguments: the subject is auth.uid(), rows are selected by login linkage,
+--   and the list DELIBERATELY SPANS EMPLOYERS — it is every outstanding request for a
+--   compensation-revealing letter about this person, from whichever employers hold one.
+--
+--   It read the expiry window ONCE, with no organization, into v_days, and then used that one
+--   number to compute `expires_at` for every row. So an employer's consent window was being
+--   applied to another employer's request. There is no single organization here to pass, and
+--   passing any one of them would have been a different wrong answer. The window is now
+--   resolved PER ROW from r.organization_id.
+--
+--   The envelope's `consent_expiry_days` is DELETED rather than scoped. One number over a list
+--   that spans employers cannot be right for all of them, so keeping it would be keeping a
+--   value that reads as authoritative and is not — the same defect as the settable-and-inert
+--   twin closed in scfg_75. It was declared in the client's result type and read by no
+--   component, and that type is updated in the same change (features/hr/service.ts), with the
+--   per-row meaning of `expires_at` documented where the field is declared.
+--
+-- WHAT THIS ADDS TO THE PATTERN. Up to here every door in the sweep had ONE organization that
+-- was either an argument or derivable from the row it was already working on. This is the
+-- first where the honest answer is "there isn't one" — and the test that catches it is asking
+-- what the ANSWER spans, not what the caller passed.
+--
+-- VERIFIED AFTER: census 21 → 19; neither function appears in platform.knob_org_blind_reader;
+-- the consents door still answers no_authenticated_caller to an unauthenticated probe (a read,
+-- writing nothing); v_days is asserted absent from the rewritten body; and pnpm type-check
+-- reports no error in features/hr/service.ts or on the removed field.

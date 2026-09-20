@@ -415,6 +415,18 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 
 ## Change log
 
+- `2026-09-19` — **The agenda says when the ORGANIZATION read failed, instead of
+  holding its skeleton forever (R37, the fourth state).** `useAgenda` forwarded
+  `organizationRequired` + `organizationResolving`, and under a failed read the
+  first is false while the legacy `resolving` stays true by design, so
+  `isLoading` kept the agenda skeleton up for as long as the panel was open —
+  the third fix in a row on this surface, each closing one state and leaving the
+  next open. Both booleans are replaced by ONE `organizationState`, and
+  `AgendaPanel` hands it to `OrganizationContextNotice` for the two terminal
+  answers (the resolving posture keeps the agenda's own skeleton, unchanged).
+  Proof: two new cases in
+  `calendar/__tests__/the-agenda-is-honest-with-no-organization.test.tsx`, red on
+  the prior bytes. Class guard: `pnpm check:org-three-states` rule 4.
 - `2026-09-19` — **Native Drive imports retain canonical successes until the consumer acknowledges them.** A rejected image/chat delivery now stays retryable from the already-imported Files rows, partial provider failures retain their exact Picker selections for import-only retry, and closing during Picker/import waits for the active item before terminal cleanup. The native Google Picker and `drive.file` authorization model are unchanged.
 
 - `2026-09-18` — **F-103 (V-23, NEW-3): every Google connect surface here now opens its authorization window through the ONE per-person gate.** `GoogleWorkspaceConnectBody.connect()` / `connectInThisTab()` / `enableSending()`, `GoogleWorkspaceOverviewBody.reconnectSelectedAccount()` / `enableCapability()` (popup and redirect) and both `GoogleWorkspaceReviewWorkspace` presses called the raw provider primitives directly, guarded by nothing but a local `busy` state set inside an async handler — two presses opened two Google consent windows for one intent. They now call `useGoogleAuthorizationWindow()` → `openAuthorizationWindow` / `openAuthorizationRedirect`, and the two redirect flows that wait for the organization first take the gate with `beginAuthorization()` BEFORE that wait (the multi-second gap a second press used to walk through) and release it only if the page never gets to leave. Full law, mechanism and proofs: [`features/connectors/FEATURE.md`](../connectors/FEATURE.md) Change log, same date. Guard: `pnpm check:google-auth-gate`. Boy-scout in the same pass: `GoogleWorkspaceOverviewBody`'s per-capability buttons folded `busy` to a boolean with `busy?.startsWith(...)` and then compared that boolean to the full press keys — never true, so neither "Enabling …" nor "Opening Google…" ever appeared while its own press ran (TS2367, which nothing ran). They now compare `busy` to the exact key.

@@ -25,7 +25,11 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { keptSourceTitle } from "../types";
 
-const CAPTURED = "2026-09-20T03:52:16.814Z";
+// Noon UTC, so "Sep 19" is the day in EVERY timezone a runner can be in. The
+// real capture (2026-09-20T03:52Z) read Sep 19 on the author's Pacific clock
+// and Sep 20 on CI's UTC clock — a test about the day must not depend on
+// where it runs.
+const CAPTURED = "2026-09-19T12:00:00.000Z";
 /** A clock in the same year, so the short form is the one under test. */
 const NOW = new Date("2026-09-25T10:00:00Z");
 

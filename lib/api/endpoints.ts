@@ -174,6 +174,16 @@ export const ENDPOINTS = {
   cms: {
     /** POST — Canonical matrx-content-guard validation before CMS writes. */
     validate: "/cms/validate" as const,
+    /**
+     * POST — THE decision door for a queued content exception
+     * (`features/approvals/cms-door.ts`). The exception id is the idempotency
+     * key; the server finds its queue row and replays the ordinary human write
+     * path. Nothing else decides these — the CMS's own review route is gone.
+     */
+    approveException: (exceptionId: string) =>
+      `/cms/exceptions/${encodeURIComponent(exceptionId)}/approve` as const,
+    rejectException: (exceptionId: string) =>
+      `/cms/exceptions/${encodeURIComponent(exceptionId)}/reject` as const,
   },
 
   /** Tool testing endpoints — Authenticated */
