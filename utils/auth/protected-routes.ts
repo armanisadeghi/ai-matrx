@@ -1,5 +1,16 @@
 /** Route families that must stop guests before any product data is resolved. */
 export function routeRequiresAuthentication(pathname: string): boolean {
+  // 🚨 THE CLIENT PORTAL IS THE ONE `/portal/**` ROUTE A GUEST MUST REACH.
+  // `/portal/c/<slug>` is a link a business sends to ITS CLIENT, and her signed-out
+  // state is the page's whole point: the portal's own title, her supplier's name,
+  // one email field. Bouncing her to `/login` would hand somebody with no AI Matrx
+  // account a door she cannot open, and would lose the slug that says which portal
+  // she was invited to. Nothing product-shaped resolves before she signs in —
+  // `custom.portal_public` answers only the sign-in panel's own words, and every
+  // read of her records needs `auth.uid()` at the door. The departed-member portal
+  // below keeps its guest block for the reason written there.
+  if (pathname === "/portal/c" || pathname.startsWith("/portal/c/")) return false;
+
   return (
     pathname.startsWith("/administration") ||
     pathname.startsWith("/api/admin") ||

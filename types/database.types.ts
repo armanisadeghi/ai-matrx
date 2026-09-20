@@ -58824,6 +58824,7 @@ export type Database = {
           resolved_at: string | null
           route: string | null
           source_app: string | null
+          source_feature: string | null
           traceback: string | null
           updated_by: string | null
           user_id: string | null
@@ -58847,6 +58848,7 @@ export type Database = {
           resolved_at?: string | null
           route?: string | null
           source_app?: string | null
+          source_feature?: string | null
           traceback?: string | null
           updated_by?: string | null
           user_id?: string | null
@@ -58870,6 +58872,7 @@ export type Database = {
           resolved_at?: string | null
           route?: string | null
           source_app?: string | null
+          source_feature?: string | null
           traceback?: string | null
           updated_by?: string | null
           user_id?: string | null

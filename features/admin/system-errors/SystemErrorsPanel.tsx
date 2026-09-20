@@ -40,6 +40,7 @@ interface SystemErrorRow {
   user_id?: string | null;
   conversation_id?: string | null;
   source_app?: string | null;
+  source_feature?: string | null;
   route?: string | null;
   error_type?: string | null;
   error_text?: string | null;
@@ -62,6 +63,8 @@ function summarize(row: SystemErrorRow): string {
     `kind: ${row.kind ?? "—"}`,
     `error_type: ${row.error_type ?? "—"}`,
     `route: ${row.route ?? "—"}`,
+    `source_app: ${row.source_app ?? "—"}`,
+    `source_feature: ${row.source_feature ?? "—"}`,
     `occurred_at: ${row.occurred_at ?? "—"}`,
     `request_id: ${row.request_id ?? "—"}`,
     `conversation_id: ${row.conversation_id ?? "—"}`,
@@ -258,6 +261,16 @@ export default function SystemErrorsPanel() {
                     {row.route ? (
                       <span className="text-xs text-gray-500 dark:text-gray-400">
                         {row.route}
+                      </span>
+                    ) : null}
+                    {row.source_app ? (
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {row.source_app}
+                      </span>
+                    ) : null}
+                    {row.source_feature ? (
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {row.source_feature}
                       </span>
                     ) : null}
                     {row.resolved_at ? (

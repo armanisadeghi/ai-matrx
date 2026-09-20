@@ -432,6 +432,42 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "Jest proof that both gate-corpus runners refuse a connection whose pg_control_system().system_identifier is production's (ATTACK-9 finding 34). Reads plan/BRANCH-REF and two source files; opens no socket, holds no credential, never part of a served request.",
     },
     {
+        id: "client-portal-service",
+        file: "features/portals/service.ts",
+        kind: "door_gated",
+        why: "THE CLIENT PORTAL's only data access. The sign-in lane (custom.portal_public / portal_invitation / portal_principal_bind) is service_role and server-only, exactly like the public form's; the SIGNED-IN lane (custom.portal_me, read_records, read_record, record_update, applicable_fields, io_comments, io_comment_write) goes through the outsider's OWN server client, never the admin client, because those doors are what decide what she sees. The switch is read one layer down, inside each door's custom.assert_store_door / store_is_open, for the organization the PORTAL belongs to — the only correct one, since the person here has no organization grant to read a knob against. This module holds the one createAdminClient().schema('custom') cast for the sign-in lane and nothing widens it.",
+    },
+    {
+        id: "client-portal-shown",
+        file: "features/portals/shown.ts",
+        kind: "door_gated",
+        why: "What a client portal screen is ALLOWED to render: the intersection of custom.portal_me()'s visible_fields (the access decision) with custom.applicable_fields' labels and order (the vocabulary). It is registered because a masked field is NOT absent from a read_records document — it comes back as a NULL key beside a _hidden block — so this is the file that stops a page printing the NAME of a field the portal never opened. It reaches the store only through features/portals/service.ts, whose doors read the switch themselves.",
+    },
+    {
+        id: "client-portal-page",
+        file: "app/(portal)/portal/c/[slug]/page.tsx",
+        kind: "door_gated",
+        why: "The client portal at its own link, server-rendered for an outsider with no organization grant. It reads no campaign switch the way a signed-in member's page does — there is no organization she may name and asking the switch for her would answer the platform default for every organization on earth. custom.portal_public answers null for missing, closed and store-switched-off alike (that is the 404), and every signed-in read goes through her own doors. The browser never holds a store client.",
+    },
+    {
+        id: "client-portal-record-page",
+        file: "app/(portal)/portal/c/[slug]/r/[recordId]/page.tsx",
+        kind: "door_gated",
+        why: "One record on the client portal, same lane and same reasoning as the portal page. Which fields appear is custom.portal_me()'s visible_fields; which Table the record is in is answered by custom.read_records rather than inferred; the comment thread exists only where the door says comments are on. Every door reads the switch itself via custom.assert_store_door.",
+    },
+    {
+        id: "client-portal-record-actions",
+        file: "app/(portal)/portal/c/[slug]/r/[recordId]/actions.ts",
+        kind: "door_gated",
+        why: "Where a client's edit and her comment arrive. The organization id is resolved from custom.portal_me() and never taken from the browser, and custom.record_update / custom.io_comment_write decide everything else — a field the portal did not open is refused BY THE DOOR, whose sentence and hint are returned verbatim. The switch is those doors' own assert_store_door.",
+    },
+    {
+        id: "client-portal-sign-in-route",
+        file: "app/api/portal/[slug]/sign-in/route.ts",
+        kind: "door_gated",
+        why: "Where a client asks for her sign-in link, served to somebody with no account. It reaches custom.portal_public and custom.portal_invitation (both service_role, both reading the switch themselves for the portal's own organization) and writes the grant through custom.portal_principal_bind. It answers the same sentence whether or not the address was invited, and never logs, returns or stores the link or the token.",
+    },
+    {
         id: "unified-data-campaign-ramp",
         file: "lib/knobs/unifiedDataCampaignRamp.ts",
         kind: "runtime",
