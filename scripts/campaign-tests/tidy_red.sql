@@ -131,6 +131,7 @@ $red$;
 -- Each forward file's inverse body runs here against the live catalog. They are executed
 -- rather than read because an inverse nobody has run is a promise. The whole file rolls
 -- back, so the database keeps the forward state.
+\i migrations/inverse/tidy_the_provenance_write_is_reachable_from_the_turn_down.sql
 \i migrations/inverse/tidy_the_provenance_flush_rides_the_turns_session_down.sql
 \i migrations/inverse/tidy_the_enrich_panel_asks_the_one_ceiling_down.sql
 \i migrations/inverse/tidy_one_freshness_ceiling_down.sql
