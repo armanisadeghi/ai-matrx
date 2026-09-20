@@ -31,3 +31,15 @@ alter table custom.anon_form drop column if exists notify_rule_id;
 alter table custom.anon_form drop column if exists honeypot_key;
 alter table custom.anon_form drop column if exists submission_cap;
 alter table custom.anon_form drop column if exists presentation;
+
+-- ── the subscription doors (added 2026-09-20) ────────────────────────────────
+-- Dropping these takes the SCREEN back, not the switch: `muted` stays in every Rule
+-- document and `custom.agg_subscriptions` keeps honouring it, because that arm belongs to
+-- the reader and not to these doors. What goes is a person's ability to LIST what they are
+-- being told about and to switch one off, which is why this is a chair step too.
+drop function if exists custom.subscription_mute(uuid, uuid, boolean);
+drop function if exists custom.subscriptions(uuid, uuid);
+
+delete from platform.client_callable_door
+ where schema_name = 'custom'
+   and function_name in ('subscriptions', 'subscription_mute');

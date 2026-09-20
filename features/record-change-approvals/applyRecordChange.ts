@@ -1,38 +1,46 @@
 /**
- * applyRecordChange — THE RESUME. The person said yes, so the change the agent
- * was refused now happens under the PERSON's own authority.
+ * applyRecordChange — THE RESUME, and it is now the SAME OPERATION that waited.
  *
- * WHY THE BROWSER AND NOT THE SERVER. The `records` tool has already answered
- * by the time anybody sees a card: the agent's call is over, there is no
- * suspended call to unblock, and an approval that could only be honoured by
- * re-running the agent would be an approval of something else. So the approval
- * is applied here, through the record store's OWN doors, as the signed-in
- * person — which is also the honest reading of what happened: the organization
- * asks A PERSON before an agent changes a table that already existed, and the
- * person is the one who made this write.
+ * WHAT WAS WRONG WITH THE FIRST VERSION (seventh verification pass, 2026-09-19).
+ * It worked, and it wrote the wrong thing: approving a column patched the
+ * table's `fields` list and then wrote the Field through
+ * `custom.record_write`, which stamps `data_class = 'record'`. A field stored
+ * as a plain record is second-class — invisible to the delete rules and to the
+ * formula-dependency check. So "approve" produced a column the store could not
+ * fully see, while the unattended path produced a real one. An approval that
+ * lands something different from what it approved is the defect, however
+ * cheerful the sentence afterwards.
  *
- * WHAT IS WRITTEN IS WHAT WAS SHOWN. The declaration the server built travels
- * whole (`recordChangeApproval.ts`) and is handed to the doors unchanged. This
- * module derives nothing about a field's shape: the store's own expansion
- * already produced a document its guards accept, and a second derivation in
- * the browser is how an approved change quietly becomes a different one.
+ * THE FIX IS TO STOP RE-IMPLEMENTING THE WRITE. A wait is a row in the one
+ * approval queue now (`custom.record`, `data_class = 'work_approval'`, filed by
+ * the store's own `field_propose` / `record_propose`), and
+ * `custom.work_approval_decide` is the door that decides it: on yes it APPLIES
+ * the change in the decision's own transaction, through `custom.field_declare`
+ * for a column and `custom.record_write` for rows, as the person deciding, with
+ * every guard and validator and their name on the history row. That is the same
+ * door the unattended path runs — so the resumed write and a direct write are
+ * the same bytes, which is the only way this card can honestly claim to apply
+ * "what you were shown".
  *
- * A FIELD IS TWO WRITES, IN THIS ORDER — the table has to declare the key
- * before any definition for it is accepted (REC-1 / FLD-8, `custom._field_shape_guard`),
- * which is exactly the order the server's own unattended path uses. The table's
- * `fields` list is read back first, so approving a column somebody already
- * added says so instead of writing it twice.
+ * THE DECLINE IS A DECISION, NOT A DISMISSAL. It goes through the same door, so
+ * the queue row reads `declined` with who decided and when, and the wait stops
+ * being pending for everyone — not just for whoever had this conversation open.
+ *
+ * WHY THE BROWSER AND NOT THE SERVER. The `records` tool has already answered by
+ * the time anybody sees a card: the agent's call is over and there is no
+ * suspended call to unblock. The decision is therefore taken here, as the
+ * signed-in person, which is also the honest reading of the policy — the
+ * organization asks A PERSON before an agent changes a table that already
+ * existed, and the person is the one deciding.
  *
  * NOTHING FAILS SILENTLY. Every refusal comes back in the store's own words.
  */
 
-import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
-import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { recordsDataSource } from "@ai-matrx/records-ui";
 
 import { createClient } from "@/utils/supabase/client";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   UNIFIED_DATA_CAMPAIGN,
   UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE,
@@ -49,16 +57,32 @@ export type ApplyApprovedOutcome =
   | { status: "refused"; detail: string };
 
 /**
+ * `custom.work_approval_decide`'s answer, as the door builds it.
+ *
+ * `message` is the store's own outcome sentence — "Rate card is now a column on
+ * Crews", "Applied. 20 records are now in Crews" — so the card never composes a
+ * second description of what just happened.
+ */
+interface DecisionAnswer {
+  approval_id?: string | null;
+  state?: string | null;
+  applied?: boolean | null;
+  field_id?: string | null;
+  record_ids?: string[] | null;
+  message?: string | null;
+}
+
+/**
  * THE switch, and there is only one: does this ORGANIZATION keep its data in
  * the unified record store? Asked before any door, exactly as every other
  * served reach into the store asks it.
  */
-async function clientOrRefusal(): Promise<
-  { client: RecordsClient } | { refused: string }
+async function reachOrRefusal(): Promise<
+  | { organizationId: string; rpc: ReturnType<typeof recordsDataSource>["rpc"] }
+  | { refused: string }
 > {
   const state = getStoreSingleton()?.getState();
   const organizationId = state ? selectActiveOrganizationId(state) : null;
-  const userId = state ? selectUserId(state) : null;
   if (!(await UNIFIED_DATA_CAMPAIGN.enabled(organizationId))) {
     return { refused: UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE };
   }
@@ -67,96 +91,93 @@ async function clientOrRefusal(): Promise<
       refused: "No organization is active, so the record store cannot be reached.",
     };
   }
-  return {
-    client: createRecordsClient({
-      dataSource: recordsDataSource(createClient()),
-      actor: personActor(userId),
-      organizationId,
-    }),
-  };
+  // THE DOOR IS CALLED DIRECTLY RATHER THAN THROUGH `createRecordsClient`, and
+  // that is deliberate rather than a shortcut: the package checks every call
+  // against the door list GENERATED at its last publish, and `work_approval_*`
+  // landed after it. A published package is the right home for this once it
+  // ships; until then, going through the same data source with the same schema
+  // is the honest option — the alternative is a card that refuses a live door
+  // because a build artefact has not caught up.
+  return { organizationId, rpc: recordsDataSource(createClient()).rpc };
 }
 
-function declaredKeys(document: unknown): string[] {
-  const fields = (document as Record<string, unknown> | null)?.["fields"];
-  if (!Array.isArray(fields)) return [];
-  return fields
-    .map((entry) =>
-      entry !== null && typeof entry === "object"
-        ? (entry as Record<string, unknown>)["name"]
-        : null,
-    )
-    .filter((name): name is string => typeof name === "string" && name.length > 0);
+/** What a door refusal reads like when the person, not a log, is the audience. */
+function sentenceFor(error: unknown): string {
+  const named = error as { message?: string; hint?: string } | null;
+  const message = named?.message?.trim();
+  const hint = named?.hint?.trim();
+  if (message && hint) return `${message} ${hint}`;
+  return message || "The store refused the change and gave no reason.";
+}
+
+/** Approve or decline exactly the change a person was shown. */
+async function decide(
+  wait: RecordChangeWait,
+  approve: boolean,
+): Promise<ApplyApprovedOutcome> {
+  if (!wait.approvalId) {
+    // A WAIT WITH NO QUEUE ROW IS NOT DECIDABLE, and saying so is the whole
+    // point of this branch. A table an organization on `always_ask` refused
+    // has no subject to have been filed against, so there is nothing to
+    // approve — the person creates it themselves, and the card says that
+    // rather than offering a button that would write something nobody filed.
+    return {
+      status: "refused",
+      detail:
+        "There is nothing queued to approve for this change, so it cannot be " +
+        "applied from here — the answer in the conversation says what was asked " +
+        "for and what to do.",
+    };
+  }
+  const reached = await reachOrRefusal();
+  if ("refused" in reached) return { status: "refused", detail: reached.refused };
+
+  const response = (await reached.rpc(
+    "work_approval_decide",
+    {
+      p_organization_id: reached.organizationId,
+      p_approval_id: wait.approvalId,
+      p_approve: approve,
+      p_note: null,
+    },
+    { schema: "custom" },
+  )) as { data?: DecisionAnswer | null; error?: unknown };
+
+  if (response.error) {
+    return { status: "refused", detail: sentenceFor(response.error) };
+  }
+  const answer = (response.data ?? {}) as DecisionAnswer;
+  const outcome = answer.message?.trim();
+  if (!approve) {
+    return {
+      status: "applied",
+      recordId: null,
+      detail: `${outcome || "The change was not made."} ${wait.policy.howToChange}`,
+    };
+  }
+  return {
+    status: "applied",
+    recordId: answer.field_id ?? answer.record_ids?.[0] ?? null,
+    detail: outcome || "The change was applied.",
+  };
 }
 
 /** Apply exactly the change a person approved. */
 export async function applyApprovedRecordChange(
   wait: RecordChangeWait,
 ): Promise<ApplyApprovedOutcome> {
-  const resolved = await clientOrRefusal();
-  if ("refused" in resolved) return { status: "refused", detail: resolved.refused };
-  const { client } = resolved;
+  return decide(wait, true);
+}
 
-  if (wait.change.change === "table") {
-    const homeId = wait.change.homeId;
-    if (!homeId) {
-      return {
-        status: "refused",
-        detail:
-          "This table has nowhere to live — the proposal named no home — so it cannot be created from here.",
-      };
-    }
-    const declared = await client.tableDeclare({
-      spec: wait.change.spec,
-      homeId,
-    });
-    if (!declared.ok) return { status: "refused", detail: declared.error.message };
-    return {
-      status: "applied",
-      recordId: declared.data,
-      detail: `${wait.change.name} is now a table in this organization.`,
-    };
-  }
-
-  const { tableId, key, label, declaration } = wait.change;
-
-  const table = await client.recordRead({ record_id: tableId });
-  if (!table.ok) return { status: "refused", detail: table.error.message };
-
-  const keys = declaredKeys(table.data.document);
-  if (keys.includes(key)) {
-    return {
-      status: "already",
-      detail: `${label} is already a column on this table.`,
-    };
-  }
-
-  // 1 — the TABLE declares the key. Nothing accepts a definition before this.
-  const told = await client.recordUpdate({
-    record_id: tableId,
-    patch: { fields: [...keys.map((name) => ({ name })), { name: key }] },
-  });
-  if (!told.ok) return { status: "refused", detail: told.error.message };
-
-  // 2 — the definition itself, as a Field record (REC-25), written exactly as
-  //     the store built it.
-  const kernel = await client.fieldKernelId();
-  if (!kernel.ok) return { status: "refused", detail: kernel.error.message };
-
-  const written = await client.recordWrite({
-    table_id: kernel.data,
-    data: declaration as Parameters<RecordsClient["recordWrite"]>[0]["data"],
-  });
-  if (!written.ok) return { status: "refused", detail: written.error.message };
-
-  return {
-    status: "applied",
-    recordId: written.data,
-    detail: `${label} is now a column on this table.`,
-  };
+/** Record the decision when the person keeps things as they are. */
+export async function declineRecordChange(
+  wait: RecordChangeWait,
+): Promise<ApplyApprovedOutcome> {
+  return decide(wait, false);
 }
 
 /**
- * What the table a pending column belongs to is CALLED.
+ * What the table a pending change belongs to is CALLED.
  *
  * A card that says "a column on table 8f3c…" names a record a person cannot
  * recognise, which is the same dead end in a smaller font. The store's own read
@@ -164,11 +185,15 @@ export async function applyApprovedRecordChange(
  * nothing about the table rather than showing an id.
  */
 export async function tableNameFor(tableId: string): Promise<string | null> {
-  const resolved = await clientOrRefusal();
-  if ("refused" in resolved) return null;
-  const read = await resolved.client.recordRead({ record_id: tableId });
-  if (!read.ok) return null;
-  const document = read.data.document as Record<string, unknown> | null;
+  const reached = await reachOrRefusal();
+  if ("refused" in reached) return null;
+  const response = (await reached.rpc(
+    "read_record",
+    { p_organization_id: reached.organizationId, p_record_id: tableId },
+    { schema: "custom" },
+  )) as { data?: Record<string, unknown> | null; error?: unknown };
+  if (response.error) return null;
+  const document = response.data ?? null;
   const name = document?.["name"] ?? document?.["label_singular"];
   return typeof name === "string" && name.trim() ? name : null;
 }

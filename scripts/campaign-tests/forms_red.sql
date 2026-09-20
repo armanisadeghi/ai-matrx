@@ -78,6 +78,30 @@ begin
   return next;
 end; $fn$;
 
+-- ── RED 5: the mute is not read, so "switched off" is a screen telling a lie ──────
+create or replace function custom.agg_subscriptions(p_organization_id uuid,
+                                                    p_saved_view_id uuid default null,
+                                                    p_cadence text default null)
+returns table(rule_id uuid, saved_view_id uuid, cadence text, schedule text,
+              channel text, recipient_user_id uuid, event_key text, name text)
+language sql stable set search_path to 'pg_catalog' as $fn$
+  select r.id,
+         nullif(r.data -> 'subscription' ->> 'saved_view_id', '')::uuid,
+         coalesce(r.data -> 'subscription' ->> 'cadence', 'immediate'),
+         nullif(r.data -> 'subscription' ->> 'schedule', ''),
+         coalesce(r.data -> 'subscription' ->> 'channel', 'in_app'),
+         nullif(r.data -> 'subscription' ->> 'recipient_user_id', '')::uuid,
+         coalesce(r.data -> 'subscription' ->> 'event_key', 'records.changed'),
+         coalesce(r.data ->> 'name', 'Subscription')
+    from custom.record r
+   where r.organization_id = p_organization_id
+     and r.data_class = 'rule' and r.deleted_at is null and r.data ? 'subscription'
+     -- THE DEFECT: no `muted` arm. Every consumer reads through here, so a subscription
+     -- somebody switched off keeps firing on every cadence and every channel.
+     and (p_saved_view_id is null or (r.data -> 'subscription' ->> 'saved_view_id')::uuid = p_saved_view_id)
+     and (p_cadence is null or coalesce(r.data -> 'subscription' ->> 'cadence', 'immediate') = p_cadence);
+$fn$;
+
 do $red$
 declare
   c_admin   constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
@@ -172,7 +196,25 @@ begin
   v_red := v_red + 1;
   raise notice 'RED 4 IS RED — a valid subscription Rule written the only way a client had before custom.rule_declare is invisible to DOOR-18 (% rows), so nobody is ever told', v_n;
 
-  raise notice '% of 4 blocks are RED (the defect each one asserts is gone from the live store)', v_red;
+  -- ── RED 5: a muted subscription still fires
+  perform set_config('request.jwt.claims', c_admin_j, true);
+  perform set_config('role', 'authenticated', true);
+  v_bad_rule := custom.rule_declare(v_org, jsonb_build_object(
+      'name', 'muted and still shouting', 'kind', 'predicate',
+      'uses', jsonb_build_array('membership'), 'scope_table_id', v_table,
+      'applies_to_types', '[]'::jsonb, 'expr', jsonb_build_object('const', true),
+      'subscription', jsonb_build_object('saved_view_id', null, 'cadence', 'immediate',
+                                         'channel', 'in_app', 'recipient_user_id', c_admin,
+                                         'event_key', 'custom.form.response', 'muted', true)));
+  perform set_config('role', v_boss, true);
+  select count(*) into v_n from custom.agg_subscriptions(v_org, null, 'immediate') s where s.rule_id = v_bad_rule;
+  if v_n <> 1 then
+    raise exception 'RED 5 IS NOT RED: the old agg_subscriptions dropped a muted subscription';
+  end if;
+  v_red := v_red + 1;
+  raise notice 'RED 5 IS RED — a subscription somebody switched off is still live to DOOR-18''s reader (% row), so "off" would be a screen telling a lie', v_n;
+
+  raise notice '% of 5 blocks are RED (the defect each one asserts is gone from the live store)', v_red;
 end;
 $red$;
 

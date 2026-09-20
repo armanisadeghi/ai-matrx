@@ -346,9 +346,13 @@ describe("leg 2 — one refused source never reports the batch as stopped", () =
     const text = (container.textContent ?? "").replace(/\s+/g, " ");
     expect(text).not.toMatch(/Stopped —/);
     expect(text).not.toMatch(/Nothing after it will run/);
-    // All seventeen were READ (the refused one included — it reached its own
-    // outcome), and the lane says so rather than implying a halt.
-    expect(text).toMatch(/17 of 17 sources read/);
+    // All seventeen REACHED AN OUTCOME, and sixteen of them were read. The
+    // headline used to fold those two facts into one number and print "17 of
+    // 17 sources read" — which, when five of seven sources died on 2026-09-20,
+    // became "7 of 7 sources read" over five rows saying nothing was added
+    // (twelfth cold walk, D2). A read and a failure are different outcomes and
+    // the line says both. What it must still never do is imply a halt.
+    expect(text).toMatch(/16 of 17 read · 1 failed/);
     expect(text).toMatch(/other 16 are unaffected/i);
   });
 
@@ -482,7 +486,9 @@ describe("leg 3 — every outcome the server sent gets its own honest row", () =
     // whole account of a source that was read.
     expect(text).not.toMatch(/Nothing after it will run/);
     expect(text).not.toMatch(/Stopped —/);
-    expect(text).toContain("4 sources were read");
+    // Same rule on the settled panel: the failure is not counted as a read
+    // (twelfth cold walk, D2). Three of these four were read; one failed.
+    expect(text).toContain("3 of 4 read · 1 failed");
   });
 
   it("renders the refusal, whole, on the source's own row", async () => {

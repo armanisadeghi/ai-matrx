@@ -611,7 +611,27 @@ export function EntityListPage<TRow>({
             : "pt-2",
         )}
       >
-        {typeof notice === "function" ? notice(list) : notice}
+        {/*
+          🚨 A TALL NOTICE MUST NEVER SQUEEZE THE TABLE OUT OF REACH. `notice`
+          sits in this shrink-0 zone — `flex-shrink: 0`, so flexbox never
+          compresses it — and until this wrapper existed, a surface whose
+          notice was a real dashboard (stat tiles + two fixed-height charts,
+          `LibraryMetricsHeader` on `/libraries/[id]`) could push the tabs and
+          toolbar down until only ~24px of viewport remained for the table
+          below: `flex-1 min-h-0` on the scroll body (below) can shrink all
+          the way to that sliver, and the sliver renders a table row with
+          nothing to scroll it into view. THIS wrapper caps the notice at a
+          fraction of the viewport and scrolls it independently, so the tabs,
+          the toolbar and a workable slice of the table are ALWAYS below it,
+          no matter how tall a surface's notice content is. Every existing
+          `notice` (assist strips, paste boxes, banners) is far under this
+          cap, so nothing about them changes.
+        */}
+        {notice && (
+          <div className="max-h-[42vh] overflow-y-auto">
+            {typeof notice === "function" ? notice(list) : notice}
+          </div>
+        )}
         <div className="flex min-w-0 items-center justify-between gap-1.5 sm:gap-2">
           <div className="min-w-0 flex-1 sm:flex-none">
             <EntityScopeTabs
@@ -733,7 +753,13 @@ export function EntityListPage<TRow>({
         ) : null}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
+      {/*
+        A guaranteed floor, not `min-h-0`: this area still SHRINKS (so its own
+        `overflow-y-auto` still engages once content exceeds it), but never
+        below a workable slice of table — the second half of the guard above.
+        `min-h-0` alone trusts every notice to stay small; this trusts nothing.
+      */}
+      <div className="min-h-[16rem] flex-1 overflow-y-auto px-3 pb-4">
         {view === "table" ? (
           <EntityListTable
             config={config}

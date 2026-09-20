@@ -28,7 +28,7 @@
   ],
   "portRange": {
     "min": 3001,
-    "max": 3023
+    "max": 3024
   },
   "reserved": [
     {
@@ -59,7 +59,8 @@
     "AGENT-BLANK": 3020,
     "UI-HONEST": 3021,
     "UI-SHIP": 3022,
-    "RELATION-DECLARE": 3023
+    "RELATION-DECLARE": 3023,
+    "WORK-DOORS": 3017
   },
   "noDevServer": {
     "W6-DOCS": "Proves its contract through the document pipeline, not a browser.",

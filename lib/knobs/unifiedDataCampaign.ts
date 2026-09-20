@@ -42,6 +42,22 @@
 // a value, never a toggle (repo law,
 // `common-docs/policies/env-vars-are-values-not-toggles.md`).
 
+// SERVER-SAFE ON PURPOSE (lane RSC-FIX, 19 September). This module is
+// imported by genuine Server Components — e.g. every server page under
+// `features/hr/settings/` reaches it through `features/organizations/service.ts` →
+// `features/organizations/service/organizationStoreContents.ts` — so it must
+// carry NO React. The one thing here that needed React (the mount hook a
+// campaign route and the sidebar use) lives in the sibling
+// `useUnifiedDataCampaignGate.ts`, a `"use client"` file, because importing
+// `useEffect`/`useState` into a Server Component's module graph is a hard
+// Next.js error, not a warning: on 19 September that exact import, added to
+// this file at line 117 by dac8fe4b48, reached every page in the app the
+// moment c8ded1d430 gave `organizationStoreContents.ts` a reason to import
+// this module, and the whole app 500'd. Nothing else moved: `enabled()`,
+// the registry re-exports and `UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE` are
+// unchanged, and the hook is not re-exported from here — re-exporting it
+// would put React right back on every server import path this split exists
+// to protect. See `lib/knobs/__tests__/lib-knobs-is-server-safe.test.ts`.
 import { createClient } from "@/utils/supabase/client";
 import {
     CAMPAIGN_MODULES,
@@ -114,77 +130,13 @@ export const UNIFIED_DATA_CAMPAIGN = {
     enabled,
 } as const;
 
-import { useEffect, useState } from "react";
-import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
-
-export interface UnifiedDataCampaignGate {
-    /** `null` until the switch has answered. A screen shows nothing yet, not "off". */
-    on: boolean | null;
-    /** Why it is on or off, in a sentence a person can act on. */
-    because: string;
-}
-
-/**
- * THE gate a campaign route and the sidebar mount. The caller passes the
- * reader itself (`UNIFIED_DATA_CAMPAIGN.enabled`), which is how the release
- * guard `pnpm check:campaign-entry-points` can see, in the calling file's own
- * source, that the switch is read there.
- *
- * It re-asks whenever the organization changes. The sidebar used to read the
- * active organization ONCE, in a mount effect, before the organization had
- * loaded — so it always asked about `null`, always got OFF, and the Records
- * entry never appeared however the switch was set (the verdict's third finding).
- */
-export function useUnifiedDataCampaign(args: {
-    organizationId: string | null | undefined;
-    organizationState?: OrganizationState;
-    storeSwitch: (organizationId: string | null | undefined) => Promise<boolean>;
-}): UnifiedDataCampaignGate {
-    const { organizationId, organizationState, storeSwitch } = args;
-    const [answer, setAnswer] = useState<{ organizationId: string | null; on: boolean } | null>(null);
-
-    useEffect(() => {
-        if (organizationState && organizationState !== "ready") return;
-        let cancelled = false;
-        const asked = organizationId ?? null;
-        void storeSwitch(asked).then((on) => {
-            if (!cancelled) setAnswer({ organizationId: asked, on });
-        });
-        return () => {
-            cancelled = true;
-        };
-        // The reader is a module function passed by the caller; re-running on its
-        // identity would re-ask the door on every render for no new fact.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [organizationId, organizationState]);
-
-    if (organizationState && organizationState !== "ready") {
-        return { on: null, because: "Waiting for organization context." };
-    }
-    if (!organizationId) {
-        return {
-            on: false,
-            because:
-                "No organization is picked yet, so there are no tables to show. " +
-                "Pick one from the organization menu and this answers for that organization.",
-        };
-    }
-    // An answer about a DIFFERENT organization is not an answer about this one.
-    if (answer === null || answer.organizationId !== organizationId) {
-        return { on: null, because: "Reading this organization's switch." };
-    }
-    return {
-        on: answer.on,
-        because: answer.on
-            ? "This organization keeps its data in the unified record store."
-            : UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE,
-    };
-}
-
 /**
  * What a campaign route says when the switch is off. Never a blank screen, and
  * never a knob key at a person: it names the one thing that turns it on, in the
  * words of the screen that does it.
+ *
+ * Pure string — safe from here, unlike the hook that used to sit below it.
+ * `useUnifiedDataCampaignGate.ts` imports this one constant.
  */
 export const UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE =
     "This organization does not keep its data in the unified record store yet, so there are no " +
