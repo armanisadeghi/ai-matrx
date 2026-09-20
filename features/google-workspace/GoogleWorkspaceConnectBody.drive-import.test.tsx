@@ -15,6 +15,7 @@ const mockEmit = jest.fn();
 const mockDispose = jest.fn();
 const mockDispatch = jest.fn();
 const mockPick = jest.fn();
+const mockToastError = jest.fn();
 
 jest.mock("@/providers/google-provider/LazyGoogleAPIProvider", () => ({
   LazyGoogleAPIProvider: ({ children }: { children: ReactNode }) => children,
@@ -92,7 +93,11 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => mockDispatch,
 }));
 jest.mock("@/lib/toast", () => ({
-  toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
+  toast: {
+    success: jest.fn(),
+    error: (message: string) => mockToastError(message),
+    info: jest.fn(),
+  },
   recordToast: { success: jest.fn(), info: jest.fn() },
 }));
 
@@ -198,12 +203,15 @@ test("retains Google successes for delivery-only retry and retries only failed i
   expect(container.textContent).toContain("image selection failed");
 
   await act(async () => button("Retry attaching").click());
-  expect(mockEmit).toHaveBeenLastCalledWith(
+  expect(mockEmit).toHaveBeenCalledWith(
     "google-callback",
     expect.objectContaining({
       files: [expect.objectContaining({ fileId: "canonical-a" })],
     }),
   );
+  expect(mockEmit).toHaveBeenLastCalledWith("google-callback", {
+    type: "window-close",
+  });
   expect(mockImportBatch).toHaveBeenCalledTimes(3);
   expect(mockDispose).toHaveBeenCalledWith("google-callback");
   expect(onClose).toHaveBeenCalledTimes(1);
@@ -244,6 +252,9 @@ test("a close request while Google Picker is open cancels before the first impor
   );
 
   expect(mockImportBatch).not.toHaveBeenCalled();
+  expect(mockEmit).toHaveBeenLastCalledWith("google-callback", {
+    type: "window-close",
+  });
   expect(mockDispose).toHaveBeenCalledWith("google-callback");
   expect(onClose).toHaveBeenCalledTimes(1);
 });
@@ -298,6 +309,9 @@ test("a close request waits for the active import and delivery before disposing 
     }),
   );
   expect(mockImportBatch).toHaveBeenCalledTimes(1);
+  expect(mockEmit).toHaveBeenLastCalledWith("google-callback", {
+    type: "window-close",
+  });
   expect(mockDispose).toHaveBeenCalledWith("google-callback");
   expect(onClose).toHaveBeenCalledTimes(1);
 });
@@ -361,4 +375,126 @@ test("a Google collision retry uses the confirmed Matrx basename without re-pick
       ],
     }),
   );
+});
+
+test("terminal settlement is single-flight across Keep, delivery completion, and close", async () => {
+  const importedA = canonical("canonical-a", "a.png");
+  let driveDeliveryCalls = 0;
+  let releaseDelivery!: () => void;
+  const releaseWindowCloses: Array<() => void> = [];
+  mockPick.mockResolvedValue([
+    { id: "provider-a", name: "a.png", mimeType: "image/png" },
+  ]);
+  mockImportBatch.mockResolvedValue({ files: [importedA], failures: [] });
+  mockEmit.mockImplementation(
+    (_callbackGroupId: string, event: { type: string }) => {
+      if (event.type === "drive-imported") {
+        driveDeliveryCalls += 1;
+        if (driveDeliveryCalls === 1) {
+          return Promise.reject(new Error("consumer unavailable"));
+        }
+        return new Promise<void>((resolve) => {
+          releaseDelivery = resolve;
+        });
+      }
+      return new Promise<void>((resolve) => {
+        releaseWindowCloses.push(resolve);
+      });
+    },
+  );
+  let closeRequest: (() => void) | null = null;
+  const onClose = jest.fn();
+
+  await act(async () => {
+    root.render(
+      <GoogleWorkspaceConnectBody
+        key="first-session"
+        mode="drive-import"
+        callbackGroupId="google-callback"
+        importDestinationFolderPath="My Files/Imports"
+        multiple
+        onClose={onClose}
+        registerCloseRequest={(request) => {
+          closeRequest = request;
+        }}
+      />,
+    );
+  });
+  await act(async () => button("Choose files to import").click());
+
+  act(() => button("Retry attaching").click());
+  act(() => {
+    button("Keep in Files and close").click();
+    button("Keep in Files and close").click();
+  });
+
+  const windowCloseCalls = () =>
+    mockEmit.mock.calls.filter((call) => call[1]?.type === "window-close");
+  expect(windowCloseCalls()).toHaveLength(1);
+  expect(mockDispose).not.toHaveBeenCalled();
+  expect(onClose).not.toHaveBeenCalled();
+
+  await act(async () => {
+    releaseDelivery();
+    await Promise.resolve();
+  });
+  act(() => closeRequest?.());
+  await act(async () => {
+    for (const release of releaseWindowCloses) release();
+  });
+  expect(windowCloseCalls()).toHaveLength(1);
+  expect(mockDispose).toHaveBeenCalledTimes(1);
+  expect(mockDispose).toHaveBeenCalledWith("google-callback");
+  expect(onClose).toHaveBeenCalledTimes(1);
+
+  let nextCloseRequest: (() => void) | null = null;
+  const nextOnClose = jest.fn();
+  mockEmit.mockResolvedValue(undefined);
+  await act(async () => {
+    root.render(
+      <GoogleWorkspaceConnectBody
+        key="next-session"
+        mode="drive-import"
+        callbackGroupId="google-callback-next"
+        importDestinationFolderPath="My Files/Imports"
+        multiple
+        onClose={nextOnClose}
+        registerCloseRequest={(request) => {
+          nextCloseRequest = request;
+        }}
+      />,
+    );
+  });
+  await act(async () => nextCloseRequest?.());
+
+  expect(windowCloseCalls()).toHaveLength(2);
+  expect(mockDispose).toHaveBeenCalledTimes(2);
+  expect(mockDispose).toHaveBeenLastCalledWith("google-callback-next");
+  expect(nextOnClose).toHaveBeenCalledTimes(1);
+});
+
+test("terminal callback failure is reported after final cleanup", async () => {
+  mockEmit.mockRejectedValue(new Error("close callback unavailable"));
+  let closeRequest: (() => void) | null = null;
+  const onClose = jest.fn();
+
+  await act(async () => {
+    root.render(
+      <GoogleWorkspaceConnectBody
+        mode="drive-import"
+        callbackGroupId="google-callback"
+        importDestinationFolderPath="My Files/Imports"
+        multiple
+        onClose={onClose}
+        registerCloseRequest={(request) => {
+          closeRequest = request;
+        }}
+      />,
+    );
+  });
+  await act(async () => closeRequest?.());
+
+  expect(mockToastError).toHaveBeenCalledWith("close callback unavailable");
+  expect(mockDispose).toHaveBeenCalledTimes(1);
+  expect(onClose).toHaveBeenCalledTimes(1);
 });

@@ -33,5 +33,3 @@ alter table custom.anon_form drop constraint if exists anon_form_audience_is_a_c
 alter table custom.anon_form drop column if exists capture_opened_by;
 alter table custom.anon_form drop column if exists capture_opened_at;
 alter table custom.anon_form drop column if exists audience;
-
-alter table custom.anon_replay drop column if exists sheet_id;

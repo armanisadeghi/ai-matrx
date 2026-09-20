@@ -156,6 +156,10 @@ function GoogleWorkspaceConnectBodyContent({
     new Map(),
   );
   const driveCancelRequestedRef = useRef(false);
+  // A terminal request owns this body instance until it settles. Every close
+  // source joins the same promise; a newly mounted import session gets a fresh
+  // latch, so late work from this session cannot close the next one.
+  const driveTerminalSettlementRef = useRef<Promise<void> | null>(null);
   /**
    * 🚨 F-74 — a fresh pick hands its Record straight to the open control (F-69,
    * `openRecord.tsx`). The inventory row `files` renders from
@@ -254,9 +258,18 @@ function GoogleWorkspaceConnectBodyContent({
     [dispatch],
   );
 
-  const finishDriveImport = useCallback(() => {
-    disposeGoogleConnectCallbackGroup(callbackGroupId);
-    onClose();
+  const finishDriveImport = useCallback((): Promise<void> => {
+    if (driveTerminalSettlementRef.current) {
+      return driveTerminalSettlementRef.current;
+    }
+    const settlement = closeGoogleWorkspaceConnect(
+      callbackGroupId,
+      onClose,
+    ).catch((cause: unknown) => {
+      toast.error(extractErrorMessage(cause));
+    });
+    driveTerminalSettlementRef.current = settlement;
+    return settlement;
   }, [callbackGroupId, onClose]);
 
   const deliverDriveImports = useCallback(
@@ -318,7 +331,7 @@ function GoogleWorkspaceConnectBodyContent({
         driveRetainedRef.current.size === 0 &&
         (driveCancelRequestedRef.current || remainingFailures.length === 0)
       ) {
-        finishDriveImport();
+        await finishDriveImport();
       }
     },
     [
@@ -368,16 +381,17 @@ function GoogleWorkspaceConnectBodyContent({
     void deliverDriveImports([...driveRetainedRef.current.values()]).then(
       (acknowledged) => {
         if (acknowledged && driveRetainedRef.current.size === 0) {
-          finishDriveImport();
+          return finishDriveImport();
         }
+        return undefined;
       },
     );
 
   const requestClose = useCallback(() => {
     driveCancelRequestedRef.current = true;
     if (busy === "pick" || driveRetainedRef.current.size > 0) return;
-    void closeGoogleWorkspaceConnect(callbackGroupId, onClose);
-  }, [busy, callbackGroupId, onClose]);
+    void finishDriveImport();
+  }, [busy, finishDriveImport]);
 
   useEffect(() => {
     registerCloseRequest?.(requestClose);
@@ -455,7 +469,7 @@ function GoogleWorkspaceConnectBodyContent({
       if (mode === "drive-import") {
         const picked = await pickGoogleDriveFiles(accessToken, { multiple });
         if (driveCancelRequestedRef.current) {
-          finishDriveImport();
+          await finishDriveImport();
           return;
         }
         if (!picked?.length) return;
@@ -724,7 +738,7 @@ function GoogleWorkspaceConnectBodyContent({
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={finishDriveImport}
+                    onClick={() => void finishDriveImport()}
                   >
                     Keep in Files and close
                   </Button>
