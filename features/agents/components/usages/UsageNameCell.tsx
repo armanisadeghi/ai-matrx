@@ -53,36 +53,33 @@ export function UsageNameCell({ row }: { row: UnifiedUsageRow }) {
     const key = row.verdict.mandate_key;
     const href = mandateHref(key, isSuperAdmin);
     return (
-      <div className="flex min-w-0 flex-col gap-0.5" onClick={(event) => event.stopPropagation()}>
-        <span className="group/entity-ref flex min-w-0 items-center gap-1">
-          <button
-            type="button"
-            className="truncate text-left font-mono text-[11px] font-medium text-foreground hover:underline"
-            title="Open this mandate in place"
-            onClick={() =>
-              openMandateWindow({
-                initialMandateKey: key,
-                mandateKeys: [key],
-                surfaceName: "agent-find-usages",
-                initialView: isSuperAdmin ? "admin" : "yours",
-              })
-            }
-          >
-            {key}
-          </button>
-          <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={CONTROL_CLASS}
-            title="Open this mandate in a new tab"
-            aria-label="Open this mandate in a new tab"
-            data-tap-target
-          >
-            <ExternalLink className="h-3 w-3" aria-hidden />
-          </a>
-        </span>
-        {row.subtitle ? <Subtitle row={row} /> : null}
+      <div className="flex min-w-0 items-center gap-1" onClick={(event) => event.stopPropagation()}>
+        <button
+          type="button"
+          className="truncate text-left font-mono text-[11px] font-medium text-foreground hover:underline"
+          title="Open this mandate in place"
+          onClick={() =>
+            openMandateWindow({
+              initialMandateKey: key,
+              mandateKeys: [key],
+              surfaceName: "agent-find-usages",
+              initialView: isSuperAdmin ? "admin" : "yours",
+            })
+          }
+        >
+          {key}
+        </button>
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={CONTROL_CLASS}
+          title="Open this mandate in a new tab"
+          aria-label="Open this mandate in a new tab"
+          data-tap-target
+        >
+          <ExternalLink className="h-3 w-3" aria-hidden />
+        </a>
       </div>
     );
   }
@@ -96,7 +93,7 @@ export function UsageNameCell({ row }: { row: UnifiedUsageRow }) {
         : usage.usageId;
     if (token && id) {
       return (
-        <div className="flex min-w-0 flex-col gap-0.5" onClick={(event) => event.stopPropagation()}>
+        <div className="min-w-0" onClick={(event) => event.stopPropagation()}>
           <EntityRef
             token={token}
             id={id}
@@ -121,55 +118,20 @@ export function UsageNameCell({ row }: { row: UnifiedUsageRow }) {
               ) : undefined
             }
           />
-          {row.subtitle ? <Subtitle row={row} /> : null}
         </div>
       );
     }
     // No route exists in this app for this usage type (surface bindings, SMS
     // lines, comparisons, code usages) — the name is honest text, not a link.
     return (
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <span
-          className="truncate text-sm text-foreground"
-          title={`${row.name} — this kind of usage has no page of its own in the app yet, so there is nothing to open.`}
-        >
-          {row.name}
-        </span>
-        {row.subtitle ? <Subtitle row={row} /> : null}
-      </div>
-    );
-  }
-
-  // Aggregate — other people's usages, counted, never named (theirs to move).
-  return (
-    <div className="flex min-w-0 flex-col gap-0.5">
-      <span className="truncate text-sm text-muted-foreground">{row.name}</span>
-      {row.subtitle ? <Subtitle row={row} /> : null}
-    </div>
-  );
-}
-
-function Subtitle({ row }: { row: UnifiedUsageRow }) {
-  const verdict = row.verdict;
-  // A mandate reached through a duplicate names that duplicate as a door too.
-  if (row.kind === "mandate" && verdict && verdict.lineage_path && verdict.lineage_path.length > 1) {
-    return (
-      <span className="flex min-w-0 items-center gap-1 text-[10px] text-muted-foreground">
-        <span className="shrink-0">
-          {verdict.holder_kind === "binding" ? `${verdict.principal.kind} binding` : "default"} · on duplicate
-        </span>
-        <EntityRef
-          token="agent"
-          id={verdict.agent_id}
-          name={verdict.agent_name}
-          href={agentHref(verdict.agent_id, null)}
-          openInNewTab
-          alwaysShowActions
-          showIcon={false}
-          labelClassName="text-[10px]"
-        />
+      <span
+        className="truncate text-sm text-foreground"
+        title={`${row.name} — this kind of usage has no page of its own in the app yet, so there is nothing to open.`}
+      >
+        {row.name}
       </span>
     );
   }
-  return <span className="truncate text-[10px] text-muted-foreground">{row.subtitle}</span>;
+
+  return <span className="truncate text-sm text-muted-foreground">{row.name}</span>;
 }
