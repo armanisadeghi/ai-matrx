@@ -8534,6 +8534,18 @@
             "default": null,
             "title": "Url"
           },
+          "source_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Key"
+          },
           "title": {
             "anyOf": [
               {
