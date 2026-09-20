@@ -33,9 +33,12 @@
 //     explained itself. `saidWhy` comes back false and the surface says so
 //     plainly and offers the way out, rather than showing a failure with a hole
 //     in the middle of it.
-//   * a failure sentence ALWAYS carries a remedy (law #4: nothing fails
-//     silently, and a stand-in without a remedy is a dead end wearing a
-//     sentence).
+//   * a failure sentence that explained NOTHING carries a remedy (law #4:
+//     nothing fails silently, and a stand-in without a remedy is a dead end
+//     wearing a sentence). A sentence that DID explain itself is left exactly
+//     as the server wrote it: the copy-protection refusal already names four
+//     lawful ways in, and bolting "try it again" onto it would tell a person
+//     to re-run a read that cannot ever succeed.
 //
 // It is deliberately in `lib/progress/` beside `honestSummary.ts`, which owns
 // the other half of this rule (`DEFAULT_FAILURE_REMEDY`, and "a reassurance may
@@ -113,8 +116,11 @@ export function humanFailureSentence(
   const saidWhy = hadClassToken ? mentionsACause(stripped) : true;
 
   const body = stripped || noReason;
+  // THE REMEDY GOES WHERE THERE IS NOTHING ELSE. A sentence that named its own
+  // cause — and usually its own way forward with it — is the server's account
+  // and is not edited.
   const text = saidWhy
-    ? withRemedy(body, remedy)
+    ? endSentence(body)
     : withRemedy(`${body} ${noReason}`.replace(/\s+/g, " ").trim(), remedy);
   return { text, saidWhy };
 }

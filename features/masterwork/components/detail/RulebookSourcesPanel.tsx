@@ -79,6 +79,7 @@ import { WebpageResourcePickerCore } from "@/features/resource-manager/resource-
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import type { paths } from "@/types/python-generated/api-types";
 import { cn } from "@/lib/utils";
+import { humanFailureSentence } from "@/lib/progress/failureSentence";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import {
   countRulesForSource,
@@ -262,10 +263,72 @@ export function visibleLaunchKeys(
   ]);
 }
 
-/** The `resources` array `POST /masterworks/ingest-dump` is handed. */
+/**
+ * THE SOURCE IDENTITY the SERVER will give an attached resource
+ * (`aidream/services/distillation/source_identity.py`): an uploaded file is
+ * `file:<id>` whether it arrives as `{token: "file", id}` or as the file lane's
+ * own `file_id`; any other entity is `entity:<token>:<id>`.
+ *
+ * Mirrored here — the one thing this client needs in order to know that an
+ * attached source and a kept Source are the SAME material.
+ */
+export function serverSourceKeyForEntity(token: string, id: string): string {
+  const t = (token ?? "").trim().toLowerCase();
+  const value = (id ?? "").trim();
+  return t === "file" ? `file:${value}` : `entity:${t}:${value}`;
+}
+
+/** The same, for a staged URL: scheme + host case and one trailing slash. */
+export function serverSourceKeyForUrl(url: string): string {
+  const raw = (url ?? "").trim();
+  if (!raw) return "";
+  const parts = raw.split("://");
+  let normalized = raw;
+  if (parts.length > 1) {
+    const [scheme, ...restParts] = parts;
+    const rest = restParts.join("://");
+    const slash = rest.indexOf("/");
+    const host = slash === -1 ? rest : rest.slice(0, slash);
+    const tail = slash === -1 ? "" : rest.slice(slash);
+    normalized = `${(scheme ?? "").toLowerCase()}://${host.toLowerCase()}${tail}`;
+  }
+  if (normalized.endsWith("/") && (normalized.match(/\//g)?.length ?? 0) > 2) {
+    normalized = normalized.slice(0, -1);
+  }
+  return normalized;
+}
+
+/**
+ * The `resources` array `POST /masterworks/ingest-dump` is handed.
+ *
+ * 🚨 ONE RESOURCE PER SOURCE — THE CONTRADICTORY PAIR IS IMPOSSIBLE HERE, NOT
+ * PAPERED OVER DOWNSTREAM (twelfth cold walk, 2026-09-20, D3).
+ *
+ * A Rulebook's dump is the union of what somebody POINTED us at (the attached
+ * edges and staged URLs) and what we HAVE (every kept Source). Those two sets
+ * OVERLAP the moment a file has been read once: `file_ingest.py` claims
+ * `file:<id>` as a kept Source before it spends, so the second press sent the
+ * same photo twice — once as `entity/file/<id>`, once as `kept_source`/
+ * `file:<id>`. The fan-out ran it twice, charged twice, and the two attempts
+ * disagreed, which is how one panel came to show
+ * `04_field_sheet_photo.png: … failed` and `04_field_sheet_photo.png: 3 draft
+ * rule(s) added.` beside each other over thirteen rows for six files.
+ *
+ * So a kept Source whose identity is already attached is DROPPED here. The
+ * attached edge wins because it is the one the person can see and remove.
+ */
 export function dumpResources(
   input: DumpPayloadInput,
 ): Record<string, unknown>[] {
+  const attachedSourceKeys = new Set<string>([
+    ...input.sourceLinks.map((l) =>
+      serverSourceKeyForEntity(l.token, l.resourceId),
+    ),
+    ...input.stagedUrls.map((s) => serverSourceKeyForUrl(s.url)),
+  ]);
+  const keptRows = input.keptRows.filter(
+    (k) => !attachedSourceKeys.has((k.source_key ?? "").trim()),
+  );
   return [
     ...input.sourceLinks.map((l) => ({
       kind: "entity",
@@ -287,7 +350,7 @@ export function dumpResources(
     // here and the same email distilled by any other door are ONE
     // source: the re-distill guard fires and the rules point back to the
     // stored passage.
-    ...input.keptRows.map((k) => ({
+    ...keptRows.map((k) => ({
       kind: "kept_source",
       source_key: k.source_key,
       ...(k.label ? { title: k.label } : {}),
@@ -770,6 +833,14 @@ export function RulebookSourcesPanel({
     if (run.running) setOpen(true);
   }, [run.running]);
 
+  /**
+   * The exact `resources` array the last launch sent, index-aligned with the
+   * outcome rows the server returns. A ref, not state: nothing renders from
+   * it, and a reload legitimately loses it (a rejoined run's retry falls back
+   * to rebuilding from the outcome row itself).
+   */
+  const launchedResourcesRef = useRef<Record<string, unknown>[] | null>(null);
+
   const launchDump = async () => {
     // Gated on the button, which names the missing precondition instead of
     // sitting dark (it was `disabled` with nothing said) and instead of
@@ -791,6 +862,11 @@ export function RulebookSourcesPanel({
       keptRows,
       titleFor: (token, id, label) => titleFor({ token, id, label }),
     });
+    // What was actually sent, kept so a failed row can be re-read ON ITS OWN.
+    // `dump_ingest.py` writes `outcomes[index]`, so the summary's `resources`
+    // are index-aligned with this array — the only way to rebuild a
+    // `kept_source` row's request, which carries no `source_key` on the wire.
+    launchedResourcesRef.current = resources;
     await run.launch(
       {
         rulebook_id: rulebook.id,
@@ -800,6 +876,42 @@ export function RulebookSourcesPanel({
       resources.length === 1 ? "1 source" : `${resources.length} sources`,
     );
   };
+
+  /**
+   * 🚨 THE WAY OUT OF ONE FAILED SOURCE (twelfth cold walk, D2). A failed row
+   * used to offer nothing, so the only remedy was pressing the whole pile
+   * again — paying a second time for every source that had already worked.
+   * This reads exactly the one source the person pressed and nothing else.
+   *
+   * No confirmation dialog: the row it appears on ADDED NOTHING, so there is
+   * nothing to lose or duplicate, and putting friction in front of the way out
+   * of a failure is the defect wearing a seatbelt.
+   */
+  const retryOneSource = useCallback(
+    (index: number, res: DumpResourceOutcome): void => {
+      const resource =
+        launchedResourcesRef.current?.[index] ?? retryResourceFor(res);
+      if (!resource) {
+        // Structurally unreachable — `DumpOutcomes` draws no control when
+        // `retryResourceFor` returns null and nothing was remembered — but a
+        // dead click is never the answer if it ever is reachable.
+        toast.info(
+          "This source can only be read again with the rest of the pile — press “Turn this into rules” once more.",
+        );
+        return;
+      }
+      launchedResourcesRef.current = [resource];
+      void run.launch(
+        {
+          rulebook_id: rulebook.id,
+          resources: [resource],
+          mode: "instructional",
+        },
+        "1 source",
+      );
+    },
+    [run, rulebook.id],
+  );
 
   /**
    * 🚨 WHAT EACH PART OF A SOURCE GAVE (W42). Read off the live rules, so a
@@ -1182,7 +1294,15 @@ export function RulebookSourcesPanel({
                   counts the server sent, a clock that moves every second, and
                   the server's labouring sentence when its heartbeat cannot
                   land — never a motionless spinner. */}
-              <RunStages run={run} />
+              {/* 🚨 THE SETTLED ACCOUNT WINS, AND IT IS THE ONLY ONE ON SCREEN
+                  (twelfth cold walk, 2026-09-20, D3). While a run is in
+                  flight the live per-resource list IS the account. The moment
+                  the run settles, `DumpOutcomes` below holds the server's
+                  final row per source — and rendering BOTH put two lists of
+                  the same sources in one panel, each free to say something
+                  different, inside two nested bordered boxes. One source, one
+                  outcome, one box. */}
+              {run.result ? null : <RunStages run={run} />}
               {run.running ? (
                 <DurableRunInterruption interruption={run.interruption} />
               ) : null}
@@ -1202,7 +1322,12 @@ export function RulebookSourcesPanel({
               </DurableRunFailure>
 
               {run.result ? (
-                <DumpOutcomes summary={run.result} onDone={() => run.reset()} />
+                <DumpOutcomes
+                  summary={run.result}
+                  onDone={() => run.reset()}
+                  onRetryOne={retryOneSource}
+                  retrying={run.running}
+                />
               ) : null}
 
               {!run.result ? (
@@ -1751,21 +1876,77 @@ function outcomeState(res: DumpResourceOutcome): string {
   }
 }
 
-/** The server's explanation for that state, whole, or null when it sent none. */
+/**
+ * The server's explanation for that state, whole, or null when it sent none.
+ *
+ * 🚨 A FAILURE'S SENTENCE GOES THROUGH `humanFailureSentence` (twelfth cold
+ * walk, D2): the class name comes out, "the server did not say why" goes in
+ * when that is the truth, and the way out is always attached. The `note` and
+ * `alreadyDistilled` sentences are the distiller's own prose about a source it
+ * READ — nothing to sanitise, and rewriting them would be the lie in the other
+ * direction.
+ */
 function outcomeExplanation(res: DumpResourceOutcome): string | null {
-  return res.note ?? res.alreadyDistilled ?? res.error ?? null;
+  if (res.note) return res.note;
+  if (res.alreadyDistilled) return res.alreadyDistilled;
+  if (outcomeTone(res) === "refused") {
+    return humanFailureSentence(res.error, {
+      remedy: "Read this one again below \u2014 nothing else is affected.",
+    }).text;
+  }
+  return res.error ?? null;
+}
+
+/**
+ * The resource payload that would re-run THIS source on its own, or null when
+ * the row does not carry enough to rebuild one — a `kept_source` outcome comes
+ * back without its `source_key`. Null means NO BUTTON: a control that cannot
+ * do what it says is worse than its absence.
+ */
+export function retryResourceFor(
+  res: DumpResourceOutcome,
+): Record<string, unknown> | null {
+  if (res.kind === "entity" && res.token && res.id) {
+    return {
+      kind: "entity",
+      token: res.token,
+      id: res.id,
+      ...(res.title ? { title: res.title } : {}),
+    };
+  }
+  if (res.kind === "url" && res.url) {
+    return {
+      kind: "url",
+      url: res.url,
+      ...(res.title ? { title: res.title } : {}),
+    };
+  }
+  return null;
 }
 
 export function DumpOutcomes({
   summary,
   onDone,
+  onRetryOne,
+  retrying,
 }: {
   summary: DumpSummary;
   onDone: () => void;
+  /**
+   * Read ONE source again. Handed the index of the row, because the server's
+   * `resources` array is index-aligned with the payload the client launched
+   * (`dump_ingest.py` writes `outcomes[index]`), which is the only way to
+   * rebuild a `kept_source` row's request. Absent on a surface that cannot
+   * relaunch — and then no retry control is drawn at all.
+   */
+  onRetryOne?: (index: number, res: DumpResourceOutcome) => void;
+  /** A relaunch is already in flight; every retry control waits it out. */
+  retrying?: boolean;
 }) {
   const failed = summary.resources.filter(
     (r) => outcomeTone(r) === "refused",
   ).length;
+  const read = summary.resources.length - failed;
   return (
     <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
       <p className="text-sm text-foreground">
@@ -1776,15 +1957,18 @@ export function DumpOutcomes({
           : ""}
         .
       </p>
-      {/* A FAN-OUT'S ACCOUNT OF ITSELF. Every source ran; this says how many
-          did not work, and never that the run stopped — the sentence that was
-          printed over fifteen files that had all been read (§9.1). */}
+      {/* 🚨 A FAILURE IS NEVER COUNTED AS A READ (twelfth cold walk, D2 — a
+          headline reading "7 of 7 sources read" over five rows that said
+          nothing was added). This sentence said "N sources were read" with N
+          being every row including the failures. It now says both numbers, and
+          still never says the run stopped — every source in a fan-out ran
+          (§9.1). */}
       {failed > 0 ? (
         <p className="text-xs text-muted-foreground">
-          {summary.resources.length} sources were read.{" "}
+          {read} of {summary.resources.length} read · {failed} failed.{" "}
           {failed === 1
-            ? "One of them could not be used — its reason is on its own row below."
-            : `${failed} of them could not be used — each reason is on its own row below.`}
+            ? "The one that failed says why on its own row below, with a way to read it again."
+            : "Each one that failed says why on its own row below, with a way to read it again."}
         </p>
       ) : null}
       <ul className="space-y-1">
@@ -1841,6 +2025,27 @@ export function DumpOutcomes({
                   <p className="mt-0.5 whitespace-pre-line break-words text-muted-foreground">
                     {outcomeExplanation(res)}
                   </p>
+                ) : null}
+                {/* 🚨 THE REMEDY IS A CONTROL, NOT A SENTENCE ABOUT ONE. A
+                    failed row used to end at its explanation, so the only way
+                    back was to press the whole pile again and pay for every
+                    source that had already worked. This reads THIS source
+                    again and nothing else. It is drawn only when the row
+                    carries enough to rebuild its own request — a control that
+                    cannot do what it says is worse than its absence. */}
+                {onRetryOne && outcomeTone(res) === "refused" ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-1 h-7"
+                    disabled={retrying}
+                    onClick={() => onRetryOne(i, res)}
+                  >
+                    {retrying ? (
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    ) : null}
+                    Read this one again
+                  </Button>
                 ) : null}
               </div>
             </li>

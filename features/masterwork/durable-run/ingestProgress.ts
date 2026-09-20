@@ -38,6 +38,7 @@
 // chunksTotal` is a count the server sent; nothing here computes a percentage
 // of a run, because nothing here knows one.
 
+import { humanFailureSentence } from "@/lib/progress/failureSentence";
 import type { ProgressStep } from "@/lib/progress/honestSummary";
 
 /** One thing the run was handed, as it is rendered. */
@@ -46,10 +47,31 @@ export interface ResourceProgress extends ProgressStep {
   id: string;
   /** The second line: what happened to it, in the server's words. */
   detail?: string;
+  /**
+   * 🚨 WHICH SOURCE THIS ROW IS ABOUT — the same identity the server uses
+   * (`aidream/services/distillation/source_identity.py`), so two slots that
+   * are the same material can be RECOGNISED as the same material.
+   *
+   * Null when the event carried nothing to identify it by (a placeholder for
+   * a resource that has not reported yet, a `kept_source` row whose identity
+   * is its `source_key` and which the progress event does not carry). A row
+   * with no identity is never collapsed into another — see
+   * `visibleResources`.
+   */
+  sourceId?: string;
+  /**
+   * Fold order. Not rendered; it is how `visibleResources` knows which of two
+   * reports about ONE source is the later one.
+   */
+  seq: number;
 }
 
 export interface IngestProgress {
-  /** A row per resource, in the order the server numbered them. */
+  /**
+   * A SLOT per resource the server numbered, index-aligned with the payload
+   * the client launched. Render `visibleResources(progress)`, never this —
+   * two slots can be one source (see `visibleResources`).
+   */
   resources: ResourceProgress[];
   /** Chunks of the source being read right now, when the lane said so. */
   chunksDone: number;
@@ -69,6 +91,8 @@ export interface IngestProgress {
    * the run has been alive.
    */
   lastProgressAt: number | null;
+  /** How many resource reports this state has folded. Fold order, nothing more. */
+  seq: number;
 }
 
 export const EMPTY_INGEST_PROGRESS: IngestProgress = {
@@ -78,6 +102,7 @@ export const EMPTY_INGEST_PROGRESS: IngestProgress = {
   rulesSoFar: -1,
   labouring: null,
   lastProgressAt: null,
+  seq: 0,
 };
 
 /** The dump lane's per-resource steps, mapped to the state each one means. */
@@ -109,6 +134,50 @@ function labelFor(data: Record<string, unknown>, index: number, count: number | 
     str(data.url) ??
     `Source ${index + 1}${count ? ` of ${count}` : ""}`
   );
+}
+
+/**
+ * THE SOURCE THIS EVENT IS ABOUT, in the server's own identity scheme
+ * (`aidream/services/distillation/source_identity.py`): an uploaded file is
+ * `file:<id>` whether it arrives as `{token: "file", id}` or as a file lane's
+ * own `file_id`, any other entity is `entity:<token>:<id>`, and a URL is
+ * itself with only the never-meaningful differences normalised.
+ *
+ * Null when the event carries nothing to identify by — a `kept_source` row is
+ * identified by its `source_key`, which `MasterworkDumpProgressData` does not
+ * carry. A null identity NEVER collapses into anything.
+ */
+function sourceIdOf(data: Record<string, unknown>): string | null {
+  const url = str(data.url);
+  if (url) return normalizeUrlKey(url);
+  const token = str(data.token);
+  const id = str(data.id);
+  if (token && id) {
+    return token.toLowerCase() === "file"
+      ? `file:${id}`
+      : `entity:${token.toLowerCase()}:${id}`;
+  }
+  return null;
+}
+
+/** `https://EXAMPLE.com/a` and `https://example.com/a/` are one source. */
+function normalizeUrlKey(raw: string): string {
+  const value = raw.trim();
+  if (!value) return "";
+  const parts = value.split("://");
+  let normalized = value;
+  if (parts.length > 1) {
+    const [scheme, ...restParts] = parts;
+    const rest = restParts.join("://");
+    const slash = rest.indexOf("/");
+    const host = slash === -1 ? rest : rest.slice(0, slash);
+    const tail = slash === -1 ? "" : rest.slice(slash);
+    normalized = `${(scheme ?? "").toLowerCase()}://${host.toLowerCase()}${tail}`;
+  }
+  if (normalized.endsWith("/") && (normalized.match(/\//g)?.length ?? 0) > 2) {
+    normalized = normalized.slice(0, -1);
+  }
+  return normalized;
 }
 
 /**
@@ -156,6 +225,7 @@ export function reduceIngestProgress(
           id: `resource-${resources.length}`,
           label: `Source ${resources.length + 1} of ${count}`,
           status: "waiting",
+          seq: 0,
         });
       }
     }
@@ -164,9 +234,10 @@ export function reduceIngestProgress(
         id: `resource-${resources.length}`,
         label: `Source ${resources.length + 1}`,
         status: "waiting",
+        seq: 0,
       });
     }
-    const detail =
+    const rawDetail =
       status === "running"
         ? undefined
         : // The server's own sentence wins when it sent one. An unrecognized
@@ -174,16 +245,29 @@ export function reduceIngestProgress(
           // the row never renders with a state and nothing beside it, which
           // reads as silence about what happened.
           (str(data.message) ?? (known ? undefined : step ?? undefined));
+    // 🚨 A RAW EXCEPTION CLASS NAME NEVER REACHES THE ROW. The twelfth cold
+    // walk read `failed (AppError). Nothing was added to your Rulebook.` five
+    // times; `humanFailureSentence` removes the class name, says out loud when
+    // the server named no cause, and always attaches the way out.
+    const detail =
+      status === "failed" && rawDetail !== undefined
+        ? humanFailureSentence(rawDetail).text
+        : rawDetail;
+    const nextSeq = state.seq + 1;
+    const sourceId = sourceIdOf(data);
     resources[index] = {
       id: `resource-${index}`,
       label: labelFor(data, index, count),
       status,
+      seq: nextSeq,
+      ...(sourceId ? { sourceId } : {}),
       ...(detail ? { detail } : {}),
     };
     const total = num(data.rules_added_total);
     return {
       ...state,
       resources,
+      seq: nextSeq,
       rulesSoFar: total !== null ? total : state.rulesSoFar,
       // Work landed, so the server is plainly reaching us again.
       labouring: null,
@@ -223,6 +307,55 @@ export function reduceIngestProgress(
 }
 
 /**
+ * 🚨 ONE ROW PER SOURCE. THE SETTLED ONE WINS. A CONTRADICTORY PAIR IS
+ * IMPOSSIBLE BY CONSTRUCTION.
+ *
+ * ## The defect (twelfth cold walk, 2026-09-20, D3)
+ *
+ * The file-pile panel showed, in one list, at the same moment:
+ *
+ *   ⚠ 04_field_sheet_photo.png: Reading “04_field_sheet_photo.png” failed …
+ *   ✓ 04_field_sheet_photo.png: 3 draft rule(s) added.
+ *
+ * — thirteen rows for six attached files. Both rows were real: the panel sends
+ * the attached file edges AND every kept Source, and a file that has been read
+ * once IS a kept Source (`file_ingest.py` claims `file:<id>` before it spends),
+ * so the same material was launched twice under two identities and the two
+ * attempts genuinely disagreed. The payload-level fix is in
+ * `RulebookSourcesPanel.dumpResources`, which now sends one resource per
+ * source. This is the render-level backstop for everything that fix cannot
+ * reach: a replayed resume event, a lane that stages its own payload, a future
+ * server that renumbers.
+ *
+ * The rule, in one line: among slots that are the SAME source, the LAST report
+ * the server made is the truth, and it is the only row shown. A slot with no
+ * identity (a placeholder, a `kept_source` whose identity the progress event
+ * does not carry) is never collapsed into anything.
+ */
+export function visibleResources(
+  progress: IngestProgress,
+): readonly ResourceProgress[] {
+  const latestSeqBySource = new Map<string, number>();
+  for (const row of progress.resources) {
+    if (!row.sourceId) continue;
+    const seen = latestSeqBySource.get(row.sourceId);
+    if (seen === undefined || row.seq > seen) {
+      latestSeqBySource.set(row.sourceId, row.seq);
+    }
+  }
+  const taken = new Set<string>();
+  return progress.resources.filter((row) => {
+    if (!row.sourceId) return true;
+    if (row.seq !== latestSeqBySource.get(row.sourceId)) return false;
+    // Two slots reporting the same source in the same fold (structurally
+    // impossible today, since `seq` increments per event) still yield one row.
+    if (taken.has(row.sourceId)) return false;
+    taken.add(row.sourceId);
+    return true;
+  });
+}
+
+/**
  * How long it has been since anything MOVED, in ms — as distinct from how long
  * the run has been alive. Null when nothing has moved yet.
  */
@@ -240,12 +373,24 @@ export function sinceLastProgressMs(
  * sent. Null when the server has not said enough to make a true sentence.
  */
 export function progressHeadline(progress: IngestProgress): string | null {
-  const done = progress.resources.filter(
-    (row) => row.status === "completed" || row.status === "failed",
-  ).length;
+  const rows = visibleResources(progress);
+  const read = rows.filter((row) => row.status === "completed").length;
+  const failed = rows.filter((row) => row.status === "failed").length;
   const parts: string[] = [];
-  if (progress.resources.length > 1) {
-    parts.push(`${done} of ${progress.resources.length} sources read`);
+  // 🚨 A HEADLINE NEVER COUNTS A FAILURE AS A READ (twelfth cold walk, D2).
+  //
+  // This line said `${done} of ${total} sources read` where `done` counted
+  // `completed` AND `failed` together, so a pile in which five of seven
+  // sources died was headed **"7 of 7 sources read"** directly above five rows
+  // saying nothing was added. The count was the only number on the screen and
+  // it was false. A read and a failure are different outcomes and the headline
+  // now says both, in that order.
+  if (rows.length > 1) {
+    parts.push(
+      failed > 0
+        ? `${read} of ${rows.length} read · ${failed} failed`
+        : `${read} of ${rows.length} sources read`,
+    );
   }
   // 🚨 A DENOMINATOR NOBODY CAN COUNT TOWARD IS WORSE THAN NO LINE.
   //

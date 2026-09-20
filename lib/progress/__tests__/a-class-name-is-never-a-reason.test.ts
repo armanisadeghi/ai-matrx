@@ -38,7 +38,7 @@ describe("a class name is never a reason", () => {
     expect(text).toContain("did not say why");
   });
 
-  it("always attaches a remedy — a failure without one is a dead end", () => {
+  it("attaches a remedy whenever it gave the person nothing to act on", () => {
     for (const raw of [
       WALK_12_D2,
       "AppError",
@@ -46,9 +46,24 @@ describe("a class name is never a reason", () => {
       null,
       "Reading “book.epub” failed (ValueError).",
     ]) {
-      const { text } = humanFailureSentence(raw);
+      const { text, saidWhy } = humanFailureSentence(raw);
+      expect(saidWhy).toBe(false);
       expect(text.toLowerCase()).toContain("try it again");
     }
+  });
+
+  it("never bolts “try it again” onto a refusal that can never succeed", () => {
+    // The copy-protection refusal names four lawful ways in. Telling the
+    // person to re-run the read instead would be a remedy that is a lie.
+    const drm =
+      "“protected-novel.epub” is copy-protected (Adobe ADEPT), so we cannot read it — and we will never strip a publisher’s protection. What does work: a DRM-free copy of the same book.";
+    const { text, saidWhy } = humanFailureSentence(drm);
+    expect(saidWhy).toBe(true);
+    expect(text.toLowerCase()).not.toContain("try it again");
+    expect(text).toContain("DRM-free copy");
+    // And a parenthesised phrase that is NOT an exception class survives
+    // untouched — "(Adobe ADEPT)" names the scheme, which is the point.
+    expect(text).toContain("(Adobe ADEPT)");
   });
 
   it("leaves a REAL cause exactly as the server wrote it", () => {
