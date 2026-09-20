@@ -120,6 +120,8 @@ side panel) and the `/detail/[type]/[id]` route. Presentation is the person's
 
 ## Change Log
 
+- 2026-09-20 — **V-29 NEW-1: an alias is SETTLED by the window it opens — a false alarm is a lie too.** `?panels=files:<id>` is a legacy alias (its hydrator opens `cloudFilesWindow`), but that window registers its address under the canonical key `cloud_files`. `UrlPanelManager` compared RAW token keys, so `files` could never be satisfied by the registration it had itself caused: live on `/tasks?panels=files:root` the Cloud Files window was on screen at t=10 s, the address was rewritten to `cloud_files:cloudFilesWindow,files:root` — two tokens for ONE window, with the pasted instance id surviving only in the ghost half — and at t≈45 s the V-28 recovery layer screamed, filed a `url-panel-unopened` capture (no `errorTierRules` entry ⇒ `DEFAULT_TIER` red ⇒ durable `public.system_error`) and toasted *"This link names a window this build could not open: files."* about a window plainly in front of the person. Every visit and every reload re-ran it. **Fixed at the class:** alias → canonical mappings are declared once in the new `url-sync/panelKeyAliases.ts`, and every key comparison in the manager runs through `resolveCanonicalTypeKey(...)` — the unresolved map is KEYED canonically (so it is emptied by the canonical registration), the observed-entries sweep and `withUnresolvedTokens`' already-represented check both canonicalise, and the map's value carries the pasted `tokenKey` so the sentence a person reads still names what THEY typed, never a canonical key they have never seen. **Census:** all 49 hydrator keys were resolved against their dispatched `overlayId` and that overlay's registry `urlSync.key` — `files` → `cloud_files` is the ONLY alias; `agent` and `detail` dispatch through their own primitives (`initInstanceUIState`, `openDetailSingleton`) and their windows register under their own keys; the other 46 match exactly. The dev-only integrity check in `initUrlHydration.ts` now also refuses a declared alias with no hydrator, one whose canonical target is not a registry `urlSync.key`, and one whose key a window already publishes. F-127's contract is untouched: a token that never registers still keeps its address and still alarms. Guard: two new cases in `__tests__/deepLinkedWindowKeepsItsAddress.test.tsx`, RED on the prior bytes (`Expected: "cloud_files:cloudFilesWindow"` / `Received: "cloud_files:cloudFilesWindow,files:root"`, plus the toast and capture that should not exist), GREEN after — and the second case proves an alias whose window never registers still keeps `files:root` and is announced by the pasted key.
+
 - 2026-09-20 — **V-28 NEW-5: a `?panels=` deep link may never erase itself, and a wall clock is never the signal that a window failed.** `?panels=brand_channel:<brandId>` failed to open in four of eight fresh loads, and every failing load printed `UrlPanelManager`'s 5000 ms "hydrated but never registered a urlSync entry" warning and then DELETED its own token from the address bar in silence; the `site_tracking` twin failed once too, and one run opened the panel and still lost the address. The cause was not the `urlSyncId` prop F-121 fixed: it was the 5000 ms deadline racing a lazily-compiled window. `initUrlHydration()` is fully synchronous (no `await`, no `import()`), so hydrator registration is never late — what is late is the WindowPanel mount, which sits behind `lazyOverlay(() => import(…))`, i.e. a Turbopack chunk COMPILE in dev. Measured on the preview box (Next reports `cpus: 1`): a warm `/api/dev-login` round trip took **10.3 s inside Next**, a cold `/tasks` took **21.2 s**, and a cold `/` compile did not finish inside the preview watchdog's **300 s** window. A 5 s deadline cannot survive that, and prod chunk fetches only make it rarer, never durable. **Three changes, at the class:** (1) the manager now waits on the REGISTRATION SIGNAL — a key leaves the unresolved set the moment its window's `urlSyncSlice` entry appears, however long that took — and never gates a URL write on it; (2) an unresolved token is written back into `?panels=` VERBATIM, so the address survives the wait, survives a never-opening window, and survives a token with no hydrator at all (which used to be stripped just as silently); (3) when the deadline does expire the manager screams in console, files a `url-panel-unopened` capture (new `CapturedErrorSource`, red tier → `public.system_error`) and puts an honest sentence on screen through `toastErrorAlreadyCaptured`: *"This link names a window this build could not open: <key>. The link is unchanged in your address bar — reload to try again, or report it if it keeps failing."* The deadline itself is now ONE number shared with the only other subsystem waiting on the same physical event, `diagnostics/overlayRenderWatchdog.ts` — `constants/lazyWindowMount.ts` (`LAZY_WINDOW_MOUNT_DEADLINE_MS`, 12 s prod / 45 s dev). Guard: `__tests__/deepLinkedWindowKeepsItsAddress.test.tsx`, RED on the prior bytes (3 of its 4 cases fail: the late registration loses the token, the never-registering window loses the token, the hydrator-less token loses the token), GREEN after, with the fourth case proving a window that actually CLOSES still drops its token.
 
 - 2026-09-19 — **U-M2: `siteTrackingWindow` — one site's Tag Manager tracking, and the frame is only a frame.** `windows/marketing/SiteTrackingWindow.tsx` wraps the canonical `SiteTrackingPanel` `variant="bare"`; a bespoke body here would be a second renderer of a VERDICT, and the part a copy always drops is the container-versus-live-page reconciliation — so the copy would print a confident grade of a container the site does not use. It shipped WITH its `registry/windowRegistryMetadata.ts` row and a `urlSync.key: "site_tracking"` hydrator (`?panels=site_tracking:<siteId>`, `urlSyncId={siteId}` on the panel), so it is in neither baseline in `window-address-baseline.json` — new debt is refused, and this window adds none. Guard: `__tests__/siteTrackingWindowWrapsThePanel.test.tsx` asserts the canonical component is the body, that `variant="bare"` is passed, and that the panel is overlay-bound and carries its subject in the address.
@@ -670,6 +672,34 @@ therefore:
 Only a window that actually registered and then UNregistered — i.e. was closed —
 removes its token. Guard:
 [`__tests__/deepLinkedWindowKeepsItsAddress.test.tsx`](./__tests__/deepLinkedWindowKeepsItsAddress.test.tsx).
+
+#### An ALIAS is settled by the window it opens (V-29 NEW-1)
+
+Some `?panels=` keys are not a window's own address: `files` is the legacy key
+whose hydrator opens `cloudFilesWindow`, and that window publishes `cloud_files`.
+Those mappings are declared in ONE place,
+[`url-sync/panelKeyAliases.ts`](./url-sync/panelKeyAliases.ts), and every key
+comparison in `UrlPanelManager` — the unresolved set, the "already represented"
+check in `withUnresolvedTokens`, and the observed-entry sweep — runs on
+`resolveCanonicalTypeKey(...)`. So an alias leaves the unresolved set the moment
+its canonical key registers, and the address carries the canonical token ONCE.
+Only the sentence a person reads names the key they pasted.
+
+Before this, keys were compared raw: `?panels=files:root` opened the Cloud Files
+window, rewrote the address to `cloud_files:cloudFilesWindow,files:root` — two
+tokens for one window — and then, at the deadline, screamed, toasted *"this
+build could not open: files"* and filed a RED-tier durable `url-panel-unopened`
+capture about a window that was on screen, on every visit and every reload. Law
+4 inverted: a false alarm is a lie too.
+
+The census is small and closed: of 49 registered hydrators, `files` is the only
+key whose target window declares a different `urlSync.key`; `agent` and `detail`
+open through their own primitives and register under their own keys; every other
+hydrator key equals its window's registry key. The dev-only integrity check at
+the end of `initUrlHydration.ts` now refuses an alias with no hydrator, an alias
+whose canonical target is not a registry `urlSync.key`, and an alias key that a
+window already publishes. **A never-registering token still keeps its address and
+still alarms** — the contract above is untouched.
 
 ### 🚨 A WINDOW WITH NO ADDRESS CANNOT BE REACHED — the address census (R35)
 

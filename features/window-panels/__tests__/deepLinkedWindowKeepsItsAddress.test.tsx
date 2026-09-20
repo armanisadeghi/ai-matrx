@@ -175,6 +175,77 @@ describe("a deep-linked window keeps its address", () => {
     expect(captureErrorMock).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * V-29 NEW-1 — AN ALIAS IS SETTLED BY THE WINDOW IT OPENS.
+   *
+   * `?panels=files:<id>` is a legacy alias: its hydrator opens
+   * `cloudFilesWindow`, which registers its address under the CANONICAL key
+   * `cloud_files`. Before this, the manager compared raw token keys only, so
+   * `files` never left the unresolved set: the address was rewritten to carry
+   * BOTH tokens for the one window, and at the deadline the person was told on
+   * screen — in a red-tier durable incident — that a window plainly on their
+   * screen could not be opened. Law 4 inverted: a false alarm is a lie too.
+   *
+   * RED on the previous bytes:
+   *   ● an aliased deep link is settled by the window its alias opens
+   *     expect(received).toBe(expected)
+   *     Expected: "cloud_files:cloudFilesWindow"
+   *     Received: "cloud_files:cloudFilesWindow,files:root"
+   *     …and then: expect(jest.fn()).not.toHaveBeenCalled()
+   *     Received has 1 call: "This link names a window this build could not
+   *     open: files. …"  (toast), plus one captureError.
+   */
+  it("settles an aliased deep link with the window its alias opens, once, and says nothing", () => {
+    registerPanelHydrator("files", () => undefined);
+    mockUrl = "/tasks?panels=files:root";
+
+    render();
+
+    // The window opens under its own canonical key — exactly what the real
+    // CloudFilesWindow does (`urlSync.key = "cloud_files"`).
+    act(() => {
+      store.dispatch(
+        registerSyncEntry({
+          typeKey: "cloud_files",
+          instanceId: "cloudFilesWindow",
+        }),
+      );
+    });
+
+    // ONE token for ONE window, and it is the canonical one.
+    expect(panelsParam()).toBe("cloud_files:cloudFilesWindow");
+
+    // Long past the notice deadline: a window that is on screen is never
+    // announced as unopenable.
+    act(() => {
+      jest.advanceTimersByTime(120_000);
+    });
+
+    expect(panelsParam()).toBe("cloud_files:cloudFilesWindow");
+    expect(toastMock).not.toHaveBeenCalled();
+    expect(captureErrorMock).not.toHaveBeenCalled();
+  });
+
+  it("still keeps and announces an aliased token whose window never registers, naming what was pasted", () => {
+    registerPanelHydrator("files", () => undefined);
+    mockUrl = "/tasks?panels=files:root";
+
+    render();
+
+    act(() => {
+      jest.advanceTimersByTime(120_000);
+    });
+
+    // F-127's contract is untouched: the address survives the failure…
+    expect(panelsParam()).toBe("files:root");
+    // …and the notice names the key the person actually pasted, not the
+    // canonical key they have never seen.
+    expect(toastMock).toHaveBeenCalledTimes(1);
+    expect(toastMock.mock.calls[0][0]).toContain("files");
+    expect(toastMock.mock.calls[0][0]).not.toContain("cloud_files");
+    expect(captureErrorMock).toHaveBeenCalledTimes(1);
+  });
+
   it("still removes a token when its window actually closes", () => {
     registerPanelHydrator("notes", () => undefined);
     mockUrl = "/tasks?panels=notes:default";

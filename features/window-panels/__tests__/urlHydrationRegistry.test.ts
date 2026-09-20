@@ -3,6 +3,7 @@ import type { OverlayId } from "@/features/overlays/catalogue";
 import { ALL_WINDOW_STATIC_METADATA } from "../registry/windowRegistryMetadata";
 import { initUrlHydration } from "../url-sync/initUrlHydration";
 import { getHydrator } from "../url-sync/UrlPanelRegistry";
+import { PANEL_KEY_ALIASES } from "../url-sync/panelKeyAliases";
 
 function hydrate(typeKey: string, instanceId: string) {
   const dispatch = jest.fn();
@@ -28,6 +29,37 @@ describe("URL hydration registry", () => {
     });
 
     expect(missing).toEqual([]);
+  });
+
+  /**
+   * V-29 NEW-1. An alias only works if BOTH halves are real: the alias key must
+   * open something, and its canonical target must be a key some window actually
+   * publishes. A dangling alias sends `UrlPanelManager` to wait on a key nothing
+   * will ever register — which is exactly the red-tier false alarm the alias map
+   * exists to end.
+   */
+  it("declares only aliases that are real in both directions", () => {
+    const registryKeys = new Set(
+      ALL_WINDOW_STATIC_METADATA.map((entry) => entry.urlSync?.key).filter(
+        (key): key is string => Boolean(key),
+      ),
+    );
+
+    const broken = Object.entries(PANEL_KEY_ALIASES).flatMap(
+      ([aliasKey, canonicalKey]) => {
+        const problems: string[] = [];
+        if (!getHydrator(aliasKey)) problems.push("alias has no hydrator");
+        if (!registryKeys.has(canonicalKey)) {
+          problems.push(`no window publishes urlSync.key "${canonicalKey}"`);
+        }
+        if (registryKeys.has(aliasKey)) {
+          problems.push("a window already publishes the alias key itself");
+        }
+        return problems.map((problem) => `${aliasKey}: ${problem}`);
+      },
+    );
+
+    expect(broken).toEqual([]);
   });
 
   it("hydrates Creator Hub with an optional tab", () => {

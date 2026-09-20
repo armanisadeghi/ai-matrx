@@ -9,6 +9,7 @@ import {
   selectIsUrlHydrated,
 } from "@/lib/redux/slices/urlSyncSlice";
 import { getHydrator } from "./UrlPanelRegistry";
+import { resolveCanonicalTypeKey } from "./panelKeyAliases";
 import { initUrlHydration } from "./initUrlHydration";
 import { LAZY_WINDOW_MOUNT_DEADLINE_MS } from "../constants/lazyWindowMount";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
@@ -91,6 +92,10 @@ export function mergeManagedPanelParams(
  *
  * A token is skipped when its type key is already represented by a live entry,
  * so a late registration replaces the placeholder instead of duplicating it.
+ * The comparison is CANONICAL (`resolveCanonicalTypeKey`): a legacy alias such
+ * as `files` is represented by the `cloud_files` token its own window
+ * published, so the address carries the canonical token once and never both
+ * (V-29 NEW-1).
  */
 export function withUnresolvedTokens(
   managedParam: string,
@@ -100,10 +105,12 @@ export function withUnresolvedTokens(
 
   const managedTokens = managedParam.split(",").filter(Boolean);
   const represented = new Set(
-    managedTokens.map((token) => token.split(":")[0]),
+    managedTokens.map((token) => resolveCanonicalTypeKey(token.split(":")[0])),
   );
   const kept = unresolvedTokens.filter(
-    (token) => Boolean(token) && !represented.has(token.split(":")[0]),
+    (token) =>
+      Boolean(token) &&
+      !represented.has(resolveCanonicalTypeKey(token.split(":")[0])),
   );
 
   return [...managedTokens, ...kept].join(",");
@@ -218,14 +225,23 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
   const isHydrated = useAppSelector(selectIsUrlHydrated);
 
   const initialLoadDone = useRef(false);
-  // typeKey -> the VERBATIM token that opened it. A key sits here from
-  // hydration until the window it opened registers its own urlSync entry —
-  // which may be seconds later on a lazy chunk, or never (a legacy alias key
-  // such as `files`, which opens `cloudFilesWindow` whose registry key is
-  // `cloud_files`, and overlays that are not WindowPanels at all). While it
-  // sits here the raw token is written straight back into `?panels=`, so the
-  // address the person pasted survives the wait and survives the failure.
-  const unresolvedTokens = useRef<Map<string, string>>(new Map());
+  // CANONICAL typeKey -> { the VERBATIM token that opened it, and the key the
+  // person actually pasted }. An entry sits here from hydration until the
+  // window it opened registers its own urlSync entry — which may be seconds
+  // later on a lazy chunk, or never (an overlay that is not a WindowPanel at
+  // all). While it sits here the raw token is written straight back into
+  // `?panels=`, so the address the person pasted survives the wait and
+  // survives the failure.
+  //
+  // 🚨 The map is keyed CANONICALLY (V-29 NEW-1). A legacy alias key — `files`,
+  // whose hydrator opens `cloudFilesWindow`, which registers as `cloud_files` —
+  // is settled the moment that canonical key registers. Keyed raw, it never
+  // could be: the manager duplicated the token in the address and then told the
+  // person in a red-tier incident that a window on their screen had not opened.
+  // `tokenKey` is kept so the sentence a person reads names what THEY pasted.
+  const unresolvedTokens = useRef<
+    Map<string, { token: string; tokenKey: string }>
+  >(new Map());
   const announcedKeys = useRef<Set<string>>(new Set());
   // Fires once, long after any legitimate lazy mount, and does exactly one
   // thing: turn a silent wait into a visible, honest notice.
@@ -266,19 +282,20 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
       const noHydrator: string[] = [];
       panels.forEach((panel) => {
         const hydrator = getHydrator(panel.typeKey);
+        const pending = {
+          token: rawTokenFor.get(panel.typeKey) ?? panel.typeKey,
+          tokenKey: panel.typeKey,
+        };
+        // An alias is judged by the key its window will publish; every other
+        // key is its own canonical key.
+        const canonicalKey = resolveCanonicalTypeKey(panel.typeKey);
         if (hydrator) {
-          unresolvedTokens.current.set(
-            panel.typeKey,
-            rawTokenFor.get(panel.typeKey) ?? panel.typeKey,
-          );
+          unresolvedTokens.current.set(canonicalKey, pending);
           hydrator(dispatch, panel.instanceId, panel.args || {});
         } else {
           // Law 4: the link named a window this build has no way to open. Keep
           // the address, say so out loud — never strip it on the next write.
-          unresolvedTokens.current.set(
-            panel.typeKey,
-            rawTokenFor.get(panel.typeKey) ?? panel.typeKey,
-          );
+          unresolvedTokens.current.set(canonicalKey, pending);
           noHydrator.push(panel.typeKey);
           console.warn(
             `[UrlPanelManager] No hydrator registered for panel type: ${panel.typeKey}`,
@@ -314,12 +331,18 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
     // The SIGNAL, not a clock: a key leaves the unresolved set the moment its
     // window registers, however long that took.
     const observedTypeKeys = new Set(
-      Object.values(entries).map((entry) => entry.typeKey),
+      Object.values(entries).map((entry) =>
+        resolveCanonicalTypeKey(entry.typeKey),
+      ),
     );
     for (const typeKey of Array.from(unresolvedTokens.current.keys())) {
       if (observedTypeKeys.has(typeKey)) unresolvedTokens.current.delete(typeKey);
     }
-    const unresolved = Array.from(unresolvedTokens.current.keys());
+    // The person is told about the key THEY pasted, never the canonical key
+    // they have never seen.
+    const unresolved = Array.from(unresolvedTokens.current.values()).map(
+      (pending) => pending.tokenKey,
+    );
 
     if (noticeDue && unresolved.length > 0) {
       announceUnopenedWindows(
@@ -335,7 +358,9 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
     // timer ran out.
     const nextManagedParam = withUnresolvedTokens(
       serializeParams(entries, managedTypeKeys),
-      Array.from(unresolvedTokens.current.values()),
+      Array.from(unresolvedTokens.current.values()).map(
+        (pending) => pending.token,
+      ),
     );
     const nextParam = mergeManagedPanelParams(
       currentParam,
