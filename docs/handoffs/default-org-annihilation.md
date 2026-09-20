@@ -94,7 +94,18 @@ and `public.dm_default_org()`, the trigger that silently filed an org-less DM in
 the starter's personal workspace. Applied through `pnpm db:apply` as a named
 chair step. Verified live first: that trigger was the only user of the function.
 
----
+**The inverse is a rollback, and it now lives where rollbacks live (2026-09-20).**
+It is `migrations/inverse/w1_org_nothing_substitutes_an_organization_dm_default_org.inverse.sql`.
+While it sat in the swept `migrations/` directory, `detect_applied.py` saw a
+file whose objects are absent and filed it under "🔴 MISSING — never applied",
+and two aidream releases carried that as pending work. Its objects are absent
+because the forward half removed them. Moved to `migrations/inverse/`, the
+directory `apply_migrations.py` names for exactly this ("not in the swept
+migrations directory"), where both non-recursive globs stop seeing it. The
+ledger keys on the basename, so nothing the database recorded changed.
+Applying it is never the campaign finishing — it would re-install the
+personal-org stamp on DM inserts, and 460 of the 523 live organizations are
+personal.
 
 ---
 
