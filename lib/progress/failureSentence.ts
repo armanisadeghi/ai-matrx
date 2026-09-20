@@ -164,6 +164,63 @@ function endSentence(text: string): string {
 }
 
 /**
+ * Known raw provider/error TOKENS — not sentences — that a source still
+ * writes directly into a "reason" column with no `error_sentence` alongside
+ * it (`platform.acquisition_block.error_class`). cold-walk-13
+ * (common-docs/projects/masterwork-methods-census/jobs-bar-2026-09-16/
+ * cold-walk-13/README.md, Friction): the acquisition console's "What
+ * happened" cell printed `LOGIN_REQUIRED` and `ProxyError` — a Python
+ * exception class and a provider enum value — inside otherwise excellent
+ * person-facing sentences.
+ *
+ * Same rule as the rest of this file, applied to a bare token instead of a
+ * whole sentence: the token itself never reaches the sentence a person
+ * reads. A recognised token gets a specific, plain sentence; anything else
+ * says "a provider error" and carries the token as a SECONDARY detail —
+ * useful if the person reports it, never folded into the sentence itself.
+ */
+const KNOWN_PROVIDER_ERROR_TOKENS: Record<string, string> = {
+  LOGIN_REQUIRED: "This account needs you to sign in again.",
+  login_required: "This account needs you to sign in again.",
+  ProxyError: "The connection through our network failed.",
+  PROXY_ERROR: "The connection through our network failed.",
+  TimeoutError: "The provider did not answer in time.",
+  TIMEOUT: "The provider did not answer in time.",
+  RATE_LIMITED: "The provider is rate-limiting us right now.",
+  RateLimitError: "The provider is rate-limiting us right now.",
+  CAPTCHA: "The provider asked us to prove we are not a robot.",
+  BOT_WALL: "The provider blocked automated access.",
+  FORBIDDEN: "The provider refused the request.",
+  AuthenticationError: "This account needs you to sign in again.",
+};
+
+/** What `providerErrorSentence` returns: a sentence that never names the raw
+ * token, plus the token itself when it wasn't one we recognised. */
+export interface ProviderErrorSentence {
+  /** Always a plain sentence — never a raw token. */
+  text: string;
+  /** The raw token, present ONLY when it was not a recognised one. Render it
+   * as secondary detail, never inside the sentence itself. */
+  detail?: string;
+}
+
+/**
+ * The sentence for a raw provider/error TOKEN — a bare value like
+ * `LOGIN_REQUIRED` or `ProxyError`, not a sentence. Use `humanFailureSentence`
+ * instead when the value in hand is already a sentence that might have a
+ * class name embedded in it.
+ */
+export function providerErrorSentence(
+  token: string | null | undefined,
+): ProviderErrorSentence {
+  const value = (token ?? "").trim();
+  if (!value) return { text: "It refused without saying why." };
+  const known = KNOWN_PROVIDER_ERROR_TOKENS[value];
+  if (known) return { text: known };
+  return { text: "It failed because of a provider error.", detail: value };
+}
+
+/**
  * The census predicate. Exported so a guard can assert that nothing this
  * product puts in front of a person carries an exception class name — see
  * `lib/progress/__tests__/a-class-name-is-never-a-reason.test.ts`.

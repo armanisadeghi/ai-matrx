@@ -70,10 +70,13 @@ import {
   DUMP_ROLE,
   DUMP_SOURCE_TOKENS,
   tallyOf,
+  attachedIdentities,
   useKeptSourceCount,
   type KeptSourceCount,
 } from "../../sourceLinks";
 import { keptSourceTitle } from "../../kept-sources/types";
+import type { KeptSourceBrief } from "../../kept-sources/service";
+import { isInterviewMaterial, keptIdentity } from "../../sourceIdentity";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { WebpageResourcePickerCore } from "@/features/resource-manager/resource-picker/WebpageResourcePicker";
@@ -166,6 +169,20 @@ interface DumpResourceOutcome {
   note?: string;
   /** The server's sentence for a source this Rulebook had already read. */
   alreadyDistilled?: string;
+  /**
+   * 🚨 A `kept_source` ROW'S ONLY IDENTITY ON THIS WIRE. `token`/`id`/`url`
+   * are all null for material the Rulebook already holds, so a refused kept
+   * source could not be rebuilt into a request and the panel could not offer
+   * to read it again — while the server's own sentence told the person to
+   * choose exactly that (cold walk 13, N7). Echoed by `dump_ingest.py`.
+   */
+  sourceKey?: string;
+  /**
+   * How many DRAFTS the earlier pass left that a replace would throw away.
+   * Present only with `alreadyDistilled`, and zero means there is nothing to
+   * replace — so no control is drawn and the sentence does not offer one.
+   */
+  replaceableDrafts?: number;
 }
 
 export interface DumpSummary {
@@ -187,14 +204,24 @@ export function parseDumpSummary(raw: unknown): DumpSummary | null {
     const status = typeof rec.status === "string" && rec.status ? rec.status : null;
     const kind = typeof rec.kind === "string" && rec.kind ? rec.kind : null;
     if (!status || !kind) return [];
-    const already =
+    const alreadyRec =
       rec.already_distilled &&
       typeof rec.already_distilled === "object" &&
-      !Array.isArray(rec.already_distilled) &&
-      typeof (rec.already_distilled as Record<string, unknown>).message ===
-        "string"
-        ? ((rec.already_distilled as Record<string, unknown>).message as string)
+      !Array.isArray(rec.already_distilled)
+        ? (rec.already_distilled as Record<string, unknown>)
         : null;
+    const already =
+      alreadyRec && typeof alreadyRec.message === "string"
+        ? (alreadyRec.message as string)
+        : null;
+    // `can_replace` is the server's own verdict (an APPROVED rule is never
+    // removed by a machine, so a source whose earlier rules are all approved
+    // has nothing a replace could take). The panel obeys it rather than
+    // inferring one, and draws no control when it says no.
+    const replaceableDrafts =
+      alreadyRec && alreadyRec.can_replace === true
+        ? Number(alreadyRec.draft_rules ?? 0)
+        : 0;
     return [
       {
         kind,
@@ -209,7 +236,11 @@ export function parseDumpSummary(raw: unknown): DumpSummary | null {
           ? { error: rec.error }
           : {}),
         ...(typeof rec.note === "string" && rec.note ? { note: rec.note } : {}),
+        ...(typeof rec.source_key === "string" && rec.source_key
+          ? { sourceKey: rec.source_key }
+          : {}),
         ...(already ? { alreadyDistilled: already } : {}),
+        ...(replaceableDrafts > 0 ? { replaceableDrafts } : {}),
       },
     ];
   });
@@ -564,10 +595,33 @@ export function RulebookSourcesPanel({
    */
   const kept = useKeptSourceCount(rulebook.id);
   const keptRows = kept.state === "ready" ? kept.rows : [];
-  const { count: totalSources, tally } = tallyOf(
-    sourceLinks.length + stagedUrls.length,
-    kept.state === "ready" ? kept.count : 0,
+  /**
+   * 🚨 RESOURCES ARE NOT INTERVIEWS (cold walk 13, N4). An interview's kept
+   * row is the same sitting the Interviews block above already names, counts
+   * and links — listing it here printed one four-turn interview twice under
+   * two headings with two different word counts (505 of her own words up
+   * there, 1,056 for the whole sitting down here). The Approach that captured
+   * it says which block owns it.
+   */
+  const keptResources = useMemo(
+    () => keptRows.filter((row) => !isInterviewMaterial(row)),
+    [keptRows],
   );
+  const keptInterviews = keptRows.length - keptResources.length;
+  const { count: totalSources, tally } = tallyOf(
+    attachedIdentities({ sourceLinks, stagedUrls }),
+    keptResources,
+    (kept.state === "ready" ? kept.count : 0) - keptInterviews,
+  );
+  /**
+   * The kept rows this panel LISTS: the ones no attachment row below already
+   * shows. A file is one source whether it is named by its edge or by its kept
+   * row, so showing it in both lists is the screen disagreeing with itself.
+   */
+  const keptOnly = useMemo(() => {
+    const shown = new Set(attachedIdentities({ sourceLinks, stagedUrls }));
+    return keptResources.filter((row) => !shown.has(keptIdentity(row)));
+  }, [keptResources, sourceLinks, stagedUrls]);
   useEffect(() => {
     onCount?.(totalSources);
   }, [totalSources, onCount]);
@@ -915,6 +969,49 @@ export function RulebookSourcesPanel({
   );
 
   /**
+   * "Distil again and replace" — the other half of the refusal sentence.
+   *
+   * The server already had the whole mechanism (`redistill: "replace"`, the
+   * same one "Read this part again" uses); what it did not have was a control,
+   * so its own message told a person to choose something that was not on the
+   * screen (cold walk 13, N7). Approved rules are never removed by a machine —
+   * the server keeps them and says so — and the confirm names exactly what
+   * goes: the drafts of THIS source, and an AI run that costs money.
+   */
+  const distilAgainAndReplace = useCallback(
+    (index: number, res: DumpResourceOutcome): void => {
+      const resource =
+        launchedResourcesRef.current?.[index] ?? retryResourceFor(res);
+      if (!resource) return;
+      const drafts = res.replaceableDrafts ?? 0;
+      const name = res.title || "this source";
+      void (async () => {
+        const ok = await confirm({
+          title: `Read “${name}” again and replace its drafts?`,
+          description:
+            `This reads the whole source again — an AI run you pay for. Its ` +
+            `${drafts} suggested ${drafts === 1 ? "rule" : "rules"} that you ` +
+            `have not approved will be thrown away and replaced by the new ` +
+            `pass. Rules you have already approved are kept.`,
+          confirmLabel: "Distil again and replace",
+        });
+        if (!ok) return;
+        launchedResourcesRef.current = [resource];
+        void run.launch(
+          {
+            rulebook_id: rulebook.id,
+            resources: [resource],
+            mode: "instructional",
+            redistill: "replace",
+          },
+          `${name} — read again`,
+        );
+      })();
+    },
+    [run, rulebook.id],
+  );
+
+  /**
    * 🚨 WHAT EACH PART OF A SOURCE GAVE (W42). Read off the live rules, so a
    * source distilled weeks ago is as legible as one distilled a minute ago.
    */
@@ -1050,6 +1147,7 @@ export function RulebookSourcesPanel({
               less than it knows. */}
           <KeptMaterialSummary
             kept={kept}
+            rows={keptOnly}
             rulebookId={rulebook.id}
             attached={tally.attached}
           />
@@ -1327,6 +1425,7 @@ export function RulebookSourcesPanel({
                   summary={run.result}
                   onDone={() => run.reset()}
                   onRetryOne={retryOneSource}
+                  onDistilAgain={distilAgainAndReplace}
                   retrying={run.running}
                 />
               ) : null}
@@ -1922,6 +2021,13 @@ export function retryResourceFor(
       ...(res.title ? { title: res.title } : {}),
     };
   }
+  if (res.kind === "kept_source" && res.sourceKey) {
+    return {
+      kind: "kept_source",
+      source_key: res.sourceKey,
+      ...(res.title ? { title: res.title } : {}),
+    };
+  }
   return null;
 }
 
@@ -1929,6 +2035,7 @@ export function DumpOutcomes({
   summary,
   onDone,
   onRetryOne,
+  onDistilAgain,
   retrying,
 }: {
   summary: DumpSummary;
@@ -1941,6 +2048,17 @@ export function DumpOutcomes({
    * relaunch — and then no retry control is drawn at all.
    */
   onRetryOne?: (index: number, res: DumpResourceOutcome) => void;
+  /**
+   * 🚨 THE CONTROL THE SERVER'S OWN SENTENCE NAMES (cold walk 13, N7).
+   * "Choose “Distil again and replace” to throw the earlier 11 drafts away"
+   * was printed over a panel whose only button was "Review the drafts" — I
+   * enumerated every button, link and role="button" on that page and no such
+   * control existed. A sentence naming a control that is not on the screen is
+   * a dead end wearing an instruction. It is drawn per row, only when the
+   * server said a replace is meaningful, and it confirms with the consequence
+   * named (the destructive-click law).
+   */
+  onDistilAgain?: (index: number, res: DumpResourceOutcome) => void;
   /** A relaunch is already in flight; every retry control waits it out. */
   retrying?: boolean;
 }) {
@@ -2048,6 +2166,23 @@ export function DumpOutcomes({
                     Read this one again
                   </Button>
                 ) : null}
+                {onDistilAgain &&
+                res.status === "already_distilled" &&
+                (res.replaceableDrafts ?? 0) > 0 &&
+                retryResourceFor(res) ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-1 h-7"
+                    disabled={retrying}
+                    onClick={() => onDistilAgain(i, res)}
+                  >
+                    {retrying ? (
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    ) : null}
+                    Distil again and replace
+                  </Button>
+                ) : null}
               </div>
             </li>
           );
@@ -2077,10 +2212,20 @@ export function DumpOutcomes({
  */
 function KeptMaterialSummary({
   kept,
+  rows,
   rulebookId,
   attached,
 }: {
   kept: KeptSourceCount;
+  /**
+   * The kept rows this block OWNS: not an interview (the Interviews block
+   * names those) and not already listed as an attachment below. Passed in
+   * rather than re-derived, because the count in the heading above and the
+   * list in here have to be the same set or the screen contradicts itself —
+   * which is what "7 sources are already here — besides the 5 attached below"
+   * over four of those very five files was (cold walk 13, N4).
+   */
+  rows: readonly KeptSourceBrief[];
   rulebookId: string;
   attached: number;
 }) {
@@ -2112,16 +2257,17 @@ function KeptMaterialSummary({
       </div>
     );
   }
-  if (kept.count === 0) return null;
+  if (rows.length === 0) return null;
 
-  const shown = kept.rows.slice(0, 5);
+  const total = rows.length;
+  const shown = rows.slice(0, 5);
   return (
     <div className="mt-3 overflow-hidden rounded-md border border-border/70 bg-card">
       <div className="flex items-center justify-between gap-2 border-b border-border/70 px-3 py-2">
         <p className="text-xs font-medium text-foreground">
-          {kept.count === 1
+          {total === 1
             ? "1 source is already here"
-            : `${kept.count.toLocaleString()} sources are already here`}
+            : `${total.toLocaleString()} sources are already here`}
           {attached > 0 ? (
             <span className="font-normal text-muted-foreground">
               {" "}
@@ -2160,9 +2306,9 @@ function KeptMaterialSummary({
           </li>
         ))}
       </ul>
-      {kept.count > shown.length ? (
+      {total > shown.length ? (
         <p className="border-t border-border/60 px-3 py-1.5 text-xs text-muted-foreground">
-          {`and ${(kept.count - shown.length).toLocaleString()} more`}
+          {`and ${(total - shown.length).toLocaleString()} more`}
           {kept.more
             ? ` — one run turns the most recent ${kept.rows.length.toLocaleString()} into rules, then press it again for the rest`
             : ""}

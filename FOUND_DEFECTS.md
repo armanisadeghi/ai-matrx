@@ -15,50 +15,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D343 — `GET /media/libraries` declares no `visibility`, no `adapter` and no `q`, so `/libraries`' search box, its four lane tabs AND its four lane counts are all decorative (2026-09-20)
-
-Cross-repo: this number owns it; aidream files its half as `AD<n> — D343 remainder`.
-**The fix is on the server, not here — nothing in this repo can close it.**
-
-`features/source-library/browse/service.ts` sends `visibility`, and `q` when the person
-types, through `listLibraries` (`features/source-library/api.ts:300`), exactly as
-`API-CONTRACT.md` §3 publishes them. `aidream/api/routers/media_catalog.py:182`
-(`origin/main`, verified 2026-09-20) is:
-
-```python
-async def list_libraries(ctx=Depends(context_dep), limit=Query(50), offset=Query(0)):
-    rows = await source_library_manager_instance.filter_items(organization_id=ctx.organization_id)
-    page = rows[offset:offset + limit]
-```
-
-No `visibility`, no `adapter`, no `q`. FastAPI drops an undeclared query parameter without a
-word, so every one of them comes back **200 with the whole unfiltered list**. Three live
-consequences, all on screen today:
-
-1. **The search box is dead.** Typing "Gmail" leaves all 33 rows (measured on screen,
-   `common-docs/projects/acquisition-frontier/acquisition-console/screens/v1/WALK-2026-09-20.md`
-   round 3, `libraries-search-gmail-filtered.png`).
-2. **The four lane tabs do not narrow.** Mine / My Orgs / Shared / Public all serve the same set.
-3. **D10's lane-count repair rests on the same ignored parameter.** `fetchCounts` calls
-   `listLibraries({ visibility: [lane] })` once per lane and reads `.total` — four calls that
-   cannot disagree, so the tabs now show four IDENTICAL totals instead of four zeros. Less
-   obviously wrong, equally wrong.
-
-**This is the surviving sibling of a class aidream already closed one endpoint over.**
-`GET /media/libraries/{id}/videos` carried exactly this bug and its docstring now says so:
-*"THE CONTRACT PUBLISHED TWELVE FILTERS AND THIS SERVED ONE … every one of them came back 200
-with the whole unfiltered list."* The parent list endpoint was never swept with it.
-
-**The fix (aidream):** declare `visibility: str | None`, `adapter: str | None`, `q: str | None`
-on `list_libraries` and push them into `filter_items` / the same `SelectionFilter` path the
-videos endpoint uses; `total` must count the FILTERED set. A guard in the same shape as the
-videos one. **Until that lands, do not add a filter parameter to any link that points at
-`/libraries`** — `features/acquisition-console/contract.ts:312` deliberately still links bare
-`/libraries`, because a `?q=` the destination cannot honour is a worse lie than no parameter.
-
-**Then, here:** `createLibraryListConfig` takes `urlState: true` so search/scope/page survive a
-reload and the console's rows can deep-link into it. Blocked on the server half.
-
 ### D341 — A window's LAYOUT comes back on refresh for 13 windows out of 195 (2026-09-19)
 
 Two systems restore a window panel and only one of them is general. `?panels=` (URL) now opens
@@ -3837,6 +3793,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D343** — `GET /media/libraries` published `visibility`, `adapter` and `q` in API-CONTRACT.md §3 and DECLARED none of them, so FastAPI dropped all three and answered 200 with the whole unfiltered list: `/libraries`' search box did not narrow, its four lane tabs served identical rows, D10's per-lane counts were four identical totals, and the Acquisition Console's Library rows linked bare because no parameter could be honoured. FIXED 2026-09-20 in both halves — aidream `d7093434f6` (all three declared through one `apply_library_filter`, unknown values refused 400, `total` counts the filtered set, contract 0.6.0; the `…/metrics` and `…/videos` siblings swept with it) and this repo's `urlState: true` on `createLibraryListConfig`, `adapter` on the wire, lane counts under the same narrowing, and `librariesHref` on every console Library row. Guard: `features/source-library/__tests__/the-libraries-link-is-a-query-the-list-runs.test.ts` (11 cases, 8 red against the pre-fix behaviour).
 - **D330** — an expression index on an RLS table is unusable by every client read (`->>` is not LEAKPROOF, so the qual can never be an index condition). FIXED 2026-09-17 by CS-30: the identity moved into real columns `files.files.artifact_kind` / `provider_session_id` (`migrations/20260917_files_artifact_identity_columns.sql` + `…_backfill_and_index.sql` + `…_column_grants.sql`, all ledgered), the server's upload door stamps them (`aidream packages/matrx-files/matrx_files/artifact_identity.py`), the panel's read filters them, and the useless index was dropped through the chair step `migrations/inverse/files_coding_session_artifact_index_drop.sql`. `pnpm check:artifact-read-latency` now refuses a returning `metadata->>` FILTER on that read by name. The two genuine siblings (`idx_cld_files_derived_from`, `idx_cld_files_variant_key`) stay: server-side readers bypass RLS. Remainder is D331, a different cause.
 - **D328 — frontend release blocked by additive entity vocabulary and duplicate lockfile mappings.** Fixed in `eae8f85f09`, `17272e64a6`, and `7e35664b69`; package `@ai-matrx/associations@0.9.22` adopted, frozen install and live gate passed, and production `ed6c73ae5fc8` served the independently verified podcast repair on 2026-09-17.
 

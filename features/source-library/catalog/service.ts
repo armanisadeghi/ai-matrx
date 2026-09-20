@@ -186,11 +186,33 @@ export function createCatalogService(
             return { byKind: {}, narrow: {} };
         },
 
-        async fetchFacets(query): Promise<EntityFacets> {
+        async fetchFacets(): Promise<EntityFacets> {
             try {
-                const { value: metrics } = await getLibraryMetrics(dispatch, libraryId, {
-                    ...toVideoQuery(query),
-                });
+                // 🚨 A FACET READ IS DELIBERATELY UNNARROWED, AND THIS IS THE
+                // BEAT IT STARTED MATTERING. Until aidream `d7093434f6` the
+                // metrics route declared `fresh` and nothing else, so the filter
+                // set this call used to pass was dropped and the chips were
+                // whole-Library counts by accident. Now the server honours it —
+                // and passing the ACTIVE query here would count each dimension
+                // inside its own selection: pick `media_kind=video` and every
+                // other media_kind chip drops to zero, is filtered out, and the
+                // section itself disappears below `minOptions`
+                // (`lib/entity-list/components/EntityFilterPanel.tsx`). The
+                // person would be left narrowed with no chip to widen by — a
+                // control that removes its own way out.
+                //
+                // So the chips count the whole Library and keep every option
+                // reachable. The honest cost, named: a chip's number is what
+                // that value is worth in the Library, not what it would add to
+                // the current narrowing. The best-in-class answer is per
+                // dimension — every OTHER filter applied, its own lifted — which
+                // is one filtered metrics read per section, and a filtered read
+                // walks every Source (aidream `compute_metrics_for_selection`
+                // says so in as many words). Five walks of a 5,810-source
+                // channel to label five chip rows is not a trade this screen
+                // makes today; the day §5 publishes a per-dimension facet
+                // endpoint, this is the one call site that changes.
+                const { value: metrics } = await getLibraryMetrics(dispatch, libraryId);
                 return {
                     byKind: {
                         media_kind: Object.entries(metrics.counts_by_kind ?? {})

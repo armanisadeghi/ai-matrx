@@ -166,9 +166,7 @@ export function StatusFact({
             ) : value === undefined ? (
                 <div className="mt-0.5 text-sm text-muted-foreground">Reading…</div>
             ) : (
-                <div className="mt-0.5 truncate text-sm text-foreground" title={value ?? undefined}>
-                    {value}
-                </div>
+                <div className="mt-0.5 text-sm leading-snug text-foreground">{value}</div>
             )}
             {children}
         </div>

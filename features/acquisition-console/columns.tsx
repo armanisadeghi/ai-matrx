@@ -45,6 +45,26 @@ function countCell(value: number | null) {
   return <span className="tabular-nums">{value.toLocaleString()}</span>;
 }
 
+/** The "What happened" cell for a blocked row. `row.where` is always a plain
+ * sentence (never a raw provider token — see
+ * `lib/progress/failureSentence.ts`); `row.whereDetail` carries the raw token
+ * ONLY when it was not one we recognised, shown as secondary detail beneath
+ * the sentence, never folded into it. */
+function whereCell(row: BlockedRow) {
+  if (!row.whereDetail) return <TextCell value={row.where} />;
+  return (
+    <span className="flex min-w-0 flex-col">
+      <TextCell value={row.where} />
+      <span
+        className="truncate text-[11px] text-muted-foreground"
+        title={row.whereDetail}
+      >
+        {row.whereDetail}
+      </span>
+    </span>
+  );
+}
+
 /** The action column's one link, spelled the same way in all three tables. */
 function actionCell(label: string, href: string, muted = false) {
   if (muted) {
@@ -220,7 +240,7 @@ export const BLOCKED_COLUMNS: MatrxColumnDef<BlockedRow>[] = [
     header: "What happened",
     label: "What happened",
     filter: "text",
-    cell: (row) => <TextCell value={row.where} />,
+    cell: (row) => whereCell(row),
   },
   {
     id: "since",

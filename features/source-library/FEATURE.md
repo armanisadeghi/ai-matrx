@@ -168,6 +168,34 @@ nothing moves; the claim is gone. The day the server publishes a word count,
 
 ## Change log
 
+- `2026-09-20` — Claude (Opus): **the dialogs' BODIES now speak the Library's
+  own noun, and three things that could never be true are gone (jobs-bar
+  cold-walk-13: N6 + Friction).** Walk 12 fixed the headers; walk 13 found
+  "video" seven more times in the Send and Transcribe BODIES, all of it from
+  sentences the server writes — the Action registry's descriptions, the
+  estimate's cost basis, its warnings and its refusals. `GET /media/actions` is
+  one global registry with no Library, so a noun baked there is baked wrong for
+  everyone: the server now writes `{item}` / `{items}` /
+  `{free_captions_source}` and `speakMediaNouns` (in `vocabulary.ts`, the same
+  table the headers read) is the ONE place those become words. Every server
+  sentence in `ActionRunDialog` and `JobPanel` goes through it — description,
+  not-yet reason, refusal, cost basis, warnings, field labels and help text —
+  and an unknown token is left intact rather than blanked, so a server ahead of
+  this client is loud instead of quietly ungrammatical. Guard:
+  `__tests__/a-podcast-is-never-told-it-is-a-video.test.tsx`, proven red on the
+  unwrapped call sites. Alongside it: `vocabulary.ts` grew a `views` axis, so a
+  podcast no longer renders a VIEWS column of dashes over 2,981 rows or a "Most
+  watched" panel beside the cadence chart, and the `TYPE: Long` badge and the
+  Type/Captions facets follow `kindSplit`/`transcribable` the way the metrics
+  tiles already did — all four gated on `kindKnown`, because the neutral
+  vocabulary means "the row has not arrived", never "this axis does not
+  exist". The cadence chart got a real axis (first / middle / last month), a
+  stated scale ("Peak N in a month" instead of a bare "117 months") and a bar
+  floor tall enough to tell a month that published something from one that did
+  not. And the second "Bring up to date" — the poorer of two identical buttons
+  300px apart — is deleted; the metrics header's keeps the running state, the
+  honest disabled reasons and the stale-numbers notice.
+
 - `2026-09-20` — **D343 filed, not fixed: three of this surface's controls are
   decorative because the live endpoint takes neither of the parameters they
   send.** `GET /media/libraries` in aidream (`media_catalog.py`, `list_libraries`,
@@ -185,6 +213,32 @@ nothing moves; the claim is gone. The day the server publishes a word count,
   change in `FOUND_DEFECTS.md` D343; the two comments that asserted the
   parameters worked are corrected in place.
 
+- `2026-09-20` — **D343 closed on both sides: the search box, the four lane
+  tabs and the Acquisition Console's Library links are one query now.**
+  `GET /media/libraries` published `visibility`, `adapter` and `q` in
+  API-CONTRACT.md §3 and DECLARED none of them, so FastAPI dropped all three and
+  answered 200 with the whole unfiltered list — the search box did not narrow,
+  the four lanes served identical rows, and D10's per-lane counts were four
+  IDENTICAL totals rather than four zeros. Server half: aidream `d7093434f6`
+  (one `apply_library_filter`, an unknown value refused 400 with the accepted
+  set named, `total` counting the filtered set; contract 0.6.0, and the
+  `…/metrics` and `…/videos` siblings swept with it). This repo: `urlState:
+  true` on `createLibraryListConfig` so `?q=`/`?scope=`/`?page=` survive a
+  reload; `browse/service.ts` sends `adapter` from the shell's own `filters` bag
+  and runs the lane counts under the SAME narrowing as the list (a tab reading
+  "Mine 33" that becomes eleven rows when pressed is the tile-vs-list defect
+  with the numbers swapped); `LibraryListQuery.adapter` widened to `string[]`
+  deliberately, because the client's `MediaAdapter` union names ten adapters and
+  the live shelf carries more — the server owns that vocabulary. §5's new
+  `filtered` / `filtered_total` / `library_total` are read in `contract.ts` with
+  ABSENT meaning unfiltered, never zero. The catalog's `fetchFacets` now asks
+  UNNARROWED on purpose: with the server honouring filters, counting each
+  dimension inside its own selection would drop every unpicked chip to zero and
+  delete the section, leaving a person narrowed with no control to widen by.
+  Guard proven failing-then-passing:
+  `__tests__/the-libraries-link-is-a-query-the-list-runs.test.ts` — 11 cases
+  walking console row → href → URL → reader → wire; 8 go red against the
+  pre-fix behaviour.
 - `2026-09-20` — **Four defects from the twelfth cold walk (D6, D6b, D10, D11),
   fixed and guarded.** D6: the Sources table used to render its empty state
   from the very first (pre-sync) row read and never re-asked when

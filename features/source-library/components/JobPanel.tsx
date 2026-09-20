@@ -73,7 +73,7 @@ import {
     formatElapsed,
     formatSecondsEstimate,
 } from "../format";
-import { sourceVocabulary, type SourceVocabulary } from "../vocabulary";
+import { sourceVocabulary, speakMediaNouns, type SourceVocabulary } from "../vocabulary";
 import type {
     ActionDeclaration,
     JobItemRow,
@@ -306,9 +306,27 @@ function JobItem({
                             </span>
                         )}
                     </div>
+                    {/* §7.5's sentence is the item's OUTCOME, not only its
+                        failure — since 2026-09-20 a SUCCEEDED item uses it to
+                        say what the work cost ("… which COST MONEY — roughly
+                        $0.22 …"). Printing that in the red failure box would
+                        make a paid success look broken, so the box takes the
+                        row's own status: destructive when the row failed,
+                        plain when it did not. The sentence itself is still
+                        the server's, verbatim, on every status. */}
                     {item.error && (
-                        <div className="mt-2 rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-2">
-                            <ServerSentence text={item.error} />
+                        <div
+                            className={cn(
+                                "mt-2 rounded-md border px-2.5 py-2",
+                                item.status === "failed"
+                                    ? "border-destructive/30 bg-destructive/5"
+                                    : "border-border bg-muted/40",
+                            )}
+                        >
+                            <ServerSentence
+                                text={item.error}
+                                tone={item.status === "failed" ? "destructive" : "muted"}
+                            />
                             {item.retryable && (
                                 <p className="mt-1 text-xs text-muted-foreground">
                                     This one can be requeued with Retry failed items.
@@ -449,7 +467,10 @@ export function JobPanel({
                     </div>
                     {action?.description && (
                         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                            {action.description}
+                            {/* N6: the registry's description is a server
+                                sentence written in noun tokens — see
+                                `speakMediaNouns`. */}
+                            {speakMediaNouns(action.description, vocabulary)}
                         </p>
                     )}
                 </div>
@@ -571,6 +592,34 @@ export function JobPanel({
                     {job.error && (
                         <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2">
                             <ServerSentence text={job.error} />
+                        </div>
+                    )}
+
+                    {/* 🚨 DID THIS SPEND MONEY? (2026-09-20). A finished job that
+                        never says so is how five videos went to the paid lane on
+                        a live Library with nobody shown a bill. `paid_policy` is
+                        frozen from the estimate at pricing time, so this answers
+                        for a job watched live AND for one opened months later —
+                        in the server's own sentence, printed whole, with the way
+                        to allow it next time when it was not allowed. Null on
+                        jobs created before the contract: absent, never guessed. */}
+                    {job.paid_policy && (
+                        <div
+                            className={cn(
+                                "rounded-md border px-3 py-2",
+                                job.paid_policy.allowed
+                                    ? "border-warning/40 bg-warning/5"
+                                    : "border-border bg-muted/40",
+                            )}
+                        >
+                            <ServerSentence text={job.paid_policy.sentence} tone="muted" />
+                            {job.paid_policy.how_to_allow && (
+                                <ServerSentence
+                                    text={job.paid_policy.how_to_allow}
+                                    tone="muted"
+                                    className="mt-1 text-xs"
+                                />
+                            )}
                         </div>
                     )}
 
@@ -730,7 +779,7 @@ export function JobPanel({
                             </span>
                         </div>
                         <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                            {estimate.cost.basis}
+                            {speakMediaNouns(estimate.cost.basis, vocabulary)}
                             {estimate.cost.paid_cost_estimate > 0 && (
                                 <>
                                     {" "}
@@ -750,7 +799,9 @@ export function JobPanel({
                                         className="flex items-start gap-1.5 text-xs text-warning"
                                     >
                                         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-                                        <TextWithDoors text={warning} />
+                                        <TextWithDoors
+                                            text={speakMediaNouns(warning, vocabulary)}
+                                        />
                                     </li>
                                 ))}
                             </ul>

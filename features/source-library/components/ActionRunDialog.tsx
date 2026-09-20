@@ -49,7 +49,7 @@ import {
 } from "@/components/ui/select";
 import { formatCost, formatCount, formatSecondsEstimate } from "../format";
 import type { ActionDeclaration, EstimateResult } from "../types";
-import { sourceVocabulary, type SourceVocabulary } from "../vocabulary";
+import { sourceVocabulary, speakMediaNouns, type SourceVocabulary } from "../vocabulary";
 import { RulebookParamPicker } from "./RulebookParamPicker";
 import { AgentParamPicker } from "./AgentParamPicker";
 
@@ -124,10 +124,14 @@ function humanize(key: string): string {
  * other missing param falls back to its humanised key, lowercased, exactly as
  * before.
  */
-function missingParamNoun(key: string, property: SchemaProperty): string {
+function missingParamNoun(
+    key: string,
+    property: SchemaProperty,
+    vocabulary: SourceVocabulary,
+): string {
     if (key === "rulebook_id") return "a Rulebook";
     if (key === "agent_id") return "an agent";
-    return (property.title ?? humanize(key)).toLowerCase();
+    return speakMediaNouns(property.title ?? humanize(key), vocabulary).toLowerCase();
 }
 
 export function ActionRunDialog(props: ActionRunDialogProps) {
@@ -186,7 +190,25 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
     const missing = required.filter(
         (key) => params[key] === undefined || params[key] === "" || params[key] === null,
     );
-    const paid = (estimate?.paid_count ?? 0) > 0;
+    // 🚨 2026-09-20: WHO DECIDED ABOUT MONEY DECIDES WHAT THIS BUTTON PROMISES.
+    // `paid` is what turns the Start button into "Spend up to $X and start" and
+    // the Cost row into a bill. When the server says paid work is NOT allowed
+    // for this run, that button would be promising a spend that cannot happen —
+    // the mirror image of the defect that spent money nobody asked for. The
+    // server's own resolution wins over the count beside it; when it sent no
+    // policy at all (an older build), nothing changes.
+    const paidPolicy = estimate?.paid_policy ?? null;
+    const paidAllowed = paidPolicy ? paidPolicy.allowed : true;
+    const paid = (estimate?.paid_count ?? 0) > 0 && paidAllowed;
+    // The server appends its money sentence to `warnings`, and this list has
+    // always printed those verbatim. Including it here only when it is NOT
+    // already in `warnings` keeps a server that skips that append honest
+    // without ever printing the same sentence twice.
+    const warnings = estimate
+        ? paidPolicy && !estimate.warnings.includes(paidPolicy.sentence)
+            ? [...estimate.warnings, paidPolicy.sentence]
+            : estimate.warnings
+        : [];
     const blocked = Boolean(estimateError) || missing.length > 0;
     const needsEstimate = action.requires_estimate || action.cost_class !== "free";
     const waiting = needsEstimate && estimateLoading;
@@ -199,7 +221,18 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                         {action.label} {formatCount(selectionCount)}{" "}
                         {selectionCount === 1 ? vocabulary.item.one : vocabulary.item.many.toLowerCase()}
                     </DialogTitle>
-                    <DialogDescription>{action.description}</DialogDescription>
+                    {/* 🚨 N6: EVERY SENTENCE THE SERVER WROTE GOES THROUGH
+                        `speakMediaNouns` ON ITS WAY TO THE SCREEN — the
+                        description, the not-yet reason, the refusal, the cost
+                        basis, the warnings, and every schema field's help
+                        text. The server writes `{item}`; this Library decides
+                        whether that is a clip, an episode or a post. Miss one
+                        call site and a podcast goes back to wearing YouTube's
+                        noun, which is exactly how walk 12's fix left seven of
+                        them behind. */}
+                    <DialogDescription>
+                        {speakMediaNouns(action.description, vocabulary)}
+                    </DialogDescription>
                 </DialogHeader>
 
                 {selectionMode === "matching" && (
@@ -216,8 +249,11 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                             aria-hidden
                         />
                         <span>
-                            {action.unavailable_reason ??
-                                `${action.label} is declared but is not wired up yet, so nothing would happen.`}
+                            {speakMediaNouns(
+                                action.unavailable_reason ??
+                                    `${action.label} is declared but is not wired up yet, so nothing would happen.`,
+                                vocabulary,
+                            )}
                         </span>
                     </p>
                 )}
@@ -240,7 +276,7 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                             <div className="flex items-start gap-2 p-3 text-sm text-destructive">
                                 <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
                                 <span>
-                                    {estimateError}
+                                    {speakMediaNouns(estimateError, vocabulary)}
                                     {estimateRemedy ? (
                                         <span className="ml-1 text-muted-foreground">
                                             ({estimateRemedy.replace(/_/g, " ")})
@@ -260,11 +296,21 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                                     label={`Free, from ${vocabulary.freeCaptionsSource ?? "its own captions"}`}
                                     value={`${formatCount(estimate.free_count)} ${estimate.free_count === 1 ? vocabulary.item.one : vocabulary.item.many.toLowerCase()}`}
                                 />
-                                <Row
-                                    icon={<BadgeDollarSign className="size-4" aria-hidden />}
-                                    label={`Paid — a model watches the ${vocabulary.item.one}`}
-                                    value={`${formatCount(estimate.paid_count)} ${estimate.paid_count === 1 ? vocabulary.item.one : vocabulary.item.many.toLowerCase()}`}
-                                />
+                                {/* When paid work is switched off for this run,
+                                    a "Paid — N items" row under "What this will
+                                    cost" reads as a promise that those N items
+                                    get watched. They do not. The server's own
+                                    sentence below names the same count AND says
+                                    plainly that nothing was charged and how to
+                                    allow it — so this row is absent rather than
+                                    misleading, and nothing goes unsaid. */}
+                                {paidAllowed && (
+                                    <Row
+                                        icon={<BadgeDollarSign className="size-4" aria-hidden />}
+                                        label={`Paid — a model watches the ${vocabulary.item.one}`}
+                                        value={`${formatCount(estimate.paid_count)} ${estimate.paid_count === 1 ? vocabulary.item.one : vocabulary.item.many.toLowerCase()}`}
+                                    />
+                                )}
                                 {estimate.already_done > 0 && (
                                     <Row
                                         label="Already done — skipped"
@@ -273,7 +319,21 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                                 )}
                                 {estimate.skipped_count > 0 && (
                                     <Row
-                                        label="Cannot be done at all"
+                                        // 🚨 "Cannot be done at all" became a LIE
+                                        // the day paid work stopped defaulting on
+                                        // (2026-09-20): on the default path the
+                                        // items with no usable captions land in
+                                        // `skipped_count`, and they CAN be done —
+                                        // turning paid work on is exactly what
+                                        // does them, which the server's own
+                                        // sentence below says. The hard label is
+                                        // kept for the genuine case: paid work was
+                                        // allowed and they still could not be done.
+                                        label={
+                                            paidAllowed
+                                                ? "Cannot be done at all"
+                                                : "Not done — paid work is switched off"
+                                        }
                                         value={formatCount(estimate.skipped_count)}
                                     />
                                 )}
@@ -284,7 +344,7 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                                             ? `${formatCost(estimate.cost.paid_cost_estimate, estimate.cost.currency)} (between ${formatCost(estimate.cost.paid_cost_low, estimate.cost.currency)} and ${formatCost(estimate.cost.paid_cost_high, estimate.cost.currency)})`
                                             : "Free"
                                     }
-                                    hint={estimate.cost.basis}
+                                    hint={speakMediaNouns(estimate.cost.basis, vocabulary)}
                                     strong
                                 />
                                 <Row
@@ -298,15 +358,17 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                             </dl>
                         )}
 
-                        {!waiting && estimate?.warnings.length ? (
+                        {!waiting && warnings.length ? (
                             <ul className="space-y-1 border-t border-border p-3 text-sm text-amber-700 dark:text-amber-400">
-                                {estimate.warnings.map((warning) => (
+                                {warnings.map((warning) => (
                                     <li key={warning} className="flex items-start gap-2">
                                         <TriangleAlert
                                             className="mt-0.5 size-4 shrink-0"
                                             aria-hidden
                                         />
-                                        <span>{warning}</span>
+                                        <span>
+                                            {speakMediaNouns(warning, vocabulary)}
+                                        </span>
                                     </li>
                                 ))}
                             </ul>
@@ -317,7 +379,12 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                 {!notYet && Object.keys(properties).length > 0 && (
                     <div className="space-y-3">
                         {Object.entries(properties).map(([key, property]) => {
-                            const label = property.title ?? humanize(key);
+                            // The schema's own `title` is a server sentence
+                            // too — "{Items} per test case" is a field LABEL.
+                            const label = speakMediaNouns(
+                                property.title ?? humanize(key),
+                                vocabulary,
+                            );
                             const value = params[key];
 
                             if (key === "agent_id") {
@@ -399,7 +466,10 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                                     />
                                     {property.description ? (
                                         <p className="text-xs text-muted-foreground">
-                                            {property.description}
+                                            {speakMediaNouns(
+                                                property.description,
+                                                vocabulary,
+                                            )}
                                         </p>
                                     ) : null}
                                 </div>
@@ -412,7 +482,9 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                     <p className="text-sm text-muted-foreground">
                         {action.label} needs{" "}
                         {missing
-                            .map((key) => missingParamNoun(key, properties[key] ?? {}))
+                            .map((key) =>
+                                missingParamNoun(key, properties[key] ?? {}, vocabulary),
+                            )
                             .join(", ")}{" "}
                         before it can start.
                     </p>
@@ -421,7 +493,7 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                 {submitError && (
                     <p className="flex items-start gap-2 text-sm text-destructive">
                         <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
-                        {submitError}
+                        {speakMediaNouns(submitError, vocabulary)}
                     </p>
                 )}
 

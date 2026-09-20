@@ -176,6 +176,9 @@ const PAID_ACTION: ActionDeclaration = {
 };
 
 const ESTIMATE: EstimateResult = {
+    // An estimate minted before the 2026-09-20 paid-policy contract carries
+    // none — the shape this fixture holds is still a legal one on the wire.
+    paid_policy: null,
     estimate_token: "est_01JTESTTOKEN",
     expires_at: new Date(Date.now() + 1_800_000).toISOString(),
     action: "transcribe",
@@ -386,6 +389,7 @@ describe("B · a job is correct on mount, not only while you are watching", () =
         organization_id: "org-1",
         action: "transcribe",
         name: "Transcribe 10 videos",
+        paid_policy: null,
         status: "running",
         parallelism: 8,
         allow_paid: true,

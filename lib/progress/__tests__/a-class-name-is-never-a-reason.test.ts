@@ -20,6 +20,7 @@
 import {
   humanFailureSentence,
   namesAnExceptionClass,
+  providerErrorSentence,
 } from "../failureSentence";
 
 const WALK_12_D2 =
@@ -91,5 +92,45 @@ describe("a class name is never a reason", () => {
     expect(namesAnExceptionClass("the server returned an error page")).toBe(
       false,
     );
+  });
+});
+
+/**
+ * `providerErrorSentence` — the acquisition console defect (cold-walk-13,
+ * common-docs/projects/masterwork-methods-census/jobs-bar-2026-09-16/
+ * cold-walk-13/README.md, Friction): "Raw provider tokens on the acquisition
+ * console: `LOGIN_REQUIRED` and `ProxyError` inside otherwise excellent
+ * person-facing sentences." Unlike `humanFailureSentence`, the value in hand
+ * here IS the token — a bare enum or exception-class value, not a sentence
+ * with one embedded.
+ */
+describe("providerErrorSentence — a bare provider token is never the sentence", () => {
+  it("gives LOGIN_REQUIRED a plain sentence", () => {
+    const { text, detail } = providerErrorSentence("LOGIN_REQUIRED");
+    expect(text).not.toContain("LOGIN_REQUIRED");
+    expect(text.toLowerCase()).toContain("sign in");
+    expect(detail).toBeUndefined();
+  });
+
+  it("gives ProxyError a plain sentence", () => {
+    const { text, detail } = providerErrorSentence("ProxyError");
+    expect(text).not.toContain("ProxyError");
+    expect(text.toLowerCase()).toContain("connection");
+    expect(detail).toBeUndefined();
+  });
+
+  it("never folds an unrecognised token into the sentence, but keeps it as detail", () => {
+    const { text, detail } = providerErrorSentence("WeirdVendorSpecificCode99");
+    expect(text).not.toContain("WeirdVendorSpecificCode99");
+    expect(text.toLowerCase()).toContain("a provider error");
+    expect(detail).toBe("WeirdVendorSpecificCode99");
+  });
+
+  it("has no detail and a plain sentence for an empty token", () => {
+    for (const empty of [null, undefined, ""]) {
+      const { text, detail } = providerErrorSentence(empty);
+      expect(text.length).toBeGreaterThan(0);
+      expect(detail).toBeUndefined();
+    }
   });
 });
