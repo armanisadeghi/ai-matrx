@@ -255,8 +255,7 @@ function GoogleWorkspaceConnectBodyContent({
   );
 
   const finishDriveImport = useCallback(() => {
-    disposeGoogleConnectCallbackGroup(callbackGroupId);
-    onClose();
+    void closeGoogleWorkspaceConnect(callbackGroupId, onClose);
   }, [callbackGroupId, onClose]);
 
   const deliverDriveImports = useCallback(

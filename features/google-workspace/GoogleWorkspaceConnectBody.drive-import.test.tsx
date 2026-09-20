@@ -198,12 +198,15 @@ test("retains Google successes for delivery-only retry and retries only failed i
   expect(container.textContent).toContain("image selection failed");
 
   await act(async () => button("Retry attaching").click());
-  expect(mockEmit).toHaveBeenLastCalledWith(
+  expect(mockEmit).toHaveBeenCalledWith(
     "google-callback",
     expect.objectContaining({
       files: [expect.objectContaining({ fileId: "canonical-a" })],
     }),
   );
+  expect(mockEmit).toHaveBeenLastCalledWith("google-callback", {
+    type: "window-close",
+  });
   expect(mockImportBatch).toHaveBeenCalledTimes(3);
   expect(mockDispose).toHaveBeenCalledWith("google-callback");
   expect(onClose).toHaveBeenCalledTimes(1);
@@ -244,6 +247,9 @@ test("a close request while Google Picker is open cancels before the first impor
   );
 
   expect(mockImportBatch).not.toHaveBeenCalled();
+  expect(mockEmit).toHaveBeenLastCalledWith("google-callback", {
+    type: "window-close",
+  });
   expect(mockDispose).toHaveBeenCalledWith("google-callback");
   expect(onClose).toHaveBeenCalledTimes(1);
 });
@@ -298,6 +304,9 @@ test("a close request waits for the active import and delivery before disposing 
     }),
   );
   expect(mockImportBatch).toHaveBeenCalledTimes(1);
+  expect(mockEmit).toHaveBeenLastCalledWith("google-callback", {
+    type: "window-close",
+  });
   expect(mockDispose).toHaveBeenCalledWith("google-callback");
   expect(onClose).toHaveBeenCalledTimes(1);
 });
