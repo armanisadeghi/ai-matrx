@@ -1010,6 +1010,16 @@ export function normalizeError(err: unknown): ApiCallError {
       code: err.code,
       name: err.name,
       ...(err.status !== null ? { status: err.status } : {}),
+      // 🚨 THE ONE ORGANIZATION-HOLD SHAPE RIDES `serverDetail` (2026-09-19).
+      // Without this, `err.details` — aidream's `organization_hold_detail`
+      // body, carrying `details.organizations`, the caller's own membership
+      // choices — was DROPPED at exactly the boundary every `callApi()`
+      // consumer reads through. `extractOrganizationHoldMemberships` (see
+      // `lib/organizations/organizationRequiredError.ts`) reads it back from
+      // here via `.serverDetail`, the same field every OTHER structured 4xx
+      // already uses (see `parseCallApiError`) — no new field, no second
+      // convention.
+      ...(err.details !== null ? { serverDetail: err.details } : {}),
     };
   }
 

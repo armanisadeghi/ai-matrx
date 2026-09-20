@@ -48,6 +48,7 @@ import {
 } from "@/lib/api/organization-context";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import type { RootState } from "@/lib/redux/store";
+import type { OrganizationRequiredWireMembership } from "@/lib/organizations/organizationRequiredError";
 
 /**
  * The person closed the picker without choosing.
@@ -90,6 +91,17 @@ type Settle = (organizationId: string | null) => void;
 
 let pending: { promise: Promise<string | null>; settle: Settle } | null = null;
 
+/**
+ * The choices the CALLER's own refusal already carried
+ * (`details.organizations` — see `organizationRequiredError.ts`'s
+ * `extractOrganizationHoldMemberships`), for the pending request only. `null`
+ * means "no refusal handed us a list" — the dialog falls back to its own
+ * membership fetch exactly as it always has. Cleared the instant the request
+ * settles so a later, list-less request never inherits a stale one.
+ */
+let prefetchedOrganizationsForPending: OrganizationRequiredWireMembership[] | null =
+  null;
+
 /** Set by the app shell once the picker overlay is mounted and reachable. */
 let openPicker: (() => void) | null = null;
 
@@ -112,6 +124,16 @@ export function hasPendingOrganizationRequest(): boolean {
 }
 
 /**
+ * The pending request's prefetched choices, if its caller's refusal carried
+ * any — the dialog reads this to render immediately instead of waiting on its
+ * own membership fetch. `null` when none were handed in (falls back to the
+ * dialog's own fetch, exactly as before this existed).
+ */
+export function getPrefetchedOrganizationsForPendingRequest(): OrganizationRequiredWireMembership[] | null {
+  return prefetchedOrganizationsForPending;
+}
+
+/**
  * Answer the outstanding request. `null` = cancelled.
  *
  * Idempotent and safe to call when nothing is pending (an unmount racing a
@@ -122,10 +144,13 @@ export function settleOrganizationSelection(
 ): void {
   const current = pending;
   pending = null;
+  prefetchedOrganizationsForPending = null;
   current?.settle(organizationId);
 }
 
-function requestOrganizationSelection(): Promise<string | null> {
+function requestOrganizationSelection(
+  prefetchedOrganizations: OrganizationRequiredWireMembership[] | null = null,
+): Promise<string | null> {
   if (pending) return pending.promise;
 
   let settle: Settle = () => {};
@@ -133,6 +158,7 @@ function requestOrganizationSelection(): Promise<string | null> {
     settle = resolve;
   });
   pending = { promise, settle };
+  prefetchedOrganizationsForPending = prefetchedOrganizations;
 
   try {
     openPicker?.();
@@ -176,6 +202,15 @@ export interface EnsureOrganizationOptions {
    * appear with no action behind it to explain why.
    */
   interactive?: boolean;
+  /**
+   * Choices the caller's OWN refusal already carried
+   * (`extractOrganizationHoldMemberships(err)` — aidream's
+   * `details.organizations` or this repo's identical Next envelope). Lets the
+   * dialog render immediately instead of waiting on its own membership fetch.
+   * `null`/omitted falls back to that fetch, unchanged from before this
+   * existed.
+   */
+  prefetchedOrganizations?: OrganizationRequiredWireMembership[] | null;
 }
 
 /**
@@ -189,7 +224,8 @@ export interface EnsureOrganizationOptions {
 export async function ensureOrganizationContext(
   options: EnsureOrganizationOptions = {},
 ): Promise<string> {
-  const { organizationId, interactive = true } = options;
+  const { organizationId, interactive = true, prefetchedOrganizations = null } =
+    options;
 
   try {
     return requireOrganizationContext(
@@ -206,7 +242,7 @@ export async function ensureOrganizationContext(
       throw error;
     }
 
-    const chosen = await requestOrganizationSelection();
+    const chosen = await requestOrganizationSelection(prefetchedOrganizations);
     if (!chosen) throw new OrganizationSelectionCancelled();
 
     // Re-run the kernel rather than trusting the picker's payload: the chosen

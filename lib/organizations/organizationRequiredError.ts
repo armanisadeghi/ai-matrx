@@ -64,22 +64,29 @@ export function isOrganizationRequiredError(err: unknown): boolean {
 export interface OrganizationRequiredWireMembership {
   id: string;
   name: string;
+  abbreviation?: string;
 }
 
 /**
  * The parsed 400 BODY of an organization refusal — the form the condition
  * takes when it crosses a plain `fetch` instead of a throwing transport.
  *
- * Routes under `app/api/**` answer a missing organization with
- * `{ error, code, message, user_message, memberships }` (see
- * lib/organizations/organizationRequiredResponse.ts). A caller that reads
- * `response.json()` has no Error to hand `isOrganizationRequiredError`, only
- * this object — so it gets its own recogniser rather than each call site
- * string-matching `code` by hand and drifting.
+ * ONE shape, from either server (unified 2026-09-19): routes under
+ * `app/api/**` (`lib/organizations/organizationRequiredResponse.ts`) and
+ * aidream's `organization_for_request` both answer
+ * `{ error, code, message, user_message, details: { organizations, … } }` —
+ * aidream's `matrx_connect.org_hold.organization_hold_detail` is the source of
+ * truth for the field names; this repo's builder emits it field-for-field. A
+ * caller that reads `response.json()` has no Error to hand
+ * `isOrganizationRequiredError`, only this object — so it gets its own
+ * recogniser rather than each call site string-matching `code` by hand and
+ * drifting.
  *
- * Deliberately tolerant about `memberships`: the server sends `[]` when it
- * could not read them, and the refusal is still the honest answer — the client
- * falls back to the picker's own list.
+ * Deliberately tolerant about `details.organizations`: it is `null` when the
+ * server could not read the list, and the refusal is still the honest answer
+ * — the client falls back to the picker's own list. Use
+ * `extractOrganizationHoldMemberships` to read it uniformly, including from a
+ * thrown `BackendApiError`/`ApiCallError` rather than a raw body.
  */
 export function isOrganizationRequiredEnvelope(
   body: unknown,
@@ -87,11 +94,56 @@ export function isOrganizationRequiredEnvelope(
   code: typeof ORGANIZATION_REQUIRED_WIRE_CODE;
   message?: string;
   user_message?: string;
-  memberships?: OrganizationRequiredWireMembership[];
+  details?: {
+    organizations?: OrganizationRequiredWireMembership[] | null;
+    memberships_url?: string;
+    set_on?: string;
+    remedy?: string;
+  };
 } {
   return (
     typeof body === "object" &&
     body !== null &&
     (body as { code?: unknown }).code === ORGANIZATION_REQUIRED_WIRE_CODE
+  );
+}
+
+/**
+ * The ONE reader for "what organizations does this refusal offer?" — works
+ * whether `err` is aidream's `BackendApiError` (`.details.organizations`), the
+ * Next envelope body (`.details.organizations`), or a `normalizeError`-shaped
+ * `ApiCallError` (`.serverDetail.organizations`, since `serverDetail` carries
+ * the raw wire body — see `lib/api/call-api.ts`'s `normalizeError`). Returns
+ * `null` when absent OR unreadable, exactly matching the wire's own
+ * null-means-"could not ask" convention — callers fall back to their own
+ * membership fetch on `null`, never on `[]` (which is a real, honest "you
+ * belong to nothing").
+ */
+export function extractOrganizationHoldMemberships(
+  err: unknown,
+): OrganizationRequiredWireMembership[] | null {
+  if (!err || typeof err !== "object") return null;
+  if ((err as { code?: unknown }).code !== ORGANIZATION_REQUIRED_WIRE_CODE) {
+    return null;
+  }
+  const container = err as { details?: unknown; serverDetail?: unknown };
+  return (
+    readOrganizationsField(container.details) ??
+    readOrganizationsField(container.serverDetail)
+  );
+}
+
+function readOrganizationsField(
+  details: unknown,
+): OrganizationRequiredWireMembership[] | null {
+  if (!details || typeof details !== "object") return null;
+  const organizations = (details as { organizations?: unknown }).organizations;
+  if (!Array.isArray(organizations)) return null;
+  return organizations.filter(
+    (org): org is OrganizationRequiredWireMembership =>
+      !!org &&
+      typeof org === "object" &&
+      typeof (org as { id?: unknown }).id === "string" &&
+      typeof (org as { name?: unknown }).name === "string",
   );
 }
