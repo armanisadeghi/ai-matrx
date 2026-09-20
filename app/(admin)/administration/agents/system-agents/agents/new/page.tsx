@@ -12,7 +12,7 @@ const CREATION_OPTIONS = [
     iconClass: "text-primary",
     title: "Create Manually",
     description:
-      "Start from a blank starter template, then edit in the system agent builder.",
+      "Start blank — an empty system agent you instruct in the builder.",
     gradient: "from-primary/5 to-primary/10",
   },
 ] as const;

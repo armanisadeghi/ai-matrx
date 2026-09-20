@@ -30,7 +30,7 @@ import {
   selectOrgBootstrapResolved,
   selectOrganizationId,
 } from "@/lib/redux/slices/appContextSlice";
-import { TEMPLATE_DATA } from "@/features/agents/constants/local-agent-templates";
+import { BLANK_AGENT_SEED } from "@/features/agents/constants/blank-agent";
 import { DesktopBuilderSkeleton } from "@/features/agents/components/builder/AgentBuilderSkeletons";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 
@@ -47,7 +47,7 @@ export function CreateManualAgentClient() {
     if (createdFor.current === organizationId) return;
     createdFor.current = organizationId;
     setError(null);
-    void createAgentFromSeed(TEMPLATE_DATA, organizationId).catch(
+    void createAgentFromSeed(BLANK_AGENT_SEED, organizationId).catch(
       (err: unknown) => {
         // A successful create ends in `redirect()`, which Next turns into a
         // navigation rather than a value — anything that lands here is a real
