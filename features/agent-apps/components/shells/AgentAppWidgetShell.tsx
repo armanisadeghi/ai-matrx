@@ -59,9 +59,10 @@ export function AgentAppWidgetShell({
     overrides.resultRenderer === "custom";
 
   const ctx = useAgentApp({
-    agentId: app.agent_id,
-    agentVersionId: app.agent_version_id,
-    useLatest: app.use_latest,
+    // Same as the other shells: the row carries the JOB. Passing only
+    // agentId after APP_MANDATE_CUTOVER refused ("does not name a
+    // mandate") and ran the row pin instead of the resolved winner.
+    app,
     appId: app.id,
     autoRun: config.autoRun ?? false,
     allowChat: config.allowChat ?? false,

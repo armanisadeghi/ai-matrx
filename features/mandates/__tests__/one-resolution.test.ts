@@ -16,7 +16,9 @@
  * the "faithful or false" rule. Their real intents are carried forward below,
  * moved onto the seam that now decides: the server verdict.
  *   - a non-agent Holder must REFUSE, never degrade to the default   → "refuses a workflow verdict"
- *   - a version-pinned winner must REFUSE                            → "refuses a version-pinned verdict"
+ *   - a version-pinned winner is ACCEPTED; agentId is the definition
+ *     id and the pin rides on isVersion/versionId                     → "accepts a version-pinned verdict"
+ *   - a pin whose definition id the door omitted REFUSES              → "refuses a pin with no definition id"
  *   - a dead / unknown mandate must refuse, optionally as null       → "a mandate the door does not know"
  *
  * ── THE LIVE DEFECT THESE PIN (measured on production, 2026-09-07) ──────────
@@ -55,6 +57,7 @@ interface Verdict {
   holder_type: string;
   agent_id: string | null;
   is_version: boolean;
+  definition_agent_id: string | null;
   provenance: string;
   config_overrides: Record<string, unknown> | null;
   contract: Record<string, unknown>;
@@ -72,6 +75,7 @@ function verdictFor(overrides: Partial<Verdict> = {}): Verdict {
     holder_type: "agent",
     agent_id: SYSTEM_AGENT,
     is_version: false,
+    definition_agent_id: SYSTEM_AGENT,
     provenance: "system",
     config_overrides: null,
     contract: {},
@@ -203,7 +207,11 @@ beforeEach(() => {
   definitionRow = MANDATE_ROW;
   verdictByOrg = {
     [ORG_A]: verdictFor(),
-    [ORG_B]: verdictFor({ provenance: "org", agent_id: ORG_AGENT }),
+    [ORG_B]: verdictFor({
+      provenance: "org",
+      agent_id: ORG_AGENT,
+      definition_agent_id: ORG_AGENT,
+    }),
   };
   invalidateMandateCache();
 });
@@ -386,30 +394,57 @@ describe("a verdict this client cannot run REFUSES, loudly", () => {
     expect(error.message).not.toContain(SYSTEM_AGENT);
   });
 
-  // 🚨 FIX-R6 F2, the frontend sibling. This refusal is NOT a developer log: it
-  // is `useMandate().error`, printed verbatim on screen by ChatNewClient,
-  // EducationTutorClient, ConductorPanel and every other consumer. It used to
-  // read "(version 8f9326a3-fc3f-438b-b742-b9ed28f363d7)" — a uuid at a person,
-  // the exact string the second walk read on production. The reader cannot act
-  // on it; what they CAN act on is the rung and the remedy, both of which the
-  // sentence already carries. The pinned id stays available to a developer
-  // through the console, never through the sentence.
-  it("refuses a version-pinned verdict, names the rung, and prints no uuid", async () => {
+  // 🚨 D1 CLOSED 2026-09-19. The client used to throw "client-run mandates must
+  // be floating" on any `is_version` winner. That was a false access denial:
+  // `POST /ai/mandates/{key}` honours the pin, and `/mandates/[key]` only asks
+  // "what runs for you". The captured production error on
+  // `workflow.deep_research.keyword_synthesis` was this throw. agentId MUST be
+  // the definition id (attribution / EntityRef); the version id rides beside it.
+  // Two rungs, two definition ids — a constant-return mutant cannot satisfy both.
+  it.each([
+    {
+      provenance: "system" as const,
+      definitionId: SYSTEM_AGENT,
+      versionId: "8f9326a3-fc3f-438b-b742-b9ed28f363d7",
+    },
+    {
+      provenance: "org" as const,
+      definitionId: ORG_AGENT,
+      versionId: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+    },
+  ])(
+    "accepts a version-pinned $provenance verdict and keeps the definition id for display",
+    async ({ provenance, definitionId, versionId }) => {
+      verdictByOrg[ORG_A] = verdictFor({
+        is_version: true,
+        agent_id: versionId,
+        definition_agent_id: definitionId,
+        provenance,
+      });
+      const resolved = await resolveMandate(KEY);
+      expect(resolved.agentId).toBe(definitionId);
+      expect(resolved.isVersion).toBe(true);
+      expect(resolved.versionId).toBe(versionId);
+      expect(resolved.provenance).toBe(provenance);
+    },
+  );
+
+  it("refuses a pin whose definition id the door omitted, names the rung, and prints no uuid", async () => {
     verdictByOrg[ORG_A] = verdictFor({
       is_version: true,
       agent_id: "8f9326a3-fc3f-438b-b742-b9ed28f363d7",
+      definition_agent_id: null,
       provenance: "org",
     });
     const error = await rejectedError(resolveMandate(KEY));
-    expect(error.message).toContain("org rung is version-pinned");
-    // The remedy, in the rung vocabulary — what the person is to DO.
-    expect(error.message).toContain("Unpin the org rung");
+    expect(error.message).toContain("org rung is pinned");
+    expect(error.message).toContain("did not name the agent");
     expect(error.message).not.toContain("8f9326a3-fc3f-438b-b742-b9ed28f363d7");
     expect(error.message).not.toMatch(
       /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
     );
-    // …and never the word the fallback must not become.
     expect(error.message.toLowerCase()).not.toContain("unknown");
+    expect(error.message).not.toContain("must be floating");
   });
 
   it("carries the winning rung through, without relabelling global as system", async () => {

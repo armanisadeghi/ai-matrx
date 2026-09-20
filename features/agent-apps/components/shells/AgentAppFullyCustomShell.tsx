@@ -99,13 +99,6 @@ export function AgentAppFullyCustomShell({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fingerprintId]);
 
-  // Pre-warm the agent on idle (same path the legacy renderer used).
-  const pinnedVersionId =
-    !app.use_latest && app.agent_version_id ? app.agent_version_id : null;
-  useWarmAgent(pinnedVersionId ?? app.agent_id, {
-    isVersion: !!pinnedVersionId,
-  });
-
   // ── Hook (Tier-3 contract) ────────────────────────────────────────────
   const ctx = useAgentApp({
     // See AgentAppFormToResultShell: the row carries the app's JOB.
@@ -114,6 +107,14 @@ export function AgentAppFullyCustomShell({
     autoRun: config.autoRun ?? false,
     allowChat: config.allowChat ?? true,
     surface,
+  });
+
+  // Warm the resolved winner, not the row's leftover pin. After cutover
+  // the row's agent_id is display-stale; the holder is the truth.
+  const pinnedVersionId =
+    !ctx.useLatest && ctx.agentVersionId ? ctx.agentVersionId : null;
+  useWarmAgent(pinnedVersionId ?? ctx.agentId ?? "", {
+    isVersion: !!pinnedVersionId,
   });
 
   const [localError, setLocalError] = useState<string | null>(null);

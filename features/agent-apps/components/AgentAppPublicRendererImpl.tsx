@@ -299,6 +299,7 @@ function CustomComponentRenderer({
   const holder = useAppHolder(app);
   const runAgentId = holder.agentId;
   const runAgentVersionId = holder.agentVersionId;
+  const runMandateKey = holder.mandateKey;
   const holderError = holder.error;
   const holderLoading = holder.loading;
   const pinnedVersionId =
@@ -442,6 +443,10 @@ function CustomComponentRenderer({
         await dispatch(
           launchAgentExecution({
             agentId: runAgentId,
+            // THE MANDATE DOOR — do not pass pinnedVersionId here: that
+            // skips `/ai/mandates/{key}` and drops config/provision. The
+            // server honours the pin on this door.
+            ...(runMandateKey ? { mandateKey: runMandateKey } : {}),
             surfaceKey: `agent-app:${slug}`,
             sourceFeature: "agent-app",
             config: {
@@ -519,6 +524,7 @@ function CustomComponentRenderer({
     [
       runAgentId,
       runAgentVersionId,
+      runMandateKey,
       holderError,
       holderLoading,
       slug,

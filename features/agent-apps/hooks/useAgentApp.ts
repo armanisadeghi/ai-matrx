@@ -351,6 +351,10 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   const launcher = useAgentLauncher(agentId, {
     surfaceKey,
     sourceFeature: "agent-app",
+    // THE MANDATE DOOR — display identity is `agentId`; the run POSTs
+    // `/ai/mandates/{key}` so the server honours a pinned winner. Passing
+    // only the definition id ran latest and dropped the pin.
+    ...(holder.mandateKey ? { mandateKey: holder.mandateKey } : {}),
     config: {
       autoRun,
       allowChat,
