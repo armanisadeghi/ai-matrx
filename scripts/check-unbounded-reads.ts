@@ -39,6 +39,16 @@
  *      parked in a module-level variable and the lookup decision is made
  *      elsewhere in the same file.
  *
+ *   3. RETURNED (added 2026-09-20, V-28 NEW-7). The read lives in a helper
+ *      that hands the rows back (`return data ?? []`), and a CALLER in the same
+ *      file asks the shape-1 or shape-2 question of what it received. The
+ *      finding is reported at the READ line, because that is the line that has
+ *      to change. V-28's verifier planted the original knob bug in exactly this
+ *      spelling — `const rows = await loadRows(); const byKey = new
+ *      Map(rows.map(…)); byKey.get(k) === undefined` — and this guard said
+ *      nothing, while the two in-function variants beside it were flagged. ONE
+ *      hop, one file: a helper imported from another module is still invisible.
+ *
  * WHAT IT DOES NOT FLAG: a read that only renders. That is not this bug.
  *
  * Loud, ADVISORY, never blocking (exit 0 always, per the repo's scream-never-
@@ -51,8 +61,13 @@
  *     how the original D190 bug in scripts/check-migrations.ts was written);
  *   - reads destructured out of `Promise.all([...])` are skipped — no single
  *     variable to follow;
- *   - a list read in one function and judged in another is tracked ONLY through
- *     an index that escapes its function (shape 2);
+ *   - a list read in one function and judged in another is tracked through an
+ *     index that escapes its function (shape 2) and across ONE return to a
+ *     caller in the SAME file (shape 3) — never across a module boundary, and
+ *     never two hops;
+ *   - a helper whose return is DERIVED from the rows (`.filter(…)`, `.length`)
+ *     is not treated as a read source: what the caller holds is no longer the
+ *     list;
  *   - it stops looking `WINDOW` lines after the read, and `WINDOW` lines after
  *     the index is built.
  * When you write an existence check, reach for readAllRows because the rule
@@ -113,7 +128,7 @@ const WINDOW = 60;
 /** How far into a `for … of rows` body we look for the index being written. */
 const LOOP_BODY = 20;
 
-type Shape = "direct" | "index";
+type Shape = "direct" | "index" | "returned";
 
 interface Finding {
   file: string;
@@ -338,6 +353,159 @@ function lookupDecision(
   return null;
 }
 
+/**
+ * Shape 2, assembled: the rows become a lookup table and the table DECIDES.
+ * Returns the decision when both halves are present in this function's window
+ * (or anywhere in the file, when the index escapes its scope).
+ */
+function indexConsumer(
+  lines: string[],
+  from: number,
+  to: number,
+  variable: string,
+): { op: string; line: number; via: string; how: string } | null {
+  const index = indexBuiltFrom(lines, from, to, variable);
+  if (!index || !index.name) return null;
+  const near = lookupDecision(
+    lines,
+    index.line + 1,
+    Math.min(lines.length, index.line + 1 + WINDOW),
+    index.name,
+  );
+  const far =
+    near ??
+    (indexEscapes(lines, index.line, index.name)
+      ? (lookupDecision(lines, index.line + 1, lines.length, null) ??
+        lookupDecision(lines, 0, index.line, null))
+      : null);
+  if (!far) return null;
+  return { op: far.op, line: far.line, via: index.name, how: index.how };
+}
+
+/** The declaration line this read sits inside, by name. */
+const FUNCTION_HEAD =
+  /(?:^|\s)(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*[(<]|(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]*)?=\s*(?:async\s*)?(?:function\b|[(<])/;
+
+function enclosingFunction(
+  lines: string[],
+  readLine: number,
+): { name: string; line: number } | null {
+  for (let j = readLine; j >= 0; j--) {
+    const m = FUNCTION_HEAD.exec(lines[j] ?? "");
+    const name = m?.[1] ?? m?.[2];
+    if (name) return { name, line: j };
+  }
+  return null;
+}
+
+/**
+ * The first line that hands `variable` itself back — `return rows;`,
+ * `return data ?? [];`, `return (data ?? []) as Row[];`. A return of something
+ * DERIVED from the rows (`return rows.length`, `return (data ?? []).length`,
+ * `return rows.map(…)`) is not a read source: what the caller receives is no
+ * longer the list, so indexing it decides nothing about the table.
+ */
+function returnsVariable(
+  lines: string[],
+  from: number,
+  to: number,
+  variable: string,
+): number | null {
+  const v = variable.replace(/\$/g, "\\$");
+  const re = new RegExp(
+    `^\\s*return\\s*\\(*\\s*(?:await\\s+)?${v}\\s*(?:\\)|;|$|\\?\\?|\\|\\||\\bas\\b)`,
+  );
+  const derived = new RegExp(`(?:\\)\\s*\\.|\\b${v}\\s*\\.)`);
+  for (let j = from; j < to; j++) {
+    const l = lines[j] ?? "";
+    if (re.test(l) && !derived.test(l)) return j;
+  }
+  return null;
+}
+
+/**
+ * Shape 3 (added 2026-09-20, V-28 NEW-7). ONE HOP ACROSS A RETURN.
+ *
+ * Shapes 1 and 2 both need the read and the verdict inside one function. The
+ * original knob bug's most natural spelling is neither:
+ *
+ *     async function loadRows() {            // ← the bare complete-list read
+ *       const { data } = await sb.from("feature_knob").select("feature, key");
+ *       return data ?? [];
+ *     }
+ *     const rows = await loadRows();         // ← the caller
+ *     const byKey = new Map(rows.map((r) => [addr(r), r]));
+ *     if (byKey.get(wanted) === undefined) throw new Error("missing knob");
+ *
+ * V-28's hostile verifier planted exactly that (`missC`) and this guard said
+ * nothing, while the two in-function variants beside it were flagged. A
+ * service/hook split is the normal way this code is written, so the miss was
+ * the common case, not the corner.
+ *
+ * So: a function whose body performs a bare complete-list read and RETURNS
+ * those rows is a READ SOURCE. Every call of it in the same file is then asked
+ * the shape-1 and shape-2 questions of its own result variable, and a verdict
+ * there is reported AT THE READ LINE — the line that has to change.
+ *
+ * ONE hop, one file, deliberately: a second hop, or a source imported from
+ * another module, is out of reach of a line-window text scan and stays in the
+ * KNOWN LIMITS above. The helper must actually hand the rows back, so a
+ * function that reads and only renders is still quiet.
+ */
+function returnedRowsConsumer(
+  lines: string[],
+  readLine: number,
+  stmtEnd: number,
+  variable: string,
+): { fn: string; consumer: string; line: number; via?: string } | null {
+  const fn = enclosingFunction(lines, readLine);
+  if (!fn) return null;
+  // Never read past the END of the function the read sits in: the next helper
+  // down the file almost always has a `return data ?? []` of its OWN, and
+  // borrowing it turns every read in a service module into a read source.
+  let bodyEnd = Math.min(lines.length, stmtEnd + 1 + WINDOW);
+  for (let j = stmtEnd + 1; j < bodyEnd; j++) {
+    const l = lines[j] ?? "";
+    if (/^[})\]];?\s*$/.test(l) || FUNCTION_HEAD.test(l)) {
+      bodyEnd = j + 1; // the closing brace line itself may carry `return x; }`
+      break;
+    }
+  }
+  const returnAt = returnsVariable(lines, stmtEnd + 1, bodyEnd, variable);
+  if (returnAt === null) return null;
+
+  const call = new RegExp(
+    `(?:const|let|var)\\s*(?:\\{[^}]*\\}|[A-Za-z_$][\\w$]*)\\s*(?::[^=]*)?=\\s*(?:await\\s+)?${fn.name.replace(/\$/g, "\\$")}\\s*\\(`,
+  );
+  for (let j = 0; j < lines.length; j++) {
+    // Never the body we just came out of — a recursive call is not a consumer.
+    if (j >= fn.line && j <= returnAt) continue;
+    const l = lines[j] ?? "";
+    if (!call.test(l)) continue;
+
+    let end = j;
+    while (end < lines.length && !(lines[end] ?? "").includes(";")) end++;
+    const stmt = lines.slice(j, Math.min(end + 1, lines.length)).join("\n");
+    const held = assignedVariable(stmt);
+    if (!held) continue;
+
+    const from = end + 1;
+    const to = Math.min(lines.length, end + 1 + WINDOW);
+    const direct = directConsumer(lines, from, to, held);
+    if (direct)
+      return { fn: fn.name, consumer: `${held} ${direct.op}`, line: direct.line };
+    const index = indexConsumer(lines, from, to, held);
+    if (index)
+      return {
+        fn: fn.name,
+        consumer: `${index.how} → ${index.via} ${index.op}`,
+        line: index.line,
+        via: index.via,
+      };
+  }
+  return null;
+}
+
 export function scanSource(src: string, rel: string): Finding[] {
   if (!src.includes(".from(") && !src.includes(".rpc(")) return [];
   const lines = src.split("\n");
@@ -396,30 +564,35 @@ export function scanSource(src: string, rel: string): Finding[] {
     }
 
     // Shape 2 — the rows become a lookup table, and the table decides.
-    const index = indexBuiltFrom(lines, from, to, variable);
-    if (!index || !index.name) continue;
-    const near = lookupDecision(
-      lines,
-      index.line + 1,
-      Math.min(lines.length, index.line + 1 + WINDOW),
-      index.name,
-    );
-    const far =
-      near ??
-      (indexEscapes(lines, index.line, index.name)
-        ? (lookupDecision(lines, index.line + 1, lines.length, null) ??
-          lookupDecision(lines, 0, index.line, null))
-        : null);
-    if (!far) continue;
+    const index = indexConsumer(lines, from, to, variable);
+    if (index) {
+      findings.push({
+        file: rel,
+        line: i + 1,
+        target: m[1] ?? "?",
+        variable,
+        consumer: `${index.how} → ${index.via} ${index.op}`,
+        consumerLine: index.line + 1,
+        shape: "index",
+        via: index.via,
+        ...(filteredByIn ? { filteredByIn: true } : {}),
+      });
+      continue;
+    }
+
+    // Shape 3 — the read is in a helper that RETURNS the rows, and a CALLER in
+    // this file asks the completeness question of what it got back.
+    const hop = returnedRowsConsumer(lines, i, end, variable);
+    if (!hop) continue;
     findings.push({
       file: rel,
       line: i + 1,
       target: m[1] ?? "?",
       variable,
-      consumer: `${index.how} → ${index.name} ${far.op}`,
-      consumerLine: far.line + 1,
-      shape: "index",
-      via: index.name,
+      consumer: `returned from ${hop.fn}() → ${hop.consumer}`,
+      consumerLine: hop.line + 1,
+      shape: "returned",
+      ...(hop.via ? { via: hop.via } : {}),
       ...(filteredByIn ? { filteredByIn: true } : {}),
     });
   }
@@ -568,6 +741,97 @@ function selfTest(): number {
   ]);
 
   // And the shapes that must stay quiet.
+  // 🚨 ONE HOP ACROSS A RETURN — V-28 NEW-7's `missC`, verbatim in shape. This
+  // was the MISS: the read lives in a helper, the caller indexes what it hands
+  // back, and the existence question is asked there.
+  checks.push([
+    "a helper returning rows + caller Map index + .get() === undefined is FLAGGED",
+    (() => {
+      const hits = shapes(`
+        async function loadRows() {
+          const { data } = await sb.from("feature_knob").select("feature, key, value");
+          return data ?? [];
+        }
+
+        async function readKnob(wanted) {
+          const rows = await loadRows();
+          const byKey = new Map(rows.map((r) => [addr(r), r]));
+          const hit = byKey.get(wanted);
+          if (hit === undefined) throw new Error("missing knob");
+          return hit;
+        }
+      `);
+      return (
+        hits.length === 1 &&
+        hits[0]?.shape === "returned" &&
+        hits[0]?.line === 3 &&
+        (hits[0]?.consumer ?? "").includes("loadRows()")
+      );
+    })(),
+  ]);
+  checks.push([
+    "a helper returning rows + caller .find( is FLAGGED",
+    (() => {
+      const hits = shapes(`
+        const loadAll = async () => {
+          const rows = await sb.from("t").select("id, slug");
+          return rows;
+        };
+
+        async function exists(slug) {
+          const all = await loadAll();
+          return Boolean(all.find((r) => r.slug === slug));
+        }
+      `);
+      return hits.length === 1 && hits[0]?.shape === "returned";
+    })(),
+  ]);
+  checks.push([
+    "a helper returning rows whose caller only RENDERS is CLEAN",
+    shapes(`
+      async function loadRows() {
+        const { data } = await sb.from("t").select("id, name");
+        return data ?? [];
+      }
+
+      async function Page() {
+        const rows = await loadRows();
+        const byId = new Map(rows.map((r) => [r.id, r]));
+        return [...byId.values()].map((r) => <Row key={r.id} row={r} />);
+      }
+    `).length === 0,
+  ]);
+  checks.push([
+    "a BOUNDED read returned from a helper is CLEAN",
+    shapes(`
+      async function loadRows() {
+        const { data } = await sb.from("t").select("id, name").limit(50);
+        return data ?? [];
+      }
+
+      async function check(wanted) {
+        const rows = await loadRows();
+        const byId = new Map(rows.map((r) => [r.id, r]));
+        return byId.get(wanted) !== undefined;
+      }
+    `).length === 0,
+  ]);
+  checks.push([
+    "a helper that reads and never hands the rows back is CLEAN",
+    shapes(`
+      async function loadRows() {
+        const { data } = await sb.from("t").select("id, name");
+        return (data ?? []).length;
+      }
+
+      async function check(wanted) {
+        const rows = await loadRows();
+        const byId = new Map(rows.map((r) => [r.id, r]));
+        return byId.get(wanted) !== undefined;
+      }
+    `).length === 0,
+  ]);
+
   checks.push([
     "a bounded read feeding an index is CLEAN",
     shapes(`
@@ -599,7 +863,7 @@ function selfTest(): number {
   }
   console.log(
     ok
-      ? `[self-test] PASS — the rule fails on the real pre-fix knob reader and on every index shape of the class, and passes on the fix.`
+      ? `[self-test] PASS — the rule fails on the real pre-fix knob reader, on every index shape of the class and on the same bug split across a helper's return, and passes on the fix.`
       : `[self-test] FAIL — the rule no longer separates the bug from the fix.`,
   );
   return ok ? 0 : 1;

@@ -578,6 +578,20 @@ if $STRICT; then
         # is the same either way — `pnpm sync-types`.
         # `pnpm check:api-types-fresh:self-test` proves it can still fail.
         "Generated API types are fresh, not hand-edited|pnpm check:api-types-fresh"
+        # COMPLETE-LIST READS — PostgREST caps a plain `.select()` at 1000 rows
+        # and says so only in a header, so a list turned into an EXISTENCE,
+        # DIFF or COMPLETENESS verdict starts answering confidently wrong the
+        # moment its table crosses the cap (D190; the knob catalogue shipped it
+        # at ~870 rows). The sweep exits 0 BY DESIGN — a finding is a question,
+        # "is this list allowed to be short?" — so it is advisory in BOTH lanes
+        # and its backlog is triage, not a stop. The self-test beside it is the
+        # part that can actually go red: it is the only thing proving the
+        # detector still separates the real pre-fix knob reader (bare .select()
+        # → Map → `=== undefined`, in one function or across one helper's
+        # return) from the readAllRows fix. Until 2026-09-20 this guard was
+        # invoked by NOTHING — no CI job, no gate (V-28 NEW-8).
+        "Unbounded reads: the detector can still fail (self-test)|pnpm check:unbounded-reads --self-test"
+        "Complete-list reads PostgREST silently caps at 1000|pnpm check:unbounded-reads"
         # UNIFIED SETTINGS PLATFORM — five guards for ONE defect class: a
         # settings screen that accepts a value the system does not honour
         # (common-docs/projects/unified-settings-platform/REGISTER.md). Orphans
@@ -952,6 +966,20 @@ else
         # 2026-09-12 (DD-128). Full story in the strict list above; advisory in
         # both lanes, remedy `pnpm sync-types`.
         "Generated API types are fresh, not hand-edited|pnpm check:api-types-fresh"
+        # COMPLETE-LIST READS — PostgREST caps a plain `.select()` at 1000 rows
+        # and says so only in a header, so a list turned into an EXISTENCE,
+        # DIFF or COMPLETENESS verdict starts answering confidently wrong the
+        # moment its table crosses the cap (D190; the knob catalogue shipped it
+        # at ~870 rows). The sweep exits 0 BY DESIGN — a finding is a question,
+        # "is this list allowed to be short?" — so it is advisory in BOTH lanes
+        # and its backlog is triage, not a stop. The self-test beside it is the
+        # part that can actually go red: it is the only thing proving the
+        # detector still separates the real pre-fix knob reader (bare .select()
+        # → Map → `=== undefined`, in one function or across one helper's
+        # return) from the readAllRows fix. Until 2026-09-20 this guard was
+        # invoked by NOTHING — no CI job, no gate (V-28 NEW-8).
+        "Unbounded reads: the detector can still fail (self-test)|pnpm check:unbounded-reads --self-test"
+        "Complete-list reads PostgREST silently caps at 1000|pnpm check:unbounded-reads"
         # UNIFIED SETTINGS PLATFORM — five guards for ONE defect class: a
         # settings screen that accepts a value the system does not honour
         # (common-docs/projects/unified-settings-platform/REGISTER.md). Orphans

@@ -298,6 +298,27 @@ jobs:
         # shape anywhere" and the retired shell is a live protocol again.
         # PLAN.md § THE STRICTNESS LAW clause 4.
         run: pnpm check:legacy-shim-containment
+      - name: "[signal] the unbounded-read detector can still fail (self-test)"
+        # A SIGNAL, NEVER A GATE (Arman's standing ruling — CI is a signal,
+        # never a gate). It lives in THIS job rather than beside the other
+        # signals because it is static and offline: the settings and
+        # kind-sandbox signals are credential-gated and their whole job is
+        # SKIPPED without the secret, which would leave this one UNMEASURED on
+        # most runs for no reason.
+        #
+        # The sweep's finding is a QUESTION ("is this list allowed to be
+        # short?"), so it exits 0 by design and could never fail here anyway —
+        # which is exactly why the self-test is the step that matters: it is the
+        # only thing that proves the detector still separates the real pre-fix
+        # knob reader (a bare .select() poured into a Map and interrogated with
+        # `=== undefined`, directly or across one helper's return) from the
+        # readAllRows fix. Until 2026-09-20 this guard ran in NO job and NO
+        # release gate — the same orphaning the five HR guards lived in.
+        continue-on-error: true
+        run: pnpm check:unbounded-reads --self-test
+      - name: "[signal] Complete-list reads that PostgREST silently caps at 1000"
+        continue-on-error: true
+        run: pnpm check:unbounded-reads
       - name: CLAUDE.md's machine-checkable claims still hold
         # Includes the claim that THIS workflow runs the gates named in it.
         # Without it here, deleting a step from this file would silently make

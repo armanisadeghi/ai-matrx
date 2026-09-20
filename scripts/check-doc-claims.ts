@@ -427,7 +427,7 @@ const claims: Claim[] = [
   },
   {
     id: "per-pr-ci",
-    claim: "per-PR CI runs Matrx-package freshness, the parse guard and its self-test, the marker law, the one-type law, the Kind Directives shim containment, the HR punch write-path strict lane, the migration slot-guard liveness lane, the realtime-publication guard and its self-test, the canonical-picker guard and its self-test, the Google one-window authorization gate and its self-test, the five HR nav/URL/envelope/mock/export guards, org context, type-check, and the content-IR + workflow-runtime suites",
+    claim: "per-PR CI runs Matrx-package freshness, the parse guard and its self-test, the marker law, the one-type law, the Kind Directives shim containment, the complete-list-read sweep and its self-test, the HR punch write-path strict lane, the migration slot-guard liveness lane, the realtime-publication guard and its self-test, the canonical-picker guard and its self-test, the Google one-window authorization gate and its self-test, the five HR nav/URL/envelope/mock/export guards, org context, type-check, and the content-IR + workflow-runtime suites",
     where: "CLAUDE.md § Repo doctrine (Nothing runs at commit time)",
     check: () => {
       // The claim in CLAUDE.md is now the opposite of what it used to be: for
@@ -522,6 +522,16 @@ const claims: Claim[] = [
         // raw provider call from a call through the one door.
         "run: pnpm check:google-auth-gate\n",
         "run: pnpm check:google-auth-gate:self-test\n",
+        // THE COMPLETE-LIST READ SWEEP (D190) — a SIGNAL, added 2026-09-20.
+        // Both lines are required, and both matched WITH the trailing newline
+        // so the shorter one cannot be satisfied by the longer `--self-test`
+        // line (the substring trap that let a sabotaged `check:parse` stay
+        // green on 2026-09-08). The sweep exits 0 by design, so deleting it
+        // could never turn CI red on its own — which is exactly why its
+        // presence has to be locked HERE. Until 2026-09-20 this guard ran in no
+        // job and no gate at all (V-28 NEW-8).
+        "run: pnpm check:unbounded-reads\n",
+        "run: pnpm check:unbounded-reads --self-test\n",
         "check:organization-context",
         "pnpm type-check",
         "test:content-ir",
