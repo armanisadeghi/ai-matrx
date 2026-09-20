@@ -35,6 +35,7 @@ function connection(
     metadata: {},
     credential_present: true,
     credential_stable: true,
+    capability_health: { __kind: "google_connection_capability_health" },
     health: "connected",
     ...overrides,
   };
@@ -105,7 +106,15 @@ describe("diagnoseGoogleResourceBinding", () => {
 });
 
 describe("diagnoseGoogleConnection", () => {
-  it("names the missing vault credential and the fix (the incident row)", () => {
+  /**
+   * The incident row, said in the person's words. It used to read "has no vault
+   * credential on file (no credential item and no legacy vault key), so the
+   * server cannot mint a Google access token" — the branch VERIFY-U-P2-R4 V13-1
+   * found rendering twenty operator words on one card. The FACT it reports is
+   * unchanged and still blocking; the sentence now comes from the declared
+   * vocabulary (`credential_missing`).
+   */
+  it("names the missing permission and the fix, in the person's words", () => {
     const diagnosis = diagnoseGoogleConnection(
       connection({
         credential_present: false,
@@ -113,9 +122,10 @@ describe("diagnoseGoogleConnection", () => {
         health: "needs_reauth",
       }),
     );
-    expect(diagnosis.label).toBe("Needs re-authentication");
+    expect(diagnosis.label).toBe("Needs reconnecting");
     expect(diagnosis.blocking).toBe(true);
-    expect(diagnosis.reason).toContain("no vault credential");
+    expect(diagnosis.reason).toContain("no longer holds a saved permission");
+    expect(diagnosis.reason).not.toMatch(/vault|mint/i);
     expect(diagnosis.reason).toContain("arman@armansadeghi.com");
     expect(diagnosis.remedy).toContain("Reconnect");
   });
@@ -133,7 +143,12 @@ describe("diagnoseGoogleConnection", () => {
     expect(diagnosis.label).not.toBe("Connected");
   });
 
-  it("surfaces the server-recorded reason for a flagged connection", () => {
+  /**
+   * F-19 / VERIFY-U-P2-R3 N9: the server-recorded reason picks the fault; it
+   * never speaks. `last_error` is operator text and this sentence is read by a
+   * non-technical person on the connector card.
+   */
+  it("translates the server-recorded reason instead of repeating it", () => {
     const diagnosis = diagnoseGoogleConnection(
       connection({
         status: "needs_attention",
@@ -141,7 +156,22 @@ describe("diagnoseGoogleConnection", () => {
         last_error: "invalid_grant from Google token refresh",
       }),
     );
-    expect(diagnosis.reason).toBe("invalid_grant from Google token refresh");
+    expect(diagnosis.reason).not.toContain("invalid_grant");
+    expect(diagnosis.reason).toContain("expired or been withdrawn");
+    expect(diagnosis.remedy).toContain("arman@armansadeghi.com");
+  });
+
+  it("prefers the typed code the server stamps beside the row", () => {
+    const diagnosis = diagnoseGoogleConnection(
+      connection({
+        status: "needs_attention",
+        health: "needs_reauth",
+        last_error: "Some sentence a later server release wrote.",
+        metadata: { credential_failure: { code: "credential_missing" } },
+      }),
+    );
+    expect(diagnosis.reason).toContain("no longer holds a saved permission");
+    expect(diagnosis.reason).not.toContain("later server release");
   });
 
   it("still explains a flagged connection that recorded no reason", () => {
@@ -155,11 +185,17 @@ describe("diagnoseGoogleConnection", () => {
     expect(diagnosis.reason).toContain("recorded no reason");
   });
 
-  it("flags the deprecated legacy-key path without blocking work", () => {
+  it("says the older storage path needs one more approval, without blocking work", () => {
     const diagnosis = diagnoseGoogleConnection(
       connection({ credential_stable: false }),
     );
-    expect(diagnosis.label).toBe("Legacy credential");
+    // "Legacy credential" / "the legacy vault key … a deprecated path scheduled
+    // for removal" was operator language on a person's card (V13-1). The state
+    // is unchanged: it works, and it will ask for one more approval some time.
+    expect(diagnosis.label).toBe("Connected");
+    expect(diagnosis.reason).toContain("connected and working");
+    expect(diagnosis.reason).not.toMatch(/vault|legacy|deprecated/i);
+    expect(diagnosis.remedy).toContain("Reconnect");
     expect(diagnosis.blocking).toBe(false);
   });
 

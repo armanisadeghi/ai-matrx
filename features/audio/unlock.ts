@@ -39,6 +39,17 @@
  *
  * Everything feature-detects: on desktop this is a no-op-cost shared context
  * that behaves identically to before.
+ *
+ * THE CATEGORY IS SEQUENCED, NOT SHARED (2026-09-17)
+ * -------------------------------------------------
+ * `"playback"` is the OUTPUT category, and WebKit refuses every
+ * `getUserMedia({audio})` under it ("AudioSession category is not compatible
+ * with audio capture" — the /chat voice-input failure on iPhone). Capture needs
+ * `"play-and-record"`. This file never touches capture: the package's mic
+ * manager (`@ai-matrx/browser-audio` ≥ 0.4.0) switches the category right
+ * before its own capture and restores whatever this file declared once the
+ * microphone stops. Never make this file "smarter" about capture, and never
+ * declare the category from a recording surface — one owner per direction.
  */
 
 let sharedContext: AudioContext | null = null;

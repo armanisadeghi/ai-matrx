@@ -182,7 +182,7 @@ describe("D6 — one source of truth for every count on the export screen", () =
       counts_by_kind: { email: 4210 },
       counts_by_direction: { outbound: 900, inbound: 3310 },
       counts_by_label: {},
-      counts_by_container: {},
+      top_containers: [],
       date_range: { earliest: null, latest: null, span_days: null },
       top_correspondents: [],
       total_chars: 10,

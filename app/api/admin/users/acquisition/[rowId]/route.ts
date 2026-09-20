@@ -32,11 +32,12 @@ export async function GET(
 ) {
   try {
     await requireSuperAdmin();
+    // The App Router already decodes dynamic segment params — decoding
+    // again double-decodes a literal `%` in the row id.
     const { rowId } = await params;
-    const decoded = decodeURIComponent(rowId);
-    const isVisitor = decoded.startsWith("visitor:");
-    const visitorId = isVisitor ? decoded.slice("visitor:".length) : null;
-    const userId = isVisitor ? null : decoded;
+    const isVisitor = rowId.startsWith("visitor:");
+    const visitorId = isVisitor ? rowId.slice("visitor:".length) : null;
+    const userId = isVisitor ? null : rowId;
     const from = request.nextUrl.searchParams.get("from");
     const admin = createAdminClient();
 

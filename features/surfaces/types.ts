@@ -288,6 +288,13 @@ export interface SurfaceWriteTarget {
    */
   updatesValue?: string;
   /**
+   * Client approval preview contract: the input replaces the exact text named
+   * by updatesValue. Opt in only for full-value replacements (including a
+   * selected text range), never insert/append/action fragments. Code-owned;
+   * it does not change the provider tool schema or database apply policy.
+   */
+  approvalComparison?: "text-replacement";
+  /**
    * Where the write lands:
    * - `"draft"`  — staged into the page's editor/draft state; the USER still
    *   reviews and saves. The preferred default (additive, reversible).

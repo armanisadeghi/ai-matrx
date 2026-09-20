@@ -47,7 +47,7 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 import { fetchFeatureKnobValues } from "@/features/admin/limits/service";
 import { getValueVocabulary } from "../data";
 import { buildBandMeta, reviewWindow } from "../lib";
-import { ApprovalQueue } from "../approvals/ApprovalQueue";
+import { ApprovalQueue } from "@/features/approvals/ApprovalQueue";
 // The two keyword tables and the placement strip are already the canonical
 // keyword table over this site's own placements; they move beside this file
 // when the legacy topics folder is retired.
@@ -672,7 +672,7 @@ export function OfferingsWorkbench() {
       ) : null}
 
       <ApprovalQueue
-        scope={{ siteId, brandId, organizationId, siteLabel: site.domain }}
+        scope={{ key: siteId, siteId, brandId, organizationId, siteLabel: site.domain }}
         kinds={["placement_drift"]}
         title="Placements the assigner moved"
         defaultExpanded

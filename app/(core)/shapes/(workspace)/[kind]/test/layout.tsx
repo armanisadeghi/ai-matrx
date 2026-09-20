@@ -6,7 +6,9 @@ export async function generateMetadata({
   params: Promise<{ kind: string }>;
 }) {
   const { kind } = await params;
-  return createShapeKindMetadata(decodeURIComponent(kind), {
+  // The App Router already decodes dynamic segment params — decoding again
+  // double-decodes a literal `%` in the kind name.
+  return createShapeKindMetadata(kind, {
     titlePrefix: "Test",
     description: "Fill the form and watch this shape render live.",
     pathSuffix: "test",

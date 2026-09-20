@@ -30,6 +30,14 @@ export function routeRequiresAuthentication(pathname: string): boolean {
     pathname === "/scraper" ||
     pathname.startsWith("/scraper/") ||
     pathname === "/tasks" ||
-    pathname.startsWith("/tasks/")
+    pathname.startsWith("/tasks/") ||
+    // The Detail primitive's page presentation (`/detail/<type>/<id>`) is the
+    // shape a record link takes when it is SHARED. A signed-out visitor
+    // following one used to get the shell, an invented title and a load
+    // failure — the record reading as broken rather than as a closed door.
+    // Stopping here sends them through the login primitive, which keeps the
+    // record as their destination (utils/auth/FEATURE.md).
+    pathname === "/detail" ||
+    pathname.startsWith("/detail/")
   );
 }

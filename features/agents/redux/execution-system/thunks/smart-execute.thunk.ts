@@ -299,7 +299,7 @@ export const smartExecute = createAsyncThunk<
       // silently drop. Same placement contract as the sandbox gate: BEFORE
       // markInputSubmitted, so a cancel leaves the composer text as typed.
       // Skipped for ephemeral chats (no persisted rows by design) and manual
-      // mode (Agent Builder — sends no scope_ids and stamps no tags).
+      // mode (Agent Builder — sends the active scope_ids for this turn but stamps no tags).
       const isEphemeral =
         state.conversations.byConversationId[conversationId]?.isEphemeral ===
         true;

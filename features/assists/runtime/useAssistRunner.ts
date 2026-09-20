@@ -18,6 +18,7 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
 import { callApi } from "@/lib/api/call-api";
+import { handToOwnBrowser } from "@/lib/extension-bridge/handToOwnBrowser";
 import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import { siteConfig } from "@/config/extras/site";
 import type { Json } from "@/types/database.types";
@@ -39,6 +40,8 @@ import "./handlers/apply-page-meta";
 import "./handlers/launch-agent";
 import "./handlers/run-mandate";
 import "./handlers/navigate";
+import "./handlers/open-in-own-browser";
+import "./handlers/open-approval-queue";
 import "./handlers/server-action";
 import "./handlers/surface-write";
 
@@ -170,6 +173,7 @@ export function useAssistRunner(): AssistRunnerApi {
         }
         router.push(target.href);
       },
+      handToOwnBrowser: (request) => handToOwnBrowser(request),
       callServer: async (endpoint, body) => {
         const result = await dispatch(
           callApi({

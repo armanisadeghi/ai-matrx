@@ -78,6 +78,15 @@ direct-to-Supabase, and:
 
 ## Change log
 
+- **2026-09-18** — Each `DeviceCard` gained a **Home connection** row, and the
+  tab gained an **Other computers** section for a computer that lends its
+  internet connection but syncs no folders (the standalone helper registers no
+  `app_instances` row, so no device card can carry it). Both render
+  `features/residential-egress/components/HomeConnectionRow.tsx`; the list is
+  read ONCE here through `useHomeConnections` and handed down, never re-read per
+  card. The live sentence at the top is now the SLOWER of the two channels —
+  "Live" while half the page polls would be a lie. Contract:
+  `common-docs/systems/platform/residential-egress/FEATURE.md`.
 - **2026-09-15** — Created (FS-L5): the Devices & sync tab, the honest storage
   meter, the admin page, and the deletion of the browser's second copy of the
   visibility rule.

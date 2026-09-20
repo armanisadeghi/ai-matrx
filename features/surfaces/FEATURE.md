@@ -2005,6 +2005,7 @@ on the first.
 
 ## Change Log
 
+- **2026-09-17 — Removed a double `decodeURIComponent` on the catch-all `name` param** in `ui/surfaces/[...name]/page.tsx` — the App Router already decodes each catch-all segment, so a surface name segment carrying a literal `%` threw `URIError` on the second decode (`.map(decodeURIComponent)`). Part of the repo-wide `pnpm check:route-param-decode` census/guard; see `lib/detail/FEATURE.md` Change Log.
 
 - **2026-09-17** — **A surface's remembered layout says when it cannot be saved.** `surfaceUserState.save` resolves the organization through `ensureOrgId`, which now throws; the throw escaped a background autosave silently, so the layout simply stopped persisting and the person lost it on the next visit. It now goes through `withOrganizationRefusalShown`.
 

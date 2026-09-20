@@ -63,6 +63,14 @@ const FIXED_CENSUS = [
  * Adding a line here is a claim you have verified on the real screen.
  */
 const LEFT_ALONE: Record<string, string> = {
+  "features/administration/unified-data-ramp/UnifiedDataRampScreen.tsx":
+    "the organization is TYPED into this admin screen, never read from the bootstrap: " +
+    "`organizationId` starts \"\" and the one bare return is `load(orgId)`'s own " +
+    "parameter guard. Nothing is busy while it is empty — `loading` starts false, " +
+    "the only spinner is inside the Reload button, and the null consumer list " +
+    "renders the sentence \"The ramp is set per organization, so there is nothing " +
+    "to show until one is named. Paste an organization id above.\" There is no " +
+    "bootstrap race to lose (checked 2026-09-19).",
   "features/organizations/hooks/useOrgAutoRagPreference.ts":
     "the load effect already sets loading=false on no org; the bare returns are the write setters.",
   "features/organizations/admin/hooks.ts":

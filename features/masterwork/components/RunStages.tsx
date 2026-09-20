@@ -65,6 +65,7 @@ import type { IngestProgress } from "../durable-run/ingestProgress";
 import {
   EMPTY_INGEST_PROGRESS,
   progressHeadline,
+  visibleResources,
 } from "../durable-run/ingestProgress";
 
 /**
@@ -113,10 +114,14 @@ function StateIcon({ status }: { status: string }) {
  * than implied.
  */
 function ResourceList({ progress }: { progress: IngestProgress }) {
-  if (progress.resources.length === 0) return null;
+  // 🚨 `visibleResources`, NEVER `progress.resources` — the slot array can
+  // hold two reports of ONE source and this list must never show a person the
+  // same file failed and succeeded at once (twelfth cold walk, D3).
+  const rows = visibleResources(progress);
+  if (rows.length === 0) return null;
   return (
     <ul className="space-y-1 rounded-md border border-border bg-card p-2">
-      {progress.resources.map((row) => (
+      {rows.map((row) => (
         <li key={row.id} className="flex items-start gap-2 text-xs">
           <StateIcon status={row.status} />
           <div className="min-w-0 flex-1">
@@ -182,7 +187,9 @@ export function RunStages({
   // every remount and quietly under-report a long wait.
   const startedAt = run.startedAt ?? null;
 
-  if (!run.running && stages.length === 0 && progress.resources.length === 0) {
+  const rows = visibleResources(progress);
+
+  if (!run.running && stages.length === 0 && rows.length === 0) {
     return null;
   }
 
@@ -202,7 +209,7 @@ export function RunStages({
   //   3. otherwise the server's own latest step, verbatim.
   const doing =
     honestProgressSummary({
-      steps: progress.resources,
+      steps: rows,
       shape: "fan_out",
       description:
         progress.labouring ??

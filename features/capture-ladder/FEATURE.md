@@ -25,12 +25,26 @@ asked LAST.
 |---|---|
 | `types.ts` | The closed vocabulary — rungs, statuses, stop causes — the `media.capture_handoff` row type, and `assertNoSkippedRung`, the ladder law as a client-side guard. |
 | `captureHandoffTable.ts` | THE ONE READ of `media.capture_handoff`: supabase-js, org-scoped, Zod-parsed at ingress. Nothing here writes. |
-| `useNeedsYou.ts` | "How many pages are waiting for a person right now?" — the reader behind the tray and `/capture/needs-you`, plus the honest `liveness` answer. |
-| `NeedsYouTray.tsx` | The global chip. Mounted in `app/DeferredSingletonCore.tsx`. |
-| `NeedsYouList.tsx` | The list body, shared by the tray popover and the full page. |
-| `NeedsYouPage.tsx` | `/capture/needs-you`, the full list. |
+| `useNeedsYou.ts` | "How many pages are waiting for a person right now?" — the reader behind the producer and `/capture/needs-you`, plus the honest `liveness` answer. |
+| `needsYouAssist.ts` | THE PRODUCER. Keeps ONE `platform.assists` row per workspace in step with the queue — emitted, refreshed, and RESOLVED when the queue empties. Urgent band, `open_in_own_browser` action. |
+| `NeedsYouAssistProducer.tsx` | Headless. Mounted in `app/DeferredSingletonCore.tsx`; runs the producer against the live queue. Renders nothing, ever. |
+| `NeedsYouList.tsx` | The list body for the full page. One frame, divided rows, at most two lines each. |
+| `NeedsYouPage.tsx` | `/capture/needs-you`, the full list plus the one primary button. |
+| `route.ts` | `NEEDS_YOU_ROUTE`, alone, so naming the route costs nobody a component import. |
+
+🚨 **There is no tray.** `NeedsYouTray.tsx` was deleted on 2026-09-18. It was a second floating
+thing in the corner the assists dock already owns, and it had none of the dock's controls — no
+instant close, no snooze, no dismiss-for-good, no action button. The notice is an assist; the
+dock shows it. Do not add another one. Owner ruling and the full reasoning:
+`common-docs/projects/acquisition-frontier/extension-ladder/STATE.md` §8.
 | `ladderOutcome.ts` | Reading the ladder off a scrape result, wording it, and THE selection rule for "send the rest to my browser". |
 | `sendToOwnBrowser.ts` | The ONE write: `POST /capture/handoffs` through `lib/python-client.ts`. |
+
+The hand-off to the person's own Chrome lives one layer out, in
+`lib/extension-bridge/handToOwnBrowser.ts`, because talking to the extension is bridge reach and
+not a capture concept. It carries the WORKSPACE: the extension resolves its own active
+organization independently of this app, and a hand-off that does not name one lands in a queue
+the person never sees (the 2026-09-18 defect).
 
 Consumed by `features/scraper/batch/BatchScrapePage.tsx` (the **Rung** column and
 the **Send the rest to my browser** action) and by

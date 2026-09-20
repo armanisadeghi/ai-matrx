@@ -27,7 +27,8 @@ const CREATION_OPTIONS = [
     icon: Plus,
     iconClass: "text-primary",
     title: "Create Manually",
-    description: "Start from a starter template and customize your agent",
+    description:
+      "Start blank — an empty agent carrying your organization's tools, ready for your instructions",
     gradient: "from-primary/5 to-primary/10",
   },
   {
@@ -60,9 +61,9 @@ const CREATION_OPTIONS = [
     href: "/agents/templates",
     icon: LayoutPanelTop,
     iconClass: "text-secondary-foreground",
-    title: "Use Template",
+    title: "Start from a Template",
     description:
-      "Start with a pre-built template from the templates library",
+      "Begin with a pre-built agent from the templates library and change it",
     gradient: "from-secondary/5 to-accent/10",
   },
 ] as const;

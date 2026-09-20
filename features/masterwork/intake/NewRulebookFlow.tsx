@@ -70,9 +70,8 @@ import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { organizationBlockingReason } from "@/features/organizations/organizationBlockingReason";
 import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
 import { resolveWizardStep } from "@/lib/wizard-draft/resolveWizardStep";
 import { WizardAnswersLost } from "@/lib/wizard-draft/WizardAnswersLost";
@@ -385,10 +384,23 @@ export function NewRulebookFlow() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  // The EXPLICIT active org — never the personal workspace standing in for
-  // one. When there is none the bounded wait below settles and the page says
-  // so inline, with the remedy; no Rulebook is created.
-  const organizationId = useAppSelector(selectOrganizationId);
+  // THE SHARED ORGANIZATION SEAM (D1, jobs-bar cold-walk-12, 2026-09-19):
+  // Start used to read `selectOrganizationId` itself and hand-roll a bounded
+  // wait in `create()` — outside any try/catch. With no organization
+  // selected, that wait could throw before ever touching state, so the click
+  // produced zero network requests, no console error, and no visible change
+  // at all: a primary, enabled, blue button that silently did nothing.
+  // `useOrganizationRequired` is the ONE shared reading of the organization
+  // every org-scoped surface in this repo uses, and `organizationBlockingReason`
+  // turns it into the sentence Start (and every other primary action in this
+  // flow, and Library's/exports' own creation flows) shows beside itself —
+  // never a per-button `if (!organizationId)`. With sole membership this
+  // reads `null` and Start behaves exactly as it always has.
+  const orgState = useOrganizationRequired();
+  const orgReason = organizationBlockingReason(
+    orgState.organizationState,
+    "starting this Rulebook",
+  );
   const {
     status: draftStatus,
     restored,
@@ -419,12 +431,6 @@ export function NewRulebookFlow() {
     searchParams.get("approach"),
   );
   const [saving, setSaving] = useState(false);
-  // W39: what Start is doing RIGHT NOW, said on the page. "waiting" is the
-  // bounded wait for the workspace; `workspaceProblem` is the settled, honest
-  // "there is no workspace" — an inline sentence with a remedy, never a toast
-  // that tells somebody to press the button again.
-  const [waitingForWorkspace, setWaitingForWorkspace] = useState(false);
-  const [workspaceProblem, setWorkspaceProblem] = useState<string | null>(null);
   /** The "On the way" cards are one collapsed line until the Expert opens it. */
   const [showComingSoon, setShowComingSoon] = useState(false);
 
@@ -584,30 +590,12 @@ export function NewRulebookFlow() {
     toStep(2);
   };
 
-  const create = async () => {
+  const create = async (workspaceId: string) => {
     const approach = startable?.find((a) => a.key === effectiveKey);
     // The sticky bar already says "Pick how you'd like to do this" in muted
     // words beside a dark Start; saying it again in red after the press would
     // dress a normal first paint as a failure (class sweep, 2026-09-16).
     if (!approach) return;
-    // THE ACTION WAITS FOR THE WORKSPACE (wall W39). Pressing Start used to
-    // read the workspace once and refuse with "still loading — try again in a
-    // moment": wrong while the bootstrap was milliseconds from landing, and a
-    // lie once it had landed with nothing selected. Now the press waits, says
-    // so on the page, and when there is genuinely no workspace it says THAT,
-    // with the remedy, and stays said until it is fixed.
-    let workspaceId = organizationId;
-    if (!workspaceId) {
-      setWorkspaceProblem(null);
-      setWaitingForWorkspace(true);
-      const workspace = await awaitEffectiveOrganizationId();
-      setWaitingForWorkspace(false);
-      if (workspace.status !== "ready") {
-        setWorkspaceProblem(workspace.reason);
-        return;
-      }
-      workspaceId = workspace.organizationId;
-    }
     // NOTHING FAILS SILENTLY: a Rulebook with no goal is not a Rulebook. The
     // step resolver should make this unreachable; if it ever is reached, the
     // Expert is told rather than handed an empty Rulebook (W43).
@@ -989,16 +977,19 @@ export function NewRulebookFlow() {
               screens of dead scroll before the only control that does
               anything, which reads as "there is no way to proceed". It is now
               a sticky bar that also NAMES the card it will start, so the
-              Expert can see what pressing it does without scrolling back. */}
-          {workspaceProblem ? (
-            <div
-              role="alert"
-              className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
-            >
-              {workspaceProblem}
-            </div>
-          ) : null}
-
+              Expert can see what pressing it does without scrolling back.
+              THE ORGANIZATION READING IS THE SHARED SEAM (D1, cold-walk-12):
+              `orgState`/`orgReason` come from `useOrganizationRequired` +
+              `organizationBlockingReason` — the one hook and one sentence
+              builder every org-scoped primary action in this repo (and, per
+              the census, the Library/exports creation flows) should share,
+              never a hand-rolled `if (!organizationId)` per button. With
+              nothing selected Start is DISABLED and the reason sits right
+              beside it, exactly the pattern Continue already demonstrates two
+              screens earlier — never a button that looks live and silently
+              does nothing (D1's exact failure). With sole membership the
+              state is already `ready`, `orgReason` is `null`, and Start
+              behaves exactly as it does today. */}
           <div className="sticky bottom-0 z-20 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t border-border bg-background/95 px-4 py-3 pb-safe backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:-mx-6 sm:px-6">
             <Button
               variant="ghost"
@@ -1011,8 +1002,8 @@ export function NewRulebookFlow() {
             </Button>
             <div className="flex min-w-0 items-center gap-3">
               <p className="min-w-0 truncate text-right text-xs text-muted-foreground sm:text-sm">
-                {waitingForWorkspace ? (
-                  "Getting your workspace ready…"
+                {orgReason ? (
+                  orgReason
                 ) : approachError ? (
                   // NOTHING FAILS SILENTLY: with no list, "Pick how you'd like
                   // to do this" is an instruction the Expert cannot follow. Say
@@ -1030,14 +1021,18 @@ export function NewRulebookFlow() {
                 )}
               </p>
               <Button
-                onClick={() => void create()}
-                disabled={saving || waitingForWorkspace || !effectiveKey}
+                onClick={() => {
+                  if (!orgState.organizationId) return;
+                  void create(orgState.organizationId);
+                }}
+                disabled={saving || Boolean(orgReason) || !effectiveKey}
+                title={orgReason ?? undefined}
                 className="min-h-[44px] shrink-0 gap-2 px-7"
               >
-                {saving || waitingForWorkspace ? (
+                {saving || orgState.organizationState === "resolving" ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : null}
-                {waitingForWorkspace
+                {orgState.organizationState === "resolving"
                   ? "Getting ready…"
                   : saving
                     ? "Starting…"

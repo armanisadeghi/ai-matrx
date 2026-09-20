@@ -470,7 +470,10 @@ const UNDECLARED_ANON_DEFINER_QUERY = `
   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
   where p.prosecdef
     and p.prokind = 'f'
-    and p.prorettype <> 'trigger'::regtype
+    -- A trigger function of EITHER kind is unreachable through PostgREST: trigger was always
+    -- excluded; event_trigger joined it 2026-09-18 after platform._door_follows_its_function()
+    -- and platform._provision_shape_guard() — born with the default PUBLIC EXECUTE — grew D5 8 -> 10.
+    and p.prorettype not in ('trigger'::regtype, 'event_trigger'::regtype)
     and n.nspname not in ('pg_catalog', 'information_schema')
     and has_function_privilege('anon', p.oid, 'EXECUTE')
     and not exists (
@@ -1054,7 +1057,11 @@ const REASON_CLAIMS_UNREACHED_GATE_QUERY = `
      select 1
        from pg_catalog.pg_proc h
        join pg_catalog.pg_namespace hn on hn.oid = h.pronamespace
-      where hn.nspname in ('iam', 'public', 'platform')
+      -- Rule (b) says "the bodies of the functions its body names" — any schema. Until
+      -- 2026-09-18 only iam / public / platform were searched, so seo.list_page_intents,
+      -- seo.list_topic_gaps and seo.map_diagnostics — which reach iam.has_access through
+      -- seo._tm_map / seo._tm_visible_sites, one hop — read as overstated reasons.
+      where hn.nspname in ('iam', 'public', 'platform', s.schema_name)
         and h.prokind = 'f'
         and strpos(lower(s.def), lower(hn.nspname || '.' || h.proname)) > 0
         and strpos(lower(pg_get_functiondef(h.oid)), s.claimed) > 0

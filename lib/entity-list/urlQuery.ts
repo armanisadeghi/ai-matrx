@@ -137,9 +137,17 @@ export function queryToParamPatch(
       query.deep === defaults.deep ? null : query.deep ? "1" : "0",
     [ENTITY_LIST_URL_PARAMS.archived]:
       query.archived === defaults.archived ? null : query.archived,
-    [ENTITY_LIST_URL_PARAMS.filters]: sameFilters
-      ? null
-      : JSON.stringify(query.filters),
+    // Absent means "the surface's untouched default". A bag the person SET
+    // themselves is written even when it equals the default by value, because
+    // `useEntityList`'s `searchSpansDefaultFilters` tells an untouched default
+    // from an explicit choice by identity: only the very `defaults.filters`
+    // object is lifted for a search, so an explicit choice must survive a
+    // reload as an explicit choice. (`readQueryFromParams` hands back that
+    // same object when the param is absent.)
+    [ENTITY_LIST_URL_PARAMS.filters]:
+      sameFilters && query.filters === defaults.filters
+        ? null
+        : JSON.stringify(query.filters),
     [ENTITY_LIST_URL_PARAMS.page]: query.page > 1 ? String(query.page) : null,
   };
 }

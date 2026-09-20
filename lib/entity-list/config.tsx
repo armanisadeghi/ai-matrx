@@ -283,6 +283,21 @@ export interface EntityListConfig<TRow> {
   defaultFilters?: EntityFilters;
 
   /**
+   * A search typed over the UNTOUCHED `defaultFilters` runs over the whole
+   * corpus, and the surface reads the lifted bag back (a bucket control shows
+   * "All"). A filter the person set themselves is honoured exactly. Full rule
+   * and the why: `useEntityList` → `searchSpansDefaultFilters`. Off by default.
+   */
+  searchSpansDefaultFilters?: boolean;
+
+  /**
+   * The search box's placeholder. Default `Search <plural>…`. Name what the
+   * box actually finds when that is more than titles — ids, session ids,
+   * commits — so nobody has to guess whether a pasted identifier will work.
+   */
+  searchPlaceholder?: string;
+
+  /**
    * Put the query in the URL: scope, search, filters, archived, deep, page,
    * plus sort/direction. Off by default so existing surfaces are untouched.
    *

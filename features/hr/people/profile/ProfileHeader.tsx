@@ -48,11 +48,11 @@ import {
   hrEmployeeHref,
   hrOrgMemberHref,
   hrOrgChartHref,
-  hrPartyHref,
   hrPeopleHref,
   hrStructureFocusHref,
   type HrOrgRef,
 } from "../../routes";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import type { HrProfileHeader as HrProfileHeaderData } from "../../types";
 import { HrCountDoor, HrPersonDoor, HrStructureDoor } from "../doors/HrPersonDoor";
 import { HrStatusChip, formatFullDate } from "../shared/HrStatusChip";
@@ -195,9 +195,9 @@ export function ProfileHeader({
             </span>
           ) : null}
           {/* §4.5 — the CRM party opens, with a Peek so the profile is not lost. */}
-          {header.party_id ? (
+          {header.party_id && resolveEntityDoors("party", header.party_id).href ? (
             <Link
-              href={hrPartyHref(header.party_id)}
+              href={resolveEntityDoors("party", header.party_id).href as string}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-muted-foreground underline-offset-2 hover:text-primary hover:underline"

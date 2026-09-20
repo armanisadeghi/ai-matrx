@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@ai-matrx/design-system";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { hasCompatibleDecisionInteraction } from "@/features/ai-models/capabilities/types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,9 +48,7 @@ import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatc
 import { toast } from "@/lib/toast";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
 import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
+import { MOBILE_TABLE_FROZEN } from "@/components/official/mobile-table/mobileTable";
 
 interface DeprecatedModelsAuditProps {
   allModels: AiModel[];
@@ -485,7 +484,7 @@ export default function DeprecatedModelsAudit({
       });
       if (failures.length > 0) {
         setGlobalError(
-          `${failures.length} of ${batch.length} replacements failed — ${failures.join("; ")}`,
+          `${failures.length} of ${batch.length} replacements failed. Open Review on a failed row for the reason.`,
         );
       }
       const landed = batch.length - failures.length;
@@ -668,8 +667,12 @@ export default function DeprecatedModelsAudit({
       </div>
 
       {globalError && (
-        <div className="px-4 py-2 bg-destructive/10 border-b text-destructive text-xs shrink-0">
-          {globalError}
+        <div
+          role="alert"
+          className="flex shrink-0 items-center gap-2 border-b bg-destructive/10 px-4 py-2 text-sm text-destructive"
+        >
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          <span>{globalError}</span>
         </div>
       )}
 
@@ -895,10 +898,16 @@ export default function DeprecatedModelsAudit({
                             updateEntry(model.id, { replacementId })
                           }
                           inputModalities={[]}
-                          allowedModelIds={activeModels.map(
-                            (candidate) => candidate.id,
-                          )}
+                          allowedModelIds={activeModels
+                            .filter((candidate) =>
+                              hasCompatibleDecisionInteraction(
+                                entry.model.capabilities,
+                                candidate.capabilities,
+                              ),
+                            )
+                            .map((candidate) => candidate.id)}
                           catalogVariant="admin"
+                          selectionPurpose="admin"
                           placeholder="Select replacement..."
                           className="h-7 w-full max-w-[240px] justify-between text-xs"
                           disabled={entry.replacing}
@@ -911,8 +920,13 @@ export default function DeprecatedModelsAudit({
                       {usageTotal > 0 && (
                         <div className="flex items-center justify-end gap-1">
                           {entry.error && (
-                            <span className="text-destructive text-[10px] mr-1">
-                              {entry.error}
+                            <span
+                              role="status"
+                              title="Open Review for the full reason"
+                              className="mr-1 inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-destructive"
+                            >
+                              <AlertTriangle className="h-3 w-3" aria-hidden />
+                              Couldn&apos;t replace
                             </span>
                           )}
                           <Button
@@ -1071,6 +1085,18 @@ export default function DeprecatedModelsAudit({
               prev ? { ...prev, settings: next } : prev,
             )
           }
+          onReplacementModelChange={(modelId) => {
+            const sourceId = settingsTarget.entry.model.id;
+            updateEntry(sourceId, { replacementId: modelId });
+            setSettingsTarget((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    entry: { ...prev.entry, replacementId: modelId },
+                  }
+                : prev,
+            );
+          }}
           onApply={handleApplyWithSettings}
           onCancel={() => setSettingsTarget(null)}
           applying={settingsTarget.entry.replacing}

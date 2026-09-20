@@ -4,7 +4,11 @@
  * SUT: `ensureOrgId` (lib/organizations/personalOrg.ts) together with the real
  * `getActiveOrgId` it reads and the real appContext reducer. The doubles are
  * the Supabase RPC (network) and the store singleton's `_sync.boot` (warm-cache
- * hydration, an external engine).
+ * hydration, an external engine). The boot-answer gate
+ * (`orgBootstrapGate`) is the REAL module, driven from the test the way the
+ * boot path drives it, because whether `ensureOrgId` joins it is part of the
+ * contract under test (2026-09-17: a cold session must not be refused before
+ * anyone has looked).
  *
  * THE LAW (common-docs/policies/context-is-carried-never-rebuilt.md): the
  * organization a write acts in is the one the user SELECTED. Nothing below the
@@ -57,6 +61,10 @@ jest.mock("@/lib/redux/store-singleton", () => ({
 
 import { ensureOrgId, clearPersonalOrgIdCache } from "../personalOrg";
 import { getActiveOrgId, requireSelectedOrgId } from "../activeOrg";
+import {
+  markOrgBootstrapResolved,
+  resetOrgBootstrapGate,
+} from "../orgBootstrapGate";
 
 const PERSONAL = "11111111-1111-1111-1111-111111111111";
 const SELECTED = "22222222-2222-2222-2222-222222222222";
@@ -69,6 +77,12 @@ describe("ensureOrgId", () => {
     rpc.mockReset();
     boot.mockReset();
     boot.mockResolvedValue(undefined);
+    // The boot path has ANSWERED the organization question (with or without an
+    // organization) — the state every case below except the last one is in.
+    // Leaving the gate unanswered would make `ensureOrgId` correctly wait, and
+    // a wait is not what those cases are pinning.
+    resetOrgBootstrapGate();
+    markOrgBootstrapResolved();
   });
 
   // Break caught: any resolver choosing an org over the caller's explicit one.
@@ -131,6 +145,32 @@ describe("ensureOrgId", () => {
 
     await expect(ensureOrgId(undefined)).resolves.toBe(SELECTED);
     expect(boot).toHaveBeenCalledTimes(1);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  // Break caught: refusing on a FIRST-EVER session before anyone has looked.
+  // There is no warm cache and no cookie, so the only answer comes from the
+  // boot path's remote fetch; a resolver that does not join
+  // `orgBootstrapGate` refuses a write the app was milliseconds from being
+  // able to make. "Nobody has looked yet" is not "there is none".
+  it("waits for the boot path's answer before refusing on a cold session", async () => {
+    resetOrgBootstrapGate(); // nobody has answered yet
+    let refusalOrId: unknown;
+    const pending = ensureOrgId(undefined).then(
+      (id) => (refusalOrId = id),
+      (err) => (refusalOrId = err),
+    );
+
+    // Give every microtask (and the awaited warm-cache boot) a chance to run:
+    // a resolver that did not wait for the gate has already refused by now.
+    for (let i = 0; i < 20; i += 1) await Promise.resolve();
+    expect(refusalOrId).toBeUndefined();
+
+    store.dispatch(setOrganization({ id: SELECTED }));
+    markOrgBootstrapResolved();
+    await pending;
+
+    expect(refusalOrId).toBe(SELECTED);
     expect(rpc).not.toHaveBeenCalled();
   });
 });

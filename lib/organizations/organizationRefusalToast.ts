@@ -44,21 +44,44 @@ export const ORGANIZATION_REQUIRED_REMEDY =
 export interface OrganizationRefusalOptions {
   /**
    * What did NOT happen, as a past participle: "saved", "created", "shared",
-   * "published". Used in the sentence "Nothing was <act> …". Defaults to
-   * "saved".
+   * "published". Read as "Nothing was <act> …" with no subject, and as
+   * "<subject> was NOT <act> …" with one. Defaults to "saved".
    */
   act?: string;
-  /** Name the thing, e.g. "This page". Defaults to "Nothing". */
+  /**
+   * Name the thing, e.g. "This page". Omit it and the sentence speaks of
+   * "Nothing".
+   */
   subject?: string;
 }
 
-/** The sentence a person reads. Exported so a surface can render it inline. */
+/**
+ * The sentence a person reads. Exported so a surface can render it inline.
+ *
+ * 🚨 THE NEGATION IS THE HELPER'S JOB, NOT THE CALLER'S (2026-09-18). The first
+ * cut built the sentence as `${subject} was ${act}`, which is honest for the
+ * subject-less default ("Nothing was saved …") and a LIE for every caller that
+ * named its subject: "This record was opened because no organization is
+ * selected.", "This document was refreshed because …", "This canvas was shared
+ * because …", "This file's edit history was saved because …". Nine call sites
+ * across five features, every one of them announcing the very act it is
+ * refusing — a screen that lies (law 4), from the module written to stop that.
+ *
+ * So the contract makes the lie impossible to construct rather than asking
+ * callers to remember a "not": a named subject ALWAYS renders "was not <act>",
+ * and there is no way to pass the affirmative in. `act` stays a bare past
+ * participle at every call site — a caller that writes "not saved" itself would
+ * produce "was not not saved", which `check:org-refusal-honesty`'s twin unit
+ * test in lib/organizations/__tests__ refuses.
+ */
 export function organizationRefusalMessage(
   options: OrganizationRefusalOptions = {},
 ): string {
-  const subject = options.subject ?? "Nothing";
   const act = options.act ?? "saved";
-  return `${subject} was ${act} because no organization is selected. ${ORGANIZATION_REQUIRED_REMEDY}`;
+  const refusal = options.subject
+    ? `${options.subject} was not ${act}`
+    : `Nothing was ${act}`;
+  return `${refusal} because no organization is selected. ${ORGANIZATION_REQUIRED_REMEDY}`;
 }
 
 /**

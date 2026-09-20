@@ -473,6 +473,22 @@ export interface AssistsPreferences {
   } | null;
 }
 
+/**
+ * Connectors — the person's own answers about the connector prompt card.
+ *
+ * `promptDismissedAt` is keyed by PROVIDER id (`"google"`, and every provider
+ * after it) and holds the ISO timestamp of the dismissal, not a boolean: the
+ * `connectors.prompt.resurface_days` knob decides whether an organization ever
+ * brings the card back, and it needs to know WHEN it was dismissed. Default 0
+ * means never — a dismissal is final unless an organization says otherwise.
+ *
+ * It lives here rather than in `localStorage` because a person who says "not
+ * now" on their laptop has said it on their phone too.
+ */
+export interface ConnectorsPreferences {
+  promptDismissedAt: Record<string, string>;
+}
+
 export interface OrganizationPreferences {
   /**
    * The user's DEFAULT active organization. When set, the active-org bootstrap
@@ -570,6 +586,13 @@ export interface ConversationFilterSurfacePref {
 export interface ConversationFilterPreferences {
   /** surfaceId → override. Empty = every surface uses its registry default. */
   surfaces: Record<string, ConversationFilterSurfacePref>;
+  /**
+   * The viewer's lane toggles (chat | matrx | auto | plugin | subagent) — one
+   * choice for every filterable history surface. Absent = never chosen → the
+   * default (chat + matrx); `[]` = every lane off. Read through
+   * `normalizeLanes` (features/agents/redux/conversation-history/lanes.ts).
+   */
+  lanes?: string[];
 }
 
 /**
@@ -677,6 +700,7 @@ export interface UserPreferences {
   listViews: ListViewsPreferences;
   lists: ListsPreferences;
   assists: AssistsPreferences;
+  connectors: ConnectorsPreferences;
 }
 
 // Add state interface for async operations
@@ -1129,6 +1153,8 @@ export const initializeUserPreferencesState = (
       quietUntil: null,
       presentationCycle: null,
     },
+    // Keyed by provider id; absent = the connector card was never dismissed.
+    connectors: { promptDismissedAt: {} },
   };
 
   // Merge with defaults to ensure all properties exist
@@ -1207,6 +1233,10 @@ export const initializeUserPreferencesState = (
     assists: {
       ...defaultPreferences.assists,
       ...preferences.assists,
+    },
+    connectors: {
+      ...defaultPreferences.connectors,
+      ...preferences.connectors,
     },
   };
 

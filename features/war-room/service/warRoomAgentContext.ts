@@ -123,7 +123,7 @@ function assignmentToResource(
   }
 
   // Provider provenance stamped on the edge at attach time (conversations:
-  // e.g. source_app="claude-code" marks a mirrored coding-agent session vs a
+  // e.g. source_app="code-plugin" marks a mirrored coding-agent session vs a
   // normal chat). Open-vocabulary: rendered for ANY row whose edge carries it.
   if (typeof md.source_app === "string" && md.source_app) {
     attrs = { ...attrs, source_app: md.source_app };

@@ -22,6 +22,10 @@ import {
   type SourceFeature,
 } from "@/types/python-generated/source-attribution";
 import {
+  AUTONOMY_MODES,
+  type AutonomyMode as ApprovalAutonomyMode,
+} from "@/features/approvals/types";
+import {
   toKeywordMeaningProposal,
   toKeywordMeaningProvenance,
   type KeywordMeaningProposal,
@@ -99,6 +103,28 @@ export type AssistAction =
       /** Declared-variable values seeded onto the fresh conversation — the
        *  structured-content channel (THE USER-INPUT LAW). */
       variableValues?: Record<string, string>;
+    }
+  | {
+      /**
+       * Hand this organization's queued pages to the person's OWN signed-in
+       * Chrome, through the Matrx extension.
+       *
+       * The pages in `media.capture_handoff` are ones neither our scraper nor
+       * our server browser can read, because they only open for someone signed
+       * in. The person's browser already is. This action does not send the
+       * person anywhere and does not open the page in front of them — the
+       * extension opens each one in a background tab and reads it. The one
+       * thing a click must achieve is that the extension is looking at the
+       * right WORKSPACE, which is why the organization travels in the row: the
+       * extension resolves its own active organization independently of this
+       * app, and a queue read against the wrong one is an empty screen that
+       * looks exactly like "nothing is waiting".
+       */
+      kind: "open_in_own_browser";
+      organizationId: string;
+      /** The queue's first page, so the extension's panel opens on it. */
+      handoffId?: string;
+      url?: string;
     }
   | {
       kind: "navigate";
@@ -191,6 +217,56 @@ export type AssistAction =
       provenance: KeywordMeaningProvenance;
       /** md5 of the canonical proposal — the dedupe identity a rejection kills. */
       payloadHash: string;
+    }
+  | {
+      /**
+       * A proposal waiting in THE PLATFORM APPROVAL QUEUE (`features/approvals/`).
+       *
+       * Human-in-the-loop policy rule 5 gives the platform ONE approval
+       * surface, and this store is that surface's store (chair ruling
+       * 2026-09-17). The row is addressed to the OPERATOR — the person whose
+       * authority the agent ran under — and the decision happens in the queue,
+       * where the kind's own reviewer renders the would-be change and whose
+       * accept replays the ordinary human write path.
+       *
+       * Its own variant rather than a `server_action` for the same reason
+       * `apply_keyword_meaning` is: the writes are client-side, through the
+       * same services a person clicking in the product uses.
+       *
+       * 🚨 It has NO chip-side applier. Its handler
+       * (`runtime/handlers/open-approval-queue.ts`) only takes the person TO
+       * the queue: an approval that could be granted from a collapsed chip,
+       * with the review body not on screen, would defeat the review.
+       */
+      kind: "approval_proposal";
+      /**
+       * The approval KIND id — the key of a registration in
+       * `features/approvals/registry.ts` (`gmail_send`, `sheet_write`, …). A
+       * string on purpose: a new kind is a data value plus one renderer, and
+       * this union must never need editing for each one.
+       */
+      proposalKind: string;
+      /** Which of the five autonomy modes produced it. */
+      mode: ApprovalAutonomyMode;
+      /** Who proposed it, in the reader's words ("the CRM follow-up agent"). */
+      proposerLabel?: string;
+      /** The acting agent, the run, and the person whose authority it used. */
+      proposerAgentId?: string;
+      proposerRunId?: string;
+      operatorUserId?: string;
+      /**
+       * The would-be change, verbatim — a tool's `dry_run` result. Its shape is
+       * owned by the kind's module, which narrows it at run time, and it keeps
+       * its `__kind` marker like everything else stored (THE KIND-MARKER LAW).
+       */
+      payload: Json;
+      /**
+       * Set when the addressee CANNOT perform this change (the operator does
+       * not hold the sending account, for example). The item still appears —
+       * never silently dropped — showing this sentence and who can act,
+       * instead of offering a decision that would be refused.
+       */
+      blocked?: { reason: string; whoCan: string };
     };
 
 /**
@@ -384,6 +460,18 @@ export interface Assist {
   isStarred: boolean;
   /** Stamped when the row was first read in the manager (the unseen dot). */
   viewedAt: string | null;
+  /**
+   * Mode 3 only: the instant this proposal applies ITSELF if nobody rules
+   * (`platform.assists.auto_apply_at`). Absent means no clock — every other
+   * mode, and every assist that is not an approval proposal. It is NOT
+   * `expiresAt`: expiring hides a chip, this one makes the change, and the
+   * approval queue prints it before it can fire (HITL policy rule 4).
+   *
+   * The column is live and generated (`types/database.types.ts` carries it as
+   * of the 2026-09-17 regeneration); `readAutoApplyAt` is still the one funnel,
+   * because a malformed value must never read as a clock.
+   */
+  autoApplyAt?: string | null;
 }
 
 /**
@@ -434,7 +522,20 @@ export type AssistSortField =
 
 export interface AssistsPage {
   rows: Assist[];
+  /**
+   * The server's `count` for this query — EVERY matching row, including the
+   * ones `narrowRows` dropped. A surface that prints a number a person reads
+   * must subtract `unreadable` (or count `rows`), because a count over rows
+   * nothing can render is the header claiming work nobody can see (round-2
+   * verification of the approval queue, § A-ii).
+   */
   total: number;
+  /**
+   * How many rows on THIS page the narrowing refused — already screamed about
+   * by `narrowRows`, and reported here so a caller can make its own total
+   * honest instead of rediscovering the gap.
+   */
+  unreadable: number;
 }
 
 /** Per-status counts for the manager's summary strip. */
@@ -494,7 +595,13 @@ function narrowEvidence(value: Json): AssistEvidence | null {
   };
 }
 
-function narrowAction(value: Json): AssistAction | null {
+/**
+ * Row `action` → the typed union, or null. EXPORTED because it is THE
+ * definition of "a row this client can act on": the approvals badge counts the
+ * rows the queue would show by running this over them, rather than counting in
+ * SQL and disagreeing with the screen (Bugbot HIGH, frontend PR 228).
+ */
+export function narrowAction(value: Json): AssistAction | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const obj = value as Record<string, Json | undefined>;
   const kind = obj.kind;
@@ -523,6 +630,20 @@ function narrowAction(value: Json): AssistAction | null {
         typeof obj.completeMessage === "string"
           ? obj.completeMessage
           : undefined,
+    };
+  }
+  if (
+    kind === "open_in_own_browser" &&
+    typeof obj.organizationId === "string" &&
+    obj.organizationId.length > 0
+  ) {
+    // The organization is the one field without which this action cannot be
+    // honest, so it is the one field narrowing refuses to default.
+    return {
+      kind,
+      organizationId: obj.organizationId,
+      handoffId: typeof obj.handoffId === "string" ? obj.handoffId : undefined,
+      url: typeof obj.url === "string" ? obj.url : undefined,
     };
   }
   if (kind === "navigate" && typeof obj.href === "string") {
@@ -591,6 +712,67 @@ function narrowAction(value: Json): AssistAction | null {
       provenance: toKeywordMeaningProvenance(obj.provenance),
       payloadHash:
         typeof obj.payloadHash === "string" ? obj.payloadHash : "",
+    };
+  }
+  if (kind === "approval_proposal") {
+    /**
+     * 🚨 EVERY ACTION KIND A PRODUCER WRITES HAS A BRANCH HERE, OR THE ROWS
+     * DO NOT EXIST.
+     *
+     * `toAssist` drops a row whose action will not narrow, so a missing branch
+     * is not a rendering gap — it is total silence: the queue reads 0 of the
+     * live proposals, a deep link reports "unconfirmed", and the header badge
+     * (counted in SQL) disagrees with the empty screen. That is exactly what
+     * happened to `approval_proposal` between the kind's addition to the union
+     * above and 2026-09-17 (Bugbot HIGH, frontend PR 228): the type existed,
+     * the producer wrote it (`aidream/services/google_workspace/approvals.py`),
+     * and nothing could read it back.
+     *
+     * The shape is the producer's, verbatim: `proposalKind`, `mode`, `payload`,
+     * `proposerLabel`, optional `proposerAgentId` / `proposerRunId`,
+     * `operatorUserId`. `payload` is passed through UNTOUCHED — its `__kind`
+     * marker is part of the data and the kind's own module narrows it (THE
+     * KIND-MARKER LAW).
+     */
+    const proposalKind = obj.proposalKind;
+    const mode = obj.mode;
+    if (typeof proposalKind !== "string" || proposalKind.length === 0) {
+      return null;
+    }
+    // A mode this build does not know is NOT coerced to a safe-looking one: the
+    // mode decides whether a person must click, so a guess is unacceptable.
+    if (
+      typeof mode !== "string" ||
+      !AUTONOMY_MODES.includes(mode as ApprovalAutonomyMode)
+    ) {
+      return null;
+    }
+    const blockedRecord =
+      obj.blocked && typeof obj.blocked === "object" && !Array.isArray(obj.blocked)
+        ? (obj.blocked as Record<string, Json | undefined>)
+        : null;
+    const blocked =
+      blockedRecord &&
+      typeof blockedRecord.reason === "string" &&
+      typeof blockedRecord.whoCan === "string"
+        ? { reason: blockedRecord.reason, whoCan: blockedRecord.whoCan }
+        : undefined;
+    return {
+      kind,
+      proposalKind,
+      mode: mode as ApprovalAutonomyMode,
+      payload: obj.payload ?? null,
+      proposerLabel:
+        typeof obj.proposerLabel === "string" ? obj.proposerLabel : undefined,
+      proposerAgentId:
+        typeof obj.proposerAgentId === "string"
+          ? obj.proposerAgentId
+          : undefined,
+      proposerRunId:
+        typeof obj.proposerRunId === "string" ? obj.proposerRunId : undefined,
+      operatorUserId:
+        typeof obj.operatorUserId === "string" ? obj.operatorUserId : undefined,
+      ...(blocked ? { blocked } : {}),
     };
   }
   if (kind === "surface_write" && typeof obj.target === "string") {
@@ -686,5 +868,18 @@ export function toAssist(row: AssistRow): Assist | null {
     decisionNote: row.decision_note,
     isStarred: row.is_starred,
     viewedAt: row.viewed_at,
+    autoApplyAt: readAutoApplyAt(row),
   };
+}
+
+/**
+ * `platform.assists.auto_apply_at` — the generated column, read through ONE
+ * funnel. The stand-in that read it off an untyped row is gone (the column has
+ * been in `types/database.types.ts` since the 2026-09-17 regeneration).
+ * Anything that is not a non-empty string is NO CLOCK: an empty or malformed
+ * value must never read as "this applies itself at some point".
+ */
+export function readAutoApplyAt(row: AssistRow): string | null {
+  const value = row.auto_apply_at;
+  return typeof value === "string" && value.length > 0 ? value : null;
 }

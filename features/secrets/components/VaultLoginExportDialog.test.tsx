@@ -40,6 +40,7 @@ jest.mock("@/utils/supabase/client", () => ({
   }),
 }));
 jest.mock("../vault-service", () => ({
+  ...jest.requireActual("../vault-service"),
   getVaultExportActor: jest.fn(),
   previewVaultLoginCsv: jest.fn(),
   downloadVaultLoginCsv: jest.fn(),
@@ -171,8 +172,48 @@ describe("VaultLoginExportDialog", () => {
     signInWithPasswordMock.mockResolvedValue({ data: { user: { id: "other-user" }, session: { access_token: "test-token" } }, error: null });
     getClaimsMock.mockResolvedValue({ data: { claims: { amr: [{ method: "password", timestamp: Math.floor(Date.now() / 1000) }] } }, error: null });
     await act(async () => button("Confirm identity").click());
-    expect(document.body.textContent).toContain("Identity confirmation could not be verified");
+    expect(document.body.textContent).toContain("We could not verify your identity");
+    expect(document.querySelector("#vault-export-password")).toBeNull();
+    expect(document.body.textContent).toContain("0 selected of 1 shown");
     expect(downloadMock).not.toHaveBeenCalled();
+  });
+
+  test("invalidates the export after the post-confirmation context changes", async () => {
+    await requestConfirmation();
+    getActorMock.mockReset();
+    getActorMock
+      .mockResolvedValueOnce(actor)
+      .mockResolvedValueOnce({
+        ...actor,
+        organizationId: "22222222-2222-4222-8222-222222222222",
+      });
+    signInWithPasswordMock.mockResolvedValue({
+      data: { user: { id: actor.userId }, session: { access_token: "test-token" } },
+      error: null,
+    });
+    getClaimsMock.mockResolvedValue({
+      data: { claims: { amr: [{ method: "password", timestamp: Math.floor(Date.now() / 1000) }] } },
+      error: null,
+    });
+    await act(async () => button("Confirm identity").click());
+    expect(document.querySelector("#vault-export-password")).toBeNull();
+    expect(document.body.textContent).toContain(
+      "Your account or organization changed",
+    );
+    expect(document.body.textContent).toContain("0 selected of 1 shown");
+  });
+
+  test("invalidates the export when the password AMR is missing", async () => {
+    await requestConfirmation();
+    signInWithPasswordMock.mockResolvedValue({
+      data: { user: { id: actor.userId }, session: { access_token: "test-token" } },
+      error: null,
+    });
+    getClaimsMock.mockResolvedValue({ data: { claims: { amr: [] } }, error: null });
+    await act(async () => button("Confirm identity").click());
+    expect(document.querySelector("#vault-export-password")).toBeNull();
+    expect(document.body.textContent).toContain("We could not verify your identity");
+    expect(document.body.textContent).toContain("0 selected of 1 shown");
   });
 
   test("late sign-in after account invalidation does not restore export", async () => {

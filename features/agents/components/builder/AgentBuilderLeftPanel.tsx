@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { Skeleton } from "@ai-matrx/design-system";
 import { AgentModelConfiguration } from "./AgentModelConfiguration";
 import { AgentVariablesManager } from "@/features/agents/components/variables-management/AgentVariablesManager";
+import { AgentToolsRow } from "@/features/agents/components/tools-management/AgentToolsRow";
 import { AgentContextPoliciesManager } from "../context-policies-management/AgentContextPoliciesManager";
 import { AgentBuilderMessagesArea } from "./AgentBuilderLeftPanelContent";
 import { AddMessageButtons } from "./AddMessageButtons";
@@ -34,9 +35,12 @@ function AddButtonsSkeleton() {
 export function AgentBuilderLeftPanel({ agentId }: AgentBuilderLeftPanelProps) {
   return (
     <div className="flex flex-col h-full">
-      <div className="flex flex-col gap-2 shrink-0 pt-0.5 pb-2">
+      <div className="flex flex-col gap-2 shrink-0 py-3">
         <AgentModelConfiguration agentId={agentId} />
         <AgentVariablesManager agentId={agentId} />
+        {/* Tools reads as a row, like Variables and Resources — not only as the
+            wrench icon above, which a whole verification pass never found. */}
+        <AgentToolsRow agentId={agentId} />
         <AgentContextPoliciesManager
           agentId={agentId}
           showCompactInjectionControl
@@ -48,7 +52,7 @@ export function AgentBuilderLeftPanel({ agentId }: AgentBuilderLeftPanelProps) {
         <AgentBuilderMessagesArea agentId={agentId} />
       </Suspense>
 
-      <div className="flex items-center justify-end gap-1 shrink-0 py-2 border-t border-border bg-background">
+      <div className="flex items-center justify-end gap-1 shrink-0 border-t border-border bg-card py-3">
         <Suspense fallback={<AddButtonsSkeleton />}>
           <AddMessageButtons agentId={agentId} />
         </Suspense>

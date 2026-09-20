@@ -45,6 +45,7 @@ import {
   newestDeliveryAt,
 } from "@/features/ai-work/conversations/bindingPlurality";
 import { workspaceName } from "@/features/ai-work/lib/codingSessionPresentation";
+import { CODE_PLUGIN_SOURCE_APP } from "@/features/ai-work/lib/providerSource";
 
 function workConversationHref(conversationId: string): string {
   return `/work/conversations/${conversationId}`;
@@ -435,9 +436,13 @@ function CodingSessionRow({
   const verdict = fidelityVerdict(session.fidelity);
   const workspace = workspaceName(session.metadata);
   const dispatch = useAppDispatch();
-  const sourceApp =
-    session.conversation?.source_app ?? meta?.sourceApp ?? session.provider;
-  const sourceFeature = session.conversation?.source_feature ?? "code-editor";
+  // A mirrored conversation is `code-plugin` · <tool>. Before its conversation
+  // row is readable, the binding's own provider names the tool.
+  const sourceApp = session.conversation?.source_app ?? CODE_PLUGIN_SOURCE_APP;
+  const sourceFeature =
+    session.conversation?.source_feature ??
+    meta?.sourceFeature ??
+    session.provider;
 
   return (
     <div className="group/entity-ref flex items-center gap-3 border-b border-border/40 px-3 py-2.5 last:border-b-0 hover:bg-muted/30">
@@ -546,9 +551,13 @@ function CodingSessionDetail({
   const meta = providerMeta(session.provider);
   const title = session.conversation?.title?.trim() || "Untitled conversation";
   const verdict = fidelityVerdict(session.fidelity);
-  const sourceApp =
-    session.conversation?.source_app ?? meta?.sourceApp ?? session.provider;
-  const sourceFeature = session.conversation?.source_feature ?? "code-editor";
+  // A mirrored conversation is `code-plugin` · <tool>. Before its conversation
+  // row is readable, the binding's own provider names the tool.
+  const sourceApp = session.conversation?.source_app ?? CODE_PLUGIN_SOURCE_APP;
+  const sourceFeature =
+    session.conversation?.source_feature ??
+    meta?.sourceFeature ??
+    session.provider;
 
   return (
     <div className="flex h-full min-h-0 flex-col">

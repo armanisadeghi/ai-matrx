@@ -476,6 +476,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- 2026-09-17 — **Removed a double `decodeURIComponent` on `sourceKey`** in `masterwork/[id]/sources/kept/[sourceKey]/page.tsx` — the App Router already decodes the value React's `use(params)` returns, so a source key carrying a literal `%` threw `URIError` on the second decode. Part of the repo-wide `pnpm check:route-param-decode` census/guard; see `lib/detail/FEATURE.md` Change Log.
 - 2026-09-18 (a pile launches whole, or not at all) — **THE FIFTEEN FILES THAT
   WERE NEVER SUBMITTED.** `common-docs/projects/acquisition-frontier/own-files/
   VERIFICATION.md` §9.1/§9.6: an Expert dropped seventeen files on a Rulebook

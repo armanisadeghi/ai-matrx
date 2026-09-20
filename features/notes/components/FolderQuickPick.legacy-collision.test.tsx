@@ -2,10 +2,17 @@ const schema = jest.fn();
 const getSession = jest.fn();
 const requireUserId = jest.fn();
 const listForSources = jest.fn();
+const toastError = jest.fn();
+const toastErrorAlreadyCaptured = jest.fn();
 
 jest.mock("@/utils/supabase/client", () => ({ supabase: { schema, auth: { getSession } } }));
 jest.mock("@/utils/auth/getUserId", () => ({ requireUserId }));
 jest.mock("@/features/scopes/service/associationsService", () => ({ associationsService: { listForSources } }));
+jest.mock("@/lib/toast", () => ({
+  toast: { error: (...a: unknown[]) => toastError(...a), dismiss: jest.fn(), success: jest.fn() },
+  toastErrorAlreadyCaptured: (...a: unknown[]) => toastErrorAlreadyCaptured(...a),
+  recordToast: { success: jest.fn(), error: jest.fn() },
+}));
 jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
 jest.mock("@/components/ui/dialog", () => ({
   Dialog: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -27,8 +34,9 @@ import { Provider } from "react-redux";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import notesReducer from "../redux/slice";
-import appContextReducer from "@/lib/redux/slices/appContextSlice";
+import appContextReducer, { makeAppContextState } from "@/lib/redux/slices/appContextSlice";
 import { FolderQuickPick } from "./FolderQuickPick";
+import { NOTE_FOLDER_CROSS_ORG_MESSAGE } from "../utils/writeErrors";
 import type { UserAuthState } from "@/lib/redux/slices/userAuthSlice";
 
 enableMapSet();
@@ -50,7 +58,7 @@ function store() {
   const userAuth = (state: Pick<UserAuthState, "id"> = { id: USER }) => state;
   return configureStore({
     reducer: { notes: notesReducer, appContext: appContextReducer, userAuth },
-    preloadedState: { appContext: { organization_id: ORG_A, organization_name: null, personal_organization_id: null, scope_selections: {}, active_scope_type_ids: [], project_id: null, project_name: null, task_id: null, task_name: null, conversation_id: null, orgBootstrapResolved: true } },
+    preloadedState: { appContext: makeAppContextState({ organization_id: ORG_A, orgBootstrapResolved: true }) },
     middleware: (defaults) => defaults({ serializableCheck: false }),
   });
 }
@@ -63,12 +71,18 @@ describe("FolderQuickPick legacy cross-org folder collision", () => {
     listForSources.mockResolvedValue({ ok: true, data: { edges: [] } });
   });
 
-  it("keeps typed input and an actionable retry after the real service rejects a legacy org-B collision", async () => {
-    const upsert = chain({ data: null, error: { code: "23505", message: "duplicate legacy key" } });
-    const orgRead = chain({ data: null, error: null });
-    const crossOrgRead = chain({ data: { id: "folder-b", organization_id: ORG_B }, error: null });
-    const from = jest.fn().mockReturnValueOnce(upsert).mockReturnValueOnce(orgRead).mockReturnValueOnce(crossOrgRead);
-    schema.mockReturnValue({ from });
+  it("keeps typed input, says a sentence and raises a toast when the database refuses a legacy org-B collision", async () => {
+    // The refusal the DATABASE raises while the retired org-blind key is live
+    // (workbench.note_folder_get_or_create) — the exact code and text, as
+    // PostgREST hands it to the client.
+    const rpc = jest.fn().mockResolvedValue({
+      data: null,
+      error: {
+        code: "23505",
+        message: "notes_folder_cross_org_legacy_key: this person already owns a folder with this name in another organization, and the retired (created_by, name) key is still live.",
+      },
+    });
+    schema.mockReturnValue({ rpc, from: jest.fn(() => chain({ data: null, error: null })) });
     const configured = store();
     const host = document.createElement("div");
     const root = createRoot(host);
@@ -86,7 +100,13 @@ describe("FolderQuickPick legacy cross-org folder collision", () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
     expect(configured.getState().notes.notes).toEqual({});
-    expect(host.textContent).toContain("notes_folder_cross_org_legacy_key");
+    expect(rpc).toHaveBeenCalledWith("note_folder_get_or_create", { p_organization_id: ORG_A, p_name: "Reserved name" });
+    // The person reads a sentence, never the database's code …
+    expect(host.textContent).toContain(NOTE_FOLDER_CROSS_ORG_MESSAGE);
+    expect(host.textContent).not.toContain("notes_folder_cross_org_legacy_key");
+    // … and the failure is ANNOUNCED by the shared boundary, not left to the surface.
+    const announced = [...toastError.mock.calls, ...toastErrorAlreadyCaptured.mock.calls].map((c) => c[0]);
+    expect(announced).toContain(NOTE_FOLDER_CROSS_ORG_MESSAGE);
     expect(input.value).toBe("Reserved name");
     expect((host.querySelector('button[type="submit"]') as HTMLButtonElement).disabled).toBe(false);
     await act(async () => { root.unmount(); });

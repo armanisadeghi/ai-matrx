@@ -46,7 +46,13 @@ function crm() {
 
 /** The party embed, pinned to the FK column (self-join embeds MUST target the
  *  FK column — `party!<fk-name>` resolves REVERSE at runtime; see FEATURE.md). */
-const PARTY_EMBED = "*, party:primary_party_id(id,display_name,party_kind)";
+// `organization_id` is selected because a WRITE about the party (a Gmail-sent
+// interaction) must carry the PARTY's organization, not the deal's: two live
+// triggers on `crm.interaction` fill or REFUSE the org from the party, so a deal
+// whose org has diverged from its party's failed the insert after the message had
+// already left (VERIFY-B1-B2 D8).
+const PARTY_EMBED =
+  "*, party:primary_party_id(id,display_name,party_kind,organization_id)";
 
 function bucketSince(bucket: DealDateBucket): string {
   const hours = { "1d": 24, "7d": 24 * 7, "30d": 24 * 30, "90d": 24 * 90 }[

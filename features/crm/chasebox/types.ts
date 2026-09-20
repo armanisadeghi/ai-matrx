@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { Database } from "@/types/database.types";
 import type { ListScopeKind } from "@/lib/list-scope/types";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 
 /** One row, exactly as crm_chasebox_items returns it. */
 export type ChaseboxRow =
@@ -115,7 +116,7 @@ export function isChaseboxQueue(value: string): value is ChaseboxQueue {
 export function chaseboxFixHref(row: ChaseboxRow): string | undefined {
   switch (row.queue as ChaseboxQueue) {
     case "fresh_replies":
-      return row.party_id ? `/crm/${row.party_id}` : undefined;
+      return row.party_id ? resolveEntityDoors("party", row.party_id).href ?? undefined : undefined;
     case "pending_drafts":
       return row.outreach_list_id
         ? `/crm/outreach-lists/${row.outreach_list_id}`
@@ -132,9 +133,9 @@ export function chaseboxFixHref(row: ChaseboxRow): string | undefined {
     case "blocked_members":
       // Every structural block is repaired on the contact record (attach a
       // point, lift a mistaken do-not-contact, see what is on the value).
-      return row.party_id ? `/crm/${row.party_id}` : undefined;
+      return row.party_id ? resolveEntityDoors("party", row.party_id).href ?? undefined : undefined;
     case "escalation_candidates":
-      return row.party_id ? `/crm/${row.party_id}` : undefined;
+      return row.party_id ? resolveEntityDoors("party", row.party_id).href ?? undefined : undefined;
     default:
       return undefined;
   }

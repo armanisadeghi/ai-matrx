@@ -28,6 +28,7 @@ import type { CheckResult } from "@/lib/guided-setup/types";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { siteConnectionStatuses } from "@/features/marketing/lib/site-status";
 import { parseSiteIntegrations } from "@/features/marketing/data/integrations-schema";
+import { preflightGscProperty } from "@/features/marketing/google/gsc-property";
 import {
   getGscBackfillStatus,
   getGscFreshness,
@@ -118,7 +119,29 @@ export const siteSetupChecklist = registerChecklist<SiteSetupContext>({
             fix: { label: "Fix the connection", href: integrationsHref(site) },
           };
         }
-        return { status: "pass", detail: gscProperty(site) ?? undefined };
+        // THE PRE-FLIGHT (google-native PLAN §4.8). A bound property of the
+        // WRONG TYPE is the worst shape this checklist can pass: the connection
+        // is genuinely healthy and Google answers 200 with nothing, so every
+        // other step below reads "no data yet" forever. Named here, with the
+        // property to pick instead.
+        const ref = gscProperty(site);
+        const preflight = ref
+          ? preflightGscProperty(ref, {
+              root_url: site.root_url,
+              domain: site.domain,
+            })
+          : null;
+        if (preflight?.verdict === "mismatch") {
+          return {
+            status: "fail",
+            reason: `${preflight.headline} ${preflight.detail}`,
+            fix: { label: "Pick the right property", href: integrationsHref(site) },
+          };
+        }
+        if (preflight?.verdict === "advisory") {
+          return { status: "pass", detail: `${ref} — ${preflight.headline}` };
+        }
+        return { status: "pass", detail: ref ?? undefined };
       },
     },
     {

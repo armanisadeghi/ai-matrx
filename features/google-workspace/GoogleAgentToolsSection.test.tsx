@@ -129,7 +129,7 @@ describe("GoogleAgentToolsSection", () => {
     host.remove();
   });
 
-  it("keeps agent assignment unavailable until the active google_read definition exists", () => {
+  it("keeps agent assignment unavailable until the active google_marketing definition exists", () => {
     tools.mockReturnValue([]);
     act(() => root.render(<GoogleAgentToolsSection />));
     expect(host.textContent).toContain("Google data access is being prepared");
@@ -142,7 +142,7 @@ describe("GoogleAgentToolsSection", () => {
 
   it("uses the active registry row and canonical owned-agent picker", async () => {
     tools.mockReturnValue([
-      { id: "read-id", name: "google_read" },
+      { id: "marketing-id", name: "google_marketing" },
       { id: "write-id", name: "google_workspace" },
     ]);
     act(() => root.render(<GoogleAgentToolsSection />));
@@ -152,28 +152,28 @@ describe("GoogleAgentToolsSection", () => {
         .find((button) => button.textContent === "Choose my agent")
         ?.click(),
     );
-    expect(host.textContent).toContain("Add Google read access");
+    expect(host.textContent).toContain("Add Google marketing access");
     expect(host.textContent).toContain(
       "Create and edit selected Docs and Sheets; prepare email.",
     );
     dispatch.mockClear();
     await act(async () =>
       Array.from(host.querySelectorAll("button"))
-        .find((button) => button.textContent === "Add Google read access")
+        .find((button) => button.textContent === "Add Google marketing access")
         ?.click(),
     );
     expect(dispatch).toHaveBeenCalledWith({
       type: "assignment",
       input: {
         agentId: "agent-one",
-        addToolIds: ["read-id"],
+        addToolIds: ["marketing-id"],
         removeToolIds: [],
       },
     });
   });
 
   it("shows serialized assignment errors and leaves the explicit action retryable", async () => {
-    tools.mockReturnValue([{ id: "read-id", name: "google_read" }]);
+    tools.mockReturnValue([{ id: "marketing-id", name: "google_marketing" }]);
     assignmentUnwrap = () =>
       Promise.reject({
         message:
@@ -187,24 +187,24 @@ describe("GoogleAgentToolsSection", () => {
     );
     await act(async () =>
       Array.from(host.querySelectorAll("button"))
-        .find((button) => button.textContent === "Add Google read access")
+        .find((button) => button.textContent === "Add Google marketing access")
         ?.click(),
     );
     expect(host.textContent).toContain("tools, owner, or model changed");
     expect(
       Array.from(host.querySelectorAll("button")).find(
-        (button) => button.textContent === "Add Google read access",
+        (button) => button.textContent === "Add Google marketing access",
       )?.disabled,
     ).toBe(false);
   });
 
   it("allows removal when an existing Google tool's model is missing or incapable", async () => {
-    tools.mockReturnValue([{ id: "read-id", name: "google_read" }]);
+    tools.mockReturnValue([{ id: "marketing-id", name: "google_marketing" }]);
     agent.mockReturnValue({
       id: "agent-one",
       name: "Research agent",
       modelId: null,
-      tools: ["read-id"],
+      tools: ["marketing-id"],
     });
     modelReady.mockReturnValue(false);
     act(() => root.render(<GoogleAgentToolsSection />));
@@ -215,7 +215,7 @@ describe("GoogleAgentToolsSection", () => {
     );
     expect(host.textContent).toContain("no model selected");
     const remove = Array.from(host.querySelectorAll("button")).find(
-      (button) => button.textContent === "Remove Google read access",
+      (button) => button.textContent === "Remove Google marketing access",
     ) as HTMLButtonElement;
     expect(remove.disabled).toBe(false);
     dispatch.mockClear();
@@ -225,7 +225,7 @@ describe("GoogleAgentToolsSection", () => {
       input: {
         agentId: "agent-one",
         addToolIds: [],
-        removeToolIds: ["read-id"],
+        removeToolIds: ["marketing-id"],
       },
     });
 
@@ -233,7 +233,7 @@ describe("GoogleAgentToolsSection", () => {
       id: "agent-one",
       name: "Research agent",
       modelId: "model-one",
-      tools: ["read-id"],
+      tools: ["marketing-id"],
     });
     modelReady.mockReturnValue(true);
     toolSupport.mockReturnValue(false);
@@ -242,14 +242,14 @@ describe("GoogleAgentToolsSection", () => {
     expect(
       (
         Array.from(host.querySelectorAll("button")).find(
-          (button) => button.textContent === "Remove Google read access",
+          (button) => button.textContent === "Remove Google marketing access",
         ) as HTMLButtonElement
       ).disabled,
     ).toBe(false);
   });
 
   it("drops a stale agent load after the actor or organization changes", async () => {
-    tools.mockReturnValue([{ id: "read-id", name: "google_read" }]);
+    tools.mockReturnValue([{ id: "marketing-id", name: "google_marketing" }]);
     agentReady.mockReturnValue(false);
     let resolveFirst: (() => void) | undefined;
     agentUnwrap = () =>

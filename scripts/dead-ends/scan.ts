@@ -20,6 +20,7 @@ import {
   expressionWords,
   inferToken,
   nounsForToken,
+  inferTokenDetailed,
   type EntityTokenInfo,
 } from "./entity-tokens";
 import type { DeadEndFinding, DeadEndRuleId, DeadEndSeverity } from "./types";
@@ -262,6 +263,98 @@ const ENTITY_SOURCE_IMPORT_RE =
 const COUNTABLE_NOUNS =
   /\b(agents?|notes?|files?|tasks?|projects?|conversations?|chats?|documents?|workflows?|skills?|apps?|overrides?|versions?|members?|users?|records?|items?|shortcuts?|transcripts?|datasets?|workbooks?|lists?|keywords?|pages?|scopes?|organizations?|orgs?|mandates?|slots?|sessions?|messages?|comments?|attachments?|resources?)\b/i;
 
+// ─── Toast door vocabulary ──────────────────────────────────────────────────
+//
+// THE CLASS (V-20 N10, 2026-09-18): `pnpm check:dead-ends` read JSX text only,
+// so a surface could create a record, name it in a toast, and offer no way to
+// reach it — and every rule above stayed green. `AgendaPanel.tsx` did exactly
+// that: "Note created and linked to this event." with no door anywhere, and the
+// note was then reachable from nothing.
+//
+// A toast is the one place where a dead end is WORSE than on a page: the
+// sentence removes itself after four seconds, so a door the user did not take
+// in that window is gone. The remedy is both halves — a door in the toast
+// (`{ action: { label, onClick } }`) and a door on the surface, because the
+// toast expires and the record does not.
+//
+// NOT the same rule as `pnpm check:record-toasts`, and neither one is the other
+// half's substitute. That check asks whether a record-naming toast CARRIES the
+// record (`recordToast` + `{ type, id, title }`) so it can be withdrawn when
+// the sentence stops being true; this one asks whether the person can OPEN the
+// record the sentence names. A call can pass either and fail the other, and the
+// two remedies are different lines of code — so the rules live apart on
+// purpose, one detector each.
+
+/** Sonner methods that raise a sentence a person reads. */
+const TOAST_METHODS = new Set(["success", "error", "info", "warning", "message"]);
+
+/**
+ * Modules whose `toast` binding raises a real toast. `sonner` is included even
+ * though importing it directly is banned elsewhere — a blind spot is not worth
+ * keeping to make this rule's scope tidy.
+ */
+const TOAST_MODULE_RE = /lib\/toast|^["']sonner["']$/;
+
+/**
+ * A record CAME INTO EXISTENCE (or into another record) in the click this toast
+ * reports, so the surface provably holds it and the user has somewhere to go.
+ *
+ * DELIBERATELY NOT `saved`, `updated`, `renamed`, `deleted`, `copied` on their
+ * own: "Note saved" is almost always the record's OWN editor — the user is
+ * already there, and the Door Law is honoured. "Deleted" and "Copied" name
+ * nothing to open at all. Requiring a creation verb is what keeps this rule off
+ * the enormous every-mutation-toast population; the cost is that a genuine
+ * "Renamed X" dead end is out of reach (FEATURE.md § Known limits).
+ */
+const TOAST_CREATION_VERB_RE =
+  /\b(created?|creating|added|imported|uploaded|duplicated|cloned|generated|published|scheduled|queued|started)\b/i;
+
+/**
+ * "Saved to <note>" / "assigned to <agent>" — the record named is ELSEWHERE.
+ *
+ * `copied to` is absent on purpose (the clipboard is not a record), and so are
+ * `sent to` / `exported to`: "Feedback sent to agent" names a RECIPIENT, and the
+ * record that came into being is the feedback comment, not the agent.
+ *
+ * For this family the entity's noun must also appear AFTER the phrase — the
+ * destination is the record being named. "Note added to the knowledge base"
+ * names the note the user is already on and a destination that is not a record,
+ * and it read as a finding until the position was checked.
+ */
+const TOAST_ELSEWHERE_PHRASE_RE =
+  /\b(saved (to|in)|added to|moved to|assigned to|linked to|attached to)\b/i;
+
+/**
+ * The operation did NOT happen. There is no record to open, and naming what
+ * failed is the surface being honest (law 4), never a dead end.
+ */
+const TOAST_FAILED_RE =
+  /\b(fail(s|ed|ure|ing)?|could ?n.t|can ?not|can.t|unable|denied|refused|rejected|invalid|missing|not found|no longer|does ?n.t exist|already|skipped|nothing (to|was)|no [a-z]+ (were|was) |was not|were not)\b/i;
+
+/**
+ * The surface REFUSED before doing anything, and the sentence is an instruction
+ * ("Choose an organization before creating a note.") or a prerequisite
+ * ("This asset kind needs a source URL"). No record was created, so there is
+ * nothing to open — and the mutation verb in it is the thing the user has NOT
+ * done yet. Nine of the first seventy-nine findings were this shape.
+ */
+const TOAST_INSTRUCTION_RE =
+  /^(choose|select|pick|enter|provide|sign in|set |name |type |give )/i;
+
+const TOAST_PREREQUISITE_RE =
+  /\b(before (creat|sav|add|upload|import|gener|send|publish)|try (creating|again)|still loading|needs? (a|an|to)\b|no [a-z ]{1,24} to (create|save|add|send)|auto-?generated)/i;
+
+/**
+ * The record is GONE (or was never a record): trashed, deleted, unpublished, or
+ * copied to the clipboard. Nothing to open — the honest affordance is Undo, and
+ * that is a different law.
+ */
+const TOAST_GONE_RE =
+  /\b(moved to (the )?trash|deleted|removed|unpublished|archived|discarded|revoked|detached|unlinked|copied to clipboard|to your clipboard)\b/i;
+
+/** Properties on a toast's options bag that put a door IN the toast. */
+const TOAST_DOOR_OPTION_RE = /^(action|actions)$/;
+
 // ─── File filtering ─────────────────────────────────────────────────────────
 
 const SKIP_PATH_FRAGMENTS = [
@@ -290,6 +383,28 @@ export function shouldScanFile(relPath: string): boolean {
 export interface ScanContext {
   repoRoot: string;
   tokens: Map<string, EntityTokenInfo>;
+  /**
+   * Optional ledger of the bare nouns that name SEVERAL registered entities
+   * ("document" → four of them) as they appear in a TOAST MESSAGE — prose a human
+   * wrote about a record. Nothing is reported against such a noun (a confident
+   * wrong record name is the defect V-21 found), so the run says out loud how
+   * often it happened and where: qualify the word or register the entity, never
+   * guess. Keyed noun → files.
+   *
+   * Deliberately MESSAGE-ONLY. Fed from identifier text too, it filled with
+   * `item`, `list` and `set` off 400 files of ordinary variable names — an
+   * everyday word in a variable is not a record this platform failed to name, and
+   * a scoreboard nobody can act on is worse than no line at all.
+   */
+  ambiguousNouns?: Map<string, Set<string>>;
+}
+
+/** Record an honest "I could not name this record" against the noun that caused it. */
+function noteAmbiguousNoun(ctx: ScanContext, noun: string, relPath: string): void {
+  if (!ctx.ambiguousNouns) return;
+  const files = ctx.ambiguousNouns.get(noun) ?? new Set<string>();
+  files.add(relPath);
+  ctx.ambiguousNouns.set(noun, files);
 }
 
 export function scanFile(
@@ -346,6 +461,9 @@ export function scanFile(
   const isDiagnosticSurface =
     /(^|\/)(debug|diagnostic|devtools)|Debug|Diagnostic|DevTools|TestClient/.test(relPath);
 
+  /** Toast bindings, read once from the import graph (see `toastBindings`). */
+  const toasts = toastBindings(sf);
+
   const visit = (node: ts.Node): void => {
     if (ts.isImportDeclaration(node)) {
       const spec = node.moduleSpecifier.getText(sf);
@@ -358,6 +476,15 @@ export function scanFile(
           ) || bindings.some((b) => DOOR_BINDING_RE.test(b));
         if (declaresDoor) importsDoor = true;
       }
+    }
+
+    if (ts.isCallExpression(node)) {
+      // A toast is not JSX and has no ancestor to carry a door, so this rule
+      // reads the CALL. It never feeds `sawEntityName` / `sawNamedId`: the
+      // Inventory Law is about a surface presenting records, and a toast is a
+      // sentence that leaves the screen.
+      const toastFinding = classifyToastCall(node, sf, relPath, ctx, toasts);
+      if (toastFinding) findings.push(toastFinding);
     }
 
     if (ts.isJsxExpression(node) && isTextPosition(node)) {
@@ -418,6 +545,475 @@ function isTextPosition(node: ts.JsxExpression): boolean {
   );
 }
 
+// ─── Rule: a toast that announces a record must open it ─────────────────────
+
+/**
+ * The toast bindings this FILE imported, read from the import graph and never
+ * from raw text — `const toast = …` on a local object must not arm the rule,
+ * and a renamed import (`import { toast as notify }`) must not escape it.
+ */
+function toastBindings(sf: ts.SourceFile): Set<string> {
+  const out = new Set<string>();
+  for (const stmt of sf.statements) {
+    if (!ts.isImportDeclaration(stmt)) continue;
+    if (!TOAST_MODULE_RE.test(stmt.moduleSpecifier.getText(sf))) continue;
+    for (const binding of importedBindings(stmt)) out.add(binding);
+  }
+  return out;
+}
+
+interface ToastMessage {
+  /** Every literal fragment of the message, in order, joined by "…". */
+  text: string;
+  /** The interpolated expressions, as source text. */
+  interpolations: string[];
+  /**
+   * The same message with each interpolation INLINED as its source text, so word
+   * ORDER survives: `Saved to ${scopeName}` → "Saved to scopeName". The
+   * destination gate needs to know whether the entity's noun came before or
+   * after the phrase, and the display text cannot answer that.
+   */
+  flat: string;
+}
+
+/**
+ * The STATIC text of a toast's message argument, or null when there is none to
+ * read. Template literals, both arms of a ternary and both sides of a `+` or
+ * `??` are read — the shipped offender was a ternary of two different sentences,
+ * and reading only the first would have missed it.
+ *
+ * A message built elsewhere (`toast.success(msg)`), or one assembled by a call,
+ * is invisible to this rule. That is a stated limit, not a pass.
+ */
+function staticMessage(expr: ts.Expression | undefined, depth = 0): ToastMessage | null {
+  if (!expr || depth > 4) return null;
+  if (ts.isStringLiteral(expr) || ts.isNoSubstitutionTemplateLiteral(expr)) {
+    return { text: expr.text, interpolations: [], flat: expr.text };
+  }
+  if (ts.isTemplateExpression(expr)) {
+    const parts = [expr.head.text];
+    const flat = [expr.head.text];
+    const interpolations: string[] = [];
+    for (const span of expr.templateSpans) {
+      interpolations.push(span.expression.getText());
+      flat.push(` ${span.expression.getText()} `, span.literal.text);
+      parts.push(span.literal.text);
+    }
+    return { text: parts.join(" … "), interpolations, flat: flat.join("") };
+  }
+  if (ts.isParenthesizedExpression(expr) || ts.isAsExpression(expr)) {
+    return staticMessage(expr.expression, depth + 1);
+  }
+  if (ts.isConditionalExpression(expr)) {
+    return mergeMessages(
+      staticMessage(expr.whenTrue, depth + 1),
+      staticMessage(expr.whenFalse, depth + 1),
+    );
+  }
+  if (ts.isBinaryExpression(expr)) {
+    return mergeMessages(
+      staticMessage(expr.left, depth + 1),
+      staticMessage(expr.right, depth + 1),
+    );
+  }
+  return null;
+}
+
+function mergeMessages(a: ToastMessage | null, b: ToastMessage | null): ToastMessage | null {
+  if (!a) return b;
+  if (!b) return a;
+  return {
+    text: `${a.text} … ${b.text}`,
+    interpolations: [...a.interpolations, ...b.interpolations],
+    flat: `${a.flat} … ${b.flat}`,
+  };
+}
+
+/**
+ * Does this call carry a door?
+ *
+ * An options argument we cannot read — a variable, a spread, a call — counts as
+ * a door. This rule reports a door it can prove ABSENT, never one it merely
+ * cannot see: `toast.success(msg, door)` (the shipped fix's own shape) must
+ * pass, and a false accusation costs more than a missed finding here.
+ */
+function toastCallHasDoor(call: ts.CallExpression, messageIndex: number): boolean {
+  const rest = call.arguments.slice(messageIndex + 1);
+  if (rest.length === 0) return false;
+  return rest.some((arg) => {
+    if (!ts.isObjectLiteralExpression(arg)) return true;
+    return arg.properties.some((prop) => {
+      if (ts.isSpreadAssignment(prop)) return true;
+      const name = prop.name ? propertyNameText(prop.name) : null;
+      return name != null && TOAST_DOOR_OPTION_RE.test(name);
+    });
+  });
+}
+
+function propertyNameText(name: ts.PropertyName): string | null {
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name)) return name.text;
+  return null;
+}
+
+/**
+ * Does this FILE render the collection of this entity — `files.map(…)`,
+ * `keywordList.map(…)`? Then the record the toast announces lands in a list the
+ * surface is already showing, with that list's own doors on it.
+ *
+ * Whole-file on purpose, and noun-scoped on purpose. An unnamed `refresh()` /
+ * `onChanged()` in the handler proves nothing about WHICH collection came back —
+ * the shipped offender called exactly that and its note was reachable from
+ * nowhere, because an agenda of calendar events never lists notes. What the file
+ * ITERATES is the honest signal.
+ */
+function fileRendersRecordsOf(token: string, scopeText: string): boolean {
+  return nounsForToken(token).some((noun) =>
+    new RegExp(
+      `\\b[A-Za-z]*${escapeRe(noun)}(s|List|Items|Rows)\\??\\.(map|slice|flatMap)\\(`,
+      "i",
+    ).test(scopeText),
+  );
+}
+
+/**
+ * Does the sentence say THIS ENTITY was created — not merely mention it?
+ *
+ * The creation verb and the entity's noun must sit within two words of each
+ * other: "Note created", "Created project “x”", "Keyword added". Without this,
+ * "Created <folder> and moved the note" was reported against `note` (the note
+ * was moved, the folder was created, and neither reading matched the finding)
+ * and "Imported 42 segments from <file>" against `file`.
+ */
+function verbNamesThisEntity(flat: string, token: string): boolean {
+  const words = flat.replace(/[^A-Za-z0-9]+/g, " ").trim().split(" ");
+  // A camelCase word contributes each of its segments, so "Created calendarEvent"
+  // reads the same as "Created calendar event".
+  const segmentsOf = (word: string): string[] =>
+    word.split(/(?=[A-Z])/).map((part) => part.toLowerCase());
+  const singular = (part: string): string =>
+    part.endsWith("s") ? part.slice(0, -1) : part;
+  const matches = (segment: string, part: string): boolean =>
+    segment === part || singular(segment) === part;
+
+  const verbAt: number[] = [];
+  const perWord = words.map(segmentsOf);
+  perWord.forEach((segments, i) => {
+    if (segments.some((segment) => TOAST_CREATION_VERB_RE.test(segment))) verbAt.push(i);
+  });
+
+  // 🚨 A MULTI-WORD noun must match CONSECUTIVE segments: "Calendar event created"
+  // names a `calendar_event`, while "event" or "calendar" alone names nothing.
+  // Testing each word against a flat SET of nouns (what this did before any noun
+  // had two words) made every noun phrase unmatchable — the registered entity
+  // would be inferred and then silently gated out here.
+  const nounAt: number[] = [];
+  for (const noun of nounsForToken(token)) {
+    const parts = noun.split(" ");
+    if (parts.length === 1) {
+      perWord.forEach((segments, i) => {
+        if (segments.some((segment) => matches(segment, parts[0]))) nounAt.push(i);
+      });
+      continue;
+    }
+    // (a) one part per word: "Calendar event created".
+    for (let i = 0; i + parts.length <= perWord.length; i++) {
+      if (parts.every((part, k) => perWord[i + k].some((seg) => matches(seg, part)))) {
+        nounAt.push(i + parts.length - 1);
+      }
+    }
+    // (b) every part inside ONE camelCase word: "calendarEvent created".
+    perWord.forEach((segments, i) => {
+      for (let at = 0; at + parts.length <= segments.length; at++) {
+        if (parts.every((part, k) => matches(segments[at + k], part))) nounAt.push(i);
+      }
+    });
+  }
+  return verbAt.some((v) => nounAt.some((n) => Math.abs(v - n) <= 2));
+}
+
+/** Does the entity's noun appear AFTER the reference phrase that matched? */
+function nounFollows(flat: string, match: RegExpExecArray, token: string): boolean {
+  const tail = flat.replace(/\s+/g, " ").slice((match.index ?? 0) + match[0].length);
+  return nounsForToken(token).some((noun) =>
+    new RegExp(`\\b${escapeRe(noun)}s?\\b`, "i").test(tail),
+  );
+}
+
+/**
+ * THE COHERENCE GATE, and the load-bearing precision gate of this rule: did the
+ * handler CALL something that names this entity?
+ *
+ * `createNoteAboutEvent(…)` before "Note created" proves the handler performed
+ * that record's mutation and therefore holds it. Every function invoked in the
+ * handler is read — `dispatch(copyNote({…}))` counts through the inner call —
+ * and nothing else is: an identifier merely *passed* (`confirmCandidate(partyId)`)
+ * is the surface's own subject, not the record the toast announces, and taking
+ * identifiers into account attributed a merged contact's toast to the party page
+ * the user was already on.
+ *
+ * It is also what keeps the entity ATTRIBUTION honest. "Created <folder> and
+ * moved the note" resolved to `note` from the trailing words while the record
+ * that came into being was a folder; the handler calls `onCreateFolder`, never a
+ * note mutation, so the mismatch is caught instead of reported as a dead end
+ * against the wrong entity.
+ */
+function handlerCallsEntityMutation(
+  fn: ts.Node,
+  token: string,
+  tokens: Map<string, EntityTokenInfo>,
+): boolean {
+  let hit = false;
+  const walk = (node: ts.Node): void => {
+    if (hit) return;
+    if (ts.isCallExpression(node)) {
+      const callee = ts.isPropertyAccessExpression(node.expression)
+        ? node.expression.name.text
+        : ts.isIdentifier(node.expression)
+          ? node.expression.text
+          : "";
+      if (callee) {
+        const info = inferToken(expressionWords(callee), tokens);
+        if (info?.token === token) hit = true;
+      }
+    }
+    ts.forEachChild(node, walk);
+  };
+  walk(fn);
+  return hit;
+}
+
+/**
+ * The nearest enclosing function — the click handler. Both precision gates
+ * below read it, and NOTHING wider: a navigation somewhere else in the file
+ * (another row's `openDetail`) says nothing about this toast.
+ */
+function enclosingFunction(node: ts.Node): ts.Node | null {
+  let cur: ts.Node | undefined = node.parent;
+  for (let guard = 0; cur && guard < 40; guard++) {
+    if (
+      ts.isFunctionDeclaration(cur) ||
+      ts.isFunctionExpression(cur) ||
+      ts.isArrowFunction(cur) ||
+      ts.isMethodDeclaration(cur)
+    ) {
+      return cur;
+    }
+    cur = cur.parent;
+  }
+  return null;
+}
+
+/**
+ * THE HANDLER ALREADY OPENED IT. `toast.success("Agent created!")` followed by
+ * `router.replace(`/agents/${newId}/build`)` is the Door Law honoured in the
+ * strongest possible way — the user is standing on the record. Five of the first
+ * ten audited findings were this shape or the next one.
+ */
+const TOAST_HANDLER_NAVIGATES_RE =
+  /\brouter\s*\.\s*(push|replace)\s*\(|\bwindow\s*\.\s*open\s*\(|\b(open|goTo|navigateTo|peek)[A-Z]\w*\s*\(|\bnavigate\s*\(/;
+
+/**
+ * THE RESULT LANDED ON THIS SCREEN. `const res = await generateImage(…)` then
+ * `setResults(res.files)` — the records the toast counts are rendered by this
+ * same surface, so there is nothing to reach for.
+ *
+ * Deliberately narrow: only a state setter fed from the MUTATION'S OWN result
+ * counts. A bare refresh callback (`onChanged()`, `fetchAppsInitial()`) does
+ * not, because it reloads the list the surface was already showing — the
+ * shipped offender called exactly that and the note it created was still
+ * reachable from nowhere.
+ */
+function mutationResultIsRenderedHere(fn: ts.Node, sf: ts.SourceFile): boolean {
+  const awaited = new Set<string>();
+  const setterArgs: string[] = [];
+  /** `const created = result.project` — one alias hop off the awaited value. */
+  const aliases: { name: string; from: string }[] = [];
+
+  const walk = (node: ts.Node): void => {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
+      if (ts.isAwaitExpression(node.initializer)) awaited.add(node.name.text);
+      else aliases.push({ name: node.name.text, from: node.initializer.getText(sf) });
+    }
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      // `setX`, and the same move under another name: `addImage(…)`,
+      // `appendRow(…)`, `pushResult(…)`, `selectFile(…)`.
+      /^(set|add|append|push|insert|select)[A-Z]/.test(node.expression.text)
+    ) {
+      setterArgs.push(node.arguments.map((a) => a.getText(sf)).join(" "));
+    }
+    ts.forEachChild(node, walk);
+  };
+  walk(fn);
+
+  // One transitive hop: an alias of an awaited value is an awaited value.
+  for (let pass = 0; pass < 2; pass++) {
+    for (const alias of aliases) {
+      if (awaited.has(alias.name)) continue;
+      if ([...awaited].some((n) => new RegExp(`\\b${escapeRe(n)}\\b`).test(alias.from))) {
+        awaited.add(alias.name);
+      }
+    }
+  }
+
+  if (awaited.size === 0 || setterArgs.length === 0) return false;
+  return [...awaited].some((name) => {
+    const re = new RegExp(`\\b${escapeRe(name)}\\b`);
+    return setterArgs.some((arg) => re.test(arg));
+  });
+}
+
+/**
+ * Is every mention of this entity's noun spoken as the surface's OWN subject —
+ * "this agent", "your files", "the current project"? Then the toast names no
+ * record the user has been left unable to reach.
+ */
+function everyMentionIsTheSurfacesOwn(text: string, token: string): boolean {
+  const nouns = nounsForToken(token);
+  let mentions = 0;
+  let own = 0;
+  for (const noun of nouns) {
+    const re = new RegExp(`(\\b(this|your|the current|each|every)\\s+)?\\b${escapeRe(noun)}s?\\b`, "gi");
+    for (const match of text.matchAll(re)) {
+      mentions += 1;
+      if (match[1]) own += 1;
+    }
+  }
+  return mentions > 0 && own === mentions;
+}
+
+/**
+ * The handler RELOADS THE LIST OF THIS VERY ENTITY — `dispatch(fetchAppsInitial())`
+ * after "App duplicated." The new record lands in the collection this surface is
+ * showing, with the list's own doors on it.
+ *
+ * Name-matched to the entity on purpose. A bare `onChanged()` / `refresh()` says
+ * nothing about WHICH collection came back, and the shipped offender called
+ * exactly that while its note stayed unreachable — so an unnamed refresh never
+ * excuses a toast.
+ */
+function reloadsThisCollection(fnText: string, token: string): boolean {
+  return nounsForToken(token).some((noun) =>
+    new RegExp(
+      `\\b(fetch|refetch|reload|refresh|load|invalidate|revalidate|sync)[A-Za-z]*${escapeRe(noun)}s?[A-Za-z]*\\s*\\(`,
+      "i",
+    ).test(fnText),
+  );
+}
+
+/**
+ * A toast that announces a record the person cannot open.
+ *
+ * Skip contexts, each one a measured class rather than a guess:
+ *  - a message this rule cannot read statically (built elsewhere);
+ *  - a FAILED operation — nothing was created, so there is nothing to open, and
+ *    naming the failure is the surface being honest;
+ *  - a mutation that is not a creation and not a reference to a record
+ *    elsewhere ("Note saved" is the note's own editor — the user is there);
+ *  - a message naming no entity the live registry knows;
+ *  - any call whose options argument this rule cannot read (assume a door).
+ */
+function classifyToastCall(
+  call: ts.CallExpression,
+  sf: ts.SourceFile,
+  relPath: string,
+  ctx: ScanContext,
+  bindings: Set<string>,
+): DeadEndFinding | null {
+  if (bindings.size === 0) return null;
+
+  let receiver: string | null = null;
+  let method: string | null = null;
+  if (ts.isPropertyAccessExpression(call.expression)) {
+    receiver = rootIdentifier(call.expression.expression);
+    method = call.expression.name.text;
+  } else if (ts.isIdentifier(call.expression)) {
+    // `toast("…")` — sonner's bare call, a `message` toast.
+    receiver = call.expression.text;
+    method = "message";
+  }
+  if (!receiver || !method) return null;
+  if (!bindings.has(receiver)) return null;
+  // `toast.custom` / `toast.promise` / `toast.dismiss` — nothing static to read.
+  if (!TOAST_METHODS.has(method)) return null;
+
+  // `recordToast.success(ref, message, options)` — the record ref comes first.
+  const messageIndex = /recordToast$/.test(receiver) ? 1 : 0;
+  const message = staticMessage(call.arguments[messageIndex]);
+  if (!message) return null;
+
+  const text = message.text.replace(/\s+/g, " ").trim();
+  if (!text) return null;
+  if (TOAST_FAILED_RE.test(text)) return null;
+  if (TOAST_INSTRUCTION_RE.test(text) || TOAST_PREREQUISITE_RE.test(text)) return null;
+  if (TOAST_GONE_RE.test(text)) return null;
+  // "added to the knowledge base" is the REFERENCE family, not a creation — and
+  // reading it as one skipped the destination gate, so a note's own panel
+  // announcing its own indexing read as a dead end.
+  const creationText = text.replace(
+    /\b(added|moved|saved|assigned|linked|attached) to\b/gi,
+    " ",
+  );
+  const createdHere = TOAST_CREATION_VERB_RE.test(creationText);
+  const elsewhere = TOAST_ELSEWHERE_PHRASE_RE.exec(message.flat.replace(/\s+/g, " "));
+  if (!createdHere && !elsewhere) return null;
+
+  const words = [
+    ...expressionWords(text),
+    ...message.interpolations.flatMap((i) => expressionWords(i)),
+  ];
+  const inferred = inferTokenDetailed(words, ctx.tokens);
+  const tokenInfo = inferred.info;
+  if (!tokenInfo) {
+    if (inferred.ambiguousNoun) noteAmbiguousNoun(ctx, inferred.ambiguousNoun, relPath);
+    return null;
+  }
+
+  // Reference family only: the record is the DESTINATION, so its noun has to
+  // come after the phrase. Skipped when the toast also reports a creation —
+  // "Created <note> and moved the note" names a record either way.
+  if (!createdHere && elsewhere && !nounFollows(message.flat, elsewhere, tokenInfo.token)) {
+    return null;
+  }
+  // Creation family: the sentence must say THIS record was created.
+  if (createdHere && !verbNamesThisEntity(message.flat, tokenInfo.token)) {
+    if (!elsewhere || !nounFollows(message.flat, elsewhere, tokenInfo.token)) return null;
+  }
+
+  // "added to THIS agent" / "saved to YOUR files" — a demonstrative or a
+  // possessive means the surface's own subject or the user's own area, not a
+  // second record they now cannot reach. Only skip when EVERY mention of the
+  // noun is spoken that way: "Note created and linked to this event" names the
+  // note plainly and must still report.
+  if (everyMentionIsTheSurfacesOwn(text, tokenInfo.token)) return null;
+
+  if (toastCallHasDoor(call, messageIndex)) return null;
+  if (fileRendersRecordsOf(tokenInfo.token, sf.text)) return null;
+
+  const fn = enclosingFunction(call);
+  if (fn) {
+    const fnText = fn.getText(sf);
+    if (TOAST_HANDLER_NAVIGATES_RE.test(fnText)) return null;
+    if (mutationResultIsRenderedHere(fn, sf)) return null;
+    if (reloadsThisCollection(fnText, tokenInfo.token)) return null;
+    if (!handlerCallsEntityMutation(fn, tokenInfo.token, ctx.tokens)) return null;
+  }
+
+  const pos = sf.getLineAndCharacterOfPosition(call.getStart(sf));
+  return makeFinding({
+    relPath,
+    line: pos.line + 1,
+    column: pos.character + 1,
+    rule: "toast-names-record",
+    severity: tokenInfo.hasRoute ? "high" : "medium",
+    entity: tokenInfo.token,
+    entityHasRoute: tokenInfo.hasRoute,
+    entityLabel: tokenInfo.label,
+    expression: text.length > 120 ? `${text.slice(0, 117)}…` : text,
+  });
+}
+
 function classifyExpression(
   node: ts.JsxExpression,
   sf: ts.SourceFile,
@@ -448,9 +1044,11 @@ function classifyExpression(
   if (isInPlaceholder(node, sf)) return null;
 
   const words = expressionWords(rawText);
-  const tokenInfo = inferToken(words, ctx.tokens);
+  const inferred = inferTokenDetailed(words, ctx.tokens);
+  const tokenInfo = inferred.info;
   const entity = tokenInfo?.token ?? `?${rootIdentifier(expr) ?? "unknown"}`;
   const entityHasRoute = tokenInfo?.hasRoute ?? false;
+  const entityLabel = tokenInfo?.label;
   const pos = sf.getLineAndCharacterOfPosition(expr.getStart(sf));
   const line = pos.line + 1;
   const column = pos.character + 1;
@@ -508,6 +1106,7 @@ function classifyExpression(
       severity: entityHasRoute ? "high" : "medium",
       entity,
       entityHasRoute,
+      entityLabel,
       expression: rawText,
     });
   }
@@ -532,6 +1131,7 @@ function classifyExpression(
       severity: entityHasRoute ? "high" : "medium",
       entity,
       entityHasRoute,
+      entityLabel,
       expression: rawText,
     });
   }
@@ -561,6 +1161,7 @@ function classifyExpression(
       column,
       rule: "unlinked-count",
       severity: "medium",
+      entityLabel,
       entity,
       entityHasRoute,
       expression: `${rawText} ${noun.trim()}`,
@@ -1383,6 +1984,8 @@ function makeFinding(args: {
   severity: DeadEndSeverity;
   entity: string;
   entityHasRoute: boolean;
+  /** The registry's label for `entity`, when a token was inferred. */
+  entityLabel?: string;
   expression: string;
 }): DeadEndFinding {
   return {
@@ -1393,6 +1996,7 @@ function makeFinding(args: {
     severity: args.severity,
     entity: args.entity,
     entityHasRoute: args.entityHasRoute,
+    ...(args.entityLabel ? { entityLabel: args.entityLabel } : {}),
     expression: args.expression,
     feature: featureOf(args.relPath),
     route: routeOf(args.relPath),

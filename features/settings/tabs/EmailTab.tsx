@@ -7,6 +7,9 @@ import { SettingsButton } from "@/components/official/settings/primitives/Settin
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
+import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import { toast } from "@/lib/toast";
 
 /**
  * Email notification preferences.
@@ -54,7 +57,7 @@ export default function EmailTab() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/user/email-preferences");
+        const res = await fetchWithOrganization("/api/user/email-preferences");
         const data = await res.json();
         if (!cancelled && data.success && data.data) setPrefs(data.data);
       } catch {
@@ -76,13 +79,44 @@ export default function EmailTab() {
   const save = async () => {
     setSaving(true);
     try {
-      const res = await fetch("/api/user/email-preferences", {
+      // Organization-scoped route: since the 2026-09-19 ruling it refuses a
+      // request that names no organization rather than filing the row in the
+      // person's personal workspace. `fetchWithOrganization` carries the
+      // selected organization and, on a refusal, opens the picker and replays
+      // once with whatever they set.
+      const res = await fetchWithOrganization("/api/user/email-preferences", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(prefs),
       });
-      const data = await res.json();
-      if (data.success) setDirty(false);
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success) {
+        setDirty(false);
+        return;
+      }
+      // 🚨 NOTHING FAILS SILENTLY. This used to read `const data = await
+      // res.json(); if (data.success) setDirty(false);` — a failed save left
+      // the form dirty and said nothing at all, so the person saw a Save
+      // button that had apparently done nothing and no reason why.
+      toast.error("Your email preferences were not saved", {
+        description:
+          typeof data?.user_message === "string"
+            ? data.user_message
+            : typeof data?.error === "string"
+              ? data.error
+              : "Something went wrong saving them. Try again in a moment.",
+      });
+    } catch (error) {
+      // The person closed the organization picker: an answer meaning "not
+      // now". Nothing was saved and nothing is claimed — the form stays dirty
+      // and they can press Save again whenever they like.
+      if (isOrganizationSelectionCancelled(error)) return;
+      toast.error("Your email preferences were not saved", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Something went wrong saving them. Try again in a moment.",
+      });
     } finally {
       setSaving(false);
     }

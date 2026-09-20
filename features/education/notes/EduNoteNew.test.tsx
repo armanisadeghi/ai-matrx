@@ -1,5 +1,6 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { makeAppContextState } from "@/lib/redux/slices/appContextSlice";
 
 const replace = jest.fn();
 const create = jest.fn();
@@ -8,19 +9,10 @@ let organizationBootstrapResolved = false;
 
 const reduxState = () =>
   ({
-    appContext: {
+    appContext: makeAppContextState({
       organization_id: organizationId,
-      organization_name: null,
-      personal_organization_id: null,
-      scope_selections: {},
-      active_scope_type_ids: [],
-      project_id: null,
-      project_name: null,
-      task_id: null,
-      task_name: null,
-      conversation_id: null,
       orgBootstrapResolved: organizationBootstrapResolved,
-    },
+    }),
     scopesTree: {
       organizations: {},
       organizationIds: [],

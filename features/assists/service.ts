@@ -7,8 +7,9 @@
  * nudges, so the scope is always MINE (user_id = the caller), pending, live
  * (unexpired, unsuppressed, not soft-deleted).
  *
- * Producers use `emitAssist` — idempotent by `dedupe_key` (re-noticing the
- * same thing updates the live pending chip, never stacks a duplicate).
+ * Producers use `emitAssist` — the only browser write is
+ * `platform.emit_pending_assist` (idempotent by `dedupe_key`; re-noticing
+ * updates the live pending chip, never stacks a duplicate, never 409s).
  */
 
 import { createClient } from "@/utils/supabase/client";
@@ -17,7 +18,7 @@ import {
   runWithSessionRetry,
   SessionUnavailableError,
 } from "@/lib/supabase/authRetry";
-import type { Json } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 import {
   toAssist,
   type Assist,
@@ -59,12 +60,27 @@ const SORT_COLUMNS = {
 
 /** Narrow rows, screaming (never silently dropping) on an unaddressable one. */
 export function narrowRows(rows: AssistRow[]): Assist[] {
+  return narrowRowsCounted(rows).rows;
+}
+
+/**
+ * The same narrowing, plus HOW MANY IT REFUSED. Callers that print a count a
+ * person reads need that number: the server's `count` includes rows nothing can
+ * render, so a header built on it claims work nobody can see (round-2
+ * verification of the approval queue, § A-ii).
+ */
+export function narrowRowsCounted(rows: AssistRow[]): {
+  rows: Assist[];
+  unreadable: number;
+} {
   const assists: Assist[] = [];
+  let unreadable = 0;
   for (const row of rows) {
     const assist = toAssist(row);
     if (assist) {
       assists.push(assist);
     } else {
+      unreadable += 1;
       // Invalid/stale ledger data is expected validation fallout: keep it loud
       // for developers without turning a safely skipped row into a durable
       // application incident through the global console.error capture.
@@ -73,7 +89,7 @@ export function narrowRows(rows: AssistRow[]): Assist[] {
       );
     }
   }
-  return assists;
+  return { rows: assists, unreadable };
 }
 
 function nowIso(): string {
@@ -119,11 +135,35 @@ export async function canProduceAssist(sourceKey: string): Promise<boolean> {
 }
 
 /**
- * Emit (or refresh) an assist. Idempotent by `dedupe_key`: an existing live
- * pending row with the same key is UPDATED in place. Returns the row id, or
- * null when the write was refused (surfaced loudly, never thrown into UI).
+ * Same-tab collapse for one addressee + dedupe key. Two mounts in one tick
+ * used to both miss the pending SELECT and both INSERT; the door below makes
+ * that race silent, and this map keeps it from becoming two RPCs as well.
+ */
+const emitInFlight = new Map<string, Promise<string | null>>();
+
+/**
+ * Emit (or refresh) an assist. Idempotent by `dedupe_key`: the database door
+ * `platform.emit_pending_assist` inserts, or updates the caller's own live
+ * pending row, or returns null when someone else already holds the key.
+ * Returns the row id, or null when the write was refused (surfaced loudly,
+ * never thrown into UI).
  */
 export async function emitAssist(
+  userId: string,
+  input: EmitAssistInput,
+  organizationId: string,
+): Promise<string | null> {
+  const flightKey = `${userId}\0${input.dedupeKey}`;
+  const existing = emitInFlight.get(flightKey);
+  if (existing) return existing;
+  const flight = emitAssistOnce(userId, input, organizationId).finally(() => {
+    if (emitInFlight.get(flightKey) === flight) emitInFlight.delete(flightKey);
+  });
+  emitInFlight.set(flightKey, flight);
+  return flight;
+}
+
+async function emitAssistOnce(
   userId: string,
   input: EmitAssistInput,
   organizationId: string,
@@ -144,82 +184,40 @@ export async function emitAssist(
     );
     return null;
   }
-  const supabase = createClient();
-  const payload = {
-    user_id: userId,
-    organization_id: organizationId,
-    // Producers address the assist; created_by = addressee keeps RLS honest
-    // even when a service-role producer writes on someone's behalf.
-    created_by: userId,
-    source_kind: input.sourceKind ?? "deterministic",
-    source_key: input.sourceKey,
-    title: input.title,
-    body: input.body ?? null,
-    action: input.action,
-    surface_name: input.surfaceName ?? null,
-    entity_type: input.entityType ?? null,
-    entity_id: input.entityId ?? null,
-    dedupe_key: input.dedupeKey,
-    expires_at: input.expiresAt ?? null,
-    priority: input.priority ?? 0,
-    evidence: (input.evidence ?? null) as Json,
-    confidence: input.confidence ?? null,
-    reasoning: input.reasoning ?? null,
-    first_seen_at: nowIso(),
-  };
-
-  const { data: existing, error: findError } = await supabase
-    .schema("platform")
-    .from(TABLE)
-    .select("id, occurrences")
-    .eq("dedupe_key", input.dedupeKey)
-    .eq("status", "pending")
-    .is("deleted_at", null)
-    .maybeSingle();
-  if (findError) {
-    console.error(`[assists] emit lookup failed: ${findError.message}`);
+  if (!userId) {
+    console.error(`[assists] emit requires a user id`);
     return null;
   }
-
-  if (existing) {
-    // A re-notice refreshes what the user reads and COUNTS — but never moves
-    // `first_seen_at`. "You have had this for three weeks" is the signal
-    // web.finding's first_detected_at carried and a plain upsert destroys.
-    const { error } = await supabase
-      .schema("platform")
-      .from(TABLE)
-      .update({
-        title: payload.title,
-        body: payload.body,
-        action: payload.action,
-        expires_at: payload.expires_at,
-        priority: payload.priority,
-        evidence: payload.evidence,
-        confidence: payload.confidence,
-        reasoning: payload.reasoning,
-        occurrences: (existing.occurrences ?? 1) + 1,
-      })
-      .eq("id", existing.id);
-    if (error) {
-      console.error(`[assists] emit refresh failed: ${error.message}`);
-      return null;
-    }
-    return existing.id;
-  }
-
-  const { data, error } = await supabase
-    .schema("platform")
-    .from(TABLE)
-    .insert(payload)
-    .select("id")
-    .single();
+  const supabase = createClient();
+  // supabase-js codegen marks every SQL argument required-non-null. The door
+  // accepts NULL for the fields a producer may omit; that is the live
+  // signature, and passing empty strings / zero UUIDs would write fakes.
+  const emitArgs = {
+    p_organization_id: organizationId,
+    p_source_kind: input.sourceKind ?? "deterministic",
+    p_source_key: input.sourceKey,
+    p_title: input.title,
+    p_body: input.body ?? null,
+    p_action: input.action,
+    p_surface_name: input.surfaceName ?? null,
+    p_entity_type: input.entityType ?? null,
+    p_entity_id: input.entityId ?? null,
+    p_dedupe_key: input.dedupeKey,
+    p_expires_at: input.expiresAt ?? null,
+    p_priority: input.priority ?? 0,
+    p_evidence: (input.evidence ?? null) as Json,
+    p_confidence: input.confidence ?? null,
+    p_reasoning: input.reasoning ?? null,
+  };
+  const { data, error } = await supabase.schema("platform").rpc(
+    "emit_pending_assist",
+    emitArgs as Database["platform"]["Functions"]["emit_pending_assist"]["Args"],
+  );
   if (error) {
-    // 23505 = a concurrent producer won the dedupe race — that's success.
-    if (error.code === "23505") return null;
     console.error(`[assists] emit failed: ${error.message}`);
     return null;
   }
-  return data.id;
+  return data ?? null;
 }
 
 /**
@@ -262,6 +260,58 @@ export async function filterUndecidedKeys(keys: string[]): Promise<string[]> {
   }
   const decided = new Set((data ?? []).map((r) => r.dedupe_key));
   return keys.filter((k) => !decided.has(k));
+}
+
+/**
+ * The ONE status that means "stop showing me this": the person dismissed it.
+ *
+ * Everything else is not a standing instruction. `accepted` means they DID the
+ * thing once — the opposite of "never again". `expired`, `superseded` and
+ * `resolved` happened to the row without anybody deciding anything.
+ */
+const SILENCED_BY_A_PERSON: readonly AssistStatus[] = ["dismissed"];
+
+/**
+ * Like {@link filterUndecidedKeys}, but only a DISMISSAL blocks a key. Use it
+ * when the producer's condition genuinely RECURS under the same dedupe key.
+ *
+ * 🚨 WHY THIS EXISTS, and what the live ledger taught it. `filterUndecidedKeys`
+ * treats any non-pending status as decided. For a producer whose key is stable
+ * — one row per workspace, say — that makes a one-shot notice in two different
+ * ways, and both were real:
+ *
+ *   * `resolved` means "the condition stopped reproducing and NOBODY had to
+ *     decide anything". A producer that resolves its own row when the work is
+ *     finished would then be silenced by its own success, and the queue could
+ *     fill up for ever with nobody told.
+ *   * `accepted` means the person PRESSED THE BUTTON. Reading that as "stop
+ *     showing me this" silences the one person who proved the notice works.
+ *     Two workspaces reached exactly that state within minutes of the feature
+ *     going live, which is how this was caught.
+ *
+ * A dismissal is different, and durable: it is the only one the person issued
+ * as an instruction about the future, and it is what "Dismiss for good"
+ * promises on the card.
+ */
+export async function filterKeysNotSilencedByAPerson(
+  keys: string[],
+): Promise<string[]> {
+  if (keys.length === 0) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("platform")
+    .from(TABLE)
+    .select("dedupe_key")
+    .in("dedupe_key", keys)
+    .in("status", SILENCED_BY_A_PERSON as unknown as string[]);
+  if (error) {
+    // Fail CLOSED: an unreadable ledger must not resurrect something the
+    // person told us to stop showing.
+    console.error(`[assists] silenced-key lookup failed: ${error.message}`);
+    return [];
+  }
+  const silenced = new Set((data ?? []).map((r) => r.dedupe_key));
+  return keys.filter((k) => !silenced.has(k));
 }
 
 /**
@@ -337,7 +387,41 @@ export async function queryAssists(
   if (response.error) {
     throw new Error(`[assists] query failed: ${response.error.message}`);
   }
-  return { rows: narrowRows(response.data ?? []), total: response.count ?? 0 };
+  const narrowed = narrowRowsCounted(response.data ?? []);
+  return {
+    rows: narrowed.rows,
+    total: response.count ?? 0,
+    unreadable: narrowed.unreadable,
+  };
+}
+
+/**
+ * ONE assist of mine, by id — the row a deep link names.
+ *
+ * Mine-scoped like every read here (THE VIEW LAW), and `null` when there is no
+ * such live row of mine. Every status is in range on purpose: the caller asks
+ * precisely because it needs to know whether the row was already decided.
+ */
+export async function getAssistById(
+  userId: string,
+  id: string,
+): Promise<Assist | null> {
+  if (!userId) throw new Error("[assists] read requires a user id");
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("platform")
+    .from(TABLE)
+    .select("*")
+    .eq("user_id", userId)
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error) {
+    if (isMissingSessionError(error)) throw new SessionUnavailableError();
+    throw new Error(`[assists] read failed: ${error.message}`);
+  }
+  if (!data) return null;
+  return toAssist(data as AssistRow);
 }
 
 /**

@@ -10,6 +10,7 @@
  * sized to fit a narrow sidebar column.
  */
 
+import { noteCreateErrorMessage } from "../utils/writeErrors";
 import { useState } from "react";
 import {
   CheckSquare,
@@ -145,15 +146,21 @@ export function NoteSidebarBulkBar({
   const handleCreateFolder = async (folderName: string) => {
     if (!hasAny || busyKind) return;
     setBusyKind("move");
+    let firstFailure: unknown = null;
     try {
       const { succeeded, failed } = await runWithConcurrency(
         selectedNotes,
         MAX_PARALLEL,
         async (note) => {
-          await dispatch(moveNoteToNewFolder({ noteId: note.id, folderName })).unwrap();
+          try {
+            await dispatch(moveNoteToNewFolder({ noteId: note.id, folderName })).unwrap();
+          } catch (cause) {
+            firstFailure ??= cause;
+            throw cause;
+          }
         },
       );
-      if (failed > 0) toast.error(`Moved ${succeeded}, ${failed} failed`);
+      if (failed > 0) toast.error(`Moved ${succeeded}, ${failed} failed. ${noteCreateErrorMessage(firstFailure)}`);
       else toast.success(`Created ${folderName} and moved ${succeeded} note${succeeded === 1 ? "" : "s"}`);
       onClear();
     } finally {

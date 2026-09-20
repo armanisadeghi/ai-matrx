@@ -39,8 +39,6 @@ import {
   History,
   Loader2,
   Link2,
-  Plus,
-  RefreshCw,
   ShieldCheck,
   Trash2,
 } from "lucide-react";
@@ -73,8 +71,12 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { getAgentModeHref } from "@/features/agents/components/shared/AgentModeController";
-import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
-import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import {
+  MatrxDataTable,
+  useTableUrlState,
+  type MatrxColumnDef,
+  type MatrxDataTableQueryState,
+} from "@ai-matrx/design-system/data-table";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -107,7 +109,7 @@ import {
   type MandateCoverageResponse,
 } from "@/features/mandates/coverage";
 import { readMandateBenchSnapshot } from "./bench-draft";
-import { MandateInputsCell, MandateOutputCell } from "./mandate-contract-cells";
+import { CompactMandateText, MandateInputsCell, MandateOutputCell } from "./mandate-contract-cells";
 import { fetchProvisions } from "@/features/mandates/provisions";
 import { adminMandateHref } from "@/features/mandates/browse/url-compat";
 import {
@@ -164,7 +166,10 @@ import { useImpactAdvance } from "./impact-advance";
 import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
 import {
   filterMandateConsoleRows,
+  isMandateConsoleDiscovering,
   mandateConsoleSearchText,
+  processMandateConsoleRows,
+  pruneMandateSelectionToVisible,
 } from "./mandate-console-discovery";
 import {
   AdvanceResultsCard,
@@ -361,8 +366,17 @@ export function MandatesConsole() {
   // link lands on the same UI as a new one rather than on a highlighted row.
   const searchParams = useSearchParams();
   const deepLinkKey = searchParams.get("mandate");
-  const tableSearchQuery =
-    searchParams.get(`table.${MANDATES_TABLE_ID}.q`) ?? "";
+  const tableUrlState = useTableUrlState({
+    tableId: MANDATES_TABLE_ID,
+    defaultPageSize: 50,
+  });
+  const hasTableSearch = tableUrlState.state.search.trim().length > 0;
+  const hasTableFilter = isMandateConsoleDiscovering(
+    {
+      ...tableUrlState.state,
+      search: "",
+    },
+  );
   const deepLinkedRef = useRef<string | null>(null);
 
   // Canonical agent listing: the Redux agent-definition slice, filtered to
@@ -720,10 +734,11 @@ export function MandatesConsole() {
       filterMandateConsoleRows(allRows, {
         coverageFilter,
         behindOnly,
-        searchQuery: tableSearchQuery,
+        discovering: false,
       }),
-    [allRows, behindOnly, coverageFilter, tableSearchQuery],
+    [allRows, behindOnly, coverageFilter],
   );
+  const [displayedRows, setDisplayedRows] = useState<ConsoleRow[]>(rows);
 
   // The success measure and the grade counts, over EVERY row (not the view).
   const impactCounts = useMemo(() => {
@@ -803,7 +818,7 @@ export function MandatesConsole() {
     target: HTMLElement | null,
   ): ResolvedContextMenuContext | null => {
     const id = target?.closest?.("[data-row-id]")?.getAttribute("data-row-id");
-    const row = id ? (rows.find((r) => r.id === id) ?? null) : null;
+    const row = id ? (allRows.find((r) => r.id === id) ?? null) : null;
     setMenuRow(row);
     if (!row) return null;
     return {
@@ -921,7 +936,7 @@ export function MandatesConsole() {
   // launched here know every mandate, the health roll-up, and the selected
   // mandate's pin state. Contract: mandates.manifest.ts.
   const getSurfaceScope = () => {
-    const summaries = rows.map(toMandateSummary);
+    const summaries = displayedRows.map(toMandateSummary);
     const health: MandatesHealthSummary = {
       ok: 0,
       behind_latest: 0,
@@ -933,7 +948,7 @@ export function MandatesConsole() {
       code_truth_import_failed: 0,
       no_holder_yet: 0,
     };
-    for (const r of rows) {
+    for (const r of displayedRows) {
       if (r.behindLatest) health.behind_latest += 1;
       if (r.health === "ok") health.ok += 1;
       else if (r.health === "no holder yet") health.no_holder_yet += 1;
@@ -947,7 +962,7 @@ export function MandatesConsole() {
       else health.not_a_system_agent += 1;
     }
     const selectedRow = selectedId
-      ? (rows.find((r) => r.id === selectedId) ?? null)
+      ? (allRows.find((r) => r.id === selectedId) ?? null)
       : null;
     const overrides: MandateOverrideSummary[] | undefined =
       selectedRow && data
@@ -1002,7 +1017,7 @@ export function MandatesConsole() {
         }
       : undefined;
     return createMandatesScope({
-      mandate_count: rows.length,
+      mandate_count: displayedRows.length,
       mandates_summary: summaries,
       health_summary: health,
       unhealthy_mandates: summaries.filter((s) => s.health !== "ok"),
@@ -1039,7 +1054,7 @@ export function MandatesConsole() {
   // Both are reassigned from the wrapper's `ref` callback below — the same
   // live-ref idiom `UserTableViewer` uses, and the only one that stays fresh
   // every render without touching a ref during render.
-  const rowsRef = useRef<ConsoleRow[]>(rows);
+  const rowsRef = useRef<ConsoleRow[]>(allRows);
   // Runs once per distinct ?mandate= value. No row lookup is needed — the page
   // resolves the key itself — so an old link works even before rows load.
   useEffect(() => {
@@ -1108,6 +1123,16 @@ export function MandatesConsole() {
   // Only rows whose DEFAULT rung is advanceable render a checkbox; a blocked
   // row keeps its per-row door and never rides a batch.
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const visibleSelectedIds = pruneMandateSelectionToVisible(
+    selectedIds,
+    displayedRows,
+  );
+  const handleViewChange = (nextRows: ConsoleRow[]) => {
+    setDisplayedRows(nextRows);
+    setSelectedIds((current) =>
+      pruneMandateSelectionToVisible(current, nextRows),
+    );
+  };
 
   /**
    * THE write door (I3, I8) through the one shared hook: consequence dialog
@@ -1220,6 +1245,7 @@ export function MandatesConsole() {
         id: "label",
         accessorKey: "label",
         header: "Label",
+        cell: (r) => <CompactMandateText text={r.label ?? "—"} />,
         width: 180,
         href: (r) => adminMandateHref(r.mandateKey),
       },
@@ -1233,12 +1259,7 @@ export function MandatesConsole() {
         width: 280,
         cell: (r) =>
           r.goal ? (
-            <span
-              className="line-clamp-2 text-xs leading-snug text-foreground"
-              title={r.goal}
-            >
-              {r.goal}
-            </span>
+            <CompactMandateText text={r.goal} />
           ) : catalogue ? (
             <span className="text-xs text-amber-700 dark:text-amber-400">
               No goal declared
@@ -1442,6 +1463,7 @@ export function MandatesConsole() {
         width: 320,
         cell: (r) => (
           <MandateInputsCell
+            compact
             row={r}
             offeredValues={
               r.provisionKey ? offersByProvision.get(r.provisionKey) : undefined
@@ -1457,7 +1479,7 @@ export function MandatesConsole() {
         header: "Output",
         filter: "select",
         width: 220,
-        cell: (r) => <MandateOutputCell row={r} />,
+        cell: (r) => <MandateOutputCell compact row={r} />,
       },
       {
         id: "bindings",
@@ -1522,6 +1544,27 @@ export function MandatesConsole() {
     advanceOneAnyway,
   ]);
 
+  const processConsoleRows = (
+    catalogueRows: ConsoleRow[],
+    state: MatrxDataTableQueryState,
+  ) =>
+    processMandateConsoleRows(catalogueRows, columns, state, {
+      coverageFilter,
+      behindOnly,
+    });
+  const behindLabel = !behindOnly
+    ? "All mandates"
+    : hasTableSearch
+      ? "Searching all mandates"
+      : hasTableFilter
+        ? "Filtering all mandates"
+        : "Behind latest";
+  const behindTitle = !behindOnly
+    ? "Showing every mandate — click to show only those behind latest"
+    : hasTableSearch || hasTableFilter
+      ? "This query is searching the full catalogue. Behind latest remains your saved default when the query is cleared — click to show every mandate by default"
+      : "Showing only mandates not running the newest saved version — click to show every mandate";
+
   // The coverage board's named rows open the mandate PAGE — the same
   // destination as a row click, the right-click menu and `?mandate=`. The
   // board can name a mandate the table has filtered out, and the page resolves
@@ -1541,129 +1584,131 @@ export function MandatesConsole() {
       <div
         ref={(node) => {
           if (!node) return;
-          rowsRef.current = rows;
+          rowsRef.current = allRows;
           selectedIdRef.current = selectedId;
         }}
-        className="flex h-full min-h-0 flex-col gap-3 p-4"
+        className="flex h-full min-h-0 flex-col gap-3 overflow-auto p-4"
       >
-        {/* The settled "nothing is selected" fact, in words with its remedy —
-            a skeleton that simply stops is indistinguishable from a screen
-            that is still working. */}
-        {noOrganization ? (
-          <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[12px] leading-snug text-amber-700 dark:text-amber-400">
-            {noOrganization}
-          </p>
-        ) : null}
-        {/* THE DOOR'S REFUSAL, IN ITS OWN WORDS. Not a toast that vanishes over
-            an empty table: a refusal is a settled fact about this account, and
-            the page says it and stops. */}
-        {systemHomeRefusal ? (
-          <div className="flex items-start gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-700 dark:text-rose-400">
-            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
-            <div className="space-y-1">
-              <div className="font-medium">
-                This console lists the platform&apos;s own jobs, and your
-                account may not.
-              </div>
-              <div className="text-muted-foreground">{systemHomeRefusal}</div>
-              <div className="text-muted-foreground">
-                The jobs your own organizations run are yours to manage at{" "}
-                <AppLink href="/mandates" className="underline">
-                  /mandates
-                </AppLink>
-                .
-              </div>
-            </div>
-          </div>
-        ) : null}
-        <MandateCoverageBoard
-          view={coverageView}
-          loading={loading}
-          error={coverageError}
-          active={coverageFilter}
-          onToggle={(bucket) =>
-            setCoverageFilter((current) => (current === bucket ? null : bucket))
-          }
-          onOpenMandate={openMandateByKey}
-        />
-        <StandingImpactStrip
-          impact={impact}
-          error={impactError}
-          loading={loading || (!impact && holderAgentIds.length > 0)}
-          staleSafeCount={impactCounts.staleSafe}
-          behindCounts={impactCounts.behindCounts}
-          blockedBehind={impactCounts.blockedBehind}
-          onAdvanceAllGreen={advanceAllGreen}
-          busy={advancing}
-        />
-        <AdvanceResultsCard
-          batches={writes.batches}
-          verdictsOf={writes.verdictsOf}
-          busy={writes.busy}
-          onRevert={(batch, rowId) => void writes.revert(batch, rowId)}
-          onDismiss={writes.clear}
-        />
-        {catalogueError && (
-          <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <div>
-              <div className="font-medium">Goals are unavailable.</div>
-              <div className="text-muted-foreground">
-                A Mandate&apos;s goal lives in the aidream code declaration, not
-                in this database. Until it answers, the Goal column is blank
-                rather than wrong: {catalogueError}
+        <div className="shrink-0 space-y-3">
+          {/* The settled "nothing is selected" fact, in words with its remedy —
+              a skeleton that simply stops is indistinguishable from a screen
+              that is still working. */}
+          {noOrganization ? (
+            <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[12px] leading-snug text-amber-700 dark:text-amber-400">
+              {noOrganization}
+            </p>
+          ) : null}
+          {/* THE DOOR'S REFUSAL, IN ITS OWN WORDS. Not a toast that vanishes over
+              an empty table: a refusal is a settled fact about this account, and
+              the page says it and stops. */}
+          {systemHomeRefusal ? (
+            <div className="flex items-start gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-700 dark:text-rose-400">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="space-y-1">
+                <div className="font-medium">
+                  This console lists the platform&apos;s own jobs, and your
+                  account may not.
+                </div>
+                <div className="text-muted-foreground">{systemHomeRefusal}</div>
+                <div className="text-muted-foreground">
+                  The jobs your own organizations run are yours to manage at{" "}
+                  <AppLink href="/mandates" className="underline">
+                    /mandates
+                  </AppLink>
+                  .
+                </div>
               </div>
             </div>
-          </div>
-        )}
-        {codeTruthError && (
-          <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <div>
-              <div className="font-medium">Code truth is unavailable.</div>
-              <div className="text-muted-foreground">
-                Mandate rows still work, but code-to-agent drift cannot be
-                trusted until aidream answers: {codeTruthError}
+          ) : null}
+          <MandateCoverageBoard
+            view={coverageView}
+            loading={loading}
+            error={coverageError}
+            active={coverageFilter}
+            onToggle={(bucket) =>
+              setCoverageFilter((current) => (current === bucket ? null : bucket))
+            }
+            onOpenMandate={openMandateByKey}
+          />
+          <StandingImpactStrip
+            impact={impact}
+            error={impactError}
+            loading={loading || (!impact && holderAgentIds.length > 0)}
+            staleSafeCount={impactCounts.staleSafe}
+            behindCounts={impactCounts.behindCounts}
+            blockedBehind={impactCounts.blockedBehind}
+            onAdvanceAllGreen={advanceAllGreen}
+            busy={advancing}
+          />
+          <AdvanceResultsCard
+            batches={writes.batches}
+            verdictsOf={writes.verdictsOf}
+            busy={writes.busy}
+            onRevert={(batch, rowId) => void writes.revert(batch, rowId)}
+            onDismiss={writes.clear}
+          />
+          {catalogueError && (
+            <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <div className="font-medium">Goals are unavailable.</div>
+                <div className="text-muted-foreground">
+                  A Mandate&apos;s goal lives in the aidream code declaration, not
+                  in this database. Until it answers, the Goal column is blank
+                  rather than wrong: {catalogueError}
+                </div>
               </div>
             </div>
-          </div>
-        )}
-        {codeAgentDriftRows.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs">
-            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
-            <span className="font-medium text-rose-600">
-              {codeAgentDriftRows.length} mandate
-              {codeAgentDriftRows.length === 1 ? "" : "s"} disagree with the
-              code that calls them.
-            </span>
-            {codeAgentDriftRows.slice(0, DRIFT_STRIP_NAMED_CAP).map((row) => (
-              <Button
-                key={row.id}
-                size="sm"
-                variant="outline"
-                disabled={navPending}
-                className="h-6 gap-1 font-mono text-[11px]"
-                onClick={() => openMandatePage(row.mandateKey)}
-              >
-                {pendingKey === row.mandateKey ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : null}
-                Review {row.mandateKey}
-              </Button>
-            ))}
-            {/* The strip used to stop at three with no sign there were more —
-                a silently truncated work queue. It now counts the rest and
-                says where they are. */}
-            {codeAgentDriftRows.length > DRIFT_STRIP_NAMED_CAP && (
-              <span className="text-[11px] text-muted-foreground">
-                +{codeAgentDriftRows.length - DRIFT_STRIP_NAMED_CAP} more —
-                filter Health by &ldquo;code ↔ agent drift&rdquo; to see them
-                all
+          )}
+          {codeTruthError && (
+            <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <div className="font-medium">Code truth is unavailable.</div>
+                <div className="text-muted-foreground">
+                  Mandate rows still work, but code-to-agent drift cannot be
+                  trusted until aidream answers: {codeTruthError}
+                </div>
+              </div>
+            </div>
+          )}
+          {codeAgentDriftRows.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
+              <span className="font-medium text-rose-600">
+                {codeAgentDriftRows.length} mandate
+                {codeAgentDriftRows.length === 1 ? "" : "s"} disagree with the
+                code that calls them.
               </span>
-            )}
-          </div>
-        )}
-        <div className="min-h-0 flex-1" data-surface-value="mandates_summary">
+              {codeAgentDriftRows.slice(0, DRIFT_STRIP_NAMED_CAP).map((row) => (
+                <Button
+                  key={row.id}
+                  size="sm"
+                  variant="outline"
+                  disabled={navPending}
+                  className="h-6 gap-1 font-mono text-[11px]"
+                  onClick={() => openMandatePage(row.mandateKey)}
+                >
+                  {pendingKey === row.mandateKey ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : null}
+                  Review {row.mandateKey}
+                </Button>
+              ))}
+              {/* The strip used to stop at three with no sign there were more —
+                  a silently truncated work queue. It now counts the rest and
+                  says where they are. */}
+              {codeAgentDriftRows.length > DRIFT_STRIP_NAMED_CAP && (
+                <span className="text-[11px] text-muted-foreground">
+                  +{codeAgentDriftRows.length - DRIFT_STRIP_NAMED_CAP} more —
+                  filter Health by &ldquo;code ↔ agent drift&rdquo; to see them
+                  all
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="min-h-64 flex-1" data-surface-value="mandates_summary">
           <NonEditableContextMenu
             sourceFeature="admin"
             contentSource={{ type: "raw" }}
@@ -1673,8 +1718,10 @@ export function MandatesConsole() {
           >
             <MatrxDataTable
               urlState={{ id: MANDATES_TABLE_ID }}
-              data={rows}
+              data={allRows}
               columns={columns}
+              processLocalRows={processConsoleRows}
+              onViewChange={handleViewChange}
               getRowId={(r) => r.id}
               searchText={mandateConsoleSearchText}
               isLoading={loading}
@@ -1686,6 +1733,9 @@ export function MandatesConsole() {
                   "Mandates seed from aidream code declarations on server boot.",
               }}
               toolbar={{
+                title: "Mandates",
+                refresh: { onRefresh: reload },
+                add: { onAdd: () => router.push("/administration/mandates/new") },
                 search: true,
                 searchPlaceholder: "Search mandates, agents…",
                 actions: (
@@ -1696,41 +1746,12 @@ export function MandatesConsole() {
                       aria-pressed={behindOnly}
                       className="h-8 gap-1 text-xs"
                       onClick={() => setBehindOnly(!behindOnly)}
-                      title={
-                        behindOnly
-                          ? "Showing only mandates not running the newest saved version — click to show every mandate"
-                          : "Showing every mandate — click to show only those behind latest"
-                      }
+                      title={behindTitle}
                     >
                       <History className="h-3.5 w-3.5" />
-                      {behindOnly ? "Behind latest" : "All mandates"}
+                      {behindLabel}
                     </Button>
                     <ImpactLegend />
-                    {/* Declaring a job is admin work, so the New button lives
-                      here — the user route has none. */}
-                    <Button asChild size="sm">
-                      <AppLink
-                        href="/administration/mandates/new"
-                        aria-label="New Mandate"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span className="hidden sm:inline">New Mandate</span>
-                      </AppLink>
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={reload}
-                      aria-label="Refresh mandates"
-                      title="Refresh mandates"
-                      disabled={fetching}
-                    >
-                      {fetching ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <RefreshCw className="w-4 h-4" />
-                      )}
-                    </Button>
                   </>
                 ),
               }}
@@ -1762,7 +1783,7 @@ export function MandatesConsole() {
               }}
               onRowOpen={(r) => openMandatePage(r.mandateKey)}
               selection={{
-                selectedIds,
+                selectedIds: visibleSelectedIds,
                 onSelectedIdsChange: setSelectedIds,
                 noun: "mandate",
                 isRowSelectable: (r) =>

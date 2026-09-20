@@ -930,14 +930,17 @@ const slice = createSlice({
         fileName: string;
         fileSize: number;
         parentFolderId: string | null;
+        folderPath?: string | null;
       }>,
     ) {
-      const { requestId, fileName, fileSize, parentFolderId } = action.payload;
+      const { requestId, fileName, fileSize, parentFolderId, folderPath } =
+        action.payload;
       state.uploads[requestId] = {
         requestId,
         fileName,
         fileSize,
         parentFolderId,
+        folderPath: folderPath ?? null,
         status: "uploading",
         bytesUploaded: 0,
         startedAt: Date.now(),

@@ -1,0 +1,45 @@
+"use client";
+
+/**
+ * V-21's control arm: the same two creations, each toast carrying the door the
+ * rule asks for (`action`), which is exactly what the remedy tells an agent to
+ * write. `toast-names-record` must report NOTHING here — a rule that flags its
+ * own remedy teaches agents to delete correct doors.
+ */
+
+import { toast } from "@/lib/toast";
+import { Button } from "@/components/ui/button";
+import { useOpenDetail } from "@/lib/detail/useOpenDetail";
+
+import { createCalendarEvent, importGoogleDocument } from "./service";
+
+export function ScheduleAndImport({ partyId, fileId }: { partyId: string; fileId: string }) {
+  const openDetail = useOpenDetail();
+
+  const onSchedule = async () => {
+    const created = await createCalendarEvent({ partyId, title: "Follow up" });
+    toast.success("Calendar event created", {
+      action: {
+        label: "Open the calendar event",
+        onClick: () => openDetail({ type: "calendar_event", id: created.id }),
+      },
+    });
+  };
+
+  const onImport = async () => {
+    const created = await importGoogleDocument({ fileId });
+    toast.success("Google document imported", {
+      action: {
+        label: "Open the Google document",
+        onClick: () => openDetail({ type: "google_document", id: created.id }),
+      },
+    });
+  };
+
+  return (
+    <>
+      <Button onClick={onSchedule}>Schedule follow-up</Button>
+      <Button onClick={onImport}>Import from Google</Button>
+    </>
+  );
+}

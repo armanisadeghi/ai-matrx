@@ -14,6 +14,7 @@ import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
 import { stageChatAgentSwitch } from "./begin-fresh-chat";
 import { NewChatLandingInput } from "./NewChatLandingInput";
 import { ChatConnectorStrip } from "@/features/connectors/ChatConnectorStrip";
+import { ConnectorPromptHost } from "@/features/connectors/ConnectorPromptHost";
 import { cn } from "@/lib/utils";
 
 interface NewChatGreetingProps {
@@ -137,6 +138,15 @@ export function NewChatGreeting({
             );
           })}
         </section>
+
+        {/* The first Google moment (PLAN §2): a dismissible card ABOVE the
+            composer and above the 16px connector strip, whose geometry it must
+            not touch. It removes itself once anything is connected, and after a
+            dismissal it never comes back unless an organization sets
+            `connectors.prompt.resurface_days`. */}
+        <div className="w-full">
+          <ConnectorPromptHost />
+        </div>
 
         {/* Hero input */}
         {sourceConversationId && (

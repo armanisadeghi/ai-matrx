@@ -14,10 +14,10 @@ import { initUrlHydration } from "./initUrlHydration";
 type UrlSyncEntries = ReturnType<typeof selectUrlSyncEntries>;
 
 /**
- * How long the Redux -> URL writer waits for a URL-hydrated window to register
- * itself in `urlSyncSlice` before canonicalizing `?panels=`. Long enough for a
- * lazily-chunked overlay to load on a cold cache; bounded so a key that never
- * registers cannot freeze URL sync for the session.
+ * How long a `?panels=` token the URL arrived with may go unclaimed before the
+ * manager says so. It does NOT gate URL writes and it never drops the token —
+ * see THE ADDRESS IS NEVER ERASED below. Long enough for a lazily-chunked
+ * overlay to load on a cold cache.
  */
 const OBSERVE_GRACE_MS = 5000;
 
@@ -68,6 +68,44 @@ export function mergeManagedPanelParams(
   return [...unmanagedTokens, ...nextManagedTokens].join(",");
 }
 
+/**
+ * 🚨 THE ADDRESS IS NEVER ERASED.
+ *
+ * `serializeParams` can only describe windows that are OPEN RIGHT NOW: a token
+ * whose window has not registered yet — or cannot, because its hydrator opened
+ * nothing — is simply absent from `entries`, so writing that serialization back
+ * to the bar DELETES it. That is what a person sees as "it loads the link, then
+ * clears it": the one copy of the address they had is gone from history, from
+ * the bar, and from anything they were about to paste, and a refresh can no
+ * longer even retry it.
+ *
+ * So a token the URL arrived with is carried verbatim until the key it names
+ * actually registers. From that moment the live entries govern it — closing the
+ * window must still drop it — which is why the caller stops passing a token
+ * once its `typeKey` has been observed.
+ *
+ * Matching is by `typeKey`, never by the whole `typeKey:instanceId`: a window
+ * legitimately registers under an identity the link did not carry (the vault
+ * link names an ITEM, the vault window registers its singleton id), and
+ * demanding an exact match would preserve those forever.
+ */
+export function withUnclaimedTokens(
+  nextParam: string,
+  unclaimedTokens: readonly string[],
+): string {
+  if (unclaimedTokens.length === 0) return nextParam;
+
+  const nextTokens = nextParam.split(",").filter(Boolean);
+  const claimedTypeKeys = new Set(
+    nextTokens.map((token) => token.split(":")[0]),
+  );
+  const preserved = unclaimedTokens.filter(
+    (token) => !claimedTypeKeys.has(token.split(":")[0]),
+  );
+
+  return [...preserved, ...nextTokens].join(",");
+}
+
 export function parseParams(paramString: string | null) {
   if (!paramString) return [];
   return paramString.split(",").map((part) => {
@@ -76,8 +114,14 @@ export function parseParams(paramString: string | null) {
     if (argsStr) {
       const parsedArgs: Record<string, string> = {};
       argsStr.split("_").forEach((pair) => {
-        const [k, v] = pair.split("-");
-        if (k && v) parsedArgs[k] = v;
+        // 🚨 Split on the FIRST hyphen only. `pair.split("-")` threw away
+        // everything after the second segment, so an arg value containing a
+        // hyphen — a uuid, a date, an escaped list (NEW-15) — arrived truncated
+        // and the panel restored wrong. Existing args (`v-fc`, `as-window`) are
+        // unaffected: they hold no hyphen.
+        const at = pair.indexOf("-");
+        if (at <= 0 || at === pair.length - 1) return;
+        parsedArgs[pair.slice(0, at)] = pair.slice(at + 1);
       });
       args = parsedArgs;
     }
@@ -108,17 +152,15 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
   const isHydrated = useAppSelector(selectIsUrlHydrated);
 
   const initialLoadDone = useRef(false);
-  const pendingInitialTypeKeys = useRef<Set<string>>(new Set());
-  const hasObservedInitialEntries = useRef(false);
-  // Deadlock breaker for the "wait for the restored window to register"
-  // guard below. A hydrated overlay does NOT always register a urlSync entry
-  // under the key that opened it — legacy alias keys (`files` opens
-  // `cloudFilesWindow`, whose registry key is `cloud_files`) and overlays that
-  // are not WindowPanels never will. Without a bound, one such token froze
-  // URL sync for the whole page session: every OTHER window's open/close
-  // stopped reaching the URL, silently. This flips the wait off after a grace
-  // period and says which keys never showed up.
-  const [waitExpired, setWaitExpired] = useState(false);
+  /**
+   * The tokens this manager handed to a hydrator on load, verbatim, keyed by
+   * `typeKey` — the ones whose windows have not registered yet. They are
+   * carried through every URL write until they do (`withUnclaimedTokens`), and
+   * dropped from here the moment they are claimed, after which the live
+   * entries own them.
+   */
+  const unclaimedTokens = useRef<Map<string, string[]>>(new Map());
+  const [unclaimedRevision, setUnclaimedRevision] = useState(0);
 
   // 1. HYDRATION (URL -> Redux)
   useEffect(() => {
@@ -147,10 +189,16 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
           }
         }
       }
+      const rawTokens = panelsParam.split(",").filter(Boolean);
       panels.forEach((panel) => {
         const hydrator = getHydrator(panel.typeKey);
         if (hydrator) {
-          pendingInitialTypeKeys.current.add(panel.typeKey);
+          // Every token under this key, not just the first: a link may name
+          // two records (`detail:file.B,detail:file.C`).
+          const raw = rawTokens.filter(
+            (token) => token.split(":")[0] === panel.typeKey,
+          );
+          if (raw.length > 0) unclaimedTokens.current.set(panel.typeKey, raw);
           hydrator(dispatch, panel.instanceId, panel.args || {});
         } else {
           console.warn(
@@ -160,17 +208,26 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
       });
     }
 
-    hasObservedInitialEntries.current =
-      pendingInitialTypeKeys.current.size === 0;
-
     // Mark hydration complete so subsequent URL writes can begin
     dispatch(setHydrated());
   }, [searchParams, dispatch, managedTypeKeys]);
 
-  // Grace timer for the registration wait above.
+  // Nothing fails silently. A token that is still unclaimed after the grace
+  // period restored NOTHING a person can see — the hydrator ran and either
+  // opened the wrong thing or opened nothing at all. The address stays in the
+  // bar (it is the only copy the person has), but the defect gets named.
   useEffect(() => {
-    if (!isHydrated || hasObservedInitialEntries.current) return undefined;
-    const timer = setTimeout(() => setWaitExpired(true), OBSERVE_GRACE_MS);
+    if (!isHydrated) return undefined;
+    const timer = setTimeout(() => {
+      const stillUnclaimed = Array.from(unclaimedTokens.current.keys());
+      if (stillUnclaimed.length === 0) return;
+      console.error(
+        `[UrlPanelManager] ?panels= token(s) [${stillUnclaimed.join(", ")}] hydrated but no window registered under that key within ${OBSERVE_GRACE_MS}ms — ` +
+          "the link restored nothing. The token is kept in the URL so the address is not lost. " +
+          "Make the hydrator in url-sync/initUrlHydration.ts OPEN the window (not just seed its state), " +
+          "and give that window a matching registry `urlSync.key`.",
+      );
+    }, OBSERVE_GRACE_MS);
     return () => clearTimeout(timer);
   }, [isHydrated]);
 
@@ -178,30 +235,23 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
   useEffect(() => {
     if (!isHydrated) return;
 
-    if (!hasObservedInitialEntries.current) {
-      const observedTypeKeys = new Set(
-        Object.values(entries).map((entry) => entry.typeKey),
-      );
-      const unobserved = Array.from(pendingInitialTypeKeys.current).filter(
-        (typeKey) => !observedTypeKeys.has(typeKey),
-      );
-
-      if (unobserved.length > 0) {
-        if (!waitExpired) return;
-        console.warn(
-          `[UrlPanelManager] ?panels= token(s) [${unobserved.join(", ")}] hydrated but never registered a urlSync entry within ${OBSERVE_GRACE_MS}ms. ` +
-            `Proceeding with URL sync so other windows are not frozen. Give the overlay a matching registry \`urlSync.key\`, or drop the hydrator.`,
-        );
+    // A key that has registered is claimed: from here the live entries own it,
+    // so closing that window still clears its token.
+    if (unclaimedTokens.current.size > 0) {
+      let claimedAny = false;
+      for (const entry of Object.values(entries)) {
+        if (unclaimedTokens.current.delete(entry.typeKey)) claimedAny = true;
       }
-      hasObservedInitialEntries.current = true;
+      // Re-run this effect once more after a claim, so the preserved token is
+      // replaced by the window's own — `entries` may not change again.
+      if (claimedAny) setUnclaimedRevision((n) => n + 1);
     }
 
     const currentParam = searchParams.get("panels") || "";
     const nextManagedParam = serializeParams(entries, managedTypeKeys);
-    const nextParam = mergeManagedPanelParams(
-      currentParam,
-      nextManagedParam,
-      managedTypeKeys,
+    const nextParam = withUnclaimedTokens(
+      mergeManagedPanelParams(currentParam, nextManagedParam, managedTypeKeys),
+      Array.from(unclaimedTokens.current.values()).flat(),
     );
 
     // Only update if actually changed, to avoid infinite replace loops
@@ -225,7 +275,7 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
     pathname,
     router,
     searchParams,
-    waitExpired,
+    unclaimedRevision,
   ]);
 
   return null;

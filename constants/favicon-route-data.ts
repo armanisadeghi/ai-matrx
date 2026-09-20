@@ -18,28 +18,60 @@ export interface FaviconRouteEntry {
   favicon?: FaviconConfig;
 }
 
+// ─── Colour families (Arman, 2026-09-18) ──────────────────────────────────────
+// "Red: Agents. Blue: Chat. Yellow: notes, docs, etc. Light blue: Data, sheets,
+//  etc. Purple: Workflows, etc. Green: Marketing. Need a good color for admin —
+//  maybe black or gray."
+//
+// The COLOUR says which family a tab belongs to; the LETTER says which page.
+// Routes outside these families keep their own curated colour — a family is a
+// statement about kinship, not a paint-everything rule. Admin, demo and test
+// colours are LOCKED in `utils/favicon-utils.ts` and win over anything here.
+
+/** Agents. */
+export const AGENTS_COLOR = "#f43f5e";
+/** Chat. */
+export const CHAT_COLOR = "#2563eb";
+/**
+ * Notes, documents, markdown — the "yellow" family. Brighter and more saturated
+ * than the locked demo mustard (`#ca8a04`) so a docs tab and a demo tab are
+ * still two different badges at 16px.
+ */
+export const DOCS_COLOR = "#eab308";
+/** Data, files, workbooks — the "light blue" family (cyan, not Chat's blue). */
+export const SHEETS_COLOR = "#0891b2";
+/** Workflows and workflow-shaped surfaces. */
+export const WORKFLOWS_COLOR = "#6d28d9";
+/** Marketing. */
+export const MARKETING_COLOR = "#15803d";
+/**
+ * Generic user-facing hubs — Launchpad and Dashboard. Orange is the one primary
+ * hue no family above claims, so the front door never reads as a feature.
+ */
+export const CORE_HUB_COLOR = "#f97316";
+
 export const faviconRouteData: FaviconRouteEntry[] = [
-  { href: "/launchpad", favicon: { color: "#4d7c0f", letter: "UL" } },
-  { href: "/dashboard", favicon: { color: "#0ea5e9", letter: "H" } },
+  { href: "/launchpad", favicon: { color: CORE_HUB_COLOR, letter: "LP" } },
+  { href: "/dashboard", favicon: { color: CORE_HUB_COLOR, letter: "H" } },
   { href: "/work", favicon: { color: "#7c3aed", letter: "AW" } },
-  { href: "/agents", favicon: { color: "#f43f5e", letter: "AG" } },
-  { href: "/mandates", favicon: { color: "#7c3aed", letter: "Mt" } },
+  { href: "/agents", favicon: { color: AGENTS_COLOR, letter: "AG" } },
+  { href: "/mandates", favicon: { color: "#7c3aed", letter: "MND" } },
   { href: "/agent-connections", favicon: { color: "#0f172a", letter: "Ax" } },
   { href: "/assists", favicon: { color: "#0c4a6e", letter: "As" } },
   { href: "/research", favicon: { color: "#7c3aed", letter: "R" } },
   { href: "/search", favicon: { color: "#2563eb", letter: "Sr" } },
   { href: "/camera", favicon: { color: "#166534", letter: "CA" } },
-  { href: "/chat", favicon: { color: "#2563eb", letter: "C" } },
+  { href: "/chat", favicon: { color: CHAT_COLOR, letter: "C" } },
   { href: "/organizations", favicon: { color: "#b91c1c", letter: "O" } },
   // DD-137a — the emergency door's two surfaces. Both paths are load-bearing:
   // the database writes them as the deep link of every emergency-access notice.
   { href: "/organizations/emergency-access", favicon: { color: "#b91c1c", letter: "EA" } },
   { href: "/me/access-log", favicon: { color: "#0f766e", letter: "AL" } },
-  { href: "/notes", favicon: { color: "#d97706", letter: "N" } },
+  { href: "/notes", favicon: { color: DOCS_COLOR, letter: "N" } },
   { href: "/tasks", favicon: { color: "#16a34a", letter: "T" } },
   { href: "/meetings", favicon: { color: "#0ea5e9", letter: "MG" } },
   { href: "/projects", favicon: { color: "#4f46e5", letter: "P" } },
-  { href: "/files", favicon: { color: "#0284c7", letter: "F" } },
+  { href: "/files", favicon: { color: SHEETS_COLOR, letter: "F" } },
   {
     href: "/tools/pdf-extractor",
     favicon: { color: "#ea580c", letter: "PE" },
@@ -52,7 +84,7 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/libraries", favicon: { color: "#dc2626", letter: "LB" } },
   // Bring your export — a service's own data download, read (features/exports)
   { href: "/exports", favicon: { color: "#0d9488", letter: "EX" } },
-  { href: "/data", favicon: { color: "#0891b2", letter: "DA" } },
+  { href: "/data", favicon: { color: SHEETS_COLOR, letter: "DA" } },
   { href: "/voice", favicon: { color: "#be185d", letter: "V" } },
   {
     href: "/demo/voice/voice-manager",
@@ -71,7 +103,7 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/hr", favicon: { color: "#4f46e5", letter: "HR" } },
   { href: "/education", favicon: { color: "#1e3a8a", letter: "ED" } },
   { href: "/maps", favicon: { color: "#713f12", letter: "MP" } },
-  { href: "/markdown-studio", favicon: { color: "#334155", letter: "MD" } },
+  { href: "/markdown-studio", favicon: { color: DOCS_COLOR, letter: "MD" } },
   { href: "/masterwork", favicon: { color: "#be123c", letter: "M" } },
   { href: "/surfaces", favicon: { color: "#075985", letter: "SF" } },
   { href: "/vault", favicon: { color: "#065f46", letter: "VA" } },
@@ -88,11 +120,11 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   },
   { href: "/knowledge", favicon: { color: "#92400e", letter: "K" } },
   // Compatibility route retained until the structural Knowledge cutover.
-  { href: "/rag", favicon: { color: "#92400e", letter: "K" } },
+  { href: "/rag", favicon: { color: "#92400e", letter: "RG" } },
   { href: "/podcast", favicon: { color: "#e11d48", letter: "PO" } },
   { href: "/print", favicon: { color: "#7c3aed", letter: "Pt" } },
   { href: "/schedules", favicon: { color: "#0d9488", letter: "SD" } },
-  { href: "/artifacts", favicon: { color: "#78716c", letter: "AR" } },
+  { href: "/artifacts", favicon: { color: "#78716c", letter: "AF" } },
   { href: "/legal", favicon: { color: "#1e40af", letter: "LG" } },
   { href: "/cms", favicon: { color: "#0f766e", letter: "CM" } },
   { href: "/knowledge-graph", favicon: { color: "#312e81", letter: "KG" } },
@@ -101,10 +133,10 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/context-items", favicon: { color: "#0369a1", letter: "Ci" } },
   { href: "/invitations", favicon: { color: "#57534e", letter: "In" } },
   { href: "/code", favicon: { color: "#4f46e5", letter: "CD" } },
-  { href: "/workflows", favicon: { color: "#6d28d9", letter: "WF" } },
+  { href: "/workflows", favicon: { color: WORKFLOWS_COLOR, letter: "WF" } },
   { href: "/scopes", favicon: { color: "#047857", letter: "S" } },
   { href: "/war-room", favicon: { color: "#dc2626", letter: "WR" } },
-  { href: "/marketing", favicon: { color: "#15803d", letter: "Mk" } },
+  { href: "/marketing", favicon: { color: MARKETING_COLOR, letter: "Mk" } },
   {
     href: "/google-analytics-youtube-review",
     favicon: { color: "#1d4ed8", letter: "GY" },
@@ -124,7 +156,7 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/how-we-prove-it", favicon: { color: "#7c2d12", letter: "Pv" } },
   { href: "/why-ai-matrx", favicon: { color: "#7c2d12", letter: "Wy" } },
   { href: "/the-landscape", favicon: { color: "#7c2d12", letter: "Ls" } },
-  { href: "/loop", favicon: { color: "#14532d", letter: "Lp" } },
+  { href: "/loop", favicon: { color: "#14532d", letter: "LO" } },
   { href: "/matrx-extend-demo", favicon: { color: "#5b21b6", letter: "Me" } },
   { href: "/pricing", favicon: { color: "#115e59", letter: "Pr" } },
   { href: "/privacy-policy", favicon: { color: "#374151", letter: "PP" } },
@@ -144,7 +176,7 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   },
   {
     href: "/free/games/matrx-jump/character-maker",
-    favicon: { color: "#14b8a6", letter: "CC" },
+    favicon: { color: "#14b8a6", letter: "CK" },
   },
   {
     href: "/free/games/matrx-jump/jump-with-settings",
@@ -168,18 +200,19 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/agent-apps", favicon: { color: "#059669", letter: "AA" } },
   { href: "/drive", favicon: { color: "#0ea5e9", letter: "Dr" } },
   { href: "/connected-sources", favicon: { color: "#2563eb", letter: "CS" } },
+  { href: "/connect-computer", favicon: { color: "#2563eb", letter: "CC" } },
   { href: "/shapes", favicon: { color: "#8b5cf6", letter: "Sh" } },
-  { href: "/documents", favicon: { color: "#4f46e5", letter: "DO" } },
-  { href: "/workbooks", favicon: { color: "#16a34a", letter: "WB" } },
+  { href: "/documents", favicon: { color: DOCS_COLOR, letter: "DO" } },
+  { href: "/workbooks", favicon: { color: SHEETS_COLOR, letter: "WB" } },
   { href: "/user-settings", favicon: { color: "#475569", letter: "US" } },
   { href: "/settings", favicon: { color: "#475569", letter: "ST" } },
   { href: "/trash", favicon: { color: "#52525b", letter: "Td" } },
   { href: "/ai/cockpit", favicon: { color: "#7c3aed", letter: "Ac" } },
   { href: "/ai/recipes", favicon: { color: "#c026d3", letter: "Rc" } },
-  { href: "/legacy/workflows", favicon: { color: "#6d28d9", letter: "Wf" } },
+  { href: "/legacy/workflows", favicon: { color: WORKFLOWS_COLOR, letter: "LWF" } },
   { href: "/lists", favicon: { color: "#1d4ed8", letter: "Li" } },
   { href: "/registered-results", favicon: { color: "#831843", letter: "Rr" } },
-  { href: "/legacy/entity-admin", favicon: { color: "#854d0e", letter: "Ea" } },
+  { href: "/legacy/entity-admin", favicon: { color: "#854d0e", letter: "ETA" } },
   { href: "/administration" },
   { href: "/administration/ui/official-components" },
   { href: "/admin" },

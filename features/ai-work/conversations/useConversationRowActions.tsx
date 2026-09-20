@@ -21,7 +21,7 @@ import type {
   EntityListController,
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
-import { isProviderSourceApp } from "@/features/ai-work/lib/providerSource";
+import { isCodePluginSourceApp } from "@/features/ai-work/lib/providerSource";
 import type { ConversationBrowseRow } from "./types";
 import { applyAudience } from "./types";
 
@@ -34,7 +34,7 @@ import { applyAudience } from "./types";
  * neither kind is a dead end.
  */
 export function conversationHomeHref(row: ConversationBrowseRow): string {
-  return row.source_app && isProviderSourceApp(row.source_app)
+  return isCodePluginSourceApp(row.source_app)
     ? `/work/conversations/${row.id}`
     : `/chat/${row.id}`;
 }

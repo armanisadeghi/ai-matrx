@@ -7,7 +7,7 @@ changes have concrete evidence of what breaks. User-visible copy says **"test
 case"** or **"sample"**, never "exemplar" (that is the contract name only —
 same rule as `features/mandates/admin/FEATURE.md`).
 
-## The three laws of this feature
+## The four laws of this feature
 
 1. **THE COMPLETE-INPUT INVARIANT.** A sample's `variables` + `user_input` +
    `metadata.input_content` are the exact values entered in the UI or sent programmatically — NEVER the merged
@@ -34,6 +34,24 @@ same rule as `features/mandates/admin/FEATURE.md`).
    runs them by default); the manager deliberately offers **Use** on any listed
    sample — trialing a candidate before approving it is the point of the list.
 
+4. **A CASE IS READ ONE INPUT AT A TIME.** A run is a SET of named inputs —
+   each variable, each attachment, and separately the human's own text — and
+   the viewer never merges them into one block of prose. `components/samples/
+   TestCaseInputs.tsx` is THE ONE viewer for a case's inputs (the saved sample
+   AND the candidate-run preview): one row per named input, carrying the
+   input's label (the author's, from `AgentContractHead.variableDeclarations`),
+   its size, and a one-line preview; a value too long for a line opens into a
+   height-capped scrolled pane with a copy control, and a short value renders
+   whole on its row with no disclosure to click. Cases themselves are collapsed
+   with the first open. This exists because live rows carry variables of
+   **267,025 characters** (`page_summaries` on the research agents): rendered
+   as the chat bubble's flat `label: value` strip, ONE case filled ~30 screens
+   of a 620px window and hid every other case. Do not reintroduce
+   `AgentUserMessageContent` here — it is correct for a transcript bubble,
+   where the bubble's own collapse bounds it, and wrong for a list of cases.
+   What a wired record id may be shown as is still decided ONCE by
+   `buildVariableDisplayLines`; this viewer adds presentation only.
+
 ## Surfaces
 
 🚨 **Samples never add page chrome (Arman, 2026-08-26).** The original
@@ -57,13 +75,52 @@ agent builder. Do not re-add chips, bars, or strips to any run surface.
 - **Manager** — `components/samples/AgentSamplesManager.tsx` (opened from the
   launcher's window; also the admin page at
   `/administration/agents/system-agents/agents/[id]/samples`): approved +
-  candidate lists with freshness badges, approve/demote/delete, and
-  **Borrow from real runs** — recent `chat.conversation` rows for the agent
-  (RLS-scoped) showing raw inputs + expandable final response, click-through
-  to the run (no-dead-ends), one-click save as `source='borrowed'` candidate
-  with `source_conversation_id` provenance.
+  candidate lists as COLLAPSED cards — the title line carries the freshness
+  and status badges plus a one-line census ("4 variables · 2 attachments ·
+  user input") so a closed card still says what is in it, and the first case
+  in the list opens on arrival. Approve/demote/delete stay on the closed row.
+  Opening a card renders `TestCaseInputs` (law 4). Also **Borrow from real
+  runs** — recent `chat.conversation` rows for the agent (RLS-scoped) as the
+  same collapsed cards, opening into the same `TestCaseInputs` plus the run's
+  final answer; click-through to the run (no-dead-ends), one-click save as
+  `source='borrowed'` candidate with `source_conversation_id` provenance.
+  `fetchRunFinalResponse` reads the answer's TEXT parts through
+  `parseMessageContent` — it used to `JSON.stringify` the content array and
+  print `[{"id":"","text":"","type":"thinking",…}]` where the answer belongs.
+- **Load sample data from a Library** —
+  `components/samples/LoadFromLibraryDialog.tsx`, opened from the Candidates
+  header. Pick one of your media Libraries, pick the catalogued items that
+  already have a transcript, and the MEDIA CATALOG writes the test cases: the
+  dialog POSTs the server-declared per-item action `use_as_agent_test_cases`
+  through `createJob` (`features/source-library/api.ts`) with
+  `params.agent_id`, and NEVER writes an `agent.exemplar` row itself. It is the
+  exact reverse of the Library-side door (`AgentParamPicker` in the Library's
+  action confirm) — one action, one server path, two entrances. The job is
+  asynchronous, so the confirmation says only what happened ("N items were
+  sent"), watches `fetchAgentSamples` a bounded six times at 4 s, and says
+  plainly when nothing has landed instead of claiming success. A Library whose
+  items have no transcript gets a sentence naming the remedy (transcribe them
+  in the Library) and no start button — `libraryReadiness` in that file is the
+  pure decision, guarded by
+  `components/samples/__tests__/library-origin.test.tsx`. Every failure prints
+  the server's own `MediaApiError.message` (+ `remedy`).
 - **Mandate bench** — `features/mandates/admin/` reads the same table filtered
   by `mandate_id`; its saves stamp `agent_id` too.
+
+## Where a sample came from (`source`)
+
+`source` is `captured` (auto-capture), `borrowed` (from a real run),
+`bench` (mandate test bench) or — since 2026-09-17 — **`library`**: written by
+the media catalog's `use_as_agent_test_cases` action, whose provenance lands
+under `metadata.media_catalog` as
+`{key, action, library_id, library_name, adapter, job_id, items: [{source_row_id,
+external_id, title, url, published_at, transcript_id, segment_count}],
+bindings}`. `sampleLibraryOrigin` (in `service.ts`) is the ONE reader of that
+block and `components/samples/SampleOriginLine.tsx` the one renderer: the
+Library's name links to `/libraries/<id>`, and a sample made from exactly one
+item links that item's `url`. A row whose `source` is `library` ALWAYS renders
+an origin — a missing or malformed block says "From a Library" rather than
+nothing, because a blank line is the silent failure this guards.
 
 ## Server side (aidream)
 
@@ -93,6 +150,21 @@ agent builder. Do not re-add chips, bars, or strips to any run surface.
   lives at `../../../../common-docs/systems/agents/agent-samples/HANDOFF.md`.
 
 ## Change Log
+
+- 2026-09-19 — Test cases are readable again. Cases collapse (first one open)
+  with a census on the closed row; inside, each variable, attachment group and
+  the human's own text is its own row with a label, a size and a preview,
+  opening into a bounded scrolled pane. `AgentContractHead` now carries the
+  agent's `variableDeclarations`, so rows read "Page Summaries" with the
+  author's help text instead of `page_summaries`. The candidate-run list got
+  the same treatment, and its final answer renders as text rather than the raw
+  message-content JSON. Law 4 added above; see `FOUND_DEFECTS.md` D339 for the
+  129k-character "user input" this made visible.
+
+- 2026-09-17 — The reverse door: test cases can now be loaded FROM a media
+  Library without leaving the agent build page, through the same
+  `use_as_agent_test_cases` job the Library side runs; `source = 'library'`
+  samples render the Library they came from and the item behind them.
 
 - 2026-09-09 — Mandate Run once reuses AgentSamplesManager and the agent sample store; form fill preserves input provenance and reports unused values.
 

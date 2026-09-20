@@ -118,6 +118,26 @@ export interface UseEntityListArgs<TRow> {
    * hidden by one, so it is never asked (`./types.ts` § ArchivedProbe).
    */
   supportsArchived?: boolean;
+  /**
+   * 🚨 SEARCH SPANS THE SURFACE'S DEFAULT NARROWING. `defaultFilters` is a
+   * BROWSING default — where an untouched page opens. A search is a different
+   * intent: someone typed an id, a title, a phrase they were handed, and the
+   * row they want is wherever it is. With this on, a search typed while the
+   * filter bag is still the untouched default is run across the whole corpus
+   * (the default filters are lifted for the fetch, the counts and the facets),
+   * and the surface reads the lifted bag back — so a bucket control shows
+   * "All", never a selected bucket the results ignore. A filter the person
+   * set themselves (a chip click, a panel choice, a pasted link carrying one)
+   * is honoured exactly, search or no search: only the UNTOUCHED default is
+   * lifted, and it is recognised by identity (`query.filters` is still the
+   * very object `defaultFilters` handed in), never by value — an explicit
+   * choice that happens to equal the default is still a choice.
+   *
+   * Why: /work/conversations opens on "AI chats". A Claude Code session id
+   * pasted into its search found NOTHING (2026-09-18) — the row sat one bucket
+   * over, behind a chip count nobody reads while staring at an empty table.
+   */
+  searchSpansDefaultFilters?: boolean;
 }
 
 /**
@@ -171,6 +191,7 @@ export function useEntityList<TRow>({
   registryToken,
   urlState = false,
   supportsArchived = true,
+  searchSpansDefaultFilters = false,
 }: UseEntityListArgs<TRow>): EntityListController<TRow> {
   // Where the registry says this list lands. It arrives ASYNCHRONOUSLY (one
   // read of platform.entity_types, cached for the whole session), so it is
@@ -226,13 +247,29 @@ export function useEntityList<TRow>({
   // UNTOUCHED scope axis takes the default whenever it arrives; the moment the
   // user clicks a scope tab, their choice owns the axis for the session.
   const scopeTouched = useRef(false);
-  const query: EntityListQuery = urlState
+  const storedQuery: EntityListQuery = urlState
     ? rawQuery
     : {
         ...rawQuery,
         ...(archivedTouched.current ? {} : { archived: defaultQuery.archived }),
         ...(scopeTouched.current ? {} : { scope: defaultQuery.scope }),
       };
+  // `searchSpansDefaultFilters` (see the arg's doc): a search typed over the
+  // UNTOUCHED default bag runs over the whole corpus. Untouched means the
+  // filter bag is still the very `defaultFilters` object — a URL that carries
+  // no filters param, or a local query nobody has patched — so an explicit
+  // choice equal to the default is never mistaken for it. Everything below
+  // reads `query`, so the fetch, the counts, the facets, the URL round-trip
+  // and every control see ONE lifted bag and cannot disagree.
+  const searchLiftsDefaults =
+    searchSpansDefaultFilters &&
+    defaultFilters !== undefined &&
+    Object.keys(defaultFilters).length > 0 &&
+    storedQuery.search.trim() !== "" &&
+    storedQuery.filters === defaultFilters;
+  const query: EntityListQuery = searchLiftsDefaults
+    ? { ...storedQuery, filters: {} }
+    : storedQuery;
   // Seeded from the query, not from "" — a URL-backed surface opened at
   // `?q=seo` must not fire one throwaway unfiltered fetch before the debounce
   // catches up.

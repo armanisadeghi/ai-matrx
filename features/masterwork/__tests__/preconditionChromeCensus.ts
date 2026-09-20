@@ -131,6 +131,40 @@ function toastErrorCalls(source: string): string[] {
   return out;
 }
 
+/**
+ * THE ONE SENTENCE R1 MUST NOT CLAIM: an ORGANIZATION REFUSAL.
+ *
+ * `toast.error(isOrganizationRequiredError(err) ? "Select an organization …" : …)`
+ * reads like prompt grammar and is nothing of the kind. It is reached only from
+ * a `catch`, after the person has typed, pressed, and had the act REFUSED —
+ * the same shape as the allow-list's "Pick at most ${max}.": an action that did
+ * not take effect, which is exactly what red is for. Nothing was created, and
+ * saying so is mandatory: `lib/organizations/organizationRefusalToast.ts` is
+ * THE one way that refusal reaches a person, and `check-org-refusal-honesty`
+ * fails a module that catches this error and shows NOTHING (2026-09-17, after a
+ * silent refusal became a silent data loss).
+ *
+ * Nor can it be gated away. The selected organization is null during boot while
+ * `ensureOrgId` deliberately WAITS for it, so a `GatedActionButton` keyed on it
+ * would disable the button on a cold start for a person who has an
+ * organization — the false refusal that same commit removed, and the
+ * dead-looking control Law 4 bans.
+ *
+ * So the exemption is the consequent of an `isOrganizationRequiredError(...)`
+ * test and NOTHING else: every other literal in the same `toast.error(...)`
+ * call — including its fallback branch — is still scanned, and a plain
+ * `toast.error("Pick a rulebook first.")` in the same file is still a
+ * violation.
+ */
+function organizationRefusalLiterals(call: string): Set<string> {
+  const out = new Set<string>();
+  const re =
+    /isOrganizationRequiredError\s*\([^)]*\)\s*\?\s*(?:"((?:[^"\\\n]|\\.)*)"|'((?:[^'\\\n]|\\.)*)'|`([^`]*)`)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(call))) out.add(m[1] ?? m[2] ?? m[3] ?? "");
+  return out;
+}
+
 /** Every double/single/backtick-quoted literal in a chunk of source. */
 function stringLiterals(chunk: string): string[] {
   const out: string[] = [];
@@ -171,8 +205,10 @@ export function censusPreconditionChrome(
       // written first: a refusal hidden in a ternary branch is the same red
       // toast to the person reading it.
       for (const call of toastErrorCalls(source)) {
+        const refusals = organizationRefusalLiterals(call);
         for (const sentence of stringLiterals(call)) {
           if (!isPreconditionPrompt(sentence)) continue;
+          if (refusals.has(sentence)) continue;
           violations.push({
             file: rel,
             rule: "R1-toast-literal",

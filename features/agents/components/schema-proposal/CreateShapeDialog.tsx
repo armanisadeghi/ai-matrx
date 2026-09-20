@@ -88,10 +88,6 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
   const organizationId = useAppSelector(selectOrganizationId);
 
   const derivedSlug = useMemo(() => deriveKindSlug(schema.name), [schema.name]);
-  const draftSample = useMemo(
-    () => JSON.stringify(draftSampleFromJsonSchema(schema.schema) ?? {}, null, 2),
-    [schema.schema],
-  );
   const proposalInput = useMemo(
     () => ({
       name: schema.name,
@@ -115,7 +111,8 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
     slug: string;
     taken: boolean;
   } | null>(null);
-  const [sampleText, setSampleText] = useState(draftSample);
+  /** null until the person edits the sample — until then it follows the draft. */
+  const [editedSample, setEditedSample] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
   /** Set once the definition exists but its example verdict is not 'passed'. */
@@ -127,6 +124,21 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
     () => (isValidKindSlug(slug) ? buildShapePlan(proposalInput, slug) : null),
     [proposalInput, slug],
   );
+  // The draft sample is derived from the PLAN's emitted schema — the exact
+  // document the DB trigger validates — so every level carries its `__kind`
+  // marker (root + nested child kinds) first, with the slugs THIS plan would
+  // register. It follows slug edits until the person types in the sample.
+  const draftSample = useMemo(() => {
+    const source =
+      planPreview && !isShapePlanFailure(planPreview)
+        ? planPreview.rootPlan.emittedJsonSchema
+        : schema.schema;
+    const draft = draftSampleFromJsonSchema(source, {
+      kind: isValidKindSlug(slug) ? slug : derivedSlug,
+    });
+    return JSON.stringify(draft ?? {}, null, 2);
+  }, [planPreview, schema.schema, slug, derivedSlug]);
+  const sampleText = editedSample ?? draftSample;
   const planWarnings =
     planPreview && !isShapePlanFailure(planPreview) ? planPreview.warnings : [];
   const planErrors =
@@ -414,7 +426,7 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
             <Textarea
               id="shape-sample"
               value={sampleText}
-              onChange={(e) => setSampleText(e.target.value)}
+              onChange={(e) => setEditedSample(e.target.value)}
               disabled={creating}
               spellCheck={false}
               className="h-44 resize-y font-mono text-xs"

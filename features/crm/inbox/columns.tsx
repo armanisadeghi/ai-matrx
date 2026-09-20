@@ -15,6 +15,7 @@
 
 import { Building2, CircleCheck, CircleDot, Mail } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import {
   DATE_FILTER_OPTIONS,
   Muted,
@@ -69,7 +70,7 @@ export const INBOX_COLUMNS: EntityColumnSpec<InboxRow>[] = [
       // so the default would peek/open the wrong record entirely.
       entityToken: (row) => (row.party_id ? "party" : undefined),
       entityId: (row) => row.party_id ?? undefined,
-      href: (row) => (row.party_id ? `/crm/${row.party_id}` : undefined),
+      href: (row) => (row.party_id ? resolveEntityDoors("party", row.party_id).href ?? undefined : undefined),
       cell: (row) => (
         <span className="truncate font-medium">
           {row.party_name ?? "Unknown contact"}

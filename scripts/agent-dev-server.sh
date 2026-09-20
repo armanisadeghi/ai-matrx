@@ -277,6 +277,118 @@ slot_occupied() {
   fail "machine-wide dev-server slot is held by $label pid $pid on port $port, owned by $owner_session at '${cwd:-unknown cwd}'. That is a DIFFERENT checkout, so its compiled code is not your diff and a per-session hostname would not make it yours. Wait for its explicit release, or stop it from its own checkout. Your hostname once the slot frees: http://$SESSION_HOST:$PORT"
 }
 
+# A private worktree (`git worktree add`) has no node_modules of its own —
+# `pnpm install` was run in the PRIMARY checkout. `git worktree add` never
+# creates node_modules at all (it is gitignored, so there is nothing to check
+# out), which shows up here as ABSENT, not a symlink; a symlink only appears
+# if something (a stale link left from a manual `pnpm install --frozen`, or a
+# tool that mirrors the primary tree) put one there by hand. Both cases need
+# the same fix, and this function used to handle only the symlink one
+# (`[[ -L "$nm" ]] || return 0` returned immediately for the far more common
+# absent case) — so a fresh worktree's `pnpm preview:start` printed
+# "dependencies are missing; run pnpm install first", and following that
+# remedy is worse than the defect: every `@ai-matrx/*` package and
+# `next`/`react`/`typescript` is declared `latest`, so an install run in the
+# worktree resolves a DIFFERENT dependency tree than the one under test
+# (V-23 NEW-1). Turbopack also refuses to serve a symlinked node_modules that
+# points outside the project root ("Symlink [project]/node_modules is
+# invalid") — this cost V-22 an hour (NEW-15) — and will cost every future
+# verifier the same until the class is fixed here instead of rediscovered
+# per-agent.
+#
+# Fix, for both the absent and the symlink case: a same-device hard-link copy
+# (`cp -al`) from the PRIMARY checkout's node_modules — full speed, no extra
+# disk (the link count goes up, the bytes do not), and it survives `pnpm
+# install` in either checkout re-linking a package because copy-on-write never
+# applies to a hard link: a write to one path never touches the other inode's
+# data, it only replaces which inode that ONE path points to. A REAL directory
+# already present (an ordinary checkout, or a worktree someone already fixed)
+# is left alone. It is never silent: every path through this function
+# announces what it found and what it did.
+ensure_worktree_node_modules() {
+  local nm="$REPO_ROOT/node_modules" primary
+
+  # A real directory is already there — ordinary checkout, or a worktree this
+  # function (or a human) already fixed. Nothing to do.
+  [[ -e "$nm" && ! -L "$nm" ]] && return 0
+
+  if [[ -L "$nm" ]]; then
+    primary="$(readlink -f "$nm" 2>/dev/null)"
+    log "this is a git worktree: node_modules is a symlink -> ${primary:-<unresolved>}"
+    log "Turbopack refuses a node_modules symlink that points outside the project root, so a plain 'pnpm preview:start' would fail here with \"Symlink [project]/node_modules is invalid\" — replacing it with a hard-link copy now (same device, no extra disk, seconds not minutes)."
+    [[ -n "$primary" && -d "$primary" ]] || fail "node_modules is a symlink but its target ('$primary') does not resolve to a directory; run pnpm install in the primary checkout first, then retry."
+  else
+    # node_modules is absent. Only a worktree gets fixed here — an ordinary
+    # checkout with no node_modules genuinely needs `pnpm install`, and this
+    # function must never mask that with a worktree remedy it does not need.
+    local common_dir
+    common_dir="$(cd "$REPO_ROOT" && git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"
+    [[ -n "$common_dir" ]] || return 0
+    primary="$(dirname "$common_dir")"
+    [[ -n "$primary" && "$primary" != "$REPO_ROOT" && -d "$primary/.git" ]] || return 0
+    log "this is a git worktree: node_modules is absent (git worktree add never creates it — it is gitignored, so there is nothing to check out)"
+    log "primary checkout: $primary"
+    log "an install here would resolve a DIFFERENT dependency tree than the one under test (every @ai-matrx/* package and next/react/typescript is declared 'latest') — hard-linking the primary checkout's node_modules instead (same device, no extra disk, seconds not minutes)."
+    [[ -d "$primary/node_modules" ]] || fail "the primary checkout ('$primary') itself has no node_modules; run pnpm install there — NEVER in this worktree, or you will be testing a dependency tree that does not match the primary checkout's lockfile resolution."
+    primary="$primary/node_modules"
+  fi
+
+  local primary_dev worktree_dev
+  primary_dev="$(stat_fmt %d %d "$primary")"
+  worktree_dev="$(stat_fmt %d %d "$REPO_ROOT")"
+  if [[ -n "$primary_dev" && -n "$worktree_dev" && "$primary_dev" != "$worktree_dev" ]]; then
+    fail "primary checkout's node_modules ('$primary') is on a different filesystem device than this worktree ('$REPO_ROOT'); a hard-link copy cannot cross devices. Remedy: cp -aL '$primary' '$nm.real' && rm -f '$nm' && mv '$nm.real' '$nm' (a real recursive copy, slower), or run pnpm install directly in this worktree."
+  fi
+
+  rm -f "$nm"
+  if ! cp -al "$primary" "$nm"; then
+    rm -rf "$nm"
+    fail "hard-link copy of node_modules from '$primary' into this worktree failed; remedy: cp -al '$primary' '$nm' by hand, or run pnpm install in this worktree."
+  fi
+  log "node_modules is now a real (hard-linked) directory in this worktree — remove it before \`git worktree remove\` if you want the disk back immediately (the worktree removal does not need you to)."
+}
+
+# The launcher used to exec `node_modules/.bin/next` — a pnpm-generated POSIX
+# shim that finds its real target by counting a FIXED number of `..` hops from
+# its own directory up to what it assumes is the filesystem root, then
+# re-descending through the target's ABSOLUTE path (minus the leading slash)
+# baked in at generation time. That assumption only holds if the shim's own
+# directory is still exactly as deep as it was when it was generated.
+# `ensure_worktree_node_modules` hard-links (`cp -al`) the PRIMARY checkout's
+# node_modules into this worktree at whatever depth the worktree happens to
+# live at — here five levels deeper
+# (`.matrx/acquisition-frontier/checkout/node_modules/.bin` vs the primary's
+# `node_modules/.bin`) — so the hop count that was correct for the primary
+# checkout lands the shim's search five directories short of the filesystem
+# root. It then appends the baked-in absolute path fragment onto whatever it
+# found there, which — because the primary checkout's own path happens to
+# start where the search stopped short — silently DOUBLES the primary
+# checkout's path onto itself instead of erroring:
+#   next_bin = <5 hops up from worktree .bin> + <baked-in absolute path>
+#            = /Users/…/matrx-frontend + Users/…/matrx-frontend/node_modules/…
+#            = /Users/…/matrx-frontend/Users/…/matrx-frontend/node_modules/next/dist/bin/next
+# (reproduced verbatim from the shared-next-dev.log crash, 2026-09-19). This is
+# not specific to one hop count or one worktree depth — ANY shim copied to a
+# directory nested at a different depth than where it was generated resolves
+# to the wrong file, silently, because the arithmetic never checks whether it
+# actually reached "/". A hard-linked copy is exactly that: same bytes, new
+# depth.
+#
+# The fix is to never depend on the shim's own path arithmetic. `next`'s real
+# entry point is a plain Node script with a `#!/usr/bin/env node` shebang
+# (`node_modules/next/dist/bin/next`) reachable from node_modules/next, which
+# is itself a normal symlink into the pnpm store that `readlink`/Node resolve
+# correctly regardless of how deep this checkout is nested — no hop-counting,
+# so no depth-dependent breakage. Node can run that file directly; the shim's
+# only other job (setting NODE_PATH) is not needed here because Next resolves
+# its own dependencies relative to its real (symlink-resolved) location in the
+# pnpm store, not via NODE_PATH.
+resolve_next_bin() {
+  local bin="$REPO_ROOT/node_modules/next/dist/bin/next"
+  [[ -f "$bin" ]] || return 1
+  printf '%s\n' "$bin"
+}
+
 cmd_start() {
   mkdir -p "$STATE_DIR"
   clear_stale_state
@@ -303,7 +415,10 @@ cmd_start() {
     return 0
   fi
 
-  [[ -x "$REPO_ROOT/node_modules/.bin/next" ]] || fail "dependencies are missing; run pnpm install first"
+  ensure_worktree_node_modules
+
+  local next_bin
+  next_bin="$(resolve_next_bin)" || fail "dependencies are missing; run pnpm install first"
 
   # Reclaim only servers dev-cleanup already classifies as runaway/abandoned.
   # With no live server above, this mainly clears stale tracking files.
@@ -330,18 +445,36 @@ cmd_start() {
     fi
   fi
 
+  if [[ -n "${HTTPS_PROXY:-}${https_proxy:-}" ]]; then
+    log "HTTPS_PROXY is set — starting Next with NODE_USE_ENV_PROXY=1 so dev-login's OTP fallback fetch actually uses it (see NEW-15)"
+  fi
+
   # exec_command owns and reaps its shell process group. Python's
   # start_new_session creates a real detached OS session that survives the tool
   # call while still giving us the exact root pid to track and stop.
-  pid="$(/usr/bin/python3 - "$REPO_ROOT" "$LOG" "$DISTDIR" "$PORT" <<'PY'
+  pid="$(/usr/bin/python3 - "$REPO_ROOT" "$LOG" "$DISTDIR" "$PORT" "$next_bin" <<'PY'
 import os
+import shutil
 import subprocess
 import sys
 
-root, log_path, distdir, port = sys.argv[1:]
+root, log_path, distdir, port, next_bin = sys.argv[1:]
+node_exe = shutil.which("node") or "node"
 env = os.environ.copy()
 env["NODE_OPTIONS"] = "--dns-result-order=ipv4first"
 env["NEXT_DISTDIR"] = distdir
+# Node's own fetch() (undici) ignores HTTPS_PROXY/HTTP_PROXY by default — it
+# only honors the env proxy vars once NODE_USE_ENV_PROXY=1 is set (Node
+# 22.12+/24.x). This dev server's own /api/dev-login route falls back to a
+# Supabase OTP `fetch` when password sign-in fails, and on a host that only
+# reaches the internet through an HTTPS_PROXY (every agent sandbox here) that
+# fetch died with "OTP fallback failed: ... Host not i[n allowlist]" — the
+# request left this process with no proxy at all and hit the sandbox's raw
+# egress filter instead of the proxy. Cost V-22 an hour (NEW-15). Setting the
+# flag only when an HTTPS_PROXY is actually configured keeps a host with real
+# direct internet (no proxy) on Node's normal fetch path.
+if os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy"):
+    env["NODE_USE_ENV_PROXY"] = "1"
 # THE PROFILE IS THE MEMORY FIX, not the RSS cap. With no MATRX_PROFILE the
 # config falls back to `full` — every route group at once — which is the exact
 # profile that OOMs PRODUCTION (it is why the app ships as three separate
@@ -354,7 +487,7 @@ env["NEXT_DISTDIR"] = distdir
 env["MATRX_PROFILE"] = os.environ.get("MATRX_PREVIEW_PROFILE", "core")
 with open(log_path, "ab", buffering=0) as log:
     process = subprocess.Popen(
-        [os.path.join(root, "node_modules/.bin/next"), "dev", "-p", port],
+        [node_exe, next_bin, "dev", "-p", port],
         cwd=root,
         env=env,
         stdin=subprocess.DEVNULL,

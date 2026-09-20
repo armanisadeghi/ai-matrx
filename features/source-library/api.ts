@@ -475,6 +475,9 @@ export function videoQueryParams(
         params.max_duration_seconds = query.max_duration_seconds;
     }
     if (query.q) params.q = query.q;
+    // §4.3 — "which of these went to the Rulebook", "which ones failed".
+    if (query.action_key) params.action_key = query.action_key;
+    if (query.action_status?.length) params.action_status = query.action_status.join(",");
     if (query.order) params.order = query.order;
     if (query.direction) params.direction = query.direction;
     if (query.limit !== undefined) params.limit = query.limit;

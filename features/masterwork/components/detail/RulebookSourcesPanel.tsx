@@ -28,8 +28,15 @@
 // shown here is preview only and is never persisted or sent.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/utils/supabase/client";
+import { readFileSizesByIds } from "@/features/files/filesDb";
+import {
+  fileSourceSizeLabel,
+  EMPTY_FILE_SIZE_LABEL,
+} from "./fileSourceSizeLabel";
 import Link from "next/link";
 import {
+  AlertTriangle,
   ChevronDown,
   ChevronRight,
   ExternalLink,
@@ -43,6 +50,10 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { clearUploadEntry, uploadFiles } from "@/features/files/redux/thunks";
+import { selectFailedUploadsForFolderPath } from "@/features/files/redux/selectors";
+import type { UploadState } from "@/features/files/types";
 import { Button } from "@/components/ui/button";
 import {
   firstBlockingReason,
@@ -62,12 +73,14 @@ import {
   useKeptSourceCount,
   type KeptSourceCount,
 } from "../../sourceLinks";
+import { keptSourceTitle } from "../../kept-sources/types";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { WebpageResourcePickerCore } from "@/features/resource-manager/resource-picker/WebpageResourcePicker";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import type { paths } from "@/types/python-generated/api-types";
 import { cn } from "@/lib/utils";
+import { humanFailureSentence } from "@/lib/progress/failureSentence";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import {
   countRulesForSource,
@@ -251,10 +264,72 @@ export function visibleLaunchKeys(
   ]);
 }
 
-/** The `resources` array `POST /masterworks/ingest-dump` is handed. */
+/**
+ * THE SOURCE IDENTITY the SERVER will give an attached resource
+ * (`aidream/services/distillation/source_identity.py`): an uploaded file is
+ * `file:<id>` whether it arrives as `{token: "file", id}` or as the file lane's
+ * own `file_id`; any other entity is `entity:<token>:<id>`.
+ *
+ * Mirrored here — the one thing this client needs in order to know that an
+ * attached source and a kept Source are the SAME material.
+ */
+export function serverSourceKeyForEntity(token: string, id: string): string {
+  const t = (token ?? "").trim().toLowerCase();
+  const value = (id ?? "").trim();
+  return t === "file" ? `file:${value}` : `entity:${t}:${value}`;
+}
+
+/** The same, for a staged URL: scheme + host case and one trailing slash. */
+export function serverSourceKeyForUrl(url: string): string {
+  const raw = (url ?? "").trim();
+  if (!raw) return "";
+  const parts = raw.split("://");
+  let normalized = raw;
+  if (parts.length > 1) {
+    const [scheme, ...restParts] = parts;
+    const rest = restParts.join("://");
+    const slash = rest.indexOf("/");
+    const host = slash === -1 ? rest : rest.slice(0, slash);
+    const tail = slash === -1 ? "" : rest.slice(slash);
+    normalized = `${(scheme ?? "").toLowerCase()}://${host.toLowerCase()}${tail}`;
+  }
+  if (normalized.endsWith("/") && (normalized.match(/\//g)?.length ?? 0) > 2) {
+    normalized = normalized.slice(0, -1);
+  }
+  return normalized;
+}
+
+/**
+ * The `resources` array `POST /masterworks/ingest-dump` is handed.
+ *
+ * 🚨 ONE RESOURCE PER SOURCE — THE CONTRADICTORY PAIR IS IMPOSSIBLE HERE, NOT
+ * PAPERED OVER DOWNSTREAM (twelfth cold walk, 2026-09-20, D3).
+ *
+ * A Rulebook's dump is the union of what somebody POINTED us at (the attached
+ * edges and staged URLs) and what we HAVE (every kept Source). Those two sets
+ * OVERLAP the moment a file has been read once: `file_ingest.py` claims
+ * `file:<id>` as a kept Source before it spends, so the second press sent the
+ * same photo twice — once as `entity/file/<id>`, once as `kept_source`/
+ * `file:<id>`. The fan-out ran it twice, charged twice, and the two attempts
+ * disagreed, which is how one panel came to show
+ * `04_field_sheet_photo.png: … failed` and `04_field_sheet_photo.png: 3 draft
+ * rule(s) added.` beside each other over thirteen rows for six files.
+ *
+ * So a kept Source whose identity is already attached is DROPPED here. The
+ * attached edge wins because it is the one the person can see and remove.
+ */
 export function dumpResources(
   input: DumpPayloadInput,
 ): Record<string, unknown>[] {
+  const attachedSourceKeys = new Set<string>([
+    ...input.sourceLinks.map((l) =>
+      serverSourceKeyForEntity(l.token, l.resourceId),
+    ),
+    ...input.stagedUrls.map((s) => serverSourceKeyForUrl(s.url)),
+  ]);
+  const keptRows = input.keptRows.filter(
+    (k) => !attachedSourceKeys.has((k.source_key ?? "").trim()),
+  );
   return [
     ...input.sourceLinks.map((l) => ({
       kind: "entity",
@@ -276,7 +351,7 @@ export function dumpResources(
     // here and the same email distilled by any other door are ONE
     // source: the re-distill guard fires and the rules point back to the
     // stored passage.
-    ...input.keptRows.map((k) => ({
+    ...keptRows.map((k) => ({
       kind: "kept_source",
       source_key: k.source_key,
       ...(k.label ? { title: k.label } : {}),
@@ -425,6 +500,53 @@ export function RulebookSourcesPanel({
     [rulebook.rules],
   );
 
+  /**
+   * File sizes for the Resources card (VERIFICATION.md §12, 2026-09-18): a
+   * zero-byte upload rendered identically to a real one — filename + bare
+   * "Files" subtitle, no size, no "(empty)". `readFileSizesByIds` is a
+   * direct RLS-authorized Supabase read (no server round trip needed for a
+   * handful of size_bytes columns); `fileSourceSizeLabel` turns a result
+   * into the honest subtitle, including calling out an empty file plainly.
+   */
+  const fileSourceIds = useMemo(
+    () =>
+      sourceLinks
+        .filter((l) => l.token === "file")
+        .map((l) => l.resourceId),
+    [sourceLinks],
+  );
+  const [fileSizesById, setFileSizesById] = useState<
+    Map<string, number | null>
+  >(new Map());
+  useEffect(() => {
+    if (fileSourceIds.length === 0) return;
+    // Only fetch ids we haven't resolved yet — sizes don't change once a
+    // file has landed, so this never re-fetches ids already in state.
+    const missing = fileSourceIds.filter((id) => !fileSizesById.has(id));
+    if (missing.length === 0) return;
+    let cancelled = false;
+    void readFileSizesByIds(supabase, missing).then((sizes) => {
+      if (cancelled) return;
+      setFileSizesById((prev) => {
+        const next = new Map(prev);
+        for (const id of missing) {
+          next.set(id, sizes.get(id) ?? null);
+        }
+        return next;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [fileSourceIds, fileSizesById]);
+  const sizeForLink = useCallback(
+    (token: string, resourceId: string): string | null => {
+      if (token !== "file") return null;
+      return fileSourceSizeLabel(fileSizesById.get(resourceId));
+    },
+    [fileSizesById],
+  );
+
   const stagedUrls = useMemo(() => dumpUrlSources(rulebook), [rulebook]);
 
   /**
@@ -455,6 +577,32 @@ export function RulebookSourcesPanel({
     [sourceLinks],
   );
 
+  /**
+   * 🚨 THE UPLOAD THAT FAILED, LEFT WITHOUT A HOME (2026-09-19 silent failure —
+   * `common-docs/projects/acquisition-frontier/own-files/VERIFICATION.md` §18
+   * claim 1b). A 400 on a fresh Rulebook's upload said the real reason ONLY in
+   * a toast, which is gone by the time anyone looks back at the card — and the
+   * card kept reading "Nothing attached yet" before, during and after. The
+   * association edge (`sourceLinks`) only exists for a file that LANDED, so a
+   * failure needs a home outside that edge list: `state.cloudFiles.uploads`
+   * already tracks every upload's outcome by requestId and never auto-clears
+   * an `error` entry (see `clearCompletedUploads`), so it survives exactly as
+   * long as this fix needs it to. `sourcesFolderPath` is unique to THIS
+   * Rulebook, so it also doubles as the correlation key: it is handed to the
+   * capture toolbar below as `uploadFolderPath`, and read back here.
+   */
+  const sourcesFolderPath = useMemo(
+    () => `Masterwork/Sources/${rulebook.id}`,
+    [rulebook.id],
+  );
+  const dispatch = useAppDispatch();
+  const failedUploads = useAppSelector((state) =>
+    selectFailedUploadsForFolderPath(state, sourcesFolderPath),
+  );
+  const [retryingUploadId, setRetryingUploadId] = useState<string | null>(
+    null,
+  );
+
   const attachSource = useCallback(
     async (token: EntityTypeToken, resourceId: string, label?: string | null) =>
       gate.track(
@@ -478,6 +626,55 @@ export function RulebookSourcesPanel({
       opts?: { label?: string },
     ) => attachSource(token, resourceId, opts?.label),
     [attachSource],
+  );
+
+  /**
+   * "Retry" hands the person a file picker for the ONE file that failed —
+   * never a re-run of the same bytes against the same 400, and never a
+   * silent no-op. Success uploads the freshly-picked file to this
+   * Rulebook's own folder, attaches it exactly as the toolbar's own upload
+   * path does, and only THEN clears the stale failed row. A retry that fails
+   * again is not swallowed: `uploadFiles` tracks its own fresh failed entry
+   * under this same `sourcesFolderPath`, so the new reason takes the old
+   * row's place on the next render — it is never dropped on the floor.
+   */
+  const retryFailedUpload = useCallback(
+    async (upload: UploadState, file: File) => {
+      setRetryingUploadId(upload.requestId);
+      try {
+        const result = await dispatch(
+          uploadFiles({
+            files: [file],
+            folderPath: sourcesFolderPath,
+            visibility: "personal",
+          }),
+        ).unwrap();
+        const fileId = result.uploaded[0];
+        if (fileId) {
+          await attachSource("file", fileId);
+        }
+      } catch (err) {
+        // The thunk itself only rejects on something outside a per-file
+        // outcome (e.g. the store isn't ready) — a real upload failure
+        // resolves normally with `failed` populated and is announced above.
+        toast.error(
+          err instanceof Error ? err.message : "Couldn't retry the upload",
+        );
+      } finally {
+        // The old attempt's row is always retired here — a fresh failure
+        // from the retry above already wrote its OWN row before this runs.
+        dispatch(clearUploadEntry({ requestId: upload.requestId }));
+        setRetryingUploadId(null);
+      }
+    },
+    [dispatch, sourcesFolderPath, attachSource],
+  );
+
+  const dismissFailedUpload = useCallback(
+    (requestId: string) => {
+      dispatch(clearUploadEntry({ requestId }));
+    },
+    [dispatch],
   );
 
   const detachSource = useCallback(
@@ -637,6 +834,14 @@ export function RulebookSourcesPanel({
     if (run.running) setOpen(true);
   }, [run.running]);
 
+  /**
+   * The exact `resources` array the last launch sent, index-aligned with the
+   * outcome rows the server returns. A ref, not state: nothing renders from
+   * it, and a reload legitimately loses it (a rejoined run's retry falls back
+   * to rebuilding from the outcome row itself).
+   */
+  const launchedResourcesRef = useRef<Record<string, unknown>[] | null>(null);
+
   const launchDump = async () => {
     // Gated on the button, which names the missing precondition instead of
     // sitting dark (it was `disabled` with nothing said) and instead of
@@ -658,6 +863,11 @@ export function RulebookSourcesPanel({
       keptRows,
       titleFor: (token, id, label) => titleFor({ token, id, label }),
     });
+    // What was actually sent, kept so a failed row can be re-read ON ITS OWN.
+    // `dump_ingest.py` writes `outcomes[index]`, so the summary's `resources`
+    // are index-aligned with this array — the only way to rebuild a
+    // `kept_source` row's request, which carries no `source_key` on the wire.
+    launchedResourcesRef.current = resources;
     await run.launch(
       {
         rulebook_id: rulebook.id,
@@ -667,6 +877,42 @@ export function RulebookSourcesPanel({
       resources.length === 1 ? "1 source" : `${resources.length} sources`,
     );
   };
+
+  /**
+   * 🚨 THE WAY OUT OF ONE FAILED SOURCE (twelfth cold walk, D2). A failed row
+   * used to offer nothing, so the only remedy was pressing the whole pile
+   * again — paying a second time for every source that had already worked.
+   * This reads exactly the one source the person pressed and nothing else.
+   *
+   * No confirmation dialog: the row it appears on ADDED NOTHING, so there is
+   * nothing to lose or duplicate, and putting friction in front of the way out
+   * of a failure is the defect wearing a seatbelt.
+   */
+  const retryOneSource = useCallback(
+    (index: number, res: DumpResourceOutcome): void => {
+      const resource =
+        launchedResourcesRef.current?.[index] ?? retryResourceFor(res);
+      if (!resource) {
+        // Structurally unreachable — `DumpOutcomes` draws no control when
+        // `retryResourceFor` returns null and nothing was remembered — but a
+        // dead click is never the answer if it ever is reachable.
+        toast.info(
+          "This source can only be read again with the rest of the pile — press “Turn this into rules” once more.",
+        );
+        return;
+      }
+      launchedResourcesRef.current = [resource];
+      void run.launch(
+        {
+          rulebook_id: rulebook.id,
+          resources: [resource],
+          mode: "instructional",
+        },
+        "1 source",
+      );
+    },
+    [run, rulebook.id],
+  );
 
   /**
    * 🚨 WHAT EACH PART OF A SOURCE GAVE (W42). Read off the live rules, so a
@@ -811,7 +1057,7 @@ export function RulebookSourcesPanel({
           {/* ── capture ──────────────────────────────────────────────── */}
           {canEdit && !captureVisible ? (
             <div className="pt-3">
-              {tally.attached > 0 ? (
+              {tally.attached > 0 || failedUploads.length > 0 ? (
                 <div className="overflow-hidden rounded-md border border-border/70 bg-card">
                   <SourceRows
                     sourceLinks={sourceLinks}
@@ -820,6 +1066,7 @@ export function RulebookSourcesPanel({
                       titleFor({ token, id, label })
                     }
                     detailFor={detailForLink}
+                    sizeFor={sizeForLink}
                     sectionsFor={sectionsFor}
                     onRedistillSection={(resource, section, label) =>
                       void redistillSection(resource, section, label)
@@ -831,6 +1078,12 @@ export function RulebookSourcesPanel({
                     canEdit={canEdit}
                     onDetach={detachAttached}
                     onRemoveUrl={(url) => void removeUrl(url)}
+                    failedUploads={failedUploads}
+                    retryingUploadId={retryingUploadId}
+                    onRetryUpload={(upload, file) =>
+                      void retryFailedUpload(upload, file)
+                    }
+                    onDismissUpload={dismissFailedUpload}
                   />
                 </div>
               ) : null}
@@ -853,7 +1106,7 @@ export function RulebookSourcesPanel({
             <div className="mt-3 overflow-hidden rounded-md border border-border/70 bg-card">
               <AssociationCaptureToolbar
                 attach={captureAttach}
-                uploadFolderPath="Masterwork/Sources"
+                uploadFolderPath={sourcesFolderPath}
                 uploadLocationLabel="your Files (Masterwork/Sources)"
                 // The packaged toolbar (W5 swap) has no "Add document" chip at
                 // all — it was a strict subset of "From your workspace" below,
@@ -989,6 +1242,7 @@ export function RulebookSourcesPanel({
                     titleFor({ token, id, label })
                   }
                   detailFor={detailForLink}
+                    sizeFor={sizeForLink}
                   sectionsFor={sectionsFor}
                   onRedistillSection={(resource, section, label) =>
                     void redistillSection(resource, section, label)
@@ -1000,6 +1254,12 @@ export function RulebookSourcesPanel({
                   canEdit={canEdit}
                   onDetach={detachAttached}
                   onRemoveUrl={(url) => void removeUrl(url)}
+                  failedUploads={failedUploads}
+                  retryingUploadId={retryingUploadId}
+                  onRetryUpload={(upload, file) =>
+                    void retryFailedUpload(upload, file)
+                  }
+                  onDismissUpload={dismissFailedUpload}
                 />
               </AssociationCaptureToolbar>
             </div>
@@ -1011,6 +1271,7 @@ export function RulebookSourcesPanel({
                 stagedUrls={stagedUrls}
                 titleFor={(token, id, label) => titleFor({ token, id, label })}
                 detailFor={detailForLink}
+                    sizeFor={sizeForLink}
                 sectionsFor={sectionsFor}
                 status={links.status}
                 error={links.error}
@@ -1018,6 +1279,7 @@ export function RulebookSourcesPanel({
                 canEdit={false}
                 onDetach={() => undefined}
                 onRemoveUrl={() => undefined}
+                failedUploads={failedUploads}
               />
             </div>
           ) : null}
@@ -1033,7 +1295,15 @@ export function RulebookSourcesPanel({
                   counts the server sent, a clock that moves every second, and
                   the server's labouring sentence when its heartbeat cannot
                   land — never a motionless spinner. */}
-              <RunStages run={run} />
+              {/* 🚨 THE SETTLED ACCOUNT WINS, AND IT IS THE ONLY ONE ON SCREEN
+                  (twelfth cold walk, 2026-09-20, D3). While a run is in
+                  flight the live per-resource list IS the account. The moment
+                  the run settles, `DumpOutcomes` below holds the server's
+                  final row per source — and rendering BOTH put two lists of
+                  the same sources in one panel, each free to say something
+                  different, inside two nested bordered boxes. One source, one
+                  outcome, one box. */}
+              {run.result ? null : <RunStages run={run} />}
               {run.running ? (
                 <DurableRunInterruption interruption={run.interruption} />
               ) : null}
@@ -1053,7 +1323,12 @@ export function RulebookSourcesPanel({
               </DurableRunFailure>
 
               {run.result ? (
-                <DumpOutcomes summary={run.result} onDone={() => run.reset()} />
+                <DumpOutcomes
+                  summary={run.result}
+                  onDone={() => run.reset()}
+                  onRetryOne={retryOneSource}
+                  retrying={run.running}
+                />
               ) : null}
 
               {!run.result ? (
@@ -1107,11 +1382,14 @@ export function RulebookSourcesPanel({
 
 // ── attached-sources list ───────────────────────────────────────────────────
 
-function SourceRows({
+const EMPTY_FAILED_UPLOADS: readonly UploadState[] = [];
+
+export function SourceRows({
   sourceLinks,
   stagedUrls,
   titleFor,
   detailFor,
+  sizeFor,
   sectionsFor,
   onRedistillSection,
   running,
@@ -1121,6 +1399,10 @@ function SourceRows({
   canEdit,
   onDetach,
   onRemoveUrl,
+  failedUploads = EMPTY_FAILED_UPLOADS,
+  retryingUploadId = null,
+  onRetryUpload,
+  onDismissUpload,
 }: {
   sourceLinks: {
     token: string;
@@ -1132,6 +1414,14 @@ function SourceRows({
   titleFor: (token: string, id: string, label: string | null) => string;
   /** The second line of a row — what a pasted source says about itself. */
   detailFor?: (metadata: unknown) => string | null;
+  /**
+   * The file-size half of that second line: a real size ("1.5 KB") or, for
+   * a genuinely empty upload, a plain call-out — never a bare "Files" label
+   * that leaves an empty file indistinguishable from a real one
+   * (VERIFICATION.md §12, 2026-09-18). `null` while unresolved or for a
+   * non-file source, so it never displaces `info.labelPlural`.
+   */
+  sizeFor?: (token: string, resourceId: string) => string | null;
   /** What each part of this source produced — empty when it has no parts. */
   sectionsFor?: (sourceKey: string) => SourceSectionYield[];
   /** Read ONE part of this source again (canEdit only). */
@@ -1148,6 +1438,18 @@ function SourceRows({
   canEdit: boolean;
   onDetach: (token: string, resourceId: string) => void | Promise<void>;
   onRemoveUrl: (url: string) => void;
+  /**
+   * 🚨 THE 2026-09-19 SILENT FAILURE, MADE VISIBLE HERE. An upload that failed
+   * has no attachment edge — `sourceLinks` will never contain it — so it gets
+   * its OWN row, in this same list, with the server's sentence, a Retry, and
+   * a Dismiss. Rendered even when every other list is empty: an upload that
+   * failed must never be indistinguishable from an upload nobody started.
+   */
+  failedUploads?: readonly UploadState[];
+  /** The one row currently re-uploading — its Retry button shows a spinner. */
+  retryingUploadId?: string | null;
+  onRetryUpload?: (upload: UploadState, file: File) => void;
+  onDismissUpload?: (requestId: string) => void;
 }) {
   if (status === "loading" || status === "idle") {
     return (
@@ -1163,7 +1465,11 @@ function SourceRows({
       </p>
     );
   }
-  if (sourceLinks.length === 0 && stagedUrls.length === 0) {
+  if (
+    sourceLinks.length === 0 &&
+    stagedUrls.length === 0 &&
+    failedUploads.length === 0
+  ) {
     return (
       <p className="p-3 text-xs text-muted-foreground">
         Nothing attached yet. Upload files, attach things from your workspace,
@@ -1174,11 +1480,31 @@ function SourceRows({
   }
   return (
     <ul className="divide-y divide-border/70">
+      {failedUploads.map((upload) => (
+        <FailedUploadRow
+          key={upload.requestId}
+          upload={upload}
+          canEdit={canEdit}
+          retrying={retryingUploadId === upload.requestId}
+          onRetry={
+            onRetryUpload
+              ? (file) => onRetryUpload(upload, file)
+              : undefined
+          }
+          onDismiss={
+            onDismissUpload
+              ? () => onDismissUpload(upload.requestId)
+              : undefined
+          }
+        />
+      ))}
       {sourceLinks.map((link) => {
         const info = tryGetEntityInfo(link.token);
         const key = attachedKey(link.token, link.resourceId);
         const unsupported = UNSUPPORTED_TOKENS.has(link.token);
         const detail = detailFor?.(link.metadata) ?? null;
+        const size = sizeFor?.(link.token, link.resourceId) ?? null;
+        const empty = size === EMPTY_FILE_SIZE_LABEL;
         return (
           <li
             key={key}
@@ -1207,8 +1533,16 @@ function SourceRows({
                     {detail}
                   </span>
                 ) : info ? (
-                  <span className="text-[10px] text-muted-foreground">
+                  <span
+                    className={cn(
+                      "text-[10px]",
+                      empty
+                        ? "text-amber-600 dark:text-amber-500"
+                        : "text-muted-foreground",
+                    )}
+                  >
                     {info.labelPlural}
+                    {size ? ` · ${size}` : ""}
                   </span>
                 ) : null}
                 {unsupported ? (
@@ -1309,6 +1643,85 @@ function SourceRows({
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * One row for an upload that failed — the server's own sentence (see
+ * `announceUploadFailures` in `features/files/redux/thunks.ts`, which put the
+ * SAME sentence in the toast this row outlives), a Retry that lets the
+ * person pick the file again without leaving this card, and a Dismiss that
+ * clears it. Never rendered as a bare filename with no reason — that IS the
+ * defect this row exists to close.
+ */
+function FailedUploadRow({
+  upload,
+  canEdit,
+  retrying,
+  onRetry,
+  onDismiss,
+}: {
+  upload: UploadState;
+  canEdit: boolean;
+  retrying: boolean;
+  onRetry?: (file: File) => void;
+  onDismiss?: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  return (
+    <li className="bg-destructive/5 px-3 py-2.5">
+      <div className="flex min-h-14 items-start gap-3">
+        <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm text-foreground">
+            Couldn&apos;t upload {upload.fileName}
+          </p>
+          {/* THE SERVER'S SENTENCE, WHOLE — never a house sentence that hides
+              it (see `announceUploadFailures`'s guard tests). */}
+          <p className="mt-0.5 whitespace-pre-line break-words text-[11px] text-destructive">
+            {upload.error ||
+              "The server refused the upload and gave no reason."}
+          </p>
+        </div>
+        {canEdit ? (
+          <div className="flex shrink-0 items-center gap-1">
+            <input
+              ref={inputRef}
+              type="file"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) onRetry?.(file);
+              }}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7"
+              disabled={retrying || !onRetry}
+              onClick={() => inputRef.current?.click()}
+            >
+              {retrying ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                "Retry"
+              )}
+            </Button>
+            <button
+              type="button"
+              title="Dismiss this failed upload"
+              disabled={retrying}
+              onClick={() => onDismiss?.()}
+              className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </li>
   );
 }
 
@@ -1464,21 +1877,77 @@ function outcomeState(res: DumpResourceOutcome): string {
   }
 }
 
-/** The server's explanation for that state, whole, or null when it sent none. */
+/**
+ * The server's explanation for that state, whole, or null when it sent none.
+ *
+ * 🚨 A FAILURE'S SENTENCE GOES THROUGH `humanFailureSentence` (twelfth cold
+ * walk, D2): the class name comes out, "the server did not say why" goes in
+ * when that is the truth, and the way out is always attached. The `note` and
+ * `alreadyDistilled` sentences are the distiller's own prose about a source it
+ * READ — nothing to sanitise, and rewriting them would be the lie in the other
+ * direction.
+ */
 function outcomeExplanation(res: DumpResourceOutcome): string | null {
-  return res.note ?? res.alreadyDistilled ?? res.error ?? null;
+  if (res.note) return res.note;
+  if (res.alreadyDistilled) return res.alreadyDistilled;
+  if (outcomeTone(res) === "refused") {
+    return humanFailureSentence(res.error, {
+      remedy: "Read this one again below \u2014 nothing else is affected.",
+    }).text;
+  }
+  return res.error ?? null;
+}
+
+/**
+ * The resource payload that would re-run THIS source on its own, or null when
+ * the row does not carry enough to rebuild one — a `kept_source` outcome comes
+ * back without its `source_key`. Null means NO BUTTON: a control that cannot
+ * do what it says is worse than its absence.
+ */
+export function retryResourceFor(
+  res: DumpResourceOutcome,
+): Record<string, unknown> | null {
+  if (res.kind === "entity" && res.token && res.id) {
+    return {
+      kind: "entity",
+      token: res.token,
+      id: res.id,
+      ...(res.title ? { title: res.title } : {}),
+    };
+  }
+  if (res.kind === "url" && res.url) {
+    return {
+      kind: "url",
+      url: res.url,
+      ...(res.title ? { title: res.title } : {}),
+    };
+  }
+  return null;
 }
 
 export function DumpOutcomes({
   summary,
   onDone,
+  onRetryOne,
+  retrying,
 }: {
   summary: DumpSummary;
   onDone: () => void;
+  /**
+   * Read ONE source again. Handed the index of the row, because the server's
+   * `resources` array is index-aligned with the payload the client launched
+   * (`dump_ingest.py` writes `outcomes[index]`), which is the only way to
+   * rebuild a `kept_source` row's request. Absent on a surface that cannot
+   * relaunch — and then no retry control is drawn at all.
+   */
+  onRetryOne?: (index: number, res: DumpResourceOutcome) => void;
+  /** A relaunch is already in flight; every retry control waits it out. */
+  retrying?: boolean;
 }) {
   const failed = summary.resources.filter(
     (r) => outcomeTone(r) === "refused",
   ).length;
+  const read = summary.resources.length - failed;
   return (
     <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
       <p className="text-sm text-foreground">
@@ -1489,15 +1958,18 @@ export function DumpOutcomes({
           : ""}
         .
       </p>
-      {/* A FAN-OUT'S ACCOUNT OF ITSELF. Every source ran; this says how many
-          did not work, and never that the run stopped — the sentence that was
-          printed over fifteen files that had all been read (§9.1). */}
+      {/* 🚨 A FAILURE IS NEVER COUNTED AS A READ (twelfth cold walk, D2 — a
+          headline reading "7 of 7 sources read" over five rows that said
+          nothing was added). This sentence said "N sources were read" with N
+          being every row including the failures. It now says both numbers, and
+          still never says the run stopped — every source in a fan-out ran
+          (§9.1). */}
       {failed > 0 ? (
         <p className="text-xs text-muted-foreground">
-          {summary.resources.length} sources were read.{" "}
+          {read} of {summary.resources.length} read · {failed} failed.{" "}
           {failed === 1
-            ? "One of them could not be used — its reason is on its own row below."
-            : `${failed} of them could not be used — each reason is on its own row below.`}
+            ? "The one that failed says why on its own row below, with a way to read it again."
+            : "Each one that failed says why on its own row below, with a way to read it again."}
         </p>
       ) : null}
       <ul className="space-y-1">
@@ -1554,6 +2026,27 @@ export function DumpOutcomes({
                   <p className="mt-0.5 whitespace-pre-line break-words text-muted-foreground">
                     {outcomeExplanation(res)}
                   </p>
+                ) : null}
+                {/* 🚨 THE REMEDY IS A CONTROL, NOT A SENTENCE ABOUT ONE. A
+                    failed row used to end at its explanation, so the only way
+                    back was to press the whole pile again and pay for every
+                    source that had already worked. This reads THIS source
+                    again and nothing else. It is drawn only when the row
+                    carries enough to rebuild its own request — a control that
+                    cannot do what it says is worse than its absence. */}
+                {onRetryOne && outcomeTone(res) === "refused" ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-1 h-7"
+                    disabled={retrying}
+                    onClick={() => onRetryOne(i, res)}
+                  >
+                    {retrying ? (
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    ) : null}
+                    Read this one again
+                  </Button>
                 ) : null}
               </div>
             </li>
@@ -1651,8 +2144,13 @@ function KeptMaterialSummary({
             key={row.source_key}
             className="flex items-center justify-between gap-3 px-3 py-1.5 text-xs"
           >
+            {/* ONE naming rule for a kept source, shared with the Kept
+                material list and the reader (cold walk 12, D8). This cell used
+                to print "Untitled" for a source with no label, which is what
+                made an Expert's OWN interview read as a stranger's source the
+                platform had put in her brand-new Rulebook. */}
             <span className="truncate text-foreground">
-              {row.label || "Untitled"}
+              {keptSourceTitle(row)}
             </span>
             <span className="shrink-0 text-muted-foreground">
               {row.word_count

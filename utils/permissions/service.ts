@@ -219,6 +219,33 @@ export async function getResourceVisibility(
       `Unknown shareable resource token: ${resourceType}. Bare table names are not accepted.`,
     );
   }
+  // A RESOURCE WHOSE TABLE NO CLIENT MAY READ ANSWERS THROUGH ITS DOOR.
+  // `getShareCapabilities` discovers the PHYSICAL column that holds the public state, and for
+  // the record store it finds one — `custom.record.visibility` really exists. But
+  // `authenticated` holds no SELECT on `custom.record` (DOOR-N-1a, permanently), so the direct
+  // read below was refused and the dialog rendered "We couldn't check this item's public
+  // visibility" on every record. The store answers the same question through a door, from
+  // `iam.content_lane` — which is where VIS-N-4's lanes actually live, so this is also the
+  // answer the Access tab beside it gives, rather than a second one off a different column.
+  if (entry.schemaName === "custom") {
+    const { data, error } = await supabase.rpc("store_door_lane", {
+      p_resource_type: resourceType,
+      p_resource_id: resourceId,
+    });
+    if (error) throw operationFailed("check this item's public visibility", error);
+    const row = (data ?? {}) as Record<string, unknown>;
+    if (row.found !== true) {
+      throw operationFailed(
+        "check this item's public visibility",
+        new Error("That record is not here any more."),
+      );
+    }
+    return {
+      isPublic: row.is_public === true,
+      visibility: row.is_public === true ? "public" : null,
+    };
+  }
+
   const capabilities = await getShareCapabilities(resourceType);
   if (!capabilities.publicState) {
     return { isPublic: false, visibility: null };
@@ -848,6 +875,49 @@ export async function resolveResourceOwnership(
     const message = errMessage(error);
     console.error(
       `[permissions] Ownership check threw for ${resourceType}:${resourceId}: ${message}`,
+    );
+    return { isOwner: false, error: message };
+  }
+}
+
+/**
+ * "MAY I DECIDE WHO ELSE SEES THIS?" — the question a share dialog actually has.
+ *
+ * `resolveResourceOwnership` above answers a NARROWER one: am I the row's
+ * `created_by`. VIS-17's one ladder says `admin` on a thing means "can change it
+ * and decide who else may", so gating the dialog on ownership made `admin` a
+ * level that could not do the one thing its own definition names — and for the
+ * record store it could not even be ASKED, because `custom.record` carries no
+ * client SELECT grant and the direct read above returns "Could not read Record".
+ *
+ * So this asks the database's own predicate (`public.may_manage_sharing`, lane
+ * SHARE 2026-09-19), which is the same one the six sharing RPCs enforce. The
+ * screen and the door cannot disagree, because there is one answer.
+ *
+ * A failure is reported as "could not determine", never as a denial — the
+ * distinction the dialog needs to tell a stranger from a broken read.
+ */
+export async function resolveSharingAuthority(
+  resourceType: ResourceType,
+  resourceId: string,
+): Promise<OwnershipResolution> {
+  if (!resourceType || !resourceId) {
+    return {
+      isOwner: false,
+      error: "Missing resource type or id — cannot resolve who may share this.",
+    };
+  }
+  try {
+    const { data, error } = await supabase.rpc("may_manage_sharing", {
+      p_resource_type: resourceType,
+      p_resource_id: resourceId,
+    });
+    if (error) throw error;
+    return { isOwner: data === true, error: null };
+  } catch (error: unknown) {
+    const message = errMessage(error);
+    console.error(
+      `[permissions] may_manage_sharing failed for ${resourceType}:${resourceId}: ${message}`,
     );
     return { isOwner: false, error: message };
   }

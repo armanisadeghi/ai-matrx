@@ -2105,6 +2105,87 @@
         }
       }
     },
+    "/ai/decisions": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Create Decision",
+        "operationId": "create_decision_ai_decisions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/decisions/{execution_id}": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Read Decision",
+        "operationId": "read_decision_ai_decisions__execution_id__get",
+        "parameters": [
+          {
+            "name": "execution_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Execution Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionResultPayload"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/agent-assignments": {
       "post": {
         "tags": [
@@ -3534,7 +3615,7 @@
           "AI"
         ],
         "summary": "Bind Conversation Sandbox",
-        "description": "Bind a sandbox to a conversation (server-authoritative, ownership-scoped).\n\nPersists ``cx_conversation.sandbox_instance_id`` so the agent auto-arms the\nfs/shell/git tools on the next turn. The binding ALWAYS persists when the\ncaller owns both the conversation and the box; ``armed`` in the response\nstates whether the next run will actually get tools (and ``reason`` why not,\ne.g. an ec2-tier box or a stopped sandbox) — so the client never silently\nfails the way the old direct-Supabase write did.",
+        "description": "Bind a sandbox to a conversation (server-authoritative, ownership-scoped).\n\nPersists ``cx_conversation.sandbox_instance_id`` so the agent auto-arms the\nfs/shell/git tools on the next turn. The binding ALWAYS persists when the\ncaller owns both the conversation and the box; ``armed`` in the response\nstates whether the next run will actually get tools (and ``reason`` why not,\ne.g. an ec2-tier box or a stopped sandbox) — so the client never silently\nfails the way the old direct-Supabase write did.\n\n**Binding BEFORE the first turn is the normal case, not an edge one.** The\nreal flow is: open ``/chat/new``, pick your box, then talk. So this door\ngoes through ``ensure_conversation_for_actor`` — it CREATES the row for the\nid the client minted rather than 404ing on it, exactly as the attachments\ndoor does. Two things make that safe, and both were built for this ruling\n(2026-09-18, feedback 6fae7a84):\n\n* adoption on the first turn no longer clears the binding — it is\n  ``matrx_ai.db.conversation_gate._ADOPTION_PRESERVED_USER_CHOICE``, state a\n  person chose, not a dead attempt's leftovers; and\n* turn-1 arming reads the persisted binding (``sandbox_autobind`` no longer\n  skips the lookup for a new conversation), so the run actually gets the box.\n\nBefore those, persisting here would have been WIPED in silence, which is\nwhy this door deliberately kept its 404 until now.",
         "operationId": "bind_conversation_sandbox_ai_conversation__conversation_id__sandbox_put",
         "parameters": [
           {
@@ -3669,7 +3750,7 @@
           "AI"
         ],
         "summary": "Bind Conversation Sandbox",
-        "description": "Bind a sandbox to a conversation (server-authoritative, ownership-scoped).\n\nPersists ``cx_conversation.sandbox_instance_id`` so the agent auto-arms the\nfs/shell/git tools on the next turn. The binding ALWAYS persists when the\ncaller owns both the conversation and the box; ``armed`` in the response\nstates whether the next run will actually get tools (and ``reason`` why not,\ne.g. an ec2-tier box or a stopped sandbox) — so the client never silently\nfails the way the old direct-Supabase write did.",
+        "description": "Bind a sandbox to a conversation (server-authoritative, ownership-scoped).\n\nPersists ``cx_conversation.sandbox_instance_id`` so the agent auto-arms the\nfs/shell/git tools on the next turn. The binding ALWAYS persists when the\ncaller owns both the conversation and the box; ``armed`` in the response\nstates whether the next run will actually get tools (and ``reason`` why not,\ne.g. an ec2-tier box or a stopped sandbox) — so the client never silently\nfails the way the old direct-Supabase write did.\n\n**Binding BEFORE the first turn is the normal case, not an edge one.** The\nreal flow is: open ``/chat/new``, pick your box, then talk. So this door\ngoes through ``ensure_conversation_for_actor`` — it CREATES the row for the\nid the client minted rather than 404ing on it, exactly as the attachments\ndoor does. Two things make that safe, and both were built for this ruling\n(2026-09-18, feedback 6fae7a84):\n\n* adoption on the first turn no longer clears the binding — it is\n  ``matrx_ai.db.conversation_gate._ADOPTION_PRESERVED_USER_CHOICE``, state a\n  person chose, not a dead attempt's leftovers; and\n* turn-1 arming reads the persisted binding (``sandbox_autobind`` no longer\n  skips the lookup for a new conversation), so the run actually gets the box.\n\nBefore those, persisting here would have been WIPED in silence, which is\nwhy this door deliberately kept its 404 until now.",
         "operationId": "bind_conversation_sandbox_ai_conversations__conversation_id__sandbox_put",
         "parameters": [
           {
@@ -8871,6 +8952,454 @@
         }
       }
     },
+    "/egress/devices": {
+      "get": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "List Devices",
+        "operationId": "list_devices_GET",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response List Devices Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Register Device",
+        "description": "Register THIS computer. The token is returned exactly once, ever.",
+        "operationId": "register_device_POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDeviceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Register Device Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/devices/{device_id}": {
+      "patch": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Patch Device",
+        "operationId": "patch_device_PATCH",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Device Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDeviceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Patch Device Patch"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Remove Device",
+        "operationId": "remove_device_DELETE",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Device Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Remove Device Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/pairings": {
+      "post": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Create Pairing",
+        "description": "ANONYMOUS. The helper has no account yet; the code is the whole link.\n\nThe body is ``{\"registration\": {...}}`` — the same envelope as\n``POST /egress/devices`` — because the helper sends exactly one shape for\nboth doors (proven 2026-09-18: a flat body here answered the real helper\nwith a 422 and no pairing ever started).",
+        "operationId": "create_pairing_POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDeviceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Pairing Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/pairings/{pairing_id}": {
+      "get": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Poll Pairing",
+        "description": "``Bearer <pairing_secret>`` — the helper's own poll, not a user JWT.",
+        "operationId": "poll_pairing_GET",
+        "parameters": [
+          {
+            "name": "pairing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Pairing Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Poll Pairing Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/pairings/by-code/{user_code}": {
+      "get": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Describe Pairing",
+        "operationId": "describe_pairing_GET",
+        "parameters": [
+          {
+            "name": "user_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Describe Pairing Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/pairings/by-code/{user_code}/approve": {
+      "post": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Approve Pairing",
+        "operationId": "approve_pairing_POST",
+        "parameters": [
+          {
+            "name": "user_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Approve Pairing Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/pairings/by-code/{user_code}/deny": {
+      "post": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Deny Pairing",
+        "operationId": "deny_pairing_POST",
+        "parameters": [
+          {
+            "name": "user_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Deny Pairing Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/tickets": {
+      "post": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Mint Ticket",
+        "operationId": "mint_ticket_POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MintTicketRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Mint Ticket Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/status": {
+      "get": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Egress Status",
+        "operationId": "egress_status_GET",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Egress Status Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/on-sign-in": {
       "post": {
         "tags": [
@@ -10549,6 +11078,67 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/{item_id}/restore": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Restore Item",
+        "operationId": "restore_item_vault_items__item_id__restore_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultRestoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultRestoreResponse"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -12745,6 +13335,504 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NativeErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/vault/native/passkeys": {
+      "post": {
+        "tags": [
+          "Credential Vault Native Passkeys"
+        ],
+        "summary": "Create",
+        "operationId": "create_vault_native_passkeys_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativePasskeyReceiptOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "mutation_id": {
+                    "title": "Mutation Id",
+                    "type": "string"
+                  },
+                  "source": {
+                    "maxLength": 87382,
+                    "minLength": 1,
+                    "title": "Source",
+                    "type": "string"
+                  },
+                  "label": {
+                    "maxLength": 1024,
+                    "minLength": 1,
+                    "title": "Label",
+                    "type": "string"
+                  },
+                  "principal_type": {
+                    "enum": [
+                      "organization",
+                      "user"
+                    ],
+                    "title": "Principal Type",
+                    "type": "string"
+                  },
+                  "excluded_credential_ids": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 128,
+                    "title": "Excluded Credential Ids",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "mutation_id",
+                  "source",
+                  "label",
+                  "principal_type"
+                ],
+                "title": "NativePasskeyCreateIn",
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/native/passkeys/receipts/{mutation_id}": {
+      "get": {
+        "tags": [
+          "Credential Vault Native Passkeys"
+        ],
+        "summary": "Receipt",
+        "operationId": "receipt_vault_native_passkeys_receipts__mutation_id__get",
+        "parameters": [
+          {
+            "name": "mutation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Mutation Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativePasskeyReceiptOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/native/passkeys/matches": {
+      "post": {
+        "tags": [
+          "Credential Vault Native Passkeys"
+        ],
+        "summary": "Matches",
+        "operationId": "matches_vault_native_passkeys_matches_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativePasskeyMatchesOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "rp_id": {
+                    "maxLength": 253,
+                    "minLength": 1,
+                    "title": "Rp Id",
+                    "type": "string"
+                  },
+                  "allowed_credential_ids": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 128,
+                    "title": "Allowed Credential Ids",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "rp_id"
+                ],
+                "title": "NativePasskeyMatchIn",
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/native/passkeys/{item_id}/materialize": {
+      "post": {
+        "tags": [
+          "Credential Vault Native Passkeys"
+        ],
+        "summary": "Materialize",
+        "operationId": "materialize_vault_native_passkeys__item_id__materialize_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativePasskeyMaterializeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "rp_id": {
+                    "maxLength": 253,
+                    "minLength": 1,
+                    "title": "Rp Id",
+                    "type": "string"
+                  },
+                  "allowed_credential_ids": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 128,
+                    "title": "Allowed Credential Ids",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "rp_id"
+                ],
+                "title": "NativePasskeyMatchIn",
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/native/passkeys/capabilities": {
+      "get": {
+        "tags": [
+          "Credential Vault Native Passkeys"
+        ],
+        "summary": "Capabilities",
+        "operationId": "capabilities_vault_native_passkeys_capabilities_get",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativePasskeyCapabilitiesOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/{item_id}/native-passkey/enable": {
+      "post": {
+        "tags": [
+          "Credential Vault Native Management"
+        ],
+        "summary": "Enable Native Passkey",
+        "operationId": "enable_native_passkey_vault_items__item_id__native_passkey_enable_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultNativePasskeyEnableRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultNativePasskeyEnableResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/native/identities": {
+      "post": {
+        "tags": [
+          "Credential Vault Native Identities"
+        ],
+        "summary": "Identities",
+        "operationId": "identities_vault_native_identities_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeIdentitiesOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeIdentityErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeIdentityErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeIdentityErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeIdentityErrorOut"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeIdentityErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeIdentityErrorOut"
                 }
               }
             },
@@ -16354,7 +17442,7 @@
           "GitHub Integrations (internal)"
         ],
         "summary": "Internal Access Token",
-        "description": "The sandbox git credential helper's one source of a live GitHub token.\n\nA refusal here is read by a MACHINE and then printed to a person standing at\na `git push` that just failed, so it names the FACT — which user id was\nlooked up, and what exists for it — before any remedy. The old body was the\nremedy alone (\"Connect GitHub in AI Matrx…\"), which sent a connected user\n(2026-09-18) to reconnect an account that was already connected and hid the\nonly datum that could have identified the real cause.",
+        "description": "The sandbox git credential helper's one source of a live GitHub token.\n\nA refusal here is read by a MACHINE and then printed to a person standing at\na `git push` that just failed, so it names the FACT — which user id was\nlooked up, and what exists for it — before any remedy. The old body was the\nremedy alone (\"Connect GitHub in AI Matrx…\"), which sent a connected user\n(2026-09-18) to reconnect an account that was already connected and hid the\nonly datum that could have identified the real cause.\n\nHand a sandbox the user's short-lived GitHub token.\n\nWHAT THE ORGANIZATION DOES AND DOES NOT DO HERE. The bridge handshake\n(``_bridge_user_id``) admits the call only with BOTH halves of the request\ncontext and installs them, and it PROVES the forwarded user is a member of\nthe forwarded organization before admitting anything — that membership\nproof is what bounds the shared bridge secret to a tenant the actor already\nbelongs to. The token itself is NOT org-scoped, and saying so would be a\nlie: ``resolve_github_access_token(user_id)`` resolves the person's own\nGitHub connection, by user. A personal integration connection carries NO\norganization at all — ``users.integration_connections`` is constrained to\n``owner_type='user' AND owner_user_id IS NOT NULL AND organization_id IS\nNULL`` (CHECK ``integration_connections_owner_shape``; see\n``aidream/services/microsoft_integrations/FEATURE.md``), where that column\nis the owner discriminator, not a tenancy stamp.\n\nSo: membership is proven at the bridge; the credential handed back is the\nperson's own, the same one they would get anywhere else in the product.\nThis route resolves no organization of its own.",
         "operationId": "internal_access_token_github_integrations_internal_access_token_get",
         "responses": {
           "200": {
@@ -16930,6 +18018,48 @@
         }
       }
     },
+    "/storage-sources/browse": {
+      "post": {
+        "tags": [
+          "Storage Sources"
+        ],
+        "summary": "Browse Provider Folder",
+        "description": "Return one bounded page from an actor-owned provider connection.",
+        "operationId": "browse_provider_folder_storage_sources_browse_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageBrowseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageBrowsePage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/storage-sources/import": {
       "post": {
         "tags": [
@@ -16955,6 +18085,248 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StorageImportResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storage-oauth/{provider}/authorize": {
+      "post": {
+        "tags": [
+          "Storage OAuth"
+        ],
+        "summary": "Authorize Storage",
+        "operationId": "authorize_storage_storage_oauth__provider__authorize_post",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "box",
+                "dropbox"
+              ],
+              "type": "string",
+              "title": "Provider"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageAuthorizationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{provider}/oauth/callback": {
+      "get": {
+        "tags": [
+          "Storage OAuth"
+        ],
+        "summary": "Storage Callback",
+        "operationId": "storage_callback__provider__oauth_callback_get",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "box",
+                "dropbox"
+              ],
+              "type": "string",
+              "title": "Provider"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "title": "State"
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Code"
+            }
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 256
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error"
+            }
+          }
+        ],
+        "responses": {
+          "307": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storage-oauth/{provider}/refresh": {
+      "post": {
+        "tags": [
+          "Storage OAuth"
+        ],
+        "summary": "Refresh Storage",
+        "operationId": "refresh_storage_storage_oauth__provider__refresh_post",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "box",
+                "dropbox"
+              ],
+              "type": "string",
+              "title": "Provider"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageConnectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageLifecycleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storage-oauth/{provider}/disconnect": {
+      "post": {
+        "tags": [
+          "Storage OAuth"
+        ],
+        "summary": "Disconnect Storage",
+        "operationId": "disconnect_storage_storage_oauth__provider__disconnect_post",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "box",
+                "dropbox"
+              ],
+              "type": "string",
+              "title": "Provider"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageConnectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageLifecycleResponse"
                 }
               }
             }
@@ -55619,6 +56991,27 @@
               "title": "Facet Limit"
             },
             "description": "Max entries per facet axis"
+          },
+          {
+            "name": "exclude_source_app",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Hide conversations from these source_apps (repeatable; NULL-safe). The CX Explorer sends 'code-plugin' by default: outside coding-tool data.",
+              "title": "Exclude Source App"
+            },
+            "description": "Hide conversations from these source_apps (repeatable; NULL-safe). The CX Explorer sends 'code-plugin' by default: outside coding-tool data."
           }
         ],
         "responses": {
@@ -55660,6 +57053,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a real Supabase Auth session for the given user id.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -64221,7 +65674,7 @@
           "RAG"
         ],
         "summary": "Rag Ingest Conversation",
-        "description": "Streaming conversation ingest (stream-everything mandate, 2026-07-06).\n\nThin wrapper around ``POST /rag/ingest`` so callers can ingest a whole\nconversation without knowing the ``source_kind='cx_message'`` plumbing.\nThe resolver is fail-closed on ownership: a conversation the caller\ndoes not own resolves to nothing and streams a clean \"source_not_found\"\nresult rather than an error or a cross-tenant leak.\n\nThe effective org is resolved (personal-org fallback) before the ingest\ncall so the written kg_chunks are always org-scoped (non-NULL invariant).",
+        "description": "Streaming conversation ingest (stream-everything mandate, 2026-07-06).\n\nThin wrapper around ``POST /rag/ingest`` so callers can ingest a whole\nconversation without knowing the ``source_kind='cx_message'`` plumbing.\nThe resolver is fail-closed on ownership: a conversation the caller\ndoes not own resolves to nothing and streams a clean \"source_not_found\"\nresult rather than an error or a cross-tenant leak.\n\nThe organization is READ off the request context before the ingest call,\nso the written kg_chunks are always org-scoped (non-NULL invariant) and\nalways in the tenant the caller was admitted for.",
         "operationId": "rag_ingest_conversation_rag_conversations__conversation_id__ingest_post",
         "parameters": [
           {
@@ -77100,6 +78553,38 @@
             }
           },
           {
+            "name": "action_key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action Key"
+            }
+          },
+          {
+            "name": "action_status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action Status"
+            }
+          },
+          {
             "name": "order",
             "in": "query",
             "required": false,
@@ -83199,7 +84684,7 @@
           "Sandbox Bridge"
         ],
         "summary": "List Changes",
-        "description": "Polling fallback for the in-sandbox watcher's down-direction.\n\nThe recommended live path is Supabase Realtime on ``cld_files`` (see\n``db/migrations/0002_cld_files_realtime.sql``). When Realtime isn't\navailable — sandbox missing the realtime client lib, missing Supabase\ncreds, or a transient WebSocket drop — the watcher polls this endpoint\nevery ~30s with the ISO timestamp of the most recent change it has\nalready processed.\n\nReturns only **modifications** (rows with ``updated_at > since``,\n``deleted_at IS NULL``), filtered and bounded server-side via\n``list_changed_files_async``. Soft-deletes are not surfaced through this\nendpoint — they only show up via Realtime, or are picked up by the next\nsession's bulk down-sync.\n\nResponse shape:\n    {\n        \"files\":       [{ id, file_path, file_size, mime_type,\n                          current_version, checksum, updated_at }, ...],\n        \"next_cursor\": \"<iso of most recent updated_at>\",\n        \"deletions_supported\": false\n    }",
+        "description": "THE downstream path for the in-sandbox replica — the whole of it.\n\nA sandbox never talks to the platform database; the bridge is the one hop,\nand it is what carries the organization. The Supabase-Realtime subscriber\nthat used to sit beside the poller was deleted on 2026-09-17, so everything\na replica must learn has to be in this answer. The box polls with the ISO\ntimestamp of the newest change it has already applied and follows the\ncadence this response instructs (``poll_after_seconds`` / ``Retry-After``).\n\nReturns every change with ``updated_at > since`` in this tenant, oldest\nfirst, bounded server-side — **modifications and deletions alike**. A\nsoft-deleted row is sent marked ``deleted: true`` (with its ``deleted_at``)\nand ``deletions_supported`` is ``true``: until 2026-09-17 it was ``false``\nand tombstones were filtered out, so a file the person deleted in the UI\nstayed on the sandbox's disk and the shutdown up-sync PUT IT BACK — the\ndelete undid itself. Deletions ride the same cursor because\n``platform._touch_row`` stamps ``updated_at`` on a soft-delete.\n\nContract both halves meet on: matrx-sandbox\n``sandbox-image/sdk/matrx_agent/cloud_sync/FEATURE.md`` § The ``/changes``\ncontract.\n\nResponse shape:\n    {\n        \"files\":       [{ id, file_path, file_size, size_bytes, mime_type,\n                          current_version, checksum, updated_at,\n                          deleted, deleted_at }, ...],\n        \"next_cursor\": \"<iso of most recent updated_at>\",\n        \"deletions_supported\": true,\n        \"poll_after_seconds\": 30\n    }",
         "operationId": "list_changes_cloud_files_changes_get",
         "parameters": [
           {
@@ -83265,6 +84750,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/BridgeIntegrationResponse"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/local/transport/verify": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Verify Local Transport",
+        "description": "Verify a daemon's existing lifecycle grant without changing any state.",
+        "operationId": "verify_local_transport_browser_manager_local_transport_verify_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           }
@@ -83379,6 +84884,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StopRunResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/runs/{run_id}/retry-through-home-computer": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Retry Through Home Computer",
+        "description": "Move this live run's exit to one of the caller's OWN computers.\n\nThe automatic switch already runs when a navigate lands on a detectable\nchallenge; this is the door for the challenge nobody could detect — a\nperson or an agent that can SEE the block says so, and the session is\ncheckpointed and reopened through their computer with the same run id.\nContract: ``common-docs/systems/platform/residential-egress/FEATURE.md``.",
+        "operationId": "retry_through_home_computer_browser_manager_runs__run_id__retry_through_home_computer_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetryThroughHomeComputerResponse"
                 }
               }
             }
@@ -85917,6 +87465,24 @@
             "description": "Only rows with failed_at < this instant (ISO-8601)."
           },
           {
+            "name": "column_filters",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "JSON-encoded dashboard filters for table_target, op_type, error_text, user_id, and request_id.",
+              "title": "Column Filters"
+            },
+            "description": "JSON-encoded dashboard filters for table_target, op_type, error_text, user_id, and request_id."
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -86379,6 +87945,24 @@
               "title": "Until"
             },
             "description": "Only rows with occurred_at < this instant (ISO-8601)."
+          },
+          {
+            "name": "column_filters",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "JSON-encoded dashboard filters for kind, route, error_text, user_id, and request_id.",
+              "title": "Column Filters"
+            },
+            "description": "JSON-encoded dashboard filters for kind, route, error_text, user_id, and request_id."
           },
           {
             "name": "limit",
@@ -91681,6 +93265,236 @@
           }
         }
       }
+    },
+    "/storage-oauth/{provider}/authorize": {
+      "post": {
+        "operationId": "authorize_storage_storage_oauth__provider__authorize_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "enum": [
+                "box",
+                "dropbox"
+              ],
+              "title": "Provider",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageAuthorizationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Authorize Storage"
+      }
+    },
+    "/storage-oauth/{provider}/disconnect": {
+      "post": {
+        "operationId": "disconnect_storage_storage_oauth__provider__disconnect_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "enum": [
+                "box",
+                "dropbox"
+              ],
+              "title": "Provider",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageLifecycleResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Disconnect Storage"
+      }
+    },
+    "/storage-oauth/{provider}/refresh": {
+      "post": {
+        "operationId": "refresh_storage_storage_oauth__provider__refresh_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "enum": [
+                "box",
+                "dropbox"
+              ],
+              "title": "Provider",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageLifecycleResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refresh Storage"
+      }
+    },
+    "/{provider}/oauth/callback": {
+      "get": {
+        "operationId": "storage_callback__provider__oauth_callback_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "enum": [
+                "box",
+                "dropbox"
+              ],
+              "title": "Provider",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "required": true,
+            "schema": {
+              "maxLength": 512,
+              "minLength": 1,
+              "title": "State",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "code",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 4096,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Code"
+            }
+          },
+          {
+            "in": "query",
+            "name": "error",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error"
+            }
+          }
+        ],
+        "responses": {
+          "307": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Storage Callback"
+      }
     }
   },
   "components": {
@@ -95877,7 +97691,7 @@
               }
             ],
             "title": "Organization Id",
-            "description": "Admin-only org override — should match the org used for the search."
+            "description": "The organization the search ran in; must match the organization this request was admitted for (a disagreeing value is a 409)."
           }
         },
         "type": "object",
@@ -98844,6 +100658,27 @@
         },
         "type": "object",
         "title": "AnnotationUpdateBody"
+      },
+      "Answer": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NoulAnswer"
+          },
+          {
+            "$ref": "#/components/schemas/ChoiceAnswer"
+          },
+          {
+            "$ref": "#/components/schemas/ScoreAnswer"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "choice": "#/components/schemas/ChoiceAnswer",
+            "noul": "#/components/schemas/NoulAnswer",
+            "score": "#/components/schemas/ScoreAnswer"
+          }
+        }
       },
       "AnthropicCountTokensResponse": {
         "properties": {
@@ -108989,6 +110824,7 @@
           "append_native",
           "capabilities",
           "delete",
+          "delete_native_stream",
           "diagnose",
           "handoff",
           "health",
@@ -109124,11 +110960,114 @@
         "title": "BridgeCapabilityReport",
         "description": "The `capabilities` action's answer: provider × origin, with reasons.\n\nGeneralizes the Claude-only ``GET /api/coding-sessions/claude/capabilities``\nprobe to every provider and every origin, and is the ONLY place a client\nmay learn what it can do — see ``supported_actions``. A client that\nhardcodes an action list breaks on the first server that predates or\npostdates it, which is why there is no version number to negotiate."
       },
+      "BridgeChangeEntry": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "file_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Path"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          },
+          "current_version": {
+            "type": "integer",
+            "title": "Current Version",
+            "default": 1
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "checksum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum"
+          },
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted",
+            "default": false
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Size"
+          }
+        },
+        "type": "object",
+        "title": "BridgeChangeEntry",
+        "description": "A change-feed row: a modification, or a DELETION that says so.\n\nTwo fields the plain listing has no use for, both named by the contract the\nsandbox implements (matrx-sandbox\n``sandbox-image/sdk/matrx_agent/cloud_sync/FEATURE.md`` § The ``/changes``\ncontract):\n\n* ``deleted`` — the marker. ``true`` means this path is gone for this\n  person; the replica unlinks it. Stated, never inferred from absence,\n  because absence is also what a page limit looks like.\n* ``file_size`` — the contract's name for ``size_bytes``. Both are sent so\n  the poller finds the name it reads and nothing loses the one it had."
+      },
       "BridgeChangesResponse": {
         "properties": {
           "files": {
             "items": {
-              "$ref": "#/components/schemas/BridgeFileEntry"
+              "$ref": "#/components/schemas/BridgeChangeEntry"
             },
             "type": "array",
             "title": "Files"
@@ -110069,6 +112008,51 @@
         ],
         "title": "BridgeOrigin"
       },
+      "BridgePinDivergence": {
+        "properties": {
+          "schema_version": {
+            "type": "integer",
+            "title": "Schema Version",
+            "default": 1
+          },
+          "provider_pinned": {
+            "type": "boolean",
+            "title": "Provider Pinned"
+          },
+          "ai_matrx_is_favorite": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Matrx Is Favorite"
+          },
+          "authority": {
+            "type": "string",
+            "enum": [
+              "ai_matrx",
+              "provider"
+            ],
+            "title": "Authority"
+          },
+          "mirrored": {
+            "type": "boolean",
+            "title": "Mirrored"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider_pinned",
+          "authority",
+          "mirrored"
+        ],
+        "title": "BridgePinDivergence",
+        "description": "The provider's star and the AI Matrx favorite disagreed — say so.\n\nA coding session's pin exists on both sides: the provider's own star (what a\n``SessionMetadata`` observation reports, mirrored into the binding's\n``provider_pinned`` metadata) and the AI Matrx favorite\n(``platform.user_entity_state.is_favorite``, the row every star in the app\nreads and writes). They are TWO facts, and until 2026-09-18 the server\ncompared the provider's own echo against itself — so a divergence looked\nlike agreement and could never heal.\n\nWhich side wins a conflict is an ORG KNOB (``effective_setting`` key\n``coding_session_provider_pin_wins``, default: the provider wins, because\nthe coding agent is where the pin is made — Arman, 2026-09-18). Whatever the\nknob says, the disagreement is REPORTED: it is never silently dropped, and\nthe identity list carries both values so a screen can show it."
+      },
       "BridgeProjectionErrorGroup": {
         "properties": {
           "code": {
@@ -110138,6 +112122,18 @@
               }
             ],
             "title": "Normalized Tool Call Id"
+          },
+          "subagent_conversation_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subagent Conversation Id"
           },
           "error_code": {
             "anyOf": [
@@ -110525,6 +112521,41 @@
             "type": "boolean",
             "title": "Deleted",
             "default": false
+          },
+          "stream_keys": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stream Keys"
+          },
+          "deleted_entries": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted Entries"
+          },
+          "pin_divergence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BridgePinDivergence"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "hookSpecificOutput": {
             "anyOf": [
@@ -120948,6 +122979,71 @@
         "title": "ChiliPiperStatusResult",
         "description": "Safe projection of Chili Piper's high-level service status."
       },
+      "ChoiceAnswer": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "choice",
+            "title": "Type",
+            "default": "choice"
+          },
+          "choice": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Choice"
+          },
+          "probabilities": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Probabilities"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Confidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "choice",
+          "probabilities",
+          "confidence"
+        ],
+        "title": "ChoiceAnswer"
+      },
+      "ChoiceQuestion": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "choice",
+            "title": "Type",
+            "default": "choice"
+          },
+          "instructions": {
+            "$ref": "#/components/schemas/SystemOneEntry"
+          },
+          "criteria": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SystemOneEntry"
+            },
+            "type": "object",
+            "minProperties": 2,
+            "title": "Criteria"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instructions",
+          "criteria"
+        ],
+        "title": "ChoiceQuestion"
+      },
       "ChunkDetail": {
         "properties": {
           "chunk_id": {
@@ -122194,6 +124290,32 @@
               }
             ],
             "title": "Session Id"
+          },
+          "hosted_runtime_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hosted Runtime Id"
+          },
+          "hosted_project_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hosted Project Key"
           },
           "fork_up_to_message_id": {
             "anyOf": [
@@ -127235,6 +129357,17 @@
               }
             ],
             "title": "Claude Category"
+          },
+          "ai_matrx_is_favorite": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Matrx Is Favorite"
           }
         },
         "type": "object",
@@ -127708,6 +129841,69 @@
         ],
         "title": "CombinedRatingSide"
       },
+      "CommandEgress": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "residential",
+            "title": "Kind",
+            "default": "residential"
+          },
+          "device_name": {
+            "type": "string",
+            "title": "Device Name"
+          },
+          "device_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Id"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "device_name"
+        ],
+        "title": "CommandEgress",
+        "description": "How this command reached the internet — announced, never hidden.\n\n🚨 CONTROL-PLANE authored (S2 v1.1, additive 2026-09-18). The worker never\nsets it: only the Browser Manager knows that a blocked page was retried\nthrough the person's own computer. It rides the command reply because that\nis where the agent and the panel read the answer, and rule 5 of\n``common-docs/systems/platform/residential-egress/FEATURE.md`` says a page\nfetched through a person's computer always says so."
+      },
+      "CommandEgressUnavailable": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason",
+          "message"
+        ],
+        "title": "CommandEgressUnavailable",
+        "description": "Why the blocked page could NOT be retried through a person's computer.\n\nAlso control-plane authored. Never a dead end: the reason is one of the\ncontract's (`no_computer`, `offline`, `paused`, `org_forbids`, `feature_off`,\n`no_acting_user`, `unavailable`) and the message is the remedy in words."
+      },
       "CommandResponse": {
         "properties": {
           "ok": {
@@ -127891,6 +130087,26 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ActionEventFacts"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "egress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CommandEgress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "egress_unavailable": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CommandEgressUnavailable"
               },
               {
                 "type": "null"
@@ -134817,7 +137033,7 @@
               }
             ],
             "title": "Owner Organization Id",
-            "description": "Optional org placement for an owned agent. Ignored unless owner_user_id is set; when omitted it resolves to the owner's personal org via resolve_effective_organization_id. Never NULL on the written row."
+            "description": "Org placement for an owned agent. Ignored unless owner_user_id is set; REQUIRED when it is — the organization the caller was admitted for (context_organization_id(ctx)) or the one on the record being processed. Never NULL on the written row, never defaulted."
           }
         },
         "type": "object",
@@ -137288,6 +139504,14 @@
             "type": "array",
             "title": "Origin Classes",
             "description": "matrx_connect ORIGIN_CLASSES + 'unknown' (DB backfill for pre-provenance rows). Valid filter values for origin_class."
+          },
+          "outside_source_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Outside Source Apps",
+            "description": "source_apps holding outside (non-AI Matrx) data — today only 'code-plugin'. CX Explorer hides them unless the viewer turns them on."
           }
         },
         "additionalProperties": false,
@@ -139394,6 +141618,168 @@
         ],
         "title": "DblpPublicPublication",
         "description": "Safe bounded projection of one public DBLP publication."
+      },
+      "DecisionResultPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "decision_result",
+            "title": "Type",
+            "default": "decision_result"
+          },
+          "execution_id": {
+            "type": "string",
+            "title": "Execution Id"
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "provider_request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Request Id"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "answers": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Answer"
+            },
+            "type": "object",
+            "title": "Answers"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/DecisionUsage"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd"
+          },
+          "offering_id": {
+            "type": "string",
+            "title": "Offering Id"
+          },
+          "route": {
+            "type": "string",
+            "title": "Route"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "execution_id",
+          "request_id",
+          "model",
+          "answers",
+          "usage",
+          "cost_usd",
+          "offering_id",
+          "route"
+        ],
+        "title": "DecisionResultPayload"
+      },
+      "DecisionRunRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Model"
+          },
+          "offering_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offering Id"
+          },
+          "state": {
+            "$ref": "#/components/schemas/SystemOneState"
+          },
+          "questions": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Question"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Questions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "model",
+          "state",
+          "questions"
+        ],
+        "title": "DecisionRunRequest",
+        "description": "HTTP/service input; native runner validates the provider discriminated body."
+      },
+      "DecisionUsage": {
+        "properties": {
+          "input_tokens": {
+            "type": "integer",
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "type": "integer",
+            "title": "Output Tokens"
+          }
+        },
+        "type": "object",
+        "required": [
+          "input_tokens",
+          "output_tokens"
+        ],
+        "title": "DecisionUsage"
       },
       "DeclarePanelBody": {
         "properties": {
@@ -142064,6 +144450,141 @@
         ],
         "title": "DevCommunityArticleList",
         "description": "Bounded public-article response."
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
+      },
+      "DeviceRegistration": {
+        "properties": {
+          "instance_id": {
+            "type": "string",
+            "title": "Instance Id"
+          },
+          "instance_name": {
+            "type": "string",
+            "title": "Instance Name"
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform"
+          },
+          "os_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Os Version"
+          },
+          "hostname": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hostname"
+          },
+          "hardware_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hardware Uuid"
+          },
+          "helper_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Helper Version"
+          },
+          "client_kind": {
+            "type": "string",
+            "pattern": "^(desktop_app|helper)$",
+            "title": "Client Kind",
+            "default": "helper"
+          }
+        },
+        "type": "object",
+        "required": [
+          "instance_id",
+          "instance_name"
+        ],
+        "title": "DeviceRegistration",
+        "description": "The helper's self-description. The desktop engine sends the same shape."
       },
       "DevtoServiceStatus": {
         "properties": {
@@ -146586,6 +149107,28 @@
               }
             ],
             "title": "Schema Source"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "organization_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Source"
           }
         },
         "type": "object",
@@ -164871,12 +167414,12 @@
             "items": {
               "$ref": "#/components/schemas/ValidationError"
             },
-            "type": "array",
-            "title": "Detail"
+            "title": "Detail",
+            "type": "array"
           }
         },
-        "type": "object",
-        "title": "HTTPValidationError"
+        "title": "HTTPValidationError",
+        "type": "object"
       },
       "HackerNewsPublicStory": {
         "properties": {
@@ -191684,6 +194227,30 @@
         "title": "MintResponse",
         "description": "S4 §2.1 / §2.2. `endpoint` is DATA — the client never constructs it."
       },
+      "MintTicketRequest": {
+        "properties": {
+          "device_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Id"
+          },
+          "purpose": {
+            "type": "string",
+            "maxLength": 120,
+            "title": "Purpose",
+            "default": "scrape"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MintTicketRequest"
+      },
       "MintTokenRequest": {
         "properties": {
           "audience": {
@@ -193907,6 +196474,98 @@
         ],
         "title": "NativeErrorOut"
       },
+      "NativeIdentitiesOut": {
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Snapshot Id"
+          },
+          "identities": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/NativePasswordIdentityOut"
+                },
+                {
+                  "$ref": "#/components/schemas/NativePasskeyIdentityOut"
+                }
+              ]
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Identities"
+          },
+          "next_after": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next After"
+          },
+          "complete": {
+            "type": "boolean",
+            "title": "Complete"
+          },
+          "unsupported_count": {
+            "type": "integer",
+            "maximum": 2000,
+            "minimum": 0,
+            "title": "Unsupported Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_id",
+          "identities",
+          "complete",
+          "unsupported_count"
+        ],
+        "title": "NativeIdentitiesOut"
+      },
+      "NativeIdentityErrorDetail": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "invalid_request",
+              "inventory_changed",
+              "inventory_limit",
+              "native_session_required",
+              "native_unavailable",
+              "organization_required",
+              "request_too_large"
+            ],
+            "title": "Code"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "NativeIdentityErrorDetail"
+      },
+      "NativeIdentityErrorOut": {
+        "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/NativeIdentityErrorDetail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "NativeIdentityErrorOut"
+      },
       "NativeMatchOut": {
         "properties": {
           "item_id": {
@@ -194031,6 +196690,275 @@
         ],
         "title": "NativeMaterializeOut"
       },
+      "NativePasskeyCapabilitiesOut": {
+        "properties": {
+          "protocol_version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Protocol Version"
+          },
+          "activation_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Activation Revision"
+          },
+          "max_source_bytes": {
+            "type": "integer",
+            "maximum": 65536,
+            "minimum": 1,
+            "title": "Max Source Bytes"
+          },
+          "max_credential_ids": {
+            "type": "integer",
+            "maximum": 128,
+            "minimum": 1,
+            "title": "Max Credential Ids"
+          },
+          "max_request_body_bytes": {
+            "type": "integer",
+            "maximum": 262144,
+            "minimum": 1,
+            "title": "Max Request Body Bytes"
+          },
+          "algorithms": {
+            "items": {
+              "type": "integer",
+              "const": -7
+            },
+            "type": "array",
+            "maxItems": 1,
+            "minItems": 1,
+            "title": "Algorithms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "protocol_version",
+          "activation_revision",
+          "max_source_bytes",
+          "max_credential_ids",
+          "max_request_body_bytes",
+          "algorithms"
+        ],
+        "title": "NativePasskeyCapabilitiesOut"
+      },
+      "NativePasskeyIdentityOut": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "passkey",
+            "title": "Kind"
+          },
+          "item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Item Id"
+          },
+          "passkey_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Passkey Id"
+          },
+          "rp_id": {
+            "type": "string",
+            "maxLength": 253,
+            "minLength": 1,
+            "title": "Rp Id"
+          },
+          "credential_id": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Credential Id"
+          },
+          "user_handle": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "User Handle"
+          },
+          "user": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "User"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "item_id",
+          "passkey_id",
+          "rp_id",
+          "credential_id",
+          "user_handle",
+          "user"
+        ],
+        "title": "NativePasskeyIdentityOut"
+      },
+      "NativePasskeyMatchOut": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "passkey_id": {
+            "type": "string",
+            "title": "Passkey Id"
+          },
+          "credential_id": {
+            "type": "string",
+            "title": "Credential Id"
+          },
+          "user_handle": {
+            "type": "string",
+            "title": "User Handle"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_id",
+          "passkey_id",
+          "credential_id",
+          "user_handle",
+          "username",
+          "display_name"
+        ],
+        "title": "NativePasskeyMatchOut"
+      },
+      "NativePasskeyMatchesOut": {
+        "properties": {
+          "matches": {
+            "items": {
+              "$ref": "#/components/schemas/NativePasskeyMatchOut"
+            },
+            "type": "array",
+            "title": "Matches"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "matches",
+          "truncated"
+        ],
+        "title": "NativePasskeyMatchesOut"
+      },
+      "NativePasskeyMaterializeOut": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source"
+        ],
+        "title": "NativePasskeyMaterializeOut"
+      },
+      "NativePasskeyReceiptOut": {
+        "properties": {
+          "mutation_id": {
+            "type": "string",
+            "title": "Mutation Id"
+          },
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "field_id": {
+            "type": "string",
+            "title": "Field Id"
+          },
+          "passkey_id": {
+            "type": "string",
+            "title": "Passkey Id"
+          },
+          "source_sha256": {
+            "type": "string",
+            "title": "Source Sha256"
+          },
+          "status": {
+            "type": "string",
+            "const": "saved_waiting_for_site",
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mutation_id",
+          "item_id",
+          "field_id",
+          "passkey_id",
+          "source_sha256",
+          "status"
+        ],
+        "title": "NativePasskeyReceiptOut"
+      },
+      "NativePasswordIdentityOut": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "password",
+            "title": "Kind"
+          },
+          "item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Item Id"
+          },
+          "service": {
+            "$ref": "#/components/schemas/NativeUrlService"
+          },
+          "user": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "User"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "item_id",
+          "service",
+          "user"
+        ],
+        "title": "NativePasswordIdentityOut"
+      },
       "NativeServiceIdentifierIn": {
         "properties": {
           "type": {
@@ -194055,6 +196983,27 @@
           "identifier"
         ],
         "title": "NativeServiceIdentifierIn"
+      },
+      "NativeUrlService": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "url",
+            "title": "Type"
+          },
+          "identifier": {
+            "type": "string",
+            "maxLength": 2048,
+            "title": "Identifier"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "identifier"
+        ],
+        "title": "NativeUrlService"
       },
       "NavLink": {
         "properties": {
@@ -196241,6 +199190,67 @@
           "published_at"
         ],
         "title": "NotesnookPublicRelease"
+      },
+      "NoulAnswer": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "noul",
+            "title": "Type",
+            "default": "noul"
+          },
+          "noul": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Noul"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "noul"
+        ],
+        "title": "NoulAnswer"
+      },
+      "NoulQuestion": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "noul",
+            "title": "Type",
+            "default": "noul"
+          },
+          "instructions": {
+            "$ref": "#/components/schemas/SystemOneEntry"
+          },
+          "criteria": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/SystemOneEntry"
+                },
+                "propertyNames": {
+                  "enum": [
+                    "false",
+                    "true"
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criteria"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instructions"
+        ],
+        "title": "NoulQuestion"
       },
       "NounDirectives": {
         "properties": {
@@ -214859,6 +217869,28 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "last_started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Started At"
+          },
+          "checkpoint_status": {
+            "type": "string",
+            "title": "Checkpoint Status",
+            "default": "none"
+          },
+          "live": {
+            "type": "boolean",
+            "title": "Live",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -214872,7 +217904,7 @@
           "status"
         ],
         "title": "ProfileView",
-        "description": "The safe profile facts a caller receives after creating one."
+        "description": "The safe profile facts a caller receives after creating one — and the\nsame shape a LISTING returns, so \"the browser you just made\" and \"the\nbrowsers you have\" are never two different vocabularies.\n\n``last_started_at`` / ``checkpoint_status`` / ``live`` are the recognisers:\non a freshly created profile they are honestly None / \"none\" / False."
       },
       "ProjectInputPart": {
         "properties": {
@@ -219014,6 +222046,27 @@
         ],
         "title": "QueryVariant"
       },
+      "Question": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NoulQuestion"
+          },
+          {
+            "$ref": "#/components/schemas/ChoiceQuestion"
+          },
+          {
+            "$ref": "#/components/schemas/ScoreQuestion"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "choice": "#/components/schemas/ChoiceQuestion",
+            "noul": "#/components/schemas/NoulQuestion",
+            "score": "#/components/schemas/ScoreQuestion"
+          }
+        }
+      },
       "QueueRefreshResult": {
         "properties": {
           "scanned": {
@@ -222702,6 +225755,19 @@
           "extraction_kind"
         ],
         "title": "RegionExtractResponse"
+      },
+      "RegisterDeviceRequest": {
+        "properties": {
+          "registration": {
+            "$ref": "#/components/schemas/DeviceRegistration"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "registration"
+        ],
+        "title": "RegisterDeviceRequest"
       },
       "RegisterSelectedFileRequest": {
         "properties": {
@@ -228054,6 +231120,36 @@
           "queue_item_id"
         ],
         "title": "RetrySubmitRequest"
+      },
+      "RetryThroughHomeComputerResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "device_name": {
+            "type": "string",
+            "title": "Device Name"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run_id",
+          "state",
+          "device_name",
+          "note"
+        ],
+        "title": "RetryThroughHomeComputerResponse",
+        "description": "What happened when a run was moved onto the person's own computer."
       },
       "RevertRequest": {
         "properties": {
@@ -233684,6 +236780,79 @@
         "title": "ScopedBody",
         "description": "Base for every body on this router.\n\nThe FE's `callApi` injects the ambient scope (organization_id / project_id /\ntask_id) into EVERY request body. A bare `extra=\"forbid\"` model therefore\n422s the moment the user has an active org selected — these fields must be\nACCEPTED and ignored (scope here comes from the path + the request's user\ncontext, never the body). `extra=\"forbid\"` stays, so real typos still fail\nloudly."
       },
+      "ScoreAnswer": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "score",
+            "title": "Type",
+            "default": "score"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "probabilities": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Probabilities"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Confidence"
+          },
+          "legend": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Legend"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "score",
+          "probabilities",
+          "confidence",
+          "legend"
+        ],
+        "title": "ScoreAnswer"
+      },
+      "ScoreQuestion": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "score",
+            "title": "Type",
+            "default": "score"
+          },
+          "instructions": {
+            "$ref": "#/components/schemas/SystemOneEntry"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/SystemOneEntry"
+            },
+            "type": "array",
+            "minItems": 2,
+            "title": "Criteria"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instructions",
+          "criteria"
+        ],
+        "title": "ScoreQuestion"
+      },
       "ScoreSourcesRequest": {
         "properties": {
           "source_ids": {
@@ -235298,6 +238467,37 @@
               }
             ],
             "title": "Q"
+          },
+          "action_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Key"
+          },
+          "action_status": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "failed",
+                    "ready",
+                    "running",
+                    "skipped"
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Status"
           }
         },
         "type": "object",
@@ -246798,6 +249998,16 @@
               }
             ],
             "title": "Runtime Execution Id"
+          },
+          "egress": {
+            "type": "string",
+            "enum": [
+              "always",
+              "auto",
+              "never"
+            ],
+            "title": "Egress",
+            "default": "auto"
           }
         },
         "additionalProperties": false,
@@ -247472,6 +250682,258 @@
         ],
         "title": "StopRunResponse"
       },
+      "StorageAuthorizationResponse": {
+        "properties": {
+          "authorization_url": {
+            "type": "string",
+            "title": "Authorization Url"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "box",
+              "dropbox"
+            ],
+            "title": "Provider"
+          },
+          "requested_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Requested Scopes"
+          },
+          "auth_mode": {
+            "type": "string",
+            "const": "confidential_authorization_code",
+            "title": "Auth Mode"
+          },
+          "pkce": {
+            "type": "string",
+            "const": "unsupported_not_used",
+            "title": "Pkce"
+          }
+        },
+        "type": "object",
+        "required": [
+          "authorization_url",
+          "provider",
+          "requested_scopes",
+          "auth_mode",
+          "pkce"
+        ],
+        "title": "StorageAuthorizationResponse"
+      },
+      "StorageBrowseItem": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "file",
+              "folder"
+            ],
+            "title": "Kind"
+          },
+          "item_ref": {
+            "type": "string",
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Item Ref"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "item_ref",
+          "name"
+        ],
+        "title": "StorageBrowseItem",
+        "description": "Safe provider identity for one visible file or folder."
+      },
+      "StorageBrowsePage": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "box",
+              "dropbox",
+              "onedrive"
+            ],
+            "title": "Provider"
+          },
+          "connection_id": {
+            "type": "string",
+            "title": "Connection Id"
+          },
+          "folder_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Ref"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StorageBrowseItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "connection_id",
+          "folder_ref",
+          "items"
+        ],
+        "title": "StorageBrowsePage",
+        "description": "One nonrecursive provider page with an opaque continuation."
+      },
+      "StorageBrowseRequest": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "box",
+              "dropbox",
+              "onedrive"
+            ],
+            "title": "Provider"
+          },
+          "connection_id": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "folder_ref": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Ref"
+          },
+          "page_size": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Page Size",
+            "default": 50
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 16384
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "connection_id"
+        ],
+        "title": "StorageBrowseRequest",
+        "description": "One bounded provider-folder page under the authenticated actor."
+      },
+      "StorageConnectionRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "title": "StorageConnectionRequest"
+      },
       "StorageImportResult": {
         "properties": {
           "file_id": {
@@ -247518,11 +250980,72 @@
         "title": "StorageImportResult",
         "description": "Safe result of importing a provider item into canonical Matrx Files."
       },
+      "StorageLifecycleResponse": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "title": "Connection Id"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "box",
+              "dropbox"
+            ],
+            "title": "Provider"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "requested_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Requested Scopes"
+          },
+          "granted_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Granted Scopes"
+          },
+          "scope_evidence": {
+            "type": "string",
+            "title": "Scope Evidence"
+          },
+          "provider_revoked": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Revoked"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "provider",
+          "status",
+          "requested_scopes",
+          "granted_scopes",
+          "scope_evidence"
+        ],
+        "title": "StorageLifecycleResponse"
+      },
       "StorageSourceImportRequest": {
         "properties": {
           "provider": {
             "type": "string",
             "enum": [
+              "box",
+              "dropbox",
               "google_drive",
               "onedrive"
             ],
@@ -251317,6 +254840,47 @@
         "type": "object",
         "title": "SystemInstructionInput",
         "description": "Structured system prompt on the chat/manual wire.\n\nMirrors ``SystemInstruction.from_value`` dict parsing — callers may send\neither a plain string or this object (agent-builder uses ``content`` +\n``include_date`` + ``intro`` / ``outro``). Downstream ``UnifiedConfig``\nnormalizes both shapes to ``SystemInstruction``."
+      },
+      "SystemOneEntry": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object"
+          },
+          {
+            "items": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "SystemOneState": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object"
+          },
+          {
+            "items": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "array"
+          }
+        ]
       },
       "SystemTaskItem": {
         "properties": {
@@ -256898,6 +260462,16 @@
             "title": "Declared In Code",
             "default": false
           },
+          "exists_in_db": {
+            "type": "boolean",
+            "title": "Exists In Db",
+            "default": true
+          },
+          "is_owned": {
+            "type": "boolean",
+            "title": "Is Owned",
+            "default": false
+          },
           "drift_count": {
             "type": "integer",
             "title": "Drift Count",
@@ -258969,6 +262543,48 @@
           "type"
         ],
         "title": "TranscriptSessionInputPart"
+      },
+      "TranscriptionChapter": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "start": {
+            "type": "number",
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "index",
+          "start"
+        ],
+        "title": "TranscriptionChapter",
+        "description": "One chapter the SOURCE container declared, on the transcript's clock.\n\nAn audiobook, a podcast episode with markers, a recorded lecture exported\nwith sections: the container carries the author's own division of the\nmaterial, and it is the only structure a transcript has. Without it a\nnine-hour book is one undifferentiated wall of words and a rule cites\n\"at 4:41:02\" instead of \"Chapter 7\". ``index`` is 1-based, in the order\nthe container declared them."
       },
       "TranscriptionFileRequest": {
         "properties": {
@@ -262172,6 +265788,35 @@
         "title": "UpdateCrmFoldSettingsRequest",
         "description": "Partial update — only the fields the user actually changed."
       },
+      "UpdateDeviceRequest": {
+        "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UpdateDeviceRequest"
+      },
       "UpdateMessageResponse": {
         "properties": {
           "updated": {
@@ -264969,6 +268614,13 @@
       },
       "ValidationError": {
         "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
           "loc": {
             "items": {
               "anyOf": [
@@ -264980,32 +268632,25 @@
                 }
               ]
             },
-            "type": "array",
-            "title": "Location"
+            "title": "Location",
+            "type": "array"
           },
           "msg": {
-            "type": "string",
-            "title": "Message"
+            "title": "Message",
+            "type": "string"
           },
           "type": {
-            "type": "string",
-            "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
+            "title": "Error Type",
+            "type": "string"
           }
         },
-        "type": "object",
         "required": [
           "loc",
           "msg",
           "type"
         ],
-        "title": "ValidationError"
+        "title": "ValidationError",
+        "type": "object"
       },
       "ValidationIssue": {
         "properties": {
@@ -267389,6 +271034,84 @@
         ],
         "title": "VaultLoginCsvPreviewResponse"
       },
+      "VaultNativePasskeyEnableRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "deletion_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Deletion Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "deletion_id"
+        ],
+        "title": "VaultNativePasskeyEnableRequest",
+        "description": "Bind the explicit reenablement request to one recorded deletion."
+      },
+      "VaultNativePasskeyEnableResponse": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Item Id"
+          },
+          "enabled": {
+            "type": "boolean",
+            "const": true,
+            "title": "Enabled"
+          },
+          "already_enabled": {
+            "type": "boolean",
+            "title": "Already Enabled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_id",
+          "enabled",
+          "already_enabled"
+        ],
+        "title": "VaultNativePasskeyEnableResponse"
+      },
       "VaultResolveRef": {
         "properties": {
           "item_id": {
@@ -267478,6 +271201,95 @@
         ],
         "title": "VaultResolveResponse",
         "description": "Browser-facing resolution — sealed fields are structurally refused\nupstream; keys are ``\"{item_id}/{field_key}\"``."
+      },
+      "VaultRestoreRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "deletion_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Deletion Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "deletion_id"
+        ],
+        "title": "VaultRestoreRequest"
+      },
+      "VaultRestoreResponse": {
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/VaultItemOut"
+          },
+          "restored_fields": {
+            "type": "integer",
+            "title": "Restored Fields"
+          },
+          "restored_attachments": {
+            "type": "integer",
+            "title": "Restored Attachments"
+          },
+          "restored_native_passkeys": {
+            "type": "integer",
+            "title": "Restored Native Passkeys"
+          },
+          "already_restored": {
+            "type": "boolean",
+            "title": "Already Restored"
+          },
+          "notice": {
+            "type": "string",
+            "const": "sharing_and_automatic_use_off",
+            "title": "Notice"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item",
+          "restored_fields",
+          "restored_attachments",
+          "restored_native_passkeys",
+          "already_restored",
+          "notice"
+        ],
+        "title": "VaultRestoreResponse"
       },
       "VaultRevealRequest": {
         "properties": {
@@ -276911,6 +280723,13 @@
             "type": "array",
             "title": "Segments"
           },
+          "chapters": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptionChapter"
+            },
+            "type": "array",
+            "title": "Chapters"
+          },
           "meta": {
             "$ref": "#/components/schemas/TranscriptionMeta"
           }
@@ -281282,6 +285101,122 @@
           "success"
         ],
         "title": "TypeResult"
+      },
+      "StorageAuthorizationResponse": {
+        "properties": {
+          "auth_mode": {
+            "const": "confidential_authorization_code",
+            "title": "Auth Mode",
+            "type": "string"
+          },
+          "authorization_url": {
+            "title": "Authorization Url",
+            "type": "string"
+          },
+          "pkce": {
+            "const": "unsupported_not_used",
+            "title": "Pkce",
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "box",
+              "dropbox"
+            ],
+            "title": "Provider",
+            "type": "string"
+          },
+          "requested_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Requested Scopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "authorization_url",
+          "provider",
+          "requested_scopes",
+          "auth_mode",
+          "pkce"
+        ],
+        "title": "StorageAuthorizationResponse",
+        "type": "object"
+      },
+      "StorageConnectionRequest": {
+        "properties": {
+          "connection_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "connection_id"
+        ],
+        "title": "StorageConnectionRequest",
+        "type": "object"
+      },
+      "StorageLifecycleResponse": {
+        "properties": {
+          "connection_id": {
+            "title": "Connection Id",
+            "type": "string"
+          },
+          "granted_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Granted Scopes",
+            "type": "array"
+          },
+          "provider": {
+            "enum": [
+              "box",
+              "dropbox"
+            ],
+            "title": "Provider",
+            "type": "string"
+          },
+          "provider_revoked": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Revoked"
+          },
+          "requested_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Requested Scopes",
+            "type": "array"
+          },
+          "scope_evidence": {
+            "title": "Scope Evidence",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "connection_id",
+          "provider",
+          "status",
+          "requested_scopes",
+          "granted_scopes",
+          "scope_evidence"
+        ],
+        "title": "StorageLifecycleResponse",
+        "type": "object"
       }
     }
   }

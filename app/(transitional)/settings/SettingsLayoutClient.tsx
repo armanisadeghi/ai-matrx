@@ -135,7 +135,8 @@ const settingsNavItems: SettingsNavItem[] = [
     IconComp: Mic,
   },
   {
-    title: "Integrations",
+    // "Connector" is the word (Arman, 2026-09-17); the route keeps its path.
+    title: "Connectors",
     href: "/settings/integrations",
     icon: <Plug className="h-3.5 w-3.5" />,
     IconComp: Plug,

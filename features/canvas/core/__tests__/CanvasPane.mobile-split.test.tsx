@@ -76,10 +76,6 @@ jest.mock("../CanvasSourceView", () => ({
   CanvasSourceView: () => <div>Canvas source</div>,
 }));
 
-jest.mock("../CanvasPaneHeaderChrome", () => ({
-  CanvasPaneUserMenu: () => null,
-}));
-
 jest.mock("../CanvasHeaderToggle", () => ({
   CanvasPanePutAwayToggle: () => null,
 }));

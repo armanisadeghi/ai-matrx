@@ -184,6 +184,42 @@ had one browser forever.
 - **The single default is the SERVER's invariant**, DB-enforced — the panel never
   computes or sets it. A newly created browser is not the default.
 
+## Which browser the agent uses
+
+Picking a browser in the panel used to be a UI-only choice: `ProfileSelector` →
+`useCloudBrowser.selectProfile` → `setActiveProfile` moved the panel's view and nothing
+told the conversation, so the agent kept working against whatever profile its tool call
+resolved on its own. `hooks/useCloudBrowserProfileContextSync.ts` closes that: whenever
+the canvas host passes a `conversationId` and a profile is active, the panel publishes
+ONE `instanceContext` entry — key `cloud_browser_profile`, `type: "json"`, value
+`{ profile_id, display_name }` — which the server exposes to the model through
+`ctx_get("cloud_browser_profile")`. Same shape and same seam as the code editor's active
+file (`features/code-editor/agent-code-editor/hooks/useIdeContextSync.ts`).
+
+- 🚨 **Machine content, so it is a CONTEXT ENTRY and never `setUserInputText`** —
+  `user_input` carries only what the human typed (THE USER-INPUT LAW).
+- It is diff-gated: one dispatch per actual change, not per render.
+- Losing the profile REMOVES the key (`removeContextEntry`). `setContextEntries` is
+  merge-only, so re-sending without the key would leave the previous browser's id in the
+  agent's context — a stale id is worse than no id.
+- No `conversationId` (the standalone window opener has no chat) = nothing is published.
+- Guard: `hooks/useCloudBrowserProfileContextSync.test.tsx` (5 cases, real reducer).
+
+## Consent switches start ON (Arman, 2026-09-18)
+
+Unattended login, session-health checks and code entry (`totpDelegation`) default to
+**true** in `service.ts`'s `DEFAULT_CONSENT`. The ruling: signed-in sites stay signed in,
+and the platform logs back in on its own wherever a person is not truly required — a
+browser that parks and waits for a human on every expired session is not a cloud browser.
+
+- A **saved explicit `false` always wins**: `cloudBrowserConsent` falls back to the
+  default only when the stored value is not a boolean, so nobody's opt-out is overridden.
+- `sensitiveActionsRequireHuman` is unchanged and always on: payments, security settings
+  and destructive changes still stop for a person, and the row says so and is locked.
+- `components/AccountSettings.tsx` copy names each switch as on-by-default behaviour the
+  person can turn off — a switch whose description reads like an opt-in while it is
+  already on is the screen lying.
+
 ## Invariants
 
 - **Before there is a browser, the Live area says what is happening.** Starting →
@@ -255,6 +291,31 @@ login is explicitly enabled; automatic TOTP additionally requires its own toggle
 The frontend never receives a password, seed, or generated code from that path.
 
 ## Change log
+
+- **2026-09-18** — Residential egress provenance. `CloudBrowserRun` carries
+  `egress` (from `browser.run.metadata.egress`) and `ProgressEvent` carries
+  `egress` / `egressUnavailable` (from the navigate command result on
+  `browser.action_event`). `TelemetrySurface` says "Browsing through <name>"
+  when a run went out through the person's own computer, and offers the
+  "Set up a home connection" door to `/connect-computer` when a navigate was
+  blocked with no computer to retry through — a detected problem shipping its
+  own fix, not a dead end. BOTH renders are guarded on presence and on shape,
+  because the aidream half is deploying separately: a run with neither field
+  renders exactly what it rendered before. Shapes are hand-typed from
+  `common-docs/systems/platform/residential-egress/FEATURE.md` until
+  `pnpm sync-types` carries them.
+- **2026-09-18 — the panel's chosen browser reaches the agent.** New
+  `hooks/useCloudBrowserProfileContextSync.ts`, mounted in `CloudBrowserBody`, publishes
+  the active profile as the single `cloud_browser_profile` context entry
+  (`type: "json"`, `{ profile_id, display_name }`) on the hosting conversation, diff-gated,
+  and removes it when no profile is active. Guard:
+  `hooks/useCloudBrowserProfileContextSync.test.tsx`.
+
+- **2026-09-18 — consent defaults flipped ON** (`unattendedLogin`, `sessionHealthChecks`,
+  `totpDelegation`), per Arman's ruling that signed-in sites stay signed in and the
+  platform logs back in on its own wherever a person is not truly required. A saved
+  explicit `false` still wins; `sensitiveActionsRequireHuman` is unchanged and always on;
+  `AccountSettings` copy and `fixtures.ts` updated to match.
 
 
 - **2026-09-17** — A handoff notification preference saved with no organization selected now says so with the remedy, instead of throwing past its caller (`withOrganizationRefusalShown`).

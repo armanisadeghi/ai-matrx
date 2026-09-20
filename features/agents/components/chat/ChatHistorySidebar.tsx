@@ -81,6 +81,7 @@ export function ChatHistorySidebar({
       excludeSourceFeatures={excludeSourceFeatures}
       initialSearchOpen={initialSearchOpen}
       hideSearchAffordance={hideSearchAffordance}
+      serverSearch
       className={className}
     />
   );

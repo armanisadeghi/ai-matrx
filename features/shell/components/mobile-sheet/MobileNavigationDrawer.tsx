@@ -10,6 +10,7 @@ import type {
   ShellNavChild,
   ShellNavItem,
 } from "@/features/shell/constants/nav-data";
+import { useShellNavGates } from "@/features/shell/navigation/useShellNavGates";
 import {
   NAV_WINDOW_PANEL_ICON,
   partitionNavChildren,
@@ -21,6 +22,7 @@ import ShellIcon from "../ShellIcon";
 import MobileRouteMenuSlot from "./MobileRouteMenuSlot";
 import MobileSheetNavLink from "./MobileSheetNavLink";
 import AdminMobileMenuItem from "../sidebar/admin-menu/AdminMobileMenuItem";
+import MobileDrawerUserRow from "../user-block/MobileDrawerUserRow";
 import { isUserSettingsPath } from "@/features/settings/route-shell/settings-route-path";
 import {
   findActiveNavChild,
@@ -152,6 +154,8 @@ export default function MobileNavigationDrawer({
   const navActions = useNavActions();
   const navPanelActions = useNavPanelActions();
   const pathname = usePathname() ?? "";
+  // Which gated destinations exist for this person right now.
+  const gates = useShellNavGates();
   const settingsRoute = isUserSettingsPath(pathname);
 
   const allItems = [...items, settingsItem];
@@ -279,12 +283,17 @@ export default function MobileNavigationDrawer({
         />
       )}
       <AdminMobileMenuItem />
+
+      {/* The person, at the end of the navigation — mobile's bottom-left. */}
+      <div className="shell-mobile-section-divider" />
+      <MobileDrawerUserRow />
     </div>
   );
 
   const renderGroup = (group: ShellNavItem) => {
     const { sections, panels, actions } = partitionNavChildren(
       group.children ?? [],
+      gates,
     );
     const activeChild = findActiveNavChild(pathname, group);
     const overviewActive =

@@ -389,10 +389,25 @@ const KEY_FIRST_RE = new RegExp(
   `\\b(${KEY_FIRST_FNS})\\s*\\(\\s*(["'][^"'\\n]+["']|[A-Z][A-Z0-9_]{2,})\\s*(?:,\\s*(?:feature\\s*=\\s*)?([^,()]+?)\\s*)?\\)`,
   "g",
 );
+// 🚨 THE TRAILING COMMA (VERIFY-U-P2-R4, V13-2). This required the closing paren
+// IMMEDIATELY after the key, so a multi-line call — which is every call a
+// formatter touches, because it ends with `KEY,` — was invisible to BOTH guards:
+// `features/connectors/ConnectorPromptCard.tsx` read a knob whose address could
+// not resolve at all and `check:settings-unregistered` never graded it.
 const FULL_KEY_RE = new RegExp(
-  `\\b(${FULL_KEY_FNS})\\s*\\(\\s*(?:[^,()]+?\\s*,\\s*[^,()]+?\\s*,\\s*)?(["'][^"'\\n]+["']|[A-Z][A-Z0-9_]{2,})\\s*\\)`,
+  `\\b(${FULL_KEY_FNS})\\s*\\(\\s*(?:[^,()]+?\\s*,\\s*[^,()]+?\\s*,\\s*)?(["'][^"'\\n]+["']|[A-Z][A-Z0-9_]{2,})\\s*,?\\s*\\)`,
   "g",
 );
+// The PAIR form — `fn(org, user, { feature: "x", key: "y" })` — which is the
+// address a reader should pass when the row's key itself contains a dot
+// (`connectors` + `prompt.resurface_days`). Written inline or as a module
+// constant of that shape.
+const PAIR_KEY_RE = new RegExp(
+  `\\b(${FULL_KEY_FNS}|resolveSessionKnob)\\s*\\([\\s\\S]{0,120}?\\{\\s*feature\\s*:\\s*["']([\\w.]+)["']\\s*,\\s*key\\s*:\\s*["']([\\w.]+)["']\\s*,?\\s*\\}`,
+  "g",
+);
+const PAIR_CONST_RE =
+  /^[ \t]*(?:export\s+)?const\s+([A-Za-z_$][\w$]*)[^=\n]*=\s*\{\s*feature\s*:\s*["']([\w.]+)["']\s*,\s*key\s*:\s*["']([\w.]+)["']\s*,?\s*\}/gm;
 const FEATURE_MAP_RE = new RegExp(`\\b(${FEATURE_MAP_FNS})\\s*\\(\\s*(["'][^"'\\n]+["']|[A-Z][A-Z0-9_]{2,})`, "g");
 // `KNOB MIRROR of platform.feature_knob "feature" "key"` (also `KNOB-MIRROR`, any words between).
 const KNOB_MIRROR_RE = /KNOB[ -]?MIRROR[^\n]*?["']([A-Za-z][\w.]*)["']\s*["']([A-Za-z][\w.]*)["']/g;
@@ -537,6 +552,28 @@ export function scanKnobReads(
     // FULL-KEY family: useEffectiveKnob(org, user, "feature.key") /
     // useSessionKnob("feature.key") — the key is the last dotted segment.
     if (!isPy) {
+      // The PAIR form first: an address written out needs no splitting, and a
+      // constant of that shape resolves by name.
+      const pairConsts = new Map<string, { feature: string; key: string }>();
+      PAIR_CONST_RE.lastIndex = 0;
+      for (let m = PAIR_CONST_RE.exec(f.text); m; m = PAIR_CONST_RE.exec(f.text)) {
+        pairConsts.set(m[1], { feature: m[2], key: m[3] });
+      }
+      PAIR_KEY_RE.lastIndex = 0;
+      const pairSeen = new Set<number>();
+      for (let m = PAIR_KEY_RE.exec(f.text); m; m = PAIR_KEY_RE.exec(f.text)) {
+        pairSeen.add(m.index);
+        sites.push({ file: f.rel, line: lineOf(f.text, m.index), fn: m[1], feature: m[2], key: m[3] });
+      }
+      const PAIR_BY_NAME = new RegExp(
+        `\\b(${FULL_KEY_FNS}|resolveSessionKnob)\\s*\\((?:[\\s\\S]{0,120}?,)?\\s*([A-Z][A-Z0-9_]{2,})\\s*,?\\s*\\)`,
+        "g",
+      );
+      for (let m = PAIR_BY_NAME.exec(f.text); m; m = PAIR_BY_NAME.exec(f.text)) {
+        const pair = pairConsts.get(m[2]);
+        if (!pair) continue;
+        sites.push({ file: f.rel, line: lineOf(f.text, m.index), fn: m[1], feature: pair.feature, key: pair.key });
+      }
       FULL_KEY_RE.lastIndex = 0;
       for (let m = FULL_KEY_RE.exec(f.text); m; m = FULL_KEY_RE.exec(f.text)) {
         const [, fn, rawFull] = m;

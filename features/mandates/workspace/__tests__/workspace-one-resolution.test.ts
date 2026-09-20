@@ -85,6 +85,19 @@ describe("the mandate workspace never walks its own ladder", () => {
     expect(crossOrgFindings(source)).toEqual([]);
   });
 
+  // D1: a pinned server verdict is a valid personal answer. The workspace used
+  // to assume every verdict that reached the screen was floating ("FLOATING by
+  // construction") because assertRunnableVerdict had already thrown. That
+  // leftover painted "Latest" for a pin, and the throw itself was the captured
+  // production denial on workflow.deep_research.keyword_synthesis.
+  it("derives Latest vs Pinned from the verdict pin, never assumes floating", () => {
+    expect(source).toContain("useLatest: !verdict.isVersion");
+    expect(source).not.toContain("FLOATING by construction");
+    expect(source).not.toContain(
+      "the client\n  // door refuses a version-pinned winner",
+    );
+  });
+
   it("would still catch the code as it shipped — red before it was green", () => {
     const shipped = `
       const orgBindings = data.bindings.filter(

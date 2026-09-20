@@ -383,6 +383,14 @@ export const adminCategoriesData: AdminCategory[] = [
         iconName: "Link2",
         link: "/administration/ai/ai-models/aliases",
       },
+      {
+        title: "Decisions",
+        description:
+          "Run a typed decision with catalog-backed decision models, inspect its probabilities and cost, then reload it by execution ID.",
+        iconName: "Scale",
+        link: "/administration/ai/ai-models/decisions",
+        isNew: true,
+      },
     ],
   },
   {
@@ -1255,6 +1263,14 @@ export const adminCategoriesData: AdminCategory[] = [
         description: "Manage database enum types and their values",
         iconName: "ToggleLeft",
         link: "/administration/database/enums",
+        isNew: true,
+      },
+      {
+        title: "Unified Data Ramp",
+        description:
+          "The switch screen for the unified data store: every consumer with its state, its Test 1 gate verdict, and a switch only where there is something honest to switch. Turning a consumer OFF is never gated.",
+        iconName: "ToggleRight",
+        link: "/administration/database/unified-data-ramp",
         isNew: true,
       },
       {

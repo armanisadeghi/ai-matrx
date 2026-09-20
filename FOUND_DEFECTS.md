@@ -15,6 +15,164 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D341 — A window's LAYOUT comes back on refresh for 13 windows out of 195 (2026-09-19)
+
+Two systems restore a window panel and only one of them is general. `?panels=` (URL) now opens
+and reloads every addressed window — fixed 2026-09-19, see `features/window-panels/FEATURE.md`.
+The OTHER path, `WindowPersistenceCore` (the local workspace: which windows were open, where,
+how big, with what body state), is opt-in per registry row: `preservation:` appears on **13 of
+195 `overlayId` rows** in `features/window-panels/registry/windowRegistryMetadata.ts`, and
+`WindowPanel.tsx:451` additionally refuses it for any `ephemeral: true` row — which is every
+agent widget shell. So a person who arranges four windows and presses reload gets back only the
+ones whose address happens to be in the URL, at default geometry. Arman's report of 2026-09-19
+("I'm having this issue everywhere… never worked to make sure we bring all of our window panels
+back on refresh") covers this half too; the URL fix does not close it.
+
+**Why it is filed, not fixed:** each row needs a considered `preservation` data contract (what of
+the body is safe to persist, what must be re-read) plus an `overlayInstanceId` for multi-instance
+windows — 180 judgement calls, not a sweep. The `ephemeral` flag on the agent shells is a separate
+ruling: it is what makes a restored agent panel's geometry impossible today.
+
+### D339 — A `research` run's first user message carries 129k characters / 972 lines of assembled markdown as the human's typed text (2026-09-19)
+
+Surfaced by the rebuilt test-case viewer, which now prints each input's size. On agent `Research Report Generator` (`7a90bace-1c2b-4d40-829d-b6d875573324`), the runs titled "Auto: Research Report" (`source_feature = research`, 2026-07-22) store their first `chat.message` user turn as one text part of **129,254 characters beginning `# Research Topic Dr. Angie Sadeghi an…`** — a rendered document, alongside the same run's four properly-named variables (`topic`, `page_summaries`, `search_results`, `keyword_syntheses`). Nobody typed that. Whether it is a USER-INPUT LAW breach (`../common-docs/systems/agents/agent-variable-binding/FEATURE.md` § THE USER-INPUT LAW) or an accepted way a mandate-launched run stores its rendered turn is NOT settled here — I did not trace the writer. To pin it down, find who writes the first user message for `source_feature = 'research'` (aidream side) and check it against the law. Consequence if it is a breach: every borrowed test case from those runs inherits the blob, and the model receives the material twice (once as variables, once as "what the person typed"). Evidence query: `select length(p->>'text') from chat.message m, jsonb_array_elements(m.content::jsonb) p where m.role='user' and m.conversation_id in (select id from chat.conversation where initial_agent_id='7a90bace-1c2b-4d40-829d-b6d875573324');`
+
+### D340 — `check:kind-marker-law` cannot tell "ignore the marker while inspecting" from "strip the marker before passing", and is red on `main` for a call site that does the former (2026-09-18)
+
+**Blocking gate, red on `main`, one finding, and I believe the finding is wrong.** The guard
+names `features/workflow-runtime/workflow-document-text.ts:49`:
+
+```
+✗ features/workflow-runtime/workflow-document-text.ts:49  filters the marker key out — `__kind` is part of the data.
+```
+
+Identical on `main` (run 35392537346, head `1ab494a7`) and on this branch, so it is base-branch
+state, not any one PR's.
+
+**What line 49 actually does.** `workflowDocumentText()` decides whether a kindless
+`output.to_frontend` payload carries exactly ONE document field, so that Copy / Save to Notes /
+Save to Task never silently save one field of a multi-field result:
+
+```ts
+const fields = Object.entries(data).filter(([key]) => key !== KIND_KEY);
+if (fields.length !== 1) return null;
+```
+
+The marker is excluded **from a count**, in a function whose return type is `string | null`. No
+object is rebuilt, nothing is stored, passed or rendered without its marker. That is
+accept-and-ignore — the very thing the law's remedy text asks a consumer to do — expressed as a
+filter because counting is how this consumer ignores it.
+
+**Why this is the guard's problem and not the call site's.** Any correct implementation of "does
+this payload have exactly one document field besides its marker" must disregard the marker while
+inspecting. Rewriting the expression only changes which syntax the detector sees; it cannot make
+the semantics stop being "ignore the marker". So the call site cannot be fixed into compliance
+without breaking it: drop the filter and EVERY kinded payload has ≥2 fields, `fields.length !== 1`
+is always true, and the function returns null for every document — the actions silently stop
+working.
+
+**Recommended fix, which I did not make:** teach `scripts/check-kind-marker-law.ts` to separate a
+read-only inspection (a filter/entries whose result is counted, or consumed into a non-object
+return) from a strip (a filter/omit/destructure whose result is re-emitted as the payload). Prove
+it failing-then-passing with both cases as fixtures, including a planted real strip so the
+narrowed detector is shown still to catch it.
+
+**Why I stopped there.** Narrowing a blocking law guard is exactly the kind of change that must not
+be made on one agent's authority mid-task: get it slightly wrong and the guard goes quiet on real
+marker stripping, which is the failure the law exists to prevent, and nobody would see it until
+kinds started disappearing from stored rows. That is a decision for the lane that owns the marker
+law. Until then this gate stays red for every PR in the repo, so it is not a slow-burn item.
+
+### D342 — `rag.kg_chunks` unique indexes count removed rows: soft-delete a chunk and it can never be re-ingested (2026-09-18)
+
+**Latent, not yet biting — measured, not assumed.** `rag.kg_chunks` carries `deleted_at`,
+holds **23,198 rows**, and **0 are soft-deleted today**. Three of its unique indexes have no
+`deleted_at IS NULL` predicate, so a soft-deleted chunk keeps holding its key:
+
+| index | columns |
+|---|---|
+| `kg_chunks_content_sha_idx` | `(source_kind, source_id, content_sha256, chunker_version)` |
+| `kg_chunks_derivation_set_uidx` | `(processed_document_id, chunk_index, derivation_kind)` — partial, but on `derivation_kind <> 'initial_extract'` only |
+| `kg_chunks_source_kind_source_id_field_id_chunk_index_chunke_key` | `(source_kind, source_id, field_id, chunk_index, chunker_version)` |
+
+Effect: soft-delete a chunk, re-ingest or re-chunk the same source, and the insert is refused
+against a row nobody can see or restore. Re-ingestion is the normal operation on this table, so
+this is the whole class, not an edge: the first person to soft-delete and re-ingest is the first
+report. Today it costs a migration; after the first soft delete it costs a data cleanup too.
+
+**The judgment call the next owner must make, not skip.** The guard's own text allows a unique
+index to stay exact across removed rows when it is genuinely an idempotency key or an external
+system's id — but then it must be listed in the baseline BY HAND with that reason
+(`--update-baseline` deliberately will not do it). `kg_chunks_content_sha_idx` is the one that
+could plausibly qualify, since a content hash is a dedupe key. It still looks like a defect to me:
+its purpose is to stop duplicate LIVE chunks, and a removed chunk is not one. Recommendation:
+make all three partial on `deleted_at IS NULL`; if the RAG lane disagrees about the content-hash
+one, the disagreement belongs in the baseline with the reason written down.
+
+**Not fixed here.** I have no apply path from this container — the Postgres pooler is unreachable,
+so `pnpm db:apply` cannot run, and hand-applying through the Supabase MCP is forbidden in this repo
+(CLAUDE.md § Migrations). It needs an owner with a terminal; a `DROP INDEX` is non-additive, so it
+is a chair step under the same rule D320 went through.
+
+Surfaced by `check:soft-delete-unique --strict`, which is BLOCKING in per-PR CI and is currently
+red on `main` for exactly these three — so every PR in the repo inherits a red check until it is
+fixed. Verified on run 35392537346 (head `1ab494a7`, 2026-09-18 20:39Z): three NEW findings, all
+`rag.kg_chunks`, and no `workbench.note_folders` finding at all.
+
+**Also still open in the same check's output:** the INFO line
+`fixed workbench.udt_dataset_rows:udt_dataset_rows_dataset_id_id_unique — remove it:
+pnpm check:soft-delete-unique -- --update-baseline`. That is a stale baseline entry for an index
+already fixed; clearing it is a one-command housekeeping step for whoever runs the baseline next.
+
+### D338 — A ledgered index rebuild on `workbench.note_folders` was undone by something that left no ledger row (2026-09-18)
+
+`chair_step_2026_09_18_db_guard_findings_non_additive.sql` (ledgered 15:22:24Z) rebuilt `note_folders_organization_created_by_name_unique` as `where deleted_at is null`, and its same-transaction proof asserts the predicate — so it WAS partial at 15:22Z. At ~19:30Z the live index was a full index again (`indpred IS NULL`). No `_schema_migrations` row between the two names it, and nothing in matrx-frontend, aidream, matrx-local or common-docs creates it outside `notes_n01_…` (`CREATE … IF NOT EXISTS`, which cannot replace an existing index). Meaning: some path executes DDL on production without the ledger — exactly what `pnpm db:apply` exists to prevent. Consequences seen: `check:soft-delete-unique` reports green for a shape the database does not have. `chair_step_2026_09_18a_note_folders_org_blind_name_key.sql` rebuilds it again; **if it reverts a second time the actor is still running.** Not investigated further: needs Postgres logs (`query_logs` for `CREATE UNIQUE INDEX note_folders_organization`) from an owner of the hunt.
+
+### D337 — Every launcher in `node_modules/.bin` is rewritten with a path one directory too high, repeatedly (2026-09-18)
+
+Twice today (11:56 and 12:13 local) all 115 shims were regenerated pointing at `$basedir/../../../../../Users/armanisadeghi/code/matrx-frontend/node_modules/…`, which resolves to `/Users/Users/…` — so `pnpm type-check`, `pnpm db:apply`, `pnpm db-types` and every `tsx` script die with `MODULE_NOT_FOUND`. The off-by-one means an install computed the relative path from a directory one level DEEPER than the checkout while writing into this checkout's `node_modules` — the shape of an install run inside a worktree whose `node_modules` is a symlink or hard-link copy of the primary's (see `docs/official/browser-testing.md` § From a private worktree). Repaired in place both times with a `sed` over the shims; the writer is still out there. Workaround that does not depend on the shims: `node node_modules/tsx/dist/cli.mjs <script>` and `node node_modules/typescript/bin/tsc --noEmit -p tsconfig.typecheck.json`.
+
+### D336 — `content_ir.kind_component` advertises three renderers that exist only on the unmerged, CONFLICTING PR 228 branch (2026-09-18)
+
+`pnpm check:shapes:components` names three ACTIVE bundled `kind_component` rows —
+`google_marketing_result`, `google_workspace_result`, `platform_record` — whose component_key
+`resolveBlockDispatch` on `main` does not know. The renderers (`components/mardown-display/blocks/google-kinds/*`,
+`.../result-kinds/PlatformRecordBlock.tsx`) and the `block-dispatch.tsx` registration live on
+`claude/youthful-babbage-erl2x4` (PR 228, "docs: point the Google Workspace feature at the native-Google
+plan"), which is `mergeable: CONFLICTING` as of 2026-09-18 11:16Z. The rows were activated in the one
+shared database by that branch, so `main` serves a registry that names a renderer it does not ship: a
+stream of any of these three kinds on production falls to the generic floor. Closes when PR 228 lands;
+the rows are deliberately NOT deactivated here because that would break the branch the moment it merges.
+Owner: whoever resolves PR 228's conflict (the google-workspace lane).
+
+### D335 — `udt_document_snapshot` declares anonymous read through its public parent, but the parent grants anon nothing — `iam.apply_rls` refuses the table (2026-09-18)
+
+Found while regenerating the two UDT snapshot components for D-component-created-by. The registry row
+for `udt_document_snapshot` carries `component_anon_read_via_public_parent = true`, so the generator
+emits a `pub_read` policy that subqueries `workbench.udt_documents` — and refuses to run because
+`anon` holds no SELECT on that parent: "the policy subquery would 42501 for every anon query. Apply
+the parent's canonical RLS (its pub_read lane grants anon) first." The LIVE `pub_read` on the snapshots
+table has the same shape today, so an anonymous reader of a public UDT document's snapshots already
+gets 42501, not rows. Fix: `iam.apply_rls('workbench','udt_documents','udt_document','entity')` (which
+grants the parent's anon lane), then regenerate `udt_document_snapshots`. Not done in the 2026-09-18
+guard session because regenerating the parent changes a live entity's policy set outside that
+session's scope. The sibling `udt_workbook_snapshots` regenerated cleanly. Owner: the workbench lane.
+
+### D334 — `integration_connection` is classified `private` (derived, never ruled) while its live read policy is owner-OR-ORGANIZATION (2026-09-18)
+
+`users.integration_connections` (and its component `integration_connection_resources`) carry
+`data_class = 'private'` with the reason "Born unclassified and derived by platform.derive_data_class
+… Reclassify deliberately if this table is not what that implies." Their bespoke read policies
+(`*_read_owner_or_org`) admit every member of the row's organization — the `organization` class's
+lane, not `private`'s (§3.1: private has no org-member lane). The 2026-09-18 staff-door migration
+closed the STAFF lane on both (that is what the class demands and what the guard measures) and left
+the owner/org arms verbatim, because whether colleagues may see each other's connected Google /
+Microsoft / GitHub accounts is a product ruling, not a guard's. Two consistent end states: classify
+`organization` (the policy is already that; the staff lane would then be lawful again and could be
+regenerated back), or keep `private` and narrow the policy to the owner. Needs the owner lane's
+ruling; until then the table is in-between. Owner: integrations (users.*).
+
+
 ### D333 — Four Media Source Catalog endpoints are published in the contract but were never built, and the frontend called all four (2026-09-18)
 
 **Status:** open (frontend half fixed; the server half is aidream's) · **Priority:** P2 — one of them was a visible, user-reachable control · **Repo:** aidream (`aidream/api/routers/media_catalog.py`) + `common-docs/projects/media-source-catalog/API-CONTRACT.md`
@@ -46,6 +204,35 @@ endpoint heading, where a client lane reads — as not built, and extend the wir
 reconciliation to fail when a documented endpoint heading carries no "not built" marker while its
 table entry says `implemented: False`. Job progress in particular is a real capability gap: until a
 stream exists, the frontend re-read is the honest ceiling.
+### D333 — `EntityRef` and `EntityDoorControls` disagree about the peek door, and two peek keys point at nothing (2026-09-17)
+
+**Status:** open · **Priority:** P2 · **Repo:** matrx-frontend
+
+`EntityRef.tsx`'s own header says both door components call `resolveEntityDoors`, "so a registry
+edit lights up both at once and neither can drift". For the PEEK they do not:
+`EntityDoorControls` asks `resolveEntityDoors(...).canPeek`, which is
+`hasPeek(peekKind) || hasRegistryPeek(info)`; `EntityRef` asks only
+`hasPeek(canonicalToken)`. So every token that has NO bespoke peek but does have a
+`titleColumn` — `seo_keyword`, `crm_deal`, `folder`, `working_document`, ~40 of them — gets the
+generic `RegistryPeek` door from one component and nothing from the other, which is the
+component almost every surface actually renders. (Measured with
+`ENTITY_TYPE_METADATA`: `seo_keyword` → `seo.keyword`, `titleColumn: "phrase"`.)
+
+Second half, in the same file: `doors.ts`'s `PEEK_KEY_BY_TOKEN` still maps `app` → `agent_app`
+and `structured_list` → `picklist`, but `PEEK_REGISTRY` was re-keyed to the canonical tokens
+(`app`, `structured_list`) and `agent_app` is not a registered entity token at all. So
+`EntityDoorControls` for an `app` offers "Quick look" (via `hasRegistryPeek`), hands
+`ResourcePeekHost` the kind `agent_app`, finds no component and no entity info, and renders
+NOTHING — a door that opens on nothing, which the doctrine ranks worse than no door.
+
+**Fix:** delete both `PEEK_KEY_BY_TOKEN` entries (the map's own comment says the real fix is
+aligning the keys, and they are aligned now), then make `EntityRef` read `canPeek`/`peekKind`
+from `resolveEntityDoors` like its sibling. **Why not done here (F-40):** flipping `EntityRef`
+turns the peek control on for ~40 tokens on every surface in the app at once — a change whose
+value is per-kind (is `RegistryPeek` a useful answer for a keyword?) and which no test in this
+tree can see; `entity-ref-doors.test.tsx` currently ASSERTS the opposite for `seo_keyword`
+("no route and no peek"). It wants one owner, a browser, and a pass over what the generic peek
+shows per kind.
 
 ### D332 — Six files under `coding-sessions/` carry no `kind` and no session id, so no session has ever listed them (2026-09-17)
 
@@ -145,6 +332,47 @@ not by assumption (the test imports nothing that round touched). **Fix:** add `u
 test's navigation mock, returning the rulebook id the card expects.
 
 
+### D331 — the surface-manifest registry imports a module that does not exist (2026-09-17)
+
+**Status:** open · **Priority:** P2
+
+`features/surfaces/manifests/registry.ts:141` does
+`import { barcodePreviewManifest } from "./barcode-preview.manifest";` and that
+file exists in no commit on any branch (`git log --all -- …barcode-preview.manifest*`
+is empty; the import is already committed, so it is not another lane's dirty
+tree). Every module that transitively reaches the manifest registry therefore
+fails to resolve — under Jest it is a hard suite failure, and it reaches far:
+`components/agent-copy/CopyButtons` and `features/surfaces/runtime/surface-writeback`
+both pull it, so the Gmail review card and `AssistCard` do, so
+`features/approvals/registry.ts` did, twice over. Found by lane F-6 while testing
+the approval kinds (worked around there with one virtual Jest mock, named in the
+test's header — the break itself is untouched).
+
+Fix: whoever owns the barcode-preview surface either lands the manifest file or
+removes the import and its registry entry. It is NOT safe to delete on sight —
+an unreferenced-looking manifest is unfinished work, not dead work
+(`../common-docs/policies/unfinished-work-alarm.md`), and the import's presence
+says someone meant to write it.
+
+### D330 — `AttachableAvailability` no longer extends the generated MCP availability shape (2026-09-17)
+
+**Status:** open · **Priority:** P3
+
+`features/connectors/attachable-resources.ts:68` fails the type-check:
+`Interface 'AttachableAvailability' incorrectly extends` the generated
+availability shape it widens (`McpAvailability` in
+`features/connectors/connection-state.ts`, aliased from
+`types/python-generated/api-types.ts`). Found while type-checking lane F-7's own
+files — this one is UNRELATED to that work and the file is untouched by it. It
+did not report on a run earlier in the same session, so the most likely cause is
+the generated-contract sync in `00d99946` moving the server shape underneath the
+hand-widened interface.
+
+**Fix:** re-read the generated `attachable` member and make
+`AttachableAvailability` conform to it (the generated type is the truth — never
+widen it back). Repro: `npx tsc -p` a config including
+`features/connectors/**/*` , or `pnpm type-check` when it can be run without
+OOM.
 
 ### D327 — Canonical agent picker can offer a stale identity and create an invisible surface binding (2026-09-17)
 
@@ -288,38 +516,42 @@ DD-169 revokes and are held by name in `scripts/impl-doors/closed-helper-reach-b
 Fix per the D18 remedy (definer trigger, auth.uid()-bound door, or a declared door) and delete
 the baseline entry in the same commit — the gate fails on a stale entry.
 
-### D320 — `workbench.note_folders` unique indexes count removed rows: delete a folder, you can never reuse its name (2026-09-13)
+### D320 — FIX APPLIED 2026-09-18, NOT YET CLOSED — `workbench.note_folders` unique indexes counted removed rows (found 2026-09-13)
 
-**Latent, not yet biting — say so honestly.** `workbench.note_folders` carries
-`deleted_at`, and THREE of its unique indexes have no `WHERE deleted_at IS NULL`:
+**The fix is on the live database. It is NOT closed, and D338 is the reason.** Measured on Matrx
+Main at 20:40Z:
 
-| index | columns | status |
+| index | was | at 20:40Z |
 |---|---|---|
-| `note_folders_organization_created_by_name_unique` | `(organization_id, created_by, name)` | **NEW** since the 2026-09-12 census |
-| `note_folders_id_organization_unique` | `(id, organization_id)` | **NEW** since the 2026-09-12 census |
-| `note_folders_created_by_name_unique` | `(created_by, name)` | pre-existing, in the frozen baseline |
+| `note_folders_organization_created_by_name_unique` | `(organization_id, created_by, name)`, exact | **partial** — `WHERE (deleted_at IS NULL)` |
+| `note_folders_created_by_name_unique` | `(created_by, name)`, exact, frozen in the baseline | **dropped** — the org-blind key is gone |
+| `note_folders_id_organization_unique` | `(id, organization_id)` | unchanged, and correctly so (below) |
 
-Effect: delete a folder called "Projects", try to create "Projects" again, and the
-database refuses — naming a row the person cannot see or restore. The two `name`
-indexes each cause it independently, so the pre-existing one is enough on its own; the
-`(id, organization_id)` one is harmless in practice, since `id` is already unique.
+And the guard agrees rather than just the migration: on CI run 35392537346 (head `1ab494a7`,
+20:39Z) `check:soft-delete-unique --strict` names **no `workbench.note_folders` index at all**.
 
-**Nobody has hit it yet:** `select count(*) from workbench.note_folders where
-deleted_at is not null` returns **0**. The first person to delete a folder and reuse its
-name is the first report. Fixing it before that costs nothing; after, it needs a data
-cleanup as well.
+🚨 **Why that is not enough to close it.** D338 (above) records that this VERY index was rebuilt
+partial at 15:22:24Z, and was a full index again by ~19:30Z — reverted by something that wrote no
+ledger row, with the actor unidentified and, in D338's words, *"if it reverts a second time the
+actor is still running."* The rebuild I measured (`1ab494a7`) landed at 20:38Z, so my 20:40Z
+reading is **two minutes old**. It proves the rebuild APPLIED. It cannot prove it HOLDS — the last
+revert took somewhere under four hours. Anyone closing this entry needs a reading from well after
+that window, not a reading from just after the migration.
 
-Remedy per the guard's own text: re-create the indexes `WHERE deleted_at IS NULL` in a
-migration (pattern: `migrations/soft_delete_partial_unique_indexes_context.sql`). The
-`(id, organization_id)` one deserves a second look — it may exist only to back a
-composite foreign key, in which case it should stay and be listed by hand with that
-reason, which `--update-baseline` deliberately will not do for you.
+**The `(id, organization_id)` index was never a defect** and the entry said so before: an index
+carrying the row's own `id` cannot be held by a removed row, and
+`scripts/check-soft-delete-unique.ts` now encodes that as an identity exclusion with a
+`--self-test`.
 
-Surfaced by `check:soft-delete-unique --strict` on armanisadeghi/ai-matrx#225, whose
-whole diff is two lines of a markdown skill file. The check reads LIVE indexes, so this
-is database state, not this PR's.
+**What it is.** `workbench.note_folders` carries `deleted_at`, and the two `name` indexes each
+independently meant that deleting a folder called "Projects" and creating "Projects" again was
+refused by the database — naming a row the person could not see or restore. It has never bitten
+anyone: `select count(*) from workbench.note_folders where deleted_at is not null` has been **0**
+throughout, so it is being fixed at the cost of a migration and no data cleanup. Surfaced by
+`check:soft-delete-unique --strict` on armanisadeghi/ai-matrx#225, whose whole diff was two lines
+of a markdown skill file — the check reads LIVE indexes, so it was database state, never that PR's.
 
-### D319 — 32 HR client doors are ungranted, so those surfaces 403 for EVERY signed-in user (2026-09-13)
+### D319 — RESOLVED 2026-09-18 — 32 HR client doors were ungranted, so those surfaces 403'd for EVERY signed-in user (found 2026-09-13)
 
 🚨 **Live product breakage, measured on Matrx Main, not inferred.** Of the 166
 `public.hr_*` SECURITY DEFINER wrappers, **32 give `authenticated` no EXECUTE**, so
@@ -372,11 +604,23 @@ diff is two lines of a markdown skill file. The check's own `grandfathered_owner
 calls these SECURITY INVOKER; live `pg_proc.prosecdef` says they are SECURITY DEFINER,
 so that note is stale and should be corrected with the fix.
 
-**Not fixed here.** The remedy is a migration adding the 32 `client_callable_door` rows
+**RESOLVED on the live database, 2026-09-18.** Migration
+`hr_public_wrappers_are_declared_doors_not_caller_census_casualties.sql` was applied at
+14:59:29Z by another lane. Measured on Matrx Main at 17:32Z the same day: the dead-door
+count went 32 → 2, and **every one of the 164 granted `public.hr_*` SECURITY DEFINER
+wrappers now has a `platform.client_callable_door` row — zero granted without one**, so
+the fix went through the door-row path the §6d-4 guard requires rather than around it.
+
+The two still ungranted are `hr_leave_accrual_apply` and `hr_leave_reinstate_on_rehire`.
+Neither is a dead button: a grep of both checkouts finds no call site for either outside
+the generated `types/database.types.ts`, so no UI control depends on them. They read as
+system/back-office jobs, correctly left un-client-callable. If a surface is ever wired to
+one, it needs a door row FIRST, then the grant.
+
+**Not fixed in the finding session.** The remedy was a migration adding the 32 `client_callable_door` rows
 and re-granting, which is HR-lane and access-layer work; `docs/official/db-rules.md` §6
 forbids changing a security layer on your own authority, and the session that found it
-was branch-restricted. **This needs an owner today** — it is not latent, it is 32 dead
-buttons in production.
+was branch-restricted. It needed an owner, and got one on 2026-09-18 (see the RESOLVED note above).
 
 ### D317 — the `shell_execution` KIND is still inactive and routed to the generic floor
 
@@ -4332,6 +4576,28 @@ now kept as well.
 
 ---
 
+## A map-valued knob cannot be written safely from a client — the DOOR has no merge and no precondition (2026-09-17, F-9)
+
+Found while fixing the Detail primitive's per-record-type setting (Bugbot, frontend PR 228).
+`platform.knob_override_set(p_value jsonb)` REPLACES the whole value, offers no per-entry merge and
+exposes no `updated_at` to guard on, so a knob that holds a map of per-thing exceptions
+(`ui.detail.presentation_by_type` = `{"file":"docked"}`) can only be changed by a client-side
+read-modify-write. `setUserKnobMapEntry` (`lib/scoped-config/service.ts`) closes the two failure
+modes a client CAN close — a failed read refuses the write instead of merging into `{}`, and the
+base is re-read past the 60s cache — and its header says the rest plainly: **two writers inside one
+round trip still lose the loser's entries, and nothing on the client can see it.** `guardedUpdate`
+cannot ride this because the write is an RPC through the key's declared door, not a table update.
+Closing it needs a per-entry merge (or an optimistic precondition) AT THE DOOR: a
+`platform.knob_override_merge(p_feature, p_key, p_entry_key, p_entry_value, …)`, or an
+`p_if_unchanged_at` argument on the existing door. Not mine to add — it is a migration against a
+client-callable `SECURITY DEFINER` function, and no map-valued knob today has enough writers for
+the race to be likely.
+
+Sibling not fixed: `components/matrx/resizable/MatrxDynamicPanel.tsx` still reserves
+`var(--header-height)` (the pre-shell 2.5rem token) on its MOBILE header padding and mobile content
+height, where the app shell's header is `--shell-header-h`. `SidePanelSurface` never reaches that
+path (it uses a Drawer on mobile), so it is not the same instance — but every other direct
+`MatrxDynamicPanel` consumer that renders under the shell on a touch device is off by 4px there.
 ## ~~A typed-but-unsent chat message does not survive a reload~~ **FIXED 2026-09-17**
 
 Found while closing the Masterwork reload-survival class (cold walk 6). Every capture LANE now
@@ -4471,3 +4737,25 @@ What still stops a regeneration on a box without credentials: step 1 (`pnpm db-t
 `SUPABASE_MATRIX_*` variables. Run `pnpm sync-types` on a credentialed machine; until then the
 topical map's three run clients (`map-pages.ts`, `map-regions.ts`, `map-intents.ts`) carry
 transcribed bodies with a red test naming the remedy. Found by the topical-map UI build (P0-A).
+
+## 2026-09-18 — `udt_bulk_write`'s delete op HARD-DELETES a soft-deletable row
+
+`public.udt_bulk_write`'s `{op:"delete"}` runs `DELETE FROM workbench.udt_dataset_rows WHERE
+id = … AND table_id = …` — a real destroy — even though the table carries `deleted_at`. That is
+the DD-119 class ("a registered entity carrying `deleted_at` is REMOVED, never destroyed, from a
+client"), one layer further in: `pnpm check:client-hard-delete` scans for supabase-js `.delete()`
+calls, so an RPC that destroys on the client's behalf is invisible to it. Every dataset-row
+delete in the product goes through this op (`features/data-tables/bulk-row-actions.ts`, the grid's
+row menu, `replaceTable`'s delete-all, and now an accepted `remove` proposal), so a deleted row is
+unrecoverable and `udt_dataset_row_versions` keeps only the versions, not the row.
+
+**Not fixed here** because flipping the op to a soft delete changes behaviour for every existing
+caller at once — the readers (`get_user_table_complete`, `get_full_table`, `udt_column_facets`,
+the realtime subscription) would each need a `deleted_at is null` filter in the same change, and
+`udt_datasets`' own delete path has the same shape. That is a data-tables repair with its own
+verification, not a side effect of the list-change-proposals feature.
+
+**What this lane did instead:** the proposal reviewer's confirm dialog says exactly what happens —
+"This DELETES the row … outright — it is gone from <list>, not archived, and this cannot be
+undone" — rather than a generic warning that implies recovery. Found by building
+`features/list-change-proposals/`.

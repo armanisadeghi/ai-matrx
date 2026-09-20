@@ -233,8 +233,14 @@ export interface SiteListRow extends MarketingSite {
   gsc_clicks_prev_28d: number | null;
   /** Prior 28-day impression sum; null when that window is empty. */
   gsc_impressions_prev_28d: number | null;
+  /** Distinct dates with GSC data in the CURRENT 28-day window. Both counts
+   *  are judged together by `analytics/gsc-delta.ts` — a delta drawn over a
+   *  short current window is the round-3 defect B-N1 (five live sites at 8 of
+   *  28 now against 23 of 28 before were painted as a ~70% collapse). */
+  gsc_cur_days: number;
   /** Distinct dates with GSC data in the prior window — deltas render only
-   *  when this is near-complete, so partial history never fakes a trend. */
+   *  when both windows are near-complete AND alike, so partial history never
+   *  fakes a trend. */
   gsc_prev_days: number;
   /** Most recent date Google has reported any data for this site. */
   gsc_latest_date: string | null;

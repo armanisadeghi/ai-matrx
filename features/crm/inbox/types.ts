@@ -9,6 +9,7 @@
 
 import type { Database } from "@/types/database.types";
 import type { ListScopeKind } from "@/lib/list-scope/types";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 
 /** One row, exactly as crm_inbox_list_scoped returns it. */
 export type InboxRow =
@@ -24,11 +25,6 @@ export type InboxRow =
  * A surface declares a SUBSET; it never invents a sixth scope.
  */
 export const INBOX_LIST_SCOPES: ListScopeKind[] = ["mine", "orgs"];
-
-/** The record page a reply belongs to. */
-export function inboxPartyHref(row: InboxRow): string | undefined {
-  return row.party_id ? `/crm/${row.party_id}` : undefined;
-}
 
 /** The campaign the reply came out of. */
 export function inboxCampaignHref(row: InboxRow): string | undefined {
@@ -54,5 +50,5 @@ export function inboxBacklinkHref(row: InboxRow): string | undefined {
 
 /** The row's primary destination: the person who replied. */
 export function inboxRowHref(row: InboxRow): string | undefined {
-  return inboxPartyHref(row);
+  return row.party_id ? resolveEntityDoors("party", row.party_id).href ?? undefined : undefined;
 }

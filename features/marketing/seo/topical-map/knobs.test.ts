@@ -66,6 +66,9 @@ jest.mock("@/utils/supabase/client", () => ({
 
 // Capture must never break the caller, and this suite never asserts on it.
 jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
+  // A PARTIAL MOCK OF A REAL MODULE DIES ON THE NEXT EXPORT (DD-239): spread
+  // the real store so a new export can never take this suite down at import.
+  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
   captureError: jest.fn(),
 }));
 

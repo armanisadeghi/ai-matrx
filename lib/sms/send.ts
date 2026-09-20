@@ -7,7 +7,6 @@
 
 import { getTwilioClient, getMessagingServiceSid, getAppBaseUrl } from './client';
 import { createAdminClient } from '@/utils/supabase/adminClient';
-import { resolveOrgIdForUserServer } from '@/lib/organizations/personalOrg';
 import type { SendSmsOptions, SendSmsResult } from './types';
 import { extractErrorMessage } from "@/utils/errors";
 import { formatSmsBody } from '@/features/sms/compliance';
@@ -176,13 +175,19 @@ export async function sendNotificationSms(options: {
   const { userId, body, notificationType, referenceType, referenceId, category = 'transactional', mediaUrl } = options;
   const supabase = createAdminClient();
 
-  // All rows written below belong to the notified user's org.
-  // org-fallback-deliberate: a notification SMS belongs to the notified
-  //   person's own workspace; this runs on an admin client with no session and
-  //   no selected organization
-  const organizationId = await resolveOrgIdForUserServer(supabase, userId);
-
-  // Get user's SMS notification preferences
+  // 🚨 THE ENROLMENT NAMES THE ORGANIZATION (2026-09-19 ruling; corrected in
+  // the 2026-09-19 review). This used to be
+  // `resolveOrgIdForUserServer(supabase, userId)` — the notified person's
+  // PERSONAL workspace, an organization nobody chose, stamped onto the
+  // notification log and the suppression check by the server.
+  //
+  // It never had to be resolved from the person at all. The enrolment row we
+  // are about to read IS org-scoped:
+  // `communication.sms_notification_preferences.organization_id` is NOT NULL
+  // (verified live 2026-09-19). So the preferences read moves ABOVE the
+  // organization, and the row the send is acting on names where it belongs.
+  // No preferences row means no send, which was already the answer — it now
+  // also means there is no organization question to get wrong.
   const { data: prefs } = await supabase
     .schema('communication').from('sms_notification_preferences')
     .select('*')
@@ -192,6 +197,9 @@ export async function sendNotificationSms(options: {
   if (!prefs || !prefs.sms_enabled || !prefs.phone_number) {
     return { success: false, error: 'SMS notifications not enabled for this user' };
   }
+
+  // All rows written below belong to the organization the person enrolled in.
+  const organizationId = prefs.organization_id;
 
   // Suppression is the veto, and it outranks every category — including
   // `system`. It is read from `crm.contact_medium` (THE ONE SUPPRESSION STORE),

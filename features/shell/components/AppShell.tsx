@@ -16,6 +16,7 @@ import "@/features/shell/components/header/variants/header-variants.css";
 import { Providers } from "@/app/Providers";
 import Sidebar from "@/features/shell/components/sidebar/Sidebar";
 import Header from "@/features/shell/components/header/Header";
+import ShellUserBlock from "@/features/shell/components/user-block/ShellUserBlock";
 import MobileDock from "@/features/shell/components/dock/MobileDock";
 import MobileSideSheet from "@/features/shell/components/mobile-sheet/MobileSideSheet";
 import GlassPortal from "@/features/shell/components/GlassPortal";
@@ -24,7 +25,6 @@ import MobileMenuPathSync from "@/features/shell/components/MobileMenuPathSync";
 import VisualViewportSync from "@/features/shell/components/VisualViewportSync";
 import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCookieSync";
 import DeferredIslands from "@/features/shell/islands/DeferredIslands";
-import { ElevatedShellUserMenuRoot } from "@/components/matrx/resizable/ElevatedShellUserMenu";
 import type { UserData } from "@/utils/userDataMapper";
 import type { BaseReduxState } from "@/types/reduxTypes";
 // CJS flag — also read by next.config.js to alias Sidebar/etc. to stubs.
@@ -77,7 +77,8 @@ export default function AppShell({
 
           {/* When FORCE_EXCLUDE_SIDEMENU, next.config aliases these imports to stubs. */}
           <Sidebar pathname={pathname} isAuthenticated={isAuthenticated} />
-          <Header userData={userData} isAuthenticated={isAuthenticated} />
+          <Header isAuthenticated={isAuthenticated} />
+          <ShellUserBlock userData={userData} isAuthenticated={isAuthenticated} />
 
           <main className="shell-main">{children}</main>
 
@@ -90,8 +91,6 @@ export default function AppShell({
 
       <GlassPortal>
         <MobileDock isAuthenticated={isAuthenticated} />
-        {/* Stand-in avatar while MatrxDynamicPanel covers the header corner */}
-        <ElevatedShellUserMenuRoot />
       </GlassPortal>
 
       <NavActiveSync />

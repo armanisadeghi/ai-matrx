@@ -27,6 +27,7 @@ import {
   AudioLines,
   File as FileIcon,
   MessagesSquare,
+  MonitorPlay,
   Table2,
   ListChecks,
   BookOpen,
@@ -34,11 +35,19 @@ import {
   MessageSquare,
   Mail,
   BrainCircuit,
+  Contact,
 } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { ENTITY_TYPE_METADATA } from "@ai-matrx/associations";
 
 import type { EnrichedItem, ItemType, KnownItemType } from "./types";
+import type { DetailRecordType } from "@/lib/detail/types";
+import { GOOGLE_DOCUMENT_ITEM_TYPE } from "@/features/google-workspace/documents/itemType";
+import { CALENDAR_EVENT_ITEM_TYPE } from "@/features/google-workspace/calendar/itemType";
+import { WEB_SITE_ITEM_TYPE } from "@/features/marketing/site-item-type";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { refinePartyDetail } from "@/features/crm/party-detail";
+import { partyKindWord } from "@/features/crm/party-words";
 
 export interface ItemTypeConfig {
   /** Stable key — the enum value. */
@@ -81,12 +90,27 @@ export interface ItemTypeConfig {
    */
   open?: ItemOpenKind;
   /**
-   * Where the generic `ItemDetailWindow` reads the full record from. Types
-   * without a bespoke window use this to open a clean, formatted detail view
-   * (every scalar column rendered). Omit for types with a bespoke window
-   * (agent/note/file/picklist) or no single canonical table (session/message)
-   * — the detail window still opens, just seed-only.
+   * Where the Detail primitive (`lib/detail`, via `detail.tsx`) reads the
+   * full record from. Types without a bespoke window use this to open a
+   * clean, formatted detail view (every scalar column rendered) in the
+   * window, docked and page presentations. Omit for a type with no single
+   * canonical table (session/message) — the detail still opens, seed-only.
    */
+  /**
+   * 🚨 THE ONE WAY A TYPE OWNS ITS DETAIL WITHOUT A SECOND REGISTRY.
+   *
+   * `detail.tsx` composes every registration generically (loader, formatted
+   * fields, health producer, frame). A few record types genuinely know more than
+   * a column dump can say — a synced Google file's own `sync_status`, a cached
+   * body that must not be printed as a field, a composer that writes back to the
+   * provider. Such a type refines the generic registration HERE, once, and every
+   * presentation (window, docked, page) inherits the refinement, because they all
+   * read the same `DetailRecordType`.
+   *
+   * It is a refinement, never a replacement: it receives the composed base and
+   * returns it changed. A type that omits it behaves exactly as before.
+   */
+  refineDetail?: (base: DetailRecordType) => DetailRecordType;
   detailSource?: {
     /** Table to `select('*')` from, keyed by `id`. */
     table: string;
@@ -127,7 +151,12 @@ export type ItemOpenKind =
   | { kind: "document" }
   | { kind: "conversation" }
   | { kind: "message" }
-  | { kind: "email" };
+  | { kind: "email" }
+  | { kind: "party" }
+  | { kind: "google_document" }
+  | { kind: "calendar_event" }
+  | { kind: "web_site" }
+  | { kind: "web_youtube_video" };
 
 // ---------------------------------------------------------------------------
 // Enrichment helpers
@@ -176,6 +205,17 @@ async function fetchRow(
 // The registry
 // ---------------------------------------------------------------------------
 
+/**
+ * `files.files`, for the Detail primitive (`lib/detail`). The click-through
+ * for a file stays the bespoke preview window; the detail primitive reads the
+ * row here when a file is opened as a record (window / docked / page).
+ */
+const FILE_DETAIL_SOURCE: NonNullable<ItemTypeConfig["detailSource"]> = {
+  table: "files",
+  schemaName: "files",
+  titleField: "file_name",
+};
+
 const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
   agent: {
     type: "agent",
@@ -187,6 +227,10 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-violet-500/20",
     },
     open: { kind: "agent" },
+    // 🚨 NEW-9 — the SAME canonical table the enrichment below reads. A type with
+    // no `detailSource` took the honest-absent path, so `/detail/agent/<id>` — a
+    // URL anyone can build — showed nothing about a record that is fully stored.
+    detailSource: { table: "definition", schemaName: "agent", titleField: "name" },
     enrich: (s, id) =>
       fetchRow(
         s,
@@ -232,6 +276,8 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-amber-500/20",
     },
     open: { kind: "note" },
+    // NEW-9 — `workbench.notes`, the table the enrichment below already reads.
+    detailSource: { table: "notes", schemaName: "workbench", titleField: "label" },
     enrich: (s, id) =>
       fetchRow(
         s,
@@ -414,6 +460,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-rose-500/20",
     },
     open: { kind: "file" },
+    detailSource: FILE_DETAIL_SOURCE,
     enrich: (s, id) => enrichFile(s, id),
   },
   video: {
@@ -426,6 +473,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-red-500/20",
     },
     open: { kind: "file" },
+    detailSource: FILE_DETAIL_SOURCE,
     enrich: (s, id) => enrichFile(s, id),
   },
   audio: {
@@ -438,6 +486,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-orange-500/20",
     },
     open: { kind: "file" },
+    detailSource: FILE_DETAIL_SOURCE,
     enrich: (s, id) => enrichFile(s, id),
   },
   file: {
@@ -450,6 +499,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-slate-500/20",
     },
     open: { kind: "file" },
+    detailSource: FILE_DETAIL_SOURCE,
     enrich: (s, id) => enrichFile(s, id),
   },
   session: {
@@ -461,8 +511,14 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       bg: "bg-teal-500/10",
       ring: "ring-teal-500/20",
     },
-    // No single canonical "session" table (war-room / studio / window / quiz
-    // all qualify) — opens seed-only until one is chosen. See FOUND_DEFECTS D8.
+    // 🚨 DELIBERATELY SOURCELESS, and the only one left after NEW-9's census
+    // (VERIFY-U-P1-R3): there is no single canonical "session" table — war-room,
+    // studio, window and quiz sessions all qualify — so a detail cannot know
+    // which to read. The Detail primitive's honest absent state carries it: the
+    // record is named from its type and id, one plain sentence says nothing more
+    // is stored here, and the doors it has still open. See FOUND_DEFECTS D8; when
+    // one table is chosen, this entry gets a `detailSource` and nothing else
+    // changes.
     open: { kind: "session" },
   },
   table: {
@@ -501,6 +557,12 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-lime-500/20",
     },
     open: { kind: "structured_list" },
+    // NEW-9 — `workbench.udt_structured_lists`, as the enrichment below reads it.
+    detailSource: {
+      table: "udt_structured_lists",
+      schemaName: "workbench",
+      titleField: "list_name",
+    },
     enrich: (s, id) =>
       fetchRow(
         s,
@@ -529,6 +591,12 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-lime-500/20",
     },
     open: { kind: "structured_list" },
+    // NEW-9 — `workbench.udt_structured_lists`, as the enrichment below reads it.
+    detailSource: {
+      table: "udt_structured_lists",
+      schemaName: "workbench",
+      titleField: "list_name",
+    },
     enrich: (s, id) =>
       fetchRow(
         s,
@@ -649,6 +717,134 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
         "communication",
       ),
   },
+  // 🚨 F-40 — AN EXISTING PERSON OPENS IN PLACE. `crm.party` is THE record for
+  // an external person (and, by `party_kind`, a company). Every surface that
+  // names one — the approvals queue's contact-import card, the outreach dialogs,
+  // the PR/backlink prospect tables, the CRM inbox — draws it as an `EntityRef`
+  // on the `party` token, and the token had NO in-place presentation: no peek was
+  // registered, and the only party window CREATES a record. So the reviewer of a
+  // contact-import proposal had to leave the queue to find out who it was about
+  // (lane F-36, Bugbot round 20 on PR 228).
+  //
+  // This entry is the whole fix: it is THE type map the Detail primitive reads,
+  // so the Person now shows as a window (the default), a docked panel or
+  // `/detail/party/<id>` from ONE registration, with no bespoke Person panel
+  // anywhere. The full 360° workspace stays at `/crm/<id>` and the detail's own
+  // doors reach it.
+  //
+  // 🚨 N6 (VERIFY-U-P1-R5) — THE TYPE'S LABEL IS THE HONEST GENERIC WORD.
+  // `crm.party` holds 1,892 rows: 460 `person` and 1,432 `organization` (read
+  // live 2026-09-18). The label was "Person", and a registration's label is per
+  // TYPE, not per row, so three records in four were labelled "Person" — twice
+  // on screen, above a field reading `organization`. A label resolved at type
+  // time cannot know the kind, so it says what IS true of every row: this is a
+  // contact record. "Contact" is the CRM's own existing generic ("Open contact
+  // record", `record_class = 'contact'`); nothing is coined here, and the
+  // specific word — Person or Company — is the ONE resolver in
+  // `features/crm/party-words.ts`, which says it on the card (`enrich` below),
+  // in the dossier's own Type field, in the peek title and in the stand-in title
+  // of a record that has not loaded (`refineDetail`, below).
+  // WHAT IS STILL OWED: the TYPE CHIP in the detail header. `DetailRecordType`
+  // carries `label: string` with no per-row form, so the chip reads "Contact"
+  // for a Person too. The package change that fixes it is recorded in this
+  // feature's FEATURE.md (escalation C) — `labelForRow?: (row) => string | null`,
+  // used for the chip and the stand-in titles while `label` keeps answering the
+  // type-level settings sentences ("every contact record opens as a window").
+  party: {
+    type: "party",
+    label: "Contact",
+    icon: Contact,
+    accent: {
+      text: "text-teal-600 dark:text-teal-400",
+      bg: "bg-teal-500/10",
+      ring: "ring-teal-500/20",
+    },
+    open: { kind: "party" },
+    detailSource: { table: "party", schemaName: "crm", titleField: "display_name" },
+    // 🚨 N5/N6 — the Person/Company DOSSIER, as ONE refinement of the composed
+    // registration: the curated, ordered, human-labelled field list instead of
+    // `select *` in PostgREST key order; the reads it needs beyond one table
+    // (contact points, the employer's name); and a nameless record named by its
+    // OWN kind. Nothing here is a second type map or a second renderer.
+    refineDetail: refinePartyDetail,
+    enrich: (s, id) =>
+      fetchRow(
+        s,
+        "party",
+        id,
+        "display_name, party_kind, job_title, headline, primary_domain",
+        (r) => ({
+          name: clip(r.display_name, 80),
+          about: clip(r.job_title, 120) ?? clip(r.headline),
+          details: [
+            r.party_kind
+              ? { label: "Type", value: partyKindWord(r.party_kind) }
+              : null,
+            r.primary_domain
+              ? { label: "Domain", value: String(r.primary_domain) }
+              : null,
+          ].filter(Boolean) as EnrichedItem["details"],
+        }),
+        "crm",
+      ),
+  },
+  // 🚨 U-W1 — A CONNECTED GOOGLE FILE IS A RECORD THAT OPENS. Its registration
+  // lives beside its own feature (`features/google-workspace/documents/`); this
+  // map is where the platform learns about it.
+  google_document: GOOGLE_DOCUMENT_ITEM_TYPE,
+  calendar_event: CALENDAR_EVENT_ITEM_TYPE,
+  // 🚨 F-87 — A MARKETING SITE OPENS IN PLACE. Its registration lives beside
+  // its own feature (`features/marketing/site-item-type.ts`); this map is where
+  // the platform learns about it. The key is the canonical entity token
+  // (`web_site`), so no `entityToken` alias is needed and no twin exists.
+  web_site: WEB_SITE_ITEM_TYPE,
+  // 🚨 V-22 NEW-6 — THE THIRD GOOGLE MIRROR TABLE IS A RECORD THAT OPENS.
+  // `web.youtube_video` is a live, active, `is_listed` entity
+  // (`platform.entity_types.token = 'web_youtube_video'`) and the third mirror
+  // beside `communication.calendar_event` and `workbench.google_document`: same
+  // shape (`external_id`, `external_url`, `synced_at`, `sync_status`), and its
+  // connection side is `channel_resource_id →
+  // users.integration_connection_resources` (read live 2026-09-18). It had no
+  // entry here and none in the entity registry, so a YouTube video had no door
+  // in any form — `/detail/web_youtube_video/<id>`, a URL anyone can build,
+  // showed nothing about a fully stored record.
+  //
+  // It is registered INLINE rather than beside a feature because no feature owns
+  // this table in this repo yet: `/marketing/tools/youtube/videos/<id>` is keyed
+  // on YouTube's own external id via `/research/youtube/videos/{video_id}`, a
+  // different identity. When a YouTube surface lands it takes this entry over,
+  // the way `features/marketing/site-item-type.ts` did for a site.
+  web_youtube_video: {
+    type: "web_youtube_video",
+    label: "YouTube video",
+    icon: MonitorPlay,
+    accent: {
+      text: "text-red-600 dark:text-red-400",
+      bg: "bg-red-500/10",
+      ring: "ring-red-500/20",
+    },
+    // No bespoke window exists, so it opens the Detail primitive — window by
+    // default, docked or page per the person's own setting.
+    open: { kind: "web_youtube_video" },
+    detailSource: { table: "youtube_video", schemaName: "web", titleField: "title" },
+    enrich: (s, id) =>
+      fetchRow(
+        s,
+        "youtube_video",
+        id,
+        "title, description, external_url, sync_status",
+        (r) => ({
+          name: clip(r.title, 80),
+          about: clip(r.description),
+          details: [
+            r.sync_status
+              ? { label: "Sync", value: titleCase(r.sync_status) ?? String(r.sync_status) }
+              : null,
+          ].filter(Boolean) as EnrichedItem["details"],
+        }),
+        "web",
+      ),
+  },
 };
 
 async function enrichFile(
@@ -706,6 +902,154 @@ export function entityTokenForItemType(
   if (typeof type !== "string" || !type) return null;
   const { config, recognized } = getItemConfig(type);
   return recognized ? (config.entityToken ?? type) : type;
+}
+
+/**
+ * 🚨 THE DOOR'S TYPE COMES FROM THE SERVER'S `record_table`, NEVER FROM A
+ * CONSTANT (lane F-93, hostile verifier V-22, finding NEW-9).
+ *
+ * Our servers stamp `record_id`, **`record_table`** (`"schema.table"`, e.g.
+ * `"communication.calendar_event"` — `aidream/services/google_workspace/tools.py`)
+ * and `record_sync_status` onto each row they name. A reader that hardcodes the
+ * item type beside `record_id` is confidently wrong the moment the stamp says
+ * something else: V-22 fed a calendar-shaped payload carrying
+ * `record_table: "media.source_library"` to the agenda door in
+ * `components/mardown-display/blocks/google-kinds/GoogleWorkspaceResultBlock.tsx`
+ * (`<RecordDoor type="calendar_event" id={event.record_id}>`) and got an "Open"
+ * control that opens a `calendar_event` with a foreign id. That is the V-21
+ * `document → udt_document` defect in a new place: the protection a token-driven
+ * reader has — `RecordDoor` renders NOTHING for a type it does not recognise — is
+ * exactly what a hardcoded type throws away.
+ *
+ * This is the one resolution, derived from THE type map itself (`detailSource`'s
+ * schema + table), so a type registered tomorrow is resolvable with no edit here.
+ * An unknown table returns `null`, and a caller must then render no door at all:
+ * a door to the wrong record reads as a fact and is a lie (`no-dead-ends`, rule
+ * 4). It never guesses from a bare table name, because table names repeat across
+ * schemas (`agent.definition` and `mandate.definition`).
+ *
+ * Callers: pass `record_table` when the payload carries one and fall back to the
+ * surface's own type only when it does not.
+ */
+const RECORD_TABLE_TO_ITEM_TYPE: ReadonlyMap<string, KnownItemType> = (() => {
+  const map = new Map<string, KnownItemType>();
+  const add = (key: string, type: KnownItemType): void => {
+    // FIRST registration wins, which is the canonical one: `structured_list` is
+    // declared before its legacy read-only alias `picklist`, and both point at
+    // `workbench.udt_structured_lists`.
+    if (!map.has(key.toLowerCase())) map.set(key.toLowerCase(), type);
+  };
+  for (const [type, config] of Object.entries(REGISTRY) as [
+    KnownItemType,
+    ItemTypeConfig,
+  ][]) {
+    const source = config.detailSource;
+    if (source) add(`${source.schemaName ?? "public"}.${source.table}`, type);
+    // A type may own its load through `refineDetail` and declare no
+    // `detailSource` at all (`google_document` does), so the token's own live
+    // registry row answers too — `ENTITY_TYPE_METADATA` is generated from
+    // `platform.entity_types`, which is where `record_table` comes from in the
+    // first place.
+    const token = config.entityToken ?? type;
+    const meta = (
+      ENTITY_TYPE_METADATA as Record<string, { schema: string; table: string }>
+    )[token];
+    if (meta) add(`${meta.schema}.${meta.table}`, type);
+  }
+  return map;
+})();
+
+/**
+ * 🚨 EVERY REGISTERED ENTITY'S TABLE, NOT ONLY THE ITEM TYPES' (lane F-104,
+ * hostile verifier V-23, finding NEW-6).
+ *
+ * `RECORD_TABLE_TO_ITEM_TYPE` above answers ONE question — "which item type
+ * does the Detail primitive open for this table" — and the honest answer for
+ * `media.source_library` is `null`, because no item type reads it. V-23's
+ * attack is what a reader then DID with that null: it rendered no control at
+ * all for a record the card had just named, although `media_source_library` is
+ * a registered entity whose `hrefFor` (`/libraries/<id>`) is a working screen.
+ *
+ * Ruling R35: `hrefFor` is the durable address and `useOpenItemPresentation` is
+ * the door, and BOTH are required. So a stamp resolves in TWO legs, and only a
+ * table NO registered entity claims resolves to nothing:
+ *
+ *   1. the entity TOKEN the table backs — from `ENTITY_TYPE_METADATA`, which is
+ *      generated from `platform.entity_types`, the same row `record_table` is
+ *      stamped from, so every one of the 800+ live tokens is declared here with
+ *      no per-entity edit (the declaration this campaign looked for already
+ *      exists: `{ token, schema, table }` on every row);
+ *   2. the ITEM TYPE with an in-place opener, when one reads that same table.
+ *
+ * A caller renders the opener when leg 2 answers, the token's own durable
+ * address when only leg 1 does, and nothing at all when neither does.
+ */
+const TOKENS_BY_RECORD_TABLE: ReadonlyMap<string, string[]> = (() => {
+  const map = new Map<string, string[]>();
+  for (const meta of Object.values(
+    ENTITY_TYPE_METADATA as Record<
+      string,
+      { token: string; schema: string; table: string }
+    >,
+  )) {
+    if (!meta?.token || !meta.schema || !meta.table) continue;
+    const key = `${meta.schema}.${meta.table}`.toLowerCase();
+    const held = map.get(key);
+    if (held) held.push(meta.token);
+    else map.set(key, [meta.token]);
+  }
+  return map;
+})();
+
+/** Entity token → the item type that opens it in place, when one exists. */
+const ITEM_TYPE_BY_ENTITY_TOKEN: ReadonlyMap<string, KnownItemType> = (() => {
+  const map = new Map<string, KnownItemType>();
+  for (const [type, config] of Object.entries(REGISTRY) as [
+    KnownItemType,
+    ItemTypeConfig,
+  ][]) {
+    const token = config.entityToken ?? type;
+    if (!map.has(token)) map.set(token, type);
+  }
+  return map;
+})();
+
+/** What a `record_table` stamp resolves to — both legs of R35, or null. */
+export interface RecordTableTarget {
+  /** The registered entity token backing that table. */
+  token: string;
+  /** The item type that opens it IN PLACE, or null when none reads the table. */
+  itemType: KnownItemType | null;
+}
+
+/**
+ * THE ONE resolution of a server `record_table` stamp. `null` means no
+ * registered entity claims that table — the only case a reader renders nothing.
+ */
+export function recordTableTarget(recordTable: unknown): RecordTableTarget | null {
+  if (typeof recordTable !== "string") return null;
+  const key = recordTable.trim().toLowerCase();
+  if (!key.includes(".")) return null;
+  const itemType = RECORD_TABLE_TO_ITEM_TYPE.get(key) ?? null;
+  const tokens = TOKENS_BY_RECORD_TABLE.get(key) ?? [];
+  if (itemType) {
+    const config = REGISTRY[itemType];
+    const declared = config.entityToken ?? itemType;
+    // The item type's own token wins when the table backs several (aliases).
+    return { token: tokens.includes(declared) ? declared : (tokens[0] ?? declared), itemType };
+  }
+  if (tokens.length === 0) return null;
+  const token = tokens.find((candidate) => ITEM_TYPE_BY_ENTITY_TOKEN.has(candidate)) ?? tokens[0];
+  return { token, itemType: ITEM_TYPE_BY_ENTITY_TOKEN.get(token) ?? null };
+}
+
+export function itemTypeForRecordTable(
+  recordTable: unknown,
+): KnownItemType | null {
+  if (typeof recordTable !== "string") return null;
+  const key = recordTable.trim().toLowerCase();
+  if (!key.includes(".")) return null;
+  return RECORD_TABLE_TO_ITEM_TYPE.get(key) ?? null;
 }
 
 export function getItemConfig(type: ItemType | null | undefined): {

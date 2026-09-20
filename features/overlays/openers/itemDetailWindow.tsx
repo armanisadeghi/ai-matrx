@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Opener for the `itemDetailWindow` overlay.
+ * Opener for the `detailWindow` overlay (generic item-presentation dossier).
  *
  * - `useOpenItemDetailWindow()` — imperative hook. Call to open with typed
  *   options; returns a handle with a `close()` method.
@@ -17,7 +17,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { ItemType } from "@/features/item-presentation/types";
 
-const OVERLAY_ID = "itemDetailWindow" as const;
+const OVERLAY_ID = "detailWindow" as const;
 
 export interface OpenItemDetailWindowOptions {
   itemType?: ItemType | null;

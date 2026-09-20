@@ -210,3 +210,23 @@ Class lesson recorded in skill-authoring §2: a routing list is read as complete
 **Unguarded classes noted by reps (not built here):** `overlayId` values are not validated
 against the overlay catalogue (`features/overlays/catalogue.ts`) by the drift check (one rep; another cited `check:surface-overlays`);
 nothing statically prevents a non-DOM provider as the direct child of a v3 context menu.
+## Correction baseline — `/root/rule_baseline` (2026-09-18)
+
+**Result: reproduced the two policy defects.** The Terra low evaluator read the
+original HEAD `surface-check` and `agent-disclosure` instructions and recommended
+removing the JSON Schema Generator binding, bound roster, and Bind control while
+excluding Builder from the fleet. It also allowed an ordinary resident keyword
+helper to inherit without an explicit surface name unless the identity was
+wrong. This is a baseline documentation evaluation, not implementation or
+runtime-enforcement proof. A fresh independent green evaluation is still
+required after this correction.
+
+### Green correction — `/root/context_rule_green` (2026-09-18)
+
+**Result: passed all six policy outcomes.** The fresh Terra low evaluator kept
+the external JSON binding, isolated the native subject agent from page scope,
+required a deliberate resident contract without ambient inheritance, allowed all
+installed user-editable definition fields plus test variables/input/run, allowed
+a task-appropriate snapshot without per-variable remapping or repeated approval,
+and included Builder in certification. This validates the current instruction
+reading only; it does not prove runtime enforcement or a unified tracker.

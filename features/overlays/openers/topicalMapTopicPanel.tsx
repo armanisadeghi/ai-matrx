@@ -24,6 +24,9 @@ import {
   focusWindow,
   restoreWindow,
 } from "@/lib/redux/slices/windowManagerSlice";
+// (map, topic) is the identity of a panel — not the moment it was opened. The
+// format is owned there because the URL hydrator has to read it back.
+import { topicPanelInstanceId } from "@/features/marketing/seo/topical-map/panel/topicPanelInstance";
 
 const OVERLAY_ID = "topicalMapTopicPanel" as const;
 
@@ -39,17 +42,13 @@ export interface TopicPanelHandle {
   close: () => void;
 }
 
-/** (map, topic) is the identity of a panel — not the moment it was opened. */
-function instanceIdFor(opts: OpenTopicPanelOptions): string {
-  return `${opts.mapId}|${opts.slug}`;
-}
 
 export function useOpenTopicPanel() {
   const dispatch = useAppDispatch();
   const store = useAppStore();
   return useCallback(
     (opts: OpenTopicPanelOptions): TopicPanelHandle => {
-      const instanceId = instanceIdFor(opts);
+      const instanceId = topicPanelInstanceId(opts);
       const open = selectOpenInstances(store.getState(), OVERLAY_ID);
       if (open.some((inst) => inst.instanceId === instanceId)) {
         // This topic is already floating: surface it (un-minimize + raise)

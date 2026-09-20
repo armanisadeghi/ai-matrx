@@ -31,9 +31,9 @@ import {
   formatStatDate,
   MiniTrendChart,
   TrendDelta,
-  trendPercent,
   type GscPeekMetric,
 } from "@/features/marketing/components/sites/SiteKpiPeeks";
+import { siteKpiDelta } from "@/features/marketing/analytics/gsc-delta";
 
 const CHART_METRICS: Array<{ key: GscPeekMetric; label: string }> = [
   { key: "clicks", label: "Clicks" },
@@ -51,16 +51,8 @@ export default function SitePeekWindowImpl({
   // access-errors: ok — decorative top-pages peek under the same list-row data
   const topPages = useSiteGscTopPages(site.id, 90, 10);
 
-  const clicksDelta = trendPercent(
-    site.gsc_clicks_28d,
-    site.gsc_clicks_prev_28d,
-    site.gsc_prev_days,
-  );
-  const impressionsDelta = trendPercent(
-    site.gsc_impressions_28d,
-    site.gsc_impressions_prev_28d,
-    site.gsc_prev_days,
-  );
+  const clicksDelta = siteKpiDelta(site, "clicks");
+  const impressionsDelta = siteKpiDelta(site, "impressions");
 
   const tiles = [
     {
@@ -137,7 +129,7 @@ export default function SitePeekWindowImpl({
               <p className="flex items-baseline gap-1 text-sm font-semibold tabular-nums text-foreground">
                 {tile.value}
                 {"delta" in tile ? (
-                  <TrendDelta percent={tile.delta ?? null} />
+                  <TrendDelta delta={tile.delta ?? null} />
                 ) : null}
               </p>
               <p className="truncate text-[9px] uppercase tracking-wide text-muted-foreground">

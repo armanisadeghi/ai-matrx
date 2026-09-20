@@ -1,6 +1,6 @@
 /**
  * Conversation attachments client — aidream `/api/connections/resources` and
- * `/api/conversations/{id}/attachments`.
+ * `/api/ai/conversations/{id}/attachments`.
  *
  * What a person picks in the chooser is not composer state and not a run
  * setting: it is a durable edge in `platform.associations`, written by the
@@ -12,6 +12,15 @@
  * that renders as "nothing attached" because a request failed is the exact
  * lie the connection chips were fixed for on 2026-09-13 — the caller shows the
  * failure and its remedy instead.
+ *
+ * 🚨 EVERY PATH IS A KEY OF THE GENERATED CONTRACT. The conversation routes
+ * are mounted under aidream's `/ai` router, and its legacy `/api` prefix is
+ * stripped by a compatibility middleware — so a hand-typed
+ * `/api/conversations/{id}/attachments` reaches the server as
+ * `/conversations/{id}/attachments`, matches nothing, and every chat that
+ * carried an attachable connection read "HTTP 404" (2026-09-17). The route
+ * templates below are checked against `paths` at type-check time; a path the
+ * server does not publish fails `pnpm type-check`, never a user.
  */
 
 import { createClient } from "@/utils/supabase/client";
@@ -22,10 +31,32 @@ import {
   applyOrganizationContextHeader,
   requireOrganizationContext,
 } from "@/lib/api/organization-context";
+import type { paths } from "@/types/python-generated/api-types";
 import type {
   ConversationAttachment,
   PendingAttachment,
 } from "./attachable-resources";
+
+/** Route templates, exactly as the generated contract publishes them. */
+const RESOURCES_ROUTE = "/connections/resources" satisfies keyof paths;
+const ATTACHMENTS_ROUTE =
+  "/conversations/{conversation_id}/attachments" satisfies keyof paths;
+const ATTACHMENT_ROUTE =
+  "/conversations/{conversation_id}/attachments/{association_id}" satisfies keyof paths;
+
+/** Fill a contract route template; every `{param}` must be supplied. */
+function fillRoute(
+  template: keyof paths,
+  params: Record<string, string>,
+): string {
+  return template.replace(/\{([^}]+)\}/g, (_match, name: string) => {
+    const value = params[name];
+    if (value === undefined) {
+      throw new Error(`Route ${template} is missing its {${name}} parameter.`);
+    }
+    return encodeURIComponent(value);
+  });
+}
 
 /**
  * One thing the user could attach, as the candidate endpoint returns it.
@@ -33,6 +64,8 @@ import type {
  * chooser turns a candidate into a pick without reshaping it.
  */
 export interface AttachableCandidate {
+  /** The row's own id — a picked-file id, or the Record's row id (F-71). */
+  resource_id: string;
   provider: string;
   resource_type: string;
   resource_ref: string;
@@ -44,6 +77,21 @@ export interface AttachableCandidate {
    * because only it knows what matters about that provider's resources.
    */
   detail: string | null;
+  /**
+   * `null` for a Record-backed candidate (F-71: a synced calendar event) —
+   * the server's access chokepoint already passed before this row could ever
+   * be listed, so an empty value here is NOT "no access" and must never be
+   * rendered as one. Only a picked file (a repository, a Drive file) carries
+   * a real GitHub/Drive permission word.
+   */
+  permission_level: string | null;
+  /**
+   * Set when this candidate IS a platform Record rather than a picked file —
+   * its schema-qualified table (`communication.calendar_event`), so the
+   * client can open the SAME row its own screen and the archive door
+   * address, through `resource_id`. `null` for a picked file.
+   */
+  record_table: string | null;
   metadata: Record<string, unknown> | null;
 }
 
@@ -70,8 +118,42 @@ async function authHeaders(): Promise<Record<string, string>> {
   );
 }
 
+/**
+ * The sentence a failed response carries. The body is read ONCE as text
+ * (a `.json()` that fails consumes the body, so a `.text()` after it is always
+ * empty — which is how a 404 reached the Error Inspector as a bare "HTTP 404").
+ * aidream's attachment errors are `{detail: {code, message, remedy}}`; plain
+ * FastAPI errors are `{detail: "…"}`; anything else names the status and the
+ * route so the failure is at least locatable.
+ */
+async function failureMessage(
+  resp: Response,
+  method: string,
+  path: string,
+): Promise<string> {
+  const text = await resp.text().catch(() => "");
+  let detail: unknown;
+  try {
+    detail = text ? (JSON.parse(text) as { detail?: unknown }).detail : undefined;
+  } catch {
+    detail = undefined;
+  }
+  if (typeof detail === "string" && detail.trim()) return detail;
+  if (detail && typeof detail === "object") {
+    const { message, remedy } = detail as { message?: unknown; remedy?: unknown };
+    if (typeof message === "string" && message.trim()) {
+      return typeof remedy === "string" && remedy.trim()
+        ? `${message} ${remedy}`
+        : message;
+    }
+    return JSON.stringify(detail);
+  }
+  return `HTTP ${resp.status} from ${method} /api${path}`;
+}
+
 async function attachFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = await authHeaders();
+  const method = init?.method ?? "GET";
   let resp: Response;
   try {
     resp = await fetch(`${AIDREAM_PRODUCTION_URL}/api${path}`, {
@@ -85,15 +167,7 @@ async function attachFetch<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (resp.status === 204) return undefined as T;
   if (!resp.ok) {
-    let detail: string | undefined;
-    try {
-      const body = (await resp.json()) as { detail?: unknown };
-      detail =
-        typeof body.detail === "string" ? body.detail : JSON.stringify(body);
-    } catch {
-      detail = await resp.text().catch(() => undefined);
-    }
-    throw new Error(detail || `HTTP ${resp.status}`);
+    throw new Error(await failureMessage(resp, method, path));
   }
   return (await resp.json()) as T;
 }
@@ -117,7 +191,7 @@ export function fetchAttachableResources(args: {
   if (args.limit != null) params.set("limit", String(args.limit));
   if (args.live) params.set("live", "true");
   return attachFetch<AttachableCandidate[]>(
-    `/connections/resources?${params.toString()}`,
+    `${RESOURCES_ROUTE}?${params.toString()}`,
     { signal: args.signal },
   );
 }
@@ -127,7 +201,7 @@ export function fetchConversationAttachments(
   conversationId: string,
 ): Promise<ConversationAttachment[]> {
   return attachFetch<ConversationAttachment[]>(
-    `/conversations/${encodeURIComponent(conversationId)}/attachments`,
+    fillRoute(ATTACHMENTS_ROUTE, { conversation_id: conversationId }),
   );
 }
 
@@ -141,7 +215,7 @@ export function attachConversationResource(
   pick: PendingAttachment,
 ): Promise<ConversationAttachment> {
   return attachFetch<ConversationAttachment>(
-    `/conversations/${encodeURIComponent(conversationId)}/attachments`,
+    fillRoute(ATTACHMENTS_ROUTE, { conversation_id: conversationId }),
     {
       method: "POST",
       body: JSON.stringify({
@@ -162,7 +236,10 @@ export function detachConversationResource(
   associationId: string,
 ): Promise<void> {
   return attachFetch<void>(
-    `/conversations/${encodeURIComponent(conversationId)}/attachments/${encodeURIComponent(associationId)}`,
+    fillRoute(ATTACHMENT_ROUTE, {
+      conversation_id: conversationId,
+      association_id: associationId,
+    }),
     { method: "DELETE" },
   );
 }

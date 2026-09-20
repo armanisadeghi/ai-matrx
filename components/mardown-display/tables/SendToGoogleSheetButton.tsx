@@ -13,6 +13,10 @@
 import { useState } from "react";
 import { Loader2, Sheet } from "lucide-react";
 import { toast } from "@/lib/toast";
+import {
+  announceProposedGoogleWrite,
+  isProposedGoogleWrite,
+} from "@/features/google-workspace/export/proposedWrite";
 
 import { Button } from "@/components/ui/button";
 
@@ -63,6 +67,16 @@ export function SendToGoogleSheetButton({
         toast.error("Could not create the Google Sheet", {
           description: result.message,
         });
+        return;
+      }
+      // NOTHING WAS WRITTEN, and it is not a failure: the organization reviews
+      // this kind of change first, so the server filed it in the approval queue
+      // instead. Saying "Created" here would claim a file that does not exist,
+      // and saying it failed would tell the user their work was lost when it is
+      // sitting in a queue with their name on it. ONE module owns those words
+      // and that door for all four call sites (F-99).
+      if (isProposedGoogleWrite(result)) {
+        announceProposedGoogleWrite(result);
         return;
       }
       if (!result.ok) {

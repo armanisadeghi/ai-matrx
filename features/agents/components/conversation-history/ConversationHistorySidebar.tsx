@@ -54,12 +54,15 @@ import {
   makeSelectConversationHistoryStatus,
   makeSelectGroupedByAgent,
   makeSelectGroupedByDate,
+  selectConversationLanes,
   selectSourceFacets,
+  selectSourceFacetsStatus,
 } from "@/features/agents/redux/conversation-history/selectors";
 import { selectIsStreaming } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import {
   seedScopeSourceFilter,
   setScopeAgentIds,
+  setScopeLanes,
   setScopeGrouping,
   setScopeSearch,
   setScopeSourceFilter,
@@ -84,6 +87,10 @@ import {
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { ConversationSourceFilterTree } from "./ConversationSourceFilterTree";
+import {
+  AllLanesOffNotice,
+  ConversationLaneToggles,
+} from "./ConversationLaneToggles";
 import { ConversationTrashSection } from "./ConversationTrashSection";
 import { ItemRow } from "@/components/official/item/ItemRow";
 import { toast } from "@/lib/toast";
@@ -91,6 +98,11 @@ import {
   LoadingTapButton,
   RefreshCwTapButton,
 } from "@ai-matrx/tap-target/buttons";
+import { useConversationServerSearch } from "./useConversationServerSearch";
+import {
+  conversationSearchRangeLabel,
+  countConversationSearchCorpus,
+} from "@/features/agents/redux/conversation-history/conversation-search";
 
 export interface ConversationHistorySidebarProps {
   /** Unique scope key (same across mounts that should share state). */
@@ -190,6 +202,11 @@ export interface ConversationHistorySidebarProps {
    * (when surrounding chrome already provides a search entry point).
    */
   hideSearchAffordance?: boolean;
+  /**
+   * Replace cache-only filtering with cached-first, authoritative server
+   * search. Opt-in because dense/admin consumers have separate search needs.
+   */
+  serverSearch?: boolean;
 
   className?: string;
   /** Extra classes for the built-in search input (dense). */
@@ -217,6 +234,7 @@ function useConversationHistoryController(
     isFavorite,
     onToggleFavorite,
     getConversationHref,
+    serverSearch = false,
   } = props;
   const dispatch = useAppDispatch();
 
@@ -261,8 +279,32 @@ function useConversationHistoryController(
   // stomp whatever the user just picked in the filter tree.
   const resolvedKey = surfaceId ? JSON.stringify(resolvedSource) : "";
 
+  // LANE gate (Chat | Matrx | Auto | Plugins | Subagents): the viewer's one
+  // persisted choice, applied to every filterable surface. Surfaces without a
+  // `surfaceId` (per-agent lists, /code) carry no gate and no toggles.
+  const enabledLanes = useAppSelector(selectConversationLanes);
+  const lanesKey = surfaceId ? enabledLanes.join(",") : "none";
+  const allLanesOff = !!surfaceId && enabledLanes.length === 0;
+  const facetsStatus = useAppSelector(selectSourceFacetsStatus);
+  const facets = useAppSelector(selectSourceFacets);
+  const conversationCount =
+    facetsStatus === "succeeded"
+      ? countConversationSearchCorpus(facets, scope)
+      : null;
+
+  const serverSearchState = useConversationServerSearch({
+    enabled: serverSearch,
+    searchTerm,
+    pageSize,
+    conversationCount,
+    scope,
+  });
+
   useEffect(() => {
     dispatch(setScopeAgentIds({ scopeId, agentIds: agentIds.slice() }));
+    dispatch(
+      setScopeLanes({ scopeId, lanes: surfaceId ? enabledLanes : null }),
+    );
     if (surfaceId) {
       dispatch(
         seedScopeSourceFilter({
@@ -296,6 +338,7 @@ function useConversationHistoryController(
     pageSize,
     excludeKey,
     resolvedKey,
+    lanesKey,
     surfaceId,
   ]);
 
@@ -330,10 +373,12 @@ function useConversationHistoryController(
   const isFavoriteResolved = useCallback(
     (conversationId: string): boolean => {
       if (isFavorite) return isFavorite(conversationId);
-      const item = scope.items.find((i) => i.conversationId === conversationId);
+      const item = [...scope.items, ...serverSearchState.items].find(
+        (i) => i.conversationId === conversationId,
+      );
       return item?.isFavorite ?? false;
     },
-    [isFavorite, scope.items],
+    [isFavorite, scope.items, serverSearchState.items],
   );
 
   const onToggleFavoriteResolved = useCallback(
@@ -370,7 +415,6 @@ function useConversationHistoryController(
   // ── Source provenance in the row menu ─────────────────────────────────────
   // Facets power the "Hide <source>" action when the scope has NO filter
   // (hide = allow-list of every known source minus this one).
-  const facets = useAppSelector(selectSourceFacets);
   useEffect(() => {
     if (surfaceId) void dispatch(fetchSourceFacets(undefined));
   }, [dispatch, surfaceId]);
@@ -477,6 +521,8 @@ function useConversationHistoryController(
     favorites,
     resolveHref,
     getSourceMenuCtx,
+    allLanesOff,
+    serverSearchState,
   };
 }
 
@@ -534,10 +580,15 @@ const DenseView: React.FC<
     favorites,
     resolveHref,
     getSourceMenuCtx,
+    allLanesOff,
   } = ctl;
 
   const empty =
-    status !== "loading" && count === 0 && !searchTerm.trim() && emptyState;
+    !allLanesOff &&
+    status !== "loading" &&
+    count === 0 &&
+    !searchTerm.trim() &&
+    emptyState;
 
   const showControls =
     showSearch || showGroupingToggle || !!headerActions || !!surfaceId;
@@ -546,6 +597,12 @@ const DenseView: React.FC<
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       {headerSlot}
       {topSlot}
+
+      {surfaceId && (
+        <div className="shrink-0 px-2 pt-1.5 pb-1">
+          <ConversationLaneToggles />
+        </div>
+      )}
 
       {showControls && (
         <div className="flex shrink-0 items-center gap-1 border-b border-border px-2 py-1">
@@ -611,6 +668,8 @@ const DenseView: React.FC<
             Loading conversations…
           </div>
         )}
+
+        {allLanesOff && <AllLanesOffNotice />}
 
         {empty && <div className="px-1 py-2">{empty}</div>}
 
@@ -765,6 +824,7 @@ const ConsumerView: React.FC<
   initialSearchOpen = false,
   hideSearchAffordance = false,
   historyLabel = "Filtered Chats",
+  pageSize = 30,
   className,
 }) => {
   const dispatch = useAppDispatch();
@@ -781,7 +841,21 @@ const ConsumerView: React.FC<
     favorites,
     resolveHref,
     getSourceMenuCtx,
+    allLanesOff,
+    serverSearchState,
   } = ctl;
+
+  const searchActive = serverSearchState.isActive;
+  const cachedSearchItems = byDate.flatMap((bucket) => bucket.items);
+  const hasAuthoritativeResults =
+    serverSearchState.isSettled &&
+    (serverSearchState.status === "succeeded" ||
+      serverSearchState.status === "loading-more" ||
+      (serverSearchState.status === "failed" &&
+        serverSearchState.items.length > 0));
+  const searchItems = hasAuthoritativeResults
+    ? serverSearchState.items
+    : cachedSearchItems;
 
   const favoriteIds = useMemo(
     () => new Set(favorites.map((f) => f.conversationId)),
@@ -806,15 +880,26 @@ const ConsumerView: React.FC<
   }, [dispatch, scopeId]);
 
   return (
-    <div className={cn("flex h-full min-h-0 flex-col bg-card", className)}>
+    <div
+      className={cn(
+        "matrx-touch-targets flex h-full min-h-0 flex-col bg-card",
+        className,
+      )}
+    >
       {headerSlot}
 
+      {/* ONE row: the lane toggles ARE the filter statement, so they sit beside
+          the refresh and source-tree controls instead of costing a second row.
+          The label only earns its space when the rail is wide enough for it —
+          on a ~260px chat sidebar it yields to the toggles (a container query,
+          so it answers to THIS rail, never the viewport). */}
       {surfaceId && (
-        <div className="flex shrink-0 items-center justify-between gap-2 px-3 pt-2 pb-1">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+        <div className="@container/histhead flex shrink-0 items-center gap-1.5 px-2 pt-2 pb-1">
+          <span className="hidden shrink-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70 @min-[360px]/histhead:block">
             {historyLabel}
           </span>
-          <div className="flex items-center gap-1">
+          <ConversationLaneToggles className="min-w-0 flex-1" />
+          <div className="flex shrink-0 items-center gap-1">
             {status === "loading" ? (
               <LoadingTapButton
                 variant="group"
@@ -884,24 +969,61 @@ const ConsumerView: React.FC<
       {topSlot}
 
       <div className="min-h-0 flex-1 overflow-y-auto pt-1">
-        {error && (
+        {error && !searchActive && (
           <div className="px-3 py-3 text-xs text-destructive">{error}</div>
         )}
 
-        {status === "loading" && count === 0 && (
+        {status === "loading" && count === 0 && !searchActive && (
           <div className="flex items-center gap-2 px-3 py-3 text-xs text-muted-foreground">
             <Loader2 className="h-3 w-3 animate-spin" />
             Loading conversations…
           </div>
         )}
 
-        {status !== "loading" && count === 0 && !searchTerm.trim() && (
-          <div className="px-3 py-6 text-center text-xs text-muted-foreground">
-            No conversations yet.
-          </div>
+        {allLanesOff ? (
+          <AllLanesOffNotice />
+        ) : (
+          status !== "loading" &&
+          count === 0 &&
+          !searchActive && (
+            <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+              No conversations yet.
+            </div>
+          )
         )}
 
-        {favorites.length > 0 && (
+        {searchActive && !allLanesOff && (
+          <ConversationSearchStatus
+            state={serverSearchState}
+            cachedCount={cachedSearchItems.length}
+            pageSize={pageSize}
+          />
+        )}
+
+        {searchActive && !allLanesOff && searchItems.length > 0 && (
+          <ConsumerSection
+            label={
+              hasAuthoritativeResults
+                ? "Best matches"
+                : "Matches in loaded chats"
+            }
+          >
+            {searchItems.map((conv) => (
+              <ConsumerRow
+                key={conv.conversationId}
+                conv={conv}
+                active={conv.conversationId === activeConversationId}
+                onOpen={onOpenConversation}
+                openInPlace={openInPlace}
+                resolveHref={resolveHref}
+                getSourceMenuCtx={getSourceMenuCtx}
+                onMutationSuccess={serverSearchState.retry}
+              />
+            ))}
+          </ConsumerSection>
+        )}
+
+        {favorites.length > 0 && !searchActive && (
           <PinnedChatsSection
             pinned={favorites}
             activeConversationId={activeConversationId}
@@ -912,29 +1034,30 @@ const ConsumerView: React.FC<
           />
         )}
 
-        {byDate.map((bucket) => {
-          const items = bucket.items.filter(
-            (conv) => !favoriteIds.has(conv.conversationId),
-          );
-          if (items.length === 0) return null;
-          return (
-            <ConsumerSection key={bucket.key} label={bucket.label}>
-              {items.map((conv) => (
-                <ConsumerRow
-                  key={conv.conversationId}
-                  conv={conv}
-                  active={conv.conversationId === activeConversationId}
-                  onOpen={onOpenConversation}
-                  openInPlace={openInPlace}
-                  resolveHref={resolveHref}
-                  getSourceMenuCtx={getSourceMenuCtx}
-                />
-              ))}
-            </ConsumerSection>
-          );
-        })}
+        {!searchActive &&
+          byDate.map((bucket) => {
+            const items = bucket.items.filter(
+              (conv) => !favoriteIds.has(conv.conversationId),
+            );
+            if (items.length === 0) return null;
+            return (
+              <ConsumerSection key={bucket.key} label={bucket.label}>
+                {items.map((conv) => (
+                  <ConsumerRow
+                    key={conv.conversationId}
+                    conv={conv}
+                    active={conv.conversationId === activeConversationId}
+                    onOpen={onOpenConversation}
+                    openInPlace={openInPlace}
+                    resolveHref={resolveHref}
+                    getSourceMenuCtx={getSourceMenuCtx}
+                  />
+                ))}
+              </ConsumerSection>
+            );
+          })}
 
-        {hasMore && (
+        {hasMore && !searchActive && (
           <div className="px-3 py-2">
             <button
               type="button"
@@ -960,6 +1083,93 @@ const ConsumerView: React.FC<
     </div>
   );
 };
+
+type ServerSearchState = ReturnType<typeof useConversationServerSearch>;
+
+function ConversationSearchStatus({
+  state,
+  cachedCount,
+  pageSize,
+}: {
+  state: ServerSearchState;
+  cachedCount: number;
+  pageSize: number;
+}) {
+  const rangeLabel = conversationSearchRangeLabel(state.effectiveRange);
+  const nextLabel = state.nextRange
+    ? conversationSearchRangeLabel(state.nextRange)
+    : null;
+  const remaining = Math.max(0, state.total - state.items.length);
+  const nextCount = Math.min(pageSize, remaining);
+  const firstSearchPending =
+    !state.isSettled || state.status === "loading" || state.status === "idle";
+
+  return (
+    <div
+      className="mx-2 mb-1 rounded-lg border border-border bg-muted/35 px-2.5 py-2 text-xs"
+      aria-live="polite"
+    >
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        {firstSearchPending && <Loader2 className="h-3 w-3 animate-spin" />}
+        <span>
+          {firstSearchPending
+            ? `Searching ${rangeLabel} on the server${
+                cachedCount > 0 ? ` · ${cachedCount} cached first` : ""
+              }`
+            : state.status === "failed"
+              ? state.error
+              : state.total === 0
+                ? `No matches in ${rangeLabel}`
+                : `${state.total} result${state.total === 1 ? "" : "s"} · Searched ${rangeLabel}`}
+        </span>
+      </div>
+
+      {state.isSettled && state.status !== "loading" && (
+        <div className="mt-1.5 flex flex-wrap gap-1">
+          {state.status === "failed" && (
+            <button
+              type="button"
+              onClick={state.retry}
+              className="rounded-md px-2 py-1 font-medium text-foreground hover:bg-accent"
+            >
+              Retry
+            </button>
+          )}
+          {remaining > 0 && (
+            <button
+              type="button"
+              onClick={() => void state.loadMore()}
+              disabled={state.status === "loading-more"}
+              className="rounded-md px-2 py-1 font-medium text-foreground hover:bg-accent disabled:opacity-60"
+            >
+              {state.status === "loading-more"
+                ? "Loading…"
+                : `Show ${nextCount} more`}
+            </button>
+          )}
+          {nextLabel && (
+            <button
+              type="button"
+              onClick={state.expandRange}
+              className="rounded-md px-2 py-1 font-medium text-foreground hover:bg-accent"
+            >
+              Search {nextLabel}
+            </button>
+          )}
+          {!state.effectiveDeep && (
+            <button
+              type="button"
+              onClick={state.enableDeepSearch}
+              className="rounded-md px-2 py-1 font-medium text-foreground hover:bg-accent"
+            >
+              Search message text
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── Dense sub-components ──────────────────────────────────────────────────────
 
@@ -1374,6 +1584,7 @@ const ConsumerRow: React.FC<{
   getSourceMenuCtx?: (
     conv: ConversationListItem,
   ) => ConversationMenuContext["source"];
+  onMutationSuccess?: () => void;
 }> = ({
   conv,
   active,
@@ -1381,6 +1592,7 @@ const ConsumerRow: React.FC<{
   openInPlace = false,
   resolveHref,
   getSourceMenuCtx,
+  onMutationSuccess,
 }) => {
   const dispatch = useAppDispatch();
   const title = conv.title?.trim() || untitled(conv);
@@ -1414,19 +1626,24 @@ const ConsumerRow: React.FC<{
           excludeFromKg: conv.excludeFromKg ?? false,
           href: resolveHref(conv),
           source: getSourceMenuCtx?.(conv),
+          onMutationSuccess,
           dispatch,
         })
       }
       rename={{
         value: conv.title ?? "",
         emptyFallback: untitled(conv),
-        onCommit: (next) =>
-          void dispatch(
+        onCommit: async (next) => {
+          const result = await dispatch(
             renameConversation({
               conversationId: conv.conversationId,
               title: next,
             }),
-          ),
+          );
+          if (renameConversation.fulfilled.match(result)) {
+            onMutationSuccess?.();
+          }
+        },
       }}
       trailing={
         isStreaming ? (

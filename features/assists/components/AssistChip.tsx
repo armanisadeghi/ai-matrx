@@ -32,6 +32,27 @@ import {
 const HOVER_OPEN_MS = 120;
 const HOVER_CLOSE_MS = 250;
 
+/**
+ * 🚨 A MENU INSIDE THIS CARD IS NOT "OUTSIDE" IT.
+ *
+ * The card's snooze ("Later") and mute ("Stop showing") controls are Radix
+ * dropdowns, and Radix PORTALS their content to `document.body` — so the
+ * moment one opened, the pointer and the focus were both outside this popover,
+ * the hover-close timer fired, the popover unmounted, and the menu died with
+ * it. From the person's seat the card simply collapsed: they pressed "Later"
+ * and nothing happened, twice, with no feedback.
+ *
+ * That is the owner's first complaint of 2026-09-18 — *"options to instantly
+ * close, snooze and dismiss forever"* — surviving as a control that exists and
+ * cannot be used, which is worse than one that is absent (law 4). Found by an
+ * independent walk; unit tests cannot see it, because it only exists when two
+ * portals are on screen at once.
+ */
+function aMenuIsOpen(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.querySelector("[data-radix-menu-content]") !== null;
+}
+
 export function AssistChip({
   assist,
   className,
@@ -69,7 +90,13 @@ export function AssistChip({
   }, []);
   const hoverClose = useCallback(() => {
     clearTimer();
-    timer.current = setTimeout(() => setOpen(false), HOVER_CLOSE_MS);
+    timer.current = setTimeout(() => {
+      // The pointer may have left this card only to land in the card's OWN
+      // menu, which lives in another portal. Closing then is how "Later"
+      // became a button that does nothing.
+      if (aMenuIsOpen()) return;
+      setOpen(false);
+    }, HOVER_CLOSE_MS);
   }, []);
   const cancelClose = useCallback(() => clearTimer(), []);
 
@@ -152,6 +179,17 @@ export function AssistChip({
         onMouseLeave={hoverClose}
         // Hover-open must not steal focus from what the user is doing.
         onOpenAutoFocus={(e) => e.preventDefault()}
+        // Same reason as `aMenuIsOpen` above: a click or a focus move into the
+        // card's own portalled menu is not an interaction OUTSIDE the card.
+        onPointerDownOutside={(event) => {
+          if (aMenuIsOpen()) event.preventDefault();
+        }}
+        onFocusOutside={(event) => {
+          if (aMenuIsOpen()) event.preventDefault();
+        }}
+        onInteractOutside={(event) => {
+          if (aMenuIsOpen()) event.preventDefault();
+        }}
         className="w-[26rem] max-w-[calc(100vw-1.5rem)] p-0"
       >
         <AssistCard assist={assist} onClose={() => setOpen(false)} />

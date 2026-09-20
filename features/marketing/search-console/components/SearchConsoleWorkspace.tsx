@@ -26,10 +26,7 @@ import { ScrollFade } from "@/components/ui/scroll-fade";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
-import {
-  formatGscDate,
-  formatGscWindow,
-} from "@/features/marketing/search-console/lib/format";
+import { formatGscWindow } from "@/features/marketing/search-console/lib/format";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
@@ -74,6 +71,7 @@ import { WatchlistTab } from "@/features/marketing/search-console/components/wat
 import { KpiBand } from "@/features/marketing/search-console/components/KpiBand";
 import { PerformanceChart } from "@/features/marketing/search-console/components/PerformanceChart";
 import { RangeCompareControl } from "@/features/marketing/search-console/components/RangeCompareControl";
+import { DataFreshnessLine } from "@/features/marketing/components/shared/DataFreshnessLine";
 import { IngestionHealthBanner } from "@/features/marketing/search-console/components/IngestionHealthBanner";
 import { GscAssistStrip } from "@/features/marketing/search-console/components/GscAssistStrip";
 import { SearchConsolePortfolio } from "@/features/marketing/search-console/components/SearchConsolePortfolio";
@@ -512,12 +510,19 @@ export function SearchConsoleWorkspace() {
                     date-only ISO strings, and the local-tz datetime formatter
                     rendered them a day early with a bogus time of day. */}
                 {formatGscWindow(periods.current)}
-                {dataThrough
-                  ? ` · data through ${formatGscDate(dataThrough)}`
-                  : knownEmpty
-                    ? " · never synced"
-                    : null}
               </span>
+              {/* THE FRESHNESS LINE (google-native PLAN §4.8 / §1 Ahrefs row):
+                  the window alone never said how OLD the numbers are, so a site
+                  whose sync broke three weeks ago read exactly like a healthy
+                  one. ONE component owns the wording and the stale threshold
+                  (`features/marketing/google/freshness.ts`). */}
+              <DataFreshnessLine
+                provider="search_console"
+                dataThrough={dataThrough}
+                pulledAt={site?.gsc_synced_at ?? null}
+                variant="inline"
+                className="hidden min-[1600px]:flex"
+              />
               <RangeCompareControl
                 value={{
                   range: state.range,
@@ -645,14 +650,17 @@ export function SearchConsoleWorkspace() {
                 />
               </div>
             </div>
-            <p className="shrink-0 truncate text-[11px] text-muted-foreground min-[1920px]:hidden">
-              {formatGscWindow(periods.current)}
-              {dataThrough
-                ? ` · data through ${formatGscDate(dataThrough)}`
-                : knownEmpty
-                  ? " · never synced"
-                  : null}
-            </p>
+            <div className="flex shrink-0 flex-col gap-0.5 min-[1600px]:hidden">
+              <p className="truncate text-[11px] text-muted-foreground">
+                {formatGscWindow(periods.current)}
+                {!dataThrough && knownEmpty ? " · never synced" : null}
+              </p>
+              <DataFreshnessLine
+                provider="search_console"
+                dataThrough={dataThrough}
+                pulledAt={site?.gsc_synced_at ?? null}
+              />
+            </div>
             <IngestionHealthBanner
               siteId={state.siteId}
               onSync={() => void runSync()}

@@ -11,7 +11,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
-import { Building2, Handshake, History, User } from "lucide-react";
+import { Building2, Handshake, History, Send, User } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -28,9 +28,13 @@ import {
 } from "@/components/user/UserIdentity";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/datetime";
+import { useOpenGmailComposeWindow } from "@/features/overlays/openers/gmailComposeWindow";
+import { selectActiveProjectId } from "@/features/scopes/redux/selectors/active-context";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { InteractionTimeline } from "../record/InteractionTimeline";
 import { PartyNotes } from "../record/PartyNotes";
 import { SectionCard, SectionEmpty } from "../record/SectionCard";
+import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import { useDealDetail } from "../../deals/useDealDetail";
 import { usePipelines } from "../../deals/usePipelines";
 import { useOrgMembers } from "../../deals/useOrgMembers";
@@ -64,6 +68,10 @@ function RecordSkeleton() {
 export function DealRecordPage({ dealId }: Props) {
   const router = useRouter();
   const { detail, isLoading, error, refresh } = useDealDetail(dealId);
+  const openGmailCompose = useOpenGmailComposeWindow();
+  // The project this work sits in — the third thing a sent message is associated
+  // with, and until F-20 no opener passed it (R2 A5/D7).
+  const activeProjectId = useAppSelector(selectActiveProjectId);
   const { stageById, pipelineById } = usePipelines();
   const deal = detail?.deal ?? null;
   const { memberById } = useOrgMembers(
@@ -148,14 +156,42 @@ export function DealRecordPage({ dealId }: Props) {
         }
         right={
           deal ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => void onDelete()}
-              className="hidden h-7 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive sm:inline-flex"
-            >
-              Delete
-            </Button>
+            <>
+              {/* Emailing the deal's Person is a first-class action here too —
+                  the send is recorded on the Person's timeline AND associated
+                  with this deal. It carries the PARTY's organization (D8). */}
+              {deal.party && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    openGmailCompose({
+                      partyId: deal.party!.id,
+                      organizationId: deal.party!.organization_id,
+                      partyLabel: deal.party!.display_name,
+                      dealId: deal.id,
+                      dealLabel: deal.name,
+                      projectId: activeProjectId ?? null,
+                      onSent: () => {
+                        void refresh();
+                      },
+                    })
+                  }
+                  className="h-7 px-2 text-xs"
+                >
+                  <Send className="mr-1 h-3.5 w-3.5" />
+                  Send email
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void onDelete()}
+                className="hidden h-7 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive sm:inline-flex"
+              >
+                Delete
+              </Button>
+            </>
           ) : undefined
         }
       />
@@ -350,6 +386,13 @@ export function DealRecordPage({ dealId }: Props) {
                   )}
                 </SectionCard>
 
+                {/* REC-34 / SCR-12 — the organization's OWN fields on this
+                    standard entity, from the unified record store. One line,
+                    no per-entity code: the SAME line the contact page carries,
+                    with a different token. Absent (not an empty box) until this
+                    organization declares a field on deals. */}
+                <EntityCustomFields entityToken="crm_deal" recordId={deal.id} />
+
                 <SectionCard
                   title="Stage history"
                   Icon={History}
@@ -394,9 +437,14 @@ export function DealRecordPage({ dealId }: Props) {
                   <InteractionTimeline
                     partyId={deal.party.id}
                     orgId={deal.organization_id}
+                    /* The Gmail-sent row belongs to the PERSON's timeline, so it
+                       carries the PERSON's organization (D8). */
+                    partyOrganizationId={deal.party.organization_id}
                     interactions={detail.interactions}
                     onChanged={refresh}
                     dealId={deal.id}
+                    partyLabel={deal.party.display_name}
+                    dealLabel={deal.name}
                   />
                 ) : (
                   <SectionCard title="Activity" Icon={History}>

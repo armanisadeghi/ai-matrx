@@ -88,6 +88,31 @@ describe("buildSiteVideoAssets", () => {
     });
   });
 
+  it("drops a VideoObject thumbnailUrl that is not shaped like an image file", () => {
+    // datadestruction.com marks its pages up with thumbnailUrl = the page's
+    // OWN url, so the extension guard misses it and the page itself was
+    // listed as a crawled "Embed" video with write actions on it.
+    const assets = buildSiteVideoAssets([
+      row("p1", "/data-destruction-los-angeles", [
+        resource({
+          url: "https://datadestruction.com/data-destruction-los-angeles/",
+          kind: "video",
+          tag: "structured-data",
+          sourceAttribute: "thumbnailUrl",
+          attributes: { schema_types: ["VideoObject"] },
+        }),
+        // The real video on the same VideoObject still comes through.
+        resource({
+          url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+          kind: "video",
+          tag: "structured-data",
+          sourceAttribute: "embedUrl",
+        }),
+      ]),
+    ]);
+    expect(assets.map((asset) => asset.key)).toEqual(["youtube:dQw4w9WgXcQ"]);
+  });
+
   it("orders providers first and most-referenced first within a group", () => {
     const assets = buildSiteVideoAssets([
       row("p1", "/a", [

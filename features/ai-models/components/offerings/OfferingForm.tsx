@@ -85,6 +85,7 @@ export default function OfferingForm({
               .filter((model) => !model.is_deprecated)
               .map((model) => model.id)}
             catalogVariant="admin"
+            selectionPurpose="admin"
             className="h-8 w-full justify-between text-sm"
           />
         </FormField>
@@ -155,7 +156,10 @@ export default function OfferingForm({
             className="h-8 text-sm"
           />
         </FormField>
-        <FormField label="Usage Basis" description="Billing unit override (blank = standard $/1M-token)">
+        <FormField
+          label="Usage Basis"
+          description="Billing unit override (blank = standard $/1M-token)"
+        >
           <Input
             value={data.usage_basis}
             onChange={set("usage_basis")}

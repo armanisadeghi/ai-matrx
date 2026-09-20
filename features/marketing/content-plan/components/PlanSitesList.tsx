@@ -14,7 +14,7 @@
  */
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   Columns3,
   Eye,
@@ -63,7 +63,6 @@ import {
 } from "@/features/marketing/seo/run-console/site-menu";
 import { buildSiteMenu } from "@/features/marketing/components/sites/site-actions";
 import { SiteEditorDialog } from "@/features/marketing/components/sites/SiteEditorDialog";
-import SitePeekWindow from "@/features/marketing/components/sites/SitePeekWindow";
 import {
   keyFieldsAiVariant,
   webCopy,
@@ -72,9 +71,9 @@ import {
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { getSiteListRow } from "@/features/marketing/data/service";
-import { marketingKeys, useDeleteSite } from "@/features/marketing/data/hooks";
-import type { MarketingSite, SiteListRow } from "@/features/marketing/types";
+import { useDeleteSite } from "@/features/marketing/data/hooks";
+import type { MarketingSite } from "@/features/marketing/types";
+import { useOpenSiteQuickViewWindow } from "@/features/overlays/openers/siteQuickViewWindow";
 import { createContentPlanListScope } from "@/features/surfaces/manifests/content-plan-list.manifest";
 import {
   SurfaceRuntimeProvider,
@@ -188,14 +187,13 @@ export function PlanSitesList({
   brandId?: string | null;
 } = {}) {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const deleteMutation = useDeleteSite();
   const { sites, orgSites } = useContentPlanSites();
   const stats = usePlanSiteStats();
+  const openSiteQuickView = useOpenSiteQuickViewWindow();
   const [editing, setEditing] = useState<MarketingSite | null>(null);
   const [deleting, setDeleting] = useState<MarketingSite | null>(null);
   const [deniedDelete, setDeniedDelete] = useState<MarketingSite | null>(null);
-  const [peeking, setPeeking] = useState<SiteListRow | null>(null);
   const [contextRow, setContextRow] = useState<PlanSiteRow | null>(null);
   // `web.site.plan_profile_id` → the profile's vertical. Cross-org read on
   // purpose: this list spans orgs, and an org-scoped read would blank the
@@ -294,20 +292,9 @@ export function PlanSitesList({
 
   const openQuickView = useCallback(
     (site: MarketingSite) => {
-      void queryClient
-        .fetchQuery({
-          queryKey: [...marketingKeys.site(site.id), "list-row"],
-          queryFn: ({ signal }) => getSiteListRow(site.id, signal),
-          staleTime: 60_000,
-        })
-        .then(setPeeking)
-        .catch((error) => {
-          toast.error("Could not open site Quick view", {
-            description: extractErrorMessage(error),
-          });
-        });
+      openSiteQuickView({ siteId: site.id, siteLabel: site.name });
     },
-    [queryClient],
+    [openSiteQuickView],
   );
 
   const confirmDelete = async () => {
@@ -1049,9 +1036,6 @@ export function PlanSitesList({
         </NonEditableContextMenu>
       </SurfaceRuntimeProvider>
 
-      {peeking ? (
-        <SitePeekWindow site={peeking} onClose={() => setPeeking(null)} />
-      ) : null}
       <SiteEditorDialog
         open={Boolean(editing)}
         onOpenChange={(open) => !open && setEditing(null)}

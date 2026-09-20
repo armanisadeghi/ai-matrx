@@ -1080,6 +1080,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Decision */
+        post: operations["create_decision_ai_decisions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/decisions/{execution_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Decision */
+        get: operations["read_decision_ai_decisions__execution_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/agent-assignments": {
         parameters: {
             query?: never;
@@ -1675,6 +1709,22 @@ export interface paths {
          *     states whether the next run will actually get tools (and ``reason`` why not,
          *     e.g. an ec2-tier box or a stopped sandbox) — so the client never silently
          *     fails the way the old direct-Supabase write did.
+         *
+         *     **Binding BEFORE the first turn is the normal case, not an edge one.** The
+         *     real flow is: open ``/chat/new``, pick your box, then talk. So this door
+         *     goes through ``ensure_conversation_for_actor`` — it CREATES the row for the
+         *     id the client minted rather than 404ing on it, exactly as the attachments
+         *     door does. Two things make that safe, and both were built for this ruling
+         *     (2026-09-18, feedback 6fae7a84):
+         *
+         *     * adoption on the first turn no longer clears the binding — it is
+         *       ``matrx_ai.db.conversation_gate._ADOPTION_PRESERVED_USER_CHOICE``, state a
+         *       person chose, not a dead attempt's leftovers; and
+         *     * turn-1 arming reads the persisted binding (``sandbox_autobind`` no longer
+         *       skips the lookup for a new conversation), so the run actually gets the box.
+         *
+         *     Before those, persisting here would have been WIPED in silence, which is
+         *     why this door deliberately kept its 404 until now.
          */
         put: operations["bind_conversation_sandbox_ai_conversation__conversation_id__sandbox_put"];
         post?: never;
@@ -1710,6 +1760,22 @@ export interface paths {
          *     states whether the next run will actually get tools (and ``reason`` why not,
          *     e.g. an ec2-tier box or a stopped sandbox) — so the client never silently
          *     fails the way the old direct-Supabase write did.
+         *
+         *     **Binding BEFORE the first turn is the normal case, not an edge one.** The
+         *     real flow is: open ``/chat/new``, pick your box, then talk. So this door
+         *     goes through ``ensure_conversation_for_actor`` — it CREATES the row for the
+         *     id the client minted rather than 404ing on it, exactly as the attachments
+         *     door does. Two things make that safe, and both were built for this ruling
+         *     (2026-09-18, feedback 6fae7a84):
+         *
+         *     * adoption on the first turn no longer clears the binding — it is
+         *       ``matrx_ai.db.conversation_gate._ADOPTION_PRESERVED_USER_CHOICE``, state a
+         *       person chose, not a dead attempt's leftovers; and
+         *     * turn-1 arming reads the persisted binding (``sandbox_autobind`` no longer
+         *       skips the lookup for a new conversation), so the run actually gets the box.
+         *
+         *     Before those, persisting here would have been WIPED in silence, which is
+         *     why this door deliberately kept its 404 until now.
          */
         put: operations["bind_conversation_sandbox_ai_conversations__conversation_id__sandbox_put"];
         post?: never;
@@ -3756,6 +3822,175 @@ export interface paths {
         patch: operations["proxy_to_local_pc_PATCH"];
         trace?: never;
     };
+    "/egress/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Devices */
+        get: operations["list_devices_GET"];
+        put?: never;
+        /**
+         * Register Device
+         * @description Register THIS computer. The token is returned exactly once, ever.
+         */
+        post: operations["register_device_POST"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/egress/devices/{device_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Device */
+        delete: operations["remove_device_DELETE"];
+        options?: never;
+        head?: never;
+        /** Patch Device */
+        patch: operations["patch_device_PATCH"];
+        trace?: never;
+    };
+    "/egress/pairings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Pairing
+         * @description ANONYMOUS. The helper has no account yet; the code is the whole link.
+         *
+         *     The body is ``{"registration": {...}}`` — the same envelope as
+         *     ``POST /egress/devices`` — because the helper sends exactly one shape for
+         *     both doors (proven 2026-09-18: a flat body here answered the real helper
+         *     with a 422 and no pairing ever started).
+         */
+        post: operations["create_pairing_POST"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/egress/pairings/{pairing_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Poll Pairing
+         * @description ``Bearer <pairing_secret>`` — the helper's own poll, not a user JWT.
+         */
+        get: operations["poll_pairing_GET"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/egress/pairings/by-code/{user_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Describe Pairing */
+        get: operations["describe_pairing_GET"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/egress/pairings/by-code/{user_code}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve Pairing */
+        post: operations["approve_pairing_POST"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/egress/pairings/by-code/{user_code}/deny": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Deny Pairing */
+        post: operations["deny_pairing_POST"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/egress/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mint Ticket */
+        post: operations["mint_ticket_POST"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/egress/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Egress Status */
+        get: operations["egress_status_GET"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/on-sign-in": {
         parameters: {
             query?: never;
@@ -4379,6 +4614,23 @@ export interface paths {
         patch: operations["update_item_vault_items__item_id__patch"];
         trace?: never;
     };
+    "/vault/items/{item_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Item */
+        post: operations["restore_item_vault_items__item_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vault/items/{item_id}/fields": {
         parameters: {
             query?: never;
@@ -4997,6 +5249,125 @@ export interface paths {
         put?: never;
         /** Materialize */
         post: operations["materialize_vault_native_passwords__item_id__materialize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/native/passkeys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create */
+        post: operations["create_vault_native_passkeys_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/native/passkeys/receipts/{mutation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Receipt */
+        get: operations["receipt_vault_native_passkeys_receipts__mutation_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/native/passkeys/matches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Matches */
+        post: operations["matches_vault_native_passkeys_matches_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/native/passkeys/{item_id}/materialize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Materialize */
+        post: operations["materialize_vault_native_passkeys__item_id__materialize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/native/passkeys/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Capabilities */
+        get: operations["capabilities_vault_native_passkeys_capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/items/{item_id}/native-passkey/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enable Native Passkey */
+        post: operations["enable_native_passkey_vault_items__item_id__native_passkey_enable_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/native/identities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Identities */
+        post: operations["identities_vault_native_identities_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6491,6 +6862,26 @@ export interface paths {
          *     remedy alone ("Connect GitHub in AI Matrx…"), which sent a connected user
          *     (2026-09-18) to reconnect an account that was already connected and hid the
          *     only datum that could have identified the real cause.
+         *
+         *     Hand a sandbox the user's short-lived GitHub token.
+         *
+         *     WHAT THE ORGANIZATION DOES AND DOES NOT DO HERE. The bridge handshake
+         *     (``_bridge_user_id``) admits the call only with BOTH halves of the request
+         *     context and installs them, and it PROVES the forwarded user is a member of
+         *     the forwarded organization before admitting anything — that membership
+         *     proof is what bounds the shared bridge secret to a tenant the actor already
+         *     belongs to. The token itself is NOT org-scoped, and saying so would be a
+         *     lie: ``resolve_github_access_token(user_id)`` resolves the person's own
+         *     GitHub connection, by user. A personal integration connection carries NO
+         *     organization at all — ``users.integration_connections`` is constrained to
+         *     ``owner_type='user' AND owner_user_id IS NOT NULL AND organization_id IS
+         *     NULL`` (CHECK ``integration_connections_owner_shape``; see
+         *     ``aidream/services/microsoft_integrations/FEATURE.md``), where that column
+         *     is the owner discriminator, not a tenancy stamp.
+         *
+         *     So: membership is proven at the bridge; the credential handed back is the
+         *     person's own, the same one they would get anywhere else in the product.
+         *     This route resolves no organization of its own.
          */
         get: operations["internal_access_token_github_integrations_internal_access_token_get"];
         put?: never;
@@ -6739,6 +7130,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/storage-sources/browse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Browse Provider Folder
+         * @description Return one bounded page from an actor-owned provider connection.
+         */
+        post: operations["browse_provider_folder_storage_sources_browse_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/storage-sources/import": {
         parameters: {
             query?: never;
@@ -6753,6 +7164,74 @@ export interface paths {
          * @description Import provider bytes into one actor-owned canonical Matrx file.
          */
         post: operations["import_provider_file_storage_sources_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/storage-oauth/{provider}/authorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Authorize Storage */
+        post: operations["authorize_storage_storage_oauth__provider__authorize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/{provider}/oauth/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Storage Callback */
+        get: operations["storage_callback__provider__oauth_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/storage-oauth/{provider}/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh Storage */
+        post: operations["refresh_storage_storage_oauth__provider__refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/storage-oauth/{provider}/disconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disconnect Storage */
+        post: operations["disconnect_storage_storage_oauth__provider__disconnect_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -27507,6 +27986,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a real Supabase Auth session for the given user id.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -30584,8 +31083,9 @@ export interface paths {
          *     does not own resolves to nothing and streams a clean "source_not_found"
          *     result rather than an error or a cross-tenant leak.
          *
-         *     The effective org is resolved (personal-org fallback) before the ingest
-         *     call so the written kg_chunks are always org-scoped (non-NULL invariant).
+         *     The organization is READ off the request context before the ingest call,
+         *     so the written kg_chunks are always org-scoped (non-NULL invariant) and
+         *     always in the tenant the caller was admitted for.
          */
         post: operations["rag_ingest_conversation_rag_conversations__conversation_id__ingest_post"];
         delete?: never;
@@ -37542,27 +38042,36 @@ export interface paths {
         };
         /**
          * List Changes
-         * @description Polling fallback for the in-sandbox watcher's down-direction.
+         * @description THE downstream path for the in-sandbox replica — the whole of it.
          *
-         *     The recommended live path is Supabase Realtime on ``cld_files`` (see
-         *     ``db/migrations/0002_cld_files_realtime.sql``). When Realtime isn't
-         *     available — sandbox missing the realtime client lib, missing Supabase
-         *     creds, or a transient WebSocket drop — the watcher polls this endpoint
-         *     every ~30s with the ISO timestamp of the most recent change it has
-         *     already processed.
+         *     A sandbox never talks to the platform database; the bridge is the one hop,
+         *     and it is what carries the organization. The Supabase-Realtime subscriber
+         *     that used to sit beside the poller was deleted on 2026-09-17, so everything
+         *     a replica must learn has to be in this answer. The box polls with the ISO
+         *     timestamp of the newest change it has already applied and follows the
+         *     cadence this response instructs (``poll_after_seconds`` / ``Retry-After``).
          *
-         *     Returns only **modifications** (rows with ``updated_at > since``,
-         *     ``deleted_at IS NULL``), filtered and bounded server-side via
-         *     ``list_changed_files_async``. Soft-deletes are not surfaced through this
-         *     endpoint — they only show up via Realtime, or are picked up by the next
-         *     session's bulk down-sync.
+         *     Returns every change with ``updated_at > since`` in this tenant, oldest
+         *     first, bounded server-side — **modifications and deletions alike**. A
+         *     soft-deleted row is sent marked ``deleted: true`` (with its ``deleted_at``)
+         *     and ``deletions_supported`` is ``true``: until 2026-09-17 it was ``false``
+         *     and tombstones were filtered out, so a file the person deleted in the UI
+         *     stayed on the sandbox's disk and the shutdown up-sync PUT IT BACK — the
+         *     delete undid itself. Deletions ride the same cursor because
+         *     ``platform._touch_row`` stamps ``updated_at`` on a soft-delete.
+         *
+         *     Contract both halves meet on: matrx-sandbox
+         *     ``sandbox-image/sdk/matrx_agent/cloud_sync/FEATURE.md`` § The ``/changes``
+         *     contract.
          *
          *     Response shape:
          *         {
-         *             "files":       [{ id, file_path, file_size, mime_type,
-         *                               current_version, checksum, updated_at }, ...],
+         *             "files":       [{ id, file_path, file_size, size_bytes, mime_type,
+         *                               current_version, checksum, updated_at,
+         *                               deleted, deleted_at }, ...],
          *             "next_cursor": "<iso of most recent updated_at>",
-         *             "deletions_supported": false
+         *             "deletions_supported": true,
+         *             "poll_after_seconds": 30
          *         }
          */
         get: operations["list_changes_cloud_files_changes_get"];
@@ -37585,6 +38094,26 @@ export interface paths {
         get: operations["integrations_aidream_cloud_files_integrations_aidream_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/local/transport/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify Local Transport
+         * @description Verify a daemon's existing lifecycle grant without changing any state.
+         */
+        post: operations["verify_local_transport_browser_manager_local_transport_verify_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -37646,6 +38175,32 @@ export interface paths {
         put?: never;
         /** Stop Run */
         post: operations["stop_run_browser_manager_runs__run_id__stop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/runs/{run_id}/retry-through-home-computer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry Through Home Computer
+         * @description Move this live run's exit to one of the caller's OWN computers.
+         *
+         *     The automatic switch already runs when a navigate lands on a detectable
+         *     challenge; this is the door for the challenge nobody could detect — a
+         *     person or an agent that can SEE the block says so, and the session is
+         *     checkpointed and reopened through their computer with the same run id.
+         *     Contract: ``common-docs/systems/platform/residential-egress/FEATURE.md``.
+         */
+        post: operations["retry_through_home_computer_browser_manager_runs__run_id__retry_through_home_computer_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -40621,6 +41176,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/storage-oauth/{provider}/authorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Authorize Storage */
+        post: operations["authorize_storage_storage_oauth__provider__authorize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/storage-oauth/{provider}/disconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disconnect Storage */
+        post: operations["disconnect_storage_storage_oauth__provider__disconnect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/storage-oauth/{provider}/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh Storage */
+        post: operations["refresh_storage_storage_oauth__provider__refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/{provider}/oauth/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Storage Callback */
+        get: operations["storage_callback__provider__oauth_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -42358,7 +42981,7 @@ export interface components {
             include_parent?: boolean;
             /**
              * Organization Id
-             * @description Admin-only org override — should match the org used for the search.
+             * @description The organization the search ran in; must match the organization this request was admitted for (a disagreeing value is a 409).
              */
             organization_id?: string | null;
         };
@@ -43707,6 +44330,7 @@ export interface components {
             /** Status */
             status?: string | null;
         };
+        Answer: components["schemas"]["NoulAnswer"] | components["schemas"]["ChoiceAnswer"] | components["schemas"]["ScoreAnswer"];
         /**
          * AnthropicCountTokensResponse
          * @description Typed success wire returned by Anthropic's count-tokens endpoint.
@@ -48723,7 +49347,7 @@ export interface components {
          *     overloading the entry-ledger counters.
          * @enum {string}
          */
-        BridgeAction: "append_native" | "capabilities" | "delete" | "diagnose" | "handoff" | "health" | "list_native" | "load_native" | "observe_hook" | "reproject" | "send";
+        BridgeAction: "append_native" | "capabilities" | "delete" | "delete_native_stream" | "diagnose" | "handoff" | "health" | "list_native" | "load_native" | "observe_hook" | "reproject" | "send";
         /** BridgeCapabilities */
         BridgeCapabilities: {
             /** Native Resume */
@@ -48769,10 +49393,51 @@ export interface components {
             /** Supported Actions */
             supported_actions: components["schemas"]["BridgeAction"][];
         };
+        /**
+         * BridgeChangeEntry
+         * @description A change-feed row: a modification, or a DELETION that says so.
+         *
+         *     Two fields the plain listing has no use for, both named by the contract the
+         *     sandbox implements (matrx-sandbox
+         *     ``sandbox-image/sdk/matrx_agent/cloud_sync/FEATURE.md`` § The ``/changes``
+         *     contract):
+         *
+         *     * ``deleted`` — the marker. ``true`` means this path is gone for this
+         *       person; the replica unlinks it. Stated, never inferred from absence,
+         *       because absence is also what a page limit looks like.
+         *     * ``file_size`` — the contract's name for ``size_bytes``. Both are sent so
+         *       the poller finds the name it reads and nothing loses the one it had.
+         */
+        BridgeChangeEntry: {
+            /** Id */
+            id?: string | null;
+            /** File Path */
+            file_path?: string | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
+            /** Mime Type */
+            mime_type?: string | null;
+            /**
+             * Current Version
+             * @default 1
+             */
+            current_version?: number;
+            updated_at?: components["schemas"]["JsonValue"] | null;
+            /** Checksum */
+            checksum?: string | null;
+            /**
+             * Deleted
+             * @default false
+             */
+            deleted?: boolean;
+            deleted_at?: components["schemas"]["JsonValue"] | null;
+            /** File Size */
+            file_size?: number | null;
+        };
         /** BridgeChangesResponse */
         BridgeChangesResponse: {
             /** Files */
-            files: components["schemas"]["BridgeFileEntry"][];
+            files: components["schemas"]["BridgeChangeEntry"][];
             /** Next Cursor */
             next_cursor: string;
             /**
@@ -49121,6 +49786,42 @@ export interface components {
          */
         BridgeOrigin: "independent_hook" | "matrx_local" | "matrx_sandbox";
         /**
+         * BridgePinDivergence
+         * @description The provider's star and the AI Matrx favorite disagreed — say so.
+         *
+         *     A coding session's pin exists on both sides: the provider's own star (what a
+         *     ``SessionMetadata`` observation reports, mirrored into the binding's
+         *     ``provider_pinned`` metadata) and the AI Matrx favorite
+         *     (``platform.user_entity_state.is_favorite``, the row every star in the app
+         *     reads and writes). They are TWO facts, and until 2026-09-18 the server
+         *     compared the provider's own echo against itself — so a divergence looked
+         *     like agreement and could never heal.
+         *
+         *     Which side wins a conflict is an ORG KNOB (``effective_setting`` key
+         *     ``coding_session_provider_pin_wins``, default: the provider wins, because
+         *     the coding agent is where the pin is made — Arman, 2026-09-18). Whatever the
+         *     knob says, the disagreement is REPORTED: it is never silently dropped, and
+         *     the identity list carries both values so a screen can show it.
+         */
+        BridgePinDivergence: {
+            /**
+             * Schema Version
+             * @default 1
+             */
+            schema_version?: number;
+            /** Provider Pinned */
+            provider_pinned: boolean;
+            /** Ai Matrx Is Favorite */
+            ai_matrx_is_favorite?: boolean | null;
+            /**
+             * Authority
+             * @enum {string}
+             */
+            authority: "ai_matrx" | "provider";
+            /** Mirrored */
+            mirrored: boolean;
+        };
+        /**
          * BridgeProjectionErrorGroup
          * @description One ``projection_error`` shape, and how many entries carry it.
          */
@@ -49141,6 +49842,8 @@ export interface components {
             normalized_message_id?: string | null;
             /** Normalized Tool Call Id */
             normalized_tool_call_id?: string | null;
+            /** Subagent Conversation Id */
+            subagent_conversation_id?: string | null;
             /** Error Code */
             error_code?: string | null;
             /** Detail */
@@ -49290,6 +49993,11 @@ export interface components {
              * @default false
              */
             deleted?: boolean;
+            /** Stream Keys */
+            stream_keys?: string[] | null;
+            /** Deleted Entries */
+            deleted_entries?: number | null;
+            pin_divergence?: components["schemas"]["BridgePinDivergence"] | null;
             /** Hookspecificoutput */
             hookSpecificOutput?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -53644,6 +54352,35 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** ChoiceAnswer */
+        ChoiceAnswer: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "choice";
+            /** Choice */
+            choice: string;
+            /** Probabilities */
+            probabilities: {
+                [key: string]: number;
+            };
+            /** Confidence */
+            confidence: number;
+        };
+        /** ChoiceQuestion */
+        ChoiceQuestion: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "choice";
+            instructions: components["schemas"]["SystemOneEntry"];
+            /** Criteria */
+            criteria: {
+                [key: string]: components["schemas"]["SystemOneEntry"];
+            };
+        };
         /** ChunkDetail */
         ChunkDetail: {
             /** Chunk Id */
@@ -54041,6 +54778,10 @@ export interface components {
             workspace_root?: string;
             /** Session Id */
             session_id?: string | null;
+            /** Hosted Runtime Id */
+            hosted_runtime_id?: string | null;
+            /** Hosted Project Key */
+            hosted_project_key?: string | null;
             /** Fork Up To Message Id */
             fork_up_to_message_id?: string | null;
             /** Model */
@@ -56252,6 +56993,8 @@ export interface components {
             claude_pinned_rank?: number | null;
             /** Claude Category */
             claude_category?: string | null;
+            /** Ai Matrx Is Favorite */
+            ai_matrx_is_favorite?: boolean | null;
         };
         /** CodingSessionIdentityList */
         CodingSessionIdentityList: {
@@ -56430,6 +57173,45 @@ export interface components {
             /** Total */
             total: number;
         };
+        /**
+         * CommandEgress
+         * @description How this command reached the internet — announced, never hidden.
+         *
+         *     🚨 CONTROL-PLANE authored (S2 v1.1, additive 2026-09-18). The worker never
+         *     sets it: only the Browser Manager knows that a blocked page was retried
+         *     through the person's own computer. It rides the command reply because that
+         *     is where the agent and the panel read the answer, and rule 5 of
+         *     ``common-docs/systems/platform/residential-egress/FEATURE.md`` says a page
+         *     fetched through a person's computer always says so.
+         */
+        CommandEgress: {
+            /**
+             * Kind
+             * @default residential
+             * @constant
+             */
+            kind?: "residential";
+            /** Device Name */
+            device_name: string;
+            /** Device Id */
+            device_id?: string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /**
+         * CommandEgressUnavailable
+         * @description Why the blocked page could NOT be retried through a person's computer.
+         *
+         *     Also control-plane authored. Never a dead end: the reason is one of the
+         *     contract's (`no_computer`, `offline`, `paused`, `org_forbids`, `feature_off`,
+         *     `no_acting_user`, `unavailable`) and the message is the remedy in words.
+         */
+        CommandEgressUnavailable: {
+            /** Reason */
+            reason: string;
+            /** Message */
+            message: string;
+        };
         /** CommandResponse */
         CommandResponse: {
             /** Ok */
@@ -56488,6 +57270,8 @@ export interface components {
             page_inventory_revision?: number;
             human_required?: components["schemas"]["HumanRequiredSignal"] | null;
             event_facts?: components["schemas"]["ActionEventFacts"] | null;
+            egress?: components["schemas"]["CommandEgress"] | null;
+            egress_unavailable?: components["schemas"]["CommandEgressUnavailable"] | null;
         };
         /** CommentReplyRow */
         CommentReplyRow: {
@@ -59416,7 +60200,7 @@ export interface components {
             owner_user_id?: string | null;
             /**
              * Owner Organization Id
-             * @description Optional org placement for an owned agent. Ignored unless owner_user_id is set; when omitted it resolves to the owner's personal org via resolve_effective_organization_id. Never NULL on the written row.
+             * @description Org placement for an owned agent. Ignored unless owner_user_id is set; REQUIRED when it is — the organization the caller was admitted for (context_organization_id(ctx)) or the one on the record being processed. Never NULL on the written row, never defaulted.
              */
             owner_organization_id?: string | null;
         };
@@ -60398,6 +61182,11 @@ export interface components {
              * @description matrx_connect ORIGIN_CLASSES + 'unknown' (DB backfill for pre-provenance rows). Valid filter values for origin_class.
              */
             origin_classes?: string[];
+            /**
+             * Outside Source Apps
+             * @description source_apps holding outside (non-AI Matrx) data — today only 'code-plugin'. CX Explorer hides them unless the viewer turns them on.
+             */
+            outside_source_apps?: string[];
         };
         /** CxExplorerFacetEntry */
         CxExplorerFacetEntry: {
@@ -61252,6 +62041,71 @@ export interface components {
             pages?: string | null;
             /** Record Page */
             record_page: string;
+        };
+        /** DecisionResultPayload */
+        DecisionResultPayload: {
+            /**
+             * Type
+             * @default decision_result
+             * @constant
+             */
+            type?: "decision_result";
+            /** Execution Id */
+            execution_id: string;
+            /** Request Id */
+            request_id: string;
+            /** Provider Request Id */
+            provider_request_id?: string | null;
+            /** Model */
+            model: string;
+            /** Answers */
+            answers: {
+                [key: string]: components["schemas"]["Answer"];
+            };
+            usage: components["schemas"]["DecisionUsage"];
+            /** Cost Usd */
+            cost_usd: number;
+            /** Offering Id */
+            offering_id: string;
+            /** Route */
+            route: string;
+        };
+        /**
+         * DecisionRunRequest
+         * @description HTTP/service input; native runner validates the provider discriminated body.
+         */
+        DecisionRunRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Model */
+            model: string;
+            /** Offering Id */
+            offering_id?: string | null;
+            state: components["schemas"]["SystemOneState"];
+            /** Questions */
+            questions: {
+                [key: string]: components["schemas"]["Question"];
+            };
+        };
+        /** DecisionUsage */
+        DecisionUsage: {
+            /** Input Tokens */
+            input_tokens: number;
+            /** Output Tokens */
+            output_tokens: number;
         };
         /** DeclarePanelBody */
         DeclarePanelBody: {
@@ -62385,6 +63239,58 @@ export interface components {
             access?: "public_no_auth";
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
+        };
+        /**
+         * DeviceRegistration
+         * @description The helper's self-description. The desktop engine sends the same shape.
+         */
+        DeviceRegistration: {
+            /** Instance Id */
+            instance_id: string;
+            /** Instance Name */
+            instance_name: string;
+            /** Platform */
+            platform?: string | null;
+            /** Os Version */
+            os_version?: string | null;
+            /** Hostname */
+            hostname?: string | null;
+            /** Hardware Uuid */
+            hardware_uuid?: string | null;
+            /** Helper Version */
+            helper_version?: string | null;
+            /**
+             * Client Kind
+             * @default helper
+             */
+            client_kind?: string;
         };
         /**
          * DevtoServiceStatus
@@ -64306,6 +65212,10 @@ export interface components {
             schema?: string | null;
             /** Schema Source */
             schema_source?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Organization Source */
+            organization_source?: string | null;
         };
         /**
          * DripSendReport
@@ -84851,6 +85761,16 @@ export interface components {
             ice: components["schemas"]["IceBlock"];
             viewport: components["schemas"]["ViewportBlock"];
         };
+        /** MintTicketRequest */
+        MintTicketRequest: {
+            /** Device Id */
+            device_id?: string | null;
+            /**
+             * Purpose
+             * @default scrape
+             */
+            purpose?: string;
+        };
         /**
          * MintTokenRequest
          * @description Body of ``POST /broker/tokens``.
@@ -86018,6 +86938,31 @@ export interface components {
         NativeErrorOut: {
             detail: components["schemas"]["NativeErrorDetail"];
         };
+        /** NativeIdentitiesOut */
+        NativeIdentitiesOut: {
+            /** Snapshot Id */
+            snapshot_id: string;
+            /** Identities */
+            identities: (components["schemas"]["NativePasswordIdentityOut"] | components["schemas"]["NativePasskeyIdentityOut"])[];
+            /** Next After */
+            next_after?: string | null;
+            /** Complete */
+            complete: boolean;
+            /** Unsupported Count */
+            unsupported_count: number;
+        };
+        /** NativeIdentityErrorDetail */
+        NativeIdentityErrorDetail: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "invalid_request" | "inventory_changed" | "inventory_limit" | "native_session_required" | "native_unavailable" | "organization_required" | "request_too_large";
+        };
+        /** NativeIdentityErrorOut */
+        NativeIdentityErrorOut: {
+            detail: components["schemas"]["NativeIdentityErrorDetail"];
+        };
         /** NativeMatchOut */
         NativeMatchOut: {
             /**
@@ -86058,6 +87003,111 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** NativePasskeyCapabilitiesOut */
+        NativePasskeyCapabilitiesOut: {
+            /**
+             * Protocol Version
+             * @constant
+             */
+            protocol_version: 1;
+            /** Activation Revision */
+            activation_revision: number;
+            /** Max Source Bytes */
+            max_source_bytes: number;
+            /** Max Credential Ids */
+            max_credential_ids: number;
+            /** Max Request Body Bytes */
+            max_request_body_bytes: number;
+            /** Algorithms */
+            algorithms: -7[];
+        };
+        /** NativePasskeyIdentityOut */
+        NativePasskeyIdentityOut: {
+            /**
+             * Kind
+             * @constant
+             */
+            kind: "passkey";
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /**
+             * Passkey Id
+             * Format: uuid
+             */
+            passkey_id: string;
+            /** Rp Id */
+            rp_id: string;
+            /** Credential Id */
+            credential_id: string;
+            /** User Handle */
+            user_handle: string;
+            /** User */
+            user: string;
+        };
+        /** NativePasskeyMatchOut */
+        NativePasskeyMatchOut: {
+            /** Item Id */
+            item_id: string;
+            /** Passkey Id */
+            passkey_id: string;
+            /** Credential Id */
+            credential_id: string;
+            /** User Handle */
+            user_handle: string;
+            /** Username */
+            username: string | null;
+            /** Display Name */
+            display_name: string | null;
+        };
+        /** NativePasskeyMatchesOut */
+        NativePasskeyMatchesOut: {
+            /** Matches */
+            matches: components["schemas"]["NativePasskeyMatchOut"][];
+            /** Truncated */
+            truncated: boolean;
+        };
+        /** NativePasskeyMaterializeOut */
+        NativePasskeyMaterializeOut: {
+            /** Source */
+            source: string;
+        };
+        /** NativePasskeyReceiptOut */
+        NativePasskeyReceiptOut: {
+            /** Mutation Id */
+            mutation_id: string;
+            /** Item Id */
+            item_id: string;
+            /** Field Id */
+            field_id: string;
+            /** Passkey Id */
+            passkey_id: string;
+            /** Source Sha256 */
+            source_sha256: string;
+            /**
+             * Status
+             * @constant
+             */
+            status: "saved_waiting_for_site";
+        };
+        /** NativePasswordIdentityOut */
+        NativePasswordIdentityOut: {
+            /**
+             * Kind
+             * @constant
+             */
+            kind: "password";
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            service: components["schemas"]["NativeUrlService"];
+            /** User */
+            user: string;
+        };
         /** NativeServiceIdentifierIn */
         NativeServiceIdentifierIn: {
             /**
@@ -86065,6 +87115,16 @@ export interface components {
              * @enum {string}
              */
             type: "domain" | "url";
+            /** Identifier */
+            identifier: string;
+        };
+        /** NativeUrlService */
+        NativeUrlService: {
+            /**
+             * Type
+             * @constant
+             */
+            type: "url";
             /** Identifier */
             identifier: string;
         };
@@ -87137,6 +88197,29 @@ export interface components {
             release_url: string;
             /** Published At */
             published_at: string;
+        };
+        /** NoulAnswer */
+        NoulAnswer: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "noul";
+            /** Noul */
+            noul: number;
+        };
+        /** NoulQuestion */
+        NoulQuestion: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "noul";
+            instructions: components["schemas"]["SystemOneEntry"];
+            /** Criteria */
+            criteria?: {
+                [key: string]: components["schemas"]["SystemOneEntry"];
+            } | null;
         };
         /**
          * NounDirectives
@@ -95755,7 +96838,12 @@ export interface components {
         };
         /**
          * ProfileView
-         * @description The safe profile facts a caller receives after creating one.
+         * @description The safe profile facts a caller receives after creating one — and the
+         *     same shape a LISTING returns, so "the browser you just made" and "the
+         *     browsers you have" are never two different vocabularies.
+         *
+         *     ``last_started_at`` / ``checkpoint_status`` / ``live`` are the recognisers:
+         *     on a freshly created profile they are honestly None / "none" / False.
          */
         ProfileView: {
             /** Profile Id */
@@ -95773,6 +96861,18 @@ export interface components {
             organization_id: string;
             /** Status */
             status: string;
+            /** Last Started At */
+            last_started_at?: string | null;
+            /**
+             * Checkpoint Status
+             * @default none
+             */
+            checkpoint_status?: string;
+            /**
+             * Live
+             * @default false
+             */
+            live?: boolean;
         };
         /** ProjectInputPart */
         ProjectInputPart: {
@@ -97548,6 +98648,7 @@ export interface components {
          * @enum {string}
          */
         QueryVariant: "advanced_operator" | "hot_off_press" | "keyword" | "listicle" | "resource_page";
+        Question: components["schemas"]["NoulQuestion"] | components["schemas"]["ChoiceQuestion"] | components["schemas"]["ScoreQuestion"];
         /** QueueRefreshResult */
         QueueRefreshResult: {
             /**
@@ -99258,6 +100359,10 @@ export interface components {
              * @default []
              */
             notes?: string[];
+        };
+        /** RegisterDeviceRequest */
+        RegisterDeviceRequest: {
+            registration: components["schemas"]["DeviceRegistration"];
         };
         /** RegisterSelectedFileRequest */
         RegisterSelectedFileRequest: {
@@ -101406,6 +102511,20 @@ export interface components {
         RetrySubmitRequest: {
             /** Queue Item Id */
             queue_item_id: string;
+        };
+        /**
+         * RetryThroughHomeComputerResponse
+         * @description What happened when a run was moved onto the person's own computer.
+         */
+        RetryThroughHomeComputerResponse: {
+            /** Run Id */
+            run_id: string;
+            /** State */
+            state: string;
+            /** Device Name */
+            device_name: string;
+            /** Note */
+            note: string;
         };
         /**
          * RevertRequest
@@ -103909,6 +105028,37 @@ export interface components {
             /** Task Id */
             task_id?: string | null;
         };
+        /** ScoreAnswer */
+        ScoreAnswer: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "score";
+            /** Score */
+            score: number;
+            /** Probabilities */
+            probabilities: {
+                [key: string]: number;
+            };
+            /** Confidence */
+            confidence: number;
+            /** Legend */
+            legend: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
+        /** ScoreQuestion */
+        ScoreQuestion: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "score";
+            instructions: components["schemas"]["SystemOneEntry"];
+            /** Criteria */
+            criteria: components["schemas"]["SystemOneEntry"][];
+        };
         /**
          * ScoreSourcesRequest
          * @description Trigger the config-driven PRE-READ scoring over a topic's sources.
@@ -104694,6 +105844,10 @@ export interface components {
             max_duration_seconds?: number | null;
             /** Q */
             q?: string | null;
+            /** Action Key */
+            action_key?: string | null;
+            /** Action Status */
+            action_status?: ("failed" | "ready" | "running" | "skipped")[] | null;
         };
         /**
          * SemanticScholarPaperResult
@@ -109853,6 +111007,12 @@ export interface components {
             activation_key: string;
             /** Runtime Execution Id */
             runtime_execution_id?: string | null;
+            /**
+             * Egress
+             * @default auto
+             * @enum {string}
+             */
+            egress?: "always" | "auto" | "never";
         };
         /** StartRunResponse */
         StartRunResponse: {
@@ -110163,6 +111323,97 @@ export interface components {
             /** State */
             state: string;
         };
+        /** StorageAuthorizationResponse */
+        StorageAuthorizationResponse: {
+            /** Authorization Url */
+            authorization_url: string;
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "box" | "dropbox";
+            /** Requested Scopes */
+            requested_scopes: string[];
+            /**
+             * Auth Mode
+             * @constant
+             */
+            auth_mode: "confidential_authorization_code";
+            /**
+             * Pkce
+             * @constant
+             */
+            pkce: "unsupported_not_used";
+        };
+        /**
+         * StorageBrowseItem
+         * @description Safe provider identity for one visible file or folder.
+         */
+        StorageBrowseItem: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "file" | "folder";
+            /** Item Ref */
+            item_ref: string;
+            /** Name */
+            name: string;
+            /** Mime Type */
+            mime_type?: string | null;
+            /** Size */
+            size?: number | null;
+            /** Revision */
+            revision?: string | null;
+            /** Modified At */
+            modified_at?: string | null;
+        };
+        /**
+         * StorageBrowsePage
+         * @description One nonrecursive provider page with an opaque continuation.
+         */
+        StorageBrowsePage: {
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "box" | "dropbox" | "onedrive";
+            /** Connection Id */
+            connection_id: string;
+            /** Folder Ref */
+            folder_ref: string | null;
+            /** Items */
+            items: components["schemas"]["StorageBrowseItem"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /**
+         * StorageBrowseRequest
+         * @description One bounded provider-folder page under the authenticated actor.
+         */
+        StorageBrowseRequest: {
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "box" | "dropbox" | "onedrive";
+            /** Connection Id */
+            connection_id: string;
+            /** Folder Ref */
+            folder_ref?: string | null;
+            /**
+             * Page Size
+             * @default 50
+             */
+            page_size?: number;
+            /** Cursor */
+            cursor?: string | null;
+        };
+        /** StorageConnectionRequest */
+        StorageConnectionRequest: {
+            /** Connection Id */
+            connection_id: string;
+        };
         /**
          * StorageImportResult
          * @description Safe result of importing a provider item into canonical Matrx Files.
@@ -110180,6 +111431,26 @@ export interface components {
             created: boolean;
             source: components["schemas"]["ExternalSourceMetadata"];
         };
+        /** StorageLifecycleResponse */
+        StorageLifecycleResponse: {
+            /** Connection Id */
+            connection_id: string;
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "box" | "dropbox";
+            /** Status */
+            status: string;
+            /** Requested Scopes */
+            requested_scopes: string[];
+            /** Granted Scopes */
+            granted_scopes: string[];
+            /** Scope Evidence */
+            scope_evidence: string;
+            /** Provider Revoked */
+            provider_revoked?: boolean | null;
+        };
         /**
          * StorageSourceImportRequest
          * @description Safe caller-supplied portion of an exact-item canonical import.
@@ -110189,7 +111460,7 @@ export interface components {
              * Provider
              * @enum {string}
              */
-            provider: "google_drive" | "onedrive";
+            provider: "box" | "dropbox" | "google_drive" | "onedrive";
             /** Connection Id */
             connection_id: string;
             /** Source Ref */
@@ -111994,6 +113265,12 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        SystemOneEntry: string | {
+            [key: string]: components["schemas"]["JsonValue"];
+        } | components["schemas"]["JsonValue"][] | null;
+        SystemOneState: string | {
+            [key: string]: components["schemas"]["JsonValue"];
+        } | components["schemas"]["JsonValue"][];
         /** SystemTaskItem */
         SystemTaskItem: {
             /** Id */
@@ -114595,6 +115872,16 @@ export interface components {
              */
             declared_in_code?: boolean;
             /**
+             * Exists In Db
+             * @default true
+             */
+            exists_in_db?: boolean;
+            /**
+             * Is Owned
+             * @default false
+             */
+            is_owned?: boolean;
+            /**
              * Drift Count
              * @default 0
              */
@@ -115470,6 +116757,27 @@ export interface components {
             type: "input_transcript_session";
             /** Transcript Session Ids */
             transcript_session_ids: string[];
+        };
+        /**
+         * TranscriptionChapter
+         * @description One chapter the SOURCE container declared, on the transcript's clock.
+         *
+         *     An audiobook, a podcast episode with markers, a recorded lecture exported
+         *     with sections: the container carries the author's own division of the
+         *     material, and it is the only structure a transcript has. Without it a
+         *     nine-hour book is one undifferentiated wall of words and a rule cites
+         *     "at 4:41:02" instead of "Chapter 7". ``index`` is 1-based, in the order
+         *     the container declared them.
+         */
+        TranscriptionChapter: {
+            /** Index */
+            index: number;
+            /** Title */
+            title?: string | null;
+            /** Start */
+            start: number;
+            /** End */
+            end?: number | null;
         };
         /** TranscriptionFileRequest */
         TranscriptionFileRequest: {
@@ -116993,6 +118301,13 @@ export interface components {
              */
             task_id?: string | null;
         };
+        /** UpdateDeviceRequest */
+        UpdateDeviceRequest: {
+            /** Enabled */
+            enabled?: boolean | null;
+            /** Display Name */
+            display_name?: string | null;
+        };
         /** UpdateMessageResponse */
         UpdateMessageResponse: {
             /** Updated */
@@ -118112,16 +119427,16 @@ export interface components {
         };
         /** ValidationError */
         ValidationError: {
+            /** Context */
+            ctx?: Record<string, never>;
+            /** Input */
+            input?: unknown;
             /** Location */
             loc: (string | number)[];
             /** Message */
             msg: string;
             /** Error Type */
             type: string;
-            /** Input */
-            input?: unknown;
-            /** Context */
-            ctx?: Record<string, never>;
         };
         /**
          * ValidationIssue
@@ -119125,6 +120440,47 @@ export interface components {
             /** Items */
             items: components["schemas"]["VaultLoginCsvPreviewItem"][];
         };
+        /**
+         * VaultNativePasskeyEnableRequest
+         * @description Bind the explicit reenablement request to one recorded deletion.
+         */
+        VaultNativePasskeyEnableRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Deletion Id
+             * Format: uuid
+             */
+            deletion_id: string;
+        };
+        /** VaultNativePasskeyEnableResponse */
+        VaultNativePasskeyEnableResponse: {
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /**
+             * Enabled
+             * @constant
+             */
+            enabled: true;
+            /** Already Enabled */
+            already_enabled: boolean;
+        };
         /** VaultResolveRef */
         VaultResolveRef: {
             /** Item Id */
@@ -119166,6 +120522,46 @@ export interface components {
             values: {
                 [key: string]: string;
             };
+        };
+        /** VaultRestoreRequest */
+        VaultRestoreRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Deletion Id
+             * Format: uuid
+             */
+            deletion_id: string;
+        };
+        /** VaultRestoreResponse */
+        VaultRestoreResponse: {
+            item: components["schemas"]["VaultItemOut"];
+            /** Restored Fields */
+            restored_fields: number;
+            /** Restored Attachments */
+            restored_attachments: number;
+            /** Restored Native Passkeys */
+            restored_native_passkeys: number;
+            /** Already Restored */
+            already_restored: boolean;
+            /**
+             * Notice
+             * @constant
+             */
+            notice: "sharing_and_automatic_use_off";
         };
         /** VaultRevealRequest */
         VaultRevealRequest: {
@@ -123379,6 +124775,8 @@ export interface components {
             duration?: number | null;
             /** Segments */
             segments?: components["schemas"]["TranscriptionSegment"][];
+            /** Chapters */
+            chapters?: components["schemas"]["TranscriptionChapter"][];
             meta: components["schemas"]["TranscriptionMeta"];
         };
         /** TypeResult */
@@ -125666,6 +127064,53 @@ export interface components {
             /** Text Preview */
             text_preview?: string | null;
         };
+        /** StorageAuthorizationResponse */
+        StorageAuthorizationResponse: {
+            /**
+             * Auth Mode
+             * @constant
+             */
+            auth_mode: "confidential_authorization_code";
+            /** Authorization Url */
+            authorization_url: string;
+            /**
+             * Pkce
+             * @constant
+             */
+            pkce: "unsupported_not_used";
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "box" | "dropbox";
+            /** Requested Scopes */
+            requested_scopes: string[];
+        };
+        /** StorageConnectionRequest */
+        StorageConnectionRequest: {
+            /** Connection Id */
+            connection_id: string;
+        };
+        /** StorageLifecycleResponse */
+        StorageLifecycleResponse: {
+            /** Connection Id */
+            connection_id: string;
+            /** Granted Scopes */
+            granted_scopes: string[];
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "box" | "dropbox";
+            /** Provider Revoked */
+            provider_revoked?: boolean | null;
+            /** Requested Scopes */
+            requested_scopes: string[];
+            /** Scope Evidence */
+            scope_evidence: string;
+            /** Status */
+            status: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -127199,6 +128644,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InvalidateAgentCacheResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_decision_ai_decisions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_decision_ai_decisions__execution_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                execution_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionResultPayload"];
                 };
             };
             /** @description Validation Error */
@@ -131879,6 +133388,357 @@ export interface operations {
             };
         };
     };
+    list_devices_GET: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    register_device_POST: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterDeviceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_device_DELETE: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                device_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_device_PATCH: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                device_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDeviceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_pairing_POST: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterDeviceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    poll_pairing_GET: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pairing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    describe_pairing_GET: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_pairing_POST: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deny_pairing_POST: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mint_ticket_POST: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MintTicketRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    egress_status_GET: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     on_sign_in_auth_on_sign_in_post: {
         parameters: {
             query?: never;
@@ -133040,6 +134900,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VaultItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_item_vault_items__item_id__restore_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultRestoreRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultRestoreResponse"];
                 };
             };
             /** @description Validation Error */
@@ -134397,6 +136294,314 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+        };
+    };
+    create_vault_native_passkeys_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Mutation Id */
+                    mutation_id: string;
+                    /** Source */
+                    source: string;
+                    /** Label */
+                    label: string;
+                    /**
+                     * Principal Type
+                     * @enum {string}
+                     */
+                    principal_type: "organization" | "user";
+                    /** Excluded Credential Ids */
+                    excluded_credential_ids?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativePasskeyReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    receipt_vault_native_passkeys_receipts__mutation_id__get: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                mutation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativePasskeyReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    matches_vault_native_passkeys_matches_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Rp Id */
+                    rp_id: string;
+                    /** Allowed Credential Ids */
+                    allowed_credential_ids?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativePasskeyMatchesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    materialize_vault_native_passkeys__item_id__materialize_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Rp Id */
+                    rp_id: string;
+                    /** Allowed Credential Ids */
+                    allowed_credential_ids?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativePasskeyMaterializeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    capabilities_vault_native_passkeys_capabilities_get: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativePasskeyCapabilitiesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enable_native_passkey_vault_items__item_id__native_passkey_enable_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultNativePasskeyEnableRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultNativePasskeyEnableResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    identities_vault_native_identities_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeIdentitiesOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeIdentityErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeIdentityErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeIdentityErrorOut"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeIdentityErrorOut"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeIdentityErrorOut"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeIdentityErrorOut"];
                 };
             };
         };
@@ -137160,6 +139365,39 @@ export interface operations {
             };
         };
     };
+    browse_provider_folder_storage_sources_browse_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageBrowseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageBrowsePage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     import_provider_file_storage_sources_import_post: {
         parameters: {
             query?: never;
@@ -137180,6 +139418,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StorageImportResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    authorize_storage_storage_oauth__provider__authorize_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "box" | "dropbox";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageAuthorizationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    storage_callback__provider__oauth_callback_get: {
+        parameters: {
+            query: {
+                state: string;
+                code?: string | null;
+                error?: string | null;
+            };
+            header?: never;
+            path: {
+                provider: "box" | "dropbox";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            307: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_storage_storage_oauth__provider__refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "box" | "dropbox";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageLifecycleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disconnect_storage_storage_oauth__provider__disconnect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "box" | "dropbox";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageLifecycleResponse"];
                 };
             };
             /** @description Validation Error */
@@ -166622,6 +168994,8 @@ export interface operations {
                 user_id?: string | null;
                 /** @description Max entries per facet axis */
                 facet_limit?: number;
+                /** @description Hide conversations from these source_apps (repeatable; NULL-safe). The CX Explorer sends 'code-plugin' by default: outside coding-tool data. */
+                exclude_source_app?: string[] | null;
             };
             header?: never;
             path?: never;
@@ -166665,6 +169039,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -180506,6 +182915,8 @@ export interface operations {
                 min_duration_seconds?: number | null;
                 max_duration_seconds?: number | null;
                 q?: string | null;
+                action_key?: string | null;
+                action_status?: string | null;
                 order?: ("duration_seconds" | "published_at" | "title" | "view_count") | null;
                 direction?: "asc" | "desc";
             };
@@ -184354,6 +186765,26 @@ export interface operations {
             };
         };
     };
+    verify_local_transport_browser_manager_local_transport_verify_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     create_profile_browser_manager_profiles_post: {
         parameters: {
             query?: never;
@@ -184438,6 +186869,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StopRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_through_home_computer_browser_manager_runs__run_id__retry_through_home_computer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetryThroughHomeComputerResponse"];
                 };
             };
             /** @description Validation Error */
@@ -186011,6 +188473,8 @@ export interface operations {
                 since?: string | null;
                 /** @description Only rows with failed_at < this instant (ISO-8601). */
                 until?: string | null;
+                /** @description JSON-encoded dashboard filters for table_target, op_type, error_text, user_id, and request_id. */
+                column_filters?: string | null;
                 limit?: number;
                 offset?: number;
             };
@@ -186235,6 +188699,8 @@ export interface operations {
                 since?: string | null;
                 /** @description Only rows with occurred_at < this instant (ISO-8601). */
                 until?: string | null;
+                /** @description JSON-encoded dashboard filters for kind, route, error_text, user_id, and request_id. */
+                column_filters?: string | null;
                 limit?: number;
                 offset?: number;
             };
@@ -189603,6 +192069,140 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    authorize_storage_storage_oauth__provider__authorize_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "box" | "dropbox";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageAuthorizationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disconnect_storage_storage_oauth__provider__disconnect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "box" | "dropbox";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageLifecycleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_storage_storage_oauth__provider__refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "box" | "dropbox";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageLifecycleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    storage_callback__provider__oauth_callback_get: {
+        parameters: {
+            query: {
+                state: string;
+                code?: string | null;
+                error?: string | null;
+            };
+            header?: never;
+            path: {
+                provider: "box" | "dropbox";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            307: {
                 headers: {
                     [name: string]: unknown;
                 };

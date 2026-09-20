@@ -13,8 +13,8 @@
 //     exact move list recorded, so Unmerge replays it perfectly.
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   ArrowLeft,
   Building2,
@@ -229,12 +229,12 @@ export function DuplicateReviewPage() {
                       <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                     )}
                     {m.loser ? (
-                      <Link
-                        href={`/crm/${m.loser.id}`}
-                        className="font-medium text-foreground hover:underline"
-                      >
-                        {m.loser.display_name}
-                      </Link>
+                      <EntityRef
+                        token="party"
+                        id={m.loser.id}
+                        name={m.loser.display_name}
+                        labelClassName="font-medium text-foreground"
+                      />
                     ) : (
                       <span className="text-muted-foreground">
                         Removed record
@@ -242,12 +242,12 @@ export function DuplicateReviewPage() {
                     )}
                     <ArrowLeft className="h-3 w-3 rotate-180 text-muted-foreground" />
                     {m.winner ? (
-                      <Link
-                        href={`/crm/${m.winner.id}`}
-                        className="font-medium text-foreground hover:underline"
-                      >
-                        {m.winner.display_name}
-                      </Link>
+                      <EntityRef
+                        token="party"
+                        id={m.winner.id}
+                        name={m.winner.display_name}
+                        labelClassName="font-medium text-foreground"
+                      />
                     ) : (
                       <span className="text-muted-foreground">
                         Removed record

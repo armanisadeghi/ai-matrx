@@ -47,6 +47,7 @@ import {
     selectLibraryLive,
 } from "../redux/sourceLibrarySlice";
 import type { VideoRow } from "../types";
+import { sourceVocabulary } from "../vocabulary";
 import { JobPanel } from "./JobPanel";
 import { LibraryMetricsHeader } from "./LibraryMetricsHeader";
 import { SourceDetailPanel } from "./SourceDetailPanel";
@@ -59,6 +60,13 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
     const organizationId = useAppSelector(selectOrganizationId);
 
     const [loadError, setLoadError] = useState<string | null>(null);
+    // D5: true whenever the most recent Library-ROW read (mount or the
+    // still-syncing poll below) failed. This is NOT the same signal as
+    // `loadError` staying non-null forever — a later poll can succeed and
+    // clear it — but it is what `LibraryMetricsHeader` needs to tell "this
+    // Library really has never synced" from "we do not currently know",
+    // which `last_synced_at` alone cannot say.
+    const [rowUnavailable, setRowUnavailable] = useState(false);
     const [metricsError, setMetricsError] = useState<string | null>(null);
     const [metricsProblems, setMetricsProblems] = useState<string[]>([]);
     const [openVideo, setOpenVideo] = useState<VideoRow | null>(null);
@@ -135,6 +143,49 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
         setListGeneration((n) => n + 1);
     });
 
+    // 🚨 THE ONE ROW READ, SHARED (D5, jobs-bar cold-walk-12, 2026-09-19). Both
+    // the mount read below and the "still syncing" poll further down used to
+    // read the Library row with two different bodies of error handling — the
+    // mount read set `loadError` on failure, the poll's `catch` swallowed
+    // EVERYTHING with a comment claiming "a genuine read failure is already
+    // surfaced by the mount read's own `loadError`", which is only true of the
+    // read that comment is attached to. A CORS-blocked (or otherwise failed)
+    // POLL read left `loadError` null and the LAST KNOWN `library` row exactly
+    // as it was — including a `last_synced_at` that was never populated
+    // because `syncEvent`'s "completed" case never wrote one either. The
+    // freshness banner (`SyncStrip`, `LibraryMetricsHeader.tsx`) has no idea a
+    // read ever failed, reads `last_synced_at` on its own, and — with the field
+    // genuinely absent — printed "This Library has never been brought up to
+    // date." directly under a metrics block computed moments earlier: a failed
+    // read rendered as an empty answer, the exact class law 4 forbids. Both
+    // reads now share this one function, and BOTH failures are recorded, so
+    // `LibraryMetricsHeader` can tell "nothing has ever synced" from "we could
+    // not check" and never claim the former when it only knows the latter.
+    const loadLibraryRow = useCallback(async () => {
+        try {
+            const row = await getLibrary(dispatch, libraryId);
+            dispatch(libraryLoaded(row));
+            setLoadError(null);
+            setRowUnavailable(false);
+            return row;
+        } catch (error) {
+            if (isOrganizationNotReady(error)) return null;
+            // A 404 with no sentence of its own means the endpoint is not
+            // on this server build — not that the Library is missing. The
+            // platform's generic "the server has nothing at that address"
+            // is true but tells a person nothing they can act on.
+            setLoadError(
+                error instanceof MediaApiError
+                    ? error.status === 404 && !error.hasServerSentence
+                        ? "This server does not answer at the Libraries address yet, so this Library cannot be read. It arrives with the Media Source Catalog server release; nothing you did caused this."
+                        : error.message
+                    : "This Library could not be read from the server.",
+            );
+            setRowUnavailable(true);
+            return null;
+        }
+    }, [dispatch, libraryId]);
+
     // Mount reads — the Library row and its metrics, before anything streams.
     useEffect(() => {
         let cancelled = false;
@@ -142,32 +193,14 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
         // this effect already re-runs the moment one lands.
         if (!organizationId) return;
         void (async () => {
-            try {
-                const row = await getLibrary(dispatch, libraryId);
-                if (cancelled) return;
-                dispatch(libraryLoaded(row));
-                setLoadError(null);
-            } catch (error) {
-                if (cancelled) return;
-                if (isOrganizationNotReady(error)) return;
-                // A 404 with no sentence of its own means the endpoint is not
-                // on this server build — not that the Library is missing. The
-                // platform's generic "the server has nothing at that address"
-                // is true but tells a person nothing they can act on.
-                setLoadError(
-                    error instanceof MediaApiError
-                        ? error.status === 404 && !error.hasServerSentence
-                            ? "This server does not answer at the Libraries address yet, so this Library cannot be read. It arrives with the Media Source Catalog server release; nothing you did caused this."
-                            : error.message
-                        : "This Library could not be read from the server.",
-                );
-            }
+            if (cancelled) return;
+            await loadLibraryRow();
         })();
         void refreshMetrics();
         return () => {
             cancelled = true;
         };
-    }, [dispatch, libraryId, organizationId, refreshMetrics]);
+    }, [dispatch, libraryId, organizationId, refreshMetrics, loadLibraryRow]);
 
     // 🚨 THE JOB-DISCOVERY MOUNT READ — the server is the door back to a job,
     // and this page had never opened it.
@@ -222,6 +255,57 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
         };
     }, [dispatch, libraryId, organizationId]);
 
+    // 🚨 THE SEAM: THIS TAB'S SYNC SLICE VS. THE SERVER'S LIBRARY ROW. The mount
+    // effect above reads the Library row exactly ONCE. When that one read lands
+    // mid-run — `sync_status: "syncing"`, started in another tab or an earlier
+    // session this one never streamed — nothing here ever asked again, so the
+    // banner in `LibraryMetricsHeader` could only ever clear if the PERSON
+    // manually reloaded the whole page and happened to catch the row after the
+    // server had actually flipped it. kottke.org (2026-09-19) reloaded four
+    // times over two-plus minutes and never caught it. So while this tab is
+    // NOT the one running the sync (`sync.sync.phase === "idle"` — a run this
+    // tab itself started is already live via the stream and needs no polling)
+    // and the last-known row says "syncing", this re-asks the one door that
+    // can ever change that answer, on its own, until it does.
+    useEffect(() => {
+        if (!organizationId) return;
+        if (live?.library?.sync_status !== "syncing") return;
+        if (sync.sync.phase !== "idle") return;
+        let cancelled = false;
+        const intervalId = window.setInterval(() => {
+            void (async () => {
+                // D5: this used to swallow every failure with a comment
+                // claiming the mount read's `loadError` already covers it —
+                // true of THAT read, never of one that fails later, here. A
+                // CORS-blocked (or any other) poll failure now goes through
+                // the SAME recorder the mount read uses, so `loadError` and
+                // `rowUnavailable` are honest about the read that actually
+                // failed, and the freshness banner can say "we could not
+                // check" instead of quietly repeating whatever `library` last
+                // held — which, for a Library never read successfully before
+                // this poll started, is nothing at all.
+                const row = await loadLibraryRow();
+                if (cancelled || row === null) return;
+                if (row.sync_status !== "syncing") {
+                    void refreshMetrics();
+                    setListGeneration((n) => n + 1);
+                }
+            })();
+        }, 5000);
+        return () => {
+            cancelled = true;
+            window.clearInterval(intervalId);
+        };
+    }, [
+        dispatch,
+        libraryId,
+        organizationId,
+        live?.library?.sync_status,
+        sync.sync.phase,
+        refreshMetrics,
+        loadLibraryRow,
+    ]);
+
     // `?sync=1` (fresh from the paste box) and `?resync=1` (bring up to date)
     // both start the one enumeration door, once, then leave the address clean.
     useEffect(() => {
@@ -244,7 +328,20 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
         [],
     );
 
-    const runner = useActionRunner(libraryId, registry.actions, onJobStarted);
+    const library = live?.library ?? null;
+    // D6b (jobs-bar cold-walk-12): this Library's own words, so a confirm
+    // dialog, a job's name and a job panel never say "video(s)" over a
+    // podcast episode or a blog post.
+    const vocabulary = useMemo(() => sourceVocabulary(library), [library]);
+
+    const runner = useActionRunner(libraryId, registry.actions, onJobStarted, vocabulary);
+
+    // D6 (jobs-bar cold-walk-12): a sync that just reported rows for THIS
+    // Library and a table that still says "nothing catalogued" is the exact
+    // defect — the banner and the table read two different sources, and
+    // nothing told the table to look again. `sync.listed` is the same number
+    // `LibraryMetricsHeader`'s "Up to date — N Sources listed" banner prints.
+    const syncReportsRows = live?.sync.listed != null && live.sync.listed > 0;
 
     const config = useMemo(
         () =>
@@ -254,14 +351,39 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                 organizationId,
                 bulkActions: runner.bulkActions,
                 onOpenRow: setOpenVideo,
+                // §4.3 — the Action labels come from the SERVER'S registry, the
+                // same one the Action bar is built from. Before it answers, a
+                // Source's outcome shows the Action's key: ugly and true.
+                actionLabels: Object.fromEntries(
+                    registry.actions.map((action) => [action.key, action.label]),
+                ),
+                // The way back from "this one failed" to the run that says why.
+                // `onJobStarted` is exactly the right door: it puts the job's own
+                // panel on this page, which is where a person already reads one.
+                onOpenJob: onJobStarted,
+                library,
+                // D6: THE actual re-read. `listGeneration` used to only build a
+                // new `config` object, which does nothing on its own — the shell
+                // re-asks a service when `serviceKey` changes (see
+                // `lib/entity-list/useEntityList.ts`), and that string never
+                // named `listGeneration`. Folding it in here is what makes
+                // `library.sync.completed` (via `useLibrarySync`'s `onSettled`)
+                // actually trigger a fresh `GET …/videos`.
+                refreshToken: listGeneration,
+                syncReportsRows,
             }),
-        // `listGeneration` forces a fresh service identity after a sync lands
-        // rows, so the list re-asks instead of showing what it held before.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [dispatch, libraryId, organizationId, runner.bulkActions, listGeneration],
+        [
+            dispatch,
+            libraryId,
+            organizationId,
+            runner.bulkActions,
+            listGeneration,
+            registry.actions,
+            onJobStarted,
+            library,
+            syncReportsRows,
+        ],
     );
-
-    const library = live?.library ?? null;
 
     return (
         <>
@@ -311,6 +433,8 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                             elapsedMs={sync.elapsedMs}
                             onBringUpToDate={() => void sync.start("full")}
                             bringUpToDateDisabled={sync.isRunning}
+                            rowUnavailable={rowUnavailable}
+                            onRetryRow={() => void loadLibraryRow()}
                         />
 
                         {registry.error && (
@@ -372,6 +496,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                             <JobPanel
                                 key={jobId}
                                 jobId={jobId}
+                                vocabulary={vocabulary}
                                 onDismiss={() =>
                                     setJobIds((current) =>
                                         current.filter((id) => id !== jobId),
@@ -412,6 +537,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                         <SourceDetailPanel
                             video={openVideo}
                             onClose={() => setOpenVideo(null)}
+                            vocabulary={vocabulary}
                         />
                     ) : null}
                 </DialogContent>

@@ -1,0 +1,96 @@
+-- chair-step: the inverse of a lane REACH file. It DELETEs declaration rows from platform.client_callable_door, which the additive allow-list refuses by name, and deleting them is what CLOSES the doors this campaign opened - the app loses those verbs again. Nothing here restores a function body; the campaign file's own `-- based-on:` hashes are the identity of the bodies it replaced, and the note below says so.
+-- The inverse of migrations/campaign/reach_the_client_doors_of_the_store.sql (lane REACH, 2026-09-19).
+--
+-- TWO HALVES, and only the second is a statement.
+--
+-- 1. THE BODIES. That file replaced the function bodies below. `CREATE OR REPLACE` has
+--    no undo of its own, so the inverse of a body change is THE BODY IT WAS BASED ON,
+--    and the campaign file names each of those by sha256 in its own `-- based-on:`
+--    header. To revert one, take the definition whose body hashes to the value beside
+--    its signature here and re-apply it through the runner:
+--
+--   custom.agg_explain(uuid, uuid, jsonb, jsonb, jsonb, jsonb, text)
+--     was sha256 5284403ef6b3fda2031ec2fb2c20ed0615756b843f19b98c3431390d3187d68b
+--   custom.doc_render_document(uuid, uuid, uuid)
+--     was sha256 99cfc06a6eb67cdecc12aced51ff2c78c96310e22ad1cb565d8e64c780ee29ac
+--   custom.doc_sign(uuid, uuid, text, text, uuid)
+--     was sha256 af68fa421a232460883e48a7471ed6b3996f49e0bb4f31f0f7f19f7305307d4d
+--   custom.doc_template_save(uuid, uuid, text, text, uuid)
+--     was sha256 254f2ce97cfdde800e4037e02fc62aaa53a344738b467bb3bd53d8b2ff6b5092
+--   custom.home_add(uuid, uuid, uuid)
+--     was sha256 242f992f429bef399e1ce3785988dd69ad7d87568ff8a1141442fb425bb1a470
+--   custom.io_export(uuid, uuid, text[], integer, text)
+--     was sha256 02f6cc91486ce3431335c274f76e436aaa6bc189c9302e5f65e2b791b94ef9fe
+--   custom.io_export_csv(uuid, uuid, text[], integer, text, text)
+--     was sha256 2c8a97d99576d5a15a7bc7682030337f97f65a6c73a3e24bc724fee425b1935b
+--   custom.io_import_open(uuid, uuid, text, text, jsonb)
+--     was sha256 c70b334c4433283b5c6e26cd5d5ea71fcadf52ef2fd6a1bad228c07f942d7d18
+--   custom.io_import_rows(uuid, uuid, jsonb, jsonb)
+--     was sha256 7e335fbd72ad4cdec59cf2929b1c6eb16746e980368502f7fd58abbb8a82d1fa
+--   custom.io_proposal_accept(uuid, uuid, text, text, text)
+--     was sha256 04f2c20d737857d5dd9b8de2f25cdd1c5cdcef77deb633a2847b9787556eb928
+--   custom.io_proposal_reject(uuid, uuid, text)
+--     was sha256 46620d06af8f94f81e8d3f880e5f0223c0af9bb3649cff5213070ecab9b23329
+--   custom.migrate_delete(uuid, uuid, text)
+--     was sha256 8807dcffcb2504a0c64406a7faa5ab58dca4ccf8233a398e8e1e06b945c5c5f2
+--   custom.migrate_demote(uuid, uuid, text)
+--     was sha256 032ba421c3e8cf1bbecad9386a71c5417faeb3c21d797dbc8015ee6accd096aa
+--   custom.migrate_extract_parent(uuid, uuid, uuid, text[], text)
+--     was sha256 08f868d1a8f9bed2d9f3fbfd9ce87875ac26d83681f78d98b786534206dff969
+--   custom.migrate_merge(uuid, uuid, uuid, text)
+--     was sha256 d627f4e4ae9da1aae39256f0bdd6d834da877d207476a14edc0611ddb79676dd
+--   custom.migrate_promote(uuid, uuid, text)
+--     was sha256 6aa79752ac8919d91c6b876664ef9c3dd8a5ed78df2306e2b1829a021572f877
+--   custom.migrate_rename(uuid, uuid, text, text)
+--     was sha256 eef76bb16001adc6bd7ec154c22b8facdac61eb0a5edda209905bc47d6d61eb8
+--   custom.migrate_reparent(uuid, uuid, uuid, text)
+--     was sha256 df65cc9d949ed3328bc7cda74644dc0a80ab4f46023c82eb4ccf1b4e54000d55
+--   custom.migrate_retype(uuid, uuid, text, text)
+--     was sha256 91c17bba65010f238ea0dc236abe96a86d1cb6d0bdc9005582ed3e03c794e262
+--   custom.migrate_split(uuid, uuid, text[], text)
+--     was sha256 0806f5749af6a4efbb61aac25ff5107ea279f7d74735144c5872607cff2d5c8b
+--   custom.query_across_homes(uuid, uuid, integer, integer, text)
+--     was sha256 4e451d13b446c96af956ca8b77d2e038ab77b4bf6caabdf8faf95524ceac3d41
+--   custom.query_by_coordinates(uuid, uuid, jsonb, integer, integer, text)
+--     was sha256 6840d8d4ad375bd45d74b5a6f2fb84fd35f1d8ccbdfe853d8ff2e47d412bd22a
+--   custom.query_can_see(uuid, uuid, text)
+--     was sha256 d0e29ba1c6720be29c69b77ff7813d5894aba69e8dd1805bdf3e5586ef319077
+--   custom.query_record_as_of(uuid, uuid, timestamp with time zone, date, text)
+--     was sha256 07f3312222b698074af3a777119a6ad01455974a7fd258ec55aace66dce4d80d
+--   custom.query_relation_edges(uuid, text, text)
+--     was sha256 67591bdc98aa69427be667b6d1890b8e452f55df9d95c9ac6302c19df402f541
+--   custom.query_rollup(uuid, uuid[], text, text, integer, text)
+--     was sha256 1781ca2f5c215876789a80b3a52fc36494b6be735f39267e232f8f6be2ae23c1
+--   custom.query_rollup_sum(uuid, uuid[], text, text, text, integer, text)
+--     was sha256 8a7552cea35daf344ba09aab273eb424782bce18cc897432a35c4a4009782976
+--   custom.query_table_as_of(uuid, uuid, timestamp with time zone, date, integer, integer, text)
+--     was sha256 e39f716f2bcb822c483ec1a0e483f46337559b55a215cdb37176a780575ae48c
+--   custom.query_table_homes(uuid, uuid)
+--     was sha256 54a7e057daf5be6589f86ebd87360dea24aa839f268fe5ef4c778d31dcc25591
+--   custom.record_aggregate(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text)
+--     was sha256 5ad0b62974e68eec00620fae912d83b73cd188ce32aa6916ee1944a182c517f9
+--   custom.record_reparent(uuid, uuid, uuid)
+--     was sha256 6085749ad4a6cde9c0926329f14fd336f4b5826754d358f48a074dc408148a94
+--   custom.record_values_versioned(uuid, uuid)
+--     was sha256 6c54f5e5c1dbdd3aee134955796069bca316cb84bd951855776c5e490a36dc03
+--   custom.relation_own(uuid, uuid, uuid)
+--     was sha256 2d902bca6b0965e2478bfa37f819f9c8a1fdfeba219e9fcd591265cd37e5b776
+--   custom.relation_targets(uuid, uuid, text)
+--     was sha256 f8c9ff17d8e58f797510983abfe6569df09041a61e2db28c7d4061e4acd803a2
+--   custom.tables_at_home(uuid, uuid[])
+--     was sha256 f0f2012208f6450b635a7606fa831b65a2b73a7c4c1166503bde2cb4cebca600
+--
+--    There is no second copy of those bodies in this repository. The hash is the
+--    identity; the git history of the campaign directory is where the text is.
+--
+-- 2. THE DOORS. This is the half that runs, and it is what actually closes the reach:
+--    the declaration comes out, and the DDL guard takes the EXECUTE grant with it on
+--    the next DDL that touches each function. A door with no row is a door with no
+--    grant, which is the whole point of the mechanism.
+
+set lock_timeout = '5s';
+
+delete from platform.client_callable_door
+ where schema_name = 'custom'
+   and declared_by like 'migrations/campaign/reach_the_client_doors_of_the_store.sql%'
+   and function_name in ('agg_explain', 'doc_render_document', 'doc_sign', 'doc_template_save', 'home_add', 'io_export', 'io_export_csv', 'io_import_open', 'io_import_rows', 'io_proposal_accept', 'io_proposal_reject', 'migrate_delete', 'migrate_demote', 'migrate_extract_parent', 'migrate_merge', 'migrate_promote', 'migrate_rename', 'migrate_reparent', 'migrate_retype', 'migrate_split', 'query_across_homes', 'query_by_coordinates', 'query_can_see', 'query_record_as_of', 'query_relation_edges', 'query_rollup', 'query_rollup_sum', 'query_table_as_of', 'query_table_homes', 'record_aggregate', 'record_reparent', 'record_values_versioned', 'relation_own', 'relation_targets', 'tables_at_home');

@@ -1,5 +1,8 @@
 "use client";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import {
+  storedMandateKey,
+  type AnyMandateKey,
+} from "@/features/mandates/mandate-key";
 
 /**
  * THE APP HOLDER ROUTER — the one place this repo answers "which agent does
@@ -91,7 +94,7 @@ export interface AppHolder {
   configOverrides: Partial<FeLlmParams> | null;
   /** The job behind the app, for doors and notes. Null on the pinned path. */
   mandateId: string | null;
-  mandateKey: string | null;
+  mandateKey: AnyMandateKey | null;
   /**
    * WHICH RUNG DECIDED, for the provenance pill — the server verdict's own five
    * values (`ResolvedMandate["provenance"]`), never a client re-labelling.
@@ -136,13 +139,50 @@ function guestHolder(app: AppHolderSource): AppHolder {
     useLatest: app.mandate_agent_version_id == null,
     configOverrides: null,
     mandateId: app.mandate_id ?? null,
-    mandateKey: app.mandate_key ?? null,
+    mandateKey: app.mandate_key ? storedMandateKey(app.mandate_key) : null,
     provenance: agentId ? "system" : null,
     loading: false,
     error: agentId
       ? null
       : `app "${app.mandate_key ?? app.mandate_id ?? "?"}" has no resolvable Holder — ` +
         "the mandate is missing, disabled, or held by something that cannot run yet",
+  };
+}
+
+/**
+ * Display + warm identity from a server verdict. Launch still goes through
+ * `mandateKey` (the mandate door honours the pin). This must never invent
+ * "floating" — that leftover assumed `resolveMandate` refused pins.
+ */
+export function holderIdentityFromResolved(
+  resolved: Pick<
+    ResolvedMandate,
+    | "agentId"
+    | "isVersion"
+    | "versionId"
+    | "configOverrides"
+    | "mandateId"
+    | "mandateKey"
+    | "provenance"
+  >,
+): Pick<
+  AppHolder,
+  | "agentId"
+  | "agentVersionId"
+  | "useLatest"
+  | "configOverrides"
+  | "mandateId"
+  | "mandateKey"
+  | "provenance"
+> {
+  return {
+    agentId: resolved.agentId,
+    agentVersionId: resolved.isVersion ? resolved.versionId : null,
+    useLatest: !resolved.isVersion,
+    configOverrides: resolved.configOverrides,
+    mandateId: resolved.mandateId,
+    mandateKey: resolved.mandateKey,
+    provenance: resolved.provenance,
   };
 }
 
@@ -213,7 +253,7 @@ export function useAppHolder(
         useLatest: true,
         configOverrides: null,
         mandateId: app.mandate_id ?? null,
-        mandateKey: app.mandate_key,
+        mandateKey: storedMandateKey(app.mandate_key),
         provenance: null,
         loading: true,
         error: null,
@@ -226,7 +266,7 @@ export function useAppHolder(
         useLatest: true,
         configOverrides: null,
         mandateId: app.mandate_id ?? null,
-        mandateKey: app.mandate_key,
+        mandateKey: storedMandateKey(app.mandate_key),
         provenance: null,
         loading: false,
         error: mandateState.error ?? `mandate "${app.mandate_key}" did not resolve`,
@@ -234,16 +274,7 @@ export function useAppHolder(
     }
     const resolved = mandateState.mandate;
     return {
-      agentId: resolved.agentId,
-      // The client run path has no version channel — a client-resolved
-      // mandate is FLOATING by construction (resolveMandate refuses a pinned
-      // one outright), so this is the truth, not a default.
-      agentVersionId: null,
-      useLatest: true,
-      configOverrides: resolved.configOverrides,
-      mandateId: resolved.mandateId,
-      mandateKey: resolved.mandateKey,
-      provenance: resolved.provenance,
+      ...holderIdentityFromResolved(resolved),
       loading: false,
       error: null,
     };

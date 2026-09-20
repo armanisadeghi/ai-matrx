@@ -154,6 +154,10 @@ const FE_SYNTHESIZED_TYPES = [
   "collection_result",
   "file_operation_result",
   "value_result",
+  // The two Google tool-result routes: one union kind per tool, one component
+  // each, reached through that kind's kind_component row.
+  "google_workspace_result",
+  "google_marketing_result",
 ];
 
 describe("block-dispatch registry", () => {

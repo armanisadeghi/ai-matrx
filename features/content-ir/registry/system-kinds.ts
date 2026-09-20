@@ -59,6 +59,7 @@ import { MERMAID_DIAGRAM_KIND_DEFINITION } from "../kinds/mermaid-diagram";
 import { SCRAPER_PAGE_KIND_DEFINITIONS } from "../kinds/scraper-page";
 import { TASK_LIST_KIND_DEFINITIONS } from "../kinds/task-list";
 import { MAP_TOPIC_PROPOSAL_KIND_DEFINITIONS } from "../kinds/map-topic-proposal";
+import { LIST_CHANGE_PROPOSAL_KIND_DEFINITIONS } from "../kinds/list-change-proposal";
 import { RESOURCE_COLLECTION_KIND_DEFINITIONS } from "../kinds/resource-collection";
 import { PROGRESS_TRACKER_KIND_DEFINITIONS } from "../kinds/progress-tracker";
 import { TIMELINE_KIND_DEFINITIONS } from "../kinds/timeline";
@@ -76,6 +77,7 @@ import { PAGE_BRIEF_KIND_DEFINITIONS } from "../kinds/page-brief";
 import { EPISODE_TITLE_OPTIONS_KIND_DEFINITIONS } from "../kinds/episode-title-options";
 import { MEDIA_CHAPTERS_KIND_DEFINITIONS } from "../kinds/media-chapters";
 import { MASTERWORK_CHECKUP_KIND_DEFINITIONS } from "../kinds/masterwork-checkup-finding";
+import { MASTERWORK_RESULT_KIND_DEFINITIONS } from "../kinds/masterwork-result";
 import { MASTERWORK_RULE_DRAFT_KIND_DEFINITIONS } from "../kinds/masterwork-rule-draft";
 import { SERIAL_OBSERVATION_TIMELINE_KIND_DEFINITIONS } from "../kinds/serial-observation-timeline";
 import { MASTERWORK_UNFOLDING_KIND_DEFINITIONS } from "../kinds/masterwork-unfolding";
@@ -119,6 +121,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // Topical map: the tree the map author proposes (Lane G, R12). One compiled
   // component, `MapTopicProposalBlock`, over the shared `TopicTree`.
   ...MAP_TOPIC_PROPOSAL_KIND_DEFINITIONS,
+  ...LIST_CHANGE_PROPOSAL_KIND_DEFINITIONS,
   ...RESOURCE_COLLECTION_KIND_DEFINITIONS,
   ...PROGRESS_TRACKER_KIND_DEFINITIONS,
   ...TIMELINE_KIND_DEFINITIONS,
@@ -139,6 +142,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // THE VALUE CONTRACT for the Rulebook surface's `rule_draft` write target.
   // Schema-only (no bridge, no compiled block): its component is a
   // `source='db'` card. See kinds/masterwork-rule-draft.ts.
+  ...MASTERWORK_RESULT_KIND_DEFINITIONS,
   ...MASTERWORK_RULE_DRAFT_KIND_DEFINITIONS,
   ...SERIAL_OBSERVATION_TIMELINE_KIND_DEFINITIONS,
   // The UNFOLDING-CASE kinds — the case oracle's growing ledger and the

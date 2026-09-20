@@ -19,6 +19,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
+  Info,
   Loader2,
   MousePointerClick,
   Plug,
@@ -33,6 +34,8 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { DataFreshnessLine } from "@/features/marketing/components/shared/DataFreshnessLine";
+import { GscBindingRefusalLine } from "@/features/marketing/components/shared/GscBindingRefusalLine";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
 import { listSites } from "@/features/marketing/data/service";
@@ -41,6 +44,11 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { formatGscDate } from "@/features/marketing/search-console/lib/format";
+import {
+  gscDeltaRefusalLabel,
+  siteKpiDelta,
+  type GscWindowDelta,
+} from "@/features/marketing/analytics/gsc-delta";
 import {
   gscDayDiff,
   gscToday,
@@ -75,20 +83,38 @@ interface SiteClicksTrend {
   days: string[];
 }
 
-function trendPercent(cur: number | null, prev: number | null): number | null {
-  if (cur === null || prev === null || prev === 0) return null;
-  return ((cur - prev) / prev) * 100;
-}
-
-/** Bordered up/down delta pill — icon + number, never color alone. */
+/**
+ * Bordered up/down delta pill — icon + number, never color alone, and the
+ * REFUSAL in words when the two windows were not collected alike.
+ *
+ * This file used to carry its own `trendPercent` plus its own inline
+ * `site.gsc_prev_days >= 21`: the third copy of one rule, judging the previous
+ * window only. Live on 2026-09-17 that printed −54.3% … −72.6% for five sites
+ * holding 8 of 28 current days against 23 of 28 previous ones (round-3 verdict
+ * B-N1). The judge is `analytics/gsc-delta.ts` for every surface now.
+ */
 function TrendPill({
-  percent,
+  delta,
   compact = false,
 }: {
-  percent: number | null;
+  delta: GscWindowDelta;
   compact?: boolean;
 }) {
-  if (percent === null) return null;
+  if (delta.percent === null) {
+    return (
+      <span
+        className={cn(
+          "inline-flex shrink-0 items-center gap-0.5 rounded-full border border-border bg-muted font-medium text-muted-foreground",
+          compact ? "px-1 py-0 text-[10px]" : "px-1.5 py-0.5 text-[11px]",
+        )}
+        title={delta.caveat ?? "The two windows were not collected alike."}
+      >
+        <Info className={compact ? "h-2.5 w-2.5" : "h-3 w-3"} aria-hidden />
+        {gscDeltaRefusalLabel(delta)}
+      </span>
+    );
+  }
+  const percent = delta.percent;
   const rising = percent >= 0;
   const Icon = rising ? TrendingUp : TrendingDown;
   return (
@@ -248,14 +274,8 @@ export function SearchConsolePortfolio({
   }
 
   const card = (site: SiteListRow) => {
-    const clicksTrend =
-      site.gsc_prev_days >= 21
-        ? trendPercent(site.gsc_clicks_28d, site.gsc_clicks_prev_28d)
-        : null;
-    const impressionsTrend =
-      site.gsc_prev_days >= 21
-        ? trendPercent(site.gsc_impressions_28d, site.gsc_impressions_prev_28d)
-        : null;
+    const clicksTrend = siteKpiDelta(site, "clicks");
+    const impressionsTrend = siteKpiDelta(site, "impressions");
     const behind = daysBehind(site.gsc_latest_date);
     const stale = behind !== null && behind >= GSC_STALE_AFTER_DAYS;
     const hasBinding = siteHasGscBinding(site);
@@ -342,7 +362,7 @@ export function SearchConsolePortfolio({
                 {formatCount(site.gsc_clicks_28d)}
               </p>
             </div>
-            <TrendPill percent={clicksTrend} />
+            <TrendPill delta={clicksTrend} />
           </div>
           {trend && trend.points.length >= 2 ? (
             <KeywordTrendSparkline
@@ -360,7 +380,7 @@ export function SearchConsolePortfolio({
                 <p className="text-sm font-semibold tabular-nums text-foreground">
                   {formatCount(site.gsc_impressions_28d)}
                 </p>
-                <TrendPill percent={impressionsTrend} compact />
+                <TrendPill delta={impressionsTrend} compact />
               </div>
             </div>
             <div>
@@ -445,6 +465,19 @@ export function SearchConsolePortfolio({
             )
           ) : null}
         </div>
+        {/* THE FRESHNESS LINE. The verdict above says how old the DATA is; this
+            says when we last asked Google and what Google's own lag is, which is
+            the difference between "we are behind" and "Google is behind"
+            (google-native PLAN §4.8). ONE component owns the wording. */}
+        <DataFreshnessLine
+          provider="search_console"
+          dataThrough={site.gsc_latest_date?.slice(0, 10) ?? null}
+          pulledAt={site.gsc_synced_at}
+        />
+        {/* A refusal shows on every dependent record (PLAN §5.3). A property
+            bound to a different site looks exactly like a quiet site from
+            here, so it is named here too — not only inside the editor. */}
+        <GscBindingRefusalLine site={site} variant="short" className="mt-1.5" />
       </div>
     );
   };

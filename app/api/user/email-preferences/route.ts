@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
+import {
+  isOrganizationRequiredServerError,
+  organizationRequiredResponse,
+} from "@/lib/organizations/organizationRequiredResponse";
 import type { TablesUpdate } from "@/types/database.types";
 
 /**
@@ -146,11 +150,27 @@ export async function PATCH(request: Request) {
         );
       }
     } else {
-      // Create new preferences (scoped to the user's personal org)
-      // org-fallback-deliberate: user_email_preferences is a per-person singleton
-      //   (one row per user_id) — the person's own workspace is its tenant, not
-      //   whichever organization is selected
-      const organizationId = await ensureOrgIdServer(supabase, undefined);
+      // 🚨 THE FIRST PREFERENCE ROW IS FILED IN THE ORGANIZATION THE CALLER
+      // IS ACTING IN. Until 2026-09-19 this read
+      // `ensureOrgIdServer(supabase, undefined)`, which ended in the
+      // `current_personal_org_id()` RPC — the server choosing the person's
+      // personal workspace because the request named none. The old comment
+      // called that deliberate ("one row per user_id"), but the uniqueness of
+      // the row is not what `organization_id` means: it is a tenant, and a
+      // tenant nobody chose is the substitution the 2026-09-19 ruling forbids.
+      // The caller states the organization on `X-Organization-Id` — the header
+      // every Matrx client carries and every other org-scoped route under
+      // app/api/** already reads (app/api/_lib/apply-scope-to-insert.ts).
+      //
+      // Only this INSERT branch asks: updating an existing row never restates
+      // the tenant, so a person whose preferences already exist is never held
+      // for a question that would not change anything.
+      const actingOrganizationId =
+        request.headers.get("X-Organization-Id")?.trim() || undefined;
+      const organizationId = await ensureOrgIdServer(
+        supabase,
+        actingOrganizationId,
+      );
       const { error } = await supabase
         .schema("users")
         .from("user_email_preferences")
@@ -174,6 +194,13 @@ export async function PATCH(request: Request) {
       msg: "Preferences updated successfully",
     });
   } catch (error) {
+    // The organization refusal is an ANSWER, not a failure: it carries the
+    // caller's own memberships so the client can hold the save, show the
+    // picker and retry. Collapsing it into the generic 500 below would turn
+    // the one question the person can answer into a dead end.
+    if (isOrganizationRequiredServerError(error)) {
+      return organizationRequiredResponse(error);
+    }
     console.error("Error in PATCH /api/user/email-preferences:", error);
     return NextResponse.json(
       { success: false, msg: "Failed to update preferences" },

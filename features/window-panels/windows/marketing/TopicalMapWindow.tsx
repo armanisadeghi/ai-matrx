@@ -51,8 +51,9 @@ import {
   TOPICAL_MAP_SURFACE_NAME,
 } from "@/features/marketing/seo/topical-map/mandateKeys";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { openOverlay, selectOpenInstances } from "@/lib/redux/slices/overlaySlice";
 import { cn } from "@/lib/utils";
 
@@ -231,14 +232,16 @@ export default function TopicalMapWindow({
 
 /** The maps this person can view in the active organization — the empty-map state. */
 function MapPicker({ onPick }: { onPick: (mapId: string) => void }) {
-  const organizationId = useAppSelector(selectOrganizationId);
+  const { organizationId, organizationState } = useOrganizationRequired();
   const maps = useTopicalMaps({ organizationId: organizationId ?? "" }, Boolean(organizationId));
 
-  if (!organizationId) {
+  if (organizationState !== "ready") {
     return (
-      <TopicalMapEmpty
+      <OrganizationContextNotice
+        state={organizationState}
+        what="Topical maps"
         title="No organization is active"
-        detail="Pick an organization in the top bar; its topical maps will be listed here."
+        description="Pick an organization in the top bar; its topical maps will be listed here."
       />
     );
   }

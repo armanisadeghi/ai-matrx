@@ -11,8 +11,10 @@ interface Props {
 }
 
 export default async function SurfaceAdminDetailRoute({ params }: Props) {
+  // The App Router already decodes each catch-all segment — decoding again
+  // double-decodes a literal `%` in the surface name.
   const { name } = await params;
-  const surfaceName = name.map((s) => decodeURIComponent(s)).join("/");
+  const surfaceName = name.join("/");
 
   const supabase = await createClient();
   const { data: surface, error } = await supabase

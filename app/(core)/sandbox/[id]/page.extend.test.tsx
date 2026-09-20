@@ -3,21 +3,19 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { SandboxInstance } from "@/types/sandbox";
+import {
+  createSandboxTestStore,
+  setSandboxTestIdentity,
+  SandboxStoreProvider,
+  type SandboxTestStore,
+} from "@/test-utils/sandbox-store";
 
-let identity = { authReady: true, userId: "user-a", organizationId: "org-a" };
-
-jest.mock("next/navigation", () => ({
-  useParams: () => ({ id: "sandbox-1" }),
-  useRouter: () => ({ push: jest.fn() }),
-}));
-jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: (selector: { name: string }) => {
-    if (selector.name === "selectIsSuperAdmin") return true;
-    if (selector.name === "selectAuthReady") return identity.authReady;
-    if (selector.name === "selectUserId") return identity.userId;
-    return identity.organizationId;
-  },
-}));
+jest.mock("next/navigation", () =>
+  require("@/test-utils/next-navigation").nextNavigationMock({
+    params: { id: "sandbox-1" },
+    pathname: "/sandbox/sandbox-1",
+  }),
+);
 jest.mock("@/features/shell/components/header/templates/EntityModeHeader", () => ({
   EntityModeHeader: ({ actions }: { actions?: Array<{ label: string; disabled?: boolean; onPress: () => void }> }) => (
     <>{actions?.map((action) => <button key={action.label} disabled={action.disabled} onClick={action.onPress}>{action.label}</button>)}</>
@@ -55,9 +53,17 @@ describe("SandboxDetailPage extension", () => {
   const originalFetch = global.fetch;
   let container: HTMLDivElement;
   let root: Root;
+  let store: SandboxTestStore;
+
+  // The page under a REAL store and the real selectors it reads.
+  const page = () => (
+    <SandboxStoreProvider store={store}>
+      <SandboxDetailPage />
+    </SandboxStoreProvider>
+  );
 
   beforeEach(() => {
-    identity = { authReady: true, userId: "user-a", organizationId: "org-a" };
+    store = createSandboxTestStore({ userId: "user-a", organizationId: "org-a", adminLevel: "super_admin" });
     container = document.createElement("div"); document.body.append(container); root = createRoot(container);
   });
   afterEach(async () => { await act(async () => root.unmount()); container.remove(); Object.defineProperty(globalThis, "fetch", { configurable: true, value: originalFetch, writable: true }); jest.restoreAllMocks(); });
@@ -66,7 +72,7 @@ describe("SandboxDetailPage extension", () => {
     const extended = { ...initial, expires_at: "2026-01-01T02:00:00.000Z" };
     const fetchMock = jest.fn(async (_input: RequestInfo | URL, init?: RequestInit) => init?.method === "POST" ? response(extended) : response());
     Object.defineProperty(globalThis, "fetch", { configurable: true, value: fetchMock, writable: true });
-    await act(async () => root.render(<SandboxDetailPage />));
+    await act(async () => root.render(page()));
     await act(async () => [...container.querySelectorAll("button")].find((button) => button.textContent === "+1h")?.click());
 
     expect(fetchMock).toHaveBeenCalledWith("/api/sandbox/sandbox-1/extend", expect.objectContaining({ method: "POST", body: JSON.stringify({ ttl_seconds: 3600 }) }));
@@ -76,7 +82,7 @@ describe("SandboxDetailPage extension", () => {
   it("routes the inline admin extension through the same POST handler", async () => {
     const fetchMock = jest.fn(async (_input: RequestInfo | URL, init?: RequestInit) => init?.method === "POST" ? response({ ...initial, expires_at: "2026-01-01T02:00:00.000Z" }) : response());
     Object.defineProperty(globalThis, "fetch", { configurable: true, value: fetchMock, writable: true });
-    await act(async () => root.render(<SandboxDetailPage />));
+    await act(async () => root.render(page()));
     await act(async () => [...container.querySelectorAll("button")].find((button) => button.textContent?.includes("Admin Quick Actions"))?.click());
     await act(async () => [...container.querySelectorAll("button")].find((button) => button.textContent?.includes("+1h Debug Time"))?.click());
 
@@ -89,10 +95,9 @@ describe("SandboxDetailPage extension", () => {
     const pending = new Promise<ReturnType<typeof response>>((resolve) => { resolveExtension = resolve; });
     const fetchMock = jest.fn((_input: RequestInfo | URL, init?: RequestInit) => init?.method === "POST" ? pending : Promise.resolve(response()));
     Object.defineProperty(globalThis, "fetch", { configurable: true, value: fetchMock, writable: true });
-    await act(async () => root.render(<SandboxDetailPage />));
+    await act(async () => root.render(page()));
     await act(async () => [...container.querySelectorAll("button")].find((button) => button.textContent === "+1h")?.click());
-    identity = { ...identity, userId: "user-b", organizationId: "org-b" };
-    await act(async () => root.render(<SandboxDetailPage />));
+    await act(async () => setSandboxTestIdentity(store, { userId: "user-b", organizationId: "org-b", adminLevel: "super_admin" }));
     resolveExtension(response({ ...initial, expires_at: "2026-01-01T02:00:00.000Z" }));
     await act(async () => { await pending; });
 

@@ -18,7 +18,10 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectInstanceVariableDefinitions } from "../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { mergeScopeVariableValues } from "../redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import {
+  mergeScopeVariableValues,
+  removeScopeVariableValues,
+} from "../redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
   selectActiveOrganizationId,
   selectActiveScopeIds,
@@ -155,17 +158,34 @@ export function useBoundVariableScope(conversationId: string): BoundVarInfo[] {
   // Fold resolved values into the scopeValues tier (merge — never wipe other values) so
   // required-validation + previews reflect them. Bound vars are still omitted from the
   // request payload (server resolves them), so this never double-sends.
+  // A name this hook folded in that no longer resolves (its scope was deactivated) is
+  // removed again — otherwise the input keeps showing a value the run no longer sends.
+  // Both refs are per conversation: a mounted input can be handed a different conversation,
+  // and its folded names must never be pruned from — or suppress a merge into — another one.
   const lastSyncRef = useRef<string>("");
+  const foldedNamesRef = useRef<string[]>([]);
+  const syncedConversationRef = useRef(conversationId);
   useEffect(() => {
+    if (syncedConversationRef.current !== conversationId) {
+      syncedConversationRef.current = conversationId;
+      lastSyncRef.current = "";
+      foldedNamesRef.current = [];
+    }
     const patch: Record<string, unknown> = {};
     for (const info of infos) {
       if (info.resolved) patch[info.name] = info.resolved.value;
     }
     const key = JSON.stringify(patch);
-    if (key !== lastSyncRef.current && Object.keys(patch).length > 0) {
-      lastSyncRef.current = key;
+    if (key === lastSyncRef.current) return;
+    lastSyncRef.current = key;
+    const stale = foldedNamesRef.current.filter((n) => !(n in patch));
+    if (stale.length > 0) {
+      dispatch(removeScopeVariableValues({ conversationId, names: stale }));
+    }
+    if (Object.keys(patch).length > 0) {
       dispatch(mergeScopeVariableValues({ conversationId, values: patch }));
     }
+    foldedNamesRef.current = Object.keys(patch);
   }, [infos, conversationId, dispatch]);
 
   return infos;

@@ -22,6 +22,11 @@ import {
   setSourceFacets,
   setSourceFacetsStatus,
 } from "./slice";
+import { isConversationLane } from "./lanes";
+import {
+  applyHistoryFilters,
+  historyFilterInputFromScope,
+} from "./history-filters";
 import {
   CONVERSATION_HISTORY_TTL_MS,
   SOURCE_FACETS_TTL_MS,
@@ -168,44 +173,37 @@ export const fetchConversationHistory = createAsyncThunk<
       query = query.in("initial_agent_id", agentIds);
     }
 
-    // Per-scope blacklist on `source_feature`. Each value gets its own `.neq`
-    // — Supabase chains them with AND, which is what we want. Used by `/chat`
-    // to drop voice-agent rows from the text-chat history.
-    for (const sf of excludeSourceFeatures) {
-      query = query.neq("source_feature", sf);
+    const filtered = applyHistoryFilters(
+      query,
+      historyFilterInputFromScope(scope, {
+        excludeSourceFeatures,
+        includeSourceFeatures,
+        includeSourceApps,
+        includeEmptySource,
+      }),
+    );
+
+    // Every lane is off: the honest answer is "nothing", without a round-trip.
+    if (filtered === null) {
+      dispatch(
+        setScopePageSuccess({
+          scopeId: args.scopeId,
+          items: [],
+          hasMore: false,
+          replace,
+          nextOffset: offset,
+        }),
+      );
+      return {
+        scopeId: args.scopeId,
+        items: [],
+        hasMore: false,
+        nextOffset: offset,
+        replace,
+      };
     }
 
-    // Per-scope ALLOW-list on source provenance. OR-combined so a row shows
-    // if its `source_feature` is selected, OR its `source_app` is selected,
-    // OR it's an empty/null-source row and those are opted-in. An entirely
-    // empty allow-list means "no source filter" (show everything) — that's
-    // how the cross-agent browse window behaves. The OR group ANDs with the
-    // agent / exclude / soft-delete filters above.
-    const orParts: string[] = [];
-    if (includeSourceFeatures.length > 0) {
-      orParts.push(`source_feature.in.(${includeSourceFeatures.join(",")})`);
-    }
-    if (includeSourceApps.length > 0) {
-      orParts.push(`source_app.in.(${includeSourceApps.join(",")})`);
-    }
-    if (includeEmptySource) {
-      // Generic rows store '' (column default) or NULL — match both.
-      orParts.push("source_feature.is.null");
-      orParts.push('source_feature.eq.""');
-    }
-    if (orParts.length > 0) {
-      query = query.or(orParts.join(","));
-    }
-
-    // Origin-class ALLOW-list (server-derived trust axis). ANDs with the
-    // source filter above — "my chat features, but only ones a person
-    // started" is a legitimate combination.
-    const includeOriginClasses = scope.includeOriginClasses ?? [];
-    if (includeOriginClasses.length > 0) {
-      query = query.in("origin_class", includeOriginClasses);
-    }
-
-    const { data, error } = await query;
+    const { data, error } = await filtered;
     if (error) {
       dispatch(
         setScopeStatus({
@@ -278,12 +276,14 @@ export const fetchConversationHistory = createAsyncThunk<
 );
 
 /**
- * Loads the user-wide source facets — distinct (source_app, source_feature)
- * pairings with counts — used to populate the filter tree. Cached on the
- * slice root with a 5-minute TTL; pass `{ force: true }` to bypass it.
+ * Loads the user-wide source facets — distinct (lane, source_app,
+ * source_feature) groupings with counts — used to populate the filter tree
+ * (facets in the enabled lanes) and the lane toggle counts (per-lane sums).
+ * Cached on the slice root with a 5-minute TTL; pass `{ force: true }` to
+ * bypass it.
  *
- * Backed by the `get_cx_conversation_source_facets` RPC, which is RLS-scoped
- * to the caller and excludes ephemeral / soft-deleted rows server-side.
+ * Backed by the `get_cx_conversation_lane_facets` RPC: the caller's own rows,
+ * ephemeral / soft-deleted excluded server-side.
  */
 export const fetchSourceFacets = createAsyncThunk<
   SourceFacet[],
@@ -305,7 +305,7 @@ export const fetchSourceFacets = createAsyncThunk<
     dispatch(setSourceFacetsStatus({ status: "loading", error: null }));
 
     const { data, error } = await supabase.rpc(
-      "get_cx_conversation_source_facets",
+      "get_cx_conversation_lane_facets",
     );
     if (error) {
       dispatch(
@@ -315,11 +315,13 @@ export const fetchSourceFacets = createAsyncThunk<
     }
 
     const rows = (data ?? []) as Array<{
+      lane: string | null;
       source_app: string | null;
       source_feature: string | null;
       n: number | string;
     }>;
     const facets: SourceFacet[] = rows.map((row) => ({
+      lane: isConversationLane(row.lane) ? row.lane : null,
       sourceApp: row.source_app ?? null,
       sourceFeature: row.source_feature ?? null,
       count: typeof row.n === "string" ? Number(row.n) || 0 : (row.n ?? 0),

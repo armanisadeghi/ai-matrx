@@ -292,6 +292,19 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     ephemeral: true,
     mobilePresentation: "drawer",
   },
+  {
+    // A WINDOW so the record stays readable behind the message being written
+    // about it. Ephemeral: a half-written email is not state to restore into a
+    // new session with an account and a recipient that may have moved on.
+    slug: "gmail-compose-window",
+    overlayId: "gmailComposeWindow",
+    kind: "window",
+    label: "Email a CRM record",
+    defaultData: { partyId: null, organizationId: null, partyLabel: null },
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+    instanceMode: "singleton",
+  },
 
   // ── Task Editor ─────────────────────────────────────────────────────────
   {
@@ -424,23 +437,117 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "fullscreen",
   },
 
-  // ── Item Detail ───────────────────────────────────────────────────────────
-  // Generic fallback detail view for an item_presentation entity (task,
-  // project, scope, document, …) that has no bespoke window yet. Tied to the
-  // clicked entity, so ephemeral — nothing to restore.
+  // ── Record Detail (the Detail primitive, lib/detail) ──────────────────────
+  // ONE core per record type, three presentations. `detailWindow` is the
+  // default (Arman, 2026-09-17); `detailDocked` is the resizable side panel;
+  // the page presentation is the `/detail/[type]/[id]` route. Both overlays
+  // share the `detail` deep-link key: `?panels=detail:<type>.<id>:as-window`
+  // / `:as-docked` (hydrator in url-sync/initUrlHydration.ts). Tied to the
+  // clicked record, so ephemeral — nothing to restore across reloads beyond
+  // the URL itself.
   {
-    slug: "item-detail-window",
-    overlayId: "itemDetailWindow",
+    slug: "detail-window",
+    overlayId: "detailWindow",
     kind: "window",
-    label: "Item details",
+    label: "Record detail",
     defaultData: {
-      itemType: null,
-      itemId: null,
-      initialName: null,
-      initialAbout: null,
+      type: null,
+      id: null,
+      seedName: null,
+      seedAbout: null,
+      listItems: null,
+      listIndex: null,
     },
     ephemeral: true,
     mobilePresentation: "drawer",
+    urlSync: { key: "detail" },
+  },
+  // ── Google import (PLAN §4.5 Contacts, §4.7 Tasks) ────────────────────────
+  // Two panels that bring a Google contact or task INTO AI Matrx. Mirror-in
+  // only. Tied to the organization the person is working in, so ephemeral —
+  // nothing to restore across reloads.
+  {
+    slug: "google-contacts-import-window",
+    overlayId: "googleContactsImportWindow",
+    kind: "window",
+    label: "Import from Google Contacts",
+    defaultData: { organizationId: null, initialExternalId: null },
+    ephemeral: true,
+    mobilePresentation: "drawer",
+    // V-23 / R35 — the panel's subject is one Google contact, so it gets a
+    // durable address: `?panels=google_contacts_import:<externalId>:o-<orgId>`.
+    // Ephemeral governs RESTORE-AFTER-RELOAD, never reachability: the extension
+    // and the desktop app open this panel through this link and no other way
+    // (PLAN §5.7 — "no client-specific Google code").
+    urlSync: { key: "google_contacts_import" },
+  },
+  {
+    slug: "google-tasks-import-window",
+    overlayId: "googleTasksImportWindow",
+    kind: "window",
+    label: "Import from Google Tasks",
+    defaultData: { organizationId: null, projectId: null },
+    ephemeral: true,
+    mobilePresentation: "drawer",
+    // V-23 / R35 — `?panels=google_tasks_import:<projectId>:o-<orgId>`. The
+    // destination project is the subject; the bare key opens the panel with no
+    // project chosen.
+    urlSync: { key: "google_tasks_import" },
+  },
+
+  // ── Agenda (PLAN §4.6) ────────────────────────────────────────────────────
+  // V-23 — the agenda over synced Google Calendar events shipped with NO
+  // registry row at all: no mobile presentation, no preservation contract, and
+  // structurally no way to declare an address, so `?panels=` could never reach
+  // it. Its body is `AgendaPanel`, the same component the home screen renders,
+  // so the window's whole subject is "the agenda" and the bare key is the
+  // address: `?panels=agenda`.
+  {
+    slug: "google-agenda-window",
+    overlayId: "googleAgendaWindow",
+    kind: "window",
+    label: "Agenda",
+    defaultData: {},
+    // Everything on screen is a fresh read of synced events; there is no
+    // window-local state a reload should resurrect.
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+    instanceMode: "singleton",
+    urlSync: { key: "agenda" },
+  },
+
+  // ── Waiting on you (the approval queue) ──────────────────────────────────
+  // V-23 — same shape as the agenda: THE approval queue as a floating window
+  // (the same surface as `/approvals`) carried no registry row, so the window
+  // form of a surface that HAS a route could not be linked to. `?panels=approvals`.
+  {
+    slug: "approvals-window",
+    overlayId: "approvalsWindow",
+    kind: "window",
+    label: "Waiting on you",
+    defaultData: {},
+    // The queue is server truth read on open; restoring a stale copy of
+    // "waiting on you" would be a lie about what is still waiting.
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+    instanceMode: "singleton",
+    urlSync: { key: "approvals" },
+  },
+  {
+    slug: "detail-docked",
+    overlayId: "detailDocked",
+    kind: "sheet",
+    label: "Record detail (docked)",
+    defaultData: {
+      type: null,
+      id: null,
+      seedName: null,
+      seedAbout: null,
+      listItems: null,
+      listIndex: null,
+    },
+    ephemeral: true,
+    urlSync: { key: "detail" },
   },
 
   // ── Web Scraper ───────────────────────────────────────────────────────────
@@ -957,6 +1064,27 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
   },
 
   // ── Scope Editor ──────────────────────────────────────────────────────────
+  {
+    slug: "agent-variable-editor-window",
+    overlayId: "agentVariableEditorWindow",
+    kind: "window",
+    label: "Variable Editor",
+    defaultData: {
+      agentId: null,
+      variableName: null,
+      justCreated: false,
+    },
+    // R35 — the subject is the (agent, variable) PAIR, minted and parsed by
+    // `features/agents/components/variables-management/variableEditorAddress.ts`
+    // and hydrated in `url-sync/initUrlHydration.ts`. It shipped unaddressed on
+    // 2026-09-18 (7404dc065f) and the address census caught it.
+    urlSync: { key: "agent_variable" },
+    // `ephemeral` is about RELOAD, not reach: a half-edited variable form is
+    // never restored from a persisted session. A link someone was handed still
+    // opens the editor on the variable it names.
+    ephemeral: true,
+    mobilePresentation: "drawer",
+  },
   {
     slug: "scope-edit-window",
     overlayId: "scopeEditWindow",
@@ -1700,6 +1828,32 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     // A review is about a run that just happened. Restoring one tomorrow would
     // present a stale table as a fresh result.
     ephemeral: true,
+  },
+
+  // The site Quick view (F-87): one site's KPI tiles, Search Console trend, top
+  // pages and connection chips, opened from nothing but an id. F-88 gave it a
+  // metadata entry because without one `preservationEnabled` is false, so the
+  // window's `onCollectData` was never called and "Save window state" wrote
+  // nothing — the prop looked like persistence and was inert. Preserved: the
+  // subject is one site id and everything on screen is a fresh read of it.
+  {
+    slug: "site-quick-view-window",
+    overlayId: "siteQuickViewWindow",
+    kind: "window",
+    label: "Site Quick view",
+    defaultData: { siteId: "", siteLabel: "" },
+    mobilePresentation: "drawer",
+    instanceMode: "singleton",
+    preservation: {
+      dataKeys: ["siteId", "siteLabel"],
+      // A restored Quick view with no site is an empty frame, not a window.
+      requiredDataKeys: ["siteId"],
+    },
+    // V-23 / R35 — the ONE in-place door for a `web_site` record had no
+    // address, so nothing outside this app could reach it and a verifier could
+    // not open it without finding a list that renders the row menu.
+    // `?panels=site_quick_view:<siteId>`.
+    urlSync: { key: "site_quick_view" },
   },
 
   // The site discovery panel (KI-040): the canonical `DiscoveryWorkspace` —
@@ -2542,6 +2696,11 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     ephemeral: true,
     mobilePresentation: "fullscreen",
     instanceMode: "singleton",
+    // V-23 / R35 — `?panels=google_connect` (optionally `:<reason>`) is how a
+    // link, an email, or another client sends someone to the consent step. A
+    // flow with no address can only be reached by re-walking whatever surface
+    // happened to raise it.
+    urlSync: { key: "google_connect" },
   },
 
   // ── Agent Skills ──────────────────────────────────────────────────────────

@@ -36,11 +36,46 @@ export const SAMPLE_INPUT_CONTENT_KEY = "input_content";
 
 export type AgentSampleRow = Database["agent"]["Tables"]["exemplar"]["Row"];
 
+/**
+ * One declared variable of the agent, reduced to what a READER of a test case
+ * needs: how to say its name, and what its author said it is for. The test-case
+ * viewer prints these instead of raw keys — `json_schema` is not a sentence,
+ * and the agent's own words are already written down.
+ */
+export interface AgentVariableDeclaration {
+  name: string;
+  label: string | null;
+  helpText: string | null;
+}
+
 export interface AgentContractHead {
   agentId: string;
   version: number | null;
   inputContractHash: string | null;
   outputContractHash: string | null;
+  /** Empty when the agent declares none, or when the column is unreadable. */
+  variableDeclarations: AgentVariableDeclaration[];
+}
+
+function parseVariableDeclarations(raw: unknown): AgentVariableDeclaration[] {
+  if (!Array.isArray(raw)) return [];
+  const out: AgentVariableDeclaration[] = [];
+  for (const entry of raw) {
+    if (!isJsonObject(entry)) continue;
+    const name = typeof entry.name === "string" ? entry.name.trim() : "";
+    if (!name) continue;
+    out.push({
+      name,
+      label: typeof entry.label === "string" && entry.label.trim()
+        ? entry.label.trim()
+        : null,
+      helpText:
+        typeof entry.helpText === "string" && entry.helpText.trim()
+          ? entry.helpText.trim()
+          : null,
+    });
+  }
+  return out;
 }
 
 export type SampleFreshness =
@@ -82,6 +117,59 @@ export function sampleInputText(
   );
 }
 
+/**
+ * THE LIBRARY PROVENANCE. A sample written by the media catalog's
+ * "Use as test cases for an agent…" action carries `source = 'library'` and,
+ * under `metadata.media_catalog`, the Library it came from plus the catalogued
+ * items behind it (server twin: the `use_as_agent_test_cases` action in
+ * aidream). This reads that block defensively: a row whose source says
+ * `library` ALWAYS answers with an origin, even when the block is missing or
+ * malformed, because "this came from a Library and we cannot say which" is the
+ * honest screen and a blank line is not.
+ */
+export const SAMPLE_MEDIA_CATALOG_KEY = "media_catalog";
+
+export interface SampleLibraryItem {
+  title: string | null;
+  url: string | null;
+}
+
+export interface SampleLibraryOrigin {
+  libraryId: string | null;
+  libraryName: string | null;
+  adapter: string | null;
+  jobId: string | null;
+  itemCount: number;
+  /** Only when the sample was written from exactly ONE catalogued item. */
+  item: SampleLibraryItem | null;
+}
+
+function textOrNull(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+export function sampleLibraryOrigin(
+  sample: Pick<AgentSampleRow, "source" | "metadata">,
+): SampleLibraryOrigin | null {
+  if (sample.source !== "library") return null;
+  const block = isJsonObject(sample.metadata)
+    ? sample.metadata[SAMPLE_MEDIA_CATALOG_KEY]
+    : null;
+  const media: JsonObject = isJsonObject(block) ? block : {};
+  const items = Array.isArray(media.items) ? media.items.filter(isJsonObject) : [];
+  const only = items.length === 1 ? items[0] : null;
+  return {
+    libraryId: textOrNull(media.library_id),
+    libraryName: textOrNull(media.library_name),
+    adapter: textOrNull(media.adapter),
+    jobId: textOrNull(media.job_id),
+    itemCount: items.length,
+    item: only
+      ? { title: textOrNull(only.title), url: textOrNull(only.url) }
+      : null,
+  };
+}
+
 /** Derived at read time from the head hashes — never persisted. */
 export function sampleFreshness(
   sample: Pick<AgentSampleRow, "input_contract_hash" | "output_contract_hash">,
@@ -110,7 +198,9 @@ export async function fetchAgentContractHead(
   const { data, error } = await supabase
     .schema("agent")
     .from("definition")
-    .select("id, version, input_contract_hash, output_contract_hash")
+    .select(
+      "id, version, input_contract_hash, output_contract_hash, variable_definitions",
+    )
     .eq("id", agentId)
     .maybeSingle();
   if (error) throw error;
@@ -120,6 +210,7 @@ export async function fetchAgentContractHead(
     version: data.version,
     inputContractHash: data.input_contract_hash,
     outputContractHash: data.output_contract_hash,
+    variableDeclarations: parseVariableDeclarations(data.variable_definitions),
   };
 }
 
@@ -362,7 +453,18 @@ export async function fetchRunFinalResponse(
   if (error) throw error;
   const content = data?.content;
   if (content == null) return null;
-  return typeof content === "string" ? content : JSON.stringify(content);
+  if (typeof content === "string") return content;
+  // A message's stored content is an array of typed parts. Stringifying it put
+  // `[{"id":"","text":"","type":"thinking","summary":[],"metadata":{}...` on
+  // screen where the answer belongs — the machine frame, not the reply. Read
+  // the text parts the same way every other consumer does, and fall back to the
+  // raw JSON only when there is no text at all, so a media-only or
+  // tool-call-only answer still shows SOMETHING rather than a blank pane.
+  if (Array.isArray(content)) {
+    const text = textFromMessageContent(parseMessageContent(content));
+    if (text) return text;
+  }
+  return JSON.stringify(content);
 }
 
 /**

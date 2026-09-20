@@ -113,6 +113,8 @@ _on_error() {
 trap '_on_error $LINENO' ERR
 
 # ── Resolve repo root ────────────────────────────────────────────────────────
+# Named --ship paths resolve from where the invoker stood, not the repo root.
+RELEASE_STAGE_CALLER_PWD="${RELEASE_STAGE_CALLER_PWD:-$PWD}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
@@ -329,6 +331,9 @@ if $SHIP_MODE; then
     if [[ ${#SHIP_PATHS[@]} -gt 0 ]]; then
         release_stage_validate_paths ${SHIP_PATHS[@]+"${SHIP_PATHS[@]}"} \
             || fail "--ship was given a pathspec it cannot commit (see above). Nothing has been changed."
+        # From here on the paths are repo-relative and every git call runs at the root.
+        SHIP_PATHS=("${RELEASE_STAGE_PATHS[@]}")
+        RELEASE_STAGE_CALLER_PWD="$REPO_ROOT"
     elif working_tree_dirty; then
         echo "" >&2
         git status --short --untracked-files=all | sed 's/^/    /' >&2
@@ -533,7 +538,7 @@ Fix the failures above (or re-run from aidream:
 # Two runners execute migrations for this platform, and this train runs the OTHER
 # one (apply_frontend_migrations resolves the applier out of the sibling aidream
 # checkout). Until 2026-09-16 they did not enforce the same rules: `-- chair-step:`
-# was an owner-awake step in one and a print statement in the other, a header naming
+# was a confirmed step in one and a print statement in the other, a header naming
 # production was allow-listed in one and waived in the other, and `--source campaign`
 # demanded its target in one and defaulted to PRODUCTION in the other. So before a
 # single migration is applied, the conformance corpus is run through BOTH runners and

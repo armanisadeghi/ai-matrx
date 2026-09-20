@@ -7,7 +7,7 @@ export const metadata = createRouteMetadata(
     titlePrefix: "Character Maker",
     title: "Matrx Jump",
     description: "Design a custom character for Matrx Jump.",
-    letter: "Cm",
+    letter: "CK",
   },
 );
 

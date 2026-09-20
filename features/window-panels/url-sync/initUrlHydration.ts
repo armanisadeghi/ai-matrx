@@ -1,8 +1,27 @@
 import { getHydrator, registerPanelHydrator } from "./UrlPanelRegistry";
-import { initInstanceUIState } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { DISPLAY_MODE_TO_OVERLAY_ID } from "@/features/agents/redux/execution-system/display-mode-overlay";
+import {
+  AGENT_RUN_WINDOW_AGENT_ARG,
+  AGENT_RUN_WINDOW_CONVERSATION_ARG,
+  AGENT_RUN_WINDOW_URL_MODE,
+} from "@/features/window-panels/windows/agents/agentRunWindowAddress";
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ALL_WINDOW_STATIC_METADATA } from "../registry/windowRegistryMetadata";
+import {
+  parseTopicPanelInstanceId,
+  topicPanelInstanceId,
+} from "@/features/marketing/seo/topical-map/panel/topicPanelInstance";
+import {
+  DETAIL_URL_AS_ARG,
+  parseDetailInstanceKey,
+  presentationFromUrlArg,
+  detailListFromUrlArgs,
+} from "@/lib/detail/presentation";
+import { openDetailSingleton } from "@/features/window-panels/detail/openDetailSingleton";
+import { parseVariableEditorInstanceId } from "@/features/agents/components/variables-management/variableEditorAddress";
+import { dispatchThunk } from "@/lib/redux/hooks";
 
 /**
  * URL sync uses the instance slot for both singleton window identities and
@@ -21,13 +40,91 @@ function getRestorableResourceId(
  * This runs exactly once on client mount.
  */
 export function initUrlHydration() {
-  // Agent execution floating panels
+  // Agent execution panels — `?panels=agent:<conversationId>:m-<mode>`.
+  //
+  // 🚨 THE HYDRATOR OPENS THE WINDOW. Until 2026-09-19 this one dispatched
+  // `initInstanceUIState` and stopped: it wrote the display CONFIG for a
+  // conversation and never opened the shell that config describes, never
+  // fetched the conversation, and therefore never registered a urlSync entry —
+  // so `UrlPanelManager` waited out its grace period and erased the token from
+  // the address bar. Every agent deep link, in the app and in every share, did
+  // exactly what Arman reported: bounced to the bare route with nothing open.
+  //
+  // Restoring an agent panel is the SAME sequence a click performs, in the same
+  // order, through the same map (`DISPLAY_MODE_TO_OVERLAY_ID`, shared with
+  // `launchAgentExecution` so the two can never disagree):
+  //   1. open the shell for the mode, keyed by the conversation, so the frame
+  //      is there immediately;
+  //   2. read the conversation back out of the database — nothing else on the
+  //      page will, because a floating panel is not a route and no page owns
+  //      it (`AgentConversationDisplay` deliberately never self-loads);
+  //   3. re-assert the mode the LINK named, after the load, because
+  //      `loadConversation` replaces the whole ui-state entry from
+  //      `metadata.display` and the link is the more specific intent.
+  // `expectMaterialized: true` is what makes step 2 honest: a reopen that
+  // comes back empty is a failed read, and the transcript says so with a
+  // retry instead of painting an empty room (law 4).
   registerPanelHydrator("agent", (dispatch, id, args) => {
+    const subject = getRestorableResourceId(id);
+    if (!subject) {
+      console.warn(
+        `[UrlPanelManager] ?panels=agent:${id} names no conversation — ` +
+          "expected agent:<conversationId>:m-<mode>.",
+      );
+      return;
+    }
+
+    // The Chat window (`agentRunWindow`) shares this key: it is a WINDOW that
+    // hosts conversations, not one conversation's shell, so its subject is its
+    // own window instance and the chat it has open rides in the args.
+    if (args.m === AGENT_RUN_WINDOW_URL_MODE) {
+      dispatch(
+        openOverlay({
+          overlayId: "agentRunWindow",
+          instanceId: subject,
+          data: {
+            initialAgentId: args[AGENT_RUN_WINDOW_AGENT_ARG] ?? null,
+            initialSelectedConversationId:
+              args[AGENT_RUN_WINDOW_CONVERSATION_ARG] ?? null,
+          },
+        }),
+      );
+      return;
+    }
+
+    const conversationId = subject;
     const displayMode = resolveAgentPanelDisplayMode(args.m);
+    const overlayId = DISPLAY_MODE_TO_OVERLAY_ID[displayMode];
+    if (!overlayId) {
+      // A mode with no shell paints nothing. An address that opens nothing has
+      // to say so rather than leave a token that looks like it worked.
+      console.warn(
+        `[UrlPanelManager] ?panels=agent:${id}:m-${args.m} names display mode ` +
+          `"${displayMode}", which has no overlay to open.`,
+      );
+      return;
+    }
+
     dispatch(
-      initInstanceUIState({
-        conversationId: id,
-        displayMode,
+      openOverlay({
+        overlayId,
+        instanceId: conversationId,
+        data: { conversationId },
+      }),
+    );
+
+    // `displayOverrides` lands in the SAME dispatch that stamps
+    // `metadata.display`, so there is no render in which the stored values are
+    // live and the link's are not. Two things are asserted there:
+    //   • the display mode the LINK named — it is the more specific intent;
+    //   • `autoRun: false` — reopening an address is NEVER a decision to spend
+    //     a paid run. Nobody clicked; a refresh must not fire an agent.
+    dispatchThunk(
+      dispatch,
+      loadConversation({
+        conversationId,
+        expectMaterialized: true,
+        displayOverrides: { displayMode, autoRun: false },
       }),
     );
   });
@@ -88,6 +185,59 @@ export function initUrlHydration() {
     );
   });
 
+  // Topical map — one topic. `?panels=topic:<mapId>|<slug>` reopens the
+  // floating topic panel the link was made from. The instance id IS the
+  // (map, topic) pair, parsed by the module that mints it, so the two never
+  // drift apart. `siteId` is deliberately not carried: it is a viewing scope,
+  // not part of the topic's identity, and the `?panels=` arg encoding
+  // (`k-v` pairs split on `-`) cannot round-trip a UUID.
+  registerPanelHydrator("topic", (dispatch, id) => {
+    const identity = parseTopicPanelInstanceId(id);
+    if (!identity) {
+      // Nothing fails silently: half an identity has no topic to show, and an
+      // empty frame would be worse than not restoring at all.
+      console.warn(
+        `[initUrlHydration] Ignoring "?panels=topic:${id}": a topic panel is ` +
+          `addressed as "<mapId>|<slug>". Re-copy the link from the panel's ` +
+          `own share control.`,
+      );
+      return;
+    }
+    dispatch(
+      openOverlay({
+        overlayId: "topicalMapTopicPanel",
+        instanceId: topicPanelInstanceId(identity),
+        data: { stackIndex: 0, ...identity, siteId: null },
+      }),
+    );
+  });
+
+  // Agent variable editor — `?panels=agent_variable:<agentId>|<variableName>`
+  // reopens the editor on the exact variable the link was made from. The window
+  // is a singleton (one editor at a time), so the subject rides in the URL's
+  // instance slot while the overlay itself stays on `default` — the same shape
+  // the vault below uses for its selected item.
+  registerPanelHydrator("agent_variable", (dispatch, id) => {
+    const address = parseVariableEditorInstanceId(id);
+    if (!address) {
+      // Nothing fails silently: half an identity has no variable to edit, and
+      // an empty editor would be worse than not restoring at all.
+      console.warn(
+        `[initUrlHydration] Ignoring "?panels=agent_variable:${id}": the variable ` +
+          `editor is addressed as "<agentId>|<variableName>". Re-copy the link ` +
+          "from the editor's own window controls.",
+      );
+      return;
+    }
+    dispatch(
+      openOverlay({
+        overlayId: "agentVariableEditorWindow",
+        instanceId: "default",
+        data: { ...address, justCreated: false },
+      }),
+    );
+  });
+
   // Vault — `?panels=vault` (optionally `:itemId`) so a link can drop someone
   // straight onto the credential they need.
   registerPanelHydrator("vault", (dispatch, id) => {
@@ -96,6 +246,40 @@ export function initUrlHydration() {
         overlayId: "credentialVaultWindow",
         instanceId: "default",
         data: { selectedItemId: id ?? null, scope: "mine" },
+      }),
+    );
+  });
+
+  // Record detail (the Detail primitive, lib/detail) —
+  // `?panels=detail:<type>.<id>:as-window|docked`. The instance is the record
+  // (`type.id`); `as` picks the in-place presentation, window by default. The
+  // page presentation is its own route and never appears here.
+  registerPanelHydrator("detail", (dispatch, id, args) => {
+    const ref = parseDetailInstanceKey(id);
+    if (!ref) {
+      console.warn(
+        `[UrlPanelManager] ?panels=detail:${id} names no record — expected detail:<type>.<id>.`,
+      );
+      return;
+    }
+    const presentation = presentationFromUrlArg(args[DETAIL_URL_AS_ARG]);
+    // 🚨 D8 — THROUGH THE ONE PRIMITIVE, NEVER `openOverlay` DIRECTLY. A link
+    // may name two records (`detail:file.B,detail:file.C`): this hydrator runs
+    // once per token, the second call retargets the same singleton, and when it
+    // dispatched the open itself the first record was closed in silence — the
+    // exact defect the openers' announcement was written for (VERIFY-U-P1-R2).
+    dispatchThunk(
+      dispatch,
+      openDetailSingleton({
+        presentation,
+        // 🚨 NEW-15 — the list the window was opened from, when the token
+        // carries it. `null` only when the link genuinely has none.
+        data: {
+          type: ref.type,
+          id: ref.id,
+          seed: null,
+          list: detailListFromUrlArgs(args),
+        },
       }),
     );
   });
@@ -125,12 +309,6 @@ export function initUrlHydration() {
         data: id ? { selectedTable: id } : null,
       }),
     );
-  });
-
-  // Cloud Files Window (legacy URL key "files" still honored — points at the
-  // new cloud-files window registered in Phase 6).
-  registerPanelHydrator("files", (dispatch) => {
-    dispatch(openOverlay({ overlayId: "cloudFilesWindow" }));
   });
 
   // State Analyzer Window
@@ -334,6 +512,81 @@ export function initUrlHydration() {
       openOverlay({
         overlayId: "structuredListManagerV2Window",
         data: forcedListId ? { forcedListId } : null,
+      }),
+    );
+  });
+
+  // ── Google-native panels (V-23 / R35) ────────────────────────────────────
+  // Every one of these was reachable ONLY by clicking the surface that raised
+  // it: no address, so no deep link, no verification from the seat, and no way
+  // for the extension or the desktop app to reach the same panel (PLAN §5.7).
+
+  // Agenda — `?panels=agenda` opens the agenda over synced Calendar events.
+  registerPanelHydrator("agenda", (dispatch) => {
+    dispatch(openOverlay({ overlayId: "googleAgendaWindow" }));
+  });
+
+  // Waiting on you — `?panels=approvals` opens the approval queue in place.
+  registerPanelHydrator("approvals", (dispatch) => {
+    dispatch(openOverlay({ overlayId: "approvalsWindow" }));
+  });
+
+  // Import from Google Contacts —
+  // `?panels=google_contacts_import:<externalContactId>:o-<organizationId>`.
+  // The bare key opens the panel with nothing pre-selected.
+  registerPanelHydrator("google_contacts_import", (dispatch, id, args) => {
+    const initialExternalId = getRestorableResourceId(
+      id,
+      "googleContactsImportWindow",
+    );
+    const organizationId = args.o ?? null;
+    dispatch(
+      openOverlay({
+        overlayId: "googleContactsImportWindow",
+        data: { organizationId, initialExternalId },
+      }),
+    );
+  });
+
+  // Import from Google Tasks —
+  // `?panels=google_tasks_import:<projectId>:o-<organizationId>`.
+  registerPanelHydrator("google_tasks_import", (dispatch, id, args) => {
+    const projectId = getRestorableResourceId(id, "googleTasksImportWindow");
+    const organizationId = args.o ?? null;
+    dispatch(
+      openOverlay({
+        overlayId: "googleTasksImportWindow",
+        data: { organizationId, projectId },
+      }),
+    );
+  });
+
+  // Connect Google — `?panels=google_connect` (optionally `:<reason>`).
+  registerPanelHydrator("google_connect", (dispatch, id) => {
+    const reason = getRestorableResourceId(id, "googleConnectWindow");
+    dispatch(
+      openOverlay({
+        overlayId: "googleConnectWindow",
+        data: reason ? { reason } : null,
+      }),
+    );
+  });
+
+  // Site Quick view — `?panels=site_quick_view:<siteId>`. The window's whole
+  // subject is one site, so a token with no id opens nothing rather than an
+  // empty frame (the render site already refuses a missing `siteId`).
+  registerPanelHydrator("site_quick_view", (dispatch, id) => {
+    const siteId = getRestorableResourceId(id, "siteQuickViewWindow");
+    if (!siteId) {
+      console.warn(
+        `[UrlPanelManager] ?panels=site_quick_view:${id} names no site — expected site_quick_view:<siteId>.`,
+      );
+      return;
+    }
+    dispatch(
+      openOverlay({
+        overlayId: "siteQuickViewWindow",
+        data: { siteId, siteLabel: null },
       }),
     );
   });

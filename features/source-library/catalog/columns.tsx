@@ -13,6 +13,8 @@ import { Captions, CaptionsOff, CircleDashed, Radio } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Muted, timeCell, type EntityColumnSpec } from "@/lib/entity-list/columns";
 import {
+    actionLabel,
+    actionOutcomeLabel,
     formatCompactNumber,
     formatDuration,
     mediaKindLabel,
@@ -20,6 +22,7 @@ import {
     transcriptStatusLabel,
 } from "../format";
 import type { VideoRow } from "../types";
+import { sourceVocabulary, type SourceVocabulary } from "../vocabulary";
 import { LENGTH_BUCKETS, PUBLISHED_BUCKETS } from "./service";
 
 const KIND_TONE: Record<string, string> = {
@@ -38,7 +41,25 @@ const TRANSCRIPT_TONE: Record<string, string> = {
     none: "border-border text-muted-foreground",
 };
 
-export const CATALOG_COLUMNS: EntityColumnSpec<VideoRow>[] = [
+const OUTCOME_TONE: Record<string, string> = {
+    ready: "border-emerald-500/40 text-emerald-600 dark:text-emerald-400",
+    running: "border-primary/40 text-primary",
+    skipped: "border-border text-muted-foreground",
+    failed: "border-destructive/40 text-destructive",
+};
+
+/**
+ * D6b (jobs-bar cold-walk-12): a function, not a static array, because two
+ * cells here used to hardcode "YouTube" and "the video" over every adapter —
+ * a podcast row that had never had its captions probed at all read "YouTube
+ * has not told us whether this video has captions." Both cells now speak this
+ * Library's own words; `vocabulary` defaults to the neutral set for the one
+ * caller (`CATALOG_COLUMNS` below) that has no Library row to build it from.
+ */
+function buildBaseColumns(
+    vocabulary: SourceVocabulary = sourceVocabulary(null),
+): EntityColumnSpec<VideoRow>[] {
+    return [
     {
         id: "thumbnail",
         label: "Thumbnail",
@@ -189,7 +210,7 @@ export const CATALOG_COLUMNS: EntityColumnSpec<VideoRow>[] = [
                     return (
                         <span
                             className="inline-flex items-center gap-1 text-muted-foreground"
-                            title="YouTube has not told us whether this video has captions."
+                            title={`Nothing has told us whether this ${vocabulary.item.one} has captions.`}
                         >
                             <CircleDashed className="size-3.5" aria-hidden />
                             Unknown
@@ -208,7 +229,7 @@ export const CATALOG_COLUMNS: EntityColumnSpec<VideoRow>[] = [
                         title={
                             languages.length
                                 ? `Caption tracks: ${languages.join(", ")}`
-                                : "YouTube reports captions. Which languages is only known after a check."
+                                : "Captions are reported. Which languages is only known after a check."
                         }
                     >
                         <Captions className="size-3.5" aria-hidden />
@@ -252,9 +273,9 @@ export const CATALOG_COLUMNS: EntityColumnSpec<VideoRow>[] = [
                         className={`py-0 text-[11px] ${TRANSCRIPT_TONE[row.transcript_status] ?? ""}`}
                         title={
                             row.transcript_lane === "free_captions"
-                                ? "From YouTube's own captions."
+                                ? `From ${vocabulary.freeCaptionsSource ?? "its own captions"}.`
                                 : row.transcript_lane === "paid_agent"
-                                  ? "A model watched the video."
+                                  ? `A model watched the ${vocabulary.item.one}.`
                                   : undefined
                         }
                     >
@@ -263,4 +284,95 @@ export const CATALOG_COLUMNS: EntityColumnSpec<VideoRow>[] = [
                 ),
         },
     },
-];
+    ];
+}
+
+/**
+ * §4.3 — WHAT LAST HAPPENED TO THIS SOURCE, as one honest line.
+ *
+ * 🚨 THE GAP THIS CLOSES. Until now a Source could say only whether it had a
+ * transcript. A person who selected fifty Sources, sent them to a Rulebook and
+ * closed the job panel had no way, ever again, to see which fifty went, which
+ * were skipped for having no words, and which failed — this list looked exactly
+ * as it had before they clicked.
+ *
+ * It is ONE column, not one per Action, for the same reason the server stores
+ * one map and not one column per Action: the registry grows, and a screen whose
+ * shape is a changelog of that registry is a screen that is always one Action
+ * behind.
+ *
+ * ABSENT, NEVER DEAD. A Source no Action has touched shows a dash — not "None",
+ * not a grey "Ready", and not an empty badge. And a badge NEVER renders without
+ * its sentence: the sentence is the point, the badge is the index into it.
+ */
+export function lastActionColumn(
+    actionLabels: Record<string, string> | undefined,
+): EntityColumnSpec<VideoRow> {
+    return {
+        id: "last_action",
+        label: "Last action",
+        facet: "action_status",
+        phone: "primary",
+        formatFacetValue: actionOutcomeLabel,
+        column: {
+            id: "last_action",
+            accessorKey: "last_action",
+            header: "Last action",
+            // The server orders by published date, views, length or title; there is
+            // no `order=last_action`, so this says so rather than sorting the 25
+            // rows this page happens to hold and calling it the answer.
+            sortable: false,
+            filter: "select",
+            filterOptions: [
+                { value: "ready", label: "Ready" },
+                { value: "running", label: "Running" },
+                { value: "skipped", label: "Skipped" },
+                { value: "failed", label: "Failed" },
+            ],
+            cell: (row) => {
+                const outcome = row.last_action;
+                if (!outcome) return <Muted>—</Muted>;
+                return (
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5">
+                            <Badge
+                                variant="outline"
+                                className={`py-0 text-[11px] ${OUTCOME_TONE[outcome.status] ?? ""}`}
+                            >
+                                {actionOutcomeLabel(outcome.status)}
+                            </Badge>
+                            <span className="truncate text-[11px] text-muted-foreground">
+                                {actionLabel(outcome.action_key, actionLabels)}
+                            </span>
+                        </div>
+                        {/* The sentence the runner itself wrote. `title` carries the
+                            whole of it, because a truncated explanation that cannot
+                            be read in full is half a lie. */}
+                        <span
+                            className="truncate text-[11px] text-foreground"
+                            title={outcome.sentence}
+                        >
+                            {outcome.sentence}
+                        </span>
+                    </div>
+                );
+            },
+        },
+    };
+}
+
+/** Every Sources column, with the Action labels the server published (§8). */
+export function catalogColumns(options?: {
+    actionLabels?: Record<string, string>;
+    /** D6b — this Library's own words for the captions/transcript cells. */
+    vocabulary?: SourceVocabulary;
+}): EntityColumnSpec<VideoRow>[] {
+    return [...buildBaseColumns(options?.vocabulary), lastActionColumn(options?.actionLabels)];
+}
+
+/**
+ * The columns with no registry behind them — an Action shows its key instead of
+ * its label. Kept as an export because the guards read it, and because a caller
+ * that has not loaded the registry yet should still get every column.
+ */
+export const CATALOG_COLUMNS: EntityColumnSpec<VideoRow>[] = catalogColumns();

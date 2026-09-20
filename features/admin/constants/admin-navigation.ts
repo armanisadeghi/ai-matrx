@@ -96,6 +96,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/ai/ai-models/offerings"),
           destination("/administration/ai/ai-models/settings"),
           destination("/administration/ai/ai-models/aliases"),
+          destination("/administration/ai/ai-models/decisions"),
         ],
       },
       {
@@ -389,6 +390,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/database/workbench"),
           destination("/administration/database/sql-functions"),
           destination("/administration/database/enums"),
+          destination("/administration/database/unified-data-ramp"),
           destination("/legacy/administration/schema-manager"),
         ],
       },

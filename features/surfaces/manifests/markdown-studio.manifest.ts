@@ -216,6 +216,7 @@ const writeTargets: SurfaceWriteTarget[] = [
       "REPLACES the entire markdown buffer with the string you pass — the text lands in the editor pane exactly as written, and the live preview and analysis view re-parse it immediately. This is a full replacement, not a merge: read `content` first and include everything you want kept, or use `append_document_content` instead when you only mean to add. Must be non-empty markdown; clearing the studio is a human action, so an empty string is refused. Staged as unsaved changes — the user reviews and saves to their library.",
     valueType: "string",
     updatesValue: "content",
+    approvalComparison: "text-replacement",
     mode: "draft",
     applyPolicy: "ask",
     group: "document_content",

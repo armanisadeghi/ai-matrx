@@ -4,7 +4,11 @@
  * Comprehensive diagnostics and troubleshooting for microphone access
  */
 
-import { acquireMicStream, releaseMicStream } from '@ai-matrx/browser-audio/core';
+import {
+  acquireMicStream,
+  isAudioSessionCaptureRefusal,
+  releaseMicStream,
+} from '@ai-matrx/browser-audio/core';
 
 export interface DiagnosticResult {
   hasMediaDevices: boolean;
@@ -241,6 +245,19 @@ export function getErrorSolution(error: unknown): { message: string; solution: s
       code: 'DEVICE_BUSY',
       message: 'Microphone is already in use',
       solution: 'Close other applications using the microphone and try again.',
+    };
+  }
+
+  // WebKit refused capture because the page's audio session category is
+  // playback-only. The mic singleton switches the category before every
+  // capture (browser-audio 0.4.0), so reaching here means that switch was
+  // rejected — a named class with a remedy, never "unknown error".
+  if (isAudioSessionCaptureRefusal(error)) {
+    return {
+      code: 'AUDIO_SESSION_INCOMPATIBLE',
+      message: 'The microphone could not start while this page is in playback-only audio mode',
+      solution:
+        'Stop any audio that is playing, then tap the microphone again. If it still fails, reload the page and try once more.',
     };
   }
 

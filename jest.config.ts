@@ -76,6 +76,13 @@ const config: Config = {
         // rule, same reason as agents/matrx above.
         "^@ai-matrx/associations/(core|react)$":
             "<rootDir>/node_modules/@ai-matrx/associations/dist/$1/index.js",
+        // @ai-matrx/records subpaths are DIRECTORIES too (dist/core/index.js,
+        // dist/react/index.js) — map before the generic rule, same reason as
+        // agents/matrx and associations above. First consumer: 2026-09-19,
+        // features/list-change-proposals/applyListChange.ts's `kind:"table"`
+        // branch (`@ai-matrx/records/core`'s `createRecordsClient`).
+        "^@ai-matrx/records/(core|react)$":
+            "<rootDir>/node_modules/@ai-matrx/records/dist/$1/index.js",
         // design-system's data-table public entry is likewise a directory
         // target in dist, while its leaf subpaths remain files.
         "^@ai-matrx/design-system/data-table$":
@@ -125,6 +132,27 @@ const config: Config = {
         // This is an explicit Playwright gate that requires a running app and
         // Chromium; Jest owns the unit suite and must not attempt to load it.
         "/features/content-ir/sandbox/browser/",
+        // The shell layout gate (`pnpm test:shell-layout`,
+        // playwright.shell-layout.config.ts) measures real layout rects in
+        // Chromium; under Jest its `@playwright/test` import dies with
+        // "Class extends value undefined" before a single test runs.
+        "/features/shell/layout-gate/",
+        // Same class: the mobile rule-row-squeeze gate
+        // (`pnpm test:rule-row-squeeze`, playwright.rule-row-squeeze.config.ts)
+        // measures real rendered layout in Chromium via its own Playwright
+        // config and `globalSetup`; Jest must not load its `.spec.ts` either.
+        "/features/masterwork/components/detail/__tests__/rule-row-squeeze/",
+        // Same class: the Library table reachability gate
+        // (`pnpm test:library-table-reachable`,
+        // playwright.library-table-reachable.config.ts) measures real
+        // rendered layout in Chromium via its own Playwright config and
+        // `globalSetup`; Jest must not load its `.spec.ts` either.
+        "/features/source-library/__tests__/library-table-reachable/",
+        // RED TWINS. A `*.red.test.tsx` is a suite that MUST fail: it runs the
+        // same assertions against the defect, so a green suite cannot be green
+        // on the mere fact that something rendered. They are run BY NAME
+        // (`npx jest <path>`) and would otherwise make `pnpm test` red for ever.
+        "\\.red\\.test\\.tsx?$",
     ],
     // Restrict to *.test.ts(x) / *.spec.ts(x). Jest's default `testMatch`
     // also globs everything under `**/__tests__/**`, which picked up our
@@ -133,6 +161,18 @@ const config: Config = {
     // they have no `describe`/`it` blocks. Restricting `testMatch` makes
     // the file extension authoritative — Jest only runs real Jest tests.
     testMatch: ["**/?(*.)+(test|spec).[jt]s?(x)"],
+    // 🚨 NOT JEST'S 5s. A per-test deadline is not an assertion — it is the
+    // wall the slowest machine has to clear — and at 5s it made every heavy
+    // jsdom render suite a coin flip on load. Two suites failed the 2026-09-19
+    // whole-battery run purely on it (`verify-owner-claims`,
+    // `finishing-lands-in-the-room-never-a-bare-chat`) and both passed alone;
+    // the second takes 10s for five tests on an IDLE machine, so the first test
+    // had no margin at all under 40 workers. 30s still fails a hung test — the
+    // whole battery is ~340s over 2,218 suites — and it stops the deadline
+    // deciding whether an assertion gets to run. A suite that NEEDS more than
+    // this is telling you something and should say so with its own
+    // `jest.setTimeout`.
+    testTimeout: 30_000,
 };
 
 export default config;

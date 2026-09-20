@@ -55,10 +55,14 @@ const STRICT = process.argv.includes("--strict");
 
 /** Where a closed picker is most expensive: surfaces where users teach the system. */
 const SCAN_GLOBS = [
-  "features/marketing/**/*.tsx",
-  "features/agents/**/components/**/*.tsx",
-  "features/scopes/**/*.tsx",
-  "features/content-ir/**/*.tsx",
+  // The WHOLE UI. Until 2026-09-18 this listed four feature trees, and a
+  // by-name hand census over the rest found only half of what this detector
+  // finds — a mapped choice list lives in files named Field, Crumb, Workspace,
+  // Section, not only *Picker. The law is a platform law; the sweep is too.
+  "features/**/*.tsx",
+  "components/**/*.tsx",
+  "app/**/*.tsx",
+  "lib/**/*.tsx",
 ];
 
 /**
@@ -75,18 +79,19 @@ const ALLOW: Array<{ match: RegExp; reason: string }> = [
     reason: "time ranges are a closed set by nature",
   },
   {
-    match: /SiteSwitcher|BrandSwitcher|OrgSwitcher/i,
+    // Narrowed 2026-09-18. This entry used to cover SiteSwitcher and
+    // BrandSwitcher with the reason "inline creation lives on that record's
+    // own surface" — the door-is-the-fix sentence the law forbids. Sites and
+    // brands are user-authored, so their switchers are BOUND (a create row,
+    // as Linear's switchers carry). Organizations alone stay out, by Arman's
+    // ruling that day, not by this reasoning.
+    match: /OrgSwitcher/i,
     reason:
-      "picks an existing record created elsewhere; inline creation lives on that record's own surface",
+      "organizations: Arman 2026-09-18 — no quick inline add; the org's own create form is the path (policy § The exceptions)",
   },
   {
     match: /sortDir|SortDirection/i,
     reason: "ascending/descending is not extensible",
-  },
-  {
-    match: /ScopeContextTargetPicker/,
-    reason:
-      "cascades over existing organizations, scope types, scopes, and context items; each record is created on its owning management surface",
   },
   {
     match: /SurfaceSimulatorSelect/,
@@ -95,16 +100,101 @@ const ALLOW: Array<{ match: RegExp; reason: string }> = [
   },
 ];
 
-const ADD_AFFORDANCE = [
+/**
+ * An add affordance is a CREATION, not a caption. Until 2026-09-18 a string
+ * like "Create or manage …" on a `<Link>` title satisfied this list, so a
+ * picker whose only "add" was a new-tab door to a management page passed —
+ * and the 2026-08-30 P13 run certified exactly that shape. Arman's ruling
+ * (policy `every-picker-takes-new-input.md` §3): a door is a companion, never
+ * the fix. So a caption counts ONLY when the same file also carries a write
+ * path (`WRITE_PATH` below) or the creatable picker primitive; a caption on a
+ * link never counts on its own.
+ */
+const ADD_CAPTION = [
   /\+\s*(Add|New|Create)/i,
   /["'`]\s*(Add|Create|New)\s+[a-z]/i,
   /Create\s+["'“]/i,
-  /quick_add|quickAdd|gsc_quick_add_value/,
-  /onCreate|allowCreate|allowOther|creatable|onAddNew|handleCreate/i,
-  /facet_value_upsert|facet_dimension_upsert|save_value_vocabulary/,
-  // P11 path: the file explains a shared vocabulary and offers the local override
-  /your own dimension|platform-governed|shared dimension/i,
 ];
+const WRITE_PATH = [
+  /quick_add|quickAdd|gsc_quick_add_value/,
+  /onCreate|allowCreate|allowOther|creatable|onAddNew|handleCreate|onCreateRequiresMore/i,
+  /facet_value_upsert|facet_dimension_upsert|save_value_vocabulary/,
+  /\b(create|add|insert|upsert)[A-Z]\w*\s*\(/,
+  /\.rpc\(\s*["'`](create|add|insert|upsert)_/,
+  /CreatablePicker|creatable-picker/,
+];
+/**
+ * P11 has TWO halves and the detector requires BOTH. Until 2026-09-18 the
+ * sentence alone was a free pass: any file whose text said "curated centrally"
+ * passed, so a two-line fixture — one `options.map(… <SelectItem>)` plus the
+ * comment `// curated centrally` — walked through (PNI-000 F4). That is the
+ * same free pass the door-only caption used to get. Under the law
+ * (`every-picker-takes-new-input.md` §3) an explanation is only acceptable
+ * BECAUSE it is paired with a live alternative — so the file must also carry
+ * one: the primitive's `lockedAction` slot, or a named local-override path.
+ */
+const P11_NOTE = [
+  /your own dimension|platform-governed|shared dimension|curated centrally|lockedNote/i,
+];
+const P11_ALTERNATIVE = [
+  /lockedAction\s*[:=]/,
+  /local override|localOverride|override path/i,
+  // A live in-place escape wired to a HANDLER, not prose: the keyword
+  // workbench's class cell hands over `onSelect={onMakeYourOwn}`.
+  /on(?:Select|Click)=\{[^}]*\b\w*(?:makeYourOwn|MakeYourOwn|createOwn|CreateOwn|override|Override)\w*/,
+];
+
+/**
+ * A COMMENT IS NOT AN AFFORDANCE. Every pattern above is a text match, so
+ * until 2026-09-18 a file whose only answer was
+ * `// TODO: one day wire a lockedAction here` passed (PNI-000 re-verify 1).
+ * Source is read with its comments removed before any affordance test, so only
+ * code can satisfy one. Quotes and template literals are respected, or every
+ * `https://…` would read as a line comment.
+ */
+function stripComments(source: string): string {
+  let out = "";
+  let i = 0;
+  let quote: string | null = null;
+  while (i < source.length) {
+    const ch = source[i];
+    const next = source[i + 1];
+    if (quote) {
+      if (ch === "\\") {
+        out += "  ";
+        i += 2;
+        continue;
+      }
+      if (ch === quote) quote = null;
+      out += ch;
+      i += 1;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === "`") {
+      quote = ch;
+      out += ch;
+      i += 1;
+      continue;
+    }
+    if (ch === "/" && next === "/") {
+      while (i < source.length && source[i] !== "\n") i += 1;
+      continue;
+    }
+    if (ch === "/" && next === "*") {
+      i += 2;
+      while (i < source.length && !(source[i] === "*" && source[i + 1] === "/"))
+        i += 1;
+      i += 2;
+      continue;
+    }
+    out += ch;
+    i += 1;
+  }
+  return out;
+}
+
+/** A `+` that only opens a page somewhere else — the pattern this law forbids. */
+const DOOR_ONLY = /<Link\b[^>]*\btarget=["']_blank["'][\s\S]{0,400}?<Plus\b/;
 
 const ITEM_TAGS = /<(SelectItem|CommandItem|DropdownMenuItem|ComboboxItem)\b/;
 /**
@@ -120,6 +210,22 @@ const DATA_DRIVEN =
 interface Finding {
   file: string;
   items: number;
+}
+
+function hasAddAffordance(raw: string): boolean {
+  const source = stripComments(raw);
+  const writes = WRITE_PATH.some((re) => re.test(source));
+  if (writes) return true;
+  // P11 counts only as an explanation PLUS a live alternative — never alone,
+  // and the alternative must be code: a prop, a key or a handler.
+  const p11 =
+    P11_NOTE.some((re) => re.test(raw)) &&
+    P11_ALTERNATIVE.some((re) => re.test(source));
+  if (p11) return true;
+  // A caption with no write path in the file is a door or a lie — never an add.
+  void ADD_CAPTION;
+  void DOOR_ONLY;
+  return false;
 }
 
 function scan(): Finding[] {
@@ -145,7 +251,7 @@ function scan(): Finding[] {
       }
       if (!ITEM_TAGS.test(source)) continue;
       if (!DATA_DRIVEN.test(source)) continue; // literal switches are fine
-      if (ADD_AFFORDANCE.some((re) => re.test(source))) continue;
+      if (hasAddAffordance(source)) continue;
       const items = (source.match(new RegExp(ITEM_TAGS.source, "g")) ?? [])
         .length;
       findings.push({ file: rel, items });
@@ -155,6 +261,41 @@ function scan(): Finding[] {
 }
 
 const findings = scan();
+
+/**
+ * THE BASELINE ONLY SHRINKS. `scripts/picker-add-baseline.json` is the list of
+ * files that screamed on 2026-09-18. A file that screams and is NOT in it is
+ * NEW debt: it is named separately, first, and fails the run in every mode
+ * (advisory included) — a law that lets new violations in while the old ones
+ * are being fixed is how P23 rotted between 2026-08-23 and 2026-09-18. A
+ * baseline file that no longer screams is announced so the entry is deleted.
+ * Never add a line to the baseline to make a run pass; fix the picker.
+ */
+const BASELINE_PATH = join(ROOT, "scripts/picker-add-baseline.json");
+let baseline: string[] = [];
+try {
+  baseline = JSON.parse(readFileSync(BASELINE_PATH, "utf8")).files ?? [];
+} catch {
+  baseline = [];
+}
+const baselineSet = new Set(baseline);
+const flagged = new Set(findings.map((f) => f.file));
+const newDebt = findings.filter((f) => !baselineSet.has(f.file));
+const cleared = baseline.filter((f) => !flagged.has(f));
+if (cleared.length > 0) {
+  console.log("");
+  console.log(
+    `  ✓ ${cleared.length} baseline file(s) no longer scream — DELETE them from scripts/picker-add-baseline.json:`,
+  );
+  for (const f of cleared) console.log(`    - ${f}`);
+}
+if (newDebt.length > 0) {
+  console.log("");
+  console.log(
+    `  ✗ NEW since the 2026-09-18 baseline — ${newDebt.length} file(s). These FAIL the run:`,
+  );
+  for (const f of newDebt) console.log(`    ✗ ${f.file}  (${f.items})`);
+}
 
 if (findings.length === 0) {
   console.log(
@@ -204,4 +345,4 @@ console.log(
 );
 console.log("");
 
-exitAfterDrain(STRICT ? 1 : 0);
+exitAfterDrain(STRICT || newDebt.length > 0 ? 1 : 0);

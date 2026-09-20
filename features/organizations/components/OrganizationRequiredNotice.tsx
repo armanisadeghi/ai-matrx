@@ -31,6 +31,13 @@
 //   `onRetry`              — re-run the load after a pick; omitted = no button.
 
 import { Building2 } from "lucide-react";
+import { Skeleton } from "@ai-matrx/design-system";
+import {
+  ORGANIZATION_UNAVAILABLE_DESCRIPTION,
+  ORGANIZATION_UNAVAILABLE_TITLE,
+  useOrganizationRequired,
+  type OrganizationState,
+} from "@/features/organizations/useOrganizationRequired";
 import { Button } from "@/components/ui/button";
 import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
 
@@ -116,6 +123,146 @@ export function OrganizationRequiredNotice({
         <p className="text-sm text-muted-foreground">{description}</p>
         {picker}
         {retry}
+      </div>
+    </div>
+  );
+}
+
+// ─── The three states, in ONE component ─────────────────────────────────────
+
+/**
+ * 🚨 THE THIRD STATE IS NOT THE REFUSAL, AND IT IS NOT AN EMPTY SCREEN.
+ * (VERIFY-R7-FIX-WAVE NEW-1, 2026-09-18.)
+ *
+ * `OrganizationRequiredNotice` above is the TERMINAL state: boot settled and
+ * there is nothing selected. A surface that renders it off a bare
+ * `!organizationId` shows it while boot is still resolving too — which is how
+ * the Tasks import control told a person with an organization to "Select an
+ * organization" from 4.0s to 17.4s after load, disabled, while the memberships
+ * read had not even been issued.
+ *
+ * So the states are not a surface's business to spell. Pass the discriminant
+ * from `useOrganizationRequired` and this component picks:
+ *
+ *   `resolving`   → a labelled waiting state that says what is being checked
+ *                   (never the refusal, never nothing);
+ *   `required`    → the honest terminal refusal with the picker;
+ *   `unavailable` → we could not READ the memberships, so we say that, and
+ *                   offer Retry (R37, 2026-09-18);
+ *   `ready`       → nothing — the caller renders its own content.
+ *
+ * 🚨 THE FOURTH STATE NEEDS NO SURFACE EDIT. Every surface already passing
+ * `state` from `useOrganizationRequired` inherits the new screen here — that is
+ * the whole point of the states living in one component. A surface that spells
+ * its own refusal instead is what `pnpm check:org-three-states` refuses.
+ */
+export function OrganizationContextNotice({
+  state,
+  what,
+  title,
+  description,
+  compact = false,
+  onRetry,
+  className,
+}: OrganizationRequiredNoticeProps & { state: OrganizationState }) {
+  if (state === "ready") return null;
+  if (state === "unavailable") {
+    return (
+      <OrganizationUnavailableNotice
+        compact={compact}
+        onRetry={onRetry}
+        className={className}
+      />
+    );
+  }
+  if (state === "resolving") {
+    return (
+      <div
+        className={className}
+        role="status"
+        aria-busy="true"
+        data-testid="organization-resolving-notice"
+      >
+        <div
+          className={
+            compact
+              ? "space-y-2 p-3"
+              : "mx-auto flex max-w-md flex-col items-center gap-3 p-6 text-center"
+          }
+        >
+          <p className="text-sm text-muted-foreground">
+            {what
+              ? `Checking which organization ${what.toLowerCase()} belong to…`
+              : "Checking which organization you are working in…"}
+          </p>
+          <Skeleton className="h-8 w-full" />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <OrganizationRequiredNotice
+      what={what}
+      title={title}
+      description={description}
+      compact={compact}
+      onRetry={onRetry}
+      className={className}
+    />
+  );
+}
+
+/**
+ * THE FOURTH STATE'S SCREEN — "we could not check", with Retry.
+ *
+ * Deliberately NO picker: a picker is the remedy for "you have not chosen one",
+ * and this state does not know whether the person has anything to choose from.
+ * Offering it here would restate the refusal in furniture after the sentence
+ * refused to say it.
+ *
+ * The retry comes from the platform gate itself when the caller gives none, so
+ * a surface inherits a working button without knowing this state exists. It is
+ * a separate component precisely so that hook runs ONLY in this state.
+ */
+function OrganizationUnavailableNotice({
+  compact,
+  onRetry,
+  className,
+}: {
+  compact: boolean;
+  onRetry?: () => void;
+  className?: string;
+}) {
+  const { retry } = useOrganizationRequired();
+  const onClick = onRetry ?? retry;
+  return (
+    <div
+      className={className}
+      role="status"
+      data-testid="organization-unavailable-notice"
+    >
+      <div
+        className={
+          compact
+            ? "space-y-2 p-3"
+            : "mx-auto flex max-w-md flex-col items-center gap-3 p-6 text-center"
+        }
+      >
+        <h3 className="text-sm font-semibold text-foreground">
+          {ORGANIZATION_UNAVAILABLE_TITLE}
+        </h3>
+        <p
+          className={
+            compact
+              ? "text-xs text-muted-foreground"
+              : "text-sm text-muted-foreground"
+          }
+        >
+          {ORGANIZATION_UNAVAILABLE_DESCRIPTION}
+        </p>
+        <Button size="sm" variant="outline" onClick={onClick}>
+          Try again
+        </Button>
       </div>
     </div>
   );

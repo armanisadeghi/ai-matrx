@@ -18,7 +18,12 @@
  * `features/masterwork/**` or `features/vision-interview/**`:
  *
  *   R1 — a `toast.error("… first.")`: a red toast whose words are an
- *        instruction for something not done YET.
+ *        instruction for something not done YET. Its one exemption is the
+ *        consequent of an `isOrganizationRequiredError(...)` test: that
+ *        sentence is reached only from a `catch`, after the act was attempted
+ *        and REFUSED, and `check-org-refusal-honesty` requires it to be shown.
+ *        The exemption is per-literal, so the same call's other branches and
+ *        the same file's other toasts are still scanned.
  *   R2 — a `toast.error(refusal)` where `refusal` came from a precondition
  *        validator (a `…): string | null` that answers "what is missing").
  *   R3 — a destructive-chrome element rendering such a validator's sentence,
@@ -143,6 +148,48 @@ describe("the census itself", () => {
     const found = censusPreconditionChrome([dir], dir);
     expect(found.map((v) => v.rule)).toEqual(["R1-toast-literal"]);
     expect(found[0].sentence).toBe("Pick a rulebook first.");
+  });
+
+  // The narrow exemption R1 carries, and the proof it stays narrow: ONE file
+  // holding all three shapes — the refusal, a prompt in the SAME call, and a
+  // prompt in another call — of which exactly the two prompts are reported.
+  // Remove the `isOrganizationRequiredError` exemption from the scanner and
+  // this goes red on the refusal; widen it to the whole call or the whole file
+  // and it goes red on a missing prompt.
+  it("R1 — leaves an organization refusal a real attempt raised, and still catches its neighbour", () => {
+    write(
+      "surface/Create.tsx",
+      [
+        'import { toast } from "@/lib/toast";',
+        'import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";',
+        "export function Create({ title }: { title: string }) {",
+        "  const other = () => {",
+        '    toast.error("Pick a rulebook first.");',
+        "  };",
+        "  const create = async () => {",
+        "    try {",
+        "      await createSession({ title });",
+        "    } catch (err) {",
+        "      toast.error(",
+        "        isOrganizationRequiredError(err)",
+        '          ? "Select an organization before starting an interview — pick yours from the avatar menu."',
+        "          : isMissingTitleError(err)",
+        '            ? "Name the interview first."',
+        "            : err instanceof Error",
+        "              ? err.message",
+        '              : "Could not create the interview.",',
+        "      );",
+        "    }",
+        "  };",
+        "  return { create, other };",
+        "}",
+      ].join("\n"),
+    );
+    const found = censusPreconditionChrome([dir], dir);
+    expect(found.map((v) => `${v.rule}|${v.sentence}`)).toEqual([
+      "R1-toast-literal|Pick a rulebook first.",
+      "R1-toast-literal|Name the interview first.",
+    ]);
   });
 
   it("R2 — catches a validator's sentence thrown as a red toast", () => {

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { formatRelativeTime } from "@/utils/datetime";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { cn } from "@/lib/utils";
 import type { ExpertStatus, PartyListRow } from "../types";
 import {
@@ -133,7 +134,7 @@ export const PARTY_COLUMNS: MatrxColumnDef<PartyListRow>[] = [
     filter: "text",
     // D112: real link on the title cell — keyboard/SR/middle-click reach the
     // record; the whole-row click stays as a mouse convenience.
-    href: (row) => `/crm/${row.id}`,
+    href: (row) => resolveEntityDoors("party", row.id).href ?? "",
     cell: (row) => (
       <div className="flex min-w-0 items-center gap-2">
         <span className="truncate text-sm font-medium text-foreground">

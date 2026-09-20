@@ -22,6 +22,7 @@
 
 import { StickyNote } from "lucide-react";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { noteCreateErrorMessage } from "@/features/notes/utils/writeErrors";
 import { registerVirtualSource } from "@/features/files/virtual-sources/registry";
 import { NotesInlinePreview } from "./NotesInlinePreview";
 import type { Database } from "@/types/database.types";
@@ -292,21 +293,18 @@ const notesAdapter: VirtualSourceAdapter = {
 
   async create(supabase, userId, args: CreateArgs) {
     if (args.kind === "folder") {
-      // note_folders is the materialized list — insert and return as a node.
-      const { data, error } = await supabase
-        .schema("workbench").from("note_folders")
-        .insert({
-          created_by: userId,
-          name: args.name,
-          path: args.name,
-          // Root entity (no org-inherit trigger) — org is NOT NULL; ride active org.
-          organization_id: await ensureOrgId(undefined),
-        })
-        .select("id, name")
-        .maybeSingle();
-      if (error || !data) {
-        throw new Error("We couldn't create that folder. Please try again.");
+      // The ONE writer of a new note folder is the database get-or-create
+      // (organization + person + name). A raw insert here collided with the
+      // retired org-blind key and answered "Please try again" — a retry that
+      // could never work (2026-09-18).
+      const organizationId = await ensureOrgId(undefined);
+      const { data: folderId, error } = await supabase
+        .schema("workbench")
+        .rpc("note_folder_get_or_create", { p_organization_id: organizationId, p_name: args.name });
+      if (error || !folderId) {
+        throw new Error(noteCreateErrorMessage(error ?? { message: "" }));
       }
+      const data = { name: args.name.trim() };
       return {
         id: folderVidFromName(data.name ?? args.name),
         kind: "folder" as const,

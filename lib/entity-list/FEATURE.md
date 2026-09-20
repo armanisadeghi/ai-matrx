@@ -428,6 +428,34 @@ how that savior page gets built.
 
 ## Change log
 
+- `2026-09-19` — Claude (Sonnet): **a tall `notice` can no longer squeeze the
+  table out of reach.** `notice` renders in the STATIC `shrink-0` zone above
+  the scope tabs and toolbar (flex-shrink: 0, so flexbox never compresses
+  it); found on `/libraries/[id]` (D4, cold-walk-12), where
+  `LibraryMetricsHeader`'s stat tiles plus two fixed `h-[276px]` charts
+  consumed nearly the whole viewport there, squeezing the table's scroll body
+  (`flex-1 min-h-0`) down to a sliver with no genuinely scrollable ancestor —
+  reachable by neither mouse nor wheel. `notice` now renders inside its own
+  `max-h-[42vh] overflow-y-auto` (scrolls independently, however tall its
+  content), and the table's scroll body is floored at `min-h-[16rem]`
+  instead of `min-h-0` (still shrinks — its own scroll still engages once
+  content exceeds it — but never below a workable slice of table). Every
+  other consumer's notice (`AssistStrip`, paste boxes, small banners) is far
+  under the 42vh cap, so nothing about them changes. Guard:
+  `features/source-library/__tests__/library-table-reachable/` (`pnpm
+  test:library-table-reachable`), real-Chromium layout at 1440x900 and
+  390x844, proven RED against the pre-fix classes and GREEN against these.
+- `2026-09-18` — Claude (Fable): **a search spans the surface's default narrowing**
+  (`config.searchSpansDefaultFilters`, `config.searchPlaceholder`). `defaultFilters` is
+  a BROWSING default; a search is a different intent. With the knob on, a search typed
+  over the UNTOUCHED default bag runs over the whole corpus (fetch, counts, facets) and
+  the surface reads the lifted bag back, so a bucket control shows "All". Untouched is
+  recognised by identity — `query.filters` is still the very `defaultFilters` object —
+  never by value, so a chip click that equals the default is still honoured; the URL
+  writes an explicitly-set bag even when it equals the default for the same reason.
+  Why: a Claude Code session id pasted into /work/conversations found nothing — the
+  row sat one bucket over, behind a chip count nobody reads while staring at an empty
+  table. First consumer: `features/ai-work/conversations/listConfig.tsx`.
 - `2026-09-17` — **Bulk selection, as an opt-in capability of the primitive**
   (`config.bulkActions` + `config.bulkSelection`). Per-row checkbox with a 44px
   touch hit area, shift-click range, header select-all, the honest two-meaning

@@ -89,6 +89,8 @@ export function useConnectGoogle() {
       options?: {
         targetConnectionId?: string;
         capabilityKey?: GoogleCapabilityKey;
+        /** `google_products` only: every catalog key the person switched on. */
+        capabilityKeys?: readonly string[];
         organizationContextId?: string;
         expectedUserId?: string;
       };

@@ -1,5 +1,6 @@
 "use client";
 
+import { Tooltip as CellTooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useRouter } from "next/navigation";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -72,8 +73,8 @@ export function UsageContent({ analytics }: { analytics: CxUsageAnalytics }) {
   }));
 
   const modelColumns: MatrxColumnDef<CxUsageAnalytics["by_model"][number]>[] = [
-    { accessorKey: "model_name", header: "Model", width: 200, cell: (row) => <span className="font-medium whitespace-nowrap">{row.model_name}</span> },
-    { accessorKey: "provider", header: "Provider", width: 130, cell: (row) => <span className="text-muted-foreground whitespace-nowrap">{row.provider}</span> },
+    { accessorKey: "model_name", header: "Model", width: 200, className: "overflow-hidden", cell: (row) => <CellTooltip><TooltipTrigger asChild><span className="block min-w-0 truncate font-medium">{row.model_name}</span></TooltipTrigger><TooltipContent>{row.model_name}</TooltipContent></CellTooltip> },
+    { accessorKey: "provider", header: "Provider", width: 130, className: "overflow-hidden", cell: (row) => <CellTooltip><TooltipTrigger asChild><span className="block min-w-0 truncate text-muted-foreground">{row.provider}</span></TooltipTrigger><TooltipContent>{row.provider}</TooltipContent></CellTooltip> },
     { accessorKey: "count", header: "Requests", align: "right", width: 100, className: "whitespace-nowrap", cell: (row) => <span className="whitespace-nowrap tabular-nums">{row.count}</span> },
     { accessorKey: "total_input_tokens", header: "Input tokens", align: "right", width: 120, className: "whitespace-nowrap", cell: (row) => <span className="font-mono whitespace-nowrap">{formatTokens(row.total_input_tokens)}</span> },
     { accessorKey: "total_output_tokens", header: "Output tokens", align: "right", width: 120, className: "whitespace-nowrap", cell: (row) => <span className="font-mono whitespace-nowrap">{formatTokens(row.total_output_tokens)}</span> },

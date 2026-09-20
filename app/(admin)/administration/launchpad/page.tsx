@@ -6,7 +6,7 @@ export const metadata = createRouteMetadata("/administration", {
   title: "Administration",
   description:
     "An always-open launch surface for every AI Matrx administration destination.",
-  letter: "LP",
+  letter: "ALP",
   canonicalPath: "/administration/launchpad",
 });
 

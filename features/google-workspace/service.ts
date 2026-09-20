@@ -6,6 +6,15 @@ import type {
   ReviewedGmailDraft,
   SelectedGoogleFile,
 } from "@/features/google-workspace/types";
+import {
+  narrowReviewedSendOutcome,
+  reviewedSendRequestBody,
+  type ReviewedGmailSendOutcome,
+} from "@/features/crm/gmail/reviewed-send-contract";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { getStoreSingleton } from "@/lib/redux/store-singleton";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { isGoogleWorkspaceResourceType } from "@/features/google-workspace/resource-types";
 
 export const DEFAULT_GOOGLE_SHEET_RANGE = "A1:C10";
 
@@ -38,6 +47,37 @@ function booleanValue(record: Record<string, unknown>, key: string): boolean {
   return value;
 }
 
+/** Same contract as `requiredString`, but `null`/absent is a real answer, not a defect. */
+function nullableString(
+  record: Record<string, unknown>,
+  key: string,
+): string | null {
+  const value = record[key];
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "string") {
+    throw new Error(`Google Workspace returned an invalid ${key}.`);
+  }
+  return value;
+}
+
+/**
+ * 🚨 EVERY WRITE CARRIES AN EXPLICIT `organization_id`; NO RESOLVER OR DATABASE
+ * TRIGGER MAY CHOOSE ONE. `registerSelectedGoogleFile`, `createGoogleDocument`
+ * and `createGoogleSheet` all write a `workbench.google_document` Record inside
+ * the same server request (aidream lane F-57, R29) — and the server writes NO
+ * Record at all when the request names no organization, recording
+ * `record_absent_reason` instead. Resolved through the SAME kernel
+ * `organizationContextHeaders` already uses for the header on every one of
+ * these calls: the effective organization, or a loud
+ * `OrganizationContextError` — never a silent send with no organization.
+ */
+function effectiveOrganizationId(): string {
+  const store = getStoreSingleton();
+  return requireOrganizationContext(
+    store ? selectOrganizationId(store.getState()) : null,
+  );
+}
+
 async function responseRecord(
   response: Response,
 ): Promise<Record<string, unknown>> {
@@ -48,13 +88,87 @@ async function responseRecord(
   return payload;
 }
 
+/**
+ * 🚨 THE KNOB GOVERNS A PERSON'S OWN CLICK TOO — THE ONE ADAPTER.
+ *
+ * Until 2026-09-17 the four write routes below went straight to Google and the
+ * five-mode ladder governed the AGENT path only: `gate_mutating_action` wraps the
+ * tool dispatch table, not these routers. So an organization that set
+ * `hitl.google.attended_file_write` to "review required" changed nothing about
+ * what a person's own button did, and no screen said so — a knob that governs
+ * nothing, which Law 6 makes the same defect as no knob at all (round-2 hostile
+ * verification, common-docs
+ * `/projects/google-native/VERIFY-U-P4-U-M1-R2.md` § A-vii).
+ *
+ * THE SERVER NOW OWNS THAT JUDGEMENT (aidream lane B-8): when the effective mode
+ * is 4 or 5 these endpoints write NOTHING and answer
+ *
+ *     HTTP 202  { "proposed": true, "assist_id": "<uuid>", "mode": "mode_4" }
+ *
+ * having filed the change in the ONE approval queue. Every caller of these four
+ * functions therefore gets a UNION, and TypeScript makes reading it mandatory —
+ * a caller that said "Written" over a 202 would be the screen lying about a
+ * change that has not happened.
+ *
+ * A 202 whose body this cannot read is a REFUSAL with a remedy, never a quiet
+ * success: the change may be queued or may not exist at all, and only the queue
+ * can say.
+ */
+export interface GoogleWriteProposed {
+  proposed: true;
+  /** The approval-queue row id — `/approvals?item=<assistId>` opens it. */
+  assistId: string;
+  /** The mode that decided it, verbatim from the server. */
+  mode: string;
+}
+
+export type GoogleWriteOutcome<T> =
+  | { proposed: false; result: T }
+  | GoogleWriteProposed;
+
+/** The door to the queued proposal. One place builds it. */
+export function approvalQueueHref(assistId: string): string {
+  return `/approvals?item=${encodeURIComponent(assistId)}`;
+}
+
+/** The sentence every caller says when a write became a proposal instead. */
+export const SENT_FOR_APPROVAL_MESSAGE =
+  "Sent for approval instead — it is in your approval queue";
+
+async function writeOutcome<T>(
+  response: Response,
+  build: (body: Record<string, unknown>) => T,
+): Promise<GoogleWriteOutcome<T>> {
+  const body = await responseRecord(response);
+  if (response.status !== 202 && body.proposed !== true) {
+    return { proposed: false, result: build(body) };
+  }
+  const assistId = body.assist_id;
+  const mode = body.mode;
+  if (typeof assistId !== "string" || assistId.length === 0) {
+    throw new Error(
+      "Google Workspace said this change needs an approval but did not say which one, so nothing can be shown. Open your approval queue to see whether it was filed.",
+    );
+  }
+  return {
+    proposed: true,
+    assistId,
+    mode: typeof mode === "string" ? mode : "unknown",
+  };
+}
+
 export async function registerSelectedGoogleFile(
   connectionId: string,
   fileId: string,
 ): Promise<SelectedGoogleFile> {
+  const organizationId = effectiveOrganizationId();
   const response = await postGoogleBackend(
     "/api/google-workspace/files/register",
-    { connection_id: connectionId, file_id: fileId },
+    {
+      connection_id: connectionId,
+      file_id: fileId,
+      organization_id: organizationId,
+    },
     "Unable to register the selected Google file.",
   );
   return selectedFile(await responseRecord(response));
@@ -62,11 +176,15 @@ export async function registerSelectedGoogleFile(
 
 function selectedFile(body: Record<string, unknown>): SelectedGoogleFile {
   const resourceType = requiredString(body, "resource_type");
-  if (
-    resourceType !== "google_document" &&
-    resourceType !== "google_spreadsheet"
-  ) {
-    throw new Error("Google Workspace returned an unsupported file type.");
+  // Measured against the ONE record, not a hand-typed pair: a Slides deck the
+  // server happily registers used to be answered "unsupported file type" here
+  // while the row it had just written sat in the person's connected files
+  // (V13-3). A type this client genuinely cannot render still refuses — loudly,
+  // and naming what came back.
+  if (!isGoogleWorkspaceResourceType(resourceType)) {
+    throw new Error(
+      `Google Workspace returned a file type this screen cannot show yet (${resourceType}). Open the file in Google, and tell us so we can add it.`,
+    );
   }
   const webViewLink = body.web_view_link;
   if (webViewLink !== null && typeof webViewLink !== "string") {
@@ -80,6 +198,10 @@ function selectedFile(body: Record<string, unknown>): SelectedGoogleFile {
     name: requiredString(body, "name"),
     mimeType: requiredString(body, "mime_type"),
     webViewLink,
+    recordId: nullableString(body, "record_id"),
+    recordSyncStatus: nullableString(body, "record_sync_status"),
+    recordSyncStatusReason: nullableString(body, "record_sync_status_reason"),
+    recordAbsentReason: nullableString(body, "record_absent_reason"),
   };
 }
 
@@ -95,13 +217,14 @@ export async function createGoogleDocument(
   connectionId: string,
   title: string,
   text: string,
-): Promise<SelectedGoogleFile> {
+): Promise<GoogleWriteOutcome<SelectedGoogleFile>> {
+  const organizationId = effectiveOrganizationId();
   const response = await postGoogleBackend(
     "/api/google-workspace/documents/create",
-    { connection_id: connectionId, title, text },
+    { connection_id: connectionId, title, text, organization_id: organizationId },
     "Unable to create the Google Doc.",
   );
-  return selectedFile(await responseRecord(response));
+  return writeOutcome(response, selectedFile);
 }
 
 /** Create a NEW Sheet in the user's own Drive and register it. */
@@ -109,50 +232,32 @@ export async function createGoogleSheet(
   connectionId: string,
   title: string,
   values: string[][],
-): Promise<SelectedGoogleFile> {
+): Promise<GoogleWriteOutcome<SelectedGoogleFile>> {
+  const organizationId = effectiveOrganizationId();
   const response = await postGoogleBackend(
     "/api/google-workspace/sheets/create",
-    { connection_id: connectionId, title, values },
+    { connection_id: connectionId, title, values, organization_id: organizationId },
     "Unable to create the Google Sheet.",
   );
-  return selectedFile(await responseRecord(response));
-}
-
-export async function readGoogleDocument(
-  connectionId: string,
-  fileId: string,
-): Promise<GoogleDocumentContent> {
-  const response = await postGoogleBackend(
-    "/api/google-workspace/documents/read",
-    { connection_id: connectionId, file_id: fileId },
-    "Unable to read the selected Google Doc.",
-  );
-  const body = await responseRecord(response);
-  return {
-    fileId: requiredString(body, "file_id"),
-    title: requiredString(body, "title"),
-    text: requiredString(body, "text"),
-    truncated: booleanValue(body, "truncated"),
-  };
+  return writeOutcome(response, selectedFile);
 }
 
 export async function appendGoogleDocument(
   connectionId: string,
   fileId: string,
   text: string,
-): Promise<GoogleDocumentContent> {
+): Promise<GoogleWriteOutcome<GoogleDocumentContent>> {
   const response = await postGoogleBackend(
     "/api/google-workspace/documents/append",
     { connection_id: connectionId, file_id: fileId, text },
     "Unable to append to the selected Google Doc.",
   );
-  const body = await responseRecord(response);
-  return {
+  return writeOutcome(response, (body) => ({
     fileId: requiredString(body, "file_id"),
     title: requiredString(body, "title"),
     text: requiredString(body, "text"),
     truncated: booleanValue(body, "truncated"),
-  };
+  }));
 }
 
 function stringMatrix(value: unknown): string[][] {
@@ -194,7 +299,7 @@ export async function writeGoogleSheet(
   fileId: string,
   rangeA1: string,
   values: string[][],
-): Promise<GoogleSheetValues> {
+): Promise<GoogleWriteOutcome<GoogleSheetValues>> {
   const response = await postGoogleBackend(
     "/api/google-workspace/sheets/write",
     {
@@ -205,23 +310,55 @@ export async function writeGoogleSheet(
     },
     "Unable to update the selected Google Sheet.",
   );
-  return sheetValues(await responseRecord(response));
+  return writeOutcome(response, sheetValues);
 }
 
+/**
+ * Send exactly the reviewed bytes, and report WHAT THE SERVER DID WITH THEM.
+ *
+ * 🚨 THE SERVER OWNS THE SENT RECORD (aidream `4dbffdffb`). It gates every
+ * recipient through the ONE send authority, sends, then writes the
+ * `crm.interaction` row, its association edges and the `crm.sending_event` —
+ * and answers with all of it. The browser writes NONE of it any more: two
+ * writers meant an ungated caller could mail an unsubscribed person and no
+ * `sending_event` existed to correlate the bounce (VERIFY-B1-B2-R4 V4 / A8).
+ *
+ * 🚨 THE DELIVERED ADDRESSES ARE STILL PART OF THE ANSWER (lane B-10, R2 N2):
+ * `to` / `cc` come back as the server's ONE parser read them — bare addresses,
+ * display names stripped — so a surface can check the row was filed against the
+ * person who actually received it.
+ *
+ * 🚨 `organization_id` IS REQUIRED (422 without it), and the record's own
+ * organization is what a CRM caller passes: suppression lives on that
+ * organization's `crm.contact_medium` rows, and `crm._inherit_parent_org` refuses
+ * any other value. A send with no record — an agent asking to email an address
+ * nobody in the CRM holds, the admin bench — carries the viewer's own
+ * organization context, resolved through the ONE fail-closed kernel, which is
+ * the SAME value `postGoogleBackend` puts in the org-context header. Nothing is
+ * defaulted: with no organization selected this throws
+ * `OrganizationContextError` with its select-an-organization remedy, before any
+ * networking.
+ *
+ * A 409 `gmail_send_refused` propagates as the canonical `BackendApiError` with
+ * the authority's blocks in `details` — read it with
+ * `reviewedSendRefusalOf(error)`; nothing was sent.
+ */
 export async function sendReviewedGmail(
   draft: ReviewedGmailDraft,
-): Promise<string> {
+): Promise<ReviewedGmailSendOutcome> {
+  const store = getStoreSingleton();
+  const organizationId = requireOrganizationContext(
+    draft.context.organizationId ??
+      (store ? selectOrganizationId(store.getState()) : null),
+  );
   const response = await postGoogleBackend(
     "/api/google-workspace/gmail/send-reviewed",
-    {
-      connection_id: draft.connectionId,
-      to: draft.to,
-      cc: draft.cc,
-      subject: draft.subject,
-      body: draft.body,
-      user_confirmed: true,
-    },
+    reviewedSendRequestBody({
+      ...draft,
+      context: { ...draft.context, organizationId },
+    }),
     "Unable to send the reviewed Gmail message.",
+    organizationId,
   );
-  return requiredString(await responseRecord(response), "message_id");
+  return narrowReviewedSendOutcome(await responseRecord(response));
 }

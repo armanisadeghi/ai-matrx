@@ -725,6 +725,19 @@ export interface UploadState {
   fileName: string;
   fileSize: number;
   parentFolderId: string | null;
+  /**
+   * The logical `folderPath` this upload targeted (`UploadFilesArg.folderPath`),
+   * verbatim — `null` when the caller used `parentFolderId` instead.
+   *
+   * This is the ONE correlation channel a container-scoped surface has for
+   * finding its own failed uploads: `state.uploads` is a flat, app-wide map
+   * (every uploader shares it — the Files page, chat attachments, the
+   * Rulebook Resources card…), so a surface that wants "MY failed uploads,
+   * not anyone else's" gives itself a folder path nothing else uses and reads
+   * back entries matching it exactly (see
+   * `RulebookSourcesPanel.tsx`'s `sourcesFolderPath`).
+   */
+  folderPath: string | null;
   status: UploadStatus;
   bytesUploaded: number;
   startedAt: number;

@@ -353,8 +353,7 @@ function BuildWindowInner({
                         <li>1. Provide something already written.</li>
                         <li>
                           2. The Masterwork checks the work against all{" "}
-                          {approvedCount}
-                          rules and fixes violations.
+                          {approvedCount} rules and fixes violations.
                         </li>
                         <li>
                           3. You receive the revision with each change

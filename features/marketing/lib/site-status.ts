@@ -4,6 +4,7 @@ import {
   parseSiteIntegrations,
   providerReferenceStatus,
 } from "@/features/marketing/data/integrations-schema";
+import { judgeGscBindingWrite } from "@/features/marketing/google/gsc-property";
 
 /**
  * The five big-picture connection statuses for a site. This module is the ONE
@@ -117,7 +118,12 @@ export function parseInitialization(
 export function siteConnectionStatuses(
   site: Pick<
     MarketingSite,
-    "initialized_at" | "initialization" | "integrations" | "gsc_synced_at"
+    | "initialized_at"
+    | "initialization"
+    | "integrations"
+    | "gsc_synced_at"
+    | "domain"
+    | "root_url"
   >,
 ): SiteConnectionStatus[] {
   const init = parseInitialization(site);
@@ -186,10 +192,24 @@ export function siteConnectionStatuses(
     providerReferenceStatus(integrations.googleSearchConsole, true),
     "Not connected",
   );
+  // THE REFUSAL IS PART OF THE CHIP (PLAN §5.3, verification defect B-4). A
+  // property bound to a DIFFERENT site answers 200 with zero rows, so without
+  // this the chip said "Connected" on a binding that can never return a row —
+  // "connected" as a boolean that lies. One judge, the same one the editor
+  // uses; this only reports it.
+  const gscRefusal = judgeGscBindingWrite(integrations.googleSearchConsole, {
+    root_url: site.root_url,
+    domain: site.domain,
+  });
   // A configured GSC binding without one completed sync is not "connected":
   // no data has ever flowed. gsc_synced_at is stamped by the sync command.
-  const searchConsole: SiteConnectionStatus =
-    gscBase.state === "connected"
+  const searchConsole: SiteConnectionStatus = !gscRefusal.allowed
+    ? {
+        ...gscBase,
+        state: "attention",
+        detail: `Search Console property does not match this site — ${gscRefusal.refusal?.headline ?? "the bound property belongs to another site"}`,
+      }
+    : gscBase.state === "connected"
       ? site.gsc_synced_at
         ? {
             ...gscBase,

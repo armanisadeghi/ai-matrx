@@ -33,7 +33,7 @@ import {
   usePlanNodeEdgeMutation,
   useSeoTopics,
 } from "../data/hooks";
-import Link from "next/link";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { PartyRow } from "@/features/crm/types";
 
 import {
@@ -335,12 +335,15 @@ function EntitySection({
               </span>
               {isParty ? (
                 // A person/company is a CRM record — its name is a door.
-                <Link
-                  href={`/crm/${edge.otherId}`}
-                  className="min-w-0 flex-1 truncate font-medium text-foreground hover:underline"
-                >
-                  {name}
-                </Link>
+                <EntityRef
+                  token="party"
+                  id={edge.otherId}
+                  name={name}
+                  showIcon={false}
+                  fill
+                  className="min-w-0 flex-1"
+                  labelClassName="min-w-0 flex-1 truncate font-medium text-foreground"
+                />
               ) : (
                 <span className="min-w-0 flex-1 truncate font-medium text-foreground">
                   {name}

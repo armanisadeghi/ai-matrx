@@ -2,8 +2,32 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
+import { parseSemver } from "@/features/admin/applications/version";
+import type { Database } from "@/types/database.types";
+
+const EDITABLE_FIELDS = [
+  "description",
+  "parameters",
+  "output_schema",
+  "annotations",
+  "category",
+  "tags",
+  "icon",
+  "semver",
+  "version",
+  "is_active",
+] as const;
+
+type ToolUpdate = Database["tool"]["Tables"]["definition"]["Update"];
+
+export function editableToolPatch(body: Record<string, unknown>): ToolUpdate {
+  return Object.fromEntries(
+    EDITABLE_FIELDS.filter((field) => Object.hasOwn(body, field)).map(
+      (field) => [field, body[field]],
+    ),
+  ) as ToolUpdate;
+}
 
 // Map requireAdmin() throws to the right HTTP status; returns null otherwise.
 function authErrorResponse(error: unknown): NextResponse | null {
@@ -63,13 +87,9 @@ export async function PUT(
   try {
     await requireAdmin();
     const { id } = await params;
-    // tool.definition has RLS with a read-only (SELECT) policy and no write policy,
-    // so writes must go through the admin client after the admin gate above.
-    const supabase = createAdminClient();
-    const body = await request.json();
-
-    // Don't allow updating id, created_at, or updated_at
-    const { id: _, created_at, updated_at, ...updateData } = body;
+    const supabase = await createClient();
+    const body = (await request.json()) as Record<string, unknown>;
+    const updateData = editableToolPatch(body);
 
     // Validate JSON fields if provided
     if (updateData.parameters && typeof updateData.parameters !== "object") {
@@ -94,6 +114,30 @@ export async function PUT(
         { error: "Annotations must be an array" },
         { status: 400 },
       );
+    }
+
+    if (
+      updateData.version !== undefined &&
+      (!Number.isInteger(updateData.version) || updateData.version < 1)
+    ) {
+      return NextResponse.json(
+        { error: "Version must be a positive integer" },
+        { status: 400 },
+      );
+    }
+
+    if (
+      updateData.semver !== undefined &&
+      (typeof updateData.semver !== "string" ||
+        !parseSemver(updateData.semver))
+    ) {
+      return NextResponse.json(
+        { error: "Semantic version must use major.minor.patch format" },
+        { status: 400 },
+      );
+    }
+    if (typeof updateData.semver === "string") {
+      updateData.semver = updateData.semver.trim();
     }
 
     // Convert empty strings to null for nullable fields
@@ -143,11 +187,23 @@ export async function DELETE(
   try {
     await requireAdmin();
     const { id } = await params;
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
-    const { error } = await supabase.schema("tool").from("definition").delete().eq("id", id);
+    const { error } = await supabase
+      .schema("tool")
+      .from("definition")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .is("deleted_at", null)
+      .select("id")
+      .single();
 
     if (error) {
+      // Missing and RLS-hidden rows intentionally share one response so this
+      // admin endpoint does not become an existence oracle.
+      if (error.code === "PGRST116") {
+        return NextResponse.json({ error: "Tool not found" }, { status: 404 });
+      }
       console.error("Error deleting tool:", error);
       return NextResponse.json(
         { error: "Failed to delete tool", details: error.message },

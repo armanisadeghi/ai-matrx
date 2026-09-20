@@ -51,6 +51,7 @@ import {
   Boxes,
   FileText,
   Layers,
+  Scale,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -90,6 +91,7 @@ import {
   FEATURE_BUCKET_ORDER,
   type FeatureBucket,
 } from "@/features/ai-models/capabilities/feature-map";
+import { modelsForSelectionPurpose } from "@/features/ai-models/capabilities/types";
 import {
   costRatingTier,
   speedRatingLabel,
@@ -158,6 +160,7 @@ const MODALITY_ICON: Record<Modality, typeof Type> = {
   document: FileText,
   entities: Boxes,
   embedding: Layers,
+  decision: Scale,
 };
 
 const INTERACTION_LABEL: Record<Interaction, string> = {
@@ -167,6 +170,7 @@ const INTERACTION_LABEL: Record<Interaction, string> = {
   realtime: "Realtime",
   embedding: "Embedding",
   agent: "Background agent",
+  decision: "Decision",
 };
 
 interface ModelListDropdownProps {
@@ -176,6 +180,8 @@ interface ModelListDropdownProps {
   inputModalities: Modality[];
   /** Optional — output modalities the model must produce (seeds the filter). */
   outputModalities?: Modality[];
+  /** The execution contract this picker selects for. */
+  selectionPurpose?: "chat" | "decision" | "admin";
   /**
    * Optional catalog constraint for specialized surfaces (for example a
    * user's active-model preference or a replacement-model allowlist). The
@@ -1322,6 +1328,7 @@ function ModelRow({
         }
       }}
       onMouseEnter={onHover}
+      onFocus={onHover}
       className={cn(
         "grid w-full grid-cols-[auto_auto_minmax(0,1fr)_auto_auto_auto] items-center gap-2 rounded px-2 py-1 transition-colors",
         retired
@@ -1417,6 +1424,7 @@ export function ModelListDropdown({
   onValueChange,
   inputModalities,
   outputModalities,
+  selectionPurpose,
   allowedModelIds,
   catalogVariant,
   emptyOptionLabel,
@@ -1444,6 +1452,7 @@ export function ModelListDropdown({
   const [adminMode, setAdminMode] = useState(false);
   const variant: ModelCatalogVariant =
     catalogVariant ?? (adminMode && isSuperAdmin ? "admin" : "user");
+  const effectiveSelectionPurpose = selectionPurpose ?? "chat";
   const { models, isLoading, error } = useModelCatalog(variant);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -1492,12 +1501,8 @@ export function ModelListDropdown({
   };
 
   const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
-  const allowedModelSet = allowedModelIds
-    ? new Set(allowedModelIds)
-    : null;
-  const priorityModelSet = priorityModelIds
-    ? new Set(priorityModelIds)
-    : null;
+  const allowedModelSet = allowedModelIds ? new Set(allowedModelIds) : null;
+  const priorityModelSet = priorityModelIds ? new Set(priorityModelIds) : null;
   const eligibleModels = allowedModelSet
     ? models.filter((model) => allowedModelSet.has(model.id))
     : models;
@@ -1525,9 +1530,7 @@ export function ModelListDropdown({
     () =>
       [
         ...new Set(
-          eligibleModels
-            .map((m) => m.maker)
-            .filter((v): v is string => !!v),
+          eligibleModels.map((m) => m.maker).filter((v): v is string => !!v),
         ),
       ].sort((a, b) => a.localeCompare(b)),
     [eligibleModels],
@@ -1570,7 +1573,10 @@ export function ModelListDropdown({
     const q = query.trim().toLowerCase();
     const hasAvailable = (m: CatalogModel) =>
       (m.admin?.offerings ?? []).some((o) => o.isAvailable);
-    const rows = eligibleModels.filter((m) => {
+    const rows = modelsForSelectionPurpose(
+      eligibleModels,
+      effectiveSelectionPurpose,
+    ).filter((m) => {
       if (tab === "favorites" && !favoriteSet.has(m.id)) return false;
       // Search matches name, maker, branded Service names — and, in the
       // admin variant, real vendor / api / provider_model_id too.
@@ -1707,7 +1713,16 @@ export function ModelListDropdown({
       return [...prioritize(favs), ...prioritize(rest)];
     }
     return prioritize(sorted);
-  }, [eligibleModels, query, filters, tab, favoriteSet, variant, priorityModelSet]);
+  }, [
+    eligibleModels,
+    query,
+    filters,
+    tab,
+    favoriteSet,
+    variant,
+    priorityModelSet,
+    effectiveSelectionPurpose,
+  ]);
 
   const activeFilterCount =
     filters.input.size +
@@ -1810,28 +1825,28 @@ export function ModelListDropdown({
       )}
     >
       {triggerVariant === "settings" ? (
-      <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        {selected ? (
-          <>
-            <MakerBrandGlyph
-              maker={selected.maker}
-              colored
-              className="h-3.5 w-3.5 shrink-0"
-            />
-            <span className="min-w-0 whitespace-normal text-left leading-tight">
-              {selected.name}
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
+          {selected ? (
+            <>
+              <MakerBrandGlyph
+                maker={selected.maker}
+                colored
+                className="h-3.5 w-3.5 shrink-0"
+              />
+              <span className="min-w-0 whitespace-normal text-left leading-tight">
+                {selected.name}
+              </span>
+            </>
+          ) : (
+            <span className="min-w-0 whitespace-normal text-left leading-tight text-muted-foreground">
+              {isLoading
+                ? "Loading models…"
+                : emptyOptionLabel && !value
+                  ? emptyOptionLabel
+                  : placeholder}
             </span>
-          </>
-        ) : (
-          <span className="min-w-0 whitespace-normal text-left leading-tight text-muted-foreground">
-            {isLoading
-              ? "Loading models…"
-              : emptyOptionLabel && !value
-                ? emptyOptionLabel
-                : placeholder}
-          </span>
-        )}
-      </div>
+          )}
+        </div>
       ) : (
         <span className="flex min-w-0 flex-1 items-center gap-1.5">
           {selected ? (
@@ -1854,7 +1869,12 @@ export function ModelListDropdown({
           )}
         </span>
       )}
-      <ChevronDown className={cn("shrink-0 text-muted-foreground/60", triggerVariant === "settings" ? "h-4 w-4" : "h-3 w-3")} />
+      <ChevronDown
+        className={cn(
+          "shrink-0 text-muted-foreground/60",
+          triggerVariant === "settings" ? "h-4 w-4" : "h-3 w-3",
+        )}
+      />
     </button>
   );
 

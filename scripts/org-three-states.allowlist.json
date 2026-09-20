@@ -1,0 +1,3 @@
+{
+  "lib/organizations/organizationRequiredServerError.ts": "This is the SERVER half of the refusal (the 2026-09-19 ruling's organization_required envelope). It runs in a Next route handler, where the three client states do not exist: there is no Redux store, no bootstrap to still be resolving, and no picker to render. Its sentence is the wire `message`/`user_message` the CLIENT then reads through the three-state hooks (lib/organizations/fetchWithOrganization.ts holds, asks and replays). Reading useOrganizationRequired here is impossible, not merely unidiomatic."
+}

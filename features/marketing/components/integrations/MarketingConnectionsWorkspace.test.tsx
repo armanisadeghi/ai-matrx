@@ -96,6 +96,7 @@ const ARMAN26_PERSONAL_CONNECTION: GoogleConnectionSummary = {
   credential_present: false,
   credential_stable: true,
   health: "needs_reauth",
+  capability_health: null,
 };
 
 function organizationConnection(): GoogleConnectionSummary {

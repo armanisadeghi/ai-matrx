@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, GitMerge, Merge, Undo2 } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
@@ -114,12 +115,12 @@ export function MergeStatusCard({
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
             This record was merged into{" "}
-            <Link
-              href={`/crm/${party.canonical_id}`}
-              className="font-medium text-foreground "
-            >
-              {activeAsLoser?.winner?.display_name ?? "the surviving record"}
-            </Link>
+            <EntityRef
+              token="party"
+              id={party.canonical_id}
+              name={activeAsLoser?.winner?.display_name ?? "the surviving record"}
+              labelClassName="font-medium text-foreground"
+            />
             . It is kept so the merge can be undone exactly.
           </p>
           {activeAsLoser && (
@@ -149,12 +150,12 @@ export function MergeStatusCard({
                   Possible{" "}
                   {other.party_kind === "organization" ? "company" : "person"}{" "}
                   match:{" "}
-                  <Link
-                    href={`/crm/${other.id}`}
-                    className="font-medium text-foreground "
-                  >
-                    {other.display_name}
-                  </Link>{" "}
+                  <EntityRef
+                    token="party"
+                    id={other.id}
+                    name={other.display_name}
+                    labelClassName="font-medium text-foreground"
+                  />{" "}
                   ({confidence}%{count > 1 ? ` · ${count} signals` : ""})
                 </li>
               );
@@ -185,12 +186,12 @@ export function MergeStatusCard({
               <li key={m.id} className="flex items-center gap-2">
                 <span className="min-w-0 truncate">
                   {m.loser ? (
-                    <Link
-                      href={`/crm/${m.loser.id}`}
-                      className="font-medium text-foreground "
-                    >
-                      {m.loser.display_name}
-                    </Link>
+                    <EntityRef
+                      token="party"
+                      id={m.loser.id}
+                      name={m.loser.display_name}
+                      labelClassName="font-medium text-foreground"
+                    />
                   ) : (
                     "A record"
                   )}{" "}

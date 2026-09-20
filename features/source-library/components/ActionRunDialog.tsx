@@ -14,9 +14,10 @@
  * is entitled to see what it is free over.
  *
  * The form under the numbers is generated from the Action's `params_schema`
- * (§8). Nothing about any specific Action is written here; the one place with
- * real knowledge is the Rulebook picker, which exists because "pick or create a
- * Rulebook" is a door into another feature, not a text box for a uuid.
+ * (§8). Nothing about any specific Action is written here; the only places with
+ * real knowledge are the two record pickers — Rulebook and agent — which exist
+ * because "pick the thing this runs against" is a door into another feature,
+ * not a text box for a uuid.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -48,7 +49,9 @@ import {
 } from "@/components/ui/select";
 import { formatCost, formatCount, formatSecondsEstimate } from "../format";
 import type { ActionDeclaration, EstimateResult } from "../types";
+import { sourceVocabulary, type SourceVocabulary } from "../vocabulary";
 import { RulebookParamPicker } from "./RulebookParamPicker";
+import { AgentParamPicker } from "./AgentParamPicker";
 
 export interface ActionRunDialogProps {
     open: boolean;
@@ -56,6 +59,11 @@ export interface ActionRunDialogProps {
     selectionCount: number;
     /** "matching" means the person asked for everything the filter matches. */
     selectionMode: "ids" | "matching";
+    /** D6b (jobs-bar cold-walk-12): this Library's own words — never "video(s)"
+     *  over a podcast episode or a blog post. Optional so a caller with no
+     *  Library row yet (or a test rendering this dialog in isolation) still
+     *  gets the neutral "item(s)" vocabulary, never a crash. */
+    vocabulary?: SourceVocabulary;
     estimate: EstimateResult | null;
     estimateLoading: boolean;
     /** A sentence from the server. Rendered instead of a Start button. */
@@ -106,12 +114,29 @@ function humanize(key: string): string {
     return key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 }
 
+/**
+ * D11 (jobs-bar cold-walk-12): the gate sentence ("X needs ⟨this⟩ before it can
+ * start") must read as a person would say it out loud, never as a database
+ * column name. A `title` on the schema (e.g. "Which Rulebook") is right for a
+ * FIELD LABEL above a picker; used verbatim in this sentence it reads "needs
+ * which Rulebook before it can start", which is not English either. The two
+ * pickers this dialog special-cases get their own grammatical noun; every
+ * other missing param falls back to its humanised key, lowercased, exactly as
+ * before.
+ */
+function missingParamNoun(key: string, property: SchemaProperty): string {
+    if (key === "rulebook_id") return "a Rulebook";
+    if (key === "agent_id") return "an agent";
+    return (property.title ?? humanize(key)).toLowerCase();
+}
+
 export function ActionRunDialog(props: ActionRunDialogProps) {
     const {
         open,
         action,
         selectionCount,
         selectionMode,
+        vocabulary = sourceVocabulary(null),
         estimate,
         estimateLoading,
         estimateError,
@@ -148,6 +173,16 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
 
     if (!action) return null;
 
+    // 🚨 `available: false` IS A DECLARATION, NOT A HIDDEN ROW. The server names
+    // an Action whose runner is not wired and says in a sentence what is missing,
+    // so a person planning work can see what the platform intends to do. What it
+    // must never do is pretend: before this, the declaration's `available` was not
+    // even in the TypeScript interface, so `summarize` and `organize` were live
+    // buttons that opened this dialog and answered 501 on Start. Not-yet is stated
+    // here, in the server's own words, and the Start button is ABSENT — never
+    // present-and-dead, and never wearing a sentence the server did not write.
+    const notYet = action.available === false;
+
     const missing = required.filter(
         (key) => params[key] === undefined || params[key] === "" || params[key] === null,
     );
@@ -162,7 +197,7 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                 <DialogHeader>
                     <DialogTitle>
                         {action.label} {formatCount(selectionCount)}{" "}
-                        {selectionCount === 1 ? "video" : "videos"}
+                        {selectionCount === 1 ? vocabulary.item.one : vocabulary.item.many.toLowerCase()}
                     </DialogTitle>
                     <DialogDescription>{action.description}</DialogDescription>
                 </DialogHeader>
@@ -174,7 +209,20 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                     </p>
                 )}
 
-                {needsEstimate && (
+                {notYet && (
+                    <p className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+                        <TriangleAlert
+                            className="mt-0.5 size-4 shrink-0 text-amber-500"
+                            aria-hidden
+                        />
+                        <span>
+                            {action.unavailable_reason ??
+                                `${action.label} is declared but is not wired up yet, so nothing would happen.`}
+                        </span>
+                    </p>
+                )}
+
+                {!notYet && needsEstimate && (
                     <section className="rounded-lg border border-border">
                         <h3 className="border-b border-border px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                             What this will cost
@@ -209,13 +257,13 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                             <dl className="divide-y divide-border text-sm">
                                 <Row
                                     icon={<Captions className="size-4" aria-hidden />}
-                                    label="Free, from YouTube's own captions"
-                                    value={`${formatCount(estimate.free_count)} ${estimate.free_count === 1 ? "video" : "videos"}`}
+                                    label={`Free, from ${vocabulary.freeCaptionsSource ?? "its own captions"}`}
+                                    value={`${formatCount(estimate.free_count)} ${estimate.free_count === 1 ? vocabulary.item.one : vocabulary.item.many.toLowerCase()}`}
                                 />
                                 <Row
                                     icon={<BadgeDollarSign className="size-4" aria-hidden />}
-                                    label="Paid — a model watches the video"
-                                    value={`${formatCount(estimate.paid_count)} ${estimate.paid_count === 1 ? "video" : "videos"}`}
+                                    label={`Paid — a model watches the ${vocabulary.item.one}`}
+                                    value={`${formatCount(estimate.paid_count)} ${estimate.paid_count === 1 ? vocabulary.item.one : vocabulary.item.many.toLowerCase()}`}
                                 />
                                 {estimate.already_done > 0 && (
                                     <Row
@@ -266,11 +314,22 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                     </section>
                 )}
 
-                {Object.keys(properties).length > 0 && (
+                {!notYet && Object.keys(properties).length > 0 && (
                     <div className="space-y-3">
                         {Object.entries(properties).map(([key, property]) => {
                             const label = property.title ?? humanize(key);
                             const value = params[key];
+
+                            if (key === "agent_id") {
+                                return (
+                                    <AgentParamPicker
+                                        key={key}
+                                        label={label}
+                                        value={typeof value === "string" ? value : null}
+                                        onChange={(next) => setParam(key, next)}
+                                    />
+                                );
+                            }
 
                             if (key === "rulebook_id") {
                                 return (
@@ -349,9 +408,12 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                     </div>
                 )}
 
-                {missing.length > 0 && (
+                {!notYet && missing.length > 0 && (
                     <p className="text-sm text-muted-foreground">
-                        {action.label} needs {missing.map(humanize).join(", ").toLowerCase()}{" "}
+                        {action.label} needs{" "}
+                        {missing
+                            .map((key) => missingParamNoun(key, properties[key] ?? {}))
+                            .join(", ")}{" "}
                         before it can start.
                     </p>
                 )}
@@ -370,8 +432,9 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                         onClick={onCancel}
                         disabled={submitting}
                     >
-                        Cancel
+                        {notYet ? "Close" : "Cancel"}
                     </Button>
+                    {notYet ? null : (
                     <Button
                         className="h-11 gap-2"
                         onClick={onConfirm}
@@ -382,8 +445,14 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                         ) : null}
                         {paid
                             ? `Spend up to ${formatCost(estimate?.cost.paid_cost_high ?? 0, estimate?.cost.currency)} and start`
-                            : `Start ${action.label.toLowerCase()}`}
+                            : // D11 (jobs-bar cold-walk-12): lowercasing the whole label
+                              // turned a proper name mid-sentence into ugly, wrong
+                              // casing ("Start send to a masterwork rulebook"). The
+                              // registry's label is already the sentence a person
+                              // reads at the top of this dialog — say it as declared.
+                              `Start ${action.label}`}
                     </Button>
+                    )}
                 </DialogFooter>
             </DialogContent>
         </Dialog>

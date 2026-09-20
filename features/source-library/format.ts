@@ -133,6 +133,39 @@ export function transcriptStatusLabel(value: string): string {
     return TRANSCRIPT_STATUS_LABELS[value] ?? value;
 }
 
+/**
+ * §4.3 — the four words an Action outcome can carry.
+ *
+ * 🚨 THEY ARE `transcriptStatusLabel`'S OWN WORDS, deliberately. The server
+ * reuses `transcript_status`'s vocabulary for every Action precisely so no new
+ * name has to be coined for each one, and inventing friendlier synonyms here
+ * ("Sent", "Done", "Indexed") would put four words on the screen for one word on
+ * the wire — which is how a person ends up unable to tell whether two rows are
+ * in the same state.
+ */
+const ACTION_OUTCOME_LABELS: Record<string, string> = {
+    ready: "Ready",
+    running: "Running",
+    skipped: "Skipped",
+    failed: "Failed",
+};
+
+export function actionOutcomeLabel(value: string): string {
+    return ACTION_OUTCOME_LABELS[value] ?? value;
+}
+
+/**
+ * The Action's own label, from the server's registry (§8) — never a list held
+ * here. An Action this build has not been told about shows its key, which is
+ * ugly and true, rather than a name this file made up.
+ */
+export function actionLabel(
+    key: string,
+    labels: Record<string, string> | undefined,
+): string {
+    return labels?.[key] ?? key;
+}
+
 const SIGNAL_SENTENCES: Record<string, string> = {
     duration: "Classified by its length.",
     shorts_url: "YouTube itself serves this at /shorts, so it is a Short.",

@@ -15,7 +15,7 @@ import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
 import { mcpConnectionRouteFor } from "@/features/agent-connections/mcp-connection-route";
 import { githubConnectUrl } from "@/features/github-integration/service";
 import { toast } from "@/lib/toast";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { googleConnectedIds } from "./google-status";
 import {
   buildLiveConnectorDefinitions,
@@ -29,7 +29,6 @@ export function useLiveConnectors() {
   const inventory = useGoogleConnectionInventory();
   const mcp = useMcpCatalog();
   const mcpError = useAppSelector(selectMcpCatalogError);
-  const organizationId = useAppSelector(selectOrganizationId);
   const openGoogleConnect = useOpenGoogleConnectWindow();
   const [connectingId, setConnectingId] = useState<ConnectorId | null>(null);
   const [isNavigating, startTransition] = useTransition();
@@ -98,12 +97,20 @@ export function useLiveConnectors() {
       return;
     }
     if (route === "github") {
-      if (!organizationId) {
-        toast.error("Select an organization before connecting GitHub.");
+      // 🚨 A PRESS WAITS FOR THE ANSWER, IT NEVER REFUSES ON A RACE
+      // (VERIFY-R7-FIX-WAVE NEW-1). `organization_id === null` is "boot has not
+      // answered" as often as it is "you have none", and a press that reads the
+      // value once refuses the first case with a sentence about the second. The
+      // platform's bounded wait answers both honestly — and when it settles
+      // with nothing, its own reason is the sentence, remedy included, never
+      // "try again in a moment".
+      const workspace = await awaitEffectiveOrganizationId();
+      if (workspace.status !== "ready") {
+        toast.error(workspace.reason);
         return;
       }
       window.location.assign(
-        githubConnectUrl(window.location.pathname, organizationId),
+        githubConnectUrl(window.location.pathname, workspace.organizationId),
       );
       return;
     }

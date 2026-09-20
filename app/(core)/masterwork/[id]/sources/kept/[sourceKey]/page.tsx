@@ -20,6 +20,8 @@ export default function KeptSourceRoute({
 }: {
   params: Promise<{ id: string; sourceKey: string }>;
 }) {
+  // The App Router already decodes dynamic segment params — decoding again
+  // double-decodes a literal `%` in the source key.
   const { id, sourceKey } = use(params);
   const ruleId = useSearchParams().get("rule");
   return (
@@ -27,7 +29,7 @@ export default function KeptSourceRoute({
       {({ rulebook }) => (
         <KeptSourcePanel
           rulebookId={id}
-          sourceKey={decodeURIComponent(sourceKey)}
+          sourceKey={sourceKey}
           rules={rulebook.rules ?? []}
           highlightRuleId={ruleId}
         />

@@ -17,16 +17,32 @@
  * `intent: "rename"` belongs to `ItemRow`'s inline editor, which a header has
  * no row to host, so the menu gets `onRename` and this component opens the
  * canonical text dialog — still `renameConversation`, never a second write path.
+ *
+ * ## The chat entrance to "Send email" (F-20 item 2)
+ *
+ * B-1's own sentence is "compose from a Person, a deal, or the chat", and the
+ * chat half was missing: `useOpenGmailComposeWindow` had three call sites, all
+ * in CRM record surfaces (VERIFY-B1-B2-R2 A1). It is here, in the conversation's
+ * own menu, and it is driven by what the conversation is ASSOCIATED with — one
+ * entry per Person the conversation is linked to, opening the SAME compose
+ * window through the SAME opener. No new component, no second compose path, and
+ * no picker invented for the occasion: a conversation linked to nobody offers
+ * nothing rather than a dead control, because the Person is what makes a sent
+ * record true.
  */
 
 import { useCallback, useState } from "react";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Send } from "lucide-react";
+import { useAssociations } from "@ai-matrx/associations/react";
 import { toast } from "@/lib/toast";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+import { useOpenGmailComposeWindow } from "@/features/overlays/openers/gmailComposeWindow";
+import type { ItemMenuSection } from "@/components/official/item/types";
+import { conversationEmailEntrances } from "./conversation-email-entrance";
 
 interface ConversationPageMenuProps {
   conversationId: string;
@@ -41,6 +57,15 @@ export function ConversationPageMenu({
   const dispatch = useAppDispatch();
   const [renameOpen, setRenameOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  const openGmailCompose = useOpenGmailComposeWindow();
+  const { edges } = useAssociations({
+    type: "conversation",
+    id: conversationId,
+  });
+  // The People this conversation is about. The edge carries the name and the
+  // organization, so the entrance costs no extra read; the compose panel files
+  // the sent row under the PARTY's own organization either way.
+  const people = conversationEmailEntrances(edges);
 
   // The conversation's live row, from whichever store already holds it. The
   // header must never fetch: if the row is not loaded the menu still works —
@@ -70,19 +95,42 @@ export function ConversationPageMenu({
     [conversationId, dispatch],
   );
 
+  const emailSection: ItemMenuSection | null =
+    people.length > 0
+      ? {
+          id: "send-email",
+          items: people.map((person) => ({
+            id: `send-email-${person.partyId}`,
+            label: `Send email to ${person.partyLabel}`,
+            icon: Send,
+            onSelect: () => {
+              // The opener returns a handle; the menu wants nothing back.
+              openGmailCompose(person);
+            },
+          })),
+        }
+      : null;
+
+  const menuConfig = buildConversationMenu({
+    conversationId,
+    title,
+    isFavorite: conv?.isFavorite ?? false,
+    isArchived: conv?.status === "archived",
+    excludeFromKg: conv?.excludeFromKg ?? false,
+    href,
+    dispatch,
+    onRename: () => setRenameOpen(true),
+  });
+
   return (
     <>
       <ItemMenu
-        config={buildConversationMenu({
-          conversationId,
-          title,
-          isFavorite: conv?.isFavorite ?? false,
-          isArchived: conv?.status === "archived",
-          excludeFromKg: conv?.excludeFromKg ?? false,
-          href,
-          dispatch,
-          onRename: () => setRenameOpen(true),
-        })}
+        config={{
+          ...menuConfig,
+          sections: emailSection
+            ? [emailSection, ...menuConfig.sections]
+            : menuConfig.sections,
+        }}
         align="end"
       >
         <button

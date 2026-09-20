@@ -17,6 +17,7 @@ import {
   Mail,
   Loader2,
   CheckCircle,
+  KeyRound,
 } from "lucide-react";
 import { useSharing, useIsOwner } from "@/utils/permissions/hooks";
 import {
@@ -29,6 +30,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { AlertTriangle, Lock } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { PermissionsList } from "./PermissionsList";
+import { AccessSummaryPanel } from "./AccessSummaryPanel";
 import { ShareWithUserTab } from "./tabs/ShareWithUserTab";
 import { ShareWithOrgTab } from "./tabs/ShareWithOrgTab";
 import { PublicAccessTab } from "./tabs/PublicAccessTab";
@@ -79,7 +81,7 @@ export function ShareModal({
   isOwner: isOwnerOverride,
 }: ShareModalProps) {
   const [activeTab, setActiveTab] = useState<
-    "users" | "organizations" | "public"
+    "users" | "organizations" | "public" | "access"
   >("users");
   const [emailingLink, setEmailingLink] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -204,7 +206,8 @@ export function ShareModal({
       <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
       <div>
         <p className="text-sm font-medium text-destructive">
-          Couldn&apos;t confirm who owns this {resourceLabel.toLowerCase()}
+          Couldn&apos;t confirm whether you may change sharing on this{" "}
+          {resourceLabel.toLowerCase()}
         </p>
         <p className="text-xs text-destructive/80 mt-0.5">{ownerError}</p>
       </div>
@@ -213,10 +216,13 @@ export function ShareModal({
     <div className="p-3 rounded-lg border bg-muted/30 flex items-start gap-2">
       <Lock className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
       <div>
-        <p className="text-sm font-medium">Only the owner can change sharing</p>
+        <p className="text-sm font-medium">
+          You need Admin on this {resourceLabel.toLowerCase()} to change who can see it
+        </p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          This {resourceLabel.toLowerCase()} was shared with you. Ask its owner
-          to invite others or change access levels.
+          Deciding who else may is what the Admin level means (viewer &lt; commenter &lt;
+          editor &lt; admin). Ask whoever holds it, or an owner of the organization. The Access
+          tab still shows you everyone who can reach this and why.
         </p>
       </div>
     </div>
@@ -300,7 +306,7 @@ export function ShareModal({
             className="flex-1 flex flex-col min-h-0"
           >
             {/* phone-ok: labels are hidden below sm, icon-only tabs on phone */}
-            <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
+            <TabsList className="grid w-full grid-cols-4 flex-shrink-0">
               <TabsTrigger value="users" className="gap-2">
                 <Users className="w-4 h-4" />
                 <span className="hidden sm:inline">Users</span>
@@ -327,6 +333,16 @@ export function ShareModal({
                     •
                   </span>
                 )}
+              </TabsTrigger>
+              {/* WHO CAN SEE THIS, AND WHY. The three tabs above list the GRANTS
+                  this dialog writes; they are only one of the six ways access is
+                  actually conferred. `AccessSummaryPanel` is the canonical
+                  answer — owner, grant, organization default, and the container
+                  that carries it — and it belongs beside the controls that
+                  change them rather than on some other screen. */}
+              <TabsTrigger value="access" className="gap-2">
+                <KeyRound className="w-4 h-4" />
+                <span className="hidden sm:inline">Access</span>
               </TabsTrigger>
             </TabsList>
 
@@ -383,6 +399,17 @@ export function ShareModal({
                 ) : (
                   manageBlockedNotice
                 )}
+              </TabsContent>
+
+              <TabsContent value="access" className="mt-0">
+                <AccessSummaryPanel
+                  entityType={resourceType as Parameters<typeof AccessSummaryPanel>[0]["entityType"]}
+                  entityId={resourceId}
+                  enabled={activeTab === "access"}
+                  refreshToken={permissions
+                    .map((p) => `${p.id}:${p.permissionLevel}`)
+                    .join("|")}
+                />
               </TabsContent>
 
               <TabsContent value="public" className="mt-0">

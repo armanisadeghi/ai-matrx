@@ -15,7 +15,7 @@ each other, or with the fixture. Both are in both repos' CI and in both `release
 release halts when the judges disagree.**
 
 **Why it exists.** ATTACK-7 (2026-09-16) found the campaign had two sanctioned runners and they
-did not enforce the same rules: `-- chair-step:` was an owner-awake step in one and a `print`
+did not enforce the same rules: `-- chair-step:` was a confirmed step in one and a `print`
 statement in the other — the one both release trains execute; a header naming production was
 judged by an allow-list in one and waived by a comment line in the other, so the abort
 checklist's only production undo ran on one command and was refused by the other; and
@@ -215,11 +215,23 @@ stored inverse removes it.
    inverse gets rehearsed (rule 27) and how switch-checklist step 3's `GRANT` gets a rehearsal
    at all, from the **same bytes** that later reach production.
 5. **At `--target production`, in BOTH runners:** the reason and the file's **entire body** are
-   printed; a **non-TTY stdin is refused outright** (both release trains run exactly like that,
-   on a 30-minute cron); a terminal must **type the filename back**; and the confirmed reason is
+   printed, and the file runs **only when the command NAMES it** —
+   `--confirm-chair-step <file.sql>`, exact basename. A sweep never passes that flag, so a sweep
+   can never run one; nothing is interactive and no terminal is involved. The confirmed reason is
    written to `public._schema_migrations.chair_step` (the column is added idempotently by the
    path that writes it) so the record of who waived the additive rule, and why, outlives the
-   terminal it was typed into.
+   command that named it.
+   🚨 **WHO RUNS IT (Arman, 2026-09-18):** *"The block is not so that my top agent doesn't do
+   it... the block is to ensure that the little agents (sonnet 5 or gpt luna) don't do it and they
+   go to the bigger models... Opus, Fable / Sol, Astra -- never going to me! I don't do
+   terminals."* The senior session that owns the work names and runs it. A smaller lane hands it
+   UP to the session that dispatched it. **It is never handed to Arman.** Until 2026-09-18 this
+   rule demanded a human at a TTY typing the filename (ATTACK-6 finding 4); agents have no
+   terminal, so every drop became a command for the owner, and one unapplied chair step in the
+   swept directory halted every unattended release.
+   **In a sweep** (aidream's runner) an unnamed chair step is SKIPPED LOUDLY — unapplied,
+   unledgered, exit code untouched — so it can never stop the files behind it. Named explicitly
+   and still unconfirmed, it is an error.
 6. A chair step is never reached by a SWEEP: it lives in `migrations/inverse/` (or is named with
    `--only`), and nothing scans that directory.
 
@@ -243,8 +255,36 @@ uv run python db/apply_migrations.py --source campaign --only <file>.sql --targe
 - Refused with `--check`, `--rerun`, `--mark-applied`, `--accept-drift`, `--all` and both
   self-tests.
 - At `--target production` the runner additionally reads the **rehearsal branch** and refuses
-  unless the SAME bytes carry a rehearsal ledger row there **and** that `--lane` holds its
-  `campaign_watch.build_lock` row.
+  unless that `--lane` holds its `campaign_watch.build_lock` row there. That is concurrency
+  control between lanes (§4.14), not a rehearsal claim.
+
+### 6a. 🚨 THE REHEARSAL COPY IS NOT A GATE (owner ruling, 2026-09-18)
+
+**A file may be applied to the main database WITHOUT a prior rehearsal ledger row and WITHOUT a
+matching rehearsal checksum.** Both runners used to refuse a campaign production apply unless the
+branch carried a `public._schema_migrations` row for the same basename whose checksum was
+byte-identical to the file about to run. That refusal is removed from both. The rehearsal row is
+still read and printed — "not rehearsed on the copy", "rehearsed with DIFFERENT bytes", or
+"rehearsed, byte-identical" — as **information on the apply line, never a verdict**.
+
+The owner's words: *"we have no production. It's all just dev… All of your work should just go
+live… Caution is dangerous right now."* The copy exists to catch a syntax error quickly. It is
+not a precondition, and a lane that cannot rehearse on it — because the copy has drifted, because
+`platform.provision` refuses there, because another lane moved a fingerprint it has not
+re-recorded — is not blocked from landing on the main database.
+
+**Nothing about the STATEMENTS moved.** Every judgement in §§2–5 still binds every file at every
+target: the additive ALLOW-LIST for a header naming production, the deny-list for a header-less
+file, `guard-unread` and `trigger-guard-unnamed`, the named-by-the-command `-- chair-step:` class
+(`--confirm-chair-step`, still logged to the ledger), and the
+`-- based-on:` hash check — which was never a branch check at all: it recomputes
+`pg_get_functiondef` on **the database being applied to**, immediately before the file executes.
+Removing the copy as a gate removes exactly one thing: the requirement that the copy saw these
+bytes first.
+
+This changes no `TargetRefusal.code`, so the corpus in §9 is unchanged by it: the rehearsal gate
+was a runtime authorisation read against a live branch, never part of `--judge-only`, and both
+checks still agree line for line.
 
 ## 7. Inverse files
 

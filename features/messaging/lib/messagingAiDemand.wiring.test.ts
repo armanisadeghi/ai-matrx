@@ -40,12 +40,19 @@ describe("messaging AI demand wiring", () => {
     const { execSync } = require("node:child_process") as typeof import("node:child_process");
     const hits = execSync(
       // A real JSX render, not the prose in these files' doc comments: the
-      // element opens its own line and its props follow.
-      "grep -rlE '^[[:space:]]*<ConversationView$' --include=*.tsx . || true",
+      // element opens its own line and its props follow. The census is the
+      // repo's own files (tracked + untracked, minus ignored), NOT a walk of
+      // the working directory: other lanes park whole checkouts under .wt/,
+      // .matrx/*/checkout/ and .coldwalk*/, and a `grep -r .` found the pane
+      // six extra times (and took 98 s) on 2026-09-18.
+      "git ls-files -z --cached --others --exclude-standard -- '*.tsx' " +
+        "':!.wt' ':!.matrx' ':!.coldwalk*' " +
+        "| xargs -0 grep -lE '^[[:space:]]*<ConversationView$' || true",
       { cwd: process.cwd(), encoding: "utf8" },
     )
       .split("\n")
-      .filter((line) => line.trim() !== "" && !line.includes("node_modules"));
+      .filter((line) => line.trim() !== "" && !line.includes("node_modules"))
+      .map((line) => (line.startsWith("./") ? line : `./${line}`));
     expect(hits).toEqual(["./features/messaging/components/ConversationPane.tsx"]);
   });
 });

@@ -61,8 +61,8 @@ export function SystemAgentSurfaceEmitter({
     return createAdminSystemAgentsScope({
       agent_id: agent.id,
       agent_name: agent.name || undefined,
-      agent_description: agent.description || undefined,
-      agent_category: agent.category || undefined,
+      agent_description: agent.description ?? "",
+      agent_category: agent.category ?? "",
       agent_tags: agent.tags ?? undefined,
       agent_type: agent.agentType || undefined,
       agent_is_system: agent.agentType === "builtin",

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
+import {
+  isOrganizationRequiredServerError,
+  organizationRequiredResponse,
+} from "@/lib/organizations/organizationRequiredResponse";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import {
   CMS_SITE_MEMBER_ADD_ACTION,
@@ -252,6 +256,12 @@ async function createRequest(
   target: ResolvedTarget,
   userId: string,
   message: string | null,
+  // The organization the requester is acting in, as the request ADMITTED it
+  // from `X-Organization-Id`. Passed in rather than read here because this
+  // helper never sees the `NextRequest` — and because the whole point is that
+  // it is carried, not resolved. `undefined` means the caller named none, and
+  // `ensureOrgIdServer` below refuses rather than choosing one.
+  actingOrganizationId: string | undefined,
 ) {
   if (target.access !== "denied") {
     return NextResponse.json(
@@ -327,13 +337,27 @@ async function createRequest(
   }
 
   const mainSupabase = await createMainSupabaseClient();
-  // The requester is asking for access to an organization they are NOT a member
-  // of, so the request row is filed in the one workspace they certainly own —
-  // their own. Read it through the sanctioned server primitive; the
-  // `current_personal_org_id` RPC belongs to lib/organizations/personalOrg.ts
-  // alone. common-docs/policies/context-is-carried-never-rebuilt.md
-  // org-fallback-deliberate: an access request is filed in the requester's own workspace — they are not yet in the organization they are asking to join
-  const personalOrgId = await ensureOrgIdServer(mainSupabase, null);
+  // 🚨 THE REQUEST ROW IS FILED IN THE ORGANIZATION THE REQUESTER IS ACTING IN.
+  // The row CANNOT live in the organization being asked for — the requester is
+  // not a member of it yet, which is the whole point of the request — so it
+  // needs a tenant of the requester's own. Until 2026-09-19 that tenant was
+  // resolved here by `ensureOrgIdServer(mainSupabase, null)`, i.e. the
+  // `current_personal_org_id()` RPC: the server picking the requester's
+  // personal workspace because the request named none. The 2026-09-19 ruling
+  // (Arman) forbids that pick wherever it happens — "no data read, no write,
+  // no API route may PICK an organization for the user". A person who works
+  // in a team organization and asks for access to a partner's website should
+  // see that request in the organization they were working in, not in a
+  // private workspace they never opened.
+  //
+  // So the tenant is the one the caller ADMITTED on `X-Organization-Id` (the
+  // header every Matrx client carries), and a request that names none is
+  // refused with the requester's memberships attached — before the insert, so
+  // nothing is half-filed and nobody is told a request was sent that was not.
+  const filingOrganizationId = await ensureOrgIdServer(
+    mainSupabase,
+    actingOrganizationId,
+  );
 
   const href = `/organizations/${organizationId}/settings#members`;
   // Human words, not the internal token — this string is read by the person
@@ -351,10 +375,10 @@ async function createRequest(
     .schema("iam")
     .from("access_requests")
     .insert({
-      // org-fallback-deliberate: the same request as the marked resolve above —
-      //   the requester is not yet in the organization they are asking to join, so
-      //   the row lives in their own workspace
-      organization_id: personalOrgId,
+      // The requester's own acting organization — see the admission above.
+      // It is deliberately NOT `organizationId`, the organization being asked
+      // for: the requester is not a member of that one yet.
+      organization_id: filingOrganizationId,
       created_by: userId,
       resource_type: "organization",
       resource_id: organizationId,
@@ -453,13 +477,27 @@ export async function POST(request: NextRequest) {
         typeof body.message === "string" && body.message.trim()
           ? body.message.trim().slice(0, 500)
           : null;
-      return createRequest(resolved.target, user.id, message);
+      return createRequest(
+        resolved.target,
+        user.id,
+        message,
+        request.headers.get("X-Organization-Id")?.trim() || undefined,
+      );
     }
 
     return NextResponse.json(
       await resolvedPayload(resolved.target, caller, user.id),
     );
   } catch (error) {
+    // The organization refusal is an ANSWER, not a failure: it carries the
+    // caller's own memberships so the client can hold the request, show the
+    // picker and retry. Collapsing it into the generic 500 below would turn
+    // the one question the person can answer into "we could not check this
+    // item just now" — a dead end that blames the system for the person's
+    // unanswered question.
+    if (isOrganizationRequiredServerError(error)) {
+      return organizationRequiredResponse(error);
+    }
     console.error("[cms/access-context] unexpected failure:", error);
     return NextResponse.json(
       { error: "We could not check this item just now.", code: "transient" },

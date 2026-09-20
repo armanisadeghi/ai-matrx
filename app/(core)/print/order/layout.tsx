@@ -21,7 +21,7 @@ export const metadata = createRouteMetadata("/print", {
     title: "Print",
     description:
         "Price a real book — trim, paper, binding, cover finish, quantity and destination — against a live print-on-demand catalogue, then order printed copies.",
-    letter: "Pt",
+    letter: "PTO",
     canonicalPath: "/print/order",
 });
 

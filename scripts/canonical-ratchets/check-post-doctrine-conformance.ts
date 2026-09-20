@@ -48,12 +48,13 @@
  *   pnpm check:post-doctrine --refresh  # audit.refresh() first (4.5-5.5s)
  *   pnpm check:post-doctrine --json
  *
- * Exit codes: 0 pass / advisory / creds absent · 1 over baseline in --strict · 2 unreadable.
+ * Exit codes: 0 pass / advisory (including an unavailable RPC outside strict/update)
+ * · 1 strict failure or an unsafe baseline update · 2 unreadable.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import process from "node:process";
-import { C, pullSnapshot, printPreamble } from "./snapshot";
+import { C, pullSnapshot, printPreamble, readonlyMeasurementFailures } from "./snapshot";
 import type { PostDoctrineFail, RatchetSnapshot } from "./snapshot";
 
 const BASELINE_PATH = resolve(import.meta.dirname, "post-doctrine-baseline.json");
@@ -80,7 +81,7 @@ function byTable(fails: PostDoctrineFail[]): Map<string, PostDoctrineFail[]> {
   return m;
 }
 
-function report(snapshot: RatchetSnapshot, baseline: Baseline): boolean {
+function report(snapshot: RatchetSnapshot, baseline: Baseline, readonlyFailures: string[]): boolean {
   const fails = snapshot.post_doctrine_fails;
   const grouped = byTable(fails);
 
@@ -91,6 +92,12 @@ function report(snapshot: RatchetSnapshot, baseline: Baseline): boolean {
       `${snapshot.births_after_cutoff} table(s) born since${C.reset}`,
   );
   const blocking = printPreamble(snapshot, STRICT);
+  if (readonlyFailures.length) {
+    const tag = STRICT ? C.red : C.yellow;
+    console.log(`  ${tag}[${STRICT ? "FAIL" : "WARN"}]${C.reset} readonly measurement is incomplete:`);
+    for (const failure of readonlyFailures) console.log(`      ${failure}`);
+    console.log(`  ${C.cyan}fix: repair canonical_ratchet_snapshot() and rerun the gate; do not update the baseline.${C.reset}`);
+  }
   console.log("");
 
   if (grouped.size === 0) {
@@ -134,17 +141,28 @@ function report(snapshot: RatchetSnapshot, baseline: Baseline): boolean {
     console.log(`${C.green}${C.bold}  At baseline. No table born since the cutoff has regressed.${C.reset}`);
   }
   console.log("");
-  return blocking;
+  return blocking || readonlyFailures.length > 0;
 }
 
 async function main(): Promise<number> {
   const snapshot = await pullSnapshot({ refresh: REFRESH });
-  if (!snapshot) return 0;
+  if (!snapshot) {
+    if (STRICT || UPDATE) {
+      console.error(`${C.red}[FAIL]${C.reset} post-doctrine conformance was not measured; strict and baseline-update modes fail closed.`);
+      return 1;
+    }
+    return 0;
+  }
 
   const baseline = JSON.parse(readFileSync(BASELINE_PATH, "utf8")) as Baseline;
   const count = snapshot.post_doctrine_fails.length;
+  const readonlyFailures = readonlyMeasurementFailures(snapshot);
 
   if (UPDATE) {
+    if (readonlyFailures.length) {
+      console.error(`${C.red}[FAIL]${C.reset} refusing to update baseline while readonly measurement is incomplete: ${readonlyFailures.join("; ")}`);
+      return 1;
+    }
     const next: Baseline = { ...baseline, fail_findings: count, seeded_at: snapshot.generated_at };
     writeFileSync(BASELINE_PATH, `${JSON.stringify(next, null, 2)}\n`);
     console.log(`${C.green}baseline updated: ${baseline.fail_findings} → ${count}${C.reset}`);
@@ -152,11 +170,11 @@ async function main(): Promise<number> {
   }
 
   if (JSON_OUT) {
-    console.log(JSON.stringify({ baseline: baseline.fail_findings, fail_findings: count, snapshot }, null, 2));
-    return STRICT && count > baseline.fail_findings ? 1 : 0;
+    console.log(JSON.stringify({ baseline: baseline.fail_findings, fail_findings: count, readonly_measurement_failures: readonlyFailures, snapshot }, null, 2));
+    return STRICT && (count > baseline.fail_findings || readonlyFailures.length > 0) ? 1 : 0;
   }
 
-  const preambleBlocking = report(snapshot, baseline);
+  const preambleBlocking = report(snapshot, baseline, readonlyFailures);
   if (!STRICT) return 0;
   return count > baseline.fail_findings || preambleBlocking ? 1 : 0;
 }

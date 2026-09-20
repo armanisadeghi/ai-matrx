@@ -54,8 +54,8 @@ import {
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { selectAssistsForSurface } from "@/features/assists/redux/assistsSlice";
-import { ApprovalQueue } from "../approvals/ApprovalQueue";
-import { KEYWORD_MEANING_SURFACE } from "../approvals/kinds/keyword-meaning";
+import { ApprovalQueue } from "@/features/approvals/ApprovalQueue";
+import { KEYWORD_MEANING_SURFACE } from "@/features/approvals/kinds/seo/keyword-meaning";
 import { GuidelinesDraftButton } from "./GuidelinesDraft";
 import { GUIDELINES_STALE_AFTER_DAYS } from "./GuidelinesGapPrompt";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -235,6 +235,7 @@ export function KwGuidelinesPanel({
           most useful thing on this screen. */}
       <ApprovalQueue
         scope={{
+          key: siteId,
           siteId,
           brandId: null,
           organizationId: null,

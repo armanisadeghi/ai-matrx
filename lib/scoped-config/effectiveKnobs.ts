@@ -83,9 +83,49 @@ function notify(): void {
   for (const listener of listeners) listener();
 }
 
-function splitKey(fullKey: string): { feature: string; key: string } {
-  const at = fullKey.lastIndexOf(".");
-  return { feature: fullKey.slice(0, at), key: fullKey.slice(at + 1) };
+/**
+ * 🚨 A KNOB'S ADDRESS IS THE PAIR, NEVER A STRING A HELPER RE-GUESSES
+ * (VERIFY-U-P2-R4, V13-2). `platform.knob_resolve` takes `(p_feature, p_key)`
+ * and `platform.feature_knob`'s primary key IS that pair — and neither half is
+ * recoverable from one dotted string: live on 2026-09-17, 635 of 812 rows have a
+ * dot INSIDE `feature` (`media.listening` + `voice`) and 58 have one inside
+ * `key` (`connectors` + `prompt.resurface_days`). The connector prompt card read
+ * `"connectors.prompt.resurface_days"`, the last-dot split sent
+ * `('connectors.prompt','resurface_days')`, the database answered
+ * `P0001 knob connectors.prompt.resurface_days is not seeded`, and the raise died
+ * in an empty catch — so the knob PLAN §7 rules could never resolve and nothing
+ * on any screen said so.
+ *
+ * A caller passes the register's own pair. The dotted string stays as a
+ * convenience for the majority of rows whose feature is everything before the
+ * last dot, and that convention is no longer assumed: every call site in the
+ * repo is resolved through this function and matched against the declared rows
+ * by `__tests__/every-knob-read-addresses-a-real-row.test.ts`.
+ */
+export interface KnobAddress {
+  feature: string;
+  key: string;
+}
+
+/** The pair, or the dotted convenience form of it. */
+export type KnobRef = string | KnobAddress;
+
+/** THE ONE PLACE A REF BECOMES THE PAIR THE RESOLVER SENDS. */
+export function knobAddress(ref: KnobRef): KnobAddress {
+  if (typeof ref !== "string") return { feature: ref.feature, key: ref.key };
+  const at = ref.lastIndexOf(".");
+  if (at <= 0 || at === ref.length - 1) {
+    throw new Error(
+      `knob "${ref}" has no feature segment — a knob is addressed by the register's ` +
+        "own (feature, key) pair; pass { feature, key }.",
+    );
+  }
+  return { feature: ref.slice(0, at), key: ref.slice(at + 1) };
+}
+
+/** The cache/invalidation address — unambiguous in this direction only. */
+function fullKeyOf(ref: KnobRef): string {
+  return typeof ref === "string" ? ref : `${ref.feature}.${ref.key}`;
 }
 
 /**
@@ -95,11 +135,13 @@ function splitKey(fullKey: string): { feature: string; key: string } {
 export function peekEffectiveKnob(
   organizationId: string | null | undefined,
   userId: string | null | undefined,
-  fullKey: string,
+  ref: KnobRef,
   scopes?: readonly KnobScope[],
 ): unknown {
   if (!organizationId) return undefined;
-  const hit = cache.get(addr(organizationId, userId ?? null, fullKey, scopes));
+  const hit = cache.get(
+    addr(organizationId, userId ?? null, fullKeyOf(ref), scopes),
+  );
   return hit ? hit.value : undefined;
 }
 
@@ -107,15 +149,16 @@ export function peekEffectiveKnob(
 export function ensureEffectiveKnob(
   organizationId: string,
   userId: string | null,
-  fullKey: string,
+  ref: KnobRef,
   scopes?: readonly KnobScope[],
 ): Promise<unknown> {
+  const fullKey = fullKeyOf(ref);
   const id = addr(organizationId, userId, fullKey, scopes);
   const hit = cache.get(id);
   if (hit && Date.now() - hit.at < TTL_MS) return Promise.resolve(hit.value);
   const pending = inFlight.get(id);
   if (pending) return pending;
-  const { feature, key } = splitKey(fullKey);
+  const { feature, key } = knobAddress(ref);
   const supabase = createClient();
   // THIS browser's device rung (USD-9) rides as a scope so a device-level
   // override (nearest rung of all) wins here exactly as it does on the
@@ -130,7 +173,19 @@ export function ensureEffectiveKnob(
         p_user_id: userId ?? undefined,
         p_scopes: buildScopes(deviceId, scopes),
       } as never);
-      if (error) throw new Error(`knob_resolve ${fullKey} failed: ${error.message}`);
+      if (error) {
+        // 🚨 A KNOB THAT IS NOT SEEDED IS A NAMED FAILURE WITH A REMEDY, never a
+        // default nobody chose (law 4). `knob_resolve` RAISES `P0001 … is not
+        // seeded`, and until 2026-09-17 that raise reached an empty catch, so an
+        // unresolvable address behaved exactly like a value of `undefined`.
+        throw new Error(
+          `knob_resolve could not answer for feature='${feature}', key='${key}' ` +
+            `(read as "${fullKey}"): ${error.message}. Either the row is not seeded — ` +
+            "seed it in a platform.feature_knob migration — or the address is wrong: " +
+            "pass the register's own { feature, key } pair, never a dotted string a " +
+            "helper has to re-split.",
+        );
+      }
       cache.set(id, { value: data as unknown, at: Date.now() });
       notify();
       return data as unknown;
@@ -152,8 +207,9 @@ if (typeof window !== "undefined") {
   });
 }
 
-/** Forget every cached value for one key (or everything, with no key). */
-export function invalidateEffectiveKnob(fullKey?: string): void {
+/** Forget every cached value for one knob (or everything, with no ref). */
+export function invalidateEffectiveKnob(ref?: KnobRef): void {
+  const fullKey = ref === undefined ? undefined : fullKeyOf(ref);
   if (!fullKey) {
     cache.clear();
   } else {
@@ -178,22 +234,36 @@ function subscribe(listener: () => void): () => void {
 export function useEffectiveKnob(
   organizationId: string | null | undefined,
   userId: string | null | undefined,
-  fullKey: string,
+  ref: KnobRef,
   scopes?: readonly KnobScope[],
 ): unknown {
+  const fullKey = fullKeyOf(ref);
   // Scopes are compared by their address, so a caller may pass a fresh array
   // literal every render without re-resolving on every render.
   const scopeKey = scopeAddr(scopes);
   const value = useSyncExternalStore(
     subscribe,
-    () => peekEffectiveKnob(organizationId, userId, fullKey, scopes),
+    () => peekEffectiveKnob(organizationId, userId, ref, scopes),
     () => undefined,
   );
   useEffect(() => {
     if (!organizationId || value !== undefined) return;
-    void ensureEffectiveKnob(organizationId, userId ?? null, fullKey, scopes).catch(() => {
-      /* the caller's screen reports the failure; a runtime read never throws */
-    });
+    void ensureEffectiveKnob(organizationId, userId ?? null, ref, scopes).catch(
+      (error: unknown) => {
+        // 🚨 IT SCREAMS (law 4). The old comment here said "the caller's screen
+        // reports the failure" — no caller did, and a knob whose RPC raised on
+        // every mount read exactly like a knob with no value (V13-2). A runtime
+        // read still never throws into render; it says what failed and what to
+        // do, once per address, where an agent and an operator will see it.
+        const address = knobAddress(ref);
+        console.error(
+          `[knob] ${fullKey} could not be resolved (feature='${address.feature}', ` +
+            `key='${address.key}'), so every reader is falling back to its own ` +
+            "default. Seed the row, or pass the register's { feature, key } pair:",
+          error,
+        );
+      },
+    );
     // `scopes` is addressed by `scopeKey`; depending on the array identity
     // would re-run this effect on every render for a caller that builds it
     // inline, which every caller does.

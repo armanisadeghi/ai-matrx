@@ -132,6 +132,9 @@ import {
   resolveMarker,
   withSnapshotKeys,
 } from "./merge-plan";
+// The TEXT half of the personal-data contract lives in the guard; this file
+// holds the MEASURED half. See `PERSONAL_DATA_TABLES`'s own header.
+import { PERSONAL_DATA_TABLES } from "./identity-shell-contract";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -580,6 +583,166 @@ const COPY_TABLES: readonly CopyTable[] = [
   { table: "platform.entity_grants", policy: "upsert" },
   { table: "platform.rulebook", policy: "upsert" },
   { table: "seo.starter_pack", policy: "upsert" },
+  // ── THE CRM HALF: `crm.party` and the tables its record page reads ────────
+  /**
+   * 🚨 THE ONLY TABLES IN THIS LIST THAT HOLD REAL PEOPLE, AND THE ONLY ONES
+   *    WHOSE EVERY PERSONAL COLUMN IS MADE UP ON PRODUCTION.
+   *
+   * WHY THEY ARE HERE. `W1-STORE` put REC-40's first retrofit on `crm.party`
+   * (`custom_fields`, nullable, no default), and its OFF proof is ANSWER
+   * IDENTITY: every existing read returns the same values with one extra key
+   * whose value is null. A branch holding ONE party row — `W1-ORG`'s own
+   * baseline — cannot prove that about a 1,905-row table, and the record page
+   * around it reads four more tables. Measured on production 2026-09-18:
+   * `party` 1,905 · `party_contact_point` 1,375 · `contact_medium` 1,410 ·
+   * `affiliation` 6 · `address` 0.
+   *
+   * WHAT IS DELIBERATELY NOT HERE. `crm.interaction` (26 production rows): the
+   * answer-identity read does not touch it and it carries ~55 columns of free
+   * text — subject lines, bodies, recording URLs, provider ids. A table nobody
+   * needs is a table whose personal columns nobody has to get right.
+   * `platform.categories` is not here either: this lane's writes are confined to
+   * `crm.*`, so `outsideFks()` nulls the four nullable references into it and
+   * says so — the measured cost is ONE row's `party.lifecycle_stage_id`, and the
+   * answer-identity statement names that row rather than rounding it away.
+   *
+   * EVERY PERSONAL COLUMN IS SYNTHESISED ON PRODUCTION, IN THE SELECT — 57 of
+   * them across the five tables — so the real value is never read, never
+   * transmitted and never held by this process, exactly as `auth.users`'s four
+   * are. Two rules every expression obeys, and both are load-bearing:
+   *
+   *   · NULL-NESS IS PRESERVED (`case when "col" is null then null else … end`).
+   *     `party_person_facet` and `party_org_facet` are CHECK constraints written
+   *     over exactly these columns' nullability — a blanket stand-in raises 23514
+   *     on every organization row.
+   *   · `primary_domain` DERIVES FROM THE ROW ID, because `party_org_domain_key`
+   *     is UNIQUE over `(organization_id, lower(primary_domain))`. That is not
+   *     hoped for: `assertSyntheticUniqueness`'s pass above asks PRODUCTION,
+   *     over the real rows, before a single row is written.
+   *
+   * AND THE GUARD IS DENY-BY-DEFAULT. `identity-shell-contract.ts`'s
+   * `PERSONAL_DATA_TABLES` says that on these five tables EVERY copied column is
+   * either synthesised or exempt — structurally by pattern (a uuid key, a clock
+   * reading, a flag, a counter), or by one of 45 exact keys in `NOT_PERSONAL`,
+   * each carrying its own written reason. Adding a column to one of these tables
+   * therefore fails the guard until somebody says which it is. The `auth.*`
+   * secret deny-list runs over them too, so a future `crm.*.password_hash` is
+   * refused by the OLD rule as well as the new one.
+   *
+   * ORDER: `party` first (its own parent), then `affiliation`, `contact_medium`
+   * and `address`, then `party_contact_point`, which points at all four.
+   * `assertCopyOrder` checks it against the branch's real FK graph, and
+   * `party`'s THREE self-references are resolved by `selfReferencingFks`'s
+   * second pass — five non-null `primary_employer_party_id` values across four
+   * batches of 483 is the 23503 that mechanism exists for.
+   */
+  {
+    table: "crm.party",
+    policy: "upsert",
+    synthesize: {
+      display_name: `'Party ' || left("id"::text, 8)`,
+      sort_name: `case when "sort_name" is null then null else 'Party ' || left("id"::text, 8) end`,
+      name_key: `case when "name_key" is null then null else 'party ' || left("id"::text, 8) end`,
+      aka: `'{}'::text[]`,
+      first_name: `case when "first_name" is null then null else 'First' || left("id"::text, 4) end`,
+      middle_name: `case when "middle_name" is null then null else 'Middle' || left("id"::text, 4) end`,
+      last_name: `case when "last_name" is null then null else 'Last' || left("id"::text, 4) end`,
+      preferred_name: `case when "preferred_name" is null then null else 'Preferred' || left("id"::text, 4) end`,
+      name_prefix: `case when "name_prefix" is null then null else 'Px' end`,
+      name_suffix: `case when "name_suffix" is null then null else 'Sx' end`,
+      pronouns: `case when "pronouns" is null then null else 'they/them' end`,
+      date_of_birth: `case when "date_of_birth" is null then null else date '1970-01-01' end`,
+      headline: `case when "headline" is null then null else 'Headline ' || left("id"::text, 8) end`,
+      legal_name: `case when "legal_name" is null then null else 'Legal ' || left("id"::text, 8) end`,
+      primary_domain: `case when "primary_domain" is null then null else 'd-' || left("id"::text, 8) || '.invalid' end`,
+      tax_id: `case when "tax_id" is null then null else 'TAX-' || left("id"::text, 8) end`,
+      registration_number: `case when "registration_number" is null then null else 'REG-' || left("id"::text, 8) end`,
+      bio: `case when "bio" is null then null else 'Biography withheld from the rehearsal branch.' end`,
+      job_title: `case when "job_title" is null then null else 'Title ' || left("id"::text, 8) end`,
+      do_not_contact_reason: `case when "do_not_contact_reason" is null then null else 'withheld' end`,
+      source_detail: `case when "source_detail" is null then null else 'withheld' end`,
+      attributes: `'{}'::jsonb`,
+      metadata: `'{}'::jsonb`,
+      field_provenance: `'{}'::jsonb`,
+    },
+    columnsNote:
+      "EVERY COLUMN IS COPIED; the 24 column(s) below are SYNTHESISED ON PRODUCTION and never read: " +
+      "display_name sort_name name_key aka first_name middle_name last_name preferred_name " +
+      "name_prefix name_suffix pronouns date_of_birth headline legal_name primary_domain tax_id " +
+      "registration_number bio job_title do_not_contact_reason source_detail attributes metadata " +
+      "field_provenance.",
+  },
+  {
+    table: "crm.affiliation",
+    policy: "upsert",
+    synthesize: {
+      title: `case when "title" is null then null else 'Title ' || left("id"::text, 8) end`,
+      department: `case when "department" is null then null else 'Department ' || left("id"::text, 8) end`,
+      metadata: `'{}'::jsonb`,
+    },
+    columnsNote:
+      "EVERY COLUMN IS COPIED; the 3 column(s) below are SYNTHESISED ON PRODUCTION and never read: " +
+      "title department metadata.",
+  },
+  {
+    table: "crm.contact_medium",
+    policy: "upsert",
+    synthesize: {
+      value_raw: `'m-' || left("id"::text, 8) || '@corpus.invalid'`,
+      value_key: `'m-' || left("id"::text, 8) || '@corpus.invalid'`,
+      display_value: `case when "display_value" is null then null else 'm-' || left("id"::text, 8) || '@corpus.invalid' end`,
+      external_id: `case when "external_id" is null then null else 'ext-' || left("id"::text, 8) end`,
+      handle: `case when "handle" is null then null else 'h-' || left("id"::text, 8) end`,
+      profile_url: `case when "profile_url" is null then null else 'https://corpus.invalid/' || left("id"::text, 8) end`,
+      consent_source: `case when "consent_source" is null then null else 'withheld' end`,
+      consent_source_url: `case when "consent_source_url" is null then null else 'https://corpus.invalid/' || left("id"::text, 8) end`,
+      consent_evidence: `'{}'::jsonb`,
+      suppression_reason: `case when "suppression_reason" is null then null else 'withheld' end`,
+      details: `'{}'::jsonb`,
+      metadata: `'{}'::jsonb`,
+    },
+    columnsNote:
+      "EVERY COLUMN IS COPIED; the 12 column(s) below are SYNTHESISED ON PRODUCTION and never read: " +
+      "value_raw value_key display_value external_id handle profile_url consent_source " +
+      "consent_source_url consent_evidence suppression_reason details metadata.",
+  },
+  {
+    table: "crm.address",
+    policy: "upsert",
+    synthesize: {
+      label: `case when "label" is null then null else 'Label ' || left("id"::text, 8) end`,
+      line1: `case when "line1" is null then null else '1 Corpus Way' end`,
+      line2: `case when "line2" is null then null else 'Unit ' || left("id"::text, 4) end`,
+      line3: `case when "line3" is null then null else 'Floor ' || left("id"::text, 4) end`,
+      locality: `case when "locality" is null then null else 'Corpusville' end`,
+      region: `case when "region" is null then null else 'CP' end`,
+      postal_code: `case when "postal_code" is null then null else '00000' end`,
+      plus4: `case when "plus4" is null then null else '0000' end`,
+      formatted_address: `case when "formatted_address" is null then null else '1 Corpus Way, Corpusville CP 00000' end`,
+      latitude: `case when "latitude" is null then null else 0.0::numeric(9,6) end`,
+      longitude: `case when "longitude" is null then null else 0.0::numeric(9,6) end`,
+      place_id: `case when "place_id" is null then null else 'place-' || left("id"::text, 8) end`,
+      timezone: `case when "timezone" is null then null else 'UTC' end`,
+      metadata: `'{}'::jsonb`,
+    },
+    columnsNote:
+      "EVERY COLUMN IS COPIED; the 14 column(s) below are SYNTHESISED ON PRODUCTION and never read: " +
+      "label line1 line2 line3 locality region postal_code plus4 formatted_address latitude " +
+      "longitude place_id timezone metadata.",
+  },
+  {
+    table: "crm.party_contact_point",
+    policy: "upsert",
+    synthesize: {
+      label: `case when "label" is null then null else 'Label ' || left("id"::text, 8) end`,
+      extension: `case when "extension" is null then null else '000' end`,
+      opt_out_source: `case when "opt_out_source" is null then null else 'withheld' end`,
+      metadata: `'{}'::jsonb`,
+    },
+    columnsNote:
+      "EVERY COLUMN IS COPIED; the 4 column(s) below are SYNTHESISED ON PRODUCTION and never read: " +
+      "label extension opt_out_source metadata.",
+  },
 ];
 
 const COPY_NAMES = COPY_TABLES.map((t) => t.table);
@@ -760,6 +923,89 @@ async function outsideFks(
       parentColumn: row.fcols[0]!,
       present: new Set(keys.rows.map((x) => String((x as Record<string, unknown>).k))),
     });
+  }
+  return out;
+}
+
+interface SelfFk {
+  readonly name: string;
+  readonly column: string;
+  /** The column of the SAME table it points at — very nearly always the primary key. */
+  readonly parentColumn: string;
+}
+
+/**
+ * 🚨 SELF-REFERENCING FOREIGN KEYS — the batched copy's 23503, and why nothing
+ * else in this file catches it.
+ *
+ * A table that points at ITSELF (`crm.party.primary_employer_party_id`, and two
+ * more on the same table: `canonical_id`, `source_party_id`) is copied in
+ * batches of `floor(30000 / ncols)` rows — 483 for a 62-column table — ORDERED BY
+ * PRIMARY KEY. A plain foreign key's referential-integrity check fires at the END
+ * OF EACH STATEMENT, so a referrer that lands in batch 1 whose parent sorts into
+ * batch 3 aborts the WHOLE copy with
+ *
+ *   23503 insert or update on table "party" violates foreign key constraint
+ *   "party_primary_employer_party_id_fkey"
+ *
+ * and takes the run's single transaction down with it. It is invisible to every
+ * existing mechanism: `assertCopyOrder` skips `parent === t` outright, and
+ * `outsideFks` only looks at parents OUTSIDE the copy set. The old comment in
+ * `assertCopyOrder` said such columns "hold zero non-null values — measured",
+ * which was true of the tables in the set on 2026-09-16 and is a measurement, not
+ * a property.
+ *
+ * THE FIX IS GENERAL AND DERIVED FROM THE CATALOGUE, not configured per table:
+ * every VALIDATED, single-column, NULLABLE foreign key whose `conrelid` equals
+ * its `confrelid` is written NULL during the copy, its `(primary key, value)`
+ * pairs are kept, and one `update … from (values …)` pass per column resolves
+ * them after that table's last batch lands — inside the SAME transaction, with
+ * the same triggers still disabled. Announced by column and count on every run.
+ *
+ * A NOT NULL self-reference cannot be deferred at all and is a refusal, by name:
+ * there is no value to write in the meantime.
+ */
+async function selfReferencingFks(client: pg.Client, qualified: string): Promise<SelfFk[]> {
+  const r = await client.query<{
+    conname: string;
+    cols: string[];
+    fcols: string[];
+    notnull: boolean;
+  }>(
+    `select c.conname,
+            (select array_agg(a.attname::text order by k.ord)
+               from unnest(c.conkey) with ordinality k(attnum, ord)
+               join pg_attribute a on a.attrelid = c.conrelid and a.attnum = k.attnum) as cols,
+            (select array_agg(a.attname::text order by k.ord)
+               from unnest(c.confkey) with ordinality k(attnum, ord)
+               join pg_attribute a on a.attrelid = c.confrelid and a.attnum = k.attnum) as fcols,
+            (select coalesce(bool_or(a.attnotnull), false)
+               from unnest(c.conkey) with ordinality k(attnum, ord)
+               join pg_attribute a on a.attrelid = c.conrelid and a.attnum = k.attnum) as notnull
+       from pg_constraint c
+      where c.conrelid = $1::regclass and c.confrelid = c.conrelid and c.contype = 'f'
+        and c.convalidated
+      order by c.conname`,
+    [qualified],
+  );
+  const out: SelfFk[] = [];
+  for (const row of r.rows) {
+    if (row.cols.length !== 1) {
+      throw new Error(
+        `${qualified}: ${row.conname} is a COMPOSITE self-referencing foreign key. The copy writes ` +
+          `in batches ordered by primary key, so it would abort 23503 on a referrer whose parent ` +
+          `sorts into a later batch, and this script's two-pass resolution is single-column. Add ` +
+          `the composite case here rather than hoping the column is always null.`,
+      );
+    }
+    if (row.notnull) {
+      throw new Error(
+        `${qualified}.${row.cols[0]} is NOT NULL and references ${qualified} itself (${row.conname}). ` +
+          `A batched copy cannot defer it — there is no value to write in the meantime — and a ` +
+          `single-statement copy of this table is not what this script does.`,
+      );
+    }
+    out.push({ name: row.conname, column: row.cols[0]!, parentColumn: row.fcols[0]! });
   }
   return out;
 }
@@ -1105,9 +1351,14 @@ async function ensureRunTable(branch: pg.Client): Promise<void> {
  * and a wrong order is a refusal that PRINTS a correct one.
  *
  * Edges considered: validated foreign keys between two tables that are both in
- * the copy set. Self-references are ignored (all such columns hold zero non-null
- * values — measured), and NOT VALID constraints are ignored because the copy
- * drops and re-creates them around itself.
+ * the copy set. Self-references are skipped HERE because no ordering of the list
+ * can fix them — a table cannot be copied before itself — and they are handled
+ * instead by `selfReferencingFks()`'s two-pass resolution, which writes the
+ * column NULL during the copy and resolves it after the table's last batch. (The
+ * comment this replaces said such columns "hold zero non-null values —
+ * measured"; that was a reading of one day's data, and `crm.party` carries five.)
+ * NOT VALID constraints are ignored because the copy drops and re-creates them
+ * around itself.
  */
 async function assertCopyOrder(branch: pg.Client): Promise<string[]> {
   const position = new Map(COPY_NAMES.map((t, i) => [t, i]));
@@ -1520,6 +1771,41 @@ async function main(): Promise<number> {
         const { table: t, policy } = entry;
         const only = entry.columns;
         const allCols = await columnsOf(prod, t);
+        // 🚨 THE PERSONAL-DATA CENSUS, MEASURED AGAINST PRODUCTION'S CATALOGUE.
+        // `identity-shell-contract.ts` judges these tables column by column out
+        // of a declared list, and a declared list rots the moment production
+        // grows a column — it would read green while a person's new value went
+        // over the wire. So the list is checked against the real shape here,
+        // before a row moves, and a difference is a refusal in either direction:
+        // a column production has and the census lacks is UNJUDGED, and one the
+        // census has and production lacks means the guard is judging a table
+        // that no longer exists in that shape.
+        const census = PERSONAL_DATA_TABLES[t];
+        if (census) {
+          const live = allCols.map((c) => c.name);
+          const added = live.filter((c) => !census.includes(c));
+          const gone = census.filter((c) => !live.includes(c));
+          if (added.length || gone.length) {
+            fail(
+              `${t}: production's columns and PERSONAL_DATA_TABLES's census disagree` +
+                (added.length
+                  ? `\n    production has, the census does not: ${added.join(", ")} — UNJUDGED by ` +
+                    `the personal-data guard, so a real value would be copied with nothing saying so`
+                  : "") +
+                (gone.length
+                  ? `\n    the census has, production does not: ${gone.join(", ")} — the guard is ` +
+                    `judging a shape this table no longer has`
+                  : "") +
+                `\n    Update PERSONAL_DATA_TABLES and say, for each new column, whether it is ` +
+                `synthesised or why it names nobody. Nothing was written.`,
+            );
+            return 1;
+          }
+          console.log(
+            `${OK}${t}: personal-data census agrees with production — ${census.length} columns, ` +
+              `each synthesised, structural, or carrying a written reason`,
+          );
+        }
         const pk = await pkOf(prod, t);
         // A SHELL: only the named columns are read from production. Every other
         // column is left at the branch's own default, and what that costs is
@@ -1682,6 +1968,19 @@ async function main(): Promise<number> {
         const unresolvedRefs = new Map<string, number>();
         const outside = await outsideFks(branch, t, COPY_NAMES);
         const nulled = new Map<string, number>();
+        // SELF-REFERENCING FOREIGN KEYS: written NULL now, resolved in one pass
+        // per column after this table's last batch lands. See `selfReferencingFks`.
+        const selfFks = await selfReferencingFks(branch, t);
+        const deferred = new Map<string, Array<{ key: unknown[]; value: unknown }>>(
+          selfFks.map((f) => [f.column, []]),
+        );
+        if (selfFks.length)
+          console.log(
+            `${INFO}${t}: ${selfFks.length} self-referencing foreign key(s) — ` +
+              selfFks.map((f) => `${f.column} → ${f.parentColumn} (${f.name})`).join("; ") +
+              `. Each is written NULL during the batched copy and resolved in one pass afterwards, ` +
+              `inside this same transaction; a batch whose parent sorts later would abort 23503.`,
+          );
         let copied = 0;
         for (let offset = 0; ; offset += rowsPerBatch) {
           const page = await prod.query(
@@ -1698,6 +1997,12 @@ async function main(): Promise<number> {
                 r[fk.column] = null;
                 nulled.set(fk.column, (nulled.get(fk.column) ?? 0) + 1);
               }
+            }
+            for (const sf of selfFks) {
+              const v = r[sf.column];
+              if (v === null || v === undefined) continue;
+              deferred.get(sf.column)!.push({ key: pk.map((c) => r[c]), value: v });
+              r[sf.column] = null;
             }
             const ph = cols.map((c, j) => {
               values.push(r[c.name]);
@@ -1794,6 +2099,77 @@ async function main(): Promise<number> {
           copied += page.rows.length;
         }
         copiedKeys.set(t, prodKeys);
+        // ── PASS TWO: the self-references, now that every row of this table is
+        //    on the branch. Same transaction, same disabled triggers. In MERGE
+        //    mode a campaign-owned row is excluded exactly as the upsert
+        //    excludes it — the refresh does not reach into a row the campaign
+        //    wrote, by this door either.
+        for (const sf of selfFks) {
+          const pairs = deferred.get(sf.column)!;
+          if (pairs.length === 0) {
+            console.log(
+              `${INFO}${t}.${sf.column}: 0 of ${copied} copied row(s) carry a self-reference — ` +
+                `nothing to resolve.`,
+            );
+            continue;
+          }
+          const marker = markers.get(t);
+          const keep = mergeMode && marker ? campaignOwnedPredicate(marker, "b") : null;
+          if (mergeMode && marker && !keep) {
+            console.log(
+              `${C.yellow}[WARN]${C.reset} ${t}.${sf.column}: ${pairs.length} self-reference(s) are ` +
+                `NOT resolved this run — the campaign-ownership marker cannot be written as a ` +
+                `predicate, so this pass cannot tell a campaign row from a production one and will ` +
+                `not guess. The column stays NULL on those rows; W1-REL's \`origin\` column is the ` +
+                `remedy.`,
+            );
+            continue;
+          }
+          const colType = cols.find((c) => c.name === sf.column)!.typ;
+          const perRow = pk.length + 1;
+          const rowsPerPass = Math.max(1, Math.floor(MAX_PARAMS / perRow));
+          let resolved = 0;
+          for (let i = 0; i < pairs.length; i += rowsPerPass) {
+            const slice = pairs.slice(i, i + rowsPerPass);
+            const vals: unknown[] = [];
+            const tuples2 = slice.map((p, n) => {
+              const ph = [
+                ...pk.map((c, j) => {
+                  vals.push(p.key[j]);
+                  return `$${n * perRow + j + 1}::${cols.find((x) => x.name === c)!.typ}`;
+                }),
+                (() => {
+                  vals.push(p.value);
+                  return `$${n * perRow + pk.length + 1}::${colType}`;
+                })(),
+              ];
+              return `(${ph.join(",")})`;
+            });
+            const vCols = [...pk.map((c) => `"${c}"`), `"__v"`].join(", ");
+            const on = pk.map((c) => `b."${c}" = v."${c}"`).join(" and ");
+            const res = await branch.query(
+              `update ${t} b set "${sf.column}" = v."__v" ` +
+                `from (values ${tuples2.join(",")}) as v(${vCols}) ` +
+                `where ${on}` +
+                (keep ? ` and not (${keep})` : ""),
+              vals,
+            );
+            resolved += res.rowCount ?? 0;
+          }
+          if (resolved !== pairs.length) {
+            fail(
+              `${t}.${sf.column}: production has ${pairs.length} row(s) carrying a self-reference ` +
+                `but only ${resolved} were resolved on the branch. The column is left NULL on the ` +
+                `rest, which is a silently different graph — nothing about this table can be ` +
+                `trusted until it is explained.`,
+            );
+          } else {
+            console.log(
+              `${OK}${t}.${sf.column}: ${resolved} self-reference(s) resolved after the last batch ` +
+                `(${sf.name}) — written NULL during the copy so a referrer could not outrun its parent`,
+            );
+          }
+        }
         console.log(`${OK}${t.padEnd(30)} ${policy} — ${copied} production row(s) written`);
         if (entry.afterCopy) {
           const res = await branch.query(entry.afterCopy.sql);

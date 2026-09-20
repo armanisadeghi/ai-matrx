@@ -26,9 +26,7 @@ export const SOURCE_APPS = [
   "aidream-sweep-listener",
   "aidream-workflow-extract-sweep",
   "chat",
-  "claude-code",
-  "codex",
-  "cursor",
+  "code-plugin",
   "dashboard",
   "matrx-admin",
   "matrx-ai",
@@ -40,7 +38,6 @@ export const SOURCE_APPS = [
   "mcp-agent-service",
   "workflow",
   "workflow-studio",
-  "vscode",
 ] as const;
 
 export type SourceApp = (typeof SOURCE_APPS)[number];
@@ -55,6 +52,10 @@ export const SOURCE_FEATURES = [
   "ai-results",
   "analysis-studio",
   "canvas",
+  "claude-code",
+  "codex",
+  "cursor",
+  "vscode",
   "conductor",
   "chat",
   "cms",
@@ -219,6 +220,13 @@ export function isSourceFeature(value: string): value is SourceFeature {
     SOURCE_FEATURE_REGEXES.some((pattern) => pattern.test(value))
   );
 }
+
+// Outside coding tools: source_app is ALWAYS CODE_PLUGIN_SOURCE_APP and the
+// tool is the source_feature. `source_app === CODE_PLUGIN_SOURCE_APP` is the
+// one test for "outside data, not ours". Never stamp a tool slug as an app.
+export const CODE_PLUGIN_SOURCE_APP = "code-plugin" as const;
+export const CODE_PLUGIN_SOURCE_APP_LABEL = "Code Plugin" as const;
+export const CODING_TOOL_SOURCE_FEATURES = ["claude-code", "codex", "cursor", "vscode"] as const;
 
 // origin_class — the WITNESSED trust axis of request attribution
 // (source: matrx_connect.context.provenance.ORIGIN_CLASSES). Read-only

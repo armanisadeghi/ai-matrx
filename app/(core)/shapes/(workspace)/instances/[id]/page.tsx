@@ -45,16 +45,20 @@ interface PageProps {
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
+  // The App Router already decodes dynamic segment params — decoding again
+  // double-decodes a literal `%` in the instance id.
   const { id } = await params;
   const supabase = await createClient();
-  const { record } = await loadKindInstance(supabase, decodeURIComponent(id));
+  const { record } = await loadKindInstance(supabase, id);
   return { title: record?.title ?? "Shape instance" };
 }
 
 export default async function ShapeInstancePermalinkPage({
   params,
 }: PageProps) {
-  const id = decodeURIComponent((await params).id);
+  // The App Router already decodes dynamic segment params — decoding again
+  // double-decodes a literal `%` in the instance id.
+  const { id } = await params;
   const supabase = await createClient();
   const { record, error } = await loadKindInstance(supabase, id);
 

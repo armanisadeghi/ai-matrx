@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
+import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,10 +31,10 @@ import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { setMode } from "@/styles/themes/themeSlice";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { Notification } from "@/types/notification.types";
 import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions";
 
 export function MobileUnifiedMenu() {
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const theme = useThemeMode();
   const setTheme = (t: "light" | "dark") => dispatch(setMode(t));
@@ -55,9 +56,6 @@ export function MobileUnifiedMenu() {
     openQuickChatHistory,
     openVoicePad,
   } = useQuickActions();
-
-  // Notifications state (placeholder)
-  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const handleThemeToggle = () => {
     setTheme(theme === "dark" ? "light" : "dark");
@@ -180,14 +178,9 @@ export function MobileUnifiedMenu() {
             <span className="text-sm">Feedback</span>
           </DropdownMenuItem>
 
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/notifications")}>
             <Bell className="h-4 w-4 mr-3 text-gray-600 dark:text-gray-400" />
-            <span className="text-sm">Notifications</span>
-            {notifications.filter((n) => !n.isRead).length > 0 && (
-              <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center">
-                {notifications.filter((n) => !n.isRead).length}
-              </span>
-            )}
+            <span className="text-sm">Inbox</span>
           </DropdownMenuItem>
 
           <DropdownMenuItem onClick={handleThemeToggle}>

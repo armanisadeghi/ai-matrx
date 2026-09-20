@@ -1,0 +1,131 @@
+{
+  "captured_at": "2026-09-20T02:05Z",
+  "organization_id": "235a6add-e8b5-43f9-883e-9dd0389c1759",
+  "how": "Produced by matrx_records.store.RecordStore.field_propose \u2014 the same call the deployed records tool makes \u2014 as admin@admin.com against the MAIN database, on tables a PERSON declared (no agent claim), in a throwaway store-ON organization left on the platform default for custom/agent_schema_changes.",
+  "approve": {
+    "organization_id": "235a6add-e8b5-43f9-883e-9dd0389c1759",
+    "table_id": "0850bf27-a624-46cd-95a9-4f9f7eb597cf",
+    "result": {
+      "proposal": "field",
+      "applied": false,
+      "table_id": "0850bf27-a624-46cd-95a9-4f9f7eb597cf",
+      "field": {
+        "key": "rate_card",
+        "label": "Rate card",
+        "multi": false,
+        "dated": false,
+        "rules": [],
+        "source": "agent",
+        "description": "What this crew costs for a day.",
+        "sensitivity": "internal",
+        "context_policy": "include",
+        "depends_on": [],
+        "applies_to_types": [],
+        "entity_definition_id": "0850bf27-a624-46cd-95a9-4f9f7eb597cf",
+        "config": {},
+        "type": "range",
+        "format": "currency",
+        "unit": "USD",
+        "parity_type": "currency"
+      },
+      "approvers": [],
+      "approval": {
+        "setting": "ask",
+        "approval_required": true,
+        "own_table": false,
+        "reason": "existing_table_needs_a_person",
+        "why": "That table already existed in this organization, so a person is asked before an agent changes it.",
+        "how_to_change": "An administrator changes this on the organization's data settings: `never ask` lets an agent change schema and write records freely, `ask` (the default) exempts only the table the agent made in this conversation, and `always ask` asks about every change. It is the knob custom/agent_schema_changes."
+      },
+      "awaiting_approval": true,
+      "not_done": "The field 'rate_card' was NOT added, and is waiting for a person. That table already existed in this organization, so a person is asked before an agent changes it. An administrator changes this on the organization's data settings: `never ask` lets an agent change schema and write records freely, `ask` (the default) exempts only the table the agent made in this conversation, and `always ask` asks about every change. It is the knob custom/agent_schema_changes.",
+      "action": "field_propose",
+      "actor": "agent",
+      "on_behalf_of": "87a6e699-3622-4869-8843-d0867456c0dd"
+    }
+  },
+  "decline": {
+    "organization_id": "235a6add-e8b5-43f9-883e-9dd0389c1759",
+    "table_id": "a77dbddf-ac7d-4966-854b-8927ca38ec32",
+    "result": {
+      "proposal": "field",
+      "applied": false,
+      "table_id": "a77dbddf-ac7d-4966-854b-8927ca38ec32",
+      "field": {
+        "key": "depot",
+        "label": "Depot",
+        "multi": false,
+        "dated": false,
+        "rules": [],
+        "source": "agent",
+        "description": "What this crew costs for a day.",
+        "sensitivity": "internal",
+        "context_policy": "include",
+        "depends_on": [],
+        "applies_to_types": [],
+        "entity_definition_id": "a77dbddf-ac7d-4966-854b-8927ca38ec32",
+        "config": {},
+        "type": "range",
+        "format": "currency",
+        "unit": "USD",
+        "parity_type": "currency"
+      },
+      "approvers": [],
+      "approval": {
+        "setting": "ask",
+        "approval_required": true,
+        "own_table": false,
+        "reason": "existing_table_needs_a_person",
+        "why": "That table already existed in this organization, so a person is asked before an agent changes it.",
+        "how_to_change": "An administrator changes this on the organization's data settings: `never ask` lets an agent change schema and write records freely, `ask` (the default) exempts only the table the agent made in this conversation, and `always ask` asks about every change. It is the knob custom/agent_schema_changes."
+      },
+      "awaiting_approval": true,
+      "not_done": "The field 'depot' was NOT added, and is waiting for a person. That table already existed in this organization, so a person is asked before an agent changes it. An administrator changes this on the organization's data settings: `never ask` lets an agent change schema and write records freely, `ask` (the default) exempts only the table the agent made in this conversation, and `always ask` asks about every change. It is the knob custom/agent_schema_changes.",
+      "action": "field_propose",
+      "actor": "agent",
+      "on_behalf_of": "87a6e699-3622-4869-8843-d0867456c0dd"
+    }
+  },
+  "redTwin": {
+    "organization_id": "235a6add-e8b5-43f9-883e-9dd0389c1759",
+    "table_id": "b3a4e5b3-6fad-48de-a10e-cf226f381880",
+    "result": {
+      "proposal": "field",
+      "applied": false,
+      "table_id": "b3a4e5b3-6fad-48de-a10e-cf226f381880",
+      "field": {
+        "key": "site_lead",
+        "label": "Site lead",
+        "multi": false,
+        "dated": false,
+        "rules": [],
+        "source": "agent",
+        "description": "What this crew costs for a day.",
+        "sensitivity": "internal",
+        "context_policy": "include",
+        "depends_on": [],
+        "applies_to_types": [],
+        "entity_definition_id": "b3a4e5b3-6fad-48de-a10e-cf226f381880",
+        "config": {},
+        "type": "range",
+        "format": "currency",
+        "unit": "USD",
+        "parity_type": "currency"
+      },
+      "approvers": [],
+      "approval": {
+        "setting": "ask",
+        "approval_required": true,
+        "own_table": false,
+        "reason": "existing_table_needs_a_person",
+        "why": "That table already existed in this organization, so a person is asked before an agent changes it.",
+        "how_to_change": "An administrator changes this on the organization's data settings: `never ask` lets an agent change schema and write records freely, `ask` (the default) exempts only the table the agent made in this conversation, and `always ask` asks about every change. It is the knob custom/agent_schema_changes."
+      },
+      "awaiting_approval": true,
+      "not_done": "The field 'site_lead' was NOT added, and is waiting for a person. That table already existed in this organization, so a person is asked before an agent changes it. An administrator changes this on the organization's data settings: `never ask` lets an agent change schema and write records freely, `ask` (the default) exempts only the table the agent made in this conversation, and `always ask` asks about every change. It is the knob custom/agent_schema_changes.",
+      "action": "field_propose",
+      "actor": "agent",
+      "on_behalf_of": "87a6e699-3622-4869-8843-d0867456c0dd"
+    }
+  }
+}

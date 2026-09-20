@@ -21,6 +21,14 @@ import type { TopicalMapKnobs } from "../../../knobs";
 import { pageColumns } from "../pageColumns";
 import { toSetPageIntentsOutcome, setPageIntentsOutcomeLine } from "../bulk/setPageIntentsOutcome";
 import { BulkOutcome } from "../bulk/BulkOutcome";
+// STATIC, not `await import(...)` inside the test. As a dynamic import the whole
+// MapRunControls module graph was compiled by ts-jest INSIDE the 5s per-test
+// timeout, which it fits on an idle machine and does not under the full
+// battery's 40 workers — the suite failed in the 2026-09-19 whole-suite run and
+// passed on its own. Compiling at suite load moves that cost out of the clock
+// the assertion is measured on; the module is not mocked, so nothing about the
+// test changes.
+import { MapRunControls } from "../runs/MapRunControls";
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -469,7 +477,6 @@ describe("(e) readOnly yields no checkbox, no bulk bar, no run controls, no revi
   // MapRunControls and PagesBulkActions (mounted directly, no isolateModules).
 
   it("MapRunControls renders nothing at all when readOnly", async () => {
-    const { MapRunControls } = await import("../runs/MapRunControls");
     await act(async () =>
       root.render(
         <MapRunControls

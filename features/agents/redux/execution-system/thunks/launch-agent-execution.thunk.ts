@@ -85,7 +85,7 @@ import {
   patchConversation,
 } from "../conversations/conversations.slice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import type { OverlayId } from "@/features/overlays/catalogue";
+import { DISPLAY_MODE_TO_OVERLAY_ID } from "../display-mode-overlay";
 import {
   isProjectCreateFlow,
   logProjectCreateAiSnapshot,
@@ -123,21 +123,6 @@ function isInteractive(resultDisplayMode: ResultDisplayMode): boolean {
   return INTERACTIVE_MODES.has(resultDisplayMode);
 }
 
-const DISPLAY_MODE_TO_OVERLAY_ID: Partial<
-  Record<ResultDisplayMode, OverlayId>
-> = {
-  "modal-full": "agentFullModal",
-  "modal-compact": "agentCompactModal",
-  "chat-bubble": "agentChatBubble",
-  inline: "agentInlineOverlay",
-  sidebar: "agentSidebarOverlay",
-  "flexible-panel": "agentFlexiblePanel",
-  panel: "agentPanelOverlay",
-  toast: "agentToastOverlay",
-  "floating-chat": "agentFloatingChat",
-  "chat-collapsible": "agentChatCollapsible",
-  "chat-assistant": "agentChatAssistant",
-};
 
 async function pollForCompletion(
   getState: () => unknown,

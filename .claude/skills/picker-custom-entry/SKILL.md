@@ -21,9 +21,8 @@ description: "Custom-entry fix for pickers with no way to add a choice (Select, 
 moment in the whole product.** Refusing it converts an advocate into silent
 churn, and nobody ever files a ticket saying so.
 
-Doctrine: **P23** in
-`common-docs/systems/marketing/seo/seo-keywords/keyword-system-decisions.md`
-(the exception is **P11** in the same file). Detector: `pnpm check:picker-add`.
+Doctrine: **THE PLATFORM POLICY** `common-docs/policies/every-picker-takes-new-input.md`
+(promoted 2026-09-18 from P23 in the SEO keyword decisions; P11 is its "platform-governed" exception). Detector: `pnpm check:picker-add`.
 Out of scope: choosing WHAT a picker should offer — that is the feature's own
 doctrine.
 
@@ -95,6 +94,20 @@ with no add button at all.
 6. Re-run `pnpm check:picker-add` — the file must drop off the list.
 
 ## Anti-patterns
+
+- **A door to the management page is NOT an add affordance.** Arman, 2026-09-18,
+  on `ContextItemPicker`: "people don't know what a 'Context Item' is when they're
+  in the scopes screen but when they're here, they see it in practice and so this
+  is the time to allow them to create one the right way and we're squandering it."
+  A `+` that opens `/organizations/…/context-items` in a new tab satisfies the
+  detector's regex and the 2026-08-30 P13 run certified exactly that on
+  `ScopeContextTargetPicker` — it is still the dead end. The record is created
+  HERE, through its one write path (`CreateOrgModal` with `initialName`,
+  `createScopeType`, `ContextItemAddForm` inline), and selected. A door is the
+  "manage" companion, never the substitute.
+- **The picker is inside a blocking modal.** A focus-trapping `Dialog` around a
+  picker makes every door a dead end (the window it opens is unreachable). The
+  host becomes a `WindowPanel`; a modal is for a yes/no, never for a workbench.
 
 - A second write path beside the vocabulary's editor "because it was easier here".
 - An "+ Add" that navigates away and loses what they typed.

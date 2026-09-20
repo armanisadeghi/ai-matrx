@@ -105,6 +105,14 @@ export default function TopicalMapTopicPanel({
       onClose={onClose}
       overlayId="topicalMapTopicPanel"
       overlayInstanceId={instanceId}
+      // V-23 / R35 — the registry has declared `urlSync: { key: "topic" }`
+      // since this panel shipped, but with no `urlSyncId` every instance wrote
+      // the SAME token (`topic:topicalMapTopicPanel`), so two open topics
+      // collapsed to one address. The instance id is already `<mapId>|<slug>`
+      // — the panel's identity — so it is the address, and the site in scope
+      // rides as an arg.
+      urlSyncId={instanceId}
+      urlSyncArgs={siteId ? { s: siteId } : undefined}
       minWidth={360}
       minHeight={280}
       initialRect={rect}

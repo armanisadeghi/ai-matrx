@@ -40,7 +40,33 @@ export type KnownItemType =
   | "document"
   | "conversation"
   | "message"
-  | "email";
+  | "email"
+  // An existing Person (or company) in the CRM — `crm.party`. The CREATE form is
+  // a different window; this is the record that already exists, which had no
+  // in-place presentation of any kind before F-40.
+  | "party"
+  // A Google Doc, Sheet or Drive file a person picked, mirrored into
+  // `workbench.google_document` (PLAN Amendment A2 names the table with Google's
+  // own noun). The record is the projection; the picked-resource row stays the
+  // authorization boundary (Amendment A1).
+  | "google_document"
+  // One owned Google Calendar event inside the agenda window, mirrored into
+  // `communication.calendar_event` (aidream migration 0766). Read-only toward
+  // Google: `visibility personal` by default (ruling R1), because a person's
+  // agenda is theirs.
+  | "calendar_event"
+  // A Marketing SITE — `web.site`, the module's central identity (every Search
+  // Console number, crawl, page and keyword belongs to one). The word is the
+  // canonical `platform.entity_types` token, `web_site`, never a twin spelled
+  // `site`: the token already carries the route and the peek, and only the
+  // in-place opener was missing (F-87).
+  | "web_site"
+  // One synced YouTube video — `web.youtube_video`, the third Google mirror
+  // table beside the Doc record and the calendar event. The word is the
+  // canonical `platform.entity_types` token, `web_youtube_video`, never a twin
+  // spelled `youtube_video` (that spelling is already an agent CONTENT BLOCK
+  // type — a video someone pasted into a message — and is a different thing).
+  | "web_youtube_video";
 
 export type ItemType = KnownItemType | (string & {});
 

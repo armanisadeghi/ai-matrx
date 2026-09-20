@@ -17,6 +17,8 @@ export default async function AdminMandateRoute({
 }: {
   params: Promise<{ mandateKey: string }>;
 }) {
+  // The App Router already decodes dynamic segment params — decoding again
+  // double-decodes a literal `%` in the mandate key/id.
   const { mandateKey } = await params;
-  return <AdminMandateWorkspacePage mandateKey={decodeURIComponent(mandateKey)} />;
+  return <AdminMandateWorkspacePage mandateKey={mandateKey} />;
 }

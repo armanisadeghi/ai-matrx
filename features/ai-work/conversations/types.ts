@@ -40,12 +40,15 @@ export const CONVERSATION_LIST_SCOPES: ListScopeKind[] = [
 // inside a bucket, never a peer of it.
 //
 // The bucket is DERIVED SERVER-SIDE (`public.cvx_audience`, one expression
-// shared by the list RPC and the facets RPC) from facts the row already has:
-// a coding-session binding or a coding source_app is external no matter what
-// else the row says; a machine origin_class is internal; a human origin is
-// chat; pre-provenance rows fall back to conversation_type. The client only
-// ever names the bucket — it never re-derives it, so a chip's count is exactly
-// what clicking it shows.
+// shared by the list RPC and the facets RPC), and that function decides nothing
+// itself: it maps `chat.conversation_lane` — the platform's ONE conversation
+// classifier, also behind the chat sidebar's five lane toggles — onto these
+// three buckets. external = lane `plugin` (source_app `code-plugin`, the one
+// "outside data" test — `isCodePluginSourceApp` in lib/providerSource.ts) or a
+// live coding-session binding, whatever else the row says; internal = lane
+// `auto` or `subagent`; chat = lane `chat` or `matrx`. The client only ever
+// names the bucket — it never re-derives it, so a chip's count is exactly what
+// clicking it shows.
 //
 // The filter key is `audience`, a REAL entry in the filter bag (never a hidden
 // SQL predicate), so the Filters panel, the URL and the chips all agree.
@@ -72,13 +75,6 @@ export const INTERNAL_CONVERSATION_TYPES = [
   "podcast",
 ] as const;
 
-/** Apps whose sessions are mirrored from outside AI Matrx. Mirrors `cvx_audience`. */
-export const EXTERNAL_SOURCE_APPS = [
-  "claude-code",
-  "codex",
-  "cursor",
-  "vscode",
-] as const;
 
 /**
  * The surface's honest starting point: the conversations a person had
@@ -111,7 +107,7 @@ export function readAudience(filters: EntityFilters): ConversationAudience {
 /**
  * The filter bag for one audience. "all" removes the axis entirely. Switching
  * buckets also drops the second-cut filters (app, run type) that only make
- * sense inside the bucket being left — otherwise "External" could arrive
+ * sense inside the bucket being left (app, tool, run type) — otherwise "External" could arrive
  * pre-narrowed to "Workflow run" and show nothing, which reads as a broken
  * page rather than a filter.
  */
@@ -121,6 +117,7 @@ export function applyAudience(
 ): EntityFilters {
   const next = { ...filters };
   delete next.source_app;
+  delete next.source_feature;
   delete next.conversation_type;
   if (audience === "all") {
     delete next.audience;

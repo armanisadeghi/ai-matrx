@@ -88,3 +88,39 @@ rerun after every pull. `pnpm check:agent-harness` is read-only.
 
 Codex skips a new or changed non-managed hook until a human reviews its hash.
 Open `/hooks` once after installation and trust the Matrx dev-server guard.
+
+## Change Log
+
+- 2026-09-18 (F-101, V-23 NEW-1): `ensure_worktree_node_modules` in
+  `scripts/agent-dev-server.sh` handled only the symlink case
+  (`[[ -L "$nm" ]] || return 0` returned immediately otherwise), but
+  `git worktree add` never creates `node_modules` at all — a fresh worktree's
+  `node_modules` is ABSENT, not a symlink — so `pnpm preview:start` there
+  printed "dependencies are missing; run pnpm install first", a remedy worse
+  than the defect (an install in the worktree resolves a different `latest`
+  dependency tree than the primary checkout's). Fixed to hard-link-copy from
+  the primary checkout in both the absent and symlink cases, and to leave an
+  already-real `node_modules` directory untouched. Forcing test:
+  `pnpm test:worktree-node-modules` (`scripts/test-worktree-node-modules.sh`).
+- 2026-09-19: starting the shared preview from `.matrx/acquisition-frontier/checkout`
+  (a worktree hard-link-copied per the entry above) crashed with `Error: Cannot
+  find module '/Users/…/matrx-frontend/Users/…/matrx-frontend/node_modules/next/dist/bin/next'`
+  — a DOUBLED absolute path. Root cause: the launcher exec'd
+  `node_modules/.bin/next`, a pnpm-generated POSIX shim that finds its real
+  target by counting a FIXED number of `../` hops from its own directory up to
+  what it assumes is the filesystem root, then re-descending through the
+  target's absolute path (baked in at generation time, leading slash
+  stripped). The hard-link copy carries that shim's bytes — hop count
+  included — into a worktree nested at a DIFFERENT depth than the primary
+  checkout, so the hop count stops five directories short of the real
+  filesystem root and the shim silently doubles the primary checkout's own
+  path onto itself instead of erroring. Not specific to this one worktree
+  depth: any hard-linked shim copied to a different nesting depth than where
+  it was generated resolves to the wrong file, silently. Fixed by adding
+  `resolve_next_bin()`, which points straight at
+  `node_modules/next/dist/bin/next` (a real Node script reachable through
+  `node_modules/next`, a normal symlink into the pnpm store that resolves
+  correctly regardless of nesting depth) and invokes it directly via `node`,
+  bypassing the shim's path arithmetic entirely. Forcing test:
+  `pnpm test:worktree-next-bin-resolution`
+  (`scripts/test-worktree-next-bin-resolution.sh`).

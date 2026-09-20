@@ -28,6 +28,7 @@ import {
   type FullScreenEditorMode,
 } from "@/lib/redux/slices/overlaySlice";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
+import { readDetailOverlayData } from "@/features/window-panels/detail/detailOverlayData";
 
 // Prop-type imports for overlay components below — used to replace `as never`
 // casts emitted by the codegen with precise static types.
@@ -219,9 +220,16 @@ const AgentCreateAppWindow = lazyOverlay(
 const GoogleConnectWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/google/GoogleConnectWindow"),
 );
+const StorageSourcePickerWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/files/StorageSourcePickerWindow"),
+);
 const LiveIntegrationsWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/connectors/LiveIntegrationsWindow"),
+);
+const ConnectorConsentDialog = lazyOverlay(
+  () => import("@/features/connectors/ConnectorConsentDialog"),
 );
 const AgentSkillsWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentSkillsWindow"),
@@ -459,6 +467,12 @@ const CrmCreatePartyWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/crm/CrmCreatePartyWindow"),
   { ssr: false },
 );
+import { narrowGmailDraftedBy } from "@/features/crm/gmail/types";
+
+const GmailComposeWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/crm/GmailComposeWindow"),
+  { ssr: false },
+);
 const CodeEditorWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/code/CodeEditorWindow").then(
@@ -605,8 +619,33 @@ const SourceInspectorWindow = lazyOverlay(
     import("@/features/window-panels/windows/source-inspector/SourceInspectorWindow"),
   { ssr: false },
 );
-const ItemDetailWindow = lazyOverlay(
-  () => import("@/features/window-panels/windows/item-detail/ItemDetailWindow"),
+const DetailWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/detail/DetailWindow"),
+  { ssr: false },
+);
+const GoogleContactsImportWindow = lazyOverlay(
+  () =>
+    import(
+      "@/features/window-panels/windows/google-import/GoogleContactsImportWindow"
+    ),
+  { ssr: false },
+);
+const GoogleTasksImportWindow = lazyOverlay(
+  () =>
+    import(
+      "@/features/window-panels/windows/google-import/GoogleTasksImportWindow"
+    ),
+  { ssr: false },
+);
+const GoogleAgendaWindow = lazyOverlay(
+  () =>
+    import(
+      "@/features/window-panels/windows/google-calendar/GoogleAgendaWindow"
+    ),
+  { ssr: false },
+);
+const DetailDocked = lazyOverlay(
+  () => import("@/features/window-panels/windows/detail/DetailDocked"),
   { ssr: false },
 );
 const NoteInfoWindow = lazyOverlay(
@@ -635,6 +674,11 @@ const GalleryWindow = lazyOverlay(
 const HierarchyCreationWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/context-scopes/HierarchyCreationWindow"),
+  { ssr: false },
+);
+const AgentVariableEditorWindow = lazyOverlay(
+  () =>
+    import("@/features/agents/components/variables-management/AgentVariableEditorWindow"),
   { ssr: false },
 );
 const ScopeEditWindow = lazyOverlay(
@@ -712,6 +756,16 @@ const MatcherReviewWindow = lazyOverlay(
 const SiteDiscoveryWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/marketing/SiteDiscoveryWindow"),
+  { ssr: false },
+);
+const SiteAnalyticsWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/marketing/SiteAnalyticsWindow"),
+  { ssr: false },
+);
+const SiteQuickViewWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/marketing/SiteQuickViewWindow"),
   { ssr: false },
 );
 const KeywordWindow = lazyOverlay(
@@ -1015,6 +1069,10 @@ const QuickNoteSaveOverlay = lazyOverlay(
     ),
   { ssr: false },
 );
+const ApprovalsWindow = lazyOverlay(
+  () => import("@/features/approvals/windows/ApprovalsWindow"),
+  { ssr: false },
+);
 const ScraperWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/ScraperWindow"),
   { ssr: false },
@@ -1221,8 +1279,14 @@ export default function OverlayController() {
     agentSkillsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentSkillsWindow"),
     ),
+    connectorConsentDialog: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "connectorConsentDialog"),
+    ),
     googleConnectWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "googleConnectWindow"),
+    ),
+    storageSourcePicker: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "storageSourcePicker"),
     ),
     liveIntegrationsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "liveIntegrationsWindow"),
@@ -1337,6 +1401,9 @@ export default function OverlayController() {
     crmCreatePartyWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "crmCreatePartyWindow"),
     ),
+    gmailComposeWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "gmailComposeWindow"),
+    ),
     cropStudioWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "cropStudioWindow"),
     ),
@@ -1381,8 +1448,20 @@ export default function OverlayController() {
     surfaceContextWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "surfaceContextWindow"),
     ),
-    itemDetailWindow: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "itemDetailWindow"),
+    detailWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "detailWindow"),
+    ),
+    googleContactsImportWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "googleContactsImportWindow"),
+    ),
+    googleTasksImportWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "googleTasksImportWindow"),
+    ),
+    googleAgendaWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "googleAgendaWindow"),
+    ),
+    detailDocked: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "detailDocked"),
     ),
     researchContextPreviewWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "researchContextPreviewWindow"),
@@ -1395,6 +1474,9 @@ export default function OverlayController() {
     ),
     hierarchyCreationWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "hierarchyCreationWindow"),
+    ),
+    agentVariableEditorWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentVariableEditorWindow"),
     ),
     scopeEditWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "scopeEditWindow"),
@@ -1470,6 +1552,12 @@ export default function OverlayController() {
     matcherReviewWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "matcherReviewWindow"),
     ),
+    siteQuickViewWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "siteQuickViewWindow"),
+    ),
+    siteAnalyticsWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "siteAnalyticsWindow"),
+    ),
     siteDiscoveryWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "siteDiscoveryWindow"),
     ),
@@ -1518,6 +1606,9 @@ export default function OverlayController() {
     ),
     quickUtilities: useAppSelector((s) =>
       selectIsOverlayOpen(s, "quickUtilities"),
+    ),
+    approvalsWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "approvalsWindow"),
     ),
     scraperWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "scraperWindow"),
@@ -1614,8 +1705,14 @@ export default function OverlayController() {
     agentSkillsWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentSkillsWindow"),
     ) as Record<string, unknown> | null,
+    connectorConsentDialog: useAppSelector((s) =>
+      selectOverlayData(s, "connectorConsentDialog"),
+    ),
     googleConnectWindow: useAppSelector((s) =>
       selectOverlayData(s, "googleConnectWindow"),
+    ) as Record<string, unknown> | null,
+    storageSourcePicker: useAppSelector((s) =>
+      selectOverlayData(s, "storageSourcePicker"),
     ) as Record<string, unknown> | null,
     sandboxManagementWindow: useAppSelector((s) =>
       selectOverlayData(s, "sandboxManagementWindow"),
@@ -1735,6 +1832,9 @@ export default function OverlayController() {
     crmCreatePartyWindow: useAppSelector((s) =>
       selectOverlayData(s, "crmCreatePartyWindow"),
     ) as Record<string, unknown> | null,
+    gmailComposeWindow: useAppSelector((s) =>
+      selectOverlayData(s, "gmailComposeWindow"),
+    ) as Record<string, unknown> | null,
     cropStudioWindow: useAppSelector((s) =>
       selectOverlayData(s, "cropStudioWindow"),
     ) as Record<string, unknown> | null,
@@ -1780,8 +1880,17 @@ export default function OverlayController() {
     surfaceContextWindow: useAppSelector((s) =>
       selectOverlayData(s, "surfaceContextWindow"),
     ) as Record<string, unknown> | null,
-    itemDetailWindow: useAppSelector((s) =>
-      selectOverlayData(s, "itemDetailWindow"),
+    detailWindow: useAppSelector((s) =>
+      selectOverlayData(s, "detailWindow"),
+    ) as Record<string, unknown> | null,
+    googleContactsImportWindow: useAppSelector((s) =>
+      selectOverlayData(s, "googleContactsImportWindow"),
+    ) as Record<string, unknown> | null,
+    googleTasksImportWindow: useAppSelector((s) =>
+      selectOverlayData(s, "googleTasksImportWindow"),
+    ) as Record<string, unknown> | null,
+    detailDocked: useAppSelector((s) =>
+      selectOverlayData(s, "detailDocked"),
     ) as Record<string, unknown> | null,
     researchContextPreviewWindow: useAppSelector((s) =>
       selectOverlayData(s, "researchContextPreviewWindow"),
@@ -1794,6 +1903,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     hierarchyCreationWindow: useAppSelector((s) =>
       selectOverlayData(s, "hierarchyCreationWindow"),
+    ) as Record<string, unknown> | null,
+    agentVariableEditorWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentVariableEditorWindow"),
     ) as Record<string, unknown> | null,
     scopeEditWindow: useAppSelector((s) =>
       selectOverlayData(s, "scopeEditWindow"),
@@ -1890,6 +2002,12 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     matcherReviewWindow: useAppSelector((s) =>
       selectOverlayData(s, "matcherReviewWindow"),
+    ) as Record<string, unknown> | null,
+    siteQuickViewWindow: useAppSelector((s) =>
+      selectOverlayData(s, "siteQuickViewWindow"),
+    ),
+    siteAnalyticsWindow: useAppSelector((s) =>
+      selectOverlayData(s, "siteAnalyticsWindow"),
     ) as Record<string, unknown> | null,
     siteDiscoveryWindow: useAppSelector((s) =>
       selectOverlayData(s, "siteDiscoveryWindow"),
@@ -2604,6 +2722,66 @@ export default function OverlayController() {
               typeof data?.callbackGroupId === "string"
                 ? data.callbackGroupId
                 : null
+            }
+            importDestinationFolderPath={
+              typeof data?.importDestinationFolderPath === "string"
+                ? data.importDestinationFolderPath
+                : null
+            }
+            accept={typeof data?.accept === "string" ? data.accept : null}
+            multiple={data?.multiple !== false}
+          />
+        );
+      })()}
+
+      {/* storageSourcePicker */}
+      {(() => {
+        const isOpen = isOpenById.storageSourcePicker;
+        const data = dataById.storageSourcePicker as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen || typeof data?.callbackGroupId !== "string") return null;
+        if (typeof data.destinationFolderPath !== "string") return null;
+        return (
+          <StorageSourcePickerWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "storageSourcePicker" }))
+            }
+            callbackGroupId={data.callbackGroupId}
+            destinationFolderPath={data.destinationFolderPath}
+            accept={typeof data.accept === "string" ? data.accept : null}
+            multiple={data.multiple !== false}
+          />
+        );
+      })()}
+
+      {/* connectorConsentDialog */}
+      {(() => {
+        const isOpen = isOpenById.connectorConsentDialog;
+        const data = dataById.connectorConsentDialog as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <ConnectorConsentDialog
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "connectorConsentDialog" }))
+            }
+            initialConnectionId={
+              typeof data?.initialConnectionId === "string"
+                ? data.initialConnectionId
+                : null
+            }
+            initialProductKeys={
+              Array.isArray(data?.initialProductKeys)
+                ? (data.initialProductKeys as unknown[]).filter(
+                    (key): key is string => typeof key === "string",
+                  )
+                : undefined
             }
           />
         );
@@ -3864,6 +4042,50 @@ export default function OverlayController() {
         );
       })()}
 
+      {/* gmailComposeWindow */}
+      {(() => {
+        if (!isOpenById.gmailComposeWindow) return null;
+        const data = dataById.gmailComposeWindow;
+        const partyId = typeof data?.partyId === "string" ? data.partyId : null;
+        const organizationId =
+          typeof data?.organizationId === "string" ? data.organizationId : null;
+        // A compose window with no record and no organization cannot write the
+        // sent record it exists to write — it does not open half-alive.
+        if (!partyId || !organizationId) return null;
+        const draftedBy = narrowGmailDraftedBy(data?.draftedBy);
+        return (
+          <GmailComposeWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "gmailComposeWindow" }))
+            }
+            partyId={partyId}
+            organizationId={organizationId}
+            partyLabel={
+              typeof data?.partyLabel === "string" ? data.partyLabel : "this record"
+            }
+            dealId={typeof data?.dealId === "string" ? data.dealId : null}
+            dealLabel={
+              typeof data?.dealLabel === "string" ? data.dealLabel : null
+            }
+            projectId={
+              typeof data?.projectId === "string" ? data.projectId : null
+            }
+            initialTo={typeof data?.initialTo === "string" ? data.initialTo : null}
+            initialSubject={
+              typeof data?.initialSubject === "string" ? data.initialSubject : null
+            }
+            initialBody={
+              typeof data?.initialBody === "string" ? data.initialBody : null
+            }
+            draftedBy={draftedBy}
+            sentCallbackId={
+              typeof data?.sentCallbackId === "string" ? data.sentCallbackId : null
+            }
+          />
+        );
+      })()}
+
       {/* TODO: review prop wiring for codeEditorWindow */}
       {/* codeEditorWindow — multi-instance */}
       {instancesById.codeEditorWindow.map((inst) => {
@@ -4474,26 +4696,95 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* itemDetailWindow */}
+      {/* detailWindow — the Detail primitive's window presentation (lib/detail) */}
       {(() => {
-        const isOpen = isOpenById.itemDetailWindow;
-        const data = dataById.itemDetailWindow as
-          Record<string, unknown> | null | undefined;
+        const isOpen = isOpenById.detailWindow;
         if (!isOpen) return null;
+        const data = readDetailOverlayData(dataById.detailWindow);
+        if (!data) return null;
         return (
-          <ItemDetailWindow
+          <DetailWindow
+            isOpen
+            onClose={() => dispatch(closeOverlay({ overlayId: "detailWindow" }))}
+            type={data.type}
+            id={data.id}
+            seedName={data.seedName}
+            seedAbout={data.seedAbout}
+            listItems={data.listItems}
+            listIndex={data.listIndex}
+            listTrimmedFrom={data.listTrimmedFrom}
+          />
+        );
+      })()}
+
+      {/* googleContactsImportWindow — "Import from Google Contacts" (PLAN §4.5) */}
+      {(() => {
+        if (!isOpenById.googleContactsImportWindow) return null;
+        const data = dataById.googleContactsImportWindow;
+        return (
+          <GoogleContactsImportWindow
             isOpen
             onClose={() =>
-              dispatch(closeOverlay({ overlayId: "itemDetailWindow" }))
+              dispatch(closeOverlay({ overlayId: "googleContactsImportWindow" }))
             }
-            itemType={typeof data?.itemType === "string" ? data.itemType : null}
-            itemId={typeof data?.itemId === "string" ? data.itemId : null}
-            initialName={
-              typeof data?.initialName === "string" ? data.initialName : null
+            organizationId={
+              typeof data?.organizationId === "string" ? data.organizationId : null
             }
-            initialAbout={
-              typeof data?.initialAbout === "string" ? data.initialAbout : null
+            initialExternalId={
+              typeof data?.initialExternalId === "string"
+                ? data.initialExternalId
+                : null
             }
+          />
+        );
+      })()}
+
+      {/* googleTasksImportWindow — "Import from Google Tasks" (PLAN §4.7) */}
+      {(() => {
+        if (!isOpenById.googleTasksImportWindow) return null;
+        const data = dataById.googleTasksImportWindow;
+        return (
+          <GoogleTasksImportWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "googleTasksImportWindow" }))
+            }
+            organizationId={
+              typeof data?.organizationId === "string" ? data.organizationId : null
+            }
+            projectId={typeof data?.projectId === "string" ? data.projectId : null}
+          />
+        );
+      })()}
+
+      {/* googleAgendaWindow — the agenda over synced Calendar events (PLAN §4.6) */}
+      {(() => {
+        if (!isOpenById.googleAgendaWindow) return null;
+        return (
+          <GoogleAgendaWindow
+            isOpen
+            onClose={() => dispatch(closeOverlay({ overlayId: "googleAgendaWindow" }))}
+          />
+        );
+      })()}
+
+      {/* detailDocked — the Detail primitive's docked presentation (lib/detail) */}
+      {(() => {
+        const isOpen = isOpenById.detailDocked;
+        if (!isOpen) return null;
+        const data = readDetailOverlayData(dataById.detailDocked);
+        if (!data) return null;
+        return (
+          <DetailDocked
+            isOpen
+            onClose={() => dispatch(closeOverlay({ overlayId: "detailDocked" }))}
+            type={data.type}
+            id={data.id}
+            seedName={data.seedName}
+            seedAbout={data.seedAbout}
+            listItems={data.listItems}
+            listIndex={data.listIndex}
+            listTrimmedFrom={data.listTrimmedFrom}
           />
         );
       })()}
@@ -4642,6 +4933,31 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "hierarchyCreationWindow" }))
             }
             data={data?.data as HierarchyCreationWindowData | undefined}
+          />
+        );
+      })()}
+
+      {/* agentVariableEditorWindow — open state lives here, above the builder's mobile tree swap (C1) */}
+      {(() => {
+        if (!isOpenById.agentVariableEditorWindow) return null;
+        const raw = dataById.agentVariableEditorWindow;
+        if (
+          !raw ||
+          typeof raw.agentId !== "string" ||
+          typeof raw.variableName !== "string"
+        )
+          return null;
+        return (
+          <AgentVariableEditorWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentVariableEditorWindow" }))
+            }
+            data={{
+              agentId: raw.agentId,
+              variableName: raw.variableName,
+              justCreated: raw.justCreated === true,
+            }}
           />
         );
       })()}
@@ -5131,6 +5447,56 @@ export default function OverlayController() {
             siteId={siteId}
             brandId={str("brandId")}
             organizationId={str("organizationId")}
+            siteLabel={str("siteLabel")}
+          />
+        );
+      })()}
+
+      {/* siteQuickViewWindow — F-87: the ONE in-place door for a site record. */}
+      {(() => {
+        const isOpen = isOpenById.siteQuickViewWindow;
+        const data = dataById.siteQuickViewWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const str = (key: string): string | null =>
+          typeof data?.[key] === "string" && data[key]
+            ? (data[key] as string)
+            : null;
+        const siteId = str("siteId");
+        // The window's whole subject is one site.
+        if (!siteId) return null;
+        return (
+          <SiteQuickViewWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "siteQuickViewWindow" }))
+            }
+            siteId={siteId}
+            siteLabel={str("siteLabel")}
+          />
+        );
+      })()}
+
+      {/* siteAnalyticsWindow */}
+      {(() => {
+        const isOpen = isOpenById.siteAnalyticsWindow;
+        const data = dataById.siteAnalyticsWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const str = (key: string): string | null =>
+          typeof data?.[key] === "string" && data[key]
+            ? (data[key] as string)
+            : null;
+        const siteId = str("siteId");
+        // The panel's whole subject is one site.
+        if (!siteId) return null;
+        return (
+          <SiteAnalyticsWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "siteAnalyticsWindow" }))
+            }
+            siteId={siteId}
             siteLabel={str("siteLabel")}
           />
         );
@@ -6620,6 +6986,15 @@ export default function OverlayController() {
           />
         );
       })}
+
+      {/* approvalsWindow — THE approval queue, same surface as /approvals */}
+      {isOpenById.approvalsWindow ? (
+        <ApprovalsWindow
+          onClose={() =>
+            dispatch(closeOverlay({ overlayId: "approvalsWindow" }))
+          }
+        />
+      ) : null}
 
       {/* scraperWindow */}
       {(() => {

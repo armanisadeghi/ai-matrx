@@ -85,7 +85,10 @@ import {
   useAdminSchedulingScopeSlice,
 } from "@/features/scheduling/lib/admin-scheduling-scope";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
-import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import {
+  OrganizationContextNotice,
+  OrganizationRequiredNotice,
+} from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 
 // The trigger types humanizeTrigger knows. A system trigger's `type` arrives
@@ -145,7 +148,7 @@ function taxonomyNodeLabel(
 }
 
 export default function SystemJobsPage() {
-  const { organizationId, canLoad, organizationRequired } =
+  const { organizationId, canLoad, organizationRequired, organizationState } =
     useOrganizationRequired();
   const [rows, setRows] = useState<SystemTaskResponse[]>([]);
   const [taxonomyNodes, setTaxonomyNodes] = useState<SystemTaskTaxonomyNode[]>(
@@ -855,6 +858,15 @@ export default function SystemJobsPage() {
   // Nothing here can load without an organization, and the refusal happens
   // before the wire — so the screen says exactly that, with the picker, rather
   // than printing the transport's sentence into an empty-table caption.
+  // A read that FAILED says so and offers Retry, never the picker-backed
+  // refusal — nobody read this person's memberships (R37).
+  if (organizationState === "unavailable") {
+    return (
+      <div className="flex h-full min-h-0 flex-col overflow-y-auto p-4">
+        <OrganizationContextNotice state="unavailable" what="System jobs" />
+      </div>
+    );
+  }
   if (organizationRequired) {
     return (
       <div className="flex h-full min-h-0 flex-col overflow-y-auto p-4">

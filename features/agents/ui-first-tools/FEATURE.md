@@ -126,7 +126,18 @@ This feature exists because:
 - `<ChangeDiff>` (`@/components/ui/change-diff`) — the app-wide before→after diff
   list (`ChangeFieldDiff[]`; `ApprovalFieldDiff` is an alias). Tone-neutral, no
   feature coupling — reusable by any "here's what changed" surface (project /
-  settings updates, version history), not just agents.
+  settings updates, version history), not just agents. Block comparisons open
+  on the combined red/green diff with New and Original tabs; empty values and
+  clears retain their exact comparison bytes. Targets declaring `approvalComparison: "text-replacement"` read
+  the original from the owning live surface's declared text `updatesValue`
+  before asking. String operations on structured read values keep their
+  existing proposal rendering; they are not full-text replacements.
+  Missing originals refuse the write, and a changed original or unmounted
+  surface refuses stale approval. Append fragments are labelled Text to append
+  rather than presented as full-document replacements. Agent builder/admin,
+  markdown, code, conversation-document, and live transcript document replacement
+  targets opt in; insert/append targets never pretend their fragment is the
+  resulting whole document.
 - **Gallery:** `/demos/agent-cards` (`app/(dev)/demos/agent-cards/page.dev.tsx`)
   is the design reference for this family. **Full gallery** previews every card
   kind; **Recent calls** rebuilds persisted `user`, `update_plan`,
@@ -379,6 +390,11 @@ server-side; the same Realtime subscription updates the panel with no delegation
 ---
 
 ## Change Log
+
+- `2026-09-18` — Surface replacement approvals preserve the live original for
+  the shared combined diff, expose New/Original views, and refuse stale approval.
+  Automated regression checks cover the runtime-to-descriptor path; live
+  browser and deployed verification remain pending.
 
 - `2026-09-12` — **Nobody is ever forced to answer; the last Next sends; composer
   submit keeps card answers.** Arman reported three chat-route defects. (1) Card

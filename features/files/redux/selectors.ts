@@ -481,6 +481,28 @@ export const selectVisibleUploads = createSelector(
       .sort((a, b) => a.startedAt - b.startedAt),
 );
 
+/**
+ * 🚨 A FAILED UPLOAD, FOUND AGAIN BY THE SURFACE THAT STARTED IT.
+ *
+ * `state.uploads` is one flat, app-wide map — every uploader in the app
+ * shares it. A container-scoped card (the Rulebook Resources card, a chat
+ * attachment tray, …) that wants "the uploads I sent, that failed" gives
+ * itself a `folderPath` nothing else uses and reads back exactly the entries
+ * that match it — see `UploadState.folderPath`. `error` entries are never
+ * auto-cleared (unlike `success`/`cancelled`, see `clearCompletedUploads`),
+ * so this stays populated until the caller retries or dismisses each one.
+ */
+export const selectFailedUploadsForFolderPath = createSelector(
+  [
+    selectAllUploads,
+    (_s: StateWithCloudFiles, folderPath: string) => folderPath,
+  ],
+  (uploads, folderPath): UploadState[] =>
+    (Object.values(uploads) as UploadState[])
+      .filter((u) => u.status === "error" && u.folderPath === folderPath)
+      .sort((a, b) => a.startedAt - b.startedAt),
+);
+
 export const selectOverallUploadProgress = createSelector(
   [selectActiveUploads],
   (active): { loaded: number; total: number; percent: number } => {

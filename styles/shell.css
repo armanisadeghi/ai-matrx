@@ -18,6 +18,7 @@
   --shell-marketing-pr: 3.5rem;
   --shell-sidebar-w: 2.75rem;
   --shell-sidebar-w-expanded: 13rem;
+  --shell-user-block-h: 3rem;
   --shell-dock-h: 3.75rem;
   --shell-dock-bottom: 0.625rem;
   --shell-dock-mx: 0.5rem;
@@ -1677,12 +1678,30 @@ button.shell-nav-flyout-item {
 /* Admin tree compatibility — the `/administration/*` pages predate this shell
    and were authored for the old ResponsiveLayout: a 2.5rem (`h-10`) header with
    content BELOW it (`<main className="pt-10">`), and ~30 pages hardcode
-   `h-[calc(100dvh-2.5rem)]`. Two scoped rules reproduce that exactly so the
-   whole admin tree drops in with zero per-page edits:
-     1. Pin the header to 2.5rem (its legacy height) so those calc() heights fit.
+   `h-[calc(100dvh-2.5rem)]`. Two rules reproduce that exactly so the whole admin
+   tree drops in with zero per-page edits:
+     1. Pin the header to 2.5rem (its legacy height) so those calc() heights fit
+        — on <body>, for the reason the next comment gives.
      2. Cancel `.shell-main`'s negative pull so content sits under the header
         instead of scrolling behind it. */
-.shell-root[data-pathname^="/administration"] {
+/* 🚨 THE ADMIN HEADER'S HEIGHT IS DECLARED ONCE, ON <body>, AND NOT ON
+   `.shell-root`. `--shell-header-h` is the ONE token for the app shell header's
+   height (2.75rem at :root above; `--header-height` in globals.css is the
+   pre-shell ResponsiveLayout token and is NOT this). Chrome that clears the
+   header is not always inside `.shell-root`: `MatrxDynamicPanelHost` portals
+   every docked panel into `#glass-layer`, a direct child of <body>
+   (app/layout.tsx), so a value declared on `.shell-root` cannot reach it by
+   inheritance and the panel would keep :root's 2.75rem under a 2.5rem admin
+   header. Declaring it on <body> instead reaches BOTH the shell subtree and the
+   portal layer from ONE place, so the two can never drift apart — a second rule
+   repeating `2.5rem` for the portal is exactly the drift this avoids.
+   `body:has()` is already load-bearing in this sheet (section 11's mobile-dock
+   runway). Consumer: `SidePanelSurface`, which reserves
+   `var(--shell-header-h, 0px)` on the fixed panel container — it reserved the
+   legacy 2.5rem token there and drew 4px over the (core) shell header's org
+   switcher, search and avatar (D3, then again at 4px: Bugbot, frontend PR 228,
+   commit 4cbd9e45). */
+body:has(.shell-root[data-pathname^="/administration"]) {
   --shell-header-h: 2.5rem;
 }
 .shell-root[data-pathname^="/administration"] .shell-main {
@@ -2383,6 +2402,7 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
 /* Chat incognito — visually mute identity chrome (sidebar + avatar). */
 .shell-root[data-chat-incognito="true"] .shell-sidebar,
 .shell-root[data-chat-incognito="true"] .shell-user-menu-wrapper,
+.shell-root[data-chat-incognito="true"] .shell-user-block,
 .shell-root[data-chat-incognito="true"] .shell-mobile-sheet {
   filter: brightness(0);
   opacity: 0.35;
@@ -2390,6 +2410,101 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
   transition:
     filter var(--shell-duration-fast) var(--shell-ease-smooth),
     opacity var(--shell-duration-fast) var(--shell-ease-smooth);
+}
+
+/* THE profile block — bottom-left, one copy (features/shell/components/
+   user-block/ShellUserBlock.tsx). Fixed, so it survives every route that
+   hides or reshapes the sidebar, and the same width as the sidebar so the
+   avatar sits exactly under the nav rail. */
+.shell-user-block {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: var(--shell-sidebar-w);
+  height: var(--shell-user-block-h);
+  z-index: 41;
+  display: flex;
+  align-items: center;
+  padding: 0 0 var(--shell-safe-area-bottom, 0px) 0;
+  background: var(--shell-sidebar-bg);
+  transition:
+    width 600ms var(--shell-ease-smooth),
+    background var(--shell-duration-normal) var(--shell-ease-smooth);
+}
+
+.shell-root:has(#shell-sidebar-toggle:checked) .shell-user-block {
+  width: var(--shell-sidebar-w-expanded);
+  background: var(--shell-sidebar-bg-expanded);
+}
+
+/* A route that hides the sidebar keeps the rail-width block. */
+.shell-root:has(.shell-hide-sidebar) .shell-user-block {
+  width: var(--shell-sidebar-w);
+  background: var(--shell-sidebar-bg);
+}
+
+.shell-user-block-trigger {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+}
+
+/* Name + email, revealed only when the rail is expanded (same reveal as
+   .shell-nav-label). A <label> for #shell-user-menu, so it toggles too. */
+.shell-user-block-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  padding-right: 0.5rem;
+  opacity: 0;
+  transform: translateX(-4px);
+  pointer-events: none;
+  cursor: pointer;
+  transition:
+    opacity var(--shell-duration-normal) var(--shell-ease-smooth),
+    transform var(--shell-duration-normal) var(--shell-ease-spring);
+}
+.shell-root:has(#shell-sidebar-toggle:checked):not(:has(.shell-hide-sidebar))
+  .shell-user-block-name {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+.shell-user-block-name-primary {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--shell-nav-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.shell-user-block-name-secondary {
+  font-size: 0.6875rem;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The sidebar's footer stops above the block so Settings is never under it. */
+.shell-sidebar-footer {
+  padding-bottom: calc(var(--shell-user-block-h) + 0.25rem);
+}
+
+@media (max-width: 1023px) {
+  /* No sidebar on mobile: the trigger is the drawer's profile row instead.
+     The panel stays (it is bottom-anchored below); only the rail trigger goes. */
+  .shell-user-block {
+    width: 0;
+    height: 0;
+    padding: 0;
+    background: transparent;
+  }
+  .shell-user-block-trigger {
+    display: none;
+  }
 }
 
 .shell-user-menu-wrapper {
@@ -2410,10 +2525,11 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
 }
 
 .shell-user-menu-panel {
+  /* Desktop: opens to the RIGHT of the bottom-left block, bottom-aligned. */
   position: absolute;
-  right: 0;
-  top: 100%;
-  margin-top: 0.375rem;
+  left: 100%;
+  bottom: 0.5rem;
+  margin-left: 0.375rem;
   z-index: 41;
   pointer-events: none;
   visibility: hidden;
@@ -2436,6 +2552,7 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
     right: 0.375rem;
     left: 0.375rem;
     top: auto;
+    margin-left: 0;
     bottom: calc(
       var(--shell-dock-h) + var(--shell-dock-bottom) +
         env(safe-area-inset-bottom, 0px) + 0.5rem
@@ -2473,7 +2590,18 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
     visibility 0s linear 0s;
 }
 
-/* Portable host — ResponsiveLayout / fullscreen preview outside `.shell-root` */
+/* Portable host — ResponsiveLayout / fullscreen preview outside `.shell-root`.
+   There the trigger still sits in a top-right header, so the panel drops
+   DOWN from it (the desktop default above anchors to the bottom-left block). */
+.shell-user-menu-portable-root .shell-user-menu-panel {
+  left: auto;
+  right: 0;
+  bottom: auto;
+  top: 100%;
+  margin-left: 0;
+  margin-top: 0.375rem;
+}
+
 .shell-user-menu-portable-root:has(#shell-user-menu:checked)
   .shell-user-menu-backdrop {
   display: block;
@@ -2489,188 +2617,6 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
     opacity var(--shell-duration-fast) var(--shell-ease-smooth),
     transform var(--shell-duration-fast) var(--shell-ease-smooth),
     visibility 0s linear 0s;
-}
-
-/* Canvas side sheet (z-index 10000) — mirror header user menu above the panel */
-.canvas-shell-user-menu-wrapper {
-  position: relative;
-  z-index: 10001;
-}
-
-.canvas-shell-user-menu-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 10000;
-  display: none;
-  cursor: default;
-}
-
-.canvas-shell-user-menu-panel {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  margin-top: 0.375rem;
-  z-index: 10002;
-  pointer-events: none;
-  visibility: hidden;
-  opacity: 0;
-  transform: translateY(-0.25rem);
-  transition:
-    opacity var(--shell-duration-fast) var(--shell-ease-smooth),
-    transform var(--shell-duration-fast) var(--shell-ease-smooth),
-    visibility 0s linear var(--shell-duration-fast);
-}
-
-.canvas-shell-user-menu-root:has(#canvas-shell-user-menu:checked)
-  .canvas-shell-user-menu-backdrop {
-  display: block;
-}
-
-.canvas-shell-user-menu-root:has(#canvas-shell-user-menu:checked)
-  .canvas-shell-user-menu-panel {
-  pointer-events: auto;
-  visibility: visible;
-  opacity: 1;
-  transform: translateY(0);
-  transition:
-    opacity var(--shell-duration-fast) var(--shell-ease-smooth),
-    transform var(--shell-duration-fast) var(--shell-ease-smooth),
-    visibility 0s linear 0s;
-}
-
-@media (max-width: 1023px) {
-  .canvas-shell-user-menu-panel {
-    position: fixed;
-    right: 0.375rem;
-    left: 0.375rem;
-    top: auto;
-    bottom: calc(
-      var(--shell-dock-h) + var(--shell-dock-bottom) +
-        env(safe-area-inset-bottom, 0px) + 0.5rem
-    );
-    margin-top: 0;
-    transform: translateY(0.5rem);
-  }
-
-  body:not(:has(.shell-show-dock)) .canvas-shell-user-menu-panel {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
-  }
-
-  .canvas-shell-user-menu-root:has(#canvas-shell-user-menu:checked)
-    .canvas-shell-user-menu-panel {
-    transform: translateY(0);
-  }
-}
-
-/* When canvas is open, hide the shell header avatar — canvas top bar replaces it */
-:root[data-canvas-open="true"] .shell-header .shell-user-menu-wrapper {
-  visibility: hidden;
-  pointer-events: none;
-}
-
-/* ---------------------------------------------------------------------------
-   Dynamic panel avatar cover — MatrxDynamicPanel sits in #glass-layer at
-   z-100, above the entire .shell-root stacking context. Padding in the panel
-   header cannot win that fight. While any panel claims cover, hide the shell
-   avatar and show ElevatedShellUserMenuRoot (z-110+) in the glass layer.
-   Reuses #shell-user-menu so menu-item close labels keep working.
-   --------------------------------------------------------------------------- */
-
-:root[data-dynamic-panel-avatar-cover="true"]
-  .shell-header
-  .shell-user-menu-wrapper {
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.elevated-shell-user-menu-root {
-  position: fixed;
-  top: var(--shell-safe-area-top, 0px);
-  right: 0;
-  z-index: 110;
-  pointer-events: auto;
-}
-
-.elevated-shell-user-menu-wrapper {
-  position: relative;
-  z-index: 112;
-}
-
-.elevated-shell-user-menu-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 111;
-  display: none;
-  cursor: default;
-}
-
-:root[data-dynamic-panel-avatar-cover="true"]:has(#shell-user-menu:checked)
-  .elevated-shell-user-menu-backdrop {
-  display: block;
-}
-
-.elevated-shell-user-menu-panel {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  margin-top: 0.375rem;
-  z-index: 112;
-  pointer-events: none;
-  visibility: hidden;
-  opacity: 0;
-  transform: translateY(-0.25rem);
-  transition:
-    opacity var(--shell-duration-fast) var(--shell-ease-smooth),
-    transform var(--shell-duration-fast) var(--shell-ease-smooth),
-    visibility 0s linear var(--shell-duration-fast);
-  max-height: calc(100dvh - 4rem);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-:root[data-dynamic-panel-avatar-cover="true"]:has(#shell-user-menu:checked)
-  .elevated-shell-user-menu-panel {
-  pointer-events: auto;
-  visibility: visible;
-  opacity: 1;
-  transform: translateY(0);
-  transition:
-    opacity var(--shell-duration-fast) var(--shell-ease-smooth),
-    transform var(--shell-duration-fast) var(--shell-ease-smooth),
-    visibility 0s linear 0s;
-}
-
-@media (max-width: 1023px) {
-  .elevated-shell-user-menu-panel {
-    position: fixed;
-    right: 0.375rem;
-    left: 0.375rem;
-    top: auto;
-    bottom: calc(
-      var(--shell-dock-h) + var(--shell-dock-bottom) +
-        env(safe-area-inset-bottom, 0px) + 0.5rem
-    );
-    margin-top: 0;
-    transform: translateY(0.5rem);
-    max-height: calc(
-      100dvh - var(--shell-dock-h) - var(--shell-dock-bottom) -
-        env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px) -
-        3.5rem
-    );
-  }
-
-  body:not(:has(.shell-show-dock)) .elevated-shell-user-menu-panel {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
-    max-height: calc(
-      100dvh - env(safe-area-inset-bottom, 0px) -
-        env(safe-area-inset-top, 0px) - 3.5rem
-    );
-  }
-
-  :root[data-dynamic-panel-avatar-cover="true"]:has(#shell-user-menu:checked)
-    .elevated-shell-user-menu-panel {
-    transform: translateY(0);
-  }
 }
 
 /* ---------------------------------------------------------------------------

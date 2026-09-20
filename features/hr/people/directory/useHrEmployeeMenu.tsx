@@ -39,10 +39,10 @@ import type { HrCapability } from "../../constants";
 import {
   hrEmployeeHref,
   hrOrgChartHref,
-  hrPartyHref,
   hrPeopleHref,
   type HrOrgRef,
 } from "../../routes";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 
 export type HrEmployeeMenuSubject = {
   employeeId: string;
@@ -133,7 +133,7 @@ export function useHrEmployeeMenu(args: {
                 label: "Open the CRM record",
                 icon: ArrowRightLeft,
                 hidden: !subject.partyId,
-                href: subject.partyId ? hrPartyHref(subject.partyId) : "#",
+                href: subject.partyId ? resolveEntityDoors("party", subject.partyId).href ?? "#" : "#",
                 target: "_blank",
               },
             ],

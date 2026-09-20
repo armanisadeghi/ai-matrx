@@ -126,6 +126,11 @@ function wireVideo(overrides: Partial<VideoRow> = {}): VideoRow {
         transcript_status: "none",
         transcript_id: null,
         transcript_lane: null,
+        // §4.3 — this fixture predates the projection, and the wire it was copied
+        // from carried neither key. A Source nothing has run on is exactly this:
+        // an empty map and no last action.
+        action_outcomes: {},
+        last_action: null,
         processing_status: "unprocessed",
         position: null,
         first_discovered_at: "2026-09-17T19:12:05.353528Z",
@@ -170,6 +175,8 @@ const IDLE_SYNC: SyncState = {
     phase: "idle",
     skippedTotal: 0,
     skippedByReason: {},
+    removedCount: 0,
+    retireRefused: false,
     startedAt: null,
     finishedElapsedMs: null,
     listed: 0,

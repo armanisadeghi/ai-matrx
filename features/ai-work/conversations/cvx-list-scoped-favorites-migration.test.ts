@@ -9,6 +9,23 @@ const migration = readFileSync(
   "utf8",
 );
 
+// public.cvx_audience and public.cvx_list_facets were last replaced by this
+// file, which restates the rule aidream's 0904_code_plugin_is_the_outside_data_app
+// put live (external = provider IS NOT NULL OR source_app = 'code-plugin') and
+// cuts the External bucket by tool. cvx_list_scoped_audience.sql above is
+// frozen history for THOSE two functions: it still lists the retired tool
+// slugs as source_apps. The runner never re-executes a ledgered file whose
+// bytes are unchanged (scripts/apply-migration.ts) — editing it would make it
+// "drifted" and a release sweep or `--reapply` would put the retired rule back,
+// so it is never edited; the assertions below read the file that is live.
+const liveAudienceMigration = readFileSync(
+  join(
+    process.cwd(),
+    "migrations/cvx_list_facets_external_breaks_down_by_tool.sql",
+  ),
+  "utf8",
+);
+
 const privilegeMigration = readFileSync(
   join(
     process.cwd(),
@@ -67,9 +84,12 @@ describe("cvx_list_scoped audience buckets", () => {
   });
 
   it("classifies with the ruled precedence: external > machine origin > human > legacy type", () => {
-    const fn = migration.slice(
-      migration.indexOf("public.cvx_audience("),
-      migration.indexOf("REVOKE ALL ON FUNCTION public.cvx_audience"),
+    const start = liveAudienceMigration.indexOf(
+      "CREATE OR REPLACE FUNCTION public.cvx_audience(",
+    );
+    const fn = liveAudienceMigration.slice(
+      start,
+      liveAudienceMigration.indexOf("$function$;", start),
     );
     const external = fn.indexOf("THEN 'external'");
     const internalByOrigin = fn.indexOf("THEN 'internal'");
@@ -79,7 +99,9 @@ describe("cvx_list_scoped audience buckets", () => {
     expect(external).toBeLessThan(internalByOrigin);
     expect(internalByOrigin).toBeLessThan(chatByOrigin);
     expect(chatByOrigin).toBeLessThan(legacy);
-    expect(fn).toContain("p_source_app IN ('claude-code','codex','cursor','vscode')");
+    // Code Plugin is the outside-data app; a tool slug is never a source_app.
+    expect(fn).toContain("OR p_source_app = 'code-plugin'");
+    expect(fn).not.toMatch(/'claude-code'|'codex'|'cursor'|'vscode'/);
     expect(fn).toContain(
       "p_origin_class IN ('child_agent','workflow','scheduled','system','client_auto')",
     );
@@ -91,8 +113,22 @@ describe("cvx_list_scoped audience buckets", () => {
     expect(migration).toContain(
       "j.s_audience IN (SELECT jsonb_array_elements_text(v_f->'audience'->'values'))",
     );
-    expect(migration).toContain("SELECT 'audience'::text, b.audience, count(*)");
-    expect(migration).toContain("SELECT 'audience_source_app'::text");
-    expect(migration).toContain("SELECT 'audience_conversation_type'::text");
+    const facets = liveAudienceMigration.slice(
+      liveAudienceMigration.indexOf(
+        "CREATE OR REPLACE FUNCTION public.cvx_list_facets(",
+      ),
+    );
+    expect(facets).toContain("SELECT 'audience'::text, b.audience, count(*)");
+    expect(facets).toContain("SELECT 'audience_source_app'::text");
+    expect(facets).toContain("SELECT 'audience_conversation_type'::text");
+    // External is cut by TOOL: code-plugin rows by source_feature, and they
+    // are kept out of the app family (else every tool collapses to one chip).
+    expect(facets).toContain("SELECT 'audience_source_feature'::text");
+    expect(facets).toContain(
+      "WHERE b.audience = 'external' AND b.source_app = 'code-plugin'",
+    );
+    expect(facets).toContain(
+      "(b.audience = 'external' AND coalesce(b.source_app,'') <> 'code-plugin')",
+    );
   });
 });

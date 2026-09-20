@@ -17,7 +17,18 @@ const componentSource = [
   .join("\n");
 
 describe("shared vault UI contract", () => {
-  test("exposes every ratified personal Vault scope without following active org", () => {
+  // The scope BEHAVIOUR — which organization each tab loads, and that the
+  // personal scopes need no organization at all — is guarded by rendering the
+  // workspace in vault-scope-routing.test.tsx. This case only holds the three
+  // ratified scopes in the navigation.
+  //
+  // It used to also assert the file never mentions `selectOrganizationId`.
+  // That stopped being true on purpose (d30f8934e0): the Organization tab now
+  // follows the organization the person SELECTED instead of silently picking
+  // `availableOrganizations[0]`, which had been showing one tenant's
+  // credentials to someone who had chosen another. A source-symbol ban could
+  // not tell the two apart, so the real routing is asserted by behaviour.
+  test("exposes every ratified personal Vault scope", () => {
     const workspaceSource = readFileSync(
       join(process.cwd(), "features/secrets/components/VaultWorkspace.tsx"),
       "utf8",
@@ -27,7 +38,6 @@ describe("shared vault UI contract", () => {
     expect(workspaceSource).toContain('label="Shared with me"');
     expect(workspaceSource).toContain('label="Organization"');
     expect(workspaceSource).toContain("useUserOrganizations()");
-    expect(workspaceSource).not.toContain("selectOrganizationId");
   });
 
   test("keeps full detail metadata complete while compact list rows truncate", () => {

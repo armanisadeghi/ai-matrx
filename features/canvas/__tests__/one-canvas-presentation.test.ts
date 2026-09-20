@@ -136,30 +136,29 @@ describe("the canvas has exactly one presentation", () => {
   });
 
   it("the shell header's canvas slot is reserved whenever the canvas is available", () => {
-    // The control belongs to the canvas pane's header while the canvas is
-    // open, but its BOX must stay in the shell header. The 2026-09-17 version
-    // of this case asserted `if (!isAvailable || itemCount === 0) return null;`
-    // — which WAS the defect: the slot only existed once an item did, so the
-    // first canvas item both created the box and pulled every button to its
-    // left 44px sideways, and folding never gave it back. Measured live on
-    // production 2026-09-18 (review row 34bfd1e8): Records 1043.39 → 999.39.
-    // The rule now: availability alone reserves the slot.
+    // The box must stay in the shell header in every canvas state. The
+    // 2026-09-17 version of this case asserted `if (!isAvailable || itemCount
+    // === 0) return null;` — which WAS the defect: the slot only existed once
+    // an item did, so the first canvas item both created the box and pulled
+    // every button to its left 44px sideways, and folding never gave it back.
+    // Measured live on production 2026-09-18 (review row 34bfd1e8): Records
+    // 1043.39 → 999.39. Since 2026-09-19 the slot ALWAYS holds the control —
+    // disabled with a reason when the canvas is empty (owner: "never hiding
+    // things and only disabling when inactive"), never an inert spacer.
     const toggle = read("features/canvas/core/CanvasHeaderToggle.tsx");
-    expect(toggle).toContain('data-canvas-header-slot="reserved"');
     expect(toggle).toContain('data-canvas-header-slot="control"');
+    expect(toggle).not.toContain('data-canvas-header-slot="reserved"');
+    expect(toggle).not.toContain("CanvasHeaderSlotSpacer");
     // Availability is the ONLY thing that can remove the slot.
     expect(toggle).toContain("if (!isAvailable) return null;");
     expect(toggle).not.toContain("!isAvailable || itemCount === 0");
-    // Both empty and open reserve the same box, from the same constant.
-    expect(toggle).toContain('<CanvasHeaderSlotSpacer reason="empty" />');
-    expect(toggle).toContain('<CanvasHeaderSlotSpacer reason="open" />');
+    // One box, one constant, every state.
     expect(toggle).toContain(
       'width: "var(--matrx-tap-target-size, 2.75rem)"',
     );
-    // The spacer is inert and honest — a box, never a dead-looking button.
-    const spacer = toggle.slice(toggle.indexOf("function CanvasHeaderSlotSpacer"));
-    expect(spacer.slice(0, spacer.indexOf("}\n"))).not.toContain("TapButton");
-    expect(spacer).toContain("aria-hidden");
+    // The empty state is a disabled control that says why.
+    expect(toggle).toContain('disabled={state === "empty"}');
+    expect(toggle).toContain("CANVAS_EMPTY_TOOLTIP");
     // The behavioural half of this law (rendered DOM, not source text):
     expect(
       existsSync(
