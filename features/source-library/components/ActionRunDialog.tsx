@@ -186,7 +186,25 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
     const missing = required.filter(
         (key) => params[key] === undefined || params[key] === "" || params[key] === null,
     );
-    const paid = (estimate?.paid_count ?? 0) > 0;
+    // 🚨 2026-09-20: WHO DECIDED ABOUT MONEY DECIDES WHAT THIS BUTTON PROMISES.
+    // `paid` is what turns the Start button into "Spend up to $X and start" and
+    // the Cost row into a bill. When the server says paid work is NOT allowed
+    // for this run, that button would be promising a spend that cannot happen —
+    // the mirror image of the defect that spent money nobody asked for. The
+    // server's own resolution wins over the count beside it; when it sent no
+    // policy at all (an older build), nothing changes.
+    const paidPolicy = estimate?.paid_policy ?? null;
+    const paidAllowed = paidPolicy ? paidPolicy.allowed : true;
+    const paid = (estimate?.paid_count ?? 0) > 0 && paidAllowed;
+    // The server appends its money sentence to `warnings`, and this list has
+    // always printed those verbatim. Including it here only when it is NOT
+    // already in `warnings` keeps a server that skips that append honest
+    // without ever printing the same sentence twice.
+    const warnings = estimate
+        ? paidPolicy && !estimate.warnings.includes(paidPolicy.sentence)
+            ? [...estimate.warnings, paidPolicy.sentence]
+            : estimate.warnings
+        : [];
     const blocked = Boolean(estimateError) || missing.length > 0;
     const needsEstimate = action.requires_estimate || action.cost_class !== "free";
     const waiting = needsEstimate && estimateLoading;
@@ -260,11 +278,21 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                                     label={`Free, from ${vocabulary.freeCaptionsSource ?? "its own captions"}`}
                                     value={`${formatCount(estimate.free_count)} ${estimate.free_count === 1 ? vocabulary.item.one : vocabulary.item.many.toLowerCase()}`}
                                 />
-                                <Row
-                                    icon={<BadgeDollarSign className="size-4" aria-hidden />}
-                                    label={`Paid — a model watches the ${vocabulary.item.one}`}
-                                    value={`${formatCount(estimate.paid_count)} ${estimate.paid_count === 1 ? vocabulary.item.one : vocabulary.item.many.toLowerCase()}`}
-                                />
+                                {/* When paid work is switched off for this run,
+                                    a "Paid — N items" row under "What this will
+                                    cost" reads as a promise that those N items
+                                    get watched. They do not. The server's own
+                                    sentence below names the same count AND says
+                                    plainly that nothing was charged and how to
+                                    allow it — so this row is absent rather than
+                                    misleading, and nothing goes unsaid. */}
+                                {paidAllowed && (
+                                    <Row
+                                        icon={<BadgeDollarSign className="size-4" aria-hidden />}
+                                        label={`Paid — a model watches the ${vocabulary.item.one}`}
+                                        value={`${formatCount(estimate.paid_count)} ${estimate.paid_count === 1 ? vocabulary.item.one : vocabulary.item.many.toLowerCase()}`}
+                                    />
+                                )}
                                 {estimate.already_done > 0 && (
                                     <Row
                                         label="Already done — skipped"
@@ -273,7 +301,21 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                                 )}
                                 {estimate.skipped_count > 0 && (
                                     <Row
-                                        label="Cannot be done at all"
+                                        // 🚨 "Cannot be done at all" became a LIE
+                                        // the day paid work stopped defaulting on
+                                        // (2026-09-20): on the default path the
+                                        // items with no usable captions land in
+                                        // `skipped_count`, and they CAN be done —
+                                        // turning paid work on is exactly what
+                                        // does them, which the server's own
+                                        // sentence below says. The hard label is
+                                        // kept for the genuine case: paid work was
+                                        // allowed and they still could not be done.
+                                        label={
+                                            paidAllowed
+                                                ? "Cannot be done at all"
+                                                : "Not done — paid work is switched off"
+                                        }
                                         value={formatCount(estimate.skipped_count)}
                                     />
                                 )}
@@ -298,9 +340,9 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                             </dl>
                         )}
 
-                        {!waiting && estimate?.warnings.length ? (
+                        {!waiting && warnings.length ? (
                             <ul className="space-y-1 border-t border-border p-3 text-sm text-amber-700 dark:text-amber-400">
-                                {estimate.warnings.map((warning) => (
+                                {warnings.map((warning) => (
                                     <li key={warning} className="flex items-start gap-2">
                                         <TriangleAlert
                                             className="mt-0.5 size-4 shrink-0"

@@ -438,6 +438,39 @@ export interface EstimateRequest {
     params?: Record<string, unknown>;
 }
 
+/**
+ * WHO DECIDED ABOUT MONEY, AND WHAT THAT MEANS FOR THIS RUN (server-owned).
+ *
+ * 🚨 THE 2026-09-20 DEFECT this closes: `allow_paid` defaulted to TRUE on the
+ * wire, so a caller that never mentioned money got paid work — five blocked
+ * videos were escalated to the paid lane on a live Library and real money was
+ * spent with nobody shown a bill. The server now resolves an omitted
+ * `allow_paid` against the organisation's `allow_paid_by_default` knob and
+ * SAYS SO, in this object, in its own words.
+ *
+ * Every sentence here is written by the server and rendered verbatim. This
+ * client never authors the money words and never infers the outcome from the
+ * counts beside them.
+ */
+export interface PaidPolicy {
+    /** Whether paid work was permitted for this run. */
+    allowed: boolean;
+    /**
+     * Where that answer came from, as a PERSON-FACING PHRASE — the server sends
+     * exactly one of "this run" (the caller stated `allow_paid` explicitly) or
+     * "your organization's settings" (it was omitted and resolved from the
+     * `allow_paid_by_default` knob). These are words, not enum tokens: never
+     * switch on them, never print them beside a label that assumes a token.
+     */
+    decided_by: string;
+    /** How many items would have gone to the paid lane. */
+    would_be_paid_count: number;
+    /** Always present, always names money in plain English. */
+    sentence: string;
+    /** When paid work was NOT allowed: how to allow it. Null when it was. */
+    how_to_allow: string | null;
+}
+
 export interface EstimateResult {
     /**
      * §7.3 (contract v0.5.5): NULLABLE. Whether a token is required is the
@@ -480,6 +513,12 @@ export interface EstimateResult {
      */
     quota: { units_required: number; units_remaining: number } | null;
     warnings: string[];
+    /**
+     * Null on a server that predates the paid-policy contract, and on any row
+     * frozen before it. The same sentence is also appended to `warnings`, which
+     * is why a client that only renders warnings is still honest.
+     */
+    paid_policy: PaidPolicy | null;
     requires_confirmation: boolean;
 }
 
@@ -505,6 +544,12 @@ export interface JobRow {
     totals: JobTotals;
     lane_totals: Partial<Record<TranscriptLane, number>>;
     estimate: EstimateResult | null;
+    /**
+     * Frozen from the estimate at pricing time: how a FINISHED job still says
+     * whether money was spent and, when it was not, how to allow it next time.
+     * Null on jobs created before this contract.
+     */
+    paid_policy: PaidPolicy | null;
     estimate_confirmed_at: string | null;
     progress_percent: number;
     error: string | null;

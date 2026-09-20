@@ -1454,7 +1454,15 @@ export function useDurableRun<TResult>(
           callApi({
             path,
             method: "POST",
-            body: body as never,
+            // A durable run STARTS with a person pressing something in this
+            // tab, so it declares itself user-initiated. Without the
+            // declaration the server has nothing to witness and records the
+            // run as an unattested `api` caller, which files a person's own
+            // ingest or image next to machine traffic (guard:
+            // scripts/check-client-initiation.mjs). A caller whose lane is
+            // genuinely automatic passes its own `initiation` and wins, since
+            // the caller's body is spread last.
+            body: { initiation: "user", ...body } as never,
             ...(launchOptions?.pathParams
               ? { pathParams: launchOptions.pathParams }
               : {}),
