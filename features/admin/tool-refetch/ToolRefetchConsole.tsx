@@ -49,11 +49,7 @@ import {
   MatrxDataTable,
   useTableUrlState,
 } from "@ai-matrx/design-system/data-table";
-import { filterAndSortRows } from "@ai-matrx/design-system/data-table/filter-engine";
-import type {
-  MatrxColumnDef,
-  MatrxDataTableQueryState,
-} from "@ai-matrx/design-system/data-table/types";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import {
   DETAIL_PAGE_SIZE,
@@ -229,23 +225,6 @@ function rowsToHumanText(rows: ToolRefetchSummaryRow[], win: RefetchWindow): str
   return [header, "", ...lines].join("\n");
 }
 
-export function projectToolRefetchRows(
-  rows: ToolRefetchSummaryRow[],
-  columns: MatrxColumnDef<ToolRefetchSummaryRow>[],
-  state: MatrxDataTableQueryState,
-): ToolRefetchSummaryRow[] {
-  return filterAndSortRows(
-    rows,
-    columns,
-    state.columnFilters,
-    state.sort,
-    state.search,
-    undefined,
-    state.layeredFilters,
-    state.searchMatchMode,
-  );
-}
-
 /* ── drill-down ────────────────────────────────────────────────────────────── */
 
 function ConversationCell({ id }: { id: string | null }) {
@@ -416,6 +395,10 @@ function ToolDetail({
 
 export function ToolRefetchConsole() {
   const [win, setWin] = useState<RefetchWindow>("30d");
+  // The package owns filtering, ranked search, hidden-column behavior, and
+  // sorting. Its pre-pagination callback is therefore the only truthful source
+  // for copy/export and the displayed-view totals below.
+  const [visibleRows, setVisibleRows] = useState<ToolRefetchSummaryRow[]>([]);
   const table = useTableUrlState({
     tableId: "tool-refetch",
     defaultSort: { id: "sameDataRepeats", direction: "desc" },
@@ -459,22 +442,17 @@ export function ToolRefetchConsole() {
     { id: "conversations", accessorKey: "conversations", header: "Convos", filter: "number", width: 90, cell: (row) => <span className="tabular-nums">{fmtCount(row.conversations)}</span> },
     { id: "lastRepeatAt", accessorKey: "lastRepeatAt", header: "Last repeat", width: 145, cell: (row) => <span className="whitespace-nowrap text-xs text-muted-foreground">{fmtWhen(row.lastRepeatAt)}</span> },
   ], []);
-  const copiedRows = useMemo(
-    () => projectToolRefetchRows(rows, columns, table.state),
-    [rows, columns, table.state],
-  );
   const sortKey = table.state.sort?.id ?? "unsorted";
   const sortAsc = table.state.sort?.direction === "asc";
 
-  const totals = useMemo(() => {
-    const src = report.data?.rows ?? [];
+  const visibleTotals = useMemo(() => {
     return {
-      tools: src.length,
-      repeats: src.reduce((n, r) => n + r.repeats, 0),
-      sameData: src.reduce((n, r) => n + r.sameDataRepeats, 0),
-      chars: src.reduce((n, r) => n + r.charsRefetchedSameData, 0),
+      tools: visibleRows.length,
+      repeats: visibleRows.reduce((n, r) => n + r.repeats, 0),
+      sameData: visibleRows.reduce((n, r) => n + r.sameDataRepeats, 0),
+      chars: visibleRows.reduce((n, r) => n + r.charsRefetchedSameData, 0),
     };
-  }, [report.data]);
+  }, [visibleRows]);
 
   return (
     <div className="space-y-4 p-6">
@@ -509,18 +487,18 @@ export function ToolRefetchConsole() {
             <CopyButtons
               size="sm"
               label="Tool re-fetch report"
-              disabled={copiedRows.length === 0}
-              human={() => rowsToHumanText(copiedRows, win)}
-              json={() => copiedRows}
+              disabled={visibleRows.length === 0}
+              human={() => rowsToHumanText(visibleRows, win)}
+              json={() => visibleRows}
               agent={() => ({
                 kind: "tool-refetch-report",
                 location: TOOL_REFETCH_AI_LOCATION,
-                description: `Tool re-fetch report for the ${win} window: ${rows.length} tools, sorted by ${sortKey} ${sortAsc ? "ascending" : "descending"}.`,
-                data: copiedRows,
-                summary: rowsToHumanText(copiedRows, win),
+                description: `Tool re-fetch report for the ${win} window: ${visibleRows.length} visible tools, sorted by ${sortKey} ${sortAsc ? "ascending" : "descending"}.`,
+                data: visibleRows,
+                summary: rowsToHumanText(visibleRows, win),
                 attributes: {
                   window: win,
-                  tool_count: rows.length,
+                  tool_count: visibleRows.length,
                   truncated: report.data?.truncated ?? false,
                   sort: `${sortKey}:${sortAsc ? "asc" : "desc"}`,
                 },
@@ -534,16 +512,16 @@ export function ToolRefetchConsole() {
                   label: `Tool re-fetch report (${win})`,
                   location: TOOL_REFETCH_AI_LOCATION,
                   kind: "tool-refetch-report",
-                  rows: copiedRows,
+                  rows: visibleRows,
                   columns: SUBSET_COLUMNS,
                   getRowId: (row) => row.toolName,
                 })),
               ]}
               export={{
                 items: [
-                  jsonExportItem(() => copiedRows),
+                  jsonExportItem(() => visibleRows),
                   csvExportItem(
-                    () => copiedRows as unknown as Array<Record<string, unknown>>,
+                    () => visibleRows as unknown as Array<Record<string, unknown>>,
                     "CSV",
                     COLUMNS.map((c) => ({ key: c.key, header: c.label })),
                   ),
@@ -573,8 +551,8 @@ export function ToolRefetchConsole() {
           ))}
           {!loading && !error && !timedOut && (
             <span className="ml-2 text-xs text-muted-foreground">
-              {fmtCount(totals.tools)} tools · {fmtCount(totals.repeats)} repeats ·{" "}
-              {fmtCount(totals.sameData)} same-data · {fmtCount(totals.chars)} chars re-fetched
+              {fmtCount(visibleTotals.tools)} shown of {fmtCount(rows.length)} tools · {fmtCount(visibleTotals.repeats)} repeats ·{" "}
+              {fmtCount(visibleTotals.sameData)} same-data · {fmtCount(visibleTotals.chars)} chars re-fetched
               {win === "all" ? " (all-time rollup view)" : " (recomputed for this window)"}
             </span>
           )}
@@ -635,6 +613,7 @@ export function ToolRefetchConsole() {
         pageSize={50}
         emptyState={{ title: error || timedOut ? "The report could not be read" : "No repeated tool calls in this window" }}
         toolbar={{ search: true, searchPlaceholder: "Search tools…" }}
+        onViewChange={setVisibleRows}
         detail={{ title: (row) => row.toolName, description: (row) => `${fmtCount(row.repeats)} repeats in the ${win} window`, render: (row) => <ToolDetail toolName={row.toolName} window={win} expectedRepeats={row.repeats} /> }}
       />
 
