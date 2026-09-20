@@ -904,6 +904,27 @@ export function sanitizeLoadedPreferences(
   return out;
 }
 
+/**
+ * Model picker stars are dual-homed: UES is the ledger, this array is the
+ * instant cache. A remote preferences fetch is last-write-wins on the whole
+ * JSON blob — a stale `favoriteModels: []` used to replace in-session stars
+ * after `staleAfter`. Union incoming with what's already painted so a hollow
+ * blob cannot unstar.
+ */
+function mergeFavoriteModelIds(
+  incoming: string[] | undefined,
+  current: string[] | undefined,
+): string[] {
+  const seen = new Set<string>();
+  const merged: string[] = [];
+  for (const id of [...(incoming ?? []), ...(current ?? [])]) {
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    merged.push(id);
+  }
+  return merged;
+}
+
 // Helper function to ensure preferences have the proper structure
 export const initializeUserPreferencesState = (
   rawPreferences: Partial<UserPreferences> = {},
@@ -1193,7 +1214,14 @@ export const initializeUserPreferencesState = (
     flashcard: { ...defaultPreferences.flashcard, ...preferences.flashcard },
     tutor: { ...defaultPreferences.tutor, ...preferences.tutor },
     playground: { ...defaultPreferences.playground, ...preferences.playground },
-    aiModels: { ...defaultPreferences.aiModels, ...preferences.aiModels },
+    aiModels: {
+      ...defaultPreferences.aiModels,
+      ...preferences.aiModels,
+      favoriteModels: mergeFavoriteModelIds(
+        preferences.aiModels?.favoriteModels,
+        defaultPreferences.aiModels.favoriteModels,
+      ),
+    },
     system: { ...defaultPreferences.system, ...preferences.system },
     messaging: { ...defaultPreferences.messaging, ...preferences.messaging },
     agentContext: {
@@ -1477,7 +1505,14 @@ const userPreferencesSlice = createSlice({
       if (loaded.playground)
         state.playground = { ...state.playground, ...loaded.playground };
       if (loaded.aiModels)
-        state.aiModels = { ...state.aiModels, ...loaded.aiModels };
+        state.aiModels = {
+          ...state.aiModels,
+          ...loaded.aiModels,
+          favoriteModels: mergeFavoriteModelIds(
+            loaded.aiModels.favoriteModels,
+            state.aiModels.favoriteModels,
+          ),
+        };
       if (loaded.system) state.system = { ...state.system, ...loaded.system };
       if (loaded.messaging)
         state.messaging = { ...state.messaging, ...loaded.messaging };
