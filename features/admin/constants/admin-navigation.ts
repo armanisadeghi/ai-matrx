@@ -390,7 +390,6 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/database/workbench"),
           destination("/administration/database/sql-functions"),
           destination("/administration/database/enums"),
-          destination("/administration/database/unified-data-ramp"),
           destination("/legacy/administration/schema-manager"),
         ],
       },
@@ -792,6 +791,12 @@ function pathOnly(path: string): string {
 export function getAdminNavigationArchitectureErrors(): string[] {
   const errors: string[] = [];
   const slugs = new Set<string>();
+  // A destination link is the React key of its nav row, so the same link in two
+  // sections renders duplicate keys and shows the page twice in the menu. It
+  // happened on 2026-09-19: fde7f6a682 gave the Unified Data Ramp its own
+  // section, and 8235aa61e3 added the SAME link to Database Tools eight hours
+  // later, each unaware of the other. The slug check below never looked at links.
+  const linkHomes = new Map<string, string>();
 
   for (const domain of adminNavigationRegistry) {
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(domain.slug)) {
@@ -809,6 +814,16 @@ export function getAdminNavigationArchitectureErrors(): string[] {
           errors.push(
             `${item.title}: query-parameter domain route ${item.link}`,
           );
+        }
+
+        const here = `${domain.name} → ${section.name}`;
+        const firstHome = linkHomes.get(item.link);
+        if (firstHome) {
+          errors.push(
+            `${item.link} is registered twice: ${firstHome} and ${here}`,
+          );
+        } else {
+          linkHomes.set(item.link, here);
         }
 
         for (const route of [item.link, ...item.ownedRoutes]) {
