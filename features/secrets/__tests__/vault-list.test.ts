@@ -51,9 +51,20 @@ function list(items: VaultItem[], query = "", sort: VaultListSort = "newest") {
 describe("filterAndSortVaultItems", () => {
   it("searches only the approved projected metadata", () => {
     const credential = item("b", "Visible credential");
-    expect(list([credential], "catalog label")).toEqual([credential]);
-    expect(list([credential], "USER_NAME")).toEqual([credential]);
-    for (const secretLikeText of ["notes-secret", "lifecycle-secret", "private-value", "hint-secret", "field-secret"]) {
+    for (const allowedText of [
+      "visible credential", "public description", "website_login", "provider-key",
+      "catalog label", "example.com/login", "public-tag", "username", "USER_NAME",
+    ]) {
+      expect(list([credential], allowedText)).toEqual([credential]);
+    }
+    Reflect.set(credential.attachments, "metadata", "attachment-secret");
+    Reflect.set(credential.fields[0], "polluted", "field-polluted-secret");
+    Reflect.set(definitions[0].payload, "polluted", "definition-polluted-secret");
+    Reflect.set(credential, "polluted", "item-polluted-secret");
+    for (const secretLikeText of [
+      "notes-secret", "lifecycle-secret", "private-value", "hint-secret", "field-secret",
+      "attachment-secret", "field-polluted-secret", "definition-polluted-secret", "item-polluted-secret",
+    ]) {
       expect(list([credential], secretLikeText)).toEqual([]);
     }
   });
@@ -67,5 +78,19 @@ describe("filterAndSortVaultItems", () => {
     expect(list(source, "", "name-asc").map((value) => value.id)).toEqual(["a", "b", "z"]);
     expect(list(source, "", "name-desc").map((value) => value.id)).toEqual(["z", "b", "a"]);
     expect(source.map((value) => value.id)).toEqual(["b", "a", "z"]);
+  });
+
+  it("uses updated time, raw ID ties, and invalid-or-missing dates last", () => {
+    const old = item("z", "same", "2026-09-01T00:00:00.000Z");
+    const newItem = item("a", "same", "2026-09-02T00:00:00.000Z");
+    const invalid = item("b", "same", "invalid-date");
+    const missing = item("c", "same");
+    Reflect.set(missing, "updated_at", null);
+    Reflect.set(newItem, "updated_at", "2026-09-03T00:00:00.000Z");
+    Reflect.set(old, "updated_at", "2026-09-02T00:00:00.000Z");
+    expect(list([invalid, old, missing, newItem], "", "recently-updated").map((value) => value.id))
+      .toEqual(["a", "z", "b", "c"]);
+    expect(list([old, newItem], "", "name-asc").map((value) => value.id)).toEqual(["a", "z"]);
+    expect(list([old, newItem], "", "name-desc").map((value) => value.id)).toEqual(["a", "z"]);
   });
 });

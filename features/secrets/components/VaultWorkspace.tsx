@@ -10,7 +10,7 @@
  * one concise supporting line. Values and full metadata belong in detail.
  */
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   AlertCircle,
   Building2,
@@ -186,29 +186,6 @@ export function VaultWorkspace({
     setUncontrolledSelectedId(next);
     onSelectedItemIdChange?.(next);
   };
-  const effectiveScopeKey = vaultScopeKey(scope);
-  const previousScopeKey = useRef(effectiveScopeKey);
-  const pendingSelectionClear = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (selectedId !== pendingSelectionClear.current) {
-      pendingSelectionClear.current = null;
-    }
-  }, [selectedId]);
-
-  const clearSelectedId = () => {
-    if (selectedId === null || pendingSelectionClear.current === selectedId) return;
-    pendingSelectionClear.current = selectedId;
-    setSelectedId(null);
-  };
-
-  useEffect(() => {
-    if (previousScopeKey.current === effectiveScopeKey) return;
-    previousScopeKey.current = effectiveScopeKey;
-    setSearch("");
-    setFamily("all");
-    clearSelectedId();
-  }, [effectiveScopeKey, selectedId]);
   // Creating is meaningless in "Shared with me" — those items are owned by
   // someone else.
   const canCreate = orgAdmin && !isShared;
@@ -249,11 +226,6 @@ export function VaultWorkspace({
   const SelectedIcon = selectedIdentity?.icon ?? KeyRound;
 
   const filtering = query.length > 0 || family !== "all";
-
-  useEffect(() => {
-    if (vault.loading || vault.error || !filtering || !selectedId) return;
-    if (!filtered.some((item) => item.id === selectedId)) clearSelectedId();
-  }, [vault.loading, vault.error, filtering, selectedId, filtered]);
 
   // ONE menu per pane, wrapped around BOTH presentations, so the /vault page
   // and the floating Vault window share a single wiring (and the window

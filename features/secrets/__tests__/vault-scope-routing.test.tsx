@@ -18,7 +18,7 @@
  *     id observably; with nothing selected the tab must refuse out loud and
  *     change no scope.
  */
-import { act } from "react";
+import { act, type ComponentProps } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { normalizeWireItem } from "../types";
@@ -27,6 +27,7 @@ import type { VaultItem, VaultScope } from "../types";
 const fetchVaultItems = jest.fn();
 const toastError = jest.fn();
 let selectedOrganizationId: string | null = null;
+let desktopWorkspace = true;
 
 jest.mock("../vault-service", () => ({
   fetchVaultItems: (...args: unknown[]) => fetchVaultItems(...args),
@@ -91,7 +92,7 @@ jest.mock("@/features/organizations/hooks", () => ({
 }));
 
 jest.mock("@/hooks/use-media-query", () => ({
-  useMediaQuery: () => true,
+  useMediaQuery: () => desktopWorkspace,
 }));
 
 import { VaultWorkspace } from "../components/VaultWorkspace";
@@ -111,7 +112,12 @@ const ROWS: Record<string, VaultItem[]> = {
 
 /** Built through the production normalizer, so the row carries every field the
  *  real read path materializes — never a hand-shaped partial. */
-function row(id: string, displayName: string): VaultItem {
+function row(
+  id: string,
+  displayName: string,
+  createdAt = "2026-09-01T00:00:00.000Z",
+  updatedAt = createdAt,
+): VaultItem {
   return normalizeWireItem({
     id,
     display_name: displayName,
@@ -133,8 +139,8 @@ function row(id: string, displayName: string): VaultItem {
     browser_fill_enabled: true,
     fields: [],
     attachments: [],
-    created_at: "2026-09-01T00:00:00.000Z",
-    updated_at: "2026-09-01T00:00:00.000Z",
+    created_at: createdAt,
+    updated_at: updatedAt,
   });
 }
 
@@ -159,16 +165,22 @@ if (typeof window.matchMedia !== "function") {
   })) as unknown as typeof window.matchMedia;
 }
 
+if (typeof HTMLElement.prototype.scrollIntoView !== "function") {
+  HTMLElement.prototype.scrollIntoView = () => undefined;
+}
+
 let container: HTMLDivElement;
 let root: Root;
 
-async function mount(): Promise<void> {
+async function mount(
+  props: Partial<ComponentProps<typeof VaultWorkspace>> = {},
+): Promise<void> {
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
   await act(async () => {
     root.render(
-      <VaultWorkspace principal={{ type: "user" }} presentation="full" />,
+      <VaultWorkspace principal={{ type: "user" }} presentation="full" {...props} />,
     );
   });
 }
@@ -206,6 +218,7 @@ describe("VaultWorkspace scope routing", () => {
       return ROWS[key];
     });
     selectedOrganizationId = null;
+    desktopWorkspace = true;
   });
 
   afterEach(async () => {
@@ -253,5 +266,87 @@ describe("VaultWorkspace scope routing", () => {
     expect(container.textContent).toContain("Selected Org Login");
     expect(container.textContent).not.toContain("First Org Login");
     expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("filters and sorts rendered full controls without changing canonical selection routing", async () => {
+    ROWS.mine = [
+      row("z", "Zulu Login", "2026-09-02T00:00:00.000Z", "2026-09-01T00:00:00.000Z"),
+      row("a", "Alpha Login", "2026-09-01T00:00:00.000Z", "2026-09-03T00:00:00.000Z"),
+    ];
+    const onSelectedItemIdChange = jest.fn();
+    await mount({ selectedItemId: null, onSelectedItemIdChange });
+
+    const search = container.querySelector<HTMLInputElement>(
+      'input[aria-label="Search credentials"]',
+    );
+    if (!search) throw new Error("Missing Vault search control");
+    await act(async () => {
+      const setValue = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      if (!setValue) throw new Error("Missing input value setter");
+      setValue.call(search, "alpha");
+      search.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(container.textContent).toContain("Alpha Login");
+    expect(container.textContent).not.toContain("Zulu Login");
+
+    const clear = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Clear search"]',
+    );
+    if (!clear) throw new Error("Missing clear search control");
+    await act(async () => clear.click());
+    expect(container.textContent).toContain("Zulu Login");
+
+    const chooseSort = async (label: string, expectedIds: string[]) => {
+      const sortTrigger = container.querySelector<HTMLButtonElement>(
+        '[aria-label="Sort credentials"]',
+      );
+      if (!sortTrigger) throw new Error("Missing sort control");
+      await act(async () => sortTrigger.click());
+      const option = Array.from(document.querySelectorAll<HTMLElement>("[role=option]")).find(
+        (candidate) => candidate.textContent === label,
+      );
+      if (!option) throw new Error(`Missing ${label} sort option`);
+      await act(async () => option.click());
+      expect(
+        Array.from(container.querySelectorAll("[data-vault-item-id]")).map((node) =>
+          node.getAttribute("data-vault-item-id"),
+        ),
+      ).toEqual(expectedIds);
+    };
+    await chooseSort("Newest added", ["z", "a"]);
+    await chooseSort("Recently updated", ["a", "z"]);
+    await chooseSort("Name A–Z", ["a", "z"]);
+    await chooseSort("Name Z–A", ["z", "a"]);
+
+    const alpha = container.querySelector<HTMLButtonElement>('[data-vault-item-id="a"]');
+    if (!alpha) throw new Error("Missing credential row");
+    await act(async () => alpha.click());
+    expect(onSelectedItemIdChange).toHaveBeenCalledWith("a");
+  });
+
+  it("keeps the full narrow dialog branch searchable", async () => {
+    desktopWorkspace = false;
+    ROWS.mine = [row("narrow", "Narrow Login")];
+    await mount({ presentation: "full" });
+    const search = container.querySelector<HTMLInputElement>('input[aria-label="Search credentials"]');
+    if (!search) throw new Error("Missing narrow search control");
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    if (!setValue) throw new Error("Missing input value setter");
+    await act(async () => {
+      setValue.call(search, "no results");
+      search.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(container.textContent).toContain("No credentials match");
+    expect(container.querySelector('[aria-label="Sort credentials"]')).not.toBeNull();
+  });
+
+  it("keeps compact cards on the same metadata controls", async () => {
+    ROWS.mine = [row("compact", "Compact Login")];
+    await mount({ presentation: "compact" });
+    expect(container.querySelector('[aria-label="Sort credentials"]')).not.toBeNull();
+    expect(container.querySelector('[data-vault-item-id="compact"]')).not.toBeNull();
   });
 });

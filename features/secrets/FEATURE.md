@@ -369,10 +369,7 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
 ## Change Log
 
 - **2026-09-20** — Added metadata-only Vault search and deterministic local
-  sorting (newest, recently updated, name A–Z/Z–A) without reading values. A
-  scope change clears filters and selection; a filter that excludes an explicit
-  selection clears the controlled route/window selection after the current
-  scope load completes.
+  sorting (newest, recently updated, name A–Z/Z–A) without reading values.
 
 - 2026-09-19 — **THE FOURTH ORGANIZATION STATE (R37) in `useAuthenticator`.** The hook answered a FAILED organization read with "No organization is selected … choose one from the organization picker" — a claim about memberships nobody read, because `setOrgBootstrapFailure` sets `orgBootstrapResolved` TRUE. It now reads `useOrganizationRequired().organizationState`: `required` keeps the refusal, `unavailable` says we could not check, `resolving` keeps loading, and `organizationRequired` is only ever the first. Test: `hooks/use-authenticator.test.tsx` (the failed-read case is red on the prior bytes). Guard: `pnpm check:org-three-states` rule 5.
 - `2026-09-19` — Replaced local password randomness with the published shared generator, canonical host limits and staged password/passphrase controls for management forms.
