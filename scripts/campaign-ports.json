@@ -58,6 +58,7 @@
     "NAV-FIX": 3019,
     "AGENT-BLANK": 3020,
     "UI-HONEST": 3021,
+    "UI-SHIP": 3022,
     "RELATION-DECLARE": 3023
   },
   "noDevServer": {

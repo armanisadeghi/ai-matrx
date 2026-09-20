@@ -53,7 +53,31 @@ export type CampaignEntryPointKind =
      * register had no word for one, so the only ways to green were to mis-declare
      * it or to delete somebody's guard.
      */
-    | "red_twin";
+    | "red_twin"
+    /**
+     * DOOR-GATED: served code that reaches the store through a door which reads
+     * the switch ITSELF, for the organization the subject belongs to, because
+     * there is no person here to read it for.
+     *
+     * The public form (PRODUCTS row 1 / DOOR-17) is the first of these and the
+     * reason the word exists. A page served to somebody with NO ACCOUNT cannot
+     * call `UNIFIED_DATA_CAMPAIGN.enabled(organizationId)`: it has no signed-in
+     * person, no organization the caller may name, and asking the switch for a
+     * caller who has none would answer the platform default (false) for every
+     * organization on earth, including the ones that ARE on. The switch is read
+     * one layer down instead, inside `custom.form_public` / `custom.form_submit`,
+     * via `custom.store_is_open(organization_id)` — for the organization the FORM
+     * belongs to, which is the only correct one — and a form whose store is off
+     * answers with zero rows, which the page renders as a 404.
+     *
+     * THIS IS STRICTLY STRONGER THAN THE `runtime` RULE, not an exemption from
+     * it: a client-side gate can be bypassed by calling the door directly, and
+     * this one cannot, because it is the door. The guard holds the kind to its
+     * name — the register's `why` must NAME the door that does the reading, so
+     * "door_gated" can never become a way to ship code that reads no switch at
+     * all.
+     */
+    | "door_gated";
 
 export interface CampaignEntryPoint {
     /** Stable id, for the guard's failure message. */
@@ -120,6 +144,30 @@ export const CAMPAIGN_STORE_TABLES: readonly string[] = [
  *     guarding.
  */
 export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
+    {
+        id: "public-form-page",
+        file: "app/(public)/f/[formId]/page.tsx",
+        kind: "door_gated",
+        why: "PRODUCTS row 1. The public form at its unguessable link, server-rendered for somebody with NO ACCOUNT. It does NOT read the campaign switch the way a signed-in page does — there is no person to read it for and no organization the caller may name. The switch is asked INSIDE custom.form_public, for the organization the form itself belongs to, and a form whose store is off answers with zero rows, which is the 404. The browser never holds a store client: the Fields come from the server and the answers go to the route handler below.",
+    },
+    {
+        id: "public-form-runner",
+        file: "app/(public)/f/[formId]/PublicFormRunner.tsx",
+        kind: "door_gated",
+        why: "PRODUCTS row 1. The one client island on the public form page: it mounts @ai-matrx/records-ui's FormRunner in its PUBLIC arm, which takes the server-resolved Fields and a submit port and builds no record-store client at all. Everything it knows came through custom.form_public, and everything it sends goes to custom.form_submit — both of which read custom/system_enabled themselves, through custom.store_is_open and custom.assert_store_door, for the organization the form belongs to. This file holds no key and can reach no door on its own.",
+    },
+    {
+        id: "public-form-submit",
+        file: "app/api/forms/[formId]/submit/route.ts",
+        kind: "door_gated",
+        why: "PRODUCTS row 1 / DOOR-17. Where a stranger's answer arrives. It adds the three things a browser cannot be trusted for — the real Origin header, a coarse client identifier for the rate limit, and lifting the honeypot out of the answers — and hands everything else to custom.form_submit, which decides published, closed, full, the cap, the window, every exposed key and every required answer. The switch is that door's own assert_store_door.",
+    },
+    {
+        id: "public-form-service",
+        file: "features/forms/service.ts",
+        kind: "door_gated",
+        why: "PRODUCTS row 1. The app's ONLY reach for custom.form_public and custom.form_submit, both server-lane doors granted to service_role alone. server-only, cached per request. Schema custom stays revoked from anon; nothing here widens that.",
+    },
     {
         id: "data-v2-tables",
         file: "app/(core)/data-v2/page.tsx",
