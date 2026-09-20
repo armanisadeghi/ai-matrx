@@ -11,7 +11,7 @@ must obey.
 - Admin routes: `app/(admin)/administration/ai/ai-models/{page,audit,deprecated-audit,provider-sync,providers,endpoints,offerings,settings,aliases}` (display metadata in `features/admin/constants/admin-{categories,navigation}.ts`).
 - API routes: `GET /api/ai-models` (CDN-cached 12h/24h SWR), `POST /api/ai-models/revalidate`, `POST /api/admin/ai-models/replace-references`. `app/api/ai-models/provider-sync` is DELETED (2026-09-11) — Provider Sync's model refresh is server-side now (aidream `POST /admin/ai-catalog/provider-models/refresh`), never a Next.js middle tier.
 - No barrel: import from `components/…`, `service.ts`, `types.ts`, `hooks/…`, `redux/…`, `audit/…`, `server/…`, `controls/…`, `capabilities/…`, `usageBasis.ts`, `format.ts`.
-- Slice `redux/modelRegistrySlice.ts` · service `service.ts` · reload thunk `catalogReload.ts` · provider-models refresh thunk `providerModelsRefresh.ts` · SSR reader `server/ai-models-server.ts` · identity display `components/official/entity-ref/AiIdentityRef.tsx`.
+- Slice `redux/modelRegistrySlice.ts` · service `service.ts` · reload thunk `catalogReload.ts` · provider-models refresh thunk `providerModelsRefresh.ts` · SSR reader `server/ai-models-server.ts` · identity display `components/official/entity-ref/AiIdentityRef.tsx` · picker favorites `hooks/useModelFavorites.ts` (canonical write: `platform.user_entity_state` via `ues_set`/`ues_list` for `ai_model`; preferences JSON is the instant cache). Replace review dialog `components/ModelSettingsReviewDialog.tsx` hosts `RunConfigOverrides` (does not fork settings rows).
 
 ## 🚨 Rules
 
@@ -20,7 +20,8 @@ must obey.
   run-control adapter. Constrain it with `allowedModelIds`, `catalogVariant`, `inputModalities`,
   `outputModalities`, `emptyOptionLabel`/`onClear`, `priorityModelIds`, and trigger styling — never
   fork its roster. Search, filters, sort, favorites, details, mobile drawer, and the admin catalog
-  are inseparable parts of model choice. Provider wire-model enums (Cartesia/Google/test harnesses)
+  are inseparable parts of model choice. Picker stars go through
+  `hooks/useModelFavorites.ts` — never a second favorite store. Provider wire-model enums (Cartesia/Google/test harnesses)
   are a different identity domain and require a nearby reasoned `canonical-model-picker-exempt:`
   comment. Guard (also protects the ONE agent picker): `pnpm check:canonical-pickers`, blocking in
   release gates.
@@ -74,6 +75,10 @@ must obey.
 > updates this file in the same change; a change to what the catalog MEANS updates the node's STATE.md.
 
 ## Change log
+
+- **2026-09-19** — **Deprecated-model replace errors are readable, and Review uses the agent settings panel.** A failed Quick replace used to dump the raw Postgres provenance refusal into the Actions cell (and again, truncated, in the Review footer), so the row wrapped into garbage and the dialog ran off the screen. The row now shows a short "Couldn't replace"; Review mounts `RunConfigOverrides` (`structured`) — the same Redux-backed settings table agents already use — so defaults and availability come from the replacement model's full registry record. The failure itself is a wrapping banner (human title + detail), never a cell dump. Shared mapping: `components/official/error-detail/explainError.ts`.
+
+- **2026-09-19** — **Model picker stars persist, and the filter/list layout is readable.** Favorites were only written into `userPreferences.aiModels.favoriteModels` — a last-write-wins JSON blob — so a later preference save from a stale snapshot emptied the stars. They now dual-write to `platform.user_entity_state` (`ai_model`) via direct `ues_set`/`ues_list` (JWT `auth.uid()`, not the associations `requireUserId` Redux gate) and reconcile on mount (`hooks/useModelFavorites.ts`). A hollow remote blob can no longer replace in-session stars (`mergeFavoriteModelIds` on load). Filter panel: 3-col maker/service tiles with Any in the grid, single-row sort/input/output chips, multilingual + include-deprecated as a bottom button row, delayed tooltips (400ms, no skip) on truncated names, taller/wider popover, and Speed/Context/Cost columns (speed as a word; context window; cost as the $ band — "Usage" and a points column that looked like context were lies).
 
 - **2026-09-14** — **Provider Sync's classification view was readable by nobody, and now reads like its five siblings (DD-238).** `ai.provider_sync_candidates` carried NO acl at all (`pg_class.relacl` null), so `fetchProviderSyncCandidates`'s `select("*")` came back `42501 permission denied for view provider_sync_candidates` at HTTP 403 for every signed-in visitor — two such rows reached `ops.system_error` from `/administration/ai/ai-models/provider-sync` on 2026-09-12 and the screen has not been opened since. The view is `security_invoker=true` and its siblings in the same schema (`model_admin`, `model_config`, `model_offering`, `model_offering_admin`, `model_public`, `ui_enum_drift`) all carry `authenticated=r`; the grant was simply missed. `migrations/dd238_the_sync_candidates_view_reads_like_its_siblings.sql` adds it. The access delta is 0, measured in a rolled-back transaction before the file was written: the view's five base relations are already readable by `authenticated` under RLS, and a plain member can already read the classification's inputs straight from `ai.provider` (8 rows carrying `provider_models_cache`, 524 model entries, 32 `sync_policy` rows). After: `test@test.com` reads 544 rows and `admin@admin.com` 557 — RLS still separating them — and `anon` is still refused. Guarded by `pnpm check:client-reads-granted`.
 

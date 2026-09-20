@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import type { MarketingPage, PageSnapshot } from "@/features/marketing/types";
 import {
   isMediaResourceKind,
+  isPosterResource,
   parseSnapshotImages,
   parseSnapshotResources,
   type ParsedSnapshotResource,
@@ -36,7 +37,12 @@ import { webCopy } from "@/features/marketing/lib/copy-payloads";
 function mediaResources(
   resources: ParsedSnapshotResource[],
 ): ParsedSnapshotResource[] {
-  return resources.filter((resource) => isMediaResourceKind(resource.kind));
+  // A VideoObject thumbnailUrl is the still, not the media — shared
+  // vocabulary, same as the site-level Videos view.
+  return resources.filter(
+    (resource) =>
+      isMediaResourceKind(resource.kind) && !isPosterResource(resource),
+  );
 }
 
 function ShareImageTile({ label, url }: { label: string; url: string }) {

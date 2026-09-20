@@ -49,6 +49,18 @@ function refusalText(reason: string | null): string {
   if (reason === "linked_component_requires_native_recovery") {
     return "This credential is linked to a provider or integration and cannot be restored automatically yet. Its retained recovery data is preserved.";
   }
+  if (reason === "native_recovery_unavailable") {
+    return "Native passkey recovery is temporarily unavailable. Reload Trash and try again; its retained recovery data is preserved.";
+  }
+  if (reason === "native_components_missing") {
+    return "The passkey recovery components are no longer complete. This credential was not changed; reload Trash and review it again.";
+  }
+  if (reason === "native_components_conflict") {
+    return "The passkey recovery components no longer match this credential. This credential was not changed; reload Trash and review it again.";
+  }
+  if (reason === "native_manifest_invalid") {
+    return "This passkey recovery record is invalid. This credential was not changed; reload Trash and review it again.";
+  }
   return "This credential cannot be recovered automatically. Its retained recovery data is preserved.";
 }
 
@@ -312,7 +324,8 @@ export function VaultTrashRestoreDialog({
                 <span className="font-medium text-foreground">
                   {item.title || "this credential"}
                 </span>{" "}
-                with {preview.fields_count} field
+                with {preview.native_passkeys_count === 1 && "1 passkey, "}
+                {preview.fields_count} field
                 {preview.fields_count === 1 ? "" : "s"} and{" "}
                 {preview.attachments_count} attachment
                 {preview.attachments_count === 1 ? "" : "s"}.
@@ -326,6 +339,13 @@ export function VaultTrashRestoreDialog({
                   capability deliberately after recovery.
                 </p>
               </div>
+              {preview.native_passkeys_count === 1 && (
+                <p className="text-sm text-muted-foreground">
+                  Restoring this passkey does not reenable it or confirm that
+                  the website accepts it. Remove any website registration at
+                  that website if you no longer want it there.
+                </p>
+              )}
               {preview.prior_was_disabled && (
                 <p className="text-xs text-muted-foreground">
                   It was already disabled before deletion and will remain

@@ -1,6 +1,11 @@
 import { setStoreSingleton } from "@/lib/redux/store-singleton";
 import { fetchAuthenticators } from "../authenticator-service";
-import { checkVaultDestination, createVaultItem, previewVaultLoginCsv, restoreVaultItem } from "../vault-service";
+import {
+  checkVaultDestination,
+  createVaultItem,
+  previewVaultLoginCsv,
+  restoreVaultItem,
+} from "../vault-service";
 import { VaultImportTransportError } from "../vault-service";
 import { uploadVaultAttachment } from "@/features/files/vault/vaultAttachmentTransport";
 
@@ -9,7 +14,10 @@ const ORGANIZATION_ID = "11111111-1111-4111-8111-111111111111";
 const mockGetSession = jest.fn(async () => ({
   data: { session: { access_token: ACCESS_TOKEN } },
 }));
-const mockGetUser = jest.fn<Promise<{ data: { user: { id: string; email?: string } }; error: null }>, [string?]>(async () => ({
+const mockGetUser = jest.fn<
+  Promise<{ data: { user: { id: string; email?: string } }; error: null }>,
+  [string?]
+>(async () => ({
   data: { user: { id: "user-1", email: "admin@admin.com" } },
   error: null,
 }));
@@ -78,42 +86,126 @@ describe("Vault and Authenticator organization transport", () => {
   });
 
   test("export verifies the exact bearer token it sends", async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse({ profile: "matrx_login_csv_v1", revision: "a".repeat(64), items: [] }));
-    await previewVaultLoginCsv({ profile: "matrx_login_csv_v1", item_ids: ["item-1"] }, { userId: "user-1", organizationId: ORGANIZATION_ID });
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        profile: "matrx_login_csv_v1",
+        revision: "a".repeat(64),
+        items: [],
+      }),
+    );
+    await previewVaultLoginCsv(
+      { profile: "matrx_login_csv_v1", item_ids: ["item-1"] },
+      { userId: "user-1", organizationId: ORGANIZATION_ID },
+    );
     expect(mockGetUser).toHaveBeenCalledWith(ACCESS_TOKEN);
-    expect(mockGetUser.mock.calls.every((args) => args[0] === ACCESS_TOKEN)).toBe(true);
-    expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({ Authorization: `Bearer ${ACCESS_TOKEN}`, "X-Organization-Id": ORGANIZATION_ID });
+    expect(
+      mockGetUser.mock.calls.every((args) => args[0] === ACCESS_TOKEN),
+    ).toBe(true);
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({
+      Authorization: `Bearer ${ACCESS_TOKEN}`,
+      "X-Organization-Id": ORGANIZATION_ID,
+    });
   });
 
   test("restore sends the frozen actor and recognizes only the root fresh-auth envelope", async () => {
-    fetchMock.mockResolvedValueOnce({ ...errorResponse(403), json: async () => ({ code: "recent_auth_required" }) } as Response);
-    await expect(restoreVaultItem("item-1", "00000000-0000-4000-8000-000000000001", { userId: "user-1", organizationId: ORGANIZATION_ID })).rejects.toMatchObject({ code: "recent_auth_required" });
+    fetchMock.mockResolvedValueOnce({
+      ...errorResponse(403),
+      json: async () => ({ code: "recent_auth_required" }),
+    } as Response);
+    await expect(
+      restoreVaultItem("item-1", "00000000-0000-4000-8000-000000000001", {
+        userId: "user-1",
+        organizationId: ORGANIZATION_ID,
+      }),
+    ).rejects.toMatchObject({ code: "recent_auth_required" });
     expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({
       method: "POST",
-      body: JSON.stringify({ deletion_id: "00000000-0000-4000-8000-000000000001" }),
-      headers: expect.objectContaining({ "X-Organization-Id": ORGANIZATION_ID }),
+      body: JSON.stringify({
+        deletion_id: "00000000-0000-4000-8000-000000000001",
+      }),
+      headers: expect.objectContaining({
+        "X-Organization-Id": ORGANIZATION_ID,
+      }),
     });
   });
 
   test("restore refuses a source-route nested error envelope", async () => {
-    fetchMock.mockResolvedValueOnce({ ...errorResponse(403), json: async () => ({ detail: { code: "recent_auth_required" } }) } as Response);
-    await expect(restoreVaultItem("item-1", "00000000-0000-4000-8000-000000000001", { userId: "user-1", organizationId: ORGANIZATION_ID })).rejects.toMatchObject({ code: "request_rejected" });
+    fetchMock.mockResolvedValueOnce({
+      ...errorResponse(403),
+      json: async () => ({ detail: { code: "recent_auth_required" } }),
+    } as Response);
+    await expect(
+      restoreVaultItem("item-1", "00000000-0000-4000-8000-000000000001", {
+        userId: "user-1",
+        organizationId: ORGANIZATION_ID,
+      }),
+    ).rejects.toMatchObject({ code: "request_rejected" });
+  });
+
+  test("restore names a native compatibility 503 instead of a generic retry", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ...errorResponse(503),
+      json: async () => ({ detail: { code: "native_passkeys_unavailable" } }),
+    } as Response);
+    await expect(
+      restoreVaultItem("item-1", "00000000-0000-4000-8000-000000000001", {
+        userId: "user-1",
+        organizationId: ORGANIZATION_ID,
+      }),
+    ).rejects.toMatchObject({ code: "native_recovery_unavailable" });
+  });
+
+  test("restore accepts the exact native passkey result count", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        restored_fields: 1,
+        restored_attachments: 0,
+        restored_native_passkeys: 1,
+        already_restored: false,
+        notice: "sharing_and_automatic_use_off",
+      }),
+    );
+    await expect(
+      restoreVaultItem("item-1", "00000000-0000-4000-8000-000000000001", {
+        userId: "user-1",
+        organizationId: ORGANIZATION_ID,
+      }),
+    ).resolves.toMatchObject({ restored_native_passkeys: 1 });
   });
 
   test("restore rejects a malformed success payload at ingress", async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ restored_fields: 1 }));
-    await expect(restoreVaultItem("item-1", "00000000-0000-4000-8000-000000000001", { userId: "user-1", organizationId: ORGANIZATION_ID })).rejects.toMatchObject({ code: "request_rejected" });
+    await expect(
+      restoreVaultItem("item-1", "00000000-0000-4000-8000-000000000001", {
+        userId: "user-1",
+        organizationId: ORGANIZATION_ID,
+      }),
+    ).rejects.toMatchObject({ code: "request_rejected" });
   });
 
   test.each([
-    [{ code: "recent_auth_required", error: "unauthorized" }, "recent_auth_required"],
+    [
+      { code: "recent_auth_required", error: "unauthorized" },
+      "recent_auth_required",
+    ],
     [{ detail: { code: "recent_auth_required" } }, "request_rejected"],
     [{ detail: "recent_auth_required" }, "request_rejected"],
     [{}, "request_rejected"],
-  ])("export classifies only the structured recent-auth response: %j", async (body, code) => {
-    fetchMock.mockResolvedValueOnce({ ...errorResponse(401), json: async () => body } as Response);
-    await expect(previewVaultLoginCsv({ profile: "matrx_login_csv_v1", item_ids: ["item-1"] }, { userId: "user-1", organizationId: ORGANIZATION_ID })).rejects.toMatchObject({ code });
-  });
+  ])(
+    "export classifies only the structured recent-auth response: %j",
+    async (body, code) => {
+      fetchMock.mockResolvedValueOnce({
+        ...errorResponse(401),
+        json: async () => body,
+      } as Response);
+      await expect(
+        previewVaultLoginCsv(
+          { profile: "matrx_login_csv_v1", item_ids: ["item-1"] },
+          { userId: "user-1", organizationId: ORGANIZATION_ID },
+        ),
+      ).rejects.toMatchObject({ code });
+    },
+  );
 
   test("Vault JSON operations send the selected organization", async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ reachable: true }));

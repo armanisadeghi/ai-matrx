@@ -35,6 +35,8 @@ import {
   type ToolSourceKind,
 } from "./source-kind-badge";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { toolApiErrorMessage } from "./tool-definition.service";
+import { parseSemver } from "@/features/admin/applications/version";
 
 interface NewTool {
   name: string;
@@ -48,7 +50,8 @@ interface NewTool {
   tags: string[];
   icon: string;
   is_active: boolean;
-  version: string;
+  semver: string;
+  version: number;
 }
 
 const DEFAULT_TOOL: NewTool = {
@@ -63,7 +66,8 @@ const DEFAULT_TOOL: NewTool = {
   tags: [],
   icon: "",
   is_active: true,
-  version: "1.0.0",
+  semver: "1.0.0",
+  version: 1,
 };
 
 export function ToolCreatePage() {
@@ -125,6 +129,14 @@ export function ToolCreatePage() {
       });
       return;
     }
+    if (!parseSemver(tool.semver)) {
+      toast({
+        title: "Invalid semantic version",
+        description: "Use major.minor.patch format, for example 1.0.0.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (Object.keys(jsonErrors).length > 0) {
       toast({ title: "Fix JSON errors before saving", variant: "destructive" });
       return;
@@ -146,8 +158,7 @@ export function ToolCreatePage() {
         }),
       });
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Failed to create tool");
+        throw new Error(await toolApiErrorMessage(response, "Failed to create tool"));
       }
       const data = await response.json();
       toast({ title: "Created", description: "Tool created successfully" });
@@ -278,7 +289,7 @@ export function ToolCreatePage() {
           </div>
         ) : null}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="space-y-1.5">
           <Label>Icon</Label>
           <IconInputWithValidation
@@ -288,11 +299,28 @@ export function ToolCreatePage() {
           />
         </div>
         <div className="space-y-1.5">
-          <Label>Version</Label>
+          <Label>Semantic version</Label>
           <Input
-            value={tool.version}
-            onChange={(e) => setField("version", e.target.value)}
+            value={tool.semver}
+            onChange={(e) => setField("semver", e.target.value)}
             placeholder="1.0.0"
+            style={{ fontSize: "16px" }}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Revision</Label>
+          <Input
+            type="number"
+            min={1}
+            step={1}
+            value={tool.version}
+            onChange={(e) => {
+              const value = Number(e.target.value);
+              if (Number.isInteger(value) && value >= 1) {
+                setField("version", value);
+              }
+            }}
+            placeholder="1"
             style={{ fontSize: "16px" }}
           />
         </div>

@@ -24,6 +24,7 @@ import { vimeoEmbedUrl, vimeoId } from "@/lib/media/vimeo";
 import { videoPublishDateFromMetadata } from "@/lib/media/video-date";
 import {
   isMediaResourceKind,
+  isPosterResource,
   type ParsedSnapshotResource,
 } from "@/features/marketing/lib/snapshot-content";
 
@@ -112,7 +113,14 @@ function canonicalize(resource: ParsedSnapshotResource): {
   publishedAt: string | null;
 } | null {
   const url = resource.url.trim();
-  if (!url || isTrackingEmbed(url) || IMAGE_FILE_EXT.test(url)) return null;
+  if (
+    !url ||
+    isTrackingEmbed(url) ||
+    IMAGE_FILE_EXT.test(url) ||
+    isPosterResource(resource)
+  ) {
+    return null;
+  }
 
   const yt = parseYouTubeUrl(url);
   if (yt) {

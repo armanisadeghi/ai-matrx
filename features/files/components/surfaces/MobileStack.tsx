@@ -685,6 +685,7 @@ function FloatingUploadAction({ parentFolderId }: FloatingUploadActionProps) {
       <FileAcquisitionActions
         presentation="icons"
         onFiles={handleFiles}
+        storageImportParentFolderId={parentFolderId}
         enableLocalFolder={false}
       />
     </div>
