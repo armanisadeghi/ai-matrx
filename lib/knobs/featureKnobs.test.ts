@@ -12,11 +12,29 @@ import { invalidateFeatureKnobs, knobStringList } from "./featureKnobs";
 
 const rows: Array<{ feature: string; key: string; value: unknown }> = [];
 
+// The catalogue is read through `readAllRows`, so the fake speaks the paged
+// dialect: `{ count: "exact" }`, `.order()`, `.range()`. Paging itself is
+// pinned in `featureKnobs.paging.test.ts`; here the table always fits one page.
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     schema: () => ({
       from: () => ({
-        select: async () => ({ data: rows, error: null }),
+        select: () => {
+          const query: Record<string, unknown> = {
+            order: () => query,
+            range: () => query,
+            then: (
+              resolve: (v: unknown) => unknown,
+              reject?: (e: unknown) => unknown,
+            ) =>
+              Promise.resolve({
+                data: rows,
+                error: null,
+                count: rows.length,
+              }).then(resolve, reject),
+          };
+          return query;
+        },
       }),
     }),
   }),
