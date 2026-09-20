@@ -5,6 +5,7 @@ import type { QuizState } from "@/components/mardown-display/blocks/quiz/quiz-ty
 import type { Json } from "@/types/database.types";
 import type { QuizSession } from "@/types/quiz-session";
 import { mapQuizSessionRow } from "@/utils/quiz-session-mapper";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 export type { QuizSession } from "@/types/quiz-session";
 
@@ -36,7 +37,7 @@ export async function findExistingQuizByHash(
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (userError || !user) {
       return { success: false, error: "Not authenticated" };
@@ -110,7 +111,7 @@ export async function createQuizSession(
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (userError || !user) {
       return { success: false, error: "Not authenticated" };
@@ -181,7 +182,7 @@ export async function updateQuizSession(
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (userError || !user) {
       return { success: false, error: "Not authenticated" };
@@ -238,7 +239,7 @@ export async function getQuizSession(
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (userError || !user) {
       return { success: false, error: "Not authenticated" };
@@ -284,7 +285,7 @@ export async function getUserQuizSessions(options?: {
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (userError || !user) {
       return { success: false, error: "Not authenticated" };
@@ -347,7 +348,7 @@ export async function deleteQuizSession(
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (userError || !user) {
       return { success: false, error: "Not authenticated" };
@@ -385,7 +386,7 @@ export async function updateQuizTitle(
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (userError || !user) {
       return { success: false, error: "Not authenticated" };

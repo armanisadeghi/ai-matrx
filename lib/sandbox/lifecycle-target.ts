@@ -2,6 +2,7 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { resolvePersistedOrchestrator, type OrchestratorTarget } from "@/lib/sandbox/orchestrator-routing";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 export type SandboxLifecycleTarget = { rowId: string; sandboxId: string; orchestrator: OrchestratorTarget; deletedAt: string | null };
 export type SandboxLifecycleResolution = { ok: true; target: SandboxLifecycleTarget } | { ok: false; status: number; error: string };
@@ -9,7 +10,7 @@ export type SandboxLifecycleResolution = { ok: true; target: SandboxLifecycleTar
 /** Owner/RLS is always first. Service-role lookup is only a verified super-admin tombstone path. */
 export async function resolveSandboxLifecycleTarget(rowId: string): Promise<SandboxLifecycleResolution> {
   const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const { data: { user }, error: userError } = await getClaimsUser(supabase);
   if (userError || !user) return { ok: false, status: 401, error: "User not authenticated" };
   const { data: owned } = await supabase.from("sandbox_instances").select("id, sandbox_id, tier, config, deleted_at").eq("id", rowId).eq("user_id", user.id).single();
   let row = owned;
