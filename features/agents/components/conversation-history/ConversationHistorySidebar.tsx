@@ -87,10 +87,7 @@ import {
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { ConversationSourceFilterTree } from "./ConversationSourceFilterTree";
-import {
-  AllLanesOffNotice,
-  ConversationLaneToggles,
-} from "./ConversationLaneToggles";
+import { AllLanesOffNotice } from "./ConversationLaneToggles";
 import { ConversationTrashSection } from "./ConversationTrashSection";
 import { ItemRow } from "@/components/official/item/ItemRow";
 import { toast } from "@/lib/toast";
@@ -598,12 +595,6 @@ const DenseView: React.FC<
       {headerSlot}
       {topSlot}
 
-      {surfaceId && (
-        <div className="shrink-0 px-2 pt-1.5 pb-1">
-          <ConversationLaneToggles />
-        </div>
-      )}
-
       {showControls && (
         <div className="flex shrink-0 items-center gap-1 border-b border-border px-2 py-1">
           {showSearch && (
@@ -888,22 +879,13 @@ const ConsumerView: React.FC<
     >
       {headerSlot}
 
-      {/* The lane toggles ARE the filter statement, so they share the row with
-          the refresh and source-tree controls and save a row of list height —
-          but only while the five names still FIT. Measured live on the /chat
-          rail (195px): sharing squeezed the group to 109px and clipped every
-          label, which is worse than the row it saved. So the row WRAPS: the
-          toggles carry a min width that holds all five names at their smallest
-          legible size, and below that they drop to their own line at full
-          width. The label yields first, since it only repeats what the sidebar
-          already is. Both are container queries — they answer to THIS rail,
-          never the viewport, so the agent-run window keeps its label. */}
+      {/* Lane and source choices live together in the filter popover. The
+          sidebar header stays a compact, stable action row at every width. */}
       {surfaceId && (
-        <div className="@container/histhead flex shrink-0 flex-wrap items-center gap-1.5 px-2 pt-2 pb-1">
-          <span className="hidden shrink-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70 @min-[360px]/histhead:block">
+        <div className="flex h-8 shrink-0 items-center gap-1 px-2">
+          <span className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
             {historyLabel}
           </span>
-          <ConversationLaneToggles className="min-w-[168px] flex-1" />
           <div className="flex shrink-0 items-center gap-1">
             {status === "loading" ? (
               <LoadingTapButton

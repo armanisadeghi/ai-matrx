@@ -16,7 +16,7 @@
  *  - NOTHING checked = no filter = show everything (the browse-all state).
  *
  * LANES ARE ABOVE THIS TREE. The Chat | Matrx | Auto | Plugins | Subagents
- * toggles (`ConversationLaneToggles`) are an independent AND gate on the list
+ * toggles are presented in this popover but remain an independent AND gate
  * query; this tree lists only sources inside the enabled lanes and never
  * writes the lane gate, so "Select all", presets, "Defaults" and "only" can
  * never re-admit a lane that is off.
@@ -51,6 +51,7 @@ import {
 import { setScopeSourceFilter } from "@/features/agents/redux/conversation-history/slice";
 import {
   makeSelectConversationHistoryScope,
+  selectConversationLanes,
   selectSourceFacets,
   selectSourceFacetsStatus,
 } from "@/features/agents/redux/conversation-history/selectors";
@@ -69,6 +70,14 @@ import {
 } from "@/features/agents/redux/conversation-history/source-registry";
 import { SOURCE_APP } from "@/features/agents/types/instance.types";
 import type { SourceFacet } from "@/features/agents/redux/conversation-history/types";
+import {
+  ConversationLaneToggles,
+  useSetConversationLanes,
+} from "./ConversationLaneToggles";
+import {
+  DEFAULT_CONVERSATION_LANES,
+  normalizeLanes,
+} from "@/features/agents/redux/conversation-history/lanes";
 
 // ── Tree model ───────────────────────────────────────────────────────────────
 
@@ -312,6 +321,8 @@ export const ConversationSourceFilterTree: React.FC<
     [scopeId],
   );
   const scope = useAppSelector(selectScope);
+  const lanes = useAppSelector(selectConversationLanes);
+  const setLanes = useSetConversationLanes();
   const facets = useAppSelector(selectSourceFacets);
   const facetsStatus = useAppSelector(selectSourceFacetsStatus);
 
@@ -363,6 +374,9 @@ export const ConversationSourceFilterTree: React.FC<
     selectedFeatures.size +
     (emptySelected ? 1 : 0) +
     (scope.includeOriginClasses?.length ?? 0);
+  const lanesAreDefault =
+    normalizeLanes(lanes).join(",") === DEFAULT_CONVERSATION_LANES.join(",");
+  const appliedFilterCount = activeCount + (lanesAreDefault ? 0 : 1);
 
   // Commit a new selection → persist + refetch first page.
   const commit = useCallback(
@@ -502,6 +516,7 @@ export const ConversationSourceFilterTree: React.FC<
   );
 
   const resetToDefaults = useCallback(() => {
+    setLanes(DEFAULT_CONVERSATION_LANES);
     const def: SurfaceFilterPref = getSurfaceDefault(surfaceId);
     dispatch(
       setScopeSourceFilter({
@@ -514,7 +529,7 @@ export const ConversationSourceFilterTree: React.FC<
       }),
     );
     void dispatch(fetchConversationHistory({ scopeId, replace: true }));
-  }, [dispatch, scopeId, surfaceId]);
+  }, [dispatch, scopeId, setLanes, surfaceId]);
 
   const isFeatureChecked = useCallback(
     (key: string): boolean =>
@@ -530,17 +545,17 @@ export const ConversationSourceFilterTree: React.FC<
             type="button"
             className={cn(
               "inline-flex h-7 items-center gap-1.5 rounded-md border border-border px-2 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors",
-              activeCount > 0 && "text-primary",
+              appliedFilterCount > 0 && "text-primary",
               triggerClassName,
             )}
-            aria-label="Filter conversations by source"
-            title="Filter by app and feature"
+            aria-label="Filter conversations"
+            title="Filter conversations"
           >
             <ListFilter className="h-3.5 w-3.5" />
             Filter
-            {activeCount > 0 && (
+            {appliedFilterCount > 0 && (
               <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold tabular-nums text-primary-foreground">
-                {activeCount}
+                {appliedFilterCount}
               </span>
             )}
           </button>
@@ -549,16 +564,16 @@ export const ConversationSourceFilterTree: React.FC<
             type="button"
             className={cn(
               "relative inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors",
-              activeCount > 0 && "text-primary",
+              appliedFilterCount > 0 && "text-primary",
               triggerClassName,
             )}
-            aria-label="Filter conversations by source"
-            title="Filter by app and feature"
+            aria-label="Filter conversations"
+            title="Filter conversations"
           >
             <ListFilter className="h-3.5 w-3.5" />
-            {activeCount > 0 && (
+            {appliedFilterCount > 0 && (
               <span className="absolute -right-0.5 -top-0.5 inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-semibold tabular-nums text-primary-foreground">
-                {activeCount}
+                {appliedFilterCount}
               </span>
             )}
           </button>
@@ -573,7 +588,7 @@ export const ConversationSourceFilterTree: React.FC<
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-3 py-2">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Show conversations from
+            Filter conversations
           </span>
           <button
             type="button"
@@ -584,6 +599,13 @@ export const ConversationSourceFilterTree: React.FC<
             <RotateCcw className="h-3 w-3" />
             Defaults
           </button>
+        </div>
+
+        <div className="border-b border-border px-2 py-2">
+          <div className="px-0.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Conversation type
+          </div>
+          <ConversationLaneToggles />
         </div>
 
         {/* Quick filters — one-click full selections. Active preset is lit. */}

@@ -409,6 +409,12 @@ export interface CaptureInput {
   sessionState?: string;
   /** Set false only for expected, successfully handled diagnostics. Default true. */
   durable?: boolean;
+  /**
+   * Separates failures that share a visible signature but belong to distinct
+   * server requests. Leave unset for repeatable local failures, which should
+   * continue to collapse into one occurrence.
+   */
+  dedupeDiscriminator?: string;
 }
 
 export interface CapturedErrorStats {
@@ -545,6 +551,7 @@ function signatureOf(input: CaptureInput): string {
     input.relation ?? "",
     input.code ?? "",
     input.message,
+    input.dedupeDiscriminator ?? "",
   ].join("|");
 }
 

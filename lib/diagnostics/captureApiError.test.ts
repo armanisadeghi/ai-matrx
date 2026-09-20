@@ -332,4 +332,28 @@ describe("captureApiError", () => {
 
     expect(getSnapshot()).toHaveLength(1);
   });
+
+  it("keeps separately identified backend write failures as separate captures", () => {
+    const error = {
+      type: "http_error" as const,
+      status: 500,
+      message: "Failed to create forked conversation.",
+    };
+    const context = {
+      url: "https://server.app.matrxserver.com/cx/conversations/source/fork",
+      method: "POST",
+      path: "/cx/conversations/{conversation_id}/fork",
+    };
+
+    captureApiError(error, { ...context, requestId: "fork-request-1" });
+    captureApiError(error, { ...context, requestId: "fork-request-2" });
+
+    expect(getSnapshot()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ requestId: "fork-request-1", count: 1 }),
+        expect.objectContaining({ requestId: "fork-request-2", count: 1 }),
+      ]),
+    );
+    expect(getSnapshot()).toHaveLength(2);
+  });
 });

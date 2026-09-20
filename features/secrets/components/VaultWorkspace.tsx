@@ -71,6 +71,11 @@ import {
   scopeToPrincipal,
   vaultScopeKey,
 } from "../types";
+import {
+  filterAndSortVaultItems,
+  VAULT_LIST_SORT_OPTIONS,
+  type VaultListSort,
+} from "../vault-list";
 import { VaultContextMenu } from "./VaultContextMenu";
 import { VaultCreateDialog } from "./VaultCreateDialog";
 import { VaultEnvImportDialog } from "./VaultEnvImportDialog";
@@ -167,6 +172,7 @@ export function VaultWorkspace({
 
   const [search, setSearch] = useState("");
   const [family, setFamily] = useState<"all" | CredentialFamily>("all");
+  const [sort, setSort] = useState<VaultListSort>("newest");
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
@@ -196,24 +202,13 @@ export function VaultWorkspace({
     return [...present].sort();
   })();
 
-  const query = search.trim().toLowerCase();
-  const filtered = vault.items.filter((item) => {
-    if (family !== "all" && familyOf(item, defsByKey) !== family) return false;
-    if (!query) return true;
-    const def = defsByKey.get(item.definition_key);
-    const haystack = [
-      item.display_name,
-      item.description ?? "",
-      item.definition_key,
-      item.provider_key ?? "",
-      def?.payload.label ?? "",
-      ...item.login_urls,
-      ...item.tags,
-      ...item.fields.map((f) => `${f.field_key} ${f.env_key ?? ""}`),
-    ]
-      .join(" ")
-      .toLowerCase();
-    return haystack.includes(query);
+  const query = search.trim();
+  const filtered = filterAndSortVaultItems({
+    items: vault.items,
+    definitions,
+    family,
+    query,
+    sort,
   });
 
   const selected = selectedId
@@ -511,6 +506,7 @@ export function VaultWorkspace({
                     </SelectContent>
                   </Select>
                 )}
+                <VaultSortControl sort={sort} onSortChange={setSort} />
               </div>
 
               <div className="flex items-center gap-2">
@@ -534,6 +530,11 @@ export function VaultWorkspace({
                     </button>
                   )}
                 </div>
+                <VaultSortControl
+                  sort={sort}
+                  onSortChange={setSort}
+                  className="hidden lg:block"
+                />
                 {canCreate && (
                   <Button
                     size="sm"
@@ -883,6 +884,7 @@ export function VaultWorkspace({
             </SelectContent>
           </Select>
         )}
+        <VaultSortControl sort={sort} onSortChange={setSort} />
 
         {canCreate && (
           <>
@@ -1059,6 +1061,37 @@ export function VaultWorkspace({
         />
       )}
     </div>,
+  );
+}
+
+function VaultSortControl({
+  sort,
+  onSortChange,
+  className,
+}: {
+  sort: VaultListSort;
+  onSortChange: (sort: VaultListSort) => void;
+  className?: string;
+}) {
+  return (
+    <Select
+      value={sort}
+      onValueChange={(value) => onSortChange(value as VaultListSort)}
+    >
+      <SelectTrigger
+        className={cn("h-9 w-auto min-w-36 shrink-0", className)}
+        aria-label="Sort credentials"
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {VAULT_LIST_SORT_OPTIONS.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
