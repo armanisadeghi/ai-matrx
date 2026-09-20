@@ -77,6 +77,8 @@ import { resolveWizardStep } from "@/lib/wizard-draft/resolveWizardStep";
 import { WizardAnswersLost } from "@/lib/wizard-draft/WizardAnswersLost";
 import { WizardDraftRestored } from "@/lib/wizard-draft/WizardDraftRestored";
 import { createDraftRulebook } from "../service";
+import { WorkingNotice } from "@/lib/progress/WorkingNotice";
+import { NEW_RULEBOOK_OPENING_MS } from "../record/openingRates";
 import {
   startableApproaches,
   type DistillationApproach,
@@ -430,7 +432,13 @@ export function NewRulebookFlow() {
   const [selectedKey, setSelectedKey] = useState<string | null>(
     searchParams.get("approach"),
   );
-  const [saving, setSaving] = useState(false);
+  // 🚨 N8 — "STARTING…" IS NOT A DURATION (cold walk 13, 2026-09-20).
+  // This button sat on the word "Starting…" for 45-51 seconds with nothing
+  // else on the screen. `saving` is now the START of a measured wait rather
+  // than a boolean, so the sticky bar can show the platform's waiting line —
+  // the clock, and a promise that stops promising once it is overtaken.
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const saving = startedAt !== null;
   /** The "On the way" cards are one collapsed line until the Expert opens it. */
   const [showComingSoon, setShowComingSoon] = useState(false);
 
@@ -606,7 +614,7 @@ export function NewRulebookFlow() {
       toStep(1);
       return;
     }
-    setSaving(true);
+    setStartedAt(Date.now());
     try {
       const rulebookName = name.trim() || nameFromGoal(goal) || "My expertise";
       const rulebook = await createDraftRulebook({
@@ -639,7 +647,7 @@ export function NewRulebookFlow() {
       toast.error(
         err instanceof Error ? err.message : "Could not start the Rulebook",
       );
-      setSaving(false);
+      setStartedAt(null);
     }
   };
 
@@ -990,6 +998,26 @@ export function NewRulebookFlow() {
               does nothing (D1's exact failure). With sole membership the
               state is already `ready`, `orgReason` is `null`, and Start
               behaves exactly as it does today. */}
+          {/* 🚨 N8 — THE WAIT SAYS HOW LONG IT HAS BEEN. Walk 13 pressed Start
+              and watched the word "Starting…" for at least 45 seconds with
+              nothing else moving on the screen. This is the platform's one
+              waiting line (`lib/progress/WorkingNotice.tsx`) — the same
+              primitive the distillation and Shadow panels already use — so the
+              clock moves every second and the promise corrects itself out loud
+              the moment it is overtaken. Numbers and where they were measured:
+              `features/masterwork/record/openingRates.ts`. */}
+          {startedAt !== null ? (
+            <WorkingNotice
+              className="sticky bottom-[64px] z-20 mb-2"
+              doing={
+                selectedApproach
+                  ? `Starting your Rulebook with ${selectedApproach.label}…`
+                  : "Starting your Rulebook…"
+              }
+              startedAt={startedAt}
+              usualMs={NEW_RULEBOOK_OPENING_MS}
+            />
+          ) : null}
           <div className="sticky bottom-0 z-20 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t border-border bg-background/95 px-4 py-3 pb-safe backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:-mx-6 sm:px-6">
             <Button
               variant="ghost"
