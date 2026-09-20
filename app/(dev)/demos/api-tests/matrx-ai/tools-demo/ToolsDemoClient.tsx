@@ -270,7 +270,14 @@ export default function ToolsDemoClient() {
       const res = await fetch(`${config.serverUrl}/tools/test/execute`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...config.authHeaders },
-        body: JSON.stringify({ tool_name: selectedTool.name, arguments: args }),
+        body: JSON.stringify({
+          tool_name: selectedTool.name,
+          arguments: args,
+          // Every door declares who opened it, dev consoles included.
+          source_app: "matrx-frontend",
+          source_feature: "tool-testing",
+          initiation: "user",
+        }),
       });
 
       const data = await res.json();
