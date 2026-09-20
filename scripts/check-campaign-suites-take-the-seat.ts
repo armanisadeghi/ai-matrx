@@ -44,7 +44,7 @@ const DIR = resolve(__dirname, "campaign-tests");
  * The number of suites that called schema `custom` and did NOT take the seat when this guard
  * was written (2026-09-20). It may only ever go DOWN.
  */
-const BASELINE = 56;
+const BASELINE = 55;
 
 /** Taking the seat, in either of the two spellings psql and plpgsql use. */
 const TAKES_THE_SEAT = /set\s+local\s+role\s+authenticated|set_config\(\s*'role'\s*,\s*'authenticated'/i;
