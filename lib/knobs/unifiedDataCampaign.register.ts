@@ -169,6 +169,12 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "The RESUME of a server-side record change a person approved in chat: it writes the agent's exact declaration through `@ai-matrx/records/core`'s `table_declare` / `record_update` / `record_write` doors under the person's own authority. Served to users from live conversations, so it reads the one switch first and refuses with the off sentence when it is off.",
     },
     {
+        id: "organization-store-contents",
+        file: "features/organizations/service/organizationStoreContents.ts",
+        kind: "runtime",
+        why: "The Danger Zone's one reach into the record store (bug 8500bd65): it reads `custom.organization_contents` to say in plain words what an organization holds before anybody confirms a delete, and calls `custom.organization_clear` — owner-only, name typed back, retires through the store's own doors and destroys only what the retention rule no longer protects — as the supported way to empty it. Served to every organization owner from the organization settings screen, so it reads the one switch before either door and, when the switch is off, says the organization holds nothing of this kind and lets the delete proceed exactly as it did before this file existed.",
+    },
+    {
         id: "record-change-approval-card",
         file: "features/record-change-approvals/RecordChangeApprovalCard.tsx",
         kind: "runtime",
