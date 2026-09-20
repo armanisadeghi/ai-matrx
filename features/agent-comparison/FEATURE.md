@@ -193,6 +193,22 @@ attributable to this page in analytics.
 
 ## Change Log
 
+Model mode at `/agents/battle/model` has the dedicated UI surface
+`matrx-user/agent-comparison-model`. Its mounted runtime exposes the locked
+agent/version, shared request and inputs, per-column outcomes, existing feedback
+rubric and scores, and comparison state. Unrevealed blind sessions omit model
+identities, column/conversation IDs, detailed provider errors, and run metrics.
+The comparison's native model runs do not receive this helper surface context.
+Its two approval-required write targets stage shared text or declared variables;
+they never submit, change models, or alter outcomes. Writes are refused during
+submission or an active model run. No judging agent or mandate is created by
+this wiring.
+- 2026-09-19 — Model mode uses the canonical route header and mode navigation,
+  a collapsible shared request, and horizontally scrollable readable columns.
+  The dedicated Model Battle surface supplies comparison inputs and evidence
+  for future helpers. Shared chat rendering now retains submitted first-turn
+  variables and hydrates server-reserved user messages after persistence,
+  preventing complete user turns from appearing as empty-message diagnostics.
 - 2026-08-29 — **Every Agent Battle composer now uses the full Smart Agent
   Input system.** Settings, System Prompt, Tools, Tuning, and Variations joined
   Model on `SharedBattleInput` backed by a cache-only execution instance. Submit

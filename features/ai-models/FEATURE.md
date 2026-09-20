@@ -11,6 +11,7 @@ must obey.
 - Admin routes: `app/(admin)/administration/ai/ai-models/{page,audit,deprecated-audit,provider-sync,providers,endpoints,offerings,settings,aliases}` (display metadata in `features/admin/constants/admin-{categories,navigation}.ts`).
 - API routes: `GET /api/ai-models` (CDN-cached 12h/24h SWR), `POST /api/ai-models/revalidate`, `POST /api/admin/ai-models/replace-references`. `app/api/ai-models/provider-sync` is DELETED (2026-09-11) — Provider Sync's model refresh is server-side now (aidream `POST /admin/ai-catalog/provider-models/refresh`), never a Next.js middle tier.
 - No barrel: import from `components/…`, `service.ts`, `types.ts`, `hooks/…`, `redux/…`, `audit/…`, `server/…`, `controls/…`, `capabilities/…`, `usageBasis.ts`, `format.ts`.
+- Slice `redux/modelRegistrySlice.ts` · service `service.ts` · reload thunk `catalogReload.ts` · provider-models refresh thunk `providerModelsRefresh.ts` · SSR reader `server/ai-models-server.ts` · identity display `components/official/entity-ref/AiIdentityRef.tsx` · picker favorites `hooks/useModelFavorites.ts` (canonical write: `platform.user_entity_state` via `ues_set`/`ues_list` for `ai_model`; preferences JSON is the instant cache). Replace Review `components/ModelSettingsReviewDialog.tsx` mounts the agent `ModelChangeReconciliation` against live usage settings (`unionUsageSettings`). Incompatibilities are a warning — Keep my settings proceeds. A write that does not finish is a toast, never a blocker.
 - Slice `redux/modelRegistrySlice.ts` · service `service.ts` · reload thunk `catalogReload.ts` · provider-models refresh thunk `providerModelsRefresh.ts` · SSR reader `server/ai-models-server.ts` · identity display `components/official/entity-ref/AiIdentityRef.tsx` · picker favorites `hooks/useModelFavorites.ts` (canonical write: `platform.user_entity_state` via `ues_set`/`ues_list` for `ai_model`; preferences JSON is the instant cache). Replace review dialog `components/ModelSettingsReviewDialog.tsx` hosts `RunConfigOverrides` (does not fork settings rows).
 
 ## 🚨 Rules
@@ -160,6 +161,7 @@ must obey.
   result is a reported row from the server, shown as the sync error for that provider — never
   hidden or silently retried.
 
+- **2026-09-19** — **Deprecated-model Review is the agent model-swap dialog, and it is not a blocker.** Review used to open an invented settings form on empty `{}` (so it never showed the live overrides) and treat a write as a hard error ("Couldn't replace", a novel banner). It now loads the settings already on the agents/templates using the old model, analyzes them with `analyzeModelChange`, and mounts `ModelChangeReconciliation` — Setting / Current value / Issue / New model default / Action. The admin can keep the current overrides and move on. A write that does not finish is a toast; Review and Quick stay available.
 - `2026-08-30` — Provider Sync now gives its mobile toolbar distinct stats,
   legend, and action rows plus the canonical coarse-pointer touch floor while
   preserving the compact desktop toolbar.
