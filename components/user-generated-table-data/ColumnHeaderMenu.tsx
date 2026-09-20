@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   ArrowDown,
+  ArrowLeftToLine,
+  ArrowRightToLine,
+  EyeOff,
   ArrowUp,
   Filter,
   ListX,
@@ -80,6 +83,10 @@ interface ColumnHeaderMenuProps {
   onConfigure?: () => void;
   /** Rename this column in its header. Omitted on read-only mounts. */
   onRename?: () => void;
+  /** Add a new column beside this one. Omitted on read-only mounts. */
+  onInsert?: (side: "left" | "right") => void;
+  /** Hide this column in the viewer's own view. Omitted when it is the last visible column. */
+  onHide?: () => void;
   /**
    * Remove this column. Omitted on read-only mounts and on the last remaining
    * column. Goes through the same confirm + RPC as the settings dialog — there
@@ -126,6 +133,8 @@ const ColumnHeaderMenu = ({
   onFilterChange,
   onConfigure,
   onRename,
+  onInsert,
+  onHide,
   onDelete,
 }: ColumnHeaderMenuProps) => {
   const hasFilter = isActiveFilter(filter);
@@ -554,7 +563,7 @@ const ColumnHeaderMenu = ({
           )}
         </div>
 
-        {(onConfigure || onDelete || onRename) && (
+        {(onConfigure || onDelete || onRename || onInsert || onHide) && (
           <>
             <div className="my-2 h-px bg-border" />
             <div className="flex flex-col gap-1">
@@ -570,6 +579,48 @@ const ColumnHeaderMenu = ({
                 >
                   <Pencil className="h-3.5 w-3.5" />
                   Rename column
+                </Button>
+              )}
+              {onInsert && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 justify-start gap-2 px-2 text-xs font-normal"
+                    onClick={() => {
+                      setOpen(false);
+                      onInsert("left");
+                    }}
+                  >
+                    <ArrowLeftToLine className="h-3.5 w-3.5" />
+                    Insert column left
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 justify-start gap-2 px-2 text-xs font-normal"
+                    onClick={() => {
+                      setOpen(false);
+                      onInsert("right");
+                    }}
+                  >
+                    <ArrowRightToLine className="h-3.5 w-3.5" />
+                    Insert column right
+                  </Button>
+                </>
+              )}
+              {onHide && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 justify-start gap-2 px-2 text-xs font-normal"
+                  onClick={() => {
+                    setOpen(false);
+                    onHide();
+                  }}
+                >
+                  <EyeOff className="h-3.5 w-3.5" />
+                  Hide column
                 </Button>
               )}
               {onConfigure && (
