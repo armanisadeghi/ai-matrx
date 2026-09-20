@@ -68,6 +68,70 @@ describe("CloudBrowserStartState", () => {
     await v.unmount();
   });
 
+  it("waits and asks again on its own when every browser slot is taken", async () => {
+    jest.useFakeTimers();
+    try {
+      const onRetry = jest.fn();
+      const v = await render(
+        <CloudBrowserStartFailed
+          error={{
+            message: "At capacity for browser_fleet (50/50 active). Your browser will start as soon as one frees up.",
+            retryable: true,
+            requestId: "req-3",
+            code: "admission_capacity_exceeded",
+          }}
+          retrying={false}
+          onRetry={onRetry}
+        />,
+      );
+      expect(v.text()).toContain("Waiting for a free browser");
+      expect(v.text()).toContain("50/50 active");
+      expect(v.button("Try again")).toBeUndefined();
+      expect(onRetry).not.toHaveBeenCalled();
+      await act(async () => {
+        jest.advanceTimersByTime(10_000);
+      });
+      expect(onRetry).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        jest.advanceTimersByTime(10_000);
+      });
+      expect(onRetry).toHaveBeenCalledTimes(2);
+      expect(v.text()).toContain("asked 2 times");
+      await v.click("Ask now");
+      expect(onRetry).toHaveBeenCalledTimes(3);
+      await v.unmount();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("turns a wait into a plain failure card once it has gone on too long", async () => {
+    jest.useFakeTimers();
+    try {
+      const v = await render(
+        <CloudBrowserStartFailed
+          error={{
+            message: "At capacity.",
+            retryable: true,
+            requestId: null,
+            code: "admission_capacity_exceeded",
+          }}
+          retrying={false}
+          onRetry={jest.fn()}
+        />,
+      );
+      expect(v.text()).toContain("Waiting for a free browser");
+      await act(async () => {
+        jest.advanceTimersByTime(10 * 60_000 + 10_000);
+      });
+      expect(v.text()).toContain("Your cloud browser could not start");
+      expect(v.button("Try again")).toBeDefined();
+      await v.unmount();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it("never offers a button that cannot work", async () => {
     const v = await render(
       <CloudBrowserStartFailed

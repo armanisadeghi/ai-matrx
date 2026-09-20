@@ -17,17 +17,23 @@
  *               to quote when it cannot.
  */
 
-import React, { useEffect, useState } from "react";
-import { AlertTriangle, Globe, Loader2, RotateCw } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { AlertTriangle, Globe, Hourglass, Loader2, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { CloudBrowserLoadError } from "../types";
+import { isWaitingForCapacity, type CloudBrowserLoadError } from "../types";
+
+/** How often the panel asks again while every browser slot is taken. */
+export const CAPACITY_RETRY_MS = 10_000;
+/** A burst refusal clears in seconds; ask again sooner. */
+export const STORM_RETRY_MS = 4_000;
+/** After this the wait stops being a wait and becomes a failure with a button. */
+export const CAPACITY_WAIT_LIMIT_MS = 10 * 60_000;
 
 function useElapsedSeconds(running: boolean): number {
   const [seconds, setSeconds] = useState(0);
   useEffect(() => {
     if (!running) return;
     const startedAt = Date.now();
-    setSeconds(0);
     const timer = window.setInterval(() => {
       setSeconds(Math.floor((Date.now() - startedAt) / 1000));
     }, 1000);
@@ -67,6 +73,87 @@ export function CloudBrowserStarting() {
   );
 }
 
+/**
+ * Every browser slot is taken (or too many are starting this second). Not a
+ * failure: the panel keeps the person's place, says so, and asks again on its
+ * own until a slot frees. Before this the person got the same red card as a
+ * real failure and a "Try again" button they had to keep pressing.
+ */
+export function CloudBrowserWaitingForCapacity({
+  error,
+  retrying,
+  onRetry,
+  onGiveUp,
+}: {
+  error: CloudBrowserLoadError;
+  retrying: boolean;
+  onRetry: () => void;
+  onGiveUp: () => void;
+}) {
+  const seconds = useElapsedSeconds(true);
+  const [attempts, setAttempts] = useState(0);
+  const retryingRef = useRef(retrying);
+  useEffect(() => {
+    retryingRef.current = retrying;
+  }, [retrying]);
+  const interval =
+    error.code === "admission_storm_rate_exceeded" ? STORM_RETRY_MS : CAPACITY_RETRY_MS;
+
+  useEffect(() => {
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+      if (Date.now() - startedAt >= CAPACITY_WAIT_LIMIT_MS) {
+        window.clearInterval(timer);
+        onGiveUp();
+        return;
+      }
+      if (retryingRef.current) return;
+      setAttempts((n) => n + 1);
+      onRetry();
+    }, interval);
+    return () => window.clearInterval(timer);
+    // The wait is one continuous episode per refusal; changing callbacks must
+    // not restart its clock.
+  }, [interval]);
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center"
+    >
+      <div className="relative">
+        <Hourglass className="h-8 w-8 text-muted-foreground" aria-hidden />
+        <Loader2
+          className="absolute -right-2 -bottom-2 h-4 w-4 animate-spin text-primary"
+          aria-hidden
+        />
+      </div>
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-foreground">
+          Waiting for a free browser
+        </p>
+        <p className="max-w-sm text-xs text-muted-foreground">{error.message}</p>
+        <p className="max-w-sm text-xs text-muted-foreground">
+          You keep your place. This panel asks again every {Math.round(interval / 1000)} seconds
+          and starts your browser the moment one frees up.
+        </p>
+      </div>
+      <p className="text-xs tabular-nums text-muted-foreground">
+        {seconds}s waited{attempts ? ` · asked ${attempts} ${attempts === 1 ? "time" : "times"}` : ""}
+      </p>
+      <Button size="sm" variant="outline" onClick={onRetry} disabled={retrying}>
+        {retrying ? (
+          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
+        ) : (
+          <RotateCw className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+        )}
+        {retrying ? "Asking now" : "Ask now"}
+      </Button>
+    </div>
+  );
+}
+
 export function CloudBrowserStartFailed({
   error,
   retrying,
@@ -76,6 +163,19 @@ export function CloudBrowserStartFailed({
   retrying: boolean;
   onRetry: () => void;
 }) {
+  // A capacity refusal is a wait the panel carries out itself; it only becomes
+  // this failure card once the wait has gone on too long.
+  const [gaveUpOn, setGaveUpOn] = useState<CloudBrowserLoadError | null>(null);
+  if (gaveUpOn !== error && isWaitingForCapacity(error)) {
+    return (
+      <CloudBrowserWaitingForCapacity
+        error={error}
+        retrying={retrying}
+        onRetry={onRetry}
+        onGiveUp={() => setGaveUpOn(error)}
+      />
+    );
+  }
   return (
     <div
       role="alert"
