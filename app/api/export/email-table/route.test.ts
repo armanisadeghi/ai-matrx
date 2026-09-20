@@ -1,10 +1,11 @@
 /** @jest-environment node */
+import { withClaims as mockWithClaims } from "@/test-utils/supabase-auth";
 
 const getUser = jest.fn();
 const emailTableExport = jest.fn();
 
 jest.mock("@/utils/supabase/server", () => ({
-  createClient: async () => ({ auth: { getUser: () => getUser() } }),
+  createClient: async () => ({ auth: mockWithClaims({ getUser: () => getUser() }) }),
 }));
 
 jest.mock("@/lib/email/exportService", () => ({
@@ -29,7 +30,9 @@ function request(body: Record<string, unknown>) {
 beforeEach(() => {
   jest.clearAllMocks();
   getUser.mockResolvedValue({
-    data: { user: { email: "owner@matrx.test" } },
+    // `id` is the JWT's `sub`: a real access token always carries it, and
+    // without it the claims the route verifies resolve to no user at all.
+    data: { user: { id: "owner-1", email: "owner@matrx.test" } },
   });
   emailTableExport.mockResolvedValue({
     success: true,

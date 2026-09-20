@@ -1,4 +1,5 @@
 /** @jest-environment node */
+import { withClaims as mockWithClaims } from "@/test-utils/supabase-auth";
 import { NextRequest } from "next/server";
 import { GET } from "./route";
 import { createClient } from "@/utils/supabase/server";
@@ -34,10 +35,10 @@ describe("GitHub OAuth callback lifecycle", () => {
     jest.clearAllMocks();
     cookie.get.mockReturnValue({ value: JSON.stringify(session) });
     createClientMock.mockResolvedValue({
-      auth: {
+      auth: mockWithClaims({
         getUser: async () => ({ data: { user: { id: "user" } } }),
         getSession: async () => ({ data: { session: { access_token: "token" } } }),
-      },
+      }),
     } as unknown as Awaited<ReturnType<typeof createClient>>);
     jest.spyOn(global, "fetch");
   });

@@ -11,6 +11,7 @@ jest.mock("@/utils/supabase/server", () => ({
   createClient: mockCreateClient,
 }));
 
+import { withClaims as mockWithClaims } from "@/test-utils/supabase-auth";
 import { mintAccessTokenWithRetry, POST } from "./route";
 
 test("retries a transient unavailable-upstream response before returning a minted token", async () => {
@@ -117,7 +118,7 @@ test("the route converts an exhausted upstream deadline into the established rec
     orchestrator: { url: "https://orchestrator.example.test", tier: "hosted", apiKey: "test" },
   });
   mockCreateClient.mockResolvedValue({
-    auth: { getUser: async () => ({ data: { user: { id: "user-test", email: "test@example.test" } }, error: null }) },
+    auth: mockWithClaims({ getUser: async () => ({ data: { user: { id: "user-test", email: "test@example.test" } }, error: null }) }),
   });
   const fetchSpy = jest.spyOn(global, "fetch").mockImplementation(
     (_url, init) =>

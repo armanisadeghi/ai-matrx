@@ -1,4 +1,5 @@
 /** @jest-environment node */
+import { withClaims as mockWithClaims } from "@/test-utils/supabase-auth";
 
 /**
  * Resending an organization invitation — the honesty contract (DD-091, law 4).
@@ -35,7 +36,7 @@ jest.mock("@/lib/email/client", () => ({
 
 jest.mock("@/utils/supabase/server", () => ({
   createClient: async () => ({
-    auth: { getUser: () => getUser() },
+    auth: mockWithClaims({ getUser: () => getUser() }),
     rpc: (...args: unknown[]) => rpc(...args),
     schema: () => ({
       from: () => ({

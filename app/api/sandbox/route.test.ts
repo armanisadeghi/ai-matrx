@@ -1,5 +1,6 @@
 /** @jest-environment node */
 
+import { withClaims as mockWithClaims } from "@/test-utils/supabase-auth";
 import { NextRequest } from "next/server";
 import { POST } from "./route";
 
@@ -19,7 +20,7 @@ const request = () => new NextRequest("http://localhost/api/sandbox", { method: 
 const countQuery = (result: unknown) => ({ select: () => ({ eq: () => ({ in: () => ({ is: async () => result }) }) }) });
 
 function clientForCount(result: unknown) {
-  return { auth: { getUser: jest.fn().mockResolvedValue({ data: { user }, error: null }) }, from: jest.fn(() => countQuery(result)) };
+  return { auth: mockWithClaims({ getUser: jest.fn().mockResolvedValue({ data: { user }, error: null }) }), from: jest.fn(() => countQuery(result)) };
 }
 
 afterEach(() => { jest.restoreAllMocks(); mockCreateClient.mockReset(); });

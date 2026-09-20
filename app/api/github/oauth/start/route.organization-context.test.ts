@@ -11,6 +11,7 @@
  */
 
 import { NextRequest } from "next/server";
+import { withClaims } from "@/test-utils/supabase-auth";
 import { createClient } from "@/utils/supabase/server";
 import { GET } from "./route";
 
@@ -41,10 +42,10 @@ describe("GitHub OAuth start — organization admission (sender-side, fail-close
     jest.clearAllMocks();
     process.env.GITHUB_CLIENT_ID = "test-client-id";
     createClientMock.mockResolvedValue({
-      auth: {
+      auth: withClaims({
         getUser: async () => ({ data: { user: { id: "user-1" } } }),
         getSession: async () => ({ data: { session: { access_token: "test-token" } } }),
-      },
+      }),
     } as unknown as Awaited<ReturnType<typeof createClient>>);
     jest.spyOn(global, "fetch").mockResolvedValue(
       new Response(
