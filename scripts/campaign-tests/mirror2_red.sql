@@ -15,7 +15,7 @@
 begin;
 set local statement_timeout = '1800s';
 set local lock_timeout = '120s';
-set local client_min_messages = warning;
+set local client_min_messages = notice;
 
 do $t$
 declare
