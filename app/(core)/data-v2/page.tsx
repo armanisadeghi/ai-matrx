@@ -84,7 +84,7 @@ export default function UnifiedDataPage() {
               // AGT-N-9 / PRODUCTS row 11. The package builds the record SCOPE and
               // hands it here; this returns the platform's ONE chat column bound to
               // that record. Never a second chat (the canvas ruling).
-              chat: (ctx) => <RecordScopedChat ctx={ctx} />,
+              chat: (ctx) => <RecordScopedChat ctx={ctx} organizationId={organizationId} />,
             }}
           >
             {/* WHAT IS WAITING ON THIS PERSON, above the tables — one inbox for

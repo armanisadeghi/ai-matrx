@@ -226,9 +226,10 @@ Personal and organization credentials render through the same
 - A list row carries compact identity only: icon, title, and one deduplicated
   supporting line. It never adds a third URL/type line or renders credential
   fields. Full metadata and encrypted fields stay in the detail pane.
-- Every scope loads `credential_items` by `created_at DESC` with `id DESC` as
-  the stable tie-breaker, so a newly created credential appears first after
-  the mutation refresh.
+- Every scope fetches `credential_items` by `created_at DESC`; the shared Vault
+  view applies its selected metadata-only order after loading. Newest added is
+  the default, and every view-order tie breaks by ID ascending so direct and
+  fallback reads present the same result.
 - New credential starts with four plain-purpose choices: Website login, API
   key, Environment value, Secure file, and Custom credential. The full catalog remains
   searchable behind **Browse all**.
@@ -366,6 +367,9 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- **2026-09-20** — Added metadata-only Vault search and deterministic local
+  sorting (newest, recently updated, name A–Z/Z–A) without reading values.
 
 - 2026-09-19 — **THE FOURTH ORGANIZATION STATE (R37) in `useAuthenticator`.** The hook answered a FAILED organization read with "No organization is selected … choose one from the organization picker" — a claim about memberships nobody read, because `setOrgBootstrapFailure` sets `orgBootstrapResolved` TRUE. It now reads `useOrganizationRequired().organizationState`: `required` keeps the refusal, `unavailable` says we could not check, `resolving` keeps loading, and `organizationRequired` is only ever the first. Test: `hooks/use-authenticator.test.tsx` (the failed-read case is red on the prior bytes). Guard: `pnpm check:org-three-states` rule 5.
 - `2026-09-19` — Replaced local password randomness with the published shared generator, canonical host limits and staged password/passphrase controls for management forms.

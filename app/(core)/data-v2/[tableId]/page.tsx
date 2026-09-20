@@ -98,7 +98,7 @@ export default function UnifiedDataTableRoute({
               // AGT-N-9 / PRODUCTS row 11. The package builds the record SCOPE and
               // hands it here; this returns the platform's ONE chat column bound to
               // that record. Never a second chat (the canvas ruling).
-              chat: (ctx) => <RecordScopedChat ctx={ctx} />,
+              chat: (ctx) => <RecordScopedChat ctx={ctx} organizationId={organizationId} />,
             }}
           >
             {/* A table this organization cannot see says so and offers the way
