@@ -15,6 +15,7 @@
  * work. Run it against the pre-2026-09-11 route and the first two cases fail.
  */
 
+import { withClaims as mockWithClaims } from "@/test-utils/supabase-auth";
 import { mkdtempSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -36,11 +37,11 @@ const NONCE_FILE = nonceFile("localhost");
 const signInWithPassword = jest.fn(async () => ({ error: null }));
 jest.mock("@/utils/supabase/server", () => ({
   createClient: jest.fn(async () => ({
-    auth: {
+    auth: mockWithClaims({
       getUser: async () => ({ data: { user: null } }),
       signOut: async () => ({}),
       signInWithPassword,
-    },
+    }),
   })),
 }));
 

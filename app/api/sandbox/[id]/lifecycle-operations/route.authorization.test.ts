@@ -1,4 +1,5 @@
 /** @jest-environment node */
+import { withClaims as mockWithClaims } from "@/test-utils/supabase-auth";
 
 const mockOwnerSingle = jest.fn();
 const mockAdminSingle = jest.fn();
@@ -10,7 +11,7 @@ const adminBuilder = { select: jest.fn(), eq: adminEq, single: mockAdminSingle }
 ownerBuilder.select.mockReturnValue(ownerBuilder); ownerEq.mockReturnValue(ownerBuilder);
 adminBuilder.select.mockReturnValue(adminBuilder); adminEq.mockReturnValue(adminBuilder);
 
-jest.mock("@/utils/supabase/server", () => ({ createClient: jest.fn(async () => ({ auth: { getUser: async () => ({ data: { user: { id: "actor-1" } }, error: null }) }, from: () => ownerBuilder })) }));
+jest.mock("@/utils/supabase/server", () => ({ createClient: jest.fn(async () => ({ auth: mockWithClaims({ getUser: async () => ({ data: { user: { id: "actor-1" } }, error: null }) }), from: () => ownerBuilder })) }));
 jest.mock("@/utils/supabase/adminClient", () => ({ createAdminClient: jest.fn(() => ({ from: () => adminBuilder })) }));
 jest.mock("@/utils/supabase/userSessionData", () => ({ checkIsSuperAdmin: (...args: unknown[]) => mockIsSuperAdmin(...args) }));
 jest.mock("@/lib/sandbox/orchestrator-routing", () => ({

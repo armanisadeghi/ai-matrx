@@ -1,5 +1,6 @@
 /** @jest-environment node */
 
+import { withClaims as mockWithClaims } from "@/test-utils/supabase-auth";
 import { NextRequest } from "next/server";
 import { GET, fetchTierInfo } from "./route";
 
@@ -32,12 +33,12 @@ afterEach(() => {
 
 function authenticatedSession(userId = "admin-user") {
   mockCreateClient.mockResolvedValue({
-    auth: {
+    auth: mockWithClaims({
       getUser: jest.fn().mockResolvedValue({
         data: { user: { id: userId } },
         error: null,
       }),
-    },
+    }),
   });
 }
 

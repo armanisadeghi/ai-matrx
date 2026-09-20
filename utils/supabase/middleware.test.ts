@@ -1,5 +1,6 @@
 /** @jest-environment node */
 
+import { withClaims } from "@/test-utils/supabase-auth";
 import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 import { NextRequest } from "next/server";
 import { AUTH_COOKIE_NAME, LEGACY_AUTH_COOKIE_NAME } from "./authCookie";
@@ -37,12 +38,12 @@ describe("Supabase proxy session continuity", () => {
     let cookiesSeenByEast: Array<{ name: string; value: string }> = [];
     mockedCreateServerClient.mockImplementation(
       (_url: string, _key: string, options: MockServerOptions) => ({
-        auth: {
+        auth: withClaims({
           getUser: async () => {
             cookiesSeenByEast = options.cookies.getAll();
             return { data: { user: { id: "east-user" } } };
           },
-        },
+        }),
       }),
     );
 
@@ -64,7 +65,7 @@ describe("Supabase proxy session continuity", () => {
 
   it("never persists a West-only session that East rejects", async () => {
     mockedCreateServerClient.mockImplementation(() => ({
-      auth: { getUser: async () => ({ data: { user: null } }) },
+      auth: withClaims({ getUser: async () => ({ data: { user: null } }) }),
     }));
 
     const response = await updateSession(
@@ -84,7 +85,7 @@ describe("Supabase proxy session continuity", () => {
   it("carries refreshed session cookies and no-cache headers through redirects", async () => {
     mockedCreateServerClient.mockImplementation(
       (_url: string, _key: string, options: MockServerOptions) => ({
-        auth: {
+        auth: withClaims({
           getUser: async () => {
             options.cookies.setAll(
               [
@@ -98,7 +99,7 @@ describe("Supabase proxy session continuity", () => {
             );
             return { data: { user: { id: "east-user" } } };
           },
-        },
+        }),
       }),
     );
 
@@ -118,7 +119,7 @@ describe("Supabase proxy session continuity", () => {
 
   it("leaves a state-bound Google code on the registered root callback", async () => {
     mockedCreateServerClient.mockImplementation(() => ({
-      auth: { getUser: async () => ({ data: { user: { id: "east-user" } } }) },
+      auth: withClaims({ getUser: async () => ({ data: { user: { id: "east-user" } } }) }),
     }));
 
     const response = await updateSession(
@@ -166,7 +167,7 @@ describe("an ambiguous auth cookie jar says so on the login bounce", () => {
   beforeEach(() => {
     mockedCreateServerClient.mockImplementation(
       (_url: string, _key: string, _options: MockServerOptions) => ({
-        auth: { getUser: async () => ({ data: { user: null } }) },
+        auth: withClaims({ getUser: async () => ({ data: { user: null } }) }),
       }),
     );
   });

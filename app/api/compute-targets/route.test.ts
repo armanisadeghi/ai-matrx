@@ -1,4 +1,5 @@
 /** @jest-environment node */
+import { withClaims as mockWithClaims } from "@/test-utils/supabase-auth";
 
 /**
  * SUT: GET /api/compute-targets. It owns the sandbox projection that feeds
@@ -62,9 +63,9 @@ function tierQuery() {
 }
 
 const supabase = {
-  auth: {
+  auth: mockWithClaims({
     getUser: async () => ({ data: { user: { id: "owner" } }, error: null }),
-  },
+  }),
   from: (table: string) => {
     if (table === "sandbox_instances") return sandboxQuery();
     if (table === "app_instances") return appInstancesQuery();

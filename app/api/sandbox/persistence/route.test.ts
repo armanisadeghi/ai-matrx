@@ -1,5 +1,6 @@
 /** @jest-environment node */
 
+import { withClaims as mockWithClaims } from "@/test-utils/supabase-auth";
 import { NextRequest } from "next/server";
 import { createServer } from "node:http";
 import { DELETE, GET } from "./route";
@@ -26,12 +27,12 @@ jest.mock("@/utils/supabase/server", () => ({
 
 function authenticatedSession(userId = "admin-user") {
   mockCreateClient.mockResolvedValue({
-    auth: {
+    auth: mockWithClaims({
       getUser: jest.fn().mockResolvedValue({
         data: { user: { id: userId } },
         error: null,
       }),
-    },
+    }),
   });
 }
 

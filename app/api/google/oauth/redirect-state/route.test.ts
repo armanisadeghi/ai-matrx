@@ -1,12 +1,13 @@
 /** @jest-environment node */
 
+import { withClaims as mockWithClaims } from "@/test-utils/supabase-auth";
 import { NextRequest } from "next/server";
 import { POST, PUT } from "./route";
 
 const mockGetUser = jest.fn();
 
 jest.mock("@/utils/supabase/server", () => ({
-  createClient: async () => ({ auth: { getUser: mockGetUser } }),
+  createClient: async () => ({ auth: mockWithClaims({ getUser: mockGetUser }) }),
 }));
 
 function request(
