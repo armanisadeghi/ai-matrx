@@ -28,6 +28,20 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
 
   routes: [
     {
+      url: "/education/study-guides",
+      label: "Study Guides",
+      description: "Notes-backed study reader with outline navigation, personal annotations, and associated flashcards.",
+      filePath: "app/(core)/education/study-guides/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/education/study-guides/[id]",
+      label: "Study guide reader",
+      description: "Read an existing note with independently resizable outline and study sidebars.",
+      filePath: "app/(core)/education/study-guides/[id]/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/education",
       label: "Marketing home",
       description:

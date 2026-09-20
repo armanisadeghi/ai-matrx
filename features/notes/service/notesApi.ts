@@ -92,8 +92,11 @@ export async function listItems(): Promise<NoteListItem[]> {
  * const note = await NotesAPI.getById(noteId);
  * ```
  */
-export async function getById(noteId: string): Promise<Note | null> {
-  return fetchNoteById(noteId);
+export async function getById(
+  noteId: string,
+  options: { failureMode?: "empty" | "throw" } = {},
+): Promise<Note | null> {
+  return fetchNoteById(noteId, options);
 }
 
 /**
