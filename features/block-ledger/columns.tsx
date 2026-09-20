@@ -19,6 +19,7 @@ import {
   timeCell,
   type EntityColumnSpec,
 } from "@/lib/entity-list/columns";
+import { personFacingSentence } from "@/lib/progress/failureSentence";
 import { cn } from "@/lib/utils";
 import {
   ENGINE_LABELS,
@@ -46,6 +47,42 @@ function shortInput(row: AcquisitionBlock): string {
   const label = row.input_label?.trim();
   if (label) return label;
   return row.input_ref.replace(/^https?:\/\//, "");
+}
+
+/** The finding, as a person reads it.
+ *
+ * 🚨 The sentence a row carries is never rendered raw. cold-walk-14 (2026-09-20)
+ * read a raw `INSERT INTO docproc.processed_documents … VALUES ($1, $2, … Args:
+ * (…)` on `/acquisition`, bound argument values included. The write seam now
+ * refuses machine text (aidream `bd369c21c7`), but this table shows rows written
+ * by every version of the server there has ever been, so the render path holds
+ * the rule too: the sentence is plain English, and anything machine-shaped drops
+ * to the muted second line — visible to whoever is debugging, never the finding.
+ *
+ * `break-words` + `whitespace-normal` because the phone card lays this out inline
+ * beside its label: without them the one sentence that IS the finding runs off the
+ * edge of the card instead of wrapping.
+ */
+function sentenceCell(raw: string) {
+  const spoken = personFacingSentence(raw);
+  return (
+    <span className="flex min-w-0 flex-col">
+      <span
+        className="line-clamp-3 whitespace-normal break-words text-xs"
+        title={spoken.text}
+      >
+        {spoken.text}
+      </span>
+      {spoken.detail ? (
+        <span
+          className="truncate text-[11px] text-muted-foreground"
+          title={spoken.detail}
+        >
+          {spoken.detail}
+        </span>
+      ) : null}
+    </span>
+  );
 }
 
 export const BLOCK_COLUMNS: EntityColumnSpec<AcquisitionBlock>[] = [
@@ -86,17 +123,7 @@ export const BLOCK_COLUMNS: EntityColumnSpec<AcquisitionBlock>[] = [
       header: "What happened",
       sortable: false,
       width: 300,
-      cell: (row) => (
-        // `break-words` + `whitespace-normal` because the phone card lays this
-        // out inline beside its label: without them the one sentence that IS the
-        // finding runs off the edge of the card instead of wrapping.
-        <span
-          className="line-clamp-3 whitespace-normal break-words text-xs"
-          title={row.error_sentence}
-        >
-          {row.error_sentence}
-        </span>
-      ),
+      cell: (row) => sentenceCell(row.error_sentence),
     },
   },
   {

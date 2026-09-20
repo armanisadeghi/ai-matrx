@@ -48,6 +48,8 @@ import { ADMIN_REPORTING_SURFACE_NAME } from "@/features/surfaces/manifests/admi
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { getProducerYield, runYieldCheck } from "./api";
 import {
@@ -198,6 +200,100 @@ export function ProducerYieldConsole() {
   const idleCount =
     (data?.rows ?? []).filter((r) => r.measurement_state === "idle").length;
 
+  const columns = useMemo((): MatrxColumnDef<ProducerYieldRow>[] => [
+    {
+      id: "producer",
+      header: "Producer",
+      accessorFn: (row) => `${row.display_name} ${row.producer_key}`,
+      width: 260,
+      cell: (row) => (
+        <div className="min-w-0">
+          <div className="truncate font-medium">{row.display_name}</div>
+          <code className="block truncate text-[11px] text-muted-foreground">
+            {row.producer_key}
+          </code>
+        </div>
+      ),
+    },
+    {
+      id: "measurement_state",
+      accessorKey: "measurement_state",
+      header: "State",
+      filter: "select",
+      width: 130,
+      cell: (row) => <StateBadge state={row.measurement_state} />,
+    },
+    {
+      id: "produced",
+      accessorKey: "produced",
+      header: "Produced",
+      filter: "number",
+      width: 105,
+      cell: (row) => <span className="tabular-nums">{formatCount(row.produced)}</span>,
+    },
+    {
+      id: "accepted",
+      accessorKey: "accepted",
+      header: "Accepted",
+      filter: "number",
+      width: 105,
+      cell: (row) => <span className="tabular-nums">{formatCount(row.accepted)}</span>,
+    },
+    {
+      id: "undecided",
+      accessorKey: "undecided",
+      header: "Undecided",
+      filter: "number",
+      width: 105,
+      cell: (row) => <span className="tabular-nums text-muted-foreground">{formatCount(row.undecided)}</span>,
+    },
+    {
+      id: "yield_rate",
+      accessorKey: "yield_rate",
+      header: "Yield",
+      filter: "number",
+      width: 100,
+      cell: (row) => <YieldCell row={row} />,
+    },
+    {
+      id: "cost_usd",
+      accessorKey: "cost_usd",
+      header: "Spend",
+      filter: "number",
+      width: 120,
+      cell: (row) => <span className="tabular-nums">{formatUsd(row.cost_usd)}</span>,
+    },
+    {
+      id: "cost_per_accepted_usd",
+      accessorKey: "cost_per_accepted_usd",
+      header: "$/accepted",
+      filter: "number",
+      width: 125,
+      cell: (row) => <span className="tabular-nums">{formatUsd(row.cost_per_accepted_usd, { digits: 4 })}</span>,
+    },
+    {
+      id: "cost_per_produced_usd",
+      accessorKey: "cost_per_produced_usd",
+      header: "$/produced",
+      filter: "number",
+      width: 125,
+      cell: (row) => <span className="tabular-nums text-muted-foreground">{formatUsd(row.cost_per_produced_usd, { digits: 4 })}</span>,
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      accessorFn: (row) => row.door_href ?? "",
+      sortable: false,
+      filter: false,
+      width: 90,
+      cell: (row) => row.door_href ? (
+        <AppLink href={row.door_href} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+          Open <ArrowUpRight className="h-3 w-3" />
+        </AppLink>
+      ) : <span className="text-muted-foreground">—</span>,
+    },
+  ], []);
+
   return (
     <div className="space-y-6 p-6">
       <header className="space-y-2">
@@ -215,10 +311,6 @@ export function ProducerYieldConsole() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => void register.refetch()} disabled={refreshing}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
             <Button size="sm" onClick={() => void onCheck()} disabled={checking}>
               <Play className="mr-2 h-4 w-4" />
               {checking ? "Checking…" : "Run floor check"}
@@ -283,102 +375,34 @@ export function ProducerYieldConsole() {
         </p>
       )}
 
-      <section className="overflow-x-auto rounded-lg border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-            <tr>
-              <th className="px-3 py-2 text-left">Producer</th>
-              <th className="px-3 py-2 text-left">State</th>
-              <th className="px-3 py-2 text-right">Produced</th>
-              <th className="px-3 py-2 text-right">Accepted</th>
-              <th className="px-3 py-2 text-right">Undecided</th>
-              <th className="px-3 py-2 text-right">Yield</th>
-              <th className="px-3 py-2 text-right">Spend</th>
-              <th className="px-3 py-2 text-right">$/accepted</th>
-              <th className="px-3 py-2 text-right">$/produced</th>
-              <th className="px-3 py-2" />
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr>
-                <td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">
-                  Loading the register…
-                </td>
-              </tr>
-            )}
-            {!loading &&
-              rows.map((r) => (
-                <tr
-                  key={r.producer_key}
-                  className={`border-t ${
-                    focused === r.producer_key ? "bg-amber-50 dark:bg-amber-950/40" : ""
-                  }`}
-                >
-                  <td className="px-3 py-2">
-                    <div className="font-medium">{r.display_name}</div>
-                    <code className="text-[11px] text-muted-foreground">
-                      {r.producer_key}
-                    </code>
-                  </td>
-                  <td className="px-3 py-2">
-                    <StateBadge state={r.measurement_state} />
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">
-                    {formatCount(r.produced)}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">
-                    {formatCount(r.accepted)}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
-                    {formatCount(r.undecided)}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">
-                    <YieldCell row={r} />
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">
-                    {formatUsd(r.cost_usd)}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">
-                    {formatUsd(r.cost_per_accepted_usd, { digits: 4 })}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
-                    {formatUsd(r.cost_per_produced_usd, { digits: 4 })}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    {/* THE DOOR LAW: the producer is a thing; let the user reach it. */}
-                    {r.door_href && (
-                      <AppLink
-                        href={r.door_href}
-                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                      >
-                        Open <ArrowUpRight className="h-3 w-3" />
-                      </AppLink>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            {!loading && rows.length === 0 && (
-              <tr>
-                <td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">
-                  No producers on the register.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </section>
-
-      {idleCount > 0 && (
-        <button
-          type="button"
-          className="text-xs text-muted-foreground underline"
-          onClick={() => setShowIdle((v) => !v)}
-        >
-          {showIdle ? "Hide" : "Show"} {idleCount} idle producer
-          {idleCount === 1 ? "" : "s"} (nothing produced)
-        </button>
-      )}
+      <MatrxDataTable
+        urlState={{ id: "producer-yield" }}
+        data={rows}
+        columns={columns}
+        getRowId={(row) => row.producer_key}
+        isLoading={loading}
+        isFetching={refreshing}
+        pageSize={50}
+        emptyState={{ title: "No producers on the register" }}
+        rowClassName={(row) => focused === row.producer_key ? "bg-amber-50 dark:bg-amber-950/40" : undefined}
+        toolbar={{
+          search: true,
+          searchPlaceholder: "Search producers…",
+          actions: (
+            <>
+              {idleCount > 0 && (
+                <Button variant="outline" size="sm" onClick={() => setShowIdle((value) => !value)}>
+                  {showIdle ? "Hide" : "Show"} {idleCount} idle
+                </Button>
+              )}
+              <Button variant="outline" size="sm" aria-label="Refresh yield register" onClick={() => void register.refetch()} disabled={refreshing}>
+                <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              </Button>
+            </>
+          ),
+        }}
+        detail={{ enabled: false }}
+      />
     </div>
   );
 }

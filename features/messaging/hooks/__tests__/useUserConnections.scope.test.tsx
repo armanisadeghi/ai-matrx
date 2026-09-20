@@ -61,37 +61,41 @@ jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({ rpc: (...a: unknown[]) => rpc(...(a as [string, Record<string, string>])) }),
 }));
 
+// EVERY MOCK RETURNS A STABLE REFERENCE. A mock that builds a fresh array or object on each
+// render makes the hook's `organizations`/`conversations` dependency change every render, the
+// effect re-run, and the suite spin for ever — which is a defect in the mock, not in the hook.
+const ME = { id: "u-me" };
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: () => ({ id: "u-me" }),
+  useAppSelector: () => ME,
 }));
 
-jest.mock("@ai-matrx/messaging/react", () => ({
-  useConversations: () => ({
-    conversations: [
+const CONVERSATIONS = [
+  {
+    participants: [
+      { userId: "u-me", email: "me@test.test", displayName: "Me", avatarUrl: "" },
       {
-        participants: [
-          { userId: "u-me", email: "me@test.test", displayName: "Me", avatarUrl: "" },
-          {
-            userId: "u-personal",
-            email: "arman.personal@gmail.test",
-            displayName: "arman's personal address",
-            avatarUrl: "",
-          },
-        ],
+        userId: "u-personal",
+        email: "arman.personal@gmail.test",
+        displayName: "arman's personal address",
+        avatarUrl: "",
       },
     ],
-    isInitialLoading: false,
-  }),
+  },
+];
+const CONVERSATIONS_RESULT = { conversations: CONVERSATIONS, isInitialLoading: false };
+jest.mock("@ai-matrx/messaging/react", () => ({
+  useConversations: () => CONVERSATIONS_RESULT,
 }));
 
+const ORGANIZATIONS_RESULT = {
+  organizations: [
+    { id: MINE, name: "This Organization", role: "owner", isPersonal: false },
+    { id: THEIRS, name: "The Other Company", role: "member", isPersonal: false },
+  ],
+  loading: false,
+};
 jest.mock("@/features/organizations/hooks", () => ({
-  useUserOrganizations: () => ({
-    organizations: [
-      { id: MINE, name: "This Organization", role: "owner", isPersonal: false },
-      { id: THEIRS, name: "The Other Company", role: "member", isPersonal: false },
-    ],
-    loading: false,
-  }),
+  useUserOrganizations: () => ORGANIZATIONS_RESULT,
 }));
 
 jest.mock("@/features/organizations/service/invitationsService", () => ({

@@ -55,6 +55,7 @@ function handoff(id: string, url: string): CaptureHandoff {
     title: "",
     rung: "own_browser",
     status: "waiting",
+    handoff_kind: "web_page",
     reason: "login_wall",
     reason_note: "",
     what_to_do: "",
@@ -79,7 +80,8 @@ function handoff(id: string, url: string): CaptureHandoff {
     deleted_at: null,
     version: 1,
     metadata: {},
-  } as CaptureHandoff;
+    custom_fields: {},
+  };
 }
 
 const dispatch = (() => undefined) as never;

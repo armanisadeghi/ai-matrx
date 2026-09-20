@@ -1197,6 +1197,10 @@ async function executeStreamingRequest(
     },
   );
 
+  // Two shapes on purpose: the stream callbacks and `consumeStream` are typed
+  // `string | null` (a header that is absent is absent), while `ApiCallResult`
+  // carries optional fields. So the raw nullable value is what the callbacks
+  // get, and every RETURN converts it at the boundary with `?? undefined`.
   const requestId = response.headers.get("X-Request-ID");
   const conversationId = response.headers.get("X-Conversation-ID");
 
@@ -1215,7 +1219,11 @@ async function executeStreamingRequest(
       serverDetail,
     };
     config.onStreamError?.(error);
-    return { requestId, conversationId, error };
+    return {
+      requestId: requestId ?? undefined,
+      conversationId: conversationId ?? undefined,
+      error,
+    };
   }
 
   // A body can be consumed exactly once. When the caller supplied a
@@ -1227,8 +1235,8 @@ async function executeStreamingRequest(
     await config.consumeStream(response, ids);
     config.onStreamComplete?.(ids.requestId, ids.conversationId);
     return {
-      requestId: ids.requestId,
-      conversationId: ids.conversationId,
+      requestId: ids.requestId ?? undefined,
+      conversationId: ids.conversationId ?? undefined,
     };
   }
 
@@ -1256,8 +1264,8 @@ async function executeStreamingRequest(
   config.onStreamComplete?.(parsedRequestId, parsedConversationId);
 
   return {
-    requestId: parsedRequestId,
-    conversationId: parsedConversationId,
+    requestId: parsedRequestId ?? undefined,
+    conversationId: parsedConversationId ?? undefined,
   };
 }
 

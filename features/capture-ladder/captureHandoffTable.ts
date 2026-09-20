@@ -111,7 +111,11 @@ const captureHandoffSchema = z.object({
    * incident, one enum over), and COERCING it to `web_page` prints a confident
    * wrong noun, which is the very lie this column was added to end.
    */
-  handoff_kind: z.unknown().transform(asHandoffKind),
+  // `.optional()` is load-bearing: in zod 4 a bare `z.unknown().transform()`
+  // treats an ABSENT key as nonoptional-and-missing and rejects the whole row,
+  // which is the "REFUSING the row" defect this comment forbids — a client
+  // reading rows written before the column existed would drop every one.
+  handoff_kind: z.unknown().optional().transform(asHandoffKind),
   reason: z
     .string()
     .nullable()

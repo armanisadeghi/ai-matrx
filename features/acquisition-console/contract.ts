@@ -22,7 +22,10 @@ import {
   createReaders,
   mapListRows,
 } from "@/lib/contract/narrow";
-import { providerErrorSentence } from "@/lib/progress/failureSentence";
+import {
+  personFacingSentence,
+  providerErrorSentence,
+} from "@/lib/progress/failureSentence";
 import {
   connectionAction,
   labelFor,
@@ -206,12 +209,20 @@ export function parseBlockRow(entry: unknown, index: number): BlockedRow {
     : providerErrorSentence(
         r.optStr(row.error_class, `blocks[${index}].error_class`),
       );
+  // AND THE SENTENCE ITSELF IS NOT TRUSTED EITHER (cold-walk-14, 2026-09-20).
+  // `error_sentence` was printed verbatim, and on 2026-09-20 it was a raw
+  // `INSERT INTO docproc.processed_documents … VALUES ($1, $2, … Args: (…)`,
+  // bound argument values included. The server seam now refuses machine text
+  // (aidream `bd369c21c7`) and the six rows that carried it were repaired —
+  // but this screen renders rows written by every version of the server there
+  // has ever been, so the rule is enforced where it is rendered as well.
+  const spoken = errorSentence ? personFacingSentence(errorSentence) : null;
   return {
     id: `block:${id}`,
     origin: "block",
     what: label?.trim() || ref.replace(/^https?:\/\//, ""),
-    where: errorSentence ?? errorClass?.text ?? "It refused without saying why",
-    whereDetail: errorClass?.detail,
+    where: spoken?.text ?? errorClass?.text ?? "It refused without saying why",
+    whereDetail: spoken?.detail ?? errorClass?.detail,
     since:
       r.optStr(row.first_seen_at, `blocks[${index}].first_seen_at`) ??
       r.str(row.last_seen_at, `blocks[${index}].last_seen_at`),

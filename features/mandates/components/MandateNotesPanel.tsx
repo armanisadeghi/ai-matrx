@@ -31,24 +31,12 @@ import {
   type MandateNote,
   type MandateNoteKind,
 } from "../notes";
+import { useAgentNames } from "@/features/surfaces/hooks/useAgentNames";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import {
-  ConfigurationTable,
-  ConfigurationTableRow,
-  FieldHelp,
   PropertyRow,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { useAgentNames } from "@/features/surfaces/hooks/useAgentNames";
-import { ProTextarea } from "@/components/official/ProTextarea";
-
-const NOTE_COLUMNS = [
-  { key: "type", label: "Type" },
-  { key: "author", label: "Author" },
-  { key: "created", label: "Created" },
-  { key: "origin", label: "Origin" },
-  { key: "holder", label: "Observed holder" },
-];
 
 export interface MandateNotesPanelProps {
   /** The mandate the notes hang off. */
@@ -245,45 +233,50 @@ export function MandateNotesPanel({
                   <Trash2 className="h-3 w-3" />
                 </button>
               </div>
-              <div className="mt-2">
-                <ConfigurationTable label="Note details" columns={NOTE_COLUMNS}>
-                  <ConfigurationTableRow
-                    columns={NOTE_COLUMNS}
-                    cells={{
-                      type: MANDATE_NOTE_KIND_LABELS[note.noteKind],
-                      author: note.authorName || "Name unavailable",
-                      created: (
-                        <span className="inline-flex flex-wrap items-center gap-1">
-                          <time dateTime={note.createdAt}>
-                            {new Date(note.createdAt).toLocaleString()}
-                          </time>
-                          <FieldHelp label="Created">
-                            {formatDistanceToNow(new Date(note.createdAt), {
-                              addSuffix: true,
-                            })}
-                          </FieldHelp>
-                        </span>
-                      ),
-                      origin: note.surfaceName
-                        ? getSurfaceDisplayLabel(note.surfaceName)
-                        : "Mandate console",
-                      holder: note.observedAgentId ? (
-                        <EntityRef
-                          token="agent"
-                          id={note.observedAgentId}
-                          name={
-                            agentNames[note.observedAgentId] ||
-                            "Name unavailable"
-                          }
-                          showIcon={false}
-                          wrap
-                        />
-                      ) : (
-                        "Not recorded"
-                      ),
-                    }}
-                  />
-                </ConfigurationTable>
+              <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+                <span className="font-medium text-foreground/70">
+                  {MANDATE_NOTE_KIND_LABELS[note.noteKind]}
+                </span>
+                <span aria-hidden="true">·</span>
+                <span className="max-w-full truncate">
+                  {note.authorName || "Name unavailable"}
+                </span>
+                <span aria-hidden="true">·</span>
+                <time
+                  dateTime={note.createdAt}
+                  title={new Date(note.createdAt).toLocaleString()}
+                >
+                  {formatDistanceToNow(new Date(note.createdAt), {
+                    addSuffix: true,
+                  })}
+                </time>
+                <span aria-hidden="true">·</span>
+                <span
+                  className="max-w-full truncate"
+                  title={
+                    note.surfaceName
+                      ? getSurfaceDisplayLabel(note.surfaceName)
+                      : "Mandate console"
+                  }
+                >
+                  {note.surfaceName
+                    ? getSurfaceDisplayLabel(note.surfaceName)
+                    : "Mandate console"}
+                </span>
+                {note.observedAgentId ? (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span
+                      className="max-w-full truncate"
+                      title={
+                        agentNames[note.observedAgentId] ||
+                        "Name unavailable"
+                      }
+                    >
+                      {agentNames[note.observedAgentId] || "Name unavailable"}
+                    </span>
+                  </>
+                ) : null}
               </div>
             </li>
           ))}
