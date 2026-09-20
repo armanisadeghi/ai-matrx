@@ -391,20 +391,34 @@ export function readsTheLegacyPairOnly(rawSource: string): boolean {
  * closed on 2026-09-19 was id-detection that stopped at the first `.` or `(`,
  * so `!appContext.organization_id && orgBootstrapResolved` read clean while
  * spelling the exact defect. The connector class between `!` and the token
- * (`[\w$.()?]`) deliberately excludes `&&`/`||`/`?`/`:`/comparison operators —
- * it may cross a member-access chain or a wrapping call, never a logical or
- * ternary boundary, so `!isLoading && orgBootstrapResolved && organizationId`
- * (an unrelated negation nowhere near the id) is still untouched.
+ * (`[\w$.()?\[\]'"]`) deliberately excludes `&&`/`||`/`?`/`:`/comparison
+ * operators — it may cross a member-access chain, a wrapping call, a bracket
+ * subscript or an optional-chaining bracket, never a logical or ternary
+ * boundary, so `!isLoading && orgBootstrapResolved && organizationId` (an
+ * unrelated negation nowhere near the id) is still untouched.
+ *
+ * RULE 5 EXTENSION (V-27 NEW-7, 2026-09-20) — BRACKET ACCESS AND THE LENGTH
+ * SKIP. The connector class stopped at `.`/`(` and could not cross into a
+ * bracket subscript at all, so `!appContext["organization_id"]`,
+ * `!appContext['organization_id']` and `!appContext?.["organization_id"]`
+ * read clean while spelling the exact same defect as the dotted form — added
+ * `[`, `]`, `'`, `"` to the connector class. Separately, the per-expression
+ * scan used to skip any expression over 400 characters outright
+ * (`if (expression.length > 400) continue;`), so a plant padded past that
+ * length passed silently no matter what it spelled; the skip is gone — every
+ * expression is judged regardless of length. Neither the census nor the
+ * shape of rule 1 forgives this one; it post-dates the census.
  */
 const RESOLVED_NAMES = /\b(?:selectOrgBootstrapResolved\s*\(|orgBootstrapResolved|orgResolved|bootstrapResolved|isOrgBootstrapResolved\s*\()/;
 const FALSY_ORG_ID =
-  /![\w$.()?]*(?:[Oo]rganization|[Oo]rg)[\w$]*(?:Id|ID|id)\b|[\w$.()?]*(?:[Oo]rganization|[Oo]rg)[\w$]*(?:Id|ID|id)\s*(?:===?)\s*null/;
+  /![\w$.()?[\]'"]*(?:[Oo]rganization|[Oo]rg)[\w$]*(?:Id|ID|id)\b|[\w$.()?[\]'"]*(?:[Oo]rganization|[Oo]rg)[\w$]*(?:Id|ID|id)\s*(?:===?)\s*null/;
 
 export function pairsResolvedWithAFalsyOrgId(rawSource: string): boolean {
   const source = stripComments(rawSource);
   // One expression at a time: statement and block boundaries end the window.
+  // Every expression is judged — no length skip. A plant long enough to have
+  // once slipped past a length cutoff is judged exactly like a short one.
   for (const expression of source.split(/[;{}]/)) {
-    if (expression.length > 400) continue;
     if (!RESOLVED_NAMES.test(expression)) continue;
     if (FALSY_ORG_ID.test(expression)) return true;
   }
@@ -934,6 +948,76 @@ export function Planted() {
   check("AN. planted wrapped-selector flagged   ", wrappedSelectorFlagged, true);
   check("AO. planted destructured-local flagged ", destructuredLocalFlagged, true);
   check("AP. unrelated negation module cleared  ", unrelatedNegationFlagged, false);
+
+  // RULE 5 EXTENSION (V-27 NEW-7) — bracket access (either quote, with or
+  // without optional chaining) reaches the id exactly like a dotted chain,
+  // and a plant padded past 400 characters is no longer silently skipped.
+  const doubleQuoteBracketPair = `"use client";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrgBootstrapResolved } from "@/lib/redux/slices/appContextSlice";
+export function Planted({ appContext }) {
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  if (!appContext["organization_id"] && orgBootstrapResolved) return <Refusal />;
+  return <Body />;
+}
+`;
+  const singleQuoteBracketPair = doubleQuoteBracketPair.replace(
+    '!appContext["organization_id"]',
+    "!appContext['organization_id']",
+  );
+  const optionalChainingBracketPair = doubleQuoteBracketPair.replace(
+    '!appContext["organization_id"]',
+    '!appContext?.["organization_id"]',
+  );
+  const longPad = "x".repeat(450);
+  const longExpressionPair = `"use client";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId, selectOrgBootstrapResolved } from "@/lib/redux/slices/appContextSlice";
+export function Planted() {
+  const organizationId = useAppSelector(selectOrganizationId);
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  if (!organizationId && orgBootstrapResolved && "${longPad}") return <Refusal />;
+  return <Body />;
+}
+`;
+  check("AQ. double-quote bracket id is seen    ", pairsResolvedWithAFalsyOrgId(doubleQuoteBracketPair), true);
+  check("AR. single-quote bracket id is seen    ", pairsResolvedWithAFalsyOrgId(singleQuoteBracketPair), true);
+  check("AS. optional-chaining bracket is seen  ", pairsResolvedWithAFalsyOrgId(optionalChainingBracketPair), true);
+  check("AT. an expression over 400 chars is seen", pairsResolvedWithAFalsyOrgId(longExpressionPair), true);
+
+  let doubleQuoteBracketFlagged = false;
+  let singleQuoteBracketFlagged = false;
+  let optionalChainingBracketFlagged = false;
+  let longExpressionFlagged = false;
+  for (const [label, source] of [
+    ["doubleQuoteBracketFlagged", doubleQuoteBracketPair],
+    ["singleQuoteBracketFlagged", singleQuoteBracketPair],
+    ["optionalChainingBracketFlagged", optionalChainingBracketPair],
+    ["longExpressionFlagged", longExpressionPair],
+  ] as const) {
+    try {
+      writeFileSync(PLANTED, source, "utf8");
+      const flagged = scan({ useCensus: false }).some(
+        (v) =>
+          v.file.includes("__self_test_planted__") &&
+          v.why.includes("orgBootstrapResolved paired"),
+      );
+      if (label === "doubleQuoteBracketFlagged") doubleQuoteBracketFlagged = flagged;
+      if (label === "singleQuoteBracketFlagged") singleQuoteBracketFlagged = flagged;
+      if (label === "optionalChainingBracketFlagged") optionalChainingBracketFlagged = flagged;
+      if (label === "longExpressionFlagged") longExpressionFlagged = flagged;
+    } finally {
+      try {
+        unlinkSync(PLANTED);
+      } catch {
+        /* already gone */
+      }
+    }
+  }
+  check("AU. planted double-quote bracket flagged", doubleQuoteBracketFlagged, true);
+  check("AV. planted single-quote bracket flagged", singleQuoteBracketFlagged, true);
+  check("AW. planted optional-chain bracket flagged", optionalChainingBracketFlagged, true);
+  check("AX. planted 400+ char expression flagged", longExpressionFlagged, true);
 
   if (failed > 0) {
     console.error(`SELF-TEST FAILED: ${failed} expectation(s) did not hold.`);

@@ -299,6 +299,24 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-09-20` — **RULE 5's id-detection now sees BRACKET ACCESS too, and the
+  400-char length skip is gone (V-27 NEW-7).** The connector class between `!`
+  and the org-id token stopped short of bracket subscripts, so
+  `!appContext["organization_id"]`, `!appContext['organization_id']` and
+  `!appContext?.["organization_id"]` (either quote, with or without optional
+  chaining) all read clean while spelling the exact rule-5 defect that the
+  dotted form (`!appContext.organization_id`) already caught. Added `[`, `]`,
+  `'`, `"` to the connector's character class in
+  `scripts/check-org-three-states.ts`. Separately, `pairsResolvedWithAFalsyOrgId`
+  silently skipped any single expression over 400 characters
+  (`if (expression.length > 400) continue;`) — a plant padded past that length
+  passed no matter what it spelled, and no warning said so. The skip is
+  removed outright; every expression is judged regardless of length. Self-test
+  cases AQ–AX prove both: `check:org-three-states --self-test` is red against
+  the old regex/skip on these six planted shapes (three bracket spellings ×
+  bare + end-to-end scan, plus the 400+-char pair) and green after. Live sweep:
+  `pnpm check:organization-context` exit 0 against the real tree, zero new
+  violations. `pnpm check:parse` clean (17,143 files).
 - 2026-09-19 — **RULE 5: `orgBootstrapResolved` IS NOT A "REQUIRED" SIGNAL (R37).** `scripts/check-org-three-states.ts` now refuses any module that pairs `orgBootstrapResolved` (or a local alias of it) with a falsy organization id in one expression — the shape twenty-two modules carried, and the shape that turns one failed read into "choose an organization" because `setOrgBootstrapFailure` sets that flag TRUE. Rule 1 also no longer accepts `selectOrgBootstrapResolved` / `orgBootstrapResolved` as a reading of the states at all (a THREE-state signal in a four-state world; removing it added zero violations). Self-test cases Z–AF prove it fails on the defect and passes on the gate's reading. The twenty-two modules were converted to `useOrganizationRequired().organizationState` + `OrganizationContextNotice` in the same commit; `__tests__/no-org-is-not-loading.test.ts` now accepts the gate as the bootstrap authority.
 - `2026-09-19` — **RULE 5's id-detection now covers every spelling, not just the
   bare identifier (V-26 NEW-3).** The falsy-id half of rule 5 originally stopped
