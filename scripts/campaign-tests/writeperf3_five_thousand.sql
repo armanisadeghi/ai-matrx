@@ -1,0 +1,136 @@
+-- WRITE-PERF-3 — IMPORT'S FIVE-THOUSAND-ROW PROOF, RUN TWICE IN ONE TRANSACTION.
+--
+-- Lane IMPORT measured 5,000 rows through `custom.io_import_rows` at 54.6 ms/row on 2026-09-20
+-- 15:23Z, WRITE-PERF at 45.6 ms/row at 21:1xZ and WRITE-PERF-2 at 21.84 ms/row at 22:3xZ. Run
+-- on its own, the same file measured 12.93 ms/row at 23:24Z and 18.59 ms/row at 23:36Z with
+-- NOTHING CHANGED UNDERNEATH IT — this database is shared with eight other lanes landing
+-- migrations, and a number from one run at one time is not evidence of anything.
+--
+-- So this file runs IMPORT's proof TWICE, minutes apart, in ONE transaction that rolls back:
+-- once with this lane's bodies live, then — after the REAL BYTES of all four of this lane's
+-- inverses have executed inside the same transaction — once with the bodies the store had
+-- before WRITE-PERF-3. Both halves see the same contention, the same caches and the same
+-- connection. The difference between them is this lane and nothing else.
+--
+-- `custom.io_import_rows` still calls `custom.record_write` ONCE PER ROW — pointing it at
+-- `custom.record_write_many` is lane IMPORT's object and remains undone — so what this measures
+-- is the single-row door, which is what every bulk import in the platform uses today.
+--
+-- Run: binlocal/p.sh -f scripts/campaign-tests/writeperf3_five_thousand.sql
+\set ON_ERROR_STOP on
+begin;
+set local statement_timeout = 0;
+set local idle_in_transaction_session_timeout = 0;
+set local lock_timeout = '10min';
+
+create temp table wp3_5k (half text, what text, value text) on commit drop;
+grant all on wp3_5k to authenticated;
+
+create or replace function pg_temp.five_thousand(p_half text) returns void
+language plpgsql as $$
+declare
+  c_admin uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
+  v_org uuid; v_home uuid; v_tbl uuid; v_run uuid; v_rows jsonb; v_res jsonb;
+  b int; i int; t0 timestamptz; t1 timestamptz;
+  v_seen int := 0; v_landed int := 0; v_dupe int := 0; v_bad int := 0; n int;
+begin
+  insert into iam.organizations (name, slug, abbreviation, created_by)
+  values ('ZZZ WRITEPERF3 5K ' || p_half,
+          'zzz-wp3-5k-' || lower(left(p_half, 1)) || '-' || substr(md5(random()::text),1,8), 'ZWC', c_admin)
+  returning id into v_org;
+  insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
+  values (v_org, c_admin, 'owner', 'active', 'organization', v_org);
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value)
+  values ('custom','system_enabled','organization', v_org, v_org, 'true');
+
+  perform set_config('app.actor_system','campaign-test/writeperf3_five_thousand', true);
+  perform set_config('request.jwt.claims',
+                     jsonb_build_object('sub', c_admin, 'role', 'authenticated')::text, true);
+  perform set_config('role','authenticated', true);
+  if current_user <> 'authenticated' then
+    raise exception '0: half % did not take the seat — current_user is %', p_half, current_user;
+  end if;
+
+  v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','5K Home'));
+  v_tbl := custom.table_declare(v_org, jsonb_build_object(
+    'name','ZZ WP3 5K Deal','slug','zz_wp3_5k_' || substr(md5(random()::text),1,8),'type','entity',
+    'label_singular','Deal','label_plural','Deals','title_field','deal','display','page',
+    'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
+    'agent_writable',true,'retention_days',365,'on_delete','cascade',
+    'fields', jsonb_build_array(jsonb_build_object('name','deal')), 'parent_id', v_home::text));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Deal','key','deal','type','text'));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Amount','key','amount','type','currency','unit','USD'));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Closes','key','closes','type','datetime'));
+
+  -- THE HUNDRED THAT ARE ALREADY HERE.
+  for i in 1..100 loop
+    perform custom.record_write(v_org, v_tbl, jsonb_build_object('deal','Deal ' || i, 'amount', 1));
+  end loop;
+
+  v_run := (custom.io_import_begin(v_org, v_tbl,
+             p_format => 'csv',
+             p_source_name => 'writeperf3-5k.csv',
+             p_policy => jsonb_build_object('on_duplicate','skip'),
+             p_dedupe_key => 'deal') ->> 'import_id')::uuid;
+
+  t0 := clock_timestamp();
+  for b in 0..9 loop
+    -- FIFTY REFUSED IN ALL: every hundredth row carries a date nothing can read.
+    select jsonb_agg(jsonb_build_object(
+             'deal',   'Deal ' || g.i,
+             'amount', round((g.i * 3.21 + 10)::numeric, 2)::text,
+             'closes', case when g.i % 100 = 0 then 'the thirty-first of Smarch'
+                            else to_char(date '2026-01-01' + ((g.i % 360) || ' days')::interval, 'YYYY-MM-DD') end)
+             order by g.i)
+      into v_rows from generate_series(b * 500 + 1, b * 500 + 500) g(i);
+    v_res := custom.io_import_rows(v_org, v_run, v_rows);
+    v_seen   := v_seen   + (v_res ->> 'rows_seen')::int;
+    v_landed := v_landed + (v_res ->> 'rows_written')::int;
+    v_dupe   := v_dupe   + (v_res ->> 'rows_duplicate')::int;
+    v_bad    := v_bad    + (v_res ->> 'rows_refused')::int;
+  end loop;
+  t1 := clock_timestamp();
+
+  select count(*) into n from custom.read_records(v_org, v_tbl, true, 1000, 0);
+
+  insert into wp3_5k values
+    (p_half, 'total ms',  round(extract(epoch from (t1-t0))*1000)::text),
+    (p_half, 'ms per row', round((extract(epoch from (t1-t0))*1000/5000)::numeric, 2)::text),
+    (p_half, 'outcome',   v_seen || ' seen · ' || v_landed || ' landed · ' || v_dupe ||
+                          ' already here · ' || v_bad || ' refused'),
+    (p_half, 'read back, first page of the ceiling', n::text);
+end;
+$$;
+
+select pg_temp.five_thousand('A — this lane''s bodies');
+
+\echo ''
+\echo '=== executing the real bytes of all four inverses inside this transaction ==='
+reset role;
+\i migrations/inverse/writeperf3_a_small_answer_is_not_read_out_of_a_big_blob_down.sql
+\i migrations/inverse/writeperf3_an_edge_arriving_forgets_nothing_down.sql
+\i migrations/inverse/writeperf3_the_table_is_read_once_per_statement_down.sql
+\i migrations/inverse/writeperf3_the_write_path_asks_the_ladder_once_down.sql
+
+select pg_temp.five_thousand('B — the bodies before this lane');
+
+\echo ''
+do $t$
+declare a text; b text; o_a text; o_b text;
+begin
+  select value into a from wp3_5k where what = 'ms per row' and half like 'A%';
+  select value into b from wp3_5k where what = 'ms per row' and half like 'B%';
+  select value into o_a from wp3_5k where what = 'outcome' and half like 'A%';
+  select value into o_b from wp3_5k where what = 'outcome' and half like 'B%';
+  if o_a is distinct from o_b then
+    raise exception 'THE TWO HALVES DID NOT DO THE SAME WORK: A said "%", B said "%"', o_a, o_b;
+  end if;
+  raise notice 'FIVE THOUSAND ROWS through custom.io_import_rows, one custom.record_write per row:';
+  raise notice '    with this lane   % ms/row', a;
+  raise notice '    without it       % ms/row', b;
+  raise notice '    both halves      %', o_a;
+end;
+$t$;
+
+select half, what, value from wp3_5k order by what, half;
+rollback;
