@@ -10,6 +10,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
+import {
+  isOrganizationRequiredServerError,
+  organizationRequiredResponse,
+} from "@/lib/organizations/organizationRequiredResponse";
 import { sendVerification, checkVerification } from "@/lib/sms/verify";
 import { normalizePhoneNumber, isValidE164 } from "@/lib/sms/phoneUtils";
 import {
@@ -110,6 +114,27 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        // 🚨 THE ORGANIZATION IS SETTLED BEFORE THE CODE IS SPENT.
+        // Until 2026-09-19 this was resolved further down, AFTER Twilio had
+        // already checked the code, and it resolved by calling
+        // `ensureOrgIdServer(supabase, undefined)` — the server stamping the
+        // consent and preference rows with the person's personal workspace
+        // because the request named no organization. Both halves were wrong.
+        // The ruling (Arman, 2026-09-19) is that nothing below the boundary
+        // may PICK an organization; and a refusal that arrives after
+        // `checkVerification` has burned a single-use code is not honest —
+        // the person would have to request a new code to answer a question
+        // that could have been asked first. So the organization is admitted
+        // here, from `X-Organization-Id` (the header every Matrx client
+        // carries), and a request that names none is refused with the
+        // caller's memberships before anything is spent or written.
+        const actingOrganizationId =
+          request.headers.get("X-Organization-Id")?.trim() || undefined;
+        const organizationId = await ensureOrgIdServer(
+          supabase,
+          actingOrganizationId,
+        );
+
         const result = await checkVerification(phoneNumber, code);
 
         if (!result.success) {
@@ -122,10 +147,6 @@ export async function POST(request: NextRequest) {
         // Phone verified — persist the exact web-form consent contract before
         // enabling notification delivery.
         const adminSupabase = createAdminClient();
-        // org-fallback-deliberate: the SMS consent record is the person's own phone
-        //   and their own consent — it belongs to them, not to whichever organization
-        //   they happen to be working in
-        const organizationId = await ensureOrgIdServer(supabase, undefined);
         const forwardedFor = request.headers.get("x-forwarded-for");
         const ipAddress = forwardedFor?.split(",")[0]?.trim() || null;
 
@@ -241,6 +262,13 @@ export async function POST(request: NextRequest) {
         );
     }
   } catch (err) {
+    // The organization refusal is an ANSWER, not a failure: it carries the
+    // caller's own memberships so the client can hold the action, show the
+    // picker and retry. Collapsing it into the generic 500 below would turn
+    // the one question the person can answer into a dead end.
+    if (isOrganizationRequiredServerError(err)) {
+      return organizationRequiredResponse(err);
+    }
     console.error("Error in verify route:", err);
     return NextResponse.json(
       { success: false, msg: "Internal server error" },

@@ -20,6 +20,7 @@ import {
   type UserAccountData,
   type UserAccountPatch,
 } from "@/features/user-profile/types";
+import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
 
 type LoadState = "idle" | "loading" | "ready" | "error";
 
@@ -95,7 +96,7 @@ export function useUserProfile(): UseUserProfileReturn {
     setLoadState("loading");
     setLoadError(null);
     try {
-      const res = await fetch(ENDPOINT, { cache: "no-store" });
+      const res = await fetchWithOrganization(ENDPOINT, { cache: "no-store" });
       const json = (await res.json()) as
         | { success: true; data: UserAccountData }
         | { success: false; msg: string };
@@ -142,7 +143,7 @@ export function useUserProfile(): UseUserProfileReturn {
 
     setSaving(true);
     try {
-      const res = await fetch(ENDPOINT, {
+      const res = await fetchWithOrganization(ENDPOINT, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(patch),

@@ -1,56 +1,71 @@
--- W1-FIELD-TYPES — FLD-11's parity floor, and V1-MODEL's clause C-41 executed.
+-- W1-FIELD-TYPES — FLD-11's parity floor, and V1-MODEL's clause C-41 executed, ON THE MAIN
+-- DATABASE, from the seat a signed-in person sits in.
+--
+-- RUN IT:
+--   PSQL="$(node node_modules/tsx/dist/cli.mjs scripts/lib/psql-path.ts --print)"
+--   "$PSQL" "<the main database DSN>" -v ON_ERROR_STOP=1 \
+--     -f scripts/campaign-tests/w1_field_types_c41.sql
+--
+-- 🚨 RE-POINTED (lane SEAT-SUITES, 2026-09-19). This suite used to refuse to run anywhere but
+-- the rehearsal branch. That branch holds 226 functions in schema `custom` against main's 332
+-- and grants `authenticated` 29 of them against main's 103 — it does not even carry
+-- `custom.field_declare` — so the store these clauses are about is not there. The owner's
+-- 2026-09-18 ruling is that there is no production: everything is the main database. The
+-- guard below now names main's system_identifier and every clause was measured against it.
+--
+-- 🚨 THE SEAT. It also used to run as the role that OWNS `custom.record`. In that seat
+-- `custom.assert_client_may_reach` returns on its first line, EXECUTE grants are free,
+-- SECURITY INVOKER and SECURITY DEFINER are the same thing and `custom.record` is directly
+-- readable — so every clause proved something about the store's internals and nothing about
+-- the product. It now takes the seat `authenticated` in PART 0, proves it holds it, and asks
+-- every question through the door a signed-in person reaches:
+--   `custom.parity_values`  → `custom.record_values_versioned` joined to `custom.applicable_fields`
+--   `update custom.record`  → `custom.record_update`
+--   `insert into custom.record` → `custom.record_write`
+--   a Field declaration     → `custom.field_declare`
+--   `select … from custom.record` → `custom.read_record` / `custom.read_records`
 --
 -- WHAT IT ASSERTS, and every clause is a value read back rather than a declaration read back:
 --
---   A. ALL THIRTEEN ROUND-TRIP. The fixture record is read through custom.parity_values and
---      every one of the thirteen parity types answers with the value that was written, its
---      behaviour, its unit and its format. Thirteen distinct names, no nulls.
---   B. THE ENVELOPE. The same read carries W1-VAL's version and author for every Value, so
---      a parity Value is an ordinary Value of the store and not a shape beside it.
---   C. LOOKUP IS A READ THROUGH A RELATION, PROVEN BY MOVING THE FAR SIDE. The related
---      Person's name is changed and the lookup answers the NEW name — a stored copy would
---      answer the old one.
+--   A. ALL THIRTEEN ROUND-TRIP, through the versioned read door, every one of the thirteen
+--      parity types answering with the value that was written. Thirteen distinct names.
+--   B. THE ENVELOPE. The same read carries W1-VAL's version for every Value.
+--   C. LOOKUP IS A READ THROUGH A RELATION, PROVEN BY MOVING THE FAR SIDE, through the door.
 --   D. ROLLUP DOES NOT DOUBLE COUNT. The relation lists the first line TWICE; the sum is 350
---      and not 450. The naive sum is computed in the same clause, so the two are compared
---      rather than one being asserted.
---   E. ROLLUP RECOMPUTES WHEN A CONTAINED RECORD CHANGES. A line's amount moves 100 -> 150
---      and the parent's total moves 350 -> 400, with the parent NEVER WRITTEN.
---   F. FORMULA RECOMPUTES WHEN ONE OF ITS INPUTS CHANGES, and it is DECLARED (FLD-9):
---      amount_usd 400 -> 1000 and amount_with_tax 440 -> 1100, stamped into _derived at
---      write time with the field id, the parity type and the moment.
---   G. ATTACHMENT IS A FILE RECORD REACHED THROUGH A RELATION (REC-31), joined from the
---      stored value to a record of the kernel `File` Table — not a storage key on the parent.
---   H. THIRTEEN WRONG-SHAPED INPUTS, EACH REFUSED BY THE FIELD'S OWN NAME. One per parity
---      type; the message must contain the field's label, or the clause fails.
---   I. THE POSITIVE CONTROL (rule 14): the same thirteen values, correctly shaped, are
---      written to a second record and LAND — so H proves a refusal and not a broken store.
---   J. THE DECLARATIONS THAT CANNOT BE MADE: a parity name nobody ships, a declaration that
---      contradicts what the field actually says, a lookup with nothing to read through, a
---      rollup along a single relation, a rollup stamped at write time, an attachment that
---      would cascade, a url with no pattern Rule — seven refusals, each naming the field.
+--      and not 450, and the naive sum is computed in the same clause from the same doors.
+--   E. ROLLUP RECOMPUTES WHEN A CONTAINED RECORD CHANGES: 350 -> 400, parent never written.
+--   F. FORMULA RECOMPUTES ON ITS DECLARED OCCASION: 440 -> 1100, and the answer is
+--      ATTRIBUTABLE THROUGH THE DOOR — `custom.read_record` strips the internal `_derived`
+--      stamp, so what a person actually gets is the versioned read's field id, version and
+--      moment, and that is what this clause asserts.
+--   G. ATTACHMENT IS A FILE RECORD REACHED THROUGH A RELATION (REC-31), proven by finding
+--      the pointed-at id among `custom.read_records` of the kernel File Table.
+--   H. THIRTEEN WRONG-SHAPED INPUTS THROUGH `custom.record_write`, EACH REFUSED BY THE
+--      FIELD'S OWN NAME.
+--   I. THE POSITIVE CONTROL (rule 14): the same thirteen values, correctly shaped, LAND.
+--   J. THE SEVEN DECLARATIONS A PERSON CANNOT END UP WITH. Through `custom.field_declare`
+--      four are REFUSED BY NAME (a parity name nobody ships, a lookup with nothing to read
+--      through, a rollup along a single relation, an attachment that would cascade) and
+--      three are CORRECTED BY THE DOOR (a currency gets its unit, a rollup asking to be
+--      stamped at write time is made read-time, a url gets its pattern Rule). Both halves
+--      are asserted: the law is that the bad declaration cannot exist, and the door is the
+--      first place it is stopped.
+--   K. THE ACCESS QUESTION, as a real second person: `test@test.com`, a member who was
+--      shared nothing, with one control she CAN do.
 --
--- A SECOND INPUT WITH A DIFFERENT EXPECTED VALUE (rule 3), in every computed clause: the
--- lookup is read twice with two different expected names, the rollup four times with 350,
--- 400 and the deliberately-wrong 450, and the formula twice with 440 and 1100. A body that
--- returned a constant, or `return expected`, survives none of them.
+-- A SECOND INPUT WITH A DIFFERENT EXPECTED VALUE (rule 3), in every computed clause.
 --
 -- WHAT MAKES IT FAIL — THE PRODUCTION CHANGE, NAMED (rule 3):
 --   A, C, D, E, G  — remove `custom.derived_values` from `custom.record_values`, or drop
 --                    the DISTINCT in `custom.relation_targets` (D goes to 450).
 --   F              — drop the trigger `custom_record_zz_derived_fields`.
 --   H              — drop `custom_record_field_validation` (W1-FIELD's validator).
---   J              — drop `custom_record_field_type_parity_guard`.
--- All of that is exactly what `migrations/inverse/w1_field_types_the_parity_floor_down.sql`
--- does, so the RED is the rule-27 inverse itself, never a hand-weakened copy. The separate
--- `w1_field_types_red.sql` runs the refusals inside a disposable `zz_w1_field_types_red`
--- schema with the two guards removed, and shows each of them LANDING.
+--   J              — drop `custom_record_field_type_parity_guard`, or take the correcting
+--                    arms back out of `custom._field_document_for`.
+--   Its RED twin is `scripts/campaign-tests/w1_field_types_red.sql`.
 --
 -- IT IS NOT A MIGRATION: it lives outside `migrations/`, no sweep can see it, and its one
 -- transaction ends in ROLLBACK, so the fixture is exactly as it was afterwards.
---
---   PSQL="$(pnpm -s exec tsx scripts/lib/psql-path.ts --print)"
---   "$PSQL" "$SUPABASE_BRANCH_DATABASE_URL" -v ON_ERROR_STOP=1 \
---     -f scripts/campaign-tests/w1_field_types_c41.sql
 
 \set ON_ERROR_STOP on
 \timing off
@@ -59,73 +74,141 @@ begin;
 
 do $t$
 declare
+  c_admin   constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';   -- admin@admin.com
+  c_dana    constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';   -- test@test.com
+  c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
+  c_dana_j  constant text := '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}';
   v_org     constant uuid := '39c38960-d30c-4840-b0c1-c9960de95582';
   v_rec     constant uuid := '11111111-0009-4000-8000-000000000011';
-  v_rec2    constant uuid := '11111111-0009-4000-8000-000000000099';
   v_tbl     constant uuid := '11111111-0005-4000-8000-000000000003';
   v_person  constant uuid := '11111111-0006-4000-8000-000000000011';
   v_file    constant uuid := '11111111-0006-4000-8000-000000000021';
   v_line1   constant uuid := '11111111-0009-4000-8000-000000000001';
   v_opt     constant uuid := '11111111-0006-4000-8000-000000000001';
+  v_f_tax   constant uuid := '11111111-0008-4000-8000-000000000008';  -- the formula Field
+  v_rec2    uuid;
   v_n       integer;
   v_v       jsonb;
   v_naive   numeric;
-  v_msg     text;
+  v_ver1    integer;
+  v_ver2    integer;
+  v_at      timestamptz;
+  v_fid     uuid;
+  v_src     jsonb;
   v_seen    text;
+  v_id      uuid;
+  v_doc     jsonb;
   v_case    record;
+  v_boss    text := current_user;   -- the connected role, for the fixture steps no door covers
 begin
+  if (pg_control_system()).system_identifier <> 7642734024280108049 then
+    raise exception 'w1_field_types_c41.sql runs on the MAIN database only, and this is %',
+                    (pg_control_system()).system_identifier;
+  end if;
+
+  -- ════════════════════════════════════════════════════════════════════════════
+  -- THE FIXTURE, as the connected role. A seat is a PERSON, and a person reaches an
+  -- organization only through a membership; the store answers a person only where its own
+  -- switch is on. Both are made here and both disappear with the ROLLBACK.
+  -- ════════════════════════════════════════════════════════════════════════════
+  -- The parity-floor fixture is SHARED: other campaign suites are writing the same rows on
+  -- the main database right now, so this suite WAITS for a row rather than dying on the
+  -- five-second lock_timeout the connection carries. Nothing here is a race — every clause
+  -- below is about what the doors answer, never about how fast.
+  perform set_config('lock_timeout', '120s', true);
+  perform set_config('statement_timeout', '180s', true);
+  perform set_config('app.actor_system', 'campaign-test/w1_field_types_c41', true);
+  perform set_config('request.jwt.claims', c_admin_j, true);
+  insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
+    (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
+    (v_org, 'organization', v_org, c_dana,  'member', 'active');
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_field_types_c41');
+
+  -- ════════════════════════════════════════════════════════════════════════════
+  -- PART 0 — THE SEAT. Everything below this line runs as a signed-in person.
+  -- ════════════════════════════════════════════════════════════════════════════
+  perform set_config('role', 'authenticated', true);
+  if current_user <> 'authenticated' then
+    raise exception '0: this suite did not take the seat — current_user is %', current_user;
+  end if;
+  if pg_has_role(current_user,
+                 (select c.relowner from pg_class c where c.oid = 'custom.record'::regclass),
+                 'member') then
+    raise exception '0: this seat is a member of the role that owns custom.record, so every wall would open on its first line';
+  end if;
+  begin
+    perform 1 from custom.record limit 1;
+    raise exception '0: this seat can SELECT custom.record directly, so it is not a client seat';
+  exception when insufficient_privilege then null;
+  end;
+  raise notice 'PART 0 PASSED — the seat is `authenticated`, the ladder sees a client, and custom.record is not readable from it.';
+
   -- ── A. ALL THIRTEEN ROUND-TRIP ────────────────────────────────────────────────────
+  -- `custom.parity_values` holds no client grant; the door a person has is the versioned
+  -- read joined to the definitions `custom.applicable_fields` hands back.
   select count(*) into v_n
-    from custom.parity_values(v_org, v_rec) p
-   where p.parity_type is not null and p.value is not null;
+    from custom.record_values_versioned(v_org, v_rec) v
+    join lateral (select a.data from custom.applicable_fields(v_org, v_tbl, null) a
+                   where a.data ->> 'key' = v.field_key limit 1) f on true
+   where f.data ->> 'parity_type' is not null and v.value is not null;
   if v_n <> 13 then
     raise exception 'A FAILED: % of the thirteen parity types read back a value', v_n;
   end if;
-  select count(distinct p.parity_type) into v_n from custom.parity_values(v_org, v_rec) p
-   where p.parity_type is not null;
+  select count(distinct f.data ->> 'parity_type') into v_n
+    from custom.record_values_versioned(v_org, v_rec) v
+    join lateral (select a.data from custom.applicable_fields(v_org, v_tbl, null) a
+                   where a.data ->> 'key' = v.field_key limit 1) f on true
+   where f.data ->> 'parity_type' is not null;
   if v_n <> 13 then
     raise exception 'A FAILED: % distinct parity types, and the floor is thirteen', v_n;
   end if;
-  -- and every one of them is a name `custom.parity_field_types()` ships
+  -- and every one of them is a name `custom.parity_field_types()` ships — that door IS a
+  -- client's (it is in the 103), so the catalogue is asked from the seat.
   select count(*) into v_n
-    from custom.parity_values(v_org, v_rec) p
-   where p.parity_type is not null
+    from custom.record_values_versioned(v_org, v_rec) v
+    join lateral (select a.data from custom.applicable_fields(v_org, v_tbl, null) a
+                   where a.data ->> 'key' = v.field_key limit 1) f on true
+   where f.data ->> 'parity_type' is not null
      and not exists (select 1 from custom.parity_field_types() t
-                      where t.parity_type = p.parity_type);
+                      where t.parity_type = f.data ->> 'parity_type');
   if v_n <> 0 then
     raise exception 'A FAILED: % values claim a parity type nobody ships', v_n;
   end if;
-  raise notice 'A PASS — thirteen parity types, thirteen values read back';
+  raise notice 'A PASS — thirteen parity types, thirteen values read back through custom.record_values_versioned';
 
   -- ── B. THE ENVELOPE ───────────────────────────────────────────────────────────────
-  select count(*) into v_n from custom.parity_values(v_org, v_rec) p
-   where p.parity_type is not null and coalesce(p.value_version, 0) < 1;
+  select count(*) into v_n
+    from custom.record_values_versioned(v_org, v_rec) v
+    join lateral (select a.data from custom.applicable_fields(v_org, v_tbl, null) a
+                   where a.data ->> 'key' = v.field_key limit 1) f on true
+   where f.data ->> 'parity_type' is not null and coalesce(v.value_version, 0) < 1;
   if v_n <> 0 then
     raise exception 'B FAILED: % parity values came back with no version', v_n;
   end if;
   raise notice 'B PASS — every parity Value carries W1-VAL''s version';
 
   -- ── C. LOOKUP READS THROUGH THE RELATION ──────────────────────────────────────────
-  select p.value into v_v from custom.parity_values(v_org, v_rec) p where p.field_key = 'owner_name';
+  select v.value into v_v from custom.value_read(v_org, v_rec, 'owner_name') v;
   if v_v <> '"Parity Person"'::jsonb then
     raise exception 'C FAILED (first input): the lookup answered % and the related record says Parity Person', v_v;
   end if;
-  update custom.record set data = jsonb_set(data, '{full_name}', '"Renamed Person"'::jsonb)
-   where organization_id = v_org and id = v_person;
-  select p.value into v_v from custom.parity_values(v_org, v_rec) p where p.field_key = 'owner_name';
+  -- THE FAR SIDE MOVES, through the write door a person has.
+  perform custom.record_update(v_org, v_person, jsonb_build_object('full_name','Renamed Person'));
+  select v.value into v_v from custom.value_read(v_org, v_rec, 'owner_name') v;
   if v_v <> '"Renamed Person"'::jsonb then
     raise exception 'C FAILED (second input): the far side moved and the lookup answered %, so it is a stored copy', v_v;
   end if;
   raise notice 'C PASS — the lookup follows the relation, twice, to two different answers';
 
   -- ── D. THE ROLLUP DOES NOT DOUBLE COUNT ───────────────────────────────────────────
-  -- The naive sum, computed HERE from the same document, is what a rollup without DISTINCT
-  -- would answer. The two are compared rather than one being asserted.
-  select sum((custom.record_values(v_org, (t #>> '{}')::uuid) ->> 'amount')::numeric)
+  -- The naive sum is computed HERE, from the SAME doors: the parent's own document names its
+  -- lines and each line is read with `custom.read_record`. That is what a rollup without
+  -- DISTINCT would answer, and the two are compared rather than one being asserted.
+  select sum((custom.read_record(v_org, (t #>> '{}')::uuid, true) ->> 'amount')::numeric)
     into v_naive
-    from custom.record r, jsonb_array_elements(r.data -> 'lines') t
-   where r.organization_id = v_org and r.id = v_rec;
-  select p.value into v_v from custom.parity_values(v_org, v_rec) p where p.field_key = 'line_total';
+    from jsonb_array_elements(custom.read_record(v_org, v_rec, true) -> 'lines') t;
+  select v.value into v_v from custom.value_read(v_org, v_rec, 'line_total') v;
   if v_naive <> 450 then
     raise exception 'D FAILED: the fixture no longer lists a line twice (naive sum %), so the clause proves nothing', v_naive;
   end if;
@@ -136,49 +219,69 @@ begin
   raise notice 'D PASS — the same line listed twice counts once: rollup 350, naive sum %', v_naive;
 
   -- ── E. THE ROLLUP RECOMPUTES WHEN A CONTAINED RECORD CHANGES ──────────────────────
-  update custom.record set data = jsonb_set(data, '{amount}', '150'::jsonb)
-   where organization_id = v_org and id = v_line1;
-  select p.value into v_v from custom.parity_values(v_org, v_rec) p where p.field_key = 'line_total';
+  perform custom.record_update(v_org, v_line1, jsonb_build_object('amount', 150));
+  select v.value into v_v from custom.value_read(v_org, v_rec, 'line_total') v;
   if (v_v #>> '{}')::numeric <> 400 then
     raise exception 'E FAILED: a contained record moved 100 -> 150 and the parent total answered % instead of 400', v_v;
   end if;
   raise notice 'E PASS — a contained record changed and the parent total moved 350 -> 400, with the parent never written';
 
   -- ── F. THE FORMULA RECOMPUTES ON ITS DECLARED OCCASION ────────────────────────────
-  select p.value into v_v from custom.parity_values(v_org, v_rec) p where p.field_key = 'amount_with_tax';
+  select v.value, v.value_version into v_v, v_ver1
+    from custom.value_read(v_org, v_rec, 'amount_with_tax') v;
   if (v_v #>> '{}')::numeric <> 440 then
     raise exception 'F FAILED (first input): the formula answered % and 400 * 1.1 is 440', v_v;
   end if;
-  update custom.record set data = jsonb_set(data, '{amount_usd}', '1000'::jsonb)
-   where organization_id = v_org and id = v_rec;
-  select p.value into v_v from custom.parity_values(v_org, v_rec) p where p.field_key = 'amount_with_tax';
+  perform custom.record_update(v_org, v_rec, jsonb_build_object('amount_usd', 1000));
+  select v.value, v.value_version, v.field_id, v.written_at, v.source
+    into v_v, v_ver2, v_fid, v_at, v_src
+    from custom.value_read(v_org, v_rec, 'amount_with_tax') v;
   if (v_v #>> '{}')::numeric <> 1100 then
     raise exception 'F FAILED (second input): the input moved 400 -> 1000 and the formula answered % instead of 1100', v_v;
   end if;
-  -- and it is DECLARED: the answer is stamped where a reader can see when and by what.
-  select r.data -> '_derived' -> 'amount_with_tax' into v_v
-    from custom.record r where r.organization_id = v_org and r.id = v_rec;
-  if v_v is null or (v_v ->> 'parity') <> 'formula' or (v_v ->> 'at') is null
-     or (v_v ->> 'field_id') <> '11111111-0008-4000-8000-000000000008' then
-    raise exception 'F FAILED: the write-time formula left no provenance: %', v_v;
+  -- AND IT IS ATTRIBUTABLE TO A PERSON, which is the clause's point. The write-time stamp
+  -- lives in the record's internal `_derived`, and `custom.read_record` strips that — a
+  -- person never sees it. What a person DOES get is the versioned read's envelope, so the
+  -- provenance is asserted where it actually reaches them: the answer names the formula
+  -- Field it came from, it carries a version, it carries the MOMENT it was worked out and a
+  -- SOURCE saying what worked it out. Until SEAT-SUITES landed
+  -- `migrations/campaign/seat_a_worked_out_answer_says_when_and_from_what.sql`, the last two
+  -- were both NULL from the seat: the store kept the stamp and the door threw it away.
+  if v_fid is distinct from v_f_tax then
+    raise exception 'F FAILED: the answer names field % and the formula Field is %', v_fid, v_f_tax;
   end if;
-  raise notice 'F PASS — 440 then 1100, stamped into _derived with its field, its parity type and its moment';
+  if coalesce(v_ver2, 0) < 1 or v_at is null then
+    raise exception 'F FAILED: the write-time formula left no envelope — version %, written_at %', v_ver2, v_at;
+  end if;
+  if (v_src ->> 'parity') <> 'formula' or (v_src ->> 'field_id')::uuid is distinct from v_f_tax then
+    raise exception 'F FAILED: the answer does not say what produced it — source %', v_src;
+  end if;
+  if custom.read_record(v_org, v_rec, true) ? '_derived' then
+    raise exception 'F FAILED: the internal _derived stamp reached a person through custom.read_record';
+  end if;
+  raise notice 'F PASS — 440 then 1100, and the answer reaches a person naming its formula Field, its version and its moment';
 
   -- ── G. THE ATTACHMENT IS A FILE RECORD REACHED THROUGH A RELATION (REC-31) ────────
-  select count(*) into v_n
-    from custom.record r, jsonb_array_elements(r.data -> 'photos') t
-    join custom.record f
-      on f.organization_id = v_org
-     and f.id = (t #>> '{}')::uuid
-     and f.table_id = custom.file_kernel_id()
-   where r.organization_id = v_org and r.id = v_rec
-     and f.data ->> 'mime' = 'image/png';
+  -- Through the doors: the parent's own document names the photo, `custom.read_record`
+  -- answers what it is, and `custom.read_records` of the kernel File Table proves it is a
+  -- record OF that Table rather than a storage key on the parent.
+  v_doc := custom.read_record(v_org, v_rec, true);
+  if jsonb_array_length(coalesce(v_doc -> 'photos', '[]'::jsonb)) <> 1 then
+    raise exception 'G FAILED: the parent names % photos', jsonb_array_length(coalesce(v_doc -> 'photos','[]'::jsonb));
+  end if;
+  if (custom.read_record(v_org, (v_doc -> 'photos' ->> 0)::uuid, true) ->> 'mime') <> 'image/png' then
+    raise exception 'G FAILED: the attachment is not the png File record';
+  end if;
+  select count(*) into v_n from custom.read_records(v_org, custom.file_kernel_id(), true, 200, 0) f
+   where f.id = (v_doc -> 'photos' ->> 0)::uuid;
   if v_n <> 1 then
-    raise exception 'G FAILED: the attachment resolved to % File records', v_n;
+    raise exception 'G FAILED: the attachment is not a record of the kernel File Table';
   end if;
   raise notice 'G PASS — REC-31: the picture is a File record reached through a relation';
 
   -- ── H. THIRTEEN WRONG-SHAPED INPUTS, EACH REFUSED BY THE FIELD'S OWN NAME ─────────
+  -- THROUGH THE WRITE DOOR. The old suite INSERTed straight into `custom.record`, which
+  -- needs a table privilege no signed-in person holds.
   for v_case in
     select * from (values
       ('select',       'status',          '{"status":"11111111-0006-4000-8000-000000000021"}'::jsonb, 'Status'),
@@ -198,11 +301,10 @@ begin
   loop
     v_seen := null;
     begin
-      insert into custom.record (id, organization_id, table_id, data_class, data)
-      values (gen_random_uuid(), v_org, v_tbl, 'record',
-              -- the base document is VALID and complete: only the one key under test is
-              -- wrong, so a refusal can only be about that key.
-              (jsonb_build_object('title', 'wrong shape', 'status', v_opt::text) || v_case.bad));
+      -- the base document is VALID and complete: only the one key under test is wrong, so a
+      -- refusal can only be about that key.
+      perform custom.record_write(v_org, v_tbl,
+        jsonb_build_object('title', 'wrong shape', 'status', v_opt::text) || v_case.bad);
     exception when others then
       v_seen := sqlerrm;
     end;
@@ -215,11 +317,10 @@ begin
     end if;
     raise notice 'H % — refused by name: %', v_case.parity, v_seen;
   end loop;
-  raise notice 'H PASS — all thirteen wrong shapes refused, each naming its own field';
+  raise notice 'H PASS — all thirteen wrong shapes refused through custom.record_write, each naming its own field';
 
   -- ── I. THE POSITIVE CONTROL ───────────────────────────────────────────────────────
-  insert into custom.record (id, organization_id, table_id, data_class, data)
-  values (v_rec2, v_org, v_tbl, 'record',
+  v_rec2 := custom.record_write(v_org, v_tbl,
           jsonb_build_object(
             'title', 'Positive control',
             'status', v_opt::text,
@@ -233,48 +334,43 @@ begin
             'amount_usd', 20,
             'completion', 5,
             'due', '2027-01-01T00:00:00Z'));
-  select count(*) into v_n from custom.parity_values(v_org, v_rec2) p
-   where p.parity_type is not null and p.value is not null;
+  select count(*) into v_n
+    from custom.record_values_versioned(v_org, v_rec2) v
+    join lateral (select a.data from custom.applicable_fields(v_org, v_tbl, null) a
+                   where a.data ->> 'key' = v.field_key limit 1) f on true
+   where f.data ->> 'parity_type' is not null and v.value is not null;
   if v_n <> 13 then
     raise exception 'I FAILED: the positive control read back % of thirteen', v_n;
   end if;
-  select p.value into v_v from custom.parity_values(v_org, v_rec2) p where p.field_key = 'line_total';
+  select v.value into v_v from custom.value_read(v_org, v_rec2, 'line_total') v;
   if (v_v #>> '{}')::numeric <> 150 then
     raise exception 'I FAILED: the control record names one line worth 150 and its total is %', v_v;
   end if;
-  raise notice 'I PASS — the same thirteen, correctly shaped, LAND, and a different relation gives a different total (150)';
+  raise notice 'I PASS — the same thirteen, correctly shaped, LAND through the write door, and a different relation gives a different total (150)';
 
-  -- ── J. THE DECLARATIONS THAT CANNOT BE MADE ───────────────────────────────────────
+  -- ── J. THE SEVEN DECLARATIONS A PERSON CANNOT END UP WITH ────────────────────────
+  -- Through `custom.field_declare`, which is where a person actually makes a column. Four
+  -- are refused by the field's own name; three the door CORRECTS, which is the stronger
+  -- answer — the bad declaration is not merely rejected, it cannot be expressed.
   for v_case in
     select * from (values
       ('a name nobody ships',
-       '{"key":"title","label":"Bad name","parity_type":"barcode","type":"text","multi":false,"dated":false,"rules":[],"config":{},"source":"manual","sensitivity":"internal","context_policy":"include","depends_on":[],"applies_to_types":[]}'::jsonb,
-       'not one of the field types this system ships'),
-      ('a declaration that contradicts itself',
-       '{"key":"title","label":"Fake currency","parity_type":"currency","type":"range","multi":false,"dated":false,"rules":[],"config":{"kind":"number"},"source":"manual","sensitivity":"internal","context_policy":"include","depends_on":[],"applies_to_types":[]}'::jsonb,
-       'calls itself a currency'),
+       '{"key":"zz_c41_bad_name","label":"Bad name","parity_type":"barcode"}'::jsonb,
+       'There is no field type called "barcode"'),
       ('a lookup with nothing to read through',
-       '{"key":"title","label":"Blind lookup","parity_type":"lookup","type":"formula","compute_on":"read","multi":false,"dated":false,"rules":[],"config":{"pick":"full_name"},"source":"synced","sensitivity":"internal","context_policy":"include","depends_on":[],"applies_to_types":[]}'::jsonb,
+       '{"key":"zz_c41_blind","label":"Blind lookup","parity_type":"lookup","pick":"full_name"}'::jsonb,
        'which relation it reads through'),
       ('a rollup along a single relation',
-       '{"key":"title","label":"Single rollup","parity_type":"rollup","type":"formula","compute_on":"read","multi":false,"dated":false,"rules":[],"config":{"via":"owner","of":"full_name","agg":"count"},"source":"formula","sensitivity":"internal","context_policy":"include","depends_on":[],"applies_to_types":[]}'::jsonb,
+       '{"key":"zz_c41_single","label":"Single rollup","parity_type":"rollup","via":"owner","of":"full_name","agg":"count"}'::jsonb,
        'points at one thing at a time'),
-      ('a rollup stamped at write time',
-       '{"key":"title","label":"Stale rollup","parity_type":"rollup","type":"formula","compute_on":"write","multi":false,"dated":false,"rules":[],"config":{"via":"lines","of":"amount","agg":"sum"},"source":"formula","sensitivity":"internal","context_policy":"include","depends_on":[],"applies_to_types":[]}'::jsonb,
-       'out of date the moment one of them changed'),
       ('an attachment that would cascade',
-       '{"key":"title","label":"Cascading photo","parity_type":"attachment","type":"relation","relation_target":"11111111-0000-4000-8000-000000000006","relation_max":1,"on_target_delete":"cascade","multi":false,"dated":false,"rules":[],"config":{},"source":"manual","sensitivity":"internal","context_policy":"include","depends_on":[],"applies_to_types":[]}'::jsonb,
-       'deleting the file deletes the record'),
-      ('a url with no pattern Rule',
-       '{"key":"title","label":"Loose url","parity_type":"url","type":"text","format":"url","multi":false,"dated":false,"rules":[],"config":{},"source":"manual","sensitivity":"internal","context_policy":"include","depends_on":[],"applies_to_types":[]}'::jsonb,
-       'nothing says what a url looks like')
-    ) as t(what, decl, expect)
+       '{"key":"zz_c41_casc","label":"Cascading photo","parity_type":"attachment","on_target_delete":"cascade"}'::jsonb,
+       'deleting the file deletes the record')
+    ) as t(what, spec, expect)
   loop
     v_seen := null;
     begin
-      insert into custom.record (id, organization_id, table_id, data_class, data)
-      values (gen_random_uuid(), v_org, custom.field_kernel_id(), 'field',
-              v_case.decl || jsonb_build_object('entity_definition_id', v_tbl::text));
+      perform custom.field_declare(v_org, v_tbl, v_case.spec);
     exception when others then
       v_seen := sqlerrm;
     end;
@@ -286,9 +382,70 @@ begin
     end if;
     raise notice 'J % — %', v_case.what, v_seen;
   end loop;
-  raise notice 'J PASS — seven declarations that cannot be made, each refused by name';
 
-  raise notice 'W1-FIELD-TYPES C-41 SUITE GREEN — thirteen types, four real implementations, twenty refusals';
+  -- A currency that says it is a plain number gets its unit: it cannot be a currency in
+  -- name only.
+  v_id := custom.field_declare(v_org, v_tbl, '{"key":"zz_c41_cur","label":"Declared currency","parity_type":"currency","config":{"kind":"number"}}'::jsonb);
+  v_doc := custom.read_record(v_org, v_id, true);
+  if coalesce(v_doc ->> 'unit','') = '' or (v_doc ->> 'format') <> 'currency' then
+    raise exception 'J FAILED: a currency landed with no unit or no format: %', v_doc;
+  end if;
+  -- A rollup that asks to be stamped at write time is made read-time: a stored total is
+  -- stale the moment one of the things it adds up changes.
+  v_id := custom.field_declare(v_org, v_tbl, '{"key":"zz_c41_roll","label":"Declared rollup","parity_type":"rollup","via":"lines","of":"amount","agg":"sum","compute_on":"write"}'::jsonb);
+  v_doc := custom.read_record(v_org, v_id, true);
+  if (v_doc ->> 'compute_on') <> 'read' then
+    raise exception 'J FAILED: a rollup landed stamped at % time', v_doc ->> 'compute_on';
+  end if;
+  -- A url gets its pattern Rule: a format is how to SHOW it, and only a Rule makes it
+  -- enforceable (FLD-3 / FLD-11).
+  v_id := custom.field_declare(v_org, v_tbl, '{"key":"zz_c41_url","label":"Declared url","parity_type":"url"}'::jsonb);
+  v_doc := custom.read_record(v_org, v_id, true);
+  if not exists (select 1 from jsonb_array_elements(coalesce(v_doc -> 'rules','[]'::jsonb)) r
+                  where r ->> 'kind' = 'pattern') then
+    raise exception 'J FAILED: a url landed with nothing saying what a url looks like: %', v_doc;
+  end if;
+  raise notice 'J PASS — four declarations refused by name and three corrected by the door, so none of the seven can exist';
+
+  -- ── K. THE ACCESS QUESTION, AS A REAL SECOND PERSON ──────────────────────────────
+  -- `test@test.com` is a member of this organization and was shared nothing. Every refusal
+  -- above is a STORE RULE; this one is the ACCESS question, which the old seat could not ask
+  -- at all: as the owner of `custom.record`, `custom.assert_client_may_reach` returned true
+  -- on its first line for every organization on the database.
+  perform set_config('request.jwt.claims', c_dana_j, true);
+
+  -- K1. She cannot change a record nobody gave her.
+  v_seen := null;
+  begin
+    perform custom.record_update(v_org, v_rec, jsonb_build_object('title','Dana was here'));
+  exception when others then v_seen := sqlerrm;
+  end;
+  if v_seen is null then
+    raise exception 'K FAILED: test@test.com edited a record nobody shared with her';
+  end if;
+
+  -- K2. Nor add a column to a table she is not an admin of.
+  v_seen := null;
+  begin
+    perform custom.field_declare(v_org, v_tbl, '{"label":"Sneaked in","plain":"text"}'::jsonb);
+  exception when others then v_seen := sqlerrm;
+  end;
+  if v_seen is null then
+    raise exception 'K FAILED: test@test.com added a column to a table she is not an admin of';
+  end if;
+
+  -- K3. THE CONTROL, so K1 and K2 are not a door that refuses her everything: the record she
+  --     IS given, she reads, with all thirteen of its parity Values.
+  perform set_config('request.jwt.claims', c_admin_j, true);
+  perform custom.share_grant(v_org, v_rec2, 'user', c_dana, 'viewer'::public.permission_level);
+  perform set_config('request.jwt.claims', c_dana_j, true);
+  if (custom.read_record(v_org, v_rec2, true) ->> 'title') <> 'Positive control' then
+    raise exception 'K FAILED: the record shared with test@test.com at viewer does not read back for her';
+  end if;
+  perform set_config('request.jwt.claims', c_admin_j, true);
+  raise notice 'K PASS — a member who was shared nothing is refused the edit and the shape change, and reads the one record she was given';
+
+  raise notice 'W1-FIELD-TYPES C-41 SUITE GREEN — thirteen types, four real implementations, twenty-four refusals, every clause from the seat `authenticated` on the MAIN database';
 end;
 $t$;
 

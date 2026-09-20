@@ -6,34 +6,48 @@
 // `appContextPolicy` sync `remote.fetch` runs on cold-boot + stale-refresh, and
 // that the back-compat `bootstrapActiveOrganization` thunk delegates to.
 //
-// Precedence for the active org — the platform's canonical order (ruling:
-// common-docs/projects/no-db-assigned-org/PLAN.md row EX-T05; the same order
-// Studio, the dashboard and the extension apply):
-//   0. this browser's STORED SELECTION — the shared apex cookie
-//      (`lib/organizations/activeOrgCookie.ts`), identity-keyed, written by
-//      every Matrx surface on aimatrx.com — IF still a membership. This is how
-//      a choice made in Workflow Studio is honoured here, and vice versa;
-//   a. the user's DEFAULT org preference (durable, cross-device) — IF they are
-//      still a member;
-//   b. else their OWN PERSONAL org, IF it is one of their memberships. This
-//      rung is what makes boot TOTAL (2026-09-12): before it existed, a person
-//      with several memberships and no stated default ended boot with NO
-//      selection at all, so every transport threw
-//      "Select an organization before sending this request." while the header
-//      cheerfully rendered the personal org. Choosing the personal workspace
-//      HERE, explicitly, once, at bootstrap is a real choice the user can see
-//      and change in the picker — it is emphatically NOT the forbidden thing,
-//      which is a TRANSPORT quietly substituting the personal org per request
-//      (`requireSelectedOrgId` still refuses, on purpose);
-//   c. else, if they belong to exactly ONE org, that org (nothing to choose →
-//      no nudge). Reachable when the personal-org RPC is unavailable;
-//   d. else null ON PURPOSE — genuinely unresolved (no memberships at all).
-//      The UI must then say so with a remedy and a picker
-//      (`OrganizationRequiredNotice`), never leak a transport error string.
+// 🚨 BOOT NO LONGER PICKS AN ORGANIZATION FOR ANYONE (Arman, 2026-09-19).
+// This ladder used to have four rungs and two of them were substitutions:
 //
-// The default org is the durable cross-DEVICE truth — read authoritatively
-// from `users.user_preferences` so it never races the client preferences-sync
-// hydration. The cookie is the cross-SURFACE truth for this browser.
+//   a. the user's stored DEFAULT-ORG preference, read straight out of
+//      `users.user_preferences`;
+//   b. else their OWN PERSONAL org, "to make boot TOTAL".
+//
+// Both are deleted. The ruling is that a "default organization" is at most a
+// per-client DISPLAY preference — the org picker may show it and nothing else
+// may read it — and that nothing may PICK an organization for the user from a
+// cookie, a saved preference, or their personal workspace. Rung b was
+// defended here as "an explicit, visible, changeable choice made ONCE at
+// bootstrap"; it is not. The person never made it. A boot that always ends
+// with a selection is a boot that has quietly decided that the personal
+// workspace is where your work goes, and the platform stops having
+// organizations at all:
+//
+//   "one missed org check that should have just failed turns into 50 in a
+//    month and 5,000 in a year, and suddenly we don't have orgs any more, we
+//    have a user and a default org, which means we just have user now."
+//
+// What a null selection costs is now paid for properly, at the ONE funnel:
+// `ensureOrgId` HOLDS the action, the picker opens, the person SETS an
+// organization, and the action resumes with it. Refusing is no longer a dead
+// end, so boot no longer has to guess to avoid one.
+//
+// THE TWO RUNGS THAT REMAIN, and why each is not a substitution:
+//   0. this device's REMEMBERED CHOICE — the shared apex cookie
+//      (`lib/organizations/activeOrgCookie.ts`), identity-keyed, written only
+//      when the person themselves selected an organization on this browser
+//      (`activeOrgCookieMiddleware` mirrors real changes of
+//      `appContext.organization_id`). It restores what THEY set, on the
+//      machine they set it on, and it is how a choice made in Workflow Studio
+//      is honoured here. It is client-only by design: nothing server-side
+//      reads `matrx-active-org`, and nothing may start to — a cookie the
+//      server trusts is a default wearing a disguise. A stale one (no longer
+//      a membership) is dropped, never used.
+//   c. exactly ONE membership → that org. Nothing to choose, so nothing is
+//      being chosen FOR them.
+//   d. otherwise null ON PURPOSE. The UI says so with a remedy and a picker
+//      (`OrganizationRequiredNotice`), and the first action that needs an
+//      organization asks for one.
 
 import { getUserOrganizations } from "@/features/organizations/service";
 import { isOwnPersonalOrg } from "@/features/organizations/types";
@@ -42,7 +56,6 @@ import {
   primePersonalOrgId,
 } from "@/lib/organizations/personalOrg";
 import { activeOrgCookie } from "@/lib/organizations/activeOrgCookie";
-import { supabase } from "@/utils/supabase/client";
 
 /** The org subset of appContext this resolver produces. */
 export interface ResolvedOrgContext {
@@ -52,39 +65,24 @@ export interface ResolvedOrgContext {
   /**
    * 🚨 WHY A NULL SELECTION MAY NOT BE AN ANSWER (R37, 2026-09-18).
    *
-   * Rung b — the user's own personal org — needs `current_personal_org_id()`.
-   * When that RPC fails the rung is skipped silently, and a person with
-   * thirteen memberships, no cookie and no stated default falls all the way to
-   * rung d and comes back with `organization_id: null`. The caller then said
-   * "Select an organization" for 24 seconds about a question nobody managed to
-   * ask. Non-null here means the rungs were DEGRADED: treat a null selection as
-   * unreadable, not as a refusal. Null means the rungs ran on real answers.
+   * Non-null here means the rungs were DEGRADED — we could not READ what the
+   * person belongs to — so a null selection must be shown as "we could not
+   * check" with a retry, never as "choose one". On 2026-09-18 a member of
+   * THIRTEEN organizations was told to pick one, disabled, for 24 seconds,
+   * after a single failed read.
+   *
+   * 🚨 IT IS NO LONGER SET BY A FAILED PERSONAL-ORG READ (2026-09-19). It was,
+   * because the selection ladder had a personal-org rung that the RPC could
+   * silently skip. That rung is gone: the surviving rungs (this device's
+   * remembered choice, and a sole membership) both read ONLY the membership
+   * list, so a failed `current_personal_org_id()` no longer degrades the
+   * selection at all — it degrades `personal_organization_id`, which is
+   * identity metadata, not scope. Leaving it wired to the personal read would
+   * now do the opposite harm: it would dress an HONEST "choose your
+   * organization" up as "we could not check", and the person would press Try
+   * again forever on a question only they can answer.
    */
   unreadableReason?: string | null;
-}
-
-/**
- * Read the user's default-org preference straight from `user_preferences`.
- * Authoritative + race-free. Never throws — null on any failure (→ nudge path).
- */
-async function readDefaultOrgIdFromDb(
-  userId: string,
-): Promise<string | null> {
-  try {
-    const { data, error } = await supabase
-      .schema("users")
-      .from("user_preferences")
-      .select("preferences")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (error || !data) return null;
-    const prefs = data.preferences as {
-      organization?: { defaultOrganizationId?: string | null };
-    } | null;
-    return prefs?.organization?.defaultOrganizationId ?? null;
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -97,17 +95,18 @@ export async function resolveActiveOrgContext(
   userId: string,
 ): Promise<ResolvedOrgContext | null> {
   // Authoritative personal org id (auto-provisioned at signup). Falls back to
-  // the org-list heuristic only if the RPC is unavailable.
+  // the org-list heuristic only if the RPC is unavailable. This is IDENTITY
+  // metadata — "which workspace is this person's own" — and since 2026-09-19
+  // it names no rung of the selection ladder, so failing to read it can no
+  // longer make a selection unreadable.
   let personalOrgId: string | null = null;
-  let unreadableReason: string | null = null;
+  let personalOrgUnreadable = false;
   try {
     personalOrgId = await resolvePersonalOrgId();
   } catch (e) {
-    unreadableReason =
-      "the personal-organization read failed" +
-      (e instanceof Error && e.message ? `: ${e.message}` : "");
+    personalOrgUnreadable = true;
     console.warn(
-      "[resolveActiveOrgContext] current_personal_org_id() failed; falling back to org-list heuristic",
+      "[resolveActiveOrgContext] current_personal_org_id() failed; falling back to the org-list heuristic for personal-org IDENTITY only",
       e,
     );
   }
@@ -117,14 +116,18 @@ export async function resolveActiveOrgContext(
   // No memberships at all — still surface the personal org if we have one.
   if (!orgs || orgs.length === 0) {
     if (!personalOrgId) {
-      // No memberships AND no personal org. That is a real answer only when
-      // the personal-org read actually ran; otherwise we simply could not look.
-      return unreadableReason
+      // No memberships AND no personal org. With nothing to belong to there is
+      // nothing to select and nothing to ask about; the caller renders the
+      // honest "you belong to no organization" notice. The personal read
+      // failing changes only whether we can NAME their own workspace, so it is
+      // reported as unreadable rather than as a settled answer.
+      return personalOrgUnreadable
         ? {
             organization_id: null,
             organization_name: null,
             personal_organization_id: null,
-            unreadableReason,
+            unreadableReason:
+              "the personal-organization read failed, so this account's own workspace could not be named",
           }
         : null;
     }
@@ -157,8 +160,9 @@ export async function resolveActiveOrgContext(
   const resolvedPersonalId = personalOrgId ?? ownedPersonalOrg?.id ?? null;
   primePersonalOrgId(resolvedPersonalId);
 
-  // 0. This browser's stored selection (the shared apex cookie) — if still a
-  //    member. A stale one is dropped so it cannot shadow the rungs below.
+  // 0. THIS DEVICE'S REMEMBERED CHOICE (the shared apex cookie) — if still a
+  //    membership. It restores an organization the person themselves selected
+  //    on this browser; a stale one is dropped so it cannot shadow rung c.
   const storedOrgId = activeOrgCookie.read(userId);
   if (storedOrgId) {
     const match = orgs.find((o) => o.id === storedOrgId);
@@ -172,35 +176,8 @@ export async function resolveActiveOrgContext(
     activeOrgCookie.clear();
   }
 
-  // a. Default org preference (durable, cross-device) — if still a member.
-  const preferredOrgId = await readDefaultOrgIdFromDb(userId);
-  if (preferredOrgId) {
-    const match = orgs.find((o) => o.id === preferredOrgId);
-    if (match) {
-      return {
-        organization_id: match.id,
-        organization_name: match.name,
-        personal_organization_id: resolvedPersonalId,
-      };
-    }
-  }
-
-  // b. THE USER'S OWN PERSONAL ORG — if it is one of their memberships.
-  //    Boot must END with an explicit selection whenever the user belongs to
-  //    anything at all; the personal workspace is the honest, user-visible
-  //    default for "you never said". See the header note on rung b.
-  if (resolvedPersonalId) {
-    const personalMembership = orgs.find((o) => o.id === resolvedPersonalId);
-    if (personalMembership) {
-      return {
-        organization_id: personalMembership.id,
-        organization_name: personalMembership.name,
-        personal_organization_id: resolvedPersonalId,
-      };
-    }
-  }
-
-  // c. Exactly one org → auto-select it (nothing to choose).
+  // c. Exactly ONE membership → that org. Auto-selecting the only option is
+  //    not choosing for anybody; there is nothing to choose.
   if (orgs.length === 1) {
     return {
       organization_id: orgs[0].id,
@@ -209,14 +186,18 @@ export async function resolveActiveOrgContext(
     };
   }
 
-  // d. Genuinely unresolved: memberships exist but none of the rungs above
-  //    could name one (no cookie, no default, personal org not a membership,
-  //    and more than one org). The UI nudges; nothing is invented.
+  // d. Genuinely unresolved: the person belongs to several organizations and
+  //    has not told THIS device which one they are working in. That is a real
+  //    answer, not a gap to be filled: the header shows the picker, and the
+  //    first action that needs an organization holds and asks (`ensureOrgId`).
   return {
     organization_id: null,
     organization_name: null,
     personal_organization_id: resolvedPersonalId,
-    // …UNLESS rung b never ran. Then this is not "unresolved", it is unread.
-    unreadableReason,
+    // A real answer, read from a real membership list: they belong to several
+    // organizations and have not said which one this device is working in.
+    // Never "unreadable" — that would hide the one question only they can
+    // answer behind a Try again button.
+    unreadableReason: null,
   };
 }

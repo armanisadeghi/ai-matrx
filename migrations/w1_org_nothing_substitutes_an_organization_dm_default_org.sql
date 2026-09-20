@@ -1,0 +1,67 @@
+-- chair-step: this migration EXISTS to be non-additive. The 2026-09-19 ruling
+--   (Arman) is that nothing may pick an organization for the user from a
+--   preference or their personal workspace, and `dm_default_org()` is that
+--   substitution implemented as a trigger: an org-less DM insert was silently
+--   filed in the starter's personal workspace. There is no additive form of
+--   "stop substituting" — the door has to be removed, not guarded, or the
+--   unsafe path simply stays beside the safe one. The application layer now
+--   holds such a request and asks the person which organization they mean
+--   (`ensureOrgId` -> the organization gate), so nothing depends on the
+--   trigger for correctness any more. Verified live first: this trigger is the
+--   ONLY user of the function, and `_stamp_org_default` (another lane's) still
+--   covers the same table, so an insert that reaches the DB org-less does not
+--   start failing today.
+-- w1_org_nothing_substitutes_an_organization_dm_default_org.sql
+--
+-- Drop the DM conversation's personal-org stamping trigger.
+--
+-- RULING (Arman, 2026-09-19). A "default organization" is at most a per-client
+-- DISPLAY preference. Nothing but the org picker may read it. No data read,
+-- write, API route, server action, transport or boot ladder may PICK an
+-- organization for the user — not from a cookie, not from a saved preference,
+-- and not from their personal workspace.
+--
+--   "one missed org check that should have just failed turns into 50 in a
+--    month and 5,000 in a year, and suddenly we don't have orgs any more, we
+--    have a user and a default org, which means we just have user now."
+--
+-- `public.dm_default_org()` is that exact substitution, in the database, where
+-- no client can see it happen:
+--
+--   IF NEW.organization_id IS NULL THEN
+--     SELECT o.id INTO NEW.organization_id
+--       FROM iam.organizations o
+--      WHERE o.is_personal AND o.created_by = COALESCE(NEW.created_by, auth.uid())
+--      LIMIT 1;
+--   END IF;
+--
+-- A direct message started with no organization named was silently filed in
+-- the starter's PERSONAL workspace — a tenant nobody chose, chosen by a
+-- trigger. The application layer now holds such a request, shows the person
+-- their memberships, and proceeds with the one they SET
+-- (`lib/organizations/personalOrg.ts` → `ensureOrgId` → the organization
+-- gate), so the trigger has nothing left to be lenient about; all it can do
+-- now is hide a client that forgot to name one.
+--
+-- WHAT IS DELIBERATELY NOT TOUCHED HERE:
+--   * `public._stamp_org_default()` and its ~250 table triggers. It is the
+--     same class of substitution and it is being removed by the aidream lane
+--     in this same campaign; dropping it from here as well would be a
+--     double-drop and a collision. `communication.dm_conversations` carries
+--     BOTH triggers today, so until that lane lands, an org-less DM insert is
+--     still stamped by `_stamp_org_default`. This migration removes one of the
+--     two doors, and the handoff
+--     (docs/handoffs/default-org-annihilation.md) records that the other is
+--     still open and whose it is.
+--   * Parent-inherit backstops that copy a PARENT ROW's organization. Those
+--     carry context rather than substituting it, and are correct.
+--
+-- Verified live before writing (2026-09-19, db.matrxserver.com):
+--   information_schema.triggers → communication.dm_conversations carries
+--   `trg_default_org EXECUTE FUNCTION dm_default_org()`, and it is the ONLY
+--   trigger anywhere using this function.
+--
+-- Inverse: w1_org_nothing_substitutes_an_organization_dm_default_org.inverse.sql
+
+drop trigger if exists trg_default_org on communication.dm_conversations;
+drop function if exists public.dm_default_org();
