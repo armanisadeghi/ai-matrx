@@ -38,6 +38,7 @@ import {
   ListTree,
   Layers,
   type LucideIcon,
+  Boxes,
 } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { estimateTokens } from "@/lib/tokens/estimate";
@@ -320,6 +321,54 @@ function deriveTagMap(manifest: ResourceManifest, ctx: RenderContext): string {
  * judgment, not just extraction. Nothing here is a second store — it reads the
  * same `crm.party` rows `/crm` shows.
  */
+/**
+ * What each analysed, curation-kept page NAMED — the leaves of a topic tree,
+ * each traceable to the page that evidenced it. Products/services first
+ * (what a tree is made of), organisations and places after (structure and
+ * facet evidence). Ordered by importance, then the post-read score, so the
+ * pages that carried the research lead. Nothing is invented: a page that
+ * named nothing prints nothing. Mirrored line for line by the server
+ * resolver (`aidream research/context_bundles.py::derive_page_entities`) —
+ * change one, change the other.
+ */
+function derivePageEntities(manifest: ResourceManifest): string {
+  const importanceOf = new Map(
+    itemsOf(manifest, "search.result").map((s) => [s.id, s.importance ?? -1]),
+  );
+  const rows = manifest.entities
+    .filter(
+      (e) =>
+        e.included &&
+        (e.analysisStatus === null || e.analysisStatus === "valid") &&
+        (e.products.length > 0 || e.organizations.length > 0 || e.locations.length > 0),
+    )
+    .map((e) => ({
+      importance: importanceOf.get(e.sourceId) ?? -1,
+      final: e.finalScore ?? -1,
+      text: [
+        `- ${e.url} [${e.pageType ?? "unknown"}]`,
+        ...(e.products.length ? [`  offerings named: ${e.products.join("; ")}`] : []),
+        ...(e.organizations.length
+          ? [`  organisations named: ${e.organizations.join("; ")}`]
+          : []),
+        ...(e.locations.length ? [`  places named: ${e.locations.join("; ")}`] : []),
+      ].join("\n"),
+    }))
+    .sort((a, b) => b.importance - a.importance || b.final - a.final);
+  if (rows.length === 0) return "";
+  return block(
+    "Named offerings, organisations and places — per analysed page",
+    [
+      ["Pages", rows.length],
+      [
+        "How to read",
+        "each line is what ONE page's structured analysis named, with the page's URL; a first-party page is the authority on what the business sells, a third-party page is evidence of how the market groups and names it",
+      ],
+    ],
+    rows.map((r) => r.text).join("\n"),
+  );
+}
+
 function deriveExperts(manifest: ResourceManifest): string {
   if (manifest.experts.length === 0) return "";
   const rows = manifest.experts.map((expert) => [
@@ -805,6 +854,22 @@ export const CATALOG: ResourceKindDef[] = [
   },
 
   // ── Derived tables ────────────────────────────────────────────────────────
+  {
+    // The leaves of a topic tree, with provenance — what the topical map author
+    // reads first (bundle `research-topical-map`). Derived from
+    // `rs_source.page_analysis`, read beside the manifest like the experts.
+    key: "page.entities",
+    label: "Named offerings, organisations and places",
+    description:
+      "What every analysed, kept page NAMED — its products and services, the organisations and places it mentions — one line per page with the URL. The cheapest structural evidence research holds.",
+    icon: Boxes,
+    group: "pages",
+    granularity: "topic",
+    heavy: false,
+    shape: "structured",
+    defaultVariable: "page_entities",
+    derive: derivePageEntities,
+  },
   {
     // The one resource that is about PEOPLE rather than pages. An agent
     // writing outreach, a report's "who to talk to", or an interview plan

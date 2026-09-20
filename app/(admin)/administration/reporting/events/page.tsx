@@ -31,6 +31,8 @@ import { Label } from "@/components/ui/label";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
+import { crossDeploymentHref } from "@/lib/deployment/surfaces";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -41,6 +43,27 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { EntityTypeToken } from "@ai-matrx/associations";
+
+/**
+ * The href a uuid CELL in this admin console may carry for `(token, id)`.
+ *
+ * Two things have to be true at once and neither is the package's job: the
+ * token must actually have a registered door (an audit log carries entity
+ * types that have none — `sch_run`, `page_extraction_runs` — and those stay
+ * copy-only rather than getting a guessed link), and the href should address
+ * the main app directly when the surface lives there, because this is the
+ * satellite admin build and its own origin only reaches those paths through a
+ * redirect.
+ */
+function adminDoorHref(
+  token: string | null | undefined,
+  id: string,
+): string | null {
+  if (!token) return null;
+  const href = resolveEntityDoors(token, id).href;
+  if (!href) return null;
+  return crossDeploymentHref(href) ?? href;
+}
 
 interface ActivityRow {
   id: number;
@@ -174,6 +197,21 @@ export default function AdminEventsPage() {
         accessorKey: "entity_id",
         header: "Entity ID",
         cellKind: "uuid",
+        // THE DOOR LAW in the GRID, not just the side panel. `cellKind:"uuid"`
+        // alone only buys short+copy — the door is opt-in, so this column
+        // shipped copy-only while the panel two screens away already opened
+        // the same record. The token varies per ROW (the audit log carries
+        // every entity type), and it is the same `entity_type` the panel's
+        // EntityRef already uses; a type outside the canonical set resolves to
+        // no href and the cell stays copy-only, so no row gets a wrong door.
+        //
+        // `href`, not a bare `token`: this console is the SATELLITE admin
+        // build, which serves only `(admin)`, so a bare `/notes/<id>` reaches
+        // the record only via manage's redirect back to www (checked live
+        // 2026-09-20 — it does redirect, it is not a 404). `crossDeploymentHref`
+        // is what `AppLink`, and therefore the side panel's own EntityRef,
+        // already uses to address www directly and skip that hop.
+        fk: { href: (id, r: ActivityRow) => adminDoorHref(r.entity_type, id) },
         width: 120,
       },
       {
@@ -188,6 +226,11 @@ export default function AdminEventsPage() {
         accessorKey: "organization_id",
         header: "Org",
         cellKind: "uuid",
+        // Declared, never `"auto"`: this column really is an organization id,
+        // and `/organizations/[orgId]` resolves a raw UUID (layout.tsx:22
+        // branches on UUID_RE) — the same check the side panel records below.
+        // Addressed cross-deployment for the same reason as Entity ID above.
+        fk: { href: (id) => adminDoorHref("organization", id) },
         width: 120,
       },
       {

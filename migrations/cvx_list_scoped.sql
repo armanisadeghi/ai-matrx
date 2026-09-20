@@ -1,3 +1,4 @@
+-- retired: its public.cvx_list_scoped and public.cvx_list_facets bodies are five generations old; the live ones come from cvx_audience_derives_from_the_lane_classifier.sql
 -- cvx_list_scoped — the canonical scoped-list RPC family for conversations.
 --
 -- Hand-written from the template in lib/list-scope/FEATURE.md; `agx_list_scoped`

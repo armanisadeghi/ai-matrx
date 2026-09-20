@@ -758,7 +758,17 @@ export function useStudioRun(runId: string): UseStudioRun {
                 callApi({
                   path: "/podcast/generate",
                   method: "POST",
-                  body,
+                  // PROVENANCE — see usePodcastRun for the full reason. The
+                  // Studio's Generate is always a person pressing the button;
+                  // the RESUME branch below cannot be stamped at all because
+                  // `/podcast/resume/{run_id}` takes no request body (it
+                  // replays the stored request, whose stamp it inherits).
+                  body: body && {
+                    ...body,
+                    source_app: "matrx-frontend",
+                    source_feature: "podcasts",
+                    initiation: "user" as const,
+                  },
                   stream: true,
                   signal: controller.signal,
                   onStreamEvent,

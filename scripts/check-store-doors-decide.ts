@@ -34,6 +34,7 @@
  *
  *   pnpm check:store-doors-decide
  *   pnpm check:store-doors-decide:self-test   # proves the censuses can still go RED
+ *   pnpm check:store-doors-decide --exhaustive  # census 13 CALLS every door, every row
  */
 
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
@@ -445,12 +446,17 @@ const SHARED_ONLY_NEVER = ["doors-disagree", "mirror-admits-more", "unmeasured"]
  * (`custom.visible_set`'s whole-Table shortcut asking `custom.reaches_directly` about the Table,
  * which climbs from the Table into the Table's Homes) and requires it to name rows.
  */
-const LIST_DOOR_CENSUS = (pretend: string | null, organization: string | null) =>
+const LIST_DOOR_CENSUS = (
+  pretend: string | null,
+  organization: string | null,
+  exhaustive = false,
+) =>
   `select coalesce(record_id::text, table_id::text, organization_id::text) as function_name,
           coalesce(door, organization_name) as identity_args,
           why
      from custom.list_door_disagreements(${pretend === null ? "null" : `'${pretend}'`},
-                                         ${organization === null ? "null" : `'${organization}'`})`;
+                                         ${organization === null ? "null" : `'${organization}'`},
+                                         200, ${exhaustive})`;
 
 /**
  * CENSUS 14 — A REFUSAL NEVER TELLS SOMEBODY WHAT THEY DO HOLD UNLESS THE DOOR ASKED
@@ -539,13 +545,16 @@ async function t10Probe(
   client: { query: (sql: string) => Promise<unknown> },
   visibilityKnob: string,
   pretend: string | null,
+  exhaustive = false,
 ): Promise<Row[]> {
   await client.query("begin");
   try {
     await client.query("set local statement_timeout = '300s'");
     await client.query("set local lock_timeout = '20s'");
     await client.query(T10_FIXTURE(visibilityKnob));
-    const rows = (await client.query(LIST_DOOR_CENSUS(pretend, T10_ORG))) as { rows: Row[] };
+    const rows = (await client.query(
+      LIST_DOOR_CENSUS(pretend, T10_ORG, exhaustive),
+    )) as { rows: Row[] };
     return rows.rows;
   } finally {
     await client.query("rollback").catch(() => undefined);
@@ -712,8 +721,24 @@ function report(title: string, rows: Row[], qualified = false): boolean {
   return false;
 }
 
+/**
+ * WHAT `--exhaustive` IS FOR (2026-09-20, lane GUARD-PERF).
+ *
+ * Census 13's default run compares the SET every list-shaped door builds its rows from
+ * (`custom.visible_set`) against the per-row ladder `custom.read_record` decides with
+ * (`custom.has_visibility`) — one query per (member, Table), and it checks in the catalogue
+ * that each door still routes through that set before it believes the substitution.
+ * `--exhaustive` CALLS the seven doors instead, for every row, with no sampling anywhere:
+ * the census exactly as LEAK-T10 wrote it. It is ~5x slower, which is why it is the nightly
+ * non-blocking run rather than the one a lane waits on, and why it is a flag rather than a
+ * deletion.
+ */
 async function main(): Promise<void> {
   const selfTest = process.argv.includes("--self-test");
+  const exhaustive = process.argv.includes("--exhaustive");
+  /** Wall-clock per census, so a guard that starts to crawl says so before it dies. */
+  const started = Date.now();
+  const since = (mark: number) => `${((Date.now() - mark) / 1000).toFixed(1)} s`;
 
   const env = loadDbEnv();
   if ("missing" in env) {
@@ -918,9 +943,15 @@ async function main(): Promise<void> {
           "with the read door refusing every row, it still agrees with the one ladder",
         ],
       ] as const) {
-        const rows = (await client.query<Row>(SHARED_ONLY_CENSUS(pretend))).rows.filter((r) =>
-          r.why?.startsWith(kind),
-        );
+        await client.query("begin");
+        let redShared: Row[];
+        try {
+          await client.query("set local statement_timeout = '900s'");
+          redShared = (await client.query<Row>(SHARED_ONLY_CENSUS(pretend))).rows;
+        } finally {
+          await client.query("rollback").catch(() => undefined);
+        }
+        const rows = redShared.filter((r) => r.why?.startsWith(kind));
         if (rows.length === 0) {
           fail(
             `SELF-TEST FAILED - ${what}. Either every shared_only organization on this database ` +
@@ -996,7 +1027,22 @@ async function main(): Promise<void> {
     // CENSUS 12 — the three answers, live, in every organization that has said `shared_only`.
     // `mirror-admits-less` is a failure only when census 7 is non-empty, so the two are read
     // together rather than one of them excusing the other in prose.
-    const sharedOnlyAll = (await client.query<Row>(SHARED_ONLY_CENSUS(null))).rows;
+    // 🚨 IT SAYS ITS OWN CLOCK, INSIDE A TRANSACTION. This connection reaches the database
+    // through the TRANSACTION pooler, where a bare `SET` is not guaranteed to still be on the
+    // same server connection when the next statement runs — `set local` inside an explicit
+    // transaction is the only form that holds. Without it this census ran under the role's
+    // 30 s default and died as a CRASH rather than returning a verdict, which is what
+    // `[FAIL] canceling statement due to statement timeout` looked like on 2026-09-20.
+    const mark12 = Date.now();
+    await client.query("begin");
+    let sharedOnlyAll: Row[];
+    try {
+      await client.query("set local statement_timeout = '900s'");
+      sharedOnlyAll = (await client.query<Row>(SHARED_ONLY_CENSUS(null))).rows;
+    } finally {
+      await client.query("rollback").catch(() => undefined);
+    }
+    console.log(`[TIME] census 12 - the three answers in every shared_only organization: ${since(mark12)}`);
     const mirrorNarrower = sharedOnlyAll.filter((r) => r.why?.startsWith("mirror-admits-less"));
     const sharedOnly = sharedOnlyAll.filter(
       (r) =>
@@ -1022,19 +1068,24 @@ async function main(): Promise<void> {
     // same server connection when the next statement runs — `set local` inside an explicit
     // transaction is the only form that holds. A census that dies on the clock reads as a crash
     // rather than as a verdict.
+    const mark13 = Date.now();
     await client.query("begin");
     let listDoors: Row[];
     try {
       await client.query("set local statement_timeout = '900s'");
-      listDoors = (await client.query<Row>(LIST_DOOR_CENSUS(null, null))).rows;
+      listDoors = (await client.query<Row>(LIST_DOOR_CENSUS(null, null, exhaustive))).rows;
     } finally {
       await client.query("rollback").catch(() => undefined);
     }
     listDoors = [
       ...listDoors,
-      ...(await t10Probe(client, "shared_only", null)),
-      ...(await t10Probe(client, "all_records", null)),
+      ...(await t10Probe(client, "shared_only", null, exhaustive)),
+      ...(await t10Probe(client, "all_records", null, exhaustive)),
     ];
+    console.log(
+      `[TIME] census 13 - every list-shaped door against custom.read_record` +
+        `${exhaustive ? " (--exhaustive: the doors themselves, every row)" : ""}: ${since(mark13)}`,
+    );
 
     // CENSUS 10 — the two seats, live, in a transaction that is always rolled back.
     const probe = await twoSeatProbe(client, "viewer", "shared_only");
@@ -1108,7 +1159,9 @@ async function main(): Promise<void> {
       // that used to follow it here was unreachable — TS7027 caught it as dead code.
       exitAfterDrain(1);
     }
-    console.log("\nEvery client door into the record store decides the caller and the row.");
+    console.log(
+      `\nEvery client door into the record store decides the caller and the row. (${since(started)})`,
+    );
   } finally {
     await client.end().catch(() => undefined);
   }
