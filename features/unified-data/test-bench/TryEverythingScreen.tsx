@@ -385,7 +385,7 @@ function Bench({
             <Section
                 n={9}
                 title={CONTENTS[8]}
-                state="partly"
+                state="placeholder"
                 what="A chart over your own records: group by a column, count or total another, and every number is the store's own answer rather than a copy kept somewhere else."
             >
                 <NeedsTable table={workingTable}>
@@ -452,7 +452,7 @@ function Bench({
             <Section
                 n={11}
                 title={CONTENTS[10]}
-                state="partly"
+                state="placeholder"
                 what="Turn a record into a document — a proposal, a quote, a letter — by writing the wording once with the table's columns dropped into it, then rendering it for any record."
             >
                 <NeedsTable table={workingTable}>
