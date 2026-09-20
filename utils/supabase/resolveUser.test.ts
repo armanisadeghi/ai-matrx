@@ -7,10 +7,17 @@
  *
  * WHY THIS TEST EXISTS: 134 call sites across 104 `app/api/**` routes were
  * converted from `client.auth.getUser()` to this helper in one pass. That is
- * only safe because the envelope is IDENTICAL — `{ data: { user }, error }`,
- * with `AuthSessionMissingError` when there is no session, because a call site
- * that branches on `error` ALONE must behave exactly as it did before. These
+ * only safe because the envelope is IDENTICAL — `{ data: { user }, error }` —
+ * and because every one of those sites gates on `if (error || !user)`. These
  * cases are the proof of that claim, not a restatement of it.
+ *
+ * 🚨 THE ONE LINE THAT IS NOT `getUser()`: a CONFIRMED signed-out caller comes
+ * back as `{ user: null, error: null }`, not as `AuthSessionMissingError`.
+ * Signed out is an answer; `error` is reserved for "we could not tell". While
+ * this door reported a settled signed-out caller as an error,
+ * `app/api/google/oauth/redirect-state` — which branches on `error` FIRST to
+ * offer a retry — told signed-out users their session "could not be verified
+ * yet" (503) instead of "sign in again" (401).
  *
  * The Supabase client is REAL (supabase-js). The auth server is the external
  * dependency, so `auth.getClaims` is spied with complete, typed results.
@@ -79,20 +86,31 @@ describe("getClaimsUser", () => {
     expect(data.user?.app_metadata).toEqual({ provider: "email", providers: ["email"] }); // x2
   });
 
-  it("answers a missing session the way getUser() does, so an `error`-only branch still fires", async () => {
+  it("reports a caller with no token as SETTLED signed out, not as a failure", async () => {
     const sb = client();
-    // getClaims() reports "no session" as { data: null, error: null } — getUser()
-    // reports it as AuthSessionMissingError. A route that checks `error` alone
-    // would sail past a null user if this door passed the difference through.
+    // getClaims() reports "no session" as { data: null, error: null }: it ran,
+    // found nothing to verify, and said so. That is a fact, not an outage, and
+    // a route that offers a retry on `error` must not offer one here.
     spyClaims(sb, { data: null, error: null });
 
     const { data, error } = await getClaimsUser(sb);
 
     expect(data.user).toBeNull();
-    expect(error).toBeInstanceOf(AuthSessionMissingError);
+    expect(error).toBeNull();
   });
 
-  it("passes a verification failure straight through as the error", async () => {
+  it("reports AuthSessionMissingError as settled signed out too", async () => {
+    const sb = client();
+    // supabase-js raises this when the session is gone rather than unverifiable.
+    spyClaims(sb, { data: null, error: new AuthSessionMissingError() });
+
+    const { data, error } = await getClaimsUser(sb);
+
+    expect(data.user).toBeNull();
+    expect(error).toBeNull();
+  });
+
+  it("keeps a VERIFICATION FAILURE as the error, so a retry branch still fires", async () => {
     const sb = client();
     const invalid = new AuthError("Invalid JWT signature", 401, "bad_jwt");
     spyClaims(sb, { data: null, error: invalid });
@@ -110,7 +128,10 @@ describe("getClaimsUser", () => {
     const { data, error } = await getClaimsUser(sb);
 
     expect(data.user).toBeNull();
-    expect(error).toBeInstanceOf(AuthSessionMissingError);
+    // A token that VERIFIED but has no subject is malformed — "could not tell",
+    // not "signed out" — so this one keeps its error.
+    expect(error).toBeInstanceOf(AuthError);
+    expect(error?.code).toBe("bad_jwt");
   });
 
   it("defaults app_metadata / user_metadata to {} so a reader never null-checks what getUser() always gave it", async () => {

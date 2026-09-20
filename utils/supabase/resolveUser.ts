@@ -8,8 +8,19 @@
  *    clients). Returns `{ user }`; `user` is null when auth fails.
  *  - `getClaimsUser(client)` — for a route that has ALREADY built a Supabase
  *    client for its own DB work. Shape-identical to `client.auth.getUser()`
- *    (`{ data: { user }, error }`, with `AuthSessionMissingError` when there is
- *    no session), so it is a drop-in at every call site.
+ *    (`{ data: { user }, error }`), so it is a drop-in at every call site.
+ *
+ * 🚨 SIGNED OUT IS AN ANSWER, NOT A FAILURE. `{ user: null, error: null }`
+ * means the verification RAN and settled: there is no session and no token.
+ * `error` is reserved for "we could not tell" — the auth server or JWKS was
+ * unreachable, the token was malformed, the token verified but carries no
+ * `sub`. A route may therefore answer a settled signed-out caller with an
+ * honest 401 ("sign in again") and keep a transient-sounding 503 for the cases
+ * that really are transient. This door used to hand back
+ * `AuthSessionMissingError` for a CONFIRMED signed-out caller, which made
+ * `app/api/google/oauth/redirect-state` — which branches on `error` FIRST to
+ * offer a retry — tell signed-out users their session "could not be verified
+ * yet" and invite them to retry forever.
  *
  * `user` carries the JWT's claims with `id` set from `sub`.
  *
@@ -54,9 +65,9 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import {
+  AuthError,
   AuthSessionMissingError,
   createClient as createSupabaseClient,
-  type AuthError,
   type JwtPayload,
   type SupabaseClient,
   type UserAppMetadata,
@@ -90,9 +101,20 @@ export type ClaimsCapableClient = { auth: Pick<SupabaseClient["auth"], "getClaim
 /**
  * `client.auth.getUser()` without the auth-server round trip.
  *
- * Returns the SAME envelope `getUser()` does — `{ data: { user }, error }`,
- * with `AuthSessionMissingError` when there is no session — so a call site
- * that branches on `error` alone behaves identically.
+ * Returns the SAME envelope `getUser()` does — `{ data: { user }, error }` —
+ * with ONE deliberate distinction the round trip never drew:
+ *
+ *  - CONFIRMED SIGNED OUT (no session, no token) → `{ user: null, error: null }`.
+ *    That is a settled fact, and a route is entitled to say "sign in again"
+ *    rather than "try again later".
+ *  - COULD NOT VERIFY (auth server / JWKS unreachable, a malformed or
+ *    badly-signed token, any other verification failure, or a token that
+ *    verified but carries no `sub`) → the `error` is kept, so a retry branch
+ *    still fires.
+ *
+ * Every call site in `app/api` gates on `if (error || !user)`, so both answers
+ * refuse exactly as before; only a site that branches on `error` FIRST — to
+ * offer a retry — can now tell the two apart.
  *
  * Pass `jwt` when the token is in hand (a Bearer header) rather than a cookie.
  */
@@ -101,11 +123,34 @@ export async function getClaimsUser(
   jwt?: string,
 ): Promise<{ data: { user: ApiClaimsUser | null }; error: AuthError | null }> {
   const { data, error } = await client.auth.getClaims(jwt);
-  if (error) return { data: { user: null }, error };
+  // supabase-js reports "there is no session here" as AuthSessionMissingError.
+  // That is an answer, not an outage.
+  if (error) {
+    if (isSignedOutError(error)) return { data: { user: null }, error: null };
+    return { data: { user: null }, error };
+  }
 
-  const user = userFromClaims(data?.claims);
-  if (!user) return { data: { user: null }, error: new AuthSessionMissingError() };
+  // No claims at all: getClaims() ran, found no token to verify, and said so.
+  if (!data?.claims) return { data: { user: null }, error: null };
+
+  const user = userFromClaims(data.claims);
+  // A token that VERIFIED but carries no subject is malformed, not signed out.
+  if (!user) {
+    return {
+      data: { user: null },
+      error: new AuthError("Verified token carries no `sub` claim", 401, "bad_jwt"),
+    };
+  }
   return { data: { user }, error: null };
+}
+
+/** Is this `getClaims()` error the settled fact "nobody is signed in"? */
+function isSignedOutError(error: AuthError): boolean {
+  return (
+    error instanceof AuthSessionMissingError ||
+    error.name === "AuthSessionMissingError" ||
+    error.code === "session_not_found"
+  );
 }
 
 export async function resolveUser(request: NextRequest) {

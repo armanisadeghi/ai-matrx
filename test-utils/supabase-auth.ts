@@ -27,7 +27,8 @@
  * Envelope, matching supabase-js:
  *  - a fake user       → `{ data: { claims }, error: null }`
  *  - no user / no session → `{ data: null, error: null }`
- *    (`getClaimsUser` turns that into `AuthSessionMissingError` itself)
+ *    (`getClaimsUser` reads that as SETTLED signed out: `user` null, `error`
+ *    null — signed out is an answer, not a verification failure)
  *  - the fake's own error → `{ data: null, error }`
  */
 
