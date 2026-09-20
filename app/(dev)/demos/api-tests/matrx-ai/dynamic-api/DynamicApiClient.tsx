@@ -182,7 +182,15 @@ const TEMPLATES: Array<{
     method: "POST",
     path: "/tools/test/execute",
     body: JSON.stringify(
-      { tool_name: "search", arguments: { q: "hello world" } },
+      {
+        tool_name: "search",
+        arguments: { q: "hello world" },
+        // Every door declares who opened it, dev consoles included — an
+        // unattributed run lands in somebody's chat sidebar.
+        source_app: "matrx-frontend",
+        source_feature: "tool-testing",
+        initiation: "user",
+      },
       null,
       2,
     ),
