@@ -40,7 +40,6 @@ import {
     ActionInbox,
     CustomFieldsSection,
     DashboardCanvas,
-    DocTemplate,
     FieldEditor,
     FormBuilder,
     FormsPanel,
@@ -58,6 +57,11 @@ import {
 } from "@ai-matrx/records-ui";
 
 import { Button } from "@/components/ui/button";
+// THE PLATFORM'S ONE RICH DOCUMENT. A rendered document is a body of text with
+// print and save-as-PDF on it, which is exactly what this component is and what
+// every other document surface in the app already mounts. A second renderer
+// here would be the parallel layer the canvas ruling forbids.
+import { RichDocument } from "@/features/rich-document/RichDocument";
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
@@ -452,32 +456,11 @@ function Bench({
             <Section
                 n={11}
                 title={CONTENTS[10]}
-                state="placeholder"
+                state="partly"
                 what="Turn a record into a document — a proposal, a quote, a letter — by writing the wording once with the table's columns dropped into it, then rendering it for any record."
             >
                 <NeedsTable table={workingTable}>
-                    {(table) => (
-                        <>
-                            <TryIt hint={`writes a real template on ${tableName(table)}`}>
-                                <div className="rounded-md border border-border p-3">
-                                    <DocTemplate tableId={table.id} />
-                                </div>
-                            </TryIt>
-                            <NotBuiltYet
-                                today={
-                                    "Nothing you can reach from a browser. The doors that save a template, render " +
-                                    "one and seal it with a signature are all live on the database, but the panel " +
-                                    "above lists your templates by reading a view the browser is refused — it says " +
-                                    "so above, in its own words, and it is not about you or this table."
-                                }
-                                waitingFor={
-                                    "that one read being opened to a signed-in person, and then a home: there is no " +
-                                    "documents page, no letterhead, and nothing yet joins a finished document to " +
-                                    "your files."
-                                }
-                            />
-                        </>
-                    )}
+                    {(table) => <DocumentsTry table={table} organizationId={organizationId} />}
                 </NeedsTable>
             </Section>
 
@@ -500,18 +483,7 @@ function Bench({
                                 A form published in section 5 already subscribes whoever asked for it, so a new
                                 response shows up in the bell at the top of the window.
                             </Aside>
-                            <NotBuiltYet
-                                today={
-                                    "A notification an agent or a published form switches on for you does fire, and " +
-                                    "it arrives in the bell at the top of the window. The panel above cannot show " +
-                                    "you the list: it reads the store's subscription door and the browser is " +
-                                    "refused, which it says above in its own words."
-                                }
-                                waitingFor={
-                                    "two things. That read being opened to a signed-in person. And, to switch one " +
-                                    `OFF, the screens package at 0.18.0 — this deployment serves ${recordsUiPkg.version}.`
-                                }
-                            />
+                            <NotificationsTry table={table} organizationId={organizationId} />
                         </>
                     )}
                 </NeedsTable>
@@ -1199,5 +1171,565 @@ function HistoryTry({ table }: { table: Table }) {
                 ) : null}
             </div>
         </TryIt>
+    );
+}
+
+// ──────────────────────────────────────────────────────────── the doors ──
+
+/**
+ * ONE PLACE THAT CALLS A STORE DOOR BY NAME.
+ *
+ * The two sections below reach doors the SCREENS PACKAGE does not reach yet at
+ * the version this deployment serves, so they ask the store directly — through
+ * the package's OWN data source, which is the same object every other call on
+ * this page goes through and the same pattern the status strip already uses for
+ * `custom.work_inbox`. It is a door call, never a table read: the five names
+ * below were declared in `platform.client_callable_door` and granted to
+ * `authenticated` by `migrations/campaign/doorstwo_the_document_and_cadence_doors.sql`,
+ * and each one runs the ladder (`assert_client_may_reach`, then
+ * `assert_client_may_open`/`_may_change`) before it returns a row.
+ */
+async function door<T>(name: string, args: Record<string, unknown>): Promise<T> {
+    const { data, error } = await recordsDataSource(createClient()).rpc(name, args, {
+        schema: "custom",
+    });
+    // THE STORE'S OWN SENTENCE, verbatim. These doors are written to refuse in
+    // English ("That notification is not addressed to you, so you cannot switch
+    // it off."), so anything this screen wrote over the top would be worse.
+    if (error) throw new Error(error.message);
+    return data as T;
+}
+
+/** What `custom.doc_templates` answers. */
+interface TemplateRow {
+    template_id: string;
+    name: string;
+    body: string;
+    template_version: number;
+    token_count: number;
+}
+
+/** What `custom.doc_renders` answers — frozen bytes and the hash a seal is over. */
+interface RenderRow {
+    render_id: string;
+    template_id: string;
+    template_version: number;
+    body: string;
+    content_hash: string;
+    rendered_at: string;
+}
+
+/** What `custom.subscriptions` answers about one subscription, from its owner's side. */
+interface SubscriptionRow {
+    rule_id: string;
+    name: string;
+    cadence: string;
+    schedule: string | null;
+    channel: string;
+    muted: boolean;
+    mine: boolean;
+    i_may_mute: boolean;
+    saved_view_id: string | null;
+    recipient_user_id: string | null;
+}
+
+// ─────────────────────────────────────────────────────────────── documents ──
+
+/**
+ * SECTION 11 — WRITE THE WORDING ONCE, RENDER IT FOR ANY RECORD.
+ *
+ * Six acts, six doors, nothing else: list the templates of this table, write or
+ * change one, retire one, render this record into a document, list the documents
+ * already made from it, and open one.
+ *
+ * A TOKEN NAMES A FIELD BY ITS ID (REC-68 — PandaDoc's mechanism), so renaming a
+ * column never breaks a template. `custom.doc_template_save` refuses a token
+ * naming no Field AT SAVE and its refusal names the token AND lists the fields
+ * that are available, so this screen shows that sentence and writes none of its
+ * own.
+ *
+ * THE RESULT OPENS IN `RichDocument`, the platform's one rich document — print
+ * and save-as-PDF come with it. A second renderer here would drift from every
+ * other document surface in the app.
+ */
+function DocumentsTry({ table, organizationId }: { table: Table; organizationId: string }) {
+    const records = useRecords(table.id, { pageSize: 25 });
+    const rows = records.data?.rows ?? [];
+
+    const [templates, setTemplates] = useState<TemplateRow[] | null>(null);
+    const [problem, setProblem] = useState<string | null>(null);
+    const [templateId, setTemplateId] = useState<string | null>(null);
+    const [recordId, setRecordId] = useState<string | null>(null);
+    const [renders, setRenders] = useState<RenderRow[] | null>(null);
+    const [openRender, setOpenRender] = useState<string | null>(null);
+    const [busy, setBusy] = useState(false);
+    const [refusal, setRefusal] = useState<string | null>(null);
+    const [draftName, setDraftName] = useState("");
+    const [draftBody, setDraftBody] = useState("");
+
+    const chosenRecord = recordId ?? rows[0]?.id ?? null;
+    const chosenTemplate = templates?.find((t) => t.template_id === templateId) ?? templates?.[0] ?? null;
+
+    const loadTemplates = useCallback(async () => {
+        setProblem(null);
+        try {
+            setTemplates(
+                await door<TemplateRow[]>("doc_templates", {
+                    p_organization_id: organizationId,
+                    p_table_id: table.id,
+                }),
+            );
+        } catch (error) {
+            setTemplates([]);
+            setProblem(error instanceof Error ? error.message : String(error));
+        }
+    }, [organizationId, table.id]);
+
+    const loadRenders = useCallback(async () => {
+        if (!chosenRecord) {
+            setRenders([]);
+            return;
+        }
+        try {
+            setRenders(
+                await door<RenderRow[]>("doc_renders", {
+                    p_organization_id: organizationId,
+                    p_record_id: chosenRecord,
+                }),
+            );
+        } catch (error) {
+            setRenders([]);
+            setProblem(error instanceof Error ? error.message : String(error));
+        }
+    }, [organizationId, chosenRecord]);
+
+    useEffect(() => {
+        void loadTemplates();
+    }, [loadTemplates]);
+    useEffect(() => {
+        void loadRenders();
+    }, [loadRenders]);
+
+    async function act(what: () => Promise<void>) {
+        setBusy(true);
+        setRefusal(null);
+        try {
+            await what();
+        } catch (error) {
+            setRefusal(error instanceof Error ? error.message : String(error));
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    if (problem && templates !== null && templates.length === 0 && renders === null) {
+        return <Refusal>{problem}</Refusal>;
+    }
+    if (templates === null) {
+        return <p className="text-sm text-muted-foreground">Reading this table’s document templates…</p>;
+    }
+
+    return (
+        <div className="space-y-3">
+            <TryIt hint={`writes a real template on ${tableName(table)} and real documents on its records`}>
+                <div className="space-y-3">
+                    {/* ── the templates this table already has ─────────────── */}
+                    {templates.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                            {tableName(table)} has no document templates yet. Write one below — the wording is
+                            yours, and <code className="rounded bg-muted px-1">{"{{field:<id>}}"}</code> drops
+                            one of this table’s columns into it.
+                        </p>
+                    ) : (
+                        <ul className="divide-y divide-border rounded-md border border-border">
+                            {templates.map((template) => (
+                                <li
+                                    key={template.template_id}
+                                    className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm"
+                                >
+                                    <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
+                                        <input
+                                            type="radio"
+                                            name="try-doc-template"
+                                            checked={chosenTemplate?.template_id === template.template_id}
+                                            onChange={() => setTemplateId(template.template_id)}
+                                        />
+                                        <span className="truncate text-foreground">{template.name}</span>
+                                    </label>
+                                    <span className="shrink-0 text-xs text-muted-foreground">
+                                        version {template.template_version} ·{" "}
+                                        {template.token_count === 1
+                                            ? "1 column merged in"
+                                            : `${template.token_count} columns merged in`}
+                                    </span>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 shrink-0 px-2 text-xs"
+                                        disabled={busy}
+                                        onClick={() => {
+                                            setTemplateId(template.template_id);
+                                            setDraftName(template.name);
+                                            setDraftBody(template.body);
+                                        }}
+                                    >
+                                        Edit its wording
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 shrink-0 px-2 text-xs"
+                                        disabled={busy}
+                                        onClick={() =>
+                                            void act(async () => {
+                                                // Soft, and it says what survives: documents
+                                                // already rendered keep their bytes and their
+                                                // seals, so this cannot invalidate a signature.
+                                                await door<boolean>("doc_template_delete", {
+                                                    p_organization_id: organizationId,
+                                                    p_template_id: template.template_id,
+                                                });
+                                                await loadTemplates();
+                                            })
+                                        }
+                                    >
+                                        Retire it
+                                    </Button>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+
+                    {/* ── write or change one ──────────────────────────────── */}
+                    <div className="space-y-2 rounded-md border border-border p-3">
+                        <input
+                            value={draftName}
+                            onChange={(event) => setDraftName(event.target.value)}
+                            placeholder="What this document is called — Proposal, Quote, Welcome letter"
+                            className="w-full rounded border border-border bg-background px-2 py-1 text-sm text-foreground"
+                        />
+                        <textarea
+                            value={draftBody}
+                            onChange={(event) => setDraftBody(event.target.value)}
+                            rows={5}
+                            placeholder="The wording. Drop a column in with {{field:<the column's id>}} — the store refuses a token that names no column of this table, and tells you which columns it has."
+                            className="w-full rounded border border-border bg-background px-2 py-1 font-mono text-xs text-foreground"
+                        />
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                                size="sm"
+                                disabled={busy || draftName.trim() === ""}
+                                onClick={() =>
+                                    void act(async () => {
+                                        await door<string>("doc_template_save", {
+                                            p_organization_id: organizationId,
+                                            p_table_id: table.id,
+                                            p_name: draftName,
+                                            p_body: draftBody,
+                                            p_template_id: null,
+                                        });
+                                        setDraftName("");
+                                        setDraftBody("");
+                                        await loadTemplates();
+                                    })
+                                }
+                            >
+                                Save it as a new template
+                            </Button>
+                            {chosenTemplate ? (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={busy || draftName.trim() === ""}
+                                    onClick={() =>
+                                        void act(async () => {
+                                            await door<string>("doc_template_save", {
+                                                p_organization_id: organizationId,
+                                                p_table_id: table.id,
+                                                p_name: draftName,
+                                                p_body: draftBody,
+                                                p_template_id: chosenTemplate.template_id,
+                                            });
+                                            await loadTemplates();
+                                        })
+                                    }
+                                >
+                                    Replace “{chosenTemplate.name}” with this
+                                </Button>
+                            ) : null}
+                        </div>
+                        <Aside>
+                            Every save of an existing template is a new version, because a signature seals a
+                            document version — a body that could move under a signed document would make the
+                            seal meaningless.
+                        </Aside>
+                    </div>
+
+                    {/* ── render this record ───────────────────────────────── */}
+                    {rows.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                            {tableName(table)} has no records yet, so there is nothing to render a document
+                            about. Type a row into it in section 1 and this comes alive.
+                        </p>
+                    ) : (
+                        <div className="flex flex-wrap items-center gap-2">
+                            <label htmlFor="try-doc-record" className="text-xs text-muted-foreground">
+                                Render
+                            </label>
+                            <select
+                                id="try-doc-record"
+                                value={chosenRecord ?? ""}
+                                onChange={(event) => setRecordId(event.target.value)}
+                                className="min-w-0 max-w-[16rem] truncate rounded border border-border bg-background px-2 py-1 text-sm text-foreground"
+                            >
+                                {rows.map((row) => (
+                                    <option key={row.id} value={row.id}>
+                                        {rowName(row, table.title_field)}
+                                    </option>
+                                ))}
+                            </select>
+                            <Button
+                                size="sm"
+                                disabled={busy || !chosenTemplate || !chosenRecord}
+                                onClick={() =>
+                                    void act(async () => {
+                                        if (!chosenTemplate || !chosenRecord) return;
+                                        const renderId = await door<string>("doc_render_document", {
+                                            p_organization_id: organizationId,
+                                            p_template_id: chosenTemplate.template_id,
+                                            p_record_id: chosenRecord,
+                                        });
+                                        setOpenRender(renderId);
+                                        await loadRenders();
+                                    })
+                                }
+                            >
+                                {chosenTemplate
+                                    ? `as a “${chosenTemplate.name}”`
+                                    : "— pick a template first"}
+                            </Button>
+                        </div>
+                    )}
+
+                    {refusal ? <Refusal>{refusal}</Refusal> : null}
+
+                    {/* ── the documents already made from this record ──────── */}
+                    {renders && renders.length > 0 ? (
+                        <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground">
+                                {renders.length === 1
+                                    ? "1 document made from this record"
+                                    : `${renders.length} documents made from this record`}{" "}
+                                — each one frozen at the moment it was made, which is what a signature is over.
+                            </p>
+                            <ul className="divide-y divide-border rounded-md border border-border">
+                                {renders.map((render) => (
+                                    <li
+                                        key={render.render_id}
+                                        className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm"
+                                    >
+                                        <span className="min-w-0 flex-1 truncate text-foreground">
+                                            {templates.find((t) => t.template_id === render.template_id)?.name ??
+                                                "A template that has since been retired"}{" "}
+                                            <span className="text-xs text-muted-foreground">
+                                                version {render.template_version}
+                                            </span>
+                                        </span>
+                                        <span className="shrink-0 text-xs text-muted-foreground">
+                                            {new Date(render.rendered_at).toLocaleString()}
+                                        </span>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 shrink-0 px-2 text-xs"
+                                            onClick={() =>
+                                                setOpenRender((was) =>
+                                                    was === render.render_id ? null : render.render_id,
+                                                )
+                                            }
+                                        >
+                                            {openRender === render.render_id ? "Close it" : "Open it"}
+                                        </Button>
+                                    </li>
+                                ))}
+                            </ul>
+                            {openRender ? (
+                                <div className="rounded-md border border-border p-3">
+                                    {/* THE PLATFORM'S ONE RICH DOCUMENT. Print and
+                                        save-as-PDF live in its own overflow menu. */}
+                                    <RichDocument
+                                        content={
+                                            renders.find((render) => render.render_id === openRender)?.body ?? ""
+                                        }
+                                        source={{ type: "raw" }}
+                                        actionsVariant="mini-bar"
+                                    />
+                                </div>
+                            ) : null}
+                        </div>
+                    ) : null}
+                </div>
+            </TryIt>
+            <NotBuiltYet
+                today={
+                    "All six acts above are real and go through the store’s own doors: the templates of this " +
+                    "table, writing and changing one, retiring one, rendering this record into a document, the " +
+                    "documents already made from it, and opening one with print and save-as-PDF on it."
+                }
+                waitingFor={
+                    "three things, none of which stops you using it. A token is written by hand as the " +
+                    "column’s id — the agent writing the template from the table’s own fields is the next " +
+                    "step. There is no letterhead, so a document is the wording you typed and nothing around " +
+                    "it. And signing is a live door but has no control on this page yet."
+                }
+            />
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────── notifications ──
+
+/**
+ * SECTION 12 — WHAT YOU ARE BEING TOLD ABOUT, AND HOW TO MAKE IT STOP.
+ *
+ * `custom.subscriptions` answers what is addressed to THIS person plus — only
+ * where they hold admin on this table — anyone's over it, narrowed to tables
+ * they can already open, so a subscription list is never a second way to learn
+ * that a table exists. `custom.subscription_mute` is the switch.
+ *
+ * ABSENT, NEVER DEAD. A row the store says this person may not mute carries no
+ * switch at all — not a greyed one — and says whose it is instead. The store
+ * answers that question (`i_may_mute`); this screen never works it out.
+ *
+ * OFF MEANS OFF. Muting is honoured inside `custom.agg_subscriptions`, the one
+ * reader every consumer goes through, so "switched off here" and "does not fire"
+ * are the same fact rather than two that can drift.
+ */
+function NotificationsTry({ table, organizationId }: { table: Table; organizationId: string }) {
+    const [rows, setRows] = useState<SubscriptionRow[] | null>(null);
+    const [problem, setProblem] = useState<string | null>(null);
+    const [busy, setBusy] = useState<string | null>(null);
+
+    const load = useCallback(async () => {
+        setProblem(null);
+        try {
+            setRows(
+                await door<SubscriptionRow[]>("subscriptions", {
+                    p_organization_id: organizationId,
+                    p_table_id: table.id,
+                }),
+            );
+        } catch (error) {
+            setRows([]);
+            setProblem(error instanceof Error ? error.message : String(error));
+        }
+    }, [organizationId, table.id]);
+
+    useEffect(() => {
+        void load();
+    }, [load]);
+
+    if (problem) return <Refusal>{problem}</Refusal>;
+    if (rows === null) {
+        return <p className="text-sm text-muted-foreground">Reading what this table tells people about…</p>;
+    }
+
+    return (
+        <div className="space-y-3">
+            <TryIt hint="switching one off really stops it firing, on every channel at once">
+                <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                        {rows.length === 0
+                            ? "Nothing is telling anyone about this table yet."
+                            : `${rows.filter((row) => !row.muted).length} of ${rows.length} on`}
+                    </p>
+                    {rows.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                            Write one in the panel above, or publish a form in section 5 that says “tell me when
+                            somebody answers” — it appears here the moment it does.
+                        </p>
+                    ) : (
+                        <ul className="divide-y divide-border rounded-md border border-border">
+                            {rows.map((row) => (
+                                <li key={row.rule_id} className="flex flex-wrap items-center gap-2 px-3 py-2">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm text-foreground">{row.name}</p>
+                                        <p className="mt-0.5 text-xs text-muted-foreground">
+                                            {row.channel === "in_app"
+                                                ? "in the app"
+                                                : row.channel === "email"
+                                                  ? "by email — only if an address is on the account"
+                                                  : `on the ${row.channel} channel`}
+                                            {" · "}
+                                            {row.cadence === "immediate"
+                                                ? "as it happens"
+                                                : row.schedule
+                                                  ? `a summary, ${row.schedule}`
+                                                  : "a summary"}
+                                            {" · "}
+                                            {row.mine ? "addressed to you" : "addressed to somebody else here"}
+                                        </p>
+                                        {row.recipient_user_id === null ? (
+                                            <p className="mt-0.5 text-xs text-destructive">
+                                                This one has nobody to tell, so it fires at nobody.
+                                            </p>
+                                        ) : null}
+                                    </div>
+                                    {row.i_may_mute ? (
+                                        <Button
+                                            variant={row.muted ? "outline" : "ghost"}
+                                            size="sm"
+                                            className="h-7 shrink-0 px-2 text-xs"
+                                            disabled={busy === row.rule_id}
+                                            onClick={() =>
+                                                void (async () => {
+                                                    setBusy(row.rule_id);
+                                                    setProblem(null);
+                                                    try {
+                                                        await door<boolean>("subscription_mute", {
+                                                            p_organization_id: organizationId,
+                                                            p_rule_id: row.rule_id,
+                                                            p_muted: !row.muted,
+                                                        });
+                                                        await load();
+                                                    } catch (error) {
+                                                        setProblem(
+                                                            error instanceof Error
+                                                                ? error.message
+                                                                : String(error),
+                                                        );
+                                                    } finally {
+                                                        setBusy(null);
+                                                    }
+                                                })()
+                                            }
+                                        >
+                                            {row.muted ? "Tell me again" : "Switch it off"}
+                                        </Button>
+                                    ) : (
+                                        // ABSENT, NOT DEAD — no switch at all, and the reason.
+                                        <span className="shrink-0 text-xs text-muted-foreground">
+                                            Somebody else’s — only they, or an admin of this table, can stop it.
+                                        </span>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            </TryIt>
+            <NotBuiltYet
+                today={
+                    "A notification an agent or a published form switches on really fires and arrives in the " +
+                    "bell at the top of the window, this list is what you are being told about, and switching " +
+                    "one off stops it firing everywhere at once."
+                }
+                waitingFor={
+                    "the editor above. At the screens version this deployment serves " +
+                    `(${recordsUiPkg.version}) it still asks the notifier’s own reader and is refused; it asks ` +
+                    "the doors this list uses from 0.28.0 onwards. Nothing else here is waiting on anything."
+                }
+            />
+        </div>
     );
 }
