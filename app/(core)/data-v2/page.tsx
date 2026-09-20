@@ -19,6 +19,7 @@ import Link from "next/link";
 import { ActionInbox, RecordsMount, TablesHome, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
+import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -75,7 +76,16 @@ export default function UnifiedDataPage() {
               actor: personActor(userId),
               organizationId: organizationId!,
             }}
-            host={{ Link, density: "condensed", members, share: recordStoreShare }}
+            host={{
+              Link,
+              density: "condensed",
+              members,
+              share: recordStoreShare,
+              // AGT-N-9 / PRODUCTS row 11. The package builds the record SCOPE and
+              // hands it here; this returns the platform's ONE chat column bound to
+              // that record. Never a second chat (the canvas ruling).
+              chat: (ctx) => <RecordScopedChat ctx={ctx} />,
+            }}
           >
             {/* WHAT IS WAITING ON THIS PERSON, above the tables — one inbox for
                 what they were assigned, what needs their approval and what an

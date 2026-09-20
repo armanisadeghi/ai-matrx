@@ -161,6 +161,18 @@ export const CAMPAIGN_STORE_TABLES: readonly string[] = [
  *     guarding.
  */
 export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
+  {
+    id: "record-scoped-chat",
+    file: "features/unified-data/record-chat/RecordScopedChat.tsx",
+    kind: "runtime",
+    why:
+      "AGT-N-9 / PRODUCTS row 11 — the host's `chat` port. The package builds a record's " +
+      "SCOPE through one door and hands it here; this renders the platform's ONE chat " +
+      "column (AgentConversationColumn) bound to that record through conversationScopeBind, " +
+      "with the scope chip, the suggested questions the record's own shape produced and the " +
+      "sentence naming any Field the store withheld. Served to users, so it reads the switch " +
+      "and shows the off sentence when it is off.",
+  },
     {
         id: "public-form-page",
         file: "app/(link)/f/[formId]/page.tsx",
