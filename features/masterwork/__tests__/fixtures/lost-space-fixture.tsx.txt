@@ -1,0 +1,25 @@
+// A .txt fixture on purpose: this is the DEFECT preserved, not live code, so
+// no compiler, linter or the census itself may ever pick it up as a source
+// file. It is the exact shape cold walk 12 found on the Quick Build screen.
+export function Fixture({ approvedCount }: { approvedCount: number }) {
+  return (
+    <ol>
+      <li>
+        2. The Masterwork checks the work against all{" "}
+        {approvedCount}
+        rules and fixes violations.
+      </li>
+      <li>
+        {approvedCount} rules and fixes violations, written correctly.
+      </li>
+      <li>
+        {busy ? <Loader2 /> : null}
+        Save my version
+      </li>
+      <li>
+        {run.label ? `"${run.label}" ` : "A Build "}
+        stopped reporting in.
+      </li>
+    </ol>
+  );
+}
