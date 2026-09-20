@@ -1197,6 +1197,10 @@ async function executeStreamingRequest(
     },
   );
 
+  const requestId = response.headers.get("X-Request-ID") ?? undefined;
+  const conversationId =
+    response.headers.get("X-Conversation-ID") ?? undefined;
+
   if (!response.ok) {
     const serverDetail: unknown = await response
       .json()
@@ -1212,17 +1216,14 @@ async function executeStreamingRequest(
       serverDetail,
     };
     config.onStreamError?.(error);
-    return { error };
+    return { requestId, conversationId, error };
   }
 
   // A body can be consumed exactly once. When the caller supplied a
   // `consumeStream` owner, hand it the raw Response and never touch the body
   // here — the ids still come from headers, which are already available.
   if (config.consumeStream) {
-    const ids = {
-      requestId: response.headers.get("X-Request-ID"),
-      conversationId: response.headers.get("X-Conversation-ID"),
-    };
+    const ids = { requestId, conversationId };
     config.onStreamStart?.(ids.requestId, ids.conversationId);
     await config.consumeStream(response, ids);
     config.onStreamComplete?.(ids.requestId, ids.conversationId);
@@ -1235,25 +1236,29 @@ async function executeStreamingRequest(
   // Use the shared NDJSON stream parser.
   // requestId and conversationId are read synchronously from response headers —
   // they are available BEFORE any body events are consumed.
-  const { events, requestId, conversationId } = parseNdjsonStream(
+  const {
+    events,
+    requestId: parsedRequestId,
+    conversationId: parsedConversationId,
+  } = parseNdjsonStream(
     response,
     config.signal ?? undefined,
   );
 
   // Fire immediately — headers arrive before the body, so this is the
   // earliest possible moment to capture conversationId (for URL updates, etc.).
-  config.onStreamStart?.(requestId, conversationId);
+  config.onStreamStart?.(parsedRequestId, parsedConversationId);
 
   // Drain the async generator, handing each event to the caller
   for await (const event of events) {
     config.onStreamEvent?.(event);
   }
 
-  config.onStreamComplete?.(requestId, conversationId);
+  config.onStreamComplete?.(parsedRequestId, parsedConversationId);
 
   return {
-    requestId: requestId ?? undefined,
-    conversationId: conversationId ?? undefined,
+    requestId: parsedRequestId ?? undefined,
+    conversationId: parsedConversationId ?? undefined,
   };
 }
 
@@ -1448,6 +1453,7 @@ export function callApi<
           url,
           method: config.method,
           path: config.path,
+          requestId: result.requestId,
         });
       }
       return result;
