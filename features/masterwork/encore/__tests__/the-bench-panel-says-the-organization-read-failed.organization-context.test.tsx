@@ -75,6 +75,14 @@ jest.mock("../../components/masterworks/TryMasterworkBox", () => ({
 }));
 jest.mock("../../review/ExpertSignOff", () => ({ ExpertSignOff: () => null }));
 jest.mock("../RunTheBench", () => ({ RunTheBench: () => null }));
+// The page reads the URL (walk 13, N10: `?run=` is the Operator's door to their
+// own deliverable), so it needs the canonical App Router double.
+jest.mock("next/navigation", () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require("@/test-utils/next-navigation").nextNavigationMock({
+    pathname: "/masterwork/encore/d8dfbd2f-169c-468e-a892-c0980e7ddd45",
+  }),
+);
 /** The bench panel, stood in so the STATE it is handed can be read directly. */
 jest.mock("../AuditionProof", () => ({
   AuditionProof: ({ bench }: { bench: { status: string; headline?: string } }) => (
