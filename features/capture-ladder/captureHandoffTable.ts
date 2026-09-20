@@ -39,11 +39,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/client";
 import {
+  asHandoffKind,
+  describeKindCounts,
+  handoffNoun,
   HANDOFF_STATUSES,
   NEEDS_YOU_STATUSES,
   OPTIONAL_RUNGS,
   RUNGS,
+  UNKNOWN_KIND_NOUN,
   type CaptureHandoff,
+  type HandoffKind,
 } from "@/features/capture-ladder/types";
 
 export const CAPTURE_HANDOFF_SCHEMA = "media" as const;
@@ -95,6 +100,18 @@ const captureHandoffSchema = z.object({
     .transform((v) => v ?? ""),
   rung: z.enum(["own_browser", "human_drive"]),
   status: z.enum(HANDOFF_STATUSES),
+  /**
+   * WHAT the browser is being asked to fetch.
+   *
+   * 🚨 NEITHER REFUSED NOR RELABELLED. A kind this build has never heard of —
+   * the server may add one before this client ships again — parses to `null`,
+   * which every sentence renders as "item". The two tempting alternatives are
+   * both defects this feature has already paid for: REFUSING the row drops a
+   * real page a real person is waiting on (that is the residential-rung
+   * incident, one enum over), and COERCING it to `web_page` prints a confident
+   * wrong noun, which is the very lie this column was added to end.
+   */
+  handoff_kind: z.unknown().transform(asHandoffKind),
   reason: z
     .string()
     .nullable()
@@ -138,6 +155,12 @@ const captureHandoffSchema = z.object({
   deleted_at: z.string().nullable().default(null),
   version: z.number().default(1),
   metadata: z
+    .record(z.string(), z.unknown())
+    .nullable()
+    .default({})
+    .transform((v) => v ?? {}),
+  /** NOT NULL, defaults to `{}` — the same contract as `metadata`. */
+  custom_fields: z
     .record(z.string(), z.unknown())
     .nullable()
     .default({})
@@ -237,12 +260,19 @@ function isMissingTable(error: { code?: string | null } | null): boolean {
   return error?.code === TABLE_NOT_FOUND || error?.code === UNDEFINED_TABLE;
 }
 
-/** The sentence for dropped rows, or `null` when none were dropped. */
+/**
+ * The sentence for dropped rows, or `null` when none were dropped.
+ *
+ * Deliberately says "item", not "page": the row failed to PARSE, so we do not
+ * know what it was. Naming it a page here would be a guess about the person's
+ * own work in the one sentence whose entire job is to admit we could not read
+ * it.
+ */
 export function droppedRowsSentence(dropped: number): string | null {
   if (dropped <= 0) return null;
   return dropped === 1
-    ? "One page in this queue came back in a shape we could not read, so it is not in the list below. It is still in the queue and your extension can still see it."
-    : `${dropped} pages in this queue came back in a shape we could not read, so they are not in the list below. They are still in the queue and your extension can still see them.`;
+    ? `One ${UNKNOWN_KIND_NOUN.one} in this queue came back in a shape we could not read, so it is not in the list below. It is still in the queue and your extension can still see it.`
+    : `${dropped} ${UNKNOWN_KIND_NOUN.many} in this queue came back in a shape we could not read, so they are not in the list below. They are still in the queue and your extension can still see them.`;
 }
 
 /**
@@ -269,7 +299,8 @@ export async function fetchNeedsYouHandoffs(
     }
     return {
       kind: "failed",
-      sentence: `We could not read the pages waiting for your browser: ${error.message}`,
+      // The read FAILED, so there is no queue to count and no kind to name.
+      sentence: `We could not read what is waiting for your browser: ${error.message}`,
     };
   }
 
@@ -277,11 +308,17 @@ export async function fetchNeedsYouHandoffs(
   return { kind: "ok", handoffs, dropped };
 }
 
-/** One of the person's OTHER workspaces, and how many pages wait in it. */
+/** One of the person's OTHER workspaces, and what waits in it. */
 export interface NeedsYouElsewhere {
   organizationId: string;
   organizationName: string;
   count: number;
+  /**
+   * The same count broken down by kind, so the sentence can say "2 pages and a
+   * video" rather than calling three different things pages. `null` keys are
+   * kinds this build does not recognise.
+   */
+  kinds: Map<HandoffKind | null, number>;
 }
 
 export type NeedsYouElsewhereResult =
@@ -335,7 +372,9 @@ export async function countNeedsYouElsewhere(
   if (otherIds.length === 0) return { kind: "ok", workspaces: [] };
 
   const { data, error } = await captureHandoffTable()
-    .select("organization_id")
+    // `handoff_kind` rides along so the sentence below can name the things
+    // honestly. It is one more column on a count query, not a second read.
+    .select("organization_id,handoff_kind")
     .in("organization_id", otherIds)
     .in("status", NEEDS_YOU_STATUSES as readonly string[])
     .is("deleted_at", null);
@@ -348,10 +387,18 @@ export async function countNeedsYouElsewhere(
   }
 
   const counts = new Map<string, number>();
+  const kindsByOrg = new Map<string, Map<HandoffKind | null, number>>();
   for (const row of data ?? []) {
     const id = (row as { organization_id?: unknown }).organization_id;
     if (typeof id !== "string") continue;
     counts.set(id, (counts.get(id) ?? 0) + 1);
+    const kind = asHandoffKind((row as { handoff_kind?: unknown }).handoff_kind);
+    let byKind = kindsByOrg.get(id);
+    if (!byKind) {
+      byKind = new Map();
+      kindsByOrg.set(id, byKind);
+    }
+    byKind.set(kind, (byKind.get(kind) ?? 0) + 1);
   }
   if (counts.size === 0) return { kind: "ok", workspaces: [] };
 
@@ -377,6 +424,7 @@ export async function countNeedsYouElsewhere(
         organizationId,
         organizationName: names.get(organizationId) ?? "another workspace",
         count,
+        kinds: kindsByOrg.get(organizationId) ?? new Map(),
       }))
       .sort((a, b) => b.count - a.count),
   };
@@ -393,7 +441,19 @@ export function elsewhereSentence(result: NeedsYouElsewhereResult): string | nul
     .join(", ");
   const rest = result.workspaces.length - Math.min(2, result.workspaces.length);
   const tail = rest > 0 ? `, and more in ${rest} other workspace${rest === 1 ? "" : "s"}` : "";
-  return total === 1
-    ? `One more page is waiting in another of your workspaces — ${named}${tail}. Switch workspace to reach it.`
-    : `${total} more pages are waiting in your other workspaces — ${named}${tail}. Switch workspace to reach them.`;
+
+  // Every workspace's kinds, summed — the lead clause names what is actually
+  // waiting ("one more video", "2 more pages and 3 videos"), never "pages" for
+  // a set that is not pages.
+  const allKinds = new Map<HandoffKind | null, number>();
+  for (const row of result.workspaces) {
+    for (const [kind, n] of row.kinds) {
+      allKinds.set(kind, (allKinds.get(kind) ?? 0) + n);
+    }
+  }
+  if (total === 1) {
+    const [only] = [...allKinds.keys()];
+    return `One more ${handoffNoun(only ?? null)} is waiting in another of your workspaces — ${named}${tail}. Switch workspace to reach it.`;
+  }
+  return `${describeKindCounts(allKinds)} are waiting in your other workspaces — ${named}${tail}. Switch workspace to reach them.`;
 }

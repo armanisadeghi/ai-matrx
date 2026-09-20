@@ -179,7 +179,7 @@ export function OrchestraBuilder({
         tabs: ["system"],
       });
       toast.success(
-        "Added an <available_agents> section to the system prompt — opened it for review. Use 'Sync agent listings' to fill it from your members.",
+        "Agent section added. Review it, then select “Sync agent listings”.",
       );
     } else {
       toast.error(

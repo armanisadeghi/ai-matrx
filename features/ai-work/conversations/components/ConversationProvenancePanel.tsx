@@ -313,18 +313,28 @@ function BindingCard({
                         }`
                       : "earlier turns"}{" "}
                     stayed on conversation{" "}
-                    <span className="font-mono text-[11px]">
-                      {handoff.priorContextConversationId}
-                    </span>
+                    <EntityRef
+                      token="conversation"
+                      id={handoff.priorContextConversationId}
+                      name={handoff.priorContextConversationId}
+                      showIcon={false}
+                      wrap
+                      labelClassName="font-mono text-[11px]"
+                    />
                     , linked here as prior context.
                   </>
                 ) : (
                   <>
                     {" "}
                     — conversation{" "}
-                    <span className="font-mono text-[11px]">
-                      {handoff.reboundFromConversationId}
-                    </span>{" "}
+                    <EntityRef
+                      token="conversation"
+                      id={handoff.reboundFromConversationId}
+                      name={handoff.reboundFromConversationId}
+                      showIcon={false}
+                      wrap
+                      labelClassName="font-mono text-[11px]"
+                    />{" "}
                     held no turns of its own.
                   </>
                 )}

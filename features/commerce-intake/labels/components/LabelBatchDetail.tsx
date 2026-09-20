@@ -144,7 +144,7 @@ export function LabelBatchDetail({
     }
     if (gate.blocked) {
       toast.error(
-        "This organization blocks printing on a printer that failed certification. An admin can change that in Organization settings → Configuration.",
+        "Printer certification failed. Ask an admin to check Organization settings.",
       );
       return true;
     }

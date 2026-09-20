@@ -342,6 +342,123 @@ export function asHandoffStatus(value: unknown): HandoffStatus | null {
 /** The two rungs a handoff row can be waiting on (§3, `rung` column). */
 export type HandoffRung = Extract<Rung, "own_browser" | "human_drive">;
 
+// ---------------------------------------------------------------------------
+// §3 — WHAT the person's browser is being asked to fetch
+// ---------------------------------------------------------------------------
+
+/**
+ * The `handoff_kind` column's closed vocabulary — this repo's import of
+ * matrx-extend's `HANDOFF_KINDS` (`src/lib/capture-ladder/types.ts`), which is
+ * what the live CHECK constraint admits. Never re-spelled loosely: the
+ * extension BRANCHES on these strings (`runner.ts` sends a `youtube_captions`
+ * row down the caption reader instead of the page reader), so a variant here
+ * would describe work the extension is not doing.
+ *
+ * 🚨 THIS EXISTS BECAUSE A QUEUE CALLED EVERYTHING A PAGE. The column shipped
+ * with YouTube captions and this repo never learned it, so `/capture/needs-you`
+ * and the assists chip told the person "3 pages are waiting for your browser"
+ * when what waited was three videos. Zod let the rows through — nothing threw,
+ * nothing was dropped, and the screen was simply wrong about the person's own
+ * work, which is the quietest way for a surface to lie.
+ */
+export const HANDOFF_KINDS = ["web_page", "youtube_captions"] as const;
+
+export type HandoffKind = (typeof HANDOFF_KINDS)[number];
+
+/**
+ * The kind, or `null`. A row whose kind we do not recognise is NOT coerced to
+ * `web_page` here — a caller that must name the thing says "item" rather than
+ * calling a future kind a page, which is the defect this vocabulary closes.
+ */
+export function asHandoffKind(value: unknown): HandoffKind | null {
+  return typeof value === "string" &&
+    (HANDOFF_KINDS as readonly string[]).includes(value)
+    ? (value as HandoffKind)
+    : null;
+}
+
+/**
+ * What the person calls the thing. Never the column value.
+ *
+ * `youtube_captions` is a VIDEO to the person: the row's title is the video's
+ * title, they queued a video, and what lands in their library is that video's
+ * words. "Captions" is our side of it — true, and the explanation's job
+ * ({@link HANDOFF_KIND_EXPLANATION}), not the noun's.
+ */
+export const HANDOFF_KIND_NOUN: Record<
+  HandoffKind,
+  { one: string; many: string }
+> = {
+  web_page: { one: "page", many: "pages" },
+  youtube_captions: { one: "video", many: "videos" },
+};
+
+/** The noun for a mixed or unrecognised set — honest, never "page" by default. */
+export const UNKNOWN_KIND_NOUN = { one: "item", many: "items" } as const;
+
+/** One more sentence, for the surface that has room to say what we actually take. */
+export const HANDOFF_KIND_EXPLANATION: Record<HandoffKind, string> = {
+  web_page:
+    "Your browser opens the page and keeps what it can read on it.",
+  youtube_captions:
+    "Your browser opens the video and keeps its subtitles — the words, not the video file.",
+};
+
+/** The noun for ONE row, in the person's words. */
+export function handoffNoun(kind: HandoffKind | null): string {
+  return kind ? HANDOFF_KIND_NOUN[kind].one : UNKNOWN_KIND_NOUN.one;
+}
+
+/**
+ * A queue in the person's words: `"3 pages"`, `"one video"`,
+ * `"2 pages and 3 videos"`.
+ *
+ * THE MIXED CASE IS THE POINT. One queue holds both kinds — the live table
+ * carries pages waiting and videos captured in the same workspace — so every
+ * count sentence is built here rather than hardcoding a noun at each call site,
+ * which is how "pages" got into five sentences in the first place.
+ *
+ * `countWord` renders 1 as a word ("one page") for a sentence, or leave it off
+ * for a digit ("1 page") where a heading wants the number to stand out.
+ */
+export function describeHandoffCounts(
+  handoffs: readonly { handoff_kind?: HandoffKind | null }[],
+  options: { countWord?: boolean } = {},
+): string {
+  const counts = new Map<HandoffKind | null, number>();
+  for (const row of handoffs) {
+    const kind = row.handoff_kind ?? null;
+    counts.set(kind, (counts.get(kind) ?? 0) + 1);
+  }
+  return describeKindCounts(counts, options);
+}
+
+/** The same sentence from counts alone, for a surface that has no rows to hand. */
+export function describeKindCounts(
+  counts: ReadonlyMap<HandoffKind | null, number>,
+  options: { countWord?: boolean } = {},
+): string {
+  const total = [...counts.values()].reduce((sum, n) => sum + n, 0);
+  if (total === 0) return `no ${UNKNOWN_KIND_NOUN.many}`;
+
+  const say = (n: number, kind: HandoffKind | null): string => {
+    const noun = kind ? HANDOFF_KIND_NOUN[kind] : UNKNOWN_KIND_NOUN;
+    const number = n === 1 && options.countWord ? "one" : String(n);
+    return `${number} ${n === 1 ? noun.one : noun.many}`;
+  };
+
+  // Stable order, so the same queue never reads two ways: the declared
+  // vocabulary first, anything unrecognised last.
+  const ordered: (HandoffKind | null)[] = [...HANDOFF_KINDS, null];
+  const parts = ordered
+    .filter((kind) => (counts.get(kind) ?? 0) > 0)
+    .map((kind) => say(counts.get(kind) ?? 0, kind));
+
+  if (parts.length === 1) return parts[0];
+  if (parts.length === 2) return `${parts[0]} and ${parts[1]}`;
+  return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+}
+
 /**
  * The statuses that mean a person still has something in front of them. The
  * tray and `/capture/needs-you` read exactly these two (§8.1).
@@ -381,6 +498,17 @@ export interface CaptureHandoff {
   title: string;
   rung: HandoffRung;
   status: HandoffStatus;
+  /**
+   * WHAT the browser is being asked to fetch. NOT NULL, defaults to
+   * `'web_page'`; the live CHECK admits {@link HANDOFF_KINDS}. Added to the
+   * table after this interface was first written, which is exactly why every
+   * screen called a video a page until 2026-09-20.
+   *
+   * `null` means THIS BUILD does not recognise the server's value — never
+   * "absent". The ingress parse keeps such a row and every sentence calls it an
+   * "item"; see the note on the `handoff_kind` field in `captureHandoffTable.ts`.
+   */
+  handoff_kind: HandoffKind | null;
   /** Machine class that sent it here. NOT NULL — the server always names one. */
   reason: string;
   /** ONE plain sentence: why your browser. NOT NULL. */
@@ -422,6 +550,11 @@ export interface CaptureHandoff {
   deleted_at: string | null;
   version: number;
   metadata: Record<string, unknown>;
+  /**
+   * The entity-table's per-row extras. NOT NULL, defaults to `{}` — same
+   * contract as `metadata`, so no screen branches on it being absent.
+   */
+  custom_fields: Record<string, unknown>;
 }
 
 /**
@@ -441,7 +574,8 @@ export function describeEstimate(seconds: number | null): string | null {
  * click through this one". Contract §3/§7.4.
  */
 export function describeWhoActs(handoff: CaptureHandoff): string {
+  const noun = handoffNoun(handoff.handoff_kind ?? null);
   return handoff.status === "needs_drive" || handoff.rung === "human_drive"
-    ? "You need to open this one yourself"
-    : "Your browser will do this on its own";
+    ? `You need to open this ${noun} yourself`
+    : `Your browser will do this on its own`;
 }

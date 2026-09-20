@@ -325,7 +325,7 @@ export function SearchConsoleWorkspace() {
       ) {
         // BOTH zero — Google genuinely returned nothing.
         toast.warning(
-          "Sync finished but stored no new rows — Google returned nothing for this window. If this repeats, the connection or property binding needs a look.",
+          "Sync found no data for this period. If this repeats, check the Google connection.",
         );
       } else if (result.createdObservations === 0) {
         // Rows came back; we already had every one. This is the NORMAL

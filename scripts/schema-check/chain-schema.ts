@@ -11,7 +11,9 @@
  * exactly the kind of noise that makes people stop trusting the checker.
  */
 
-const SCHEMA_RE = /\.schema\(\s*['"]([a-z_][a-z0-9_]*)['"]\s*\)/g;
+import { buildTableConsts } from "./table-ref-resolution";
+
+const SCHEMA_RE = /\.schema\(\s*(?:['"]([a-z_][a-z0-9_]*)['"]|([A-Za-z_$][\w$]*))\s*\)/g;
 // Receivers we KNOW default to the public schema (raw supabase client handles).
 export const PUBLIC_CLIENTS = new Set(["supabase", "supabaseClient", "sb"]);
 
@@ -27,13 +29,23 @@ function binderAliasRe(binderNames: string[]): RegExp {
 
 /** Per-file client-alias -> schema lookup ("" = a bare alias of the public client). */
 export function buildClientSchemas(content: string, binders: Map<string, string>): Map<string, string> {
+  const localBinders = new Map(binders);
+  // A single-return factory binds the schema just as a shared *Db helper does.
+  // Do not infer factories with branches or additional statements.
+  const constants = buildTableConsts(content);
+  const factory = /\bfunction\s+(\w+)\s*\([^)]*\)\s*\{\s*return\s+(?:createClient\(\)|supabase|supabaseClient)\s*\.schema\(\s*(?:["']([a-z_][a-z0-9_]*)["']|(\w+))\s*\)\s*;?\s*\}/g;
+  for (const m of content.matchAll(factory)) {
+    const schema = m[2] ?? constants.get(m[3]);
+    if (schema) localBinders.set(m[1], schema);
+  }
   const clientSchemas = new Map<string, string>();
   for (const m of content.matchAll(PUBLIC_ALIAS_RE)) clientSchemas.set(m[1], "");
   for (const m of content.matchAll(SCHEMA_ALIAS_RE)) clientSchemas.set(m[1], m[2]);
-  if (binders.size > 0) {
-    for (const m of content.matchAll(binderAliasRe([...binders.keys()]))) {
+  if (localBinders.size > 0) {
+    for (const [name, schema] of localBinders) clientSchemas.set(`call:${name}`, schema);
+    for (const m of content.matchAll(binderAliasRe([...localBinders.keys()]))) {
       const binderName = m[0].match(/=\s*(\w+)\(/)?.[1];
-      if (binderName && binders.has(binderName)) clientSchemas.set(m[1], binders.get(binderName)!);
+      if (binderName && localBinders.has(binderName)) clientSchemas.set(m[1], localBinders.get(binderName)!);
     }
   }
   return clientSchemas;
@@ -49,8 +61,9 @@ export function chainStartOf(lines: string[], i: number): number {
 /** The last explicit `.schema("S")` in the method chain from `chainStart` through line `i`, or null. */
 export function explicitChainSchema(lines: string[], chainStart: number, i: number): string | null {
   const chain = lines.slice(chainStart, i + 1).join("\n");
+  const constants = buildTableConsts(lines.join("\n"));
   let last: string | null = null;
-  for (const m of chain.matchAll(SCHEMA_RE)) last = m[1];
+  for (const m of chain.matchAll(SCHEMA_RE)) last = m[1] ?? constants.get(m[2]) ?? null;
   return last;
 }
 
@@ -92,8 +105,8 @@ export function resolvedChainSchema(
 
   const root = chainRoot(lines, chainStart);
   if (!root) return { schema: null, chainStart };
-  if (root.isCall) return { schema: binders.get(root.ident) ?? null, chainStart }; // `docprocDb(supabase).from(...)`
-  if (PUBLIC_CLIENTS.has(root.ident)) return { schema: "", chainStart };
+  if (root.isCall) return { schema: clientSchemas.get(`call:${root.ident}`) ?? binders.get(root.ident) ?? null, chainStart }; // `docprocDb(supabase).from(...)`
   if (clientSchemas.has(root.ident)) return { schema: clientSchemas.get(root.ident)!, chainStart }; // aliased const, "" = public
+  if (PUBLIC_CLIENTS.has(root.ident)) return { schema: "", chainStart };
   return { schema: null, chainStart };
 }

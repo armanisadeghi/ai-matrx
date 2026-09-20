@@ -132,7 +132,7 @@ export function GazetteerPlaceDetectionConsole({
         toast.error(
           pass.skipped === "autonomy_off"
             ? "Place detection is turned off — nothing ran."
-            : "Place detection is set to wait for a person, and this pass covers every site's shared keywords, so there is nobody it can ask. Nothing ran.",
+            : "Place detection did not run because this shared pass requires a person to approve it.",
         );
       } else {
         toast.success(

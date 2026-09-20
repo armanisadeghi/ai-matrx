@@ -43,6 +43,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/utils/cn";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { formatSessionTimestamp } from "@/features/agent-connections/coding-sessions/verdict";
@@ -87,7 +88,9 @@ const VERDICT_TONE: Record<SyncVerdictCode, string> = {
 
 function VerdictIcon({ code }: { code: SyncVerdictCode }) {
   if (code === "unknown")
-    return <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />;
+    return (
+      <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+    );
   if (code === "in_sync")
     return (
       <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
@@ -100,13 +103,7 @@ function VerdictIcon({ code }: { code: SyncVerdictCode }) {
 }
 
 /** One of the four counts. An unknown cell states WHO can answer it. */
-function Count({
-  label,
-  value,
-}: {
-  label: string;
-  value: number | null;
-}) {
+function Count({ label, value }: { label: string; value: number | null }) {
   return (
     <div className="min-w-0 border-b border-r border-border px-3 py-2.5 last:border-r-0">
       <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
@@ -125,7 +122,13 @@ function Count({
   );
 }
 
-function Detail({ label, children }: { label: string; children: React.ReactNode }) {
+function Detail({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="min-w-0 border-b border-border px-3 py-2 text-xs">
       <dt className="font-medium text-muted-foreground">{label}</dt>
@@ -332,9 +335,14 @@ export function CloudSyncTruthPanel({
           </Detail>
           <Detail label="Conversation in AI Matrx">
             {diagnosis.conversation_id ? (
-              <span className="font-mono text-[11px]">
-                {diagnosis.conversation_id}
-              </span>
+              <EntityRef
+                token="conversation"
+                id={diagnosis.conversation_id}
+                name={diagnosis.conversation_id}
+                showIcon={false}
+                wrap
+                labelClassName="font-mono text-[11px]"
+              />
             ) : (
               <span className="text-muted-foreground">
                 No conversation row — nothing was ever created for this session
@@ -383,8 +391,8 @@ export function CloudSyncTruthPanel({
         ) : null}
         {reconcile.phase === "running" ? (
           <p className="mt-2 text-xs text-muted-foreground">
-            Matrx Local is reconciling this conversation. A long transcript takes
-            a while — this page will show its answer when it is done.
+            Matrx Local is reconciling this conversation. A long transcript
+            takes a while — this page will show its answer when it is done.
           </p>
         ) : null}
         {reconcile.phase === "unreachable" || reconcile.phase === "failed" ? (

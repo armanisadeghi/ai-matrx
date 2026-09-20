@@ -16,7 +16,7 @@
  */
 import { defineConfig, devices } from "@playwright/test";
 
-import { noAppSentence, resolveBaseURL } from "./features/content-ir/sandbox/browser/base-url";
+import { noAppSentence, resolveBaseURL } from "./scripts/lib/kind-sandbox-base-url";
 
 /**
  * Refuse here rather than inside a test. A missing app is not a failing

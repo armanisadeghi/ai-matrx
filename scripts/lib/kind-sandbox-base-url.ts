@@ -1,5 +1,6 @@
 /**
- * Where the app actually is.
+ * Playwright-only server discovery. This is test infrastructure, never a
+ * product runtime setting or a customer-facing readiness timeout.
  *
  * This is a SHARED checkout: the agent preview is normally on :3001
  * (`pnpm preview:start`), a plain `pnpm dev` lands on :3000, and either may be

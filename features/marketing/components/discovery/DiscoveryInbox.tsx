@@ -289,7 +289,7 @@ export function DiscoveryInbox({ brandId }: { brandId: string }) {
     const needLabel = selectedItems.length - ready.length;
     if (ready.length === 0) {
       toast.error(
-        "Every selected item is typed Other with no label — Other needs a per-item label, so label them or confirm those individually.",
+        "Add a label to each “Other” item before confirming them together.",
       );
       return;
     }

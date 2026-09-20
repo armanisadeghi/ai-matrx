@@ -183,7 +183,7 @@ export function CreateAgentAppFormWrapper({
       // The route files the app in the admitted organization and refuses
       // without one — say so here rather than send a request that 400s.
       toast.error(
-        "No organization is selected, so this app has nowhere to be filed. Choose the organization you are working in from the avatar menu and try again.",
+        "Select an organization from the avatar menu, then try again.",
       );
       return;
     }
@@ -218,7 +218,7 @@ export function CreateAgentAppFormWrapper({
       // The route files the app in the admitted organization and refuses
       // without one — say so here rather than send a request that 400s.
       toast.error(
-        "No organization is selected, so this app has nowhere to be filed. Choose the organization you are working in from the avatar menu and try again.",
+        "Select an organization from the avatar menu, then try again.",
       );
       return;
     }

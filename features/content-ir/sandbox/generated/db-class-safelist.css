@@ -1,6 +1,6 @@
 /* GENERATED — do not edit by hand.
  *
- * The Tailwind utilities the 166 organization-authored component
+ * The Tailwind utilities the 174 organization-authored component
  * bodies in content_ir.kind_component use. Tailwind emits a utility only for a
  * class it SCANS in a source file; these classes live in the database, so
  * without this file they produce no CSS and the component silently renders
@@ -10,18 +10,21 @@
  * Regenerate:  pnpm gen:kind-sandbox-safelist
  * Verify:      pnpm check:kind-sandbox-safelist   (fails when the live bodies move)
  *
- * Corpus fingerprint — rows: 166; newest updated_at: 2026-09-14T19:02:06.170356+00:00; candidates: 11beb2893db75bc2
- * Candidates scanned: 5832
- * Of those, Tailwind generates: 1422
- * Already covered by the repo source scan: 1101
- * Closed by this file: 321
+ * Corpus fingerprint — rows: 174; newest updated_at: 2026-09-17T18:20:30.067861+00:00; candidates: 613d7ac2cdbdfb55
+ * Candidates scanned: 6026
+ * Of those, Tailwind generates: 1472
+ * Already covered by the repo source scan: 1125
+ * Closed by this file: 347
  */
+@source inline("-inset-x-1");
 @source inline("-mt-12");
 @source inline("-mx-1");
 @source inline("-mx-2");
 @source inline("-mx-4");
 @source inline("-rotate-90");
+@source inline("-top-1");
 @source inline("-translate-x-3");
+@source inline("-translate-y-0.5");
 @source inline("-translate-y-1/2");
 @source inline("-translate-y-2");
 @source inline("-translate-y-4");
@@ -96,10 +99,12 @@
 @source inline("@[520px]:block");
 @source inline("@[520px]:flex");
 @source inline("@[520px]:flex-row");
+@source inline("@[520px]:gap-3");
 @source inline("@[520px]:grid-cols-2");
 @source inline("@[520px]:hidden");
 @source inline("@[520px]:inline");
 @source inline("@[520px]:items-center");
+@source inline("@[520px]:items-start");
 @source inline("@[520px]:justify-between");
 @source inline("@[520px]:text-base");
 @source inline("@[520px]:whitespace-normal");
@@ -110,11 +115,15 @@
 @source inline("@[560px]:block");
 @source inline("@[560px]:border-border/70");
 @source inline("@[560px]:border-l");
+@source inline("@[560px]:flex");
 @source inline("@[560px]:flex-row");
 @source inline("@[560px]:gap-2");
+@source inline("@[560px]:gap-3");
 @source inline("@[560px]:gap-4");
 @source inline("@[560px]:grid-cols-2");
 @source inline("@[560px]:grid-cols-4");
+@source inline("@[560px]:inline");
+@source inline("@[560px]:inline-flex");
 @source inline("@[560px]:items-center");
 @source inline("@[560px]:items-start");
 @source inline("@[560px]:justify-between");
@@ -166,10 +175,23 @@
 @source inline("@[720px]:grid-cols-2");
 @source inline("@[720px]:text-3xl");
 @source inline("@[80rem]:grid-cols-3");
+@source inline("@[820px]:flex-col");
+@source inline("@[820px]:gap-1");
+@source inline("@[820px]:gap-y-0");
+@source inline("@[820px]:grid");
 @source inline("@[820px]:grid-cols-2");
+@source inline("@[820px]:grid-cols-[128px_minmax(0,1fr)_168px_128px]");
+@source inline("@[820px]:items-start");
+@source inline("@[820px]:pt-0.5");
+@source inline("@[820px]:pt-1.5");
 @source inline("@[860px]:col-span-2");
 @source inline("@[860px]:col-span-3");
+@source inline("@[860px]:gap-y-0");
+@source inline("@[860px]:grid");
 @source inline("@[860px]:grid-cols-5");
+@source inline("@[860px]:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)_minmax(0,1.2fr)]");
+@source inline("@[860px]:hidden");
+@source inline("@[860px]:items-start");
 @source inline("@[900px]:col-span-2");
 @source inline("@[900px]:grid-cols-2");
 @source inline("@[900px]:grid-cols-3");
@@ -223,6 +245,7 @@
 @source inline("bg-background/60");
 @source inline("bg-background/70");
 @source inline("bg-background/80");
+@source inline("bg-background/90");
 @source inline("bg-background/95");
 @source inline("bg-black/25");
 @source inline("bg-black/5");
@@ -248,6 +271,7 @@
 @source inline("bg-chart-4/10");
 @source inline("bg-chart-5");
 @source inline("bg-chart-5/10");
+@source inline("bg-current");
 @source inline("bg-cyan-500");
 @source inline("bg-cyan-500/10");
 @source inline("bg-cyan-500/5");
@@ -407,6 +431,7 @@
 @source inline("border-emerald-500/40");
 @source inline("border-emerald-500/50");
 @source inline("border-emerald-500/60");
+@source inline("border-foreground/20");
 @source inline("border-foreground/30");
 @source inline("border-fuchsia-500/30");
 @source inline("border-green-300");
@@ -425,9 +450,11 @@
 @source inline("border-l-emerald-500");
 @source inline("border-l-emerald-500/50");
 @source inline("border-l-primary/30");
+@source inline("border-l-primary/50");
 @source inline("border-l-red-500");
 @source inline("border-l-rose-500");
 @source inline("border-l-sky-500");
+@source inline("border-l-transparent");
 @source inline("border-none");
 @source inline("border-orange-500/30");
 @source inline("border-orange-500/40");
@@ -515,6 +542,7 @@
 @source inline("dark:hover:text-violet-400");
 @source inline("dark:text-amber-100/70");
 @source inline("dark:text-amber-200");
+@source inline("dark:text-amber-200/90");
 @source inline("dark:text-amber-300");
 @source inline("dark:text-amber-300/80");
 @source inline("dark:text-amber-400");
@@ -571,6 +599,7 @@
 @source inline("duration-150");
 @source inline("duration-200");
 @source inline("duration-300");
+@source inline("duration-400");
 @source inline("duration-500");
 @source inline("duration-700");
 @source inline("ease-in-out");
@@ -591,6 +620,7 @@
 @source inline("flex-col");
 @source inline("flex-none");
 @source inline("flex-nowrap");
+@source inline("flex-row");
 @source inline("flex-shrink-0");
 @source inline("flex-wrap");
 @source inline("float-right");
@@ -706,13 +736,17 @@
 @source inline("group-focus-within/interp:block");
 @source inline("group-hover/edit:opacity-100");
 @source inline("group-hover/interp:block");
+@source inline("group-hover/into:opacity-100");
 @source inline("group-hover/link:opacity-100");
+@source inline("group-hover/pick:opacity-100");
+@source inline("group-hover/pid:opacity-100");
 @source inline("group-hover/q:opacity-100");
 @source inline("group-hover/row:opacity-100");
 @source inline("group-hover/section:opacity-100");
 @source inline("group-hover/src:opacity-100");
 @source inline("group-hover/swatch:opacity-90");
 @source inline("group-hover/swatch:scale-110");
+@source inline("group-hover/url:opacity-100");
 @source inline("group-hover:-translate-y-0.5");
 @source inline("group-hover:bg-muted");
 @source inline("group-hover:bg-primary/10");
@@ -730,12 +764,16 @@
 @source inline("group-hover:translate-x-0.5");
 @source inline("group/edit");
 @source inline("group/interp");
+@source inline("group/into");
 @source inline("group/link");
+@source inline("group/pick");
+@source inline("group/pid");
 @source inline("group/q");
 @source inline("group/row");
 @source inline("group/section");
 @source inline("group/src");
 @source inline("group/swatch");
+@source inline("group/url");
 @source inline("grow");
 @source inline("h-0.5");
 @source inline("h-1");
@@ -773,6 +811,7 @@
 @source inline("hover:bg-accent");
 @source inline("hover:bg-accent/30");
 @source inline("hover:bg-accent/50");
+@source inline("hover:bg-amber-500/10");
 @source inline("hover:bg-background");
 @source inline("hover:bg-background/70");
 @source inline("hover:bg-destructive/10");
@@ -804,6 +843,7 @@
 @source inline("hover:border-rose-400/60");
 @source inline("hover:border-sky-400/60");
 @source inline("hover:border-violet-400/60");
+@source inline("hover:brightness-105");
 @source inline("hover:brightness-110");
 @source inline("hover:decoration-foreground");
 @source inline("hover:decoration-primary");
@@ -894,6 +934,7 @@
 @source inline("max-h-[420px]");
 @source inline("max-h-[640px]");
 @source inline("max-h-[70vh]");
+@source inline("max-h-[75vh]");
 @source inline("max-h-none");
 @source inline("max-w-2xl");
 @source inline("max-w-3xl");
@@ -904,6 +945,7 @@
 @source inline("max-w-[10rem]");
 @source inline("max-w-[18rem]");
 @source inline("max-w-[28rem]");
+@source inline("max-w-[9rem]");
 @source inline("max-w-full");
 @source inline("max-w-lg");
 @source inline("max-w-md");
@@ -938,7 +980,10 @@
 @source inline("min-w-[140px]");
 @source inline("min-w-[180px]");
 @source inline("min-w-[200px]");
+@source inline("min-w-[3.5rem]");
 @source inline("min-w-[420px]");
+@source inline("min-w-[48px]");
+@source inline("min-w-[8.5rem]");
 @source inline("min-w-[8rem]");
 @source inline("min-w-full");
 @source inline("ml-0.5");
@@ -1036,6 +1081,7 @@
 @source inline("pr-0.5");
 @source inline("pr-1");
 @source inline("pr-16");
+@source inline("pr-2");
 @source inline("pr-3");
 @source inline("pr-4");
 @source inline("pr-6");
@@ -1131,6 +1177,7 @@
 @source inline("scale-105");
 @source inline("scale-95");
 @source inline("scale-[1.01]");
+@source inline("scroll-mt-16");
 @source inline("scroll-mt-24");
 @source inline("select-all");
 @source inline("select-none");
@@ -1180,6 +1227,7 @@
 @source inline("text-[0.85em]");
 @source inline("text-[0.8em]");
 @source inline("text-[0.95rem]");
+@source inline("text-[10.5px]");
 @source inline("text-[10px]");
 @source inline("text-[11.5px]");
 @source inline("text-[11px]");
@@ -1188,6 +1236,7 @@
 @source inline("text-[13px]");
 @source inline("text-[14px]");
 @source inline("text-[15px]");
+@source inline("text-[9.5px]");
 @source inline("text-[9px]");
 @source inline("text-accent-foreground");
 @source inline("text-amber-400");
@@ -1221,6 +1270,7 @@
 @source inline("text-emerald-700");
 @source inline("text-emerald-800");
 @source inline("text-foreground");
+@source inline("text-foreground/70");
 @source inline("text-foreground/75");
 @source inline("text-foreground/80");
 @source inline("text-foreground/85");

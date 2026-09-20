@@ -37,6 +37,8 @@
  * stale is just a hand-written file with a longer header.
  */
 import { createClient } from "@supabase/supabase-js";
+import { readAllRows } from "@ai-matrx/data/db";
+import type { Database } from "../../../types/database.types";
 import { Scanner } from "@tailwindcss/oxide";
 import { createHash } from "node:crypto";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
@@ -75,11 +77,8 @@ async function loadEnv(): Promise<Record<string, string>> {
     return out;
 }
 
-interface BodyRow {
-    component_key: string;
-    component_source: string | null;
-    updated_at: string | null;
-}
+type BodyRow = Pick<Database["content_ir"]["Tables"]["kind_component"]["Row"],
+    "component_key" | "component_source" | "updated_at">;
 
 /** Every organization-authored body, live. No sample, no fixture. */
 export async function readLiveBodies(): Promise<BodyRow[]> {
@@ -91,16 +90,20 @@ export async function readLiveBodies(): Promise<BodyRow[]> {
             "The safelist generator reads the live component bodies and needs NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY in .env.local. Without them it cannot know which classes the corpus uses, and it will not guess.",
         );
     }
-    const sb = createClient(url, key, { auth: { persistSession: false } });
-    const { data, error } = await sb
-        .schema("content_ir")
-        .from("kind_component")
-        .select("component_key,component_source,updated_at")
-        .eq("source", "db");
-    if (error) {
-        throw new Error(`Reading content_ir.kind_component failed: ${error.message}`);
-    }
-    return (data ?? []).filter((row) => (row.component_source ?? "").trim());
+    const sb = createClient<Database>(url, key, { auth: { persistSession: false } });
+    // The fingerprint must cover the whole corpus, including rows beyond
+    // PostgREST's response cap. Order by the primary key for stable pages.
+    const data = await readAllRows<BodyRow>(
+        ({ from, to }) => sb
+            .schema("content_ir")
+            .from("kind_component")
+            .select("component_key,component_source,updated_at", { count: "exact" })
+            .eq("source", "db")
+            .order("id")
+            .range(from, to),
+        { label: "content_ir.kind_component sandbox class corpus" },
+    );
+    return data.filter((row) => (row.component_source ?? "").trim());
 }
 
 /** Tailwind's own extractor, over the database rows instead of over files. */
