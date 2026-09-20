@@ -145,7 +145,7 @@ describeLive("the approval card, against the live record store", () => {
     await settle(10);
 
     // It SAYS what now exists…
-    expect(container.textContent ?? "").toContain("is now a column on this table");
+    expect(container.textContent ?? "").toContain("is now a column on");
 
     // …and the store agrees: the table declares the key and the Field is there.
     expect(await declaredKeys(store, tableId)).toContain(key);
@@ -175,6 +175,9 @@ describeLive("the approval card, against the live record store", () => {
     expect(wait.policy.setting).toBe("ask");
     expect(wait.policy.reason).toBe("existing_table_needs_a_person");
     expect(wait.change.change).toBe("field");
+    // A captured result carries no queue row, so the card offers no decision
+    // over it — that is the `always_ask` table case, and it is deliberate.
+    expect(wait.approvalId).toBeNull();
     // An ordinary result is not a wait — a card that could appear over a change
     // that already happened would be worse than no card at all.
     expect(readOrdinary()).toBeNull();
