@@ -39,6 +39,15 @@ export interface SourceVocabulary {
      * are already text; there is nothing to caption and nothing to transcribe.
      */
     transcribable: boolean;
+    /**
+     * Where the FREE transcription lane's text comes from, in the same words
+     * the job panel and the confirm dialog print beside `free_captions` (§7.1).
+     * `null` when `transcribable` is false — there is no free lane to name.
+     * D6b (jobs-bar cold-walk-12): this used to be a hardcoded "YouTube's own
+     * captions" printed over a podcast row, which the row's OWN failure text
+     * beside it correctly called "a podcast" — one screen, two vocabularies.
+     */
+    freeCaptionsSource: string | null;
     /** The cadence chart's own title. */
     cadence: string;
 }
@@ -48,6 +57,7 @@ const NEUTRAL: SourceVocabulary = {
     kindSplit: null,
     length: null,
     transcribable: false,
+    freeCaptionsSource: null,
     cadence: "Added, by month",
 };
 
@@ -66,6 +76,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
             mean: "mean per video",
         },
         transcribable: true,
+        freeCaptionsSource: "YouTube's own captions",
         cadence: "Publishing cadence, by month",
     },
     podcast_rss: {
@@ -80,6 +91,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
             mean: "mean per episode",
         },
         transcribable: true,
+        freeCaptionsSource: "the show's own published transcript",
         cadence: "Publishing cadence, by month",
     },
     blog_feed: {
@@ -88,6 +100,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
         // No duration and no word count reach the client today. Absent, not zero.
         length: null,
         transcribable: false,
+        freeCaptionsSource: null,
         cadence: "Publishing cadence, by month",
     },
     slide_deck: {
@@ -95,6 +108,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
         kindSplit: null,
         length: null,
         transcribable: false,
+        freeCaptionsSource: null,
         cadence: "Published, by month",
     },
     drive_folder: {
@@ -102,6 +116,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
         kindSplit: null,
         length: null,
         transcribable: false,
+        freeCaptionsSource: null,
         cadence: "Added, by month",
     },
     onedrive_drive: {
@@ -109,6 +124,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
         kindSplit: null,
         length: null,
         transcribable: false,
+        freeCaptionsSource: null,
         cadence: "Added, by month",
     },
     google_picked_files: {
@@ -116,6 +132,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
         kindSplit: null,
         length: null,
         transcribable: false,
+        freeCaptionsSource: null,
         cadence: "Added, by month",
     },
     outlook_mail: {
@@ -123,6 +140,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
         kindSplit: null,
         length: null,
         transcribable: false,
+        freeCaptionsSource: null,
         cadence: "Received, by month",
     },
     outlook_calendar: {
@@ -130,6 +148,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
         kindSplit: null,
         length: null,
         transcribable: false,
+        freeCaptionsSource: null,
         cadence: "Scheduled, by month",
     },
     teams_chat: {
@@ -137,6 +156,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
         kindSplit: null,
         length: null,
         transcribable: false,
+        freeCaptionsSource: null,
         cadence: "Active, by month",
     },
 };

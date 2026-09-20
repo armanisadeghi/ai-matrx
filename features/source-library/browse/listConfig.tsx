@@ -222,8 +222,13 @@ export function createLibraryListConfig(
         facetSections: [],
         emptyState: {
             title: "No Libraries yet",
+            // D6b (jobs-bar cold-walk-12): this is the door BEFORE any Library
+            // exists, so there is no adapter to read a noun from yet — but
+            // naming only YouTube here, while the paste box right above it
+            // already accepts a podcast, a blog, or a deck, told a person
+            // pasting any of those that they were in the wrong place.
             description:
-                "Paste a YouTube channel, @handle, playlist or any video link above. The whole catalogue lists in seconds, separated into longs, Shorts and live.",
+                "Paste a YouTube channel, a podcast feed, a blog, or a slide deck link above. The whole catalogue lists in seconds.",
         },
     };
 }

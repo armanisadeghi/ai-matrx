@@ -16,7 +16,6 @@
 export { ConversationListPane } from "./components/ConversationListPane";
 export { ConversationPane } from "./components/ConversationPane";
 export { MessagingSideSheet } from "./components/MessagingSideSheet";
-export { MessageIcon } from "./components/MessageIcon";
 export { NewConversationDialog } from "./components/NewConversationDialog";
 export {
   MessagingConversationRowChrome,

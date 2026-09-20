@@ -1,30 +1,27 @@
-// features/notifications/types.ts
-//
-// The shape the `communication` notification doors actually return, and the
-// result envelope every door in `./service.ts` answers with.
-
-/** One row of `communication.my_notifications`, mapped field by field. */
-export interface PlatformNotification {
+/**
+ * features/notifications/types.ts — the shell Inbox's row.
+ *
+ * One row of `communication.notification` as the recipient sees it through
+ * the `communication.my_notifications` door: the in-app channel only, delivered
+ * rows only, never the provider columns (to_address, provider_message_id, …).
+ *
+ * These columns mirror the door's RETURNS TABLE exactly. When
+ * `types/database.types.ts` is regenerated (`pnpm db-types`) the door's return
+ * type appears under `communication.Functions.my_notifications` and this type
+ * can be derived from it instead of declared.
+ */
+export interface InboxNotification {
   id: string;
-  eventKey: string;
-  subject: string;
+  event_key: string;
+  subject: string | null;
   body: string | null;
-  deepLink: string | null;
-  targetKind: string | null;
-  targetId: string | null;
-  organizationId: string | null;
-  createdAt: string;
-  deliveredAt: string | null;
-  readAt: string | null;
-  actedAt: string | null;
+  deep_link: string | null;
+  target_kind: string | null;
+  target_id: string | null;
+  organization_id: string | null;
+  created_at: string;
+  delivered_at: string | null;
+  read_at: string | null;
+  acted_at: string | null;
   outcome: string | null;
 }
-
-/**
- * Nothing in `./service.ts` throws and nothing swallows: a refusal comes back
- * as `{ok:false}` carrying the door's OWN sentence, which the bell renders
- * verbatim instead of an empty list.
- */
-export type NotificationResult<T> =
-  | { ok: true; value: T }
-  | { ok: false; message: string; code: string | null; technical: string | null };

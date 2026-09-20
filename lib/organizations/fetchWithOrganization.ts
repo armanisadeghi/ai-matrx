@@ -57,7 +57,10 @@
 // route. Same three beats, different wire.
 
 import { getActiveOrgId } from "@/lib/organizations/activeOrg";
-import { isOrganizationRequiredEnvelope } from "@/lib/organizations/organizationRequiredError";
+import {
+  extractOrganizationHoldMemberships,
+  isOrganizationRequiredEnvelope,
+} from "@/lib/organizations/organizationRequiredError";
 
 /** The header every Matrx client carries; see app/api/_lib/apply-scope-to-insert.ts. */
 const ORGANIZATION_HEADER = "X-Organization-Id";
@@ -79,13 +82,20 @@ function withOrganizationHeader(
  * whatever the answer — a recogniser that consumes the stream would break
  * every success path it was added to protect.
  */
-async function isOrganizationRefusal(response: Response): Promise<boolean> {
-  if (response.status !== 400) return false;
+/**
+ * The refusal body, read from a CLONE so the caller's `response.json()` still
+ * works whatever the answer, or `null` when this is not our envelope.
+ */
+async function readOrganizationRefusal(
+  response: Response,
+): Promise<unknown | null> {
+  if (response.status !== 400) return null;
   try {
-    return isOrganizationRequiredEnvelope(await response.clone().json());
+    const body = await response.clone().json();
+    return isOrganizationRequiredEnvelope(body) ? body : null;
   } catch {
     // Not JSON, or already consumed: then it is not our envelope.
-    return false;
+    return null;
   }
 }
 
@@ -102,9 +112,15 @@ export async function fetchWithOrganization(
 ): Promise<Response> {
   const selected = getActiveOrgId();
   const response = await fetch(input, withOrganizationHeader(init, selected));
-  if (!(await isOrganizationRefusal(response))) return response;
+  const refusal = await readOrganizationRefusal(response);
+  if (!refusal) return response;
 
-  // The server says this request needs an organization and names none. Ask.
+  // The server says this request needs an organization and names none. Ask —
+  // and hand the gate the choices the refusal ALREADY carries
+  // (`details.organizations`), so the dialog can render them immediately
+  // instead of waiting on its own membership fetch. `null` (unreadable on this
+  // path) or `[]` (no memberships) both leave the gate to fall back to that
+  // fetch, exactly as before this envelope carried anything.
   // The gate is imported here rather than at module scope so a caller that
   // never meets a refusal never pulls the picker's graph into its chunk.
   const { ensureOrganizationContext } = await import(
@@ -113,7 +129,9 @@ export async function fetchWithOrganization(
   // Throws `OrganizationSelectionCancelled` when the person declines, which is
   // an ANSWER ("not now") and is left to the caller to treat as nothing
   // happened — never swallowed into a silent success here.
-  const chosen = await ensureOrganizationContext();
+  const chosen = await ensureOrganizationContext({
+    prefetchedOrganizations: extractOrganizationHoldMemberships(refusal),
+  });
 
   // Replay once, and only once, with what they named.
   return fetch(input, withOrganizationHeader(init, chosen));

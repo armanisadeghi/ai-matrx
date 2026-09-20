@@ -1274,6 +1274,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Unified Data Ramp",
+        description:
+          "The switch screen for the unified data store: every consumer with its state, its Test 1 gate verdict, and a switch only where there is something honest to switch. Turning a consumer OFF is never gated.",
+        iconName: "ToggleRight",
+        link: "/administration/database/unified-data-ramp",
+        isNew: true,
+      },
+      {
         title: "Canonicalization Toolkit",
         description:
           "Live gate + audit snapshots for the DB canonicalization transition: certification summary, every FAIL/WARN finding, broken functions, migration candidates (M2M/unregistered/stale), and per-table preflight (table_impact) + verify/certify tools.",

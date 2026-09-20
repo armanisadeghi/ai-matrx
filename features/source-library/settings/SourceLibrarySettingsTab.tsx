@@ -253,8 +253,14 @@ export default function SourceLibrarySettingsTab() {
             {reclassification > 0 && (
                 <SettingsCallout
                     tone="warning"
+                    // D6b (jobs-bar cold-walk-12): this count spans every Library in
+                    // the organization, not only YouTube ones — "video(s)" over a
+                    // podcast or blog Source is exactly the bug. This screen is
+                    // organization-wide, so it uses the feature's own canonical noun
+                    // (`FEATURE.md`: "Library · Source · Action") rather than one
+                    // adapter's word.
                     title={`${reclassification.toLocaleString()} ${
-                        reclassification === 1 ? "video" : "videos"
+                        reclassification === 1 ? "Source" : "Sources"
                     } would be classified differently`}
                 >
                     Nothing has been reclassified. These settings apply to the whole

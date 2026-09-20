@@ -6,8 +6,11 @@
  * The four visibility lanes of the contract (§3) ARE the four list scopes this
  * platform already speaks — mine · my orgs · community · world — so the scope
  * tab is translated into the endpoint's `visibility` filter rather than being a
- * second vocabulary. `lane_counts` supplies the true per-tab totals, so a tab
- * never shows a number derived from the page it happens to be holding.
+ * second vocabulary. The contract's `lane_counts` field, meant to supply the
+ * true per-tab totals in one call, is still one of the three OPEN "Frontend
+ * requests" — no server build has ever sent it (D10, jobs-bar cold-walk-12,
+ * 2026-09-19) — so `fetchCounts` below asks the SAME endpoint `fetchPage`
+ * already trusts, once per lane, and reads its `total`.
  *
  * Sorting is deliberately declared UNSUPPORTED on this surface's columns
  * (`sortable: false`) rather than faked client-side: `GET /media/libraries`
@@ -107,38 +110,58 @@ export function createLibraryListService(
         },
 
         async fetchCounts(): Promise<EntityScopeCounts> {
-            try {
-                const response = await listLibraries(dispatch, { limit: 1, offset: 0 });
-                const lanes = response.lane_counts;
-                if (!lanes) {
-                    return {
-                        byKind: {},
-                        narrow: {},
-                        narrowUnavailable: {
-                            orgs: "This server did not report a per-lane count, so the tab totals are unknown rather than zero.",
-                        },
-                    };
+            // D10 (jobs-bar cold-walk-12, 2026-09-19): this used to trust
+            // `response.lane_counts` from a call that carried NO `visibility`
+            // filter at all (`listLibraries(dispatch, { limit: 1, offset: 0 })`
+            // — an empty array is falsy, so `listLibraries` never even sent the
+            // parameter). `lane_counts` is one of this contract's three OPEN
+            // "Frontend requests" (`FEATURE.md` § "The contract is the truth")
+            // — no server build has ever sent it — so every load fell into the
+            // "no lanes" branch and returned an EMPTY `byKind`. `byKind` is
+            // documented as "absent kinds are unsupported"
+            // (`lib/entity-list/types.ts`), but the shared tab bar renders an
+            // absent-but-answered count as a literal 0 (`EntityScopeTabs.tsx`:
+            // `typeof measured === "number" ? measured : countsLoading ? null : 0`)
+            // — which is how "1-11 of 11" rows ended up sitting under
+            // "Mine 0 / My Orgs 0 / Shared 0 / Public 0".
+            //
+            // The fix: count the SAME way the rows are counted. `fetchPage`
+            // already proves `listLibraries({ visibility, limit }).total` is
+            // real and reliable for one lane at a time — this is that identical
+            // call, once per lane, run in parallel. One derivation, two callers.
+            const lanes = Object.keys(SCOPE_TO_VISIBILITY) as (keyof typeof SCOPE_TO_VISIBILITY)[];
+            const results = await Promise.allSettled(
+                lanes.map((kind) =>
+                    listLibraries(dispatch, {
+                        visibility: [SCOPE_TO_VISIBILITY[kind]],
+                        limit: 1,
+                        offset: 0,
+                    }),
+                ),
+            );
+
+            const byKind: Partial<Record<string, number>> = {};
+            const narrowUnavailable: Partial<Record<string, string>> = {};
+            results.forEach((result, index) => {
+                const kind = lanes[index];
+                if (result.status === "fulfilled") {
+                    byKind[kind] = result.value.total;
+                } else {
+                    // Left OUT of `byKind`, never defaulted to 0 — this lane's
+                    // count is genuinely unknown, not genuinely empty, and the
+                    // sentence names which one so a person can tell the two
+                    // apart if this surface ever exposes it (`EntityScopeTabs`
+                    // does not read this per-kind message today; recording it
+                    // here is the honest half regardless).
+                    const error = result.reason;
+                    narrowUnavailable[kind] =
+                        error instanceof MediaApiError
+                            ? `The ${kind} total could not be read: ${error.message}`
+                            : `The ${kind} total could not be read from the server just now.`;
                 }
-                return {
-                    byKind: {
-                        mine: lanes.mine,
-                        orgs: lanes.org,
-                        shared: lanes.community,
-                        public: lanes.world,
-                    },
-                    narrow: {},
-                };
-            } catch {
-                // A counts failure is not a rows failure: the shell renders the
-                // list and says the tab totals are unknown, never zero.
-                return {
-                    byKind: {},
-                    narrow: {},
-                    narrowUnavailable: {
-                        orgs: "The per-lane totals could not be read from the server just now.",
-                    },
-                };
-            }
+            });
+
+            return { byKind, narrow: {}, narrowUnavailable };
         },
 
         async fetchFacets(): Promise<EntityFacets> {

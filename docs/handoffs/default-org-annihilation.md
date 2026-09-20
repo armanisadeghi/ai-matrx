@@ -94,7 +94,18 @@ and `public.dm_default_org()`, the trigger that silently filed an org-less DM in
 the starter's personal workspace. Applied through `pnpm db:apply` as a named
 chair step. Verified live first: that trigger was the only user of the function.
 
----
+**The inverse is a rollback, and it now lives where rollbacks live (2026-09-20).**
+It is `migrations/inverse/w1_org_nothing_substitutes_an_organization_dm_default_org.inverse.sql`.
+While it sat in the swept `migrations/` directory, `detect_applied.py` saw a
+file whose objects are absent and filed it under "🔴 MISSING — never applied",
+and two aidream releases carried that as pending work. Its objects are absent
+because the forward half removed them. Moved to `migrations/inverse/`, the
+directory `apply_migrations.py` names for exactly this ("not in the swept
+migrations directory"), where both non-recursive globs stop seeing it. The
+ledger keys on the basename, so nothing the database recorded changed.
+Applying it is never the campaign finishing — it would re-install the
+personal-org stamp on DM inserts, and 460 of the 523 live organizations are
+personal.
 
 ---
 
@@ -239,12 +250,31 @@ was already in place on every one of them; no new constraint work was needed.
    drop landed 2026-09-20, during this review. Verified live at the end of it:
    0 triggers, 0 function, 117 parent-inherit triggers untouched. The new SQL
    guard's rule 8 keeps it from being re-attached.
-2. **Envelope shape differs from aidream's** (`memberships` vs
-   `details.organizations`). Worth converging on one shape; until then the
-   `code` match is what carries the recogniser. Nothing currently READS
-   `memberships` — the picker renders from its own list — so the field is
-   correct but unconsumed. Either wire it up or drop it; do not leave it
-   described as something the client uses.
+2. ~~**Envelope shape differs from aidream's** (`memberships` vs
+   `details.organizations`).~~ **CLOSED (2026-09-19, unification pass).**
+   `lib/organizations/organizationRequiredServerError.ts` now emits aidream's
+   EXACT shape — `{error, code, message, user_message, details: {hold,
+   can_choose, set_on, remedy, organizations, memberships_url}}` — pinned by a
+   contract test (`lib/organizations/__tests__/organizationHoldEnvelope.test.ts`)
+   against a fixture copied byte-for-byte from aidream's own builder output
+   (`packages/matrx-connect/matrx_connect/org_hold.py`'s
+   `organization_hold_detail`, re-exported by
+   `aidream/services/organizations/org_hold.py`). `readCallerMemberships` now
+   returns `null` (not `[]`) when the list could not be read, matching
+   aidream's own null-means-unreadable convention, and also selects
+   `abbreviation` to match the Python shape's `{id, name, abbreviation}`.
+   The field IS now consumed: `extractOrganizationHoldMemberships`
+   (`lib/organizations/organizationRequiredError.ts`) reads
+   `details.organizations` from either server's refusal —
+   aidream's `BackendApiError.details`, this repo's own envelope `.details`, or
+   `ApiCallError.serverDetail` (which `lib/api/call-api.ts`'s `normalizeError`
+   now populates from `BackendApiError.details` — it used to drop it) —
+   and `fetchWithOrganization.ts` hands the extracted list to
+   `ensureOrganizationContext({ prefetchedOrganizations })`
+   (`lib/organization/organization-gate.ts`), which the gate dialog
+   (`features/organizations/gate/OrganizationGateDialog.tsx`) renders
+   immediately instead of waiting on its own `useScopeTree` fetch — falling
+   back to that fetch exactly as before whenever nothing was prefetched.
 3. **`iam.default_organization_id(uuid)` still exists**, now with a comment
    saying it is display-only. Its only remaining caller is
    `iam._default_organization_is_a_membership`, which CONSTRAINS the stated
@@ -264,3 +294,24 @@ was already in place on every one of them; no new constraint work was needed.
    set an org, write completes) and the slow-bootstrap cold-boot check. The
    database-side changes above ARE verified live, by probe, in a rolled-back
    transaction.
+
+---
+
+## Round 3 — the envelope unification (2026-09-19)
+
+Closed item 2 above. Summary lives there; not repeated here. Also fixed, found
+in the course of the unification, not previously flagged in this handoff:
+`lib/api/call-api.ts`'s `normalizeError` dropped `BackendApiError.details`
+entirely when building `ApiCallError` — the aidream 400 body's
+`details.organizations` (and every other structured `details` field) never
+reached a `callApi()` caller reading the returned `{ error }` result, only a
+caller that caught the raw thrown error. Fixed by carrying it through as
+`serverDetail`, the same field `parseCallApiError` already uses for every other
+structured 4xx — no new convention.
+
+**Not verified by this lane:** the gate dialog rendering a prefetched list live
+(localhost seat check) — the wiring is unit-tested
+(`lib/organization/__tests__/organization-gate.test.ts`,
+`features/organizations/gate/OrganizationGateDialog.test.tsx`, both still
+green) but no browser walk was done end to end through a real 400 from either
+server.

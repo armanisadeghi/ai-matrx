@@ -183,10 +183,10 @@ export function apiGet<P extends PathWith<"get">>(
 /** POST a JSON body. Body AND response are derived from the contract. */
 export function apiPost<P extends PathWith<"post">>(
   path: P,
-  body: PostBody<P>,
+  body: PostBody<P> extends never ? undefined : PostBody<P>,
   opts?: RequestOptions,
 ): Envelope<PostResult<P>> {
-  return postJson<PostResult<P>, PostBody<P>>(path, body, opts);
+  return postJson<PostResult<P>, PostBody<P>>(path, body as PostBody<P>, opts);
 }
 
 /** PATCH a JSON body. Body AND response are derived from the contract. */

@@ -22,6 +22,7 @@ import ShellIcon from "../ShellIcon";
 import MobileRouteMenuSlot from "./MobileRouteMenuSlot";
 import MobileSheetNavLink from "./MobileSheetNavLink";
 import AdminMobileMenuItem from "../sidebar/admin-menu/AdminMobileMenuItem";
+import MobileDrawerUserRow from "../user-block/MobileDrawerUserRow";
 import { isUserSettingsPath } from "@/features/settings/route-shell/settings-route-path";
 import {
   findActiveNavChild,
@@ -282,6 +283,10 @@ export default function MobileNavigationDrawer({
         />
       )}
       <AdminMobileMenuItem />
+
+      {/* The person, at the end of the navigation — mobile's bottom-left. */}
+      <div className="shell-mobile-section-divider" />
+      <MobileDrawerUserRow />
     </div>
   );
 

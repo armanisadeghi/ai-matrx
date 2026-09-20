@@ -49,9 +49,12 @@ function RulebookHandoffNotice() {
             <div className="flex items-start gap-2">
                 <BookOpen className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                 <p className="min-w-0 text-xs leading-relaxed text-muted-foreground">
-                    Paste the channel here first: we catalogue every video as a
-                    Source in a Library, and from there you can send the ones
-                    you want to{" "}
+                    {/* D6b (jobs-bar cold-walk-12): this notice shows for any
+                        kind of Library, not only YouTube — naming videos here
+                        over a podcast or blog paste was the same bug. */}
+                    Paste the channel, feed, or address here first: we catalogue
+                    every Source in a Library, and from there you can send the
+                    ones you want to{" "}
                     {backHref
                         ? "the Rulebook you came from"
                         : "a Rulebook"}

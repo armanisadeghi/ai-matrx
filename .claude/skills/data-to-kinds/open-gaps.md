@@ -350,7 +350,7 @@ skill's `gap #14 of 2026-08-24` and `gap #16 of 2026-08-24` → the gate section
 
 > 🚨 **UNRESOLVED CONFLICT — `CFL-054`. Do not build against this section until Arman rules.**
 > **This document says:** a result's second view should be what the current live path produces from the same input, shown beside the new kind on every demo, and it should go quiet once the cutover lands.
-> **[`SKILL.md`](/skills/data-to-kinds/SKILL.md) (vocabulary, "the three projections") and [`stage-d.md`](/skills/data-to-kinds/stage-d.md) (repointing the emitters) say:** the second view is the raw provider payload, returned only when a caller asks for it (`include_raw=`).
+> **[`SKILL.md`](/skills/data-to-kinds/SKILL.md) (vocabulary, "the three projections") and [`stage-d.md`](/skills/data-to-kinds/stage-d.md) (the second-view line of repointing the emitters) say:** the second view is the raw provider payload, returned only when a caller asks for it (`include_raw=`).
 > **Why it matters:** it decides what every demo's second tab shows and what the repointed emitters must serve — the untouched provider data for inspection, or the old output for side-by-side comparison that disappears after cutover.
 > **Your move:** bring Arman these two readings and the consequence, get his ruling, then build.
 > Register: [`/operations/conflicts.md`](/operations/conflicts.md) · `CFL-054`

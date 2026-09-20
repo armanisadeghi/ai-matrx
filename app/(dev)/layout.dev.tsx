@@ -15,6 +15,7 @@ import type { BaseReduxState } from "@/types/reduxTypes";
 // reactive identity source so non-React consumers see the current state.
 import Sidebar from "@/features/shell/components/sidebar/Sidebar";
 import Header from "@/features/shell/components/header/Header";
+import ShellUserBlock from "@/features/shell/components/user-block/ShellUserBlock";
 import MobileDock from "@/features/shell/components/dock/MobileDock";
 import MobileSideSheet from "@/features/shell/components/mobile-sheet/MobileSideSheet";
 import GlassPortal from "@/features/shell/components/GlassPortal";
@@ -110,7 +111,8 @@ export default async function AppLayout({
         <input type="checkbox" id="shell-panel-mobile" aria-hidden="true" />
 
         <Sidebar pathname={pathname} isAuthenticated={isAuthenticated} />
-        <Header userData={userData} isAuthenticated={isAuthenticated} />
+        <Header isAuthenticated={isAuthenticated} />
+        <ShellUserBlock userData={userData} isAuthenticated={isAuthenticated} />
 
         <main className="shell-main">{children}</main>
 

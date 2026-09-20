@@ -135,6 +135,7 @@ running on the server. Guard: `__tests__/unreadable-shapes.test.tsx`.
 | `__tests__/honest-on-the-real-wire.test.tsx` | The shapes the LIVE server sends (`caption_languages: null`, the `{"library": …}` envelope, the platform visibility enum, a partial jsonb `metrics` blob) and the paste box's keyboard. |
 | `__tests__/not-yet-is-not-a-failure.test.tsx` | The organization resolves a beat after first render: no call is made without one, the transport's `organization_context_required` never becomes a sentence, and a read that started earlier can never overwrite the one on screen. |
 | `__tests__/every-kind-speaks-its-own-words.test.tsx` | Every adapter `vocabulary.ts` declares, rendered — only YouTube may use YouTube's words. |
+| `__tests__/library-table-reachable/` | Playwright gate (`pnpm test:library-table-reachable`), not a Jest suite — real Chromium layout over `EntityListPage`'s and `LibraryMetricsHeader`'s actual class strings, at 1440x900 and 390x844. Proves the episode table is reachable even when `LibraryMetricsHeader`'s stat tiles + charts are their tallest. |
 
 ## Doors in
 
@@ -146,7 +147,8 @@ and a way back), and from `/transcripts` beside New.
 
 ```bash
 pnpm type-check
-npx jest features/source-library --no-coverage      # 11, three laws
+npx jest features/source-library --no-coverage      # 12, three laws
+pnpm test:library-table-reachable                   # real-Chromium layout, 1440x900 + 390x844
 ```
 
 Live, signed in as `admin@admin.com` via `pnpm dev-login /libraries`. Screenshots
@@ -165,6 +167,57 @@ nothing moves; the claim is gone. The day the server publishes a word count,
 `vocabulary.ts` is the only file that changes.
 
 ## Change log
+
+- `2026-09-20` — **Four defects from the twelfth cold walk (D6, D6b, D10, D11),
+  fixed and guarded.** D6: the Sources table used to render its empty state
+  from the very first (pre-sync) row read and never re-asked when
+  `library.sync.completed` landed rows — `serviceKey` (`catalog/listConfig.tsx`)
+  now folds in `LibraryPage`'s `listGeneration`, the real fix, plus a
+  belt-and-suspenders `emptyState` override so "Nothing catalogued yet" can
+  never render while the sync banner (`sync.listed`) is reporting rows for this
+  Library. D6b: podcast episodes were called "videos" throughout ("Transcribe 3
+  videos", "Free, from YouTube's own captions" on a podcast job) — every
+  hardcoded "video(s)" in the feature (bulk-selection noun, confirm dialog,
+  job names/toasts, the job panel's lane sentences and item fallback text, the
+  Source detail panel, the transcript service's error sentences, the Sources
+  table's caption/transcript cells) now reads `sourceVocabulary(library)`,
+  which grew a `freeCaptionsSource` field for the free-lane sentence; two
+  Action `params_schema` entries (`aidream/services/media_catalog/actions.py`)
+  also grew `title`s the same way `agent_id` already had. Guarded by a static
+  census test that fails on any hardcoded "video(s)" outside `vocabulary.ts`'s
+  YouTube entry (`__tests__/d6b-no-hardcoded-video-outside-vocabulary.test.ts`).
+  D10: the four visibility-lane counters (Mine/My Orgs/Shared/Public) always
+  read `0` because they trusted `lane_counts`, one of this contract's three
+  OPEN "Frontend requests" that no server build has ever sent —
+  `browse/service.ts`'s `fetchCounts` now derives every lane's count the same
+  way `fetchPage` counts rows: one `listLibraries({ visibility: [lane] })` call
+  per lane, reading `.total`. Guarded, failing-then-passing, in
+  `__tests__/d10-lane-counts-not-derived-from-nothing.test.ts`. D11: the send
+  dialog's parameter labels and gate sentence spelled out the raw
+  `rulebook_id`/`collection_id` keys ("Rulebook id", "needs rulebook id before
+  it can start") — `send_to_rulebook`'s and `build_knowledge_base`'s
+  `params_schema`s now carry `title`s (server), and `ActionRunDialog`'s missing-
+  param sentence and Start-button casing were fixed to read them as a person
+  would say them, following the same pattern the bridge lane used for
+  `agent_id` ("Which agent") in aidream `82dd7c48c5`. Full walk:
+  `common-docs/projects/masterwork-methods-census/jobs-bar-2026-09-16/cold-walk-12/README.md`.
+
+- `2026-09-19` — **The Library episode table is reachable again at 1440x900**
+  (D4, cold-walk-12). `LibraryMetricsHeader`'s stat tiles plus its two fixed
+  `h-[276px]` charts could consume nearly the whole viewport inside
+  `EntityListPage`'s static `notice` zone, squeezing the table's `flex-1
+  min-h-0` scroll body down to a sliver with no genuinely scrollable
+  ancestor — 24px of row 1 visible, rows 2-25 gone, mouse-wheel scrolling
+  doing nothing. Fixed in the SHARED PRIMITIVE
+  (`lib/entity-list/components/EntityListPage.tsx`), not here: `notice` now
+  renders inside its own `max-h-[42vh] overflow-y-auto` (scrolls on its own,
+  however tall its content), and the table's scroll body is floored at
+  `min-h-[16rem]` instead of `min-h-0` (still shrinks, so its own scroll
+  still engages, but never below a workable slice of table). Every other
+  `EntityListPage` notice (assist strips, paste boxes) is far under the cap,
+  so nothing about them changes. Guard: `__tests__/library-table-reachable/`
+  (`pnpm test:library-table-reachable`), proven RED against the pre-fix
+  classes and GREEN against the current ones, at both 1440x900 and 390x844.
 
 - `2026-09-19` — **A Source can finally say what was done to it, for every
   Action and not just `transcribe`.** Until today the only per-item outcome on

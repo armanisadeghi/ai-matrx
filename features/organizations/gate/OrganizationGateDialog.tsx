@@ -39,11 +39,21 @@ import {
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import type { OrganizationRequiredWireMembership } from "@/lib/organizations/organizationRequiredError";
 import {
+  getPrefetchedOrganizationsForPendingRequest,
   hasPendingOrganizationRequest,
   registerOrganizationPicker,
   settleOrganizationSelection,
 } from "@/lib/organization/organization-gate";
+
+/** Row shape common to the scope tree's rich `OrgNode` and a bare prefetched
+ * choice — all the dialog actually renders or selects by. */
+interface PickerRow {
+  id: string;
+  name: string;
+  is_personal: boolean;
+}
 
 export function OrganizationGateDialog() {
   const dispatch = useAppDispatch();
@@ -54,8 +64,33 @@ export function OrganizationGateDialog() {
   // The header and this action gate must see the SAME membership list. A
   // second component-local fetch can remain pending while the header is ready.
   const { organizations, status, error, refresh } = useScopeTree();
+
+  // What the BLOCKED ACTION's own refusal already carried
+  // (`details.organizations`), read once per open. `null` when the caller
+  // handed none in (the ordinary fail-closed path, unchanged) — the dialog
+  // then depends entirely on `useScopeTree`, exactly as before this existed.
+  const [prefetched, setPrefetched] = useState<
+    OrganizationRequiredWireMembership[] | null
+  >(null);
+  useEffect(() => {
+    if (open) setPrefetched(getPrefetchedOrganizationsForPendingRequest());
+  }, [open]);
+
+  // The scope tree is the richer, canonical source (role, projects, the
+  // platform's own is_personal) and wins the instant it has anything. Until
+  // it does, a non-empty prefetched list lets the dialog show real choices
+  // immediately instead of "Loading your organizations…" — the whole point of
+  // carrying them on the refusal in the first place.
+  const usingPrefetched = organizations.length === 0 && !!prefetched?.length;
+  const displayList: PickerRow[] = usingPrefetched
+    ? prefetched!.map((org) => ({
+        id: org.id,
+        name: org.name,
+        is_personal: false,
+      }))
+    : organizations;
   const loading =
-    organizations.length === 0 && (status === "idle" || status === "loading");
+    displayList.length === 0 && (status === "idle" || status === "loading");
 
   useEffect(() => {
     if (open && userId) void dispatch(ensureScopeTree({}));
@@ -85,7 +120,7 @@ export function OrganizationGateDialog() {
     };
   }, [store]);
 
-  const sorted = [...organizations].sort((a, b) => {
+  const sorted = [...displayList].sort((a, b) => {
     // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
     if (a.is_personal !== b.is_personal) return a.is_personal ? 1 : -1;
     return a.name.localeCompare(b.name);
@@ -137,7 +172,7 @@ export function OrganizationGateDialog() {
               Your session is unavailable. Sign in again to continue; nothing
               has been submitted.
             </p>
-          ) : error && organizations.length === 0 ? (
+          ) : error && organizations.length === 0 && !usingPrefetched ? (
             <div role="alert" className="space-y-2 px-1 py-6">
               <p className="text-sm text-destructive">{error}</p>
               <Button variant="outline" onClick={() => void refresh()}>

@@ -22,6 +22,7 @@ import {
     transcriptStatusLabel,
 } from "../format";
 import type { VideoRow } from "../types";
+import { sourceVocabulary, type SourceVocabulary } from "../vocabulary";
 import { LENGTH_BUCKETS, PUBLISHED_BUCKETS } from "./service";
 
 const KIND_TONE: Record<string, string> = {
@@ -47,7 +48,18 @@ const OUTCOME_TONE: Record<string, string> = {
     failed: "border-destructive/40 text-destructive",
 };
 
-const BASE_COLUMNS: EntityColumnSpec<VideoRow>[] = [
+/**
+ * D6b (jobs-bar cold-walk-12): a function, not a static array, because two
+ * cells here used to hardcode "YouTube" and "the video" over every adapter —
+ * a podcast row that had never had its captions probed at all read "YouTube
+ * has not told us whether this video has captions." Both cells now speak this
+ * Library's own words; `vocabulary` defaults to the neutral set for the one
+ * caller (`CATALOG_COLUMNS` below) that has no Library row to build it from.
+ */
+function buildBaseColumns(
+    vocabulary: SourceVocabulary = sourceVocabulary(null),
+): EntityColumnSpec<VideoRow>[] {
+    return [
     {
         id: "thumbnail",
         label: "Thumbnail",
@@ -198,7 +210,7 @@ const BASE_COLUMNS: EntityColumnSpec<VideoRow>[] = [
                     return (
                         <span
                             className="inline-flex items-center gap-1 text-muted-foreground"
-                            title="YouTube has not told us whether this video has captions."
+                            title={`Nothing has told us whether this ${vocabulary.item.one} has captions.`}
                         >
                             <CircleDashed className="size-3.5" aria-hidden />
                             Unknown
@@ -217,7 +229,7 @@ const BASE_COLUMNS: EntityColumnSpec<VideoRow>[] = [
                         title={
                             languages.length
                                 ? `Caption tracks: ${languages.join(", ")}`
-                                : "YouTube reports captions. Which languages is only known after a check."
+                                : "Captions are reported. Which languages is only known after a check."
                         }
                     >
                         <Captions className="size-3.5" aria-hidden />
@@ -261,9 +273,9 @@ const BASE_COLUMNS: EntityColumnSpec<VideoRow>[] = [
                         className={`py-0 text-[11px] ${TRANSCRIPT_TONE[row.transcript_status] ?? ""}`}
                         title={
                             row.transcript_lane === "free_captions"
-                                ? "From YouTube's own captions."
+                                ? `From ${vocabulary.freeCaptionsSource ?? "its own captions"}.`
                                 : row.transcript_lane === "paid_agent"
-                                  ? "A model watched the video."
+                                  ? `A model watched the ${vocabulary.item.one}.`
                                   : undefined
                         }
                     >
@@ -272,7 +284,8 @@ const BASE_COLUMNS: EntityColumnSpec<VideoRow>[] = [
                 ),
         },
     },
-];
+    ];
+}
 
 /**
  * §4.3 — WHAT LAST HAPPENED TO THIS SOURCE, as one honest line.
@@ -351,8 +364,10 @@ export function lastActionColumn(
 /** Every Sources column, with the Action labels the server published (§8). */
 export function catalogColumns(options?: {
     actionLabels?: Record<string, string>;
+    /** D6b — this Library's own words for the captions/transcript cells. */
+    vocabulary?: SourceVocabulary;
 }): EntityColumnSpec<VideoRow>[] {
-    return [...BASE_COLUMNS, lastActionColumn(options?.actionLabels)];
+    return [...buildBaseColumns(options?.vocabulary), lastActionColumn(options?.actionLabels)];
 }
 
 /**

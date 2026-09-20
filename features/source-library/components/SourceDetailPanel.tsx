@@ -75,6 +75,7 @@ import {
     type MediaTranscriptSegment,
 } from "../transcriptService";
 import type { TranscriptStatus, VideoRow } from "../types";
+import { sourceVocabulary, type SourceVocabulary } from "../vocabulary";
 
 /* ─────────────────────────── header pieces ─────────────────────────── */
 
@@ -229,6 +230,10 @@ export function SourceDetailPanel({
     video,
     onClose,
     onTranscribe,
+    // D6b (jobs-bar cold-walk-12): this Library's own words, so the panel says
+    // "this episode"/"this post" instead of "this video" over a non-YouTube
+    // Source. Omitted falls back to the neutral "item" vocabulary.
+    vocabulary = sourceVocabulary(null),
 }: {
     video: VideoRow;
     onClose?: () => void;
@@ -240,6 +245,7 @@ export function SourceDetailPanel({
      * cannot do anything.
      */
     onTranscribe?: (video: VideoRow) => void;
+    vocabulary?: SourceVocabulary;
 }) {
     const [transcript, setTranscript] = useState<MediaTranscript | null>(null);
     const [loading, setLoading] = useState(false);
@@ -264,7 +270,7 @@ export function SourceDetailPanel({
         let cancelled = false;
         setLoading(true);
         setLoadError(null);
-        fetchMediaTranscript(transcriptId)
+        fetchMediaTranscript(transcriptId, vocabulary.item.one)
             .then((result) => {
                 if (cancelled) return;
                 setTranscript(result);
@@ -276,14 +282,14 @@ export function SourceDetailPanel({
                 setLoadError(
                     error instanceof Error
                         ? error
-                        : new Error("This video's transcript could not be read."),
+                        : new Error(`This ${vocabulary.item.one}'s transcript could not be read.`),
                 );
                 setLoading(false);
             });
         return () => {
             cancelled = true;
         };
-    }, [shouldLoad, transcriptId, reloadNonce]);
+    }, [shouldLoad, transcriptId, reloadNonce, vocabulary.item.one]);
 
     // Reset the search whenever the panel changes source.
     useEffect(() => {
@@ -339,8 +345,9 @@ export function SourceDetailPanel({
             </Button>
         ) : (
             <p className="max-w-md text-xs text-muted-foreground">
-                Transcription runs as a job over a selection: select this video in the
-                catalogue and choose Transcribe, which shows the cost before anything runs.
+                Transcription runs as a job over a selection: select this{" "}
+                {vocabulary.item.one} in the catalogue and choose Transcribe, which shows
+                the cost before anything runs.
             </p>
         );
 
@@ -352,9 +359,9 @@ export function SourceDetailPanel({
                         icon={CaptionsOff}
                         tone="neutral"
                         headline="Not transcribed yet"
-                        body="Nothing has transcribed this video, so there are no cues to read or search."
+                        body={`Nothing has transcribed this ${vocabulary.item.one}, so there are no cues to read or search.`}
                     >
-                        {transcribeDoor("Transcribe this video")}
+                        {transcribeDoor(`Transcribe this ${vocabulary.item.one}`)}
                     </TranscriptState>
                 );
             case "queued":
@@ -363,7 +370,7 @@ export function SourceDetailPanel({
                         icon={Hourglass}
                         tone="busy"
                         headline="Queued for transcription"
-                        body="A transcription job has accepted this video and it is waiting its turn. The transcript appears here once the job reaches it."
+                        body={`A transcription job has accepted this ${vocabulary.item.one} and it is waiting its turn. The transcript appears here once the job reaches it.`}
                     />
                 );
             case "running":
@@ -375,10 +382,10 @@ export function SourceDetailPanel({
                             video.transcript_lane === "paid_agent"
                                 ? "Being transcribed by the paid agent"
                                 : video.transcript_lane === "free_captions"
-                                  ? "Fetching YouTube's own captions"
+                                  ? `Fetching ${vocabulary.freeCaptionsSource ?? "its own captions"}`
                                   : "Being transcribed now"
                         }
-                        body="This video is in a running transcription job. It is not stuck — reopen this panel after the job finishes to read the transcript."
+                        body={`This ${vocabulary.item.one} is in a running transcription job. It is not stuck — reopen this panel after the job finishes to read the transcript.`}
                     />
                 );
             case "failed":
@@ -387,7 +394,7 @@ export function SourceDetailPanel({
                         icon={AlertTriangle}
                         tone="bad"
                         headline="Transcription failed"
-                        body="The last attempt to transcribe this video did not finish. The row does not carry the reason — the failing job's item does, under the job that ran it."
+                        body={`The last attempt to transcribe this ${vocabulary.item.one} did not finish. The row does not carry the reason — the failing job's item does, under the job that ran it.`}
                     >
                         {transcribeDoor("Try transcribing again")}
                     </TranscriptState>
@@ -401,8 +408,8 @@ export function SourceDetailPanel({
                         body={
                             video.has_captions === false ||
                             (video.caption_languages ?? []).length === 0
-                                ? "YouTube serves no caption track for this video, so the free lane had nothing to fetch and the job was not allowed to spend on the paid lane."
-                                : "The last transcription job skipped this video. Re-running it with the paid lane allowed is what gets it transcribed."
+                                ? `No caption track was found for this ${vocabulary.item.one}, so the free lane had nothing to fetch and the job was not allowed to spend on the paid lane.`
+                                : `The last transcription job skipped this ${vocabulary.item.one}. Re-running it with the paid lane allowed is what gets it transcribed.`
                         }
                     >
                         {transcribeDoor("Transcribe with the paid lane")}
@@ -418,9 +425,9 @@ export function SourceDetailPanel({
                     icon={AlertTriangle}
                     tone="bad"
                     headline="Marked ready, but no transcript is attached"
-                    body="This video says it is transcribed, yet it carries no transcript id, so there is nothing to open. Re-running transcription rewrites both."
+                    body={`This ${vocabulary.item.one} says it is transcribed, yet it carries no transcript id, so there is nothing to open. Re-running transcription rewrites both.`}
                 >
-                    {transcribeDoor("Transcribe this video again")}
+                    {transcribeDoor(`Transcribe this ${vocabulary.item.one} again`)}
                 </TranscriptState>
             );
         }
@@ -469,7 +476,7 @@ export function SourceDetailPanel({
                             : `All ${transcript.storedSegmentCount} stored cues were unreadable, so none of them can be shown.`
                     }
                 >
-                    {transcribeDoor("Transcribe this video again")}
+                    {transcribeDoor(`Transcribe this ${vocabulary.item.one} again`)}
                 </TranscriptState>
             );
         }
@@ -573,7 +580,7 @@ export function SourceDetailPanel({
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             data-tap-target="true"
-                                            title={`Open the video at ${formatTimestamp(segment.start)}`}
+                                            title={`Open the ${vocabulary.item.one} at ${formatTimestamp(segment.start)}`}
                                             className="group inline-flex h-11 shrink-0 items-center gap-1 self-start rounded-md px-1.5 font-mono text-xs tabular-nums text-primary hover:bg-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                         >
                                             <Play
@@ -582,7 +589,7 @@ export function SourceDetailPanel({
                                             />
                                             {formatTimestamp(segment.start)}
                                             <span className="sr-only">
-                                                Open the video at this moment
+                                                Open the {vocabulary.item.one} at this moment
                                             </span>
                                         </a>
                                         <p className="min-w-0 flex-1 self-center py-1 text-sm leading-relaxed text-foreground">

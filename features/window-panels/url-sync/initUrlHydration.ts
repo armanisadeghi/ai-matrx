@@ -1,5 +1,11 @@
 import { getHydrator, registerPanelHydrator } from "./UrlPanelRegistry";
-import { initInstanceUIState } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { DISPLAY_MODE_TO_OVERLAY_ID } from "@/features/agents/redux/execution-system/display-mode-overlay";
+import {
+  AGENT_RUN_WINDOW_AGENT_ARG,
+  AGENT_RUN_WINDOW_CONVERSATION_ARG,
+  AGENT_RUN_WINDOW_URL_MODE,
+} from "@/features/window-panels/windows/agents/agentRunWindowAddress";
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ALL_WINDOW_STATIC_METADATA } from "../registry/windowRegistryMetadata";
@@ -35,13 +41,91 @@ function getRestorableResourceId(
  * This runs exactly once on client mount.
  */
 export function initUrlHydration() {
-  // Agent execution floating panels
+  // Agent execution panels — `?panels=agent:<conversationId>:m-<mode>`.
+  //
+  // 🚨 THE HYDRATOR OPENS THE WINDOW. Until 2026-09-19 this one dispatched
+  // `initInstanceUIState` and stopped: it wrote the display CONFIG for a
+  // conversation and never opened the shell that config describes, never
+  // fetched the conversation, and therefore never registered a urlSync entry —
+  // so `UrlPanelManager` waited out its grace period and erased the token from
+  // the address bar. Every agent deep link, in the app and in every share, did
+  // exactly what Arman reported: bounced to the bare route with nothing open.
+  //
+  // Restoring an agent panel is the SAME sequence a click performs, in the same
+  // order, through the same map (`DISPLAY_MODE_TO_OVERLAY_ID`, shared with
+  // `launchAgentExecution` so the two can never disagree):
+  //   1. open the shell for the mode, keyed by the conversation, so the frame
+  //      is there immediately;
+  //   2. read the conversation back out of the database — nothing else on the
+  //      page will, because a floating panel is not a route and no page owns
+  //      it (`AgentConversationDisplay` deliberately never self-loads);
+  //   3. re-assert the mode the LINK named, after the load, because
+  //      `loadConversation` replaces the whole ui-state entry from
+  //      `metadata.display` and the link is the more specific intent.
+  // `expectMaterialized: true` is what makes step 2 honest: a reopen that
+  // comes back empty is a failed read, and the transcript says so with a
+  // retry instead of painting an empty room (law 4).
   registerPanelHydrator("agent", (dispatch, id, args) => {
+    const subject = getRestorableResourceId(id);
+    if (!subject) {
+      console.warn(
+        `[UrlPanelManager] ?panels=agent:${id} names no conversation — ` +
+          "expected agent:<conversationId>:m-<mode>.",
+      );
+      return;
+    }
+
+    // The Chat window (`agentRunWindow`) shares this key: it is a WINDOW that
+    // hosts conversations, not one conversation's shell, so its subject is its
+    // own window instance and the chat it has open rides in the args.
+    if (args.m === AGENT_RUN_WINDOW_URL_MODE) {
+      dispatch(
+        openOverlay({
+          overlayId: "agentRunWindow",
+          instanceId: subject,
+          data: {
+            initialAgentId: args[AGENT_RUN_WINDOW_AGENT_ARG] ?? null,
+            initialSelectedConversationId:
+              args[AGENT_RUN_WINDOW_CONVERSATION_ARG] ?? null,
+          },
+        }),
+      );
+      return;
+    }
+
+    const conversationId = subject;
     const displayMode = resolveAgentPanelDisplayMode(args.m);
+    const overlayId = DISPLAY_MODE_TO_OVERLAY_ID[displayMode];
+    if (!overlayId) {
+      // A mode with no shell paints nothing. An address that opens nothing has
+      // to say so rather than leave a token that looks like it worked.
+      console.warn(
+        `[UrlPanelManager] ?panels=agent:${id}:m-${args.m} names display mode ` +
+          `"${displayMode}", which has no overlay to open.`,
+      );
+      return;
+    }
+
     dispatch(
-      initInstanceUIState({
-        conversationId: id,
-        displayMode,
+      openOverlay({
+        overlayId,
+        instanceId: conversationId,
+        data: { conversationId },
+      }),
+    );
+
+    // `displayOverrides` lands in the SAME dispatch that stamps
+    // `metadata.display`, so there is no render in which the stored values are
+    // live and the link's are not. Two things are asserted there:
+    //   • the display mode the LINK named — it is the more specific intent;
+    //   • `autoRun: false` — reopening an address is NEVER a decision to spend
+    //     a paid run. Nobody clicked; a refresh must not fire an agent.
+    dispatchThunk(
+      dispatch,
+      loadConversation({
+        conversationId,
+        expectMaterialized: true,
+        displayOverrides: { displayMode, autoRun: false },
       }),
     );
   });
@@ -438,32 +522,6 @@ export function initUrlHydration() {
       openOverlay({
         overlayId: "structuredListManagerV2Window",
         data: forcedListId ? { forcedListId } : null,
-      }),
-    );
-  });
-
-  // Topic panel — `?panels=topic:<mapId>|<slug>:s-<siteId>`. The registry has
-  // declared this key since the panel shipped and NOTHING answered it: the
-  // link opened nothing and `UrlPanelManager` logged a warning nobody read
-  // (found by the dev integrity check below, which only screams in a browser).
-  registerPanelHydrator("topic", (dispatch, id, args) => {
-    const [mapId, slug] = (id ?? "").split("|");
-    if (!mapId || !slug) {
-      console.warn(
-        `[UrlPanelManager] ?panels=topic:${id} names no topic — expected topic:<mapId>|<slug>.`,
-      );
-      return;
-    }
-    dispatch(
-      openOverlay({
-        overlayId: "topicalMapTopicPanel",
-        instanceId: id,
-        data: {
-          stackIndex: 0,
-          mapId,
-          slug,
-          siteId: args.s ?? null,
-        },
       }),
     );
   });

@@ -36,11 +36,46 @@ export const SAMPLE_INPUT_CONTENT_KEY = "input_content";
 
 export type AgentSampleRow = Database["agent"]["Tables"]["exemplar"]["Row"];
 
+/**
+ * One declared variable of the agent, reduced to what a READER of a test case
+ * needs: how to say its name, and what its author said it is for. The test-case
+ * viewer prints these instead of raw keys — `json_schema` is not a sentence,
+ * and the agent's own words are already written down.
+ */
+export interface AgentVariableDeclaration {
+  name: string;
+  label: string | null;
+  helpText: string | null;
+}
+
 export interface AgentContractHead {
   agentId: string;
   version: number | null;
   inputContractHash: string | null;
   outputContractHash: string | null;
+  /** Empty when the agent declares none, or when the column is unreadable. */
+  variableDeclarations: AgentVariableDeclaration[];
+}
+
+function parseVariableDeclarations(raw: unknown): AgentVariableDeclaration[] {
+  if (!Array.isArray(raw)) return [];
+  const out: AgentVariableDeclaration[] = [];
+  for (const entry of raw) {
+    if (!isJsonObject(entry)) continue;
+    const name = typeof entry.name === "string" ? entry.name.trim() : "";
+    if (!name) continue;
+    out.push({
+      name,
+      label: typeof entry.label === "string" && entry.label.trim()
+        ? entry.label.trim()
+        : null,
+      helpText:
+        typeof entry.helpText === "string" && entry.helpText.trim()
+          ? entry.helpText.trim()
+          : null,
+    });
+  }
+  return out;
 }
 
 export type SampleFreshness =
@@ -163,7 +198,9 @@ export async function fetchAgentContractHead(
   const { data, error } = await supabase
     .schema("agent")
     .from("definition")
-    .select("id, version, input_contract_hash, output_contract_hash")
+    .select(
+      "id, version, input_contract_hash, output_contract_hash, variable_definitions",
+    )
     .eq("id", agentId)
     .maybeSingle();
   if (error) throw error;
@@ -173,6 +210,7 @@ export async function fetchAgentContractHead(
     version: data.version,
     inputContractHash: data.input_contract_hash,
     outputContractHash: data.output_contract_hash,
+    variableDeclarations: parseVariableDeclarations(data.variable_definitions),
   };
 }
 
@@ -415,7 +453,18 @@ export async function fetchRunFinalResponse(
   if (error) throw error;
   const content = data?.content;
   if (content == null) return null;
-  return typeof content === "string" ? content : JSON.stringify(content);
+  if (typeof content === "string") return content;
+  // A message's stored content is an array of typed parts. Stringifying it put
+  // `[{"id":"","text":"","type":"thinking","summary":[],"metadata":{}...` on
+  // screen where the answer belongs — the machine frame, not the reply. Read
+  // the text parts the same way every other consumer does, and fall back to the
+  // raw JSON only when there is no text at all, so a media-only or
+  // tool-call-only answer still shows SOMETHING rather than a blank pane.
+  if (Array.isArray(content)) {
+    const text = textFromMessageContent(parseMessageContent(content));
+    if (text) return text;
+  }
+  return JSON.stringify(content);
 }
 
 /**

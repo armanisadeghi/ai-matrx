@@ -143,6 +143,8 @@ side panel) and the `/detail/[type]/[id]` route. Presentation is the person's
 
 - 2026-09-14 — **`impactBatchWindow` carries `posture` and `focusAgentId`** (Agent Change Impact I6): the opener, the controller block, the window's `onCollectData` and the metadata `defaultData`/`preservation.dataKeys` all grew the two keys, so a post-edit panel opened through the per-person read door and scoped to one agent restores as such. Title reads "Change impact — this agent" in that case.
 
+- 2026-09-19 — **Agent deep links open the agent, and no `?panels=` token is ever erased.** Reported live: `/agents/<id>/build?panels=agent:<conversationId>:m-flexible-panel` loaded, cleared itself back to the bare route, and opened nothing. Two defects, one in each half of the system. (1) The `agent` hydrator dispatched `initInstanceUIState` and stopped — it wrote a conversation's display CONFIG and never opened the shell that config describes, never read the conversation back out of the database, and therefore never registered a `urlSync` entry. It now performs the same sequence a click performs: open the shell for the mode through `DISPLAY_MODE_TO_OVERLAY_ID` (extracted to `features/agents/redux/execution-system/display-mode-overlay.ts` so `launchAgentExecution` and the hydrator read ONE map), `loadConversation({ expectMaterialized: true })`, then re-assert the mode the LINK named on top of `metadata.display`. (2) `UrlPanelManager` erased the token: its writer can only describe open windows, so an unregistered token vanished from the bar after a 5 s wait that ALSO froze every other window's URL sync. Tokens the URL arrived with are now preserved verbatim until their key registers (`withUnclaimedTokens`), the wait is gone, and a still-unclaimed token is a `console.error` naming the key and the remedy. Also: `agentRunWindow` mints `m-run` (+ `a`/`c` args) so the Chat window and the conversation shells stop colliding on the shared `agent` key; the duplicate second `topic` hydrator, which silently overwrote the canonical one, is deleted; the legacy `files` alias hydrator (nothing minted it; `cloud_files` is the registry key) is deleted under no-legacy.
+
 - 2026-09-09 — Watchdog failure payloads retain the viewport used for diagnosis, its degenerate/fallback flag, and render acknowledgement kind; missing acknowledgements remain `none`, never an inferred presentation.
 
 - 2026-09-09 — **Alternate mobile surfaces acknowledge visibility without fake geometry.** A registered window may deliberately replace `WindowPanel` on mobile with a purpose-built surface. Settings, Chat Options, and the four flashcard viewers use `useOverlaySurfaceRenderAck` while their drawer, sheet, or fullscreen viewer is active; the silent-render watchdog treats that mount as visibility proof instead of false-screaming `no-window-registered` and offering a useless `revealWindow` action.
@@ -702,6 +704,45 @@ the end of `initUrlHydration.ts` now refuses an alias with no hydrator, an alias
 whose canonical target is not a registry `urlSync.key`, and an alias key that a
 window already publishes. **A never-registering token still keeps its address and
 still alarms** — the contract above is untouched.
+### 🚨 THE HYDRATOR OPENS THE WINDOW
+
+Learned from one report (Arman, 2026-09-19: an agent deep link "goes to this and
+then it clears it and just loads this and the component is never loaded"). Its
+second half — the address is never erased — is the section above; this is the
+first half.
+
+**A hydrator OPENS the window.** Seeding a feature's state is not restoring a
+panel. A hydrator dispatches the same open the click dispatches — `openOverlay`
+(or the feature's one opener primitive) — and then fetches whatever the panel
+needs, because a floating panel is not a route and no page owns it. The `agent`
+hydrator dispatched `initInstanceUIState` and nothing else: it wrote how a
+conversation would be displayed and never opened the shell, never read the
+conversation, and so never registered a `urlSync` entry. Every agent deep link
+in the product landed on the bare route with nothing open. Guard: the "an agent
+deep link opens the agent" cases in
+[`__tests__/urlHydrationRegistry.test.ts`](./__tests__/urlHydrationRegistry.test.ts).
+
+**Two windows may share one key only if their tokens tell them apart.**
+`agentRunWindow` (the Chat window, which HOSTS conversations) and the
+display-mode shells (`agentFlexiblePanel` and siblings, each of which IS one
+conversation) both claim `agent`. The `m` arg disambiguates: `m-run` is the Chat
+window, addressed by its own instance and carrying the agent and open chat in
+`a`/`c` args ([`windows/agents/agentRunWindowAddress.ts`](./windows/agents/agentRunWindowAddress.ts));
+anything else is a conversation shell, addressed by the conversation id, with
+`m` naming the display mode through the ONE map both the live launch and the
+hydrator read ([`features/agents/redux/execution-system/display-mode-overlay.ts`](../agents/redux/execution-system/display-mode-overlay.ts)).
+
+**Merge note (2026-09-20).** Main's fix for the report above carried its own
+never-erase implementation (`withUnclaimedTokens`, matched by raw `typeKey`, a
+5 s console notice). This branch's `withUnresolvedTokens` states the same law
+and was verified live across V-28…V-30, so the merge kept it: keys are judged
+in canonical space, tokens are tracked by canonical key + instance id, the
+notice rides the shared lazy-mount deadline and reaches the screen. Main's
+helper tests now run against `withUnresolvedTokens`. Main also deleted the
+legacy `files` hydrator under no-legacy; it stays here because links carrying
+it are in the wild (docs, chats, the extension) and the alias contract above
+is built on it — delete the alias and its hydrator together, with the
+`deepLinkedWindowKeepsItsAddress` cases, once those minters are gone.
 
 ### 🚨 A WINDOW WITH NO ADDRESS CANNOT BE REACHED — the address census (R35)
 

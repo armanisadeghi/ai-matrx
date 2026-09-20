@@ -33,6 +33,7 @@ import type {
     SelectionDescriptor,
     VideoRow,
 } from "../types";
+import { sourceVocabulary, type SourceVocabulary } from "../vocabulary";
 import { ActionRunDialog } from "../components/ActionRunDialog";
 import { actionNeedsEstimate } from "./useActionRegistry";
 
@@ -101,6 +102,11 @@ export function useActionRunner(
     libraryId: string,
     actions: ActionDeclaration[],
     onJobStarted?: (jobId: string) => void,
+    /** D6b (jobs-bar cold-walk-12): this Library's own words for the confirm
+     *  dialog, the job's own name and the "started on N …" toast. Omitted
+     *  (e.g. in a test with no Library row yet) falls back to the neutral
+     *  "item(s)" vocabulary rather than YouTube's. */
+    vocabulary: SourceVocabulary = sourceVocabulary(null),
 ): UseActionRunner {
     const dispatch = useAppDispatch();
     const [pending, setPending] = useState<Pending | null>(null);
@@ -208,13 +214,19 @@ export function useActionRunner(
                 estimate_token: estimate?.estimate_token ?? null,
                 ...transcriptionOptions(pending.action, params),
                 params,
-                name: `${pending.action.label} ${pending.selection.count} videos`,
+                name: `${pending.action.label} ${pending.selection.count} ${
+                    pending.selection.count === 1
+                        ? vocabulary.item.one
+                        : vocabulary.item.many.toLowerCase()
+                }`,
             });
             setStartedJobIds((current) => [job.id, ...current]);
             onJobStarted?.(job.id);
             close({
                 message: `${pending.action.label} started on ${pending.selection.count} ${
-                    pending.selection.count === 1 ? "video" : "videos"
+                    pending.selection.count === 1
+                        ? vocabulary.item.one
+                        : vocabulary.item.many.toLowerCase()
                 }. Watch it below — it keeps running if you close this tab.`,
                 refresh: true,
             });
@@ -242,6 +254,7 @@ export function useActionRunner(
             action={pending?.action ?? null}
             selectionCount={pending?.selection.count ?? 0}
             selectionMode={pending?.selection.mode ?? "ids"}
+            vocabulary={vocabulary}
             estimate={estimate}
             estimateLoading={estimateLoading}
             estimateError={estimateError}

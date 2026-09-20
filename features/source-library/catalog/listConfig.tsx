@@ -23,7 +23,8 @@ import type { EntityBulkAction } from "@/lib/entity-list/selection";
 import { catalogColumns } from "./columns";
 import { createCatalogService } from "./service";
 import { actionLabel } from "../format";
-import type { VideoRow } from "../types";
+import { sourceVocabulary } from "../vocabulary";
+import type { LibraryRow, VideoRow } from "../types";
 
 export function createCatalogListConfig(options: {
     dispatch: AppDispatch;
@@ -40,6 +41,30 @@ export function createCatalogListConfig(options: {
      *  exists for it. Without this the row could name what happened and give a
      *  person nowhere to go and read the rest of it. */
     onOpenJob?: (jobId: string) => void;
+    /** This Library's row, so the noun and the empty state speak the adapter's
+     *  own words (D6b, jobs-bar cold-walk-12) — never YouTube's "video(s)" over
+     *  a podcast or a blog. `null` while the mount read has not landed yet. */
+    library?: LibraryRow | null;
+    /**
+     * D6 (jobs-bar cold-walk-12, 2026-09-19): bumped every time a sync lands
+     * new rows (`library.sync.completed`). `serviceKey` is what actually makes
+     * this shell re-ask a service — see `lib/entity-list/useEntityList.ts`'s
+     * own header comment on `serviceKey`. This screen's row read used to be
+     * keyed only by `libraryId`/`organizationId`, so a page that just watched
+     * the sync banner count to 507 kept showing the FIRST read's zero rows
+     * forever: nothing in the query ever changed, so nothing ever re-asked.
+     * Folding this in is the fix, in the shell's own idiom.
+     */
+    refreshToken?: number;
+    /**
+     * D6's belt-and-suspenders half: while the sync banner (`sync.listed`,
+     * `LibraryMetricsHeader`) is reporting rows for THIS library, the honest
+     * empty state can never be "Nothing catalogued yet" — that sentence is a
+     * flat lie one banner-height above a stat block saying otherwise. Passed
+     * by `LibraryPage` from the live sync state; omitted (or `false`) uses the
+     * ordinary empty state.
+     */
+    syncReportsRows?: boolean;
 }): EntityListConfig<VideoRow> {
     const {
         dispatch,
@@ -49,7 +74,11 @@ export function createCatalogListConfig(options: {
         onOpenRow,
         actionLabels,
         onOpenJob,
+        library = null,
+        refreshToken,
+        syncReportsRows,
     } = options;
+    const vocabulary = sourceVocabulary(library);
 
     function useCatalogRowActions(
         _list: EntityListController<VideoRow>,
@@ -114,8 +143,8 @@ export function createCatalogListConfig(options: {
         // No scope tabs: the Library IS the scope. See ./service.ts.
         scopes: [],
         service: createCatalogService(dispatch, libraryId),
-        serviceKey: `media-catalog:${libraryId}:${organizationId ?? "none"}`,
-        columns: catalogColumns({ actionLabels }),
+        serviceKey: `media-catalog:${libraryId}:${organizationId ?? "none"}:${refreshToken ?? 0}`,
+        columns: catalogColumns({ actionLabels, vocabulary }),
         prefsVersion: 1,
         getRowId: (row) => row.id,
         getRowName: (row) => row.title,
@@ -125,7 +154,7 @@ export function createCatalogListConfig(options: {
         // axis of its own — the affordance is switched off rather than lying.
         supportsArchived: false,
         bulkActions,
-        bulkSelection: { noun: "video", selectAllMatching: true },
+        bulkSelection: { noun: vocabulary.item.one, selectAllMatching: true },
         facetSections: [
             {
                 facet: "media_kind",
@@ -172,10 +201,21 @@ export function createCatalogListConfig(options: {
             },
         ],
         prefsDefaults: { sort: "published_at", direction: "desc" },
-        emptyState: {
-            title: "Nothing catalogued yet",
-            description:
-                "Bring this Library up to date and every video on the channel lists here in seconds.",
-        },
+        // D6: never the "nothing here" sentence while the sync banner is
+        // reporting rows for this exact Library — that combination is not an
+        // edge case here, it is what a person sees on every fresh catalogue
+        // for the beat between the banner landing and this list's own re-read
+        // catching up. `refreshToken` above is the real fix (the list now
+        // actually re-asks); this is the guard for the read still in flight.
+        emptyState: syncReportsRows
+            ? {
+                  title: `Bringing your ${vocabulary.item.many.toLowerCase()} into view`,
+                  description:
+                      "The catalogue just finished listing this Library's rows. Finishing the read for this table now — they will appear in a moment.",
+              }
+            : {
+                  title: "Nothing catalogued yet",
+                  description: `Bring this Library up to date and every ${vocabulary.item.one} on the channel lists here in seconds.`,
+              },
     };
 }

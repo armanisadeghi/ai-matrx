@@ -343,12 +343,16 @@ export function useDataStoreDetail(storeId: string | null) {
       if (!storeId) return false;
       try {
         const supabase = createClient();
+        // Soft delete — `bind` above revives a removed binding by upserting
+        // deleted_at: null, and every read of this table filters deleted_at IS
+        // NULL, so destroying the row only loses the history. db-rules §8/§8a.
         const { error: deleteError } = await ragDb(supabase)
           .from("data_store_members")
-          .delete()
+          .update({ deleted_at: new Date().toISOString() })
           .eq("data_store_id", storeId)
           .eq("source_kind", sourceKind)
-          .eq("source_id", sourceId);
+          .eq("source_id", sourceId)
+          .is("deleted_at", null);
         if (deleteError) throw deleteError;
         refresh();
         return true;
@@ -621,12 +625,15 @@ export function useDocumentDataStores(processedDocumentId: string | null) {
       if (!processedDocumentId) return false;
       try {
         const supabase = createClient();
+        // Soft delete — see removeMember: the binding is revived by `bind`'s
+        // upsert, and both read paths already filter deleted_at IS NULL.
         const { error: deleteError } = await ragDb(supabase)
           .from("data_store_members")
-          .delete()
+          .update({ deleted_at: new Date().toISOString() })
           .eq("data_store_id", dataStoreId)
           .eq("source_kind", "processed_document")
-          .eq("source_id", processedDocumentId);
+          .eq("source_id", processedDocumentId)
+          .is("deleted_at", null);
         if (deleteError) throw deleteError;
         refresh();
         return true;

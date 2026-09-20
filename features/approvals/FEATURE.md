@@ -32,7 +32,7 @@ The SEO value-system queue (register KI-045) was already the generic mechanism: 
 | Surface | `ApprovalsWorkspace.tsx` | The one screen both hosts mount |
 | Route | `app/(core)/approvals/page.tsx` | `/approvals`; reads `?item=<assist id>` server-side and hands it down, so the queue expands, scrolls to that row and rings it — and says plainly when that row is no longer waiting |
 | Window | `windows/ApprovalsWindow.tsx` + `features/overlays/openers/approvalsWindow.tsx` | The same surface in a `WindowPanel`, wrapping the canonical component |
-| Badge | `usePendingApprovalCount.ts` + `features/shell/components/header/header-right-menu/ApprovalsMenuItem.tsx` | "Waiting on you" with a count in the user menu; no badge at 0 and none when the count could not be read |
+| Badge | `usePendingApprovalCount.ts` + `features/notifications/useInbox.ts` (`useInboxCounts`) | "Waiting on you" is a pinned row with a count in the shell Inbox (the header bell), and part of the bell's number; no row at 0 and none when the count could not be read |
 | Kinds | `kinds/*.tsx`, `kinds/seo/*.tsx` | One module per proposal kind |
 
 Also mounted on: the marketing approvals console (all keyword kinds, per site), the value workbench, the business guidelines panel (`keyword_meaning:guideline_edit`), the offering tree (`placement_drift`), discovery.

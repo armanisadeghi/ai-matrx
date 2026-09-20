@@ -69,6 +69,7 @@ export function toolBrief(tool: ToolLike) {
     tool_group: tool.tool_group ?? null,
     tier: tool.tier ?? null,
     source_kind: tool.source_kind ?? null,
+    semver: tool.semver ?? null,
     version: tool.version ?? null,
     is_active: tool.is_active ?? null,
     admin_only: tool.admin_only ?? null,
@@ -105,8 +106,8 @@ export function toolSummary(tool: ToolLike): string {
 
 /**
  * The editable surface of a tool definition, live or saved. Deliberately
- * looser than `ToolLike`: the create form has no `id` yet and types `version`
- * as a semver string, so the shared builders must accept both shapes.
+ * looser than `ToolLike`: the create form has no `id` yet, so the shared
+ * builders accept its unsaved draft shape too.
  */
 export interface ToolEditorFields {
   id?: string;
@@ -114,7 +115,8 @@ export interface ToolEditorFields {
   description?: string | null;
   category?: string | null;
   source_kind?: string | null;
-  version?: number | string | null;
+  semver?: string | null;
+  version?: number | null;
   is_active?: boolean | null;
   tags?: string[] | null;
   icon?: string | null;
@@ -138,6 +140,7 @@ export function toolChips(
   return {
     name: tool.name || "(unnamed)",
     source_kind: tool.source_kind ?? "—",
+    semver: tool.semver ?? "—",
     version: tool.version ?? "—",
     active: tool.is_active === false ? "inactive" : "active",
     category: tool.category ?? "—",
@@ -167,7 +170,8 @@ const EDITOR_FIELDS: { field: string; label: string; json?: boolean }[] = [
   { field: "source_kind", label: "Source Kind" },
   { field: "managed_by_server_id", label: "MCP Server" },
   { field: "icon", label: "Icon" },
-  { field: "version", label: "Version" },
+  { field: "semver", label: "Semantic version" },
+  { field: "version", label: "Revision" },
   { field: "is_active", label: "Active" },
   { field: "tags", label: "Tags" },
   { field: "parameters", label: "Parameters Schema", json: true },

@@ -34,6 +34,11 @@ the register is [the Question Ledger](/operations/questions.md); the interviewer
 
 Run them in order. The first that says "not a question" ends the matter.
 
+**Before test 0 — default to telling him, not asking him.** Most of what agents send him should be
+numbered DECISIONS in the voice of the best engineer alive, each with its reason and its champion
+(including saying plainly when a doctrine line or an "Arman said" claim is wrong), then ONE gentle
+"confirm and I start", then take charge and finish: [tell me, don't ask me](/policies/tell-me-dont-ask-me.md).
+
 0. **Are you asking the boss, or the user?** *Would this question exist if Arman had never used
    the product himself?* If it exists only because he owns a recycling company, an SEO brand, a
    site or a team — the content, taste or configuration of ONE organization — it is not his
