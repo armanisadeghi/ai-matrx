@@ -550,6 +550,8 @@
     "check:campaign-ramp-ids:self-test": "tsx scripts/check-campaign-ramp-ids.ts --self-test",
     "check:suites-take-the-seat": "tsx scripts/check-campaign-suites-take-the-seat.ts",
     "check:suites-take-the-seat:self-test": "tsx scripts/check-campaign-suites-take-the-seat.ts --self-test",
+    "check:fields-stay-masked": "tsx scripts/check-fields-stay-masked.ts",
+    "check:fields-stay-masked:self-test": "tsx scripts/check-fields-stay-masked.ts --self-test",
     "check:store-doors-decide": "tsx scripts/check-store-doors-decide.ts",
     "check:store-doors-decide:self-test": "tsx scripts/check-store-doors-decide.ts --self-test",
     "check:store-doors-decide:exhaustive": "tsx scripts/check-store-doors-decide.ts --exhaustive"
