@@ -23,6 +23,9 @@ import {
   holderIdentityFromResolved,
   pinnedHolder,
 } from "./appHolder";
+// A mandate key is a BRANDED value, not a string: the carrier refuses a bare
+// one so no caller can hand the door a token it never minted.
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 describe("APP_MANDATE_CUTOVER", () => {
   it("is ON — flipped 2026-08-30 on Arman's order; apps resolve through their mandate", () => {
@@ -77,7 +80,7 @@ describe("holderIdentityFromResolved — a pin is a pin", () => {
     agentId: "definition-id",
     configOverrides: null,
     mandateId: "mandate-1",
-    mandateKey: "app.thing",
+    mandateKey: storedMandateKey("app.thing"),
     provenance: "system" as const,
   };
 
