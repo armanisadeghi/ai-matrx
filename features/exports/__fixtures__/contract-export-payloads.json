@@ -1,0 +1,202 @@
+{
+  "fresh_kindle_clippings": {
+    "library": {
+      "adapter": "kindle_clippings",
+      "adapter_label": "Kindle highlights (My Clippings.txt)",
+      "id": "lib-fresh-kindle",
+      "item_count": 11,
+      "metrics": {
+        "adapter": "kindle_clippings",
+        "adapter_label": "Kindle highlights (My Clippings.txt)",
+        "bytes_read": 2429,
+        "confidence": 0.96,
+        "counts_by_direction": {
+          "outbound": 11
+        },
+        "counts_by_kind": {
+          "highlight": 11
+        },
+        "counts_by_label": {
+          "Highlight": 10,
+          "Kindle": 11,
+          "Note": 1
+        },
+        "date_range": {
+          "earliest": "2024-03-03T12:12:00Z",
+          "latest": "2024-03-04T18:12:00Z",
+          "span_days": 1
+        },
+        "detected_from": "My Clippings.txt is laid out as Kindle's clippings log: 12 '- Your Highlight/Note on \u2026 | Location \u2026 | Added on \u2026' lines separated by 12 rows of '=========='.",
+        "elapsed_ms": 0,
+        "owner_identity": null,
+        "owner_identity_basis": null,
+        "skipped": [],
+        "top_containers": [
+          {
+            "count": 3,
+            "key": "The Design of Everyday Things",
+            "label": "The Design of Everyday Things"
+          },
+          {
+            "count": 3,
+            "key": "Waste and Want: A Social History of Trash",
+            "label": "Waste and Want: A Social History of Trash"
+          },
+          {
+            "count": 3,
+            "key": "Seeing Like a State",
+            "label": "Seeing Like a State"
+          },
+          {
+            "count": 2,
+            "key": "Thinking in Systems: A Primer",
+            "label": "Thinking in Systems: A Primer"
+          }
+        ],
+        "top_correspondents": [],
+        "total_chars": 698,
+        "total_items": 11,
+        "total_words": 135,
+        "warnings": [
+          "Nothing in this export says which identity belongs to you, so the \"sent by me\" filter is off until you pick your own address or handle. Every other filter works."
+        ],
+        "with_attachments": 0
+      },
+      "name": "My Clippings.txt",
+      "sync_error": null,
+      "sync_status": "idle"
+    }
+  },
+  "legacy_shape_migrated": {
+    "library": {
+      "adapter": "kindle_clippings",
+      "adapter_label": "Kindle highlights (My Clippings.txt)",
+      "id": "lib-legacy-migrated",
+      "item_count": 11,
+      "metrics": {
+        "adapter": "kindle_clippings",
+        "adapter_label": "Kindle highlights (My Clippings.txt)",
+        "bytes_read": 2429,
+        "confidence": 0.96,
+        "counts_by_direction": {
+          "outbound": 11
+        },
+        "counts_by_kind": {
+          "highlight": 11
+        },
+        "counts_by_label": {
+          "Highlight": 10,
+          "Kindle": 11,
+          "Note": 1
+        },
+        "date_range": {
+          "earliest": "2024-03-03T12:12:00Z",
+          "latest": "2024-03-04T18:12:00Z",
+          "span_days": 1
+        },
+        "detected_from": "My Clippings.txt is laid out as Kindle's clippings log: 12 '- Your Highlight/Note on \u2026 | Location \u2026 | Added on \u2026' lines separated by 12 rows of '=========='.",
+        "elapsed_ms": 0,
+        "owner_identity": null,
+        "owner_identity_basis": null,
+        "skipped": [],
+        "top_containers": [
+          {
+            "count": 3,
+            "key": "The Design of Everyday Things",
+            "label": "The Design of Everyday Things"
+          },
+          {
+            "count": 3,
+            "key": "Waste and Want: A Social History of Trash",
+            "label": "Waste and Want: A Social History of Trash"
+          },
+          {
+            "count": 3,
+            "key": "Seeing Like a State",
+            "label": "Seeing Like a State"
+          },
+          {
+            "count": 2,
+            "key": "Thinking in Systems: A Primer",
+            "label": "Thinking in Systems: A Primer"
+          }
+        ],
+        "top_correspondents": [],
+        "total_chars": 698,
+        "total_items": 11,
+        "total_words": 135,
+        "warnings": [
+          "Nothing in this export says which identity belongs to you, so the \"sent by me\" filter is off until you pick your own address or handle. Every other filter works."
+        ],
+        "with_attachments": 0
+      },
+      "name": "My Clippings.txt",
+      "sync_error": null,
+      "sync_status": "idle"
+    }
+  },
+  "legacy_shape_raw_unmigrated": {
+    "library": {
+      "adapter": "kindle_clippings",
+      "adapter_label": "Kindle highlights (My Clippings.txt)",
+      "id": "lib-legacy-raw",
+      "item_count": 11,
+      "metrics": {
+        "adapter": "kindle_clippings",
+        "adapter_label": "Kindle highlights (My Clippings.txt)",
+        "bytes_read": 2429,
+        "confidence": 0.96,
+        "counts_by_container": {
+          "Seeing Like a State": 3,
+          "The Design of Everyday Things": 3,
+          "Thinking in Systems: A Primer": 2,
+          "Waste and Want: A Social History of Trash": 3
+        },
+        "counts_by_direction": {
+          "outbound": 11
+        },
+        "counts_by_kind": {
+          "highlight": 11
+        },
+        "counts_by_label": {
+          "Highlight": 10,
+          "Kindle": 11,
+          "Note": 1
+        },
+        "date_range": {
+          "earliest": "2024-03-03T12:12:00Z",
+          "latest": "2024-03-04T18:12:00Z",
+          "span_days": 1
+        },
+        "detected_from": "My Clippings.txt is laid out as Kindle's clippings log: 12 '- Your Highlight/Note on \u2026 | Location \u2026 | Added on \u2026' lines separated by 12 rows of '=========='.",
+        "elapsed_ms": 0,
+        "owner_identity": null,
+        "owner_identity_basis": null,
+        "skipped": [],
+        "top_correspondents": [],
+        "total_chars": 698,
+        "total_items": 11,
+        "total_words": 135,
+        "warnings": [
+          "Nothing in this export says which identity belongs to you, so the \"sent by me\" filter is off until you pick your own address or handle. Every other filter works."
+        ],
+        "with_attachments": 0
+      },
+      "name": "My Clippings.txt",
+      "sync_error": null,
+      "sync_status": "idle"
+    }
+  },
+  "not_yet_indexed": {
+    "library": {
+      "adapter": "kindle_clippings",
+      "adapter_label": "Kindle highlights (My Clippings.txt)",
+      "id": "lib-not-indexed",
+      "item_count": 0,
+      "metrics": {},
+      "name": "My Clippings.txt",
+      "sync_error": null,
+      "sync_status": "idle"
+    }
+  }
+}
