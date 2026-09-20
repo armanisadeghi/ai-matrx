@@ -232,6 +232,46 @@ from a successful one. Now:
 - **insert failures raise.** This adapter already ignores its own RPC failure by
   relation name, so it cannot loop; every other caller decides how to degrade.
 
+**Every client names its FEATURE too, and no error row is app-only any more
+(applied live 2026-09-20).** `source_app` / `source_feature` are ONE two-level
+categorization: the app, then the feature inside it (Arman, 2026-09-18).
+`ops.system_error` gained `source_feature` that morning and every Python writer
+started stamping both halves — but this RPC, the door EVERY client app writes
+through, could still only say the app, so a CMS failure and an education-tutor
+failure were the same row across the whole platform.
+`migrations/log_client_error_names_the_feature_too.sql`:
+
+- the RPC takes a twelfth parameter **`p_source_feature`**, and the old
+  ELEVEN-argument signature is GONE. It had to be: Postgres cannot add a
+  parameter in place, and with both live PostgREST refuses the eleven named
+  arguments every current client sends as ambiguous (PGRST203) — an outage of
+  the error channel itself. One function survives, `p_source_feature` DEFAULTS to
+  null, and a Chrome-extension or desktop build a user has not updated keeps
+  working unchanged. The pre-DD-115 ten-argument shim is untouched and now
+  delegates to the twelve-argument door;
+- **a missing feature is never stored as null.** It becomes the registered
+  sentinel **`client-unmapped`** plus a `context.source_feature_note` saying the
+  client named no feature. Every `client-unmapped` row in the dashboard is a
+  request for one more line in a client's route map, not a shrug;
+- **a malformed slug is refused with `22023`**, the same way an unknown app is.
+  The registry itself lives in Python
+  (`aidream/services/conversation_context/source_attribution.py`, mirrored to
+  `types/python-generated/source-attribution.ts`), so the function validates the
+  SHAPE of a slug and the TypeScript `SourceFeature` type keeps an unregistered
+  value from compiling;
+- **this repo derives the feature from the route that failed** —
+  `lib/diagnostics/errorSourceFeature.ts` (`sourceFeatureForRoute`), used by both
+  the authenticated RPC lane and the guest endpoint, which writes
+  `source_feature` on its direct insert too. matrx-extend maps the failing table
+  (`src/lib/supabase/db-failure.ts`), matrx-local maps its route
+  (`desktop/src/lib/error-outbox.ts`);
+- **SQL cannot reopen this.** The six in-database maintenance functions that file
+  error rows now carry `source_app='database'` and their subsystem's feature
+  (`migrations/db_maintenance_errors_name_their_feature.sql`), and aidream's
+  `scripts/check_error_capture_attribution.py` grew a `.sql` arm and a LIVE
+  `pg_proc` arm that fail on any function body inserting an error row without a
+  feature.
+
 **Explicit organization IDs are assertions, never fallback hints** (applied live
 2026-09-15). Matrx Local's durable outbox sends the organization captured at the
 time of occurrence. If the occurrence-time identity is no longer admitted before

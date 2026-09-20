@@ -57,6 +57,18 @@ swallows: a failed insert raises, and an error with no resolvable organization i
 still written with a note saying so (DD-115,
 `migrations/log_client_error_source_app_and_loud_failures_dd115.sql`).
 
+**And every caller names its FEATURE inside that app** (2026-09-20,
+`migrations/log_client_error_names_the_feature_too.sql`). `source_app` /
+`source_feature` are ONE two-level categorization: the app, then the feature. The
+RPC's twelfth parameter is `p_source_feature`; this repo fills it from the route
+that failed via `sourceFeatureForRoute` (`lib/diagnostics/errorSourceFeature.ts`),
+so you do NOT pass it by hand — **add a line to the map in that file when you ship
+a new top-level surface.** A route the map does not cover records the registered
+sentinel `client-unmapped`, which is a visible to-do in the error dashboard, not a
+silent default. Slugs are a closed registry (`SourceFeature` in
+`types/python-generated/source-attribution.ts`); a new one is registered in
+aidream's `source_attribution.py` and the mirror regenerated, never invented here.
+
 ## React boundaries
 
 New error boundary → use `lib/error-boundary/ErrorBoundaryWithCapture.tsx` (capture built-in). Migrating a bespoke `componentDidCatch` → add one line: `captureReactRenderError(error, { boundary, relation, componentStack })` (`lib/diagnostics/captureReactError.ts`). Route `error.tsx` boundaries are already covered at `components/errors/ErrorBoundaryView.tsx` — don't re-wire each one.
