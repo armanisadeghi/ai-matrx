@@ -33,6 +33,21 @@ function escalationLabel(row: ProviderBatch): string {
   return "—";
 }
 
+export function turnaroundSeconds(row: ProviderBatch): number | null {
+  if (!row.submitted_at || !row.completed_at) return null;
+  const submittedAt = Date.parse(row.submitted_at);
+  const completedAt = Date.parse(row.completed_at);
+  if (Number.isNaN(submittedAt) || Number.isNaN(completedAt)) return null;
+  return (completedAt - submittedAt) / 1000;
+}
+
+export const providerBatchesUrlState = {
+  id: "provider-batches",
+  defaultSort: { id: "submitted_at", direction: "desc" as const },
+  // Cross-tab focus is an explicit caller intent, never a stale row query.
+  selectedRow: false,
+};
+
 export function ProviderBatchesPanel({
   batches,
   loading,
@@ -100,14 +115,14 @@ export function ProviderBatchesPanel({
     { id: "status", accessorKey: "status", header: "Status", filter: "select", width: 120, cell: (row) => <StatusBadge status={row.status} /> },
     { id: "request_count", accessorKey: "request_count", header: "Items", filter: "number", width: 90, cell: (row) => <span className="tabular-nums">{fmtInt(row.request_count)}</span> },
     { id: "poll_count", accessorKey: "poll_count", header: "Polls", filter: "number", width: 85, cell: (row) => <span className="tabular-nums text-muted-foreground">{fmtInt(row.poll_count)}</span> },
-    { id: "turnaround", header: "Turnaround", accessorFn: (row) => row.completed_at ?? row.submitted_at, width: 120, cell: (row) => <span className="tabular-nums text-muted-foreground">{fmtSpan(row.submitted_at, row.completed_at)}</span> },
+    { id: "turnaround", header: "Turnaround", accessorFn: turnaroundSeconds, filter: "number", width: 120, cell: (row) => <span className="tabular-nums text-muted-foreground">{fmtSpan(row.submitted_at, row.completed_at)}</span> },
     { id: "escalation", header: "Escalation", accessorFn: escalationLabel, width: 145, cell: (row) => <span className="text-muted-foreground">{escalationLabel(row)}</span> },
     { id: "cost", header: "Cost", accessorFn: (row) => num(row.cost_usd) ?? num(row.est_live_cost_usd) ?? 0, filter: "number", width: 110, cell: (row) => <CostCell actual={num(row.cost_usd)} liveEquivalent={row.live_equivalent_cost_usd === null ? null : num(row.live_equivalent_cost_usd)} estimate={num(row.est_live_cost_usd)} settled={row.status === "completed"} /> },
   ];
 
   return (
     <MatrxDataTable
-      urlState={{ id: "provider-batches", defaultSort: { id: "submitted_at", direction: "desc" } }}
+      urlState={providerBatchesUrlState}
       data={batches}
       columns={columns}
       getRowId={(row) => row.id}

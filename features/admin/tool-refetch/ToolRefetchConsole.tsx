@@ -46,7 +46,11 @@ import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
-import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import type {
+  MatrxColumnDef,
+  MatrxDataTableQueryState,
+  SortState,
+} from "@ai-matrx/design-system/data-table/types";
 
 import {
   DETAIL_PAGE_SIZE,
@@ -222,6 +226,37 @@ function rowsToHumanText(rows: ToolRefetchSummaryRow[], win: RefetchWindow): str
   return [header, "", ...lines].join("\n");
 }
 
+export function sortToolRefetchRows(
+  rows: ToolRefetchSummaryRow[],
+  sort: SortState | null,
+): ToolRefetchSummaryRow[] {
+  if (!sort) return rows;
+  const key = sort.id as SortKey;
+  if (!COLUMNS.some((column) => column.key === key)) return rows;
+  return [...rows].sort((a, b) => {
+    if (key === "toolName") {
+      return sort.direction === "asc"
+        ? a.toolName.localeCompare(b.toolName)
+        : b.toolName.localeCompare(a.toolName);
+    }
+    const left = a[key] as number | null;
+    const right = b[key] as number | null;
+    if (left === null && right === null) return 0;
+    if (left === null) return 1;
+    if (right === null) return -1;
+    return sort.direction === "asc" ? left - right : right - left;
+  });
+}
+
+const INITIAL_TABLE_STATE: MatrxDataTableQueryState = {
+  page: 1,
+  pageSize: 50,
+  search: "",
+  anyOf: "",
+  columnFilters: {},
+  sort: { id: "sameDataRepeats", direction: "desc" },
+};
+
 /* ── drill-down ────────────────────────────────────────────────────────────── */
 
 function ConversationCell({ id }: { id: string | null }) {
@@ -392,6 +427,9 @@ function ToolDetail({
 
 export function ToolRefetchConsole() {
   const [win, setWin] = useState<RefetchWindow>("30d");
+  const [tableState, setTableState] = useState<MatrxDataTableQueryState>(
+    INITIAL_TABLE_STATE,
+  );
   const copySubset = useCopySubsetVariant();
 
   const report = useQuery({
@@ -414,6 +452,12 @@ export function ToolRefetchConsole() {
       : null;
 
   const rows = report.data?.rows ?? [];
+  const copiedRows = useMemo(
+    () => sortToolRefetchRows(rows, tableState.sort),
+    [rows, tableState.sort],
+  );
+  const sortKey = tableState.sort?.id ?? "unsorted";
+  const sortAsc = tableState.sort?.direction === "asc";
 
   const columns = useMemo((): MatrxColumnDef<ToolRefetchSummaryRow>[] => [
     { id: "toolName", accessorKey: "toolName", header: "Tool", width: 240, cell: (row) => <span className="font-medium">{row.toolName}</span> },
@@ -475,15 +519,15 @@ export function ToolRefetchConsole() {
             <CopyButtons
               size="sm"
               label="Tool re-fetch report"
-              disabled={rows.length === 0}
-              human={() => rowsToHumanText(rows, win)}
-              json={() => rows}
+              disabled={copiedRows.length === 0}
+              human={() => rowsToHumanText(copiedRows, win)}
+              json={() => copiedRows}
               agent={() => ({
                 kind: "tool-refetch-report",
                 location: TOOL_REFETCH_AI_LOCATION,
                 description: `Tool re-fetch report for the ${win} window: ${rows.length} tools, sorted by ${sortKey} ${sortAsc ? "ascending" : "descending"}.`,
-                data: rows,
-                summary: rowsToHumanText(rows, win),
+                data: copiedRows,
+                summary: rowsToHumanText(copiedRows, win),
                 attributes: {
                   window: win,
                   tool_count: rows.length,
@@ -500,16 +544,16 @@ export function ToolRefetchConsole() {
                   label: `Tool re-fetch report (${win})`,
                   location: TOOL_REFETCH_AI_LOCATION,
                   kind: "tool-refetch-report",
-                  rows,
+                  rows: copiedRows,
                   columns: SUBSET_COLUMNS,
                   getRowId: (row) => row.toolName,
                 })),
               ]}
               export={{
                 items: [
-                  jsonExportItem(() => rows),
+                  jsonExportItem(() => copiedRows),
                   csvExportItem(
-                    () => rows as unknown as Array<Record<string, unknown>>,
+                    () => copiedRows as unknown as Array<Record<string, unknown>>,
                     "CSV",
                     COLUMNS.map((c) => ({ key: c.key, header: c.label })),
                   ),
@@ -592,7 +636,7 @@ export function ToolRefetchConsole() {
       )}
 
       <MatrxDataTable
-        urlState={{ id: "tool-refetch", defaultSort: { id: "sameDataRepeats", direction: "desc" } }}
+        query={{ mode: "controlled-local", state: tableState, onStateChange: setTableState }}
         data={rows}
         columns={columns}
         getRowId={(row) => row.toolName}
