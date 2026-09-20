@@ -5,6 +5,7 @@ let mockSelectorState: {
   appContext: {
     organization_id: string | null;
     orgBootstrapResolved: boolean;
+    orgBootstrapFailure: string | null;
   };
 };
 const mockSelectorListeners = new Set<() => void>();
@@ -37,11 +38,13 @@ import { useAuthenticator } from "./use-authenticator";
 function setOrganizationContext(
   organizationId: string | null,
   orgBootstrapResolved: boolean,
+  orgBootstrapFailure: string | null = null,
 ): void {
   mockSelectorState = {
     appContext: {
       organization_id: organizationId,
       orgBootstrapResolved,
+      orgBootstrapFailure,
     },
   };
   for (const listener of mockSelectorListeners) listener();
@@ -53,7 +56,11 @@ describe("useAuthenticator organization lifecycle", () => {
     fetchAuthenticators.mockResolvedValue([]);
     mockSelectorListeners.clear();
     mockSelectorState = {
-      appContext: { organization_id: null, orgBootstrapResolved: false },
+      appContext: {
+        organization_id: null,
+        orgBootstrapResolved: false,
+        orgBootstrapFailure: null,
+      },
     };
   });
 
@@ -111,6 +118,31 @@ describe("useAuthenticator organization lifecycle", () => {
     await settle(hook, () => fetchAuthenticators.mock.calls.length === 1);
     expect(hook.current.error).toBeNull();
     expect(hook.current.organizationRequired).toBe(false);
+
+    await hook.unmount();
+  });
+
+  /**
+   * 🚨 THE FOURTH STATE IS NOT THE REFUSAL (R37, 2026-09-19).
+   *
+   * `setOrgBootstrapFailure` sets `orgBootstrapResolved = true` on purpose, so
+   * the hook's old reading — `orgBootstrapResolved && !organizationId` — was
+   * ALSO true when the organization read FAILED, and it told a person who may
+   * belong to thirteen organizations to pick one. Nobody read their
+   * memberships. On the prior bytes this case produced the refusal sentence
+   * ("choose one from the organization picker"); it must now say we could not
+   * check, and it must never claim a choice is needed.
+   */
+  it("says the read FAILED instead of asking for a pick nobody checked", async () => {
+    setOrganizationContext(null, true, "the organization read failed: Failed to fetch");
+    const hook = await renderHook(() => useAuthenticator());
+
+    expect(fetchAuthenticators).not.toHaveBeenCalled();
+    expect(hook.current.organizationRequired).toBe(false);
+    expect(hook.current.loading).toBe(false);
+    expect(hook.current.error).toEqual(expect.any(String));
+    expect(hook.current.error).toContain("could not check");
+    expect(hook.current.error).not.toMatch(/picker/i);
 
     await hook.unmount();
   });

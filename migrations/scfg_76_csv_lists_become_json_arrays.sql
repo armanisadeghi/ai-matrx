@@ -1,0 +1,43 @@
+-- scfg_76_csv_lists_become_json_arrays.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- Four ordered LISTS were registered as comma-separated strings. Their own descriptions
+-- said so out loud — "Ordered, comma-separated response", "Comma-separated following the
+-- live hr.workflow.route_absent_approver_action precedent" — because when they were seeded
+-- the live value_type CHECK admitted only number|integer|boolean|string|enum. scfg_01 added
+-- `json`. The CSV was residue of a constraint that no longer exists.
+--
+--   hr.time_and_attendance.ot_alert_channels_employee  "push,sms,in_app" → ["push","sms","in_app"]
+--   hr.time_and_attendance.ot_alert_channels_manager   "push,in_app"     → ["push","in_app"]
+--   hr.time_and_attendance.ot_alert_channels_hr        "in_app"          → ["in_app"]
+--   hr.workflow.route_absent_approver_action
+--       "delegated,substitute,climb,route_and_escalate"
+--     → ["delegated","substitute","climb","route_and_escalate"]
+--
+-- Order is preserved, which matters for the last one: it is a fallback ladder, and its final
+-- rung routes anyway with escalate_after_hours forced to 0 so a request never sits silently
+-- behind an out-of-office.
+--
+-- WHY THIS IS NOT COSMETIC. A register that stores a list as a string lies about its own
+-- shape to everything downstream: every reader has to know to split it, and every settings
+-- control has to guess whether to render a text box or a list editor. The two live
+-- list-shaped defects closed today — the worker-class double shape (scfg_73) and the
+-- allowlist the reader parsed as an array while the register called it a string (scfg_75) —
+-- were both this, one step further along.
+--
+-- SAFETY. Each key was checked for a live reader in pg_proc immediately before its own
+-- update, and the whole thing refuses if any organization has an override row: converting
+-- the platform value while a tenant still holds a CSV string would split the shapes again,
+-- which is the defect, not the fix. Neither held. No function reads any of the four today —
+-- and per the unfinished-work alarm that makes them UNFINISHED, not deletable, so they are
+-- converted and kept, not removed.
+--
+-- NOT TOUCHED: approaching_ot_axes, still four approaching_ot_axis_* booleans. Unlike the
+-- worker classes it has no composite twin, so nothing disagrees with anything and nothing is
+-- broken. Converging it is optional tidying; a SPEC-TIME §13 amendment adopting the shipped
+-- names is owed either way.
+--
+-- VERIFIED AFTER: all four are value_type `json` with their members in the original order.

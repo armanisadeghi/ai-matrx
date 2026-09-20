@@ -34,6 +34,8 @@ import * as React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
+import { BackendApiError } from "@/lib/api/errors";
+
 const mockImport = jest.fn();
 const mockSearch = jest.fn();
 const mockFields = jest.fn();
@@ -487,5 +489,272 @@ describe("the address's externalId is reconciled against what the read returns",
     // — Review could fire them at the NEW account.
     expect(text).toContain("0 selected");
     expect(findButton("Review the field map").disabled).toBe(true);
+  });
+});
+
+/**
+ * F-114 — TWO WAYS THE PROOF READ AND THE ADDRESS'S REQUEST STILL LIED
+ * (VERIFY-R10-FIX-WAVE NEW findings, 2026-09-18).
+ *
+ * (1) The mount branch of the read effect returned
+ *     `() => unfilteredAbortRef.current?.abort()` as its CLEANUP, and the
+ *     effect re-runs on every `query` change — so the FIRST keystroke aborted
+ *     the one read that can prove the address's contact exists. Every test
+ *     above missed it because the mock resolves whatever the signal says; the
+ *     tests below honour the signal, exactly as `fetch` does.
+ *
+ * (2) `requestedExternalId` survived its own promotion, so a person who
+ *     un-ticked the deep-linked contact had it ticked again by the next
+ *     Refresh, debounced search, or post-save reload. Promotion happens
+ *     ONCE — after it, the address has been answered and holds nothing.
+ */
+describe("the proof read survives a keystroke, and a promotion happens exactly once", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
+  beforeAll(() => {
+    (
+      globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
+  beforeEach(() => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    mockFields.mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+    mockImport.mockReset();
+    mockSearch.mockReset();
+    mockFields.mockReset();
+  });
+
+  async function settle(times = 10) {
+    for (let attempt = 0; attempt < times; attempt += 1) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+    }
+  }
+
+  const ADA = {
+    external_id: "people/1",
+    resource_name: "people/1",
+    display_name: "Ada Lovelace",
+    given_name: "Ada",
+    family_name: "Lovelace",
+    job_title: "Head of Data",
+    company: "Example Ltd",
+    emails: ["ada@example.com"],
+    phones: [],
+    source_updated_at: null,
+    already_imported: true,
+    person_id: "p1",
+    person_name: "Ada Lovelace",
+    imported_at: "2026-09-16T00:00:00Z",
+  };
+
+  const read = (contacts: unknown[]) => ({
+    provider_key: "google_contacts",
+    google_account: "me@example.com",
+    contacts,
+    count: contacts.length,
+    total_read: contacts.length,
+    already_imported: contacts.length,
+    truncated: false,
+    warnings: [],
+  });
+
+  function findButton(label: string): HTMLButtonElement {
+    const button = [...container.querySelectorAll("button")].find((candidate) =>
+      (candidate.textContent ?? "").includes(label),
+    );
+    if (!button) throw new Error(`no button matching ${label}`);
+    return button as HTMLButtonElement;
+  }
+
+  function clickByAriaLabel(label: string) {
+    const el = [...container.querySelectorAll("[aria-label]")].find(
+      (candidate) => candidate.getAttribute("aria-label") === label,
+    );
+    if (!el) throw new Error(`no control with aria-label ${label}`);
+    el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  }
+
+  async function typeQuery(text: string) {
+    const input = container.querySelector("input") as HTMLInputElement;
+    const setter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      "value",
+    )!.set!;
+    await act(async () => {
+      setter.call(input, text);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+    await settle();
+  }
+
+  it("a keystroke does not abort the unfiltered proof read (F-114 NEW-1)", async () => {
+    // The mock behaves like `fetch`: an aborted signal REJECTS, it does not
+    // hand back a result. That is the only difference from the suite above,
+    // and it is the whole defect.
+    let unfilteredSignal: AbortSignal | null = null;
+    let releaseUnfiltered: (() => void) | null = null;
+    mockSearch.mockImplementation(
+      (args: { query?: string | null; signal?: AbortSignal }) =>
+        new Promise((resolve, reject) => {
+          if (args.query) {
+            resolve(read([]));
+            return;
+          }
+          unfilteredSignal = args.signal ?? null;
+          releaseUnfiltered = () => resolve(read([ADA]));
+          args.signal?.addEventListener("abort", () => {
+            const error = new Error("Aborted");
+            error.name = "AbortError";
+            reject(error);
+          });
+        }),
+    );
+
+    await act(async () => {
+      root.render(
+        <GoogleContactsImportPanel
+          organizationId="org-1"
+          initialExternalId="people/1"
+        />,
+      );
+    });
+    await settle();
+
+    // The person types before the mount's unfiltered read has answered.
+    await typeQuery("Ada");
+
+    // 🚨 THE DEFECT: the mount branch's cleanup fired on the keystroke and
+    // aborted the ONE read that can prove this contact exists.
+    expect(unfilteredSignal).toBeTruthy();
+    expect((unfilteredSignal as unknown as AbortSignal).aborted).toBe(false);
+
+    // And when it answers, it still promotes the address's contact.
+    await act(async () => {
+      releaseUnfiltered!();
+    });
+    await settle();
+
+    const text = container.textContent ?? "";
+    expect(text).toContain("1 selected");
+    expect(text).not.toContain("Still looking for the contact this link named");
+  });
+
+  it("un-ticking the deep-linked contact survives a Refresh (F-114 NEW-2)", async () => {
+    mockSearch.mockResolvedValue(read([ADA]));
+
+    await act(async () => {
+      root.render(
+        <GoogleContactsImportPanel
+          organizationId="org-1"
+          initialExternalId="people/1"
+        />,
+      );
+    });
+    await settle();
+    expect(container.textContent ?? "").toContain("1 selected");
+
+    // The person looks at it and decides not to import it after all.
+    await act(async () => {
+      clickByAriaLabel("Select Ada Lovelace");
+    });
+    await settle();
+    expect(container.textContent ?? "").toContain("0 selected");
+
+    // 🚨 THE DEFECT: `requestedExternalId` outlived its own promotion, so the
+    // next read ticked the box again behind the person's back.
+    await act(async () => {
+      findButton("Refresh").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+    });
+    await settle();
+
+    expect(container.textContent ?? "").toContain("0 selected");
+    expect(findButton("Review the field map").disabled).toBe(true);
+  });
+  it("the proof read is re-run after a recovery, so the still-looking line does not outlive it (F-115 / V-26 NEW-2)", async () => {
+    // THE VERIFIER'S EXACT PATH (VERIFY-R11-FIX-WAVE NEW-2): the server
+    // refuses with 409 until an account is named, the person TYPES, and only
+    // then presses an account. `typedRef` was sticky, so from the first
+    // keystroke on, every later re-run of the read effect fired the TYPED
+    // read only — the unfiltered proof read never ran again, `unfilteredSearch`
+    // stayed null after the account reset, and "Still looking for the contact
+    // this link named…" printed beside a settled read forever.
+    const BOB = { ...ADA, external_id: "people/2", display_name: "Bob", already_imported: false, person_id: null, person_name: null, imported_at: null };
+    // The contact the LINK named: it is not what the person typed, so only the
+    // unfiltered proof read can ever settle whether it is in this account.
+    const CAROL = { ...BOB, external_id: "people/9", display_name: "Carol" };
+    const ambiguous = () =>
+      new BackendApiError({
+        code: "several_google_accounts",
+        detail: "2 connected Google accounts can read Contacts: one@x.com, two@x.com.",
+        userMessage: "2 connected Google accounts can read Contacts: one@x.com, two@x.com.",
+        details: { candidate_accounts: ["one@x.com", "two@x.com"] },
+        status: 409,
+      });
+    mockSearch.mockImplementation(
+      async (args: { query?: string; googleAccount?: string | null }) => {
+        if (!args.googleAccount) throw ambiguous();
+        return {
+          ...read(args.query ? [BOB] : [BOB, CAROL]),
+          google_account: args.googleAccount,
+        };
+      },
+    );
+
+    await act(async () => {
+      root.render(
+        <GoogleContactsImportPanel
+          organizationId="org-1"
+          initialExternalId="people/9"
+        />,
+      );
+    });
+    await settle();
+
+    // The person types while the server is still refusing.
+    await typeQuery("bob");
+    // …then takes the remedy the panel offers: an account.
+    await act(async () => {
+      findButton("one@x.com").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+    });
+    await settle();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+    await settle();
+
+    // 🚨 THE SYMPTOM THE VERIFIER READ OFF THE DOM: a settled read on screen
+    // with the still-looking line beside it, forever.
+    const text = container.textContent ?? "";
+    expect(text).toContain("Bob");
+    expect(text).not.toContain("Still looking for the contact this link named");
+    // The proof read settled and ANSWERED the link: Carol is in this account.
+    expect(text).toContain("1 selected");
+
+    // …and its cause: the unfiltered proof read must RUN AGAIN under the
+    // chosen account. It is owed by the account identity, never by whether
+    // anyone has ever typed.
+    const proofReads = mockSearch.mock.calls.filter(
+      (call: [{ query?: string; googleAccount?: string | null }]) =>
+        call[0].query === "" && call[0].googleAccount === "one@x.com",
+    );
+    expect(proofReads.length).toBeGreaterThan(0);
   });
 });

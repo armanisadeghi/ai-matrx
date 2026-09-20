@@ -44,18 +44,29 @@ describe("MandatesConsole organization hydration boundary", () => {
 
   it("waits for explicit organization context and refetches when it changes", () => {
     expect(source).toMatch(
-      /useEffect\(\(\) => \{[\s\S]*?if \(!selectedOrganizationId\) \{[\s\S]*?fetchData\(\);[\s\S]*?\}, \[[\s\S]*?accessToken,[\s\S]*?authReady,[\s\S]*?fetchData,[\s\S]*?orgBootstrapResolved,[\s\S]*?selectedOrganizationId,[\s\S]*?\]\);/,
+      /useEffect\(\(\) => \{[\s\S]*?if \(!selectedOrganizationId\) \{[\s\S]*?fetchData\(\);[\s\S]*?\}, \[[\s\S]*?accessToken,[\s\S]*?authReady,[\s\S]*?fetchData,[\s\S]*?organizationState,[\s\S]*?selectedOrganizationId,[\s\S]*?\]\);/,
     );
   });
 
-  it("settles instead of loading forever once the bootstrap says there is no organization", () => {
+  it("settles instead of loading forever once the organization question has an answer", () => {
     // The whole point: the skeleton must STOP, and it must not stop silently.
-    expect(source).toContain("selectOrgBootstrapResolved");
+    //
+    // 🚨 AND IT MUST NOT STOP WITH THE WRONG SENTENCE (R37). It used to read
+    // `orgBootstrapResolved`, which `setOrgBootstrapFailure` sets TRUE — so a
+    // FAILED organization read landed in the refusal and told a member of
+    // thirteen organizations to pick one. The reading is the gate's four-state
+    // discriminant, and both terminal answers render through the ONE notice.
+    expect(source).toContain("useOrganizationRequired()");
+    expect(source).not.toContain("selectOrgBootstrapResolved");
     expect(source).toMatch(
-      /if \(orgBootstrapResolved\) \{[\s\S]*?setLoading\(false\);[\s\S]*?setNoOrganization\(/,
+      /if \(organizationState !== "resolving"\) \{[\s\S]*?setLoading\(false\);/,
+    );
+    expect(source).toMatch(
+      /organizationState === "required" \|\| organizationState === "unavailable"/,
     );
     // …and the settled fact reaches the screen with its remedy.
     expect(source).toContain("No organization is selected");
-    expect(source).toContain("{noOrganization}");
+    expect(source).toContain("<OrganizationContextNotice");
+    expect(source).toContain("state={organizationState}");
   });
 });

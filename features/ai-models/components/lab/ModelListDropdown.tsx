@@ -55,10 +55,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
-import { selectFavoriteModelIds } from "@/lib/redux/preferences/userPreferenceSelectors";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { useModelFavorites } from "@/features/ai-models/hooks/useModelFavorites";
 import {
   Popover,
   PopoverTrigger,
@@ -1443,8 +1442,6 @@ export function ModelListDropdown({
 }: ModelListDropdownProps) {
   const isMobile = useIsMobile();
   const dialogContainer = useDialogContainer();
-  const dispatch = useAppDispatch();
-  const favoriteIds = useAppSelector(selectFavoriteModelIds);
   // The admin variant is super-admin only. The toggle is invisible to
   // everyone else, and the DB enforces the same gate (admin_model_catalog
   // raises 42501 for non-admins) — the UI gate is convenience, not security.
@@ -1500,25 +1497,12 @@ export function ModelListDropdown({
     }
   };
 
-  const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
+  const { favoriteSet, toggleFavorite } = useModelFavorites(open);
   const allowedModelSet = allowedModelIds ? new Set(allowedModelIds) : null;
   const priorityModelSet = priorityModelIds ? new Set(priorityModelIds) : null;
   const eligibleModels = allowedModelSet
     ? models.filter((model) => allowedModelSet.has(model.id))
     : models;
-
-  const toggleFavorite = (id: string) => {
-    const next = favoriteSet.has(id)
-      ? favoriteIds.filter((f) => f !== id)
-      : [...favoriteIds, id];
-    dispatch(
-      setPreference({
-        module: "aiModels",
-        preference: "favoriteModels",
-        value: next,
-      }),
-    );
-  };
 
   // Resolve the label from the whole fetched catalog even when a constrained
   // caller no longer considers the persisted value eligible. The stale value

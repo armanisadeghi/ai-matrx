@@ -33,12 +33,15 @@ import {
   clearUserVariableValue,
   resetUserVariableValues,
   initInstanceVariables,
+  stampSubmittedFirstTurnValues,
+  clearSubmittedFirstTurnValues,
 } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
   selectOwnVariableValues,
   selectUserVariableValues,
   selectVariablesForRequest,
   selectHostVariableNames,
+  selectOwnSubmittedFirstTurnValues,
 } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { buildVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
 import { readFileSync } from "node:fs";
@@ -114,6 +117,70 @@ describe.each([
 });
 
 describe("authorship moves one way only", () => {
+  it("keeps the submitted first-turn display stable after draft cleanup and later edits", () => {
+    let state = reducer(
+      undefined,
+      createInstanceFullPayloadForTest(CONVERSATION),
+    );
+    state = reducer(
+      state,
+      stampSubmittedFirstTurnValues({
+        conversationId: CONVERSATION,
+        values: { raw_instructions: "Original instructions", host_goal: "Hidden" },
+        hostValueNames: ["host_goal"],
+      }),
+    );
+    state = reducer(state, resetUserVariableValues(CONVERSATION));
+    state = reducer(
+      state,
+      setUserVariableValues({
+        conversationId: CONVERSATION,
+        values: { raw_instructions: "A later composer draft" },
+      }),
+    );
+
+    expect(selectOwnSubmittedFirstTurnValues(CONVERSATION)(wrap(state))).toEqual({
+      raw_instructions: "Original instructions",
+    });
+  });
+
+  it("releases an unaccepted first submit so an edited retry freezes new values", () => {
+    let state = reducer(
+      undefined,
+      createInstanceFullPayloadForTest(CONVERSATION),
+    );
+    state = reducer(
+      state,
+      stampSubmittedFirstTurnValues({
+        conversationId: CONVERSATION,
+        values: { raw_instructions: "Failed draft" },
+      }),
+    );
+    state = reducer(state, clearSubmittedFirstTurnValues(CONVERSATION));
+    state = reducer(
+      state,
+      stampSubmittedFirstTurnValues({
+        conversationId: CONVERSATION,
+        values: { raw_instructions: "Corrected retry" },
+      }),
+    );
+
+    expect(selectOwnSubmittedFirstTurnValues(CONVERSATION)(wrap(state))).toEqual({
+      raw_instructions: "Corrected retry",
+    });
+  });
+
+  it("releases the snapshot from both execution paths before a stream reader starts", () => {
+    for (const file of [
+      "features/agents/redux/execution-system/thunks/execute-instance.thunk.ts",
+      "features/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
+    ]) {
+      const source = read(file);
+      expect(source).toContain("firstTurnSnapshotStamped && !streamStarted");
+      expect(source).toContain("clearSubmittedFirstTurnValues(conversationId)");
+    }
+  });
+
   it("a value the person then edits becomes hers, and shows", () => {
     let state = reducer(
       undefined,
@@ -213,7 +280,7 @@ describe("every launch path records authorship", () => {
     const bubble = read(
       "features/agents/components/messages-display/user/FirstTurnVariables.tsx",
     );
-    expect(bubble).toContain("selectOwnVariableValues(conversationId)");
+    expect(bubble).toContain("selectOwnSubmittedFirstTurnValues(conversationId)");
     expect(bubble).not.toContain("selectUserVariableValues(conversationId)");
   });
 });

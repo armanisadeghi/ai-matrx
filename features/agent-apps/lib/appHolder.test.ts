@@ -18,14 +18,13 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+
 import {
   APP_MANDATE_CUTOVER,
   holderIdentityFromResolved,
   pinnedHolder,
 } from "./appHolder";
-// A mandate key is a BRANDED value, not a string: the carrier refuses a bare
-// one so no caller can hand the door a token it never minted.
-import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 describe("APP_MANDATE_CUTOVER", () => {
   it("is ON — flipped 2026-08-30 on Arman's order; apps resolve through their mandate", () => {
@@ -80,7 +79,14 @@ describe("holderIdentityFromResolved — a pin is a pin", () => {
     agentId: "definition-id",
     configOverrides: null,
     mandateId: "mandate-1",
-    mandateKey: storedMandateKey("app.thing"),
+    // 🚨 A MANDATE KEY IS A TYPE, NOT A STRING (features/mandates/mandate-key.ts).
+    // A bare literal in an object literal widens to `string`, which is not
+    // assignable to `AnyMandateKey`, so `type-check` refused both cases below.
+    // `app.*` is a DB-authored key the generated union cannot carry, and
+    // `dbAuthoredMandateKey` is the ONE typed door for exactly that — it keeps
+    // the literal visible to `pnpm check:mandate-keys` instead of widening the
+    // carrier back to `string`, which that file names as the thing never to do.
+    mandateKey: dbAuthoredMandateKey("app.thing"),
     provenance: "system" as const,
   };
 

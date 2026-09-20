@@ -25,9 +25,10 @@ Companions, read only when the pointer says so:
 - After a unique finding → read [field-log.md](field-log.md), add the row, then fold
   any reusable rule back into this file.
 - Proof status of this skill → [evals.md](evals.md). There is no GREEN claim yet.
-- Stage 4c only → read [owner-park.md](owner-park.md) for the required
-  owner-map research, the one-agent-per-provider fan-out, Prompts A/B/C,
-  and the first hunt that found all five leftovers.
+- As soon as Stage 1 names the hard leftovers → read [owner-park.md](owner-park.md)
+  and start the owner-map hunt. Do not wait for Stage 4c. That file also has
+  the one-agent-per-provider fan-out, Prompts A/B/C, and the first hunt that
+  found all five leftovers.
 
 ## Who may run it
 
@@ -55,10 +56,11 @@ These are standing. They are not "unless it would be faster."
 - Do not treat `ahead/behind` or `git branch --merged` as unique work
 - Do not wait on a silent inventory script to decide posture
 - Do not treat a hung delete (iCloud, Documents, dead path) as a repo stop
-- Do not tell cut-off agents to commit, pull, or reset the shared checkout
+- Do not tell leftover owners to commit, pull, or reset the shared checkout
   **until Stage 6 is finished and the shared folder is a clean match of
   `origin/main`.** After that, they should commit on this tip — they see
   current code and they resolve their own conflicts. They still must not reset.
+  Do not tell them they were interrupted. They were not.
 - Do not pull the shared checkout onto GitHub `main` until Stage 6
 - GitHub `main` (`origin/main` after fetch) is the only merge target and the only
   comparison line. Local `main` is a view, often a stale one. After Stage 4,
@@ -125,7 +127,10 @@ local commits, not the ahead count. Then cherry **every leftover branch** the
 same way. `HEAD == origin/main` does not mean the leftover branches are empty.
 Cherry `+` plus a same-message commit already on GitHub, with later GitHub
 commits on those files, is J: keep GitHub. The leftover is not newer just
-because the patches differ.
+because the patches differ. Cherry `+` on a leftover branch is often a stale
+ancestor (W7-OFF, playground) sitting under a newer namesake tip. Merging
+that commit can delete a six-figure line count. Extract the unique hunk;
+do not merge the ancestor.
 
 **1b. Dirty checkout vs GitHub, not vs stale local `main`.** For each modified or
 untracked path: already matches `origin/main`, already exists on `origin/main`,
@@ -135,8 +140,14 @@ because local `main` froze. If `SKILL.md` is on GitHub and its companions
 directory) are only untracked here, that is a sync-commit miss — land the
 canonical copies. It is not unique product. Dirty can also be a rewind: a
 working-tree file older than GitHub (a version number, a config). That is
-junk, not unique product. A `log.md` Creation line is not proof the file is
-on GitHub — check `origin/main:path`.
+junk, not unique product. `exists_differs` is not unique product: the path
+is already on GitHub. Several dirty blobs in the 2026-09-20 frontend pile
+were exact earlier GitHub commits; local deletes would have dropped
+campaign SQL GitHub still has. Prove a unique hunk or leave it. Dumping
+the dirty tree unwinds `main`. A `log.md` Creation line is not proof the
+file is on GitHub — check `origin/main:path`. Do not park skills, prose
+docs, or already-matching migrations as leftover owner work — land them
+through intake the same hour.
 
 **1c. Bucket every leftover** — every worktree, local branch, remote branch, PR,
 and stash gets one letter:
@@ -177,14 +188,35 @@ paragraphs: keep GitHub, land only the new capability.
 Stop and report two sentences: what the status implied, what the patches say.
 Ask before any delete.
 
+## Owner hunt starts here — do not wait for Stage 4c
+
+The first field test listed owner research as Stage 4c, after landing. That is
+too late. Hard leftovers (dirty clusters, stacked worktrees, large PRs, Codex
+or Claude leftover branches) need chat owners **as soon as Stage 1 names
+them**, so one agent per provider can start Prompt A while you are still
+deleting junk and landing clean leftovers.
+
+Start the hunt the moment Stage 1 has the hard list. A subagent may run it.
+You still check the map before anyone is messaged. Prompt A until Stage 6.
+The hunt text, the three tables, and the prompts stay in `owner-park.md`.
+
+If you reach Stage 4c with no map, you are behind — run the hunt then, and
+fold this reminder if the file has drifted back.
+
 ## Stage 2 — Easy leftovers only
 
 Delete A, B, and H. Leave C through G and I through L.
 
 - Remove a worktree only if its commit is on `origin/main`. Let git refuse dirty
-  ones. Skip a hung remove.
+  ones. Skip a hung remove. A worktree whose SHA is on `origin/main` can still
+  be a **live intake** — do not delete the checkout that is landing leftovers
+  tonight. Hollow A leftovers (thousands of missing tracked files, ` D`) are
+  not unique product; `worktree remove --force` is allowed after the ancestor
+  proof. If even force hangs, that leftover is bucket G. Skip it. Do not
+  block the repo.
 - Delete local and remote branches whose unique patches are on `origin/main`.
-  Cherry / patch-id, not `--merged`.
+  Cherry / patch-id, not `--merged`. Re-cherry immediately before each
+  delete. Leftovers flip A↔C while GitHub moves.
 - Drop a stash only when it is empty or older than what is already on GitHub. If
   you cannot prove every file is already on GitHub, it stays. A mixed stash
   (some files B, some unique lines) is not a Stage 2 drop.
@@ -216,10 +248,16 @@ Sharpenings that kept those rules from being twisted:
 
 - **Recent** is the last unique commit or last uncommitted edit, not the birthday
   of the branch.
-- Migrations, generated API contracts, lockfiles, and docs that change a
-  behavior claim are not "just docs."
+- Skills and prose docs, including FEATURE.md unique hunks, land now.
+  Keep GitHub lines the dirty tree dropped. A dirty skill that deletes
+  companions or rewinds GitHub is junk — land the canonical copy.
+- Dirty migrations that already match `origin/main` are already on GitHub.
+  Unique migrations already applied on the live database land. Unique
+  migrations that would change database structure get a look.
+- Generated API contracts and lockfiles are still not "just docs."
 - Merge onto current GitHub `main` in one short-lived intake checkout. Never
   onto the dirty shared checkout. Never reset it to make room.
+  `gh pr merge` dying on `log.md` is keep-both in intake, not a hold.
 - Failing CI stops a merge only when it proves this change broke boot, auth,
   data, or a shared contract.
 - After it is reachable from `origin/main`, delete the leftover.
@@ -235,8 +273,12 @@ than the unique dirty set, you missed files. First aidream park caught two files
 and had to go back.
 
 **4b. Wave 1 — obvious yes.** Docs, coverage-only tests, comments, lessons.
-Draft PRs that merge cleanly may land. Draft is not a hold. Mid-wave, drop
-anything that turns out already to be on GitHub.
+Draft PRs that merge cleanly may land. Draft is not a hold. A PR held as
+"the family needs inspection" with no named two-writer conflict is just
+delay — name the files and the two behaviors, or land it. Mid-wave, drop
+anything that turns out already to be on GitHub. A focused commit on stale
+shared `main` mid-recovery is not the dirty blob: extract unique lines
+through intake. Do not reset that author.
 
 **4c. Wave 2 — recent product, no real overlap.** Mechanical git conflicts
 (imports, two names for the same helper, changelog lines): keep both.
@@ -251,8 +293,23 @@ are one decision.
 only on the stale shared checkout. Last unique edit older than 72 hours.
 
 One leftover at a time onto the intake tree, then push `origin/main`. Do not
-squash unrelated leftovers into one merge. After it is on GitHub `main`, delete
-that leftover's PR, branch, and worktree.
+squash unrelated leftovers into one merge. Unique commits that exist only on
+stale local `main` are landed by **cherry-pick**, not by merging the commit
+object (that object still carries the stale ancestor). A stacked series
+(launchpad 1..N) is picked **in order** onto the new tip. Probing each later
+commit against bare `origin/main` will fake-conflict on files the earlier
+commit in the series already fixes. After it is reachable from
+`origin/main` (`merge-base --is-ancestor`), delete that leftover's PR, branch,
+and worktree. A merge commit that only exists in intake is not landed. If
+`git push origin HEAD:main` is rejected because GitHub moved, merge
+`origin/main` into the intake commit and push again. Never force-push.
+
+Re-probe `merge-tree` after every successful land. Clean against the previous
+tip is not clean against the new one.
+
+A `FOUND_DEFECTS.md` collision is keep-both: the filing already on GitHub keeps
+its number; the leftover filing takes the next free ID. Same for any ledger
+that forbids duplicate IDs.
 
 The dirty shared checkout catching up is Stage 6, not this stage.
 
@@ -274,6 +331,9 @@ Use this only after the obvious unique leftovers from Stage 4 are on `main`.
 4. **Dirty files without a real conflict go in.** Take them through the intake
    checkout the same way parked work went in. This is not permission to commit
    the dirty tree as one blob. Keep out only what will absolutely conflict.
+   Skills and docs go first. Then unique new files GitHub never had. Then
+   coverage tests that still contain GitHub's cases. Do not stop at an owner
+   list while those are still dirty.
 5. **Shrink the pile.** Tests and harmless residue land now so the next look
    is smaller.
 
@@ -282,33 +342,42 @@ Come back after the round with the wave report. Do not tour the leftover tree.
 This is still **not** "we have main in the shared folder." Landing onto intake
 does not update the shared checkout. Do not tell anyone it did.
 
-## Stage 4c — Owner research, then recall
+## Stage 4c — Recall (the hunt should already be running)
 
-This is a required stage, not a side hunt. The owner-map research was the most
-useful move of the first recovery. Skip it and later messages are guesses.
+This is the fan-out, not the first time you think about owners. The hunt
+starts after Stage 1. Stage 4c is when you use the map: one agent per
+provider, Prompt A until Stage 6.
 
-Stage 4c only → read [owner-park.md](owner-park.md).
+If the map is still empty here, you are late. Read [owner-park.md](owner-park.md)
+and run the hunt now before more landing.
 
-**4c-1. Research (required).** Cluster dirty files first (drop `.wt/` noise
-and same-second codegen stamps). Hunt chats for distinctive paths from the
-biggest clusters. A subagent may run that hunt. Every leftover gets a
-best-guess owner or is marked unclaimed. For a subagent writer, name the
-**parent** chat (title + id) and the last-active time on that parent. Write
-**one table per provider** (Claude Code, Codex, Cursor). That set is the
-artifact you hand people. Never one mixed-provider table.
+**4c-1. Research (required, start after Stage 1).** Cluster dirty files first
+(drop `.wt/` noise and same-second codegen stamps). Hunt chats for
+distinctive paths from the biggest clusters **and** from the leftovers you
+already know will be hard (large PRs, Codex/Claude leftover branches, hung
+worktrees). A subagent may run that hunt. Every leftover gets a best-guess
+owner or is marked unclaimed. For a subagent writer, name the **parent**
+chat (title + id) and the last-active time on that parent. Write **one table
+per provider** (Claude Code, Codex, Cursor). That set is the artifact you
+hand people. Never one mixed-provider table.
 
 **4c-2. One agent per provider.** Do not try to message every owner yourself.
 Pick one live Codex chat, one Claude Code chat, and one Cursor chat. Give
 each **only that platform's table** and tell them to ignore the other
 platforms. They fan the prompt to the other chats **on that same provider**.
 Skip a platform with `None.` Skip a still-live cluster author unless they
-are the fan-out agent.
+are the fan-out agent. If this session has no send door to that provider,
+finish Prompt C locally from the already-written keep-GitHub or land
+decision. Do not wait for a paste.
 
-**4c-3. Which prompt.** Prompt A (park only) until Stage 6 is done. Prompt B
-(commit on current `main`) after Stage 6 plus generate. Prompt C (go to the
-worktree or audit path; delete the leftover or land the best product on
-`main`; delete leftover branches and worktrees; no in-between) once leftovers
-have owners and a place they sit. All three texts are in `owner-park.md`.
+**4c-3. Which prompt.** Prompt A until Stage 6: they **commit their files
+onto a new named local branch** (not `main`), or they name the leftover
+that already holds the work. No conflicts, no pull, no reset. Prompt B
+after Stage 6 plus generate: commit on current `main`, resolve conflicts
+on their files, land non-destructive work. Prompt C only after A has
+moved the work off the shared folder, or after Stage 6 — never while the
+shared checkout is still the stale mash. All three texts are in
+`owner-park.md`. None of them may claim the owner was interrupted.
 
 **4c-4. Inventory the same hour.** New commits and branches become bucket M.
 Two owners on one file: hold it.
@@ -338,8 +407,14 @@ while unknown dirty still has no owner and no orphan park.
 
 A reset of the shared folder onto GitHub `main` is allowed only when Arman
 has ordered it **and** unique dirty is parked as named files (not one blob).
+Re-diff every dirty path against current `origin/main` immediately before
+the reset. New unique files appear while you work. Land or park them first.
 Aidream 2026-09-19: he ordered it because the disaster inverted the usual
 "local is truth every 30 minutes" rule — remote `main` became the line.
+If the shared-checkout guard refuses `reset --hard` and `restore .`, restore
+every **named** disagreeing path from `origin/main`, then point local `main`
+at that tip. Same outcome. Do not invent a third tree. This repo may have
+no `db/generate.py` — skip generate, do not invent an equivalent.
 
 After the shared folder matches `origin/main`, **generate before leftover
 replay** when the parked pile is full of `db/models`, `db/managers`, or
@@ -507,6 +582,9 @@ Rows from the 2026-09-19 transcript, not imagined.
 | "log.md says the file was created, so it is on GitHub" | Check the path on `origin/main`. A Creation line can land without the file. |
 | "This stash is B because one of its files already landed" | A mixed stash stays until the unique lines land. |
 | "I'll overwrite the skill with this repo's findings" | Keep GitHub. Land only the new capability. Two recoveries must not rewind each other. |
+| "gh pr merge failed, so hold the PR" | `log.md` keep-both in intake. A git conflict is not a real conflict. |
+| "Arman ordered Stage 6, reset now" | Re-diff dirty vs current GitHub first. New unique files appear while you work. |
+| "Someone committed on the stale shared folder, reset them" | Extract unique lines through intake. Do not reset that author. |
 | "I'll wait for the official audit script" | It ran ~16 minutes with no output. Count with ordinary git. |
 | "I'll reset the dirty checkout to make room" | Open an intake worktree from current `origin/main`. |
 | "Failing CI means do not merge" | Stop only when this change broke boot, auth, data, or a shared contract. |
@@ -514,6 +592,8 @@ Rows from the 2026-09-19 transcript, not imagined.
 | "This family is one yes or no" | Split it. Additive files landed; the rewrite was held. |
 | "I'll commit the dirty tree" | Park unique files, re-diff, intake. Never one blob. |
 | "The hung Documents worktree blocks the repo" | Skip it. Finish the rest. |
+| "It's on origin/main, so delete the worktree" | It may be the live intake. Hold that one. |
+| "Force-remove will clear a hollow A leftover" | Often hangs. Then it is G. Skip. Do not sit on it. |
 | "Behind went up, so I made it worse" | GitHub still moving is the live line. Healthy. |
 | "`--merged` did not list it, so it is unique" | Same work, new hashes. Cherry it. |
 | "The skill covers this, no need to tell Arman" | A shape this file does not name must be presented and written in. |
@@ -536,6 +616,8 @@ Rows from the 2026-09-19 transcript, not imagined.
 ## Red flags
 
 - "I'll just reset `main`."
+- "Every A worktree goes, including the intake."
+- "The hollow leftover is still dirty, so we wait on the hung force-remove."
 - "This is close enough to commit everything."
 - "The inventory script will finish eventually."
 - "I already know what is unique from the ahead count."
@@ -549,6 +631,9 @@ Rows from the 2026-09-19 transcript, not imagined.
 - "release.sh stopped, so we stop."
 - "The first release shipped, so we can slow down."
 - "I'll wait for the subagent roster before I pull."
+- "gh pr merge failed, so the PR waits."
+- "He ordered the reset, so skip the last dirty pass."
+- "They committed on stale main, so reset them."
 - "I'll just run `pnpm db-types` on this behind checkout."
 - "HEAD matches GitHub, so there is nothing left."
 - "SKILL.md synced, so I can ignore the untracked companions."
@@ -571,8 +656,9 @@ finds them.
 | blind writer, leftover author never saw main | Bucket J, Stage 4b.1 |
 | intake worktree, detached merge | Stage 4a |
 | shared checkout, dirty tree as one blob | Hard bans, Stage 6 |
-| cut-off agent, error mode, stopped session, dirty-file owner | Stage 4c, owner-park.md |
-| cluster dirty files, owner map, one agent per provider | Stage 4c-1 and 4c-2 |
+| leftover owner, cut-off agent, error mode, stopped session, dirty-file owner | Owner hunt after Stage 1, owner-park.md |
+| cluster dirty files, owner map, one agent per provider | Owner hunt after Stage 1; fan-out at Stage 4c |
+| cherry-pick stale local main, stacked series | Stage 4 |
 | "do we have main", pull main, commit your work | Stage 4c Prompt A vs B vs C, Stage 6 |
 | db/generate.py, generated managers, schema truth | Stage 6 generate-first |
 | Size 2, stop the line | Related law → obstacles |

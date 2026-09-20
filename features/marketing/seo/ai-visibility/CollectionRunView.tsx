@@ -9,6 +9,7 @@
  * ShareButton in the header.
  */
 
+import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import {
   AiVisibilityReport,
@@ -84,6 +85,7 @@ export function CollectionRunView({ run }: { run: CollectionRunViewRun }) {
             </p>
           </section>
         )}
+        <EntityCustomFields entityToken="seo_collection_run" recordId={run.id} />
       </div>
     </main>
   );

@@ -1,24 +1,48 @@
 // lib/scoped-config/effectiveKnobs.ts
 //
-// THE runtime read of ONE ladder-resolved value for the signed-in person —
-// the answer `platform.knob_resolve` gives for (organization, user), the same
-// nearest-rung-wins resolution the settings surface shows, so a feature that
-// consumes a setting and the screen that edits it can never disagree.
+// THE runtime read of ladder-resolved settings for the signed-in person — the
+// answers `platform.knob_snapshot` gives for (organization, user, scopes), the
+// same nearest-rung-wins resolution the settings surface shows, so a feature
+// that consumes a setting and the screen that edits it can never disagree.
+//
+// 🚨 ONE FETCH, NOT ONE PER SETTING (Arman, 2026-09-20: *"the one thing that
+// absolutely cannot happen is that we can't be fetching individual
+// configurations for everything that we do, and we can't be trying to do these
+// things live or through any sort of application level logic regardless of if
+// it's a server or the client"*). Until this file was rewritten, every knob a
+// screen read was its own `platform.knob_resolve` round trip: the Masterwork
+// record surface alone opened five, the Question Desk five more, and a page
+// carrying both paid ten network calls to learn ten small values. The whole
+// register — every knob, resolved for this person in this organization — is
+// 870 keys and 44 kB and answers in 47 ms, measured live on 2026-09-20. So the
+// client fetches THAT, once per (organization, user, scope address), and every
+// read after it is a lookup in a `Map`. Adding a knob to a screen now costs
+// nothing at run time, which is the property that makes law 6 ("opinions become
+// knobs") affordable.
+//
+// A missing key is not a default nobody chose: `knob_snapshot` carries a row
+// for every registered knob, so an address the map does not hold is a knob that
+// is NOT SEEDED, and `ensureEffectiveKnob` says so by name with the remedy —
+// the same failure `knob_resolve`'s `P0001 … is not seeded` used to raise.
+//
+// It also ends the dotted-address ambiguity at the READ: the map is keyed by
+// `feature || '.' || key`, and re-joining a ref that was split at its last dot
+// reproduces that string exactly, whichever segment the dot really belonged to.
+// The pair still matters for WRITES (`knob_override_set`) and for the failure
+// message, so `knobAddress` stays.
 //
 // `lib/knobs/featureKnobs.ts` reads the PLATFORM value of a register row (the
-// admin limits); this module reads the EFFECTIVE value after the organization
-// and personal rungs. Use this one for anything a person or organization may
-// override (`overridable_by` non-empty). Consumers today:
-//   `media.listening.voice`                            → features/audio/service/listeningConfig.ts
-//   `agents.model_prefs.chat_default_model`            → features/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts
-//   `agents.model_prefs.agent_authoring_default_model` → features/agents/agent-creators (the generator's run override)
+// admin limits); this module reads the EFFECTIVE value after the organization,
+// device and personal rungs. Use this one for anything a person or organization
+// may override (`overridable_by` non-empty).
 //
-// Framework-free, cached per (org, user, key) with a short TTL, invalidated
-// on every write through `setKnobOverride` (same tab) and by the platform
-// directive channel's `settings_changed` (other tabs, once Lane E lands). A
-// React face is `useEffectiveKnob` below (useSyncExternalStore), so a control
-// that shows the value re-renders the moment a write lands.
-
+// Cache busting is event-driven, exactly as Arman described ("just like we have
+// with editing agents"): every write through `setKnobOverride` (same tab) and
+// the platform directive channel's `settings_changed` (other tabs, the server)
+// drops the snapshots, and the next read re-fetches one. The 60s TTL below is a
+// backstop for a missed directive, not the mechanism. A React face is
+// `useEffectiveKnob` (useSyncExternalStore), so a control showing the value
+// re-renders the moment a write lands.
 import { useEffect, useSyncExternalStore } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { registerDirectiveHandler } from "@/lib/client-directives/directiveRegistry";
@@ -26,11 +50,34 @@ import { getWebDeviceId } from "./deviceId";
 
 const TTL_MS = 60_000;
 
-type Entry = { value: unknown; at: number };
+/**
+ * Every registered knob, resolved for one (organization, user, scope address).
+ * `resolved` is keyed by `feature || '.' || key` exactly as the RPC builds it;
+ * `stamp` is the database's own `now()` at resolution, carried so a log or a
+ * future conditional re-fetch can say WHICH answers a screen is showing.
+ */
+type Snapshot = { resolved: Record<string, unknown>; stamp: string | null; at: number };
 
-const cache = new Map<string, Entry>();
-const inFlight = new Map<string, Promise<unknown>>();
+const snapshots = new Map<string, Snapshot>();
+const inFlight = new Map<string, Promise<Snapshot>>();
 const listeners = new Set<() => void>();
+
+/**
+ * 🚨 A FETCH THAT STARTED BEFORE A WRITE MUST NOT OUTLIVE IT.
+ *
+ * Every invalidation bumps this. A fetch reads it before it asks and again
+ * when the answer lands: if it moved, that answer describes the register as it
+ * was BEFORE the write, and installing it would put the pre-write value back
+ * in the cache — where `useEffectiveKnob` would see a defined value, stop
+ * asking, and show the person the setting they just changed away from, for a
+ * whole TTL. Clearing the cache alone does not prevent this, because the
+ * in-flight promise resolves afterwards and writes into the cleared map
+ * (found by Cursor Bugbot on PR 238, 2026-09-20, before it ever ran).
+ */
+let generation = 0;
+
+/** How many times a fetch re-asks when a write lands mid-flight. */
+const MAX_RACE_RETRIES = 3;
 
 /**
  * A rung nearer than the organization that this READ should take into account —
@@ -67,19 +114,42 @@ function scopeAddr(scopes: readonly KnobScope[] | undefined): string {
   return scopes.map((s) => `${s.kind}:${s.id}`).join(",");
 }
 
-function addr(
+/**
+ * The SNAPSHOT's address — never a key's. The entity rungs are part of it: two
+ * Rulebooks in one org can legitimately resolve the same key to different
+ * values, and a cache that forgot them would serve one Rulebook's answer for
+ * another. The organization is in it for the same reason, one rung up: a person
+ * in two organizations gets two snapshots, never one blended answer.
+ */
+function snapshotAddr(
   organizationId: string,
   userId: string | null,
-  fullKey: string,
   scopes?: readonly KnobScope[],
 ): string {
-  // The entity rungs are part of the ADDRESS: two Rulebooks in one org can
-  // legitimately resolve the same key to different values, and a cache that
-  // forgot them would serve one Rulebook's answer for another.
-  return `${organizationId}|${userId ?? ""}|${scopeAddr(scopes)}|${fullKey}`;
+  return `${organizationId}|${userId ?? ""}|${scopeAddr(scopes)}`;
 }
 
+/**
+ * 🚨 "NO VALUE YET" IS A STATE A READER MUST BE ABLE TO LEAVE.
+ *
+ * `useEffectiveKnob` decides whether to ask by looking at its own value, so an
+ * `undefined` that STAYS `undefined` across a notification changes nothing in
+ * its dependency list and its effect never re-runs — the reader sits on its
+ * consumer's default until the component remounts. The ordinary path hides
+ * this, because an invalidation moves a defined value to `undefined` and that
+ * transition is itself the trigger. The path that has no value to begin with
+ * has no transition, and nothing wakes it.
+ *
+ * So every notification bumps this, and readers depend on it. A notify with no
+ * value in hand now re-asks; `ensureKnobSnapshot` de-duplicates, so a reader
+ * that already has a fresh answer pays nothing (found by Cursor Bugbot on
+ * PR 238, 2026-09-20 — and it was the exact claim the give-up branch's own
+ * comment made without proving it).
+ */
+let storeVersion = 0;
+
 function notify(): void {
+  storeVersion += 1;
   for (const listener of listeners) listener();
 }
 
@@ -129,8 +199,10 @@ function fullKeyOf(ref: KnobRef): string {
 }
 
 /**
- * The cached effective value, or `undefined` when nothing has been resolved
- * yet (callers treat `undefined` as "not answered" — never as a value).
+ * The cached effective value, or `undefined` when this (organization, user,
+ * scope) snapshot has not landed yet — or when it landed and carries no such
+ * address at all. Callers treat `undefined` as "not answered", never as a
+ * value; the unseeded case is named, loudly, by `ensureEffectiveKnob`.
  */
 export function peekEffectiveKnob(
   organizationId: string | null | undefined,
@@ -139,13 +211,17 @@ export function peekEffectiveKnob(
   scopes?: readonly KnobScope[],
 ): unknown {
   if (!organizationId) return undefined;
-  const hit = cache.get(
-    addr(organizationId, userId ?? null, fullKeyOf(ref), scopes),
-  );
-  return hit ? hit.value : undefined;
+  const snapshot = snapshots.get(snapshotAddr(organizationId, userId ?? null, scopes));
+  if (!snapshot) return undefined;
+  return snapshot.resolved[fullKeyOf(ref)];
 }
 
-/** Resolve (and cache) one effective value; concurrent callers share one call. */
+/**
+ * Fetch (once) the whole resolved register for this person in this
+ * organization, then answer from it. Concurrent callers — the five knobs one
+ * surface reads on mount, and every other surface mounted beside it — share
+ * the ONE call.
+ */
 export function ensureEffectiveKnob(
   organizationId: string,
   userId: string | null,
@@ -153,46 +229,150 @@ export function ensureEffectiveKnob(
   scopes?: readonly KnobScope[],
 ): Promise<unknown> {
   const fullKey = fullKeyOf(ref);
-  const id = addr(organizationId, userId, fullKey, scopes);
-  const hit = cache.get(id);
-  if (hit && Date.now() - hit.at < TTL_MS) return Promise.resolve(hit.value);
+  return ensureKnobSnapshot(organizationId, userId, scopes).then((snapshot) => {
+    if (!(fullKey in snapshot.resolved)) {
+      // 🚨 A KNOB THAT IS NOT SEEDED IS A NAMED FAILURE WITH A REMEDY, never a
+      // default nobody chose (law 4). The snapshot carries a row for EVERY
+      // registered knob, so an address it does not hold is not seeded — the
+      // same condition `knob_resolve` raised `P0001 … is not seeded` for, now
+      // decided locally and with the pair spelled out.
+      const { feature, key } = knobAddress(ref);
+      throw new Error(
+        `no knob is registered for feature='${feature}', key='${key}' ` +
+          `(read as "${fullKey}"): platform.knob_snapshot answered for this ` +
+          "organization and carries no such address. Either the row is not " +
+          "seeded — seed it in a platform.feature_knob migration — or the " +
+          "address is wrong: pass the register's own { feature, key } pair, " +
+          "never a dotted string a helper has to re-split.",
+      );
+    }
+    return snapshot.resolved[fullKey];
+  });
+}
+
+/** ONE round trip. No caching, no races — the caller owns both. */
+async function fetchKnobSnapshot(
+  supabase: ReturnType<typeof createClient>,
+  organizationId: string,
+  userId: string | null,
+  scopes: readonly KnobScope[] | undefined,
+  deviceId: string | null,
+): Promise<Snapshot> {
+  // `knob_snapshot` is not in `types/database.types.ts` yet: regenerating it
+  // needs `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SECRET_KEY` (the strip step
+  // reads `platform.entity_types.client_excluded_columns`, and a file that
+  // was not stripped must never be committed as if it were), and this
+  // session has neither. So the RPC name is cast HERE, narrowly, and the
+  // remedy is: run `pnpm db-types` from an environment that has those two
+  // variables, then delete this cast — the call itself needs no other
+  // change. Nothing else in this file is untyped.
+  const { data, error } = await (
+    supabase.schema("platform") as unknown as {
+      rpc: (
+        name: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ data: unknown; error: { message: string } | null }>;
+    }
+  ).rpc("knob_snapshot", {
+    p_organization_id: organizationId,
+    p_user_id: userId ?? undefined,
+    p_scopes: buildScopes(deviceId, scopes),
+  });
+  if (error) {
+    throw new Error(
+      `platform.knob_snapshot could not answer for organization='${organizationId}': ` +
+        `${error.message}. Every setting on this screen is falling back to its ` +
+        "consumer's own default until it can. A 42501 here means the signed-in " +
+        "person is not a member of that organization — the read is gated on " +
+        "membership by design.",
+    );
+  }
+  const payload = (data ?? {}) as { resolved?: Record<string, unknown>; stamp?: string };
+  return {
+    resolved: payload.resolved ?? {},
+    stamp: payload.stamp ?? null,
+    at: Date.now(),
+  };
+}
+
+/**
+ * THE ONE NETWORK READ. Everything a screen asks about settings is answered
+ * from what this returns; nothing in this repo resolves a single knob over the
+ * wire (guard: `pnpm check:knob-snapshot-adoption`).
+ */
+export function ensureKnobSnapshot(
+  organizationId: string,
+  userId: string | null,
+  scopes?: readonly KnobScope[],
+): Promise<Snapshot> {
+  const id = snapshotAddr(organizationId, userId, scopes);
+  const hit = snapshots.get(id);
+  if (hit && Date.now() - hit.at < TTL_MS) return Promise.resolve(hit);
   const pending = inFlight.get(id);
   if (pending) return pending;
-  const { feature, key } = knobAddress(ref);
   const supabase = createClient();
   // THIS browser's device rung (USD-9) rides as a scope so a device-level
   // override (nearest rung of all) wins here exactly as it does on the
   // settings screen (`knob_index` takes it as `p_device_id`).
   const deviceId = getWebDeviceId();
+  // A token, not the promise itself: the `finally` below must ask "is the
+  // entry under this address still MINE?", and comparing against `run` inside
+  // its own initializer is not something the compiler will vouch for.
+  const mine: { promise?: Promise<Snapshot> } = {};
   const run = (async () => {
     try {
-      const { data, error } = await supabase.schema("platform").rpc("knob_resolve", {
-        p_feature: feature,
-        p_key: key,
-        p_organization_id: organizationId,
-        p_user_id: userId ?? undefined,
-        p_scopes: buildScopes(deviceId, scopes),
-      } as never);
-      if (error) {
-        // 🚨 A KNOB THAT IS NOT SEEDED IS A NAMED FAILURE WITH A REMEDY, never a
-        // default nobody chose (law 4). `knob_resolve` RAISES `P0001 … is not
-        // seeded`, and until 2026-09-17 that raise reached an empty catch, so an
-        // unresolvable address behaved exactly like a value of `undefined`.
-        throw new Error(
-          `knob_resolve could not answer for feature='${feature}', key='${key}' ` +
-            `(read as "${fullKey}"): ${error.message}. Either the row is not seeded — ` +
-            "seed it in a platform.feature_knob migration — or the address is wrong: " +
-            "pass the register's own { feature, key } pair, never a dotted string a " +
-            "helper has to re-split.",
+      for (let attempt = 0; ; attempt += 1) {
+        const askedAt = generation;
+        const snapshot = await fetchKnobSnapshot(
+          supabase,
+          organizationId,
+          userId,
+          scopes,
+          deviceId,
         );
+        if (generation === askedAt) {
+          snapshots.set(id, snapshot);
+          notify();
+          return snapshot;
+        }
+        // A write landed while this was in flight. The answer in hand predates
+        // it, so it is never cached; ask again for one that does not.
+        if (attempt >= MAX_RACE_RETRIES) {
+          // Writes are still arriving faster than a round trip. Hand this
+          // caller the newest answer we have WITHOUT caching it, so the next
+          // read starts clean rather than inheriting a value we know is
+          // behind.
+          //
+          // 🚨 THIS COMMENT ONCE CLAIMED MORE THAN THE CODE DID. It said
+          // "`useEffectiveKnob` sees `undefined`, re-runs its effect and
+          // re-fetches — it self-heals", and that was FALSE: the hook re-runs
+          // on a change in its dependencies, and an `undefined` that stays
+          // `undefined` is not a change, so a reader that never had a value sat
+          // on its consumer's default until it remounted. The claim is true now
+          // only because `notify` bumps `storeVersion` and the hook depends on
+          // it — see the note beside `notify`. A stand-in that says it recovers
+          // has to be the thing that recovers (law 4).
+          console.warn(
+            `[knob] gave up re-reading platform.knob_snapshot for organization='${organizationId}' ` +
+              `after ${MAX_RACE_RETRIES} writes landed mid-flight. The answer returned is not ` +
+              "cached, so the next read fetches a fresh one.",
+          );
+          // Retire the entry BEFORE notifying, not in the `finally` afterwards:
+          // the notification is what makes mounted readers re-ask, and a reader
+          // that re-asks while this promise is still registered would simply
+          // join it and receive the same pre-write answer again.
+          if (inFlight.get(id) === mine.promise) inFlight.delete(id);
+          notify();
+          return snapshot;
+        }
       }
-      cache.set(id, { value: data as unknown, at: Date.now() });
-      notify();
-      return data as unknown;
     } finally {
-      inFlight.delete(id);
+      // Only retire OUR entry: an invalidation may have cleared the map and a
+      // newer fetch may already be registered under this address.
+      if (inFlight.get(id) === mine.promise) inFlight.delete(id);
     }
   })();
+  mine.promise = run;
   inFlight.set(id, run);
   return run;
 }
@@ -207,16 +387,22 @@ if (typeof window !== "undefined") {
   });
 }
 
-/** Forget every cached value for one knob (or everything, with no ref). */
-export function invalidateEffectiveKnob(ref?: KnobRef): void {
-  const fullKey = ref === undefined ? undefined : fullKeyOf(ref);
-  if (!fullKey) {
-    cache.clear();
-  } else {
-    for (const id of [...cache.keys()]) {
-      if (id.endsWith(`|${fullKey}`)) cache.delete(id);
-    }
-  }
+/**
+ * Forget the cached answers. The unit of caching is the SNAPSHOT, so one knob
+ * changing drops the snapshots that could be carrying it and the next read
+ * re-fetches one — one call, not one per knob, which is the whole point. The
+ * `ref` is kept in the signature because every caller has one and it makes the
+ * intent readable at the call site; it deliberately does not narrow the drop.
+ */
+export function invalidateEffectiveKnob(_ref?: KnobRef): void {
+  // The bump is the half that a `clear()` alone cannot do: it tells every
+  // fetch already in flight that its answer is now historical, so none of them
+  // can reinstall the pre-write register behind this call. Dropping the
+  // in-flight entries as well means a reader arriving after this point starts
+  // its own fetch rather than joining one that began before the write.
+  generation += 1;
+  snapshots.clear();
+  inFlight.clear();
   notify();
 }
 
@@ -246,6 +432,15 @@ export function useEffectiveKnob(
     () => peekEffectiveKnob(organizationId, userId, ref, scopes),
     () => undefined,
   );
+  // The store's own version, so a notification that leaves `value` at
+  // `undefined` still re-runs the effect below. Without it, a reader that has
+  // never had a value has nothing in its dependency list that can change, and
+  // it never asks again — see THE "NO VALUE YET" note beside `notify`.
+  const version = useSyncExternalStore(
+    subscribe,
+    () => storeVersion,
+    () => 0,
+  );
   useEffect(() => {
     if (!organizationId || value !== undefined) return;
     void ensureEffectiveKnob(organizationId, userId ?? null, ref, scopes).catch(
@@ -268,6 +463,6 @@ export function useEffectiveKnob(
     // would re-run this effect on every render for a caller that builds it
     // inline, which every caller does.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, userId, fullKey, scopeKey, value]);
+  }, [organizationId, userId, fullKey, scopeKey, value, version]);
   return value;
 }

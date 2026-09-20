@@ -37,11 +37,6 @@ export function isProposedGoogleWrite(
   return !result.ok && result.reason === "proposed";
 }
 
-/** The whole truth in one sentence, for hosts that show a line rather than a toast. */
-export function proposedGoogleWriteSentence(result: ProposedGoogleWrite): string {
-  return `${result.message} ${NOTHING_CHANGED_YET}`;
-}
-
 /** The toast every surface shows: what happened, what did not, and the door. */
 export function announceProposedGoogleWrite(result: ProposedGoogleWrite): void {
   toast.info(result.message, {

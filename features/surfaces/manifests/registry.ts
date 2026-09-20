@@ -52,6 +52,7 @@ import { chatManifest } from "./chat.manifest";
 import { assistantMessageManifest } from "./assistant-message.manifest";
 import { contextPreviewManifest } from "./context-preview.manifest";
 import { agentRunManifest } from "./agent-run.manifest";
+import { agentComparisonModelManifest } from "./agent-comparison-model.manifest";
 import { scraperManifest } from "./scraper.manifest";
 import { searchManifest } from "./search.manifest";
 import { documentsManifest } from "./documents.manifest";
@@ -272,6 +273,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   assistantMessageManifest,
   contextPreviewManifest,
   agentRunManifest,
+  agentComparisonModelManifest,
   scraperManifest,
   searchManifest,
   documentsManifest,

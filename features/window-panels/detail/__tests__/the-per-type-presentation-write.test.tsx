@@ -45,11 +45,20 @@ function fakeLadder(initial: unknown) {
   const calls: Call[] = [];
   const rpc = (fn: string, args: Record<string, unknown>) => {
     calls.push({ fn, args });
-    if (fn === "knob_resolve") {
+    if (fn === "knob_snapshot") {
+      // ONE fetch, every key (2026-09-20): the client resolves the whole
+      // register once per (organization, user, scopes) and reads from memory,
+      // so an effective read arrives here as a snapshot, never as one knob.
       return Promise.resolve(
         state.resolveError
           ? { data: null, error: { message: state.resolveError } }
-          : { data: state.value, error: null },
+          : {
+              data: {
+                resolved: { "ui.detail.presentation_by_type": state.value },
+                stamp: "2026-09-20T00:00:00Z",
+              },
+              error: null,
+            },
       );
     }
     if (fn === "knob_override_set") {

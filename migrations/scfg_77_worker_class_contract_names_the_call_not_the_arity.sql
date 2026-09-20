@@ -1,0 +1,40 @@
+-- scfg_77_worker_class_contract_names_the_call_not_the_arity.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- scfg_73 broke a function contract, and `check:hr-punch-write-path:strict` caught it. This
+-- records the repair and, more usefully, what I should have done first.
+--
+-- WHAT BROKE. hr.function_contract row ae1130d2 protects hr.timecards_never_asked_to_attest
+-- and required its body to CONTAIN the literal `hr._time_punch_enabled_worker_classes()`.
+-- The reason is sound and worth keeping: that detector must apply the worker-class filter so
+-- a contractor — who is never asked to attest (SPEC-TIME §8) — is an honest exclusion rather
+-- than a permanent false positive that eventually gets the whole check muted.
+--
+-- scfg_73 rewrote the call to `hr._time_punch_enabled_worker_classes(em.organization_id)`.
+-- The requirement still holds — the filter is still applied, now per row's organization —
+-- but the substring no longer matched, so the gate went red on a semantically correct change.
+--
+-- THE REPAIR. The clause now names the call by its OPENING PARENTHESIS,
+-- `hr._time_punch_enabled_worker_classes(`, which is what the contract always meant: apply
+-- the filter. Pinning `(em.organization_id)` would have to be re-edited by every future change
+-- to that expression, and every one of those edits is a chance to drop the call instead of
+-- adjust it — the contract would then be protecting its own spelling rather than the invariant.
+-- Per D13, protection is a ROW in hr.function_contract and never a change to the check itself;
+-- editing this row is that mechanism, not a way around it.
+--
+-- 🚨 THE LESSON, which is the part worth carrying. A migration that rewrites a live function
+-- body must read that function's hr.function_contract rows FIRST. scfg_73 verified role grants,
+-- override rows, caller bodies and the absence of survivors — and did not look at the one table
+-- whose entire job is to say what those bodies must keep saying. The contract machinery exists
+-- because hr_l3_69 was applied, ledgered, committed and then silently ERASED by another lane's
+-- re-emit; a substring clause is deliberately blunt so it cannot be talked out of.
+--
+-- Checked while here: the other eight contract rows covering the six functions scfg_73 rewrote
+-- (pay_period_transition, punch_write_path_conformance, _enroll_pay_period_rows) name tokens
+-- none of those edits touched. Exactly one row was affected.
+--
+-- VERIFIED AFTER: public.__hr_punch_write_path_conformance() returns ZERO rows with ok = false,
+-- live, which is the same function the strict CI gate reads.

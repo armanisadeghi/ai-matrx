@@ -4,9 +4,8 @@
  * SettingControlInput — pure, controlled renderer for a single model setting,
  * driven entirely by the model's ControlDefinition. The shared per-control
  * input primitive for every settings surface: the agent builder's settings
- * editor (AgentSettingsCore), per-run overrides (RunConfigOverrides), and the
- * model replacement review (ModelSettingsReviewDialog). A restyle here lands
- * on every surface — never fork a variant.
+ * editor (AgentSettingsCore) and per-run overrides (RunConfigOverrides). A
+ * restyle here lands on every surface — never fork a variant.
  *
  * Covers every ControlType: enum (Select, with an out-of-enum warning),
  * boolean (Checkbox), number/integer (NumberInput, slider when min+max are

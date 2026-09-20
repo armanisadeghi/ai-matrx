@@ -1,0 +1,20 @@
+-- scfg_71_knob_org_blind_reader_view.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- platform.knob_org_blind_reader: the database's census of itself.
+--
+-- A knob whose overridable_by names a rung is a PROMISE -- the admin screen offers that control,
+-- so every reader must resolve with that scope. A reader that resolves the platform rung only
+-- breaks the promise SILENTLY. No source census can see this class: the calls live inside pg_proc
+-- bodies, invisible to any grep over TypeScript or Python. That is how 45 HR functions drifted.
+--
+-- Locked knobs ('{}') are deliberately EXCLUDED: reading a platform-controlled value without an
+-- organization is correct, not a defect.
+--
+-- live_override_rows > 0 is the severe tier: a tenant has already set a value that is being
+-- ignored right now. It found one on its first run (see scfg_72).
+--
+-- Declared WITH (security_invoker = true) -- a view without it runs as its owner with BYPASSRLS.

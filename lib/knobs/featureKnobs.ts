@@ -15,9 +15,26 @@
 //   - One fetch per window, shared: concurrent callers await the same promise,
 //     so a kit fan-out asking eight generators for their knobs costs ONE query.
 
+import { readAllRows } from "@ai-matrx/data/db";
+
 import { createClient } from "@/utils/supabase/client";
 
 const TTL_MS = 60_000;
+
+/**
+ * Rows per request. Matches PostgREST's `db-max-rows` on Matrx Main, which is
+ * the cap this read exists to page past.
+ */
+const DEFAULT_PAGE_SIZE = 1000;
+let pageSize = DEFAULT_PAGE_SIZE;
+
+/**
+ * TEST SEAM. A fixture proving the catalogue is paged would otherwise need
+ * 1001 rows; this lets it stand up three. Pass 0 to restore the real size.
+ */
+export function __setFeatureKnobPageSizeForTests(rows: number): void {
+  pageSize = rows > 0 ? rows : DEFAULT_PAGE_SIZE;
+}
 
 type KnobValue = unknown;
 
@@ -31,13 +48,30 @@ function addr(feature: string, key: string): string {
 
 async function loadAll(): Promise<Map<string, KnobValue>> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .schema("platform")
-    .from("feature_knob")
-    .select("feature, key, value");
-  if (error) throw new Error(`feature_knob read failed: ${error.message}`);
+  // THE CATALOGUE IS A LIST WE TREAT AS COMPLETE. Every read here is an
+  // existence check whose miss RAISES, and `platform.feature_knob` is already
+  // ~870 rows against PostgREST's 1000-row cap. A bare `.select()` would not
+  // error at the cap — it returns a successful-looking short array — so the
+  // 1001st knob would make its readers report `Missing feature knob` for a row
+  // sitting in the table. `(feature, key)` is the primary key, so ordering on
+  // the pair is the stable total order paging requires.
+  const rows = await readAllRows<{
+    feature: string;
+    key: string;
+    value: KnobValue;
+  }>(
+    ({ from, to }) =>
+      supabase
+        .schema("platform")
+        .from("feature_knob")
+        .select("feature, key, value", { count: "exact" })
+        .order("feature", { ascending: true })
+        .order("key", { ascending: true })
+        .range(from, to),
+    { label: "platform.feature_knob", pageSize },
+  );
   const next = new Map<string, KnobValue>();
-  for (const row of data ?? []) {
+  for (const row of rows) {
     next.set(addr(row.feature, row.key), row.value);
   }
   return next;

@@ -12,12 +12,10 @@ import { BadgeCheck, FileUp, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
-import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectOrganizationId,
-  selectOrgBootstrapResolved,
-} from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 
 import { buildLabelBatchListConfig } from "../listConfig";
 import { CreateLabelBatchDialog } from "./CreateLabelBatchDialog";
@@ -30,7 +28,14 @@ export function LabelBatchesPage() {
   const organizationId = useAppSelector(selectOrganizationId);
   // Without an org there is no list to build: say so rather than render a
   // header over an empty page that looks broken.
-  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  // 🚨 THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved` is
+  // set TRUE by `setOrgBootstrapFailure` as well, so "resolved and still no
+  // id" was ALSO the failed read — and this screen told a member of thirteen
+  // organizations to pick one. The gate's discriminant separates them and the
+  // ONE notice renders each, the failed one with its Retry.
+  const { organizationState } = useOrganizationRequired();
+  const organizationUnanswered =
+    organizationState === "required" || organizationState === "unavailable";
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
 
@@ -86,8 +91,11 @@ export function LabelBatchesPage() {
           </Link>
         </div>
       </PageHeader>
-      {!organizationId && orgBootstrapResolved && (
-        <OrganizationRequiredNotice what="Label batches" />
+      {organizationUnanswered && (
+        <OrganizationContextNotice
+          state={organizationState}
+          what="Label batches"
+        />
       )}
       {config && (
         <EntityListPage

@@ -146,6 +146,21 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-09-19` — **The avatar menu stays clickable while the canvas is open.**
+  The canvas sheet is z-10000 over the top-right corner. The pane-header
+  dropdown opened (visible) but hung into the pane body and lost hit-testing,
+  and every menu item hardcoded `htmlFor="shell-user-menu"` so a click toggled
+  the hidden header checkbox instead of the canvas copy. The class is the one
+  `MatrxDynamicPanel` already solved: while the canvas is open it claims the
+  glass-layer `ElevatedShellUserMenuRoot`, stacked at z-10001 (above the
+  sheet), and menu items close whichever checkbox the open menu owns
+  (`menuCheckboxId` context). Guards:
+  `features/shell/layout-gate/canvas-user-menu-above-sheet.spec.ts`
+  (`MATRX_LAYOUT_GATE_MUTATION=under-canvas` forces z-110 and
+  `elementFromPoint` hits the sheet) and
+  `header-right-menu/menuCheckboxId.test.ts` (a hardcoded
+  `htmlFor="shell-user-menu"` on an item file goes RED).
+
 - `2026-09-18` — **`/artifacts` NO LONGER DROPS ITS OPEN CANVAS ITEM ON RELOAD —
   the open artifact is part of the page's address.** The recorded open item:
   the canvas slice is deliberately not persisted, chat re-derives its artifacts

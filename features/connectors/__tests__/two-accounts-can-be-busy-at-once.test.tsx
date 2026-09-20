@@ -19,12 +19,32 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
+/**
+ * THE FIXTURE LAW (F-107) — the slice builds its own state and the REAL
+ * selectors read it. This file used to hand-write
+ * `selectShouldPromptForOrganization` in the slice stand-in; the organization
+ * gate now reads that rule from a pure leaf nobody mocks
+ * (`lib/organizations/shouldPromptForOrganization.ts`), so a hand-written copy
+ * is dead code that silently stops being consulted — and an empty state handed
+ * to the real leaf reads as "boot has not answered yet", which is how the Tasks
+ * import control's suite went red on 2026-09-19. One fixture, no re-implemented
+ * rule, nothing to go stale.
+ */
+const { makeAppContextState } = jest.requireActual<
+  typeof import("@/lib/redux/slices/appContextSlice")
+>("@/lib/redux/slices/appContextSlice");
+
+const appContext = makeAppContextState({
+  organization_id: "org-1",
+  orgBootstrapResolved: true,
+});
+
 jest.mock("@/lib/toast", () => ({
   toast: { info: jest.fn(), success: jest.fn(), error: jest.fn() },
 }));
 
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
+  useAppSelector: (selector: (state: unknown) => unknown) => selector({ appContext }),
   useAppDispatch: () => jest.fn(),
 }));
 
@@ -32,10 +52,6 @@ jest.mock("@/lib/redux/hooks", () => ({
 // V-24 NEW-3), so the stand-in carries the selectors the gate reads. An
 // organization is selected here, so the gate answers `ready` and the notice
 // renders nothing: this file is about two presses, not about the organization.
-jest.mock("@/lib/redux/slices/appContextSlice", () => ({
-  selectOrganizationId: () => "org-1",
-  selectShouldPromptForOrganization: () => false,
-}));
 
 jest.mock("@/features/scopes/redux/selectors/tree", () => ({
   selectOrganizationsList: () => [],

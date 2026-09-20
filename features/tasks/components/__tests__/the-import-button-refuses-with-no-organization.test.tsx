@@ -77,15 +77,28 @@ jest.mock("@/features/tasks/redux/taskUiSlice", () => ({
   selectSelectedTaskId: () => null,
 }));
 
-jest.mock("@/lib/redux/slices/appContextSlice", () => ({
-  selectOrganizationId: () => mockOrganizationId,
-  selectShouldPromptForOrganization: () =>
-    mockBootstrapResolved && mockOrganizationId == null,
-}));
-
-jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
-}));
+// THE FIXTURE LAW (F-107 / F-115): this suite never re-implements the
+// organization rule. It builds REAL app-context state through the slice's own
+// `makeAppContextState` and lets the real selectors — the slice's
+// `selectOrganizationId` and the pure leaves the gate reads — answer. The day
+// the gate learns a new input, this file costs nothing; a hand-written
+// `selectShouldPromptForOrganization` here silently stopped being consulted
+// the day the gate moved to its pure leaf, and the button read "Checking…".
+jest.mock("@/lib/redux/hooks", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { makeAppContextState } = jest.requireActual(
+    "@/lib/redux/slices/appContextSlice",
+  ) as typeof import("@/lib/redux/slices/appContextSlice");
+  return {
+    useAppSelector: (selector: (state: unknown) => unknown) =>
+      selector({
+        appContext: makeAppContextState({
+          organization_id: mockOrganizationId,
+          orgBootstrapResolved: mockBootstrapResolved,
+        }),
+      }),
+  };
+});
 
 jest.mock("@/features/overlays/openers/googleImportWindows", () => ({
   useOpenGoogleTasksImport: () => openGoogleTasksImport,

@@ -111,11 +111,13 @@ An escalation without "Consumed by" is incomplete — trace the destination firs
 
 **Deep Fix (default).** You own the whole fix: the Required Sequence above, cross-feature audit, ingress validation, backfill. Live types missing a route that local aidream already serves → local-sync procedure, not an escalation. Escalate (decision brief) for: a DB migration/backfill needing approval, an architecture or product-behavior decision, a wire-contract question needing the Python **source** changed, or protected resources (`protected-resources` skill).
 
-**Batch / wave mode** — only when explicitly running assigned per-file task lists (strictness waves, `type-errors/` fan-outs; see [`docs/upgrades/STRICTNESS-WAVE-HANDOFF.md`](../../../docs/upgrades/STRICTNESS-WAVE-HANDOFF.md)):
-- Edit only the assigned file; work blind from the error list.
+**Batch / wave mode** — assigned per-file task lists (strictness waves, post-release Stage 8 type-error armies, `type-errors/` fan-outs; see [`docs/upgrades/STRICTNESS-WAVE-HANDOFF.md`](../../../docs/upgrades/STRICTNESS-WAVE-HANDOFF.md)):
+- Edit only the assigned file or named sibling cluster; work blind from the error list.
 - **Never run `tsc` / `pnpm build` / full type-checks** — parallel agents stall everyone; the orchestrator verifies centrally.
+- At most **six** agents at a time (provider rate limit).
 - No forbidden hatches, ever — a batch fix that cheats is worse than no fix.
 - An error needing cross-file/logic/data changes → **leave it in place and file a decision brief**; the brief feeds a Deep Fix, it is not a license to cast.
+- **Commit locally as you finish each assigned file.** Exclusive paths only. An uncommitted type fix does not exist — it will not be in the next build. Report the commit SHA. Escalations with no code change do not invent a commit.
 
 ## Verification
 
@@ -128,6 +130,7 @@ An escalation without "Consumed by" is incomplete — trace the destination firs
 ```
 ### filename.ts
 **Fixed:** [error] → [what changed and why]
+**Commit:** [sha] (required on every fix; omit only when there is no code change)
 **Escalated:** [error] → decision brief (format above)
 ```
 

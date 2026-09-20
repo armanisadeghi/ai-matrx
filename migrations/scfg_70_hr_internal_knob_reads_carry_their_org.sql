@@ -1,0 +1,31 @@
+-- scfg_70_hr_internal_knob_reads_carry_their_org.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- hr._knob(feature, key) is platform.knob_resolve with the organization hard-wired to NULL:
+--     hr._knob(f,k)          => platform.knob_resolve(f, k, null)
+--     hr._hr_knob(f,k,org,d) => platform.knob_resolve(f, k, org)
+-- So every one of its 45 caller functions resolved the PLATFORM rung only, and 62 of the 67
+-- literal calls sat on keys an organization is ALLOWED to override -- the split-brain the
+-- scoped-config system exists to prevent: the admin screen offers a control the engine ignores.
+--
+-- Verified live BEFORE the change: ZERO of the 50 distinct keys read org-blind had a single
+-- override row, so the defect was LATENT and this migration changed no effective value for any
+-- tenant. Because the two helpers differ ONLY in the org argument, substituting an org expression
+-- is strictly non-regressive: NULL at that point reproduces today's behaviour exactly.
+--
+-- SCOPE: the 24 functions in schema `hr` that NO client role can call (verified in the migration
+-- itself against both the authenticated and anon roles). Each one also gets a
+-- platform.client_callable_door row in the same transaction, because replacing a SECURITY DEFINER
+-- function now requires an access decision (provision_shape_guard) -- and these are truthfully
+-- server-only.
+--
+-- DELIBERATELY NOT IN SCOPE: the 18 client-callable doors (public.hr_* plus hr.reveal_ssn) and 4
+-- bespoke functions. A client door's declaration must state what each entity-id argument is
+-- checked against; inventing those would be fabricating a security decision, which is exactly
+-- what that guard exists to stop. They are listed in platform.knob_org_blind_reader (scfg_71).
+--
+-- The body is the DO block applied via the MCP; it is reproduced in the handoff at
+-- aidream/docs/handoffs/scoped-configuration-residuals.md.

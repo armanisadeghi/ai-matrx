@@ -87,6 +87,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
     "Agent catalogue failure (@ai-matrx/agents/catalog errorSink)",
   "reasoning-leak": "Reasoning leaked into answer text",
   "data-shape": "Data-shape contract violation",
+  "url-panel-unopened": "Deep-linked window never opened",
   "org-resolution": "Org resolution fallback",
   "topical-map-rpc": "Topical map RPC refusal",
   "feature-knob-vocabulary": "Feature knob value this build does not implement",

@@ -19,10 +19,11 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
-  selectOrganizationId,
-  selectOrgBootstrapResolved,
-} from "@/lib/redux/slices/appContextSlice";
+  ORGANIZATION_UNAVAILABLE_DESCRIPTION,
+  useOrganizationRequired,
+} from "@/features/organizations/useOrganizationRequired";
 import { callApi, type ApiCallConfig } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
 
@@ -91,7 +92,11 @@ export function useServedRunForm(
   // resolving; on a session with NO organization selected, `loading` stayed the
   // state forever and the form never said why. Once the bootstrap has resolved
   // with no org, that is a settled fact: say it, with the action that fixes it.
-  const orgResolved = useAppSelector(selectOrgBootstrapResolved);
+  // 🚨 AND THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved`
+  // goes TRUE when the read FAILED too (`setOrgBootstrapFailure` sets it), so
+  // reading it alone said "choose an organization" to a person nobody had read
+  // the memberships of. The gate's discriminant separates the two.
+  const { organizationState } = useOrganizationRequired();
   const [state, setState] = useState<ServedRunFormState>({
     status: "loading",
   });
@@ -127,7 +132,16 @@ export function useServedRunForm(
 
   // Derived at render, never set in the effect (react-hooks/set-state-in-effect):
   // the settled fact needs no extra render pass and can never go stale.
-  if (!organizationId && orgResolved && definitionId !== null) {
+  if (organizationState === "unavailable" && definitionId !== null) {
+    return {
+      status: "error",
+      message: ORGANIZATION_UNAVAILABLE_DESCRIPTION,
+      issues: [],
+      serverExplained: false,
+      doesNotCompile: false,
+    };
+  }
+  if (organizationState === "required" && definitionId !== null) {
     return {
       status: "error",
       message:

@@ -31,10 +31,9 @@ import { AlertTriangle, Loader2, OctagonAlert } from "lucide-react";
 
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectOrganizationId,
-  selectOrgBootstrapResolved,
-} from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { SINGLE_SITE_SENTENCE, fetchMandateReferences, formatRepoList, unreportedSentence, type MandateReferenceReport, type MandateReferenceRow } from "./references";
 
 export interface SourceUsageFallback {
@@ -100,16 +99,17 @@ export function MandateSourceUsage({
   // `loading` starts `true`; a bare early return left "Waiting for your
   // organization to load" spinning forever on a session with none selected.
   // Once the bootstrap has resolved with no organization, stop and say why.
-  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  // 🚨 THE FOURTH STATE (R37) — see MandateReferenceBoardView. `resolved &&
+  // !organizationId` is ALSO true when the read failed, and that is not a
+  // request to choose.
+  const { organizationState } = useOrganizationRequired();
+  const organizationUnanswered =
+    organizationState === "required" || organizationState === "unavailable";
   const [report, setReport] = useState<MandateReferenceReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reading, setReading] = useState(true);
   // Derived at render, never set in the effect (react-hooks/set-state-in-effect).
-  const noOrganization =
-    !organizationId && orgBootstrapResolved
-      ? "No organization is selected, so this key's references cannot be read — choose one from the organization picker in the header and this fills in."
-      : null;
-  const loading = reading && !noOrganization;
+  const loading = reading && !organizationUnanswered;
 
   const load = useCallback(() => {
     if (!organizationId) return;
@@ -146,17 +146,13 @@ export function MandateSourceUsage({
 
   return (
     <div className="min-w-0 space-y-4">
-      {noOrganization ? (
-        <div
-          role="status"
-          className="flex items-start gap-2 rounded-md border border-border p-3 text-sm"
-        >
-          <AlertTriangle
-            className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <span>{noOrganization}</span>
-        </div>
+      {organizationUnanswered ? (
+        <OrganizationContextNotice
+          state={organizationState}
+          compact
+          className="rounded-md border border-border"
+          description="No organization is selected, so this key's references cannot be read — choose one from the organization picker in the header and this fills in."
+        />
       ) : !organizationId ? (
         <div
           role="status"

@@ -44,7 +44,7 @@ type Call = { fn: string; args: Record<string, unknown> };
  *   `org`  — the organization's own map (its exceptions for everyone).
  *   `user` — the person's own override row, which is what the write may replace.
  *
- * `knob_resolve` answers the EFFECTIVE value (user rung wins key by key here,
+ * `knob_snapshot` answers the EFFECTIVE values (user rung wins key by key here,
  * which is the most generous reading of the ladder — enough to prove the write
  * does not read it), and `platform.knob_override` answers the per-rung rows.
  */
@@ -59,7 +59,11 @@ function fakeLadder(initialUser: unknown, initialOrg: Record<string, unknown> | 
 
   const rpc = (fn: string, args: Record<string, unknown>) => {
     calls.push({ fn, args });
-    if (fn === "knob_resolve") {
+    if (fn === "knob_snapshot") {
+      // ONE fetch, every key (2026-09-20): the client no longer resolves a
+      // single knob over the wire, so warming the effective cache asks for the
+      // whole resolved register at once. This double registers exactly one
+      // knob, so its snapshot holds exactly one address.
       const effective =
         state.org && state.value !== null && typeof state.value === "object"
           ? { ...state.org, ...(state.value as Record<string, unknown>) }
@@ -67,7 +71,13 @@ function fakeLadder(initialUser: unknown, initialOrg: Record<string, unknown> | 
       return Promise.resolve(
         state.resolveError
           ? { data: null, error: { message: state.resolveError } }
-          : { data: effective, error: null },
+          : {
+              data: {
+                resolved: { "ui.detail.presentation_by_type": effective },
+                stamp: "2026-09-20T00:00:00Z",
+              },
+              error: null,
+            },
       );
     }
     if (fn === "knob_override_set") {
@@ -278,5 +288,5 @@ it("writes at the person's own rung, through the platform door, once", async () 
   // is the person's OWN rung (`platform.knob_override`), never the effective
   // ladder — merging the ladder is NEW-3.
   expect(ladder.calls[0].fn).toBe("from:knob_override");
-  expect(ladder.calls.some((c) => c.fn === "knob_resolve")).toBe(false);
+  expect(ladder.calls.some((c) => c.fn === "knob_snapshot")).toBe(false);
 });

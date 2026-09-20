@@ -16,6 +16,7 @@
  * the queue its own list has started queue number two.
  */
 
+import { cmsContentExceptionKind } from "./kinds/cms-content-exception";
 import { contactImportKind } from "./kinds/contact-import";
 import { documentAppendKind } from "./kinds/document-append";
 import { documentCreateKind } from "./kinds/document-create";
@@ -43,6 +44,13 @@ export const APPROVAL_KINDS: readonly ApprovalKind[] = [
   spreadsheetCreateKind,
   contactImportKind,
   taskImportKind,
+  // Then the CMS's content exceptions (register Q-1, chair 2026-09-19): a
+  // request to stop a safety rule blocking content, produced by
+  // `aidream/services/cms/exception_proposals.py` and decided through the CMS
+  // door. It is the first kind whose SUBJECT lives in another database — the
+  // exception row stays in the CMS product DB, because it is the standing policy
+  // eight CMS write paths read; this row carries the proposal and the decision.
+  cmsContentExceptionKind,
   // Then the keyword system's three (register KI-045).
   keywordMeaningKind,
   placementDriftKind,

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import type { OverlayId } from "@/features/overlays/catalogue";
 import { getMenuIcon, type MenuIconKey } from "./menuIconRegistry";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
+import { useMenuCheckboxId } from "./menuCheckboxId";
 
 interface OverlayMenuItemProps {
   overlayId: OverlayId;
@@ -23,13 +24,14 @@ export function OverlayMenuItem({
 }: OverlayMenuItemProps) {
   const dispatch = useAppDispatch();
   const Icon = getMenuIcon(icon);
+  const menuCheckboxId = useMenuCheckboxId();
 
   const handleClick = useCallback(() => {
     dispatch(openOverlay({ overlayId }));
   }, [dispatch, overlayId]);
 
   return (
-    <label htmlFor="shell-user-menu" className="block">
+    <label htmlFor={menuCheckboxId} className="block">
       <button className={cn(MENU_ITEM_CLASS, className)} onClick={handleClick}>
         <Icon />
         {label}

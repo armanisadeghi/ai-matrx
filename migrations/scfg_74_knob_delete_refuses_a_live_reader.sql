@@ -1,0 +1,42 @@
+-- scfg_74_knob_delete_refuses_a_live_reader.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- A register row is not a record of a decision. It IS the value the resolver returns, and
+-- platform.knob_resolve RAISES on a key it cannot find rather than falling back to a
+-- hard-coded default — deliberately, so a missing key is loud. The consequence nobody had
+-- guarded: deleting a row that some function still reads does not degrade that function,
+-- it TAKES IT DOWN.
+--
+-- WHAT PROVOKED IT. On 2026-09-19 scfg_73 converged the worker-class knobs and deleted the
+-- four superseded booleans with `where key like 'punch_enabled_worker_class_%'`. In LIKE,
+-- `_` matches any single character, so the pattern written for four rows also matched the
+-- fifth: `punch_enabled_worker_classes`, the composite hr.punch_record itself reads. The
+-- statement was exactly right about four rows and catastrophic about the fifth, it ran
+-- inside a migration that had already verified role grants, override rows and caller
+-- bodies — and nothing in the database objected.
+--
+-- THE GUARD. platform.knob_delete_refuses_a_live_reader(), a BEFORE DELETE FOR EACH ROW
+-- trigger on platform.feature_knob, scans pg_proc for a function body naming the key as a
+-- quoted literal and raises 23503 listing every reader it found. Only a source of truth the
+-- database computes about itself can see these calls: they live inside function bodies,
+-- invisible to any grep over TypeScript or Python.
+--
+-- PROVEN FAILING-THEN-PASSING, not merely installed:
+--   * replaying the exact mistake — `like 'punch_enabled_worker_class_%'` — is refused;
+--   * deleting the composite by its exact key is refused by name:
+--       "hr.time_and_attendance.punch_enabled_worker_classes is still read by
+--        hr._time_punch_enabled_worker_classes, hr.clock_state, hr.punch_knobs_missing,
+--        hr.punch_record"
+--   * the hint says what to do: repoint or delete the readers first; where the match is
+--     coincidental, remove the reader in the same transaction.
+--
+-- WHAT IT DOES NOT DO. It matches on the key string alone, so two features sharing a key
+-- name make each other's rows undeletable while either is read. That is the safe direction
+-- to be wrong in, and the hint names the remedy. It also cannot see a key assembled at
+-- runtime — the very shape hr._time_punch_enabled_worker_classes used before scfg_73, and a
+-- good reason not to build keys by concatenation.
+--
+-- Deletes from this table are rare; the scan cost is paid only by them.

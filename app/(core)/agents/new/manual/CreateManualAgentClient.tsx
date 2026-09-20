@@ -26,17 +26,18 @@ import { AlertTriangle } from "lucide-react";
 
 import { createAgentFromSeed } from "@/lib/agents/actions";
 import { useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectOrgBootstrapResolved,
-  selectOrganizationId,
-} from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { BLANK_AGENT_SEED } from "@/features/agents/constants/blank-agent";
 import { DesktopBuilderSkeleton } from "@/features/agents/components/builder/AgentBuilderSkeletons";
-import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 
 export function CreateManualAgentClient() {
   const organizationId = useAppSelector(selectOrganizationId);
-  const bootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  // 🚨 THE FOURTH STATE IS NOT THE REFUSAL (R37): `orgBootstrapResolved` is
+  // TRUE after a FAILED read too, so this page used to ask for a pick nobody
+  // had checked was needed.
+  const { organizationState } = useOrganizationRequired();
   const [error, setError] = useState<string | null>(null);
   // One create per resolved organization: the effect re-runs when the person
   // picks one, and must not fire twice for the same id (double mount, re-render).
@@ -78,9 +79,10 @@ export function CreateManualAgentClient() {
     );
   }
 
-  if (bootstrapResolved && !organizationId) {
+  if (organizationState === "required" || organizationState === "unavailable") {
     return (
-      <OrganizationRequiredNotice
+      <OrganizationContextNotice
+        state={organizationState}
         what="A new agent"
         description="An agent belongs to one organization, and none is selected for this session, so nothing was created. Pick the organization you are working in and the agent will be created there."
       />

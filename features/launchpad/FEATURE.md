@@ -47,6 +47,7 @@ destinations derive from the shell navigation registry.
 - The Launchpad is authenticated and hidden from guests.
 - `/dashboard` stays a hub. Do not move its metrics or rotating discovery content here.
 - The default browse state stays compact. Full destination density appears only after a search or an explicit `View all` action.
+- The route uses the canonical `(core)` AppShell sidebar and header. The page is a normal document in `.shell-main` — it does not become a second full-height scroller. The last cards sit above at least a quarter-viewport of empty space.
 - The route uses the canonical `(core)` AppShell sidebar and header. The page is a normal document in `.shell-main` — it does not become a second full-height scroller.
 - Browse is two grids on one page: apps with no children in a uniform dense row, folders with children in a second grid sorted by size. Folder heights are one of four 32px steps. Descriptions stay on one line. The left shell sidebar stays visible.
 - Area-card descriptions stay on one line. The catalog shortens long nav copy for the card; search still ranks the full nav description.
@@ -68,5 +69,6 @@ and favorites into an always-open launcher.
 
 ## Change log
 
+- `2026-09-19` — Cursor: split browse into a uniform app row and a size-sorted folder grid; restored the left shell sidebar; one-line folder descriptions; removed the unused browse helper sentence. The page scrolls in `.shell-main` with at least a quarter-viewport of empty space under the last cards.
 - `2026-09-19` — Cursor: split browse into a uniform app row and a size-sorted folder grid; restored the left shell sidebar; one-line folder descriptions; removed the unused browse helper sentence.
 - `2026-08-20` — Codex: created the authenticated user Launchpad, registry-backed search and browse cards, shared new-tab quick starts and favorites, the persistent shell door, unique route identity, and shared visibility-aware stale-page refresh.

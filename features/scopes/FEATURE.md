@@ -332,6 +332,17 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-09-18 — **Conversation scope stamping waits for the conversation row.** A
+  first-turn UUID is announced before the server's atomic turn commit makes
+  `chat.conversation` readable. `syncConversationScopes` previously called the
+  ACL-protected `assoc_set_targets` during that gap, so the correct
+  `iam.has_access(source, 'editor')` guard returned 42501 even for the creator.
+  The thunk now uses the canonical `waitForConversationPersisted` barrier before
+  reading or writing association edges and refuses loudly if the row never
+  materializes. The request's own `scope_ids` still supply the current turn;
+  the association is the durable lane for later turns. Guard:
+  `redux/thunks/syncConversationScopes.test.ts`.
+
 - 2026-09-18 — **The organization comes from the scope type, not from whichever org is
   active** (PNI-000 review rounds 1–2). A `ContextItemBinding` stores only the item and its
   scope type, and `ContextItemBindingEditor` used to seed the picker's org with the ACTIVE
