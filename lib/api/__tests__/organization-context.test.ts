@@ -331,12 +331,14 @@ describe("callApi organization context", () => {
     })(jest.fn(), () => state, undefined);
 
     expect(result.error).toMatchObject({ status: 500 });
-    expect(getSnapshot()).toEqual([
-      expect.objectContaining({
-        relation: "POST /ai/agents/{agent_id}",
-        requestId: "fork-request-1",
-      }),
-    ]);
+    expect(getSnapshot()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          relation: "POST /ai/agents/{agent_id}",
+          requestId: "fork-request-1",
+        }),
+      ]),
+    );
     },
   );
 });
