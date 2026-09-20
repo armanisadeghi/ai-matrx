@@ -205,15 +205,47 @@ const DECLARED_LADDER_CENSUS = (rungs: string[]) => `
 const INVOKER_DOOR_CENSUS = (exempt: boolean) => `
   select p.proname::text as function_name, pg_get_function_identity_arguments(p.oid) as identity_args,
          'a client may execute it and it is SECURITY INVOKER, so it runs with the CALLER''s '
-         'privileges - and authenticated holds no table privilege in schema custom and no '
-         'EXECUTE on the ladder, so the grant is worth nothing and the call dies on the '
-         'body''s own first line'::text as why
+         'privileges - and it reaches ' ||
+         case when ${NO_COMMENTS} ~* '(from|join|into|update|delete\\s+from)\\s+custom\\.record\\M'
+              then 'custom.record, which authenticated holds no privilege on'
+              else 'custom.' || (select string_agg(q.proname, ', ' order by q.proname)
+                                   from pg_proc q
+                                  where q.pronamespace = 'custom'::regnamespace
+                                    and q.oid <> p.oid
+                                    and not has_function_privilege('authenticated', q.oid, 'EXECUTE')
+                                    and ${NO_COMMENTS} ~* ('custom\\.' || q.proname || '\\s*\\('))
+                   || ', which authenticated may not execute'
+         end ||
+         ' - so the grant is worth nothing and the call dies on the body''s own first line'::text as why
     from pg_proc p
    where p.pronamespace = 'custom'::regnamespace
      and not p.prosecdef
      ${exempt ? `and p.prorettype not in ('pg_catalog.trigger'::regtype, 'pg_catalog.event_trigger'::regtype)` : ""}
      and has_function_privilege('authenticated', p.oid, 'EXECUTE')
-     and ${NO_COMMENTS} ~* '(custom\\.record|custom\\.assert_|assert_client_may|has_visibility)'
+     -- THE REAL QUESTION, NOT A PROXY FOR IT (lane ENTITY-FIELDS, 2026-09-20). This used to
+     -- read \`custom.record|custom.assert_|assert_client_may|has_visibility\`, which is the
+     -- shape the defect happened to have rather than the thing that makes it a defect. It
+     -- named a body for mentioning a ladder function the caller CAN execute - and it named a
+     -- body for its own CREATE FUNCTION line, because that line contains the function's own
+     -- name. The census now asks what actually decides it: does this body touch something the
+     -- CALLER cannot reach? custom.record (census 7 keeps authenticated holding no table
+     -- privilege here) or a function of this schema with no EXECUTE for authenticated. A
+     -- The custom.record arm reads FROM / JOIN / INTO / UPDATE / DELETE FROM specifically,
+     -- because \`'custom.record'::regclass\` is a NAME, not a read: custom.assert_client_may_reach
+     -- resolves that literal to find the store's owner and needs no privilege on the table to
+     -- do it, and a census that named it for the mention alone would be back to a proxy. A
+     -- SECURITY INVOKER door that touches NEITHER runs perfectly as the person - which is the
+     -- whole point of the three ENTITY-FIELDS value doors, where the standard business table's
+     -- OWN row-level security is what must decide, and a SECURITY DEFINER wrapper would
+     -- replace it with a second access system.
+     and (
+       ${NO_COMMENTS} ~* '(from|join|into|update|delete\\s+from)\\s+custom\\.record\\M'
+       or exists (select 1 from pg_proc q
+                   where q.pronamespace = 'custom'::regnamespace
+                     and q.oid <> p.oid
+                     and not has_function_privilege('authenticated', q.oid, 'EXECUTE')
+                     and ${NO_COMMENTS} ~* ('custom\\.' || q.proname || '\\s*\\('))
+     )
    order by 1`;
 
 const DECLARED_SWITCH_CENSUS = (accept: boolean) => `
