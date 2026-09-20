@@ -30,7 +30,10 @@
 //                            open({ organizationId: org.organizationId }); }} />
 //
 //   resolving   → disabled, "Checking which organization you are working in…"
-//   required    → disabled, "Select an organization before <act>."
+//   required    → ENABLED, "Choose an organization to continue." — pressing it
+//                 OPENS THE PICKER, the person sets one, and the act it was
+//                 wrapping runs with it (2026-09-19; see THE REFUSAL IS A
+//                 QUESTION below).
 //   unavailable → ENABLED, "We could not check which organization you are
 //                 working in. Press to try again." — never the refusal (R37,
 //                 2026-09-18): the read failed, so nothing is known about this
@@ -55,6 +58,28 @@
 // a consumer that renders the posture without it.
 //   ready       → enabled, no title
 //
+// 🚨 THE REFUSAL IS A QUESTION, NOT A WALL (Arman, 2026-09-19). The `required`
+// state used to DISABLE the control and put "Select an organization before
+// <act>." in its tooltip — factually true, and a dead end in fourteen files:
+// the person is told to go somewhere else, do something else, and come back.
+// That is the same dead end that pushed every boot ladder in this codebase to
+// GUESS an organization rather than end without one, which is how a platform
+// with organizations quietly turns into a platform with a user and a default.
+//
+//   "one missed org check that should have just failed turns into 50 in a
+//    month and 5,000 in a year, and suddenly we don't have orgs any more, we
+//    have a user and a default org, which means we just have user now."
+//
+// The ruling closes the loop from the other side: nothing picks for the
+// person, and every refusal must offer them the pick. So `required` keeps the
+// control LIVE and its press opens the picker through the ONE gate
+// (`ensureOrganizationContext`); when they choose, `press`'s wrapped act runs
+// immediately with the organization they just set. Cancelling does nothing at
+// all — no toast, no error, exactly where they were. A consumer gets this for
+// free by wrapping its action in `press(...)`, which is why
+// `check:org-three-states` rule 3 refuses a consumer that renders the posture
+// without it.
+//
 // The refusal sentence is built by the ONE builder every other refusal in the
 // repo uses (`organizationRefusalMessage` is its toast twin), so the wording
 // can never drift per surface and `check:org-refusal-honesty` keeps reading it.
@@ -69,6 +94,10 @@ import {
   useOrganizationRequired,
   type OrganizationState,
 } from "@/features/organizations/useOrganizationRequired";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 
 /** What the control shows while boot has not answered yet. Never a refusal. */
 export const ORGANIZATION_RESOLVING_TITLE =
@@ -80,7 +109,7 @@ export const ORGANIZATION_RESOLVING_TITLE =
  * so the sentence reads as an instruction with a remedy, never as a wire error.
  */
 export function organizationControlRefusal(act: string): string {
-  return `Select an organization before ${act}.`;
+  return `Choose an organization before ${act}.`;
 }
 
 /**
@@ -96,9 +125,12 @@ export interface OrganizationGatedControl {
   organizationId: string | null;
   organizationState: OrganizationState;
   /**
-   * True while the answer is still coming and once it has settled with nothing
-   * — a control never acts on a guess. FALSE in `unavailable`, where the press
-   * is not the act at all: it is the remedy (see THE REMEDY IS THE PRESS).
+   * True ONLY while the answer is still coming — a control never acts on a
+   * guess. FALSE in `unavailable`, where the press is the remedy (see THE
+   * REMEDY IS THE PRESS), and FALSE in `required`, where the press is the
+   * QUESTION (see THE REFUSAL IS A QUESTION): both of those states have
+   * something useful to do with a click, and a control that can do something
+   * useful is never dead.
    */
   disabled: boolean;
   /** Re-run the organization read. The `unavailable` state's only remedy. */
@@ -114,7 +146,9 @@ export interface OrganizationGatedControl {
    *
    *   ready       → runs `act` with the organization, never null;
    *   unavailable → re-runs the organization read (the sentence's own remedy);
-   *   resolving / required → nothing, and the control is disabled anyway.
+   *   required    → opens the picker and, once the person SETS an
+   *                 organization, runs `act` with it. Cancelling does nothing;
+   *   resolving   → nothing, and the control is disabled anyway.
    */
   press: (act: (organizationId: string) => void) => () => void;
 }
@@ -140,16 +174,36 @@ export function useOrganizationGatedControl(act: string): OrganizationGatedContr
       retry();
       return;
     }
-    // Never act on a guess. `disabled` already covers the other two states for
-    // a mouse; this covers a keyboard, a programmatic click and a stale render.
+    // The refusal's press IS the question. Hold the act, open the ONE picker,
+    // and run it with whatever the person sets — never with a guess, and never
+    // with nothing. Cancelling (`OrganizationSelectionCancelled`) is an answer
+    // meaning "not now", so it is swallowed here: no toast, no banner, nothing
+    // moved. Any OTHER failure (no picker mounted at all) is the fail-closed
+    // path and is reported rather than silently dropped.
+    if (organizationState === "required") {
+      void ensureOrganizationContext()
+        .then((organizationId) => act(organizationId))
+        .catch((error: unknown) => {
+          if (isOrganizationSelectionCancelled(error)) return;
+          console.error(
+            "[organizations] the picker could not be opened for a gated control; the action did not run.",
+            error,
+          );
+        });
+      return;
+    }
+    // Never act on a guess. `disabled` already covers `resolving` for a mouse;
+    // this covers a keyboard, a programmatic click and a stale render.
     if (organizationId == null) return;
     act(organizationId);
   };
   return {
     organizationId,
     organizationState,
-    // `unavailable` stays pressable — the press re-runs the read.
-    disabled: organizationState !== "ready" && organizationState !== "unavailable",
+    // Only `resolving` disables. `unavailable` stays pressable because the
+    // press re-runs the read; `required` stays pressable because the press
+    // asks the question.
+    disabled: organizationState === "resolving",
     title: title(),
     retry,
     press,

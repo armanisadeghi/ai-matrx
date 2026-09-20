@@ -1,32 +1,39 @@
 // lib/organizations/personalOrg.ts
 //
 // The ONE canonical way to resolve the signed-in user's PERSONAL organization
-// id on the client — the identity of the person's OWN workspace.
+// id on the client — the identity of the person's OWN workspace — and the ONE
+// funnel through which an org-scoped write gets the organization it acts in.
 //
-// 🚨 IT IS NOT A FALLBACK. Until 2026-09-17 this module also owned "the
-// never-null fallback for org-scoped writes": `ensureOrgId` ended in the
-// personal-org RPC whenever Redux held no selection, so a write the person
-// made with nothing selected was filed in their personal workspace silently.
-// That is exactly what the law forbids — the organization is READ below the
-// boundary, never invented, defaulted or substituted
-// (common-docs/policies/context-is-carried-never-rebuilt.md). Boot has been
-// TOTAL since 2026-09-12 (`resolveActiveOrgContext` rung b explicitly SELECTS
-// the user's own personal workspace when nothing else applies), so a missing
-// selection now means genuinely unresolved, and `ensureOrgId` REFUSES.
+// 🚨 THE PERSONAL ORG IS NOT A FALLBACK, AND NEITHER IS ANYTHING ELSE.
+// Until 2026-09-17 `ensureOrgId` ended in the personal-org RPC, so a write the
+// person made with nothing selected was filed in their personal workspace
+// silently. That was deleted and `ensureOrgId` began to THROW — honest, and
+// still a dead end for the ~210 files that funnel through it.
 //
-// What remains here answers one question only: "which organization is this
-// user's own workspace?" — the bootstrap resolver asks it, and so may a
-// surface that deliberately, by name, files something personal (a creator's
-// payout account, a person's cross-organization notification default).
+// The 2026-09-19 ruling (Arman) settles it for the whole platform: a "default
+// organization" is at most a per-client DISPLAY preference, read by the org
+// picker and nothing else. No data read, write, API route, server action,
+// transport or boot ladder may PICK an organization for the user — not from a
+// cookie, not from a saved preference, not from the personal org. A request
+// that needs an organization and has none is HELD, the person is shown their
+// memberships and SETS one, and the request then proceeds normally.
+// Sole-membership auto-select stays, because there is nothing to choose.
+//
+//   "one missed org check that should have just failed turns into 50 in a
+//    month and 5,000 in a year, and suddenly we don't have orgs any more, we
+//    have a user and a default org, which means we just have user now."
+//
+// So `ensureOrgId` now ASKS (see its own note), `ensureOrgIdServer` REFUSES
+// with the caller's memberships attached, and what remains of the
+// personal-org resolver answers one question only: "which organization is this
+// user's own workspace?" — for a surface that deliberately, BY NAME, files
+// something personal (a creator's payout account, a cross-organization
+// notification default).
 //
 // Backed by the `current_personal_org_id()` RPC (SECURITY DEFINER, no args —
 // resolves `auth.uid()` server-side). Every user's personal org is
 // auto-provisioned at signup and its id never changes, so this is fetched at
 // most ONCE per session and memoized at module scope.
-//
-// Priming: the active-org bootstrap (`lib/redux/thunks/activeOrgBootstrap.ts`)
-// calls the RPC at session start and primes this cache, so callsites that read
-// it afterward make zero extra network calls.
 //
 // Lifetime: the cache is module-scoped, so it lives for the tab's page
 // lifetime. Sign-out does a full `window.location.href` navigation (see
@@ -34,19 +41,17 @@
 // automatically dropped between users. `clearPersonalOrgIdCache()` exists for
 // tests and any future in-place auth swap.
 //
-// This SUPERSEDES the scattered per-callsite `ensure_personal_organization`
-// resolvers. The one exception that must NOT use this primitive is
+// The one exception that must NOT use this primitive is
 // `lib/scheduler-client/claim.ts`, which resolves the org for an ARBITRARY task
 // owner (not `auth.uid()`) and so still needs the parameterized RPC.
 
 import { supabase } from "@/utils/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+import {
+  organizationRequired,
+  OrganizationRequiredServerError,
+} from "@/lib/organizations/organizationRequiredServerError";
 import { getActiveOrgId } from "@/lib/organizations/activeOrg";
-// The ONE error type for "no organization is selected" — the same class the
-// transport kernel and `requireSelectedOrgId` throw, so every surface's
-// existing recogniser (`isOrganizationRequiredError`) already handles it.
-import { OrganizationContextError } from "@ai-matrx/agents/matrx";
 // Cycle-free leaf (same constraint as activeOrg.ts) — never `@/lib/redux/store`.
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 // The ONE "has the organization question been answered yet?" promise, settled
@@ -117,15 +122,42 @@ export async function resolvePersonalOrgId(): Promise<string> {
  *   3. on a COLD boot, where neither of those can have an answer yet, wait for
  *      the boot path's own remote resolution (`orgBootstrapGate`) and read the
  *      selection again — refusing before anyone has looked is a false refusal;
- *   4. otherwise THROW. There is no personal-organization rung: a backstop
- *      files the person's work in a workspace they never chose, and does it
- *      silently. Boot explicitly SELECTS the personal workspace when nothing
- *      else applies, so if we get here nothing is selected at all.
+ *   4. ASK. The write is HELD, the person is shown their memberships, they SET
+ *      one, and this returns it — the write then proceeds normally, stamped
+ *      exactly where it would have been stamped had they chosen first.
  *
- * The throw is the same `OrganizationContextError` every transport raises, so
- * a surface that already renders `OrganizationRequiredNotice` on
- * `isOrganizationRequiredError` shows the picker and the remedy rather than a
- * raw string.
+ * 🚨 RUNG 4 IS THE 2026-09-19 RULING (Arman), AND IT IS THE WHOLE POINT.
+ * Before it, this function did one of two useless things: until 2026-09-17 it
+ * ended in the personal-org RPC (a SUBSTITUTION — the person's work filed in a
+ * workspace they never chose, silently), and after that it simply THREW. Both
+ * answer a question only the person can answer. Throwing is the honest half of
+ * the answer and still leaves ~210 files telling a person to go do something
+ * else, somewhere else, and come back — which is how a refused autosave
+ * becomes a lost draft.
+ *
+ *   "one missed org check that should have just failed turns into 50 in a
+ *    month and 5,000 in a year, and suddenly we don't have orgs any more, we
+ *    have a user and a default org, which means we just have user now."
+ *
+ * So the third option — ask, then continue — is applied HERE, at the ONE
+ * funnel all those callsites already pass through, rather than being wired
+ * into each of them. Nothing about a callsite changes: it still awaits an
+ * organization id and still gets one, or still sees a throw.
+ *
+ * WHAT STILL THROWS, AND WHY IT MUST:
+ *   • `OrganizationSelectionCancelled` — the person closed the picker. That is
+ *     an ANSWER, not a failure: "not now". Callers treat it as nothing
+ *     happened — no toast, no error banner, no cleared composer. ~50 sites
+ *     already recognise it.
+ *   • `OrganizationContextError` — we could not ask AT ALL (no browser, no
+ *     store, no picker mounted: a server render, a worker, a test). The
+ *     fail-closed behaviour is never weakened here, only deferred when there
+ *     is a person present to defer to.
+ *
+ * The gate is imported dynamically on purpose. This module is a cycle-free
+ * leaf that service code imports freely; the gate pulls in the Redux root
+ * state type and the transport kernel. The import only ever runs on the rung
+ * that has already decided to ask, so the ordinary path costs nothing.
  *
  * Law: common-docs/policies/context-is-carried-never-rebuilt.md.
  */
@@ -150,62 +182,90 @@ export async function ensureOrgId(
 
   // 🚨 "NOBODY HAS LOOKED YET" IS NOT "THERE IS NONE". The warm-cache boot
   // above answers a RETURNING session, where the last organization comes back
-  // out of IndexedDB. On a FIRST-EVER session there is no local record and no
-  // apex cookie, so the only answer comes from `appContextPolicy.remote.fetch`
-  // → `resolveActiveOrgContext`, which deliberately waits for `whenPageIdle`
+  // out of IndexedDB. On a FIRST-EVER session there is no local record, so the
+  // only answer comes from `appContextPolicy.remote.fetch` →
+  // `resolveActiveOrgContext`, which deliberately waits for `whenPageIdle`
   // before spending the network. Every write made in that window — an
   // autosave, a first note, a canvas score — was refused with "Select an
   // organization" although the person HAS one and the app was seconds from
-  // finding it. A false refusal is as dishonest as a false success, so join
-  // the answer the boot path is already fetching. This starts nothing: it
-  // waits on the one promise the boot settles (bounded, so it can never hang),
-  // and there is no second fetch anywhere.
+  // finding it (13 memberships, 24 seconds, 2026-09-18). A false refusal is as
+  // dishonest as a false success, and PROMPTING while still resolving is the
+  // same lie wearing a dialog. So join the answer the boot path is already
+  // fetching BEFORE asking anyone anything. This starts nothing: it waits on
+  // the one promise the boot settles (bounded, so it can never hang).
   if (!isOrgBootstrapResolved()) {
     await whenOrgBootstrapResolved();
     activeOrgId = getActiveOrgId();
     if (activeOrgId) return activeOrgId;
   }
 
-  throw new OrganizationContextError(
-    "organization_context_required",
-    "Select an organization before sending this request.",
+  // Boot has looked and there is genuinely no selection. ASK.
+  const { ensureOrganizationContext } = await import(
+    "@/lib/organization/organization-gate"
   );
+  return ensureOrganizationContext();
 }
 
 /**
- * Server-side personal-org resolver for the session bound to the GIVEN SSR
- * client. Use in route handlers / Server Actions, where the module-scoped
- * browser cache above MUST NOT be used — server module scope is shared across
- * requests and users, so caching `auth.uid()`'s personal org would leak it to
- * the next request. Resolves per call via `current_personal_org_id()` (no
- * cache). Returns the given id when set, otherwise resolves the session's org.
+ * The organization a ROUTE HANDLER or Server Action acts in.
+ *
+ * 🚨 IT RESOLVES NOTHING ANY MORE (2026-09-19 ruling). Until today this ended
+ * in `current_personal_org_id()`: five route handlers called it with no
+ * organization and the SERVER quietly filed the write in the caller's personal
+ * workspace — the forbidden substitution, on the one side of the wire the
+ * client cannot see. `app/api/user/profile`, `app/api/user/email-preferences`,
+ * `app/api/sms/preferences`, `app/api/sms/verify` and
+ * `app/api/cms/access-context` all did exactly that.
+ *
+ * Now there is one rule: return the organization the REQUEST NAMED, or refuse
+ * with `OrganizationRequiredServerError`, which carries the caller's own
+ * memberships so the client can hold the request, show the picker, let the
+ * person SET one, and retry. The handler answers it with
+ * `organizationRequiredResponse(error)` — a 400 whose body matches, field for
+ * field, what the Python server's `organization_for_request` emits
+ * (`aidream/services/organizations/request_scope.py`), so one client
+ * recogniser covers a refusal from either server.
+ *
+ * It keeps the two-argument shape so no callsite has to be rewritten to be
+ * made honest: pass the admitted organization and it is returned unchanged.
  */
 export async function ensureOrgIdServer(
   client: SupabaseClient,
   orgId: string | null | undefined,
 ): Promise<string> {
   if (orgId) return orgId;
-  const { data, error } = await client.rpc("current_personal_org_id");
-  if (error || !data) {
-    throw (
-      error ??
-      new Error(
-        "current_personal_org_id() returned no personal organization for the session",
-      )
-    );
-  }
-  return data as string;
+  return organizationRequired(
+    client,
+    "This request carried an identity but no organization. Name the " +
+      "organization you are acting in and send it again.",
+  );
 }
 
 /**
- * Resolve an org id for an org-scoped write made on behalf of an ARBITRARY user
- * (not the calling session) — the case for admin/secret-key clients that have no
- * `auth.uid()` of their own (e.g. SMS send/receive, Twilio webhooks). Returns
- * the given org id when set; otherwise the named user's personal org via the
- * `ensure_personal_organization(p_user_id)` RPC; otherwise — when there is no
- * user at all (unassigned phone number, unrouted inbound SMS) — the global
- * system org. Mirrors `lib/scheduler-client/claim.ts`, which resolves the org
- * for an arbitrary task owner the same way.
+ * The organization for a write made on behalf of an ARBITRARY user by an
+ * admin/secret-key client that has no `auth.uid()` of its own — the Twilio
+ * webhook lane (`lib/sms/receive.ts`, `send.ts`, `numbers.ts`). There is no
+ * session, no selection and nobody to ask: an inbound text arrives whether or
+ * not anyone is looking at a screen.
+ *
+ * 🚨 THE SYSTEM-ORG FALLBACK IS GONE (2026-09-19 ruling). It used to answer
+ * "the named user's personal org, and when there is no user at all, the global
+ * system org" — so an unrouted inbound SMS was filed into the platform's own
+ * organization, which is a substitution by another name. A row nobody can name
+ * an organization for is ORG-LESS, and the honest thing is to say so and stop,
+ * not to pick one.
+ *
+ * What remains resolves the org of a NAMED person's own workspace, which is
+ * not a default and not a preference: it is the identity of the only workspace
+ * a message addressed to that person can belong to. It is deliberately the
+ * narrowest surviving case, it is called from exactly three webhook sites, and
+ * `userId` is REQUIRED — no user, no answer.
+ *
+ * ⚠️ LEFT BEHIND, ON PURPOSE (see docs/handoffs/default-org-annihilation.md).
+ * The org-less case cannot be expressed yet: every `communication.*` table
+ * declares `organization_id NOT NULL` (verified live, 2026-09-19), so an
+ * unrouted inbound SMS has nowhere to land as an org-less row. Rather than
+ * substitute silently, this THROWS and the caller must decide visibly.
  */
 export async function resolveOrgIdForUserServer(
   client: SupabaseClient,
@@ -213,19 +273,23 @@ export async function resolveOrgIdForUserServer(
   orgId?: string | null | undefined,
 ): Promise<string> {
   if (orgId) return orgId;
-  if (userId) {
-    const { data, error } = await client.rpc("ensure_personal_organization", {
-      p_user_id: userId,
-    });
-    if (error || !data) {
-      throw (
-        error ??
-        new Error(
-          `ensure_personal_organization() returned no personal organization for user ${userId}`,
-        )
-      );
-    }
-    return data as string;
+  if (!userId) {
+    throw new OrganizationRequiredServerError(
+      "This write names no user and no organization, so it belongs to no " +
+        "organization. Nothing is substituted: give the row an organization " +
+        "or store it org-less.",
+    );
   }
-  return resolveSystemOrgId(client);
+  const { data, error } = await client.rpc("ensure_personal_organization", {
+    p_user_id: userId,
+  });
+  if (error || !data) {
+    throw (
+      error ??
+      new Error(
+        `ensure_personal_organization() returned no personal organization for user ${userId}`,
+      )
+    );
+  }
+  return data as string;
 }

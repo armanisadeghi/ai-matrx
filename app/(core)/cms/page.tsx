@@ -6,6 +6,10 @@ import Link from "next/link";
 import { CmsSiteService } from "@/features/cms/services/cmsService";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 import type { ClientSiteSummary } from "@/features/cms/types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
@@ -198,16 +202,37 @@ export default function SitesListPage() {
 
   // THE ACTIVE ORG, EXPLICITLY. A site belongs to the company the user is
   // working in; with no organization selected there is no honest answer, so
-  // the Create control refuses and says so rather than filing the site into a
-  // personal workspace nobody asked for.
+  // the site is never filed into a personal workspace nobody asked for.
+  //
+  // 🚨 BUT REFUSING IS NOT AN ANSWER EITHER (Arman, 2026-09-19). Until today
+  // this control went DEAD with no organization selected — the button was
+  // disabled and a red line under the form said "Choose an organization first
+  // … Pick it from the menu under your avatar", sending the person out of the
+  // dialog they had already filled in, into a menu, and back. A screen is
+  // absent or honest, never dead, and a refusal with nothing to press is how
+  // every boot ladder in this codebase ended up GUESSING an organization
+  // instead of ending without one. Now the control stays LIVE: Create asks,
+  // through the ONE gate, and the site is created in whatever the person sets.
   const activeOrganizationId = useAppSelector(selectOrganizationId);
 
   const handleCreate = async () => {
     if (!newName || !newSlug) return;
-    if (!activeOrganizationId) {
-      setError(
-        "Choose an organization first — a site has to belong to one. Pick it from the menu under your avatar.",
-      );
+    // Hold the create, open the picker if we must, and carry on with the
+    // organization the person names. Cancelling means "not now": nothing is
+    // created, nothing is cleared, and the dialog is exactly as they left it.
+    let organizationId: string;
+    try {
+      organizationId = await ensureOrganizationContext({
+        organizationId: activeOrganizationId,
+      });
+    } catch (err) {
+      if (!isOrganizationSelectionCancelled(err)) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "We could not work out which organization this site belongs to.",
+        );
+      }
       return;
     }
     setIsCreating(true);
@@ -219,7 +244,7 @@ export default function SitesListPage() {
         // A website belongs to the company, not to whoever clicked New — this
         // is what lets a teammate open it (CMS migration 0039). The route
         // refuses an org the caller is not a member of.
-        organizationId: activeOrganizationId,
+        organizationId,
       });
       setDialogOpen(false);
       setNewName("");
@@ -347,10 +372,10 @@ export default function SitesListPage() {
                   </div>
                 </div>
                 {!activeOrganizationId && (
-                  <p className="flex items-start gap-1.5 text-xs text-destructive">
+                  <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
                     <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-px" />
-                    Choose an organization first — a site has to belong to one.
-                    Pick it from the menu under your avatar.
+                    A site belongs to one organization. Press Create Site and
+                    we&apos;ll ask you which one.
                   </p>
                 )}
                 <DialogFooter>
@@ -363,12 +388,9 @@ export default function SitesListPage() {
                   </Button>
                   <Button
                     onClick={handleCreate}
-                    disabled={
-                      isCreating ||
-                      !newName ||
-                      !newSlug ||
-                      !activeOrganizationId
-                    }
+                    // Never gated on the organization: with none selected the
+                    // press IS how the person selects one.
+                    disabled={isCreating || !newName || !newSlug}
                     className="gap-1.5"
                   >
                     {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
