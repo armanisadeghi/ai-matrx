@@ -698,6 +698,28 @@ async function twoSeatProbe(
   return { wroteAnyway, readAfterRevoke };
 }
 
+/**
+ * CENSUS 16 — THE FINGERPRINT AND THE BODIES ARE THE SAME DATABASE (lane PAIR-GUARD, 2026-09-20).
+ *
+ * `platform.provision` refuses EVERY spec with `preflight.read_kernel` the moment
+ * `iam.entity_read_kernel_fingerprint()` (hashed from the sixteen live access-kernel
+ * bodies) stops equalling `iam.entity_read_kernel_expected()` (the recorded proof). On
+ * 2026-09-20 that is exactly what happened: three landings replaced kernel bodies and
+ * re-recorded nothing, and no table could be created on this database for ~2.5 hours.
+ *
+ * `platform.provision_selfcheck()` already finds this — hourly, AFTER the fact. This
+ * census is the same fact asked BEFORE a lane lands, in the guard lanes actually run.
+ * It reads the two functions rather than a cached string, so nothing can go green by
+ * agreeing with a stale copy of itself.
+ */
+const KERNEL_FINGERPRINT_CENSUS = `
+  select 'iam.entity_read_kernel_expected' as function_name,
+         'the recorded proof' as identity_args,
+         'live bodies hash to ' || iam.entity_read_kernel_fingerprint() ||
+         ' but the recorded expectation is ' || iam.entity_read_kernel_expected() ||
+         ' - platform.provision refuses every spec with preflight.read_kernel until they agree' as why
+   where iam.entity_read_kernel_fingerprint() is distinct from iam.entity_read_kernel_expected()`;
+
 interface Row {
   function_name: string;
   identity_args: string;
@@ -1010,6 +1032,54 @@ async function main(): Promise<void> {
         "[ OK ] self-test - under all_records the same old line produces no disagreement, which " +
           "is why the strict setting is where this defect lives.",
       );
+
+      // CENSUS 16's RED HALF — a kernel body PLANTED, in a transaction that is always
+      // rolled back. `iam.entity_read_kernel_fingerprint()` hashes `prosrc`, so one
+      // comment line inside a body is the whole plant: the exact shape a lane produces
+      // when it CREATE OR REPLACE's a kernel function and re-records nothing. If this
+      // does not go red, census 16's green above is reading something that cannot move.
+      await client.query("begin");
+      try {
+        await client.query("set local lock_timeout = '20s'");
+        await client.query(`
+          do $plant$
+          declare v_def text; v_src text;
+          begin
+            select pg_get_functiondef(p.oid), p.prosrc into v_def, v_src
+              from pg_proc p
+             where p.pronamespace = 'public'::regnamespace and p.proname = 'library_is_open'
+             limit 1;
+            if v_def is null then
+              raise exception 'public.library_is_open is not on this database — census 16 cannot be proved red';
+            end if;
+            execute replace(v_def, v_src, v_src || E'\n  -- planted by check:store-doors-decide --self-test');
+          end
+          $plant$;`);
+        const planted = (await client.query<Row>(KERNEL_FINGERPRINT_CENSUS)).rows;
+        if (planted.length !== 1) {
+          await client.query("rollback").catch(() => undefined);
+          fail(
+            "SELF-TEST FAILED - one access-kernel body (public.library_is_open) was replaced with " +
+              `one comment line added and census 16 named ${planted.length} disagreement(s), not 1. ` +
+              "Then the census is not comparing iam.entity_read_kernel_fingerprint() against the live " +
+              "bodies, and its zero on the real run proves nothing.",
+          );
+        }
+        console.log(`[ OK ] self-test - ${planted[0]!.why}`);
+      } finally {
+        await client.query("rollback").catch(() => undefined);
+      }
+      const healed = (await client.query<Row>(KERNEL_FINGERPRINT_CENSUS)).rows;
+      if (healed.length !== 0) {
+        fail(
+          "SELF-TEST FAILED - the planted kernel body was rolled back and census 16 still names " +
+            `${healed.length} disagreement(s). Either the plant escaped its transaction (it must not) ` +
+            "or this database really is in the P2-00f state and every provision is being refused.",
+        );
+      }
+      console.log(
+        "[ OK ] self-test - after ROLLBACK the recorded fingerprint and the live bodies agree again.",
+      );
     }
 
     const callers = (await client.query<Row>(CALLER_CENSUS(DECIDERS))).rows;
@@ -1135,6 +1205,11 @@ async function main(): Promise<void> {
     ).rows;
     console.log(`[TIME] censuses 14+15 - the ladder plans once: ${since(mark14)}`);
 
+    // CENSUS 16 — the live kernel bodies against the recorded fingerprint.
+    const mark16 = Date.now();
+    const kernelDrift = (await client.query<Row>(KERNEL_FINGERPRINT_CENSUS)).rows;
+    console.log(`[TIME] census 16 - the kernel fingerprint against the live bodies: ${since(mark16)}`);
+
     const ok = [
       report("client doors taking an organization id that never decide the caller", callers),
       report("client doors that write a record without deciding that row", records),
@@ -1178,6 +1253,11 @@ async function main(): Promise<void> {
       report(
         "partitioned entity or registry tables with no current plan-cached row probe",
         staleProbes,
+        true,
+      ),
+      report(
+        "the recorded access-kernel fingerprint disagreeing with the live kernel bodies",
+        kernelDrift,
         true,
       ),
     ].every(Boolean);

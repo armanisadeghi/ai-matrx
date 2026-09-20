@@ -53,6 +53,7 @@ export function recordStoreShare(subject: ShareSubject) {
       resourceId={subject.subjectId}
       resourceName={subject.name}
       organizationId={subject.organizationId}
+      resourceNoun={subject.kind === "table" ? "Table" : "Record"}
     />
   );
 }
