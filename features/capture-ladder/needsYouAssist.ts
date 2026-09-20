@@ -48,7 +48,11 @@ import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
 import { assistPriority, type AssistAction } from "@/features/assists/types";
 import type { AppDispatch } from "@/lib/redux/store";
 import { hasOwnBrowserExtension } from "@/lib/extension-bridge/handToOwnBrowser";
-import type { CaptureHandoff } from "@/features/capture-ladder/types";
+import {
+  describeHandoffCounts,
+  handoffNoun,
+  type CaptureHandoff,
+} from "@/features/capture-ladder/types";
 
 /** Stable producer id. One family, so the dock's family rule sees one source. */
 export const NEEDS_YOU_SOURCE_KEY = "capture_ladder.needs_your_browser";
@@ -83,7 +87,7 @@ function hostOf(url: string): string {
  * three times is what made the old tray unreadable.
  */
 export function needsYouTitle(
-  count: number,
+  handoffs: readonly CaptureHandoff[],
   organizationName?: string | null,
 ): string {
   // 🚨 THE WORKSPACE IS IN THE TITLE ON PURPOSE. The dock is addressed to the
@@ -93,10 +97,19 @@ export function needsYouTitle(
   // anywhere. Without naming it, "a page is waiting for your browser" while
   // looking at a different workspace is the same ambiguity this whole rework
   // exists to end (found on an independent walk, 2026-09-19).
+  //
+  // 🚨 AND SO IS WHAT THEY ARE. This said "page" for everything until
+  // 2026-09-20, including the ten YouTube videos the queue was actually
+  // holding — `handoff_kind` had been on the table for days and this repo had
+  // never read it. A chip that misnames the work is a chip the person cannot
+  // decide about: "3 pages are waiting" and "3 videos are waiting" are
+  // different answers to "do I want to do this now?".
   const where = organizationName ? ` in ${organizationName}` : "";
-  return count === 1
-    ? `A page${where} is waiting for your browser`
-    : `${count} pages${where} are waiting for your browser`;
+  if (handoffs.length === 1) {
+    const [only] = handoffs;
+    return `A ${handoffNoun(only?.handoff_kind ?? null)}${where} is waiting for your browser`;
+  }
+  return `${describeHandoffCounts(handoffs)}${where} are waiting for your browser`;
 }
 
 /**
@@ -118,9 +131,21 @@ export function needsYouBody(
         ? `${named[0]} and ${named[1]}`
         : (named[0] ?? "These pages");
 
-  const lines = [
-    `${list} — these only open for someone who is signed in, and our servers are not.`,
-  ];
+  // WHY OUR SERVERS CANNOT, in terms that are true of what is actually queued.
+  // "These only open for someone who is signed in" is a sentence about a login
+  // wall; YouTube refuses our servers with a bot check and hands the same video
+  // to an ordinary browser without asking anyone to sign in. Saying the login
+  // sentence over a queue of videos is a confident wrong explanation — worse
+  // than the vaguer one, because the person acts on it.
+  const kinds = new Set(handoffs.map((row) => row.handoff_kind ?? null));
+  const why =
+    kinds.size === 1 && kinds.has("youtube_captions")
+      ? "YouTube will not hand their subtitles to a server, but it gives them to an ordinary browser like yours."
+      : kinds.size === 1 && kinds.has("web_page")
+        ? "these only open for someone who is signed in, and our servers are not."
+        : "sites hand these to an ordinary browser like yours and refuse our servers.";
+
+  const lines = [`${list} — ${why}`];
 
   if (!options.extensionInstalled) {
     lines.push(
@@ -230,7 +255,7 @@ export async function produceNeedsYouAssist(
     userId,
     {
       sourceKey: NEEDS_YOU_SOURCE_KEY,
-      title: needsYouTitle(handoffs.length, args.organizationName),
+      title: needsYouTitle(handoffs, args.organizationName),
       body: needsYouBody(handoffs, { extensionInstalled }),
       action: needsYouAction({
         organizationId,

@@ -112,9 +112,11 @@ function NeedsYouAction({
           </a>
         </Button>
         <p className="text-xs text-muted-foreground">
-          These pages need a browser that is already signed in — yours. The
-          Matrx extension is what lets it read them for you, and it is not
-          installed here yet.
+          {/* "These pages" was wrong for a queue of videos; the queue holds
+              both. The sentence says what is true of every kind in it. */}
+          These need a browser the sites will actually answer — yours. The Matrx
+          extension is what lets it read them for you, and it is not installed
+          here yet.
         </p>
       </div>
     );

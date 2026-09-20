@@ -61,7 +61,7 @@ export function NewInterviewExperience() {
       // organization is selected (features/vision-interview/service.ts).
       toast.error(
         isOrganizationRequiredError(err)
-          ? "Select an organization before starting an interview \u2014 every interview is filed under one organization. Pick yours from the avatar menu."
+          ? "Select an organization from the avatar menu, then start the interview."
           : err instanceof Error
             ? err.message
             : "Could not create the interview.",

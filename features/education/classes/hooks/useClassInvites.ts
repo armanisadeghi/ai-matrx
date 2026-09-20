@@ -193,7 +193,7 @@ export function useClassInvites(
         } else {
           // The refresh minted a fresh token, so their older link is dead.
           toast.warning(
-            "The invitation was refreshed, but the email could not be sent — their earlier link no longer works, so copy the new link from the list and send it yourself.",
+            "Email wasn’t sent. Copy the new invitation link and send it yourself.",
           );
         }
       } else {

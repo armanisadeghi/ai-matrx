@@ -10,6 +10,7 @@
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import * as ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 interface Finding {
@@ -40,12 +41,6 @@ const NON_EXECUTABLE_EXCLUSIONS = new Set([
   "app/(public)/developers/oauth/page.tsx",
 ]);
 
-const PYTHON_CLIENT_IMPORT =
-  /from\s+["']@\/lib\/python-client["']|import\(["']@\/lib\/python-client["']\)/;
-const USE_BACKEND_API_IMPORT =
-  /from\s+["']@\/hooks\/useBackendApi["']|import\(["']@\/hooks\/useBackendApi["']\)/;
-const NETWORK_PRIMITIVE =
-  /\bfetch\s*\(|\bresilientFetch\s*\(|new\s+XMLHttpRequest\s*\(|new\s+WebSocket\s*\(/;
 const BACKEND_LOCATOR =
   /BACKEND_URLS|AIDREAM_PRODUCTION_URL|NEXT_PUBLIC_BACKEND_URL|server\.app\.matrxserver\.com|selectResolvedBaseUrl|resolveBaseUrl\s*\(|resolveBaseUrlForPath\s*\(|resolveFilesBaseUrl\s*\(|crawlerCommandUrl\s*\(|backendBase\s*\(|logApiTarget\s*\(|resolveOrchestratorByTier\s*\(|\bbackendUrl\b|\bbaseUrl\b|\bserverUrl\b/;
 const STRONG_BACKEND_LOCATOR =
@@ -60,37 +55,115 @@ const PYTHON_CLIENT_UTILITIES = new Set([
   "resolveFilesBaseUrl",
 ]);
 
-function executableSource(source: string): string {
-  const blank = (value: string) => value.replace(/[^\n]/g, " ");
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, blank)
-    .replace(/^\s*\/\/.*$/gm, blank);
+function parseSource(file: string, source: string): ts.SourceFile {
+  return ts.createSourceFile(
+    file,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    file.endsWith(".tsx") || file.endsWith(".jsx")
+      ? ts.ScriptKind.TSX
+      : ts.ScriptKind.TS,
+  );
 }
 
-function importsRawPythonVerb(source: string): boolean {
-  if (/import\(["']@\/lib\/python-client["']\)/.test(source)) return true;
-  const importPattern =
-    /import\s+(?!type\b)([^;]*?)\s+from\s+["']@\/lib\/python-client["']/g;
-  let match: RegExpExecArray | null;
-  while ((match = importPattern.exec(source))) {
-    const clause = match[1];
-    if (/\*\s+as\s+/.test(clause)) return true;
-    const braces = clause.match(/\{([\s\S]*?)\}/);
-    if (!braces) return true;
-    const symbols = braces[1]
-      .split(",")
-      .map((symbol) => symbol.trim())
-      .filter(Boolean)
-      .filter((symbol) => !symbol.startsWith("type "))
-      .map((symbol) => symbol.split(/\s+as\s+/)[0].trim());
-    if (symbols.some((symbol) => !PYTHON_CLIENT_UTILITIES.has(symbol))) {
-      return true;
+function isDynamicImportOf(node: ts.CallExpression, module: string): boolean {
+  return (
+    node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+    node.arguments.length === 1 &&
+    ts.isStringLiteral(node.arguments[0]) &&
+    node.arguments[0].text === module
+  );
+}
+
+function importsModule(sourceFile: ts.SourceFile, module: string): boolean {
+  let found = false;
+  const visit = (node: ts.Node): void => {
+    if (ts.isImportDeclaration(node)) {
+      if (
+        ts.isStringLiteral(node.moduleSpecifier) &&
+        node.moduleSpecifier.text === module &&
+        !node.importClause?.isTypeOnly
+      ) {
+        found = true;
+      }
+    } else if (ts.isCallExpression(node) && isDynamicImportOf(node, module)) {
+      found = true;
     }
-  }
-  return false;
+    if (!found) ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return found;
+}
+
+function importsRawPythonVerb(sourceFile: ts.SourceFile): boolean {
+  let raw = false;
+  const visit = (node: ts.Node): void => {
+    if (ts.isImportDeclaration(node)) {
+      if (
+        !ts.isStringLiteral(node.moduleSpecifier) ||
+        node.moduleSpecifier.text !== "@/lib/python-client" ||
+        node.importClause?.isTypeOnly
+      ) {
+        // Not the import this check owns.
+      } else {
+        const clause = node.importClause;
+        if (!clause || clause.name || !clause.namedBindings) raw = true;
+        else if (ts.isNamespaceImport(clause.namedBindings)) raw = true;
+        else {
+          raw = clause.namedBindings.elements.some(
+            (element) =>
+              !element.isTypeOnly &&
+              !PYTHON_CLIENT_UTILITIES.has(
+                (element.propertyName ?? element.name).text,
+              ),
+          );
+        }
+      }
+    } else if (
+      ts.isCallExpression(node) &&
+      isDynamicImportOf(node, "@/lib/python-client")
+    ) {
+      raw = true;
+    }
+    if (!raw) ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return raw;
+}
+
+function networkPrimitivePositions(sourceFile: ts.SourceFile): number[] {
+  const positions: number[] = [];
+  const visit = (node: ts.Node): void => {
+    if (ts.isCallExpression(node)) {
+      const callee = node.expression;
+      if (
+        (ts.isIdentifier(callee) &&
+          (callee.text === "fetch" || callee.text === "resilientFetch")) ||
+        (ts.isPropertyAccessExpression(callee) && callee.name.text === "fetch")
+      ) {
+        positions.push(
+          ts.isPropertyAccessExpression(callee)
+            ? callee.name.getStart(sourceFile)
+            : callee.getStart(sourceFile),
+        );
+      }
+    } else if (
+      ts.isNewExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      (node.expression.text === "XMLHttpRequest" ||
+        node.expression.text === "WebSocket")
+    ) {
+      positions.push(node.expression.getStart(sourceFile));
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return positions;
 }
 
 function backendTransportPositions(
+  sourceFile: ts.SourceFile,
   source: string,
   file: string,
   explicitApiTestTransport: boolean,
@@ -99,12 +172,14 @@ function backendTransportPositions(
   const strongLocator = STRONG_BACKEND_LOCATOR.test(source);
   const serviceWorker =
     file === "features/files/cache/service-worker/src/sw.ts";
-  const calls = new RegExp(NETWORK_PRIMITIVE.source, "g");
-  let match: RegExpExecArray | null;
-  while ((match = calls.exec(source))) {
-    const argumentTail = source.slice(match.index + match[0].length);
-    if (match[0].includes("WebSocket")) {
-      positions.push(match.index);
+  for (const position of networkPrimitivePositions(sourceFile)) {
+    const primitive = source
+      .slice(position)
+      .match(/^(?:fetch|resilientFetch|XMLHttpRequest|WebSocket)/)?.[0];
+    if (!primitive) continue;
+    const argumentTail = source.slice(position + primitive.length);
+    if (primitive === "WebSocket") {
+      positions.push(position);
       continue;
     }
     // Same-origin Next.js routes are not direct Python calls. If such a route
@@ -115,13 +190,13 @@ function backendTransportPositions(
     // aidream, another Matrx service, or a third-party API. Those non-aidream
     // cases may be legitimate, but still require explicit human approval.
     if (/^\s*[`"'](?:https?|wss?):\/\//.test(argumentTail)) {
-      positions.push(match.index);
+      positions.push(position);
       continue;
     }
 
     const nearby = source.slice(
-      Math.max(0, match.index - 1_200),
-      Math.min(source.length, match.index + 1_200),
+      Math.max(0, position - 1_200),
+      Math.min(source.length, position + 1_200),
     );
     if (
       serviceWorker ||
@@ -130,7 +205,7 @@ function backendTransportPositions(
       BACKEND_LOCATOR.test(nearby) ||
       REMOTE_URL.test(nearby)
     ) {
-      positions.push(match.index);
+      positions.push(position);
     }
   }
   return positions;
@@ -199,18 +274,18 @@ function scan(): Finding[] {
     if (CORE_TRANSPORTS.has(file) || NON_EXECUTABLE_EXCLUSIONS.has(file))
       continue;
     const source = readFileSync(filePath, "utf8");
-    const code = executableSource(source);
+    const sourceFile = parseSource(file, source);
 
     if (
       file !== "hooks/useBackendApi.ts" &&
-      USE_BACKEND_API_IMPORT.test(code)
+      importsModule(sourceFile, "@/hooks/useBackendApi")
     ) {
       findings.push(
         finding("legacy-hook", file, firstEvidence(source, /useBackendApi/)),
       );
     }
 
-    if (PYTHON_CLIENT_IMPORT.test(code) && importsRawPythonVerb(code)) {
+    if (importsRawPythonVerb(sourceFile)) {
       findings.push(
         finding(
           "raw-python-client",
@@ -224,9 +299,10 @@ function scan(): Finding[] {
       file.startsWith("app/(dev)/demos/api-tests/") &&
       !file.endsWith("/hooks/useSaveSample.ts") &&
       !file.endsWith("/hooks/useToolTestContext.ts") &&
-      NETWORK_PRIMITIVE.test(code);
+      networkPrimitivePositions(sourceFile).length > 0;
     for (const position of backendTransportPositions(
-      code,
+      sourceFile,
+      source,
       file,
       explicitApiTestTransport,
     )) {

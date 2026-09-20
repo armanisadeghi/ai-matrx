@@ -150,7 +150,7 @@ export async function createTask(
     // Law: common-docs/policies/context-is-carried-never-rebuilt.md.
     if (isOrganizationRequiredError(error)) {
       toast.error(
-        "Select an organization before creating a task \u2014 every record is filed under one organization. Pick yours from the avatar menu.",
+        "Select an organization from the avatar menu, then create the task.",
       );
       return null;
     }

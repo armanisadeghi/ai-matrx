@@ -20,6 +20,6 @@ export function notifyPrintOutcome(outcome: void | PrintOutcome): void {
   if (outcome !== "downloaded") return;
   toast.info("Print window was blocked — downloaded the print file instead", {
     description:
-      "Your browser blocked the pop-up, so the printable page was saved as an .html download. Open it and print from there, or allow pop-ups for this site.",
+      "Open the downloaded file to print it, or allow pop-ups for this site.",
   });
 }

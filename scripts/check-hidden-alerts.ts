@@ -22,6 +22,7 @@
  *   pnpm check:hidden-alerts             census, exit 1 on any finding
  *   pnpm check:hidden-alerts:self-test   proves the detector fails on the 2026-09-18 line
  */
+import { exitAfterDrain } from "./lib/exit-after-drain";
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 
@@ -175,4 +176,4 @@ function main(): number {
   return 1;
 }
 
-process.exit(main());
+exitAfterDrain(main());

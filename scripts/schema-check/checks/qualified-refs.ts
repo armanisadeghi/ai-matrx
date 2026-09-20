@@ -15,6 +15,7 @@
 import { isIgnored, loc, registerCheck } from "../context";
 import { relationExists } from "../snapshot";
 import type { Context, Finding } from "../types";
+import ts from "typescript";
 
 const PAIR_RE = /\b([a-z_][a-z0-9_]*)\.([a-z_][a-z0-9_]*)\b/g;
 const SQL_KEYWORD = /\b(from|join|into|update|table|references|truncate|delete\s+from|insert\s+into|alter\s+table)\b/i;
@@ -28,7 +29,7 @@ function inComment(text: string, idx: number): boolean {
   return before.includes("//") && !/https?:$/.test(before.replace(/\/[^/]*$/, "/"));
 }
 
-function check(ctx: Context): Finding[] {
+export function checkQualifiedRefs(ctx: Context): Finding[] {
   const { snapshot: snap } = ctx;
   if (snap.tables.size === 0) return [];
   const liveSchemas = new Set([...snap.tables.keys(), ...snap.views.keys()]);
@@ -36,8 +37,12 @@ function check(ctx: Context): Finding[] {
 
   for (const file of ctx.codeFiles) {
     const { lines } = file;
+    let literalRanges: Array<[number, number]> | undefined;
+    let offset = 0;
     for (let i = 0; i < lines.length; i++) {
       const text = lines[i];
+      const lineOffset = offset;
+      offset += text.length + 1;
       if (isIgnored(text)) continue;
       const sqlish = SQL_KEYWORD.test(text);
       PAIR_RE.lastIndex = 0;
@@ -51,6 +56,25 @@ function check(ctx: Context): Finding[] {
         if (relationExists(snap, schema, rel)) continue; // correct as written
         const livesIn = [...(snap.relationSchemas.get(rel) ?? [])].filter((s) => s !== schema).sort();
         if (!livesIn.length) continue; // a function/view/random dotted token — skip
+        // In JS/TS a member access is never a SQL relation. A method named join
+        // or a property named table must not turn provider.scopes/meta.table into
+        // executable SQL. Inspect string/template text, excluding interpolations.
+        if (file.ext !== ".sql" && !inComment(text, m.index)) {
+          if (!literalRanges) {
+            literalRanges = [];
+            const source = ts.createSourceFile(file.path, lines.join("\n"), ts.ScriptTarget.Latest, true);
+            const visit = (node: ts.Node): void => {
+              if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)
+                || ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node)) {
+                literalRanges!.push([node.getStart(source), node.getEnd()]);
+              }
+              ts.forEachChild(node, visit);
+            };
+            visit(source);
+          }
+          const position = lineOffset + m.index;
+          if (!literalRanges.some(([start, end]) => position >= start && position + m[0].length <= end)) continue;
+        }
         // A line that already names the correct location (e.g. "moved to graveyard.prompts")
         // is documenting the move, not making a stale reference — skip it.
         if (livesIn.some((s) => text.includes(`${s}.${rel}`))) continue;
@@ -77,4 +101,4 @@ function check(ctx: Context): Finding[] {
   return findings;
 }
 
-registerCheck("qualified-refs", check);
+registerCheck("qualified-refs", checkQualifiedRefs);

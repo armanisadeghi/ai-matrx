@@ -338,7 +338,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
         const conflictTabId = result.tabId;
         toast.warning("Remote row updated since you opened this tab", {
           description:
-            "Reload to pick up the remote changes (your local edits are copied to the clipboard) or Overwrite to push your version anyway.",
+            "Choose Reload or Overwrite. Reload copies your edits to the clipboard.",
           duration: 15000,
           action: {
             label: "Reload",

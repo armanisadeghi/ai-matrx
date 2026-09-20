@@ -137,7 +137,7 @@ export function HtmlPreviewBridge({
           console.error("[HtmlPreviewBridge] Failed to register artifact:", err);
           toast.error("This page is not linked to the conversation", {
             description:
-              "The page itself was published, but recording it against this message failed, so it will not appear here next time. Try publishing again.",
+              "Page published, but it was not linked to this message. Try publishing again.",
           });
         }
       }

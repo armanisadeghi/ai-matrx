@@ -54,7 +54,7 @@ export function EncoreBrowseCards({
                     <Badge
                       variant="outline"
                       className="px-1.5 py-0 text-[10px] text-muted-foreground"
-                      title="Only you can see this one. Release it to let others run it."
+                      title="This item is personal. Release it to let others run it."
                     >
                       Draft
                     </Badge>

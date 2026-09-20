@@ -281,8 +281,8 @@ export function ShareableRegistryPanel({
           ? `${label(editor.resourceType)} registered as shareable`
           : `${label(editor.resourceType)} saved`,
       );
-      toast.info(
-        "FE compile-time mirror (utils/permissions/registry.ts) needs `pnpm tsx scripts/regen-shareable-registry-snapshot.ts` to stay in parity.",
+      console.info(
+        "[shareable-registry] Run `pnpm tsx scripts/regen-shareable-registry-snapshot.ts` to keep the frontend permission snapshot in sync.",
       );
       setEditor(null);
       setSidePanelId(null);

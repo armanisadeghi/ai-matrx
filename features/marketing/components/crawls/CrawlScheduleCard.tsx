@@ -113,7 +113,7 @@ export function CrawlScheduleCard({
     if (result.status === "conflict") {
       toast.error("This schedule changed somewhere else", {
         description:
-          "Your version was out of date, so nothing was overwritten. The current schedule is now shown — re-apply your change if you still want it.",
+          "Schedule changed elsewhere. Review the latest version and try again.",
       });
       setDraft(null);
       return;

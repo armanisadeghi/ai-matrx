@@ -93,6 +93,7 @@ import {
 import { useIncomingMessageNotifier } from "@/features/messaging/lib/useIncomingMessageNotifier";
 import { unlockAudio } from "@/features/messaging/utils/notificationSound";
 import { toast } from "@/lib/toast";
+import { diagnosticToastCopy } from "@/lib/toast/diagnostic-copy";
 
 export interface MessagingHostProps {
   children: ReactNode;
@@ -165,9 +166,8 @@ export function MessagingHost({ children }: MessagingHostProps) {
       console.error(line);
       if (!shownRef.current.has(event.message)) {
         shownRef.current.add(event.message);
-        toast.error(event.message, {
-          ...(event.remedy !== undefined ? { description: event.remedy } : {}),
-        });
+        const copy = diagnosticToastCopy("messaging", event.message);
+        toast.error(copy.title, { description: copy.description });
       }
       return;
     }

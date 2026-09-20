@@ -508,7 +508,7 @@ export function CaptureStudio({
           ?.then(({ partial }) => {
             toast.success(
               partial
-                ? "Recording stopped and saved to your captures — it was interrupted, so only the media captured before the interruption is included."
+                ? "Recording interrupted. The captured portion was saved."
                 : "Recording stopped and saved to your captures.",
             );
           })

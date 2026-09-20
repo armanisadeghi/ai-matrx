@@ -73,6 +73,7 @@ import {
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { meetBaseUrl } from "@/features/meet/lib/meetBaseUrl";
 import { toast } from "@/lib/toast";
+import { diagnosticToastCopy } from "@/lib/toast/diagnostic-copy";
 
 export interface MeetHostProps {
   children: ReactNode;
@@ -100,11 +101,8 @@ export function MeetHost({ children }: MeetHostProps) {
       console.error(line);
       if (!shownRef.current.has(event.message)) {
         shownRef.current.add(event.message);
-        toast.error(event.message, {
-          ...(event.remedy !== undefined
-            ? { description: event.remedy }
-            : {}),
-        });
+        const copy = diagnosticToastCopy("meet", event.message);
+        toast.error(copy.title, { description: copy.description });
       }
       return;
     }

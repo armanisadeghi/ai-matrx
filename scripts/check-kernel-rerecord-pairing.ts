@@ -20,6 +20,7 @@
  *   pnpm check:kernel-rerecord-pairing
  *   pnpm check:kernel-rerecord-pairing --self-test
  */
+import { exitAfterDrain } from "./lib/exit-after-drain";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -297,5 +298,5 @@ function main(): number {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  process.exit(main());
+  exitAfterDrain(main());
 }
