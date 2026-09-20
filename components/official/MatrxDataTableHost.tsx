@@ -75,7 +75,7 @@ const ports: TableHost = {
   },
   notify: toast,
   rowContextRegistry: { register: registerTableRowContextResolver },
-  createDefaultRowContext: createDefaultTableRowMenuDescriptor,
+  createDefaultMenuContext: createDefaultTableRowMenuDescriptor,
   ContextMenuBoundary: TableContextMenuBoundary,
 };
 export function MatrxDataTableHost({ children }: { children: ReactNode }) {

@@ -35,6 +35,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isAuthenticated }: SidebarProps) {
   const visibleItems = navItemsForViewer(primaryNavItems, isAuthenticated);
+  const activeCandidates = [...visibleItems, settingsItem];
   return (
     <aside className="shell-sidebar">
       {/* Brand Section — Route header override + default toggle fallback */}
@@ -86,7 +87,11 @@ export default function Sidebar({ isAuthenticated }: SidebarProps) {
           {isAuthenticated && <FavoritesNavGroup />}
           {visibleItems.map((item) =>
             item.children ? (
-              <NavFlyoutGroup key={item.label} item={item} />
+              <NavFlyoutGroup
+                key={item.label}
+                item={item}
+                candidates={activeCandidates}
+              />
             ) : (
               <NavItem key={item.label} item={item} />
             ),
@@ -103,7 +108,7 @@ export default function Sidebar({ isAuthenticated }: SidebarProps) {
         <AdminSidebarSection />
         <SidebarWindowToggleIsland />
         {settingsItem.children ? (
-          <NavFlyoutGroup item={settingsItem} />
+          <NavFlyoutGroup item={settingsItem} candidates={activeCandidates} />
         ) : (
           <NavItem item={settingsItem} />
         )}

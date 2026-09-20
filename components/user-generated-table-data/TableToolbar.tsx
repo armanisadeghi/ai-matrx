@@ -526,6 +526,7 @@ export default function TableToolbar({
             isOpen={showTableConfigModal}
             onClose={() => setShowTableConfigModal(false)}
             onSuccess={() => loadTableData(true)}
+            onAddColumn={() => setShowAddColumnModal(true)}
           />
           <RowOrderingModal
             isOpen={showRowOrderingModal}

@@ -21,6 +21,7 @@ import {
   Eye,
   EyeOff,
   GripVertical,
+  Plus,
   RotateCcw,
 } from "lucide-react";
 
@@ -43,6 +44,8 @@ type Props = {
   order: string[];
   onHiddenChange: (next: string[]) => void;
   onOrderChange: (next: string[]) => void;
+  /** Add a new column to the TABLE (not just this view). Omitted on read-only mounts. */
+  onAddColumn?: () => void;
 };
 
 export function ColumnViewMenu({
@@ -51,6 +54,7 @@ export function ColumnViewMenu({
   order,
   onHiddenChange,
   onOrderChange,
+  onAddColumn,
 }: Props) {
   const [dragging, setDragging] = useState<string | null>(null);
 
@@ -178,6 +182,18 @@ export function ColumnViewMenu({
           })}
         </div>
 
+        {onAddColumn && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="mt-1 h-8 w-full justify-start gap-2 px-1.5 text-xs font-normal"
+            onClick={onAddColumn}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add a column to the table…
+          </Button>
+        )}
         <p className="px-1.5 pt-2 text-[11px] leading-snug text-muted-foreground">
           Drag to reorder. This affects only your view — it does not change the
           table for anyone else.

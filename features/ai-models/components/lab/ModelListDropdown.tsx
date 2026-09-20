@@ -9,9 +9,10 @@
  * doesn't shift anything. Mobile: a bottom drawer with detail / filter
  * sub-views.
  *
- * Rows are dense and tabular (Maker · Name · Speed · Points · Usage) —
- * POINTS are the platform's user currency (points_per_million output shown in
- * the row; in · out in the detail card, labeled plainly). Full capability
+ * Rows are dense and tabular (Maker · Name · Speed · Context · Cost) —
+ * Speed is a short word (Slow/Med/Fast/Fast+/Max). Context is the window
+ * size. Cost is the relative $ band — never "usage" and never points (those
+ * live in the detail card). Full capability
  * data (modalities, every feature bucket incl. "Other", interaction,
  * multilingual, pricing) lives in the always-present detail card — nothing is
  * ever hidden. Modality/capability chips render straight from the stored
@@ -59,9 +60,14 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { useModelFavorites } from "@/features/ai-models/hooks/useModelFavorites";
 import {
+  Input,
   Popover,
   PopoverTrigger,
   PopoverContent,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
   selectTriggerVariants,
 } from "@ai-matrx/design-system";
 import { useDialogContainer } from "@/components/ui/dialog";
@@ -71,7 +77,6 @@ import {
   DrawerContent,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { Input } from "@ai-matrx/design-system";
 import { MakerBrandGlyph } from "@/components/icons/MakerBrandGlyph";
 import { ServiceBrandGlyph } from "@/components/icons/ServiceBrandGlyph";
 import {
@@ -90,10 +95,11 @@ import {
   FEATURE_BUCKET_ORDER,
   type FeatureBucket,
 } from "@/features/ai-models/capabilities/feature-map";
-import { modelsForSelectionPurpose } from "@/features/ai-models/capabilities/types";
+import { isDecisionModelCapability } from "@/features/ai-models/capabilities/types";
 import {
   costRatingTier,
   speedRatingLabel,
+  speedRatingWord,
   type PriceTier,
 } from "@/features/ai-models/format";
 import {
@@ -102,7 +108,7 @@ import {
   serviceCountLabel,
 } from "@/features/ai-models/constants/service-label";
 
-const PANEL_HEIGHT = 440;
+const PANEL_HEIGHT = 640;
 /**
  * 🚨 THE PICKER STAYS ON SCREEN (V2-5, production walk 2026-08-31).
  *
@@ -123,8 +129,8 @@ const PANEL_HEIGHT = 440;
  */
 const LIST_MAX_HEIGHT = `min(${PANEL_HEIGHT}px, var(--radix-popper-available-height, 70dvh))`;
 // Fixed column widths — the popover width is their sum per variant.
-const LIST_WIDTH = 448; // widened for the Points column (the user currency)
-const DETAIL_WIDTH = 360; // widened so modality/capability rows never wrap
+const LIST_WIDTH = 520;
+const DETAIL_WIDTH = 540;
 const ADMIN_PANEL_WIDTH = 400; // admin-only third column (offerings)
 
 type SortKey =
@@ -241,28 +247,49 @@ function SpeedDots({ value }: { value: number | null }) {
   const label = speedRatingLabel(value);
   return (
     <span
-      className="inline-flex items-center gap-0.5"
+      className="inline-flex items-center gap-1"
       title={label == null ? "No speed rating yet" : `Speed ${label}/5`}
     >
-      {[0, 1, 2, 3, 4].map((i) => (
-        <span
-          key={i}
-          className={cn(
-            "h-1.5 w-1.5 rounded-full",
-            value != null && i < value
-              ? "bg-foreground/70"
-              : "bg-muted-foreground/25",
-          )}
-        />
-      ))}
-      {value != null && value >= 6 && (
-        <span className="text-[9px] leading-none text-amber-500">+</span>
-      )}
+      <span className="text-[11px] font-medium tabular-nums text-foreground/80">
+        {speedRatingWord(value)}
+      </span>
+      <span className="inline-flex items-center gap-0.5">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <span
+            key={i}
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              value != null && i < value
+                ? "bg-foreground/70"
+                : "bg-muted-foreground/25",
+            )}
+          />
+        ))}
+        {value != null && value >= 6 && (
+          <span className="text-[9px] leading-none text-amber-500">+</span>
+        )}
+      </span>
     </span>
   );
 }
 
-function UsageTier({ tier }: { tier: PriceTier | null }) {
+function SpeedCell({ value }: { value: number | null }) {
+  const word = speedRatingWord(value);
+  const label = speedRatingLabel(value);
+  return (
+    <DelayedHint
+      label={
+        label == null ? "No speed rating yet" : `Speed ${word} (${label}/5)`
+      }
+    >
+      <span className="inline-block w-11 text-right text-[11px] font-medium tabular-nums text-foreground/80">
+        {word}
+      </span>
+    </DelayedHint>
+  );
+}
+
+function CostTier({ tier }: { tier: PriceTier | null }) {
   if (!tier)
     return <span className="text-[11px] text-muted-foreground/50">—</span>;
   const plus = tier.endsWith("+");
@@ -659,10 +686,10 @@ function ModelDetailCard({
             </div>
             <div>
               <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Usage
+                Cost
               </dt>
               <dd>
-                <UsageTier tier={tier} />
+                <CostTier tier={tier} />
               </dd>
             </div>
             <div>
@@ -846,24 +873,55 @@ interface Filters {
   premium: TriState;
 }
 
+const HOVER_DELAY_MS = 400;
+
+/** Delayed hint — fast enough to read, slow enough not to strobe while moving. */
+function DelayedHint({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactElement;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="top" sideOffset={6} className="max-w-64 text-xs">
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function ChipRow({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex flex-nowrap gap-1 overflow-x-auto pb-0.5">
+      {children}
+    </div>
+  );
+}
+
 function ChipToggle({
   active,
   onClick,
   children,
+  className,
 }: {
   active: boolean;
   onClick: () => void;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-md border px-2 py-0.5 text-[11px] transition-colors",
+        "inline-flex shrink-0 items-center rounded-md border px-2 py-0.5 text-[11px] transition-colors",
         active
           ? "border-primary bg-primary/10 text-foreground"
           : "border-border text-muted-foreground hover:text-foreground",
+        className,
       )}
     >
       {children}
@@ -894,13 +952,12 @@ function MakerFilterButton({
           : "border-border text-muted-foreground hover:text-foreground",
       )}
     >
-      <MakerBrandGlyph maker={maker} colored className="h-3.5 w-3.5 shrink-0" />
-      <span
-        className="truncate text-[11px] font-medium leading-tight"
-        title={maker}
-      >
-        {maker}
-      </span>
+      <MakerBrandGlyph maker={maker} colored className="h-4 w-4 shrink-0" />
+      <DelayedHint label={maker}>
+        <span className="min-w-0 truncate text-[11px] font-medium leading-tight">
+          {maker}
+        </span>
+      </DelayedHint>
     </button>
   );
 }
@@ -928,13 +985,12 @@ function ServiceFilterButton({
           : "border-border text-muted-foreground hover:text-foreground",
       )}
     >
-      <ServiceBrandGlyph service={service} className="h-3.5 w-3.5 shrink-0" />
-      <span
-        className="truncate text-[11px] font-medium leading-tight"
-        title={service}
-      >
-        {service}
-      </span>
+      <ServiceBrandGlyph service={service} className="h-4 w-4 shrink-0" />
+      <DelayedHint label={service}>
+        <span className="min-w-0 truncate text-[11px] font-medium leading-tight">
+          {service}
+        </span>
+      </DelayedHint>
     </button>
   );
 }
@@ -1039,7 +1095,7 @@ function FiltersPanel({
     { key: "maker", label: "Maker" },
     { key: "service", label: SERVICE_LABEL },
     { key: "context", label: "Context" },
-    { key: "price", label: variant === "admin" ? "Price ($/M out)" : "Usage" },
+    { key: "price", label: variant === "admin" ? "Price ($/M out)" : "Cost" },
     ...(variant === "admin"
       ? ([
           { key: "vendor", label: "Vendor" },
@@ -1079,141 +1135,111 @@ function FiltersPanel({
   );
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto p-3 text-xs">
-      <FilterSection label="Sort by">
-        <div className="flex flex-wrap gap-1">
-          {sortOptions.map((o) => (
+    <div className="flex h-full flex-col text-xs">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3 pb-4">
+        <FilterSection label="Sort by">
+          <ChipRow>
+            {sortOptions.map((o) => (
+              <ChipToggle
+                key={o.key}
+                active={filters.sort === o.key}
+                onClick={() => setFilters((f) => ({ ...f, sort: o.key }))}
+              >
+                {o.label}
+              </ChipToggle>
+            ))}
+          </ChipRow>
+        </FilterSection>
+
+        {/* Modality filters at the TOP of the filter area (owner spec). */}
+        <FilterSection label="Input">
+          <ChipRow>
             <ChipToggle
-              key={o.key}
-              active={filters.sort === o.key}
-              onClick={() => setFilters((f) => ({ ...f, sort: o.key }))}
+              active={filters.input.size === 0}
+              onClick={() => setFilters((f) => ({ ...f, input: new Set() }))}
             >
-              {o.label}
+              Any
             </ChipToggle>
-          ))}
-        </div>
-      </FilterSection>
+            {INPUT_MODALITIES.map((m) => (
+              <ChipToggle
+                key={m}
+                active={filters.input.has(m)}
+                onClick={() => toggleModality("input", m)}
+              >
+                <span className="capitalize">{m}</span>
+              </ChipToggle>
+            ))}
+          </ChipRow>
+        </FilterSection>
 
-      {/* Modality filters at the TOP of the filter area (owner spec). */}
-      <FilterSection label="Input">
-        <div className="flex flex-wrap gap-1">
-          <ChipToggle
-            active={filters.input.size === 0}
-            onClick={() => setFilters((f) => ({ ...f, input: new Set() }))}
-          >
-            Any
-          </ChipToggle>
-          {INPUT_MODALITIES.map((m) => (
+        <FilterSection label="Output">
+          <ChipRow>
             <ChipToggle
-              key={m}
-              active={filters.input.has(m)}
-              onClick={() => toggleModality("input", m)}
+              active={filters.output.size === 0}
+              onClick={() => setFilters((f) => ({ ...f, output: new Set() }))}
             >
-              <span className="capitalize">{m}</span>
+              Any
             </ChipToggle>
-          ))}
-        </div>
-      </FilterSection>
+            {OUTPUT_MODALITIES.map((m) => (
+              <ChipToggle
+                key={m}
+                active={filters.output.has(m)}
+                onClick={() => toggleModality("output", m)}
+              >
+                <span className="capitalize">{m}</span>
+              </ChipToggle>
+            ))}
+          </ChipRow>
+        </FilterSection>
 
-      <FilterSection label="Output">
-        <div className="flex flex-wrap gap-1">
-          <ChipToggle
-            active={filters.output.size === 0}
-            onClick={() => setFilters((f) => ({ ...f, output: new Set() }))}
-          >
-            Any
-          </ChipToggle>
-          {OUTPUT_MODALITIES.map((m) => (
+        {/* Admin-only dimensions — everything displayed is filterable. */}
+        {variant === "admin" && (
+          <>
+            <FilterSection label="Deprecated">
+              <TriStateChips
+                value={filters.deprecated}
+                onChange={(v) => setFilters((f) => ({ ...f, deprecated: v }))}
+                yesLabel="Deprecated only"
+                noLabel="Active only"
+              />
+            </FilterSection>
+
+            <FilterSection label="Availability">
+              <TriStateChips
+                value={filters.availability}
+                onChange={(v) => setFilters((f) => ({ ...f, availability: v }))}
+                yesLabel="Available"
+                noLabel="Unavailable"
+              />
+            </FilterSection>
+
+            <FilterSection label="Premium">
+              <TriStateChips
+                value={filters.premium}
+                onChange={(v) => setFilters((f) => ({ ...f, premium: v }))}
+                yesLabel="Premium only"
+                noLabel="Standard only"
+              />
+            </FilterSection>
+
+            {/* Real serving vendors — ADMIN eyes only. */}
+            <FilterSection label="Vendor">{setChip("vendors")}</FilterSection>
+
+            {/* Real wire APIs — ADMIN eyes only. */}
+            <FilterSection label="API">{setChip("apis")}</FilterSection>
+          </>
+        )}
+
+        {/* Maker + Service — Any lives in the same 3-col grid, never its own row. */}
+        <FilterSection label="Maker">
+          <div className="grid grid-cols-3 gap-1">
             <ChipToggle
-              key={m}
-              active={filters.output.has(m)}
-              onClick={() => toggleModality("output", m)}
+              active={filters.makers.size === 0}
+              onClick={() => setFilters((f) => ({ ...f, makers: new Set() }))}
+              className="justify-center py-1"
             >
-              <span className="capitalize">{m}</span>
+              Any
             </ChipToggle>
-          ))}
-        </div>
-      </FilterSection>
-
-      <ChipToggle
-        active={filters.multilingualOnly}
-        onClick={() =>
-          setFilters((f) => ({ ...f, multilingualOnly: !f.multilingualOnly }))
-        }
-      >
-        <span className="inline-flex items-center gap-1">
-          <Languages className="h-3 w-3" /> Multilingual only
-        </span>
-      </ChipToggle>
-
-      {variant === "user" && (
-        <ChipToggle
-          active={filters.includeDeprecated}
-          onClick={() =>
-            setFilters((f) => ({
-              ...f,
-              includeDeprecated: !f.includeDeprecated,
-            }))
-          }
-        >
-          <span
-            className="inline-flex items-center gap-1"
-            title="Deprecated models still run; they are hidden by default so you are not steered to one."
-          >
-            Include deprecated
-          </span>
-        </ChipToggle>
-      )}
-
-      {/* Admin-only dimensions — everything displayed is filterable. */}
-      {variant === "admin" && (
-        <>
-          <FilterSection label="Deprecated">
-            <TriStateChips
-              value={filters.deprecated}
-              onChange={(v) => setFilters((f) => ({ ...f, deprecated: v }))}
-              yesLabel="Deprecated only"
-              noLabel="Active only"
-            />
-          </FilterSection>
-
-          <FilterSection label="Availability">
-            <TriStateChips
-              value={filters.availability}
-              onChange={(v) => setFilters((f) => ({ ...f, availability: v }))}
-              yesLabel="Available"
-              noLabel="Unavailable"
-            />
-          </FilterSection>
-
-          <FilterSection label="Premium">
-            <TriStateChips
-              value={filters.premium}
-              onChange={(v) => setFilters((f) => ({ ...f, premium: v }))}
-              yesLabel="Premium only"
-              noLabel="Standard only"
-            />
-          </FilterSection>
-
-          {/* Real serving vendors — ADMIN eyes only. */}
-          <FilterSection label="Vendor">{setChip("vendors")}</FilterSection>
-
-          {/* Real wire APIs — ADMIN eyes only. */}
-          <FilterSection label="API">{setChip("apis")}</FilterSection>
-        </>
-      )}
-
-      {/* Maker + Service at the BOTTOM of the filter area (owner spec). */}
-      <FilterSection label="Maker">
-        <div className="space-y-2">
-          <ChipToggle
-            active={filters.makers.size === 0}
-            onClick={() => setFilters((f) => ({ ...f, makers: new Set() }))}
-          >
-            Any
-          </ChipToggle>
-          {/* phone-ok: small truncating maker filter chips with icon */}
-          <div className="grid grid-cols-4 gap-1">
             {makerOptions.map((maker) => (
               <MakerFilterButton
                 key={maker}
@@ -1223,20 +1249,18 @@ function FiltersPanel({
               />
             ))}
           </div>
-        </div>
-      </FilterSection>
+        </FilterSection>
 
-      {/* Branded serving names ONLY (served_via) — never a real vendor. */}
-      <FilterSection label={SERVICE_LABEL}>
-        <div className="space-y-2">
-          <ChipToggle
-            active={filters.services.size === 0}
-            onClick={() => setFilters((f) => ({ ...f, services: new Set() }))}
-          >
-            Any
-          </ChipToggle>
-          {/* phone-ok: small truncating service filter chips with icon */}
-          <div className="grid grid-cols-4 gap-1">
+        {/* Branded serving names ONLY (served_via) — never a real vendor. */}
+        <FilterSection label={SERVICE_LABEL}>
+          <div className="grid grid-cols-3 gap-1">
+            <ChipToggle
+              active={filters.services.size === 0}
+              onClick={() => setFilters((f) => ({ ...f, services: new Set() }))}
+              className="justify-center py-1"
+            >
+              Any
+            </ChipToggle>
             {serviceOptions.map((service) => (
               <ServiceFilterButton
                 key={service}
@@ -1246,38 +1270,66 @@ function FiltersPanel({
               />
             ))}
           </div>
-        </div>
-      </FilterSection>
+        </FilterSection>
 
-      <FilterSection label="Features">
-        <div className="flex flex-wrap gap-1">
-          {FEATURE_BUCKET_ORDER.map((b) => (
-            <ChipToggle
-              key={b}
-              active={filters.features.has(b)}
-              onClick={() => toggleFeature(b)}
-            >
-              {FEATURE_BUCKETS[b].label}
-            </ChipToggle>
-          ))}
-        </div>
-      </FilterSection>
-
-      <FilterSection label="Interaction">
-        <div className="flex flex-wrap gap-1">
-          {(["any", "turn", "single", "extraction", "realtime"] as const).map(
-            (i) => (
+        <FilterSection label="Features">
+          <div className="flex flex-wrap gap-1">
+            {FEATURE_BUCKET_ORDER.map((b) => (
               <ChipToggle
-                key={i}
-                active={filters.interaction === i}
-                onClick={() => setFilters((f) => ({ ...f, interaction: i }))}
+                key={b}
+                active={filters.features.has(b)}
+                onClick={() => toggleFeature(b)}
               >
-                {i === "any" ? "Any" : INTERACTION_LABEL[i]}
+                {FEATURE_BUCKETS[b].label}
               </ChipToggle>
-            ),
-          )}
-        </div>
-      </FilterSection>
+            ))}
+          </div>
+        </FilterSection>
+
+        <FilterSection label="Interaction">
+          <div className="flex flex-wrap gap-1">
+            {(["any", "turn", "single", "extraction", "realtime"] as const).map(
+              (i) => (
+                <ChipToggle
+                  key={i}
+                  active={filters.interaction === i}
+                  onClick={() => setFilters((f) => ({ ...f, interaction: i }))}
+                >
+                  {i === "any" ? "Any" : INTERACTION_LABEL[i]}
+                </ChipToggle>
+              ),
+            )}
+          </div>
+        </FilterSection>
+      </div>
+
+      <div className="z-10 flex shrink-0 flex-nowrap items-center gap-1 border-t border-border bg-popover px-3 py-2">
+        <ChipToggle
+          active={filters.multilingualOnly}
+          onClick={() =>
+            setFilters((f) => ({ ...f, multilingualOnly: !f.multilingualOnly }))
+          }
+          className="flex-1 justify-center"
+        >
+          <span className="inline-flex items-center gap-1">
+            <Languages className="h-3 w-3" /> Multilingual
+          </span>
+        </ChipToggle>
+        {variant === "user" && (
+          <ChipToggle
+            active={filters.includeDeprecated}
+            onClick={() =>
+              setFilters((f) => ({
+                ...f,
+                includeDeprecated: !f.includeDeprecated,
+              }))
+            }
+            className="flex-1 justify-center"
+          >
+            Include deprecated
+          </ChipToggle>
+        )}
+      </div>
     </div>
   );
 }
@@ -1327,9 +1379,8 @@ function ModelRow({
         }
       }}
       onMouseEnter={onHover}
-      onFocus={onHover}
       className={cn(
-        "grid w-full grid-cols-[auto_auto_minmax(0,1fr)_auto_auto_auto] items-center gap-2 rounded px-2 py-1 transition-colors",
+        "grid w-full grid-cols-[16px_20px_minmax(0,1fr)_2.75rem_3rem_2.75rem] items-center gap-2 rounded px-2 py-1 transition-colors",
         retired
           ? "cursor-not-allowed opacity-60"
           : "cursor-pointer hover:bg-muted/60 focus:bg-muted/60 focus:outline-none",
@@ -1360,9 +1411,11 @@ function ModelRow({
         <MakerBrandGlyph maker={model.maker} colored className="h-3.5 w-3.5" />
       </span>
       <span className="flex min-w-0 items-center gap-1.5">
-        <span className="truncate text-xs font-medium text-foreground">
-          {model.name}
-        </span>
+        <DelayedHint label={model.name}>
+          <span className="truncate text-xs font-medium text-foreground">
+            {model.name}
+          </span>
+        </DelayedHint>
         {model.isDeprecated && !retired && (
           <span
             className="shrink-0 rounded bg-destructive/15 px-1 text-[9px] text-destructive"
@@ -1397,21 +1450,31 @@ function ModelRow({
           </span>
         )}
       </span>
-      <SpeedDots value={model.speedRating} />
-      {/* Points — the user currency (per 1M output tokens). */}
-      <span
-        className="w-11 whitespace-nowrap text-right font-mono text-[11px] tabular-nums text-foreground/80"
-        title={
-          model.pointsOutput == null
-            ? "No points pricing yet"
-            : `${fmtPoints(model.pointsInput)} in · ${fmtPoints(model.pointsOutput)} out points / 1M tokens`
+      <SpeedCell value={model.speedRating} />
+      <DelayedHint
+        label={
+          model.contextWindow == null
+            ? "No context window listed"
+            : `Context window ${model.contextWindow.toLocaleString()} tokens`
         }
       >
-        {fmtPointsCompact(model.pointsOutput)}
-      </span>
-      <span className="w-10 text-right">
-        <UsageTier tier={tier} />
-      </span>
+        <span className="block w-12 whitespace-nowrap text-right font-mono text-[11px] tabular-nums text-foreground/80">
+          {model.contextWindow == null
+            ? "—"
+            : fmtPointsCompact(model.contextWindow)}
+        </span>
+      </DelayedHint>
+      <DelayedHint
+        label={
+          tier == null
+            ? "No relative cost rating yet"
+            : `Relative cost ${tier.replace("+", "")}${tier.endsWith("+") ? "+" : ""} — more $ is more expensive`
+        }
+      >
+        <span className="block w-[2.75rem] text-right">
+          <CostTier tier={tier} />
+        </span>
+      </DelayedHint>
     </div>
   );
 }
@@ -1442,6 +1505,8 @@ export function ModelListDropdown({
 }: ModelListDropdownProps) {
   const isMobile = useIsMobile();
   const dialogContainer = useDialogContainer();
+  const [open, setOpen] = useState(false);
+  const { favoriteSet, toggleFavorite } = useModelFavorites(open);
   // The admin variant is super-admin only. The toggle is invisible to
   // everyone else, and the DB enforces the same gate (admin_model_catalog
   // raises 42501 for non-admins) — the UI gate is convenience, not security.
@@ -1449,9 +1514,9 @@ export function ModelListDropdown({
   const [adminMode, setAdminMode] = useState(false);
   const variant: ModelCatalogVariant =
     catalogVariant ?? (adminMode && isSuperAdmin ? "admin" : "user");
-  const effectiveSelectionPurpose = selectionPurpose ?? "chat";
+  const effectiveSelectionPurpose =
+    selectionPurpose ?? (variant === "admin" ? "admin" : "chat");
   const { models, isLoading, error } = useModelCatalog(variant);
-  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"all" | "favorites">("all");
   const [rightPanel, setRightPanel] = useState<RightPanel>(null);
@@ -1497,7 +1562,6 @@ export function ModelListDropdown({
     }
   };
 
-  const { favoriteSet, toggleFavorite } = useModelFavorites(open);
   const allowedModelSet = allowedModelIds ? new Set(allowedModelIds) : null;
   const priorityModelSet = priorityModelIds ? new Set(priorityModelIds) : null;
   const eligibleModels = allowedModelSet
@@ -1557,10 +1621,14 @@ export function ModelListDropdown({
     const q = query.trim().toLowerCase();
     const hasAvailable = (m: CatalogModel) =>
       (m.admin?.offerings ?? []).some((o) => o.isAvailable);
-    const rows = modelsForSelectionPurpose(
-      eligibleModels,
-      effectiveSelectionPurpose,
-    ).filter((m) => {
+    const rows = eligibleModels.filter((m) => {
+      if (effectiveSelectionPurpose === "chat" && isDecisionModelCapability(m))
+        return false;
+      if (
+        effectiveSelectionPurpose === "decision" &&
+        !isDecisionModelCapability(m)
+      )
+        return false;
       if (tab === "favorites" && !favoriteSet.has(m.id)) return false;
       // Search matches name, maker, branded Service names — and, in the
       // admin variant, real vendor / api / provider_model_id too.
@@ -1720,7 +1788,8 @@ export function ModelListDropdown({
     (filters.availability !== "any" ? 1 : 0) +
     (filters.premium !== "any" ? 1 : 0) +
     (filters.interaction !== "any" ? 1 : 0) +
-    (filters.multilingualOnly ? 1 : 0);
+    (filters.multilingualOnly ? 1 : 0) +
+    (filters.includeDeprecated ? 1 : 0);
 
   const handleOpen = (next: boolean) => {
     setOpen(next);
@@ -1929,18 +1998,17 @@ export function ModelListDropdown({
       </div>
 
       {/* Column header */}
-      <div className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto_auto] gap-2 border-b border-border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+      <div className="grid grid-cols-[16px_20px_minmax(0,1fr)_2.75rem_3rem_2.75rem] gap-2 border-b border-border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
         <span className="w-4" />
         <span className="w-5" title="Maker" aria-label="Maker" />
         <span>Name</span>
-        <span>Speed</span>
-        <span
-          className="w-11 text-right"
-          title="Points per 1M output tokens — the usage currency"
-        >
-          Points
-        </span>
-        <span className="w-10 text-right">Usage</span>
+        <span className="w-11 text-right">Speed</span>
+        <DelayedHint label="How many tokens this model can hold in one conversation">
+          <span className="block w-12 text-right">Context</span>
+        </DelayedHint>
+        <DelayedHint label="Relative cost band — more $ is more expensive. Not your personal usage.">
+          <span className="block w-[2.75rem] text-right">Cost</span>
+        </DelayedHint>
       </div>
 
       {/* Rows */}
@@ -2017,30 +2085,6 @@ export function ModelListDropdown({
           {filtered.length} of {eligibleModels.length} model
           {eligibleModels.length === 1 ? "" : "s"}
         </span>
-        {variant === "user" && (
-          <button
-            type="button"
-            onClick={() =>
-              setFilters((f) => ({
-                ...f,
-                includeDeprecated: !f.includeDeprecated,
-              }))
-            }
-            title={
-              filters.includeDeprecated
-                ? "Deprecated models are listed. Click to hide them again."
-                : "Deprecated models still run but are hidden by default. Click to list them."
-            }
-            className={cn(
-              "inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors",
-              filters.includeDeprecated
-                ? "bg-primary/10 text-foreground"
-                : "hover:text-foreground",
-            )}
-          >
-            Include deprecated
-          </button>
-        )}
         {isSuperAdmin && catalogVariant == null && (
           <button
             type="button"
@@ -2075,55 +2119,60 @@ export function ModelListDropdown({
       <Drawer open={open} onOpenChange={handleOpen}>
         <DrawerTrigger asChild>{trigger}</DrawerTrigger>
         <DrawerContent className="h-[85dvh]">
-          <DrawerTitle className="sr-only">Select model</DrawerTitle>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            {mobileDetail ? (
-              <>
-                <button
-                  onClick={() => setMobileDetail(null)}
-                  className="flex shrink-0 items-center gap-1.5 border-b border-border px-3 py-2.5 text-sm font-medium text-primary"
-                >
-                  <ChevronRight className="h-4 w-4 rotate-180" /> Back
-                </button>
-                <div className="min-h-0 flex-1 overflow-y-auto">
-                  <ModelDetailCard
-                    model={mobileDetail}
-                    tier={costRatingTier(mobileDetail.costRating)}
-                    variant={variant}
-                    onSelect={() => handleSelect(mobileDetail.id)}
-                    isCurrentModel={mobileDetail.id === value}
-                    pinnedOfferingId={pinnedOfferingId}
-                    onPinOffering={
-                      onOfferingPinChange ? handlePinOffering : undefined
-                    }
-                    includeAdminSection
-                  />
-                </div>
-              </>
-            ) : mobileFilters ? (
-              <>
-                <button
-                  onClick={() => setMobileFilters(false)}
-                  className="flex shrink-0 items-center gap-1.5 border-b border-border px-3 py-2.5 text-sm font-medium text-primary"
-                >
-                  <ChevronRight className="h-4 w-4 rotate-180" /> Back
-                </button>
-                <div className="min-h-0 flex-1">
-                  <FiltersPanel
-                    filters={filters}
-                    setFilters={setFilters}
-                    variant={variant}
-                    makerOptions={makerOptions}
-                    serviceOptions={serviceOptions}
-                    vendorOptions={vendorOptions}
-                    apiOptions={apiOptions}
-                  />
-                </div>
-              </>
-            ) : (
-              listPanel
-            )}
-          </div>
+          <TooltipProvider
+            delayDuration={HOVER_DELAY_MS}
+            skipDelayDuration={HOVER_DELAY_MS}
+          >
+            <DrawerTitle className="sr-only">Select model</DrawerTitle>
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              {mobileDetail ? (
+                <>
+                  <button
+                    onClick={() => setMobileDetail(null)}
+                    className="flex shrink-0 items-center gap-1.5 border-b border-border px-3 py-2.5 text-sm font-medium text-primary"
+                  >
+                    <ChevronRight className="h-4 w-4 rotate-180" /> Back
+                  </button>
+                  <div className="min-h-0 flex-1 overflow-y-auto">
+                    <ModelDetailCard
+                      model={mobileDetail}
+                      tier={costRatingTier(mobileDetail.costRating)}
+                      variant={variant}
+                      onSelect={() => handleSelect(mobileDetail.id)}
+                      isCurrentModel={mobileDetail.id === value}
+                      pinnedOfferingId={pinnedOfferingId}
+                      onPinOffering={
+                        onOfferingPinChange ? handlePinOffering : undefined
+                      }
+                      includeAdminSection
+                    />
+                  </div>
+                </>
+              ) : mobileFilters ? (
+                <>
+                  <button
+                    onClick={() => setMobileFilters(false)}
+                    className="flex shrink-0 items-center gap-1.5 border-b border-border px-3 py-2.5 text-sm font-medium text-primary"
+                  >
+                    <ChevronRight className="h-4 w-4 rotate-180" /> Back
+                  </button>
+                  <div className="min-h-0 flex-1">
+                    <FiltersPanel
+                      filters={filters}
+                      setFilters={setFilters}
+                      variant={variant}
+                      makerOptions={makerOptions}
+                      serviceOptions={serviceOptions}
+                      vendorOptions={vendorOptions}
+                      apiOptions={apiOptions}
+                    />
+                  </div>
+                </>
+              ) : (
+                listPanel
+              )}
+            </div>
+          </TooltipProvider>
         </DrawerContent>
       </Drawer>
     );
@@ -2155,75 +2204,80 @@ export function ModelListDropdown({
           maxHeight: LIST_MAX_HEIGHT,
         }}
       >
-        <div className="h-full overflow-x-auto overflow-y-hidden">
-          <div className="flex h-full" style={{ minWidth: popoverWidth }}>
-            <div
-              className="flex h-full min-h-0 shrink-0 flex-col border-r border-border"
-              style={{ width: LIST_WIDTH }}
-            >
-              {listPanel}
-            </div>
-            <div
-              className="flex h-full min-h-0 shrink-0 flex-col overflow-hidden"
-              style={{ width: DETAIL_WIDTH }}
-            >
-              {rightPanel === "filters" ? (
-                <FiltersPanel
-                  filters={filters}
-                  setFilters={setFilters}
-                  variant={variant}
-                  makerOptions={makerOptions}
-                  serviceOptions={serviceOptions}
-                  vendorOptions={vendorOptions}
-                  apiOptions={apiOptions}
-                />
-              ) : rightPanel === "detail" && hovered ? (
-                <div
-                  key={hovered.id}
-                  className="h-full animate-in fade-in-0 duration-300"
-                >
-                  <ModelDetailCard
-                    model={hovered}
-                    tier={costRatingTier(hovered.costRating)}
-                    variant={variant}
-                    onSelect={() => handleSelect(hovered.id)}
-                    isCurrentModel={hovered.id === value}
-                    pinnedOfferingId={pinnedOfferingId}
-                    onPinOffering={
-                      onOfferingPinChange ? handlePinOffering : undefined
-                    }
-                  />
-                </div>
-              ) : (
-                <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
-                  <MousePointerClick className="h-6 w-6 text-muted-foreground/40" />
-                  <p className="text-xs leading-relaxed text-muted-foreground/70">
-                    Hover a model to preview its details, or click to select.
-                  </p>
-                </div>
-              )}
-            </div>
-            {/* Admin extension column — the LARGE total-transparency section. */}
-            {variant === "admin" && (
+        <TooltipProvider
+          delayDuration={HOVER_DELAY_MS}
+          skipDelayDuration={HOVER_DELAY_MS}
+        >
+          <div className="h-full overflow-x-auto overflow-y-hidden">
+            <div className="flex h-full" style={{ minWidth: popoverWidth }}>
               <div
-                className="flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-l border-border"
-                style={{ width: ADMIN_PANEL_WIDTH }}
+                className="flex h-full min-h-0 shrink-0 flex-col border-r border-border"
+                style={{ width: LIST_WIDTH }}
               >
-                {adminPanelModel ? (
-                  <AdminOfferingsSection model={adminPanelModel} />
+                {listPanel}
+              </div>
+              <div
+                className="flex h-full min-h-0 shrink-0 flex-col overflow-hidden"
+                style={{ width: DETAIL_WIDTH }}
+              >
+                {rightPanel === "filters" ? (
+                  <FiltersPanel
+                    filters={filters}
+                    setFilters={setFilters}
+                    variant={variant}
+                    makerOptions={makerOptions}
+                    serviceOptions={serviceOptions}
+                    vendorOptions={vendorOptions}
+                    apiOptions={apiOptions}
+                  />
+                ) : rightPanel === "detail" && hovered ? (
+                  <div
+                    key={hovered.id}
+                    className="h-full animate-in fade-in-0 duration-300"
+                  >
+                    <ModelDetailCard
+                      model={hovered}
+                      tier={costRatingTier(hovered.costRating)}
+                      variant={variant}
+                      onSelect={() => handleSelect(hovered.id)}
+                      isCurrentModel={hovered.id === value}
+                      pinnedOfferingId={pinnedOfferingId}
+                      onPinOffering={
+                        onOfferingPinChange ? handlePinOffering : undefined
+                      }
+                    />
+                  </div>
                 ) : (
                   <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
-                    <Shield className="h-6 w-6 text-muted-foreground/40" />
+                    <MousePointerClick className="h-6 w-6 text-muted-foreground/40" />
                     <p className="text-xs leading-relaxed text-muted-foreground/70">
-                      Hover a model to see every offering&apos;s real vendor,
-                      api, provider model id and $ pricing.
+                      Hover a model to preview its details, or click to select.
                     </p>
                   </div>
                 )}
               </div>
-            )}
+              {/* Admin extension column — the LARGE total-transparency section. */}
+              {variant === "admin" && (
+                <div
+                  className="flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-l border-border"
+                  style={{ width: ADMIN_PANEL_WIDTH }}
+                >
+                  {adminPanelModel ? (
+                    <AdminOfferingsSection model={adminPanelModel} />
+                  ) : (
+                    <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
+                      <Shield className="h-6 w-6 text-muted-foreground/40" />
+                      <p className="text-xs leading-relaxed text-muted-foreground/70">
+                        Hover a model to see every offering&apos;s real vendor,
+                        api, provider model id and $ pricing.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </TooltipProvider>
       </PopoverContent>
     </Popover>
   );

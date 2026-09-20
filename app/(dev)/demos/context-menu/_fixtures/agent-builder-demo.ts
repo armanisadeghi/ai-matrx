@@ -18,16 +18,12 @@ export const DEMO_AGENT_BUILDER_SCOPE: AgentBuilderScopeInput = {
   agent_variable_definitions: [],
   agent_output_schema: { type: "object", properties: {} },
   agent_settings: { temperature: 0.7 },
-  agent_json: JSON.stringify(
-    {
-      id: DEMO_AGENT_ID,
-      name: "Demo Support Agent",
-      type: "user",
-      version: 1,
-    },
-    null,
-    2,
-  ),
+  agent_json: {
+    id: DEMO_AGENT_ID,
+    name: "Demo Support Agent",
+    type: "user",
+    version: 1,
+  },
   is_dirty: false,
 };
 

@@ -34,10 +34,9 @@
  * back" door that calls the same revert. Never silent, never a wall.
  */
 
-import { useState } from "react";
-import { Loader2, Radar, X } from "lucide-react";
+import { Fragment, useState, type ReactNode } from "react";
+import { Loader2, Radar } from "lucide-react";
 import { TapTargetButton } from "@ai-matrx/tap-target";
-import { Badge } from "@/components/ui/badge";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
@@ -49,6 +48,7 @@ import {
   fetchImpact,
   postAdvance,
   postRevert,
+  reachFactsOf,
   readAutoAdvanceGreen,
   readPostEditAutoOpen,
   rungSuffixOf,
@@ -60,6 +60,7 @@ import {
   type BatchTierCounts,
   type ImpactPosture,
   type ImpactVerdict,
+  type ReachFacts,
   type StandingImpact,
   type WriteContext,
 } from "./impact";
@@ -110,15 +111,32 @@ export async function readAgentReach(
   }
 }
 
-/** The badge's tone follows the worst pile it carries — red before check before safe. */
+/** Icon color only — no chip chrome. Red before check before quiet. */
 export function reachToneClassName(counts: BatchTierCounts): string {
-  if (counts.byTier.red > 0) {
-    return "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400";
-  }
-  if (counts.byTier.drift > 0) {
-    return "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400";
-  }
-  return "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
+  if (counts.byTier.red > 0) return "text-rose-600 dark:text-rose-400";
+  if (counts.byTier.drift > 0) return "text-amber-600 dark:text-amber-400";
+  return "text-muted-foreground";
+}
+
+function ReachFactRows({ facts }: { facts: ReachFacts }): ReactNode {
+  const rows: Array<[string, number]> = [
+    ["Advance", facts.advance],
+    ["Check", facts.check],
+    ["Red", facts.red],
+    ["Mandates", facts.mandates],
+  ];
+  if (facts.blocked > 0) rows.push(["Blocked", facts.blocked]);
+  if (facts.current > 0) rows.push(["Current", facts.current]);
+  return (
+    <div className="grid grid-cols-[auto_minmax(2ch,auto)] gap-x-4 gap-y-0.5 font-mono text-[11px] leading-4">
+      {rows.map(([label, value]) => (
+        <Fragment key={label}>
+          <span className="text-muted-foreground">{label}</span>
+          <span className="text-right tabular-nums">{value}</span>
+        </Fragment>
+      ))}
+    </div>
+  );
 }
 
 const REACH_TOAST_MS = 20_000;
@@ -259,13 +277,13 @@ export function useAgentChangeReach(agentId: string) {
       );
       let countsNow = result.counts;
       if (auto.state === "advanced") {
-        const { title, lines } = describeAutoAdvance(auto.report, auto.candidates);
+        const { lines } = describeAutoAdvance(auto.report, auto.candidates);
         const advanced = auto.report.counts?.advanced ?? 0;
         const legs = auto.legs;
         const announce = advanced > 0 ? toast.success : toast.error;
-        announce(title, {
+        announce(`Moved ${advanced}`, {
           duration: AUTO_ADVANCE_TOAST_MS,
-          description: `${lines.join(" · ")} — this organization has automatic green advances on (agent_impact.auto_advance_green). Put back undoes every pin this batch moved.`,
+          description: lines.join("\n"),
           action:
             advanced > 0
               ? {
@@ -300,24 +318,19 @@ export function useAgentChangeReach(agentId: string) {
         setReach(after);
         if (after.state === "reached") countsNow = after.counts;
       } else if (auto.state === "failed") {
-        toast.error(
-          `Automatic green advance failed: ${auto.why}`,
-          {
-            duration: AUTO_ADVANCE_TOAST_MS,
-            description: `${auto.candidates.length} pin${auto.candidates.length === 1 ? "" : "s"} qualified and none moved. Review them in the impact panel.`,
-          },
-        );
+        toast.error(`Auto-advance failed`, {
+          duration: AUTO_ADVANCE_TOAST_MS,
+          description: `${auto.candidates.length} qualified · ${auto.why}`,
+        });
       } else if (auto.state === "knob_unknown") {
         console.warn(
           `[agent-change-reach] agent_impact.auto_advance_green could not be read (${auto.why}); nothing was advanced automatically.`,
         );
       }
-      toast.info(auto.state === "advanced" ? describeReach(countsNow) : result.sentence, {
+      const facts = reachFactsOf(countsNow);
+      toast.info(`${facts.mandates} mandate${facts.mandates === 1 ? "" : "s"}`, {
         duration: REACH_TOAST_MS,
-        description:
-          auto.state === "advanced"
-            ? "The green pins above moved by themselves; the rest wait for you. Review the jobs, compare the versions, test it, and advance the others when you are ready."
-            : "Nothing moved. Review the jobs, compare the versions, test it, and advance the safe ones when you are ready.",
+        description: <ReachFactRows facts={facts} />,
         action: { label: "Review", onClick: () => openPanel(name) },
       });
       const autoOpen = await readPostEditAutoOpen();
@@ -331,20 +344,16 @@ export function useAgentChangeReach(agentId: string) {
         );
       }
     } else if (result.state === "failed") {
-      toast.error(
-        `Saved, but this change's reach is unknown: ${result.why}`,
-        {
-          duration: REACH_TOAST_MS,
-          description:
-            "The mandates this agent serves were not checked — nothing here says the change is safe.",
-        },
-      );
+      toast.error(`Reach unknown`, {
+        duration: REACH_TOAST_MS,
+        description: result.why,
+      });
     } else if (result.state === "none" && result.withheldTotal > 0) {
       toast.info(
-        `Saved. No job you can see pins this agent; ${result.withheldTotal} pin${result.withheldTotal === 1 ? "" : "s"} on it ${result.withheldTotal === 1 ? "is" : "are"} not yours to see.`,
+        `0 visible · ${result.withheldTotal} hidden`,
         {
           duration: REACH_TOAST_MS,
-          description: result.withheldSentences.join(" ") || undefined,
+          description: result.withheldSentences.join("\n") || undefined,
         },
       );
     }
@@ -353,59 +362,31 @@ export function useAgentChangeReach(agentId: string) {
 
   const badge =
     reach === null || reach.state === "none" ? null : reach.state === "reading" ? (
-      <span
-        className="inline-flex items-center gap-1 rounded bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
-        title="Checking which jobs this change reaches…"
-      >
-        <Loader2 className="h-3 w-3 animate-spin" /> reach
+      <span className="inline-flex h-6 w-6 items-center justify-center text-muted-foreground" title="Checking reach…">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
       </span>
     ) : reach.state === "failed" ? (
-      <span className="inline-flex items-center gap-0.5">
-        <Badge
-          variant="outline"
-          className="h-5 gap-1 border-rose-500/40 bg-rose-500/10 px-1.5 text-[10px] text-rose-700 dark:text-rose-400"
-          title={`This change's reach is unknown: ${reach.why}`}
-        >
-          <Radar className="h-3 w-3" /> reach unknown
-        </Badge>
-        <button
-          type="button"
-          onClick={() => setReach(null)}
-          className="rounded p-0.5 text-muted-foreground hover:bg-muted"
-          title="Dismiss"
-          aria-label="Dismiss the reach notice"
-        >
-          <X className="h-3 w-3" />
-        </button>
-      </span>
+      <button
+        type="button"
+        onClick={() => setReach(null)}
+        className="inline-flex h-6 w-6 items-center justify-center text-rose-600 dark:text-rose-400"
+        title={reach.why}
+        aria-label="Dismiss the reach notice"
+      >
+        <Radar className="h-3.5 w-3.5" />
+      </button>
     ) : (
-      <span className="inline-flex items-center gap-0.5">
-        <button
-          type="button"
-          onClick={() => openPanel(agentName)}
-          className="rounded focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          title={`${reach.sentence}. Open the impact panel — compare versions, test, advance the safe ones.`}
-          aria-label={reach.sentence}
-          data-testid="agent-change-reach-badge"
-        >
-          <Badge
-            variant="outline"
-            className={`h-5 gap-1 px-1.5 text-[10px] ${reachToneClassName(reach.counts)}`}
-          >
-            <Radar className="h-3 w-3" />
-            reaches {reach.counts.mandates}
-          </Badge>
-        </button>
-        <button
-          type="button"
-          onClick={() => setReach(null)}
-          className="rounded p-0.5 text-muted-foreground hover:bg-muted"
-          title="Dismiss"
-          aria-label="Dismiss the reach badge"
-        >
-          <X className="h-3 w-3" />
-        </button>
-      </span>
+      <button
+        type="button"
+        onClick={() => openPanel(agentName)}
+        className={`inline-flex h-6 items-center gap-0.5 ${reachToneClassName(reach.counts)}`}
+        title={reach.sentence}
+        aria-label={reach.sentence}
+        data-testid="agent-change-reach-badge"
+      >
+        <Radar className="h-3.5 w-3.5" />
+        <span className="text-[10px] font-medium tabular-nums">{reach.counts.mandates}</span>
+      </button>
     );
 
   // The mobile header is a fixed row of 44pt tap targets, so the chip above
@@ -433,7 +414,7 @@ export function useAgentChangeReach(agentId: string) {
         {reach.state === "reached" ? (
           <span
             aria-hidden="true"
-            className={`pointer-events-none absolute -right-0.5 -top-0.5 min-w-[1.1rem] rounded-full border px-1 text-center text-[10px] font-semibold leading-4 tabular-nums ${reachToneClassName(reach.counts)}`}
+            className={`pointer-events-none absolute -right-0.5 -top-0.5 text-[10px] font-semibold tabular-nums leading-none ${reachToneClassName(reach.counts)}`}
           >
             {reach.counts.mandates}
           </span>

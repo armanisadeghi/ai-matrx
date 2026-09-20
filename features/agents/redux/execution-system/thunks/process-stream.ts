@@ -137,6 +137,10 @@ import {
   addOptimisticUserMessage,
   type MessageRecord,
 } from "../messages/messages.slice";
+import {
+  hasDisplayableMessageContent,
+  refetchSingleMessage,
+} from "../message-crud/refetch-single-message.thunk";
 import { removeInboxItem } from "../inbox/inbox.slice";
 import {
   selectMessageCount,
@@ -215,6 +219,7 @@ import { selectHasUnsentResources } from "../instance-resources/instance-resourc
 import {
   clearSubmittedVariableResourcePolicies,
   resetUserVariableValues,
+  clearSubmittedFirstTurnValues,
 } from "../instance-variable-values/instance-variable-values.slice";
 import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -444,6 +449,17 @@ export async function processStream({
   // messageId. Single-reservation streams trivially collapse to one entry.
   const reservedAssistantTurns: Array<{ messageId: string; position: number }> =
     [];
+
+  // A user reservation is only an identity/position announcement. Unlike an
+  // assistant row, its server-authored content is never assembled from stream
+  // chunks. Some execution modes build that content on the server from the
+  // submitted variables and context, so the local optimistic row can be empty
+  // even though the durable message is complete. Refresh it once the server
+  // moves the reserved row forward rather than attempting to reconstruct the
+  // provider template from client-side machine context.
+  const reservedUserMessageIds = new Set<string>();
+  const persistedConversationIdByUserMessageId = new Map<string, string>();
+  const authoritativeUserMessageRefreshes: Promise<unknown>[] = [];
 
   let reservedUserRequestId: string | null = null;
 
@@ -1948,6 +1964,14 @@ export async function processStream({
               forceLocalConversationId,
             );
 
+            if (role === "user" && belongsToConversation) {
+              reservedUserMessageIds.add(d.record_id);
+              persistedConversationIdByUserMessageId.set(
+                d.record_id,
+                d.parent_refs.conversation_id ?? conversationId,
+              );
+            }
+
             if (role === "assistant") {
               // ── Agent handoff rebind / turn tracking ──────────────────
               // A handoff turn streams the specialist's answer under the
@@ -2321,6 +2345,39 @@ export async function processStream({
               patch,
             }),
           );
+          // `record_reserved` intentionally carries no message body. A user
+          // body may be assembled solely by the server, so wait for its
+          // terminal update before fetching it — ONLY when the client never
+          // had a body. An optimistic send already froze what the person
+          // submitted; refetching that row into the transcript rewrites
+          // history when the reply lands (agent template / user_content
+          // projection). `active` is not a durable-read barrier.
+          if (
+            d.status === "completed" &&
+            reservedUserMessageIds.delete(d.record_id)
+          ) {
+            const existing = getState().messages.byConversationId[
+              conversationId
+            ]?.byId[d.record_id];
+            const alreadyFrozen = hasDisplayableMessageContent(
+              existing?.userContent ?? existing?.content,
+            );
+            if (!alreadyFrozen) {
+              authoritativeUserMessageRefreshes.push(
+                Promise.resolve(
+                  dispatch(
+                    refetchSingleMessage({
+                      conversationId,
+                      messageId: d.record_id,
+                      persistedConversationId:
+                        persistedConversationIdByUserMessageId.get(d.record_id),
+                      waitForReadable: true,
+                    }),
+                  ),
+                ),
+              );
+            }
+          }
         } else if (d.table === "user_request") {
           dispatch(
             patchUserRequest({
@@ -2889,9 +2946,37 @@ export async function processStream({
     throw streamFailure;
   }
 
+  // The first-turn variable snapshot is frozen optimistically so the bubble
+  // survives composer cleanup. If the request fails before the server even
+  // reserves that first user row, it was never accepted; release the snapshot
+  // so an edited retry freezes its own submitted values instead of inheriting
+  // a failed draft. Later-turn failures must retain the historical snapshot.
+  if (
+    streamFailure !== null &&
+    persistedConversationIdByUserMessageId.size === 0
+  ) {
+    const entry = getState().messages.byConversationId[conversationId];
+    const records = (entry?.orderedIds ?? []).map((id) => entry?.byId[id]);
+    const onlyOptimisticFirstAttempt = records.every(
+      (record) =>
+        !record ||
+        (record.source === "client" && record._clientStatus === "pending"),
+    );
+    if (onlyOptimisticFirstAttempt) {
+      dispatch(clearSubmittedFirstTurnValues(conversationId));
+    }
+  }
+
   // Final flush of any trailing buffers after the loop ends
   dispatchBatch();
   blockAccumulator.finalize(dispatch);
+
+  // The terminal user-message refresh is part of this stream's transcript
+  // commit, not background best effort. Its bounded retry covers a server
+  // commit/read race while still allowing a missing row to stay honestly empty.
+  if (authoritativeUserMessageRefreshes.length > 0) {
+    await Promise.allSettled(authoritativeUserMessageRefreshes);
+  }
 
   // Unconditional: the local isInTextRun/isInReasoningRun flags can be stale
   // (a passive event resets them while the slice keeps the run open). Both

@@ -110,7 +110,7 @@ export function useAgentBuilderSurfaceScope(
         string,
         unknown
       >,
-      agent_json: definition ? JSON.stringify(definition) : undefined,
+      agent_json: definition ?? undefined,
 
       // ── Capabilities ───────────────────────────────────────────────────
       agent_tools: selectAgentTools(state, agentId) ?? undefined,
@@ -126,7 +126,8 @@ export function useAgentBuilderSurfaceScope(
       >,
 
       // ── Inputs ─────────────────────────────────────────────────────────
-      agent_context_policies: selectAgentContextPolicies(state, agentId) ?? undefined,
+      agent_context_policies:
+        selectAgentContextPolicies(state, agentId) ?? undefined,
       agent_variable_definitions:
         selectAgentVariableDefinitions(state, agentId) ?? undefined,
 

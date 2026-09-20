@@ -10,34 +10,20 @@
  */
 
 import { useState } from "react";
-import {
-  Activity,
-  ChevronDown,
-  Eraser,
-  EyeOff,
-  Library,
-  Loader2,
-  Play,
-  Plus,
-  RotateCcw,
-  Save,
-} from "lucide-react";
+import { Loader2, Play } from "lucide-react";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import HeaderActions from "@/features/shell/components/header/variants/shared/HeaderActions";
+import type { HeaderAction } from "@/features/shell/components/header/variants/types";
+import { BattleModeNav } from "@/features/agent-comparison/shared/ModePicker";
 import { recordToast, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { ComparisonSetLoaderDialog } from "@/features/agent-comparison/components/ComparisonSetLoaderDialog";
-import { BlindControls } from "@/features/agent-comparison/shared/BlindControls";
 import { useBlindShuffle } from "@/features/agent-comparison/shared/useBlindShuffle";
 import { resetBlind } from "@/features/agent-comparison/redux/battleSlice";
+import { selectBlindActive } from "@/features/agent-comparison/redux/selectors";
 import { setModelColumnCollapsed, setModelColumns } from "../redux/slice";
 import {
   addColumnToModelBattle,
@@ -69,6 +55,7 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
   const lockedAgentId = useAppSelector(selectLockedAgentId);
   const activeSetId = useAppSelector(selectActiveModelSetId);
   const activeSetName = useAppSelector(selectActiveModelSetName);
+  const blindActive = useAppSelector(selectBlindActive);
   const isSubmittingAll = useAppSelector(selectIsSubmittingAllModel);
   const canSubmit = useAppSelector(selectCanSubmitModel);
   const columns = useAppSelector(selectModelColumns);
@@ -84,7 +71,7 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
 
   const handleSubmitAll = async () => {
     if (!lockedAgentId) {
-      toast.error("Pick an agent in the Locked input section first.");
+      toast.error("Choose an agent in the shared request first.");
       return;
     }
     if (columns.length === 0) {
@@ -124,9 +111,9 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
         {
           type: "agent_comparison_battle",
           id: activeSetId,
-          title: activeSetName,
+          title: blindActive ? "Model comparison" : activeSetName,
         },
-        `Saved "${activeSetName}"`,
+        blindActive ? "Comparison saved" : `Saved "${activeSetName}"`,
       );
     } catch (err) {
       toast.error(`Couldn't save: ${err instanceof Error ? err.message : err}`);
@@ -138,7 +125,7 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
     try {
       await dispatch(saveModelBattleAs({ name })).unwrap();
       setSaveAsOpen(false);
-      toast.success(`Saved as "${name}"`);
+      toast.success(blindActive ? "Comparison saved" : `Saved as "${name}"`);
     } catch (err) {
       toast.error(`Couldn't save: ${err instanceof Error ? err.message : err}`);
     } finally {
@@ -201,155 +188,112 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
     }
   };
 
+  const actions: HeaderAction[] = [
+    {
+      icon: "Library",
+      label: "Open comparison",
+      onPress: () => setLoaderOpen(true),
+    },
+    {
+      icon: "Activity",
+      label: runsWindowOpen ? "Close runs" : "Compare runs",
+      onPress: onToggleRunsWindow,
+    },
+    ...(lockedAgentId
+      ? [
+          {
+            icon: "Plus",
+            label: "Add model",
+            onPress: () => {
+              void dispatch(addColumnToModelBattle(undefined));
+            },
+          },
+        ]
+      : []),
+    ...(lockedAgentId && columns.length > 0
+      ? [
+          {
+            icon: "Save",
+            label: activeSetId ? "Save comparison" : "Save comparison as…",
+            onPress: () => {
+              void handleSave();
+            },
+          },
+          ...(activeSetId
+            ? [
+                {
+                  icon: "Copy",
+                  label: "Save a copy…",
+                  onPress: () => setSaveAsOpen(true),
+                },
+              ]
+            : []),
+          {
+            icon: "RotateCcw",
+            label: "Clear responses only",
+            onPress: () => setResetKeepInputsConfirm(true),
+          },
+          {
+            icon: "RotateCcw",
+            label: "Reset model variants",
+            onPress: () => setResetConfirm(true),
+          },
+        ]
+      : []),
+    ...(collapsedCount > 0
+      ? [
+          {
+            icon: "Expand",
+            label: `Show ${collapsedCount} hidden models`,
+            onPress: handleExpandAll,
+          },
+        ]
+      : []),
+    ...(lockedAgentId || columns.length > 0
+      ? [
+          {
+            icon: "Eraser",
+            label: "Clear comparison",
+            destructive: true,
+            onPress: () => setClearConfirm(true),
+          },
+        ]
+      : []),
+  ];
+
   return (
     <>
-      <div className="flex items-center gap-2 px-2 py-1.5 border-b border-border bg-card shrink-0">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Model battle
-          </span>
-          {activeSetName && (
-            <span className="text-xs text-foreground truncate max-w-[200px]">
-              · {activeSetName}
-            </span>
-          )}
-          <span className="text-[11px] text-muted-foreground/70 shrink-0">
-            ({columns.length} model{columns.length === 1 ? "" : "s"})
-          </span>
-          {collapsedCount > 0 && (
-            <button
-              type="button"
-              onClick={handleExpandAll}
-              title={`Click to expand all ${collapsedCount} collapsed model${
-                collapsedCount === 1 ? "" : "s"
-              }`}
-              className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 text-[10px] font-semibold uppercase tracking-wider hover:bg-amber-500/25 transition-colors shrink-0"
-            >
-              <EyeOff className="w-3 h-3" />
-              {collapsedCount} hidden
-              <span className="text-[9px] font-normal opacity-70 ml-0.5">
-                · click to show
-              </span>
-            </button>
-          )}
-        </div>
-
-        <Button
-          size="sm"
-          variant="default"
-          onClick={() => dispatch(addColumnToModelBattle(undefined))}
-          className="h-7 ml-1"
-          disabled={!lockedAgentId}
-          title={
-            lockedAgentId
-              ? "Add a new model variant"
-              : "Pick an agent first, then add models"
-          }
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Add model
-        </Button>
-
-        <div className="flex-1" />
-
-        <Button
-          size="sm"
-          variant={runsWindowOpen ? "default" : "outline"}
-          onClick={onToggleRunsWindow}
-          className="h-7"
-        >
-          <Activity className="w-3.5 h-3.5" />
-          Runs
-        </Button>
-
-        <div className="w-px h-5 bg-border mx-1" />
-
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setLoaderOpen(true)}
-          className="h-7"
-        >
-          <Library className="w-3.5 h-3.5" />
-          Open
-        </Button>
-
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handleSave}
-          className="h-7"
-          disabled={columns.length === 0 || !lockedAgentId}
-        >
-          <Save className="w-3.5 h-3.5" />
-          {activeSetId ? "Save" : "Save as..."}
-        </Button>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+      <RouteHeader
+        center={<BattleModeNav />}
+        right={
+          <div className="flex items-center">
+            <HeaderActions
+              actions={actions}
+              maxInline={1}
+              sheetTitle={
+                blindActive
+                  ? "Model comparison"
+                  : (activeSetName ?? "Model comparison")
+              }
+            />
             <Button
               size="sm"
-              variant="outline"
-              className="h-7"
-              disabled={columns.length === 0 && !lockedAgentId}
+              onClick={handleSubmitAll}
+              disabled={isSubmittingAll || !canSubmit}
+              aria-label="Submit all models"
+              title="Run the shared request against every model"
+              className="h-8 max-sm:h-11 max-sm:w-11 max-sm:p-0 shrink-0"
             >
-              <Eraser className="w-3.5 h-3.5" />
-              Clear
-              <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
+              {isSubmittingAll ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Play className="w-3.5 h-3.5" />
+              )}
+              <span className="max-sm:sr-only">Submit all</span>
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuItem onClick={() => setResetKeepInputsConfirm(true)}>
-              <RotateCcw className="w-3.5 h-3.5" />
-              <div className="flex flex-col">
-                <span>Clear responses only</span>
-                <span className="text-[10px] text-muted-foreground">
-                  Wipe responses; keep per-column models + locked input.
-                </span>
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setResetConfirm(true)}>
-              <RotateCcw className="w-3.5 h-3.5" />
-              <div className="flex flex-col">
-                <span>Reset variants</span>
-                <span className="text-[10px] text-muted-foreground">
-                  Drop per-column model picks + responses. Keep agent + inputs.
-                </span>
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setClearConfirm(true)}>
-              <Eraser className="w-3.5 h-3.5" />
-              <div className="flex flex-col">
-                <span>Clear all</span>
-                <span className="text-[10px] text-muted-foreground">
-                  Empty the page; reset the locked agent + inputs too.
-                </span>
-              </div>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <div className="w-px h-5 bg-border mx-1" />
-
-        <BlindControls />
-
-        <Button
-          size="sm"
-          variant="default"
-          onClick={handleSubmitAll}
-          disabled={isSubmittingAll || !canSubmit}
-          className="h-7"
-        >
-          {isSubmittingAll ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Play className="w-3.5 h-3.5" />
-          )}
-          Submit all
-        </Button>
-      </div>
+          </div>
+        }
+      />
 
       <TextInputDialog
         open={saveAsOpen}

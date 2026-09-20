@@ -1212,6 +1212,15 @@ interface TemplateRow {
     token_count: number;
 }
 
+/**
+ * One row of `custom.applicable_fields`, which answers `custom.record` rows of
+ * data_class `field`. Only the two keys this screen reads are named.
+ */
+interface FieldRow {
+    id: string;
+    data: { key?: string; label?: string; type?: string; format?: string } | null;
+}
+
 /** What `custom.doc_renders` answers — frozen bytes and the hash a seal is over. */
 interface RenderRow {
     render_id: string;
@@ -1234,6 +1243,49 @@ interface SubscriptionRow {
     i_may_mute: boolean;
     saved_view_id: string | null;
     recipient_user_id: string | null;
+}
+
+/**
+ * SECTION 11b — PRODUCTS row 16, *"Have the client sign this before we start."*
+ *
+ * A signature is a Value on the record with its own audit trail, never a detour
+ * into another vendor. What this screen adds to the six document acts above is
+ * the SEVENTH: asking somebody outside the organization to sign one of those
+ * frozen documents, and watching for their answer.
+ */
+interface SignRequestRow {
+    request_id: string;
+    render_id: string;
+    record_id: string;
+    field_key: string;
+    document_title: string | null;
+    signer_name: string;
+    signer_email: string;
+    signer_has_account: boolean;
+    state: "sent" | "viewed" | "signed" | "declined" | "invalidated" | "expired";
+    /** The store's own sentence. This screen shows it and writes none of its own. */
+    sentence: string;
+    document_version: number;
+    document_hash: string;
+    sent_at: string;
+    expires_at: string;
+    viewed_at: string | null;
+    signed_at: string | null;
+    declined_at: string | null;
+    invalidated_at: string | null;
+    signature_id: string | null;
+    signature_mark: string | null;
+    reminder_count: number;
+}
+
+/** What `custom.sign_request_create` hands back — the link's secret, exactly once. */
+interface SignRequestMade {
+    request_id: string;
+    path: string;
+    signer_email: string;
+    signer_has_account: boolean;
+    document_version: number;
+    expires_at: string;
 }
 
 // ─────────────────────────────────────────────────────────────── documents ──
@@ -1269,6 +1321,14 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
     const [refusal, setRefusal] = useState<string | null>(null);
     const [draftName, setDraftName] = useState("");
     const [draftBody, setDraftBody] = useState("");
+    // PRODUCTS row 16 — asking somebody to sign one of these frozen documents.
+    const [signRequests, setSignRequests] = useState<SignRequestRow[] | null>(null);
+    const [signatureFields, setSignatureFields] = useState<FieldRow[]>([]);
+    const [askingOn, setAskingOn] = useState<string | null>(null);
+    const [askEmail, setAskEmail] = useState("");
+    const [askName, setAskName] = useState("");
+    const [askField, setAskField] = useState<string | null>(null);
+    const [madeLink, setMadeLink] = useState<SignRequestMade | null>(null);
 
     const chosenRecord = recordId ?? rows[0]?.id ?? null;
     const chosenTemplate = templates?.find((t) => t.template_id === templateId) ?? templates?.[0] ?? null;
@@ -1306,12 +1366,58 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
         }
     }, [organizationId, chosenRecord]);
 
+    const loadSignRequests = useCallback(async () => {
+        if (!chosenRecord) {
+            setSignRequests([]);
+            return;
+        }
+        try {
+            setSignRequests(
+                await door<SignRequestRow[]>("sign_requests", {
+                    p_organization_id: organizationId,
+                    p_record_id: chosenRecord,
+                }),
+            );
+        } catch (error) {
+            setSignRequests([]);
+            setProblem(error instanceof Error ? error.message : String(error));
+        }
+    }, [organizationId, chosenRecord]);
+
+    // WHICH COLUMN THE SIGNATURE IS. VAL-10 makes a signature a Value, so it
+    // belongs to a Field — a text Field whose format is `signature`. The store
+    // answers which ones those are; this screen never guesses.
+    const loadSignatureFields = useCallback(async () => {
+        try {
+            const fields = await door<FieldRow[]>("applicable_fields", {
+                p_organization_id: organizationId,
+                p_table_id: table.id,
+                p_record_type: null,
+            });
+            setSignatureFields(
+                fields.filter(
+                    (field) => field.data?.type === "text" && field.data?.format === "signature",
+                ),
+            );
+        } catch {
+            // Not a refusal worth a banner: the ask control below is ABSENT when
+            // there is no signature column, and says why.
+            setSignatureFields([]);
+        }
+    }, [organizationId, table.id]);
+
     useEffect(() => {
         void loadTemplates();
     }, [loadTemplates]);
     useEffect(() => {
         void loadRenders();
     }, [loadRenders]);
+    useEffect(() => {
+        void loadSignRequests();
+    }, [loadSignRequests]);
+    useEffect(() => {
+        void loadSignatureFields();
+    }, [loadSignatureFields]);
 
     async function act(what: () => Promise<void>) {
         setBusy(true);
@@ -1553,9 +1659,242 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                                         >
                                             {openRender === render.render_id ? "Close it" : "Open it"}
                                         </Button>
+                                        {/* PRODUCTS row 16. ABSENT, NEVER DEAD: with no
+                                            signature column on this table there is no
+                                            button at all, and the line under the list
+                                            says what to declare. */}
+                                        {signatureFields.length > 0 ? (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-7 shrink-0 px-2 text-xs"
+                                                disabled={busy}
+                                                onClick={() => {
+                                                    setMadeLink(null);
+                                                    setRefusal(null);
+                                                    setAskField(
+                                                        askField ??
+                                                            signatureFields[0]?.data?.key ??
+                                                            null,
+                                                    );
+                                                    setAskingOn((was) =>
+                                                        was === render.render_id
+                                                            ? null
+                                                            : render.render_id,
+                                                    );
+                                                }}
+                                            >
+                                                {askingOn === render.render_id
+                                                    ? "Never mind"
+                                                    : "Request signature"}
+                                            </Button>
+                                        ) : null}
                                     </li>
                                 ))}
                             </ul>
+                            {signatureFields.length === 0 ? (
+                                <p className="text-xs text-muted-foreground">
+                                    To ask somebody to sign one of these, {tableName(table)} needs a
+                                    signature column — a text column whose format is{" "}
+                                    <code className="rounded bg-muted px-1">signature</code>. Declare one
+                                    in section 1 and the button appears here.
+                                </p>
+                            ) : null}
+
+                            {/* ── ask somebody to sign this exact version ──────────── */}
+                            {askingOn ? (
+                                <div className="space-y-2 rounded-md border border-border p-3">
+                                    <p className="text-xs text-muted-foreground">
+                                        They get an unguessable link that works for fourteen days and is
+                                        over THIS version of the document. If this record changes before
+                                        they sign, the link stops working and says so — nobody signs a
+                                        document the record no longer supports.
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        <input
+                                            value={askName}
+                                            onChange={(event) => setAskName(event.target.value)}
+                                            placeholder="Who is signing — their name"
+                                            className="min-w-48 flex-1 rounded border border-border bg-background px-2 py-1 text-sm text-foreground"
+                                        />
+                                        <input
+                                            value={askEmail}
+                                            onChange={(event) => setAskEmail(event.target.value)}
+                                            placeholder="Their email address"
+                                            className="min-w-48 flex-1 rounded border border-border bg-background px-2 py-1 text-sm text-foreground"
+                                        />
+                                        {signatureFields.length > 1 ? (
+                                            <select
+                                                value={askField ?? ""}
+                                                onChange={(event) => setAskField(event.target.value)}
+                                                className="rounded border border-border bg-background px-2 py-1 text-sm text-foreground"
+                                            >
+                                                {signatureFields.map((field) => (
+                                                    <option
+                                                        key={field.id}
+                                                        value={field.data?.key ?? ""}
+                                                    >
+                                                        {field.data?.label ?? field.data?.key}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : null}
+                                        <Button
+                                            size="sm"
+                                            disabled={
+                                                busy ||
+                                                askEmail.trim() === "" ||
+                                                askName.trim() === ""
+                                            }
+                                            onClick={() =>
+                                                void act(async () => {
+                                                    const made = await door<SignRequestMade>(
+                                                        "sign_request_create",
+                                                        {
+                                                            p_organization_id: organizationId,
+                                                            p_render_id: askingOn,
+                                                            p_field_key:
+                                                                askField ??
+                                                                signatureFields[0]?.data?.key ??
+                                                                null,
+                                                            p_signer_email: askEmail.trim(),
+                                                            p_signer_name: askName.trim(),
+                                                            p_expires_in: "14 days",
+                                                        },
+                                                    );
+                                                    setMadeLink(made);
+                                                    setAskingOn(null);
+                                                    setAskEmail("");
+                                                    setAskName("");
+                                                    await loadSignRequests();
+                                                })
+                                            }
+                                        >
+                                            Send it
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : null}
+
+                            {/* THE LINK IS SHOWN ONCE AND ONLY ONCE, because only its
+                                SHA-256 is kept. Saying so is the difference between a
+                                screen that is honest and one the person later blames. */}
+                            {madeLink ? (
+                                <div className="space-y-1 rounded-md border border-border p-3">
+                                    <p className="text-sm text-foreground">
+                                        Send this link to {madeLink.signer_email}. It is shown once —
+                                        the store keeps only a fingerprint of it, so nobody here can
+                                        read it back, and nobody who reads this database can sign.
+                                    </p>
+                                    <code className="block break-all rounded bg-muted px-2 py-1 text-xs">
+                                        {madeLink.path}
+                                    </code>
+                                    <p className="text-xs text-muted-foreground">
+                                        Works until {new Date(madeLink.expires_at).toLocaleString()}.
+                                        {madeLink.signer_has_account
+                                            ? " They have an account here, so reminders can be sent in the app."
+                                            : " They have no account here, so reminders are yours to send."}
+                                    </p>
+                                </div>
+                            ) : null}
+
+                            {/* ── what was asked, and what came back ───────────────── */}
+                            {signRequests && signRequests.length > 0 ? (
+                                <ul className="divide-y divide-border rounded-md border border-border">
+                                    {signRequests.map((ask) => (
+                                        <li
+                                            key={ask.request_id}
+                                            className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm"
+                                        >
+                                            <span className="min-w-0 flex-1">
+                                                <span className="text-foreground">
+                                                    {ask.signer_name}
+                                                </span>{" "}
+                                                <span className="text-xs text-muted-foreground">
+                                                    {ask.signer_email} · version{" "}
+                                                    {ask.document_version} ·{" "}
+                                                    {ask.document_hash.slice(0, 12)}
+                                                </span>
+                                                {/* THE STORE'S SENTENCE, VERBATIM. */}
+                                                <span className="block text-xs text-muted-foreground">
+                                                    {ask.sentence}
+                                                    {ask.reminder_count > 0
+                                                        ? ask.reminder_count === 1
+                                                            ? " Reminded once."
+                                                            : ` Reminded ${ask.reminder_count} times.`
+                                                        : ""}
+                                                </span>
+                                            </span>
+                                            {/* Only a live request can be nudged or
+                                                withdrawn; an answered one carries no
+                                                control rather than a dead one. */}
+                                            {ask.state === "sent" || ask.state === "viewed" ? (
+                                                <>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-7 shrink-0 px-2 text-xs"
+                                                        disabled={busy}
+                                                        onClick={() =>
+                                                            void act(async () => {
+                                                                const answer = await door<{
+                                                                    reminded: boolean;
+                                                                    message: string;
+                                                                }>("sign_request_remind", {
+                                                                    p_organization_id: organizationId,
+                                                                    p_request_id: ask.request_id,
+                                                                });
+                                                                if (!answer.reminded) {
+                                                                    setRefusal(answer.message);
+                                                                }
+                                                                await loadSignRequests();
+                                                            })
+                                                        }
+                                                    >
+                                                        Remind them
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-7 shrink-0 px-2 text-xs"
+                                                        disabled={busy}
+                                                        onClick={() =>
+                                                            void act(async () => {
+                                                                await door("sign_request_cancel", {
+                                                                    p_organization_id: organizationId,
+                                                                    p_request_id: ask.request_id,
+                                                                    p_reason: null,
+                                                                });
+                                                                await loadSignRequests();
+                                                            })
+                                                        }
+                                                    >
+                                                        Withdraw it
+                                                    </Button>
+                                                </>
+                                            ) : null}
+                                            {ask.state === "signed" ? (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-7 shrink-0 px-2 text-xs"
+                                                    onClick={() =>
+                                                        setOpenRender((was) =>
+                                                            was === ask.render_id
+                                                                ? null
+                                                                : ask.render_id,
+                                                        )
+                                                    }
+                                                >
+                                                    {openRender === ask.render_id
+                                                        ? "Close the signed document"
+                                                        : "Open the signed document"}
+                                                </Button>
+                                            ) : null}
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : null}
                             {openRender ? (
                                 <div className="rounded-md border border-border p-3">
                                     {/* THE PLATFORM'S ONE RICH DOCUMENT. Print and
@@ -1575,15 +1914,22 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
             </TryIt>
             <NotBuiltYet
                 today={
-                    "All six acts above are real and go through the store’s own doors: the templates of this " +
-                    "table, writing and changing one, retiring one, rendering this record into a document, the " +
-                    "documents already made from it, and opening one with print and save-as-PDF on it."
+                    "All seven acts above are real and go through the store’s own doors: the templates of " +
+                    "this table, writing and changing one, retiring one, rendering this record into a " +
+                    "document, the documents already made from it, opening one with print and save-as-PDF " +
+                    "on it, and asking somebody outside your organization to sign one — they get an " +
+                    "unguessable link that expires, they type or draw their name, and the signature lands " +
+                    "as a value on this record with who, when, from where, on what browser and the hash of " +
+                    "the exact document version they saw. Change the record after asking and the link stops " +
+                    "working and says why."
                 }
                 waitingFor={
                     "three things, none of which stops you using it. A token is written by hand as the " +
                     "column’s id — the agent writing the template from the table’s own fields is the next " +
                     "step. There is no letterhead, so a document is the wording you typed and nothing around " +
-                    "it. And signing is a live door but has no control on this page yet."
+                    "it. And a reminder reaches a signer who has an account here through the notification " +
+                    "bell; a signer with no account is told so in words, and sending them the link again is " +
+                    "yours to do, because there is no outbound email lane yet."
                 }
             />
         </div>

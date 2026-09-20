@@ -1,3 +1,4 @@
+-- chair-step: re-installing the three billing substitutions (the meter billing a personal workspace, the tier resolvers reading a default organization) is the abort step for the 2026-09-19 ruling, not a pending half of the campaign; it overwrites live billing function bodies and runs only during an incident, named, with the chair awake
 -- w1_org_billing_is_organization_keyed.inverse.sql
 --
 -- Restores the three billing substitutions F2 removed.

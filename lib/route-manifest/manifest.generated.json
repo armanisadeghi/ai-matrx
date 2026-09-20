@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1200,
+  "routeCount": 1217,
   "routes": [
     {
       "pattern": "/",
@@ -27,6 +27,16 @@
       "pattern": "/_flashcard/[category]/[id]",
       "status": "live",
       "source": "app/(transitional)/_flashcard/[category]/[id]/page.tsx"
+    },
+    {
+      "pattern": "/acquisition",
+      "status": "live",
+      "source": "app/(core)/acquisition/page.tsx"
+    },
+    {
+      "pattern": "/acquisition/blocks",
+      "status": "live",
+      "source": "app/(core)/acquisition/blocks/page.tsx"
     },
     {
       "pattern": "/administration",
@@ -657,6 +667,11 @@
       "pattern": "/administration/database/sql-queries",
       "status": "live",
       "source": "app/(admin)/administration/database/sql-queries/page.tsx"
+    },
+    {
+      "pattern": "/administration/database/unified-data-ramp",
+      "status": "live",
+      "source": "app/(admin)/administration/database/unified-data-ramp/page.tsx"
     },
     {
       "pattern": "/administration/database/workbench",
@@ -1389,6 +1404,11 @@
       "source": "app/(core)/agents/battle/page.tsx"
     },
     {
+      "pattern": "/agents/battle/conversation",
+      "status": "live",
+      "source": "app/(core)/agents/battle/conversation/page.tsx"
+    },
+    {
       "pattern": "/agents/battle/model",
       "status": "live",
       "source": "app/(core)/agents/battle/model/page.tsx"
@@ -1542,6 +1562,11 @@
       "pattern": "/appointment-reminder",
       "status": "live",
       "source": "app/(public)/appointment-reminder/page.tsx"
+    },
+    {
+      "pattern": "/approvals",
+      "status": "live",
+      "source": "app/(core)/approvals/page.tsx"
     },
     {
       "pattern": "/artifacts",
@@ -1834,6 +1859,11 @@
       "source": "app/(core)/commerce/triage/page.tsx"
     },
     {
+      "pattern": "/connect-computer",
+      "status": "live",
+      "source": "app/(core)/connect-computer/page.tsx"
+    },
+    {
       "pattern": "/connected-sources",
       "status": "live",
       "source": "app/(core)/connected-sources/page.tsx"
@@ -1929,6 +1959,21 @@
       "source": "app/(core)/data/page.tsx"
     },
     {
+      "pattern": "/data-v2",
+      "status": "live",
+      "source": "app/(core)/data-v2/page.tsx"
+    },
+    {
+      "pattern": "/data-v2/[tableId]",
+      "status": "live",
+      "source": "app/(core)/data-v2/[tableId]/page.tsx"
+    },
+    {
+      "pattern": "/data-v2/try-everything",
+      "status": "live",
+      "source": "app/(core)/data-v2/try-everything/page.tsx"
+    },
+    {
       "pattern": "/data/[id]",
       "status": "live",
       "source": "app/(core)/data/[id]/page.tsx"
@@ -1937,6 +1982,21 @@
       "pattern": "/data/create",
       "status": "live",
       "source": "app/(core)/data/create/page.tsx"
+    },
+    {
+      "pattern": "/decisions",
+      "status": "live",
+      "source": "app/(core)/decisions/page.tsx"
+    },
+    {
+      "pattern": "/detail",
+      "status": "live",
+      "source": "app/(core)/detail/page.tsx"
+    },
+    {
+      "pattern": "/detail/[type]/[id]",
+      "status": "live",
+      "source": "app/(core)/detail/[type]/[id]/page.tsx"
     },
     {
       "pattern": "/developers/oauth",
@@ -2457,6 +2517,11 @@
       "pattern": "/exports/[libraryId]",
       "status": "live",
       "source": "app/(core)/exports/[libraryId]/page.tsx"
+    },
+    {
+      "pattern": "/f/[formId]",
+      "status": "live",
+      "source": "app/(link)/f/[formId]/page.tsx"
     },
     {
       "pattern": "/features",
@@ -4381,6 +4446,11 @@
       "source": "app/(core)/marketing/topical-maps/[mapId]/page.tsx"
     },
     {
+      "pattern": "/marketing/topical-maps/start",
+      "status": "live",
+      "source": "app/(core)/marketing/topical-maps/start/page.tsx"
+    },
+    {
       "pattern": "/marketing/topical-maps/topics/[topicId]",
       "status": "live",
       "source": "app/(core)/marketing/topical-maps/topics/[topicId]/page.tsx"
@@ -4579,6 +4649,11 @@
       "pattern": "/notes/[id]/diff",
       "status": "live",
       "source": "app/(core)/notes/[id]/diff/page.tsx"
+    },
+    {
+      "pattern": "/notifications",
+      "status": "live",
+      "source": "app/(core)/notifications/page.tsx"
     },
     {
       "pattern": "/oauth/callback/[app]",
@@ -4979,6 +5054,16 @@
       "pattern": "/portal/[orgId]",
       "status": "live",
       "source": "app/(portal)/portal/[orgId]/page.tsx"
+    },
+    {
+      "pattern": "/portal/c/[slug]",
+      "status": "live",
+      "source": "app/(portal)/portal/c/[slug]/page.tsx"
+    },
+    {
+      "pattern": "/portal/c/[slug]/r/[recordId]",
+      "status": "live",
+      "source": "app/(portal)/portal/c/[slug]/r/[recordId]/page.tsx"
     },
     {
       "pattern": "/pricing",

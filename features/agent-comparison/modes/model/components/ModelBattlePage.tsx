@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/resizable";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SharedRunsWindow } from "@/features/agent-comparison/components/SharedRunsWindow";
-import { ModePicker } from "@/features/agent-comparison/shared/ModePicker";
 import { reorderModelColumns, setModelColumnCollapsed } from "../redux/slice";
 import {
   selectLockedAgentId,
@@ -36,6 +35,7 @@ import { addColumnToModelBattle } from "../redux/thunks";
 import { LockedInputSection } from "./LockedInputSection";
 import { ModelColumn } from "./ModelColumn";
 import { ModelToolbar } from "./ModelToolbar";
+import { ModelBattleSurfaceRuntime } from "./ModelBattleSurfaceRuntime";
 import type { ModelColumn as ModelColumnType } from "../types";
 
 const RUNS_WINDOW_ID = "agent-comparison-model-runs";
@@ -62,49 +62,62 @@ export function ModelBattlePage() {
   };
 
   return (
-    <div
-      className="h-full flex flex-col overflow-hidden"
-      style={{ paddingTop: "var(--shell-header-h)" }}
-    >
-      <ModePicker />
-      <ModelToolbar
-        runsWindowOpen={runsWindowOpen}
-        onToggleRunsWindow={() => setRunsWindowOpen((v) => !v)}
-      />
+    <ModelBattleSurfaceRuntime>
+      <div
+        className="matrx-touch-targets h-full flex flex-col overflow-hidden"
+        style={{ paddingTop: "var(--shell-header-h)" }}
+      >
+        <ModelToolbar
+          runsWindowOpen={runsWindowOpen}
+          onToggleRunsWindow={() => setRunsWindowOpen((v) => !v)}
+        />
 
-      <LockedInputSection />
+        <LockedInputSection />
 
-      <div className="flex-1 min-h-0 flex">
-        {columns.length === 0 ? (
-          <EmptyState
-            agentReady={!!lockedAgentId}
-            onAdd={() => dispatch(addColumnToModelBattle(undefined))}
+        <div
+          data-surface-value="model_outcomes"
+          aria-label="Model outcomes"
+          className="flex-1 min-h-0 flex overflow-x-auto"
+        >
+          {columns.length === 0 ? (
+            <EmptyState
+              agentReady={!!lockedAgentId}
+              onAdd={() => dispatch(addColumnToModelBattle(undefined))}
+            />
+          ) : (
+            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+              <SortableContext
+                items={columnIds}
+                strategy={horizontalListSortingStrategy}
+              >
+                <div
+                  className="flex-1 min-w-0"
+                  style={{
+                    minWidth: columns.reduce(
+                      (width, column) => width + (column.collapsed ? 44 : 280),
+                      0,
+                    ),
+                  }}
+                >
+                  <ColumnGroup columns={columns} />
+                </div>
+              </SortableContext>
+            </DndContext>
+          )}
+          <AddModelTile
+            disabled={!lockedAgentId}
+            onClick={() => dispatch(addColumnToModelBattle(undefined))}
           />
-        ) : (
-          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-            <SortableContext
-              items={columnIds}
-              strategy={horizontalListSortingStrategy}
-            >
-              <div className="flex-1 min-w-0">
-                <ColumnGroup columns={columns} />
-              </div>
-            </SortableContext>
-          </DndContext>
-        )}
-        <AddModelTile
-          disabled={!lockedAgentId}
-          onClick={() => dispatch(addColumnToModelBattle(undefined))}
-        />
-      </div>
+        </div>
 
-      {runsWindowOpen && (
-        <SharedRunsWindow
-          id={RUNS_WINDOW_ID}
-          onClose={() => setRunsWindowOpen(false)}
-        />
-      )}
-    </div>
+        {runsWindowOpen && (
+          <SharedRunsWindow
+            id={RUNS_WINDOW_ID}
+            onClose={() => setRunsWindowOpen(false)}
+          />
+        )}
+      </div>
+    </ModelBattleSurfaceRuntime>
   );
 }
 
@@ -169,7 +182,7 @@ function ColumnSegment({
         id={column.columnId}
         panelRef={panelRef}
         defaultSize={defaultSize}
-        minSize="8%"
+        minSize="240px"
         collapsible
         collapsedSize="44px"
         style={{
@@ -202,8 +215,8 @@ function EmptyState({
         </div>
         <p className="text-sm text-muted-foreground">
           {agentReady
-            ? "Each variant runs the SAME locked input against a different model. Pick 2-4 models and compare. Settings are normalized server-side per model — no need to retune."
-            : "Model mode locks everything except the model itself. Each variant just picks a different model — the server normalizes settings to that model's equivalents automatically."}
+            ? "Run the same request across different models and compare their responses."
+            : "Choose the agent to test, then add models and enter one shared request."}
         </p>
         {agentReady && (
           <button
@@ -237,7 +250,7 @@ function AddModelTile({
           ? "Pick a locked agent first to enable model variants"
           : "Add a model variant"
       }
-      className="group h-full w-16 shrink-0 flex flex-col items-center justify-center gap-2 border-l-2 border-dashed border-primary/50 bg-primary/5 hover:bg-primary/15 hover:border-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-primary/5 disabled:hover:border-primary/50"
+      className="group h-full w-11 shrink-0 flex flex-col items-center justify-center gap-2 border-l-2 border-dashed border-primary/50 bg-primary/5 hover:bg-primary/15 hover:border-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-primary/5 disabled:hover:border-primary/50"
     >
       <div className="w-9 h-9 rounded-full flex items-center justify-center bg-primary text-primary-foreground shadow-md group-hover:scale-110 transition-transform">
         <Plus className="w-5 h-5" strokeWidth={2.5} />

@@ -6,6 +6,11 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { useModels } from "@/features/ai-models/hooks/useModels";
+import {
+  firstDecisionModelId,
+  resolvePreferredDecisionModel,
+} from "@/features/ai-models/preferredDecisionModel";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -36,6 +41,32 @@ export function DecisionPlayground() {
   const [busy, setBusy] = useState(false);
   const [recovering, setRecovering] = useState(false);
   const executionId = params.get("execution_id");
+  // The model that loads when nobody picked one: the settings ladder's
+  // `agents.model_prefs.decision_default_model` (org → user, nearest wins),
+  // else the catalog's first decision model, else nothing — and the ready
+  // check says "Choose a decision model" out loud. Never hard-coded.
+  const catalog = useModels();
+  const [defaultApplied, setDefaultApplied] = useState(false);
+  const [defaultUnavailable, setDefaultUnavailable] = useState(false);
+
+  useEffect(() => {
+    if (defaultApplied || organizationState !== "ready" || !catalog.isReady) return;
+    let active = true;
+    void resolvePreferredDecisionModel().then((preferred) => {
+      if (!active) return;
+      setDefaultApplied(true);
+      const fallback = firstDecisionModelId(catalog.models);
+      const initial = preferred ?? fallback;
+      if (initial) {
+        setModel((current) => current ?? initial);
+      } else {
+        setDefaultUnavailable(true);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [catalog.isReady, catalog.models, defaultApplied, organizationState]);
 
   useEffect(() => {
     if (!executionId || organizationState !== "ready") return;
@@ -69,7 +100,13 @@ export function DecisionPlayground() {
 
   const parsedState = parseDecisionValue(state, stateMode, "State");
   const validationErrors = [
-    ...(model ? [] : ["Choose a decision model."]),
+    ...(model
+      ? []
+      : [
+          defaultUnavailable
+            ? "Choose a decision model. No default is set and the catalog has no decision model to fall back on."
+            : "Choose a decision model.",
+        ]),
     ...(parsedState.error ? [parsedState.error] : []),
     ...questionErrors(questions),
   ];
@@ -114,18 +151,12 @@ export function DecisionPlayground() {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-4 p-4 lg:p-6">
-      <header className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
-        <div className="flex gap-3">
-          <div className="rounded-lg bg-violet-500/10 p-2 text-violet-700 dark:text-violet-300">
-            <Scale className="size-5" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold">Decision playground</h1>
-            <p className="max-w-2xl text-sm text-muted-foreground">
-              Evaluate named Choice, Score, and Noul questions against your
-              state. This is a typed decision, not a chat request.
-            </p>
-          </div>
+      <header className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+        <div className="flex items-center gap-2 text-violet-700 dark:text-violet-300">
+          <Scale className="size-5" />
+          <h1 className="text-lg font-semibold text-foreground">
+            Decision playground
+          </h1>
         </div>
         {result && (
           <a
@@ -151,7 +182,6 @@ export function DecisionPlayground() {
               inputModalities={["text"]}
               outputModalities={["decision"]}
               selectionPurpose="decision"
-              catalogVariant="admin"
               pinnedOfferingId={offeringId}
               onOfferingPinChange={setOfferingId}
               placeholder="Choose a decision model"

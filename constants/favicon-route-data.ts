@@ -134,6 +134,7 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/invitations", favicon: { color: "#57534e", letter: "In" } },
   { href: "/code", favicon: { color: "#4f46e5", letter: "CD" } },
   { href: "/workflows", favicon: { color: WORKFLOWS_COLOR, letter: "WF" } },
+  { href: "/decisions", favicon: { color: "#6d28d9", letter: "Dn" } },
   { href: "/scopes", favicon: { color: "#047857", letter: "S" } },
   { href: "/war-room", favicon: { color: "#dc2626", letter: "WR" } },
   { href: "/marketing", favicon: { color: MARKETING_COLOR, letter: "Mk" } },

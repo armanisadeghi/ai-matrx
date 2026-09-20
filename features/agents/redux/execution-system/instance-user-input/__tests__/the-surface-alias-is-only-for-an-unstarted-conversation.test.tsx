@@ -23,10 +23,14 @@ import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 import instanceUserInput, {
+  initInstanceUserInput,
   markInputSubmitted,
   setUserInputText,
 } from "../instance-user-input.slice";
-import messages, { addOptimisticUserMessage } from "../../messages/messages.slice";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import messages, {
+  addOptimisticUserMessage,
+} from "../../messages/messages.slice";
 import {
   composerDraftMiddleware,
   __discardComposerDraftWritesForTest,
@@ -127,6 +131,7 @@ beforeEach(() => {
 afterEach(() => {
   unmountProbe();
   jest.restoreAllMocks();
+  (captureError as jest.Mock).mockClear();
 });
 
 describe("the surface alias and the handoff line", () => {
@@ -140,11 +145,21 @@ describe("the surface alias and the handoff line", () => {
     });
     unmountProbe();
     reload();
+    (captureError as jest.Mock).mockClear();
 
     // The landing mints a DIFFERENT client-only id on the next visit.
+    // Restore waits for the input entry — the same gate ChatRoomClient uses
+    // for draft transfer — so a reload does not scream PRE-INIT.
     store = makeStore();
     mountProbe(store, REMINTED_ID);
+    expect(textIn(store, REMINTED_ID)).toBe("");
+    expect(captureError).not.toHaveBeenCalled();
+
+    act(() => {
+      store.dispatch(initInstanceUserInput({ conversationId: REMINTED_ID }));
+    });
     expect(textIn(store, REMINTED_ID)).toBe(DRAFT);
+    expect(captureError).not.toHaveBeenCalled();
   });
 
   it("a conversation that already has messages never adopts a landing draft", () => {

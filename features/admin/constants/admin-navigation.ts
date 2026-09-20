@@ -96,7 +96,6 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/ai/ai-models/offerings"),
           destination("/administration/ai/ai-models/settings"),
           destination("/administration/ai/ai-models/aliases"),
-          destination("/administration/ai/ai-models/decisions"),
         ],
       },
       {

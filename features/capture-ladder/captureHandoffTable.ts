@@ -41,6 +41,7 @@ import { createClient } from "@/utils/supabase/client";
 import {
   HANDOFF_STATUSES,
   NEEDS_YOU_STATUSES,
+  OPTIONAL_RUNGS,
   RUNGS,
   type CaptureHandoff,
 } from "@/features/capture-ladder/types";
@@ -53,8 +54,21 @@ const TABLE_NOT_FOUND = "PGRST205";
 /** Postgres' own code for "that relation does not exist". */
 const UNDEFINED_TABLE = "42P01";
 
+/**
+ * §2's trail entry.
+ *
+ * 🚨 `rung` ADMITS THE OPTIONAL ENTRIES, and that is the whole point of this
+ * comment. It validated `z.enum(RUNGS)` until 2026-09-20, and the live table
+ * carries ten rows whose trail reads `http → residential → browser →
+ * own_browser`. Every one of them failed this parse, was dropped by
+ * `parseCaptureHandoff`, and never reached the tray or `/capture/needs-you` —
+ * pages genuinely waiting on a person, absent from the only screen that lists
+ * them, with a console error as the sole evidence. An optional entry is a
+ * LAWFUL part of a trail (see `types.ts` `OPTIONAL_RUNGS`); refusing the row
+ * over it is refusing the person their work.
+ */
 const rungTrailEntrySchema = z.object({
-  rung: z.enum(RUNGS),
+  rung: z.enum([...RUNGS, ...OPTIONAL_RUNGS]),
   ok: z.boolean(),
   reason: z.string().nullable().default(null),
   note: z.string().nullable().default(null),
@@ -138,8 +152,39 @@ const captureHandoffSchema = z.object({
 export function parseCaptureHandoff(row: unknown): CaptureHandoff | null {
   const parsed = captureHandoffSchema.safeParse(row);
   if (parsed.success) return parsed.data;
+  // NAME THE ROW. The first version of this line reported only the Zod issues,
+  // and the ten drops it produced on 2026-09-20 said `rung_trail[1].rung` was
+  // invalid without saying WHICH page, WHICH row, or WHAT the offending value
+  // was — so the report could not be turned into a query. Identity first, the
+  // rejected values next, the structured issues kept intact after them.
+  const identity =
+    row && typeof row === "object"
+      ? (row as Record<string, unknown>)
+      : ({} as Record<string, unknown>);
   console.error(
     "[capture-ladder] a media.capture_handoff row did not match the contract and was dropped",
+    {
+      id: typeof identity.id === "string" ? identity.id : "(no id on the row)",
+      url:
+        typeof identity.url === "string" ? identity.url : "(no url on the row)",
+      status: identity.status ?? null,
+      rung: identity.rung ?? null,
+      // The value each failing path actually held — a "expected one of …"
+      // message that never prints what it GOT cannot be acted on.
+      rejected: parsed.error.issues.map((issue) => ({
+        path: issue.path.join("."),
+        message: issue.message,
+        value: issue.path.reduce<unknown>(
+          (value, key) =>
+            value && typeof value === "object"
+              ? (value as Record<string | number, unknown>)[
+                  key as string | number
+                ]
+              : undefined,
+          row,
+        ),
+      })),
+    },
     parsed.error.issues,
   );
   return null;

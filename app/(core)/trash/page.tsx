@@ -63,6 +63,8 @@ import {
 } from "@/features/trash/lifecycleService";
 import {
   itemCount,
+  groupScheduleText,
+  isScheduleOverdue,
   lifecycleLabel,
   longDate,
   whenPhrase,
@@ -95,18 +97,23 @@ function PendingGroup({
   item,
   busy,
   restoreIndividually,
+  noticeAsOf,
   onKeep,
 }: {
   item: LifecyclePending;
   busy: boolean;
   restoreIndividually: boolean;
+  noticeAsOf: string | null;
   onKeep: () => void;
 }) {
   const label = lifecycleLabel(item.entity_token, item.label);
-  const date = longDate(item.wipe_on);
   const soon = item.in_warning_window;
-  const when = whenPhrase(item.days_left);
-  const lead = item.rows === 1 ? "Deleted for good" : "The first goes for good";
+  const schedule = groupScheduleText({
+    wipeOn: item.wipe_on,
+    asOf: noticeAsOf,
+    daysLeft: item.days_left,
+    rows: item.rows,
+  });
 
   return (
     <div
@@ -122,12 +129,12 @@ function PendingGroup({
           {itemCount(item.rows)} — {label}
         </p>
         <p className="text-muted-foreground mt-0.5 text-sm">
-          {date ? `${lead} on ${date} (${when}).` : `${lead} ${when}.`}
+          {schedule}
         </p>
         {soon && (
           <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
             <Clock className="h-3.5 w-3.5" aria-hidden />
-            This is what we emailed you about.
+            This group is in its retention warning period.
           </p>
         )}
       </div>
@@ -465,6 +472,7 @@ export default function TrashPage() {
                 item={group}
                 busy={keeping === group.entity_token}
                 restoreIndividually={isVaultOwnedTrashToken(group.entity_token)}
+                noticeAsOf={notice?.as_of ?? null}
                 onKeep={() => void keepAll(group)}
               />
             ))}
@@ -511,6 +519,9 @@ export default function TrashPage() {
             {items.map((item) => {
               const Icon = getResourceIcon(item.entity_token);
               const clock = pendingByToken.get(item.entity_token);
+              const overdue = clock
+                ? isScheduleOverdue(clock.wipe_on, notice?.as_of ?? null)
+                : false;
               return (
                 <li
                   key={`${item.entity_token}:${item.id}`}
@@ -538,11 +549,11 @@ export default function TrashPage() {
                       )}
                       title={
                         longDate(clock.wipe_on)
-                          ? `Deleted for good around ${longDate(clock.wipe_on)}`
+                          ? `Earliest group schedule: ${longDate(clock.wipe_on)}. Individual rows may have later deadlines.`
                           : undefined
                       }
                     >
-                      Goes {whenPhrase(clock.days_left)}
+                      Group schedule: {overdue ? "eligible for deletion" : whenPhrase(clock.days_left)}
                     </span>
                   )}
                   <span className="text-muted-foreground hidden shrink-0 text-xs sm:inline">

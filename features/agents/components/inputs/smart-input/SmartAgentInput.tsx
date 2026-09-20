@@ -24,6 +24,12 @@ import { ChatConnectionsStrip } from "./ChatConnectionsStrip";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
 import type { AttachedContextRailItem } from "./ConversationContextRail";
 
+export interface SmartAgentInputSurfaceValueAnchors {
+  variables?: string;
+  resources?: string;
+  context?: string;
+}
+
 interface SmartAgentInputProps {
   conversationId: string | null | undefined;
   /**
@@ -56,6 +62,8 @@ interface SmartAgentInputProps {
    * a single-purpose form), never to tidy the UI.
    */
   showConnectors?: boolean;
+  /** Optional Locate anchors supplied by an owning surface. */
+  surfaceValueAnchors?: SmartAgentInputSurfaceValueAnchors;
 }
 
 export function SmartAgentInput({
@@ -78,6 +86,7 @@ export function SmartAgentInput({
   contextRailAttachedItems,
   extraRightControls,
   showConnectors = true,
+  surfaceValueAnchors,
 }: SmartAgentInputProps) {
   const isAmbient = presentation === "ambient";
   // Queued-while-running message cards render above EITHER variant, so every
@@ -119,6 +128,7 @@ export function SmartAgentInput({
           contextRailPresentation={contextRailPresentation}
           contextRailAttachedItems={contextRailAttachedItems}
           extraRightControls={extraRightControls}
+          surfaceValueAnchors={surfaceValueAnchors}
           presentation={presentation}
         />
         {connectorStrip}
@@ -146,6 +156,7 @@ export function SmartAgentInput({
         contextRailPresentation={contextRailPresentation}
         contextRailAttachedItems={contextRailAttachedItems}
         extraRightControls={extraRightControls}
+        surfaceValueAnchors={surfaceValueAnchors}
       />
       {connectorStrip}
     </>

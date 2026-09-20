@@ -64,6 +64,10 @@ import {
 import { selectActiveBattleColumns } from "../shared/activeBattleColumns";
 import { setFeedbackRank, setFeedbackSnapshot } from "../redux/battleSlice";
 import type { FeedbackSnapshot } from "../types";
+import {
+  RESPONSE_FEEDBACK_METRICS,
+  type FeedbackMetricDefinition,
+} from "../shared/feedbackMetrics";
 
 interface Props {
   conversationId: string;
@@ -72,22 +76,6 @@ interface Props {
 // =============================================================================
 // Default metric set — what LLM responses are actually judged on
 // =============================================================================
-
-interface MetricDef {
-  id: string;
-  label: string;
-  hint: string;
-}
-
-const DEFAULT_METRICS: MetricDef[] = [
-  { id: "accuracy", label: "Accuracy", hint: "Are the facts / claims correct? Any hallucinations?" },
-  { id: "relevance", label: "Relevance", hint: "Does the response actually answer the request?" },
-  { id: "completeness", label: "Completeness", hint: "Are all parts of the request addressed, with no gaps?" },
-  { id: "instruction_following", label: "Instruction following", hint: "Did the agent honor every explicit instruction (format, scope, tone)?" },
-  { id: "reasoning", label: "Reasoning", hint: "Is the logical flow sound? Are conclusions justified?" },
-  { id: "clarity", label: "Clarity", hint: "Is the writing clear, well-structured, and easy to scan?" },
-  { id: "conciseness", label: "Conciseness", hint: "Right length for the task — no padding, no terseness that omits." },
-];
 
 const THUMBS_UP_DEFAULT_SCORE = 4;
 const THUMBS_DOWN_DEFAULT_SCORE = 2;
@@ -308,7 +296,7 @@ function ResponseFeedbackBarInner({ conversationId, requestId }: InnerProps) {
     let nextOverall = overall;
     if (defaultScore != null) {
       const filled: Scores = { ...scores };
-      for (const m of DEFAULT_METRICS) {
+      for (const m of RESPONSE_FEEDBACK_METRICS) {
         if (filled[m.id] == null) filled[m.id] = defaultScore;
       }
       nextScores = filled;
@@ -391,7 +379,10 @@ function ResponseFeedbackBarInner({ conversationId, requestId }: InnerProps) {
   const configuredColumnCount = columns.filter((c) => c.agentId).length;
 
   return (
-    <div className="border border-border rounded-md bg-card/50 mx-2 my-3 shadow-sm">
+    <div
+      className="border border-border rounded-md bg-card/50 mx-2 my-3 shadow-sm"
+      data-surface-value="model_feedback"
+    >
       {/* Usage strip — server-reported tokens + cost, client TTFT + total.
           Hidden during an active blind test (cost/speed leak which model
           ran); replaced by a neutral notice so the user knows it's there. */}
@@ -545,7 +536,7 @@ function ResponseFeedbackBarInner({ conversationId, requestId }: InnerProps) {
 
       {/* Per-metric grid */}
       <div className="px-3 py-2 space-y-1">
-        {DEFAULT_METRICS.map((metric) => (
+        {RESPONSE_FEEDBACK_METRICS.map((metric) => (
           <MetricRow
             key={metric.id}
             metric={metric}
@@ -581,7 +572,7 @@ function MetricRow({
   value,
   onChange,
 }: {
-  metric: MetricDef;
+  metric: FeedbackMetricDefinition;
   value: number | null;
   onChange: (v: number) => void;
 }) {

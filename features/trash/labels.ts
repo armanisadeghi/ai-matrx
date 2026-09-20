@@ -54,6 +54,44 @@ export function whenPhrase(daysLeft: number | null): string {
   return `in ${daysLeft} days`;
 }
 
+/**
+ * The notice producer clamps `days_left` to zero. Its `as_of` timestamp is the
+ * only truthful clock for a schedule already past, provided both timestamps
+ * parse. Invalid or missing dates keep the conservative producer phrase.
+ */
+export function isScheduleOverdue(
+  wipeOn: string | null,
+  asOf: string | null,
+): boolean {
+  if (!wipeOn || !asOf) return false;
+  const wipeAt = new Date(wipeOn).getTime();
+  const noticeAt = new Date(asOf).getTime();
+  return Number.isFinite(wipeAt) && Number.isFinite(noticeAt) && wipeAt < noticeAt;
+}
+
+/** The exact group-level schedule sentence rendered by Trash. */
+export function groupScheduleText({
+  wipeOn,
+  asOf,
+  daysLeft,
+  rows,
+}: {
+  wipeOn: string | null;
+  asOf: string | null;
+  daysLeft: number | null;
+  rows: number;
+}): string {
+  const date = longDate(wipeOn);
+  if (isScheduleOverdue(wipeOn, asOf)) {
+    return date
+      ? `Eligible for deletion since ${date}.`
+      : "Eligible for deletion.";
+  }
+  const lead = rows === 1 ? "Deleted for good" : "The first goes for good";
+  const when = whenPhrase(daysLeft);
+  return date ? `${lead} on ${date} (${when}).` : `${lead} ${when}.`;
+}
+
 /** "August 29, 2026" — the exact date, spelled out. */
 export function longDate(iso: string | null): string | null {
   if (!iso) return null;

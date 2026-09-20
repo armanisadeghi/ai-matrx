@@ -14,6 +14,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { RecordsMount, TablePage, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
+import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -89,7 +90,16 @@ export default function UnifiedDataTableRoute({
               actor: personActor(userId),
               organizationId: organizationId!,
             }}
-            host={{ Link, density: "condensed", members, share: recordStoreShare }}
+            host={{
+              Link,
+              density: "condensed",
+              members,
+              share: recordStoreShare,
+              // AGT-N-9 / PRODUCTS row 11. The package builds the record SCOPE and
+              // hands it here; this returns the platform's ONE chat column bound to
+              // that record. Never a second chat (the canvas ruling).
+              chat: (ctx) => <RecordScopedChat ctx={ctx} />,
+            }}
           >
             {/* A table this organization cannot see says so and offers the way
                 back — never the blank frame the 19 September verdict found. */}

@@ -64,6 +64,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { extractErrorMessage } from "@/utils/errors";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectPlatformDefaultTextModelId } from "@/features/ai-models/redux/platformDefaultModel";
+import { useModels } from "@/features/ai-models/hooks/useModels";
+import {
+  DECISION_DEFAULT_MODEL_KNOB,
+  firstDecisionModelId,
+} from "@/features/ai-models/preferredDecisionModel";
 import { getSystemShortcut } from "@/features/agents/constants/system-shortcuts";
 import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
@@ -404,6 +409,22 @@ function SliderField({
 }
 
 /**
+ * The decision knob's runtime default when unset: the catalog's first
+ * decision model — the same fallback `DecisionPlayground` applies, read from
+ * the same model registry. `unavailable` is true only once the catalog is
+ * loaded and holds no decision model, so the row says so instead of spinning.
+ */
+function useCatalogDecisionDefaultModel(enabled: boolean): {
+  modelId: string | null;
+  unavailable: boolean;
+} {
+  const { models, isReady } = useModels();
+  if (!enabled) return { modelId: null, unavailable: false };
+  const modelId = firstDecisionModelId(models);
+  return { modelId, unavailable: isReady && modelId === null };
+}
+
+/**
  * A model, from the AI catalogue — the maker and the model, the friendly way
  * ("Anthropic Sonnet 5"). `ModelListDropdown` IS the platform's model picker
  * (chat, the lab, every settings tab go through it); a second one here would
@@ -419,6 +440,10 @@ function ModelField({
 }: KnobFieldControlProps) {
   const isBuilderKey =
     knob.full_key === "agents.model_prefs.agent_authoring_default_model";
+  // The decision knob picks from the DECISION contract only — offering chat
+  // models here would let a person save a default the decision surface
+  // cannot run. Same filter the Decision playground's picker uses.
+  const isDecisionKey = knob.full_key === DECISION_DEFAULT_MODEL_KNOB;
   const configuredValue =
     typeof ladder.value === "string" && ladder.value !== ""
       ? ladder.value
@@ -431,13 +456,18 @@ function ModelField({
   const builderDefault = useAgentBuilderDefaultModel(
     isBuilderKey && !configuredValue,
   );
+  const decisionDefault = useCatalogDecisionDefaultModel(
+    isDecisionKey && !configuredValue,
+  );
   const value =
     configuredValue ??
     (knob.full_key === "agents.model_prefs.chat_default_model"
       ? platformTextModelId
       : isBuilderKey
         ? builderDefault.modelId
-        : null);
+        : isDecisionKey
+          ? decisionDefault.modelId
+          : null);
   const isBuilderDefault = !configuredValue && isBuilderKey;
   return (
     <ModelListDropdown
@@ -451,13 +481,16 @@ function ModelField({
         if (next && next !== value) void onCommit(next);
       }}
       inputModalities={[]}
-      outputModalities={["text"]}
+      outputModalities={isDecisionKey ? ["decision"] : ["text"]}
+      selectionPurpose={isDecisionKey ? "decision" : undefined}
       placeholder={
         builderDefault.unavailable
           ? "Agent builder model is unavailable"
-          : isBuilderDefault
-            ? "Loading agent builder's model…"
-            : "Loading current model…"
+          : decisionDefault.unavailable
+            ? "No decision model in the catalog"
+            : isBuilderDefault
+              ? "Loading agent builder's model…"
+              : "Loading current model…"
       }
       disabled={disabled}
       triggerVariant="settings"
