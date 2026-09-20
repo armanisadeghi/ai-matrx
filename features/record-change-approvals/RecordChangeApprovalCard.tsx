@@ -21,10 +21,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import {
-  UNIFIED_DATA_CAMPAIGN,
-  useUnifiedDataCampaign,
-} from "@/lib/knobs/unifiedDataCampaign";
+import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
+import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 
 import { ApprovalCard } from "@/features/agents/ui-first-tools/ui/ApprovalCard";
 import type { PendingAsk } from "@/features/agents/ui-first-tools/redux/pending-asks.slice";

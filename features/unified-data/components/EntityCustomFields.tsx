@@ -28,7 +28,8 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { createClient } from "@/utils/supabase/client";
-import { UNIFIED_DATA_CAMPAIGN, useUnifiedDataCampaign } from "@/lib/knobs/unifiedDataCampaign";
+import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
+import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 
 export interface EntityCustomFieldsProps {
   /** The standard table's registry token (REC-33) — `party`, `crm_deal`, `crm_interaction`. */

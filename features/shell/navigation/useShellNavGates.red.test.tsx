@@ -24,7 +24,8 @@ import { Provider } from "react-redux";
 import appContextReducer, { setOrganization } from "@/lib/redux/slices/appContextSlice";
 import { getActiveOrgId } from "@/lib/organizations/activeOrg";
 import type { ShellNavGates } from "@/features/shell/constants/nav-data";
-import { UNIFIED_DATA_CAMPAIGN, useUnifiedDataCampaign } from "@/lib/knobs/unifiedDataCampaign";
+import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
+import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { GatedDataMenu } from "./useShellNavGates.fixture";
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

@@ -61,6 +61,10 @@ function trackedImportersOfTheSwitch(): string[] {
         "lib/knobs/unifiedDataCampaign.ts",
         "lib/knobs/unifiedDataCampaign.register.ts",
         "lib/knobs/unifiedDataCampaign.test.ts",
+        // The switch's CLIENT half (lane RSC-FIX, 19 September) — see the
+        // matching comment in scripts/lib/campaign-entry-points.ts. It IS the
+        // switch, not a consumer of it.
+        "lib/knobs/useUnifiedDataCampaignGate.ts",
         "scripts/check-campaign-entry-points.ts",
         "scripts/lib/campaign-entry-points.ts",
     ]);
