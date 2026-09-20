@@ -158,6 +158,27 @@ async function navigateTo(pathname: string) {
   });
 }
 
+it("shows a close button on an action toast and dismisses it", async () => {
+  await act(async () => {
+    toast.info("Saved submission to recover", {
+      action: { label: "Open", onClick: jest.fn() },
+    });
+  });
+  await settle();
+
+  const close = document.querySelector<HTMLButtonElement>(
+    'li[data-sonner-toast] button[data-close-button]',
+  );
+  expect(close).not.toBeNull();
+  expect(close?.getAttribute("aria-label")).toBe("Close toast");
+
+  await act(async () => {
+    close?.click();
+  });
+  await settle();
+  expect(toastText()).not.toContain("Saved submission to recover");
+});
+
 describe("a record toast cannot outlive its record on screen", () => {
   it("expires on the wall clock even while the document is hidden — every toast raised through lib/toast, record or not", async () => {
     hideDocument();
