@@ -1,0 +1,101 @@
+-- scfg_97_one_fetch_not_one_per_setting.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-20. This file is the RECORD.
+--
+-- Arman, 2026-09-20: "the one thing that absolutely cannot happen is that we can't be
+-- fetching individual configurations for everything that we do, and we can't be trying to
+-- do these things live or through any sort of application level logic regardless of if
+-- it's a server or the client."
+--
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- WHAT WAS ACTUALLY HAPPENING, MEASURED RATHER THAN ASSUMED
+-- ═══════════════════════════════════════════════════════════════════════════════════
+--
+-- SERVER (aidream): better than feared. Override rows are cached per (feature,
+-- organization) and resolution happens IN-PROCESS, so a warm read is a dict lookup, not a
+-- query. Not a round trip per read. But the granularity is per FEATURE, so a request
+-- touching five features can take five cold-cache fetches, and the TTL is 60s.
+--
+-- CLIENT (matrx-frontend): this is where the concern was live and correct.
+-- `useEffectiveKnob` called `platform.knob_resolve` ONCE PER KEY. Every distinct setting a
+-- screen read was its own network round trip on first read. A bulk path (`knob_index`)
+-- existed but only the settings screens used it.
+--
+-- THE NUMBER THAT DECIDED THE DESIGN: 870 knobs registered, 536 delegated, and the ENTIRE
+-- resolved map is 49 kB (31 kB for just the delegated ones) - a few kB compressed. There
+-- was never a size argument for fetching them one at a time. Resolving the whole platform
+-- for one (user, organization) measures 47 ms.
+--
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- platform.knob_snapshot(p_organization_id, p_user_id, p_scopes) -> jsonb
+-- ═══════════════════════════════════════════════════════════════════════════════════
+--
+--   { organization_id, user_id, stamp, count, resolved: { "feature.key": value, … } }
+--
+-- 🚨 IT CALLS knob_resolve PER KEY, ON PURPOSE, AND THAT IS THE IMPORTANT DECISION.
+-- Resolution is ONE rule - precedence, overridable_by, rung locks, override_direction,
+-- range clamping - and it lives in platform.knob_resolve. A snapshot that reimplemented
+-- that set-wise for speed would be a SECOND resolver, and it would drift from the
+-- single-key answer the moment either side changed. That is the same split-brain this
+-- entire campaign existed to close, so it was not going to be reintroduced in the name of
+-- performance. These are function calls inside ONE query, not round trips, and the cost
+-- was measured (47 ms) rather than feared.
+--
+-- `stamp` is the cache key: the newest write across the register plus THIS organization's
+-- overrides and rung locks. A holder whose stamp still matches holds current truth. The
+-- existing settings_changed directive channel pushes invalidation; the stamp is the belt
+-- to that suspenders, for a tab that was asleep when the push went out.
+--
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- THE ACCESS DECISION, AND THE GUARD THAT REFUSED THE FIRST ATTEMPT
+-- ═══════════════════════════════════════════════════════════════════════════════════
+--
+-- The first version was SECURITY DEFINER with a door row that said, in as many words,
+-- "passing another organization's id returns that organization's configuration", and
+-- called that acceptable because it is "only configuration".
+--
+-- ddl_guard[definer_no_access_decision] REFUSED IT, and cited seo.keyword_value_map -
+-- which had an equally truthful door row and handed 114,686 rows of another tenant's data
+-- to a non-member on 2026-09-17. The guard was right and the rationalisation was wrong: an
+-- organization's configuration says which features they run, what their ceilings are, and
+-- how their operation is posture-d. None of that is a stranger's to read. A door row is
+-- not a door check.
+--
+-- The body now decides access BEFORE the first read and before existence, so a foreign id
+-- and an invented one answer identically:
+--     if p_organization_id is not null
+--        and not iam.is_trusted_backend()
+--        and not iam.has_org_access(p_organization_id) then raise 42501
+--
+-- VERIFICATION, stated precisely because the obvious test is misleading here:
+--   · iam.has_org_access(<org>) returns FALSE for a stranger - PROVEN directly under a
+--     planted non-member JWT claim.
+--   · iam.is_trusted_backend() is TRUE for any DIRECT database connection by design
+--     (session_user <> 'authenticator'), which is what the Supabase MCP is.
+--   · Therefore a browser session (session_user = 'authenticator', no membership) fails
+--     both halves and is refused. That composite is INFERRED from the two proven halves
+--     and the documented semantics of is_trusted_backend - it was NOT executed as a live
+--     PostgREST call, because this connection cannot be one.
+--   · A first attempt to "prove" the refusal by SET ROLE authenticated reported the gate
+--     had failed. It had not: SET ROLE changes current_user, not session_user, so the
+--     trusted-backend lane still applied. The test was wrong, not the gate. Recorded
+--     because the failure direction was the frightening one and the correction is the
+--     whole point.
+--
+-- NULL rule: a null organization skips the gate and resolves the platform rung for every
+-- key - the right answer for a signed-out or organization-less caller, disclosing nothing
+-- tenant-specific.
+--
+-- ═══════════════════════════════════════════════════════════════════════════════════
+-- WHAT IS NOT DONE YET
+-- ═══════════════════════════════════════════════════════════════════════════════════
+--
+-- The primitive exists, is gated and is measured. The adoption is the remaining work and
+-- is deliberately NOT half-applied here:
+--   1. matrx-frontend: fetch one snapshot per (user, organization), read from memory, and
+--      DELETE the per-key knob_resolve call in useEffectiveKnob so it cannot come back.
+--   2. aidream: one snapshot per (user, organization) replacing the per-feature caches.
+--   3. A guard that fails if any client code resolves a single knob over the network
+--      again - without it this decays back within a quarter.
