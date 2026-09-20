@@ -1730,7 +1730,7 @@ function NotificationsTry({ table, organizationId }: { table: Table; organizatio
                 waitingFor={
                     "the editor above. At the screens version this deployment serves " +
                     `(${recordsUiPkg.version}) it still asks the notifier’s own reader and is refused; it asks ` +
-                    "the doors this list uses from 0.28.0 onwards. Nothing else here is waiting on anything."
+                    "the doors this list uses from 0.30.0 onwards. Nothing else here is waiting on anything."
                 }
             />
         </div>

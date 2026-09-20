@@ -8,6 +8,7 @@ import {
   MessageRole,
 } from "@/features/message-templates/types/message-templates-db";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
@@ -374,6 +375,11 @@ export function TemplateViewPage({
                   {template.content || ""}
                 </pre>
               </div>
+
+              <EntityCustomFields
+                entityToken="message_template"
+                recordId={template.id}
+              />
             </div>
           ) : (
             /* ── Edit Mode ── compact fields, auto-grow textarea */

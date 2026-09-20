@@ -13,6 +13,17 @@ session. Leave a one-off here with the repo and the date.
 
 | When | Repo | What we thought | What was true | Folded into SKILL.md? |
 |---|---|---|---|---|
+| 2026-09-20 | matrx-frontend | Dirty skills/docs/migrations wait for owners | 30 dirty migrations already matched GitHub. Dirty GDR deleted companions GitHub still has. Unique FEATURE.md hunks and true-new files landed through intake the same hour | Stage 1b / 3 / 4b: skills+docs in; matching migrations already done |
+| 2026-09-20 | matrx-frontend | Fan-out after 01:30 PT was Prompt A | Codex/Claude got Prompt C cleanup at ~01:33 PT. Only vault-task3 parked a new branch. Live writers `4aca9d01` / `97ce06fb` are not leftovers | owner-park: C forbidden on stale shared folder |
+| 2026-09-20 | matrx-frontend | Prompt A is the first-night "you got cut off" text | There was no interruption. The ask is isolate unique work so it can be found. The cutoff sentence makes owners resume and repair the shared folder | owner-park A/B rewritten |
+| 2026-09-20 | matrx-frontend | Owner hunt waits for Stage 4c | Arman ordered it as soon as Stage 1 named the hard leftovers. Codex owners (battle, server-search, storage-picker, vault-task3) showed up while landing continued | Owner hunt after Stage 1 |
+| 2026-09-20 | matrx-frontend | Merge-tree of a stale-main commit is the leftover | That commit object still carries the W7-OFF ancestor. Cherry-pick the unique patch. A launchpad series must be picked in order | Stage 4 cherry-pick series |
+| 2026-09-20 | matrx-local | Prompt C waits for a Codex paste | This Cursor session has no Codex send door. The keep-GitHub decision was already written. Recovery owner deleted the leftover and the park branch, then started Stage 8 | owner-park Prompt C, Stage 4c-2 |
+| 2026-09-20 | matrx-local | Stage 6 is `git reset --hard origin/main` | The shared-checkout guard refused reset and `restore .`. Named-path restore, then point `main` at GitHub, made the folder a clean match | Stage 6 |
+| 2026-09-20 | matrx-local | Stage 6 generate-first applies here | No `db/generate.py`. Desktop app. Skip generate | Stage 6 |
+| 2026-09-20 | matrx-frontend | merge-tree clean means the leftover stays clean | After one land, the next leftover collided in FOUND_DEFECTS.md / window-panels. Re-probe after every push | Stage 4 |
+| 2026-09-20 | matrx-frontend | Keep-both on FOUND_DEFECTS.md can keep the same D number | Two D339 filings. Later leftover gets the next free ID | Stage 4 |
+| 2026-09-20 | matrx-frontend | Delete the leftover branch as soon as the merge commit exists | Push was rejected because GitHub moved. Delete only after `origin/main` is an ancestor | Stage 4 |
 | 2026-09-19 | aidream | 149 ahead / 433 behind was a second product line | 129 of 149 local commits were already on GitHub as the same patch; ~10 unique; GitHub half of the split was real | Stage 1a |
 | 2026-09-19 | aidream | 76 worktrees were unique leftover work | 56 already pointed at commits on GitHub; 12 had unique patches | Stage 2 |
 | 2026-09-19 | aidream | Untracked files were new work | 46 of 67 already existed on `origin/main`; local `main` was stale | Stage 1b |
@@ -58,3 +69,10 @@ session. Leave a one-off here with the repo and the date.
 | 2026-09-20 | common-docs | Two mains same SHA and leftover worktrees already on GitHub meant stand down | Unique untracked files still existed. `log.md` and Integration Maintainer already named Unmerged work intake; the file was never on GitHub | Stage 0 / 1b |
 | 2026-09-20 | common-docs | Stash board rows already on GitHub, so drop the stash | Two disaster-recovery log lines in that stash were still unique | Stage 2 mixed stash |
 | 2026-09-20 | common-docs | Dirty skill files were this recovery's notes to commit | They were matrx-local's rewrite and would have unwound the extend stand-down already on GitHub | Bucket J, two-recovery skill |
+| 2026-09-20 | common-docs | Stage 6 reset was ordered, so reset now | Five new screenshots and a recapture set had appeared. Re-diff first | Stage 6 |
+| 2026-09-20 | common-docs | A walker committed three files on stale shared main | Extracted through intake. Did not reset him | Stage 4b |
+| 2026-09-20 | matrx-frontend | A worktree on `origin/main` is a Stage 2 delete | One of them was the live intake landing leftovers that hour | Stage 2 hold live intake |
+| 2026-09-20 | matrx-frontend | Git refused A deletes because the trees were dirty | Porcelain was thousands of ` D` missing files (hollow leftover), not unique product. `--force` then hung on every one. Skip; bucket G; keep going | Stage 2 hollow + hung |
+| 2026-09-20 | matrx-frontend | Hold the two big PRs until the family is inspected | They had no named two-writer conflict. Overnight another intake merged both. Holding without an exact conflict is just delay | Stage 4 — name the conflict or land |
+| 2026-09-20 | matrx-frontend | Dirty files look inconsequential so commit the working tree | 169 paths already exist on GitHub with different content. Several dirty blobs were exact earlier GitHub commits; local deletes would drop campaign SQL GitHub still has. Unique product extracted through intake. Dumping dirty unwinds main | Stage 1b exist_differs ≠ unique |
+| 2026-09-20 | matrx-frontend | Leftover-branch cherry+ is the namesake feature still unmerged | The + commits were stale W7-OFF and playground ancestors. GitHub already has later hashes. Merging the leftover commit would delete ~200k lines | Stage 1a cherry+ can be a stale ancestor |

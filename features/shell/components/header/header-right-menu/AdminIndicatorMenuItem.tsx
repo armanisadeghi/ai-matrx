@@ -9,9 +9,11 @@ import {
   toggleOverlay,
 } from "@/lib/redux/slices/overlaySlice";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
+import { useMenuCheckboxId } from "./menuCheckboxId";
 
 export function AdminIndicatorMenuItem() {
   const dispatch = useAppDispatch();
+  const menuCheckboxId = useMenuCheckboxId();
   const isOpen = useAppSelector((state) =>
     selectIsOverlayOpen(state, "adminIndicator"),
   );
@@ -21,7 +23,7 @@ export function AdminIndicatorMenuItem() {
   }, [dispatch]);
 
   return (
-    <label htmlFor="shell-user-menu" className="block">
+    <label htmlFor={menuCheckboxId} className="block">
       <button
         className={cn(MENU_ITEM_CLASS, "[&_svg]:text-amber-500")}
         onClick={handleClick}

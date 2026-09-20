@@ -60,8 +60,6 @@ export function AgentSaveStatus({
           </span>
         )}
 
-        {isEditMode && reachBadge}
-
         {isEditMode && isReadOnly && (
           <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10">
             View only
@@ -112,6 +110,8 @@ export function AgentSaveStatus({
             )}
           </button>
         )}
+
+        {isEditMode && reachBadge}
       </div>
 
       <AlertDialog open={showModelWarning} onOpenChange={setShowModelWarning}>
