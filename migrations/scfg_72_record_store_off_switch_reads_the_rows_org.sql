@@ -1,0 +1,22 @@
+-- scfg_72_record_store_off_switch_reads_the_rows_org.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- custom.trg_associations_bump_visibility read its own off switch ORG-BLIND, and this one was
+-- NOT latent: `custom.system_enabled` is overridable at the organization rung, the platform value
+-- is false, and THREE organizations are deliberately set true.
+--
+-- The trigger resolved that knob with a NULL organization, so it read false for everybody and
+-- returned early on every write to platform.associations. For the three organizations where the
+-- record store IS enabled, the epoch bump and the same-commit visibility_cache invalidation --
+-- the "invalidated in the same commit" half of VIS-7 -- had never run. The switch was on and the
+-- engine could not see it.
+--
+-- The organization was already on the row: the body assigned v_org := v_row.organization_id
+-- eleven lines BELOW the knob read. Hoisting that assignment above the read is the whole fix.
+-- Blast radius is exactly the three enabled organizations; everywhere else the knob still
+-- resolves false and the trigger stays the no-op it has always been.
+--
+-- Found by platform.knob_org_blind_reader (scfg_71) on its first run.

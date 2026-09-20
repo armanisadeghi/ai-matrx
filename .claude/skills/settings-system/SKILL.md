@@ -25,13 +25,31 @@ Everything user-configurable flows through one system: a `SettingsShell` mounted
 4. **Tabs are lazy.** Every registry entry uses `lazyTab(() => import("./tabs/XYZ"))`. Never static-import a tab.
 5. **Icons are Lucide.** No emojis in settings UI ever.
 6. **Every tab works on mobile.** No `className="hidden md:..."`. The primitives are already mobile-ready; don't bypass them.
-7. **Admin gating is declarative.** Add `requiresAdmin: true` to the registry entry — the tree hides it, `getVisibleTabs(isAdmin)` filters it, and the shell passes `isAdmin` down automatically.
+7. **A knob is not a preference.** Anything the platform or an org governs is a `platform.feature_knob` row rendered through `features/settings/universal`, never a slice and never a `UserPreferences` field. If you are about to add a threshold, ceiling, mode or policy to `defaultPreferences.ts`, stop — that is a knob.
+8. **Admin gating is declarative.** Add `requiresAdmin: true` to the registry entry — the tree hides it, `getVisibleTabs(isAdmin)` filters it, and the shell passes `isAdmin` down automatically.
 
 ---
 
 ## Decision tree — "I want to add a setting"
 
+🚨 **FIRST BRANCH — is this a PREFERENCE or is it CONFIGURATION?** This question comes before
+every question below it, and getting it wrong is the most common mistake in this system. The tree
+that follows is for *preferences*: things that belong to the person using the app. Anything the
+platform or an organization governs is a **knob**, lives in `platform.feature_knob`, and never
+becomes a Redux slice or a `UserPreferences` field.
+
 ```
+Is the value governed by the PLATFORM or by an ORGANIZATION?
+  (a limit, quota, ceiling, timeout, threshold, retry/batch size, mode, strategy,
+   policy, or ANY behavioral choice someone other than this user should decide)
+  Yes → it is a KNOB, not a setting. Seed a platform.feature_knob row and render it
+        through features/settings/universal (KnobFieldControl / KnobRungOverrides).
+        Then make the SECOND decision — who may override it — and default to NOBODY:
+        overridable_by = '{}' is platform-locked and is a first-class answer.
+        Law: common-docs/policies/limits-are-knobs-agents-set-them.md
+        Machine: common-docs/systems/platform/feature-knobs/FEATURE.md
+  No, it is genuinely this person's own preference ↓
+
 Does the value already live in a registered slice?
   Yes → call `useSetting("slice.dotted.key")` from your tab. DONE.
   No  ↓

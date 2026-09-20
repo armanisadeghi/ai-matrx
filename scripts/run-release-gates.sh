@@ -537,6 +537,11 @@ if $STRICT; then
         # No baseline: the tree was brought to zero on adoption (2026-09-10, 200
         # literals across 76 files), so any finding is NEW.
         "Hand-typed mandate keys (vocabulary not adopted)|pnpm check:mandate-keys"
+        # ONE FETCH, NOT ONE PER SETTING (Arman, 2026-09-20). The client resolves
+        # the whole register once per (organization, user, scopes) through
+        # `platform.knob_snapshot`; an `rpc("knob_resolve", …)` is one round trip
+        # for one small value and decays the system back in a single commit.
+        "A setting fetched one at a time|pnpm check:knob-snapshot-adoption"
         # ONE GOOGLE AUTHORIZATION WINDOW PER PERSON (V-23 NEW-3). "One window
         # at a time" used to be a `useRef` inside ONE component and a `useState`
         # read from a stale closure, over 19 call sites: two presses opened two
@@ -937,6 +942,11 @@ else
         # No baseline: the tree was brought to zero on adoption (2026-09-10, 200
         # literals across 76 files), so any finding is NEW.
         "Hand-typed mandate keys (vocabulary not adopted)|pnpm check:mandate-keys"
+        # ONE FETCH, NOT ONE PER SETTING (Arman, 2026-09-20). The client resolves
+        # the whole register once per (organization, user, scopes) through
+        # `platform.knob_snapshot`; an `rpc("knob_resolve", …)` is one round trip
+        # for one small value and decays the system back in a single commit.
+        "A setting fetched one at a time|pnpm check:knob-snapshot-adoption"
         # ONE GOOGLE AUTHORIZATION WINDOW PER PERSON (V-23 NEW-3). "One window
         # at a time" used to be a `useRef` inside ONE component and a `useState`
         # read from a stale closure, over 19 call sites: two presses opened two

@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "82e1f75b389e";
+export const KIND_REGISTRY_FINGERPRINT = "d18687b77492";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -7620,7 +7620,7 @@ export interface CmsHtmlPageResult {
 }
 
 /**
- * Kind `cms_page_build` (registry v3).
+ * Kind `cms_page_build` (registry v4).
  */
 export interface CmsPageBuild {
   /**
@@ -10261,7 +10261,7 @@ export interface KeywordRelationshipMap {
 }
 
 /**
- * Kind `keyword_relationship_research` (registry v11).
+ * Kind `keyword_relationship_research` (registry v12).
  */
 export interface KeywordRelationshipResearch {
   /**
@@ -12966,7 +12966,7 @@ export interface PlanKeywordStrategy {
 }
 
 /**
- * Kind `plan_page_draft` (registry v3).
+ * Kind `plan_page_draft` (registry v4).
  */
 export interface PlanPageDraft {
   /**
@@ -13000,7 +13000,7 @@ export interface PlanPageDraft {
 }
 
 /**
- * Kind `plan_page_outline` (registry v3).
+ * Kind `plan_page_outline` (registry v4).
  */
 export interface PlanPageOutline {
   /**
@@ -13034,7 +13034,7 @@ export interface PlanPageOutline {
 }
 
 /**
- * Kind `plan_page_research` (registry v3).
+ * Kind `plan_page_research` (registry v4).
  */
 export interface PlanPageResearch {
   /**
@@ -13060,7 +13060,7 @@ export interface PlanPageResearch {
 }
 
 /**
- * Kind `plan_page_review` (registry v3).
+ * Kind `plan_page_review` (registry v4).
  */
 export interface PlanPageReview {
   /**

@@ -206,6 +206,8 @@
     "check:hardcoded-prompts:write": "tsx scripts/check-hardcoded-prompts.ts --write",
     "check:hardcoded-agents": "tsx scripts/check-hardcoded-agents.ts",
     "check:hardcoded-agents:write": "tsx scripts/check-hardcoded-agents.ts --write",
+    "check:knob-snapshot-adoption": "node scripts/check-knob-snapshot-adoption.mjs",
+    "check:knob-snapshot-adoption:self-test": "node scripts/check-knob-snapshot-adoption.mjs --self-test",
     "check:mandate-keys": "tsx scripts/check-mandate-keys.ts",
     "check:mandate-keys:self-test": "jest scripts/__tests__/check-mandate-keys.test.ts",
     "check:mandate-references": "uvx --from matrx-mandate-scan==0.2.2 matrx-mandate-scan check",

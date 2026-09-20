@@ -1,0 +1,79 @@
+-- scfg_92_the_affordance_gate_is_not_the_authorization.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- First unit of the hr.capability tenant sweep opened by scfg_91. Two of the eleven call sites
+-- are CLEARED on evidence, and the census is taught to say why.
+--
+-- ── hr.wf_inbox — the two literal-null calls, and why they are correct
+--
+-- These were the only two rows in the census passing a LITERAL null subject, which is the
+-- degenerate case by construction: no subject and no organization means hr.capability skips
+-- both its tenant boundary and population_contains, and answers "does this caller hold
+-- workflow.view_queue ANYWHERE, over ANYBODY".
+--
+-- Reading the body settles it, and the body already said so:
+--
+--     -- THIS CHECK IS AN AFFORDANCE GATE AND IS ORG-LESS ON PURPOSE.
+--     if not hr.capability(v_uid, 'workflow.view_queue', null) then
+--       return ... 'no_queue_authority' ...
+--
+-- That call decides whether to bother building the queue scope at all, and its twin sets
+-- `can_view_queue` in the envelope so the client knows whether to offer the tab. Neither
+-- returns a row. Every row the function actually emits is authorized separately, twice, in the
+-- COUNT and in the SELECT, with the full five-argument form:
+--
+--     hr.capability(v_uid, 'workflow.view_queue', i.subject_employment_id,
+--                   current_date, i.organization_id)
+--
+-- and the candidate set is already restricted to organizations the caller holds an employment
+-- in. So the cheap question gates a tab; the expensive one gates the data. Widening the
+-- affordance gate to five arguments would ask "in WHICH organization" of a question that is
+-- deliberately about none of them, and would refuse the tab to a person who legitimately holds
+-- queue standing in an employer other than the one that happens to be first.
+--
+-- ── THE CENSUS LEARNS THE DISTINCTION, AND STILL REPORTS THE ROW
+--
+-- hr.capability_asked_without_a_tenant gains two columns: `capability` (the token being asked)
+-- and `same_capability_tenant_checked` — true when the SAME body also asks the SAME capability
+-- in the five-argument form. That is the signature of an affordance gate sitting above a
+-- properly tenant-bound check, and it is exactly the `same_key_scoped_read` move from scfg_83,
+-- one layer up: narrow what the census can judge, never drop what it cannot. Both wf_inbox
+-- rows are now true; the other nine are false and are real work.
+--
+-- 🚨 THE FLAG WAS WRONG ON ITS FIRST WRITING, AND THE BODY CAUGHT IT. The first version
+-- escaped the capability literal with replace(x, '''', '''''') before interpolating it into the
+-- regex, which DOUBLED the quotes and made the pattern match nothing — so wf_inbox came back
+-- `false`, contradicting the comment sitting in its own source. A single quote is not a regex
+-- metacharacter and needed no escaping. Worth recording because the failure direction was the
+-- dangerous one: a flag that silently reads false makes every row look genuine and the census
+-- look like more work than it is, which is how a real finding gets lost in noise. It was caught
+-- only because the flag disagreed with a body that had already been read.
+--
+-- ── WHAT IS LEFT: nine rows over eight functions, none of them mechanical
+--
+--   hr._wf_display            workflow.view_queue    inst.subject_employment_id
+--   hr.wf_pending             workflow.view_queue    p_employment_id
+--   hr_authority_delegation_end  authority.grant     d.delegator_employment_id
+--   hr_authority_revoke       authority.grant        v_holder_emp
+--   hr_mint_records_request_token  identity.read     rq.employment_id
+--   hr_mint_records_request_token  records.govern    rq.employment_id
+--   hr_role_assign            role.assign            p_employment_id
+--   hr_role_revoke            role.assign            v_emp
+--   hr_set_employment_pin     working_record.write   p_employment_id
+--
+-- Each is safe if and only if that subject can never be null at that point, which has to be
+-- established per body — a parameter a client supplies, a column read from a row that may not
+-- exist, and a variable assigned from a lookup are three different stories. hr_role_assign and
+-- hr_set_employment_pin take the id straight from the caller, so they are the ones to read
+-- first. Note that hr_set_employment_pin's ORGANIZATION half was already closed in scfg_82: it
+-- derives v_org from the employment before its gate and raises P0002 on no match, which is
+-- evidence the subject cannot be null there — but the capability call still has to be read on
+-- its own terms rather than inferred from that.
+--
+-- VERIFIED AFTER: the view returns 11 rows over 9 functions, exactly 2 of them
+-- same_capability_tenant_checked = true (both hr.wf_inbox), and the flag was confirmed against
+-- the live body rather than trusted. Nothing was rewritten in this unit: no function body
+-- changed, so no contract row and no door row was touched.

@@ -1,0 +1,84 @@
+-- scfg_91_the_ssn_door_asks_about_one_employer.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- The last two doors of the org-blind sweep — and the one that was not really about knobs.
+--
+-- ── public.hr_break_glass — hr.access.break_glass_grant_ttl_minutes
+--
+-- The organization is not an argument: it is read from the TARGET ROW, by dynamic SQL over the
+-- token's own entity_types mapping, and a row that does not exist raises P0002 before anything
+-- else happens. The caller must then hold a role whose catalogue row carries break_glass_allowed
+-- IN THAT ORGANIZATION — a manager never can. So v_org is established and checked long before
+-- the TTL is read. How long an emergency grant lasts is the employer's judgement about its own
+-- emergencies; it now resolves there.
+--
+-- 🚨 AND THE OTHER KNOB IN THIS SAME FUNCTION IS DELIBERATELY LEFT ORG-BLIND.
+-- hr.domain_wide.break_glass_justification_min_chars carries overridable_by = '{}' — platform-
+-- locked on purpose, and mirrored by a CHECK constraint on hr.access_audit so the two cannot
+-- drift. Reading a locked knob with no organization is not a defect: the resolver would ignore
+-- the organization anyway, and passing one would SUGGEST to the next reader that an employer can
+-- move a floor it cannot. This is the shape Arman described — build it as a knob, then set it at
+-- the system level so nobody below can touch it — and the census agrees, because it only ever
+-- flags keys that are actually delegated. Left as it is, on purpose, and written down here so
+-- the next sweep does not "finish" it.
+--
+-- ── hr.reveal_ssn — and a live cross-tenant hole that had nothing to do with configuration
+--
+-- The knob half is ordinary: v_org is the subject employee's employer, read from hr.employee and
+-- P0002-refused when absent, so hr.access.ssn_reveal_daily_alert_threshold now resolves there.
+-- How many reveals in a day is normal is the employer's judgement about its own payroll work.
+--
+-- 🚨 THE REAL FINDING IS THE GATE ABOVE IT. It read:
+--
+--     hr.capability(v_uid, 'ssn.reveal', v_subject)
+--
+-- three arguments — no date, and NO ORGANIZATION. v_subject is the subject's latest live
+-- employment, and it is NULL for anybody carrying no employment row. Inside hr.capability a null
+-- subject collapses BOTH protections in one step: the tenant clause
+-- `(v_org is null or ra.organization_id = v_org)` goes vacuously true, and `population_contains`
+-- is skipped outright by `(p_subject_employment is null or ...)`. The question the SSN door was
+-- asking in that case was not "may this person reveal THIS person's number" but "does this
+-- caller hold ssn.reveal ANYWHERE, over ANYBODY".
+--
+-- This is not a new class. It is the SAME one closed at hr_l1_59 (the tenant half) and hr_l1_64
+-- (the population half), whose fixes are pinned by contract rows on hr_employee_profile and
+-- hr_employee_update — and it was still open on the one door that guards social-security numbers.
+-- Now `hr.capability(v_uid, 'ssn.reveal', v_subject, current_date, v_org)`, with v_org the
+-- subject's own employer, which is authoritative even when the person holds no employment.
+--
+-- EXPLOITABLE TODAY? NO, AND THE NUMBER WAS MEASURED RATHER THAN ASSUMED: zero live employees
+-- lack an employment row, so v_subject was never null in practice. It was latent, with 8 live
+-- ssn.reveal assignments across 7 organizations standing in front of it. Latent is not fixed:
+-- the first employee record created ahead of its employment turns it on, silently.
+-- A contract row now pins the five-argument call and BANS the three-argument one by name.
+--
+-- ── the census could not have seen the second one, so the census was extended
+--
+-- hr.capability itself read hr.access.manager_visibility_depth as
+-- `hr._hr_knob(..., p_organization_id, null)` — SPELLED scoped, and org-blind for every caller
+-- that omitted the organization, which is most of them. platform.knob_org_blind_reader cannot
+-- see that: the null arrives in a VARIABLE, not as a literal. It now reads v_org, the subject's
+-- authoritative employer, which in the manager lane is guaranteed non-null (that branch runs only
+-- when p_subject_employment is not null). A scoped spelling is not a scoped read.
+--
+-- NEW: hr.capability_asked_without_a_tenant (security_invoker), listing every three-argument
+-- hr.capability call in the database with whether its subject is a LITERAL null. 11 rows today,
+-- 2 of them literal nulls (both in hr.wf_inbox, asking workflow.view_queue with no subject and
+-- no organization). The view REPORTS and does not accuse: a three-argument call is perfectly safe
+-- when its subject can never be null, and deciding that means reading each body. That reading is
+-- the NEXT unit, not this one — it spans the authority, workflow and records doors and each needs
+-- its own null story established, exactly the way these eleven were. Logged in FOUND_DEFECTS.md
+-- with the census so it cannot quietly grow.
+--
+-- VERIFIED AFTER: platform.knob_org_blind_reader is down to ONE row across the whole database —
+-- custom._containment_guard, the deliberate comparison baseline established correct in scfg_83
+-- and flagged same_key_scoped_read. Every other org-blind knob read in the platform is closed.
+-- public.__hr_punch_write_path_conformance() reports zero failing blocking checks, including
+-- function_contracts_hold over the two new rows. hr.capability and hr.reveal_ssn remain
+-- unreachable by any client role, and hr_break_glass is still executable by `authenticated`, so
+-- nothing was revoked or exposed inside the change. None of the three was probed by CALLING it:
+-- break-glass writes a permission grant and reveal_ssn writes a restricted-tier audit row, and a
+-- write is never a probe (scfg_78).

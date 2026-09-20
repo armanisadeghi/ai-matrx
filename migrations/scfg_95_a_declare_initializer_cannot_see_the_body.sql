@@ -1,0 +1,153 @@
+-- scfg_95_a_declare_initializer_cannot_see_the_body.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- Fourth and final unit of the hr.capability tenant sweep, and the unit that found a second,
+-- unrelated class underneath it. Both remaining census rows are closed, so every row in
+-- hr.capability_asked_without_a_tenant is now either FIXED or CLEARED WITH RECORDED EVIDENCE.
+--
+-- ═══════════════════════════════════════════════════════════════════════════════════════
+-- THE CLASS: A DECLARE INITIALIZER CANNOT SEE A VARIABLE THE BODY HAS NOT ASSIGNED YET
+-- ═══════════════════════════════════════════════════════════════════════════════════════
+--
+-- hr.wf_pending opened with:
+--
+--     declare
+--       v_org uuid;
+--       v_show_wait boolean;
+--       v_limit integer := (hr._hr_knob('hr.workflow','inbox_page_size', v_org, null) #>> '{}')::integer;
+--
+-- v_org is assigned forty lines down, in the body. A PL/pgSQL DECLARE default is evaluated at
+-- BLOCK ENTRY, in declaration order, so this read was made with NULL on every single call while
+-- reading, to any reviewer, as though it were scoped. Proven live rather than asserted:
+--
+--     declare v_org uuid;
+--             v_seen text := coalesce(v_org::text, 'NULL AT INITIALIZER TIME');
+--     begin   v_org := '...0001'; return v_seen; end;
+--     -> 'NULL AT INITIALIZER TIME | body value: 00000000-0000-0000-0000-000000000001'
+--
+-- 🚨 WHY IT IS A CLASS AND NOT A TYPO. Nothing in the system can see it. It is not an org-blind
+-- READ, because the call site names an organization, so platform.knob_org_blind_reader does not
+-- report it. It is not a type error, a lint finding or a test failure. And it is INERT TODAY --
+-- inbox_page_size carries overridable_by = '{}', so the platform rung is the only rung and a
+-- NULL organization reaches the same answer. It becomes live silently, on the unrelated future
+-- day somebody delegates the knob: hr.wf_inbox would honour the employer and hr.wf_pending would
+-- not, and the two halves of ONE inbox would paginate differently with nothing to explain it.
+--
+-- CENSUS: platform.knob_read_before_its_org_exists (security_invoker). It cuts each plpgsql
+-- function at its outermost `begin`, finds knob reads in the DECLARE prefix whose organization
+-- argument is a BARE IDENTIFIER, and reports it only when that identifier is itself declared in
+-- that same prefix. One row database-wide, hr.wf_pending; zero after this change. Failing then
+-- passing, measured on the live database rather than on a fixture.
+--
+-- 🚨 WHAT THE CENSUS DELIBERATELY DOES NOT REPORT, and the first version that got it wrong.
+-- The first cut of this view asked "is an organization passed to a knob no organization can
+-- override" and returned TEN rows -- iam.publish_to_world, iam.member_default_level,
+-- iam.field_sensitivity_level, hr.jurisdiction_evaluate and others. Eight of those are not
+-- defects, and the view's own comment asserted they were before anyone had looked at what it
+-- would catch. Passing an organization to a LOCKED knob is inert and it is the SAFER spelling:
+-- the argument cannot change the answer today, and the call site is already correct if the lock
+-- is ever lifted. A blind read is the one that goes stale silently. The view was rewritten to
+-- measure the defect that exists instead of the shape that looked like one.
+--   · A PARAMETER in the same position is fine -- it is populated at block entry.
+--   · A SELF-CONTAINED SUBQUERY is fine. hr.wf_inbox does exactly that
+--     (`(select e.organization_id from hr.employment e where e.id = p_employment_id)`)
+--     and is CORRECT; it was not touched.
+--
+-- ═══════════════════════════════════════════════════════════════════════════════════════
+-- hr.wf_pending -- three changes
+-- ═══════════════════════════════════════════════════════════════════════════════════════
+--
+-- 1. inbox_page_size now reads through the BLIND helper, hr._knob('hr.workflow',
+--    'inbox_page_size'), with the reason written beside it. The knob is platform-locked, this
+--    inbox deliberately spans every employer the caller works for, and there is therefore no
+--    single organization to resolve it against even in principle. Same doctrine as
+--    break_glass_justification_min_chars in hr_break_glass: a locked knob is DECIDED, not
+--    absent, and the honest spelling says so. Confirmed: the blind read did NOT add a row to
+--    platform.knob_org_blind_reader, because that census reports delegated keys only.
+--
+-- 2. inbox_show_waiting IS org-overridable, and it was read from the same always-null v_org on
+--    the self-service path -- so an employer who turned the requester-side section off would
+--    have been obeyed only when an ADMIN read someone else's queue, and ignored on the person's
+--    own inbox. That is the split-brain this whole campaign exists to close.
+--
+--    It is now resolved PER ROW, by the employer whose row it is, through one new helper:
+--
+--        hr._wf_waiting_visible(p_org uuid) returns boolean stable
+--
+--    used in exactly two executable positions (the count and the row subquery); the pagination
+--    total now reuses v_wait_total instead of re-running a third copy of the same count. An
+--    inbox that spans employers has no single organization to resolve a per-employer setting
+--    against ONCE -- resolving it per row is the only reading that lets an employer govern
+--    their own requests without governing another employer's. Precedent: the per-row expiry in
+--    hr_my_verification_consents (scfg_8x), where the single scalar was deleted for the same
+--    reason. v_show_wait is gone entirely; the rewrite asserted it did not survive.
+--
+--    LATENT, measured: platform.knob_override holds ZERO rows for feature hr.workflow, so every
+--    row resolves the platform default (true) and the visible behaviour is byte-identical to
+--    before. It turns on the first time an employer sets it.
+--
+-- 3. hr.capability(v_uid, 'workflow.view_queue', p_employment_id) -> five-argument with
+--    current_date and v_org. The call sits in the branch where p_employment_id is NOT NULL and
+--    v_org has just been read from that employment row two lines above, so this one was
+--    mechanical once the question was asked in the right order.
+--
+-- ═══════════════════════════════════════════════════════════════════════════════════════
+-- hr._wf_display -- the entitlement gate
+-- ═══════════════════════════════════════════════════════════════════════════════════════
+--
+--     and hr.capability(v_uid, 'workflow.view_queue', inst.subject_employment_id)
+--
+-- hr.workflow_instance.subject_employment_id is NULLABLE, and a null subject makes the tenant
+-- clause vacuously true AND skips population_contains -- the hr_l1_59 / hr_l1_64 class, on the
+-- gate that decides whether a reader sees the SUBJECT'S NAME and the CHANGE SUMMARY of a
+-- workflow instance. Now five-argument with inst.organization_id, which is NOT NULL.
+--
+-- The question that settled it is the same one that settled the rest of the sweep: ask what the
+-- ANSWER spans, not what the caller passed. An instance belongs to exactly one organization, so
+-- "may this person read ITS content" is a question about that one organization and no other.
+--
+-- Replacing it tripped provision_shape_guard, correctly -- it had no client_callable_door row.
+-- One was written FROM ITS OWN BODY and inserted in the same transaction: p_step is a ROW
+-- SELECTOR and authorizes nothing; the function decides only how much of the step to SAY;
+-- entitlement is derived here (subject by login linkage, resolved_user_ids, or view_queue over
+-- that subject in that instance's organization) and a caller who is none of those gets the
+-- contentless render. The server_only lane was not asserted but PROVEN in the same transaction,
+-- before the declaration was written: the block raises if authenticated or anon holds EXECUTE.
+--
+-- ═══════════════════════════════════════════════════════════════════════════════════════
+-- TERMINAL STATE
+-- ═══════════════════════════════════════════════════════════════════════════════════════
+--
+--   platform.knob_read_before_its_org_exists   0   (was 1; new census, failing-then-passing)
+--   hr.capability_asked_without_a_tenant       6   (was 8; all six cleared WITH evidence)
+--   platform.knob_org_blind_reader             1   (unchanged: custom._containment_guard,
+--                                                   the deliberate comparison baseline)
+--
+-- The six survivors are not open work. Two are hr.wf_inbox's affordance gates, which are
+-- org-less on purpose and carry same_capability_tenant_checked = true. Four --
+-- hr_authority_delegation_end, hr_role_assign, hr_role_revoke, hr_set_employment_pin -- have a
+-- subject that is provably non-null above the gate (a P0002 guard, or a NOT NULL column on a
+-- P0002-guarded row). They stay listed because three of those guarantees are held some lines
+-- away and a reordering edit would break them in silence.
+--
+-- METHOD (unchanged, and the reason nothing was hand-transcribed): read pg_get_functiondef,
+-- assert each needle matches EXACTLY ONCE, substitute, assert the survivors, then execute the
+-- result. DD-220 is the failure this avoids -- a body composed from a dump taken at session
+-- start silently reverts every change another lane made in between.
+--
+-- 🚨 ONE ASSERTION WAS WRONG ON FIRST WRITING, and it failed CLOSED. The survivor check counted
+-- occurrences of `hr._wf_waiting_visible(i.organization_id)` and expected two -- but the
+-- explanatory COMMENT written in the same rewrite contains that exact string, so the real count
+-- was three and the whole block raised and rolled back with nothing applied. Verified the live
+-- function was untouched before re-running. The corrected assertion counts
+-- `and hr._wf_waiting_visible(i.organization_id)`, which the prose does not contain. Recorded
+-- because the direction matters: an assertion that fails on its own comment costs one round,
+-- while an assertion that passes on prose would have hidden a missing predicate.
+--
+-- VERIFIED AFTER: hr.wf_pending() and hr.wf_pending(null, '{"page_offsets":{...}}') both execute
+-- and refuse with no_caller; hr._wf_display(<unknown step>) returns null; ALL of
+-- public.__hr_punch_write_path_conformance() returns true, including function_contracts_hold
+-- (170 functions under contract) and definer_helpers_are_not_client_reachable.
