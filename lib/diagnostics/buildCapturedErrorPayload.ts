@@ -82,12 +82,12 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
     "Stream held open after terminal (closed locally)",
   "media-durability": "Media durability violation",
   media: "Media terminal failure (@ai-matrx/media diagnostics port)",
-  "media-healed":
-    "Media render HEALED after its primary lane died (root cause named)",
+  "media-healed": "Media render HEALED after its primary lane died (root cause named)",
   "agent-catalog":
     "Agent catalogue failure (@ai-matrx/agents/catalog errorSink)",
   "reasoning-leak": "Reasoning leaked into answer text",
   "data-shape": "Data-shape contract violation",
+  "url-panel-unopened": "Deep-linked window never opened",
   "org-resolution": "Org resolution fallback",
   "topical-map-rpc": "Topical map RPC refusal",
   "feature-knob-vocabulary": "Feature knob value this build does not implement",
@@ -105,8 +105,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "unsaved-work": "Unsaved user work at risk",
   "durable-run": "Durable run could not be rejoined or settled",
   "record-unavailable": "Record unavailable (deleted, or access gap)",
-  associations:
-    "Associations package scream (port degradation / schema violation)",
+  associations: "Associations package scream (port degradation / schema violation)",
 };
 
 export function sourceLabel(source: CapturedErrorSource): string {
