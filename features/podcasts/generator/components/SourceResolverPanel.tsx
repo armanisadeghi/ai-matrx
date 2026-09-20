@@ -18,6 +18,7 @@ import {
   Globe,
   FileAudio,
   StickyNote,
+  ChevronDown,
   Loader2,
   Search,
   UploadCloud,
@@ -28,10 +29,9 @@ import { Youtube } from "@/components/icons/brand-icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { NotePickerPopover } from "@/features/notes/components/NotePickerPopover";
+import { NotesAPI } from "@/features/notes/service/notesApi";
 import { extractErrorMessage } from "@/utils/errors";
-import { cn } from "@/lib/utils";
-import { useNotes } from "@/features/notes/hooks/useNotes";
-import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import type { ResolveKind } from "../constants";
 import { useSourceResolvers } from "../useSourceResolvers";
 
@@ -246,84 +246,87 @@ function NoteResolver({
   value,
   onChange,
   rtl,
+  onBusyChange,
 }: Omit<SourceResolverPanelProps, "resolveKind">) {
-  const { notes, isLoading } = useNotes();
-  const [query, setQuery] = useState("");
   const [pickedId, setPickedId] = useState<string | null>(null);
+  const [pickedLabel, setPickedLabel] = useState<string | null>(null);
+  const [isResolving, setIsResolving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const selectionRequestRef = useRef(0);
 
-  const q = query.trim().toLowerCase();
-  const filtered = q
-    ? notes.filter(
-        (n) =>
-          n.label.toLowerCase().includes(q) ||
-          (n.content ?? "").toLowerCase().includes(q) ||
-          idMatchesQuery(n, q),
-      )
-    : notes;
+  useEffect(() => {
+    onBusyChange?.(isResolving);
+  }, [isResolving, onBusyChange]);
+
+  useEffect(
+    () => () => {
+      selectionRequestRef.current += 1;
+    },
+    [],
+  );
+
+  const handlePick = async (noteId: string) => {
+    const requestId = ++selectionRequestRef.current;
+    setIsResolving(true);
+    setError(null);
+    try {
+      const note = await NotesAPI.getById(noteId, { failureMode: "throw" });
+      if (requestId !== selectionRequestRef.current) return;
+      if (!note) {
+        throw new Error(
+          "That note is no longer available. Choose another note.",
+        );
+      }
+      setPickedId(note.id);
+      setPickedLabel(note.label || "Untitled note");
+      onChange(note.content ?? "");
+    } catch (err) {
+      if (requestId !== selectionRequestRef.current) return;
+      setError(extractErrorMessage(err));
+    } finally {
+      if (requestId === selectionRequestRef.current) {
+        setIsResolving(false);
+      }
+    }
+  };
 
   return (
     <div className="space-y-2.5">
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search your notes…"
-          className="pl-8"
-        />
-      </div>
+      <NotePickerPopover
+        onSelectNote={handlePick}
+        trigger={
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isResolving}
+            className="w-full justify-between gap-3"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              {isResolving ? (
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+              ) : (
+                <StickyNote className="h-4 w-4 shrink-0 text-muted-foreground" />
+              )}
+              <span className="truncate">
+                {isResolving
+                  ? "Loading note…"
+                  : (pickedLabel ?? "Choose a note")}
+              </span>
+            </span>
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+          </Button>
+        }
+      />
 
-      <div className="max-h-52 overflow-y-auto rounded-xl border border-border bg-card">
-        {isLoading ? (
-          <div className="flex items-center justify-center gap-2 py-8 text-xs text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading your notes…
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="py-8 text-center text-xs text-muted-foreground">
-            {q ? "No notes match." : "You have no notes yet."}
-          </div>
-        ) : (
-          <ul className="divide-y divide-border">
-            {filtered.map((note) => {
-              const selected = pickedId === note.id;
-              return (
-                <li key={note.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPickedId(note.id);
-                      onChange(note.content ?? "");
-                    }}
-                    className={cn(
-                      "flex w-full items-start gap-2.5 px-3 py-2 text-left transition-colors",
-                      selected ? "bg-primary/5" : "hover:bg-accent/40",
-                    )}
-                  >
-                    <StickyNote
-                      className={cn(
-                        "mt-0.5 h-4 w-4 shrink-0",
-                        selected ? "text-primary" : "text-muted-foreground",
-                      )}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-foreground">
-                        {note.label || "Untitled note"}
-                      </span>
-                      <span className="line-clamp-1 text-[11px] text-muted-foreground">
-                        {note.content || "Empty note"}
-                      </span>
-                    </span>
-                    {selected && (
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+      {error && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-2.5 text-xs text-destructive"
+        >
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
       {pickedId && (
         <ResolvedTextEditor
@@ -369,6 +372,7 @@ function ResolvedTextEditor({
         dir={rtl ? "rtl" : undefined}
         autoGrow
         minHeight={168}
+        maxHeight={420}
         enableTextStats
         className="text-base"
       />
