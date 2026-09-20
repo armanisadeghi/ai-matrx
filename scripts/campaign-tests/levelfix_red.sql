@@ -1,7 +1,7 @@
 -- LEVEL-FIX — THE RED TWIN. The suite's assertions against the code as it was.
 --
 -- RUN IT (against the MAIN database):
---   PSQL="$(pnpm -s exec tsx scripts/lib/psql-path.ts --print)"
+--   PSQL="$(node node_modules/tsx/dist/cli.mjs scripts/lib/psql-path.ts --print)"
 --   "$PSQL" "<the five SUPABASE_MATRIX_* values>" -v ON_ERROR_STOP=1 \
 --     -f scripts/campaign-tests/levelfix_red.sql
 --
@@ -13,6 +13,25 @@
 -- green run mean something, and it is also what proves those inverses are valid SQL.
 --
 -- Nothing survives it: the transaction is rolled back, including the fixture.
+--
+-- 🚨 THE SEAT (lane SEAT-SUITES, 2026-09-19). A RED TWIN'S JOB IS UNCHANGED: with the old
+-- kernel restored, all five clauses must still go RED. What changed is WHO ASKS THEM. This
+-- suite used to build its fixture by INSERTing straight into `custom.record` and to ask
+-- `custom.effective_level` and `custom.has_visibility` — neither of which a signed-in person
+-- may EXECUTE — from the role that OWNS `custom.record`, where
+-- `custom.assert_client_may_reach` returns on its first line. So it measured the ladder's
+-- internals, and a defect that only bites a real client seat was invisible to it. It now:
+--   * builds its fixture through `custom.table_declare` / `custom.record_write` /
+--     `custom.share_grant`, seated as `admin@admin.com`;
+--   * takes the seat `authenticated` and PROVES it (PART 0) before any clause;
+--   * asks every one of the five clauses AS THE PERSON THEY ARE ABOUT — `test@test.com` —
+--     through `custom.my_level` and `custom.query_can_see`, the two doors a browser reaches;
+--   * pairs them with ONE CONTROL she CAN do, so "went red" is never "the door refused her
+--     everything".
+-- Two steps have no client door and SAY SO where they stand: the Home record (made by the
+-- onboarding path, not a browser), and reading `platform.feature_knob` for the organization's
+-- own member default, which is the value RED 1 compares the door against. Neither asserts a
+-- product clause.
 
 \set ON_ERROR_STOP on
 \timing off
@@ -20,9 +39,6 @@
 \set ORG   '\'1ef10000-0000-4a00-8a00-000000000c01\''
 \set ADMIN '\'87a6e699-3622-4869-8843-d0867456c0dd\''
 \set DANA  '\'4060701e-706a-4c76-b3ca-0bbc69fa5a14\''
-\set HQ    '\'1ef10000-0000-4a00-8a00-000000000c11\''
-\set TBL   '\'1ef10000-0000-4a00-8a00-000000000c21\''
-\set REC   '\'1ef10000-0000-4a00-8a00-000000000c31\''
 
 begin;
 set local statement_timeout = '600s';
@@ -37,12 +53,78 @@ values (:ORG, 'organization', :ORG, :ADMIN, 'owner', 'active'),
        (:ORG, 'organization', :ORG, :DANA,  'member', 'active');
 insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
 values ('custom', 'system_enabled', 'organization', :ORG, :ORG, 'true'::jsonb, 'LEVEL-FIX red twin');
-insert into custom.record (id, organization_id, table_id, data_class, data, created_by)
-values (:TBL, :ORG, '11111111-0000-4000-8000-000000000004', 'record',
-        jsonb_build_object('name', 'LEVELFIX Red table'), :ADMIN),
-       (:REC, :ORG, :TBL, 'record', jsonb_build_object('title', 'The admin''s record'), :ADMIN);
-insert into iam.permissions (resource_type, resource_id, granted_to_user_id, permission_level, created_by)
-values ('record', :REC, :DANA, 'viewer', :ADMIN);
+
+-- ── and the Table and the record, BUILT THROUGH THE DOORS, seated as the organization's owner.
+do $fix$
+declare
+  v_org   constant uuid := '1ef10000-0000-4a00-8a00-000000000c01';
+  v_admin constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
+  v_dana  constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
+  v_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
+  v_boss  text := current_user;
+  v_home  uuid;
+  v_tbl   uuid;
+  v_rec   uuid;
+begin
+  perform set_config('request.jwt.claims', v_admin_j, true);
+
+  -- A HOME record has no client door of its own; this one fixture step is written as the
+  -- connected role and SAYS SO. No clause is asserted here.
+  insert into custom.record (organization_id, table_id, data)
+  values (v_org, null, jsonb_build_object('name', 'LEVELFIX Red Home')) returning id into v_home;
+
+  -- ════════════════════════════════════════════════════════════════════════════
+  -- PART 0 — THE SEAT. Everything below this line runs as a signed-in person.
+  -- ════════════════════════════════════════════════════════════════════════════
+  perform set_config('role', 'authenticated', true);
+  if current_user <> 'authenticated' then
+    raise exception '0: this suite did not take the seat — current_user is %', current_user;
+  end if;
+  if pg_has_role(current_user,
+                 (select c.relowner from pg_class c where c.oid = 'custom.record'::regclass),
+                 'member') then
+    raise exception '0: this seat is a member of the role that owns custom.record, so every wall would open on its first line';
+  end if;
+  begin
+    perform 1 from custom.record limit 1;
+    raise exception '0: this seat can SELECT custom.record directly, so it is not a client seat';
+  exception when insufficient_privilege then null;
+  end;
+  raise notice 'PART 0 PASSED — the seat is `authenticated`, the ladder sees a client, and custom.record is not readable from it.';
+
+  v_tbl := custom.table_declare(v_org, jsonb_build_object(
+    'name','LEVELFIX Red table','slug','levelfix_red_table','type','entity',
+    'label_singular','Thing','label_plural','Things','title_field','title','display','list',
+    'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
+    'agent_writable',true,'retention_days',365,
+    'fields', jsonb_build_array(jsonb_build_object('name','title')),
+    'parent_id', v_home::text));
+  v_rec := custom.record_write(v_org, v_tbl, jsonb_build_object('title','The admin''s record'));
+  -- THE DELIBERATE VIEWER SHARE, made through the share door rather than by hand-writing an
+  -- `iam.permissions` row: the whole question below is what a SHARE conveys, and a row the
+  -- share door never produced cannot answer it.
+  perform custom.share_grant(v_org, v_rec, 'person', v_dana, 'viewer'::public.permission_level);
+
+  -- THE CONTROL, before anything is broken: she holds what she was given, and no more. If this
+  -- is not true the red twin is measuring nothing and says so here rather than five blocks on.
+  perform set_config('request.jwt.claims',
+                     '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}', true);
+  if not custom.query_can_see(v_org, v_rec, 'viewer') then
+    raise exception 'FIXTURE FAILED — the record shared with test@test.com at viewer does not read back for her, so nothing below is measurable.';
+  end if;
+  if custom.query_can_see(v_org, v_rec, 'editor') then
+    raise exception 'FIXTURE FAILED — with the FIX live she is already editor, so this twin would go red for the wrong reason.';
+  end if;
+  perform set_config('request.jwt.claims', v_admin_j, true);
+
+  -- the ids, for the clause block below.
+  perform set_config('zz.tbl', v_tbl::text, true);
+  perform set_config('zz.rec', v_rec::text, true);
+
+  -- OUT OF THE SEAT so the inverse migrations below can be executed. They are DDL on the
+  -- platform's access kernel: an operator step by definition, and it asserts nothing.
+  perform set_config('role', v_boss, true);
+end $fix$;
 
 -- ══════════════════════════════ THE INVERSES, EXECUTED. This is the code as it was.
 -- LEVEL-FIX (1 of 4) — THE INVERSE. The two kernel bodies exactly as they stood at
@@ -354,53 +436,94 @@ update platform.feature_knob
  where feature = 'custom' and key = 'member_default_level';
 
 -- ══════════════════════════════ AND THE SAME CLAUSES, WHICH MUST ALL GO RED
+-- Every one of them is now asked AS `test@test.com`, from the seat `authenticated`, through
+-- the two doors a browser reaches. The red twin's job is unchanged: all five must go red.
 do $t$
 declare
-  v_org  constant uuid := '1ef10000-0000-4a00-8a00-000000000c01';
-  v_dana constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
-  v_tbl  constant uuid := '1ef10000-0000-4a00-8a00-000000000c21';
-  v_rec  constant uuid := '1ef10000-0000-4a00-8a00-000000000c31';
+  v_org   constant uuid := '1ef10000-0000-4a00-8a00-000000000c01';
+  v_dana  constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
+  v_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
+  v_dana_j  constant text := '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}';
+  v_boss  text := current_user;
+  v_tbl   uuid := current_setting('zz.tbl')::uuid;
+  v_rec   uuid := current_setting('zz.rec')::uuid;
+  v_knob  public.permission_level;
+  v_level public.permission_level;
   v_red  int := 0;
   v_note text := '';
 begin
-  -- RED 1 (green part 1a) — the two doors disagree in the same breath.
-  if custom.effective_level(v_dana, v_org, v_rec, 'record')
-       is distinct from iam.member_default_level(v_org, v_tbl) then
+  -- OUT OF THE SEAT, for one value and no clause: what THIS organization says membership alone
+  -- confers. There is no client door that answers a knob, and RED 1 is the comparison between
+  -- that sentence and what the read door actually hands a person — so the sentence is read
+  -- here, by the operator, and the door is asked below, by her.
+  v_knob := iam.member_default_level(v_org, v_tbl);
+
+  -- ════════════════════════════════════════════════════════════════════════════
+  -- PART 0 — THE SEAT. Everything below this line runs as a signed-in person.
+  -- ════════════════════════════════════════════════════════════════════════════
+  perform set_config('role', 'authenticated', true);
+  if current_user <> 'authenticated' then
+    raise exception '0: this suite did not take the seat — current_user is %', current_user;
+  end if;
+  if pg_has_role(current_user,
+                 (select c.relowner from pg_class c where c.oid = 'custom.record'::regclass),
+                 'member') then
+    raise exception '0: this seat is a member of the role that owns custom.record, so every wall would open on its first line';
+  end if;
+  begin
+    perform 1 from custom.record limit 1;
+    raise exception '0: this seat can SELECT custom.record directly, so it is not a client seat';
+  exception when insufficient_privilege then null;
+  end;
+
+  perform set_config('request.jwt.claims', v_dana_j, true);
+
+  -- RED 1 (green part 1a) — the two doors disagree in the same breath. `custom.my_level` is
+  -- what a person's screen asks; `custom.effective_level` is the internal it calls and holds
+  -- no client grant at all.
+  v_level := custom.my_level(v_org, v_rec, 'record');
+  if v_level is distinct from v_knob then
     v_red := v_red + 1;
     v_note := v_note || format('1a: the read door says %s and the organization knob says %s. ',
-      coalesce(custom.effective_level(v_dana, v_org, v_rec, 'record')::text, 'nothing'),
-      coalesce(iam.member_default_level(v_org, v_tbl)::text, 'nothing'));
+      coalesce(v_level::text, 'nothing'), coalesce(v_knob::text, 'nothing'));
   end if;
 
   -- RED 2 (green part 1b) — membership alone confers editor.
-  if custom.has_visibility(v_dana, 'record', v_rec, 'editor'::public.permission_level) then
+  if custom.query_can_see(v_org, v_rec, 'editor') then
     v_red := v_red + 1;
     v_note := v_note || '1b: membership alone confers editor. ';
   end if;
 
   -- RED 3 (green part 2c/2d/2e) — a VIEWER is answered editor by the one ladder every write
   -- door asks, which is what let her rewrite, delete and create.
-  if custom.effective_level(v_dana, v_org, v_rec, 'record') > 'viewer'::public.permission_level then
+  if custom.my_level(v_org, v_rec, 'record') > 'viewer'::public.permission_level then
     v_red := v_red + 1;
     v_note := v_note || format('2: shared at viewer, answered %s. ',
-      custom.effective_level(v_dana, v_org, v_rec, 'record')::text);
+      custom.my_level(v_org, v_rec, 'record')::text);
   end if;
 
-  -- RED 4 (green part 4a) — revoke the share entirely and she is still at editor.
-  delete from iam.permissions
-   where resource_type = 'record' and resource_id = v_rec and granted_to_user_id = v_dana;
-  if custom.has_visibility(v_dana, 'record', v_rec, 'editor'::public.permission_level) then
+  -- RED 4 (green part 4a) — revoke the share entirely and she is still at editor. The revoke
+  -- goes through the SHARE DOOR, as the owner, exactly as a person un-shares something.
+  perform set_config('request.jwt.claims', v_admin_j, true);
+  perform custom.share_revoke(v_org, v_rec, 'person', v_dana);
+  perform set_config('request.jwt.claims', v_dana_j, true);
+  if custom.query_can_see(v_org, v_rec, 'editor') then
     v_red := v_red + 1;
     v_note := v_note || '4a: still editor AFTER the share was revoked. ';
   end if;
 
   -- RED 5 (green part 5b) — the VIS-19 override is gone: a deliberate viewer share is unioned
   -- with the organization default and silently raised back.
+  -- The knob override is an operator step (a knob has no client door), so the seat is stepped
+  -- out of for that ONE statement and back in before anything is asked.
+  perform set_config('role', v_boss, true);
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
   values ('custom', 'member_default_level', 'organization', v_org, v_org, '"editor"'::jsonb, 'LEVEL-FIX red twin');
-  insert into iam.permissions (resource_type, resource_id, granted_to_user_id, permission_level, created_by)
-  values ('record', v_rec, v_dana, 'viewer', '87a6e699-3622-4869-8843-d0867456c0dd');
-  if custom.has_visibility(v_dana, 'record', v_rec, 'editor'::public.permission_level) then
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', v_admin_j, true);
+  perform custom.share_grant(v_org, v_rec, 'person', v_dana, 'viewer'::public.permission_level);
+  perform set_config('request.jwt.claims', v_dana_j, true);
+  if custom.query_can_see(v_org, v_rec, 'editor') then
     v_red := v_red + 1;
     v_note := v_note || '5b: a viewer share was raised back to editor by the role default. ';
   end if;
@@ -409,10 +532,18 @@ begin
     raise exception 'RED TWIN FAILED — only % of 5 blocks went red. %  The green suite is '
       'therefore not measuring what it claims to.', v_red, v_note;
   end if;
-  raise notice '5 of 5 blocks are RED — %', v_note;
+  raise notice '5 of 5 blocks are RED, every one of them asked as test@test.com from the seat '
+    '`authenticated` — %', v_note;
+  perform set_config('role', v_boss, true);
+  perform set_config('request.jwt.claims', '', true);
 end $t$;
 
 -- RED 6 — and the census, which is the whole-database version of the same question.
+-- IT IS AN OPERATOR'S REPORT, NOT A PERSON'S SCREEN: `iam.member_level_overreach()` names
+-- every member of every organization who is over their level, so no signed-in person may run
+-- it and none should. It is asked here as the connected role, deliberately and out loud, and
+-- it asserts nothing about what any person may do — the five clauses above are that, and all
+-- five were asked from the seat.
 do $t$
 declare v_n int; v_who text;
 begin
