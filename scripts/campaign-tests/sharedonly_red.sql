@@ -115,7 +115,7 @@ begin
   if not v_set.o_all_visible
      and coalesce(array_length(v_set.o_true_visibility, 1), 0) = 0
      and coalesce(array_length(v_set.o_carried_visible, 1), 0) = 0 then
-    v_red := v_red || array['2: the whole table shared at ADMIN and the read door's own set carries not one of its rows'::text];
+    v_red := v_red || array['2: the whole table shared at ADMIN and the read door''s own set carries not one of its rows'::text];
   end if;
   delete from iam.permissions where resource_type = 'record' and resource_id = v_a and granted_to_user_id = v_dana;
 
