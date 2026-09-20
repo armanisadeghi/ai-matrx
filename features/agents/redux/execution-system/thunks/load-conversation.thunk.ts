@@ -51,7 +51,10 @@ import {
 import { initInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.slice";
 import { fetchInputCapabilitiesSnapshot } from "../instance-input-capabilities/input-capabilities-snapshot";
 import { parsePersistedInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.persistence";
-import { initInstanceUIState } from "../instance-ui-state/instance-ui-state.slice";
+import {
+  initInstanceUIState,
+  type InitInstanceUIStatePayload,
+} from "../instance-ui-state/instance-ui-state.slice";
 import {
   initInstanceContext,
   setContextEntries,
@@ -127,6 +130,16 @@ export interface LoadConversationArgs {
    * Nothing about the RPC call itself changes.
    */
   expectMaterialized?: boolean;
+  /**
+   * Display state the CALLER knows better than the stored `metadata.display`
+   * does — applied on top of it in the SAME dispatch, so no render can see the
+   * stored value where the caller's correction belongs.
+   *
+   * The reopen-from-a-URL path uses exactly two: the display mode the link
+   * named (more specific than whatever was stored) and `autoRun: false`,
+   * because reopening an address is never a decision to spend a paid run.
+   */
+  displayOverrides?: Omit<InitInstanceUIStatePayload, "conversationId">;
 }
 
 interface ThunkApi {
@@ -160,6 +173,7 @@ export const loadConversation = createAsyncThunk<
       beforePosition,
       signal,
       expectMaterialized = false,
+      displayOverrides,
     },
     { dispatch },
   ) => {
@@ -452,11 +466,12 @@ export const loadConversation = createAsyncThunk<
         : {};
     const displayMeta =
       (metaObj.display as Record<string, unknown> | undefined) ?? undefined;
-    if (displayMeta) {
+    if (displayMeta || displayOverrides) {
       dispatch(
         initInstanceUIState({
           conversationId,
           ...displayMeta,
+          ...displayOverrides,
         } as never),
       );
     }
