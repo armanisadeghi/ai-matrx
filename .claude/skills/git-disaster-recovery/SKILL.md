@@ -44,6 +44,11 @@ Companions, read only when pointed:
 ## Hard bans
 
 - Never force-push.
+- Never leave a local worktree or a local branch behind. Arman, 2026-09-20:
+  "there is no reason for ever having a worktree. Updates should always be
+  made to the single source of truth that is pushed live every 30 minutes."
+  An intake worktree lives for the minutes one landing takes, then it is
+  removed. Remote branches are tolerated; local ones are forbidden.
 - Never commit the dirty shared tree as one blob.
 - Never merge onto the dirty shared checkout or reset it "to make room".
   Landing happens in one short-lived intake worktree from current `origin/main`.
@@ -222,8 +227,9 @@ paths nobody owns. Do not let that pile grow back. Every 30 minutes:
 - Type-check GitHub main in an intake worktree after every batch. A blind
   batch that breaks the build is undone the same hour, one file at a time,
   never by reverting the batch.
-- Remove idle worktrees whose tip is on `origin/main` and whose tree is
-  clean. A slow filesystem makes `worktree remove` hang: unregister it under
+- Remove every worktree that is not the release script's own, landing its
+  unique files on main first. Idle or live makes no difference: nothing
+  waits in a worktree. A slow filesystem makes `worktree remove` hang: unregister it under
   `.git/worktrees/` and delete the directory in the background.
 - The shared-checkout guard reads the whole command line. One `checkout -- .`
   or `add -A` anywhere in a chained command refuses the entire chain before

@@ -10,13 +10,35 @@
    file. Both sheets are imported in app/layout.tsx. */
 @layer matrx-design-system-tokens, matrx-design-system;
 
-@import "tailwindcss";
+/* Keep automatic discovery out of parked worktrees and build caches. The
+ * oxide glob walker traverses those trees even when .gitignore excludes them. */
+@import "tailwindcss" source(none);
+@source "../actions";
+@source "./";
+@source "../components";
+@source "../config";
+@source "../constants";
+@source "../features";
+@source "../hooks";
+@source "../lib";
+@source "../providers";
+@source "../public";
+@source "../styles";
+@source "../types";
+@source "../utils";
 @source "../node_modules/@ai-matrx/design-system/dist";
 @source "../node_modules/@ai-matrx/agents/dist";
 @source "../node_modules/@ai-matrx/capture/dist";
 @source "../node_modules/@ai-matrx/associations/dist";
 @source "../node_modules/@ai-matrx/media/dist";
 @source "../node_modules/@ai-matrx/diff/dist";
+@source "../node_modules/@ai-matrx/records-ui/dist";
+@source "../node_modules/@ai-matrx/content-ir-react/dist";
+@source "../node_modules/@ai-matrx/print/dist";
+@source "../node_modules/@ai-matrx/tap-target/dist";
+@source "../node_modules/@ai-matrx/meet/dist";
+@source "../node_modules/@ai-matrx/messaging/dist";
+@source "../node_modules/@ai-matrx/kit/dist";
 @import "tw-animate-css";
 
 /* THE DATABASE-CLASS SAFELIST (DD-123 §1.8). Tailwind emits a utility only for

@@ -17,6 +17,7 @@
 
 import { useCallback } from "react";
 import { fileHandler } from "@/features/files/handler/handler";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { useBackendApi } from "@/hooks/useBackendApi";
@@ -114,17 +115,64 @@ export function useIngest(): UseIngestResult {
       const safe = title.replace(/[^\w\- ]+/g, "").replace(/\s+/g, "_").slice(0, 60) || "source";
       const blob = new Blob([text], { type: "text/markdown" });
       const file = new File([blob], `${safe}.md`, { type: "text/markdown" });
-      const result = await upload(
-        { kind: "file", file },
-        { onProgress: uploadProgressReporter(`Saving ${title}…`, onProgress) },
-      );
-      if (!result.fileId) {
-        // Loud recovery: without an anchor fileId, artifacts can't link a
-        // `source` lineage edge — the "durable anchor" guarantee is broken.
-        console.error(
-          "[useIngest] anchor upload returned no fileId — kit artifacts will have no source lineage.",
-          { title },
+      // 🚨 THE ANCHOR IS LINEAGE, NOT THE PAYLOAD — IT MAY NEVER SINK THE INGEST.
+      //
+      // This copy exists so a kit's artifacts can link a `source` edge back to
+      // what they were built from. Useful; not the thing the person asked for.
+      // The thing they asked for is the text they already handed us, which is
+      // in `text` right now and needs nothing from storage.
+      //
+      // It used to `await upload(...)` bare, so a storage outage threw straight
+      // out of `normalize()` and the whole study kit died — and what the person
+      // saw was `file upload failed — ClientError: An error occurred
+      // (InvalidAccessKeyId) when calling the PutObject operation`. On
+      // 2026-09-20 that ran for 91 minutes (21:19:35Z-22:49:51Z, 18 captured
+      // errors across /education/start and /chat) while somebody was PASTING
+      // TEXT and had uploaded nothing at all. Two lies in one sentence: it
+      // named a file the person never chose, and it read as their fault.
+      //
+      // The path below already tolerated a missing anchor — `ref.fileId` is
+      // `string | undefined` and every downstream reader handles it. Only the
+      // THROW was fatal. So a storage failure now degrades exactly like a
+      // missing fileId: loudly, to us, and invisibly to the person's outcome.
+      let result: Awaited<ReturnType<typeof upload>> | null = null;
+      try {
+        result = await upload(
+          { kind: "file", file },
+          { onProgress: uploadProgressReporter(`Saving ${title}…`, onProgress) },
         );
+      } catch (cause) {
+        captureError({
+          source: "runtime-exception",
+          operation: "insert",
+          relation: "education/onboard/anchor-source",
+          message: `Education ingest could not archive its source copy: ${
+            cause instanceof Error ? cause.message : String(cause)
+          }`,
+          // What the person would be told IF we told them. Never the storage
+          // provider's sentence, and never the word "upload" on a paste.
+          userMessage:
+            "Your notes are safe and your study kit is being built — we just couldn't keep a copy of the original source.",
+          // The kit is built from text we are still holding. Nothing is lost
+          // except the lineage edge, which re-anchors on the next ingest.
+          recoverable: true,
+          raw: cause,
+        });
+        return undefined;
+      }
+      if (!result.fileId) {
+        // Same outcome by a different route: the call succeeded but handed
+        // back no id, so there is still nothing to hang a lineage edge on.
+        captureError({
+          source: "runtime-exception",
+          operation: "insert",
+          relation: "education/onboard/anchor-source",
+          message:
+            "Education ingest anchor upload returned no fileId — kit artifacts will have no source lineage.",
+          userMessage:
+            "Your notes are safe and your study kit is being built — we just couldn't keep a copy of the original source.",
+          recoverable: true,
+        });
       }
       return result.fileId;
     },
