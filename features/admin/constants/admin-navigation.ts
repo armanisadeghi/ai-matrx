@@ -390,6 +390,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/database/workbench"),
           destination("/administration/database/sql-functions"),
           destination("/administration/database/enums"),
+          destination("/administration/database/unified-data-ramp"),
           destination("/legacy/administration/schema-manager"),
         ],
       },

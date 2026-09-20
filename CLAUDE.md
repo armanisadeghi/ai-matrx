@@ -171,6 +171,7 @@ Non-obvious homes: live `/chat` → [`features/agents/components/chat/FEATURE.md
   admin.” AI Dream MCP: run `uv run python scripts/repair_mcp_access.py --check` in `../aidream`,
   then `--repair` only when it reports the configured grant missing. Full boundary:
   `../common-docs/policies/defect-ownership.md`.
+- 🚨 **A blocker you can see and fix is YOURS — "another lane owns it" is not a finding.** Red on main too, another campaign's route, a pre-existing failing gate in your path: FIX IT in the same push, minimally and verified — never a comment naming it, never a proposed patch for someone else. **And never poll a blocker you could have fixed**: a recurring check-in whose only possible outcome is somebody else acting is a paid wake producing "nothing changed" (Arman, 2026-09-19: *"We don't 'report' things we can just fix"*). `../common-docs/policies/defect-ownership.md`.
 
 ## Dev server & browser testing
 

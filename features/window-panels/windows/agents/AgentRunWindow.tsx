@@ -78,6 +78,11 @@ import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControl
 import { usePreparedResourceSeed } from "@/features/agents/components/chat/usePreparedResourceSeed";
 import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
 import type { Resource } from "@/features/agents/resources/types";
+import {
+  AGENT_RUN_WINDOW_AGENT_ARG,
+  AGENT_RUN_WINDOW_CONVERSATION_ARG,
+  AGENT_RUN_WINDOW_URL_MODE,
+} from "./agentRunWindowAddress";
 
 const SOURCE_FEATURE: SourceFeature = "agent-runner";
 
@@ -891,6 +896,18 @@ function AgentRunWindowInner({
       overlayId="agentRunWindow"
       overlayInstanceId={instanceId}
       urlSyncId={instanceId}
+      // The Chat window shares the `agent` URL key with the display-mode
+      // shells, which ARE one conversation each. `m-run` is what says this
+      // token addresses the WINDOW; the agent and the open conversation ride
+      // as args so a refresh comes back to the same chat rather than an empty
+      // picker. See agentRunWindowAddress.ts.
+      urlSyncArgs={{
+        m: AGENT_RUN_WINDOW_URL_MODE,
+        ...(agentId ? { [AGENT_RUN_WINDOW_AGENT_ARG]: agentId } : {}),
+        ...(activeConversationId
+          ? { [AGENT_RUN_WINDOW_CONVERSATION_ARG]: activeConversationId }
+          : {}),
+      }}
       onCollectData={collectData}
       actionsRight={
         agentId && surfaceKey ? (

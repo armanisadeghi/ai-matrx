@@ -15,6 +15,24 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D341 — A window's LAYOUT comes back on refresh for 13 windows out of 195 (2026-09-19)
+
+Two systems restore a window panel and only one of them is general. `?panels=` (URL) now opens
+and reloads every addressed window — fixed 2026-09-19, see `features/window-panels/FEATURE.md`.
+The OTHER path, `WindowPersistenceCore` (the local workspace: which windows were open, where,
+how big, with what body state), is opt-in per registry row: `preservation:` appears on **13 of
+195 `overlayId` rows** in `features/window-panels/registry/windowRegistryMetadata.ts`, and
+`WindowPanel.tsx:451` additionally refuses it for any `ephemeral: true` row — which is every
+agent widget shell. So a person who arranges four windows and presses reload gets back only the
+ones whose address happens to be in the URL, at default geometry. Arman's report of 2026-09-19
+("I'm having this issue everywhere… never worked to make sure we bring all of our window panels
+back on refresh") covers this half too; the URL fix does not close it.
+
+**Why it is filed, not fixed:** each row needs a considered `preservation` data contract (what of
+the body is safe to persist, what must be re-read) plus an `overlayInstanceId` for multi-instance
+windows — 180 judgement calls, not a sweep. The `ephemeral` flag on the agent shells is a separate
+ruling: it is what makes a restored agent panel's geometry impossible today.
+
 ### D339 — A `research` run's first user message carries 129k characters / 972 lines of assembled markdown as the human's typed text (2026-09-19)
 
 Surfaced by the rebuilt test-case viewer, which now prints each input's size. On agent `Research Report Generator` (`7a90bace-1c2b-4d40-829d-b6d875573324`), the runs titled "Auto: Research Report" (`source_feature = research`, 2026-07-22) store their first `chat.message` user turn as one text part of **129,254 characters beginning `# Research Topic Dr. Angie Sadeghi an…`** — a rendered document, alongside the same run's four properly-named variables (`topic`, `page_summaries`, `search_results`, `keyword_syntheses`). Nobody typed that. Whether it is a USER-INPUT LAW breach (`../common-docs/systems/agents/agent-variable-binding/FEATURE.md` § THE USER-INPUT LAW) or an accepted way a mandate-launched run stores its rendered turn is NOT settled here — I did not trace the writer. To pin it down, find who writes the first user message for `source_feature = 'research'` (aidream side) and check it against the law. Consequence if it is a breach: every borrowed test case from those runs inherits the blob, and the model receives the material twice (once as variables, once as "what the person typed"). Evidence query: `select length(p->>'text') from chat.message m, jsonb_array_elements(m.content::jsonb) p where m.role='user' and m.conversation_id in (select id from chat.conversation where initial_agent_id='7a90bace-1c2b-4d40-829d-b6d875573324');`
