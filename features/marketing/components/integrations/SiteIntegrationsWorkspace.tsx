@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Save,
   SearchCheck,
+  Tag,
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -73,6 +74,7 @@ import {
   formatCompactDate,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { SiteAnalyticsCard } from "@/features/marketing/components/settings/SiteAnalyticsCard";
+import { SiteTrackingCard } from "@/features/marketing/components/settings/SiteTrackingCard";
 import {
   describeBackendFailure,
   type BackendFailureExplanation,
@@ -228,6 +230,18 @@ const builtIns: Array<{
     resourceLabel: "GA4 property",
     resourcePlaceholder: "properties/123456789",
     icon: BarChart3,
+  },
+  {
+    // U-M2 — the container a site's tracking is graded against. The PUBLIC id, because that is
+    // the id the page's own snippet carries and the only thing the live-page reconciliation can
+    // match on (`features/marketing/data/integrations-schema.ts`).
+    key: "googleTagManager",
+    label: "Google Tag Manager (optional)",
+    description:
+      "Read-only. Grades what is firing on this site and checks that the container is really on the live page.",
+    resourceLabel: "Container ID",
+    resourcePlaceholder: "GTM-ABC1234",
+    icon: Tag,
   },
 ];
 
@@ -1215,6 +1229,10 @@ function SiteIntegrationsEditor({
           </div>
 
           {reviewMode ? <SiteAnalyticsCard site={site} /> : null}
+
+          {/* THE CANONICAL PANEL, not a copy (same law as SiteAnalyticsCard): the tracking
+              verdict, the container-versus-live-page reconciliation and the inventory. */}
+          <SiteTrackingCard site={site} />
 
           {!reviewMode ? (
             <UrlChangeIntakeCard

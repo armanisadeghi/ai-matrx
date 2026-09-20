@@ -1,0 +1,101 @@
+-- scfg_90_there_is_one_display_name_composer.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- Two doors closed, and one of them turned out not to be a scoping miss at all.
+--
+-- ── public.hr_employee_profile(p_employee_id, p_as_of) — hr.access.comp_visibility_for_managers
+--
+-- The ordinary case, and the cleanest instance of the test yet. The organization is NOT the
+-- caller's claim and is not an argument: hr._l1_viewer reads it from the SUBJECT employee's own
+-- row (hr.employee.organization_id) and returns null — answered as `not_reachable` — when there
+-- is no such employee. The knob read sits on the `v_kind = 'manager'` branch, which is reached
+-- only when hr._l1_is_manager_of holds inside that same employer, and a viewer kind of 'none' is
+-- refused and audited before it. So v_org is established, non-null, and is the right rung by the
+-- other test too: whether a manager may see a report's pay band is the EMPLOYER's policy about
+-- its own employees' compensation, and the answer spans exactly one employer.
+-- The value also rides out in the response as `comp_visibility`, so the wrong rung was visible
+-- to the client, not just internal.
+-- Both function_contract rows over this door (the five capability calls that must carry v_org,
+-- and the derived-status header) survive verbatim; no override rows exist for the key.
+--
+-- ── public.hr_employee_update — hr.employees.display_name_rule, AND THE CLASS BEHIND IT
+--
+-- 🚨 THIS IS NOT ONE DOOR'S BUG. Chasing the org-blind read found FOUR writers of
+-- hr.employee.display_name, composing it FOUR different ways, of which exactly ONE consulted the
+-- rule at all — and that one consulted it with no organization. A setting three of its four
+-- writers ignore is not a setting.
+--
+--   public.hr_employee_create      hardcoded preferred-first + preferred-last
+--   public.hr_employee_update      read the rule, org-blind, three branches
+--   public.hr_self_update          hardcoded preferred-first + preferred-last
+--   hr.profile_edit_wf_apply       hardcoded legal-first + legal-last (F3 branch only)
+--
+-- What that meant for a real employer, stated plainly: one that set display_name_rule to
+-- `legal_full` got legal names only for people an HR admin happened to EDIT afterwards. Everybody
+-- it HIRED was named preferred_full, and anybody who touched their own profile was renamed back
+-- to preferred_full by the self-service lane. And at the PLATFORM DEFAULT
+-- (preferred_first_legal_last) the doors already disagreed with each other for anyone with a
+-- preferred surname: hr_employee_update produced `preferred-first legal-last`, the other two
+-- produced `preferred-first preferred-last`. The same person had two names depending on which
+-- screen last saved them.
+--
+-- THE FIX IS THE PRIMITIVE, NOT THE INSTANCE. New: hr.employee_display_name(p_org, legal_first,
+-- legal_last, preferred_first, preferred_last) — the ONE composer, resolving the rule for the
+-- employer through hr._hr_knob, and RAISING 22023 on a null organization rather than quietly
+-- answering from the platform rung (composing a person's name against the wrong rung is silent
+-- and permanent). All four writers now call it:
+--   create   → the composed FALLBACK only; an explicit display_name in the payload still wins.
+--   update   → v_org, the subject's employer, already gated by hr._l1_subject_write_gate.
+--   self     → v_org, read alongside v_employee before the door refuses anyone but the subject.
+--   wf_apply → inst.organization_id, off the workflow instance row.
+--
+-- ONE DELIBERATE BEHAVIOUR CHANGE, named rather than buried: a self-service edit now obeys the
+-- employer's rule. At the default, a person who types a preferred surname will be displayed
+-- preferred-first + LEGAL-last — which is what an HR admin editing the same person already
+-- produced, and what the rule's own basis says it is for ("the surname that matches payroll and
+-- the I-9"). Making the two lanes disagree was never a decision anyone took. An employer that
+-- wants the whole name to be the person's to choose sets `preferred_full`; that is the knob.
+--
+-- §4.10 F3 IS UNCHANGED. hr.profile_edit_wf_apply still recomputes ONLY when no preferred name
+-- overrides it — an approved legal-name change must not overwrite the name somebody chose to be
+-- called. Only the composition inside that branch moved to the composer, where it is a no-op
+-- today (with no preferred names every rule composes legal-first + legal-last) and stops being
+-- one the moment a fourth rule value exists. That is precisely why a hardcoded copy there would
+-- have rotted unnoticed.
+--
+-- PROTECTION IS A ROW, NEVER A CHECK (D13). Four hr.function_contract rows now require
+-- `hr.employee_display_name(` in each writer, and hr_employee_update's row additionally BANS the
+-- exact org-blind string it replaced. A later lane re-emitting any of these four bodies from its
+-- own source — the failure mode hr_l3_69 suffered, applied and ledgered and then silently
+-- erased — now fails __hr_punch_write_path_conformance() instead of passing in silence.
+--
+-- TWO DECLARATIONS WRITTEN, BOTH FROM THE BODY. The composer is declared server-only. So is
+-- hr.profile_edit_wf_apply, which had NO door row and was flagged the moment it was replaced:
+-- no client role holds EXECUTE on it, no SQL body names it, and it is reached only by DYNAMIC
+-- dispatch through hr._wf_apply → hr._wf_call_hook over hr.workflow_flow_type.apply_fn, where
+-- the row flow_key = 'profile_edit_request' registers it. Zero static callers is what a
+-- data-dispatched hook looks like; it is not an unused function.
+--
+-- NO BACKFILL, AND THE NUMBER WAS MEASURED RATHER THAN ASSUMED. 38 live employees; 6 carry a
+-- display_name that differs from what the composer produces, and all 6 are fixtures whose
+-- display_name was set EXPLICITLY at create (`G2S-CAOT Calla Ortega` against a preferred first
+-- name of `G2S-CAOT-Calla`). An explicit name is honoured and never recomposed, so those are
+-- correct as they stand. Nobody in the database has a preferred SURNAME, which is why the
+-- divergence between the doors had not yet produced a visible wrong name — it was waiting.
+-- Renaming live people is not a side effect of a code fix and is not done here.
+--
+-- VERIFIED AFTER: census 8 → 3 rows over 3 functions across this file's two units; no
+-- display_name_rule row remains in platform.knob_org_blind_reader; five functions now reference
+-- the composer (the four writers plus itself); __hr_punch_write_path_conformance() reports zero
+-- failing blocking checks, function_contracts_hold included; the three client doors are still
+-- executable by `authenticated` and the composer and profile_edit_wf_apply are not, so nothing
+-- was revoked or exposed inside the change. The composer was exercised directly against a live
+-- organization (Robert/Smith/Bob → `Bob Smith`; no preferred → `Robert Smith`), which is a READ
+-- and writes nothing — the distinction scfg_78 got wrong.
+--
+-- REMAINING: hr_break_glass, hr.reveal_ssn, and custom._containment_guard (the deliberate
+-- comparison baseline established correct in scfg_83, which stays). Emergency access and a
+-- social-security-number disclosure, each to be read entirely on its own terms.

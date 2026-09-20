@@ -1,10 +1,10 @@
 {
-  "$schema": "none \u2014 read by features/window-panels/__tests__/everyWindowHasAnAddress.test.ts",
+  "$schema": "none — read by features/window-panels/__tests__/everyWindowHasAnAddress.test.ts",
   "$why": [
     "R35: every identity the platform names has a durable address AND an in-place door.",
-    "A window with no `urlSync` key cannot be deep-linked, cannot be opened by a verifier from the seat, and cannot be reached by the extension or the desktop app (Google-native PLAN \u00a75.7: 'the same panels through the existing window-panel deep links; no client-specific Google code').",
+    "A window with no `urlSync` key cannot be deep-linked, cannot be opened by a verifier from the seat, and cannot be reached by the extension or the desktop app (Google-native PLAN §5.7: 'the same panels through the existing window-panel deep links; no client-specific Google code').",
     "V-23 measured three items UNMEASURED for exactly this reason: the agenda and the two Google import panels could not be reached, and the site Quick view's one-panel identity could not be checked because the overlay-bound window had no address.",
-    "This file is the CENSUS of the class, not a permission slip. `addressless` holds windows that genuinely must not have an address, each with its reason. `unaddressedBaseline` is DEBT: windows whose payload names a durable subject and that still have no address. The guard only lets it SHRINK \u2014 a new window in either list fails, and an entry that has since been addressed must be deleted from here."
+    "This file is the CENSUS of the class, not a permission slip. `addressless` holds windows that genuinely must not have an address, each with its reason. `unaddressedBaseline` is DEBT: windows whose payload names a durable subject and that still have no address. The guard only lets it SHRINK — a new window in either list fails, and an entry that has since been addressed must be deleted from here."
   ],
   "addressless": {
     "createProjectWindow": "Returns a value to the caller that opened it (its payload carries `callbackGroupId`). A deep link would open a picker with nothing to hand its answer back to, so this window is addressed by the surface that raised it and nothing else.",
@@ -19,11 +19,11 @@
     "surfaceAgentBindWindow": "Returns a value to the caller that opened it (its payload carries `callbackGroupId`). A deep link would open a picker with nothing to hand its answer back to, so this window is addressed by the surface that raised it and nothing else.",
     "userSearchWindow": "Returns a value to the caller that opened it (its payload carries `callbackGroupId`). A deep link would open a picker with nothing to hand its answer back to, so this window is addressed by the surface that raised it and nothing else."
   },
-  "$sharedAddressesWhy": "One address may name one SUBJECT rendered in more than one presentation \u2014 the presentation rides in an arg, not in a second key. Anything else is two windows on one address, and one of them is unreachable.",
+  "$sharedAddressesWhy": "One address may name one SUBJECT rendered in more than one presentation — the presentation rides in an arg, not in a second key. Anything else is two windows on one address, and one of them is unreachable.",
   "sharedAddresses": {
-    "detail": "`detail:<type>.<id>:as-window|docked` \u2014 one record, two presentations of the Detail primitive (lib/detail). `as-` picks which; the key names the record."
+    "detail": "`detail:<type>.<id>:as-window|docked` — one record, two presentations of the Detail primitive (lib/detail). `as-` picks which; the key names the record."
   },
-  "$noMetadataWhy": "A catalogue window with no row in windowRegistryMetadata.ts cannot declare an address at all \u2014 nor a mobile presentation, nor a preservation contract. These are debt of the same class, one level earlier.",
+  "$noMetadataWhy": "A catalogue window with no row in windowRegistryMetadata.ts cannot declare an address at all — nor a mobile presentation, nor a preservation contract. These are debt of the same class, one level earlier.",
   "noMetadataBaseline": [
     "copySubsetWindow",
     "scopeBatchImportWindow",
@@ -100,5 +100,16 @@
     "transcriptStudioWindow",
     "whatsappMedia",
     "whatsappSettings"
-  ]
+  ],
+  "$subjectlessAddressesWhy": "V-27 NEW-2: a registry row can declare `urlSync.key` while the window never passes `urlSyncId`, so the panel registers its sync entry under the singleton overlay id and writes THAT into ?panels= — the deep link opens once and dies on reload. This census reads the window components. These entries are the ones that were already like that when the case landed, or that genuinely address by key alone WITH the reason; it only shrinks. Each entry names the subject its address drops; the fix is `urlSyncId={<that id>}` on the window, plus a hydrator that can read it back.",
+  "subjectlessAddresses": {
+    "quickTasksWindow": "DEBT: declares `quick_tasks` and its payload names orgId/projectId/taskId, but the window passes no `urlSyncId`, so the token carries the overlay id and a shared link reopens no particular task list.",
+    "userPreferencesWindow": "DEBT: declares `user_preferences` over `initialTabId`; the settings shell renders the panel with no `urlSyncId`, so the address cannot name the tab it opened on.",
+    "credentialVaultWindow": "DEBT: declares `vault` over `selectedItemId`; the window passes no `urlSyncId`, so a link reopens the vault but never the item.",
+    "markdownEditorWindow": "DEBT: declares `markdown_editor` over the processor/coordinator/sample ids; the window passes no `urlSyncId`.",
+    "cropStudioWindow": "DEBT: declares `crop_studio` over `folderId`; the image-studio window passes no `urlSyncId`.",
+    "keywordWindow": "DEBT: declares `keyword` and its payload names the phrase, the site, the page and the brand, but the window passes no `urlSyncId`, so every keyword shares one address."
+  },
+  "$unlocatableWindowsWhy": "A window whose component is not under features/window-panels/windows/** cannot be read by the subject census. Unmeasured is never a pass, so each one is named here with the reason it lives elsewhere.",
+  "unlocatableWindows": []
 }

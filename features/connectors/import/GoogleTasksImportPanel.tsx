@@ -38,6 +38,13 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { toast } from "@/lib/toast";
 import { getUserMessage } from "@/lib/api/errors";
 import { importGoogleTasks, listGoogleTasks } from "./service";
+import { GoogleImportReadFailureNotice } from "./GoogleImportReadFailureNotice";
+import {
+  googleImportReadState,
+  googleImportSelectionControls,
+  readGoogleImportFailure,
+  type GoogleImportReadFailure,
+} from "./read-failure";
 import {
   importDateText,
   importFieldList,
@@ -92,6 +99,18 @@ export function GoogleTasksImportPanel({
   const [selected, setSelected] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<TaskImportResultPending | null>(null);
+  /**
+   * 🚨 THE READ'S FOURTH STATE, the same law and the same component as the
+   * contacts panel (`./read-failure.ts`, F-113). Under a refused listing this
+   * panel used to print the server's failure AND "This list has no tasks." —
+   * a claim about a list nobody ever read, over Select/Import controls for a
+   * list that does not exist here.
+   */
+  const [readFailure, setReadFailure] = useState<GoogleImportReadFailure | null>(
+    null,
+  );
+  /** The account chosen when the server said several could answer. */
+  const [googleAccount, setGoogleAccount] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
@@ -104,18 +123,24 @@ export function GoogleTasksImportPanel({
     try {
       const result = await listGoogleTasks({
         organizationId: effectiveOrganizationId,
+        googleAccount,
         signal: controller.signal,
       });
+      setReadFailure(null);
       setListing(result);
       setActiveListId((current) => current ?? result.task_lists[0]?.task_list_id ?? null);
       result.warnings.forEach((warning) => toast.warning(warning));
     } catch (cause) {
       if (controller.signal.aborted) return;
-      setError(getUserMessage(cause));
+      // 🚨 A FAILED READ IS NOT AN EMPTY READ (F-113): the refusal gets its
+      // own posture, and the superseded listing goes with it — task lists
+      // left on screen under a failure answer a question nobody asked.
+      setReadFailure(readGoogleImportFailure(cause));
+      setListing(null);
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
-  }, [effectiveOrganizationId]);
+  }, [effectiveOrganizationId, googleAccount]);
 
   useEffect(() => {
     void load();
@@ -133,6 +158,21 @@ export function GoogleTasksImportPanel({
 
   const chosen = active ? (selected[active.task_list_id] ?? []) : [];
   const chosenSet = useMemo(() => new Set(chosen), [chosen]);
+  // 🚨 NO CONTROLS OVER A LIST NOBODY READ — the ONE rule, from the shared
+  // piece both import panels render their failure with (`./read-failure.ts`,
+  // F-115). This panel already hid its footer when it held no list; going
+  // through the helper is what keeps the two panels ONE rule rather than two
+  // ideas of it, and it also drops any id the current listing no longer holds.
+  const selectionControls = googleImportSelectionControls({
+    state: googleImportReadState({
+      loading,
+      failure: readFailure,
+      settled: listing !== null,
+      rowCount: active?.tasks.length ?? 0,
+    }),
+    provenIds: (active?.tasks ?? []).map((task) => task.task_id),
+    selected: chosen,
+  });
 
   const toggle = (taskId: string) => {
     if (!active) return;
@@ -145,6 +185,14 @@ export function GoogleTasksImportPanel({
           : [...forList, taskId],
       };
     });
+  };
+
+  // THE REMEDY IS THE PRESS: the accounts the server named are the choice.
+  // ONE read per press — `load` is keyed on the account, and the effect below
+  // re-runs it; calling it here too would fire two Google reads for one press.
+  const chooseAccount = (account: string) => {
+    setGoogleAccount(account);
+    setReadFailure(null);
   };
 
   const selectNotHere = () => {
@@ -168,14 +216,16 @@ export function GoogleTasksImportPanel({
   };
 
   const run = async () => {
-    if (!effectiveOrganizationId || !active || chosen.length === 0) return;
+    const ids = selectionControls.ids;
+    if (!effectiveOrganizationId || !active || ids.length === 0) return;
     setBusy(true);
     setError(null);
     try {
       const result = await importGoogleTasks({
         organizationId: effectiveOrganizationId,
+        googleAccount,
         taskListId: active.task_list_id,
-        taskIds: chosen,
+        taskIds: ids,
         projectId,
         dryRun: false,
       });
@@ -286,12 +336,20 @@ export function GoogleTasksImportPanel({
           <span className="text-xs text-muted-foreground">
             {listing?.google_account ?? "Your Google account"}
           </span>
+          {/* 🚨 REFRESH NEVER SILENTLY RE-RUNS A REQUEST WE KNOW WILL FAIL
+              (F-113): while the server is waiting to be told WHICH account to
+              read, the same read is the same refusal, and the choice is below. */}
           <Button
             size="sm"
             variant="ghost"
             className="ml-auto h-7 gap-1 px-2 text-xs"
             onClick={() => void load()}
-            disabled={loading}
+            disabled={loading || readFailure?.kind === "several_accounts"}
+            title={
+              readFailure?.kind === "several_accounts"
+                ? "Choose which Google account to read from first."
+                : undefined
+            }
           >
             <RefreshCw className="h-3 w-3" />
             Refresh
@@ -364,6 +422,16 @@ export function GoogleTasksImportPanel({
           {error}
         </p>
       ) : null}
+      {/* THE FOURTH STATE. One posture, both import panels. */}
+      {readFailure ? (
+        <GoogleImportReadFailureNotice
+          failure={readFailure}
+          chosenAccount={googleAccount}
+          onChooseAccount={chooseAccount}
+          onRetry={() => void load()}
+          busy={loading}
+        />
+      ) : null}
       {active?.has_more ? (
         <p className="border-b border-border bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
           This list holds more tasks than one read covers; the counts above are
@@ -371,7 +439,9 @@ export function GoogleTasksImportPanel({
         </p>
       ) : null}
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {!loading && (!active || active.tasks.length === 0) ? (
+        {/* 🚨 ONLY A READ THAT HAPPENED MAY SAY THE ACCOUNT IS EMPTY (F-113) —
+            under a failure nothing was read, so neither sentence is a fact. */}
+        {!loading && !readFailure && (!active || active.tasks.length === 0) ? (
           <p className="p-6 text-center text-sm text-muted-foreground">
             {listing && listing.task_lists.length === 0
               ? "This Google account has no task lists we can read."
@@ -475,6 +545,12 @@ export function GoogleTasksImportPanel({
           ))}
         </ul>
       </div>
+      {/* 🚨 NO CONTROLS OVER A LIST NOBODY READ (F-113). With no list in hand —
+          a refused read, or an account with none — this footer rendered
+          "Select the 0 not here yet" and "Import 0" as disabled buttons: a
+          screen that looks like a broken version of itself instead of simply
+          not offering what it cannot do. Absent or honest, never dead. */}
+      {active && selectionControls.offered ? (
       <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-2">
         <Button
           size="sm"
@@ -500,16 +576,17 @@ export function GoogleTasksImportPanel({
           size="sm"
           className="ml-auto"
           onClick={run}
-          disabled={busy || chosen.length === 0}
+          disabled={busy || selectionControls.ids.length === 0}
         >
           {busy ? (
             <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
           ) : (
             <CheckSquare className="mr-1 h-3.5 w-3.5" />
           )}
-          Import {chosen.length}
+          Import {selectionControls.ids.length}
         </Button>
       </div>
+      ) : null}
     </div>
   );
 }

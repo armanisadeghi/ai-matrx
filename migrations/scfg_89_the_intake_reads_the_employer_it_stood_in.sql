@@ -1,0 +1,73 @@
+-- scfg_89_the_intake_reads_the_employer_it_stood_in.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- public.hr_incident_create(p_payload jsonb) — hr.relations.complaint_subject_excluded_default
+-- and hr.relations.incident_escalation_target. Two org-blind reads in one door; the sibling
+-- hr_incident_assign closed the escalation-target key from the other side in scfg_84.
+--
+-- WHAT EACH READ DECIDES, because neither is cosmetic:
+--
+--   complaint_subject_excluded_default decides whether the person a complaint is ABOUT can read
+--   it. It is consulted on exactly one branch — incident_kind = 'complaint'. Harassment,
+--   discrimination and ethics are PLATFORM-LOCKED true a few lines above and never consult a
+--   knob or the payload at all, which is why the intake form shows those three a lock and not a
+--   switch. So the defect was narrow and real: an employer that had deliberately loosened (or
+--   tightened) the default for ordinary complaints was being handed the platform's answer.
+--
+--   incident_escalation_target is the contact named when the assignee is themselves a party to
+--   the case — the accused-HR-owner case. It rides out in the response envelope, so the number
+--   of people who see the wrong contact is every reporter whose report cannot be routed the
+--   ordinary way. Same key, same reason as scfg_84.
+--
+-- THE ORGANIZATION IS AN ARGUMENT — VIA THE PAYLOAD — AND IT IS CHECKED. This is the first door
+-- in the sweep where the organization arrives inside a jsonb payload rather than as a named
+-- parameter, and that spelling is NOT what decides whether it may be trusted. What decides it is
+-- hr._l1_write_gate(v_org, 'incident.investigate', v_subject, …), which runs before either knob
+-- read and:
+--   * raises 42501 when there is no authenticated caller;
+--   * raises 22023 when the payload carried no organization_id — so v_org is never null past the
+--     gate and no read can fall through to a personal or platform default by accident;
+--   * returns null only when hr.capability(caller, 'incident.investigate', v_subject, …, v_org)
+--     is true.
+-- A caller WITHOUT that capability is not simply let through: the reporter lane below the gate
+-- requires hr._l1_self_employment(auth.uid(), v_org, current_date) to be non-null — a live
+-- employment in that same employer. Both lanes establish standing IN v_org. That is the
+-- distinction DD-192 (hr_access_audit_query, scfg_80) is about: an organization id a caller
+-- hands you is a claim, and it becomes a fact when something refuses without it.
+--
+-- The intake lane itself is deliberately open — an ordinary employee files a report about
+-- anyone, and the capability gates INVESTIGATION, not intake. That is unchanged here.
+--
+-- CONTRACT ROWS READ FIRST, this time. hr.function_contract carries TWO active rows over this
+-- door (1d9ce837, 97ab82f2) pinning five clauses: the gate asked about v_subject and never null,
+-- hr.subject_employment_as_of(, the platform-lock expression, the self-employment fallback, and
+-- a ban on osha_recordable. The rewrite touches only the two knob calls, so all five survive
+-- verbatim — and public.__hr_punch_write_path_conformance() was run after, with
+-- function_contracts_hold green along with every other blocking check. scfg_73 taught this the
+-- expensive way by rewriting a body whose contract it had not read.
+--
+-- NO TENANT CHANGED TODAY: platform.knob_override holds zero rows for either key, so every
+-- organization still resolves the platform value. What changed is that an organization can now
+-- have its own answer honoured at all.
+--
+-- HOW IT WAS APPLIED: not by re-typing the body. The rewrite ran as a DO block that read
+-- pg_get_functiondef, asserted exactly two `hr._knob('hr.relations'` reads were present before,
+-- substituted both, asserted no `hr._knob(` survived and exactly two scoped reads existed, and
+-- only then EXECUTEd. A hand-transcribed 90-line body is a silent-revert risk of the same shape
+-- as DD-220.
+--
+-- VERIFIED AFTER: census 8 → 6 rows over 5 functions; hr_incident_create no longer appears in
+-- platform.knob_org_blind_reader; both scoped calls re-read from pg_get_functiondef; the door is
+-- still executable by `authenticated`, so the §6d-4 guard revoked nothing inside the change; and
+-- the door row now carries a gate_predicate stating the 22023/42501/self-employment facts above.
+-- NOT probed by calling it: this door WRITES an incident and an audit row, and a write is never
+-- a probe (scfg_78).
+--
+-- WHAT IS LEFT, and why none of it is mechanical: custom._containment_guard (the deliberate
+-- comparison baseline established correct in scfg_83 — it stays), hr_break_glass,
+-- hr_employee_profile, hr_employee_update (two rows, one key) and hr.reveal_ssn. Those are
+-- emergency access, profile reads and writes, and a social-security-number disclosure; each gets
+-- read entirely on its own terms rather than pattern-matched from the eight that came before.

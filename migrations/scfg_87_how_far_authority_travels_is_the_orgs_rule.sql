@@ -1,0 +1,37 @@
+-- scfg_87_how_far_authority_travels_is_the_orgs_rule.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- public.hr_authority_delegation_request(...) — delegation_max_depth and
+-- delegation_max_horizon_days. Both are governance rules, not limits:
+--
+--   delegation_max_depth decides whether an authority that was ITSELF delegated can be handed
+--   on again. At the default of 1 it cannot, so a chain of approval power cannot quietly grow a
+--   link at a time. Whether an organization permits re-delegation at all is its own rule about
+--   who ends up able to approve things.
+--
+--   delegation_max_horizon_days bounds how long a delegation may run. Expiry is mandatory here
+--   — "a delegation must end" — and how long is too long is the organization's judgement about
+--   its own approval hygiene.
+--
+-- Both were reading the platform rung, so an organization that had tightened either had the
+-- platform's looser answer applied to its own approval chain.
+--
+-- THE GATE HERE IS OWNERSHIP, NOT A CAPABILITY, which is a shape this sweep had not met yet.
+-- p_authority_id is the authorization input: the organization, holder kind, holder id and source
+-- are read from that hr.approval_authority row, and an id matching no ACTIVE authority raises
+-- P0002 rather than proceeding. The test is then that the authority is held by an employment
+-- belonging to the caller — only the holder of an authority may hand it on, and anybody else is
+-- refused with not_the_holder. No capability grants this; holding the thing does.
+--
+-- p_delegate_employment_id is NOT an authorization input — it is the object of the action, the
+-- person receiving the delegation. The dates are bounded by the horizon knob, and p_reason is
+-- recorded in the audit.
+--
+-- VERIFIED AFTER: census 13 → 11 rows over 7 functions; this door no longer appears.
+--
+-- REMAINING (7): _containment_guard (the deliberate baseline, scfg_83), hr_break_glass,
+-- hr_corrective_action_issue, hr_employee_profile, hr_employee_update, hr_incident_create,
+-- and hr.reveal_ssn.

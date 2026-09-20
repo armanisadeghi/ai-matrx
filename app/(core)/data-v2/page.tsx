@@ -102,7 +102,11 @@ export default function UnifiedDataPage() {
               </span>
             </Link>
             <TablesHome
-              onOpenTable={(tableId, dashboardId) =>
+              // records-ui 0.16.1's `onOpenTable` carries the table only; the
+              // dashboard rides as an optional second argument so this stays
+              // assignable now and reads the dashboard the moment the package
+              // sends one.
+              onOpenTable={(tableId: string, dashboardId?: string | null) =>
                 router.push(
                   dashboardId
                     ? `/data-v2/${tableId}?dashboard=${dashboardId}`

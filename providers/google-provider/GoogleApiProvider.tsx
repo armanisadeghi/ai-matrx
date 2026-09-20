@@ -22,6 +22,7 @@ import {
 import type { GoogleOAuthRedirectStartOptions } from "./oauthRedirect";
 import {
   acquireOrJoinGoogleAuthorizationGate,
+  GOOGLE_AUTHORIZATION_BUSY_MESSAGE,
   type GoogleAuthorizationGateHandle,
 } from "./googleAuthorizationGate";
 import {
@@ -151,6 +152,11 @@ interface GoogleAPIContextType {
     scopesToRequest: string[],
     loginHint?: string,
     options?: GoogleTokenRequestOptions,
+    /**
+     * The one-window gate, when the caller already took it. Omitted, `signIn`
+     * takes the gate itself, so no call site can bypass it.
+     */
+    gate?: GoogleAuthorizationGateHandle | null,
   ) => Promise<string | null>;
   requestAuthorizationCode: (
     scopesToRequest: string[],
@@ -170,7 +176,10 @@ interface GoogleAPIContextType {
   ) => Promise<void>;
   signOut: () => Promise<void>;
   getGrantedScopes: () => string[];
-  requestScopes: (scopes: string[]) => Promise<boolean>;
+  requestScopes: (
+    scopes: string[],
+    gate?: GoogleAuthorizationGateHandle | null,
+  ) => Promise<boolean>;
   resetError: () => void;
   /**
    * Re-inserts the Google Identity Services script and restarts the bounded
@@ -375,6 +384,7 @@ export default function GoogleAPIProvider({
     scopesToRequest: string[],
     loginHint?: string,
     options?: GoogleTokenRequestOptions,
+    gate?: GoogleAuthorizationGateHandle | null,
   ) => {
     if (!isGoogleLoaded || !window.google?.accounts) {
       setError("Google auth not initialized.");
@@ -392,8 +402,24 @@ export default function GoogleAPIProvider({
       finalScopes.every((scope) => grantedScopes.includes(scope)) &&
       (!loginHint || tokenAccountHintRef.current === loginHint);
     if (cachedTokenIsUsable) return token;
-    if (authInProgress) {
-      console.log("Auth in progress, skipping...");
+
+    // 🚨 THE ONE-WINDOW GATE, NOT `authInProgress` (V-23 NEW-3, lane F-103).
+    // `requestAccessToken()` below opens a Google consent window exactly as the
+    // authorization-code primitives do, so it takes the SAME module-level gate:
+    // one browser tab is one person, one window. The old guard was the state
+    // flag read from a rendered closure — two presses in one tick both saw the
+    // stale `false` and both opened a window — and it announced the refusal to
+    // the CONSOLE, which no person reads. The refusal now goes to the provider's
+    // own error channel, the one every caller of this method already shows, and
+    // the contract (`string | null`) is unchanged so no call site can be left
+    // with an unhandled rejection from a button's `onClick`.
+    let held: GoogleAuthorizationGateHandle;
+    try {
+      held = acquireOrJoinGoogleAuthorizationGate(gate, "Google sign-in");
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : GOOGLE_AUTHORIZATION_BUSY_MESSAGE,
+      );
       return null;
     }
 
@@ -418,10 +444,12 @@ export default function GoogleAPIProvider({
           }
           resolve(accessToken);
           setAuthInProgress(false);
+          held.release();
         },
         error_callback: (err: ErrorResponse) => {
           console.log("Token client error:", err);
           setAuthInProgress(false);
+          held.release();
           if (
             err.type !== "popup_closed" &&
             err.type !== "popup_closed_by_user"
@@ -431,7 +459,21 @@ export default function GoogleAPIProvider({
           resolve(null);
         },
       });
-      tokenClientRef.current.requestAccessToken();
+      // GIS refusing to build the client, or `requestAccessToken` throwing,
+      // means the window never opened — the gate must not stay held for the
+      // rest of the session. `release` is idempotent.
+      try {
+        tokenClientRef.current.requestAccessToken();
+      } catch (cause) {
+        setAuthInProgress(false);
+        held.release();
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "Google sign-in could not start.",
+        );
+        resolve(null);
+      }
     });
   };
 
@@ -630,7 +672,10 @@ export default function GoogleAPIProvider({
 
   const getGrantedScopes = useCallback(() => grantedScopes, [grantedScopes]);
 
-  const requestScopes = async (scopes: string[]): Promise<boolean> => {
+  const requestScopes = async (
+    scopes: string[],
+    gate?: GoogleAuthorizationGateHandle | null,
+  ): Promise<boolean> => {
     if (
       !isGoogleLoaded ||
       !window.google?.accounts ||
@@ -643,8 +688,16 @@ export default function GoogleAPIProvider({
       setError("Google client ID is not configured.");
       return false;
     }
-    if (authInProgress) {
-      console.log("Auth in progress, skipping...");
+    // THE SAME ONE-WINDOW GATE as `signIn` and the authorization-code
+    // primitives: an incremental scope request opens a Google consent window
+    // like any other, and `authInProgress` was the stale-closure non-lock.
+    let held: GoogleAuthorizationGateHandle;
+    try {
+      held = acquireOrJoinGoogleAuthorizationGate(gate, "Google scope request");
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : GOOGLE_AUTHORIZATION_BUSY_MESSAGE,
+      );
       return false;
     }
 
@@ -661,10 +714,12 @@ export default function GoogleAPIProvider({
           const accessToken = handleCredentialResponse(response);
           resolve(Boolean(accessToken));
           setAuthInProgress(false);
+          held.release();
         },
         error_callback: (err: ErrorResponse) => {
           console.log("Scope request error:", err);
           setAuthInProgress(false);
+          held.release();
           if (
             err.type !== "popup_closed" &&
             err.type !== "popup_closed_by_user"
@@ -676,10 +731,22 @@ export default function GoogleAPIProvider({
       });
       tokenClientRef.current = client;
       if (client) {
-        client.requestAccessToken();
+        try {
+          client.requestAccessToken();
+        } catch (cause) {
+          setAuthInProgress(false);
+          held.release();
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : "Google scope request could not start.",
+          );
+          resolve(false);
+        }
       } else {
         setError("Failed to initialize Google token client for scope request.");
         setAuthInProgress(false);
+        held.release();
         resolve(false);
       }
     });

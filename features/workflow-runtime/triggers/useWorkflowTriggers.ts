@@ -15,10 +15,11 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
-  selectOrganizationId,
-  selectOrgBootstrapResolved,
-} from "@/lib/redux/slices/appContextSlice";
+  ORGANIZATION_UNAVAILABLE_DESCRIPTION,
+  useOrganizationRequired,
+} from "@/features/organizations/useOrganizationRequired";
 import { callApi, type ApiCallConfig } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
 
@@ -103,7 +104,11 @@ export function useWorkflowTriggers(
    * no remedy. Once the bootstrap has resolved and there is still no org,
    * that is a settled fact: stop loading and say what fixes it.
    */
-  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  // 🚨 AND THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved`
+  // goes TRUE when the read FAILED too (`setOrgBootstrapFailure` sets it), so
+  // reading it alone said "choose an organization" to a person nobody had read
+  // the memberships of. The gate's discriminant separates the two.
+  const { organizationState } = useOrganizationRequired();
   const [triggers, setTriggers] = useState<WorkflowTrigger[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -136,9 +141,11 @@ export function useWorkflowTriggers(
 
   // Derived at render, never set in the effect (react-hooks/set-state-in-effect).
   const noOrganization =
-    !organizationId && orgBootstrapResolved
-      ? "No organization is selected, so this workflow's schedules cannot be read — choose one from the organization picker in the header and this fills in."
-      : null;
+    organizationState === "unavailable"
+      ? ORGANIZATION_UNAVAILABLE_DESCRIPTION
+      : organizationState === "required"
+        ? "No organization is selected, so this workflow's schedules cannot be read — choose one from the organization picker in the header and this fills in."
+        : null;
 
   useEffect(() => {
     setLoading(true);

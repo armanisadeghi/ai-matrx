@@ -38,12 +38,21 @@ jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     schema: () => ({
       from: () => {
-        // `featureKnobs.loadAll()` awaits `.select(...)` directly;
-        // `readJsonObjectKnobs()` narrows with `.eq(...).in(...)` first. One
-        // thenable builder answers both without pretending to be PostgREST.
+        // `featureKnobs.loadAll()` pages the catalogue through `readAllRows`
+        // (`{ count: "exact" }` + `.order().range()`, so the 1001st knob is not
+        // silently dropped); `readJsonObjectKnobs()` narrows with
+        // `.eq(...).in(...)` first. One thenable builder answers both without
+        // pretending to be PostgREST. The fixture always fits a single page —
+        // paging itself is pinned in `lib/knobs/featureKnobs.paging.test.ts`.
         const builder = {
           rows: ROWS,
           select() {
+            return builder;
+          },
+          order() {
+            return builder;
+          },
+          range() {
             return builder;
           },
           eq(_column: string, value: string) {
@@ -54,8 +63,20 @@ jest.mock("@/utils/supabase/client", () => ({
             builder.rows = builder.rows.filter((r) => values.includes(r.key));
             return builder;
           },
-          then(resolve: (r: { data: unknown; error: null }) => unknown) {
-            return Promise.resolve(resolve({ data: builder.rows, error: null }));
+          then(
+            resolve: (r: {
+              data: unknown;
+              error: null;
+              count: number;
+            }) => unknown,
+          ) {
+            return Promise.resolve(
+              resolve({
+                data: builder.rows,
+                error: null,
+                count: builder.rows.length,
+              }),
+            );
           },
         };
         return builder;

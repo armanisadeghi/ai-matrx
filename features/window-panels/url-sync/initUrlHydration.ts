@@ -9,6 +9,7 @@ import {
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ALL_WINDOW_STATIC_METADATA } from "../registry/windowRegistryMetadata";
+import { PANEL_KEY_ALIASES } from "./panelKeyAliases";
 import {
   parseTopicPanelInstanceId,
   topicPanelInstanceId,
@@ -311,6 +312,15 @@ export function initUrlHydration() {
     );
   });
 
+  // Cloud Files Window (legacy URL key "files" still honored — points at the
+  // new cloud-files window registered in Phase 6). The window publishes its
+  // address as `cloud_files`, so this key is declared an ALIAS in
+  // `panelKeyAliases.ts`: without that declaration UrlPanelManager cannot tell
+  // that the registration it caused is the one it is waiting for (V-29 NEW-1).
+  registerPanelHydrator("files", (dispatch) => {
+    dispatch(openOverlay({ overlayId: "cloudFilesWindow" }));
+  });
+
   // State Analyzer Window
   registerPanelHydrator("state_analyzer", (dispatch) => {
     dispatch(openOverlay({ overlayId: "adminStateAnalyzerWindow" }));
@@ -591,6 +601,44 @@ export function initUrlHydration() {
     );
   });
 
+  // Site tracking — `?panels=site_tracking:<siteId>`. The window's whole subject is one site, so
+  // a token with no id opens nothing rather than an empty frame (the render site already refuses
+  // a missing `siteId`).
+  registerPanelHydrator("site_tracking", (dispatch, id) => {
+    const siteId = getRestorableResourceId(id, "siteTrackingWindow");
+    if (!siteId) {
+      console.warn(
+        `[UrlPanelManager] ?panels=site_tracking:${id} names no site — expected site_tracking:<siteId>.`,
+      );
+      return;
+    }
+    dispatch(
+      openOverlay({
+        overlayId: "siteTrackingWindow",
+        data: { siteId, siteLabel: null },
+      }),
+    );
+  });
+
+  // Brand channel — `?panels=brand_channel:<brandId>`. The window's whole subject is one brand,
+  // so a token with no id opens nothing rather than an empty frame (the render site already
+  // refuses a missing `brandId`).
+  registerPanelHydrator("brand_channel", (dispatch, id) => {
+    const brandId = getRestorableResourceId(id, "brandChannelWindow");
+    if (!brandId) {
+      console.warn(
+        `[UrlPanelManager] ?panels=brand_channel:${id} names no brand — expected brand_channel:<brandId>.`,
+      );
+      return;
+    }
+    dispatch(
+      openOverlay({
+        overlayId: "brandChannelWindow",
+        data: { brandId, brandLabel: null },
+      }),
+    );
+  });
+
   // ── Dev-only integrity check ─────────────────────────────────────────────
   // Every registry entry that declares `urlSync.key` must have a hydrator
   // registered above. Drift here is silent: `?panels=<key>` would just
@@ -611,6 +659,40 @@ export function initUrlHydration() {
         `[initUrlHydration] ${missing.length} registry urlSync key(s) have no hydrator:\n` +
           missing.map((m) => `  - ${m.overlayId} → "${m.key}"`).join("\n") +
           `\nRegister a hydrator in features/window-panels/url-sync/initUrlHydration.ts.`,
+      );
+    }
+
+    // Every declared alias must be real in both directions, or the manager
+    // resolves a token against a key nothing will ever publish and the V-29
+    // NEW-1 false alarm comes straight back.
+    const registryKeys = new Set(
+      ALL_WINDOW_STATIC_METADATA.map((entry) => entry.urlSync?.key).filter(
+        (key): key is string => Boolean(key),
+      ),
+    );
+    const brokenAliases: string[] = [];
+    for (const [aliasKey, canonicalKey] of Object.entries(PANEL_KEY_ALIASES)) {
+      if (!getHydrator(aliasKey)) {
+        brokenAliases.push(
+          `  - "${aliasKey}" is declared an alias but has no hydrator: the link opens nothing.`,
+        );
+      }
+      if (!registryKeys.has(canonicalKey)) {
+        brokenAliases.push(
+          `  - "${aliasKey}" → "${canonicalKey}": no registry entry declares urlSync.key "${canonicalKey}", so the alias can never be settled.`,
+        );
+      }
+      if (registryKeys.has(aliasKey)) {
+        brokenAliases.push(
+          `  - "${aliasKey}" is BOTH a registry urlSync.key and an alias: a window already publishes it, so the alias must be removed.`,
+        );
+      }
+    }
+    if (brokenAliases.length > 0) {
+      console.error(
+        `[initUrlHydration] ${brokenAliases.length} broken \`?panels=\` alias declaration(s):\n` +
+          brokenAliases.join("\n") +
+          `\nFix features/window-panels/url-sync/panelKeyAliases.ts.`,
       );
     }
   }

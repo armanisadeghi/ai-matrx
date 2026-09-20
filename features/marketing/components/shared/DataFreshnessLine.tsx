@@ -23,6 +23,12 @@ export interface DataFreshnessLineProps {
   /** The property's own timezone, when the provider reports one (GA4 does). */
   timezone?: string | null;
   /**
+   * For a provider whose limits the SERVER declares rather than this repo (`tag_manager`), its
+   * own caveats off the same record this line describes. The first takes the lag slot; the
+   * frontend authors no sentence there (V-28 NEW-3).
+   */
+  serverCaveats?: readonly string[];
+  /**
    * 🚨 THE ONE CLOCK THIS LINE USES, for both the printed age and the stale
    * verdict (round-4 finding V14-9). Omitted in production — the reader's own
    * clock — and frozen by this component's test, which is the only way the
@@ -42,6 +48,7 @@ export function DataFreshnessLine({
   dataThrough,
   pulledAt,
   timezone,
+  serverCaveats,
   now,
   variant = "block",
   className,
@@ -52,6 +59,7 @@ export function DataFreshnessLine({
     dataThrough,
     pulledAt,
     warningAfterHours: knob.hours,
+    ...(serverCaveats ? { serverCaveats } : {}),
     ...(now ? { now } : {}),
   });
   // A clock ahead of the reader's and a data day from the future are BOTH

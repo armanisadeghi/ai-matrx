@@ -125,10 +125,10 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
       tier: "internal",
     },
     {
-      name: "ApprovalsQueuePanel",
-      filePath: "features/cms/components/admin/ApprovalsQueuePanel.tsx",
+      name: "ApprovalQueue (kinds: cms_content_exception)",
+      filePath: "features/approvals/kinds/cms-content-exception.tsx",
       description:
-        "F3 validation-exception review/approve UI, built against P3's ContentException shape.",
+        "F3 content exceptions are reviewed in THE ONE platform approval queue (register Q-1, 2026-09-19) — the CMS agents surface mounts it narrowed to this kind, and the same rows appear at /approvals. The bespoke ApprovalsQueuePanel is deleted.",
       tier: "internal",
     },
     {
@@ -189,11 +189,11 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
       filePath: "app/api/cms/assets/route.ts",
     },
     {
-      url: "/api/cms/approvals",
+      url: "/cms/exceptions/{id}/approve|reject",
       method: "POST",
       description:
-        "{action}-dispatch: list/approve/reject (requireSuperAdmin). F3 queue — returns available:false until P1's client_content_exceptions table exists.",
-      filePath: "app/api/cms/approvals/route.ts",
+        "aidream's door for a queued content exception — it claims the proposal row, replays the ordinary human write path (set_exception_status) and stores the receipt. Replaced /api/cms/approvals, which is deleted (register Q-1, 2026-09-19).",
+      filePath: "features/approvals/cms-door.ts",
     },
     {
       url: "/api/html-pages",

@@ -30,10 +30,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectOrganizationId,
-  selectOrgBootstrapResolved,
-} from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { errorRowsHref, fetchMandateReferenceBoard, formatRepoList, formatSeconds, costCell, type MandatePatrolRun, type MandatePatrolSection, type MandateReferenceBoard, type MandateReferenceBoardRepo } from "./references";
 import { formatFileSize } from "@ai-matrx/kit/format";
 
@@ -427,17 +426,20 @@ export function MandateReferenceBoardView() {
   // Before the bootstrap resolves, waiting is the truth. Once it HAS resolved
   // and there is still no organization, that is a settled fact: stop loading
   // and say what fixes it.
-  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  // 🚨 THE FOURTH STATE (R37). `orgBootstrapResolved && !organizationId` used
+  // to be this refusal's whole reading — and `setOrgBootstrapFailure` sets
+  // resolved TRUE, so a failed read told a member of thirteen organizations to
+  // pick one. The gate's discriminant separates the two terminal answers and
+  // `OrganizationContextNotice` renders each, Retry included.
+  const { organizationState } = useOrganizationRequired();
+  const organizationUnanswered =
+    organizationState === "required" || organizationState === "unavailable";
   const [board, setBoard] = useState<MandateReferenceBoard | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reading, setReading] = useState(true);
   const [reloads, setReloads] = useState(0);
   // Derived at render, never set in the effect (react-hooks/set-state-in-effect).
-  const noOrganization =
-    !organizationId && orgBootstrapResolved
-      ? "No organization is selected, so the reference board cannot read anything — choose one from the organization picker in the header and this fills in."
-      : null;
-  const loading = reading && !noOrganization;
+  const loading = reading && !organizationUnanswered;
 
   const reload = useCallback(() => setReloads((n) => n + 1), []);
 
@@ -484,17 +486,13 @@ export function MandateReferenceBoardView() {
         </Button>
       </header>
 
-      {noOrganization ? (
-        <div
-          role="status"
-          className="flex items-start gap-2 rounded-md border border-border p-3 text-sm"
-        >
-          <AlertTriangle
-            className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <span>{noOrganization}</span>
-        </div>
+      {organizationUnanswered ? (
+        <OrganizationContextNotice
+          state={organizationState}
+          compact
+          className="rounded-md border border-border"
+          description="No organization is selected, so the reference board cannot read anything — choose one from the organization picker in the header and this fills in."
+        />
       ) : !organizationId ? (
         <div
           role="status"

@@ -1,0 +1,63 @@
+-- scfg_94_the_records_door_mints_a_credential.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- Third unit of the hr.capability tenant sweep. The worst-shaped of the four that scfg_93 left
+-- open, fixed before the lane it guards has carried a single row.
+--
+-- ── public.hr_mint_records_request_token(p_request_id, p_delivery_address, p_scope, p_reason)
+--
+--     if not (hr.capability(v_uid,'records.govern', rq.employment_id)
+--             or hr.capability(v_uid,'identity.read',  rq.employment_id)) then
+--
+-- BOTH calls three-argument, and `hr.records_request.employment_id` is NULLABLE. With a null
+-- subject and no organization, hr.capability's tenant clause goes vacuously true and
+-- population_contains is skipped, so the gate asked only "does this caller hold records.govern
+-- or identity.read ANYWHERE, over ANYBODY".
+--
+-- 🚨 WHY THIS ONE IS WORSE THAN THE OTHERS IN THE SWEEP. It is not a read and not a flag. Passing
+-- this gate calls platform.mint_outsider_token and issues a credential granting `read` and
+-- `download` on the request — delivered to `p_delivery_address`, WHICH THE CALLER SUPPLIES. So
+-- the shape was: an HR admin in their own employer could mint themselves a download link for
+-- another employer's records request. The body even carries a refusal insisting the address of
+-- record "is set by HR at grant time and is never supplied by the requester" — that protects
+-- against the REQUESTER choosing the address, and says nothing about WHICH HR.
+--
+-- 🚨 AND THE NULL IS THE DESIGNED SHAPE, NOT AN EDGE. A records request is exactly the door an
+-- EX-EMPLOYEE or a third party uses, and neither has a current employment. So the unguarded
+-- branch is arguably the main case this feature exists for, not a rare one. That is the opposite
+-- of hr_authority_revoke (scfg_93), where the null branch was a shape nobody had used yet.
+--
+-- Now both calls carry `current_date, rq.organization_id`, read from the row and P0002-guarded
+-- above. A null subject still skips the population check — inherent to having no subject — but
+-- the cross-tenant half closes, and that is the half that issues credentials.
+--
+-- EXPLOITABLE TODAY? NO, AND MEASURED: hr.records_request holds ZERO rows. The lane has never
+-- run. This is the cheapest moment such a thing is ever fixed, and the reason to look at a door
+-- before its first row rather than after.
+--
+-- This is the same class as hr_l1_59 (tenant) and hr_l1_64 (population), and the same FAMILY as
+-- the cross-tenant `mint_outsider_token` the security arc already closed once as a live P0 —
+-- there in the mint itself, here in the caller's gate above it. A contract row pins both
+-- five-argument calls and bans both three-argument spellings by name.
+--
+-- VERIFIED AFTER: hr.capability_asked_without_a_tenant 10 → 8 rows, neither
+-- hr_mint_records_request_token row remains; public.__hr_punch_write_path_conformance() reports
+-- zero failing blocking checks including function_contracts_hold over the new row; the door is
+-- still executable by `authenticated`, so nothing was revoked inside the change. NOT probed by
+-- calling it: it mints a credential and writes an audit row, and a write is never a probe
+-- (scfg_78) — doubly so for a door whose side effect is a working download link.
+--
+-- ── STILL OPEN: the workflow pair, and it needs a DECISION rather than a thread-through
+--
+--   hr.wf_pending   (workflow.view_queue, p_employment_id uuid DEFAULT NULL)
+--   hr._wf_display  (workflow.view_queue, inst.subject_employment_id — nullable column)
+--
+-- Both are READ surfaces on the task inbox, and for wf_pending a null employment is what a
+-- caller sends when asking about THEMSELVES — the ordinary path, not an edge. Passing an
+-- organization mechanically would be guessing at the answer: refusing without an employment
+-- would break every self-service inbox, and resolving "the caller's own" has to pick one when a
+-- person holds employments in two employers. That is a product question about what the inbox
+-- shows, and it belongs to the workflow lane rather than to this sweep.

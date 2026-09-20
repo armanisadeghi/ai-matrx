@@ -1,0 +1,119 @@
+-- scfg_98_the_client_reads_one_snapshot.sql
+-- migrate: skip: this file changes nothing in the database. The database half
+-- (platform.knob_snapshot) shipped in scfg_97 and is live; this records the
+-- ADOPTION, which is code in two repos, so the reason lives beside the other
+-- scoped-configuration records rather than in a commit message nobody greps.
+--
+-- ============================================================================
+-- ONE FETCH, NOT ONE PER SETTING — THE ADOPTION
+-- ============================================================================
+--
+-- Arman, 2026-09-20, in full because the constraint is the whole design:
+--
+--   "the one thing that absolutely cannot happen is that we can't be fetching
+--    individual configurations for everything that we do, and we can't be
+--    trying to do these things live or through any sort of application level
+--    logic regardless of if it's a server or the client."
+--
+-- scfg_97 built `platform.knob_snapshot` and said, in its own words, that the
+-- adoption was "deliberately NOT half-applied here" and named three steps. All
+-- three are now done.
+--
+-- ---------------------------------------------------------------------------
+-- 1. THE CLIENT — matrx-frontend/lib/scoped-config/effectiveKnobs.ts
+-- ---------------------------------------------------------------------------
+-- Before: every knob a screen read was its own `platform.knob_resolve` round
+-- trip. The Masterwork record surface opened five on mount, the Question Desk
+-- five more, Masterwork drive five more; a page carrying two of them paid ten
+-- network calls to learn ten small values. The cost of consulting a setting was
+-- high enough that the cheap move was to stop consulting settings — which is
+-- law 6 ("opinions become knobs") dying quietly, one screen at a time.
+--
+-- After: ONE `platform.knob_snapshot` per (organization, user, scope address),
+-- held in a module cache, and every `useEffectiveKnob` / `ensureEffectiveKnob` /
+-- `useSessionKnob` read is a `Map` lookup. The per-key RPC is DELETED, not
+-- deprecated. Adding a knob to a screen now costs nothing at run time.
+--
+-- The scope address is part of the cache key, not an afterthought: two
+-- Rulebooks in one organization legitimately resolve the same key to different
+-- values, and the device rung rides in it too, so a device-level override wins
+-- here exactly as it does on the settings screen.
+--
+-- Busting is event-driven, as Arman described it ("just like we have with
+-- editing agents"): every `setKnobOverride` write and the directive channel's
+-- `settings_changed` drop the snapshots and the next read fetches one. The 60s
+-- TTL that remains is a backstop for a missed directive, not the mechanism.
+--
+-- A key the snapshot does not carry is NOT SEEDED — the snapshot holds a row
+-- for every registered knob — and the client says so by name with the remedy.
+-- That is the same failure `knob_resolve` raised as `P0001 … is not seeded`,
+-- now decided locally and with the (feature, key) pair spelled out. It is never
+-- a default nobody chose (law 4).
+--
+-- A SIDE EFFECT WORTH NAMING: the dotted-address ambiguity that cost V13-2 is
+-- gone at the READ. The snapshot is keyed by `feature || '.' || key`, and
+-- re-joining a ref split at its last dot reproduces that string whichever
+-- segment the dot really belonged to. `connectors.prompt.resurface_days` now
+-- resolves whether the split guessed right or not. The pair still matters for
+-- WRITES and for the failure message, so `knobAddress` stays.
+--
+-- ---------------------------------------------------------------------------
+-- 2. THE SERVER — aidream/services/feature_knobs/service.py
+-- ---------------------------------------------------------------------------
+-- The server was never fetching one configuration at a time, but it was
+-- fetching one FEATURE at a time: the caches were keyed per (feature) and per
+-- (feature, organization), so a request touching four features opened four
+-- register queries, four override queries and four lock queries.
+--
+-- The three caches now hold WHOLE answers — the entire register once, and one
+-- organization's entire override and lock sets once — and every per-feature
+-- reader slices them in memory. The same request opens at most three queries,
+-- and none at all after the first in a minute. The whole register is 870 rows
+-- and 49 kB, so holding all of it is cheaper than deciding which part to hold.
+--
+-- 🚨 THE ORGANIZATION STAYS IN THE KEY of anything override-shaped. A cache
+-- keyed by feature alone for override data is a cross-tenant leak, and a
+-- whole-answer cache is exactly where that mistake would be easy to make.
+--
+-- ---------------------------------------------------------------------------
+-- 3. THE GUARD — it decays back in one commit without one
+-- ---------------------------------------------------------------------------
+-- `pnpm check:knob-snapshot-adoption` (+ `:self-test`), in BOTH release-gate
+-- lists, refuses any `rpc("knob_resolve", …)` in repo source. The next agent
+-- needing one value in one place will otherwise write one, because it is three
+-- lines and it works — for that agent, at the cost of a round trip per setting
+-- for ever.
+--
+-- Two files are exempted BY NAME, each because it exists to police
+-- `knob_resolve` rather than to call it (the DD-198 classifier and its
+-- fixtures). An exemption the scan no longer finds FAILS as stale, so the list
+-- only shrinks.
+--
+-- `platform.knob_index` is NOT a finding: it is the settings SCREEN's per-rung
+-- read (origin, lock, platform default, out-of-range) for a whole feature
+-- prefix in one call — already one call for many keys. And `knob_resolve`
+-- itself stays in the database: `knob_snapshot` is built on it key by key, on
+-- purpose, so there is exactly one resolver and it cannot drift from itself.
+--
+-- ---------------------------------------------------------------------------
+-- VERIFIED
+-- ---------------------------------------------------------------------------
+--   • `platform.knob_snapshot` live: 870 keys, 44 kB, 47 ms (2026-09-20).
+--   • Client: the two test doubles that answered `knob_resolve` now answer
+--     `knob_snapshot` and pass (setUserKnobMapEntry 12/12, the per-type
+--     presentation write 5/5). `tsc` reports nothing in effectiveKnobs.ts.
+--   • Server: a new test stubs the MODELS (one layer below every existing knob
+--     test, all of which stub the per-feature readers and so could not see
+--     this) and COUNTS queries — three features cost one register read, one
+--     override read and one lock read, and a second organization opens its own
+--     override read and never sees the first one's rows. Proven failing first
+--     by restoring per-feature fetching: 2 of 3 fail, then pass again.
+--   • `pnpm check:knob-snapshot-adoption` proven failing-then-passing against a
+--     real tracked file, not only its self-test fixture.
+--
+-- NOT VERIFIED HERE, and said plainly: no browser walk and no live Postgres.
+-- This container has no direct database route (every `--live` lane exits
+-- UNMEASURED rather than claiming agreement) and the `@ai-matrx/*` packages are
+-- not installed, so there is no dev server. The two aidream tests that failed
+-- in this session's runs failed on `DatabaseConnectError` and fail identically
+-- without these changes.

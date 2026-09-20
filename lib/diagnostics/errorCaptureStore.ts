@@ -139,6 +139,14 @@ export type CapturedErrorSource =
    */
   | "data-shape"
   /**
+   * A `?panels=` deep-link token was hydrated but no window ever registered a
+   * urlSync entry for it, so the link opened nothing. The token is kept in the
+   * address bar and the person is told; this row is the diagnostic. Firing
+   * means either a window whose registry `urlSync.key` and hydrator disagree,
+   * or a lazy chunk that took longer than the mount deadline to arrive.
+   */
+  | "url-panel-unopened"
+  /**
    * The active-org single-source-of-truth was MISSING from Redux when an
    * org-scoped write needed it, so `ensureOrgId` fell back to the personal-org
    * RPC. The `appContextPolicy` sync engine is supposed to keep the org present

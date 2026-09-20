@@ -1,0 +1,41 @@
+-- scfg_86_same_key_one_door_can_scope_it_the_other_cannot.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- public.hr_verification_request_create(p_payload jsonb) — verification_letter_default_kind
+-- and verification_consent_expiry_days.
+--
+-- 🚨 THE SAME KEY, THE OPPOSITE ANSWER FROM scfg_82, AND BOTH ARE RIGHT.
+-- `verification_consent_expiry_days` was removed from hr_my_verification_consents' envelope
+-- because that door LISTS one person's requests ACROSS EMPLOYERS, so no single number could be
+-- right for all of them. Here the same key is SCOPED and kept, because a request being CREATED
+-- belongs to exactly one employer — the one the employment is in. Same key, opposite treatment,
+-- and the difference is not the key at all: it is what the ANSWER spans. That is the test
+-- scfg_82 arrived at, applied in the direction that keeps a value rather than deletes one.
+--
+-- `verification_letter_default_kind` decides what kind of letter is created when the caller
+-- does not name one — employment only, or employment and income. That choice determines whether
+-- the request needs the employee's consent at all, so the platform default was silently
+-- deciding a consent question on every organization's behalf.
+--
+-- THE DECLARATION, and the one part of it that is load-bearing. The employment id is an
+-- authorization input; the organization is derived from it; a missing row returns
+-- `not_reachable`. The gate then branches on an IDENTITY FACT: when
+-- hr._wf_login_of(employment) = auth.uid() the SUBJECT is asking about themselves, and an
+-- employee requesting their own letter needs no working_record.write — §4.9 A1, where consent
+-- is implicit and still recorded. Everyone else goes through hr._l1_write_gate.
+--   That branch was once a live defect and the body says so: as NULL, `v_self` skipped the gate
+--   ENTIRELY for any caller with no current employment in the organization, and then passed NULL
+--   into the audit's NOT NULL is_self_access — a crash standing in for a refusal. It is now
+--   computed as `auth.uid() is not null AND the linkage matches`, which is why the declaration
+--   states it as an identity fact rather than a convenience.
+--
+-- VERIFIED AFTER: census 15 → 13 rows over 8 functions; this door no longer appears; a
+-- fabricated employment id still answers `not_reachable` and the probe is safe by construction
+-- — the door returns before hr.arm_write().
+--
+-- REMAINING (8): _containment_guard (the deliberate baseline, scfg_83),
+-- hr_authority_delegation_request, hr_break_glass, hr_corrective_action_issue,
+-- hr_employee_profile, hr_employee_update, hr_incident_create, and hr.reveal_ssn.

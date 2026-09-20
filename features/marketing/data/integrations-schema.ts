@@ -64,14 +64,39 @@ export interface CmsIntegrationDraft extends ProviderIntegrationDraft {
 export interface SiteIntegrationsDraft {
   googleSearchConsole: ProviderIntegrationDraft;
   googleAnalytics4: ProviderIntegrationDraft;
+  /**
+   * The Google Tag Manager container this site's tracking is graded against
+   * (google-native PLAN §4.10 Plane C: "a binding on the site"). `resourceRef` is the container's
+   * PUBLIC id — `GTM-XXXXXXX` — because that is the id the page's own snippet carries, and the
+   * reconciliation that looks for the container on the live site can only match on that. The
+   * numeric internal container id would never appear in the HTML.
+   */
+  googleTagManager: ProviderIntegrationDraft;
   pageSpeedInsights: ProviderIntegrationDraft;
+  /**
+   * The owned YouTube channel this record is bound to — `credentialRef` is the
+   * `users.integration_connections` id and `resourceRef` is the channel id
+   * (`UC…`), the two facts `POST /google-sync/youtube/refresh` needs.
+   *
+   * 🚨 IT LIVES IN THE SITE DRAFT ON PURPOSE (google-native U-M3, chair ruling
+   * 2). The binding is written on a BRAND (`web.brand.integrations`), not a
+   * site, and it uses this module rather than a second one because the document
+   * shape is identical — same column name, same `marketing.providers.<key>`
+   * envelope, same four keys. One parser and one writer for one shape is why a
+   * brand binding and a site binding can never drift apart; a `brand-
+   * integrations-schema.ts` twin is the defect this avoids.
+   */
+  youtubeChannel: ProviderIntegrationDraft;
   dataForSeo: DataForSeoIntegrationDraft;
   cms: CmsIntegrationDraft;
   customProviders: CustomProviderIntegrationDraft[];
 }
 
 export type BuiltInProviderKey =
-  "googleSearchConsole" | "googleAnalytics4" | "pageSpeedInsights";
+  | "googleSearchConsole"
+  | "googleAnalytics4"
+  | "googleTagManager"
+  | "pageSpeedInsights";
 
 export interface IntegrationValidationIssue {
   field: string;
@@ -92,6 +117,11 @@ const UUID_PATTERN =
 const PROVIDER_KEY_PATTERN = /^[a-z][a-z0-9._-]{1,63}$/;
 const DOMAIN_PATTERN =
   /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
+/**
+ * A Tag Manager PUBLIC container id. This is the spelling that appears in the site's own snippet
+ * (`gtm.js?id=GTM-ABC1234`), which is the only thing the live-page reconciliation can match on.
+ */
+const GTM_CONTAINER_PATTERN = /^GTM-[A-Z0-9]{4,10}$/;
 const NAMESPACED_RESOURCE_PATTERN =
   /^[a-z][a-z0-9._-]{1,31}:[a-z0-9][a-z0-9._:/-]{0,180}$/i;
 const PROHIBITED_SECRET_KEYS = new Set([
@@ -179,7 +209,9 @@ export function parseSiteIntegrations(value: Json): SiteIntegrationsDraft {
   return {
     googleSearchConsole: parseProvider(providers.google_search_console),
     googleAnalytics4: parseProvider(providers.google_analytics_4),
+    googleTagManager: parseProvider(providers.google_tag_manager),
     pageSpeedInsights: parseProvider(providers.pagespeed_insights),
+    youtubeChannel: parseProvider(providers.youtube_channel),
     dataForSeo: parseDataForSeo(providers.dataforseo),
     cms: parseCms(providers.cms),
     customProviders: custom.flatMap((value, index) => {
@@ -256,7 +288,9 @@ export function buildSiteIntegrations(
         ...existingProviders,
         google_search_console: providerDocument(draft.googleSearchConsole),
         google_analytics_4: providerDocument(draft.googleAnalytics4),
+        google_tag_manager: providerDocument(draft.googleTagManager),
         pagespeed_insights: providerDocument(draft.pageSpeedInsights),
+        youtube_channel: providerDocument(draft.youtubeChannel),
         dataforseo: {
           enabled: draft.dataForSeo.enabled,
           cadence: draft.dataForSeo.cadence,
@@ -284,7 +318,14 @@ export function buildSiteIntegrations(
  */
 export function buildSiteIntegrationsWithProviderChange(
   existing: Json,
-  provider: BuiltInProviderKey,
+  /**
+   * `youtubeChannel` is accepted here and is deliberately NOT in
+   * `BuiltInProviderKey`: that union is the set of providers the SITE
+   * integrations editor renders a row for, and adding a brand-only binding to it
+   * would put a control on a screen that cannot honour it. The rebase itself is
+   * provider-agnostic (google-native U-M3).
+   */
+  provider: BuiltInProviderKey | "youtubeChannel",
   expected: ProviderIntegrationDraft,
   next: ProviderIntegrationDraft,
 ): Json {
@@ -368,7 +409,7 @@ function validateBuiltIn(
   provider: ProviderIntegrationDraft,
   field: BuiltInProviderKey,
   label: string,
-  resourceKind: "gsc" | "ga4" | "optional",
+  resourceKind: "gsc" | "ga4" | "gtm" | "optional",
   issues: IntegrationValidationIssue[],
 ) {
   if (field !== "pageSpeedInsights") {
@@ -391,7 +432,9 @@ function validateBuiltIn(
         : isHttpUrl(resource)
       : resourceKind === "ga4"
         ? /^(?:properties\/)?\d{4,24}$/.test(resource)
-        : isSafeGenericResource(resource);
+        : resourceKind === "gtm"
+          ? GTM_CONTAINER_PATTERN.test(resource)
+          : isSafeGenericResource(resource);
   if (!valid || looksLikeSecret(resource)) {
     issues.push({
       field: `${field}.resourceRef`,
@@ -400,7 +443,50 @@ function validateBuiltIn(
           ? `${label} property must be an HTTP(S) URL or sc-domain:example.com.`
           : resourceKind === "ga4"
             ? `${label} property must be a numeric ID or properties/123456.`
-            : `${label} resource must be a URL, domain, numeric ID, or namespaced reference.`,
+            : resourceKind === "gtm"
+              ? `${label} container must be a public container ID such as GTM-ABC1234 — the id in the site's own Tag Manager snippet.`
+              : `${label} resource must be a URL, domain, numeric ID, or namespaced reference.`,
+    });
+  }
+}
+
+/**
+ * A YouTube channel id as the Google API hands it back: `UC` plus 22 characters
+ * of the URL-safe alphabet (`_discover_youtube` in aidream stores `items[].id`
+ * verbatim as the resource's `resource_ref`). A handle (`@name`) or a custom URL
+ * is NOT accepted — `POST /google-sync/youtube/refresh` resolves the channel by
+ * matching this value against the discovered `youtube_channel` resource row, so
+ * anything else is a refusal the person would only meet at refresh time.
+ */
+export function isYouTubeChannelId(value: string): boolean {
+  return /^UC[A-Za-z0-9_-]{22}$/.test(value.trim());
+}
+
+/**
+ * The owned-channel binding (google-native U-M3). Not routed through
+ * `validateBuiltIn` because its resource is neither a GSC property nor a GA4
+ * property nor "anything safe-looking": it is one exact shape, and `enabled`
+ * without it is a binding that cannot refresh.
+ */
+function validateYouTubeChannel(
+  provider: ProviderIntegrationDraft,
+  issues: IntegrationValidationIssue[],
+) {
+  validateCredential(provider, "youtubeChannel", "YouTube channel", issues);
+  const resource = provider.resourceRef.trim();
+  if (provider.enabled && !resource) {
+    issues.push({
+      field: "youtubeChannel.resourceRef",
+      message: "YouTube channel needs the channel id to refresh from.",
+    });
+    return;
+  }
+  if (!resource) return;
+  if (!isYouTubeChannelId(resource) || looksLikeSecret(resource)) {
+    issues.push({
+      field: "youtubeChannel.resourceRef",
+      message:
+        "YouTube channel must be a channel id such as UCxxxxxxxxxxxxxxxxxxxxxx — not a handle, a custom URL or a video link.",
     });
   }
 }
@@ -430,12 +516,20 @@ export function validateSiteIntegrations(
     issues,
   );
   validateBuiltIn(
+    draft.googleTagManager,
+    "googleTagManager",
+    "Google Tag Manager",
+    "gtm",
+    issues,
+  );
+  validateBuiltIn(
     draft.pageSpeedInsights,
     "pageSpeedInsights",
     "PageSpeed Insights",
     "optional",
     issues,
   );
+  validateYouTubeChannel(draft.youtubeChannel, issues);
 
   if (draft.cms.enabled && !draft.cms.kind) {
     issues.push({

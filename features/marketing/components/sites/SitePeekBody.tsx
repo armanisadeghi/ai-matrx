@@ -70,7 +70,6 @@ export default function SitePeekBody({ site }: SitePeekBodyProps) {
   const daily = useSiteGscDaily(site.id, 90);
   // access-errors: ok — decorative top-pages peek under the same list-row data
   const topPages = useSiteGscTopPages(site.id, 90, 10);
-
   // ONE judge for the delta, on BOTH windows' coverage (round-3 verdict B-N1).
   const clicksDelta = siteKpiDelta(site, "clicks");
   const impressionsDelta = siteKpiDelta(site, "impressions");

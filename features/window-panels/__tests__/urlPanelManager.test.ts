@@ -2,7 +2,7 @@ import {
   mergeManagedPanelParams,
   parseParams,
   serializeParams,
-  withUnclaimedTokens,
+  withUnresolvedTokens,
 } from "../url-sync/UrlPanelManager";
 import { resolveAgentPanelDisplayMode } from "../url-sync/initUrlHydration";
 import { resolveWindowUrlSyncKey } from "../utils/urlSyncIdentity";
@@ -70,17 +70,21 @@ describe("UrlPanelManager URL helpers", () => {
   // not registered was simply absent from the serialization, so the writer
   // replaced the URL with one that no longer held it: the link loaded, then
   // cleared itself, and the only copy of the address was gone.
+  // Merged 2026-09-20: main's `withUnclaimedTokens` and this branch's
+  // `withUnresolvedTokens` state the same law; the latter also judges keys in
+  // canonical space (an alias is represented by the token its window
+  // published) and writes live windows first, unresolved tokens after.
   describe("a token the URL arrived with is never erased", () => {
     it("carries an unclaimed token through a write that knows nothing about it", () => {
       expect(
-        withUnclaimedTokens("notes:default", [
+        withUnresolvedTokens("notes:default", [
           "agent:8b4bead9:m-flexible-panel",
         ]),
-      ).toBe("agent:8b4bead9:m-flexible-panel,notes:default");
+      ).toBe("notes:default,agent:8b4bead9:m-flexible-panel");
     });
 
     it("carries it even when no window is open at all", () => {
-      expect(withUnclaimedTokens("", ["agent:8b4bead9:m-flexible-panel"])).toBe(
+      expect(withUnresolvedTokens("", ["agent:8b4bead9:m-flexible-panel"])).toBe(
         "agent:8b4bead9:m-flexible-panel",
       );
     });
@@ -90,12 +94,12 @@ describe("UrlPanelManager URL helpers", () => {
       // id. Matching on the whole `typeKey:instanceId` would preserve the link
       // token forever, next to the window's own.
       expect(
-        withUnclaimedTokens("vault:credentialVaultWindow", ["vault:item-123"]),
+        withUnresolvedTokens("vault:credentialVaultWindow", ["vault:item-123"]),
       ).toBe("vault:credentialVaultWindow");
     });
 
     it("leaves a param with nothing unclaimed exactly as it was", () => {
-      expect(withUnclaimedTokens("notes:default", [])).toBe("notes:default");
+      expect(withUnresolvedTokens("notes:default", [])).toBe("notes:default");
     });
   });
 

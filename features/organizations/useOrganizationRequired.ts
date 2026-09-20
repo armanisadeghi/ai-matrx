@@ -58,10 +58,7 @@
 
 import { useCallback } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectOrganizationId,
-  selectShouldPromptForOrganization,
-} from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 // 🚨 THE GATE READS ITS NEW INPUTS THROUGH PURE LEAVES, NEVER THROUGH MORE
 // EXPORTS OF THE APP-CONTEXT SLICE OR MORE HOOKS. Dozens of surfaces render
 // through this hook, and dozens of their tests stand the slice and
@@ -69,10 +66,14 @@ import {
 // day they were written. A module mock replaces the module for every importer,
 // so one more slice selector here killed seven suites and 25 tests on
 // 2026-09-18 — surfaces that had not changed at all. The failure reason comes
-// from `lib/organizations/orgBootstrapFailure.ts` (imports nothing) and the
-// retry dispatches through `lib/redux/store-singleton.ts` (imports nothing),
-// so the next thing this gate learns costs no test in the repo a line.
+// from `lib/organizations/orgBootstrapFailure.ts` (imports nothing), the nudge
+// from `lib/organizations/shouldPromptForOrganization.ts` (imports only that
+// leaf) and the retry dispatches through `lib/redux/store-singleton.ts`
+// (imports nothing), so the next thing this gate learns costs no test in the
+// repo a line. The slice is down to ONE member here, `selectOrganizationId`,
+// which every stand-in ever written already carries.
 import { selectOrgBootstrapFailure } from "@/lib/organizations/orgBootstrapFailure";
+import { selectShouldPromptForOrganization } from "@/lib/organizations/shouldPromptForOrganization";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { retryActiveOrgBootstrap } from "@/lib/redux/thunks/activeOrgBootstrap";
 

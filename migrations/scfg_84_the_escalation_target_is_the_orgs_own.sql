@@ -1,0 +1,39 @@
+-- scfg_84_the_escalation_target_is_the_orgs_own.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- public.hr_incident_assign(p_incident_id, p_employment_id, p_reason) —
+-- hr.relations.incident_escalation_target
+--
+-- WHAT THE DEFECT ACTUALLY WAS, because it is not a generic scoping miss. When someone tries to
+-- assign an investigation to a person who is a PARTY to that case, the door refuses and names
+-- who to escalate to instead, so the report is never left unroutable — the accused-HR-owner
+-- case is not hypothetical, and that sentence is the whole point of the refusal. It was naming
+-- the PLATFORM's escalation target to every organization. An organization that had set its own
+-- would have had its people pointed at the wrong contact, in a harassment or misconduct case,
+-- at the exact moment the routing matters. Now resolved from the incident's own organization.
+--
+-- TWO ENTITY IDS, AND ONLY ONE IS AN AUTHORIZATION INPUT — which is the distinction this sweep
+-- keeps turning on:
+--
+--   p_incident_id IS one. The organization and the subject are read from that incident row. A
+--   row that does not exist or is deleted returns `not_reachable` — deliberately the SAME answer
+--   a caller who may not see it gets, so the id cannot be used as an existence oracle. The
+--   caller is then refused with that same word if hr.incident_excluded says they are a party to
+--   the case. Only then does hr._l1_write_gate ask for `incident.investigate`, and it asks about
+--   the SUBJECT of the case, not about the person being assigned (hr_l1_64): the population
+--   question is about whom the case is about.
+--
+--   p_employment_id is NOT. It is the OBJECT of the action — the person being routed to the
+--   case — and it is validated in its own right rather than trusted: assigning a party to the
+--   case is refused by name. That refusal is the one carrying the escalation target.
+--
+-- NULL rule: v_org cannot be null at the knob read, because a null would have returned
+-- not_reachable at the top.
+--
+-- VERIFIED AFTER: census 18 → 17 rows over 10 functions; hr_incident_assign no longer appears;
+-- a fabricated incident id still answers `not_reachable` and writes nothing (the door returns
+-- before hr.arm_write(), so that probe is safe by construction — the distinction scfg_78 got
+-- wrong and scfg_81 got right).

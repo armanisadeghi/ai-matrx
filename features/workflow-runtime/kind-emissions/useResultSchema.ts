@@ -18,10 +18,11 @@
 import { useEffect, useState } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
-  selectOrganizationId,
-  selectOrgBootstrapResolved,
-} from "@/lib/redux/slices/appContextSlice";
+  ORGANIZATION_UNAVAILABLE_DESCRIPTION,
+  useOrganizationRequired,
+} from "@/features/organizations/useOrganizationRequired";
 import { callApi } from "@/lib/api/call-api";
 
 import { parseResultSchema, type DeclaredResultSchema } from "./result-schema";
@@ -62,7 +63,11 @@ export function useResultSchema(definitionId: string): ResultSchemaState {
   // fixed (V3 F4). Waiting is right only until the bootstrap resolves; on a
   // session with NO organization selected this read stayed "loading" forever.
   // Once resolved with no org, that is a settled fact: say it, with the remedy.
-  const orgResolved = useAppSelector(selectOrgBootstrapResolved);
+  // 🚨 AND THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved`
+  // goes TRUE when the read FAILED too (`setOrgBootstrapFailure` sets it), so
+  // reading it alone said "choose an organization" to a person nobody had read
+  // the memberships of. The gate's discriminant separates the two.
+  const { organizationState } = useOrganizationRequired();
   const [answered, setAnswered] = useState<Answered>({
     forId: definitionId,
     state: { status: "loading" },
@@ -98,7 +103,10 @@ export function useResultSchema(definitionId: string): ResultSchemaState {
   }, [dispatch, definitionId, organizationId]);
 
   // Derived at render, never set in the effect (react-hooks/set-state-in-effect).
-  if (!organizationId && orgResolved) {
+  if (organizationState === "unavailable") {
+    return { status: "error", message: ORGANIZATION_UNAVAILABLE_DESCRIPTION };
+  }
+  if (organizationState === "required") {
     return {
       status: "error",
       message:
