@@ -41,15 +41,18 @@
  * rung, because "no org selected yet" and "your org has no override" are
  * different facts that used to look identical.
  *
- * v1 constraint: the client run path (useRunAgent → POST /agents/{id}) has no
- * `is_version` channel, so a verdict whose winner is VERSION-PINNED cannot run
- * here. It refuses — and now the refusal names the rung the server chose and
- * the version it chose, instead of guessing from a row this module read itself.
+ * A version-pinned winner is a VALID verdict. Launch goes through
+ * `POST /ai/mandates/{key}` (see `resolveStartPath`); the server honours the
+ * pin. This module's job is DISPLAY IDENTITY: `agentId` is always the
+ * `agent.definition` id (attribution / snapshot / EntityRef), and `isVersion` +
+ * `versionId` carry the pin. Refusing a pin here was a false access denial —
+ * the server said "this is what runs" and every `useMandate` consumer disabled
+ * the job (captured 2026-09-19 on `/mandates/workflow.deep_research.keyword_synthesis`).
  *
  * Failures are LOUD: unknown mandate, disabled mandate, unresolved organization,
- * a version-pinned winner, and a non-agent Holder all throw. No silent fallback
- * to a hardcoded id — that would hide exactly the breakage this system exists to
- * surface.
+ * a pin whose definition id the server omitted, and a non-agent Holder all
+ * throw. No silent fallback to a hardcoded id — that would hide exactly the
+ * breakage this system exists to surface.
  */
 
 import { createClient } from "@/utils/supabase/client";
@@ -100,7 +103,20 @@ export interface ResolvedMandate {
    * observations) key on this, never on `agentId`, which moves with the pin.
    */
   mandateId: string;
+  /**
+   * The agent.definition id of the Holder — ALWAYS the live agent row, even
+   * when the winning rung is version-pinned. Attribution, snapshots, and
+   * EntityRef doors key on this. The pin, if any, is `versionId`.
+   */
   agentId: string;
+  /**
+   * True when the winning rung named a frozen Holder version. The run door
+   * (`POST /ai/mandates/{key}`) honours this; a consumer that still POSTs
+   * `/ai/agents/{id}` must send `is_version: true` and the `versionId`.
+   */
+  isVersion: boolean;
+  /** The pinned `agent.definition_version` id when `isVersion` is true. */
+  versionId: string | null;
   /**
    * The DECIDING layer's Holder type. Always `"agent"` today — a binding
    * naming any other Holder refuses resolution outright (see
@@ -341,16 +357,21 @@ export class MandateOrganizationUnresolvedError extends Error {
 }
 
 /**
- * REFUSE a verdict this client cannot run — the client half of the server's
- * `EXECUTABLE_HOLDER_TYPES` gate. A `holder_type='workflow'` winner carries NO
- * `agent_id` by construction; running the system default instead would be a
- * deliberate binding silently evaporating, with the caller told the platform
- * default was in charge.
+ * REFUSE a verdict this client cannot paint or launch — the client half of the
+ * server's `EXECUTABLE_HOLDER_TYPES` gate. A `holder_type='workflow'` winner
+ * carries NO `agent_id` by construction; running the system default instead
+ * would be a deliberate binding silently evaporating, with the caller told the
+ * platform default was in charge.
+ *
+ * A version-pinned AGENT winner is runnable: the mandate start door honours
+ * the pin. What this returns is DISPLAY IDENTITY (`agentId` = definition id)
+ * plus the pin itself. A pin whose definition id the server omitted cannot be
+ * painted or attributed — that is a broken door, not a reason to unpin.
  */
 function assertRunnableVerdict(
   mandateKey: string,
   verdict: MandateResolutionResponse,
-): string {
+): { agentId: string; isVersion: boolean; versionId: string | null } {
   const rung = verdict.provenance;
   if (verdict.holder_type !== "agent" || !verdict.agent_id) {
     throw new Error(
@@ -359,25 +380,29 @@ function assertRunnableVerdict(
         `to an agent, or route this consumer through the server.`,
     );
   }
-  if (verdict.is_version) {
-    // 🚨 NO UUID IN A SENTENCE A PERSON READS (FIX-R6 F2). This throw is not a
-    // developer log: `useMandate` hands `.message` straight to consumers that
-    // print it on screen. It used to say "(version <uuid>)" — unreadable, and
-    // unactionable next to a remedy that names the rung. The pinned id is a
-    // DIAGNOSTIC, so it goes to the console, where developers look, and the
-    // sentence keeps only what the reader can act on.
-    console.error(
-      `[mandates] ${mandateKey}: the ${rung} rung is pinned to holder version`,
-      verdict.agent_id,
-    );
-    throw new Error(
-      `mandate "${mandateKey}": the ${rung} rung is version-pinned to a ` +
-        `specific Holder version, and this screen has no channel to run a ` +
-        `pinned version — client-run mandates must be floating. Unpin the ` +
-        `${rung} rung, or route this consumer through the server.`,
-    );
+  const isVersion = Boolean(verdict.is_version);
+  if (isVersion) {
+    const definitionId = verdict.definition_agent_id;
+    if (!definitionId) {
+      throw new Error(
+        `mandate "${mandateKey}": the ${rung} rung is pinned to a Holder ` +
+          `version, but the resolution door did not name the agent that ` +
+          `version belongs to. This screen cannot paint or attribute the run ` +
+          `without that id. Retry; if it persists the door is missing ` +
+          `definition_agent_id.`,
+      );
+    }
+    return {
+      agentId: definitionId,
+      isVersion: true,
+      versionId: verdict.agent_id,
+    };
   }
-  return verdict.agent_id;
+  return {
+    agentId: verdict.definition_agent_id ?? verdict.agent_id,
+    isVersion: false,
+    versionId: null,
+  };
 }
 
 export interface ResolveMandateOptions {
@@ -471,7 +496,7 @@ export async function resolveMandate(
     throw error;
   }
 
-  const agentId = assertRunnableVerdict(mandateKey, verdict);
+  const holder = assertRunnableVerdict(mandateKey, verdict);
   const provenance = verdict.provenance;
   const holderType: string = verdict.holder_type ?? "agent";
   const configOverrides: Partial<FeLlmParams> | null = isJsonObject(
@@ -533,7 +558,9 @@ export async function resolveMandate(
   const value: ResolvedMandate = {
     mandateKey,
     mandateId: mandate.id,
-    agentId,
+    agentId: holder.agentId,
+    isVersion: holder.isVersion,
+    versionId: holder.versionId,
     holderType,
     configOverrides,
     provenance,
@@ -653,8 +680,8 @@ export async function fetchMandatePins(
  * Chrome that LISTS mandates (the Agents header menu naming what AI runs on
  * this page) needs the label to render and the id to hang notes off, and it
  * must not go through `resolveMandate`: that is the RUN path and it throws on
- * disabled or version-pinned mandates, which is exactly right for running and
- * exactly wrong for listing. A key with no row is reported (`recordUnavailable`)
+ * a disabled mandate or a non-agent Holder, which is exactly right for running
+ * and exactly wrong for listing. A key with no row is reported (`recordUnavailable`)
  * and simply absent from the result — a surface that names a mandate the
  * database does not have is a wiring defect worth seeing.
  */

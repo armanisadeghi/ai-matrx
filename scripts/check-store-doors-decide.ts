@@ -28,6 +28,10 @@
  *
  * UNMEASURED IS NOT PASSED. No credentials or an unreachable database is a FAILURE.
  *
+ *  11. A client-executable function in schema `custom` that is SECURITY INVOKER. The
+ *      grant on it is worth nothing (census 7 keeps `authenticated` holding no table
+ *      privilege here) and the call dies on the body's own first line. That was T9.
+ *
  *   pnpm check:store-doors-decide
  *   pnpm check:store-doors-decide:self-test   # proves the censuses can still go RED
  */
@@ -178,6 +182,72 @@ const DECLARED_LADDER_CENSUS = (rungs: string[]) => `
      ${rungs.length ? `and ${NO_COMMENTS} !~* '(${rungs.join("|")})'` : ""}
    order by 1`;
 
+/**
+ * THE ELEVENTH CENSUS - A GRANT ON A SECURITY INVOKER BODY IS A GRANT WORTH NOTHING
+ * (2026-09-20, lane STORE-T).
+ *
+ * `custom.migrate_retype` was declared client-callable, held EXECUTE for `authenticated`,
+ * asked the one ladder in its first three lines - and was SECURITY INVOKER. So it ran with
+ * the CALLER'S privileges, and `authenticated` holds EXECUTE on none of the ladder, so it
+ * died on its own first line: `permission denied for function assert_client_may_reach`, to
+ * the OWNER of the record. That is the whole of acceptance test T9, and every census above
+ * was green on it: the grant was there, the door row was there, the ladder was in the body.
+ *
+ * Census 7 keeps the boundary that makes this checkable - `authenticated` holds no TABLE
+ * privilege in schema `custom` - so an INVOKER function here can reach nothing of the store
+ * at all. Which means: if its body names the store's own tables or the ladder, the grant on
+ * it is either dead or about to be. Either way it is a lie told to a caller.
+ *
+ * TRIGGER functions are exempt and always were: they have no direct call surface, `CREATE
+ * FUNCTION` gives them PUBLIC EXECUTE by default, and both DDL guards exempt them for the
+ * same reason.
+ */
+const INVOKER_DOOR_CENSUS = (exempt: boolean) => `
+  select p.proname::text as function_name, pg_get_function_identity_arguments(p.oid) as identity_args,
+         'a client may execute it and it is SECURITY INVOKER, so it runs with the CALLER''s '
+         'privileges - and it reaches ' ||
+         case when ${NO_COMMENTS} ~* '(from|join|into|update|delete\\s+from)\\s+custom\\.record\\M'
+              then 'custom.record, which authenticated holds no privilege on'
+              else 'custom.' || (select string_agg(q.proname, ', ' order by q.proname)
+                                   from pg_proc q
+                                  where q.pronamespace = 'custom'::regnamespace
+                                    and q.oid <> p.oid
+                                    and not has_function_privilege('authenticated', q.oid, 'EXECUTE')
+                                    and ${NO_COMMENTS} ~* ('custom\\.' || q.proname || '\\s*\\('))
+                   || ', which authenticated may not execute'
+         end ||
+         ' - so the grant is worth nothing and the call dies on the body''s own first line'::text as why
+    from pg_proc p
+   where p.pronamespace = 'custom'::regnamespace
+     and not p.prosecdef
+     ${exempt ? `and p.prorettype not in ('pg_catalog.trigger'::regtype, 'pg_catalog.event_trigger'::regtype)` : ""}
+     and has_function_privilege('authenticated', p.oid, 'EXECUTE')
+     -- THE REAL QUESTION, NOT A PROXY FOR IT (lane ENTITY-FIELDS, 2026-09-20). This used to
+     -- read \`custom.record|custom.assert_|assert_client_may|has_visibility\`, which is the
+     -- shape the defect happened to have rather than the thing that makes it a defect. It
+     -- named a body for mentioning a ladder function the caller CAN execute - and it named a
+     -- body for its own CREATE FUNCTION line, because that line contains the function's own
+     -- name. The census now asks what actually decides it: does this body touch something the
+     -- CALLER cannot reach? custom.record (census 7 keeps authenticated holding no table
+     -- privilege here) or a function of this schema with no EXECUTE for authenticated. A
+     -- The custom.record arm reads FROM / JOIN / INTO / UPDATE / DELETE FROM specifically,
+     -- because \`'custom.record'::regclass\` is a NAME, not a read: custom.assert_client_may_reach
+     -- resolves that literal to find the store's owner and needs no privilege on the table to
+     -- do it, and a census that named it for the mention alone would be back to a proxy. A
+     -- SECURITY INVOKER door that touches NEITHER runs perfectly as the person - which is the
+     -- whole point of the three ENTITY-FIELDS value doors, where the standard business table's
+     -- OWN row-level security is what must decide, and a SECURITY DEFINER wrapper would
+     -- replace it with a second access system.
+     and (
+       ${NO_COMMENTS} ~* '(from|join|into|update|delete\\s+from)\\s+custom\\.record\\M'
+       or exists (select 1 from pg_proc q
+                   where q.pronamespace = 'custom'::regnamespace
+                     and q.oid <> p.oid
+                     and not has_function_privilege('authenticated', q.oid, 'EXECUTE')
+                     and ${NO_COMMENTS} ~* ('custom\\.' || q.proname || '\\s*\\('))
+     )
+   order by 1`;
+
 const DECLARED_SWITCH_CENSUS = (accept: boolean) => `
   select p.proname::text as function_name, pg_get_function_identity_arguments(p.oid) as identity_args,
          'declared client-callable and writes a record, but never asks whether the store is open '
@@ -301,6 +371,185 @@ const IDENTITY_RENDERING_CENSUS = `
    where d.identity_argtypes is not null
      and d.identity_args is distinct from pg_get_function_identity_arguments(p.oid)
    order by 1`;
+
+/**
+ * CENSUS 12 — THE THREE ANSWERS TO ONE QUESTION, IN EVERY `shared_only` ORGANIZATION
+ * (2026-09-19, lane SHARED-ONLY).
+ *
+ * Censuses 1-9 read the CATALOGUE and census 10 asks two seats about one record. All eleven
+ * were green on the day the sixth independent pass found that an organization which chooses
+ * "people only see what is shared with them" LOSES SHARING ENTIRELY: the store's own question
+ * "can she see this?" answered TRUE, every screen answered "You do not have access to this
+ * table", and a whole table shared at Admin opened with zero rows. Nothing about the shape of
+ * a door was wrong; three different pieces of the system answered one question differently.
+ *
+ * `custom.shared_only_disagreements()` is that comparison, over every (member, record) pair in
+ * every organization that has said `shared_only`: the ONE LADDER, the READ DOOR's own
+ * predicate, and the RLS POLICY TEXT the mirror generates, on the same row. The kind of
+ * disagreement is the first word of `why`:
+ *
+ *   doors-disagree      the ladder and the read door differ - always a failure
+ *   mirror-admits-more  the policy text admits a row every door refuses - always a failure,
+ *                       and exactly what `custom/member_default_visibility` left open in
+ *                       `iam.entity_read_expr` until this lane
+ *   mirror-admits-less  the doors admit through an arm of the store ladder that sits ABOVE the
+ *                       platform kernel the mirror is generated from. Harmless while schema
+ *                       `custom` holds no table privilege for any client role - which is
+ *                       census 7 - because then no policy built from that text decides
+ *                       anything. The moment census 7 finds one, this becomes a failure too,
+ *                       and the two censuses are wired together below so that happens by
+ *                       itself.
+ *   unmeasured          an organization with more pairs than the ceiling - never a pass.
+ *
+ * Its RED half re-runs the same census with one of two REAL historical states restored:
+ * `mirror_forgets_the_knob` (the mirror before this lane) and `door_refuses_the_share` (the
+ * screens the sixth pass photographed).
+ */
+const SHARED_ONLY_CENSUS = (pretend: string | null) =>
+  `select record_id::text as function_name,
+          coalesce(member_id::text, organization_name) as identity_args,
+          why
+     from custom.shared_only_disagreements(${pretend === null ? "null" : `'${pretend}'`})`;
+
+/** The kinds that are never allowed, whatever else is true. */
+const SHARED_ONLY_NEVER = ["doors-disagree", "mirror-admits-more", "unmeasured"];
+
+/**
+ * CENSUS 10 — THE TWO-SEAT PROBE: "VIEWER" MEANS VIEWER, AND REVOKED MEANS REVOKED
+ * (2026-09-19, lane LEVEL-FIX).
+ *
+ * Censuses 1-9 all read the CATALOGUE. Every one of them was green on the day the fifth
+ * independent pass shared a record with a colleague at VIEWER through the Share dialog and
+ * watched her rewrite it, delete it, create her own in the table, and go on editing after the
+ * share was revoked. Nothing about the shape of a door was wrong. The ANSWER was wrong:
+ * `iam.has_access_for_base`'s organization-member lane hard-coded `p_required <= 'editor'` for
+ * every member of every organization, so the read door said `editor` while
+ * `custom.share_access` said `viewer` in the same breath.
+ *
+ * A shape census cannot see that, so this one is not a shape census. It BUILDS a throwaway
+ * organization with two real seats inside a transaction it always rolls back, shares one record
+ * at viewer, and asks the doors the two questions the product promises:
+ *
+ *   a. A VIEWER CANNOT WRITE - `custom.record_update`, `custom.record_delete` and
+ *      `custom.record_write` all refuse, as role `authenticated` carrying her claims.
+ *   b. REVOKED CANNOT READ - with the share gone, in an organization that has said membership
+ *      alone shows nothing (`custom/member_default_visibility = shared_only`),
+ *      `custom.read_record` refuses.
+ *
+ * And, because a probe that can only pass is not a probe, its RED half (`--self-test`) inverts
+ * exactly two real things inside the same rolled-back transaction - the grant is written at
+ * `editor` instead of `viewer`, and the organization is left at the shipped `all_records` - and
+ * requires both clauses to FAIL. Those are the two states in which the product genuinely does
+ * allow the write and the read, so a green answer above is green about something.
+ *
+ * It uses `admin@admin.com` and `test@test.com` and nobody else, touches no existing row, and
+ * commits nothing.
+ */
+const TWO_SEAT_ORG = "1ef10000-0000-4a00-8a00-0000000000d1";
+const TWO_SEAT_TBL = "1ef10000-0000-4a00-8a00-0000000000d2";
+const TWO_SEAT_REC = "1ef10000-0000-4a00-8a00-0000000000d3";
+const TWO_SEAT_ADMIN = "87a6e699-3622-4869-8843-d0867456c0dd";
+const TWO_SEAT_MEMBER = "4060701e-706a-4c76-b3ca-0bbc69fa5a14";
+/** The kernel Table every store fixture hangs off. */
+const TWO_SEAT_KERNEL_ORG = "11111111-0000-4000-8000-000000000004";
+
+const TWO_SEAT_FIXTURE = (grantLevel: string, visibilityKnob: string) => `
+  select set_config('app.actor_system', 'check_store_doors_decide', true);
+  insert into iam.organizations (id, name, slug, abbreviation, created_by)
+  values ('${TWO_SEAT_ORG}', 'STORE DOORS two-seat probe', 'store-doors-two-seat-probe', 'SDP',
+          '${TWO_SEAT_ADMIN}');
+  insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
+  values ('${TWO_SEAT_ORG}', 'organization', '${TWO_SEAT_ORG}', '${TWO_SEAT_ADMIN}', 'owner', 'active'),
+         ('${TWO_SEAT_ORG}', 'organization', '${TWO_SEAT_ORG}', '${TWO_SEAT_MEMBER}', 'member', 'active');
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('custom', 'system_enabled', 'organization', '${TWO_SEAT_ORG}', '${TWO_SEAT_ORG}',
+          'true'::jsonb, 'check:store-doors-decide two-seat probe'),
+         ('custom', 'member_default_visibility', 'organization', '${TWO_SEAT_ORG}', '${TWO_SEAT_ORG}',
+          '"${visibilityKnob}"'::jsonb, 'check:store-doors-decide two-seat probe');
+  insert into custom.record (id, organization_id, table_id, data_class, data, created_by)
+  values ('${TWO_SEAT_TBL}', '${TWO_SEAT_ORG}', '${TWO_SEAT_KERNEL_ORG}', 'record',
+          jsonb_build_object('name', 'Two-seat probe table'), '${TWO_SEAT_ADMIN}'),
+         ('${TWO_SEAT_REC}', '${TWO_SEAT_ORG}', '${TWO_SEAT_TBL}', 'record',
+          jsonb_build_object('title', 'The admin''s record'), '${TWO_SEAT_ADMIN}');
+  -- The share the dialog writes - on the record AND on the table it lives in, because
+  -- custom.record_write asks for editor ON THE TABLE and the probe has to be able to invert
+  -- into a person who genuinely may create a record, not merely one who may edit an existing one.
+  insert into iam.permissions (resource_type, resource_id, granted_to_user_id, permission_level, created_by)
+  values ('record', '${TWO_SEAT_REC}', '${TWO_SEAT_MEMBER}', '${grantLevel}', '${TWO_SEAT_ADMIN}'),
+         ('record', '${TWO_SEAT_TBL}', '${TWO_SEAT_MEMBER}', '${grantLevel}', '${TWO_SEAT_ADMIN}');
+`;
+
+/** Each clause the member's seat must be refused, and the name it is reported under. */
+const TWO_SEAT_WRITE_CLAUSES: ReadonlyArray<readonly [string, string]> = [
+  ["custom.record_update", `select custom.record_update('${TWO_SEAT_ORG}', '${TWO_SEAT_REC}', '{"title":"probe"}'::jsonb, null)`],
+  ["custom.record_delete", `select custom.record_delete('${TWO_SEAT_ORG}', '${TWO_SEAT_REC}')`],
+  ["custom.record_write", `select custom.record_write('${TWO_SEAT_ORG}', '${TWO_SEAT_TBL}', '{"title":"probe"}'::jsonb)`],
+];
+
+const TWO_SEAT_BECOME_MEMBER = `
+  select set_config('request.jwt.claims',
+    '{"sub":"${TWO_SEAT_MEMBER}","role":"authenticated"}', true);
+  set local role authenticated;
+`;
+
+interface TwoSeatResult {
+  /** Doors that took a write from somebody shared at the probe's level. */
+  readonly wroteAnyway: string[];
+  /** True when the revoked seat could still open the record. */
+  readonly readAfterRevoke: boolean;
+}
+
+/**
+ * Run the probe inside ONE transaction and roll it back, whatever happens. `grantLevel` and
+ * `visibilityKnob` are what the self-test inverts.
+ */
+async function twoSeatProbe(
+  client: { query: (sql: string) => Promise<unknown> },
+  grantLevel: string,
+  visibilityKnob: string,
+): Promise<TwoSeatResult> {
+  const wroteAnyway: string[] = [];
+  let readAfterRevoke = false;
+  await client.query("begin");
+  try {
+    await client.query("set local statement_timeout = '120s'");
+    await client.query("set local lock_timeout = '20s'");
+    await client.query(TWO_SEAT_FIXTURE(grantLevel, visibilityKnob));
+
+    for (const [name, sql] of TWO_SEAT_WRITE_CLAUSES) {
+      await client.query("savepoint probe");
+      try {
+        await client.query(TWO_SEAT_BECOME_MEMBER);
+        await client.query(sql);
+        wroteAnyway.push(name);
+      } catch {
+        // refused, which is the answer the product promises
+      } finally {
+        await client.query("rollback to savepoint probe");
+      }
+    }
+
+    // …and the revoked seat.
+    await client.query(
+      `delete from iam.permissions where resource_type = 'record'
+         and resource_id in ('${TWO_SEAT_REC}', '${TWO_SEAT_TBL}')
+         and granted_to_user_id = '${TWO_SEAT_MEMBER}'`,
+    );
+    await client.query("savepoint probe");
+    try {
+      await client.query(TWO_SEAT_BECOME_MEMBER);
+      await client.query(`select custom.read_record('${TWO_SEAT_ORG}', '${TWO_SEAT_REC}', false)`);
+      readAfterRevoke = true;
+    } catch {
+      // refused
+    } finally {
+      await client.query("rollback to savepoint probe");
+    }
+  } finally {
+    await client.query("rollback").catch(() => undefined);
+  }
+  return { wroteAnyway, readAfterRevoke };
+}
 
 interface Row {
   function_name: string;
@@ -469,6 +718,83 @@ async function main(): Promise<void> {
           `${closedNames.size} client-reachable function(s) in a declared-closed schema, ` +
           "including all five that must be. It can go red.",
       );
+      // CENSUS 10, THE RED HALF. The same probe with exactly two real things inverted: the
+      // grant is written at EDITOR rather than viewer, and the organization is left at the
+      // shipped `all_records` rather than `shared_only`. Both clauses must then FAIL - those
+      // are the two states in which the product really does allow the write and the read, so
+      // if they do not fail, the probe is not driving the doors it claims to drive.
+      const redProbe = await twoSeatProbe(client, "editor", "all_records");
+      const missedWrites = TWO_SEAT_WRITE_CLAUSES.map(([n]) => n).filter(
+        (n) => !redProbe.wroteAnyway.includes(n),
+      );
+      if (missedWrites.length > 0) {
+        fail(
+          "SELF-TEST FAILED - with the colleague granted EDITOR outright, the two-seat probe " +
+            `still saw ${missedWrites.join(", ")} refuse her. Either those doors are broken for ` +
+            "somebody who may, or the probe is not calling them - and then its green answer proves " +
+            "nothing.",
+        );
+      }
+      if (!redProbe.readAfterRevoke) {
+        fail(
+          "SELF-TEST FAILED - with the organization left at the shipped `all_records`, a member " +
+            "with no share at all was still refused the read. Either the member lane is gone " +
+            "entirely, or the probe is not calling custom.read_record.",
+        );
+      }
+      console.log(
+        "[ OK ] self-test - inverting the grant to editor and the organization to all_records, " +
+          `the two-seat probe sees all ${redProbe.wroteAnyway.length} write door(s) take the ` +
+          "write and the read go through. It can go red.",
+      );
+
+      // CENSUS 11, THE RED HALF. With trigger functions no longer exempt, every SECURITY
+      // INVOKER trigger body in this schema that touches the store must be named. An empty
+      // answer would mean the query is not reading the catalogue it claims to.
+      const redInvoker = (await client.query<Row>(INVOKER_DOOR_CENSUS(false))).rows;
+      if (redInvoker.length === 0) {
+        fail(
+          "SELF-TEST FAILED - with trigger functions no longer exempt, the SECURITY INVOKER " +
+            "census named nothing at all. Schema `custom` is full of INVOKER trigger bodies " +
+            "that touch custom.record, so an empty answer means it is not reading them.",
+        );
+      }
+      console.log(
+        `[ OK ] self-test - without the trigger exemption the SECURITY INVOKER census names ` +
+          `${redInvoker.length} function(s). It can go red.`,
+      );
+
+      // CENSUS 12, THE RED HALF. The two states this really was in, each of which must produce
+      // the kind of disagreement it caused: the RLS mirror before it learned
+      // `custom/member_default_visibility`, and the screens the sixth pass photographed.
+      for (const [pretend, kind, what] of [
+        [
+          "mirror_forgets_the_knob",
+          "mirror-admits-more",
+          "with `custom/member_default_visibility` taken back out of iam.entity_read_expr, the " +
+            "policy text admits nobody the doors refuse",
+        ],
+        [
+          "door_refuses_the_share",
+          "doors-disagree",
+          "with the read door refusing every row, it still agrees with the one ladder",
+        ],
+      ] as const) {
+        const rows = (await client.query<Row>(SHARED_ONLY_CENSUS(pretend))).rows.filter((r) =>
+          r.why?.startsWith(kind),
+        );
+        if (rows.length === 0) {
+          fail(
+            `SELF-TEST FAILED - ${what}. Either every shared_only organization on this database ` +
+              "has no member with anything shared, or the census is not comparing what it says it " +
+              "compares - and then its zero above proves nothing.",
+          );
+        }
+        console.log(
+          `[ OK ] self-test - ${pretend}: the shared_only census names ${rows.length} ` +
+            `${kind} row(s). It can go red.`,
+        );
+      }
     }
 
     const callers = (await client.query<Row>(CALLER_CENSUS(DECIDERS))).rows;
@@ -480,6 +806,45 @@ async function main(): Promise<void> {
     const tablePrivileges = (await client.query<Row>(TABLE_PRIVILEGE_CENSUS)).rows;
     const closedSchemas = (await client.query<Row>(CLOSED_SCHEMA_CENSUS(true))).rows;
     const rendering = (await client.query<Row>(IDENTITY_RENDERING_CENSUS)).rows;
+    const invokerDoors = (await client.query<Row>(INVOKER_DOOR_CENSUS(true))).rows;
+
+    // CENSUS 12 — the three answers, live, in every organization that has said `shared_only`.
+    // `mirror-admits-less` is a failure only when census 7 is non-empty, so the two are read
+    // together rather than one of them excusing the other in prose.
+    const sharedOnlyAll = (await client.query<Row>(SHARED_ONLY_CENSUS(null))).rows;
+    const mirrorNarrower = sharedOnlyAll.filter((r) => r.why?.startsWith("mirror-admits-less"));
+    const sharedOnly = sharedOnlyAll.filter(
+      (r) =>
+        SHARED_ONLY_NEVER.some((kind) => r.why?.startsWith(kind)) ||
+        (tablePrivileges.length > 0 && r.why?.startsWith("mirror-admits-less")),
+    );
+    if (mirrorNarrower.length > 0 && tablePrivileges.length === 0) {
+      console.log(
+        `[INFO] ${mirrorNarrower.length} row(s) the store's doors admit through an arm above the ` +
+          "platform kernel the RLS mirror is generated from. Not a failure: census 7 is empty, so " +
+          "no policy built from that text decides a read. It becomes a failure the moment it is not.",
+      );
+    }
+
+    // CENSUS 10 — the two seats, live, in a transaction that is always rolled back.
+    const probe = await twoSeatProbe(client, "viewer", "shared_only");
+    const twoSeat: Row[] = [
+      ...probe.wroteAnyway.map((name) => ({
+        function_name: name.replace(/^custom\./, ""),
+        identity_args: "shared at viewer",
+        why: "a person shared at VIEWER was allowed to write through this door - the Share dialog, "
+          + "the Access tab and custom.share_access all say viewer, so the door has to as well",
+      })),
+      ...(probe.readAfterRevoke
+        ? [{
+            function_name: "read_record",
+            identity_args: "share revoked",
+            why: "the share was revoked and the record still opened for her, in an organization "
+              + "whose custom/member_default_visibility is shared_only - a revoke that does not "
+              + "take effect on the next call is not a revoke",
+          }]
+        : []),
+    ];
 
     const ok = [
       report("client doors taking an organization id that never decide the caller", callers),
@@ -495,6 +860,18 @@ async function main(): Promise<void> {
         true,
       ),
       report("door rows whose stored signature is not what the catalog renders", rendering, true),
+      report(
+        "client-executable functions in schema custom that are SECURITY INVOKER",
+        invokerDoors,
+      ),
+      report(
+        "doors that took a write from somebody shared at viewer, or showed a revoked person the record",
+        twoSeat,
+      ),
+      report(
+        "shared_only organizations where the one ladder, the read door and the RLS policy text do not agree",
+        sharedOnly,
+      ),
     ].every(Boolean);
 
     if (!ok) {

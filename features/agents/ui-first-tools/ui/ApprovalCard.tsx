@@ -14,9 +14,18 @@
  * exactly once. Apply packs `confirmed:true` (and the REMEMBER_SENTINEL when
  * "always approve" is on); Keep as is packs `confirmed:false`; Respond packs the
  * typed `freeform`; the × minimizes without resolving the tool call.
+ *
+ * ONE CARD, TWO KINDS OF WAIT. A client-delegated tool is SUSPENDED while this
+ * card is on screen, and the registry above is how it resumes. A change the
+ * SERVER already refused has no suspended call to resume — the `records` tool
+ * answered `awaiting_approval` and returned — so its producer hands `onDecide`
+ * instead and applies the change itself
+ * (`features/record-change-approvals`). Everything a person reads and every
+ * gesture they make is the same in both, which is the point: there is one
+ * approval grammar on this platform, not one per place a write happens.
  */
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Check,
   Plus,
@@ -48,6 +57,32 @@ import { AgentCardShell, type AccentTone } from "./AgentCardShell";
 
 interface ApprovalCardProps {
   ask: PendingAsk;
+  /**
+   * Standalone mode: take the decision instead of resolving a delegated tool
+   * call. Set by a producer whose write is its own to make (a server-side
+   * change a person is approving after the fact).
+   */
+  onDecide?: (decision: "approve" | "decline") => void;
+  /**
+   * What the card says once the decision has been taken — the outcome replaces
+   * the action row, so a decided card never offers the decision again.
+   */
+  outcome?: ReactNode;
+  /**
+   * Offer "Respond". A suspended tool call can be redirected with a sentence;
+   * a change that has already come back from the server cannot, so its producer
+   * turns this off rather than showing a box that would go nowhere.
+   */
+  allowRespond?: boolean;
+  /**
+   * A sentence shown ALWAYS, above the diff — not behind Details.
+   *
+   * `description` is supporting detail a person may open; a reason a change is
+   * waiting, and the one setting that governs it, is not detail. A card that
+   * hid WHY behind a toggle would be asking for a decision while withholding
+   * the fact the decision turns on.
+   */
+  note?: ReactNode;
 }
 
 const VERB_META: Record<
@@ -95,7 +130,13 @@ function ProposedValueBody({ value, kind }: { value: unknown; kind?: string }) {
   );
 }
 
-export function ApprovalCard({ ask }: ApprovalCardProps) {
+export function ApprovalCard({
+  ask,
+  onDecide,
+  outcome,
+  allowRespond = true,
+  note,
+}: ApprovalCardProps) {
   const dispatch = useAppDispatch();
   const [remember, setRemember] = useState(false);
   const [respondMode, setRespondMode] = useState(false);
@@ -135,6 +176,10 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
   }
 
   function approve() {
+    if (onDecide) {
+      onDecide("approve");
+      return;
+    }
     resolve({
       ...EMPTY_ASK_RESPONSE,
       confirmed: true,
@@ -143,6 +188,10 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
   }
 
   function decline() {
+    if (onDecide) {
+      onDecide("decline");
+      return;
+    }
     resolve({ ...EMPTY_ASK_RESPONSE, confirmed: false });
   }
 
@@ -152,7 +201,9 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
     resolve({ ...EMPTY_ASK_RESPONSE, freeform: text });
   }
 
-  const footer = respondMode ? (
+  const footer = outcome ? (
+    <div className="text-xs leading-relaxed text-muted-foreground">{outcome}</div>
+  ) : respondMode ? (
     <div>
       <Textarea
         value={respondText}
@@ -207,14 +258,16 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
         >
           Keep as is
         </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => setRespondMode(true)}
-          className="min-h-11 flex-1 px-2.5 text-muted-foreground hover:text-foreground sm:min-h-8 sm:flex-none"
-        >
-          Respond
-        </Button>
+        {allowRespond && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setRespondMode(true)}
+            className="min-h-11 flex-1 px-2.5 text-muted-foreground hover:text-foreground sm:min-h-8 sm:flex-none"
+          >
+            Respond
+          </Button>
+        )}
       </div>
       {autoNoun && (
         <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 rounded-md text-[12px] text-muted-foreground transition-colors hover:text-foreground sm:min-h-6">
@@ -282,6 +335,9 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
       contentClassName="px-3 pb-2 pt-1"
       aria-label={`${eyebrow}: ${headline}`}
     >
+      {note ? (
+        <p className="mb-2 text-xs leading-relaxed text-muted-foreground">{note}</p>
+      ) : null}
       {change.description && detailsOpen ? (
         <p className="mb-2 rounded-md bg-muted/40 px-2.5 py-2 text-xs leading-relaxed text-muted-foreground">
           {change.description}

@@ -5,6 +5,7 @@ import { toast } from "@/lib/toast";
 import { useRouter } from "next/navigation";
 import type { Database } from "@/types/database.types";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import { DEFAULT_AGENT_MODEL_ID } from "@/features/agents/constants/blank-agent";
 import { stripNullish } from "@/utils/supabase/payload";
 // The ONE write-organization resolver (explicit value → the org the user
 // SELECTED → refuse). `agent.definition` is org-scoped and its sibling write
@@ -30,7 +31,9 @@ export interface AgentBuilderResult {
   error?: string;
 }
 
-const DEFAULT_MODEL_ID = "e2150d2f-7dd3-4fad-9d81-6e6ea41d4afd";
+// One constant for every creation path — see blank-agent.ts for why the old
+// pin (a deprecated small flash model) was the wrong seat for a tool-loop agent.
+const DEFAULT_MODEL_ID = DEFAULT_AGENT_MODEL_ID;
 
 /**
  * Builds a minimal INSERT payload for agent.definition.

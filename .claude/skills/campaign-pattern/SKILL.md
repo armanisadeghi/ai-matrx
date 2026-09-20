@@ -68,6 +68,8 @@ This became D15 — and it is why the campaign caught a live cross-tenant leak, 
 never worked once, a dead engine, and a dozen lying screens that every builder had reported as
 finished. **Without this law, the other four moves produce confident garbage.**
 
+**Test data looks real or it is deleted** ([policy](/policies/test-data-looks-real.md)).
+
 ### 5. Answer through a defaults-carrying interview, then get out of the way
 The final pre-build interview carried the team's recommendation on every item with the rule:
 *"anything you skip ships with the stated recommendation as the platform default."* Only the

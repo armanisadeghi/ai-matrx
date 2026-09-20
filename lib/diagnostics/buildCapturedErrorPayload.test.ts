@@ -27,12 +27,17 @@ describe("Error Inspector investigation prompts", () => {
   it("wraps one faithful error payload in the durable-fix instructions", () => {
     const prompt = capturedErrorToInvestigationPrompt(error);
 
-    expect(prompt).toContain("complete, evidence-based root cause analysis");
-    expect(prompt).toContain("make no code changes");
+    expect(prompt).toContain("Your NUMBER ONE JOB is to FIX");
+    expect(prompt).toContain("A report-only conclusion is a failure of this brief");
+    expect(prompt).toContain("Then implement immediately");
+    expect(prompt).toContain("Prefer MANY justified layer fixes over one report");
+    expect(prompt).not.toContain("make no code changes");
+    expect(prompt).not.toContain("only when warranted");
     expect(prompt).toContain("Do not merely silence or downgrade the error");
     expect(prompt).toContain("<captured-error-evidence>\n<app-error");
     expect(prompt).toContain(error.requestId);
     expect(prompt).toContain("the incident is rarely only one failure");
+    expect(prompt).toContain("A yellow or Silent row is unfinished work");
   });
 
   it("preserves every supplied error inside the whole-session prompt", () => {

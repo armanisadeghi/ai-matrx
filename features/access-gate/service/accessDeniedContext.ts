@@ -29,6 +29,7 @@ import type {
   RequestedLevel,
 } from "@/features/access-gate/types";
 import { parsePermissionLevel } from "@/utils/permissions/levels";
+import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
 
 function rec(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -175,7 +176,7 @@ async function fetchCmsAccessDeniedPayload(
   token: string,
   id: string,
 ): Promise<Record<string, unknown> | null> {
-  const response = await fetch("/api/cms/access-context", {
+  const response = await fetchWithOrganization("/api/cms/access-context", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token, id }),

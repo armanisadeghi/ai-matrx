@@ -89,6 +89,12 @@ through `@ai-matrx/realtime` — invoke the `supabase-realtime` skill first.
 
 ## Change log
 
+- **2026-09-20** — Merge with `main`: a parallel lane had wired the old
+  `NotificationDropdown` to the same doors through its own reader
+  (`useNotificationBell.ts`, `display.ts`, `types/notification.types.ts`).
+  Two readers over one spine is the defect this feature exists to end, so
+  those four files were dropped in the merge and the transitional
+  `DesktopLayout` keeps `InboxHeaderButton`.
 - **2026-09-19** — Created. The shell had a dead "Notifications" label in the
   avatar menu and a `NotificationDropdown` fed by an empty `useState`; both
   deleted (with `types/notification.types.ts`, `NotificationItem.tsx`,

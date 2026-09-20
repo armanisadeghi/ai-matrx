@@ -1,0 +1,51 @@
+-- READ-PERF, the inverse of the assertion fix: custom.read_door_parity projects the raw
+-- three-valued expression again, so a record with no creator reads as a disagreement.
+create or replace function custom.read_door_parity(
+  p_organization_id uuid,
+  p_table_id        uuid,
+  p_user            uuid,
+  p_required        public.permission_level,
+  p_sample          integer)
+returns table(record_id uuid, set_based boolean, per_row boolean, verdict text)
+language plpgsql
+stable
+security definer
+set search_path to ''
+as $function$
+declare
+  v_set record;
+begin
+  v_set := custom.visible_set(p_user, p_organization_id, p_table_id, p_required);
+  return query
+  with answered as (
+    select r.id,
+           ( v_set.o_fallback
+             or v_set.o_all_visible
+             or r.created_by = p_user
+             or (r.visibility = any (v_set.o_true_visibility) and not (r.id = any (v_set.o_granted_all)))
+             or r.id = any (v_set.o_granted_visible)
+             or r.id = any (v_set.o_carried_visible) ) as sb,
+           custom.has_visibility(p_user, 'record', r.id, p_required) as pr
+      from (select rec.id, rec.created_by, rec.visibility
+              from custom.record rec
+             where rec.organization_id = p_organization_id
+               and rec.table_id is not distinct from p_table_id
+               and rec.deleted_at is null
+             -- p_sample = 0 means EVERY row. Above that it is a random sample, which is what a
+             -- Table with a hundred thousand rows needs: the ladder costs about a millisecond a
+             -- row, so asking it about all of them is minutes. `random()` and not `id` order,
+             -- because an ordered sample only ever proves the first page.
+             order by case when coalesce(p_sample, 0) > 0 then random() else 0 end
+             limit case when coalesce(p_sample, 0) > 0 then p_sample else null end) r
+  )
+  select a.id, a.sb, a.pr,
+         case
+           when a.sb = a.pr then 'same'
+           when a.pr then 'HIDDEN BY THE SET — the one ladder says this person holds this record and the set-based shape left it out. Whatever admits them (a grant, a container, a class) is not in custom.visible_set''s arms.'
+           else 'SHOWN BY THE SET — the one ladder says this person does NOT hold this record and the set-based shape let it through. A visibility class was answered by an unrepresentative row, or containment was resolved to a level the path does not carry.'
+         end
+    from answered a;
+end;
+$function$;
+
+

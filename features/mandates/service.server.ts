@@ -34,9 +34,10 @@ import type { AnyMandateKey } from "./mandate-key";
  * that must NOT paint before the real rung is known should not use this module —
  * it should render from `useMandate`'s loading state.
  *
- * Floating-only, same as the browser: the run path the page hands off to has no
- * version channel, so a version-pinned default throws rather than running the
- * wrong row.
+ * A version-pinned system default is a valid first-paint answer: this path
+ * paints the live agent row (`default_holder_id`) and records the pin on
+ * `isVersion` / `versionId`. The browser resolution on hydration is the
+ * verdict that actually runs.
  *
  * No module cache: each request resolves fresh through the request-scoped
  * Supabase server client (two indexed single-row reads).
@@ -55,7 +56,6 @@ import {
   contractOfMandate,
   holderOfMandate,
   inputKindOfMandate,
-  isFloatingMandate,
   mandateDefinitions,
   mandateTreatments,
 } from "@/lib/supabase/mandateStorage";
@@ -90,9 +90,9 @@ export async function resolveMandateServer(
     throw new Error(`mandate "${mandateKey}" is disabled`);
   }
   const systemHolder = holderOfMandate(mandate);
-  if (!isFloatingMandate(mandate) || !systemHolder.holderId) {
+  if (!systemHolder.holderId) {
     throw new Error(
-      `mandate "${mandateKey}" is version-pinned — a server-rendered mandate must be floating (no pinned Holder version), because the client run path this page hands off to has no version channel; unpin the job's default Holder, or render this screen from useMandate instead of before first paint (${MANDATE_STORAGE_LABEL})`,
+      `mandate "${mandateKey}" has no default Holder — assign one on ${MANDATE_STORAGE_LABEL} before this screen can paint`,
     );
   }
 
@@ -126,6 +126,8 @@ export async function resolveMandateServer(
     mandateKey,
     mandateId: mandate.id,
     agentId: systemHolder.holderId,
+    isVersion: systemHolder.versionId != null,
+    versionId: systemHolder.versionId,
     holderType: systemHolder.holderType,
     configOverrides: null,
     provenance: "system",

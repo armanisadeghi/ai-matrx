@@ -50,14 +50,14 @@ see [`../scopes/FEATURE.md`](../scopes/FEATURE.md).
 Phase 6.9 gave every app a `mandate_id`: the JOB it fronts. An app's
 `agent_id NOT NULL` is exactly the hardcoded agent the Mandate law exists to
 eliminate, so [`lib/appHolder.ts`](lib/appHolder.ts) is now the ONE place this
-repo answers "which agent does this app run?" — pinned column today,
-mandate-resolved once `APP_MANDATE_CUTOVER` flips (a one-line release on
-Arman's nod, never fired from a build). With the switch OFF the router returns
-the row's own columns verbatim, so nothing has changed yet. Two lanes, because
+repo answers "which agent does this app run?" — `APP_MANDATE_CUTOVER` is ON.
+The holder threads the server pin (`isVersion` / `versionId`); launch POSTs
+`/ai/mandates/{key}` so the server honours it. Do not pass `pinnedVersionId`
+on that launch — that skips the mandate door. An unresolvable mandate REFUSES
+with a message — it never falls back to `agent_id`. Two lanes, because
 `anon` cannot read `mandate.definition`: a signed-in caller resolves the full
-ladder client-side, a guest takes the system-default columns the public RPC
-`get_aga_public_data` now carries. An unresolvable mandate REFUSES with a
-message — it never falls back to `agent_id`. Backfill + parity:
+ladder, a guest takes the system-default columns the public RPC
+`get_aga_public_data` carries. Backfill + parity:
 `aidream/scripts/migrate_apps_to_mandates.py`. Cross-repo design:
 [`/common-docs/projects/workflow-mandate-program/DESIGN-unification.md`](../../../common-docs/projects/workflow-mandate-program/DESIGN-unification.md) §5.2.
 
@@ -156,7 +156,7 @@ The legacy `app/api/public/agent-apps/[slug]/execute/route.ts` (deleted on `2026
 - 🚨 **Generated components obey [`docs/GENERATOR_CONTRACT.md`](docs/GENERATOR_CONTRACT.md).** Host chrome stays outside `component_code`; the response remains opaque; `MarkdownStream` stays mounted with live request context; registered Shapes are never parsed or rendered twice. `AgentAppMarkdownStreamBridge` is the recovery floor for missing request props, not an alternate rendering path.
 - **Publication is one transition.** `agentAppPublicationPatch` moves `status`, `visibility`, and `published_at` together. Creation defaults to published/public; unpublish moves to draft/internal. Never expose independent controls for fields whose mismatch makes the advertised public URL fail.
 - 🚨 **Ownership is `created_by`; visibility is the `visibility` enum. `user_id` / `is_public` DO NOT EXIST** — dropped from `app.definition` 2026-08-13 when the `app` token was certified (app 5/5, 0 FAIL / 0 WARN). An app IS the public face of an agent, so `visibility='public'` is normal here (unlike `agent.definition`, which bans it). Never reintroduce a boolean: read/write `visibility` and label it through the ONE vocabulary in [`lib/visibility/labels.ts`](../../lib/visibility/labels.ts) (`visibilityLabelShort` / `visibilityLabelLong` / `isPubliclyVisible`). The old "Public / Personal" two-state labelling was wrong — an `internal` row is not personal. A two-state _control_ (the Settings switch, the admin toggle) is still fine; it maps `public` ⇄ `internal`. **`created_by IS NULL` is the global/system-app marker** (formerly `user_id IS NULL`) — that is what `scope: "global"` filters on and what the DELETE route treats as admin-only. The agent-facing surface value is `app_visibility` (string), never `app_is_public`.
-- **Pin-by-version default.** Apps embed specific `primaryAgentVersionId`. `useLatest: true` is rare and risky — same contract as Shortcuts.
+- **Pin-by-version default.** The mandate winner carries the pin; the holder threads it and launch goes through the mandate door. Inventing `useLatest: true` after a successful resolve is a silent pin drop.
 - **An inactive Holder lane passes `""` to `useMandate` and performs no read.** Hooks stay unconditional, but the empty sentinel is not a mandate key; querying it creates a false `record-unavailable` plus companion console error.
 - **Redux canonical location is under `features/agents/redux/agent-apps/`.** Do not create a parallel slice.
 - **`sourceCode` executes in a sandbox.** Import allowlisting, variable validation — mirror the prompt-apps security model.
@@ -188,6 +188,15 @@ and admin/user route families are live. Remaining migration work is tracked in:
 ---
 
 ## Change log
+
+- `2026-09-19` — **A pinned mandate winner is no longer dropped after resolve.**
+  After D1 stopped `resolveMandate` from throwing on a pin, `useAppHolder`
+  still zeroed `agentVersionId` and forced `useLatest: true` ("FLOATING by
+  construction"), the public renderer and `useAgentApp` launched by
+  definition id only, the widget shell skipped the holder entirely, and the
+  custom shell warmed the row pin. Holder now threads the verdict pin;
+  launches go through `mandateKey` (the mandate door honours the pin);
+  every shell passes the app row. Guard: `lib/appHolder.test.ts`.
 
 - `2026-09-17` — **An app is filed in the organization the person selected, not
   their private workspace.** All 96 live `app.definition` rows sat in their

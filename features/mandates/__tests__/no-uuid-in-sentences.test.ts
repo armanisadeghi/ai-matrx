@@ -169,7 +169,8 @@ describe("no mandate sentence prints an internal id at a person", () => {
       join(REPO_ROOT, "features/mandates/service.ts"),
       "utf8",
     );
-    expect(service).toContain("is version-pinned to a ");
+    expect(service).toContain("this screen can only run an agent");
+    expect(service).not.toContain("client-run mandates must be floating");
   });
 
   it("the console exemption is falsifiable — it does not exempt a throw", () => {

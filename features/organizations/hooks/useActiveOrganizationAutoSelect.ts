@@ -1,34 +1,38 @@
 // features/organizations/hooks/useActiveOrganizationAutoSelect.ts
 //
-// BOOT ENDS WITH A SELECTION. If the user belongs to any organization at all,
-// no boot may end with "you have no organization selected" while every
-// transport refuses to send a request. The primary path is
-// `resolveActiveOrgContext` inside the appContextPolicy sync fetch; this hook
-// is the second, independent layer — it needs no network and no sync engine:
-// the moment Redux holds enough to name an org, an unset active org is filled
-// in, applying the SAME canonical rung order as the resolver.
+// THE SECOND BOOT LADDER, CUT DOWN TO THE ONE RUNG THAT IS NOT A CHOICE.
 //
-// Rungs applied here (the resolver's a → c; its rung 0, the shared apex
-// cookie, is already folded into appContextPolicy.deserialize):
-//   a. the stated default-org preference, if it is one of the memberships;
-//   b. the user's OWN personal org, if it is one of the memberships — an
-//      explicit, visible, changeable choice made ONCE at bootstrap. This is
-//      not the forbidden personal-org fallback: transports still refuse an
-//      unselected org (`requireSelectedOrgId`), and nothing per-request
-//      substitutes anything;
-//   c. exactly one membership → that one.
-// No memberships at all → nothing is selected and the UI says so honestly
-// (`OrganizationRequiredNotice`).
+// 🚨 WHAT THIS USED TO DO, AND WHY IT IS GONE (Arman, 2026-09-19).
+// This hook existed to make sure "boot ends with a selection". Two seconds
+// after bootstrap resolved, if nothing was selected, it SILENTLY dispatched
+// `chooseActiveOrganization` for whichever organization it could name —
+// applying the stated default-org preference first, then the person's own
+// personal workspace. It logged a warning nobody reads and moved on.
 //
-// It warns loudly when it fires, because reaching this layer means the primary
-// path did not do its job — a recovery that fires silently is a bug that never
-// gets fixed.
+// That is precisely the thing the ruling forbids, and it is the worst-shaped
+// version of it: a timer, in a hook, that picks the organization a person's
+// work will be filed under, two seconds after they stopped looking. A default
+// organization is at most a per-client DISPLAY preference; the org picker may
+// show it, and nothing else may read it. Nothing may pick an organization for
+// the user from a cookie, a saved preference, or their personal org.
 //
-// History (2026-09-12): this layer used to require a stated default-org
-// preference, exactly like the primary path — so a user with nine memberships
-// and a null `defaultOrganizationId` had BOTH layers decline, and the app sat
-// forever with no selection while the header rendered the personal org and
-// every request threw "Select an organization before sending this request."
+//   "one missed org check that should have just failed turns into 50 in a
+//    month and 5,000 in a year, and suddenly we don't have orgs any more, we
+//    have a user and a default org, which means we just have user now."
+//
+// Both rungs are deleted, and with them the grace timer, the warning, and the
+// store re-read the timer needed. What remains is the ONE rung that decides
+// nothing: a person who belongs to exactly one organization is put in it,
+// because there was never a choice to make.
+//
+// WHAT HAPPENS INSTEAD WHEN THERE IS A CHOICE. Nothing, here — deliberately.
+// The person belongs to several organizations and has not told this device
+// which one they are working in. The header shows the picker
+// (`selectShouldPromptForOrganization`), and the first action that actually
+// needs an organization HOLDS and asks: `ensureOrgId` opens the picker, the
+// person SETS one, and the action resumes with it. A boot that guesses to
+// avoid a dead end is only needed while refusing is a dead end, and it is not
+// one any more.
 
 "use client";
 
@@ -36,49 +40,30 @@ import { useEffect } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   selectOrganizationId,
-  selectPersonalOrganizationId,
   selectOrgBootstrapResolved,
 } from "@/lib/redux/slices/appContextSlice";
 import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
-import { selectDefaultOrganizationId } from "@/lib/redux/preferences/userPreferenceSelectors";
 import type { OrgNode } from "@/features/scopes/types";
 
 /**
- * How long to let the primary path finish before recovering.
+ * The organization this boot may select WITHOUT asking, or null.
  *
- * `orgBootstrapResolved` goes true on ANY appContext rehydrate — including a
- * hollow cached record whose `cacheSatisfies` miss has just kicked off the
- * cold-boot fetch. Firing the instant that flag flips would race the resolver
- * and print a "resolve failed" warning that is simply early. A short grace
- * makes the warning mean what it says: after this long with memberships and no
- * active org, the primary path really did not deliver.
- */
-const PRIMARY_RESOLVE_GRACE_MS = 2000;
-
-/**
- * Pick the org this boot should end with, applying the canonical rung order to
- * what Redux already holds. Returns null only when nothing can be named.
+ * There is exactly one: the person's only membership. Every other case — a
+ * stated default, their personal workspace, "the first one" — is a choice, and
+ * a choice belongs to the person (2026-09-19 ruling). Kept as a named,
+ * exported function so the rule is testable and so the guard
+ * (`scripts/check-no-default-organization.ts`) has one place to watch for a
+ * rung growing back.
  */
 export function pickActiveOrganization(
   organizations: readonly OrgNode[],
-  defaultOrganizationId: string | null | undefined,
-  personalOrganizationId: string | null | undefined,
 ): OrgNode | null {
-  if (organizations.length === 0) return null;
-  if (defaultOrganizationId) {
-    const stated = organizations.find((o) => o.id === defaultOrganizationId);
-    if (stated) return stated;
-  }
-  if (personalOrganizationId) {
-    const personal = organizations.find((o) => o.id === personalOrganizationId);
-    if (personal) return personal;
-  }
-  if (organizations.length === 1) return organizations[0];
-  return null;
+  return organizations.length === 1 ? organizations[0] : null;
 }
 
 /**
- * Auto-select the active organization when nothing is active yet.
+ * Select the active organization when the person has exactly one and nothing
+ * is selected yet.
  *
  * @param organizations the user's memberships (scope tree). An empty list means
  *   "not loaded / no memberships" — nothing is selected from it.
@@ -90,50 +75,20 @@ export function useActiveOrganizationAutoSelect(
   const store = useAppStore();
   const activeOrgId = useAppSelector(selectOrganizationId);
   const bootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
-  const defaultOrganizationId = useAppSelector(selectDefaultOrganizationId);
-  const personalOrganizationId = useAppSelector(selectPersonalOrganizationId);
 
   useEffect(() => {
     if (activeOrgId) return;
     // Before bootstrap resolves, the sync engine may still be about to deliver
-    // the org — let the primary path win rather than racing it.
+    // the organization — and the membership list may still be partial, which
+    // would make "exactly one" a lie. Let the primary path finish.
     if (!bootstrapResolved) return;
-    const match = pickActiveOrganization(
-      organizations,
-      defaultOrganizationId,
-      personalOrganizationId,
-    );
-    if (!match) return;
-
-    // Give the primary resolve its grace period, then re-check the LIVE store
-    // before writing. Effect cleanup cancels the timer in the ordinary case,
-    // but that runs a render later — and `setOrganization` also clears scope /
-    // project / task / conversation, so a stale fire would not merely be
-    // redundant, it would throw away the working context of whoever selected
-    // in the meantime (the resolver, another tab's broadcast, or the user).
-    const timer = setTimeout(() => {
-      const live = store.getState().appContext;
-      if (live.organization_id) return;
-      console.warn(
-        "[organizations] Boot ended with no active organization while one could be named — selecting it. " +
-          "The appContextPolicy resolve should have done this; if you are seeing this line, that path failed.",
-        {
-          selected: match.id,
-          defaultOrganizationId,
-          personalOrganizationId,
-          membershipCount: organizations.length,
-        },
-      );
-      dispatch(chooseActiveOrganization({ id: match.id, name: match.name }));
-    }, PRIMARY_RESOLVE_GRACE_MS);
-    return () => clearTimeout(timer);
-  }, [
-    dispatch,
-    store,
-    activeOrgId,
-    bootstrapResolved,
-    defaultOrganizationId,
-    personalOrganizationId,
-    organizations,
-  ]);
+    const only = pickActiveOrganization(organizations);
+    if (!only) return;
+    // Re-read the LIVE store rather than trusting this render's selector: a
+    // resolve, another tab's broadcast, or the person's own pick may have
+    // landed since, and `setOrganization` also clears scope / project / task /
+    // conversation, so a stale write would throw away real working context.
+    if (store.getState().appContext.organization_id) return;
+    dispatch(chooseActiveOrganization({ id: only.id, name: only.name }));
+  }, [dispatch, store, activeOrgId, bootstrapResolved, organizations]);
 }

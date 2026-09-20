@@ -183,12 +183,44 @@ export function judge(
                     `this code ships to users on any lane's release commit with the switch bypassed.`,
             });
         }
-        if (entry.kind !== "runtime" && gated) {
+        // A RED TWIN is the one non-runtime kind that MAY call the gate: wiring the
+        // gate wrongly on purpose is the whole of what it does. It is held to its
+        // name instead — a file that does not end `.red.test.ts(x)` cannot claim the
+        // word, so "red_twin" can never be used to walk served code past the
+        // `runtime` rule above.
+        // DOOR-GATED code is served to people with NO ACCOUNT, so it cannot call
+        // a switch that needs a person and an organization to resolve. The switch
+        // is read one layer down, inside the door, for the organization the
+        // subject belongs to. The kind is held to its name the way `red_twin` is:
+        // the reason must NAME the door that reads it, so the word can never
+        // become "this code reads no switch at all".
+        if (entry.kind === "door_gated" && !/custom\.[a-z_]+/.test(entry.why)) {
+            violations.push({
+                file: entry.file,
+                message:
+                    `${entry.id}: registered "door_gated" but its reason names no door. ` +
+                    `Say which custom.* door reads custom/system_enabled for this code — ` +
+                    `that sentence is what keeps this kind from becoming a way to ship ` +
+                    `code that reads no switch anywhere.`,
+            });
+        }
+        if (entry.kind === "red_twin" && !/\.red\.test\.tsx?$/.test(entry.file)) {
+            violations.push({
+                file: entry.file,
+                message:
+                    `${entry.id}: registered "red_twin" but is not named like one. ` +
+                    `A red twin's file must end ".red.test.ts" or ".red.test.tsx" — that ` +
+                    `name is what keeps this kind from becoming a way to ship ungated ` +
+                    `runtime code.`,
+            });
+        }
+        if (entry.kind !== "runtime" && entry.kind !== "red_twin" && entry.kind !== "door_gated" && gated) {
             violations.push({
                 file: entry.file,
                 message:
                     `${entry.id}: registered "${entry.kind}" but calls the gate. ` +
-                    `Either it is runtime code (change the kind) or the gate does not belong here.`,
+                    `Either it is runtime code (change the kind), or it is a deliberately ` +
+                    `wrong-wired test (kind "red_twin"), or the gate does not belong here.`,
             });
         }
     }

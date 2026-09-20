@@ -34,6 +34,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { InteractionTimeline } from "../record/InteractionTimeline";
 import { PartyNotes } from "../record/PartyNotes";
 import { SectionCard, SectionEmpty } from "../record/SectionCard";
+import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import { useDealDetail } from "../../deals/useDealDetail";
 import { usePipelines } from "../../deals/usePipelines";
 import { useOrgMembers } from "../../deals/useOrgMembers";
@@ -384,6 +385,13 @@ export function DealRecordPage({ dealId }: Props) {
                     </p>
                   )}
                 </SectionCard>
+
+                {/* REC-34 / SCR-12 — the organization's OWN fields on this
+                    standard entity, from the unified record store. One line,
+                    no per-entity code: the SAME line the contact page carries,
+                    with a different token. Absent (not an empty box) until this
+                    organization declares a field on deals. */}
+                <EntityCustomFields entityToken="crm_deal" recordId={deal.id} />
 
                 <SectionCard
                   title="Stage history"

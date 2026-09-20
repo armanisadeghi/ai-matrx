@@ -9,6 +9,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
+import {
+  isOrganizationRequiredServerError,
+  organizationRequiredResponse,
+} from "@/lib/organizations/organizationRequiredResponse";
 import { normalizePhoneNumber } from "@/lib/sms/phoneUtils";
 
 /**
@@ -227,11 +231,24 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Upsert preferences (scoped to the user's personal org)
-    // org-fallback-deliberate: sms_notification_preferences is a per-person
-    //   singleton (upsert on user_id) — one row that follows the person across
-    //   organizations
-    const organizationId = await ensureOrgIdServer(supabase, undefined);
+    // 🚨 THE PREFERENCE ROW IS FILED IN THE ORGANIZATION THE CALLER IS ACTING
+    // IN. Until 2026-09-19 this read `ensureOrgIdServer(supabase, undefined)`,
+    // which ended in the `current_personal_org_id()` RPC: the server picking
+    // the person's personal workspace because the request named none. The
+    // old comment here called that deliberate — "a per-person singleton, one
+    // row that follows the person across organizations" — but `upsert on
+    // user_id` is what makes the row a singleton; `organization_id` is still a
+    // tenant, and stamping it from the personal workspace is the server
+    // choosing a tenant nobody chose. Arman, 2026-09-19: "one missed org check
+    // that should have just failed turns into 50 in a month and 5,000 in a
+    // year". The caller states the organization on `X-Organization-Id` — the
+    // header every Matrx client carries and every other org-scoped route under
+    // app/api/** already reads (app/api/_lib/apply-scope-to-insert.ts) — and
+    // with none the request is REFUSED, before a single row is written, with
+    // the caller's memberships attached so the person can choose and retry.
+    const actingOrganizationId =
+      request.headers.get("X-Organization-Id")?.trim() || undefined;
+    const organizationId = await ensureOrgIdServer(supabase, actingOrganizationId);
     const { data, error } = await adminSupabase
       .schema("communication")
       .from("sms_notification_preferences")
@@ -284,6 +301,13 @@ export async function PUT(request: NextRequest) {
       data,
     });
   } catch (err) {
+    // The organization refusal is an ANSWER, not a failure: it carries the
+    // caller's own memberships so the client can hold the action, show the
+    // picker and retry. Collapsing it into the generic 500 below would turn
+    // the one question the person can answer into a dead end.
+    if (isOrganizationRequiredServerError(err)) {
+      return organizationRequiredResponse(err);
+    }
     console.error("Error in preferences PUT:", err);
     return NextResponse.json(
       { success: false, msg: "Internal server error" },

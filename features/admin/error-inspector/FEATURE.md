@@ -320,14 +320,16 @@ The AI action is a two-choice menu at both inspector levels:
 
 - **Error / Errors** — the existing faithful structured payload, unchanged.
 - **Error with prompt / Errors with prompt** — the same payload wrapped in an
-  implementation-ready investigation brief. It requires the receiving agent to
-  reconstruct the failure path, find the direct root cause, inspect every
-  involved boundary and failed safeguard, correct the whole evidence-supported
-  failure class, and verify the fix. It explicitly forbids code changes when
-  the captured condition is expected/correct behavior and forbids mistaking a
-  downgrade, swallowed exception, blind retry, or one-payload special case for
-  a fix. The prompt is built centrally in `buildCapturedErrorPayload.ts`, so
-  single-error and whole-session exports cannot drift.
+  implementation-ready investigation brief. The receiving agent's number one
+  job is to fix the defect, the class, and every failed safeguard the evidence
+  supports — many justified layers, not a report. Yellow / Silent / "designed"
+  / "already handled" is a lead, not a verdict. A report-only conclusion is a
+  failure of the brief. A downgrade, swallowed exception, blind retry, or
+  one-payload special case is not a fix. The only allowed no-change outcome is
+  rare and must prove nothing remains in the writer, wrap, siblings, or
+  user-visible result. The prompt is built centrally in
+  `buildCapturedErrorPayload.ts`, so single-error and whole-session exports
+  cannot drift.
 
 ## Entry points
 
@@ -397,6 +399,14 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
   exact browser `Script error.` shape with no error object, URL, line, or column
   is still visible in Error Inspector but cannot enter `system_error`; nearby
   runtime failures retaining any source evidence remain durable.
+- 2026-09-19 — **Investigation prompt inverted: fix first.** The Copy-for-AI
+  "with prompt" brief no longer tells the receiving agent to decide whether the
+  capture is a defect and then "make no code changes" when it looks designed.
+  That sentence is what authorized report-only responses on yellow rows. The
+  brief now says the number one job is to fix the class at every justified
+  layer; yellow/Silent/"already handled" is a lead; a report-only conclusion
+  is a failure of the brief. Tests pin the new wording and reject the old
+  stop-instruction.
 - 2026-08-29 — **Successfully guarded Markdown delimiter repairs stay local.** `markdown-delimiters` is yellow on every route because arbitrary model/tool/file/transcript text can contain delimiter tokens and the renderer neutralizes them before Markdown sees them; renderer crashes and unguarded failures remain red.
 - 2026-08-27 — **Web Scraper domain failures are visible and singular.** The scraper can return HTTP 200 while an individual result row carries `success: false`; `useScraperApi` previously converted that row into local panel state, bypassing every rejection-based capture adapter. The new `scraper` adapter records that domain failure with its full diagnostics while standing down for HTTP/network and typed stream errors already captured centrally. Focused tests pin all three boundaries; live verification produced exactly one red Error Inspector row for a controlled failed target.
 - 2026-08-25 — **Shell icon registry failures are structured and singular.** A rejected shell icon now arrives as `shell-navigation` with `SHELL_ICON_UNREGISTERED`, `relation=icon:<name>`, the `CircleHelp` recovery, and its stack. The production console adapter promotes the tagged error instead of also creating a generic `console-error` symptom; focused tests pin both the typed branch and the ordinary console fallback.
