@@ -1,0 +1,791 @@
+{
+  "label": "before",
+  "at": "2026-09-20T22:19:33.711Z",
+  "fixture": {
+    "tableId": "fc007161-f1c5-4ea9-9548-eefda0bc7d72",
+    "rows": 120
+  },
+  "consoleErrors": [],
+  "results": {
+    "render.rows": {
+      "group": "the table renders",
+      "observed": {
+        "headers": [
+          "Job↑",
+          "Status",
+          "Owner",
+          "Amount",
+          "Share",
+          "Qty",
+          "Score",
+          "Plain Number",
+          "Rating",
+          "Bytes",
+          "Seconds",
+          "Done",
+          "Due",
+          "Opened At",
+          "Seen At",
+          "Notes",
+          "Summary",
+          "Email",
+          "Link",
+          "Phone",
+          "Swatch",
+          "Payload",
+          "Labels",
+          "Chips",
+          "Regions",
+          "Total",
+          "Actions"
+        ],
+        "rows": 100,
+        "first": [
+          "Job 001",
+          "Job 002",
+          "Job 003"
+        ]
+      }
+    },
+    "formats.all": {
+      "group": "25 formats",
+      "observed": {
+        "Job": {
+          "text": "Job 001",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Status": {
+          "text": "Done",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Owner": {
+          "text": "Ada",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Amount": {
+          "text": "$250.00",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Share": {
+          "text": "0%",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Qty": {
+          "text": "1",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Score": {
+          "text": "0.00",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Plain Number": {
+          "text": "0",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Rating": {
+          "text": "",
+          "svgs": 5,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Bytes": {
+          "text": "1.0 KB",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Seconds": {
+          "text": "0:30",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Done": {
+          "text": "",
+          "svgs": 1,
+          "inputs": 1,
+          "links": 0,
+          "swatches": 1
+        },
+        "Due": {
+          "text": "12/31/2025, 4:00:00 PM",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Opened At": {
+          "text": "3/1/2026, 1:30:00 AM",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Seen At": {
+          "text": "2 weeks ago",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Notes": {
+          "text": "Line one for job 1 Line two",
+          "svgs": 1,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Summary": {
+          "text": "Job 1 is done",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Email": {
+          "text": "ada@example.com",
+          "svgs": 1,
+          "inputs": 0,
+          "links": 1,
+          "swatches": 0
+        },
+        "Link": {
+          "text": "https://example.com/jobs/1",
+          "svgs": 1,
+          "inputs": 0,
+          "links": 1,
+          "swatches": 0
+        },
+        "Phone": {
+          "text": "55501000",
+          "svgs": 1,
+          "inputs": 0,
+          "links": 1,
+          "swatches": 0
+        },
+        "Swatch": {
+          "text": "#2563eb",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 1
+        },
+        "Payload": {
+          "text": "{\"index\":0,\"owner\":\"Ada\"}",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Labels": {
+          "text": "[\"Ada\",\"Done\"]",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Chips": {
+          "text": "donep1",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 1
+        },
+        "Regions": {
+          "text": "North",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        },
+        "Total": {
+          "text": "250",
+          "svgs": 0,
+          "inputs": 0,
+          "links": 0,
+          "swatches": 0
+        }
+      }
+    },
+    "formats.formula": {
+      "group": "formulas",
+      "observed": {
+        "job001": "250",
+        "job003": "972",
+        "job010": "1,749"
+      }
+    },
+    "color.colorBy": {
+      "group": "colour by column",
+      "observed": {
+        "Job 001": "lab(98.1563 -5.60117 2.75915)",
+        "Job 002": "lab(96.5005 4.18508 1.52328)",
+        "Job 003": "lab(96.492 -1.14644 -5.11479)",
+        "Job 004": "lab(98.6252 -0.635922 8.42309)",
+        "distinct": 4
+      }
+    },
+    "color.rule": {
+      "group": "live colour rules",
+      "observed": {
+        "over3000": "lab(95.916 -1.21653 23.111)",
+        "under3000": "lab(96.492 -1.14644 -5.11479)",
+        "differs": true
+      }
+    },
+    "color.manualCell": {
+      "group": "manual highlights",
+      "observed": {
+        "highlighted": "lab(98.1563 -5.60117 2.75915)",
+        "plain": "lab(96.5005 4.18508 1.52328)",
+        "differs": true
+      }
+    },
+    "color.manualColumn": {
+      "group": "manual highlights",
+      "observed": {
+        "ownerColumn": "lab(92.0301 -2.24757 -11.6453)",
+        "otherColumn": "lab(96.5005 4.18508 1.52328)",
+        "differs": true
+      }
+    },
+    "select.range": {
+      "group": "range select",
+      "observed": {
+        "byKeyboard": "Job 002\tBlocked\tBruno\nJob 003\tActive\tCleo\nJob 004\tQueued\tDev",
+        "byShiftClick": "Cleo"
+      }
+    },
+    "select.wholeRow": {
+      "group": "range select",
+      "observed": {
+        "columns": 26,
+        "startsWith": "Job 005\tDone\tEsme\t398\t0."
+      }
+    },
+    "paste.excel": {
+      "group": "Excel paste",
+      "observed": {
+        "r1c1": "PASTED-A",
+        "r1c2": "PASTED-B",
+        "r2c1": "PASTED-C",
+        "r2c2": "PASTED-D"
+      }
+    },
+    "fill.down": {
+      "group": "fill down",
+      "observed": {
+        "source": "Line one for job 12 Line two",
+        "filled1": "Line one for job 13 Line two",
+        "filled2": "Line one for job 14 Line two"
+      }
+    },
+    "undo.cellEdit": {
+      "group": "undo",
+      "observed": {
+        "before": "Line one for job 16 Line two",
+        "after": "UNDO-PROBE",
+        "undone": "Line one for job 16 Line two",
+        "restored": true
+      }
+    },
+    "edit.enterOpens": {
+      "group": "Enter-to-edit",
+      "observed": {
+        "editorBeforeEnter": null,
+        "editorAfterEnter": {
+          "tag": "textarea",
+          "value": "Esme"
+        }
+      }
+    },
+    "edit.typeReplaces": {
+      "group": "type-to-replace",
+      "observed": {
+        "editor": {
+          "tag": "textarea",
+          "value": "Z"
+        }
+      }
+    },
+    "edit.validationRefusal": {
+      "group": "validation",
+      "observed": {
+        "refusalPhrases": [
+          "at least",
+          "must be",
+          "characters"
+        ],
+        "editorStillOpen": {
+          "tag": "textarea",
+          "value": "Q"
+        },
+        "storedValue": "Q"
+      }
+    },
+    "sort.column": {
+      "group": "sort",
+      "observed": {
+        "asc": [
+          "Job 001",
+          "Job 002",
+          "Job 003"
+        ],
+        "desc": [
+          "Job 120",
+          "Job 119",
+          "Job 118"
+        ]
+      }
+    },
+    "filter.column": {
+      "group": "filter",
+      "observed": {
+        "rowsWhileFiltered": 30,
+        "distinctStatuses": [
+          "Done"
+        ],
+        "rowsAfterClear": 100
+      }
+    },
+    "facets.counts": {
+      "group": "facets with counts",
+      "observed": {
+        "values": [
+          "Done",
+          "Blocked",
+          "Active",
+          "Queued"
+        ],
+        "counts": {
+          "Done": "30",
+          "Blocked": "30",
+          "Active": "30",
+          "Queued": "30"
+        },
+        "panelText": "Status 4 distinct Sort ascending Sort descending FILTER Active 30 Blocked 30 Done 30 Queued 30 Match text instead Use a range Rename column Insert column left Insert column right Hide column Column settings Remove column"
+      }
+    },
+    "menu.cell": {
+      "group": "context menu",
+      "observed": {
+        "items": [
+          "Cut cell⌘X",
+          "Paste⌘V",
+          "Clear cell⌫",
+          "Fill downSelect cells in two or more rows first⌘D",
+          "Edit cell↵",
+          "Highlight cell",
+          "Row · Job 030",
+          "Column · Amount",
+          "Open in Data WorkspaceAlready open in the Data Workspace",
+          "Copy dataset ID",
+          "Listen",
+          "Copy as",
+          "Select All",
+          "Copy reference…",
+          "AI Actions",
+          "Agents",
+          "Content Blocks",
+          "My Items",
+          "Org Items",
+          "History",
+          "Export",
+          "Convert",
+          "Attach To",
+          "Share",
+          "Chat",
+          "Quick Actions",
+          "Admin Tools",
+          "Data Tables"
+        ]
+      }
+    },
+    "menu.row": {
+      "group": "context menu",
+      "observed": {
+        "items": [
+          "Copy 26 cells⌘C",
+          "Cut 26 cells⌘X",
+          "Paste over 26 cells⌘V",
+          "Clear 26 cells⌫",
+          "Fill downSelect cells in two or more rows first⌘D",
+          "Edit cellSelect one cell to edit it↵",
+          "Highlight 26 cells",
+          "Row · Job 031",
+          "Column · Job",
+          "Open in Data WorkspaceAlready open in the Data Workspace",
+          "Copy dataset ID",
+          "Listen",
+          "Copy as",
+          "Select All",
+          "Copy reference…",
+          "AI Actions",
+          "Agents",
+          "Content Blocks",
+          "My Items",
+          "Org Items",
+          "History",
+          "Export",
+          "Convert",
+          "Attach To",
+          "Share",
+          "Chat",
+          "Quick Actions",
+          "Admin Tools",
+          "Data Tables"
+        ]
+      }
+    },
+    "menu.column": {
+      "group": "context menu",
+      "observed": {
+        "items": [
+          "Rename column",
+          "Column settings…",
+          "Sort A→Z",
+          "Sort Z→A",
+          "Clear sortNot sorted by this column",
+          "Hide column",
+          "Insert column left…",
+          "Insert column right…",
+          "Highlight column",
+          "Stop coloring rows by this column",
+          "Table colors…",
+          "Delete column…",
+          "Open in Data WorkspaceAlready open in the Data Workspace",
+          "Copy dataset ID",
+          "Listen",
+          "Select All",
+          "Copy reference…",
+          "AI Actions",
+          "Agents",
+          "Content Blocks",
+          "My Items",
+          "Org Items",
+          "History",
+          "Attach To",
+          "Share",
+          "Chat",
+          "Quick Actions",
+          "Admin Tools",
+          "Data Tables"
+        ]
+      }
+    },
+    "menu.selection": {
+      "group": "context menu",
+      "observed": {
+        "items": [
+          "Cut cell⌘X",
+          "Paste⌘V",
+          "Clear cell⌫",
+          "Fill downSelect cells in two or more rows first⌘D",
+          "Edit cell↵",
+          "Highlight cell",
+          "Row · Job 034",
+          "Column · Owner",
+          "Open in Data WorkspaceAlready open in the Data Workspace",
+          "Copy dataset ID",
+          "Listen",
+          "Copy as",
+          "Select All",
+          "Copy reference…",
+          "AI Actions",
+          "Agents",
+          "Content Blocks",
+          "My Items",
+          "Org Items",
+          "History",
+          "Export",
+          "Convert",
+          "Attach To",
+          "Share",
+          "Chat",
+          "Quick Actions",
+          "Admin Tools",
+          "Data Tables"
+        ]
+      }
+    },
+    "columns.hidden": {
+      "group": "hidden columns",
+      "observed": {
+        "headers": [
+          "Job↑",
+          "Status",
+          "Owner",
+          "Amount",
+          "Share",
+          "Qty",
+          "Rating",
+          "Bytes",
+          "Seconds",
+          "Done",
+          "Due",
+          "Opened At",
+          "Seen At",
+          "Notes",
+          "Summary",
+          "Email",
+          "Link",
+          "Phone",
+          "Swatch",
+          "Payload",
+          "Labels",
+          "Chips",
+          "Regions",
+          "Total",
+          "Actions"
+        ]
+      }
+    },
+    "columns.widths": {
+      "group": "column widths",
+      "observed": {
+        "widths": [
+          40,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          172
+        ],
+        "resizeHandles": 0
+      }
+    },
+    "columns.frozen": {
+      "group": "frozen columns",
+      "observed": {
+        "stickyHeaderCells": [
+          {
+            "i": 0,
+            "label": "",
+            "position": "sticky"
+          },
+          {
+            "i": 1,
+            "label": "Job↑",
+            "position": "sticky"
+          },
+          {
+            "i": 2,
+            "label": "Status",
+            "position": "sticky"
+          },
+          {
+            "i": 3,
+            "label": "Owner",
+            "position": "sticky"
+          },
+          {
+            "i": 4,
+            "label": "Amount",
+            "position": "sticky"
+          },
+          {
+            "i": 5,
+            "label": "Share",
+            "position": "sticky"
+          },
+          {
+            "i": 6,
+            "label": "Qty",
+            "position": "sticky"
+          },
+          {
+            "i": 7,
+            "label": "Score",
+            "position": "sticky"
+          },
+          {
+            "i": 8,
+            "label": "Plain Number",
+            "position": "sticky"
+          },
+          {
+            "i": 9,
+            "label": "Rating",
+            "position": "sticky"
+          },
+          {
+            "i": 10,
+            "label": "Bytes",
+            "position": "sticky"
+          },
+          {
+            "i": 11,
+            "label": "Seconds",
+            "position": "sticky"
+          },
+          {
+            "i": 12,
+            "label": "Done",
+            "position": "sticky"
+          },
+          {
+            "i": 13,
+            "label": "Due",
+            "position": "sticky"
+          },
+          {
+            "i": 14,
+            "label": "Opened At",
+            "position": "sticky"
+          },
+          {
+            "i": 15,
+            "label": "Seen At",
+            "position": "sticky"
+          },
+          {
+            "i": 16,
+            "label": "Notes",
+            "position": "sticky"
+          },
+          {
+            "i": 17,
+            "label": "Summary",
+            "position": "sticky"
+          },
+          {
+            "i": 18,
+            "label": "Email",
+            "position": "sticky"
+          },
+          {
+            "i": 19,
+            "label": "Link",
+            "position": "sticky"
+          },
+          {
+            "i": 20,
+            "label": "Phone",
+            "position": "sticky"
+          },
+          {
+            "i": 21,
+            "label": "Swatch",
+            "position": "sticky"
+          },
+          {
+            "i": 22,
+            "label": "Payload",
+            "position": "sticky"
+          },
+          {
+            "i": 23,
+            "label": "Labels",
+            "position": "sticky"
+          },
+          {
+            "i": 24,
+            "label": "Chips",
+            "position": "sticky"
+          },
+          {
+            "i": 25,
+            "label": "Regions",
+            "position": "sticky"
+          },
+          {
+            "i": 26,
+            "label": "Total",
+            "position": "sticky"
+          },
+          {
+            "i": 27,
+            "label": "Actions",
+            "position": "sticky"
+          }
+        ]
+      }
+    },
+    "grouping.byColumn": {
+      "group": "grouping",
+      "observed": {
+        "groupHeaderRows": 1,
+        "statusWordsOnScreen": [
+          "Done",
+          "Blocked",
+          "Active",
+          "Queued"
+        ]
+      }
+    },
+    "rowHeight": {
+      "group": "row height",
+      "observed": {
+        "bodyRowHeight": 53
+      }
+    },
+    "coverage.honestCount": {
+      "group": "honest count",
+      "observed": {
+        "coverageSentences": []
+      }
+    },
+    "export.copyCsv": {
+      "group": "export",
+      "observed": {
+        "copyControls": 2,
+        "exportControls": 1
+      }
+    },
+    "history.available": {
+      "group": "history",
+      "observed": {
+        "historyControls": 101
+      }
+    }
+  }
+}

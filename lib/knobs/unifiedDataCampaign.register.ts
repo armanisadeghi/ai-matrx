@@ -270,6 +270,12 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "PRODUCTS row 16. The app's ONLY reach for custom.sign_request_public, custom.sign_request_sign and custom.sign_request_decline, all three server-lane doors granted to service_role alone. server-only, cached per request. Schema custom stays revoked from anon; nothing here widens that.",
     },
     {
+        id: "crew-capture-page",
+        file: "app/(link)/capture/[sheetId]/page.tsx",
+        kind: "runtime",
+        why: "PRODUCTS row 15. The link a crew opens on their phones. It is SIGNED-IN — unlike the public form at /f/<id> — so the browser calls the five custom.capture_* doors as the person themselves and those doors decide; the link is an address, not a secret. It is in the (link) group because it is the whole screen on a phone held in one hand: no shell, no sidebar. The switch is read by every door it touches (custom.assert_store_door / custom.store_is_open) and custom.capture_open answers with an honest may_capture and a sentence, which is what the screen shows rather than a dead camera button.",
+    },
+    {
         id: "data-v2-tables",
         file: "app/(core)/data-v2/page.tsx",
         kind: "runtime",
