@@ -321,6 +321,7 @@ export async function pickGoogleWorkspaceFile(
  */
 export async function pickGoogleDriveFiles(
   accessToken: string,
+  options: { multiple?: boolean } = {},
 ): Promise<PickedGoogleDriveFile[] | null> {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -334,13 +335,12 @@ export async function pickGoogleDriveFiles(
     .setMode(picker.DocsViewMode.LIST);
 
   return new Promise<PickedGoogleDriveFile[] | null>((resolve, reject) => {
-    const instance = new picker.PickerBuilder()
+    const builder = new picker.PickerBuilder()
       .setAppId(projectNumber(clientId))
       .setDeveloperKey(apiKey)
       .setOAuthToken(accessToken)
       .setOrigin(window.location.origin)
       .setTitle("Choose files to import")
-      .enableFeature(picker.Feature.MULTISELECT_ENABLED)
       .addView(view)
       .setCallback((data) => {
         try {
@@ -353,8 +353,11 @@ export async function pickGoogleDriveFiles(
               : new Error("Google Drive selection failed."),
           );
         }
-      })
-      .build();
+      });
+    if (options.multiple !== false) {
+      builder.enableFeature(picker.Feature.MULTISELECT_ENABLED);
+    }
+    const instance = builder.build();
     instance.setVisible(true);
   });
 }

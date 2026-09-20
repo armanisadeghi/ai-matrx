@@ -7,6 +7,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 const preventDefault = jest.fn();
 const mockOpenGoogle = jest.fn();
+const mockOpenStorage = jest.fn();
 const mockDispatch = jest.fn();
 const mockToastError = jest.fn();
 
@@ -37,6 +38,10 @@ jest.mock("@/features/marketing/google/hooks", () => ({
 
 jest.mock("@/features/overlays/openers/googleConnectWindow", () => ({
   useOpenGoogleConnectWindow: () => mockOpenGoogle,
+}));
+
+jest.mock("@/features/overlays/openers/storageSourcePicker", () => ({
+  useOpenStorageSourcePicker: () => mockOpenStorage,
 }));
 
 jest.mock("@/lib/redux/hooks", () => ({
@@ -106,7 +111,7 @@ describe("FileAcquisitionActions menu chooser", () => {
   });
 
   it("hydrates the canonical Files row and tree before handing an import to chat", async () => {
-    const onGoogleImported = jest
+    const onStorageImported = jest
       .fn<Promise<void>, [unknown[]]>()
       .mockResolvedValue();
     act(() => {
@@ -114,8 +119,8 @@ describe("FileAcquisitionActions menu chooser", () => {
         <FileAcquisitionActions
           presentation="buttons"
           onFiles={jest.fn()}
-          googleImportParentFolderId="folder-1"
-          onGoogleImported={onGoogleImported}
+          storageImportParentFolderId="folder-1"
+          onStorageImported={onStorageImported}
         />,
       );
     });
@@ -189,7 +194,7 @@ describe("FileAcquisitionActions menu chooser", () => {
       type: "cloudFiles/attachChildToFolder",
       payload: { parentFolderId: "folder-1", kind: "file", id: "file-1" },
     });
-    expect(onGoogleImported).toHaveBeenCalledWith([imported]);
+    expect(onStorageImported).toHaveBeenCalledWith([imported]);
   });
 
   it("does not route an unresolved nested destination to the Files root", () => {
@@ -198,7 +203,7 @@ describe("FileAcquisitionActions menu chooser", () => {
         <FileAcquisitionActions
           presentation="buttons"
           onFiles={jest.fn()}
-          googleImportParentFolderId="missing-folder"
+          storageImportParentFolderId="missing-folder"
         />,
       );
     });
@@ -220,7 +225,7 @@ describe("FileAcquisitionActions menu chooser", () => {
         <FileAcquisitionActions
           presentation="buttons"
           onFiles={jest.fn()}
-          googleImportParentFolderId={null}
+          storageImportParentFolderId={null}
         />,
       );
     });
@@ -232,6 +237,28 @@ describe("FileAcquisitionActions menu chooser", () => {
 
     expect(mockOpenGoogle.mock.calls[0]?.[0]?.importDestinationFolderPath).toBe(
       "",
+    );
+  });
+
+  it("refuses an invalid destination before opening the shared storage picker", () => {
+    act(() => {
+      root.render(
+        <FileAcquisitionActions
+          presentation="buttons"
+          onFiles={jest.fn()}
+          storageImportFolderPath="My Files/../Other"
+        />,
+      );
+    });
+
+    const storageButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("OneDrive, Dropbox or Box"),
+    );
+    act(() => storageButton?.click());
+
+    expect(mockOpenStorage).not.toHaveBeenCalled();
+    expect(mockToastError).toHaveBeenCalledWith(
+      "The destination folder path is invalid.",
     );
   });
 });

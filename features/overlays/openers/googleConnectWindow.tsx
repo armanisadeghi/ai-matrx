@@ -28,6 +28,8 @@ export interface OpenGoogleConnectOptions extends GoogleConnectWindowHandlers {
   initialConnectionId?: string;
   /** Logical Matrx Files folder used by the canonical provider import. */
   importDestinationFolderPath?: string;
+  accept?: string;
+  multiple?: boolean;
 }
 
 export interface GoogleConnectWindowHandle {
@@ -56,6 +58,8 @@ export function useOpenGoogleConnectWindow() {
             initialConnectionId: options?.initialConnectionId ?? null,
             importDestinationFolderPath:
               options?.importDestinationFolderPath ?? null,
+            accept: options?.accept ?? null,
+            multiple: options?.multiple ?? true,
             callbackGroupId: callbacks?.callbackGroupId ?? null,
           },
         }),

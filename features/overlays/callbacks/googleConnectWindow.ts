@@ -1,5 +1,5 @@
 import { callbackManager } from "@/utils/callbackManager";
-import type { CanonicalStorageImport } from "@/features/google-workspace/import/storageSourceImport";
+import type { CanonicalStorageImport } from "@/features/files/storage-sources/types";
 
 export interface GoogleDriveImportedEvent {
   type: "drive-imported";
@@ -65,6 +65,7 @@ export async function emitGoogleConnectEvent(
   ) {
     return;
   }
-  await callbackManager.triggerGroupCommand(callbackGroupId, event);
-  activeGoogleConnectCallbackGroups.delete(callbackGroupId);
+  await callbackManager.triggerGroupCommand(callbackGroupId, event, {
+    removeAfterSuccess: false,
+  });
 }

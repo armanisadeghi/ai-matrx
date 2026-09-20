@@ -86,6 +86,21 @@ export default function UnifiedDataPage() {
               className="mb-4 max-h-64"
               onOpenRecord={(recordId, tableId) => router.push(`/data-v2/${tableId}?record=${recordId}`)}
             />
+            {/* THE ONE PLACE THAT SHOWS THE WHOLE STORE. Everything on this
+                page is one corner of it; /data-v2/try-everything puts the rest
+                — sharing, relations, forms, approvals, the agent, history,
+                dashboards, documents, notifications — in front of the same
+                person in the same organization, and says plainly which of them
+                are not finished. */}
+            <Link
+              href="/data-v2/try-everything"
+              className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm transition-colors hover:bg-muted/50"
+            >
+              <span className="font-medium text-foreground">Try everything</span>
+              <span className="min-w-0 flex-1 truncate text-muted-foreground">
+                every part of the record store on one page, with the unfinished parts named
+              </span>
+            </Link>
             <TablesHome onOpenTable={(tableId) => router.push(`/data-v2/${tableId}`)} />
           </RecordsMount>
         )}

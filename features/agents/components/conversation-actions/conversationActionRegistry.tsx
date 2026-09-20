@@ -290,6 +290,7 @@ export function buildConversationMenu(
                     result.payload.newConversationId,
                   ),
                 });
+                ctx.onMutationSuccess?.();
               }
             },
           },
@@ -379,10 +380,10 @@ export function buildConversationMenu(
                 title: "Delete conversation",
                 description: (
                   <>
-                    This moves <b>{displayTitle(ctx.title)}</b> and every message
-                    inside it to the trash. Nothing is destroyed — it leaves every
-                    list, and you can bring it back from Trash at the bottom of
-                    the conversation list.
+                    This moves <b>{displayTitle(ctx.title)}</b> and every
+                    message inside it to the trash. Nothing is destroyed — it
+                    leaves every list, and you can bring it back from Trash at
+                    the bottom of the conversation list.
                   </>
                 ),
                 confirmLabel: "Delete",
@@ -398,7 +399,8 @@ export function buildConversationMenu(
               } else {
                 ctx.onMutationSuccess?.();
                 toast.success("Conversation moved to the trash", {
-                  description: "Restore it from Trash at the bottom of the conversation list.",
+                  description:
+                    "Restore it from Trash at the bottom of the conversation list.",
                 });
               }
             },

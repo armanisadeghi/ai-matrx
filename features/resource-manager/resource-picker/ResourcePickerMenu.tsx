@@ -191,6 +191,7 @@ export function ResourcePickerMenu({
           }
           topSlot={
             <InlineUploadArea
+              selectionMode={selectionMode}
               onSelect={async (files) => {
                 // Preserve selection order and wait for every durable edge
                 // before any host is allowed to dismiss the picker.

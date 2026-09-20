@@ -74166,6 +74166,7 @@ export type Database = {
           p_origin_class: string
           p_provider: string
           p_source_app: string
+          p_source_feature: string
         }
         Returns: string
       }

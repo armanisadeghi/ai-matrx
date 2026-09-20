@@ -40,13 +40,15 @@ export const CONVERSATION_LIST_SCOPES: ListScopeKind[] = [
 // inside a bucket, never a peer of it.
 //
 // The bucket is DERIVED SERVER-SIDE (`public.cvx_audience`, one expression
-// shared by the list RPC and the facets RPC) from facts the row already has:
-// a coding-session binding or source_app `code-plugin` (the one "outside data"
-// test — `isCodePluginSourceApp` in lib/providerSource.ts) is external no matter what
-// else the row says; a machine origin_class is internal; a human origin is
-// chat; pre-provenance rows fall back to conversation_type. The client only
-// ever names the bucket — it never re-derives it, so a chip's count is exactly
-// what clicking it shows.
+// shared by the list RPC and the facets RPC), and that function decides nothing
+// itself: it maps `chat.conversation_lane` — the platform's ONE conversation
+// classifier, also behind the chat sidebar's five lane toggles — onto these
+// three buckets. external = lane `plugin` (source_app `code-plugin`, the one
+// "outside data" test — `isCodePluginSourceApp` in lib/providerSource.ts) or a
+// live coding-session binding, whatever else the row says; internal = lane
+// `auto` or `subagent`; chat = lane `chat` or `matrx`. The client only ever
+// names the bucket — it never re-derives it, so a chip's count is exactly what
+// clicking it shows.
 //
 // The filter key is `audience`, a REAL entry in the filter bag (never a hidden
 // SQL predicate), so the Filters panel, the URL and the chips all agree.
