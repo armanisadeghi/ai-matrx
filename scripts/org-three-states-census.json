@@ -1,8 +1,7 @@
 {
-  "reason": "Pre-existing debt found by the rule's first run (2026-09-18, lane F-89): modules that spell an organization refusal from a nullable id, and therefore state the terminal answer while boot is still resolving. Repair each by reading the three states (useOrganizationRequired / useOrganizationGatedControl / OrganizationContextNotice) or by WAITING for the answer (awaitEffectiveOrganizationId), then STRIKE the line \u2014 this list only shrinks. The ten Google-native surfaces the rule was written for are already repaired and deliberately absent.",
+  "reason": "Pre-existing debt found by the rule's first run (2026-09-18, lane F-89): modules that spell an organization refusal from a nullable id, and therefore state the terminal answer while boot is still resolving. Repair each by reading the three states (useOrganizationRequired / useOrganizationGatedControl / OrganizationContextNotice) or by WAITING for the answer (awaitEffectiveOrganizationId), then STRIKE the line — this list only shrinks. The ten Google-native surfaces the rule was written for are already repaired and deliberately absent.",
   "modules": [
     "app/(admin)/administration/scopes-context/context-inspector/page.tsx",
-    "app/(core)/cms/page.tsx",
     "app/(dev)/demos/api-tests/tool-testing/hooks/useToolTestContext.ts",
     "app/(dev)/demos/scopes/context-lab/sharp/MillerColumns.tsx",
     "app/(dev)/demos/short-link-kit/page.dev.tsx",
