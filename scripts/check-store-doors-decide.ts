@@ -341,6 +341,48 @@ const IDENTITY_RENDERING_CENSUS = `
    order by 1`;
 
 /**
+ * CENSUS 12 — THE THREE ANSWERS TO ONE QUESTION, IN EVERY `shared_only` ORGANIZATION
+ * (2026-09-19, lane SHARED-ONLY).
+ *
+ * Censuses 1-9 read the CATALOGUE and census 10 asks two seats about one record. All eleven
+ * were green on the day the sixth independent pass found that an organization which chooses
+ * "people only see what is shared with them" LOSES SHARING ENTIRELY: the store's own question
+ * "can she see this?" answered TRUE, every screen answered "You do not have access to this
+ * table", and a whole table shared at Admin opened with zero rows. Nothing about the shape of
+ * a door was wrong; three different pieces of the system answered one question differently.
+ *
+ * `custom.shared_only_disagreements()` is that comparison, over every (member, record) pair in
+ * every organization that has said `shared_only`: the ONE LADDER, the READ DOOR's own
+ * predicate, and the RLS POLICY TEXT the mirror generates, on the same row. The kind of
+ * disagreement is the first word of `why`:
+ *
+ *   doors-disagree      the ladder and the read door differ - always a failure
+ *   mirror-admits-more  the policy text admits a row every door refuses - always a failure,
+ *                       and exactly what `custom/member_default_visibility` left open in
+ *                       `iam.entity_read_expr` until this lane
+ *   mirror-admits-less  the doors admit through an arm of the store ladder that sits ABOVE the
+ *                       platform kernel the mirror is generated from. Harmless while schema
+ *                       `custom` holds no table privilege for any client role - which is
+ *                       census 7 - because then no policy built from that text decides
+ *                       anything. The moment census 7 finds one, this becomes a failure too,
+ *                       and the two censuses are wired together below so that happens by
+ *                       itself.
+ *   unmeasured          an organization with more pairs than the ceiling - never a pass.
+ *
+ * Its RED half re-runs the same census with one of two REAL historical states restored:
+ * `mirror_forgets_the_knob` (the mirror before this lane) and `door_refuses_the_share` (the
+ * screens the sixth pass photographed).
+ */
+const SHARED_ONLY_CENSUS = (pretend: string | null) =>
+  `select record_id::text as function_name,
+          coalesce(member_id::text, organization_name) as identity_args,
+          why
+     from custom.shared_only_disagreements(${pretend === null ? "null" : `'${pretend}'`})`;
+
+/** The kinds that are never allowed, whatever else is true. */
+const SHARED_ONLY_NEVER = ["doors-disagree", "mirror-admits-more", "unmeasured"];
+
+/**
  * CENSUS 10 — THE TWO-SEAT PROBE: "VIEWER" MEANS VIEWER, AND REVOKED MEANS REVOKED
  * (2026-09-19, lane LEVEL-FIX).
  *
@@ -689,6 +731,38 @@ async function main(): Promise<void> {
         `[ OK ] self-test - without the trigger exemption the SECURITY INVOKER census names ` +
           `${redInvoker.length} function(s). It can go red.`,
       );
+
+      // CENSUS 12, THE RED HALF. The two states this really was in, each of which must produce
+      // the kind of disagreement it caused: the RLS mirror before it learned
+      // `custom/member_default_visibility`, and the screens the sixth pass photographed.
+      for (const [pretend, kind, what] of [
+        [
+          "mirror_forgets_the_knob",
+          "mirror-admits-more",
+          "with `custom/member_default_visibility` taken back out of iam.entity_read_expr, the " +
+            "policy text admits nobody the doors refuse",
+        ],
+        [
+          "door_refuses_the_share",
+          "doors-disagree",
+          "with the read door refusing every row, it still agrees with the one ladder",
+        ],
+      ] as const) {
+        const rows = (await client.query<Row>(SHARED_ONLY_CENSUS(pretend))).rows.filter((r) =>
+          r.why?.startsWith(kind),
+        );
+        if (rows.length === 0) {
+          fail(
+            `SELF-TEST FAILED - ${what}. Either every shared_only organization on this database ` +
+              "has no member with anything shared, or the census is not comparing what it says it " +
+              "compares - and then its zero above proves nothing.",
+          );
+        }
+        console.log(
+          `[ OK ] self-test - ${pretend}: the shared_only census names ${rows.length} ` +
+            `${kind} row(s). It can go red.`,
+        );
+      }
     }
 
     const callers = (await client.query<Row>(CALLER_CENSUS(DECIDERS))).rows;
@@ -701,6 +775,24 @@ async function main(): Promise<void> {
     const closedSchemas = (await client.query<Row>(CLOSED_SCHEMA_CENSUS(true))).rows;
     const rendering = (await client.query<Row>(IDENTITY_RENDERING_CENSUS)).rows;
     const invokerDoors = (await client.query<Row>(INVOKER_DOOR_CENSUS(true))).rows;
+
+    // CENSUS 12 — the three answers, live, in every organization that has said `shared_only`.
+    // `mirror-admits-less` is a failure only when census 7 is non-empty, so the two are read
+    // together rather than one of them excusing the other in prose.
+    const sharedOnlyAll = (await client.query<Row>(SHARED_ONLY_CENSUS(null))).rows;
+    const mirrorNarrower = sharedOnlyAll.filter((r) => r.why?.startsWith("mirror-admits-less"));
+    const sharedOnly = sharedOnlyAll.filter(
+      (r) =>
+        SHARED_ONLY_NEVER.some((kind) => r.why?.startsWith(kind)) ||
+        (tablePrivileges.length > 0 && r.why?.startsWith("mirror-admits-less")),
+    );
+    if (mirrorNarrower.length > 0 && tablePrivileges.length === 0) {
+      console.log(
+        `[INFO] ${mirrorNarrower.length} row(s) the store's doors admit through an arm above the ` +
+          "platform kernel the RLS mirror is generated from. Not a failure: census 7 is empty, so " +
+          "no policy built from that text decides a read. It becomes a failure the moment it is not.",
+      );
+    }
 
     // CENSUS 10 — the two seats, live, in a transaction that is always rolled back.
     const probe = await twoSeatProbe(client, "viewer", "shared_only");
@@ -743,6 +835,10 @@ async function main(): Promise<void> {
       report(
         "doors that took a write from somebody shared at viewer, or showed a revoked person the record",
         twoSeat,
+      ),
+      report(
+        "shared_only organizations where the one ladder, the read door and the RLS policy text do not agree",
+        sharedOnly,
       ),
     ].every(Boolean);
 
