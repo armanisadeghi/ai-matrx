@@ -111,6 +111,12 @@ via `<CostValue>`/`useCostDisplay`; never `toFixed(2)` a dollar figure in a rese
 
 ## Change log
 
+- 2026-09-20 — New derived resource kind `page.entities` (what every analysed, kept page NAMED —
+  products/services, organisations, places — with its URL), fed by a parallel `rs_source.page_analysis`
+  read beside the manifest like the experts; the topical-map output card now names the bundle it reads
+  (`research-topical-map`). Its server-side twin is aidream `research/context_bundles.py` — the
+  resolver's selector/order/limit/budget/trim semantics now exist on both sides; change one, change the
+  other. Test: `resources/pageEntities.test.ts`.
 - `2026-09-17` — **Creating a context bundle carries the organization instead of `?? null`.** `createBundle` wrote `organization_id: input.organizationId ?? null` into `research.rs_context_bundle`, and a NULL there is the `public._stamp_org_default` trigger filing the bundle in the writer's personal workspace. It now resolves through `ensureOrgId(input.organizationId)` — the caller's organization, else the one the person SELECTED, else an `OrganizationContextError` the surface renders as "select an organization". Guard: `pnpm check:organization-context`.
 
 - 2026-09-11 — Media gallery file naming is the package's ruling end to end: the display

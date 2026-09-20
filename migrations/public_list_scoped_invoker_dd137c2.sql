@@ -1,3 +1,4 @@
+-- retired: its public.cvx_list_scoped body was replaced since; the live one comes from cvx_audience_derives_from_the_lane_classifier.sql
 -- public_list_scoped_invoker_dd137c2 — NINE LIST RPCs RUN AS THEIR CALLER, AND THEIR BESPOKE ORG
 -- PREDICATES ARE DELETED (DD-137c, step 2; VISIBILITY-BY-CLASS §3.3 chair R2).
 --

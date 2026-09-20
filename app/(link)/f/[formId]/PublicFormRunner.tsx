@@ -1,6 +1,6 @@
 "use client";
 
-// app/(public)/f/[formId]/PublicFormRunner.tsx — THE ONLY CLIENT CODE ON THE
+// app/(link)/f/[formId]/PublicFormRunner.tsx — THE ONLY CLIENT CODE ON THE
 // PUBLIC FORM PAGE, and it is a mount and a fetch.
 //
 // `FormRunner` is the SAME component the owner sees inside the app. Its public

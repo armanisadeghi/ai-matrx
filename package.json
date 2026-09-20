@@ -118,6 +118,7 @@
     "check:surface-overlays": "tsx scripts/check-surface-overlays.ts",
     "check:surface-interactive-roots": "tsx scripts/check-surface-interactive-roots.ts",
     "check:source-attribution": "tsx scripts/check-source-attribution.ts",
+    "check:client-initiation": "node scripts/check-client-initiation.mjs",
     "check:docs-guards": "tsx scripts/check-docs-guards.ts",
     "check:skill-descriptions": "tsx scripts/check-skill-descriptions.ts",
     "check:skill-descriptions:self-test": "tsx scripts/check-skill-descriptions.ts --self-test",
@@ -548,7 +549,8 @@
     "check:suites-take-the-seat": "tsx scripts/check-campaign-suites-take-the-seat.ts",
     "check:suites-take-the-seat:self-test": "tsx scripts/check-campaign-suites-take-the-seat.ts --self-test",
     "check:store-doors-decide": "tsx scripts/check-store-doors-decide.ts",
-    "check:store-doors-decide:self-test": "tsx scripts/check-store-doors-decide.ts --self-test"
+    "check:store-doors-decide:self-test": "tsx scripts/check-store-doors-decide.ts --self-test",
+    "check:store-doors-decide:exhaustive": "tsx scripts/check-store-doors-decide.ts --exhaustive"
   },
   "dependencies": {
     "@ai-matrx/agents": "latest",

@@ -31,11 +31,17 @@ import {
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectShouldPromptForOrganization } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectOrganizationId,
+  selectOrganizationName,
+  selectShouldPromptForOrganization,
+} from "@/lib/redux/slices/appContextSlice";
 import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
 
 export default function HeaderChooseOrgButton() {
   const shouldPrompt = useAppSelector(selectShouldPromptForOrganization);
+  const organizationId = useAppSelector(selectOrganizationId);
+  const organizationName = useAppSelector(selectOrganizationName);
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
 
@@ -44,15 +50,38 @@ export default function HeaderChooseOrgButton() {
   // switch (it only enables once an org is active).
   if (!shouldPrompt && !open) return null;
 
+  // 🚨 THE ONE STATE THIS CONTROL KEEPS ITSELF ALIVE FOR IS THE ONE IT USED TO
+  // LIE ABOUT. After a selection the button is still on screen — by design,
+  // for "Set as default" — and it went on reading "Choose org" in warning red
+  // with the chosen organization ticked in its own open panel (Acquisition
+  // Console walk, 2026-09-20, `console-1440-light.png`). A control that
+  // contradicts its own panel is the same defect as a dead-looking one, so the
+  // label follows the selection and the warning colour goes with the warning.
+  // The name can lag the id by a beat (it is written by the same switcher
+  // action, but a cookie/bootstrap restore can land the id first), so the
+  // nameless case says what the control now DOES rather than falling back to
+  // the sentence that is no longer true.
+  const chosen = organizationId != null;
+  const label = chosen ? (organizationName ?? "Change workspace") : "Choose org";
+  const description = chosen
+    ? organizationName
+      ? `Workspace: ${organizationName}. Change workspace`
+      : "Change workspace"
+    : "Choose an organization";
+
   const trigger = (
     <button
       type="button"
-      aria-label="Choose an organization"
-      title="Choose an organization"
-      className="inline-flex h-11 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-red-600 transition-colors hover:bg-red-500/10 dark:text-red-400 sm:h-8"
+      aria-label={description}
+      title={description}
+      className={`inline-flex h-11 items-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors sm:h-8 ${
+        chosen
+          ? "text-muted-foreground hover:bg-accent hover:text-foreground"
+          : "text-red-600 hover:bg-red-500/10 dark:text-red-400"
+      }`}
     >
       <Building2 size={14} strokeWidth={2} aria-hidden="true" />
-      <span className="hidden sm:inline">Choose org</span>
+      <span className="hidden max-w-[10rem] truncate sm:inline">{label}</span>
     </button>
   );
 

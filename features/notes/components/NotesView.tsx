@@ -15,6 +15,7 @@ import React, {
   useId,
 } from "react";
 import dynamic from "next/dynamic";
+import { initialTabsFromUrl } from "@/features/notes/initialTabsFromUrl";
 import {
   FileText,
   SplitSquareHorizontal,
@@ -213,15 +214,23 @@ export function NotesView({
   // Config props win over URL params. When syncUrl is false (overlays /
   // embeds), never hydrate from the page's ?tabs= — that would steal the
   // /notes workspace into Quick Notes / Utilities.
+  // `?active=` ALONE has to open that note. Every note door in the platform is
+  // `/notes?active=<id>` (the `note` entry in features/scopes/registry/
+  // entityRegistry.ts) — the org Notes tile, EntityRef, MatrxUuidCell, all of
+  // them — and until 2026-09-20 this list only ever read `?tabs=`, so the
+  // restore effect below bailed on an empty `initialTabs` and every one of
+  // those doors landed on "Open a note from the sidebar, or start a new one".
+  // The rule is a pure function so it can be guarded: ./initialTabsFromUrl.
   const initialTabs =
     config?.initialTabs ??
     (syncUrl
-      ? urlTabs.length > 0
-        ? urlTabs
-        : routeNoteId
-          ? [routeNoteId]
-          : undefined
+      ? initialTabsFromUrl({
+          tabs: urlTabs,
+          active: urlActive,
+          routeNoteId,
+        })
       : undefined);
+
   const initialActiveTab =
     config?.initialActiveTab ??
     (syncUrl ? (urlActive ?? routeNoteId) : undefined);

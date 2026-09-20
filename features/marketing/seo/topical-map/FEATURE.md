@@ -116,6 +116,13 @@ reader falls back to that row's own `default_value`.
 
 ## Change log
 
+- **2026-09-20** — Research integration rebuilt server-side (aidream `134d180ed9`): `existing_research`
+  reads the `research-topical-map` bundle (named offerings per page with URLs, keyword syntheses, the
+  report; the company's own domains named; coverage gaps appended) instead of the assembled document;
+  `new_research` now seeds the intent, proposes keywords from the company's own site and runs the pass —
+  the result carries `research_keywords`, `research_run_started`, `research_run_note` (additive; the
+  start screen's tile copy updated). Migration 0891 (the bundle row) still to be applied from a
+  credentialed machine.
 - **2026-09-18 (evening)** — Functionality pass after the first browser walk (report:
   `common-docs/projects/table-provisioning/TOPICAL-MAP-UI-WALK-REPORT.md`): the four run
   controls' 422 (`body.organization_id: Extra inputs are not permitted`) fixed on the server —
