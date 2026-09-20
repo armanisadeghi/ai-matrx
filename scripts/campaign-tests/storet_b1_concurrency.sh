@@ -40,15 +40,28 @@ ADMIN='87a6e699-3622-4869-8843-d0867456c0dd'
 ORG="$("$PSQL" "$DSN" -At -c 'select gen_random_uuid()')"
 TMP="$(mktemp -d)"
 
+# ONE transaction, and THE ORDER MATTERS: deleting the records fires `io_record_changed`,
+# which writes new `custom.io_outbox` rows, and those hold a foreign key to the organization.
+# Deleting the outbox first leaves the rows the record delete is about to create, and then the
+# organization cannot go — which is exactly how the first runs of this script left four
+# organizations behind. `app.actor_system` is named because `platform._stamp_actor_tier`
+# refuses an automated write that does not say which system it is.
 cleanup() {
   "$PSQL" "$DSN" -q -c "
+    begin;
+    select set_config('app.actor_system','campaign-test/storet_b1', true);
     delete from custom.record          where organization_id='$ORG'::uuid;
+    delete from custom.io_outbox       where organization_id='$ORG'::uuid;
     delete from platform.associations  where organization_id='$ORG'::uuid;
     delete from platform.knob_override where organization_id='$ORG'::uuid;
     delete from iam.memberships        where organization_id='$ORG'::uuid;
     delete from history.migration_log  where organization_id='$ORG'::uuid;
     delete from iam.organizations      where id='$ORG'::uuid;
+    commit;
   " >/dev/null 2>&1 || true
+  local left
+  left="$("$PSQL" "$DSN" -At -c "select count(*) from iam.organizations where id='$ORG'::uuid" 2>/dev/null || echo '?')"
+  [ "$left" = "0" ] || echo "WARNING: this script left organization $ORG behind (count=$left) — delete it before reporting."
 }
 trap cleanup EXIT
 
