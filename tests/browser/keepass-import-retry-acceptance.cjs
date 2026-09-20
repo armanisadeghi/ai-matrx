@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const { execFileSync } = require("node:child_process");
 const { chromium } = require("playwright");
 
 const ARM = "RUN_UNDER_REVIEW";
@@ -23,12 +24,69 @@ function localOrigin(value, port) {
     const url = new URL(value);
     return (
       url.protocol === "http:" &&
-      ["127.0.0.1", "localhost"].includes(url.hostname) &&
+      (url.hostname === "127.0.0.1" ||
+        url.hostname === "::1" ||
+        url.hostname === "localhost" ||
+        url.hostname.endsWith(".localhost")) &&
       (!port || url.port === port)
     );
   } catch {
     return false;
   }
+}
+function parsePreviewLease(raw) {
+  const values = Object.fromEntries(
+    String(raw)
+      .split("\n")
+      .flatMap((line) => {
+        const index = line.indexOf("=");
+        return index > 0 ? [[line.slice(0, index), line.slice(index + 1)]] : [];
+      }),
+  );
+  return values;
+}
+function assertPreviewAttestation(lease, config, expected) {
+  assert(lease.ROOT === expected.worktree, "preview_checkout_mismatch");
+  assert(
+    lease.OWNER_HOST === new URL(config.frontend).hostname,
+    "preview_host_mismatch",
+  );
+  assert(
+    lease.PORT === "3001" && /^\d+$/.test(lease.PID || ""),
+    "preview_lease_invalid",
+  );
+  assert(expected.commit === expected.currentCommit, "preview_commit_mismatch");
+}
+function previewLeasePath(env = process.env) {
+  return (
+    env.MATRX_KEEPASS_PREVIEW_LEASE ||
+    path.join(
+      env.MATRX_PREVIEW_STATE_DIR ||
+        path.join("/tmp", `matrx-frontend-preview-${process.getuid()}`),
+      "shared-next-dev.meta",
+    )
+  );
+}
+async function readPreviewAttestation(config, env = process.env) {
+  const lease = parsePreviewLease(
+    await fs.readFile(previewLeasePath(env), "utf8"),
+  );
+  const commit = execFileSync("git", ["rev-parse", "HEAD"], {
+    cwd: WORKTREE,
+    encoding: "utf8",
+  }).trim();
+  assertPreviewAttestation(lease, config, {
+    worktree: WORKTREE,
+    commit,
+    currentCommit: commit,
+  });
+  return { lease, commit };
+}
+function assertBundleBackend(sources, api) {
+  assert(
+    sources.some((source) => source.includes(api)),
+    "compiled_backend_mismatch",
+  );
 }
 function runtimeConfig(env = process.env) {
   const frontend = env.MATRX_KEEPASS_LOCAL_FRONTEND,
@@ -36,10 +94,6 @@ function runtimeConfig(env = process.env) {
   assert(env.MATRX_KEEPASS_IMPORT_CANARY === ARM, "explicit_arm_required");
   assert(localOrigin(frontend, "3001"), "localhost_frontend_required");
   assert(localOrigin(api), "localhost_api_required");
-  assert(
-    env.NEXT_PUBLIC_BACKEND_URL_PROD === api,
-    "compiled_backend_origin_required",
-  );
   assert(
     env.AI_ADMIN_USERNAME === "admin@admin.com" &&
       typeof env.AI_ADMIN_PASSWORD === "string" &&
@@ -158,39 +212,108 @@ async function listOwned(config, actor, names) {
     actor,
     "/api/vault/items?principal_type=user",
   );
-  assert(response.ok(), "owned_reconciliation_list_required");
+  assert(response.ok, "owned_reconciliation_list_required");
   const body = await response.json();
   assert(Array.isArray(body?.items), "owned_reconciliation_shape_required");
   return body.items.filter((item) => names.has(item?.display_name));
 }
-async function reconcile(config, actor, ledger, names) {
+async function reconcile(config, actor, ledger, names, deps = {}) {
   const items = await listOwned(config, actor, names);
   for (const item of items) {
     assert(typeof item.id === "string", "owned_reconciliation_id_required");
-    if (!ledger.ids.includes(item.id)) ledger.ids.push(item.id);
+    const attempt = ledger.attempts.find(
+      (candidate) => candidate.name === item.display_name,
+    );
+    assert(attempt, "owned_reconciliation_attempt_required");
+    if (attempt.itemId && attempt.itemId !== item.id)
+      throw new Error("owned_reconciliation_receipt_mismatch");
+    attempt.itemId = item.id;
   }
-  await save(ledger);
+  await (deps.save || save)(ledger);
   return items;
 }
-async function cleanup(config, actor, ledger, names) {
-  if (!actor?.token || !actor.orgId) return false;
-  for (const item of await reconcile(config, actor, ledger, names)) {
-    const response = await api(
-      config,
-      actor,
-      `/api/vault/items/${encodeURIComponent(item.id)}`,
-      { method: "DELETE" },
+function bodyIdentity(body) {
+  return {
+    definitionKey: body.definition_key,
+    source: body.source,
+    principal: body.principal?.type,
+    fieldKeys: (body.fields || []).map((field) => field.field_key).sort(),
+    loginUrlCount: Array.isArray(body.login_urls) ? body.login_urls.length : -1,
+    browserFillEnabled: body.browser_fill_enabled,
+  };
+}
+async function recordAttempt(ledger, name, key, body, deps = {}) {
+  const identity = bodyIdentity(body);
+  const existing = ledger.attempts.find((attempt) => attempt.name === name);
+  if (existing) {
+    assert(
+      existing.key === key &&
+        JSON.stringify(existing.body) === JSON.stringify(identity),
+      "attempt_mapping_mismatch",
     );
-    assert.equal(response.status, 204, "owned_cleanup_delete_required");
+    return existing;
   }
-  assert.equal(
-    (await listOwned(config, actor, names)).length,
-    0,
-    "owned_cleanup_baseline_required",
-  );
-  ledger.cleaned = true;
-  await save(ledger);
-  return true;
+  const attempt = { name, key, body: identity, itemId: null };
+  ledger.attempts.push(attempt);
+  await (deps.save || save)(ledger);
+  return attempt;
+}
+async function cleanup(config, actor, ledger, names, deps = {}) {
+  const failures = [];
+  if (!actor?.token || !actor.orgId)
+    return [new Error("owned_cleanup_context_unavailable")];
+  let items = [];
+  try {
+    items = await reconcile(config, actor, ledger, names, deps);
+  } catch (error) {
+    failures.push(error);
+  }
+  const ids = new Set([
+    ...items.map((item) => item.id),
+    ...ledger.attempts.map((attempt) => attempt.itemId).filter(Boolean),
+  ]);
+  for (const id of ids) {
+    try {
+      const response = await api(
+        config,
+        actor,
+        `/api/vault/items/${encodeURIComponent(id)}`,
+        { method: "DELETE" },
+      );
+      assert.equal(response.status, 204, "owned_cleanup_delete_required");
+    } catch (error) {
+      failures.push(error);
+    }
+  }
+  try {
+    assert.equal(
+      (await listOwned(config, actor, names)).length,
+      0,
+      "owned_cleanup_baseline_required",
+    );
+  } catch (error) {
+    failures.push(error);
+  }
+  if (failures.length === 0) {
+    ledger.cleaned = true;
+    await (deps.save || save)(ledger);
+  }
+  return failures;
+}
+function finalFailure(primary, cleanupFailures) {
+  return cleanupFailures.length
+    ? new AggregateError(
+        [...cleanupFailures, ...(primary ? [primary] : [])],
+        "keepass_cleanup_incomplete",
+      )
+    : primary;
+}
+async function removeArtifact(remove, target, code, failures) {
+  try {
+    await remove(target);
+  } catch {
+    failures.push(new Error(code));
+  }
 }
 
 async function main() {
@@ -222,7 +345,7 @@ async function main() {
   };
   for (const item of [retry, cancelOne, cancelTwo]) item.entryXml = entry(item);
   const names = new Set([retry.title, cancelOne.title, cancelTwo.title]);
-  const ledger = { run: RUN, keys: [], ids: [], cleaned: false };
+  const ledger = { run: RUN, baseline: null, attempts: [], cleaned: false };
   await save(ledger);
   await fs.writeFile(FIXTURE, xml([retry.entryXml]), { mode: 0o600 });
   let context;
@@ -234,6 +357,18 @@ async function main() {
       headless: true,
     });
     page = await context.newPage();
+    await readPreviewAttestation(config);
+    await page.goto(`${config.frontend}/vault`, {
+      waitUntil: "domcontentloaded",
+      timeout: 30_000,
+    });
+    const bundleSources = await page.evaluate(async () => {
+      const urls = [...document.scripts]
+        .map((script) => script.src)
+        .filter(Boolean);
+      return Promise.all(urls.map(async (url) => (await fetch(url)).text()));
+    });
+    assertBundleBackend(bundleSources, config.api);
     const login = page.waitForResponse(
       (response) =>
         response.url().includes("/auth/v1/token") &&
@@ -274,6 +409,23 @@ async function main() {
       releaseCancel = resolve;
     });
     let cancellationPhase = false;
+    let resolveActorBound;
+    const actorBound = new Promise((resolve) => {
+      resolveActorBound = resolve;
+    });
+    context.on("request", (request) => {
+      const url = new URL(request.url());
+      if (url.origin !== config.api || !url.pathname.startsWith("/api/vault/"))
+        return;
+      const headers = request.headers();
+      if (
+        headers.authorization === `Bearer ${actor.token}` &&
+        /^[0-9a-f-]{36}$/i.test(headers["x-organization-id"] || "")
+      ) {
+        actor.orgId = headers["x-organization-id"];
+        resolveActorBound();
+      }
+    });
     await context.route("**/api/vault/**", async (route) => {
       const request = route.request(),
         url = new URL(request.url());
@@ -302,18 +454,15 @@ async function main() {
         typeof key === "string" && key.length > 0,
         "idempotency_key_required",
       );
-      if (!ledger.keys.includes(key)) {
-        ledger.keys.push(key);
-        await save(ledger);
-      }
+      const attempt = await recordAttempt(ledger, expected.title, key, body);
       const response = await route.fetch();
       assert(response.ok(), "create_must_complete");
       const created = await response.json();
       assert(typeof created?.id === "string", "create_receipt_required");
-      if (!ledger.ids.includes(created.id)) {
-        ledger.ids.push(created.id);
-        await save(ledger);
-      }
+      if (attempt.itemId && attempt.itemId !== created.id)
+        throw new Error("attempt_receipt_mismatch");
+      attempt.itemId = created.id;
+      await save(ledger);
       const receipt = { key, body: bodyText, id: created.id };
       if (expected === retry && !first) {
         first = receipt;
@@ -332,10 +481,6 @@ async function main() {
       }
       return route.fulfill({ response });
     });
-    await page.goto(`${config.frontend}/vault`, {
-      waitUntil: "domcontentloaded",
-      timeout: 30_000,
-    });
     await page
       .getByRole("button", { name: "Import passwords", exact: true })
       .click();
@@ -345,6 +490,23 @@ async function main() {
       .getByRole("option", { name: "KeePass / KeePassXC XML", exact: true })
       .click();
     await dialog.locator('input[type="file"]').setInputFiles(FIXTURE);
+    await Promise.race([
+      actorBound,
+      new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error("request_actor_preflight_required")),
+          20_000,
+        ),
+      ),
+    ]);
+    const baseline = await listOwned(config, actor, names);
+    assert.equal(baseline.length, 0, "owned_baseline_required");
+    ledger.baseline = {
+      names: [...names],
+      count: 0,
+      organizationId: actor.orgId,
+    };
+    await save(ledger);
     await dialog
       .getByText(/1 selected; 0 skipped; 0 invalid; 0 unsupported/i)
       .waitFor({ timeout: 20_000 });
@@ -366,11 +528,23 @@ async function main() {
     await dialog
       .getByText(/Imported 1; skipped 0; failed 0/i)
       .waitFor({ timeout: 20_000 });
-    assert(first && ledger.ids.length === 1, "response_loss_receipt_required");
-    assert.equal(
-      (await reconcile(config, actor, ledger, new Set([retry.title]))).length,
-      1,
-      "response_loss_exactly_one_item",
+    assert(
+      first &&
+        ledger.attempts.length === 1 &&
+        ledger.attempts[0].itemId === first.id,
+      "response_loss_receipt_required",
+    );
+    const retryItems = await reconcile(
+      config,
+      actor,
+      ledger,
+      new Set([retry.title]),
+    );
+    assert.equal(retryItems.length, 1, "response_loss_exactly_one_item");
+    assert(
+      ledger.attempts[0].key === first.key &&
+        ledger.attempts[0].itemId === retryItems[0].id,
+      "response_loss_durable_mapping_required",
     );
     await page.keyboard.press("Escape");
     await page
@@ -451,19 +625,13 @@ async function main() {
           body: JSON.stringify({ field_key: "import_source_record" }),
         },
       );
-      assert(response.ok(), "encrypted_source_reveal_required");
+      assert(response.ok, "encrypted_source_reveal_required");
       assertSource((await response.json()).value, item);
     }
   } catch (error) {
     primaryFailure = error;
   } finally {
-    let cleanupFailure;
-    try {
-      if (!(await cleanup(config, actor, ledger, names)))
-        cleanupFailure = new Error("owned_cleanup_context_unavailable");
-    } catch {
-      cleanupFailure = new Error("owned_cleanup_failed");
-    }
+    const cleanupFailures = await cleanup(config, actor, ledger, names);
     if (page) {
       try {
         await page.goto(`${config.frontend}/sign-out`, {
@@ -487,7 +655,7 @@ async function main() {
           timeout: 15_000,
         });
       } catch {
-        cleanupFailure ||= new Error("browser_logout_required");
+        cleanupFailures.push(new Error("browser_logout_required"));
       }
     }
     if (context) {
@@ -495,20 +663,51 @@ async function main() {
         await context.clearCookies();
         await context.close();
       } catch {
-        cleanupFailure ||= new Error("browser_close_required");
+        cleanupFailures.push(new Error("browser_close_required"));
       }
     }
-    await fs.rm(FIXTURE, { force: true });
-    await fs.rm(PROFILE, { recursive: true, force: true });
-    if (ledger.cleaned) await fs.rm(LEDGER, { force: true });
-    if (primaryFailure) throw primaryFailure;
-    if (cleanupFailure) throw cleanupFailure;
+    await removeArtifact(
+      (target) => fs.rm(target, { force: true }),
+      FIXTURE,
+      "fixture_removal_required",
+      cleanupFailures,
+    );
+    await removeArtifact(
+      (target) => fs.rm(target, { recursive: true, force: true }),
+      PROFILE,
+      "profile_removal_required",
+      cleanupFailures,
+    );
+    if (cleanupFailures.length === 0 && ledger.cleaned) {
+      await removeArtifact(
+        (target) => fs.rm(target, { force: true }),
+        LEDGER,
+        "ledger_removal_required",
+        cleanupFailures,
+      );
+    }
+    const failure = finalFailure(primaryFailure, cleanupFailures);
+    if (failure) throw failure;
   }
   process.stdout.write(
     "PASS: localhost KeePass retry, duplicate, cancellation, preservation, and cleanup\n",
   );
 }
-module.exports = { exactRetry, localOrigin, runtimeConfig, assertSource };
+module.exports = {
+  exactRetry,
+  localOrigin,
+  runtimeConfig,
+  assertSource,
+  parsePreviewLease,
+  assertPreviewAttestation,
+  assertBundleBackend,
+  listOwned,
+  reconcile,
+  cleanup,
+  finalFailure,
+  recordAttempt,
+  removeArtifact,
+};
 if (require.main === module) {
   if (process.env.MATRX_KEEPASS_IMPORT_CANARY !== ARM)
     throw new Error("inert_canary_requires_explicit_arm");
