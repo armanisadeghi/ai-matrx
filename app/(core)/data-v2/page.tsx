@@ -101,7 +101,15 @@ export default function UnifiedDataPage() {
                 every part of the record store on one page, with the unfinished parts named
               </span>
             </Link>
-            <TablesHome onOpenTable={(tableId) => router.push(`/data-v2/${tableId}`)} />
+            <TablesHome
+              onOpenTable={(tableId, dashboardId) =>
+                router.push(
+                  dashboardId
+                    ? `/data-v2/${tableId}?dashboard=${dashboardId}`
+                    : `/data-v2/${tableId}`,
+                )
+              }
+            />
           </RecordsMount>
         )}
       </div>

@@ -115,7 +115,7 @@ export const START_MAP_SOURCES = [
     kind: "new_research",
     label: "Research it first",
     helper:
-      "Commission a company topic-tree research run. The map is built from it once the research finishes — you will be offered that step here.",
+      "Set up and run a company topic-tree research pass: keywords proposed from the company's own site (its name first, then one per service line), then the research runs on its own. The map is built from it once it finishes — you will be offered that step here.",
     icon: FlaskConical,
     control: "none",
     launchLabel: "Start the research",

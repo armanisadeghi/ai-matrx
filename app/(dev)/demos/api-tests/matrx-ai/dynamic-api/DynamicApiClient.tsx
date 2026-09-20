@@ -119,6 +119,14 @@ const TEMPLATES: Array<{
         messages: [{ role: "user", content: "Hello!" }],
         stream: true,
         debug: false,
+        // PROVENANCE. A preset fired from this console is a person pressing
+        // Send, so the conversation it creates must say so rather than land
+        // unattributed in someone's chat sidebar. `tool-testing` is the
+        // registered slug for this dev console (aidream
+        // services/conversation_context/source_attribution.py).
+        source_app: "matrx-frontend",
+        source_feature: "tool-testing",
+        initiation: "user",
       },
       null,
       2,
@@ -133,6 +141,10 @@ const TEMPLATES: Array<{
         ai_model_id: "gpt-4o",
         messages: [{ role: "user", content: "What is 2 + 2?" }],
         stream: false,
+        // PROVENANCE — see the streaming preset above.
+        source_app: "matrx-frontend",
+        source_feature: "tool-testing",
+        initiation: "user",
       },
       null,
       2,

@@ -21,9 +21,26 @@
  * Reads are never flagged: a filter, a column, a facet or a display label may
  * mention `source_app` freely because it carries no run-door marker.
  *
- * `--self-test` proves the guard can fail: it runs the same checker over a
- * planted sample that omits `initiation` and exits non-zero unless that sample
- * is reported.
+ * ## RULE 2 — a NAMED conversation door must carry the WHOLE stamp
+ *
+ * Rule 1 only ever fires on a literal that ALREADY stamps `source_app`. A
+ * request body that stamps NOTHING AT ALL was invisible to it, which is
+ * exactly how a census of 2026-09-20 found five frontend doors sending no
+ * `source_app`, no `source_feature` and no `initiation` at all: the rows land
+ * unattributed, cannot be costed or filtered, and `chat.conversation_lane(...)`
+ * drops them into the 'matrx' lane so they surface in people's chat sidebars
+ * as conversations they never started.
+ *
+ * So: a request descriptor that NAMES one of `CONVERSATION_DOOR_ENDPOINTS`
+ * must carry `source_app` AND `initiation`. The endpoint list is explicit and
+ * commented below, and so is `STAMP_BLOCKED_DOORS` — the doors whose aidream
+ * request model cannot accept the stamp yet. Blocked doors are PRINTED on
+ * every green run: this guard never goes quiet about a door it cannot arm.
+ *
+ * `--self-test` proves BOTH rules can fail: it runs the same checkers over
+ * planted samples (one omitting `initiation` beside a `source_app`, one naming
+ * a door endpoint with no attribution at all) and exits non-zero unless each
+ * planted sample is reported and each honest sample is not.
  */
 
 import fs from "node:fs";
@@ -62,6 +79,65 @@ const FIRST_PARTY_APPS = new Set([
 
 /** A literal that carries one of these is starting/continuing an AI run. */
 const RUN_DOOR_MARKERS = ["user_input:", "is_new:", "prior_messages:"];
+
+/**
+ * ── RULE 2's EXPLICIT ENDPOINT LIST ─────────────────────────────────────────
+ *
+ * Server paths that CREATE or CONTINUE a conversation row AND whose aidream
+ * request model actually accepts the stamp today (it inherits
+ * `ScopedRequest` — `aidream/services/conversation_context/scope.py` — which is
+ * the ONLY base carrying `source_app` / `source_feature` / `initiation`).
+ *
+ * Adding a path here is how a new door becomes guarded. Before adding one,
+ * confirm its request model inherits `ScopedRequest`; if it does not, it
+ * belongs in `STAMP_BLOCKED_DOORS` below with its evidence, never here — a
+ * stamp a `extra="forbid"` model rejects is a 422 on a live feature.
+ */
+const CONVERSATION_DOOR_ENDPOINTS = [
+  // The canonical chat door (ChatRequest — carries source_app/initiation).
+  "/ai/chat",
+  // The Builder / manual-run door (aliased by ENDPOINTS.ai.manual, so the
+  // literal only appears in dev consoles and docs).
+  "/ai/manual",
+  // The podcast pipeline (PodcastGenerateRequest extends ScopedRequest).
+  "/podcast/generate",
+];
+
+/**
+ * 🚨 DOORS THIS GUARD CANNOT ARM YET — AND EXACTLY WHY.
+ *
+ * Every one of these is a person clicking a button in our own screens, and
+ * every one of them creates an unattributed conversation row. They are NOT
+ * checked, because the aidream request model physically refuses the stamp:
+ * sending `source_app` would 422 the feature rather than attribute it. The fix
+ * is in aidream (move the model onto `ScopedRequest`); the moment it lands,
+ * move the path up into `CONVERSATION_DOOR_ENDPOINTS` and the door is guarded.
+ *
+ * Evidence read live on 2026-09-20 against aidream's models and this repo's
+ * `types/python-generated/api-types.ts`.
+ */
+const STAMP_BLOCKED_DOORS = [
+  [
+    "/images/generate",
+    'aidream GenerateImageRequest(AcceptsInjectedScope) sets extra="forbid" (aidream/services/image/generate.py)',
+  ],
+  [
+    "/podcast/resume/{run_id}",
+    "the endpoint takes NO request body at all (requestBody?: never) — it replays the stored request",
+  ],
+  [
+    "/tools/test/execute",
+    "aidream ToolTestExecuteRequest is a bare BaseModel with three fields (aidream/services/ai_execution/tool_testing.py)",
+  ],
+  [
+    "/masterworks/ingest, ingest-file, ingest-timeline, ingest-triad, ingest-drip, ingest-corpus, ingest-chat, ingest-conversations, ingest-predictions",
+    'the whole family inherits AcceptsInjectedScope with extra="forbid" (aidream/services/distillation/models.py)',
+  ],
+];
+
+/** A window that has one of these is an actual REQUEST, not a mention. */
+const REQUEST_WINDOW_MARKERS = /(?:^|[\s,{(])(?:method|body)\s*:/;
+
 
 function walk(dir, files) {
   if (!fs.existsSync(dir)) return files;
@@ -147,6 +223,163 @@ export function findings(files, readFile = (f) => fs.readFileSync(f, "utf8")) {
   return found;
 }
 
+/**
+ * `source`, with every comment blanked out but every byte position kept. Rule 2
+ * matches string literals, and this repo documents its endpoints heavily in
+ * prose — without this, `laneRates.ts`'s comments would read as call sites.
+ */
+export function blankComments(source) {
+  const out = source.split("");
+  let i = 0;
+  const n = source.length;
+  const blank = (from, to) => {
+    for (let k = from; k < to && k < n; k += 1) {
+      if (out[k] !== "\n") out[k] = " ";
+    }
+  };
+  while (i < n) {
+    const ch = source[i];
+    if (ch === '"' || ch === "'" || ch === "`") {
+      const quote = ch;
+      i += 1;
+      while (i < n) {
+        if (source[i] === "\\") {
+          i += 2;
+          continue;
+        }
+        if (source[i] === quote) {
+          i += 1;
+          break;
+        }
+        i += 1;
+      }
+      continue;
+    }
+    if (ch === "/" && source[i + 1] === "/") {
+      const start = i;
+      while (i < n && source[i] !== "\n") i += 1;
+      blank(start, i);
+      continue;
+    }
+    if (ch === "/" && source[i + 1] === "*") {
+      const start = i;
+      i += 2;
+      while (i < n && !(source[i] === "*" && source[i + 1] === "/")) i += 1;
+      i = Math.min(i + 2, n);
+      blank(start, i);
+      continue;
+    }
+    i += 1;
+  }
+  return out.join("");
+}
+
+/** The call-expression argument list surrounding `index`, or null. */
+function enclosingCallArgs(source, index) {
+  let depth = 0;
+  let start = -1;
+  for (let i = index; i >= 0; i -= 1) {
+    const ch = source[i];
+    if (ch === ")") depth += 1;
+    else if (ch === "(") {
+      if (depth === 0) {
+        start = i;
+        break;
+      }
+      depth -= 1;
+    }
+  }
+  if (start < 0) return null;
+  depth = 0;
+  for (let i = start; i < source.length; i += 1) {
+    const ch = source[i];
+    if (ch === "(") depth += 1;
+    else if (ch === ")") {
+      depth -= 1;
+      if (depth === 0) return { text: source.slice(start, i + 1), start };
+    }
+  }
+  return null;
+}
+
+/**
+ * The SMALLEST enclosing window around `index` that actually looks like an
+ * HTTP request (it names a `method:` or a `body:`), or null when the endpoint
+ * is merely named — a constant table, a type, an equality check.
+ */
+function requestWindow(source, index) {
+  const candidates = [
+    enclosingCallArgs(source, index),
+    enclosingObjectLiteral(source, index),
+  ].filter((c) => c && REQUEST_WINDOW_MARKERS.test(c.text));
+  if (candidates.length === 0) return null;
+  return candidates.reduce((a, b) => (a.text.length <= b.text.length ? a : b));
+}
+
+const HAS_SOURCE_APP = /(?:^|[\s,{(])(?:source_app|sourceApp)\s*\??\s*[:,}]/;
+const HAS_INITIATION = /(?:^|[\s,{(])initiation\s*\??\s*[:,}]/;
+
+/**
+ * RULE 2: a request descriptor that names a known conversation door must carry
+ * BOTH halves of the stamp. Stamping nothing at all was invisible to rule 1.
+ */
+export function doorFindings(files, readFile = (f) => fs.readFileSync(f, "utf8")) {
+  const found = [];
+  for (const file of files) {
+    const raw = readFile(file);
+    if (!CONVERSATION_DOOR_ENDPOINTS.some((ep) => raw.includes(ep))) continue;
+    const source = blankComments(raw);
+    const seen = new Set();
+    for (const endpoint of CONVERSATION_DOOR_ENDPOINTS) {
+      // The path must END here: `/ai/chat` is not `/ai/chatter`.
+      const pattern = new RegExp(
+        `${endpoint.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=["'\`?#])`,
+        "g",
+      );
+      for (const match of source.matchAll(pattern)) {
+        const at = match.index;
+        const window = requestWindow(source, at);
+        if (!window || seen.has(window.start)) continue;
+        seen.add(window.start);
+        if (HAS_SOURCE_APP.test(window.text) && HAS_INITIATION.test(window.text)) {
+          continue;
+        }
+        found.push({
+          file,
+          line: source.slice(0, at).split("\n").length,
+          endpoint,
+        });
+      }
+    }
+  }
+  return found;
+}
+
+function reportDoors(found) {
+  for (const finding of found) {
+    const rel = path.relative(REPO_ROOT, finding.file) || finding.file;
+    console.error(
+      `${rel}:${finding.line}: this request opens the conversation door ` +
+        `${finding.endpoint} with no attribution — the row lands unattributed ` +
+        `and conversation_lane() drops it into the 'matrx' chat sidebar. Add ` +
+        `source_app, source_feature (a slug already in aidream ` +
+        `services/conversation_context/source_attribution.py) and ` +
+        `initiation: "user" | "auto".`,
+    );
+  }
+}
+
+/** Never silent: say which doors this guard still cannot arm, and why. */
+function reportBlockedDoors() {
+  console.log(
+    `check_client_initiation: ${STAMP_BLOCKED_DOORS.length} door famil(ies) ` +
+      "are NOT guarded because aidream's request model cannot accept the stamp:",
+  );
+  for (const [endpoint, why] of STAMP_BLOCKED_DOORS) {
+    console.log(`  - ${endpoint}\n      ${why}`);
+  }
+}
+
 function report(found) {
   for (const finding of found) {
     const rel = path.relative(REPO_ROOT, finding.file) || finding.file;
@@ -180,7 +413,53 @@ function selfTest() {
     console.error("SELF-TEST FAILED: the guard flagged a run door that declares initiation.");
     process.exit(1);
   }
+
+  // ── RULE 2 ───────────────────────────────────────────────────────────────
+  // A door named with NO attribution at all — invisible to rule 1, which is
+  // the whole reason rule 2 exists.
+  const plantedDoor = `
+    const run = await dispatch(
+      callApi({
+        path: "/podcast/generate",
+        method: "POST",
+        body,
+        stream: true,
+      }),
+    );
+  `;
+  const honestDoor = plantedDoor.replace(
+    "body,",
+    'body: { ...body, source_app: "matrx-frontend", source_feature: "podcasts", initiation: "user" },',
+  );
+  // A door merely NAMED (a constant table, a docstring-free alias) is not a
+  // request and must stay green, or the guard would fire on every registry.
+  const mention = `
+    export const ENDPOINTS = { ai: { manual: "/ai/manual" as const } };
+    // A comment naming "/podcast/generate" with a body: here is still prose.
+  `;
+  const readDoor = (f) =>
+    f === "planted-door.ts" ? plantedDoor : f === "honest-door.ts" ? honestDoor : mention;
+  const doorRed = doorFindings(["planted-door.ts"], readDoor);
+  const doorGreen = doorFindings(["honest-door.ts"], readDoor);
+  const doorMention = doorFindings(["mention.ts"], readDoor);
+  if (doorRed.length !== 1) {
+    console.error(
+      "SELF-TEST FAILED: rule 2 did not flag a conversation door with no attribution.",
+    );
+    process.exit(1);
+  }
+  if (doorGreen.length !== 0) {
+    console.error("SELF-TEST FAILED: rule 2 flagged a door that carries the full stamp.");
+    process.exit(1);
+  }
+  if (doorMention.length !== 0) {
+    console.error("SELF-TEST FAILED: rule 2 flagged a mere mention of a door path.");
+    process.exit(1);
+  }
   console.log("check_client_initiation self-test: RED on the missing attestation, GREEN once declared.");
+  console.log(
+    "check_client_initiation self-test: rule 2 RED on an unattributed conversation door, GREEN once stamped, quiet on a mention.",
+  );
   process.exit(0);
 }
 
@@ -189,15 +468,22 @@ function main() {
   const files = [];
   for (const root of SCAN_ROOTS) walk(path.join(REPO_ROOT, root), files);
   const found = findings(files);
-  if (found.length > 0) {
+  const doors = doorFindings(files);
+  if (found.length > 0 || doors.length > 0) {
     report(found);
+    reportDoors(doors);
     console.error(
-      `\n${found.length} first-party run door(s) do not declare initiation. ` +
+      `\n${found.length} first-party run door(s) do not declare initiation and ` +
+        `${doors.length} named conversation door(s) send no attribution at all. ` +
         "Law: common-docs/systems/platform/provenance/FEATURE.md.",
     );
     process.exit(1);
   }
-  console.log(`check_client_initiation: ${files.length} client files, every run door attested.`);
+  console.log(
+    `check_client_initiation: ${files.length} client files, every run door attested ` +
+      `and every guarded conversation door stamped.`,
+  );
+  reportBlockedDoors();
 }
 
 main();
