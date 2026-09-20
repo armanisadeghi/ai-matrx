@@ -22,7 +22,7 @@
 import { settingsRegistry } from "@/features/settings/registry";
 
 import { routeAnswerFor, routeEntryFor, routeStatusFor } from "../match";
-import { SETTINGS_TAB_IDS } from "../vocabulary";
+import { CONFIG_LEAVES_UNMEASURED, SETTINGS_TAB_IDS } from "../vocabulary";
 
 describe("a static href may not be swallowed by a dynamic segment", () => {
   it("fails the exact href the connectors doc names, by name", () => {
@@ -81,6 +81,46 @@ describe("a static href may not be swallowed by a dynamic segment", () => {
     expect(answer.problem).toBe(
       "`/marketing/sites/tracking` declares `siteId` = '8f1c0d2e-site', but its `[siteId]` segment carries 'tracking' — the href does not name what the caller says it does.",
     );
+  });
+
+  /**
+   * 🚨 AN AGREEMENT BETWEEN TWO THINGS ONE AUTHOR WROTE IS NOT EVIDENCE
+   * (V-30 NEW-1). Requiring `literal === value` closed the NAME loophole and
+   * left the same hole open one spelling further on: a caller that hardcodes
+   * BOTH sides — the href AND the value — agrees with itself, and
+   * `routeAnswerFor("/marketing/sites/tracking", { params: { siteId: "tracking" } })`
+   * answered TRUE. The exact href this suite exists to refuse, through the
+   * guard a second time.
+   */
+  it("refuses the door-to-nowhere href when the caller hardcodes the VALUE too", () => {
+    const answer = routeAnswerFor("/marketing/sites/tracking", {
+      params: { siteId: "tracking" },
+    });
+    expect(answer.answers).toBe(false);
+    expect(answer.verdict).toBe("refuses");
+    expect(answer.problem).toContain("has the shape of a page name");
+    expect(answer.problem).toContain("'tracking'");
+  });
+
+  it("refuses a hardcoded value that is a page name this app spells itself", () => {
+    // `brands` is a static segment of a real route, so it is a page name — a
+    // caller declaring it as a brand id is agreeing with its own string.
+    const answer = routeAnswerFor("/marketing/brands/brands", {
+      params: { brandId: "brands" },
+    });
+    expect(answer.answers).toBe(false);
+    expect(answer.problem).toContain("a word this app spells itself as a page name");
+  });
+
+  it("answers the same href when the value is a real uuid", () => {
+    const uuid = "6f1c1b3a-2f5d-4a7e-9c31-0b2d5e8a4c91";
+    const answer = routeAnswerFor(`/marketing/sites/${uuid}`, {
+      params: { siteId: uuid },
+    });
+    expect(answer.entry?.pattern).toBe("/marketing/sites/[siteId]");
+    expect(answer.answers).toBe(true);
+    expect(answer.verdict).toBe("answers");
+    expect(answer.problem).toBeNull();
   });
 
   it("refuses a param declared by NAME only, and says the declaration proves nothing", () => {
@@ -249,13 +289,38 @@ describe("a route may declare its segment is a page name, and must prove it", ()
   });
 
   /**
-   * The taxonomy-driven configuration sections are built at runtime from the
-   * org's registry domains (`features/settings/universal/configTree.ts`), so
-   * this file cannot enumerate their leaves — the `config` root answers, and
-   * this test is the written statement that its leaves are NOT checked.
+   * 🚨 UNMEASURED IS NOT AN ANSWER (V-30 NEW-6). The taxonomy-driven
+   * configuration sections are built at runtime from the org's registry
+   * domains (`features/settings/universal/configTree.ts`), so this file cannot
+   * enumerate their leaves. That bound used to be stated in a COMMENT while
+   * the verdict said `answers: true, problem: null` — byte-identical to a leaf
+   * that had been checked, in the same round that taught the unbounded-read
+   * sweep that silence must not read as clean. The verdict is now a tri-state
+   * and says so itself.
    */
-  it("answers a config-rooted settings href, whose leaves it cannot enumerate", () => {
-    expect(routeAnswerFor("/user-settings/config").answers).toBe(true);
-    expect(routeAnswerFor("/user-settings/config/marketing/sites").answers).toBe(true);
+  it("reports a config LEAF as unmeasured, never as a silent true", () => {
+    const leaf = routeAnswerFor("/user-settings/config/marketing/sites");
+    expect(leaf.answers).toBe(true); // the route really does serve it
+    expect(leaf.problem).toBeNull(); // and there is nothing to refuse
+    // …but nobody checked the leaf, and the verdict says which.
+    expect(leaf.verdict).toBe("unmeasured");
+    expect(leaf.unmeasured).toBe(CONFIG_LEAVES_UNMEASURED);
+    expect(leaf.unmeasured).toBe(
+      "runtime config sections are not enumerable statically",
+    );
+  });
+
+  it("keeps the config ROOT, and every enumerated tab, a measured answer", () => {
+    const root = routeAnswerFor("/user-settings/config");
+    expect(root.answers).toBe(true);
+    expect(root.verdict).toBe("answers");
+    expect(root.unmeasured).toBeUndefined();
+
+    const enumerated = routeAnswerFor("/user-settings/integrations/google-workspace");
+    expect(enumerated.verdict).toBe("answers");
+    expect(enumerated.unmeasured).toBeUndefined();
+
+    // And a settings href naming nothing is still a refusal, not an excuse.
+    expect(routeAnswerFor("/user-settings/tracking").verdict).toBe("refuses");
   });
 });

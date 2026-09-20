@@ -33,6 +33,14 @@ export interface ClosedVocabularySegment {
   why: string;
   /** Is this concrete run of segments a member of the vocabulary? */
   has(segments: readonly string[]): boolean;
+  /**
+   * 🚨 UNMEASURED IS NOT AN ANSWER (V-30 NEW-6). A vocabulary may be closed
+   * over MOST of its ids and open over one family it genuinely cannot
+   * enumerate. `has` says yes for such a run — the page is real — but saying
+   * only "yes" makes an id nobody checked indistinguishable from one that was.
+   * This returns the reason the run was NOT judged, or `null` when it was.
+   */
+  unmeasuredReason?(segments: readonly string[]): string | null;
 }
 
 /** `text-generation` → `textGeneration`; the settings URL↔id translation. */
@@ -119,14 +127,26 @@ export const SETTINGS_TAB_IDS: readonly string[] = [
  * The one id family this file cannot enumerate: the taxonomy-driven
  * configuration sections (`features/settings/universal/configTree.ts`) are
  * built at runtime from the org's registry domains, under the root `config`.
- * They are real pages, so a `config`-rooted href answers — and this comment is
- * the honest statement that their leaf names are NOT checked here.
+ * They are real pages, so a `config`-rooted href answers — and, since V-30
+ * NEW-6, it answers as **unmeasured**: `unmeasuredReason` hands the caller the
+ * sentence, so a census can COUNT what nobody checked instead of reading a
+ * silent `true` as a checked leaf. A comment is not a verdict.
  */
 const CONFIG_TAB_ROOT_ID = "config";
+
+/** The one sentence a caller gets when a `config.*` leaf was never judged. */
+export const CONFIG_LEAVES_UNMEASURED =
+  "runtime config sections are not enumerable statically";
 
 /** Segments → the registry tab id the route would resolve them to. */
 export function settingsTabIdFor(segments: readonly string[]): string {
   return segments.filter(Boolean).map(kebabToCamel).join(".");
+}
+
+function isConfigTabId(tabId: string): boolean {
+  return (
+    tabId === CONFIG_TAB_ROOT_ID || tabId.startsWith(`${CONFIG_TAB_ROOT_ID}.`)
+  );
 }
 
 export const CLOSED_VOCABULARY_SEGMENTS: readonly ClosedVocabularySegment[] = [
@@ -139,9 +159,16 @@ export const CLOSED_VOCABULARY_SEGMENTS: readonly ClosedVocabularySegment[] = [
       if (segments.length === 0) return true; // the settings home
       const tabId = settingsTabIdFor(segments);
       if (SETTINGS_TAB_IDS.includes(tabId)) return true;
-      return (
-        tabId === CONFIG_TAB_ROOT_ID || tabId.startsWith(`${CONFIG_TAB_ROOT_ID}.`)
-      );
+      return isConfigTabId(tabId);
+    },
+    unmeasuredReason(segments) {
+      if (segments.length === 0) return null;
+      const tabId = settingsTabIdFor(segments);
+      if (SETTINGS_TAB_IDS.includes(tabId)) return null;
+      // `config` itself is a real, enumerated root; only its LEAVES are built
+      // at runtime, so only a leaf is unmeasured.
+      if (tabId === CONFIG_TAB_ROOT_ID) return null;
+      return isConfigTabId(tabId) ? CONFIG_LEAVES_UNMEASURED : null;
     },
   },
 ];

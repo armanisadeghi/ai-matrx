@@ -95,7 +95,9 @@
  *   pnpm check:unbounded-reads
  *   pnpm check:unbounded-reads --json
  *   pnpm check:unbounded-reads --self-test   (proves it can FAIL — red then green)
- *   pnpm check:unbounded-reads --file <path>  (one file, anywhere — replay a pre-fix version)
+ *   pnpm check:unbounded-reads --file <path> [--file <path> …]
+ *       (any number of files, anywhere — replay a pre-fix version; it prints
+ *        how many it scanned, so a `[]` is never mistaken for "all clean")
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
@@ -646,12 +648,38 @@ function secondHopUnmeasured(
   const returnAt = returnsVariable(lines, stmtEnd + 1, bodyEnd, variable);
   if (returnAt === null) return null;
 
+  const escaped = fn.name.replace(/\$/g, "\\$");
   const call = new RegExp(
-    `(?:const|let|var)\\s*(?:\\{[^}]*\\}|[A-Za-z_$][\\w$]*)\\s*(?::[^=]*)?=\\s*(?:await\\s+)?${fn.name.replace(/\$/g, "\\$")}\\s*\\(`,
+    `(?:const|let|var)\\s*(?:\\{[^}]*\\}|[A-Za-z_$][\\w$]*)\\s*(?::[^=]*)?=\\s*(?:await\\s+)?${escaped}\\s*\\(`,
+  );
+  // 🚨 ASSIGNING THE ROWS IS NOT THE ONLY WAY THEY LEAVE (V-30 NEW-2). The
+  // first version of this rule required the middle helper to ASSIGN what it
+  // got back and return the variable — `const middle = await rawRead(); return
+  // middle;` — which is exactly the spelling its own self-test fixture used.
+  // The ordinary spelling, `return await rawRead();`, produced no finding AND
+  // no unmeasured line: character-identical to a file with nothing wrong, in
+  // the guard whose whole new law is that silence must not read as clean. A
+  // bare `return <helper>(…)` hands the rows on just as hard as a variable.
+  const directReturn = new RegExp(
+    `(?:^|[{;]|=>)\\s*return\\s+(?:await\\s+)?${escaped}\\s*\\(`,
   );
   for (let j = 0; j < lines.length; j++) {
     // Never the body the read sits in — a recursive call is not a hop.
     if (j >= fn.line && j <= returnAt) continue;
+    if (directReturn.test(lines[j] ?? "")) {
+      const outer = enclosingFunction(lines, j);
+      // A function returning ITSELF is recursion, not a hop.
+      if (outer?.name === fn.name) continue;
+      return {
+        file: rel,
+        line: readLine + 1,
+        source: `${fn.name}() → ${outer?.name ?? "a second helper"}()`,
+        variable,
+        consumer: `handed on again from ${outer?.name ?? "the caller"}()`,
+        kind: "two-hops",
+        reason: `the \`${target}\` rows leave \`${fn.name}()\` and are handed on again by \`${outer?.name ?? "its caller"}()\` — a second hop, past the ONE hop this scan follows, so whoever decides with them was never judged.`,
+      };
+    }
     if (!call.test(lines[j] ?? "")) continue;
     let end = j;
     while (end < lines.length && !(lines[end] ?? "").includes(";")) end++;
@@ -1071,6 +1099,67 @@ function selfTest(): number {
     })(),
   ]);
   checks.push([
+    "two hops spelled `return await helper()`, with no intermediate variable",
+    (() => {
+      // 🚨 V-30 NEW-2. The case above pins the ASSIGNED spelling — which is the
+      // one the fix was written against. This is the spelling a service layer
+      // is actually written in, and it printed nothing at all.
+      const r = scan(`
+        async function rawRead() {
+          const { data } = await sb.from("feature_knob").select("feature, key, value");
+          return data ?? [];
+        }
+
+        async function passThrough() { return await rawRead(); }
+
+        async function readKnob(wanted) {
+          const rows = await passThrough();
+          const byKey = new Map(rows.map((r) => [addr(r), r]));
+          if (byKey.get(wanted) === undefined) throw new Error("missing knob");
+        }
+      `);
+      return (
+        r.findings.length === 0 &&
+        r.unmeasured.length === 1 &&
+        r.unmeasured[0]?.kind === "two-hops" &&
+        (r.unmeasured[0]?.source ?? "").includes("rawRead()") &&
+        (r.unmeasured[0]?.reason ?? "").includes("passThrough()")
+      );
+    })(),
+  ]);
+  checks.push([
+    "the same spelling without `await` is the same hop",
+    (() => {
+      const r = scan(`
+        async function rawRead() {
+          const { data } = await sb.from("feature_knob").select("feature, key, value");
+          return data ?? [];
+        }
+
+        function passThrough() {
+          return rawRead();
+        }
+
+        async function readKnob(wanted) {
+          const rows = await passThrough();
+          const byKey = new Map(rows.map((r) => [addr(r), r]));
+          if (byKey.get(wanted) === undefined) throw new Error("missing knob");
+        }
+      `);
+      return r.findings.length === 0 && r.unmeasured.length === 1;
+    })(),
+  ]);
+  checks.push([
+    "a helper that returns ITSELF is recursion, never a second hop",
+    scan(`
+      async function rawRead(page) {
+        const { data } = await sb.from("feature_knob").select("feature, key, value");
+        if (!data) return rawRead(page + 1);
+        return data;
+      }
+    `).unmeasured.length === 0,
+  ]);
+  checks.push([
     "the same bug split across two FILES: no finding, and an UNMEASURED line naming the import",
     (() => {
       const r = scan(`
@@ -1137,7 +1226,7 @@ function selfTest(): number {
   }
   console.log(
     ok
-      ? `[self-test] PASS — the rule fails on the real pre-fix knob reader, on every index shape of the class and on the same bug split across a helper's return, passes on the fix, and REPORTS AS UNMEASURED the two hops it cannot follow (second hop, another file).`
+      ? `[self-test] PASS — the rule fails on the real pre-fix knob reader, on every index shape of the class and on the same bug split across a helper's return, passes on the fix, and REPORTS AS UNMEASURED the two hops it cannot follow (second hop — assigned AND directly returned — and another file).`
       : `[self-test] FAIL — the rule no longer separates the bug from the fix.`,
   );
   return ok ? 0 : 1;
@@ -1149,24 +1238,48 @@ function main(): number {
   // `--file <path>` scans ONE file, anywhere on disk, and prints its findings as
   // JSON. It is how you replay a file as it stood before a fix (`git show
   // <sha>^:<path> > /tmp/pre.ts`) and watch this guard name it.
-  const fileFlag = process.argv.indexOf("--file");
-  if (fileFlag !== -1) {
-    const target = process.argv[fileFlag + 1];
-    if (!target) {
+  // 🚨 EVERY `--file` IS SCANNED, AND THE COUNT IS PRINTED (V-30 NEW-3). This
+  // read `argv.indexOf("--file") + 1` and scanned exactly ONE path: `--file a
+  // --file b --file c` judged `a`, printed one verdict, and said nothing about
+  // the two it dropped. A verifier lost a probe round to it — three fixtures,
+  // one `[]`, and nothing on screen saying only one had been judged. In the
+  // guard whose law is "unmeasured is not clean", its own argument handling was
+  // the counter-example.
+  const targets: string[] = [];
+  for (let i = 0; i < process.argv.length; i++) {
+    if (process.argv[i] !== "--file") continue;
+    const next = process.argv[i + 1];
+    if (!next || next.startsWith("--")) {
       console.error("--file needs a path");
       return 1;
     }
-    const abs = resolve(ROOT, target);
-    const result = scanAll(readFileSync(abs, "utf8"), relative(ROOT, abs));
+    targets.push(next);
+  }
+  if (targets.length > 0) {
+    const scanned: { file: string; findings: Finding[]; unmeasured: Unmeasured[] }[] =
+      targets.map((target) => {
+        const abs = resolve(ROOT, target);
+        const rel = relative(ROOT, abs);
+        const result = scanAll(readFileSync(abs, "utf8"), rel);
+        return { file: rel, ...result };
+      });
     // Findings stay the top-level array this flag has always printed; what the
     // scan could not judge is printed beside it, never mixed in.
-    console.log(JSON.stringify(result.findings, null, 2));
-    if (result.unmeasured.length > 0) {
+    console.log(JSON.stringify(scanned.flatMap((s) => s.findings), null, 2));
+    const allUnmeasured = scanned.flatMap((s) => s.unmeasured);
+    if (allUnmeasured.length > 0) {
       console.log(
-        `\n${C.yellow}[UNMEASURED]${C.reset} ${result.unmeasured.length} read(s) this sweep could not judge:`,
+        `\n${C.yellow}[UNMEASURED]${C.reset} ${allUnmeasured.length} read(s) this sweep could not judge:`,
       );
-      console.log(JSON.stringify(result.unmeasured, null, 2));
+      console.log(JSON.stringify(allUnmeasured, null, 2));
     }
+    // The tool says what it measured, so a `[]` can never be mistaken for
+    // "all of them are clean".
+    console.log(
+      `\n${C.cyan}[INFO]${C.reset} scanned ${C.bold}${scanned.length}${C.reset} file(s): ${scanned
+        .map((s) => s.file)
+        .join(", ")}`,
+    );
     return 0;
   }
 

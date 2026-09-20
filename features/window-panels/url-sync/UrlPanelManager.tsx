@@ -9,7 +9,7 @@ import {
   selectIsUrlHydrated,
 } from "@/lib/redux/slices/urlSyncSlice";
 import { getHydrator } from "./UrlPanelRegistry";
-import { resolveCanonicalTypeKey } from "./panelKeyAliases";
+import { canonicalizeTokenKey, resolveCanonicalTypeKey } from "./panelKeyAliases";
 import { initUrlHydration } from "./initUrlHydration";
 import { LAZY_WINDOW_MOUNT_DEADLINE_MS } from "../constants/lazyWindowMount";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
@@ -225,22 +225,31 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
   const isHydrated = useAppSelector(selectIsUrlHydrated);
 
   const initialLoadDone = useRef(false);
-  // CANONICAL typeKey -> { the VERBATIM token that opened it, and the key the
-  // person actually pasted }. An entry sits here from hydration until the
-  // window it opened registers its own urlSync entry — which may be seconds
-  // later on a lazy chunk, or never (an overlay that is not a WindowPanel at
-  // all). While it sits here the raw token is written straight back into
-  // `?panels=`, so the address the person pasted survives the wait and
+  // One entry per PASTED TOKEN: the token to write back into `?panels=`, the
+  // key the person actually pasted, and the canonical key it is settled by. An
+  // entry sits here from hydration until the window it opened registers its own
+  // urlSync entry — which may be seconds later on a lazy chunk, or never (an
+  // overlay that is not a WindowPanel at all). While it sits here the token is
+  // written straight back into `?panels=`, so the address survives the wait and
   // survives the failure.
   //
-  // 🚨 The map is keyed CANONICALLY (V-29 NEW-1). A legacy alias key — `files`,
-  // whose hydrator opens `cloudFilesWindow`, which registers as `cloud_files` —
-  // is settled the moment that canonical key registers. Keyed raw, it never
-  // could be: the manager duplicated the token in the address and then told the
-  // person in a red-tier incident that a window on their screen had not opened.
-  // `tokenKey` is kept so the sentence a person reads names what THEY pasted.
+  // 🚨 A token is SETTLED by its canonical key (V-29 NEW-1). A legacy alias key
+  // — `files`, whose hydrator opens `cloudFilesWindow`, which registers as
+  // `cloud_files` — is settled the moment that canonical key registers. Judged
+  // raw, it never could be: the manager duplicated the token in the address and
+  // then told the person in a red-tier incident that a window on their screen
+  // had not opened. `tokenKey` is kept so the sentence a person reads names
+  // what THEY pasted.
+  //
+  // 🚨 …BUT IT IS NOT KEYED BY THAT (V-30 NEW-5). Keying the map by the
+  // canonical key alone meant two tokens that canonicalise together —
+  // `files:a` and `cloud_files:b` in one link — silently OVERWROTE each other:
+  // the first pasted token was forgotten with no warning, and if neither
+  // window ever registered the notice named one key instead of two. The key is
+  // canonical key + instance id, so every pasted token survives; the SWEEP
+  // still runs on `canonicalKey`, so one registration settles all of them.
   const unresolvedTokens = useRef<
-    Map<string, { token: string; tokenKey: string }>
+    Map<string, { token: string; tokenKey: string; canonicalKey: string }>
   >(new Map());
   const announcedKeys = useRef<Set<string>>(new Set());
   // Fires once, long after any legitimate lazy mount, and does exactly one
@@ -258,11 +267,13 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
     if (panelsParam) {
       const managedKeys = managedTypeKeys ? new Set(managedTypeKeys) : null;
       const rawTokens = panelsParam.split(",");
-      const allPanels = parseParams(panelsParam);
-      const rawTokenFor = new Map<string, string>();
-      allPanels.forEach((panel, index) => {
-        if (panel.typeKey) rawTokenFor.set(panel.typeKey, rawTokens[index]);
-      });
+      // The verbatim token rides WITH its panel, by position. Keyed by type key
+      // it could not survive two tokens sharing one key — the same collision
+      // V-30 NEW-5 found one layer down.
+      const allPanels = parseParams(panelsParam).map((panel, index) => ({
+        ...panel,
+        raw: rawTokens[index] ?? panel.typeKey,
+      }));
       const panels = allPanels.filter(
         (panel) => !managedKeys || managedKeys.has(panel.typeKey),
       );
@@ -282,20 +293,38 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
       const noHydrator: string[] = [];
       panels.forEach((panel) => {
         const hydrator = getHydrator(panel.typeKey);
-        const pending = {
-          token: rawTokenFor.get(panel.typeKey) ?? panel.typeKey,
-          tokenKey: panel.typeKey,
-        };
+        const rawToken = panel.raw;
         // An alias is judged by the key its window will publish; every other
         // key is its own canonical key.
         const canonicalKey = resolveCanonicalTypeKey(panel.typeKey);
+        // 🚨 THE ADDRESS IS CANONICALISED BY KEY, AND KEEPS WHAT WAS PASTED
+        // (V-30 NEW-4). The alias rewrite is a 1:1 key substitution, so the
+        // instance id the person pasted rides across (`files:root` →
+        // `cloud_files:root`) instead of being replaced. It is only ever done
+        // when the canonical key ALSO has a hydrator, because a rewritten
+        // address that this build could not reload would be a worse link than
+        // the one the person had. The window's own entry still wins the moment
+        // it registers, instance id and all.
+        const canonicalToken =
+          canonicalKey !== panel.typeKey && getHydrator(canonicalKey)
+            ? canonicalizeTokenKey(rawToken)
+            : rawToken;
+        const pending = {
+          token: canonicalToken,
+          tokenKey: panel.typeKey,
+          canonicalKey,
+        };
+        // Keyed by canonical key AND instance id: one registration settles
+        // every token that canonicalises to it, and no pasted token is
+        // silently dropped by another (V-30 NEW-5).
+        const pendingKey = `${canonicalKey}\u0000${panel.instanceId ?? ""}`;
         if (hydrator) {
-          unresolvedTokens.current.set(canonicalKey, pending);
+          unresolvedTokens.current.set(pendingKey, pending);
           hydrator(dispatch, panel.instanceId, panel.args || {});
         } else {
           // Law 4: the link named a window this build has no way to open. Keep
           // the address, say so out loud — never strip it on the next write.
-          unresolvedTokens.current.set(canonicalKey, pending);
+          unresolvedTokens.current.set(pendingKey, pending);
           noHydrator.push(panel.typeKey);
           console.warn(
             `[UrlPanelManager] No hydrator registered for panel type: ${panel.typeKey}`,
@@ -335,8 +364,11 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
         resolveCanonicalTypeKey(entry.typeKey),
       ),
     );
-    for (const typeKey of Array.from(unresolvedTokens.current.keys())) {
-      if (observedTypeKeys.has(typeKey)) unresolvedTokens.current.delete(typeKey);
+    for (const [pendingKey, pending] of Array.from(
+      unresolvedTokens.current.entries(),
+    )) {
+      if (observedTypeKeys.has(pending.canonicalKey))
+        unresolvedTokens.current.delete(pendingKey);
     }
     // The person is told about the key THEY pasted, never the canonical key
     // they have never seen.

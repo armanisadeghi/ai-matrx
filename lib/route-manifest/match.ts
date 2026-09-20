@@ -192,8 +192,27 @@ export interface RouteAnswer {
   /** The manifest row Next.js would serve it with, or `null` for `unbuilt`. */
   entry: RouteManifestEntry | null;
   status: RouteStatus;
+  /**
+   * 🚨 THE VERDICT IS A TRI-STATE (V-30 NEW-6). `answers` is a boolean, and a
+   * boolean cannot say "I could not judge this" — so a `/user-settings/config/*`
+   * leaf, whose id set is built at runtime and which this file therefore never
+   * checked, came back `answers: true, problem: null`, byte-identical to a leaf
+   * that WAS checked. The same round taught the unbounded-read sweep that
+   * silence must not read as clean; this is the route guard learning it.
+   *
+   *   `"answers"`     — followed, and it lands on what it names.
+   *   `"refuses"`     — it does not; `problem` says so in one sentence.
+   *   `"unmeasured"`  — the route serves it, but nothing here judged the
+   *                     literal it carries; `unmeasured` says why.
+   */
+  verdict: "answers" | "refuses" | "unmeasured";
   /** True only when a person following this href lands on the thing it names. */
   answers: boolean;
+  /**
+   * Present ONLY on `verdict: "unmeasured"`: why this href was not judged.
+   * A census that wants rigor counts these; it must never count them as clean.
+   */
+  unmeasured?: string;
   /** `null` when it answers; otherwise ONE sentence naming the defect, with
    *  both hrefs in it, ready to print in a failing expectation. */
   problem: string | null;
@@ -245,6 +264,83 @@ function declaredParamValues(
 }
 
 /**
+ * 🚨 AN AGREEMENT BETWEEN TWO THINGS ONE AUTHOR WROTE IS NOT EVIDENCE
+ * (V-30 NEW-1). Requiring `literal === value` closed V-29 NEW-6's loophole for
+ * a caller that declares a NAME, and left the same loophole open one spelling
+ * further on: a census row that hardcodes the href AND the value —
+ * `routeAnswerFor("/marketing/sites/tracking", { params: { siteId: "tracking" } })`
+ * — satisfied it and answered `true`. The exact href this whole guard exists to
+ * refuse, waved through again. What the equality actually proves is that the
+ * caller can read its own string; it proves nothing about 'tracking' being a
+ * real site.
+ *
+ * So a declared VALUE is evidence only when it could have come from a record:
+ *
+ *   1. it is not a word this app spells ITSELF — a static route segment
+ *      anywhere in the manifest, or a member of the segment's own closed page
+ *      vocabulary. Those are page names; a page name in an id segment is the
+ *      door-to-nowhere, whoever declared it.
+ *   2. where the segment is an ID (`[siteId]`, `[brandId]`, `[id]`), it looks
+ *      like one: a uuid, or at least something the manifest could never be
+ *      mistaken for a page name — it carries a digit. A bare lowercase word in
+ *      an id segment is a page name that nobody looked up.
+ *
+ * The lawful caller is unaffected, because it never hardcodes either side:
+ * `routeAnswerFor(hrefFor(site), { params: { siteId: site.id } })` passes a
+ * value that came from a READ.
+ */
+const UUID_SHAPED =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** `siteId`, `brandId`, `id` — a segment whose value is somebody's record id. */
+function isIdSegment(name: string): boolean {
+  return name === "id" || /[a-z0-9]Id$/.test(name);
+}
+
+let STATIC_SEGMENT_WORDS: Set<string> | null = null;
+
+/** Every literal segment any route in the manifest is built from, lowercased. */
+function staticSegmentWords(): Set<string> {
+  if (STATIC_SEGMENT_WORDS) return STATIC_SEGMENT_WORDS;
+  const words = new Set<string>();
+  for (const entry of MANIFEST.routes) {
+    for (const segment of splitSegments(entry.pattern)) {
+      if (!segment.startsWith("[")) words.add(segment.toLowerCase());
+    }
+  }
+  STATIC_SEGMENT_WORDS = words;
+  return words;
+}
+
+/**
+ * `null` when the declared value is real evidence; otherwise the ONE sentence
+ * naming why the caller's own say-so does not count.
+ */
+function declaredValueObjection(
+  path: string,
+  pattern: string,
+  segment: FilledSegment,
+  value: string,
+): string | null {
+  if (UUID_SHAPED.test(value)) return null;
+  const subject = segment.name.replace(/Id$/, "");
+
+  const vocabulary = closedVocabularyFor(pattern, segment.name);
+  const spelledByTheApp =
+    staticSegmentWords().has(value.toLowerCase()) ||
+    Boolean(vocabulary?.has([value]));
+  if (spelledByTheApp) {
+    return `\`${path}\` declares \`${segment.name}\` = '${value}', but '${value}' is a word this app spells itself as a page name — a value hardcoded beside the href that already carries it is an agreement between two things one author wrote, never evidence that '${value}' is a real ${subject}. Pass the value a READ produced (\`params: { ${segment.name}: <record>.id }\`).`;
+  }
+
+  if (isIdSegment(segment.name) && !/\d/.test(value)) {
+    return `\`${path}\` declares \`${segment.name}\` = '${value}', and its \`${segment.source}\` segment does carry '${value}' — but '${value}' has the shape of a page name, not of a ${subject} id, and a value the caller hardcoded beside its own href proves only that it can read its own string. Pass a real id (\`params: { ${segment.name}: <record>.id }\`) or drop \`params\` and let the href be judged.`;
+  }
+
+  return null;
+}
+
+/**
  * 🚨 THE GUARD: does following this href land on the thing it names?
  *
  * Three ways it does not, each named in the returned sentence:
@@ -263,6 +359,7 @@ export function routeAnswerFor(href: string, options: RouteAnswerOptions = {}): 
       entry: null,
       status: "unbuilt",
       external: true,
+      verdict: "refuses",
       answers: false,
       problem: `\`${href}\` is an absolute address, not a path this app routes — an external address is never a route door; use an explicit external action.`,
     };
@@ -275,6 +372,7 @@ export function routeAnswerFor(href: string, options: RouteAnswerOptions = {}): 
     return {
       entry: null,
       status: "unbuilt",
+      verdict: "refuses",
       answers: false,
       problem: `\`${path}\` is served by no route in the manifest — it is a 404.`,
     };
@@ -285,12 +383,17 @@ export function routeAnswerFor(href: string, options: RouteAnswerOptions = {}): 
     return {
       entry: hit.entry,
       status: "placeholder",
+      verdict: "refuses",
       answers: false,
       problem: `\`${path}\` is served by \`${hit.entry.pattern}\`, a registered coming-soon placeholder${promise} — a 200 that is still a dead end.`,
     };
   }
 
   const declared = declaredParamValues(options.params);
+  // 🚨 V-30 NEW-6: a segment the vocabulary serves but cannot ENUMERATE is not
+  // a pass — it is an honest "nobody checked this", collected here and said out
+  // loud in the verdict rather than folded into a silent `true`.
+  const unmeasuredReasons: string[] = [];
   for (const segment of hit.filled) {
     if (segment.consumed.length === 0) continue; // optional catch-all, took nothing
     const literal = segment.consumed.join("/");
@@ -303,14 +406,32 @@ export function routeAnswerFor(href: string, options: RouteAnswerOptions = {}): 
         return {
           entry: hit.entry,
           status: hit.entry.status,
+          verdict: "refuses",
           answers: false,
           problem: `\`${path}\` declares the parameter \`${segment.name}\` but supplies no value for it, so nothing checked that '${literal}' is a real ${segment.name.replace(/Id$/, "")} and not a literal word — pass \`params: { ${segment.name}: <the value in the href> }\`.`,
         };
       }
-      if (literal === value) continue; // the href really does carry that id
+      if (literal === value) {
+        // The href really does carry that value — now: is the VALUE evidence?
+        const objection = declaredValueObjection(
+          path,
+          hit.entry.pattern,
+          segment,
+          value,
+        );
+        if (!objection) continue;
+        return {
+          entry: hit.entry,
+          status: hit.entry.status,
+          verdict: "refuses",
+          answers: false,
+          problem: objection,
+        };
+      }
       return {
         entry: hit.entry,
         status: hit.entry.status,
+        verdict: "refuses",
         answers: false,
         problem: `\`${path}\` declares \`${segment.name}\` = '${value}', but its \`${segment.source}\` segment carries '${literal}' — the href does not name what the caller says it does.`,
       };
@@ -320,14 +441,36 @@ export function routeAnswerFor(href: string, options: RouteAnswerOptions = {}): 
     // when the literal is a member, and is as dead as any other swallowed word
     // when it is not (`./vocabulary.ts`).
     const vocabulary = closedVocabularyFor(hit.entry.pattern, segment.name);
-    if (vocabulary?.has(segment.consumed)) continue;
+    if (vocabulary?.has(segment.consumed)) {
+      const why = vocabulary.unmeasuredReason?.(segment.consumed) ?? null;
+      if (why) unmeasuredReasons.push(why);
+      continue;
+    }
     return {
       entry: hit.entry,
       status: hit.entry.status,
+      verdict: "refuses",
       answers: false,
       problem: `\`${path}\` is served by \`${hit.entry.pattern}\` — it would open the ${segment.name.replace(/Id$/, "")} named '${literal}'.`,
     };
   }
 
-  return { entry: hit.entry, status: hit.entry.status, answers: true, problem: null };
+  if (unmeasuredReasons.length > 0) {
+    return {
+      entry: hit.entry,
+      status: hit.entry.status,
+      verdict: "unmeasured",
+      answers: true,
+      problem: null,
+      unmeasured: Array.from(new Set(unmeasuredReasons)).join("; "),
+    };
+  }
+
+  return {
+    entry: hit.entry,
+    status: hit.entry.status,
+    verdict: "answers",
+    answers: true,
+    problem: null,
+  };
 }

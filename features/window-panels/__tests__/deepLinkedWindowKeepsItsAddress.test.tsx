@@ -246,6 +246,79 @@ describe("a deep-linked window keeps its address", () => {
     expect(captureErrorMock).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * 🚨 CANONICALISING A TOKEN REWRITES ITS KEY AND NOTHING ELSE (V-30 NEW-4).
+   * `?panels=files:root` settled as `cloud_files:cloudFilesWindow` — the key
+   * corrected AND the instance id the person pasted thrown away for the
+   * window's own singleton id. The alias is a 1:1 key substitution, so while
+   * nobody has published anything the address is `cloud_files:root`: the
+   * canonical key, the pasted instance id.
+   */
+  it("canonicalises an aliased token's KEY and keeps the pasted instance id", () => {
+    registerPanelHydrator("files", () => undefined);
+    registerPanelHydrator("cloud_files", () => undefined);
+    mockUrl = "/tasks?panels=files:root";
+
+    render();
+
+    act(() => {
+      jest.advanceTimersByTime(120_000);
+    });
+
+    expect(panelsParam()).toBe("cloud_files:root");
+    // The sentence still names the key the person actually pasted.
+    expect(toastMock.mock.calls[0][0]).toContain("files");
+    expect(toastMock.mock.calls[0][0]).not.toContain("cloud_files");
+  });
+
+  it("lets the window that publishes a different instance id win", () => {
+    registerPanelHydrator("files", () => undefined);
+    registerPanelHydrator("cloud_files", () => undefined);
+    mockUrl = "/tasks?panels=files:root";
+
+    render();
+
+    act(() => {
+      store.dispatch(
+        registerSyncEntry({
+          typeKey: "cloud_files",
+          instanceId: "cloudFilesWindow",
+        }),
+      );
+    });
+
+    // ONE token for ONE window, and it is the window's own address.
+    expect(panelsParam()).toBe("cloud_files:cloudFilesWindow");
+    act(() => {
+      jest.advanceTimersByTime(120_000);
+    });
+    expect(toastMock).not.toHaveBeenCalled();
+  });
+
+  /**
+   * 🚨 TWO TOKENS THAT CANONICALISE TOGETHER MUST BOTH SURVIVE (V-30 NEW-5).
+   * The pending record was stored under the canonical key alone, so a link
+   * carrying BOTH `files:a` and `cloud_files:b` kept only the second: the
+   * first pasted token was forgotten with no warning, and the notice named one
+   * key instead of two.
+   */
+  it("keeps BOTH tokens when two of them canonicalise to the same key", () => {
+    registerPanelHydrator("files", () => undefined);
+    registerPanelHydrator("cloud_files", () => undefined);
+    mockUrl = "/tasks?panels=files:a,cloud_files:b";
+
+    render();
+
+    act(() => {
+      jest.advanceTimersByTime(120_000);
+    });
+
+    expect(panelsParam()).toBe("cloud_files:a,cloud_files:b");
+    // …and the person is told about both keys they pasted, not one.
+    expect(toastMock).toHaveBeenCalledTimes(1);
+    expect(toastMock.mock.calls[0][0]).toContain("files, cloud_files");
+  });
+
   it("still removes a token when its window actually closes", () => {
     registerPanelHydrator("notes", () => undefined);
     mockUrl = "/tasks?panels=notes:default";

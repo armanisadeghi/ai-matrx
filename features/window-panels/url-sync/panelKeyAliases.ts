@@ -41,3 +41,23 @@ export const PANEL_KEY_ALIASES: Readonly<Record<string, string>> = {
 export function resolveCanonicalTypeKey(typeKey: string): string {
   return PANEL_KEY_ALIASES[typeKey] ?? typeKey;
 }
+
+/**
+ * 🚨 CANONICALISING A TOKEN REWRITES ITS KEY AND NOTHING ELSE (V-30 NEW-4).
+ * An alias maps ONE key to ONE canonical key, so the rest of the token — the
+ * instance id the person pasted, and any args riding behind it — carries
+ * across untouched: `files:root` becomes `cloud_files:root`, never
+ * `cloud_files:<whatever singleton id the window happens to publish>`. The
+ * window's OWN entry still wins the moment it registers; this only decides
+ * what the address says while nobody has published anything yet.
+ *
+ * `files:root:v-fc` → `cloud_files:root:v-fc`; a token with no alias comes
+ * back byte-identical.
+ */
+export function canonicalizeTokenKey(token: string): string {
+  const separator = token.indexOf(":");
+  const key = separator === -1 ? token : token.slice(0, separator);
+  const canonical = resolveCanonicalTypeKey(key);
+  if (canonical === key) return token;
+  return separator === -1 ? canonical : `${canonical}${token.slice(separator)}`;
+}
