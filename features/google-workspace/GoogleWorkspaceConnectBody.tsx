@@ -383,6 +383,7 @@ function GoogleWorkspaceConnectBodyContent({
         if (acknowledged && driveRetainedRef.current.size === 0) {
           return finishDriveImport();
         }
+        return undefined;
       },
     );
 
