@@ -10,7 +10,7 @@
  * one concise supporting line. Values and full metadata belong in detail.
  */
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   Building2,
@@ -71,6 +71,11 @@ import {
   scopeToPrincipal,
   vaultScopeKey,
 } from "../types";
+import {
+  filterAndSortVaultItems,
+  VAULT_LIST_SORT_OPTIONS,
+  type VaultListSort,
+} from "../vault-list";
 import { VaultContextMenu } from "./VaultContextMenu";
 import { VaultCreateDialog } from "./VaultCreateDialog";
 import { VaultEnvImportDialog } from "./VaultEnvImportDialog";
@@ -167,6 +172,7 @@ export function VaultWorkspace({
 
   const [search, setSearch] = useState("");
   const [family, setFamily] = useState<"all" | CredentialFamily>("all");
+  const [sort, setSort] = useState<VaultListSort>("newest");
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
@@ -180,6 +186,29 @@ export function VaultWorkspace({
     setUncontrolledSelectedId(next);
     onSelectedItemIdChange?.(next);
   };
+  const effectiveScopeKey = vaultScopeKey(scope);
+  const previousScopeKey = useRef(effectiveScopeKey);
+  const pendingSelectionClear = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (selectedId !== pendingSelectionClear.current) {
+      pendingSelectionClear.current = null;
+    }
+  }, [selectedId]);
+
+  const clearSelectedId = () => {
+    if (selectedId === null || pendingSelectionClear.current === selectedId) return;
+    pendingSelectionClear.current = selectedId;
+    setSelectedId(null);
+  };
+
+  useEffect(() => {
+    if (previousScopeKey.current === effectiveScopeKey) return;
+    previousScopeKey.current = effectiveScopeKey;
+    setSearch("");
+    setFamily("all");
+    clearSelectedId();
+  }, [effectiveScopeKey, selectedId]);
   // Creating is meaningless in "Shared with me" — those items are owned by
   // someone else.
   const canCreate = orgAdmin && !isShared;
@@ -196,24 +225,13 @@ export function VaultWorkspace({
     return [...present].sort();
   })();
 
-  const query = search.trim().toLowerCase();
-  const filtered = vault.items.filter((item) => {
-    if (family !== "all" && familyOf(item, defsByKey) !== family) return false;
-    if (!query) return true;
-    const def = defsByKey.get(item.definition_key);
-    const haystack = [
-      item.display_name,
-      item.description ?? "",
-      item.definition_key,
-      item.provider_key ?? "",
-      def?.payload.label ?? "",
-      ...item.login_urls,
-      ...item.tags,
-      ...item.fields.map((f) => `${f.field_key} ${f.env_key ?? ""}`),
-    ]
-      .join(" ")
-      .toLowerCase();
-    return haystack.includes(query);
+  const query = search.trim();
+  const filtered = filterAndSortVaultItems({
+    items: vault.items,
+    definitions,
+    family,
+    query,
+    sort,
   });
 
   const selected = selectedId
@@ -231,6 +249,11 @@ export function VaultWorkspace({
   const SelectedIcon = selectedIdentity?.icon ?? KeyRound;
 
   const filtering = query.length > 0 || family !== "all";
+
+  useEffect(() => {
+    if (vault.loading || vault.error || !filtering || !selectedId) return;
+    if (!filtered.some((item) => item.id === selectedId)) clearSelectedId();
+  }, [vault.loading, vault.error, filtering, selectedId, filtered]);
 
   // ONE menu per pane, wrapped around BOTH presentations, so the /vault page
   // and the floating Vault window share a single wiring (and the window
@@ -511,6 +534,7 @@ export function VaultWorkspace({
                     </SelectContent>
                   </Select>
                 )}
+                <VaultSortControl sort={sort} onSortChange={setSort} />
               </div>
 
               <div className="flex items-center gap-2">
@@ -534,6 +558,11 @@ export function VaultWorkspace({
                     </button>
                   )}
                 </div>
+                <VaultSortControl
+                  sort={sort}
+                  onSortChange={setSort}
+                  className="hidden lg:block"
+                />
                 {canCreate && (
                   <Button
                     size="sm"
@@ -883,6 +912,7 @@ export function VaultWorkspace({
             </SelectContent>
           </Select>
         )}
+        <VaultSortControl sort={sort} onSortChange={setSort} />
 
         {canCreate && (
           <>
@@ -1059,6 +1089,37 @@ export function VaultWorkspace({
         />
       )}
     </div>,
+  );
+}
+
+function VaultSortControl({
+  sort,
+  onSortChange,
+  className,
+}: {
+  sort: VaultListSort;
+  onSortChange: (sort: VaultListSort) => void;
+  className?: string;
+}) {
+  return (
+    <Select
+      value={sort}
+      onValueChange={(value) => onSortChange(value as VaultListSort)}
+    >
+      <SelectTrigger
+        className={cn("h-9 w-auto min-w-36 shrink-0", className)}
+        aria-label="Sort credentials"
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {VAULT_LIST_SORT_OPTIONS.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
