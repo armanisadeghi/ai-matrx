@@ -27,6 +27,9 @@ is shrink the dirty set, and owners are step 4 for whatever is left.
 
 | When | Repo | What we thought | What was true | Folded into SKILL.md? |
 |---|---|---|---|---|
+| 2026-09-21 | matrx-frontend | `git add` then `git commit` is one step | In a checkout with a dozen writers another lane consumes the index between the two; the staged set was empty by the time commit ran, twice. Commit by pathspec in one command: `git commit -m ... -- <paths>` | Step 7 |
+| 2026-09-21 | matrx-frontend | A regenerated column belongs in every select list | The live grant decides: anon has no custom_fields on podcast episodes and authenticated has none on file versions, so naming it there 401s or 403s the read. Check the role's granted columns before adding a regenerated column to a select | Step 7 |
+| 2026-09-21 | matrx-frontend | Regenerated types land alone | Twice in one afternoon a database.types.ts regeneration broke main because the row literals, fixtures and "every column" select lists that build those rows were not updated with it. The loop is sync-types, type-check, fix, in the same hour, by the lane that regenerated | Step 7 |
 | 2026-09-21 | aidream | An intake worktree is mine for the run | Several lanes ran this skill on one repo at once and one deleted another's intake mid-verification. When other lanes are cleaning, land through git plumbing (merge-tree, commit-tree, push) which needs no worktree | Step 3 |
 | 2026-09-21 | aidream | `"$C:refs/heads/main"` is a safe refspec | zsh mangled it even quoted. Build the refspec into a variable with printf, or run the landing in bash | Step 3 |
 | 2026-09-21 | aidream, frontend | One git command reports the truth | With a dozen writers the index lock is contended for minutes; every checkout, pull and merge needs a retry loop or it reports a false failure | Step 7 |
