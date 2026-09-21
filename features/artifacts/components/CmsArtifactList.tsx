@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useTransition } from "react";
+import React, { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -61,6 +61,7 @@ import {
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 
 const ARTIFACT_ICONS: Record<ArtifactType, React.FC<{ className?: string }>> = {
   html_page: Globe,
@@ -111,178 +112,6 @@ function statusTone(status: ArtifactStatus): string {
     return "text-muted-foreground";
   }
   return "text-muted-foreground";
-}
-
-interface ArtifactRowProps {
-  artifact: CxArtifactRecord;
-  isNavigating: boolean;
-  isAnyNavigating: boolean;
-  onOpen: (artifact: CxArtifactRecord) => void;
-  onNavigate: (id: string) => void;
-  onDelete: (artifact: CxArtifactRecord) => void;
-  onArchive: (artifact: CxArtifactRecord) => void;
-  onOpenEditor: (artifact: CxArtifactRecord) => void;
-}
-
-function ArtifactRow({
-  artifact,
-  isNavigating,
-  isAnyNavigating,
-  onOpen,
-  onNavigate,
-  onDelete,
-  onArchive,
-  onOpenEditor,
-}: ArtifactRowProps) {
-  const Icon = ARTIFACT_ICONS[artifact.artifactType] ?? FileText;
-  const isDisabled = isNavigating || isAnyNavigating;
-  const title = artifact.title?.trim() || "Untitled";
-  const kind =
-    ARTIFACT_TYPE_LABELS[artifact.artifactType] ?? artifact.artifactType;
-  const statusLabel =
-    ARTIFACT_STATUS_LABELS[artifact.status] ?? artifact.status;
-
-  const handleRowActivate = (e: React.MouseEvent | React.KeyboardEvent) => {
-    if ((e.target as HTMLElement).closest("[data-no-nav]")) return;
-    if ("metaKey" in e && (e.metaKey || e.ctrlKey)) {
-      window.open(`/artifacts/${artifact.id}`, "_blank");
-      return;
-    }
-    if (!isDisabled) onOpen(artifact);
-  };
-
-  return (
-    <tr
-      className={cn(
-        "group border-b border-border/60 last:border-b-0",
-        isDisabled
-          ? "opacity-60"
-          : "cursor-pointer hover:bg-accent/50",
-      )}
-      onClick={handleRowActivate}
-      aria-label={title}
-    >
-      <td className="py-2 pr-3 pl-2">
-        <div className="flex min-w-0 items-start gap-2.5">
-          <Icon
-            className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-            aria-hidden
-          />
-          <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 items-start gap-2">
-              <span className="min-w-0 flex-1 text-sm font-medium leading-snug text-foreground break-words [overflow-wrap:anywhere] line-clamp-2">
-                {title}
-              </span>
-              {artifact.status !== "published" && (
-                <span
-                  className={cn(
-                    "shrink-0 text-xs leading-snug",
-                    statusTone(artifact.status),
-                  )}
-                >
-                  {statusLabel}
-                </span>
-              )}
-            </div>
-            {artifact.description && (
-              <p className="mt-0.5 line-clamp-1 break-words text-xs text-muted-foreground">
-                {artifact.description}
-              </p>
-            )}
-            <p className="mt-0.5 text-xs text-muted-foreground sm:hidden">
-              {kind} · {formatUpdatedAt(artifact.updatedAt)}
-            </p>
-          </div>
-          {isNavigating && (
-            <Loader2 className="mt-0.5 size-4 shrink-0 animate-spin text-primary" />
-          )}
-        </div>
-      </td>
-      <td className="hidden px-3 py-2 text-xs text-muted-foreground md:table-cell">
-        {kind}
-      </td>
-      <td className="hidden whitespace-nowrap px-3 py-2 text-xs text-muted-foreground sm:table-cell">
-        <time dateTime={artifact.updatedAt} title={new Date(artifact.updatedAt).toLocaleString()}>
-          {formatUpdatedAt(artifact.updatedAt)}
-        </time>
-      </td>
-      <td className="w-10 px-1 py-2" data-no-nav onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-end gap-0.5">
-          {artifact.externalUrl && (
-            <Link
-              href={artifact.externalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              tabIndex={-1}
-              className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground opacity-0 hover:bg-accent hover:text-foreground group-hover:opacity-100 group-focus-within:opacity-100"
-              title="View live"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <ExternalLink className="size-3.5" />
-              <span className="sr-only">View live</span>
-            </Link>
-          )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-7 text-muted-foreground opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 data-[state=open]:opacity-100"
-                disabled={isDisabled}
-              >
-                <MoreHorizontal className="size-4" />
-                <span className="sr-only">Actions</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              {artifact.externalUrl && (
-                <DropdownMenuItem asChild>
-                  <a
-                    href={artifact.externalUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2"
-                  >
-                    <ExternalLink className="size-3.5" />
-                    View live
-                  </a>
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem
-                className="flex items-center gap-2"
-                onClick={() => onNavigate(artifact.id)}
-              >
-                <FileText className="size-3.5" />
-                Open full page
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="flex items-center gap-2"
-                onClick={() => onOpenEditor(artifact)}
-              >
-                <Pencil className="size-3.5" />
-                Edit content
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="flex items-center gap-2 text-muted-foreground"
-                onClick={() => onArchive(artifact)}
-              >
-                <ArchiveIcon className="size-3.5" />
-                Archive
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="flex items-center gap-2 text-destructive"
-                onClick={() => onDelete(artifact)}
-              >
-                <Trash2 className="size-3.5" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </td>
-    </tr>
-  );
 }
 
 function ArtifactListSkeleton() {
@@ -438,6 +267,25 @@ export function CmsArtifactList() {
   };
 
   const isLoading = fetchStatus === "loading";
+  const navigationPending = navigatingId !== null;
+  const columns = useMemo<MatrxColumnDef<CxArtifactRecord>[]>(
+    () => [
+      {
+        id: "name",
+        header: "Name",
+        accessorFn: (artifact) => artifact.title?.trim() || "Untitled",
+        cell: (artifact) => {
+          const Icon = ARTIFACT_ICONS[artifact.artifactType] ?? FileText;
+          const title = artifact.title?.trim() || "Untitled";
+          return <div className="flex min-w-0 items-start gap-2.5"><Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden /><div className="min-w-0"><span className="block font-medium leading-snug">{title}</span>{artifact.description && <span className="block truncate text-xs text-muted-foreground">{artifact.description}</span>}</div></div>;
+        },
+      },
+      { id: "kind", header: "Kind", accessorFn: (artifact) => ARTIFACT_TYPE_LABELS[artifact.artifactType] ?? artifact.artifactType, mobileHidden: true },
+      { id: "updated", header: "Updated", accessorFn: (artifact) => artifact.updatedAt, filter: "date", mobileHidden: true, cell: (artifact) => <time dateTime={artifact.updatedAt} title={new Date(artifact.updatedAt).toLocaleString()}>{formatUpdatedAt(artifact.updatedAt)}</time> },
+      { id: "status", header: "Status", accessorFn: (artifact) => artifact.status, filter: "select", mobileHidden: true, cell: (artifact) => artifact.status === "published" ? "—" : <span className={statusTone(artifact.status)}>{ARTIFACT_STATUS_LABELS[artifact.status]}</span> },
+    ],
+    [],
+  );
   const statusButtonLabel =
     filters.status === "all"
       ? "Active"
@@ -573,46 +421,27 @@ export function CmsArtifactList() {
           )}
         </div>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-xs font-medium text-muted-foreground">
-              <th className="px-2 py-1.5 text-left font-medium">Name</th>
-              <th className="hidden px-3 py-1.5 text-left font-medium md:table-cell">
-                Kind
-              </th>
-              <th className="hidden px-3 py-1.5 text-left font-medium sm:table-cell">
-                Updated
-              </th>
-              <th className="w-10" />
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((artifact) => (
-              <ArtifactRow
-                key={artifact.id}
-                artifact={artifact}
-                isNavigating={navigatingId === artifact.id}
-                isAnyNavigating={navigatingId !== null}
-                onOpen={handleOpen}
-                onNavigate={handleNavigate}
-                onDelete={handleDelete}
-                onArchive={handleArchive}
-                onOpenEditor={handleOpenEditor}
-              />
-            ))}
-          </tbody>
-        </table>
+        <MatrxDataTable<CxArtifactRecord>
+          tableId="artifacts/content-library"
+          data={filtered}
+          columns={columns}
+          getRowId={(artifact) => artifact.id}
+          isLoading={isLoading}
+          density="condensed"
+          pageSize={0}
+          hidePagination
+          coverage={{ noun: "artifact", answeredBy: "client" }}
+          copy={false}
+          toolbar={{ search: false }}
+          detail={{ enabled: false }}
+          window={{ enabled: false }}
+          getRowHref={(artifact) => `/artifacts/${artifact.id}`}
+          onRowOpen={(artifact) => { if (!navigationPending) handleOpen(artifact); }}
+          rowClassName={() => navigationPending ? "pointer-events-none opacity-60" : undefined}
+          rowActions={(artifact) => <div className="flex items-center gap-0.5">{navigatingId === artifact.id && <Loader2 className="size-4 animate-spin text-primary" />}<Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleNavigate(artifact.id)} title="Open full page"><FileText className="size-3.5" /></Button><Button variant="ghost" size="icon" className="size-7" disabled={navigationPending || !(artifact.artifactType === "html_page" && artifact.externalId)} onClick={() => handleOpenEditor(artifact)} title="Edit content"><Pencil className="size-3.5" /></Button>{artifact.externalUrl && <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} asChild><a href={artifact.externalUrl} target="_blank" rel="noopener noreferrer" title="View live"><ExternalLink className="size-3.5" /></a></Button>}<Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleArchive(artifact)} title="Archive"><ArchiveIcon className="size-3.5" /></Button><Button variant="ghost" size="icon" className="size-7 text-destructive" disabled={navigationPending} onClick={() => handleDelete(artifact)} title="Delete"><Trash2 className="size-3.5" /></Button></div>}
+        />
       )}
 
-      {filtered.length > 0 && (
-        <p className="px-2 pb-2 text-xs text-muted-foreground">
-          {filtered.length}
-          {filtered.length !== allArtifacts.length
-            ? ` of ${allArtifacts.length}`
-            : ""}{" "}
-          {filtered.length === 1 ? "item" : "items"}
-        </p>
-      )}
     </div>
   );
 }

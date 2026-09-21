@@ -66,6 +66,7 @@ import {
   MOBILE_TABLE_FROZEN,
 } from "@/components/official/mobile-table/mobileTable";
 import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
+import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -883,63 +884,7 @@ function ExcludeButton({
   );
 }
 
-// ─── Comparison table (real <table> for alignment) ────────────────────────
-
-function SortableTH({
-  sortKey,
-  activeSortKey,
-  activeSortDir,
-  onSort,
-  children,
-  className = "",
-}: {
-  sortKey: ComparisonSortKey;
-  activeSortKey: ComparisonSortKey;
-  activeSortDir: ComparisonSortDir;
-  onSort: (key: ComparisonSortKey) => void;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  const isActive = activeSortKey === sortKey;
-  return (
-    <th
-      className={`px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap bg-muted/50 ${className}`}
-    >
-      <button
-        type="button"
-        onClick={() => onSort(sortKey)}
-        className={`inline-flex items-center gap-1 hover:text-foreground transition-colors ${
-          isActive ? "text-foreground" : "text-muted-foreground"
-        }`}
-      >
-        {children}
-        {isActive ? (
-          activeSortDir === "asc" ? (
-            <ChevronUp className="h-3 w-3 shrink-0" />
-          ) : (
-            <ChevronDown className="h-3 w-3 shrink-0" />
-          )
-        ) : (
-          <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-40" />
-        )}
-      </button>
-    </th>
-  );
-}
-
-const STATIC_TH = ({
-  children,
-  className = "",
-}: {
-  children?: React.ReactNode;
-  className?: string;
-}) => (
-  <th
-    className={`px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap bg-muted/50 ${className}`}
-  >
-    {children}
-  </th>
-);
+// ─── Provider comparison grid ─────────────────────────────────────────────
 
 function ComparisonTable({
   comparisons,
@@ -962,23 +907,22 @@ function ComparisonTable({
   onToggleExclusion: (c: ModelComparison) => void;
   policyBusy: boolean;
 }) {
-  const [sortKey, setSortKey] = useState<ComparisonSortKey>("released");
-  const [sortDir, setSortDir] = useState<ComparisonSortDir>("desc");
-
-  const toggleSort = (key: ComparisonSortKey) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-      return;
-    }
-    setSortKey(key);
-    setSortDir(defaultSortDirForColumn(key));
-  };
-
-  const sortedComparisons = useMemo(() => {
-    const arr = [...comparisons];
-    arr.sort((a, b) => compareComparisons(a, b, sortKey, sortDir));
-    return arr;
-  }, [comparisons, sortKey, sortDir]);
+  const columns = useMemo<MatrxColumnDef<ModelComparison>[]>(
+    () => [
+      { id: "display_name", header: "Display name", accessorFn: (comparison) => comparison.display_name, defaultSortDirection: "asc", cell: (comparison) => <span className="block max-w-[160px] truncate font-medium" title={comparison.display_name}>{comparison.display_name}</span> },
+      { id: "id", header: "Model ID", accessorFn: (comparison) => comparison.id, cell: (comparison) => <span className="block max-w-[200px] truncate font-mono text-[10px] text-muted-foreground" title={comparison.id}>{comparison.id}</span> },
+      { id: "context", header: "Context", accessorFn: (comparison) => comparison.providerEntry?.max_input_tokens ?? comparison.localEntry?.context_window ?? null, defaultSortDirection: "desc", align: "right", cell: (comparison) => formatNum(comparison.providerEntry?.max_input_tokens ?? comparison.localEntry?.context_window) },
+      { id: "max_out", header: "Max out", accessorFn: (comparison) => comparison.providerEntry?.max_tokens ?? comparison.localEntry?.max_tokens ?? null, defaultSortDirection: "desc", align: "right", cell: (comparison) => formatNum(comparison.providerEntry?.max_tokens ?? comparison.localEntry?.max_tokens) },
+      { id: "released", header: "Released", accessorFn: (comparison) => comparison.providerEntry?.created_at ?? "", sortValue: (comparison) => parseTimestamp(comparison.providerEntry?.created_at) ?? -Infinity, defaultSortDirection: "desc", cell: (comparison) => formatDate(comparison.providerEntry?.created_at) },
+      { id: "our_name", header: "Our name", accessorFn: (comparison) => comparison.localEntry?.common_name ?? "", cell: (comparison) => comparison.localEntry?.common_name ?? "—" },
+      { id: "price", header: "Price", accessorFn: (comparison) => comparison.pricing.ours?.input ?? null, cell: (comparison) => <PriceCell pricing={comparison.pricing} /> },
+      { id: "verified", header: "Price checked", accessorFn: (comparison) => comparison.pricing.verified_at ?? "", cell: (comparison) => <PriceVerifiedCell pricing={comparison.pricing} /> },
+      { id: "primary", header: "Primary", accessorFn: (comparison) => Boolean(comparison.localEntry?.is_primary), defaultSortDirection: "desc", cell: (comparison) => comparison.localEntry?.is_primary ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : "—" },
+      { id: "deprecated", header: "Deprecated", accessorFn: (comparison) => Boolean(comparison.localEntry?.is_deprecated), defaultSortDirection: "desc", cell: (comparison) => comparison.localEntry?.is_deprecated ? <span className="font-medium text-amber-500">yes</span> : "—" },
+      { id: "status", header: "Status", accessorFn: (comparison) => comparison.status, sortValue: (comparison) => STATUS_SORT_ORDER[comparison.status], filter: "select", cell: (comparison) => <StatusBadge status={comparison.status} cutoff={cutoff} /> },
+    ],
+    [cutoff],
+  );
 
   if (comparisons.length === 0) {
     return (
@@ -990,211 +934,25 @@ function ComparisonTable({
 
   return (
     <div className="border-t overflow-x-auto">
-      <table className={cn("text-xs border-collapse", MOBILE_TABLE_FROZEN)}>
-        <thead>
-          <tr className="border-b">
-            <SortableTH
-              sortKey="display_name"
-              activeSortKey={sortKey}
-              activeSortDir={sortDir}
-              onSort={toggleSort}
-              className="pl-3"
-            >
-              Display Name
-            </SortableTH>
-            <SortableTH
-              sortKey="id"
-              activeSortKey={sortKey}
-              activeSortDir={sortDir}
-              onSort={toggleSort}
-            >
-              Model ID
-            </SortableTH>
-            <SortableTH
-              sortKey="context"
-              activeSortKey={sortKey}
-              activeSortDir={sortDir}
-              onSort={toggleSort}
-            >
-              Context
-            </SortableTH>
-            <SortableTH
-              sortKey="max_out"
-              activeSortKey={sortKey}
-              activeSortDir={sortDir}
-              onSort={toggleSort}
-            >
-              Max Out
-            </SortableTH>
-            <SortableTH
-              sortKey="released"
-              activeSortKey={sortKey}
-              activeSortDir={sortDir}
-              onSort={toggleSort}
-            >
-              Released
-            </SortableTH>
-            <SortableTH
-              sortKey="our_name"
-              activeSortKey={sortKey}
-              activeSortDir={sortDir}
-              onSort={toggleSort}
-            >
-              Our Name
-            </SortableTH>
-            <SortableTH
-              sortKey="price"
-              activeSortKey={sortKey}
-              activeSortDir={sortDir}
-              onSort={toggleSort}
-            >
-              Price in/out/cached per MTok
-            </SortableTH>
-            <SortableTH
-              sortKey="verified"
-              activeSortKey={sortKey}
-              activeSortDir={sortDir}
-              onSort={toggleSort}
-            >
-              Price checked
-            </SortableTH>
-            <SortableTH
-              sortKey="primary"
-              activeSortKey={sortKey}
-              activeSortDir={sortDir}
-              onSort={toggleSort}
-            >
-              Primary
-            </SortableTH>
-            <SortableTH
-              sortKey="deprecated"
-              activeSortKey={sortKey}
-              activeSortDir={sortDir}
-              onSort={toggleSort}
-            >
-              Deprecated
-            </SortableTH>
-            <SortableTH
-              sortKey="status"
-              activeSortKey={sortKey}
-              activeSortDir={sortDir}
-              onSort={toggleSort}
-            >
-              Status
-            </SortableTH>
-            <STATIC_TH className="pr-3"></STATIC_TH>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedComparisons.map((c) => {
-            const isSelected = c.id === selectedId;
-            const le = c.localEntry;
-            const pe = c.providerEntry;
-            const ctx = pe?.max_input_tokens ?? le?.context_window;
-            const maxOut = pe?.max_tokens ?? le?.max_tokens;
-            const released = pe?.created_at;
+      <MatrxDataTable<ModelComparison>
+        tableId={`ai-models/provider-sync/${providerName ?? "provider"}`}
+        data={comparisons}
+        columns={columns}
+        getRowId={(comparison) => comparison.id}
+        density="condensed"
+        defaultSort={{ id: "released", direction: "desc" }}
+        pageSize={0}
+        hidePagination
+        coverage={{ noun: "provider model", answeredBy: "client" }}
+        copy={false}
+        detail={{ enabled: false }}
+        window={{ enabled: false }}
+        selectedId={selectedId}
+        onRowOpen={(comparison) => onSelect(comparison.id === selectedId ? null : comparison)}
+        rowClassName={(comparison) => `${STATUS_LEFT[comparison.status]} ${comparison.id === selectedId ? STATUS_BG_SEL[comparison.status] : STATUS_BG[comparison.status]}`}
+        rowActions={(comparison) => <div className="flex items-center gap-1"><ProviderSyncRowCopyForAiButton comparison={comparison} providerName={providerName} />{comparison.status === "matched" && comparison.localEntry && <OpenDetailButton onClick={() => { if (comparison.localEntry) onOpenModel(comparison.localEntry.id); }} />}{comparison.status === "missing_local" && <Button size="sm" variant="ghost" className="h-5 px-1.5 text-[10px]" onClick={() => onAddMissing(comparison)}><Plus className="h-2.5 w-2.5" />Add</Button>}{comparison.status !== "extra_local" && <ExcludeButton comparison={comparison} onToggle={onToggleExclusion} busy={policyBusy} />}</div>}
+      />
 
-            const rowBg = isSelected
-              ? STATUS_BG_SEL[c.status]
-              : STATUS_BG[c.status];
-
-            return (
-              <tr
-                key={c.id}
-                onClick={() => onSelect(isSelected ? null : c)}
-                className={`border-b last:border-b-0 cursor-pointer transition-colors border-l-2 ${STATUS_LEFT[c.status]} ${rowBg} hover:brightness-95 dark:hover:brightness-110`}
-              >
-                <td className="px-2 py-1.5 pl-3 font-medium whitespace-nowrap max-w-[160px]">
-                  <span
-                    className="truncate block max-w-[160px]"
-                    title={c.display_name}
-                  >
-                    {c.display_name}
-                  </span>
-                </td>
-                <td className="px-2 py-1.5 font-mono text-[10px] text-muted-foreground whitespace-nowrap max-w-[200px]">
-                  <span className="truncate block max-w-[200px]" title={c.id}>
-                    {c.id}
-                  </span>
-                </td>
-                <td className="px-2 py-1.5 tabular-nums whitespace-nowrap">
-                  {formatNum(ctx)}
-                </td>
-                <td className="px-2 py-1.5 tabular-nums whitespace-nowrap">
-                  {formatNum(maxOut)}
-                </td>
-                <td className="px-2 py-1.5 whitespace-nowrap text-muted-foreground">
-                  {formatDate(released)}
-                </td>
-                <td className="px-2 py-1.5 font-mono text-[10px] text-muted-foreground whitespace-nowrap max-w-[140px]">
-                  <span
-                    className="truncate block max-w-[140px]"
-                    title={le?.common_name ?? ""}
-                  >
-                    {le?.common_name ?? "—"}
-                  </span>
-                </td>
-                <td className="px-2 py-1.5">
-                  <PriceCell pricing={c.pricing} />
-                </td>
-                <td className="px-2 py-1.5">
-                  <PriceVerifiedCell pricing={c.pricing} />
-                </td>
-                <td className="px-2 py-1.5 text-center">
-                  {le?.is_primary ? (
-                    <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mx-auto" />
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </td>
-                <td className="px-2 py-1.5 text-center">
-                  {le?.is_deprecated ? (
-                    <span className="text-amber-500 font-medium">yes</span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </td>
-                <td className="px-2 py-1.5 whitespace-nowrap">
-                  <StatusBadge status={c.status} cutoff={cutoff} />
-                </td>
-                <td
-                  className="px-2 py-1.5 pr-3"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="flex items-center gap-1">
-                    <ProviderSyncRowCopyForAiButton
-                      comparison={c}
-                      providerName={providerName}
-                    />
-                    {c.status === "matched" && le && (
-                      <OpenDetailButton onClick={() => onOpenModel(le.id)} />
-                    )}
-                    {c.status === "missing_local" && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-5 px-1.5 text-[10px] gap-0.5 text-amber-600 hover:text-amber-700"
-                        onClick={() => onAddMissing(c)}
-                        title="Add this provider model to the database"
-                      >
-                        <Plus className="h-2.5 w-2.5" />
-                        Add
-                      </Button>
-                    )}
-                    {c.status !== "extra_local" && (
-                      <ExcludeButton
-                        comparison={c}
-                        onToggle={onToggleExclusion}
-                        busy={policyBusy}
-                      />
-                    )}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
     </div>
   );
 }
