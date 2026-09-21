@@ -116,7 +116,8 @@ check("FAILING BASELINE: a root preinstall refusal still leaves node_modules lin
   const { dir, stateDir } = makeFixture({ mode: "preinstall" });
   try {
     writeLiveLease(stateDir, dir, holder.pid);
-    const { status } = runInstall(dir, stateDir);
+    // strict mode: the retired preinstall path is only a refusal when asked to be
+    const { status } = runInstall(dir, stateDir, { MATRX_STRICT_INSTALL_GATE: "1" });
     assert.equal(status, 1, "the retired guard does report failure");
     assert.ok(
       existsSync(join(dir, "node_modules")),
