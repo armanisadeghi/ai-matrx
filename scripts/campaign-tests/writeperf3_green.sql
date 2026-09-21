@@ -16,6 +16,11 @@
 --      own organization's page contract
 --  10  the write-path replanner census is still 0
 --
+-- THE USE CASE (owner law, 2026-09-21: no fake test data). The fixture is a regional cold-chain
+-- haulier's dispatch desk: ten Carriers, and Shipments with the six columns a dispatcher keeps —
+-- consignment reference, declared value, delivery window, status, coordinator and carrier. The
+-- refusal clause uses the mistake that actually arrives: a status nobody put on the list.
+--
 -- Run: binlocal/p.sh -f scripts/campaign-tests/writeperf3_green.sql
 \set ON_ERROR_STOP on
 begin;
@@ -37,7 +42,7 @@ begin
   c_dana_j  := jsonb_build_object('sub', c_dana,  'role', 'authenticated')::text;
 
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ WRITEPERF3 GREEN', 'zzz-wp3-green-' || substr(md5(random()::text),1,8), 'ZWC', c_admin)
+  values ('ZZZ Cascade Cold Chain — WRITE-PERF-3 green', 'zzz-wp3-green-' || substr(md5(random()::text),1,8), 'ZWC', c_admin)
   returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
   values (v_org, c_admin, 'owner', 'active', 'organization', v_org),
@@ -113,32 +118,37 @@ begin
   raise notice '2  % statement triggers across the fourteen tables, and associations UPDATE is the precise one', n;
 
   -- the fixture the rest of the suite writes into
-  v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Green Home'));
+  v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Dispatch desk'));
   v_acct := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WP3 Account','slug','zz_wp3g_acct_' || substr(md5(random()::text),1,8),'type','entity',
-    'label_singular','Account','label_plural','Accounts','title_field','title','display','page',
+    'name','Carrier','slug','zz_wp3g_carrier_' || substr(md5(random()::text),1,8),'type','entity',
+    'label_singular','Carrier','label_plural','Carriers','title_field','title','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','title')), 'parent_id', v_home::text));
   perform custom.field_declare(v_org, v_acct, jsonb_build_object('label','Title','key','title','type','text'));
   for i in 1..10 loop
-    v_accts := v_accts || custom.record_write(v_org, v_acct, jsonb_build_object('title','Account ' || i));
+    v_accts := v_accts || custom.record_write(v_org, v_acct, jsonb_build_object('title',
+      (array['Cascade Freight Lines','Sonoran Cold Carriers','Great Lakes Reefer Co',
+             'Pinebelt Haulage','Rio Grande Coldway','Puget Sound Chill Freight',
+             'Ozark Temperature Logistics','Blue Ridge Cold Chain',
+             'High Plains Refrigerated','Gulf Coast Perishables'])[i]));
   end loop;
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WP3 Deal','slug','zz_wp3g_deal_' || substr(md5(random()::text),1,8),'type','entity',
-    'label_singular','Deal','label_plural','Deals','title_field','deal','display','page',
+    'name','Shipment','slug','zz_wp3g_shipment_' || substr(md5(random()::text),1,8),'type','entity',
+    'label_singular','Shipment','label_plural','Shipments','title_field','reference','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
-    'fields', jsonb_build_array(jsonb_build_object('name','deal')), 'parent_id', v_home::text));
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Deal','key','deal','type','text'));
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Amount','key','amount','type','currency','unit','USD'));
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Stage','key','stage','type','select','options', jsonb_build_array('Open','Won','Lost')));
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Account','key','account','type','relation','relation_target', v_acct::text));
+    'fields', jsonb_build_array(jsonb_build_object('name','reference')), 'parent_id', v_home::text));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Consignment reference','key','reference','type','text'));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Declared value','key','declared_value','type','currency','unit','USD'));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Status','key','status','type','select','options', jsonb_build_array('In transit','Delivered','Delayed')));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Carrier','key','carrier','type','relation','relation_target', v_acct::text));
 
   -- ===== 3. THE MEMO AMORTISES, AND `tf:` IS IN IT =====
   for i in 1..5 loop
     perform custom.record_write(v_org, v_tbl, jsonb_build_object(
-      'deal','Memo ' || i, 'amount', 10, 'stage','Open', 'account', v_accts[1 + (i % 10)]::text));
+      'reference', 'CC-2026-' || lpad((700 + i)::text, 5, '0'), 'declared_value', 4250,
+      'status', 'In transit', 'carrier', v_accts[1 + (i % 10)]::text));
   end loop;
   v_b := coalesce(nullif(current_setting('mx_memo.b', true), ''), '{}');
   v_s := coalesce(nullif(current_setting('mx_memo.s', true), ''), '{}');
@@ -158,16 +168,18 @@ begin
     array_length(v_keys, 1), array_length(v_keys2, 1);
 
   -- ===== 4. FIVE HUNDRED IN ONE STATEMENT =====
-  select array_agg(jsonb_build_object('deal','Batch ' || g.i, 'amount', g.i,
-                                      'stage', (array['Open','Won','Lost'])[1 + (g.i % 3)],
-                                      'account', v_accts[1 + (g.i % 10)]::text) order by g.i)
+  select array_agg(jsonb_build_object(
+           'reference',      'CC-2026-' || lpad(g.i::text, 5, '0'),
+           'declared_value', round((1250 + (g.i * 137.55)::numeric % 48000)::numeric, 2),
+           'status',         (array['In transit','Delivered','Delayed'])[1 + (g.i % 3)],
+           'carrier',        v_accts[1 + (g.i % 10)]::text) order by g.i)
     into v_docs from generate_series(1, 500) g(i);
   v_ids := custom.record_write_many(v_org, v_tbl, v_docs);
   if coalesce(array_length(v_ids, 1), 0) <> 500 then
     raise exception '4: the batched door handed back % ids for 500 records', coalesce(array_length(v_ids,1),0);
   end if;
   for i in 1..500 loop
-    if (custom.read_record(v_org, v_ids[i], true) -> 'data' ->> 'deal') <> 'Batch ' || i then
+    if (custom.read_record(v_org, v_ids[i], true) -> 'data' ->> 'reference') <> 'CC-2026-' || lpad(i::text, 5, '0') then
       raise exception '4: id % is not the record that was handed in at that position', i;
     end if;
   end loop;
@@ -176,15 +188,15 @@ begin
   -- ===== 5. THE BATCH REFUSES WHAT THE SINGLE ROW REFUSES, WORD FOR WORD =====
   begin
     perform custom.record_write_many(v_org, v_tbl, array[
-      jsonb_build_object('deal','Fine A'),
-      jsonb_build_object('deal','Bad one', 'stage', 'Nonsense'),
-      jsonb_build_object('deal','Fine B')]);
+      jsonb_build_object('reference','CC-2026-90001'),
+      jsonb_build_object('reference','CC-2026-90002', 'status', 'Held at dock'),
+      jsonb_build_object('reference','CC-2026-90003')]);
     raise exception '5: a batch carrying an invented choice was not refused';
   exception when others then
     get stacked diagnostics v_state = returned_sqlstate, v_msg = message_text, v_hint = pg_exception_hint;
   end;
   begin
-    perform custom.record_write(v_org, v_tbl, jsonb_build_object('deal','Bad one', 'stage', 'Nonsense'));
+    perform custom.record_write(v_org, v_tbl, jsonb_build_object('reference','CC-2026-90002', 'status', 'Held at dock'));
     raise exception '5: the same record alone was not refused';
   exception when others then
     get stacked diagnostics v_state2 = returned_sqlstate, v_msg2 = message_text, v_hint2 = pg_exception_hint;
@@ -193,7 +205,7 @@ begin
     raise exception '5: the batch refused with "% / %" and the single row with "% / %"', v_state, v_msg, v_state2, v_msg2;
   end if;
   select count(*) into n from custom.read_records(v_org, v_tbl, true, 1000, 0) r
-   where r.document -> 'data' ->> 'deal' in ('Fine A','Fine B');
+   where r.document -> 'data' ->> 'reference' in ('CC-2026-90001','CC-2026-90003');
   if n <> 0 then
     raise exception '5: % of the good rows in the refused batch landed anyway', n;
   end if;
@@ -201,7 +213,7 @@ begin
 
   -- ===== 6. AN EDGE ARRIVING FORGETS NOTHING; AN EDGE TAKEN AWAY EMPTIES THE MEMO =====
   perform custom.record_write(v_org, v_tbl, jsonb_build_object(
-    'deal','Edge probe', 'account', v_accts[3]::text));
+    'reference','CC-2026-90010', 'carrier', v_accts[3]::text));
   if coalesce(nullif(current_setting('mx_memo.b', true), ''), '{}') = '{}' then
     raise exception '6: writing a record WITH a relation emptied the bulky memo — an edge arriving must forget nothing';
   end if;
@@ -217,38 +229,38 @@ begin
   raise notice '6  an edge arriving forgets nothing; an edge taken away empties the memo';
 
   -- ===== 7. A FIELD ARRIVING EMPTIES THE MEMO; A RECORD ARRIVING DOES NOT =====
-  perform custom.record_write(v_org, v_tbl, jsonb_build_object('deal','Warm the memo', 'amount', 1));
+  perform custom.record_write(v_org, v_tbl, jsonb_build_object('reference','CC-2026-90020', 'declared_value', 1800));
   if coalesce(nullif(current_setting('mx_memo.s', true), ''), '{}') = '{}' then
     raise exception '7: the small memo is empty before the structure test, so the test would prove nothing';
   end if;
-  perform custom.record_write(v_org, v_tbl, jsonb_build_object('deal','Just a record', 'amount', 2));
+  perform custom.record_write(v_org, v_tbl, jsonb_build_object('reference','CC-2026-90021', 'declared_value', 2400));
   if coalesce(nullif(current_setting('mx_memo.s', true), ''), '{}') = '{}' then
     raise exception '7: a plain record arriving emptied the memo, which is the whole cost this lane removed';
   end if;
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Notes','key','notes','type','text'));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Dock note','key','dock_note','type','text'));
   if coalesce(nullif(current_setting('mx_memo.s', true), ''), '{}') <> '{}' then
     raise exception '7: a FIELD arriving did NOT empty the memo, so the next row would be told the old shape';
   end if;
-  perform custom.record_write(v_org, v_tbl, jsonb_build_object('deal','After the field', 'notes','x'));
+  perform custom.record_write(v_org, v_tbl, jsonb_build_object('reference','CC-2026-90022', 'dock_note','Tail-lift booked'));
   -- TWO STATEMENTS ON PURPOSE. `custom.read_record` is STABLE, so folded into the same
   -- expression as the write it would read the snapshot taken before that write and answer
   -- "there is no record …" — which is what the first draft of this clause did.
   v_ids := custom.record_write_many(v_org, v_tbl,
-             array[jsonb_build_object('deal','Reads the new column', 'notes','hello')]);
-  if (custom.read_record(v_org, v_ids[1], true) -> 'data' ->> 'notes') <> 'hello' then
+             array[jsonb_build_object('reference','CC-2026-90023', 'dock_note','Reefer pre-cooled to -18C')]);
+  if (custom.read_record(v_org, v_ids[1], true) -> 'data' ->> 'dock_note') <> 'Reefer pre-cooled to -18C' then
     raise exception '7: the column declared mid-transaction is not readable through the door';
   end if;
   raise notice '7  a record arriving keeps the memo, a Field arriving empties it, and the new column is written at once';
 
   -- ===== 8. A NO IS NEVER REMEMBERED =====
   begin
-    perform custom.record_write_many(gen_random_uuid(), v_tbl, array[jsonb_build_object('deal','nope')]);
+    perform custom.record_write_many(gen_random_uuid(), v_tbl, array[jsonb_build_object('reference','CC-2026-90030')]);
     raise exception '8: the batched door accepted an organization this seat is not in';
   exception when others then
     get stacked diagnostics v_msg = message_text;
   end;
   begin
-    perform custom.record_write_many(gen_random_uuid(), v_tbl, array[jsonb_build_object('deal','nope')]);
+    perform custom.record_write_many(gen_random_uuid(), v_tbl, array[jsonb_build_object('reference','CC-2026-90030')]);
     raise exception '8: the SECOND attempt at a foreign organization was accepted, so a refusal was remembered as a yes';
   exception when others then
     get stacked diagnostics v_msg2 = message_text;
@@ -261,7 +273,7 @@ begin
   -- ===== 9. test@test.com =====
   perform set_config('request.jwt.claims', c_dana_j, true);
   begin
-    perform custom.record_write_many(v_org, v_tbl, array[jsonb_build_object('deal','Dana should not')]);
+    perform custom.record_write_many(v_org, v_tbl, array[jsonb_build_object('reference','CC-2026-90040')]);
     raise exception '9: test@test.com wrote a batch into a Table she has no rung on';
   exception when others then
     get stacked diagnostics v_state = returned_sqlstate, v_msg = message_text;

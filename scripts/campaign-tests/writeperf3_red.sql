@@ -7,6 +7,79 @@
 -- supposed to find missing is still there.
 --
 -- Run: binlocal/p.sh -f scripts/campaign-tests/writeperf3_red.sql
+-- ===== RED 0 — THE DEFECT A PEER'S SUITE FOUND, REPRODUCED ON DEMAND =====
+--
+-- Only ONE of this lane's five files is reverted here — the BEFORE-ROW trigger that empties the
+-- memo when a Table, a Field or a Rule is written — with everything else live. That is the exact
+-- state in which `scripts/campaign-tests/doorfix_green.sql` went red against this lane:
+--
+--     ERROR:  Phone takes words, and it was given a number
+--
+-- because `custom._field_type_converts_values` (AFTER ROW) rewrites a Field's records inside the
+-- same statement, before any AFTER-STATEMENT trigger of that statement has emptied the memo.
+-- This block asserts that doorfix is red without the trigger and green with it — run in that
+-- order, in one session, so the guard is SEEN failing rather than described.
+\set ON_ERROR_STOP on
+begin;
+set local lock_timeout = '5min';
+set local statement_timeout = 0;
+\i migrations/inverse/writeperf3_a_structure_row_empties_the_memo_before_it_lands_down.sql
+
+do $t$
+declare
+  c_admin uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
+  v_boss text := current_user;
+  v_org uuid; v_home uuid; v_tbl uuid; v_field uuid; v_msg text; i int;
+begin
+  insert into iam.organizations (name, slug, abbreviation, created_by)
+  values ('ZZZ Cascade Cold Chain — WRITE-PERF-3 red 0',
+          'zzz-wp3-red0-' || substr(md5(random()::text),1,8), 'ZWC', c_admin) returning id into v_org;
+  insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
+  values (v_org, c_admin, 'owner', 'active', 'organization', v_org);
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value)
+  values ('custom','system_enabled','organization', v_org, v_org, 'true');
+  perform set_config('app.actor_system','campaign-test/writeperf3_red', true);
+  perform set_config('request.jwt.claims',
+                     jsonb_build_object('sub', c_admin, 'role', 'authenticated')::text, true);
+  perform set_config('role','authenticated', true);
+
+  v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Dispatch desk'));
+  v_tbl := custom.table_declare(v_org, jsonb_build_object(
+    'name','Shipment','slug','zz_wp3r0_' || substr(md5(random()::text),1,8),'type','entity',
+    'label_singular','Shipment','label_plural','Shipments','title_field','reference','display','page',
+    'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
+    'agent_writable',true,'retention_days',365,'on_delete','cascade',
+    'fields', jsonb_build_array(jsonb_build_object('name','reference')), 'parent_id', v_home::text));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Consignment reference','key','reference','type','text'));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Pallets','key','pallets','type','text'));
+  for i in 1..3 loop
+    perform custom.record_write(v_org, v_tbl, jsonb_build_object(
+      'reference', 'CC-2026-' || lpad((600 + i)::text, 5, '0'), 'pallets', (24 + i)::text));
+  end loop;
+
+  perform set_config('role', v_boss, true);
+  select f.id into v_field from custom.record f
+   where f.organization_id = v_org and f.table_id = custom.field_kernel_id()
+     and f.data ->> 'key' = 'pallets' and f.deleted_at is null;
+  perform set_config('role','authenticated', true);
+
+  -- THE DISPATCHER DECIDES PALLETS IS A NUMBER, NOT A WORD.
+  begin
+    perform custom.record_update(v_org, v_field,
+      jsonb_build_object('type','range','config', jsonb_build_object('kind','number')));
+    raise exception 'RED 0 FAILED: changing the column''s behaviour succeeded WITHOUT the before-row invalidation, so this block proves nothing';
+  exception when others then
+    get stacked diagnostics v_msg = message_text;
+    if v_msg like 'RED 0 FAILED%' then raise; end if;
+    if v_msg not like '%takes words, and it was given a number%' then
+      raise exception 'RED 0 FAILED: it refused, but with "%" rather than the stale-shape refusal this guard is about', v_msg;
+    end if;
+  end;
+  raise notice 'RED 0  without the before-row invalidation the same statement refuses its own conversion: "%"', v_msg;
+end;
+$t$;
+rollback;
+
 \set ON_ERROR_STOP on
 begin;
 set local statement_timeout = 0;

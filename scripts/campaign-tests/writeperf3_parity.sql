@@ -28,6 +28,15 @@
 -- changed underneath them. A number from one run at one time is not evidence. A and B here are
 -- separated by seconds, on one connection, in one transaction.
 --
+-- THE USE CASE, AND IT IS NOT DECORATION (owner law, 2026-09-21: no fake test data). Every
+-- record below is a REFRIGERATED SHIPMENT MANIFEST for a regional cold-chain haulier: a
+-- Carriers table of ten hauliers, and a Shipments table whose columns are the six a dispatcher
+-- actually keeps — the consignment reference, the declared value of the load, the delivery
+-- window, where the load has got to, the coordinator who owns it, and which carrier is moving
+-- it. The hundred refusals are the hundred mistakes a dispatcher really makes: a status nobody
+-- put on the list, a delivery window typed as a sentence, a value typed with a currency word in
+-- it, and a carrier or a coordinator id copied from a spreadsheet that is out of date.
+--
 -- Run: binlocal/p.sh -f scripts/campaign-tests/writeperf3_parity.sql
 \set ON_ERROR_STOP on
 begin;
@@ -46,17 +55,33 @@ create or replace function pg_temp.canon(p jsonb) returns text language sql immu
            '[0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?([+-][0-9]{2}(:?[0-9]{2})?|Z)?', '<t>', 'g');
 $$;
 
--- THE HUNDRED BAD ROWS. Five kinds, cycled, each carrying its own number so no two refusals are
--- the same sentence: an invented choice, a date nothing can read, a price that is not a number,
--- a relation pointing at a record that does not exist, and a person who is not one.
+-- THE HUNDRED MANIFEST LINES A DISPATCHER GETS WRONG. Five kinds, cycled, each carrying its own
+-- consignment reference so no two refusals are the same sentence: a status nobody put on the
+-- list, a delivery window typed as a sentence, a declared value with the currency written into
+-- it, a carrier id copied from a stale spreadsheet, and a coordinator who has left.
 create or replace function pg_temp.bad(p_i int) returns jsonb language sql immutable as $$
-  select case p_i % 5
-    when 0 then jsonb_build_object('deal', 'Bad ' || p_i, 'stage',   'Nonsense ' || p_i)
-    when 1 then jsonb_build_object('deal', 'Bad ' || p_i, 'closes',  'the ' || p_i || 'st of Smarch')
-    when 2 then jsonb_build_object('deal', 'Bad ' || p_i, 'amount',  'about ' || p_i || ' dollars')
-    when 3 then jsonb_build_object('deal', 'Bad ' || p_i, 'account', md5('acct' || p_i)::uuid::text)
-    else        jsonb_build_object('deal', 'Bad ' || p_i, 'owner',   md5('who' || p_i)::uuid::text)
+  select jsonb_build_object('reference', 'CC-2026-' || lpad((80000 + p_i)::text, 5, '0'))
+    || case p_i % 5
+    when 0 then jsonb_build_object('status',          (array['Held at dock','Refused at gate','Awaiting customs','Re-iced in yard','Driver swapped'])[1 + (p_i % 5)])
+    when 1 then jsonb_build_object('delivery_window', (array['next Tuesday morning','end of week','after the holiday','ASAP','when the yard opens'])[1 + (p_i % 5)])
+    when 2 then jsonb_build_object('declared_value',  'approx ' || (8 + p_i % 40) || 'k USD')
+    when 3 then jsonb_build_object('carrier',         md5('retired-carrier-' || p_i)::uuid::text)
+    else        jsonb_build_object('coordinator',     md5('left-the-company-' || p_i)::uuid::text)
   end;
+$$;
+
+-- ONE MANIFEST LINE, the way the dispatcher's sheet has it. Deterministic, so both halves of
+-- this file write byte-identical documents.
+create or replace function pg_temp.manifest(p_i int, p_coordinator uuid, p_carriers uuid[])
+returns jsonb language sql immutable as $$
+  select jsonb_strip_nulls(jsonb_build_object(
+    'reference',       'CC-2026-' || lpad(p_i::text, 5, '0'),
+    'declared_value',  round((1250 + (p_i * 137.55)::numeric % 48000)::numeric, 2),
+    'delivery_window', to_char(timestamp '2026-01-05 06:00' + ((p_i % 300) || ' days')::interval
+                               + ((p_i % 9) || ' hours')::interval, 'YYYY-MM-DD"T"HH24:MI'),
+    'status',          (array['In transit','Delivered','Delayed'])[1 + (p_i % 3)],
+    'coordinator',     case when p_i % 10 = 0 then p_coordinator::text else null end,
+    'carrier',         case when p_i % 7 = 0 then null else p_carriers[1 + (p_i % 10)]::text end));
 $$;
 
 create or replace function pg_temp.run(p_half text) returns void
@@ -70,7 +95,7 @@ declare
   v_boss text := current_user;
 begin
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ WRITEPERF3 PARITY ' || p_half,
+  values ('ZZZ Cascade Cold Chain — WRITE-PERF-3 parity ' || p_half,
           'zzz-wp3-par-' || lower(p_half) || '-' || substr(md5(random()::text),1,8), 'ZWC', c_admin)
   returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
@@ -87,42 +112,40 @@ begin
     raise exception '0: half % did not take the seat — current_user is %', p_half, current_user;
   end if;
 
-  v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Parity Home'));
+  v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Dispatch desk'));
   v_acct := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WP3 Account','slug','zz_wp3_acct_' || lower(p_half) || substr(md5(random()::text),1,6),'type','entity',
-    'label_singular','Account','label_plural','Accounts','title_field','title','display','page',
+    'name','Carrier','slug','zz_wp3_carrier_' || lower(p_half) || substr(md5(random()::text),1,6),'type','entity',
+    'label_singular','Carrier','label_plural','Carriers','title_field','title','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','title')), 'parent_id', v_home::text));
   perform custom.field_declare(v_org, v_acct, jsonb_build_object('label','Title','key','title','type','text'));
+  -- The ten hauliers this operator books against.
   for i in 1..10 loop
-    v_accts := v_accts || custom.record_write(v_org, v_acct, jsonb_build_object('title','Account ' || i));
+    v_accts := v_accts || custom.record_write(v_org, v_acct, jsonb_build_object('title',
+      (array['Cascade Freight Lines','Sonoran Cold Carriers','Great Lakes Reefer Co',
+             'Pinebelt Haulage','Rio Grande Coldway','Puget Sound Chill Freight',
+             'Ozark Temperature Logistics','Blue Ridge Cold Chain',
+             'High Plains Refrigerated','Gulf Coast Perishables'])[i]));
   end loop;
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WP3 Deal','slug','zz_wp3_deal_' || lower(p_half) || substr(md5(random()::text),1,6),'type','entity',
-    'label_singular','Deal','label_plural','Deals','title_field','deal','display','page',
+    'name','Shipment','slug','zz_wp3_shipment_' || lower(p_half) || substr(md5(random()::text),1,6),'type','entity',
+    'label_singular','Shipment','label_plural','Shipments','title_field','reference','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
-    'fields', jsonb_build_array(jsonb_build_object('name','deal')), 'parent_id', v_home::text));
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Deal','key','deal','type','text'));
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Amount','key','amount','type','currency','unit','USD'));
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Closes','key','closes','type','datetime'));
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Stage','key','stage','type','select','options', jsonb_build_array('Open','Won','Lost')));
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Owner','key','owner','type','member'));
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Account','key','account','type','relation','relation_target', v_acct::text));
+    'fields', jsonb_build_array(jsonb_build_object('name','reference')), 'parent_id', v_home::text));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Consignment reference','key','reference','type','text'));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Declared value','key','declared_value','type','currency','unit','USD'));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Delivery window','key','delivery_window','type','datetime'));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Status','key','status','type','select','options', jsonb_build_array('In transit','Delivered','Delayed')));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Coordinator','key','coordinator','type','member'));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Carrier','key','carrier','type','relation','relation_target', v_acct::text));
 
   -- ============ 1. TWO THOUSAND ROWS, FOUR STATEMENTS OF FIVE HUNDRED ============
   t0 := clock_timestamp();
   for b in 0..3 loop
-    select array_agg(jsonb_strip_nulls(jsonb_build_object(
-             'deal',   'Deal ' || g.i,
-             'amount', round((g.i * 12.37 + 100)::numeric, 2),
-             'closes', to_char(date '2026-01-01' + ((g.i % 360) || ' days')::interval, 'YYYY-MM-DD'),
-             'stage',  (array['Open','Won','Lost'])[1 + (g.i % 3)],
-             'owner',  case when g.i % 10 = 0 then v_home::text else null end,
-             'account', case when g.i % 7 = 0 then null else v_accts[1 + (g.i % 10)]::text end))
-             order by g.i)
+    select array_agg(pg_temp.manifest(g.i, v_home, v_accts) order by g.i)
       into v_docs from generate_series(b * 500 + 1, b * 500 + 500) g(i);
     v_ids := v_ids || custom.record_write_many(v_org, v_tbl, v_docs);
   end loop;
@@ -133,12 +156,7 @@ begin
   -- The same shape one row at a time, which is the door `custom.io_import_rows` uses today.
   t0 := clock_timestamp();
   for i in 2001..2200 loop
-    perform custom.record_write(v_org, v_tbl, jsonb_strip_nulls(jsonb_build_object(
-      'deal', 'Solo ' || i,
-      'amount', round((i * 12.37 + 100)::numeric, 2),
-      'closes', to_char(date '2026-01-01' + ((i % 360) || ' days')::interval, 'YYYY-MM-DD'),
-      'stage', (array['Open','Won','Lost'])[1 + (i % 3)],
-      'account', v_accts[1 + (i % 10)]::text)));
+    perform custom.record_write(v_org, v_tbl, pg_temp.manifest(i, v_home, v_accts));
   end loop;
   t1 := clock_timestamp();
   insert into wp3_ms values (p_half, '200 rows, one custom.record_write per row',
@@ -201,7 +219,7 @@ begin
     -- (a) inside a batch of ten, nine of which are perfectly good
     begin
       select array_agg(case when g.j = 5 then pg_temp.bad(i)
-                            else jsonb_build_object('deal', 'Fine ' || i || '-' || g.j) end order by g.j)
+                            else pg_temp.manifest(90000 + i * 10 + g.j, v_home, v_accts) end order by g.j)
         into v_docs from generate_series(1, 10) g(j);
       perform custom.record_write_many(v_org, v_tbl, v_docs);
       v_state := 'NOTHING WAS REFUSED'; v_msg := null; v_det := null; v_hint := null;

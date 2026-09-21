@@ -16,6 +16,12 @@
 -- `custom.record_write_many` is lane IMPORT's object and remains undone — so what this measures
 -- is the single-row door, which is what every bulk import in the platform uses today.
 --
+-- THE USE CASE (owner law, 2026-09-21: no fake test data). Five thousand rows of a REFRIGERATED
+-- SHIPMENT MANIFEST imported from the dispatcher's CSV: a consignment reference, the declared
+-- value of the load and the delivery window. A hundred of them are already in the system
+-- because the file was uploaded twice; fifty carry a delivery window somebody typed as a
+-- sentence instead of a date, which is the mistake that actually arrives in these files.
+--
 -- Run: binlocal/p.sh -f scripts/campaign-tests/writeperf3_five_thousand.sql
 \set ON_ERROR_STOP on
 begin;
@@ -35,7 +41,7 @@ declare
   v_seen int := 0; v_landed int := 0; v_dupe int := 0; v_bad int := 0; n int;
 begin
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ WRITEPERF3 5K ' || p_half,
+  values ('ZZZ Cascade Cold Chain — WRITE-PERF-3 import ' || p_half,
           'zzz-wp3-5k-' || lower(left(p_half, 1)) || '-' || substr(md5(random()::text),1,8), 'ZWC', c_admin)
   returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
@@ -51,36 +57,38 @@ begin
     raise exception '0: half % did not take the seat — current_user is %', p_half, current_user;
   end if;
 
-  v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','5K Home'));
+  v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Dispatch desk'));
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WP3 5K Deal','slug','zz_wp3_5k_' || substr(md5(random()::text),1,8),'type','entity',
-    'label_singular','Deal','label_plural','Deals','title_field','deal','display','page',
+    'name','Shipment','slug','zz_wp3_5k_' || substr(md5(random()::text),1,8),'type','entity',
+    'label_singular','Shipment','label_plural','Shipments','title_field','reference','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
-    'fields', jsonb_build_array(jsonb_build_object('name','deal')), 'parent_id', v_home::text));
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Deal','key','deal','type','text'));
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Amount','key','amount','type','currency','unit','USD'));
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Closes','key','closes','type','datetime'));
+    'fields', jsonb_build_array(jsonb_build_object('name','reference')), 'parent_id', v_home::text));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Consignment reference','key','reference','type','text'));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Declared value','key','declared_value','type','currency','unit','USD'));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Delivery window','key','delivery_window','type','datetime'));
 
-  -- THE HUNDRED THAT ARE ALREADY HERE.
+  -- THE HUNDRED CONSIGNMENTS THAT ARE ALREADY HERE, because the file was uploaded twice.
   for i in 1..100 loop
-    perform custom.record_write(v_org, v_tbl, jsonb_build_object('deal','Deal ' || i, 'amount', 1));
+    perform custom.record_write(v_org, v_tbl, jsonb_build_object(
+      'reference', 'CC-2026-' || lpad(i::text, 5, '0'), 'declared_value', 1250));
   end loop;
 
   v_run := (custom.io_import_begin(v_org, v_tbl,
              p_format => 'csv',
-             p_source_name => 'writeperf3-5k.csv',
+             p_source_name => 'manifest-2026-w03.csv',
              p_policy => jsonb_build_object('on_duplicate','skip'),
-             p_dedupe_key => 'deal') ->> 'import_id')::uuid;
+             p_dedupe_key => 'reference') ->> 'import_id')::uuid;
 
   t0 := clock_timestamp();
   for b in 0..9 loop
-    -- FIFTY REFUSED IN ALL: every hundredth row carries a date nothing can read.
+    -- FIFTY REFUSED IN ALL: every hundredth line has a delivery window typed as a sentence.
     select jsonb_agg(jsonb_build_object(
-             'deal',   'Deal ' || g.i,
-             'amount', round((g.i * 3.21 + 10)::numeric, 2)::text,
-             'closes', case when g.i % 100 = 0 then 'the thirty-first of Smarch'
-                            else to_char(date '2026-01-01' + ((g.i % 360) || ' days')::interval, 'YYYY-MM-DD') end)
+             'reference',       'CC-2026-' || lpad(g.i::text, 5, '0'),
+             'declared_value',  round((1250 + (g.i * 137.55)::numeric % 48000)::numeric, 2)::text,
+             'delivery_window', case when g.i % 100 = 0 then 'when the yard opens'
+                                     else to_char(timestamp '2026-01-05 06:00' + ((g.i % 300) || ' days')::interval,
+                                                  'YYYY-MM-DD"T"HH24:MI') end)
              order by g.i)
       into v_rows from generate_series(b * 500 + 1, b * 500 + 500) g(i);
     v_res := custom.io_import_rows(v_org, v_run, v_rows);
