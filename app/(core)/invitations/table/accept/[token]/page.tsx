@@ -54,6 +54,8 @@ import { Card } from "@/components/ui/card";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import { invitationSignUpHref } from "@/utils/auth/invitation-links";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { setOrganization } from "@/lib/redux/slices/appContextSlice";
 import {
   acceptOutsideShare,
   peekTableShare,
@@ -65,6 +67,7 @@ type Opened = Awaited<ReturnType<typeof acceptOutsideShare>>;
 export default function AcceptTableSharePage() {
   const params = useParams();
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const token = params.token as string;
 
   const [working, setWorking] = useState(false);
@@ -94,7 +97,28 @@ export default function AcceptTableSharePage() {
     setWorking(true);
     setError(null);
     try {
-      setOpened(await acceptOutsideShare(token));
+      const answer = await acceptOutsideShare(token);
+      // 🚨 SHE IS IN NO ORGANIZATION, SO SHE CAN NEVER CHOOSE ONE — and every
+      // record surface HOLDS a request that carries none. Measured headless on
+      // 2026-09-21: the customer accepted, landed on the table's route, and read
+      // *"Data records need an organization … no organization is selected for
+      // this session"* with a picker that had nothing in it. The hold is right
+      // for a member with several organizations and a dead end for an outside
+      // principal, who has exactly one reachable organization and no membership
+      // to pick it from.
+      //
+      // This is NOT the banned "default organization". That law forbids a
+      // resolver choosing an organization for somebody from a cookie, a saved
+      // preference or their personal org. This is the opposite: an EXPLICIT act
+      // by the person, on an organization the invitation itself named, at the
+      // moment they accept it — the same `appContext/setOrganization` a click in
+      // the picker dispatches, mirrored to the shared cookie by the same
+      // middleware. It confers nothing: the grant is what lets her read, and the
+      // ladder still answers every door.
+      dispatch(
+        setOrganization({ id: answer.organization_id, name: answer.organization }),
+      );
+      setOpened(answer);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       // The store is the truth about why; re-read it so the page says which.
@@ -102,7 +126,7 @@ export default function AcceptTableSharePage() {
     } finally {
       setWorking(false);
     }
-  }, [token, look]);
+  }, [token, look, dispatch]);
 
   const signIn = useCallback(async () => {
     // Sign-up carries the destination and the TOKEN back here (never the
