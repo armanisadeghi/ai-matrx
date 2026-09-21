@@ -15,23 +15,33 @@
  *      which asks the visibility ladder before it reads a name. It does not re-implement
  *      "read tableList, find title_field, call rowName" for the fourth time.
  *
- * WHY, MEASURED. Before this lane there were three independent copies of that resolution —
- * `labels.tsx`, `RelationPicker.tsx` and `PortalsPanel.tsx` — plus a fourth private picker,
- * `TableToPointAt`, inside `FieldEditor.tsx`. `TableToPointAt` is deleted and its callers now
- * mount `ReferenceBuilder`. Writing this guard then found THREE MORE the census had not
- * named — `Grid.tsx`, `Peek.tsx` and this repo's `TryEverythingScreen.tsx` — so the real
- * number is SIX, and all six are the BASELINE below. Not one of them could ever have shown
- * two columns of the target joined into one string, because none of them knew a display spec
- * existed.
+ * WHY, MEASURED. Before lane RELATION-DISPLAY there were three independent copies of that
+ * resolution — `labels.tsx`, `RelationPicker.tsx` and `PortalsPanel.tsx` — plus a fourth
+ * private picker, `TableToPointAt`, inside `FieldEditor.tsx`. `TableToPointAt` was deleted
+ * and its callers mount `ReferenceBuilder`. Writing this guard then found THREE MORE the
+ * census had not named — `Grid.tsx`, `Peek.tsx` and this repo's `TryEverythingScreen.tsx` —
+ * so the real number was SIX, and the guard shipped carrying all six as a BASELINE, saying
+ * out loud that "claiming zero by allowlisting them would be the same lie with extra steps".
  *
- * 🚨 THIS GUARD CARRIES A BASELINE, NOT A ZERO, AND SAYS SO OUT LOUD.
- * The brief this lane was given asked for "the known-good allowlist at zero". It is not
- * zero: six copies of the label resolution are still live, and moving them onto the store
- * door is a behaviour change to every grid, board, gallery, picker, peek and portal card in
- * the product — real work with its own verification, not a line in a guard. Claiming zero by
- * allowlisting them would be the same lie with extra steps. The baseline ONLY SHRINKS (the
- * same shape as `check:fields-stay-masked`), so the next lane to move one gets a guard that
- * refuses to let it come back.
+ * ✅ THE BASELINE IS NOW ZERO, AND IT GOT THERE BY MOVING THE CODE (lane
+ * RELATION-DISPLAY-2, 2026-09-21). Not one entry was allowlisted. The six split into two
+ * different questions that had been answered six times between them:
+ *
+ *   · THREE WERE RESOLVING A RELATION — an id in hand, words wanted. `labels.tsx`,
+ *     `RelationPicker.tsx` and, on the reading side, everything they feed. They now ask
+ *     `client.relationWordsMany`, which lands on `custom._words_for`: this column's own
+ *     display spec, the visibility ladder asked BEFORE the name is read, a whole page in
+ *     one round trip, and no 200-row prefetch ceiling anywhere. `labels.tsx`'s own comment
+ *     recorded the batch door as missing ("there is still no batch door on the store") —
+ *     REL-DISP built it, so the per-id lane is gone entirely.
+ *   · THREE WERE NAMING A RECORD WHOSE TABLE THEY ALREADY HELD — `Grid.tsx` (the Talk
+ *     action), `Peek.tsx` (the peek title), `PortalsPanel.tsx`'s client picker and this
+ *     repo's `TryEverythingScreen.tsx` in two places. There is no door to ask: they hold
+ *     the Table and they hold the document. What each wrote out by hand was the join
+ *     between them, and it now lives ONCE, as `recordNameIn` / `rowNameIn` in `names.ts`.
+ *
+ * THE BASELINE ONLY SHRINKS (the same shape as `check:fields-stay-masked`). At zero that
+ * means a single new copy of either question is a FAILURE, which is the point.
  *
  * SCOPE: this repo, and the `@ai-matrx/records*` packages in the sibling aidream checkout.
  * Run: `pnpm check:one-reference-builder` · `pnpm check:one-reference-builder --self-test`
@@ -72,28 +82,15 @@ const IS_THE_PRIMITIVE_ITSELF = (rel: string) =>
   rel.includes("check-one-reference-builder");
 
 /**
- * THE BASELINE — the three copies that were already there when this guard was written, each
- * with the reason it is still there. A new one is a FAILURE; removing one lowers the number
- * and the guard then refuses to let it grow back.
+ * THE BASELINE — EMPTY, and it was emptied by moving six files onto the primitive rather
+ * than by writing six names in here (see the header). A file that appears in a run is a
+ * NEW copy of a question this platform answers once, and the run fails.
+ *
+ * If you are about to add an entry: don't. The two answers are
+ * `client.relationWordsMany` when you hold an id, and `recordNameIn` / `rowNameIn` from
+ * `@ai-matrx/records-ui` when you hold the Table and the document.
  */
-const BASELINE: Record<string, string> = {
-  "aidream/apps/shared/records-ui/src/labels.tsx":
-    "the bulk label lane every grid, board and gallery cell reads through; moving it to relationWordsMany changes how every relation cell in the product is fetched",
-  "aidream/apps/shared/records-ui/src/RelationPicker.tsx":
-    "the relation editor's own copy, which also chases ids outside the first page",
-  "aidream/apps/shared/records-ui/src/PortalsPanel.tsx":
-    "the portal card's copy, on a surface a stranger can open",
-  // THE THREE THE WIDENED PATTERN FOUND, which the first version of this guard missed.
-  // These name the record a person is ALREADY looking at rather than the far side of a
-  // relation, so they are a milder form of the same question — but it is the same question,
-  // and the same one answer should serve it.
-  "aidream/apps/shared/records-ui/src/Grid.tsx":
-    "names the row for the Talk action from the table's title_field",
-  "aidream/apps/shared/records-ui/src/Peek.tsx":
-    "names the record being peeked at from the table's title_field",
-  "matrx-frontend/features/unified-data/test-bench/TryEverythingScreen.tsx":
-    "the test bench's own copy, in this repo rather than the package",
-};
+const BASELINE: Record<string, string> = {};
 
 const SKIP_DIR = new Set([
   "node_modules", ".git", ".next", "dist", "build", "coverage", ".turbo", ".wt", "tmp",
