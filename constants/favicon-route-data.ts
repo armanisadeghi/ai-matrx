@@ -62,6 +62,9 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/search", favicon: { color: "#2563eb", letter: "Sr" } },
   { href: "/camera", favicon: { color: "#166534", letter: "CA" } },
   { href: "/chat", favicon: { color: CHAT_COLOR, letter: "C" } },
+  // The in-app door onto a person's staff — the same thread their texts and
+  // calls use, so it shares Chat's hue and carries its own badge.
+  { href: "/staff", favicon: { color: CHAT_COLOR, letter: "Sa" } },
   { href: "/organizations", favicon: { color: "#b91c1c", letter: "O" } },
   // DD-137a — the emergency door's two surfaces. Both paths are load-bearing:
   // the database writes them as the deep link of every emergency-access notice.
