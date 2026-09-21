@@ -77,7 +77,8 @@
     "LIMITS-FIX-UI": 3038,
     "STAGE-RULES-2": 3039,
     "PEEK-SHARE": 3040,
-    "BUILDERS": 3041
+    "BUILDERS": 3041,
+    "REALTIME": 3042
   },
   "noDevServer": {
     "W6-DOCS": "Proves its contract through the document pipeline, not a browser.",
