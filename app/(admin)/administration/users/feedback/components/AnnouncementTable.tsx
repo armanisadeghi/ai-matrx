@@ -170,7 +170,7 @@ export default function AnnouncementTable() {
             <Card className="p-4">
                 <div className="mb-4 flex items-center justify-between">
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                        <strong>{announcements.length}</strong> announcement{announcements.length !== 1 ? 's' : ''}
+                        <strong>{announcements.length}</strong> loaded announcement{announcements.length !== 1 ? 's' : ''}
                     </span>
                     <div className="flex items-center gap-1">
                         <CopyButtons
@@ -208,8 +208,9 @@ export default function AnnouncementTable() {
                     </div>
                 </div>
 
-                {/* Arman requested canonical adoption. The source returns this complete
-                    local collection, so all rows stay available without inventing paging. */}
+                {/* Intentional override — Arman, 2026-09-21 shared-table rollout:
+                    the legacy unbounded read has no count/receipt. Treat it as a loaded
+                    local window, not a complete transport; existing row actions remain sole doors. */}
                 <MatrxDataTable
                     data={announcements}
                     columns={columns}
@@ -218,6 +219,10 @@ export default function AnnouncementTable() {
                     hidePagination
                     localPagination={{ mode: 'progressive' }}
                     viewTabs={false}
+                    copy={false}
+                    detail={{ enabled: false }}
+                    window={{ enabled: false }}
+                    coverage={{ matched: announcements.length, cap: announcements.length, answeredBy: 'client', noun: 'loaded announcement' }}
                     toolbar={{ search: true, searchPlaceholder: 'Search announcements…' }}
                     rowActions={(announcement) => <div className="flex items-center gap-2"><Badge className={announcementTypeColors[announcement.announcement_type]}>{announcement.announcement_type}</Badge><CopyButtons size="xs" label={`Announcement "${announcement.title}"`} human={() => announcementSummary(announcement)} json={() => announcement} agent={() => ({ kind: 'system-announcement', location: LOCATION, description: 'One system announcement row.', data: announcement, summary: announcementSummary(announcement), attributes: { id: announcement.id, type: announcement.announcement_type, active: announcement.is_active } })} /><Button variant="ghost" size="sm" onClick={() => handleView(announcement)} className="h-7 px-2" title="View details"><Eye className="w-4 h-4" /></Button><Button variant="ghost" size="sm" onClick={() => { setAnnouncementToDelete(announcement.id); setDeleteDialogOpen(true); }} className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete announcement"><Trash2 className="w-4 h-4" /></Button></div>}
                 />

@@ -17,7 +17,7 @@ import type { AiTask } from "@/features/ai-runs/types/aiRunTypes";
 const PAGE_LOCATION = "AI Matrx Admin — AI Tasks (/administration/ai/ai-tasks)";
 
 export default function AiTasksPage() {
-  const { tasks, isLoading, error, total, hasMore, loadMore, refresh } = useAiTasks({
+  const { tasks, isLoading, error, total, refresh } = useAiTasks({
     limit: 50,
     order_by: "created_at",
     order_direction: "desc",
@@ -76,7 +76,7 @@ export default function AiTasksPage() {
             {tasks.length > 0 && (
               <CopyButtons
                 size="sm"
-                label="All AI tasks"
+                label="Loaded AI tasks"
                 human={() =>
                   tasks
                     .map(
@@ -88,7 +88,7 @@ export default function AiTasksPage() {
                 agent={() => ({
                   kind: "ai-tasks",
                   location: PAGE_LOCATION,
-                  description: "The AI tasks currently listed.",
+                  description: "The currently loaded first source window of AI tasks.",
                   data: tasks,
                   attributes: { count: tasks.length, total },
                 })}
@@ -133,16 +133,21 @@ export default function AiTasksPage() {
             </Alert>
           ) : (
             <>
-              {/* The source exposes a precise total and offset loader. Arman requested
-                  canonical adoption; keep the source-owned window honest and loadable. */}
+              {/* Intentional override — Arman, 2026-09-21 shared-table rollout:
+                  this page historically exposes only its first 50-row source window.
+                  Keep that behavior rather than adding a loader that the 10-second
+                  poll would discard; the table labels this as a loaded local window. */}
               <MatrxDataTable
                 data={tasks}
                 columns={columns}
                 getRowId={(task) => task.id}
                 hidePagination
                 viewTabs={false}
-                coverage={{ total, matched: total, answeredBy: "source", noun: "task" }}
-                toolbar={{ title: "AI tasks", search: false, actions: hasMore ? <Button variant="outline" size="sm" onClick={() => void loadMore()} disabled={isLoading}>Load more</Button> : undefined }}
+                copy={false}
+                detail={{ enabled: false }}
+                window={{ enabled: false }}
+                coverage={{ total, matched: tasks.length, cap: 50, answeredBy: "client", noun: "loaded task" }}
+                toolbar={{ title: `Loaded tasks (${tasks.length} of ${total})`, search: false }}
                 rowActions={(task) => <CopyButtons size="icon" label={`Task ${task.id.slice(0, 8)}`} human={() => [`ID: ${task.id}`, `Name: ${task.task_name || "—"}`, `Status: ${task.status}`, `Created: ${formatDate(task.created_at)}`, `Updated: ${formatDate(task.updated_at)}`].join("\n")} agent={() => ({ kind: "ai-task", location: PAGE_LOCATION, description: "A single AI task row.", data: task, attributes: { id: task.id, status: task.status } })} />}
               />
             </>
