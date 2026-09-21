@@ -22,7 +22,7 @@
 // Wired as `pnpm check:install-gate:self-test`.
 
 import assert from "node:assert/strict";
-import { execFileSync, spawn } from "node:child_process";
+import { spawnSync, execFileSync, spawn } from "node:child_process";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, copyFileSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
@@ -91,20 +91,18 @@ function writeLiveLease(stateDir, root, pid) {
 }
 
 function runInstall(dir, stateDir, extraEnv = {}, args = ["install", "--prefer-offline"]) {
-  try {
-    const stdout = execFileSync("pnpm", args, {
-      cwd: dir,
-      env: { ...process.env, MATRX_PREVIEW_STATE_DIR: stateDir, MATRX_ALLOW_INSTALL_WITH_PREVIEW: "", ...extraEnv },
-      stdio: "pipe",
-      encoding: "utf8",
-    });
-    return { status: 0, output: stdout };
-  } catch (error) {
-    return {
-      status: typeof error.status === "number" ? error.status : 1,
-      output: `${error.stdout ?? ""}${error.stderr ?? ""}`,
-    };
-  }
+  // spawnSync, not execFileSync: a WARNING goes to stderr on a SUCCESSFUL run,
+  // and the test must be able to read it (the gate warns-and-proceeds by default).
+  const result = spawnSync("pnpm", args, {
+    cwd: dir,
+    env: { ...process.env, MATRX_PREVIEW_STATE_DIR: stateDir, MATRX_ALLOW_INSTALL_WITH_PREVIEW: "", ...extraEnv },
+    stdio: "pipe",
+    encoding: "utf8",
+  });
+  return {
+    status: typeof result.status === "number" ? result.status : 1,
+    output: `${result.stdout ?? ""}${result.stderr ?? ""}`,
+  };
 }
 
 // A process that is genuinely alive for the duration of the test, standing in
