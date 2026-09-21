@@ -16,6 +16,16 @@
 --      the kernel says she may see it, and the door now asks the kernel instead of nobody
 --   4  a record she may not open is withheld by the same sentence (REL-14, unchanged)
 --   5  a record she MAY open still reads its title (the record arm is untouched)
+--   6  the person ladder platform.knob_snapshot now asks says no for a stranger's settings
+--   7  and yes for herself, so the arm refuses somebody rather than everybody
+--   8  her own knob snapshot still resolves
+--   9  the organization ladder context.provision_scope_dataset now asks says no for a
+--      scope in a tenant she is not a member of
+--
+-- CLAUSES 6, 7 AND 9 ARE NOT MEASURED THROUGH THE DOOR, AND THEY SAY SO. Both of those new
+-- arms are guarded by `not iam.is_trusted_backend()`, which answers TRUE for every direct
+-- psql connection (`session_user <> 'authenticator'`) — as knob_snapshot's own organization
+-- arm already was. They assert the ladder the door asks, with the caller's own identity.
 --
 -- Its twin is scripts/campaign-tests/argsruled_red.sql, which asserts clause 1 the other way
 -- round and passes only while the defect is live.
@@ -35,6 +45,8 @@ declare
   v_model  constant uuid := '8c3c4436-d3b1-489d-b802-29456fb7f659';  -- ai.model_definition "allam-2-7b"
   v_jobs   constant uuid := 'af3bfff6-a255-41e5-9ac2-879d53816163';  -- Rincon's Jobs table
   v_withheld constant text := platform.relation_withheld_label();
+  c_stranger constant uuid := '000eaa28-cf5d-402a-8f01-5e2c24191323';  -- an account that shares no organization with Dana
+  v_foreign_scope constant uuid := '339751a3-1b2c-46bc-a2c3-5fb187bf59b3';  -- a context scope in a tenant she is not in
   v_out  text;
   v_job  uuid;
 begin
@@ -99,6 +111,46 @@ begin
     end if;
     raise notice '5 — a record she may open still reads "%". PASS', v_out;
   end if;
+
+
+  -- ══ 6 — THE PERSON LADDER ANSWERS NO FOR A STRANGER ════════════════════════════════
+  -- platform.knob_snapshot resolves the USER rung, so p_user_id names whose personal
+  -- overrides come back. Keith Watanabe has an account here and shares no organization
+  -- with Dana. The decision ARGS-RULED added is `iam.may_address_user_in_org`, and it is
+  -- guarded by `not iam.is_trusted_backend()` — exactly as this door's own ORGANIZATION
+  -- arm already is.
+  --
+  -- [NOT MEASURED THROUGH THE DOOR FROM THIS SEAT — AND IT SAYS SO RATHER THAN PASSING.]
+  -- `iam.is_trusted_backend()` answers TRUE for any session whose `session_user` is not
+  -- `authenticator`, which is every psql connection, including this one after `set role`.
+  -- So neither the new person arm nor the door's existing organization arm can fire here.
+  -- What IS measurable from this seat is the ladder the door now asks, and it is asked with
+  -- the caller's own identity:
+  if iam.may_address_user_in_org(c_stranger, v_rincon) then
+    raise exception '6 FAILED: the person ladder says Dana may address an account that shares no organization with her';
+  end if;
+  raise notice '6 — iam.may_address_user_in_org says no for a stranger (the door''s new arm; not measurable from a direct connection). PASS';
+
+  if not iam.may_address_user_in_org('4060701e-706a-4c76-b3ca-0bbc69fa5a14', v_rincon) then
+    raise exception '7 FAILED: the person ladder refuses Dana herself';
+  end if;
+  raise notice '7 — and yes for herself, so the arm is not a refusal of everybody. PASS';
+
+  -- ══ 8 — HER OWN SNAPSHOT STILL RESOLVES ════════════════════════════════════════════
+  if platform.knob_snapshot(v_rincon, '4060701e-706a-4c76-b3ca-0bbc69fa5a14', null) is null then
+    raise exception '8 FAILED: her own snapshot came back null — the door is refusing what it should allow';
+  end if;
+  raise notice '8 — her own snapshot still resolves. PASS';
+
+  -- ══ 9 — NOTHING IS PROVISIONED INTO A TENANT SHE IS NOT IN ═════════════════════════
+  -- context.provision_scope_dataset used to create a dataset, its fields, an instance row
+  -- and a context value in whatever organization the scope it was handed belongs to, with
+  -- no access decision at all. Its new arm carries the same `is_trusted_backend` escape a
+  -- server lane needs, so from this seat the ladder is asserted directly:
+  if iam.has_org_access((select s.organization_id from context.scopes s where s.id = v_foreign_scope)) then
+    raise exception '9 FAILED: Dana is a member of the organization that scope belongs to, so it is the wrong fixture';
+  end if;
+  raise notice '9 — iam.has_org_access says no for the organization that foreign scope belongs to (the door''s new arm). PASS';
 
   raise notice 'GREEN SUITE PASSED.';
 end $t$;
