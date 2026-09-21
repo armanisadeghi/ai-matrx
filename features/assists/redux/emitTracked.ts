@@ -58,6 +58,7 @@ export async function emitAssistTracked(
   const assist = toAssist({
     // Local mirror of the row we just wrote — enough for the dock.
     id,
+    custom_fields: {},
     user_id: userId,
     entity_type: input.entityType ?? null,
     entity_id: input.entityId ?? null,
