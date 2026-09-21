@@ -149,7 +149,35 @@ set local lock_timeout = '10s';
 
 -- ── DEFECT 1 PUT BACK: the containment that never reaches the ladder ───────────────────────
 -- From here the lock is held, so everything below is milliseconds.
-alter table custom.record disable trigger zz_w2_containment_association;
+-- 🚨 DERIVED FROM THE LIVE CATALOGUE (lane RED-SUITES-3, 2026-09-21). This line named ONE
+-- trigger, `zz_w2_containment_association`, and
+-- `writeperf2_the_after_triggers_fire_once_per_statement.sql` replaced it with the
+-- STATEMENT-level pair `zz_w2_containment_association_s_i` / `_s_u` over
+-- `custom._containment_association_stmt_insert` / `_stmt_update` — so this file died on
+-- "trigger ... does not exist" before it planted anything, and the whole red twin proved
+-- nothing. It now asks the catalogue which triggers on `custom.record` write the containment
+-- edge, disables every one of them, and RAISES if there are none left to disable.
+do $containment$
+declare v_sql text; v_n integer := 0;
+begin
+  for v_sql in
+    select format('alter table custom.record disable trigger %I', tg.tgname)
+      from pg_trigger tg
+      join pg_proc p on p.oid = tg.tgfoid
+      join pg_namespace n on n.oid = p.pronamespace
+     where tg.tgrelid = 'custom.record'::regclass
+       and not tg.tgisinternal
+       and n.nspname = 'custom' and p.proname like '\_containment\_association%'
+     order by tg.tgname
+  loop
+    execute v_sql; v_n := v_n + 1;
+  end loop;
+  if v_n = 0 then
+    raise exception 'DEFECT 1 precondition: no trigger on custom.record calls a custom._containment_association* body, so there is no containment edge to take away';
+  end if;
+  raise notice 'DEFECT 1 — % containment-edge trigger(s) disabled, derived from the live catalogue.', v_n;
+end
+$containment$;
 
 create or replace function custom.containment_edges(p_organization_id uuid)
  returns table(parent_id uuid, child_id uuid, via text)
