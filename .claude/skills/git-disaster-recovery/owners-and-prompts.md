@@ -41,8 +41,8 @@ can paste it straight into that chat:
 
 ```
 Cursor
-- "Canvas avatar menu vs top-right overlay": your header work is on branch
-  park/cursor-shell-header. Finish it there, commit only your files, tell me when it is ready for main.
+- "Canvas avatar menu vs top-right overlay": your header files are dirty in the shared
+  checkout. Commit only them, by path, on main and push. Tell me when it is on main.
 
 Codex
 - None.
@@ -73,7 +73,7 @@ Reply: what you own, the branch or PR name, and whether GitHub main already has 
 
 ```
 The shared folder now matches GitHub main.
-Commit your files on this tip or a short branch from it, and resolve conflicts only in your files.
+Commit your files on this tip, by explicit path, and resolve conflicts only in your files.
 If it is not destructive, get it onto main. Do not reset. Do not paste an old tree onto this one.
 Reply: what you landed, what you held, and where anything left still sits.
 ```
@@ -81,9 +81,9 @@ Reply: what you landed, what you held, and where anything left still sits.
 **C. Your leftover has a named place. Finish it or delete it.**
 
 ```
-Your work is at <branch / worktree / path>.
+Your work is at <remote branch / path>.
 Either delete it completely, or resolve it against current main, keep only the best final product, and commit that.
-Then delete every leftover branch and worktree. Deleted or committed, nothing in between. Work fast.
+Then delete every leftover remote branch. Deleted or committed, nothing in between. Work fast.
 If GitHub already has a newer version, GitHub wins: delete yours.
 ```
 
@@ -93,8 +93,8 @@ story to any of them.
 
 ## After they answer
 
-New branches and commits from owners are inventoried the same hour and land
-through intake like any clean leftover. Two owners on one file is a real
+New commits from owners are inventoried the same hour and land on main
+like any clean leftover. Two owners on one file is a real
 conflict: hold it, one line to Arman with a recommendation. Unclaimed unique
-product goes onto one named branch with a descriptive name and keeps its
+product is committed on main by path with a descriptive message and keeps its
 owner line open. Never leave it as anonymous dirt.
