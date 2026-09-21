@@ -1,8 +1,23 @@
 {
   "_what": "DD-162 ratchet. The definer-class census's remaining distance, as a CEILING that may only fall. `pnpm check:definer-class` fails when a number here rises, and the only honest way to change a number is downward, in the same commit that closes the functions.",
-  "_why_not_zero": "These are SECURITY DEFINER functions that read a private or confidential table and explain themselves to nobody the census can see. They are not edited blind: dropping iam.assert_class_read into a reader on a `private` token makes it raise ALWAYS (the gate refuses a blanket read on private/confidential by design), so a sweep would break live product flows one function at a time, and a sweep of allowlist rows would turn iam.definer_class_exemption into a wall of 'ok'. Each one needs a person to decide what it is FOR. That is a campaign; the ratchet is what stops it growing while the campaign runs.",
-  "_measured_at": "2026-09-12",
-  "_measured_by": "B-53 (DD-162), against brsgrqvjdzwihsvnfqkf",
-  "unexplained_readers": 183,
-  "unexplained_readers_reachable_by_anon": 54
+  "_why_not_zero": "These are SECURITY DEFINER functions that read a private or confidential table and explain themselves to nobody — not through the class gate, not by narrowing to the caller, not by asking whether the caller is an administrator, not by an organization predicate, not through an explicit anon rule in platform.client_callable_door, and not through the ladder (platform.definer_body_decides_access walks their whole call graph). They are not edited blind: dropping iam.assert_class_read into a reader on a `private` token makes it raise ALWAYS (the gate refuses a blanket read on private/confidential by design), so a sweep would break live product flows one function at a time. Each one needs a person to decide what it is FOR.",
+  "_measured_at": "2026-09-21",
+  "_measured_by": "GUARD-STAMPS, against brsgrqvjdzwihsvnfqkf (the live database)",
+  "_why_it_moved_183_to_11": "183 was measured on 2026-09-12 and had grown to 246 by 2026-09-21 — but 220 of those 246 were never holes. The census answered 'does this explain itself?' with four literal LIKE patterns and three regexes over ONE body, so a door that decides by calling a helper (custom.assert_store_door, custom.assert_client_may_change, iam.has_org_access — how this platform is actually built) read as a function answering to nobody. The census now also asks platform.definer_body_decides_access, the same transitive call-graph oracle the DD-223 door_body_must_decide constraint trigger already trusts, and reads the explicit anon rules the door registry already holds. The surface did not change; the measurement stopped being wrong. Migrations: guardstamps_definer_census_asks_the_one_ladder.sql and _lazily.sql.",
+  "_the_eleven_that_remain": [
+    "audit.table_impact — reads audit_broken_functions / audit_function_deps / meta_excluded_schema",
+    "platform._confirmation_admission — reads entity_type",
+    "platform.custom_reference_source — reads entity_type",
+    "platform.entity_default_list_scope — reads entity_type",
+    "public.entity_schemas_list — reads platform_schema",
+    "public.entity_types_list — reads entity_type",
+    "public.get_share_capabilities — reads entity_type",
+    "public.list_templates — reads templates / template_context_items / template_scope_types",
+    "public.masterwork_improvement_summary — reads hindsight_enrollment",
+    "public.reference_categories_list — reads platform_reference_category",
+    "public.system_org_id — reads system_orgs"
+  ],
+  "_what_they_have_in_common": "All eleven are reachable by `authenticated` only — ZERO are callable by a signed-out browser, down from 22 — and ten of the eleven read the platform's own CATALOGUE (entity_type, platform_schema, templates, system_orgs, reference categories) rather than any organization's data. That is why they answer nobody: they are answering a question about the shape of the product, not about a tenant's rows. Whether a catalogue table should be classed `private` at all is the decision each one is waiting on.",
+  "unexplained_readers": 11,
+  "unexplained_readers_reachable_by_anon": 0
 }
