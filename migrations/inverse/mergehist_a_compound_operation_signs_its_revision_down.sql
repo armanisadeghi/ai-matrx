@@ -292,7 +292,23 @@ end;
 $function$
 ;
 
-alter table history.row_versions drop column if exists operation_name;
-alter table history.row_versions drop column if exists migration_id;
+-- 🚨 THE TWO COLUMNS STAY (lane RED-SUITES-3, 2026-09-21). This file dropped them because
+-- MERGE-HIST's up-file added them, and the history store has moved on: the STATEMENT-level
+-- capture the perf rewrite installed — `history.record_capture_stmt_insert` / `_stmt_update` /
+-- `_stmt_delete`, attached to `custom.record` as `zzz_history_capture_s_i` / `_s_u` / `_s_d` —
+-- NAMES `migration_id` in its own INSERT. So dropping the column stopped the store recording
+-- anything at all, and `mergehist_red.sql` died on its first write:
+--     ERROR:  column "migration_id" of relation "row_versions" does not exist
+--     CONTEXT:  PL/pgSQL function history.record_capture_stmt_insert() line 17
+-- before it asked a single one of its questions. A history store that cannot take a row is not
+-- the defect this file exists to restore.
+--
+-- WHAT THE DEFECT IS, and it is fully restored above: nothing SIGNS a revision any more. Every
+-- door that wrote or read the signature is back to the body it had before MERGE-HIST, so the
+-- two columns sit there empty for anything those doors touch — which is exactly what "a
+-- compound operation does not sign its revision" looks like. Emptying them is the restoration;
+-- demolishing them is a broken table.
+update history.row_versions set operation_name = null, migration_id = null
+ where operation_name is not null or migration_id is not null;
 
 select * from platform.reopen_declared_doors('custom');

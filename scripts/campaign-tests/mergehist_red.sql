@@ -210,7 +210,9 @@ begin
   if v_red <> 5 then
     raise exception 'only % of 5 blocks are red', v_red;
   end if;
-  raise notice '% of 5 blocks are RED (the defect they assert is gone), and the inverse executed', v_red;
+  -- Wording corrected by lane RED-SUITES-3, 2026-09-21: this twin PASSES when all five flip,
+  -- and a block that flipped is a defect PUT BACK by the inverse, not one that is gone.
+  raise notice '% of 5 blocks are RED — the inverse executed and every defect MERGE-HIST closed is back and was observed', v_red;
 end $t$;
 
 -- ── THE SEAT IS A REAL SEAT — the access clause, as a real second person ─────────────────

@@ -79,28 +79,35 @@ begin
 end; $fn$;
 
 -- ── RED 5: the mute is not read, so "switched off" is a screen telling a lie ──────
-create or replace function custom.agg_subscriptions(p_organization_id uuid,
-                                                    p_saved_view_id uuid default null,
-                                                    p_cadence text default null)
-returns table(rule_id uuid, saved_view_id uuid, cadence text, schedule text,
-              channel text, recipient_user_id uuid, event_key text, name text)
-language sql stable set search_path to 'pg_catalog' as $fn$
-  select r.id,
-         nullif(r.data -> 'subscription' ->> 'saved_view_id', '')::uuid,
-         coalesce(r.data -> 'subscription' ->> 'cadence', 'immediate'),
-         nullif(r.data -> 'subscription' ->> 'schedule', ''),
-         coalesce(r.data -> 'subscription' ->> 'channel', 'in_app'),
-         nullif(r.data -> 'subscription' ->> 'recipient_user_id', '')::uuid,
-         coalesce(r.data -> 'subscription' ->> 'event_key', 'records.changed'),
-         coalesce(r.data ->> 'name', 'Subscription')
-    from custom.record r
-   where r.organization_id = p_organization_id
-     and r.data_class = 'rule' and r.deleted_at is null and r.data ? 'subscription'
-     -- THE DEFECT: no `muted` arm. Every consumer reads through here, so a subscription
-     -- somebody switched off keeps firing on every cadence and every channel.
-     and (p_saved_view_id is null or (r.data -> 'subscription' ->> 'saved_view_id')::uuid = p_saved_view_id)
-     and (p_cadence is null or coalesce(r.data -> 'subscription' ->> 'cadence', 'immediate') = p_cadence);
-$fn$;
+--
+-- 🚨 DERIVED FROM THE LIVE BODY (lane RED-SUITES-3, 2026-09-21). This block used to carry a
+-- hand-typed copy of `custom.agg_subscriptions`, and the live door has grown THREE columns
+-- since (`table_id`, `quiet_hours`, and a normalised cadence on both sides of the filter,
+-- RED-SUITES-2), so the plant collided with it before anything was proved:
+--     ERROR:  cannot change return type of existing function
+--     HINT:   Use DROP FUNCTION custom.agg_subscriptions(uuid,uuid,text) first.
+-- A red twin that carries a snapshot of a door is a red twin that stops planting the moment
+-- the door moves. This takes the LIVE bytes, deletes exactly the one line that reads the
+-- mute, and refuses BY NAME if that line is not there to delete — so it can never again
+-- quietly plant a body that differs from the shipped one in more ways than the defect.
+do $plant_red5$
+declare
+  v_def  text;
+  v_line constant text :=
+    '     and coalesce((r.data -> ''subscription'' ->> ''muted'')::boolean, false) = false' || E'\n';
+begin
+  select pg_get_functiondef(p.oid) into v_def
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'custom' and p.proname = 'agg_subscriptions';
+  if v_def is null then
+    raise exception 'RED 5 precondition: custom.agg_subscriptions does not exist, so there is no mute arm to take out';
+  end if;
+  if position(v_line in v_def) = 0 then
+    raise exception 'RED 5 precondition: the live custom.agg_subscriptions no longer carries the mute arm this twin removes, so this plant would prove nothing. Re-derive it from the live body before trusting anything below.';
+  end if;
+  execute replace(v_def, v_line, '');
+end
+$plant_red5$;
 
 do $red$
 declare
@@ -214,7 +221,9 @@ begin
   v_red := v_red + 1;
   raise notice 'RED 5 IS RED — a subscription somebody switched off is still live to DOOR-18''s reader (% row), so "off" would be a screen telling a lie', v_n;
 
-  raise notice '% of 5 blocks are RED (the defect each one asserts is gone from the live store)', v_red;
+  raise notice -- Wording corrected by lane RED-SUITES-3, 2026-09-21: a block that flipped is a defect PUT
+  -- BACK by this twin's own plants, not one that is gone.
+  '% of 5 blocks are RED — every defect the green suite closes was planted again and observed', v_red;
 end;
 $red$;
 
