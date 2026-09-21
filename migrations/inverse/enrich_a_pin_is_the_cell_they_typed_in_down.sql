@@ -1,5 +1,20 @@
 -- INVERSE of migrations/campaign/enrich_a_pin_is_the_cell_they_typed_in.sql
 -- Puts both bodies back byte for byte as they stood before that file ran.
+--
+-- 🚨 WHICH ONE RUNS, AND IN WHAT ORDER (lane INVERSE-GUARD, 2026-09-21).
+-- The body this file restores calls custom.carry_unchanged_value_stamps, and the sibling
+-- inverse `enrich_a_persons_edit_holds_the_cell_down.sql` REMOVES
+-- that function. They are not two independent undos: they are two halves of one lane's
+-- teardown, and the pair has exactly one safe order.
+--   · THIS FILE ALONE is what puts THIS file's defect back, and it is what the red twin beside
+--     it runs. custom.carry_unchanged_value_stamps is still there, so the body it restores still resolves.
+--   · `enrich_a_persons_edit_holds_the_cell_down.sql` is the DEEPER teardown — it takes
+--     custom.carry_unchanged_value_stamps itself away — so it may never run with this file's restore standing in
+--     front of it. Run it on its own, against the lane's shipped bodies, never after this one.
+-- Running the sibling FIRST and this one SECOND is the one order that leaves the access kernel
+-- calling a function that is gone, and it is the order this note exists to forbid.
+-- ground-standing-ok: b — the order above is stated, and neither half is run on top of the other.
+--
 
 set lock_timeout = '5s';
 set statement_timeout = '600s';

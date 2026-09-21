@@ -7,6 +7,21 @@
 --   answers read out of the kilobyte blob — and removes the third memo. Run for real by
 --   scripts/campaign-tests/writeperf3_red.sql, writeperf3_parity.sql and
 --   writeperf3_five_thousand.sql inside a rolled-back transaction.
+--
+-- 🚨 WHICH ONE RUNS, AND IN WHAT ORDER (lane INVERSE-GUARD, 2026-09-21).
+-- The body this file restores calls platform.memo_b_get, platform.memo_b_put, and the sibling
+-- inverse `writeperf3_the_table_is_read_once_per_statement_down.sql` REMOVES
+-- those functions. They are not two independent undos: they are two halves of one lane's
+-- teardown, and the pair has exactly one safe order.
+--   · THIS FILE ALONE is what puts THIS file's defect back, and it is what the red twin beside
+--     it runs. platform.memo_b_get is still there, so the body it restores still resolves.
+--   · `writeperf3_the_table_is_read_once_per_statement_down.sql` is the DEEPER teardown — it takes
+--     platform.memo_b_get itself away — so it may never run with this file's restore standing in
+--     front of it. Run it on its own, against the lane's shipped bodies, never after this one.
+-- Running the sibling FIRST and this one SECOND is the one order that leaves the access kernel
+-- calling a function that is gone, and it is the order this note exists to forbid.
+-- ground-standing-ok: b — the order above is stated, and neither half is run on top of the other.
+--
 
 CREATE OR REPLACE FUNCTION platform.memo_clear()
  RETURNS void

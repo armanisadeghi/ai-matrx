@@ -325,4 +325,21 @@ delete from platform.client_callable_door
    and declared_by = 'W4-DOOR-WRITE'
    and function_name in ('table_declare', 'applicable_fields', 'table_capacity', 'promote_table');
 
-drop function if exists custom.assert_client_may_reach(uuid, text);
+-- 🚨 `custom.assert_client_may_reach` STAYS STANDING (lane INVERSE-GUARD, 2026-09-21).
+-- THE WHOLE RECORD STORE NOW REACHES IT. Seventeen live triggers on `custom.record`,
+-- `custom.external_link` and `custom.external_source` — every shape guard, every write door,
+-- the undeclared-key guard, the claimed-column guard, the pipeline entry trigger, the relation
+-- contract on `platform.associations` — reach this predicate through `custom._store_door` and
+-- its siblings, and `custom.work_approval_decide`
+-- (`apprvfix_the_queue_holds_a_record_write_too.sql`) calls it directly. None of those lanes
+-- knew W4-DOOR-WRITE existed; they adopted the one predicate it left behind.
+--
+-- Dropping it here would not put this lane's defect back, it would break every write to the
+-- record store on the next statement — the same shape as `w1_v1_fixes_one_door_predicate_down.sql`
+-- (nineteen triggers over `custom.assert_store_door`) that lane RED-SUITES-3 measured and
+-- repaired on 2026-09-21. So the predicate is LEFT WHERE IT IS and the behaviour is NEUTERED
+-- instead: the eight door bodies above are restored to their pre-W4-DOOR-WRITE shape, so not
+-- one of this lane's doors decides membership any more, and the four `client_callable_door`
+-- rows this lane inserted are deleted below. That is the defect, in full, with the ground
+-- still under it.
+--   drop function if exists custom.assert_client_may_reach(uuid, text);   -- deliberately NOT dropped

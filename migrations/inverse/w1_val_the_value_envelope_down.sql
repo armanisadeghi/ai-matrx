@@ -131,21 +131,45 @@ as $function$
      and r.id = p_record_id;
 $function$;
 
+-- 🚨 ELEVEN OF THIS LANE'S EIGHTEEN FUNCTIONS STAY STANDING (lane INVERSE-GUARD, 2026-09-21).
+-- ENTITY-FIELDS ADOPTED THE VALUE ENVELOPE. `custom._entity_custom_fields_guard`
+-- (`entityfields_a_row_with_no_custom_fields_has_none.sql`) calls
+-- `custom.validate_value_envelope`, `custom.actor_word`, `custom.value_versions`,
+-- `custom.stamp_value_envelopes` and `custom.value_envelope_refusal`, and it is what the LIVE
+-- trigger `custom_fields_validation` on `crm.party` runs — so dropping them would leave that
+-- trigger attached over bodies that are gone and every write to a standard Entity carrying
+-- custom fields would raise. Two more were adopted elsewhere: `custom.history_actor`
+-- (`histscreens_a_record_can_say_who_changed_it.sql`) reads `custom.retired_actor_words`, and
+-- `custom.enrich_land` (`enrich_a_field_a_model_owns.sql`) reads `custom.absence_reasons`.
+-- The four vocabulary helpers those five bodies then call
+-- (`custom.actor_vocabulary`, `custom.per_value_access_words`, `custom.value_alternate_keys`,
+-- `custom.value_envelope_keys`) go with them: leaving a body standing over a callee that is
+-- gone is the same defect one hop down.
+--
+-- So those eleven are LEFT WHERE THEY ARE and the behaviour is NEUTERED instead. What carried
+-- W1-VAL's fix is gone in full: the `record_value_envelope` constraint, the `_value_envelope`
+-- trigger, the seven functions below, and — the whole of it — the two replaced bodies above,
+-- `custom._record_field_validation()` and `custom.record_values(uuid,uuid)`, restored byte for
+-- byte to W1-FIELD's hashes. With those two back, NOTHING in the record store writes, reads or
+-- validates an envelope: a value is a bare JSON scalar again, with no version, no actor and no
+-- provenance, which is precisely the defect this file exists to restore. The eleven survivors
+-- are reachable only from ENTITY-FIELDS' own guard and two screens outside this lane.
 drop function if exists custom.value_read(uuid, uuid, text);
 drop function if exists custom.record_values_versioned(uuid, uuid);
-drop function if exists custom.validate_value_envelope(uuid, custom.record[], jsonb);
 drop function if exists custom._value_envelope();
-drop function if exists custom.actor_word(text);
-drop function if exists custom.value_versions(jsonb, jsonb);
-drop function if exists custom.stamp_value_envelopes(jsonb, text, text, timestamptz);
 drop function if exists custom.intern_provenance(jsonb);
 drop function if exists custom.source_next_pointer(jsonb);
 drop function if exists custom.source_pointer(jsonb, jsonb);
 drop function if exists custom.value_envelope_ok(jsonb);
-drop function if exists custom.value_envelope_refusal(jsonb);
-drop function if exists custom.per_value_access_words();
-drop function if exists custom.value_alternate_keys();
-drop function if exists custom.value_envelope_keys();
-drop function if exists custom.retired_actor_words();
-drop function if exists custom.actor_vocabulary();
-drop function if exists custom.absence_reasons();
+--   the eleven deliberately NOT dropped:
+--   custom.validate_value_envelope(uuid, custom.record[], jsonb)
+--   custom.actor_word(text)
+--   custom.value_versions(jsonb, jsonb)
+--   custom.stamp_value_envelopes(jsonb, text, text, timestamptz)
+--   custom.value_envelope_refusal(jsonb)
+--   custom.per_value_access_words()
+--   custom.value_alternate_keys()
+--   custom.value_envelope_keys()
+--   custom.retired_actor_words()
+--   custom.actor_vocabulary()
+--   custom.absence_reasons()

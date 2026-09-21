@@ -545,4 +545,11 @@ delete from platform.client_callable_door
 
 drop function if exists platform.relation_edges_without_a_live_field();
 drop function if exists platform.relation_edge_has_a_live_field(uuid, uuid);
-drop function if exists platform.relation_withheld_label();
+-- 🚨 `platform.relation_withheld_label` STAYS STANDING (lane INVERSE-GUARD, 2026-09-21).
+-- REL-DISP adopted it: `custom._words_for` (`reldisp_a_relation_says_which_words_it_shows.sql`)
+-- returns it on the live card-label path, and ARGS-RULED's `platform.relation_label` returns it
+-- too. It is a one-line constant sentence, it carries none of this lane's behaviour, and
+-- dropping it would make every withheld relation label raise instead of saying what it says.
+-- The defect this file restores is carried entirely by the doors and the two edge functions
+-- above, all of which are taken back; the label is left where it is.
+--   drop function if exists platform.relation_withheld_label();   -- deliberately NOT dropped

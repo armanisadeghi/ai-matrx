@@ -1,6 +1,21 @@
 -- INVERSE of tabledelete_what_is_going_with_it_is_not_an_obstacle.sql — custom.delete_rule and
 -- custom.record_delete as tabledelete_a_table_takes_its_contents_with_it.sql left them, before
 -- the door said out loud what the whole operation was taking. Run it only to undo that file.
+--
+-- 🚨 WHICH ONE RUNS, AND IN WHAT ORDER (lane INVERSE-GUARD, 2026-09-21).
+-- The body this file restores calls custom.table_contents, and the sibling
+-- inverse `tabledelete_a_table_takes_its_contents_with_it_down.sql` REMOVES
+-- that function. They are not two independent undos: they are two halves of one lane's
+-- teardown, and the pair has exactly one safe order.
+--   · THIS FILE ALONE is what puts THIS file's defect back, and it is what the red twin beside
+--     it runs. custom.table_contents is still there, so the body it restores still resolves.
+--   · `tabledelete_a_table_takes_its_contents_with_it_down.sql` is the DEEPER teardown — it takes
+--     custom.table_contents itself away — so it may never run with this file's restore standing in
+--     front of it. Run it on its own, against the lane's shipped bodies, never after this one.
+-- Running the sibling FIRST and this one SECOND is the one order that leaves the access kernel
+-- calling a function that is gone, and it is the order this note exists to forbid.
+-- ground-standing-ok: b — the order above is stated, and neither half is run on top of the other.
+--
 
 set lock_timeout = '3s';
 set statement_timeout = '5min';

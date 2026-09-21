@@ -15,7 +15,15 @@ drop function if exists custom.pipeline_declare(uuid, uuid, jsonb);
 drop function if exists custom._pipeline_rule(uuid, uuid, text, text, text, text, jsonb, jsonb, jsonb);
 drop function if exists custom._pipeline_stage_key(uuid, uuid, text);
 drop function if exists custom.table_stage_field(uuid, uuid);
-drop function if exists custom._stage_field_key(uuid, uuid);
+-- 🚨 `custom._stage_field_key` STAYS STANDING (lane INVERSE-GUARD, 2026-09-21).
+-- STAGE-RULES-2 adopted it: `custom.pipeline_gate_preview`
+-- (`stagerules2_a_gate_remembers_what_it_was_asked.sql`) calls it on the live path, and that
+-- lane never knew PIPELINES existed. Restoring this lane's defect is not the same as breaking
+-- STAGE-RULES-2's gate preview, so the helper is LEFT WHERE IT IS and the behaviour is
+-- neutered instead: the six doors, their declaration rows, the entry trigger and the three
+-- replaced bodies above are what carried the fix, and every one of them is taken back below.
+-- Nothing in PIPELINES reaches `_stage_field_key` once they are gone.
+--   drop function if exists custom._stage_field_key(uuid, uuid);   -- deliberately NOT dropped
 
 delete from platform.client_callable_door
  where schema_name = 'custom'

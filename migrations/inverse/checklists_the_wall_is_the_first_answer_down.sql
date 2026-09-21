@@ -3,6 +3,21 @@
 --   can plant the real pre-fix bytes and show the sentence a stranger used to be told.
 --
 -- CHECKLISTS — the inverse of `checklists_the_wall_is_the_first_answer.sql`.
+--
+-- 🚨 WHICH ONE RUNS, AND IN WHAT ORDER (lane INVERSE-GUARD, 2026-09-21).
+-- The body this file restores calls custom.checklist_refusal, custom.checklist_steps_table, custom._checklist_instantiate, and the sibling
+-- inverse `checklists_a_checklist_is_a_template_of_work_down.sql` REMOVES
+-- those functions. They are not two independent undos: they are two halves of one lane's
+-- teardown, and the pair has exactly one safe order.
+--   · THIS FILE ALONE is what puts THIS file's defect back, and it is what the red twin beside
+--     it runs. custom.checklist_refusal is still there, so the body it restores still resolves.
+--   · `checklists_a_checklist_is_a_template_of_work_down.sql` is the DEEPER teardown — it takes
+--     custom.checklist_refusal itself away — so it may never run with this file's restore standing in
+--     front of it. Run it on its own, against the lane's shipped bodies, never after this one.
+-- Running the sibling FIRST and this one SECOND is the one order that leaves the access kernel
+-- calling a function that is gone, and it is the order this note exists to forbid.
+-- ground-standing-ok: b — the order above is stated, and neither half is run on top of the other.
+--
 
 set lock_timeout = '45s';
 

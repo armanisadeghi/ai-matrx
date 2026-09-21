@@ -4,6 +4,21 @@
 --   the kernel's own choice tables — restores the four bodies that read it there, and takes the
 --   `option_key` registry row back out. Running this restores a contract violation, which is
 --   what it is for.
+--
+-- 🚨 WHICH ONE RUNS, AND IN WHAT ORDER (lane INVERSE-GUARD, 2026-09-21).
+-- The body this file restores calls custom.choice_field_map, custom.choice_key_of, custom.choice_words, and the sibling
+-- inverse `choiceval_a_choice_is_its_own_word_down.sql` REMOVES
+-- those functions. They are not two independent undos: they are two halves of one lane's
+-- teardown, and the pair has exactly one safe order.
+--   · THIS FILE ALONE is what puts THIS file's defect back, and it is what the red twin beside
+--     it runs. custom.choice_field_map is still there, so the body it restores still resolves.
+--   · `choiceval_a_choice_is_its_own_word_down.sql` is the DEEPER teardown — it takes
+--     custom.choice_field_map itself away — so it may never run with this file's restore standing in
+--     front of it. Run it on its own, against the lane's shipped bodies, never after this one.
+-- Running the sibling FIRST and this one SECOND is the one order that leaves the access kernel
+-- calling a function that is gone, and it is the order this note exists to forbid.
+-- ground-standing-ok: b — the order above is stated, and neither half is run on top of the other.
+--
 
 set lock_timeout = '45s';
 set statement_timeout = '600s';
