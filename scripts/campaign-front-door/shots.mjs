@@ -27,7 +27,7 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ROOT = process.cwd();
-const PORT = 3001; // the one machine-wide dev server (CLAUDE.md § Dev server)
+const PORT = Number(process.env.FRONT_DOOR_PORT ?? 3044); // the one machine-wide dev server (pnpm preview:start prints the port)
 const HOST = "front-door.localhost";
 const ORIGIN = `http://${HOST}:${PORT}`;
 

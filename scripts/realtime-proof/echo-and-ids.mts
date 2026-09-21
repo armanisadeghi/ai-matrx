@@ -34,9 +34,14 @@ import type { RecordsDataSource } from "../../../aidream/apps/shared/records/src
 // into the one shared ledger and Marco's side then recognised her op id as its own, which
 // would mean dropping a real change. The harness was lying, not the product. Marco therefore
 // gets his OWN instance of the module, which is exactly what a second browser is.
-const marcoOps = (await import(
-  "../../../aidream/apps/shared/records/src/ops.ts?browser=marco"
-)) as { isOwnOp: (id: string | null | undefined) => boolean };
+// The `?browser=` suffix is a RUNTIME instruction to the loader (give me a second
+// instance), and TypeScript resolves specifiers, not loaders — a literal here makes it
+// assert TS2307 about a module that loads perfectly. Holding the specifier in a const
+// keeps the runtime behaviour exactly and stops the compiler claiming a false fact.
+const MARCO_OWN_INSTANCE = "../../../aidream/apps/shared/records/src/ops.ts?browser=marco";
+const marcoOps = (await import(MARCO_OWN_INSTANCE)) as {
+  isOwnOp: (id: string | null | undefined) => boolean;
+};
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -65,7 +70,14 @@ const bad = (m: string) => {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** A data source that counts every door it is asked for. */
-function countingSource(supa: SupabaseClient): { source: RecordsDataSource; calls: Map<string, number> } {
+// It is typed by WHAT IT USES, not by the whole client. Both seats are bound to the
+// `custom` schema, which is a different generic instantiation of `SupabaseClient` from
+// the default `"public"` one, and naming that type here made the compiler refuse both
+// call sites for a difference this function genuinely does not care about: it counts
+// door names and hands the call straight on.
+function countingSource(
+  supa: { rpc: (fn: string, args: Record<string, unknown>) => unknown; from: (table: string) => unknown },
+): { source: RecordsDataSource; calls: Map<string, number> } {
   const calls = new Map<string, number>();
   const source = {
     rpc: (fn: string, args: Record<string, unknown>) => {
