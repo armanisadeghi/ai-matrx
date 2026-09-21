@@ -1,4 +1,8 @@
-import { isAnswerlessTurn, type AnswerlessTurnInput } from "./answerless-turn";
+import {
+  countPersonVisibleParts,
+  isAnswerlessTurn,
+  type AnswerlessTurnInput,
+} from "./answerless-turn";
 
 /**
  * The witness for the production case found on 2026-09-18: `Quick Test Agent`
@@ -16,6 +20,8 @@ const settledEmptyAnswer: AnswerlessTurnInput = {
   renderedText: "",
   attachmentCount: 0,
   mediaBlockCount: 0,
+  typedPartCount: 0,
+  streamedAnswerBlockCount: 0,
 };
 
 describe("isAnswerlessTurn", () => {
@@ -77,5 +83,96 @@ describe("isAnswerlessTurn", () => {
     expect(
       isAnswerlessTurn({ ...settledEmptyAnswer, renderedText: "WATCHABLE TEST OK" }),
     ).toBe(false);
+  });
+});
+
+/**
+ * Walk 18, defect C — the notice printed UNDER a 170-word question the
+ * interviewer had just written, twice in five turns, on production.
+ *
+ * The witness is the walk's own turn 4: `chat.message` rows at positions
+ * 22–27 of conversation `e9e9b52a-df84-4d07-9ad1-60f4f151a45a`
+ * (`walk18-Drain and Heater Verdict`, 2026-09-21). The turn's three assistant
+ * rows are `thinking + tool_call`, `thinking + tool_call + tool_call`, and a
+ * 456-character text answer — a turn that plainly wrote something. It rendered
+ * from its live stream, so what the person read came from the stream's render
+ * blocks while the persisted row this decision was reading had not yet been
+ * committed with that text.
+ */
+describe("a turn that streamed an answer is never answerless", () => {
+  it("stays silent when the answer is on screen from the stream, not the row", () => {
+    expect(
+      isAnswerlessTurn({
+        ...settledEmptyAnswer,
+        // The row has not been committed with its text yet — the exact state
+        // the screen was in when the false notice printed.
+        renderedText: "",
+        // …while 1 text block for this request is on screen.
+        streamedAnswerBlockCount: 1,
+      }),
+    ).toBe(false);
+  });
+
+  it("still speaks for a turn that only thought and called tools", () => {
+    // The 2026-09-18 defect this whole file exists for: "Worked for 1.2s" over
+    // an empty bubble. Thinking / reasoning blocks are excluded from the
+    // streamed count (selectAnswerBlockCount), so it stays 0 here.
+    expect(
+      isAnswerlessTurn({ ...settledEmptyAnswer, streamedAnswerBlockCount: 0 }),
+    ).toBe(true);
+  });
+
+  it("stays silent when the whole answer is a typed part", () => {
+    expect(
+      isAnswerlessTurn({ ...settledEmptyAnswer, typedPartCount: 1 }),
+    ).toBe(false);
+  });
+});
+
+/**
+ * The part-shape half of the same rule, asserted over the REAL shapes the
+ * platform writes into `cx_message.content` — `decision_questions` and
+ * `decision_answers` became first-class message parts on 2026-09-20 (aidream
+ * 00a2ae6181 / e9df34bb93) and carry no text at all.
+ */
+describe("countPersonVisibleParts", () => {
+  it("counts a decision_questions part as output the person sees", () => {
+    expect(
+      countPersonVisibleParts([
+        {
+          type: "decision_questions",
+        },
+      ]),
+    ).toBe(1);
+  });
+
+  it("counts a decision_answers part — a decision holder writes no text", () => {
+    expect(countPersonVisibleParts([{ type: "decision_answers" }])).toBe(1);
+  });
+
+  it("counts a part type we have never heard of — new kinds are visible by default", () => {
+    expect(countPersonVisibleParts([{ type: "some_future_kind" }])).toBe(1);
+  });
+
+  it("counts neither thinking nor tool work — that was the original defect", () => {
+    // Walk 18's turn-4 rows, verbatim in shape: two tool-calling iterations.
+    expect(
+      countPersonVisibleParts([
+        { type: "thinking" },
+        { type: "tool_call" },
+        { type: "tool_call" },
+        { type: "tool_result" },
+        { type: "reasoning" },
+      ]),
+    ).toBe(0);
+  });
+
+  it("does not count plain text — `renderedText` measures that", () => {
+    expect(countPersonVisibleParts([{ type: "text" }, {}])).toBe(0);
+  });
+
+  it("is 0 for a row with no parts", () => {
+    expect(countPersonVisibleParts(undefined)).toBe(0);
+    expect(countPersonVisibleParts([])).toBe(0);
   });
 });

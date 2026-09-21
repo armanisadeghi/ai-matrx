@@ -2,6 +2,9 @@
 
 import { CircleSlash, Loader2 } from "lucide-react";
 
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+
 /**
  * The words for a turn that finished and produced no answer. The decision of
  * WHEN this shows lives in `answerless-turn.ts`; this file owns only what the
@@ -10,6 +13,17 @@ import { CircleSlash, Loader2 } from "lucide-react";
  * Written for someone who has never seen a stack trace: it says what happened,
  * what it means, and what to do — and it offers Retry only where retry is
  * actually wired, so there is no dead-looking control.
+ *
+ * 🚨 THE REMEDY IS WRITTEN TO THE PERSON WHO IS READING IT (walk 18, defect C)
+ *
+ * This box used to end, for everybody, with *"if it keeps coming back empty,
+ * the agent's instructions or the model it uses are the thing to change."* The
+ * Expert it was printed at on 2026-09-21 was a residential plumber halfway
+ * through an interview about drain lines. She writes no agent instructions and
+ * picks no model; she was handed an engineer's to-do list and no way to act on
+ * it. An Expert gets the fact and the one thing she can do — run it again.
+ * The engineering advice is true and worth keeping, so it stays, as a muted
+ * line for the admins who can actually act on it.
  */
 export function AssistantNoAnswer({
   onRetry,
@@ -18,6 +32,8 @@ export function AssistantNoAnswer({
   onRetry?: () => void;
   retrying?: boolean;
 }) {
+  const isAdmin = useAppSelector(selectIsSuperAdmin);
+
   return (
     <div className="mt-1 text-xs" data-assistant-no-answer>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
@@ -38,10 +54,18 @@ export function AssistantNoAnswer({
         )}
       </div>
       <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground/80">
-        Nothing came back from the model, so there is nothing to read. Running
-        it again usually settles it; if it keeps coming back empty, the agent&rsquo;s
-        instructions or the model it uses are the thing to change.
+        Nothing came back this time, so there is nothing to read. Nothing you
+        wrote was lost. Running it again usually settles it.
       </p>
+      {isAdmin && (
+        <p
+          className="mt-1 text-[11px] leading-relaxed text-muted-foreground/60"
+          data-assistant-no-answer-admin-detail
+        >
+          Admin: if it keeps coming back empty, the agent&rsquo;s instructions
+          or the model it uses are the thing to change.
+        </p>
+      )}
     </div>
   );
 }

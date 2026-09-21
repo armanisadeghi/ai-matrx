@@ -45,6 +45,7 @@ import {
   selectErrorIsFatal,
   selectRequestError,
   selectRenderBlockCount,
+  selectAnswerBlockCount,
   selectHasInlineError,
   selectProviderRetry,
   selectLiveCitationSources,
@@ -58,6 +59,7 @@ import {
   extractContentBlocks,
   isFailedRecord,
   extractRecordError,
+  selectIsLatestAssistantMessage,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { normalizeContentBlocks } from "@/features/agents/redux/execution-system/utils/normalize-content-blocks";
 import {
@@ -77,7 +79,7 @@ import { AssistantWarning } from "../../run/AssistantWarning";
 import { BreathingOrb } from "./BreathingOrb";
 import { AssistantActionBar } from "./AssistantActionBar";
 import { AssistantNoAnswer } from "./AssistantNoAnswer";
-import { isAnswerlessTurn } from "./answerless-turn";
+import { countPersonVisibleParts, isAnswerlessTurn } from "./answerless-turn";
 import { retryConversationTurn } from "@/features/agents/redux/execution-system/message-crud/retry-turn.thunk";
 import { commitInlineContentEdit } from "@/features/agents/redux/execution-system/message-crud/commit-inline-edit.thunk";
 import { toast } from "@/lib/toast";
@@ -391,6 +393,26 @@ export function AgentAssistantMessage({
     requestId ? selectRenderBlockCount(requestId) : () => 0,
   );
 
+  // What this turn actually STREAMED onto the screen as an answer (thinking
+  // and tool work excluded). While the turn renders from its stream source —
+  // the whole session, per the lifetime rule above — this is what the person
+  // is reading, and `renderedText` (the persisted row) may still be empty.
+  // Walk 18, defect C: asking only the row printed "This run finished without
+  // writing an answer" under a 170-word question. See `answerless-turn.ts`.
+  const streamedAnswerBlockCount = useAppSelector(
+    requestId ? selectAnswerBlockCount(requestId) : () => 0,
+  );
+
+  // Is this the conversation's newest assistant turn? Retry re-runs the LAST
+  // turn, so the "Run it again" remedy is only honest here — a control on an
+  // older turn would re-run something else. (Law 4: the remedy a person is
+  // told to use must exist, and must do what the sentence says.)
+  const isLatestAssistantMessage = useAppSelector(
+    messageId
+      ? selectIsLatestAssistantMessage(conversationId, messageId)
+      : () => false,
+  );
+
   // A MID-TURN error is already rendered inline at its chronological position
   // by EnhancedChatMarkdown (the `error` unified slot). When that happens we
   // must NOT also render the trailing copy below the content — that's the very
@@ -419,6 +441,8 @@ export function AgentAssistantMessage({
     renderedText,
     attachmentCount: attachmentParts.length,
     mediaBlockCount: serverProcessedBlocks?.length ?? 0,
+    typedPartCount: countPersonVisibleParts(extractContentBlocks(record)),
+    streamedAnswerBlockCount,
   });
 
   const showProviderRetry =
@@ -622,7 +646,13 @@ export function AgentAssistantMessage({
         ))}
       {answerless && (
         <AssistantNoAnswer
-          onRetry={canRetry ? handleRetry : undefined}
+          // The remedy is "run it again", so the control has to be there. It
+          // rides on the newest assistant turn (what `retryConversationTurn`
+          // actually re-runs); on an older turn the notice states the fact
+          // without offering a button that would re-run the wrong turn.
+          onRetry={
+            canRetry || isLatestAssistantMessage ? handleRetry : undefined
+          }
           retrying={retrying}
         />
       )}

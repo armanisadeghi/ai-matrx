@@ -420,6 +420,39 @@ export const selectRenderBlockCount =
     state.activeRequests.byRequestId[requestId]?.renderBlockOrder.length ?? 0;
 
 /**
+ * How many blocks this request actually STREAMED ONTO THE SCREEN as an answer
+ * — every render block that is not chain-of-thought and carries something to
+ * look at (`content` or `data`).
+ *
+ * Why this exists and `selectRenderBlockCount` is not enough (walk 18, defect
+ * C): a live turn renders from its stream source for the whole session, so
+ * "did this turn produce an answer" must be asked of the STREAM, not only of
+ * the persisted row — see `answerless-turn.ts`. And it must exclude
+ * `thinking` / `reasoning` via the same {@link NON_ANSWER_BLOCK_TYPES} every
+ * other "what did the model output" derivation uses, because a turn that only
+ * thought and called tools is precisely the one the answerless notice was
+ * written for ("Worked for 1.2s" over an empty bubble, 2026-09-18).
+ *
+ * Primitive (a number) — safe for `useAppSelector` without memoisation.
+ */
+export const selectAnswerBlockCount =
+  (requestId: string) =>
+  (state: RootState): number => {
+    const request = state.activeRequests.byRequestId[requestId];
+    if (!request) return 0;
+    let count = 0;
+    for (const blockId of request.renderBlockOrder) {
+      const block = request.renderBlocks[blockId];
+      if (!block || NON_ANSWER_BLOCK_TYPES.has(block.type)) continue;
+      const hasText =
+        typeof block.content === "string" && block.content.trim() !== "";
+      const hasData = block.data != null;
+      if (hasText || hasData) count += 1;
+    }
+    return count;
+  };
+
+/**
  * The LAST render block's content-ir envelope (`metadata.__ir`) whose root
  * kind matches `kind` — or, when `kind` is omitted, the last envelope with
  * ANY resolved (non-empty) root kind.
