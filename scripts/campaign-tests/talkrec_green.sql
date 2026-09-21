@@ -301,8 +301,15 @@ begin
   if v_caught is null then
     raise exception '5a: a viewer changed the record through the write door';
   end if;
-  if v_caught !~* '(access|permission|not yours|may not)' then
-    raise exception '5a: the refusal is not in plain words: %', v_caught;
+  -- 🚨 RE-PINNED (lane RED-SUITES-2, 2026-09-21). "In plain words" was measured by looking for
+  -- `access`, `permission`, `not yours` or `may not` — four pieces of database vocabulary, in a
+  -- suite whose whole subject is talking to a person. This lane's own ruling replaced them. The
+  -- sentence is now "You hold the viewer level on this record, and custom.record_update needs
+  -- the editor level.", and that is what is asserted: the level she holds, the level the door
+  -- needs, and the door — which no substring of jargon ever checked.
+  if v_caught not ilike '%viewer level%' or v_caught not ilike '%editor level%'
+     or v_caught not like '%custom.record_update%' then
+    raise exception '5a: the refusal does not name the level she holds, the level the door needs, and the door: %', v_caught;
   end if;
 
   perform set_config('request.jwt.claims', c_admin_j, true);

@@ -252,8 +252,17 @@ begin
     raise exception '2c FAILED — somebody shared at VIEWER took a write.';
   exception when insufficient_privilege then
     get stacked diagnostics v_msg = message_text;
-    if v_msg not like '%access%' and v_msg not like '%permission%' then
-      raise exception '2c FAILED — the refusal did not say what it was: "%"', v_msg;
+    -- 🚨 RE-PINNED (lane RED-SUITES-2, 2026-09-21). This clause asked whether the refusal
+    -- contained the word "access" or "permission" — it called that "saying what it was", and
+    -- it is the opposite: those are the words of a database, not of a person. Lane TALK-REC's
+    -- ruling replaced them. The sentence a person meets now is
+    --   "You hold the viewer level on this record, and custom.record_update needs the editor level."
+    -- The clause asserts THAT promise instead of the old vocabulary, and it is far stricter
+    -- than a substring of jargon: the refusal has to name the level she HOLDS, the level the
+    -- door NEEDS, and the door it was refused at.
+    if v_msg not ilike '%viewer level%' or v_msg not ilike '%editor level%'
+       or v_msg not like '%custom.record_update%' then
+      raise exception '2c FAILED — the refusal does not name the level she holds, the level the door needs, and the door: "%"', v_msg;
     end if;
   end;
 
