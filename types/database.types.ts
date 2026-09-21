@@ -10299,6 +10299,13 @@ export type Database = {
             foreignKeyName: "fk_cx_tool_call_parent"
             columns: ["parent_call_id"]
             isOneToOne: false
+            referencedRelation: "vw_tool_gate_verdict"
+            referencedColumns: ["tool_call_id"]
+          },
+          {
+            foreignKeyName: "fk_cx_tool_call_parent"
+            columns: ["parent_call_id"]
+            isOneToOne: false
             referencedRelation: "vw_tool_refetch"
             referencedColumns: ["repeat_tool_call_id"]
           },
@@ -10825,6 +10832,53 @@ export type Database = {
           unknown_cost_calls: number | null
         }
         Relationships: []
+      }
+      vw_tool_gate_verdict: {
+        Row: {
+          call_id: string | null
+          conversation_id: string | null
+          created_at: string | null
+          created_by: string | null
+          decided_by: string | null
+          kept_sections: number | null
+          limits_source: string | null
+          mandate_key: string | null
+          reason: string | null
+          result_format: string | null
+          retained_output_chars: number | null
+          section_count: number | null
+          shown_chars: number | null
+          threshold: number | null
+          tool_call_id: string | null
+          tool_name: string | null
+          total_chars: number | null
+          unjudged_kept_sections: number | null
+          withheld_sections: Json | null
+          withheld_sections_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_tool_call_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_tool_call_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_tool_call_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vw_tool_refetch: {
         Row: {
@@ -15703,6 +15757,30 @@ export type Database = {
         }
         Relationships: []
       }
+      channel_readiness: {
+        Row: {
+          channel: string
+          checked_at: string
+          checked_by: string
+          configured: boolean
+          detail: string
+        }
+        Insert: {
+          channel: string
+          checked_at?: string
+          checked_by: string
+          configured: boolean
+          detail: string
+        }
+        Update: {
+          channel?: string
+          checked_at?: string
+          checked_by?: string
+          configured?: boolean
+          detail?: string
+        }
+        Relationships: []
+      }
       contact_submissions: {
         Row: {
           admin_notes: string | null
@@ -17693,6 +17771,7 @@ export type Database = {
         Args: { p_inbound_message_id: string }
         Returns: string
       }
+      channel_readiness_say: { Args: { p_channel: string }; Returns: Json }
       claim_notifications_for_render: {
         Args: {
           p_lease_seconds?: number
@@ -17998,6 +18077,16 @@ export type Database = {
       }
       confirm_sms_tool_authorization: {
         Args: { p_call_id: string; p_recent_auth_at: string; p_user_id: string }
+        Returns: Json
+      }
+      confirm_voice_tool_authorization: {
+        Args: {
+          p_call_id: string
+          p_interaction_id: string
+          p_response_kind: string
+          p_response_value: string
+          p_user_id: string
+        }
         Returns: Json
       }
       consume_sms_tool_authorization: {
@@ -18559,6 +18648,25 @@ export type Database = {
           p_user: string
         }
         Returns: Json
+      }
+      notify_from_sql: {
+        Args: {
+          p_dedupe_key: string
+          p_deep_link: string
+          p_event_key: string
+          p_organization_id: string
+          p_payload: Json
+          p_recipient_label: string
+          p_recipient_user_id: string
+          p_target_id: string
+          p_target_kind: string
+          p_to_address: string
+        }
+        Returns: Json
+      }
+      record_channel_readiness: {
+        Args: { p_channel: string; p_configured: boolean; p_detail?: string }
+        Returns: undefined
       }
       record_notification_outcome: {
         Args: {
@@ -27520,7 +27628,6 @@ export type Database = {
           config: Json
           created_at: string
           created_by: string | null
-          credentials: Json
           deleted_at: string | null
           id: string
           is_active: boolean
@@ -27538,7 +27645,6 @@ export type Database = {
           config?: Json
           created_at?: string
           created_by?: string | null
-          credentials?: Json
           deleted_at?: string | null
           id?: string
           is_active?: boolean
@@ -27556,7 +27662,6 @@ export type Database = {
           config?: Json
           created_at?: string
           created_by?: string | null
-          credentials?: Json
           deleted_at?: string | null
           id?: string
           is_active?: boolean
@@ -29962,6 +30067,39 @@ export type Database = {
       }
       is_user_visible_path: { Args: { p_file_path: string }; Returns: boolean }
       min_tombstone_retention_days: { Args: never; Returns: number }
+      webhook_create: {
+        Args: {
+          p_description?: string
+          p_event_types?: string[]
+          p_organization_id: string
+          p_resource_types?: string[]
+          p_target_url: string
+        }
+        Returns: {
+          consecutive_failures: number
+          created_at: string
+          custom_fields: Json
+          description: string | null
+          event_types: string[] | null
+          id: string
+          is_active: boolean
+          last_attempt_at: string | null
+          last_success_at: string | null
+          max_consecutive_failures: number
+          organization_id: string
+          owner_id: string
+          resource_types: string[] | null
+          secret: string
+          target_url: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "webhooks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       webhook_dispatch: { Args: { p_limit?: number }; Returns: number }
       webhook_event_payload: {
         Args: { p_event_id: number; p_webhook_id: string }
@@ -29969,6 +30107,7 @@ export type Database = {
       }
       webhook_reconcile: { Args: never; Returns: number }
       webhook_redeliver: { Args: { p_delivery_id: string }; Returns: string }
+      webhook_rotate_secret: { Args: { p_webhook_id: string }; Returns: string }
       webhook_send_test: { Args: { p_webhook_id: string }; Returns: string }
       webhook_sign: {
         Args: { p_payload: string; p_secret: string }
@@ -57689,6 +57828,81 @@ export type Database = {
           },
         ]
       }
+      goal_clauses: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          extracted_at: string | null
+          extracted_by_holder: string | null
+          goal_grounding: string
+          goal_hash: string
+          goal_text: string
+          id: string
+          job_sentence: string | null
+          judgeable: boolean | null
+          judgeable_reason: string | null
+          mandate_key: string
+          metadata: Json
+          never_clauses: Json
+          organization_id: string
+          ratified_at: string | null
+          ratified_by: string | null
+          ratified_note: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          extracted_at?: string | null
+          extracted_by_holder?: string | null
+          goal_grounding?: string
+          goal_hash: string
+          goal_text: string
+          id?: string
+          job_sentence?: string | null
+          judgeable?: boolean | null
+          judgeable_reason?: string | null
+          mandate_key: string
+          metadata?: Json
+          never_clauses?: Json
+          organization_id: string
+          ratified_at?: string | null
+          ratified_by?: string | null
+          ratified_note?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          extracted_at?: string | null
+          extracted_by_holder?: string | null
+          goal_grounding?: string
+          goal_hash?: string
+          goal_text?: string
+          id?: string
+          job_sentence?: string | null
+          judgeable?: boolean | null
+          judgeable_reason?: string | null
+          mandate_key?: string
+          metadata?: Json
+          never_clauses?: Json
+          organization_id?: string
+          ratified_at?: string | null
+          ratified_by?: string | null
+          ratified_note?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       observation: {
         Row: {
           attempted_count: number
@@ -67359,6 +67573,27 @@ export type Database = {
         }
         Relationships: []
       }
+      realtime_topic_prefix: {
+        Row: {
+          admits_fn: unknown
+          description: string
+          prefix: string
+          registered_at: string
+        }
+        Insert: {
+          admits_fn: unknown
+          description: string
+          prefix: string
+          registered_at?: string
+        }
+        Update: {
+          admits_fn?: unknown
+          description?: string
+          prefix?: string
+          registered_at?: string
+        }
+        Relationships: []
+      }
       reference_categories: {
         Row: {
           is_active: boolean
@@ -69231,6 +69466,10 @@ export type Database = {
       _cf_valid_date: { Args: { p_value: string }; Returns: boolean }
       _cf_valid_datetime: { Args: { p_value: string }; Returns: boolean }
       _confirmation_admission: { Args: { p_relid: unknown }; Returns: string }
+      _door_follows_its_function_impl: {
+        Args: { p_schemas: string[] }
+        Returns: undefined
+      }
       _drop_custom_field_index: {
         Args: { p_definition_id: string }
         Returns: boolean
@@ -69271,6 +69510,10 @@ export type Database = {
         }
         Returns: number
       }
+      _provision_shape_guard_impl: {
+        Args: { p_cmds: Json }
+        Returns: undefined
+      }
       _provisioner_selftest_once: {
         Args: never
         Returns: {
@@ -69278,6 +69521,10 @@ export type Database = {
           detail: string
           status: string
         }[]
+      }
+      _reopen_declared_doors_after_revoke_impl: {
+        Args: never
+        Returns: undefined
       }
       _report_undeclared_confirmation_write: {
         Args: { p_org: string; p_relid: unknown; p_user: string }
@@ -70552,6 +70799,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      realtime_topic_admits: { Args: { p_topic: string }; Returns: boolean }
       reanchor_outsider_token: { Args: { p_token_id: string }; Returns: Json }
       rebuild_reachability: { Args: never; Returns: number }
       rebuild_static_row_probes: { Args: never; Returns: number }
@@ -75666,7 +75914,7 @@ export type Database = {
           p_is_public: boolean
           p_items?: Json
           p_list_name: string
-          p_organization_id: string
+          p_organization_id?: string
           p_public_read?: boolean
           p_user_id: string
         }
@@ -81216,6 +81464,7 @@ export type Database = {
         Returns: Json
       }
       system_org_id: { Args: { p_key: string }; Returns: string }
+      table_share_peek: { Args: { p_token: string }; Returns: Json }
       thread_contents: {
         Args: { thread_id: string }
         Returns: {
@@ -82691,7 +82940,7 @@ export type Database = {
           embedding: string
           hit_count: number
           model: string
-          organization_id: string | null
+          organization_id: string
         }
         Insert: {
           cache_key: string
@@ -82699,7 +82948,7 @@ export type Database = {
           embedding: string
           hit_count?: number
           model: string
-          organization_id?: string | null
+          organization_id: string
         }
         Update: {
           cache_key?: string
@@ -82707,7 +82956,7 @@ export type Database = {
           embedding?: string
           hit_count?: number
           model?: string
-          organization_id?: string | null
+          organization_id?: string
         }
         Relationships: []
       }
@@ -84096,7 +84345,7 @@ export type Database = {
           id: string
           latency_ms: number | null
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           pipeline_config: Json
           query: string
           query_hash: string
@@ -84111,7 +84360,7 @@ export type Database = {
           id?: string
           latency_ms?: number | null
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           pipeline_config?: Json
           query: string
           query_hash: string
@@ -84126,7 +84375,7 @@ export type Database = {
           id?: string
           latency_ms?: number | null
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           pipeline_config?: Json
           query?: string
           query_hash?: string
@@ -85350,6 +85599,7 @@ export type Database = {
           pre_read_score: number | null
           rank: number | null
           raw_search_result: Json | null
+          read_priority_reason: string | null
           recommended_use: string | null
           redundancy_group: string | null
           scrape_status: string
@@ -85361,6 +85611,7 @@ export type Database = {
           thumbnail_url: string | null
           title: string | null
           topic_id: string
+          triage_verdict: Json | null
           updated_at: string
           updated_by: string | null
           url: string
@@ -85402,6 +85653,7 @@ export type Database = {
           pre_read_score?: number | null
           rank?: number | null
           raw_search_result?: Json | null
+          read_priority_reason?: string | null
           recommended_use?: string | null
           redundancy_group?: string | null
           scrape_status?: string
@@ -85413,6 +85665,7 @@ export type Database = {
           thumbnail_url?: string | null
           title?: string | null
           topic_id: string
+          triage_verdict?: Json | null
           updated_at?: string
           updated_by?: string | null
           url: string
@@ -85454,6 +85707,7 @@ export type Database = {
           pre_read_score?: number | null
           rank?: number | null
           raw_search_result?: Json | null
+          read_priority_reason?: string | null
           recommended_use?: string | null
           redundancy_group?: string | null
           scrape_status?: string
@@ -85465,6 +85719,7 @@ export type Database = {
           thumbnail_url?: string | null
           title?: string | null
           topic_id?: string
+          triage_verdict?: Json | null
           updated_at?: string
           updated_by?: string | null
           url?: string
@@ -87244,6 +87499,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      realtime_topic_admits: { Args: { p_topic: string }; Returns: boolean }
       sch_tasks_enabled_by_id:
         | {
             Args: { p_task_ids: Json }

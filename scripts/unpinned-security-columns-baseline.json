@@ -57,8 +57,6 @@
   "docproc.processed_documents|std_update|w|owner_id",
   "education.game_room|std_insert|a|host_user_id",
   "education.game_room|std_update|w|host_user_id",
-  "files.webhooks|cld_webhooks_owner_all|*|secret",
-  "files.webhooks|platform_admin_all|*|secret",
   "hr.access_audit|std_insert|a|actor_user_id",
   "hr.access_audit|std_update|w|actor_user_id",
   "hr.candidate|std_insert|a|actor_user_id",

@@ -15,16 +15,20 @@ import type {
   WebhookDelivery,
 } from "./types";
 
-/** Generate a signing secret shown to the user once at creation. */
-export function generateWebhookSecret(): string {
-  const bytes = new Uint8Array(24);
-  crypto.getRandomValues(bytes);
-  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-  return `whsec_${hex}`;
-}
+// 🚨 THE SIGNING SECRET IS MINTED WHERE IT IS VERIFIED — not here. (SECURITY-SWEEP, 2026-09-21.)
+// This file used to carry `generateWebhookSecret()`: 24 bytes of `crypto.getRandomValues` in
+// the page, POSTed straight into `files.webhooks.secret` at create and at rotate. The
+// dispatcher then signs every outbound delivery with `files.webhook_sign(secret, body)`, so
+// the value the server proves itself with was chosen by whatever was running in the tab. It is
+// now minted by `files.webhook_create` / `files.webhook_rotate_secret` (SECURITY DEFINER,
+// owner-checked, `gen_random_bytes(24)`, same `whsec_` + 48 hex shape so every receiver that
+// already verifies these signatures is unaffected) and returned exactly once, which is what
+// the screen always promised. `secret` is withheld from the client grant entirely.
 
 // Every column EXCEPT `secret` — the signing secret is shown once at create /
-// rotate time and must never come back over the wire on a list read.
+// rotate time and must never come back over the wire on a list read. Since the column left
+// the client grant, this is also the only shape that READS: `select("*")` on this table is now
+// a 42501, which is the point — a screen never needs a secret to render.
 const WEBHOOK_LIST_COLUMNS =
   "id, owner_id, target_url, description, is_active, organization_id, event_types, resource_types, " +
   "last_attempt_at, last_success_at, consecutive_failures, max_consecutive_failures, created_at, updated_at";
@@ -50,7 +54,6 @@ export async function createWebhook(
   } = await supabase.auth.getUser();
   if (userErr || !user) throw new Error("You must be signed in to create a webhook.");
 
-  const secret = generateWebhookSecret();
   // 🚨 A WEBHOOK IS FILED IN AN ORGANIZATION, ALWAYS.
   // `files.webhooks` carries `public._stamp_org_default`, so the old
   // `?? null` was not "no organization" — it was the writer's PERSONAL
@@ -62,19 +65,16 @@ export async function createWebhook(
   // common-docs/policies/context-is-carried-never-rebuilt.md
   // org-fallback-deliberate: the person's own workspace is the "my own events" choice the org-wide toggle leaves off
   const organizationId = input.organization_id ?? (await resolvePersonalOrgId());
+  // The door mints the secret and returns the whole row once — including it. `owner_id` is
+  // stamped from `auth.uid()` inside the door, so it is not sent from here either.
   const { data, error } = await filesDb(supabase)
-    .from("webhooks")
-    .insert({
-      owner_id: user.id,
-      target_url: input.target_url,
-      secret,
-      description: input.description ?? null,
-      organization_id: organizationId,
-      event_types: input.event_types ?? null,
-      resource_types: input.resource_types ?? null,
-      is_active: true,
+    .rpc("webhook_create", {
+      p_target_url: input.target_url,
+      p_organization_id: organizationId,
+      p_description: input.description ?? null,
+      p_event_types: input.event_types ?? null,
+      p_resource_types: input.resource_types ?? null,
     })
-    .select("*")
     .single()
     .returns<Webhook>();
   if (error) throw new Error(`Failed to create webhook: ${error.message}`);
@@ -105,23 +105,21 @@ export async function updateWebhook(
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
-    .select("*")
+    .select(WEBHOOK_LIST_COLUMNS)
     .single()
     .returns<Webhook>();
   if (error) throw new Error(`Failed to update webhook: ${error.message}`);
   return data;
 }
 
-/** Rotate the signing secret. Returns the new secret (show once). */
+/** Rotate the signing secret through the door. Returns the new secret (show once). */
 export async function rotateWebhookSecret(id: string): Promise<string> {
-  const secret = generateWebhookSecret();
   const supabase = createClient();
-  const { error } = await filesDb(supabase)
-    .from("webhooks")
-    .update({ secret, updated_at: new Date().toISOString() })
-    .eq("id", id);
+  const { data, error } = await filesDb(supabase)
+    .rpc("webhook_rotate_secret", { p_webhook_id: id })
+    .returns<string>();
   if (error) throw new Error(`Failed to rotate secret: ${error.message}`);
-  return secret;
+  return data;
 }
 
 export async function deleteWebhook(id: string): Promise<void> {
