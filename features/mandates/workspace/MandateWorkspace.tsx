@@ -580,7 +580,7 @@ function OneMandateWorkspace({
             perspective={perspective}
             organizationName={perspective === "organization" && principal.kind === "org" ? nameOfOrg(principal.orgId) : null}
             buildTab={(tab): MandateAlchemyCapture => tab === "definition"
-              ? { status: "ready", savedOnly: true, data: { saved_definition: buildMandateDefinitionCore(data, perspective, perspective === "organization" && principal.kind === "org" ? nameOfOrg(principal.orgId) : null), pins: data.pins, pinned_context: data.pinnedContext } }
+              ? { status: "ready", savedOnly: true, data: { saved_definition: buildMandateDefinitionCore(data, perspective, perspective === "organization" && principal.kind === "org" ? nameOfOrg(principal.orgId) : null), pins: normalizeTransferJson(data.pins), pinned_context: data.pinnedContext } }
               : { status: "error", message: "This tab has not finished publishing its saved data." }}
           />
           </div>
