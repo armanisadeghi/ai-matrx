@@ -153,8 +153,17 @@ async function openTheBoard(page) {
   return body;
 }
 
+/**
+ * Held at module scope so the error path can CLOSE IT. Every guarded stop in this file
+ * throws, and the first version of the catch below wrote its note and returned without
+ * closing the browser — so a run that stopped on purpose left chromium alive until the
+ * outer `timeout` killed it fifteen minutes later. A walk that leaks a browser every time
+ * it does the right thing is a walk nobody runs twice.
+ */
+let browser = null;
+
 async function main() {
-  const browser = await chromium.launch({ headless: true });
+  browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
   const page = await context.newPage();
 
@@ -356,8 +365,9 @@ async function main() {
   await browser.close();
 }
 
-main().catch((error) => {
+main().catch(async (error) => {
   console.error(`[stagerules2] STOPPED: ${error?.message ?? error}`);
   writeFileSync(resolve(OUT, "stage-rules-walk.txt"), notes.concat([`STOPPED: ${error?.message ?? error}`]).join("\n") + "\n");
+  await browser?.close().catch(() => {});
   process.exitCode = 1;
 });
