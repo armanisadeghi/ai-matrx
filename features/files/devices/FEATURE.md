@@ -22,9 +22,11 @@ local mechanics only.
 | `useDevicesAndSync.ts` | The read, the realtime subscription, the announced polling fallback. |
 | `service.ts` | Direct-to-Supabase reads and the three intent writes. |
 | `honest-states.ts` | The mapping-state vocabulary as this browser renders it. |
-| `honest-states-parity.ts` | **Guard** — diffs the titles against the engine's generated artifact. |
+| `honest-states-parity.ts` | **Guard** — `pnpm check:honest-states-parity` (+ `:self-test`). Diffs values, titles and remedy actions against the engine's generated artifact, both directions. Wired into CI (`honest-states-parity` job, gated on `MATRX_LOCAL_REPO_TOKEN`) and both release-gate lanes. |
+| `components/SyncStorageMeters.tsx` | One storage meter per organization that OWNS a synced folder. |
+| `@/features/files/storage-meter/` | The meter itself — billing is its only source (D11). See that folder's header. |
 | `useNow.ts` | The shared clock (a `Date.now()` in a render body is impure). |
-| `app/(admin)/administration/files/devices/` | The admin page over `files.sync_mapping_admin_status`. |
+| `app/(admin)/administration/applications/sync/` | The admin page over `files.sync_mapping_admin_status`. |
 
 ## The five things that are easy to get wrong
 
@@ -43,9 +45,10 @@ local mechanics only.
 4. **The state words are not ours.** Values and titles come from
    `matrx-local/crates/matrx-sync/contracts/honest_states.json`, the same
    artifact that generates the `state` CHECK constraint. Run
-   `pnpm tsx features/files/devices/honest-states-parity.ts` after touching
-   `honest-states.ts`; it fails on any drift in either direction, and fails
-   (never skips) when the matrx-local checkout is missing.
+   `pnpm check:honest-states-parity` after touching `honest-states.ts`; it
+   fails on any drift in either direction, and fails (never skips) when the
+   matrx-local checkout is missing. CI runs it too, gated on
+   `MATRX_LOCAL_REPO_TOKEN` and SKIPPED-with-a-warning without it.
 5. **A remedy the browser cannot perform gets a sentence, not a button.** Most
    remedies are physical acts on a machine — grant a folder permission, free
    disk space, resolve a conflict. The row says which machine. Only
@@ -54,29 +57,53 @@ local mechanics only.
 
 ## The storage meter
 
-`useStorageQuota` / `StorageQuotaChip` (in `features/files/hooks` and
-`features/files/components/surfaces/desktop`). It reads `get_usage_status`
-direct-to-Supabase, and:
+`features/files/storage-meter/` — `summarizeOrgStorage` (pure), `useOrgStorageMeter`
+(the two reads) and `OrgStorageMeter` (the chip), rendered here by
+`components/SyncStorageMeters.tsx`, ONE per organization that owns a synced
+folder. D11: storage limits come from ONE resolver, `billing.resolve_capability`,
+metered to the organization.
 
-- the RPC **synthesizes zeros** when `files.user_storage_usage` has no row, so
-  the flattener reports `ledger_measured` and the chip renders "Usage being
-  recalculated" with no bar rather than "0 of 5 GB" about an unmeasured
-  account (SPEC-SERVER §8: metering only just landed, FS-L6 still rebuilds and
-  re-grains the ledger);
-- the plan **name** comes from `billing.plan_status` for the effective
-  organization (D11), not the retiring `files.account_tiers` ladder;
-- over quota and blocked link to `/pricing`, and a failed read says so with a
-  Retry.
+- The plan NAME **and** the limit come from the SAME read,
+  `billing.plan_status(p_org)`, whose every dimension is literally
+  `resolve_capability(user, capability, org)`. They cannot drift apart.
+- **Nothing falls back.** A failed billing read renders the sentence and a Try
+  again, never a number from somewhere else. `readPlanStatus` exists for exactly
+  that reason: `fetchPlanStatus` collapses every failure to `null`, which is how
+  a retired ladder's 5 GB came to sit under billing's plan word (L5-1).
+- `files.account_tiers` is NOT read here, directly or through
+  `public.get_usage_status` → `public.get_user_limits`. The measured bytes come
+  straight from `files.user_storage_usage` under RLS.
+- No ledger row → "Usage being recalculated", no bar. A confident 0% about an
+  unmeasured account is a lie.
+- The GRAIN is stated on screen: `public.apply_usage_delta` is keyed on the
+  user, so the bytes are this person's files and the limit is the
+  organization's. SPEC-SERVER §8's amendment permits that until FS-L6 re-grains
+  the ledger, and requires the two never be read as one sentence. Delete
+  `GRAIN_NOTE` the day FS-L6 lands.
+- The cloud-files sidebar (`NavSidebar` → `StorageQuotaChip` →
+  `useStorageQuota`) still reads the old ladder. That is the remaining
+  `account_tiers` reader on a user-facing surface; it is out of this item's
+  scope and belongs to FS-L6.
 
 ## Guards
 
 | Command | What it proves |
 |---|---|
-| `pnpm tsx features/files/devices/honest-states-parity.ts` | The browser's state titles equal the engine artifact's, verbatim. |
-| `pnpm tsx features/files/utils/user-visible-parity.ts` | The one visibility rule: the TS mirror equals the live SQL functions, and the browser's rendered set equals the predicate's set (needs `AI_ADMIN_*`). |
-| `npx jest features/files/hooks/useStorageQuota.test.ts features/files/utils/user-visible.test.ts` | The unmeasured-ledger and visibility unit covers. |
+| `pnpm check:honest-states-parity` | The browser's state values, titles and remedy actions equal the engine artifact's, verbatim, both directions. CI job + both release-gate lanes. |
+| `pnpm check:honest-states-parity:self-test` | …and that guard still goes red (three planted drifts). |
+| `pnpm check:user-visible-parity` | The one visibility rule: the TS mirror equals the live SQL functions, and the browser's rendered set equals the predicate's set (needs `AI_ADMIN_*`). Set-based — 4,945 paths in under a second through `files.is_user_visible_paths`. Knobs: `PARITY_PATH_BATCH`, `PARITY_MAX_PATHS`. |
+| `npx jest features/files/storage-meter features/files/devices features/files/utils/user-visible.test.ts` | The meter's honest states, the one-sentence-per-row rule, and the visibility unit covers. |
 
 ## Change log
+
+- **2026-09-21** — Verification findings L5-1…L5-4 fixed. The meter is
+  rebuilt on billing (see above) and no longer reads `files.account_tiers`; a
+  folder row derives ONE sentence from the state enum AND `last_seen_at`
+  (`describeMappingReport`), so a six-day-old `syncing` can no longer say
+  "Files are moving" beside "Silent since 6 days ago"; the knowledge toggle
+  says what it actually does (it writes the C11 knob, and the file service does
+  not honour it yet); and both parity guards are wired to `check:*` scripts
+  that CI and the release gates run.
 
 - **2026-09-18** — Each `DeviceCard` gained a **Home connection** row, and the
   tab gained an **Other computers** section for a computer that lends its
