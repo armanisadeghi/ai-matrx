@@ -3,7 +3,16 @@
 drop trigger if exists custom_record_field_type_converts_values on custom.record;
 drop function if exists custom._field_type_converts_values();
 drop function if exists custom.field_value_convert(jsonb, jsonb);
-drop function if exists custom.field_behaviour(jsonb);
+
+-- 🚨 `custom.field_behaviour(jsonb)` STAYS STANDING (lane INVERSE-GUARD, 2026-09-21). This file used to drop it.
+-- `custom.field_update` — the field-edit door in `enrich_a_persons_edit_holds_the_cell.sql`,
+-- a lane outside this one — has since adopted it and calls it on the live path, so taking it
+-- away would not put DOOR-FIX 3's defect back, it would break a door that has nothing to do
+-- with this lane. The defect IS put back in full by the two statements above: with
+-- `custom_record_field_type_converts_values` detached and `custom._field_type_converts_values`
+-- gone, nothing converts a value when a Field changes what it behaves as, which is the whole
+-- of what DOOR-FIX 3 fixed. The signature predicate standing underneath changes nothing,
+-- because nothing in this lane calls it any more.
 
 CREATE OR REPLACE FUNCTION custom.migrate_retype(p_organization_id uuid, p_id uuid, p_to text, p_note text DEFAULT NULL::text)
  RETURNS jsonb

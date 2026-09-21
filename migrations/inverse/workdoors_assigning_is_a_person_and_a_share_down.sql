@@ -21,14 +21,29 @@ delete from platform.client_callable_door
 drop function if exists custom.work_list(uuid, text, boolean, integer, integer);
 drop function if exists custom.work_set_state(uuid, uuid, uuid);
 drop function if exists custom.work_record_states(uuid, uuid);
-drop function if exists custom.work_assign(uuid, uuid, uuid, timestamptz, boolean);
-drop function if exists custom.work_person(uuid, uuid, boolean);
+
+-- 🚨 `custom.work_assign` AND `custom.work_person` STAY STANDING (lane INVERSE-GUARD, 2026-09-21). This file used to
+-- drop both here. Two lanes outside WORK-DOORS have adopted them and reach them on the live
+-- path: `custom._checklist_instantiate` in
+-- `checklists_a_checklist_is_a_template_of_work.sql` assigns through `custom.work_assign`,
+-- and `custom.io_cell` in `import_a_name_that_points_at_a_record.sql` resolves a person
+-- through `custom.work_person`. Both are reached from triggers standing on `custom.record`
+-- right now — `zz_ckl_watch` through `custom._checklist_watch` and `zzz_pipelines_on_entry`
+-- through `custom._pipeline_on_entry` — so dropping them would not put this lane's defect
+-- back: the next write to the record store would die on a function that does not exist,
+-- before the red twin asked anything. That is the class
+-- `storerel_a_relation_edge_names_its_field_down.sql` lost a session to.
+--
+-- THE DEFECT IS STILL PUT BACK by what remains: the client-door register rows go above, so no
+-- signed-in person can reach any of these verbs, and the three doors that nothing else calls
+-- are gone. Two bodies standing for two in-database callers are not the doors this lane
+-- opened.
 
 do $$
 declare v_left integer;
 begin
   select count(*) into v_left from pg_proc p
    where p.pronamespace = 'custom'::regnamespace
-     and p.proname in ('work_person', 'work_assign', 'work_record_states', 'work_set_state', 'work_list');
-  raise notice 'workdoors assignment inverse: % of the 5 functions remain (0 is correct)', v_left;
+     and p.proname in ('work_record_states', 'work_set_state', 'work_list');
+  raise notice 'workdoors assignment inverse: % of the 3 dropped functions remain (0 is correct; work_assign and work_person stay standing on purpose - see the note above)', v_left;
 end $$;

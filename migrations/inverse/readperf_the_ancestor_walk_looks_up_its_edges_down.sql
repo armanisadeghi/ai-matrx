@@ -29,6 +29,16 @@ AS $function$
   group by u.container_type, u.container_id;
 $function$;
 
+-- The DOOR row goes: after this file runs nothing in this lane reaches the per-node lookup,
+-- and a client door is a promise this lane no longer makes.
 delete from platform.client_callable_door
  where schema_name = 'custom' and function_name = 'carrying_edges_of';
-drop function if exists custom.carrying_edges_of(text, uuid);
+
+-- 🚨 `custom.carrying_edges_of(text, uuid)` ITSELF STAYS STANDING (lane INVERSE-GUARD, 2026-09-21). This file used
+-- to drop it. `custom.list_door_disagreements` in
+-- `exportfix_the_census_follows_the_export.sql` — a lane outside READ-PERF — has since
+-- adopted it and calls it on the live path, so dropping it would not restore READ-PERF's
+-- defect, it would break the export census. The defect IS restored in full by the body above:
+-- `custom.visibility_ancestors` walks the whole `custom.carrying_edges` view again, per node,
+-- which is exactly the slow shape this lane removed. A helper standing beside it that nothing
+-- in the walk calls costs the walk nothing.

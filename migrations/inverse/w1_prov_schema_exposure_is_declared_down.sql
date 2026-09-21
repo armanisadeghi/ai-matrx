@@ -24,7 +24,19 @@ set statement_timeout = '600s';
 
 drop function if exists platform.schema_exposure_violations(text);
 drop function if exists platform.schema_is_client_exposed(text);
-drop table if exists platform.schema_client_exposure;
+
+-- 🚨 `platform.schema_client_exposure` STAYS STANDING AND IS EMPTIED (lane INVERSE-GUARD, 2026-09-21). This file
+-- used to `drop table` it. `platform._reopen_declared_doors_after_revoke_impl` in
+-- `boot_lane_component_rls_and_event_trigger_execution.sql` — the boot lane, outside W1-PROV
+-- — has since adopted the registry and reads it on the live path, so dropping the table would
+-- not restore W1-PROV's defect, it would break the door-reopen path at boot with a relation
+-- that does not exist. EMPTYING IT IS THE DEFECT, EXACTLY: with no row in it, no schema is
+-- declared exposed, which is the state the RED probe measured — one
+-- `platform.provision(spec)` leaving the new relation `authenticated=arwd/postgres`. The
+-- readers above are gone, the three provisioner bodies below are back to their pre-fix
+-- definitions, and a registry nobody has declared anything in says exactly as little as a
+-- registry that is not there.
+delete from platform.schema_client_exposure;
 
 CREATE OR REPLACE FUNCTION iam.apply_table_grants(p_schema text, p_table text, p_variant text DEFAULT 'entity'::text)
  RETURNS void

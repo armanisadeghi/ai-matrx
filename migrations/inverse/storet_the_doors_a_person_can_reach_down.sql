@@ -1,13 +1,21 @@
 -- STORE-T file 1, the inverse: the doors closed again exactly as they were — the seven grants
 -- revoked, the register rows this lane added removed, the three new doors dropped, and the
 -- three replaced bodies put back byte-for-byte.
+--
+-- 🚨 `custom.my_level(uuid, uuid, text)` STAYS STANDING (lane INVERSE-GUARD, 2026-09-21). This file used to drop it
+-- with the other two doors. `custom.bookings` in
+-- `booking_a_booking_is_a_record_with_a_held_slot.sql` — a lane outside STORE-T — has since
+-- adopted it and calls it on the live path, and it is an access-kernel root besides, so
+-- dropping it would not restore STORE-T's defect, it would break the booking door. Its CLIENT
+-- DOOR is what STORE-T opened, and the client door is what this file takes back: the register
+-- row goes with the other two below, so a signed-in person can no longer reach it — which is
+-- the state the red twin measures. The body stays for the callers inside the database.
 
 revoke execute on function custom.value_read(uuid, uuid, text)       from authenticated;
 revoke execute on function custom.field_dependants(uuid, uuid)       from authenticated;
 revoke execute on function custom.table_type_field(uuid, uuid)       from authenticated;
 revoke execute on function custom.parity_field_types()               from authenticated;
 
-drop function if exists custom.my_level(uuid, uuid, text);
 drop function if exists custom.record_as_of(uuid, uuid, timestamp with time zone);
 drop function if exists custom.delete_preview(uuid, uuid);
 

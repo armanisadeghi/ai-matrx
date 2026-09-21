@@ -2,6 +2,16 @@
 --   It puts back the census body that counted only what `custom.query_principal()` could see —
 --   which answers a confident `cells: 0` to the role that owns `custom.record`, because that role
 --   has no session. Running this restores the silent zero, so it exists for the red twin.
+--
+-- 🚨 ONE OF THE TWO RUNS, AND IF BOTH RUN, THIS ONE FIRST (lane INVERSE-GUARD, 2026-09-21).
+-- The census body below calls `custom.choice_key_of` and `custom.choice_field_map`, and the
+-- sibling inverse `choiceval_a_choice_is_its_own_word_down.sql` takes both away — because it
+-- inverts the whole choice-word lane that created them, while this file inverts only the
+-- later census fix that landed on top of it. They invert in the reverse of the order they
+-- landed: this file first, the choice-word teardown second, and that teardown takes
+-- `custom.choice_census` with it, so after both have run nothing reaches a function that is
+-- gone. The other order is the only one that breaks, and an inverse pair is never run in it.
+-- ground-standing-ok: b
 
 set lock_timeout = '45s';
 set statement_timeout = '600s';

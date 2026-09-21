@@ -74,17 +74,31 @@ drop trigger if exists custom_record_containment_guard on custom.record;
 drop function if exists custom._table_shape_guard();
 drop function if exists custom._containment_guard();
 drop function if exists custom.record_reparent(uuid, uuid, uuid);
-drop function if exists custom.relation_own(uuid, uuid, uuid);
 drop function if exists custom.home_add(uuid, uuid, uuid);
-drop function if exists custom.table_declare(uuid, jsonb);
-drop function if exists custom.tables_at_home(uuid, uuid[]);
 drop function if exists custom.home_relations();
 drop function if exists custom.reachable_from(uuid, uuid[]);
-drop function if exists custom.containment_edges(uuid);
-drop function if exists custom.containment_chain(uuid, uuid);
-drop function if exists custom.containment_parent(jsonb);
-drop function if exists custom.containment_depth_ceiling(uuid);
-drop function if exists custom.table_kernel_id();
+
+-- 🚨 EIGHT OF THE FOURTEEN STAY STANDING (lane INVERSE-GUARD, 2026-09-21). This file used
+-- to drop
+-- `custom.relation_own`, `custom.table_declare`, `custom.tables_at_home`,
+-- `custom.containment_edges`, `custom.containment_chain`, `custom.containment_parent`,
+-- `custom.containment_depth_ceiling` and `custom.table_kernel_id` as well. Every one of them
+-- has been adopted since by a lane outside W1-TABLE and sits on the live path today —
+-- `custom.work_relation_kinds` (W3-WORK), `custom.work_approval_request` (APPRV-TAIL and
+-- APPRV-FIX), `custom.delete_rule` (DOOR-FIX), `custom.query_across_homes` (CHOICE-VAL),
+-- `custom.visibility_as_of` (AS-OF) and `history.who_could_see` (GUARD-SWITCH) — and
+-- `custom.table_kernel_id` in particular is reached by TWENTY-ONE triggers standing on
+-- `custom.record`, `custom.io_outbox` and `iam.permissions` right now. Dropping them would
+-- not restore W1-TABLE's defect: the next write to the record store would die on a function
+-- that does not exist, before the red twin asked its first question. That is the exact class
+-- `storerel_a_relation_edge_names_its_field_down.sql` lost a session to.
+--
+-- THE DEFECT IS STILL PUT BACK by what this file does drop: the two projections, the two
+-- guards on `custom.record` and their bodies, the reparent door, the home door, the home
+-- relation projection and the reachability walk are all gone, and REC-N-4's knob row goes
+-- below — so no Table has a home it is held to, nothing refuses a containment cycle and
+-- nothing enforces a depth ceiling, which is the world W1-TABLE found. Eight predicates
+-- standing underneath, called by nothing this lane leaves behind, hold nothing to anything.
 
 -- ── REC-N-4's knob row ─────────────────────────────────────────────────────────
 -- Only this lane's key, and only when no organization has overridden it: a DELETE that took

@@ -298,7 +298,14 @@ end;
 $function$;
 
 
-drop function if exists iam.member_lane_open(uuid);
+-- 🚨 `iam.member_lane_open(uuid)` STAYS STANDING (lane INVERSE-GUARD, 2026-09-21). This file used to drop it here.
+-- `custom.list_door_disagreements` in `exportfix_the_census_follows_the_export.sql` — a lane
+-- outside VIS-2 — has since adopted it and calls it on the live path, so dropping it would
+-- not restore VIS-2's defect, it would break the export census with a function that does not
+-- exist. THE KNOB IS WHAT IS TAKEN BACK, and the delete below takes it: with no
+-- `custom/member_default_visibility` row the reader answers from the platform default again,
+-- and the two kernel bodies restored above never ask it anything. That is the defect, put
+-- back, with nothing else broken.
 
 delete from platform.feature_knob
  where feature = 'custom' and key = 'member_default_visibility';

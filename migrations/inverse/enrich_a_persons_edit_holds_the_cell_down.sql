@@ -4,9 +4,18 @@
 -- 2026-09-20 before this lane ran — the two `-- based-on:` hashes in the forward file are
 -- hashes of exactly these texts — and drops the two functions the forward file added.
 --
--- RUN `migrations/inverse/enrich_the_trigger_takes_the_pin_down.sql` FIRST. The live trigger
--- `custom._value_envelope` calls both functions dropped here; putting the old trigger body
--- back is what stops it calling them.
+-- 🚨 RUN `migrations/inverse/enrich_the_trigger_takes_the_pin_down.sql` FIRST, AND THIS FILE
+-- REFUSES UNTIL YOU HAVE (lane INVERSE-GUARD, 2026-09-21). The trigger `_value_envelope` on
+-- `custom.record` runs
+-- `custom._value_envelope`, and that body calls both functions dropped below. Drop them with
+-- the enriched body still live and the next write to the record store dies on a function that
+-- does not exist, before any red twin asks its first question — the class
+-- `storerel_a_relation_edge_names_its_field_down.sql` lost a whole session to. The remedy here
+-- is NOT to detach the trigger: `_value_envelope` stamps every value on the store and is not
+-- this lane's to take off. It is to run the sibling inverse first, which puts
+-- `custom._value_envelope` back to the body that never asks for either function — and the
+-- `do` block below reads the LIVE body and refuses, by name, if that has not happened.
+-- ground-standing-ok: a
 --
 -- WHAT IT DOES NOT UNDO, and says so rather than pretending: a `pinned` key already written
 -- into a value envelope stays in the document. Putting the old custom.value_envelope_keys()
@@ -16,6 +25,27 @@
 
 set lock_timeout = '5s';
 set statement_timeout = '600s';
+
+-- THE ORDER IS CHECKED, NEVER ASSUMED. `pg_get_functiondef` is the live text of the body the
+-- live trigger runs; if it still reaches either function this file is about to take away, the
+-- file stops here and says which sibling puts that right.
+do $order$
+declare
+  v_def text;
+begin
+  select pg_get_functiondef(p.oid) into v_def
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'custom' and p.proname = '_value_envelope'
+   limit 1;
+  if v_def is not null
+     and (v_def like '%pin_agent_cells%' or v_def like '%carry_unchanged_value_stamps%') then
+    raise exception 'REFUSING to drop custom.pin_agent_cells / custom.carry_unchanged_value_stamps: the live custom._value_envelope() still calls them, and the trigger _value_envelope on custom.record still runs it'
+      using errcode = '2BP01',
+            hint = 'Run migrations/inverse/enrich_the_trigger_takes_the_pin_down.sql first - it puts custom._value_envelope() back to the body that asks for neither. A dropped function under an attached trigger is not a defect put back, it is a broken table.';
+  end if;
+end;
+$order$;
 
 drop function if exists custom.pin_agent_cells(jsonb, jsonb, text[]);
 drop function if exists custom.carry_unchanged_value_stamps(jsonb, jsonb);
