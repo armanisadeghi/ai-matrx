@@ -516,6 +516,29 @@ export const ENDPOINTS = {
     /** GET — Costs */
     costs: (projectId: string) => `/research/${projectId}/costs` as const,
   },
+
+  /**
+   * ACTION REQUESTS — `platform.action_request`. An agent asks the person it
+   * works for for ONE thing; they answer on `/q/<token>` and the parked turn
+   * resumes.
+   *
+   * All three sit on aidream's PUBLIC router at the BARE prefix (no `/api`,
+   * no version), because the person tapping them has no account in the general
+   * case. They are POSTs deliberately — the token would otherwise sit in a URL,
+   * which means in the access log and in every proxy between here and it.
+   *
+   * Reached ONLY from `features/action-requests/service.ts` (server lane): the
+   * `Authorization` header is what separates a signed-in completion from a
+   * bearer one, so the decision to send it belongs where the session cookie is.
+   */
+  actionRequests: {
+    /** POST — what the page draws. MUTATES NOTHING. */
+    open: "/action-requests/open" as const,
+    /** POST — the answer. */
+    complete: "/action-requests/complete" as const,
+    /** POST — "text me a new link". Rate-limited in the database. */
+    remint: "/action-requests/remint" as const,
+  },
 } as const;
 
 // NOTE: The AI runtime v1/v2 spine version now lives in
