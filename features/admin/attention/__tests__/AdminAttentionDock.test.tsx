@@ -178,6 +178,31 @@ function alarm(over: Partial<SystemScheduleAlarm> = {}): SystemScheduleAlarm {
 
 let container: HTMLDivElement;
 let root: Root;
+let resizeObservers: ResizeObserverCallback[] = [];
+const originalResizeObserver = globalThis.ResizeObserver;
+const initialViewport = { width: window.innerWidth, height: window.innerHeight };
+
+function installDockGeometry(element: HTMLElement): void {
+  Object.defineProperties(element, {
+    offsetWidth: {
+      configurable: true,
+      get: () =>
+        element.dataset.surfaceValue === "admin_attention_dock_collapsed" ? 180 : 460,
+    },
+    offsetHeight: {
+      configurable: true,
+      get: () =>
+        element.dataset.surfaceValue === "admin_attention_dock_collapsed" ? 48 : 260,
+    },
+  });
+  element.getBoundingClientRect = () => {
+    const width = element.offsetWidth;
+    const height = element.offsetHeight;
+    const left = Number.parseFloat(element.style.left) || 312;
+    const top = Number.parseFloat(element.style.top) || 344;
+    return { left, top, right: left + width, bottom: top + height, width, height } as DOMRect;
+  };
+}
 
 async function tick(): Promise<void> {
   await act(async () => {
@@ -230,6 +255,18 @@ beforeEach(() => {
   window.sessionStorage.clear();
   clearMutes();
   clearSnooze();
+  Object.defineProperty(window, "innerWidth", { configurable: true, value: 500 });
+  Object.defineProperty(window, "innerHeight", { configurable: true, value: 400 });
+  resizeObservers = [];
+  class DockResizeObserver {
+    constructor(callback: ResizeObserverCallback) {
+      resizeObservers.push(callback);
+    }
+    disconnect() {}
+    observe() {}
+    unobserve() {}
+  }
+  globalThis.ResizeObserver = DockResizeObserver as unknown as typeof ResizeObserver;
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -238,6 +275,10 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   container.remove();
+  if (originalResizeObserver) globalThis.ResizeObserver = originalResizeObserver;
+  else delete (globalThis as { ResizeObserver?: typeof ResizeObserver }).ResizeObserver;
+  Object.defineProperty(window, "innerWidth", { configurable: true, value: initialViewport.width });
+  Object.defineProperty(window, "innerHeight", { configurable: true, value: initialViewport.height });
 });
 
 describe("AdminAttentionDock", () => {
@@ -269,6 +310,51 @@ describe("AdminAttentionDock", () => {
     expect(title).toContain("1 scheduled job is switched off");
     expect(title).toContain("2 providers are down");
     expect(document.documentElement.dataset.adminAttention).toBe("expanded");
+  });
+
+  it("always starts compact, even when an old tab remembered the expanded dock", async () => {
+    window.sessionStorage.setItem("matrx.admin-attention.collapsed", "0");
+    fetchSystemScheduleAlarms.mockResolvedValue([alarm()]);
+    fetchOpenOutages.mockResolvedValue([]);
+
+    await mount();
+
+    expect(buttonByLabel("Expand the attention dock")).toBeDefined();
+    expect(container.querySelector('[data-surface-value="admin_attention_dock"]')).toBeNull();
+    expect(window.sessionStorage.getItem("matrx.admin-attention.collapsed")).toBeNull();
+  });
+
+  it("keeps a dock dragged against the edge fully in-bounds when it expands", async () => {
+    fetchSystemScheduleAlarms.mockResolvedValue([alarm()]);
+    fetchOpenOutages.mockResolvedValue([]);
+    // This is the exact persisted position produced when a person drags the
+    // compact pill to the lower-right edge.
+    window.localStorage.setItem(
+      "matrx.admin-attention.position",
+      JSON.stringify({ x: 312, y: 344 }),
+    );
+    await mount();
+
+    const dock = container.querySelector('[data-surface-value="admin_attention_dock_collapsed"]') as HTMLElement;
+    installDockGeometry(dock);
+    await act(async () => {
+      resizeObservers.forEach((callback) => callback([], {} as ResizeObserver));
+    });
+    expect(dock.style.left).toBe("312px");
+    expect(dock.style.top).toBe("344px");
+
+    await expand();
+    await act(async () => {
+      resizeObservers.forEach((callback) => callback([], {} as ResizeObserver));
+    });
+
+    expect(dock.style.left).toBe("32px");
+    expect(dock.style.top).toBe("132px");
+    const box = dock.getBoundingClientRect();
+    expect(box.left).toBeGreaterThanOrEqual(8);
+    expect(box.top).toBeGreaterThanOrEqual(8);
+    expect(box.right).toBeLessThanOrEqual(window.innerWidth - 8);
+    expect(box.bottom).toBeLessThanOrEqual(window.innerHeight - 8);
   });
 
   it("a schedule row carries its doors and its fix", async () => {

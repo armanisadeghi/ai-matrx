@@ -20,7 +20,7 @@
  * surface off-screen, and `reset()` always brings it back to its anchor.
  */
 
-import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 export interface DraggableFloatPosition {
   x: number;
@@ -30,12 +30,8 @@ export interface DraggableFloatPosition {
 interface UseDraggableFloatOptions {
   /** localStorage key for the remembered position. */
   storageKey: string;
-  /**
-   * The floating element. The CONSUMER owns the ref (`ref={elementRef}`) so
-   * nothing ref-shaped has to be read while rendering — the hook only touches
-   * it from pointer handlers and effects, where measuring is legal.
-   */
-  elementRef: RefObject<HTMLElement | null>;
+  /** The mounted floating surface, or null while a conditional surface is absent. */
+  element: HTMLElement | null;
   /** Where the surface sits until the person moves it. */
   anchor: {
     /** CSS `top`/`bottom`/`left`/`right` values applied when un-dragged. */
@@ -88,31 +84,77 @@ function clamp(pos: DraggableFloatPosition, el: HTMLElement | null): DraggableFl
   };
 }
 
+function samePosition(a: DraggableFloatPosition, b: DraggableFloatPosition): boolean {
+  return a.x === b.x && a.y === b.y;
+}
+
 export function useDraggableFloat({
   storageKey,
+  element,
   anchor,
-  elementRef,
 }: UseDraggableFloatOptions) {
   const [position, setPosition] = useState<DraggableFloatPosition | null>(null);
   const [dragging, setDragging] = useState(false);
   const grabRef = useRef<{ dx: number; dy: number } | null>(null);
+  const restoredRef = useRef(false);
 
   useEffect(() => {
+    if (restoredRef.current) return;
     const stored = readStored(storageKey);
-    if (stored) setPosition(clamp(stored, elementRef.current));
-  }, [storageKey, elementRef]);
+    if (!stored) {
+      restoredRef.current = true;
+      return;
+    }
+    const frame = window.requestAnimationFrame(() => {
+      restoredRef.current = true;
+      setPosition(clamp(stored, element));
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [storageKey, element]);
+
+  /**
+   * A remembered position can be read before this conditional surface mounts,
+   * when it has no dimensions yet. Clamp again as soon as it becomes measurable
+   * and whenever its compact/expanded content changes; otherwise an old wide
+   * card can be restored partly beyond the viewport after a reload.
+   */
+  useLayoutEffect(() => {
+    if (!element) return undefined;
+
+    const keepInViewport = () => {
+      const box = element.getBoundingClientRect();
+      const escaped =
+        box.left < EDGE_MARGIN_PX ||
+        box.top < EDGE_MARGIN_PX ||
+        box.right > window.innerWidth - EDGE_MARGIN_PX ||
+        box.bottom > window.innerHeight - EDGE_MARGIN_PX;
+      setPosition((current) => {
+        if (current) {
+          const next = clamp(current, element);
+          return samePosition(current, next) ? current : next;
+        }
+        return escaped ? clamp({ x: box.left, y: box.top }, element) : current;
+      });
+    };
+
+    keepInViewport();
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(keepInViewport);
+    observer?.observe(element);
+    return () => observer?.disconnect();
+  }, [element]);
 
   // A shrinking window can never strand the surface off-screen.
   useEffect(() => {
     const onResize = () =>
-      setPosition((current) => (current ? clamp(current, elementRef.current) : current));
+      setPosition((current) => (current ? clamp(current, element) : current));
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [elementRef]);
+  }, [element]);
 
   const onPointerDown = useCallback((event: React.PointerEvent<HTMLElement>) => {
     if (event.button !== 0) return;
-    const el = elementRef.current;
+    const el = element;
     if (!el) return;
     const rect = el.getBoundingClientRect();
     grabRef.current = { dx: event.clientX - rect.left, dy: event.clientY - rect.top };
@@ -121,7 +163,7 @@ export function useDraggableFloat({
     setDragging(true);
     event.currentTarget.setPointerCapture?.(event.pointerId);
     event.preventDefault();
-  }, [elementRef]);
+  }, [element]);
 
   useEffect(() => {
     if (!dragging) return;
@@ -129,7 +171,7 @@ export function useDraggableFloat({
       const grab = grabRef.current;
       if (!grab) return;
       setPosition(
-        clamp({ x: event.clientX - grab.dx, y: event.clientY - grab.dy }, elementRef.current),
+        clamp({ x: event.clientX - grab.dx, y: event.clientY - grab.dy }, element),
       );
     };
     const onUp = () => {
@@ -148,7 +190,7 @@ export function useDraggableFloat({
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
     };
-  }, [dragging, storageKey, elementRef]);
+  }, [dragging, storageKey, element]);
 
   const reset = useCallback(() => {
     setPosition(null);

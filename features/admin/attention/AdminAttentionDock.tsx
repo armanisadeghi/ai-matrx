@@ -37,9 +37,9 @@
  *   - A mute that has run out is not a mute: the local store is re-read on
  *     every poll result and the nearest expiry arms a timer, so silence ends
  *     by itself in this tab without a reload (Bugbot, 2026-09-13).
- *   - Collapse is per tab (default: the compact pill, so an operational
- *     notice cannot cover the page the person is trying to inspect); snooze
- *     is per browser and timed.
+ *   - Every fresh page starts as the compact pill, so an operational notice
+ *     cannot cover the page the person is trying to inspect. Expansion is an
+ *     explicit, in-memory choice; snooze is per browser and timed.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -87,32 +87,23 @@ import { useProviderOutageSource } from "./sources/useProviderOutageSource";
 import { useScheduleAlarmSource } from "./sources/useScheduleAlarmSource";
 import type { AttentionAction, AttentionItem } from "./types";
 
-const COLLAPSED_KEY = "matrx.admin-attention.collapsed";
 /** Every source's React Query key starts with this, so one invalidation wakes all. */
 export const ATTENTION_QUERY_PREFIX = ["admin-attention"] as const;
 const POSITION_KEY = "matrx.admin-attention.position";
+const LEGACY_COLLAPSED_KEY = "matrx.admin-attention.collapsed";
 
 /**
- * Collapsed state for THIS tab. Absent means "not chosen yet", and the default
- * is the compact pill so an operational notice cannot cover the page the
- * person is trying to inspect. An explicit choice always wins.
+ * A fresh page is always compact. Remembering an expanded operational notice
+ * turned a previous click into a page-load obstruction, which is the opposite
+ * of the dock's purpose.
  */
-function readCollapsed(): boolean {
+function clearLegacyCollapsedPreference(): void {
   try {
-    const stored = window.sessionStorage.getItem(COLLAPSED_KEY);
-    if (stored === "1") return true;
-    if (stored === "0") return false;
+    // Clean up the old per-tab preference so a previous expanded state cannot
+    // reopen over a later page.
+    window.sessionStorage.removeItem(LEGACY_COLLAPSED_KEY);
   } catch {
-    // Storage refused (private mode) — fall through to the default.
-  }
-  return true;
-}
-
-function writeCollapsed(value: boolean): void {
-  try {
-    window.sessionStorage.setItem(COLLAPSED_KEY, value ? "1" : "0");
-  } catch {
-    // Storage refused (private mode) — the in-memory state still applies.
+    // Storage refused (private mode) — the compact default still applies.
   }
 }
 
@@ -123,7 +114,9 @@ export default function AdminAttentionDock() {
   const organizationId = useAppSelector(selectOrganizationId);
   const canRead = Boolean(isSuperAdmin && authReady && accessToken && organizationId);
 
-  const [collapsedChoice, setCollapsedChoice] = useState(readCollapsed);
+  // A new dock is compact without consulting browser storage. Retiring the
+  // legacy preference happens after paint so rendering stays pure.
+  const [collapsedChoice, setCollapsedChoice] = useState(true);
   const pathname = usePathname();
   const [snoozedUntil, setSnoozedUntil] = useState(readSnoozedUntil);
   const localMutes = useLocalMutes();
@@ -131,7 +124,7 @@ export default function AdminAttentionDock() {
   const [noteFor, setNoteFor] = useState<AttentionItem | null>(null);
   const [noteBusy, setNoteBusy] = useState(false);
   const wakeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cardRef = useRef<HTMLDivElement | null>(null);
+  const [cardElement, setCardElement] = useState<HTMLDivElement | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -141,11 +134,15 @@ export default function AdminAttentionDock() {
 
   const float = useDraggableFloat({
     storageKey: POSITION_KEY,
-    elementRef: cardRef,
+    element: cardElement,
     // Bottom-right by default: out of the way of every page's own header and
     // primary controls.
     anchor: { bottom: "1rem", right: "1rem" },
   });
+
+  useEffect(() => {
+    clearLegacyCollapsedPreference();
+  }, []);
 
   // 🚨 A MUTE THAT HAS RUN OUT IS NOT A MUTE. This is a session-long
   // singleton, so "read once on mount" would mean "once per full page load".
@@ -230,7 +227,6 @@ export default function AdminAttentionDock() {
     if (onReviewPage) return;
     const next = !collapsedChoice;
     setCollapsedChoice(next);
-    writeCollapsed(next);
   };
 
   const snooze = (ms: number) => setSnoozedUntil(writeSnooze(ms));
@@ -372,7 +368,7 @@ export default function AdminAttentionDock() {
       : `${loudFailures.length === 1 ? "A check" : `${loudFailures.length} checks`} could not be read`;
     return (
       <div
-        ref={cardRef}
+        ref={setCardElement}
         className="z-50 flex items-center gap-1 shadow-xl"
         style={float.style}
         data-surface-value="admin_attention_dock_collapsed"
@@ -406,7 +402,7 @@ export default function AdminAttentionDock() {
 
   return (
     <div
-      ref={cardRef}
+      ref={setCardElement}
       className={shell}
       style={float.style}
       data-surface-value="admin_attention_dock"
