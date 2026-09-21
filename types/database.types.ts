@@ -52476,6 +52476,10 @@ export type Database = {
         Returns: string
       }
       leave_wf_validate: { Args: { p_instance: string }; Returns: Json }
+      link_names_its_employer: {
+        Args: { p_link: string; p_organization_id: string }
+        Returns: string
+      }
       manager_as_of: {
         Args: { p_employment_id: string; p_on: string }
         Returns: string
@@ -54813,8 +54817,10 @@ export type Database = {
     Views: {
       definer_class_census: {
         Row: {
+          anon_rule_declared: boolean | null
           asks_an_admin: boolean | null
           asks_the_gate: boolean | null
+          asks_the_ladder: boolean | null
           classed_tokens: string | null
           declared: boolean | null
           exempt_reason: string | null
@@ -69738,6 +69744,10 @@ export type Database = {
           token: string
         }[]
       }
+      action_link_carries_its_organization: {
+        Args: { p_action: Json; p_organization_id: string }
+        Returns: Json
+      }
       action_request_call_resolved: {
         Args: { p_id: string }
         Returns: undefined
@@ -70634,6 +70644,10 @@ export type Database = {
       link_carries_its_organization: {
         Args: { p_link: string; p_organization_id: string }
         Returns: string
+      }
+      link_trigger_is_attached: {
+        Args: { p_schema: string; p_table: string; p_trigger: string }
+        Returns: boolean
       }
       list_my_presentable_assists: {
         Args: { p_limit?: number }
@@ -77284,6 +77298,14 @@ export type Database = {
           table_name: string
         }[]
       }
+      entity_row_create: {
+        Args: { p_organization_id: string; p_title: string; p_token: string }
+        Returns: Json
+      }
+      entity_row_rename: {
+        Args: { p_id: string; p_title: string; p_token: string }
+        Returns: Json
+      }
       entity_schemas_list: {
         Args: never
         Returns: {
@@ -77654,6 +77676,14 @@ export type Database = {
           related_entry: Json
           related_table_name: string
         }[]
+      }
+      flexible_data_archive: {
+        Args: { p_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      flexible_data_write: {
+        Args: { p_id?: string; p_organization_id: string; p_patch: Json }
+        Returns: Json
       }
       fn_get_user_usage_snapshot: {
         Args: { p_user_id: string }
@@ -80688,6 +80718,11 @@ export type Database = {
         Returns: Json
       }
       org_null_ratchet_snapshot: { Args: never; Returns: Json }
+      org_preferences_set: {
+        Args: { p_organization_id: string; p_patch: Json }
+        Returns: Json
+      }
+      org_update: { Args: { p_org_id: string; p_patch: Json }; Returns: Json }
       outreach_unsubscribe: {
         Args: { p_reason?: string; p_token: string; p_user_agent?: string }
         Returns: Json

@@ -224,11 +224,13 @@ export async function createFlexibleData(
     visibility: input.visibility ?? "personal",
   };
 
-  const { data, error } = await (await getSupabase())
-    .schema("platform").from("flexible_data")
-    .insert(payload)
-    .select(LIST_COLUMNS)
-    .single();
+  // THROUGH THE DOOR. `platform` is not a client-writable schema (DOORS-ONLY-3):
+  // `public.flexible_data_write` stamps created_by from auth.uid() and reads label,
+  // slug, data, category_id and visibility out of the patch and nothing else.
+  const { data: written, error } = await (await getSupabase()).rpc(
+    "flexible_data_write",
+    { p_organization_id: input.organizationId, p_patch: payload as never },
+  );
 
   if (error) {
     throw new FlexibleDataError(
@@ -236,7 +238,11 @@ export async function createFlexibleData(
     );
   }
 
-  return assertFlexibleDataRecord(data);
+  const createdId = (written as { id?: string } | null)?.id;
+  if (!createdId) {
+    throw new FlexibleDataError("Failed to create flexible_data: the door returned no record.");
+  }
+  return getFlexibleData(createdId);
 }
 
 export async function updateFlexibleData(
@@ -250,13 +256,15 @@ export async function updateFlexibleData(
   if (input.data !== undefined) payload.data = toJsonObject(input.data);
   if (input.visibility !== undefined) payload.visibility = input.visibility;
 
-  const { data, error } = await (await getSupabase())
-    .schema("platform").from("flexible_data")
-    .update(payload)
-    .eq("id", id)
-    .is("deleted_at", null)
-    .select(LIST_COLUMNS)
-    .single();
+  // THROUGH THE DOOR. The door resolves the record together with its organization, so
+  // a record in another tenant reads as absent rather than as refused — which is why
+  // the current row is read first: the caller's signature never carried an organization.
+  const current = await getFlexibleData(id);
+  const { error } = await (await getSupabase()).rpc("flexible_data_write", {
+    p_organization_id: current.organization_id,
+    p_patch: payload as never,
+    p_id: id,
+  });
 
   if (error) {
     throw new FlexibleDataError(
@@ -264,15 +272,18 @@ export async function updateFlexibleData(
     );
   }
 
-  return assertFlexibleDataRecord(data);
+  return getFlexibleData(id);
 }
 
 export async function deleteFlexibleData(id: string): Promise<void> {
-  const { error } = await (await getSupabase())
-    .schema("platform").from("flexible_data")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id)
-    .is("deleted_at", null);
+  // ARCHIVING HAS ITS OWN DOOR ARM, at the ADMIN rung — putting something away is not
+  // the same act as editing it, and a door that let a caller set `deleted_at` inside an
+  // edit patch would be a delete wearing an edit's name.
+  const current = await getFlexibleData(id);
+  const { error } = await (await getSupabase()).rpc("flexible_data_archive", {
+    p_organization_id: current.organization_id,
+    p_id: id,
+  });
 
   if (error) {
     throw new FlexibleDataError(

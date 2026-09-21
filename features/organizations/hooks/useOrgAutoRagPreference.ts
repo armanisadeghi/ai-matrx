@@ -112,15 +112,15 @@ export function useOrgAutoRagPreference(
       const prev = enabled;
       setEnabledState(next); // optimistic
       try {
-        const { error: uErr } = await supabase
-          .schema("iam").from("organization_preferences")
-          .upsert(
-            {
-              organization_id: organizationId,
-              auto_rag_enabled: next,
-            },
-            { onConflict: "organization_id" },
-          );
+        // THROUGH THE DOOR. `iam` is not a client-writable schema (DOORS-ONLY-3).
+        // `public.org_preferences_set` writes the preference flags and the budget
+        // CEILING and cannot touch `daily_auto_rag_cost_used_usd` or
+        // `daily_auto_rag_window_start` — the live spend meter aidream writes, which
+        // the base-table UPDATE grant let a browser reset for itself.
+        const { error: uErr } = await supabase.rpc("org_preferences_set", {
+          p_organization_id: organizationId,
+          p_patch: { auto_rag_enabled: next } as never,
+        });
         if (uErr) throw uErr;
         setError(null);
       } catch (err) {
@@ -141,15 +141,15 @@ export function useOrgAutoRagPreference(
       const prev = indexNonPdf;
       setIndexNonPdfState(next); // optimistic
       try {
-        const { error: uErr } = await supabase
-          .schema("iam").from("organization_preferences")
-          .upsert(
-            {
-              organization_id: organizationId,
-              auto_index_non_pdf: next,
-            },
-            { onConflict: "organization_id" },
-          );
+        // THROUGH THE DOOR. `iam` is not a client-writable schema (DOORS-ONLY-3).
+        // `public.org_preferences_set` writes the preference flags and the budget
+        // CEILING and cannot touch `daily_auto_rag_cost_used_usd` or
+        // `daily_auto_rag_window_start` — the live spend meter aidream writes, which
+        // the base-table UPDATE grant let a browser reset for itself.
+        const { error: uErr } = await supabase.rpc("org_preferences_set", {
+          p_organization_id: organizationId,
+          p_patch: { auto_index_non_pdf: next } as never,
+        });
         if (uErr) throw uErr;
         setError(null);
       } catch (err) {
@@ -170,15 +170,15 @@ export function useOrgAutoRagPreference(
       const prev = suggestionSweeps;
       setSuggestionSweepsState(next); // optimistic
       try {
-        const { error: uErr } = await supabase
-          .schema("iam").from("organization_preferences")
-          .upsert(
-            {
-              organization_id: organizationId,
-              suggestion_sweeps_enabled: next,
-            },
-            { onConflict: "organization_id" },
-          );
+        // THROUGH THE DOOR. `iam` is not a client-writable schema (DOORS-ONLY-3).
+        // `public.org_preferences_set` writes the preference flags and the budget
+        // CEILING and cannot touch `daily_auto_rag_cost_used_usd` or
+        // `daily_auto_rag_window_start` — the live spend meter aidream writes, which
+        // the base-table UPDATE grant let a browser reset for itself.
+        const { error: uErr } = await supabase.rpc("org_preferences_set", {
+          p_organization_id: organizationId,
+          p_patch: { suggestion_sweeps_enabled: next } as never,
+        });
         if (uErr) throw uErr;
         setError(null);
       } catch (err) {
@@ -202,15 +202,15 @@ export function useOrgAutoRagPreference(
       const prev = budgetUsd;
       setBudgetState(next); // optimistic
       try {
-        const { error: uErr } = await supabase
-          .schema("iam").from("organization_preferences")
-          .upsert(
-            {
-              organization_id: organizationId,
-              daily_auto_rag_budget_usd: next,
-            },
-            { onConflict: "organization_id" },
-          );
+        // THROUGH THE DOOR. `iam` is not a client-writable schema (DOORS-ONLY-3).
+        // `public.org_preferences_set` writes the preference flags and the budget
+        // CEILING and cannot touch `daily_auto_rag_cost_used_usd` or
+        // `daily_auto_rag_window_start` — the live spend meter aidream writes, which
+        // the base-table UPDATE grant let a browser reset for itself.
+        const { error: uErr } = await supabase.rpc("org_preferences_set", {
+          p_organization_id: organizationId,
+          p_patch: { daily_auto_rag_budget_usd: next } as never,
+        });
         if (uErr) throw uErr;
         setError(null);
       } catch (err) {

@@ -448,11 +448,13 @@ export const hierarchyService = {
     id: string,
     data: { name?: string; description?: string },
   ): Promise<void> {
-    const { error } = await supabase
-      .schema("iam")
-      .from("organizations")
-      .update(data)
-      .eq("id", id);
+    // THROUGH THE DOOR. `iam` is not a client-writable schema (DOORS-ONLY-3), and this
+    // call used to pass `data` through UNFILTERED to a base-table update — the door reads
+    // the seven keys it allows and ignores everything else.
+    const { error } = await supabase.rpc("org_update", {
+      p_org_id: id,
+      p_patch: data as never,
+    });
     if (error) throw error;
   },
 

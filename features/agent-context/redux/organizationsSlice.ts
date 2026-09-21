@@ -110,10 +110,12 @@ export const updateOrg = createAsyncThunk(
     id: string;
     patch: { name?: string; description?: string };
   }) => {
-    const { error } = await supabase
-      .schema("iam").from("organizations")
-      .update(params.patch)
-      .eq("id", params.id);
+    // THROUGH THE DOOR. `iam` is not a client-writable schema (DOORS-ONLY-3), and this
+    // thunk used to pass `patch` through UNFILTERED to a base-table update.
+    const { error } = await supabase.rpc("org_update", {
+      p_org_id: params.id,
+      p_patch: params.patch as never,
+    });
     if (error) throw error;
     return params;
   },

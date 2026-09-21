@@ -188,20 +188,21 @@ export async function updateOrganization(
     if (updates.website !== undefined) updateData.website = updates.website;
     if (updates.settings !== undefined) updateData.settings = updates.settings;
 
-    // NOT `.single()`. Updating an organization is gated by the RLS policy
-    // `iam.organizations.org_update_policy`, and an RLS refusal is a ZERO-ROW
-    // no-op, not an error — `.single()` turned that into a raw PostgREST
-    // `PGRST116` string on the Save button. DD-048 fix 1, 2026-09-11.
-    const { data: rows, error } = await supabase
-      .schema("iam")
-      .from("organizations")
-      .update(updateData)
-      .eq("id", orgId)
-      .select();
+    // THROUGH THE DOOR. `iam` is not a client-writable schema (DOORS-ONLY-3):
+    // `public.org_update` asks the same question org_update_policy asked — platform
+    // admin, or iam.is_org_manager — and then reads SEVEN keys out of the patch, so
+    // `is_personal`, `created_by` and `slug` are not reachable from a browser at all.
+    // A refusal is now an ERROR with a sentence, not the zero-row no-op DD-048 had to
+    // detect by asking for the row back.
+    const { data: row, error } = await supabase.rpc("org_update", {
+      p_org_id: orgId,
+      p_patch: updateData as never,
+    });
 
     if (error) throw pgErrorToError(error);
 
-    if (!rows || rows.length === 0) {
+    const updated = row as { id?: string } | null;
+    if (!updated?.id) {
       return {
         success: false,
         error:
@@ -209,12 +210,18 @@ export async function updateOrganization(
       };
     }
 
-    const data = rows[0];
+    // The door answers with the identity it wrote, not the whole row; the screen wants
+    // the whole organization, so it is re-read through the same SELECT that was never
+    // touched by this campaign.
+    const organization = await getOrganization(orgId);
+    if (!organization) {
+      return { success: false, error: "The organization could not be read back." };
+    }
 
     return {
       success: true,
       message: "Organization updated successfully",
-      organization: transformOrganizationFromDb(data),
+      organization,
     };
   } catch (error: unknown) {
     const err = pgErrorToError(error);
@@ -240,7 +247,7 @@ export async function deleteOrganization(
       .schema("iam")
       .from("organizations")
       // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-      .select("is_personal")
+      .select("is_personal, name")
       .eq("id", orgId)
       .single();
 
@@ -248,21 +255,24 @@ export async function deleteOrganization(
       return { success: false, error: "Cannot delete personal organization" };
     }
 
-    // `.select()` is REQUIRED, not decoration. Deletion is gated by the RLS
-    // policy `iam.organizations.org_delete_policy`, and an RLS refusal is a
-    // ZERO-ROW no-op, not an error — without asking for the deleted row back
-    // this reported "Organization deleted successfully" for a delete that
-    // never happened. DD-048, 2026-09-11.
-    const { data: deleted, error } = await supabase
+    // 🚨 THIS IS AN ARCHIVE, AND IT WAS A HARD DELETE. `DELETE FROM iam.organizations`
+    // took the organization's memberships, its data and its audit trail with it and there
+    // was no way back — on a table whose whole purpose is to be the wall around somebody's
+    // business. `iam.organization_archive` already existed for exactly this; the delete
+    // simply never used it. Soft-delete everything important. (DOORS-ONLY-3; `iam` is
+    // also not a client-writable schema, so the DELETE no longer has a path either.)
+    const { data: archived, error } = await supabase
       .schema("iam")
-      .from("organizations")
-      .delete()
-      .eq("id", orgId)
-      .select("id");
+      .rpc("organization_archive", {
+        p_org: orgId,
+        p_confirm_name: org?.name ?? "",
+        p_reason: "Removed by an owner from the organization settings screen.",
+      });
 
     if (error) throw pgErrorToError(error);
 
-    if (!deleted || deleted.length === 0) {
+    const deleted = archived ? [archived] : [];
+    if (deleted.length === 0) {
       return {
         success: false,
         error:
