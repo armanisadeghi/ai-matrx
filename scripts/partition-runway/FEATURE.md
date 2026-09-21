@@ -107,5 +107,6 @@ it.
 
 ## Change log
 
+- 2026-09-21 — The live snapshot uses the secret key by name. `.env.local` lists the publishable key first, and that key is not allowed to call `partition_runway_snapshot`, so the check reported 42501 instead of the runway.
 - 2026-08-15 — Built (D122 residual 1). RPC + pure core + CLI + 27 tests; wired
   advisory into both release-gate lists.
