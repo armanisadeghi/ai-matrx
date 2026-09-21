@@ -1,7 +1,7 @@
 ---
 type: Handoff
 status: active
-updated: 2026-09-15
+updated: 2026-09-20
 repos: [matrx-frontend]
 scope: program
 feature: Data Tables
@@ -37,6 +37,14 @@ vision: []
 - Testing: `pnpm preview:start` → your own hostname; `pnpm dev-login /data/<id>`; test table "Table 1 · 2nd" `dd073d8c-f6cd-419e-8a81-7ce17cf50b81` (owned by admin@admin.com); examples `ce73458f…` (Project Tracker), `437ad3e2…` (Product Catalog), `6a4b2950…` (Team Directory). Trap: the isolated browser denies clipboard read and fires no native clipboard events — dispatch a synthetic `paste` `ClipboardEvent` and stub `readText` (memory `inapp-browser-clipboard-limits`). Trap: the harness "Return" key does not reach the grid as Enter — dispatch a `keydown` with `key: "Enter"` from JS. Tests: `npx jest features/data-tables/__tests__ --no-coverage` (277).
 
 ## Remaining work
+
+**2026-09-20 additions (Arman: "add more data types … make the column widths adjustable … full width or scroll … look for other things just like that"):**
+
+0a. **More column types** — `time` shipped 2026-09-20. Still missing against the Airtable field list, in the order people will ask: **created time / last modified time** (system columns fed from the row's own timestamps the way formulas are injected — `withComputedColumns`-style, read-only), **person** (a user picker storing the user id, rendered as name + avatar; needs a user-lookup RPC scoped to the organization), **attachment** (file ids from the files feature; the grid renders thumbnails via `enhance-file-type` slots), **autonumber** (server-assigned sequence on insert — a trigger, not a client counter), **link to another table + lookup/rollup** (the Reference system exists for single links; lookups are formulas over the linked row), **barcode / QR**, **button** (run an agent on this row — belongs to automations, item 1 below). Each is one `FieldFormatDef` plus its input; the system-fed ones also need the row's `created_at`/`updated_at` returned by `get_user_table_data_paginated` (check) and `get_user_table_complete`.
+0b. **Layout defaults as an organization knob.** Today `auto` (fit ≤ 8 columns, else scroll) is hardcoded taste; per the settings law it should be a `platform.feature_knob` (`extensibility.user_tables.default_layout`, values auto/fit/scroll, plus default row height) with the per-view choice as the override. Same for the 150px column floor.
+0c. **Wrap text** per view (Airtable "wrap"): cells currently truncate with an ellipsis; a `wrap` view flag that turns off `truncate` and lets rows grow is the natural fourth control in the Layout menu.
+0d. **Column widths on touch devices.** The drag handle is desktop-only; the Layout menu could offer per-column width presets (S/M/L) for phones.
+0e. **Live verification of the layout + time work** (commit `c9bb3c545f`): not yet seen in a browser at the time of this note — see the FEATURE.md change log for the checklist (fit/scroll switch, drag + double-click, density, freeze, Time column create/edit/sort, saved view round-trip).
 
 1. **Automations** (Arman: through the platform's scheduling/workflow primitives, never inside data-tables). `features/scheduling/types.ts` declares an `"event"` trigger type but `TriggerConfig` has no event shape and nothing produces table-change events. Design the producer (a `platform.activity_log` row per `udt_dataset_rows` change or a realtime-driven scheduler claim) and the trigger config there; the table side then only needs "run agent X when a row changes" as a knob.
 2. **Realtime colors with a real second user.** Verified by changing `metadata.style` under an open page; not by a second signed-in session. Two-browser check per the `supabase-realtime` skill checklist.
