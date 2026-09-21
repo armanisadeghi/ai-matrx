@@ -19,13 +19,16 @@ import { Button, TooltipProvider } from "@ai-matrx/design-system";
 
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
-import { StorageQuotaChip } from "@/features/files/components/surfaces/desktop/StorageQuotaChip";
 
 import { HomeConnectionRow } from "@/features/residential-egress/components/HomeConnectionRow";
 import { useHomeConnections } from "@/features/residential-egress/hooks/useHomeConnections";
 import { useHomeConnectionFocus } from "@/features/residential-egress/hooks/useHomeConnectionFocus";
 
 import { DeviceCard } from "./components/DeviceCard";
+import {
+  SyncStorageMeters,
+  owningOrganizationIds,
+} from "./components/SyncStorageMeters";
 import { useDevicesAndSync } from "./useDevicesAndSync";
 
 export function DevicesSyncTab() {
@@ -72,7 +75,10 @@ export function DevicesSyncTab() {
         />
 
         <div className="flex flex-wrap items-center gap-2">
-          <StorageQuotaChip className="min-w-56" />
+          <SyncStorageMeters
+            organizationIds={owningOrganizationIds(mappings)}
+            className="min-w-64"
+          />
           <span className="flex-1" />
           {/* The fallback is announced, never silent (D9). */}
           {/* Two channels feed this page now; the slower one sets the sentence,
