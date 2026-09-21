@@ -26,6 +26,12 @@ const EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const EXCLUDED_DIRS = new Set([".next", "node_modules", "dist", "build", "__tests__"]);
 /** File-capture metadata also uses `source_feature` — not CX attribution. */
 const EXCLUDED_PATH_PARTS = new Set(["media-capture"]);
+const CAPTURE_TYPES_MODULE = "@/features/media-capture/core/capture-types";
+const CAPTURE_METADATA_BUILDERS = new Set([
+  "buildAudioCaptureMetadata",
+  "buildPhotoCaptureMetadata",
+  "buildVideoCaptureMetadata",
+]);
 
 interface Finding {
   field: "source_app" | "source_feature";
@@ -90,6 +96,42 @@ function isDisplayOnlyNoneLabel(node: ts.Node): boolean {
   return false;
 }
 
+function captureMetadataBuilderLocals(sourceFile: ts.SourceFile): ReadonlySet<string> {
+  const locals = new Set<string>();
+  for (const statement of sourceFile.statements) {
+    if (
+      !ts.isImportDeclaration(statement) ||
+      !ts.isStringLiteral(statement.moduleSpecifier) ||
+      statement.moduleSpecifier.text !== CAPTURE_TYPES_MODULE
+    ) {
+      continue;
+    }
+    const bindings = statement.importClause?.namedBindings;
+    if (!bindings || !ts.isNamedImports(bindings)) continue;
+    for (const element of bindings.elements) {
+      if (CAPTURE_METADATA_BUILDERS.has(element.propertyName?.text ?? element.name.text)) {
+        locals.add(element.name.text);
+      }
+    }
+  }
+  return locals;
+}
+
+function isCaptureMetadataBuilderProperty(
+  node: ts.PropertyAssignment,
+  captureBuilderLocals: ReadonlySet<string>,
+): boolean {
+  const objectLiteral = node.parent;
+  if (!ts.isObjectLiteralExpression(objectLiteral)) return false;
+  const call = objectLiteral.parent;
+  return (
+    ts.isCallExpression(call) &&
+    call.arguments[0] === objectLiteral &&
+    ts.isIdentifier(call.expression) &&
+    captureBuilderLocals.has(call.expression.text)
+  );
+}
+
 function addFinding(
   findings: Finding[],
   sourceFile: ts.SourceFile,
@@ -112,6 +154,10 @@ function addFinding(
 
 function scanFile(file: string): Finding[] {
   const sourceText = fs.readFileSync(file, "utf8");
+  return scanSourceText(file, sourceText);
+}
+
+function scanSourceText(file: string, sourceText: string): Finding[] {
   const sourceFile = ts.createSourceFile(
     file,
     sourceText,
@@ -120,11 +166,16 @@ function scanFile(file: string): Finding[] {
     file.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
   );
   const findings: Finding[] = [];
+  const captureBuilderLocals = captureMetadataBuilderLocals(sourceFile);
 
   function visit(node: ts.Node): void {
     if (ts.isPropertyAssignment(node)) {
       const name = propertyName(node.name);
-      if (name && !isDisplayOnlyNoneLabel(node)) {
+      if (
+        name &&
+        !isDisplayOnlyNoneLabel(node) &&
+        !isCaptureMetadataBuilderProperty(node, captureBuilderLocals)
+      ) {
         addFinding(findings, sourceFile, node, name, stringValue(node.initializer));
       }
     } else if (ts.isJsxAttribute(node)) {
@@ -149,6 +200,20 @@ function scanFile(file: string): Finding[] {
   return findings;
 }
 
+function assertScannerContract(): void {
+  const captureSource = `
+    import { buildPhotoCaptureMetadata as buildPhoto } from "${CAPTURE_TYPES_MODULE}";
+    buildPhoto({ sourceFeature: "capture-only-feature" });
+    ordinaryCxCall({ sourceFeature: "must-remain-visible" });
+  `;
+  const findings = scanSourceText(path.join(REPO_ROOT, "scanner-contract.ts"), captureSource);
+  const values = findings.map((finding) => finding.value);
+  if (values.includes("capture-only-feature") || !values.includes("must-remain-visible")) {
+    console.error("[FAIL] Source-attribution scanner contract failed.");
+    exitAfterDrain(1);
+  }
+}
+
 function duplicates(values: readonly string[]): string[] {
   const seen = new Set<string>();
   const repeated = new Set<string>();
@@ -160,6 +225,7 @@ function duplicates(values: readonly string[]): string[] {
 }
 
 const files: string[] = [];
+assertScannerContract();
 for (const root of ROOTS) walk(path.join(REPO_ROOT, root), files);
 const findings = files.flatMap(scanFile);
 const invalid = findings.filter((finding) =>
