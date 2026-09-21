@@ -83,6 +83,12 @@ interface ColumnHeaderMenuProps {
   onConfigure?: () => void;
   /** Rename this column in its header. Omitted on read-only mounts. */
   onRename?: () => void;
+  /**
+   * How a stored value reads to a person, when the two differ — a `person`
+   * column stores user ids and shows names. The checklist shows the label and
+   * filters by the value. Omit when they are the same thing.
+   */
+  labelForValue?: (value: string) => string;
   /** Add a new column beside this one. Omitted on read-only mounts. */
   onInsert?: (side: "left" | "right") => void;
   /** Hide this column in the viewer's own view. Omitted when it is the last visible column. */
@@ -133,6 +139,7 @@ const ColumnHeaderMenu = ({
   onFilterChange,
   onConfigure,
   onRename,
+  labelForValue,
   onInsert,
   onHide,
   onDelete,
@@ -413,8 +420,11 @@ const ColumnHeaderMenu = ({
                       onCheckedChange={() => toggleValue(entry.value)}
                       className="h-3.5 w-3.5"
                     />
-                    <span className="min-w-0 flex-1 truncate" title={entry.value}>
-                      {entry.value}
+                    <span
+                      className="min-w-0 flex-1 truncate"
+                      title={labelForValue ? `${labelForValue(entry.value)} (${entry.value})` : entry.value}
+                    >
+                      {labelForValue ? labelForValue(entry.value) : entry.value}
                     </span>
                     <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
                       {entry.count}

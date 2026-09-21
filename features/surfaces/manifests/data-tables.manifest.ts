@@ -135,7 +135,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "column_list",
     label: "Columns",
     description:
-      "Array of `{ name, display_name, type, required, order, format?, choices?, validation? }` for every column, in display order. `name` is the MACHINE field name (what a cell write must send); `display_name` is the header the user sees. `format` is the column's display meaning when the storage type alone would mislead — a `percent` column typed `number` holding 45 means 45%, not 0.45. `choices` lists the options a choice column offers; a value outside them is still accepted and simply flagged, but prefer an existing option over inventing one. `validation` lists the column's validation RULES in plain English (`At least 0`, `###-#### pattern`, `One of: Red, Green`, `Unique across rows`) — unlike `choices` these are ENFORCED: a cell_value write that breaks one is refused with the reason, so read them before writing rather than discovering them by failing. Absent on a column that constrains nothing. Empty array when no table is open.",
+      "Array of `{ name, display_name, type, required, order, format?, choices?, validation? }` for every column, in display order. `name` is the MACHINE field name (what a cell write must send); `display_name` is the header the user sees. `format` is the column's display meaning when the storage type alone would mislead — a `percent` column typed `number` holding 45 means 45%, not 0.45. `choices` lists the options a choice column offers; a value outside them is still accepted and simply flagged, but prefer an existing option over inventing one. `choice_labels` (present only when they differ from the values — a `person` column stores user ids and shows names) maps each choice VALUE to what the user reads; a write sends the value, never the label. `validation` lists the column's validation RULES in plain English (`At least 0`, `###-#### pattern`, `One of: Red, Green`, `Unique across rows`) — unlike `choices` these are ENFORCED: a cell_value write that breaks one is refused with the reason, so read them before writing rather than discovering them by failing. Absent on a column that constrains nothing. Empty array when no table is open.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 500,
@@ -409,6 +409,13 @@ export interface DataTableColumnEntry {
    * so an empty list never reads as "this column has no options".
    */
   choices?: string[];
+  /**
+   * How each choice VALUE reads to a person, when the two differ — a `person`
+   * column stores user ids and shows names. Keys are entries of `choices`.
+   * A write must send the VALUE (the key), never the label. Omitted when
+   * values and labels are the same thing.
+   */
+  choice_labels?: Record<string, string>;
   /**
    * The column's VALIDATION RULES, in plain English — the same phrases the row
    * forms print under the input (`describeValidationRules`). Present because a
