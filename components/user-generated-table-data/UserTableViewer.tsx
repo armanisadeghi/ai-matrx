@@ -5006,7 +5006,7 @@ const UserTableViewer = ({
                   })}
                   {!isReadOnly && <TableCell className="w-8 p-0" />}
                   <TableCell className="px-1 py-0 text-center">
-                    <div className="flex items-center justify-center gap-0 [&>button]:h-7 [&>button]:w-7">
+                    <div className="flex items-center justify-center gap-0 [&_button]:h-7 [&_button]:w-7 [&_button_svg]:h-3.5 [&_button_svg]:w-3.5">
                       {/* The table's own one-click buttons (row-actions.ts),
                           always behind ONE icon that opens the list — never
                           inline chips (Arman, 2026-09-21: they were giant and
