@@ -10,8 +10,9 @@ test("AI Tasks retains its fixed first source window without implicit table door
   assert.match(page, /<MatrxDataTable/);
   assert.match(
     page,
-    /coverage=\{\{ total, matched: tasks\.length, cap: 50, answeredBy: "client"/,
+    /coverage=\{\{ total, cap: 50, answeredBy: "client", noun: "task"/,
   );
+  assert.doesNotMatch(page, /matched: tasks\.length/);
   assert.match(page, /copy=\{false\}/);
   assert.match(page, /detail=\{\{ enabled: false \}\}/);
   assert.match(page, /window=\{\{ enabled: false \}\}/);
@@ -25,8 +26,11 @@ test("Announcements disclose their loaded window and retain only explicit action
   assert.match(page, /<MatrxDataTable/);
   assert.match(
     page,
-    /coverage=\{\{ matched: announcements\.length, cap: announcements\.length, answeredBy: 'client'/,
+    /coverage=\{\{ answeredBy: 'client', noun: 'system announcement'/,
   );
+  assert.doesNotMatch(page, /matched: announcements\.length/);
+  assert.doesNotMatch(page, /cap: announcements\.length/);
+  assert.doesNotMatch(page, /All system announcements/);
   assert.match(page, /localPagination=\{\{ mode: 'progressive' \}\}/);
   assert.match(page, /onRowOpen=\{handleEdit\}/);
   assert.match(page, /copy=\{false\}/);

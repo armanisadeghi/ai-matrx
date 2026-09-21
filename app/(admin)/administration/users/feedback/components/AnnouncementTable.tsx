@@ -181,7 +181,7 @@ export default function AnnouncementTable() {
                             agent={() => ({
                                 kind: 'system-announcements',
                                 location: LOCATION,
-                                description: 'All system announcements.',
+                                description: 'The system announcements loaded by this page.',
                                 data: announcements,
                                 attributes: { count: announcements.length },
                             })}
@@ -222,7 +222,7 @@ export default function AnnouncementTable() {
                     copy={false}
                     detail={{ enabled: false }}
                     window={{ enabled: false }}
-                    coverage={{ matched: announcements.length, cap: announcements.length, answeredBy: 'client', noun: 'loaded announcement' }}
+                    coverage={{ answeredBy: 'client', noun: 'system announcement' }}
                     toolbar={{ search: true, searchPlaceholder: 'Search announcements…' }}
                     rowActions={(announcement) => <div className="flex items-center gap-2"><Badge className={announcementTypeColors[announcement.announcement_type]}>{announcement.announcement_type}</Badge><CopyButtons size="xs" label={`Announcement "${announcement.title}"`} human={() => announcementSummary(announcement)} json={() => announcement} agent={() => ({ kind: 'system-announcement', location: LOCATION, description: 'One system announcement row.', data: announcement, summary: announcementSummary(announcement), attributes: { id: announcement.id, type: announcement.announcement_type, active: announcement.is_active } })} /><Button variant="ghost" size="sm" onClick={() => handleView(announcement)} className="h-7 px-2" title="View details"><Eye className="w-4 h-4" /></Button><Button variant="ghost" size="sm" onClick={() => { setAnnouncementToDelete(announcement.id); setDeleteDialogOpen(true); }} className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete announcement"><Trash2 className="w-4 h-4" /></Button></div>}
                 />

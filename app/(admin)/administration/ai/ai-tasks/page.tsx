@@ -146,7 +146,7 @@ export default function AiTasksPage() {
                 copy={false}
                 detail={{ enabled: false }}
                 window={{ enabled: false }}
-                coverage={{ total, matched: tasks.length, cap: 50, answeredBy: "client", noun: "loaded task" }}
+                coverage={{ total, cap: 50, answeredBy: "client", noun: "task" }}
                 toolbar={{ title: `Loaded tasks (${tasks.length} of ${total})`, search: false }}
                 rowActions={(task) => <CopyButtons size="icon" label={`Task ${task.id.slice(0, 8)}`} human={() => [`ID: ${task.id}`, `Name: ${task.task_name || "—"}`, `Status: ${task.status}`, `Created: ${formatDate(task.created_at)}`, `Updated: ${formatDate(task.updated_at)}`].join("\n")} agent={() => ({ kind: "ai-task", location: PAGE_LOCATION, description: "A single AI task row.", data: task, attributes: { id: task.id, status: task.status } })} />}
               />
