@@ -14,6 +14,7 @@ for (const [label, path] of [
     const page = source(path);
     assert.match(page, /<MatrxDataTable/);
     assert.doesNotMatch(page, /<table/);
+    assert.doesNotMatch(page, /false &&/);
     assert.match(page, /copy=\{false\}/);
     assert.match(page, /detail=\{\{ enabled: false \}\}/);
     assert.match(page, /window=\{\{ enabled: false \}\}/);
@@ -25,6 +26,9 @@ test("Artifacts keeps canvas-first open and a modifier-clickable detail URL", ()
   assert.match(page, /onRowOpen=\{handleOpen\}/);
   assert.match(page, /getRowHref=\{\(artifact\) => `\/artifacts\/\$\{artifact\.id\}`\}/);
   assert.match(page, /answeredBy: "client"/);
+  assert.match(page, /title="Edit content"/);
+  assert.match(page, /disabled=\{navigatingId !== null\}/);
+  assert.doesNotMatch(page, /ArtifactRow/);
 });
 
 test("AI model tables retain settled usage and provider row actions", () => {
@@ -33,7 +37,11 @@ test("AI model tables retain settled usage and provider row actions", () => {
   assert.match(deprecated, /entries\.every\(\(e\) => !e\.loading\)/);
   assert.match(deprecated, /handleBulkReplace/);
   assert.match(deprecated, /Promise\.allSettled/);
+  assert.match(deprecated, /Couldn.t replace/);
+  assert.match(deprecated, /toolbar=\{\{ search: false \}\}/);
   assert.match(provider, /ProviderSyncRowCopyForAiButton/);
   assert.match(provider, /Sync Now/);
   assert.match(provider, /selectedComparison/);
+  assert.match(provider, /data=\{sortedComparisons\}/);
+  assert.match(provider, /defaultSortDirForColumn\(key\)/);
 });
