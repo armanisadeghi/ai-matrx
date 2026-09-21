@@ -55,8 +55,8 @@ begin
 end $target$;
 
 begin;
-set local statement_timeout = '600s';
-set local lock_timeout = '60s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 
 select set_config('app.actor_system', 'campaign.w4_query.red', true);
 

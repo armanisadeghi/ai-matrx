@@ -23,8 +23,8 @@
 \set DANA  '\'4060701e-706a-4c76-b3ca-0bbc69fa5a14\''
 
 begin;
-set local statement_timeout = '600s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'campaign-test/leakt10_red', true);
 
 -- ══════════════════════════ THE DEFECTS, PUT BACK, FROM THE INVERSES' OWN BYTES ══════════════

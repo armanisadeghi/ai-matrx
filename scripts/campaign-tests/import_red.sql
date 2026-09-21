@@ -16,8 +16,8 @@
 -- RED 5  THE CONTROL, which must be GREEN, so the twin cannot pass by refusing everything
 
 begin;
-set local lock_timeout = '240s';
-set local statement_timeout = '900s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 do $suite$
 declare

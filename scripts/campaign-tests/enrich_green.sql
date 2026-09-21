@@ -15,8 +15,8 @@
 begin;
 -- The connection goes through the transaction pooler, so a SESSION-level SET lands on a
 -- different backend than the statements below. It has to be `set local`.
-set local lock_timeout = '120s';
-set local statement_timeout = '600s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 do $suite$
 declare

@@ -42,7 +42,7 @@
 begin;
 set local statement_timeout = 0;
 set local idle_in_transaction_session_timeout = 0;
-set local lock_timeout = '10min';
+set local lock_timeout = '10s';
 
 create temp table wp3_shot (half text, kind text, ord int, payload text) on commit drop;
 create temp table wp3_ms   (half text, what text, ms numeric) on commit drop;

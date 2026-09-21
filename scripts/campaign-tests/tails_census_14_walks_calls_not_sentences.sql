@@ -23,8 +23,8 @@
 
 \set ON_ERROR_STOP on
 begin;
-set local lock_timeout = '30s';
-set local statement_timeout = '900s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 -- The walk, with the stripper switched on or off. `p_strip=false` is the shipped-before
 -- body's behaviour, character for character.

@@ -14,7 +14,7 @@
 
 \set ON_ERROR_STOP on
 begin;
-set local lock_timeout = '180s';
+set local lock_timeout = '10s';
 
 do $$
 declare

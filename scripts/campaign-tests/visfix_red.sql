@@ -38,7 +38,7 @@
 \timing off
 
 begin;
-set local statement_timeout = '300s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'visfix_red_twin', true);
 
 -- ── DEFECT 2 PUT BACK: the per-container bodies T1 could never finish ──────────────────────
@@ -140,12 +140,12 @@ begin
 end;
 $slow2$;
 
-set local statement_timeout = '300s';
+set local statement_timeout = '60s';
 -- The ALTER TABLE below takes ACCESS EXCLUSIVE on `custom.record` and its sixteen partitions.
 -- On a busy store it will not get that lock inside the two-second default, and a lock timeout
 -- here is contention, never the defect — so it waits. Everything after it is milliseconds, and
 -- the transaction rolls back, so the lock is held for about as long as those few statements take.
-set local lock_timeout = '120s';
+set local lock_timeout = '10s';
 
 -- ── DEFECT 1 PUT BACK: the containment that never reaches the ladder ───────────────────────
 -- From here the lock is held, so everything below is milliseconds.

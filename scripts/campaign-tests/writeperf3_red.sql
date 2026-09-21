@@ -21,7 +21,7 @@
 -- order, in one session, so the guard is SEEN failing rather than described.
 \set ON_ERROR_STOP on
 begin;
-set local lock_timeout = '5min';
+set local lock_timeout = '10s';
 set local statement_timeout = 0;
 \i migrations/inverse/writeperf3_a_structure_row_empties_the_memo_before_it_lands_down.sql
 
@@ -83,7 +83,7 @@ rollback;
 \set ON_ERROR_STOP on
 begin;
 set local statement_timeout = 0;
-set local lock_timeout = '10min';
+set local lock_timeout = '10s';
 
 -- THE FOURTEEN LOCKS, TAKEN ONCE, IN ONE STATEMENT, BEFORE ANYTHING ELSE.
 --

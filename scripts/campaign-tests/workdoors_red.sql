@@ -22,8 +22,8 @@
 
 begin;
 
-set lock_timeout = '60s';
-set statement_timeout = '600s';
+set lock_timeout = '10s';
+set statement_timeout = '60s';
 
 -- ════════════════════════════════════════════════════════════════════════════════
 -- THE FIXTURE, and the two original bodies this file will replace by hand.

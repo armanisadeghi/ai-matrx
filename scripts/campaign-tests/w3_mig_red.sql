@@ -73,8 +73,8 @@
 \timing off
 
 begin;
-set local statement_timeout = '600s';
-set local lock_timeout = '60s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 
 do $r$
 declare

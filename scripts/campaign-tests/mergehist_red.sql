@@ -43,7 +43,7 @@
 \timing off
 
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 
 -- ─────────── THE INVERSE, as the connected role. Out of the seat, and nothing is asserted.
 \i migrations/inverse/mergehist_a_compound_operation_signs_its_revision_down.sql

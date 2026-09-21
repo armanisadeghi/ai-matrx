@@ -29,8 +29,8 @@
 
 -- ══════════════════════════════════════════════ STEP 0 — a clean slate
 begin;
-set local statement_timeout = '600s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'laddercap_green_suite', true);
 delete from iam.permissions where resource_type = 'record'
    and resource_id in (select id from custom.record where organization_id = :ORG);
@@ -62,7 +62,7 @@ commit;
 
 -- The Table, its Home, and one record — built through the store's own door, as the owner.
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'laddercap_green_suite', true);
 do $t$
 declare
@@ -115,7 +115,7 @@ commit;
 -- that take the ladder back to the state it was in when the cap governed only arms 2 and 3 —
 -- which is the state this lane's own green suite went red on.
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'laddercap_red_suite', true);
 insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
 values ('custom', 'member_default_level', 'organization', :ORG, :ORG, '"admin"'::jsonb, 'LADDER-CAP red');
@@ -159,7 +159,7 @@ rollback;
 -- VIEWER share on the record, raised to editor by the organization default carried through the
 -- Table. Executes all four inverses, newest first.
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'laddercap_red_suite', true);
 insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
 values ('custom', 'member_default_level', 'organization', :ORG, :ORG, '"editor"'::jsonb, 'LADDER-CAP red');
@@ -216,7 +216,7 @@ rollback;
 -- ══════════════ BLOCK 3 — THE OVERREACH CENSUS FORGETS SHARED-ONLY'S FOURTH RUNG and names the
 -- twelve Table rows again. Executes the fourth-rung inverse.
 begin;
-set local statement_timeout = '900s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'laddercap_red_suite', true);
 \i migrations/inverse/laddercap_the_overreach_census_knows_the_fourth_rung_down.sql
 do $t$
@@ -237,7 +237,7 @@ rollback;
 -- ══════════════ BLOCK 4 — THREE DOORS STOP ASKING WHETHER SHE MAY KNOW THE TABLE, and
 -- STORE-REL's own census names them again. Executes the three-door inverse.
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'laddercap_red_suite', true);
 \i migrations/inverse/laddercap_three_doors_ask_whether_she_may_know_the_table_down.sql
 do $t$
@@ -258,7 +258,7 @@ rollback;
 
 -- ══════════════ ROLLBACK VERIFIED — the landed state answered the whole time underneath.
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 do $t$
 declare v_n int;
 begin
@@ -279,7 +279,7 @@ commit;
 
 -- ═══════════════════════════ TEARDOWN — the throwaway organization leaves nothing behind.
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'laddercap_green_suite', true);
 delete from iam.permissions where resource_type = 'record'
    and resource_id in (select id from custom.record where organization_id = :ORG);

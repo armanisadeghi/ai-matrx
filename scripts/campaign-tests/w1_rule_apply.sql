@@ -76,8 +76,8 @@ begin;
 -- THE FLOOR (see THE LOCK above). Raised once for the whole transaction. MEASURED on main
 -- 2026-09-19: `lock_timeout` is 5s and `statement_timeout` is 30s by default, and with other
 -- campaign lanes queued on `custom.record` even the membership insert loses on both.
-set local lock_timeout = '60s';
-set local statement_timeout = '600s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 do $t$
 declare

@@ -45,8 +45,8 @@
 
 -- ══════════════════════════════════════════════ STEP 0 — a clean slate
 begin;
-set local statement_timeout = '600s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'laddercap_green_suite', true);
 delete from iam.permissions where resource_type = 'record'
    and resource_id in (select id from custom.record where organization_id = :ORG);
@@ -78,7 +78,7 @@ commit;
 
 -- The Table, its Home, and one record — built through the store's own door, as the owner.
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'laddercap_green_suite', true);
 do $t$
 declare
@@ -127,7 +127,7 @@ commit;
 
 -- ═══════════ PART 0 — TAKE THE SEAT AND PROVE IT, then PART 1 and PART 2 from inside it.
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'laddercap_green_suite', true);
 do $t$
 declare
@@ -290,7 +290,7 @@ commit;
 
 -- ═══════════════════════════ PART 4 — THE CENSUSES, ON THE WHOLE DATABASE.
 begin;
-set local statement_timeout = '900s';
+set local statement_timeout = '60s';
 do $t$
 declare v_n int; v_who text;
 begin
@@ -316,7 +316,7 @@ commit;
 
 -- ═══════════════════════════ TEARDOWN — the throwaway organization leaves nothing behind.
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'laddercap_green_suite', true);
 delete from iam.permissions where resource_type = 'record'
    and resource_id in (select id from custom.record where organization_id = :ORG);

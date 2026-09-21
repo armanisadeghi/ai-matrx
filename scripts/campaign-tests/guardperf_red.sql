@@ -17,8 +17,8 @@
 
 \set ON_ERROR_STOP on
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 
 -- ══ THE PLANT: the REAL BYTES of the inverse, executed here. That they run at all is also
 --    what proves the inverse is valid SQL.
@@ -382,8 +382,8 @@ rollback;
 
 -- ══ GREEN — the landed bytes, the same fixture, the same census.
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 
   select set_config('app.actor_system', 'check_store_doors_decide', true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)

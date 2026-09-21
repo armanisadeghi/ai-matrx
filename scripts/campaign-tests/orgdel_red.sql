@@ -32,7 +32,7 @@
 begin;
 -- Replacing a live trigger or door function has to wait for the sessions currently inside it,
 -- and this database is busy. The default two-second wait is not enough; sixty is.
-set local lock_timeout = '60s';
+set local lock_timeout = '10s';
 \i migrations/inverse/orgdel_an_organization_says_what_it_holds_down.sql
 do $r$
 declare
@@ -58,7 +58,7 @@ rollback;
 begin;
 -- Replacing a live trigger or door function has to wait for the sessions currently inside it,
 -- and this database is busy. The default two-second wait is not enough; sixty is.
-set local lock_timeout = '60s';
+set local lock_timeout = '10s';
 \i migrations/inverse/orgdel_the_retention_rule_decides_the_hard_delete_down.sql
 do $r$
 declare
@@ -118,7 +118,7 @@ rollback;
 begin;
 -- Replacing a live trigger or door function has to wait for the sessions currently inside it,
 -- and this database is busy. The default two-second wait is not enough; sixty is.
-set local lock_timeout = '60s';
+set local lock_timeout = '10s';
 \i migrations/inverse/orgdel_the_clear_goes_through_the_purge_down.sql
 do $r$
 declare
@@ -159,7 +159,7 @@ rollback;
 begin;
 -- Replacing a live trigger or door function has to wait for the sessions currently inside it,
 -- and this database is busy. The default two-second wait is not enough; sixty is.
-set local lock_timeout = '60s';
+set local lock_timeout = '10s';
 \i migrations/inverse/orgdel_the_undo_is_not_swept_away_with_the_logs_down.sql
 do $r$
 declare
@@ -208,7 +208,7 @@ rollback;
 begin;
 -- Replacing a live trigger or door function has to wait for the sessions currently inside it,
 -- and this database is busy. The default two-second wait is not enough; sixty is.
-set local lock_timeout = '60s';
+set local lock_timeout = '10s';
 \i migrations/inverse/orgdel_a_deletion_event_asks_nobody_for_permission_down.sql
 do $r$
 declare

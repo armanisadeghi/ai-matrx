@@ -43,8 +43,8 @@
 
 -- ══════════════════════════════════════════════════ STEP 0 — a clean slate, both ways
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'asof_green_suite', true);
 delete from iam.permissions where id = :GRANT;
 delete from iam.permissions where resource_type = 'record'
@@ -87,8 +87,8 @@ commit;
 
 -- ═══════════════════════════════════════════════════════ STEP 1 — the fixtures
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'asof_green_suite', true);
 do $t$
 declare
@@ -161,7 +161,7 @@ commit;
 
 -- ════════════════════════════════ PART 1 — T13: ONE RECORD IS ONE QUESTION
 begin;
-set local statement_timeout = '300s';
+set local statement_timeout = '60s';
 do $t$
 declare
   v_org  constant uuid := 'a50f0000-0000-4a00-8a00-000000000a01';
@@ -204,7 +204,7 @@ commit;
 
 -- ═══════════════════════ PART 2 — T6: THE TWO CLOCKS NEVER ANSWER FOR EACH OTHER
 begin;
-set local statement_timeout = '300s';
+set local statement_timeout = '60s';
 do $t$
 declare
   v_org constant uuid := 'a50f0000-0000-4a00-8a00-000000000a01';
@@ -263,7 +263,7 @@ commit;
 -- ══════════════ PART 3 — T15: A SHARE IS RECORDED, AND THE AUDIT SAYS HOW LONG
 -- Three REAL transactions, because the interval is the point and a transaction has one clock.
 begin;
-set local statement_timeout = '120s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'asof_green_suite', true);
 insert into iam.permissions (id, resource_type, resource_id, granted_to_user_id, permission_level, status, created_by)
 values (:GRANT, 'record', :REC, :DANA, 'viewer', 'active', :ADMIN);
@@ -279,13 +279,13 @@ begin
 end $t$;
 
 begin;
-set local statement_timeout = '120s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'asof_green_suite', true);
 delete from iam.permissions where id = :GRANT;
 commit;
 
 begin;
-set local statement_timeout = '300s';
+set local statement_timeout = '60s';
 do $t$
 declare
   v_org   constant uuid := 'a50f0000-0000-4a00-8a00-000000000a01';
@@ -345,7 +345,7 @@ commit;
 
 -- ═════════ PART 4 — T1: THE CUTOVER DIFF IS HONEST ABOUT ITS DEPTH, AND A PERSON CAN RUN IT
 begin;
-set local statement_timeout = '300s';
+set local statement_timeout = '60s';
 do $t$
 declare
   v_org   constant uuid := 'a50f0000-0000-4a00-8a00-000000000a01';
@@ -418,7 +418,7 @@ commit;
 -- actually about: asking about ONE record must cost the same in an organization of 20 records
 -- and an organization of 420. It is measured rather than asserted from the body.
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'asof_green_suite', true);
 do $t$
 declare
@@ -462,8 +462,8 @@ commit;
 
 -- ═══════════════════════════════════ TEARDOWN — and a census that fails unless it is gone
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'asof_green_suite', true);
 delete from iam.permissions where id = :GRANT;
 delete from iam.permissions where resource_type = 'record'

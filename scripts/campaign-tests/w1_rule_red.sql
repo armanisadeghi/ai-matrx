@@ -50,8 +50,8 @@
 
 -- ── RED 1: THE RULE SHAPE GUARD (REC-15 and REC-17 at save time) ──────────────────────
 begin;
-set local lock_timeout = '60s';
-set local statement_timeout = '240s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 -- OUT OF THE SEAT: no client door removes a production guard. Nothing is asserted here.
 create or replace function custom._rule_shape_guard() returns trigger
@@ -145,8 +145,8 @@ rollback;
 
 -- ── RED 2: THE TWO USES (REC-15 on the store) ─────────────────────────────────────────
 begin;
-set local lock_timeout = '60s';
-set local statement_timeout = '240s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 -- OUT OF THE SEAT.
 create or replace function custom._record_rule_uses() returns trigger
@@ -204,8 +204,8 @@ rollback;
 
 -- ── RED 3: REC-17'S MECHANISM, FROM THE OTHER SIDE ────────────────────────────────────
 begin;
-set local lock_timeout = '60s';
-set local statement_timeout = '240s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 do $r3$
 declare
@@ -268,8 +268,8 @@ rollback;
 
 -- ── RED 4: THE FORGED WORKED-OUT ANSWER ───────────────────────────────────────────────
 begin;
-set local lock_timeout = '60s';
-set local statement_timeout = '240s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 -- OUT OF THE SEAT.
 create or replace function custom._record_rule_uses() returns trigger
@@ -323,8 +323,8 @@ rollback;
 
 -- ── RED 5: THE ACCESS WALL ────────────────────────────────────────────────────────────
 begin;
-set local lock_timeout = '60s';
-set local statement_timeout = '240s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 do $r5$
 declare

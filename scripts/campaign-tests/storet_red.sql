@@ -19,7 +19,7 @@
 \timing off
 
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 
 -- The inverses, applied for real inside this transaction. Nothing here is committed.
 \i migrations/inverse/storet_the_doors_a_person_can_reach_down.sql

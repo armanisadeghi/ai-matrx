@@ -43,8 +43,8 @@ begin;
 -- trigger` when this was measured). A 20-second lock wait made the file die in its fixtures
 -- with `canceling statement due to lock timeout`, which reads exactly like a red block that
 -- did not flip and is not one. Nothing here is asserted on time.
-set local statement_timeout = '900s';
-set local lock_timeout = '120s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'guardswitch_red_suite', true);
 
 -- ─────────────────────────── the pre-GUARD-SWITCH bodies, restored inside this transaction

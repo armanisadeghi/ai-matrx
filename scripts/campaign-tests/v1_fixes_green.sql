@@ -50,7 +50,7 @@
 begin;
 -- Other lanes write this store all night and the server's lock_timeout is 5s; nothing here
 -- takes a lock stronger than an ordinary row lock, so it waits rather than dying on traffic.
-set local lock_timeout = '60s';
+set local lock_timeout = '10s';
 
 do $t$
 declare

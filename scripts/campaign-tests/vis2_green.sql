@@ -43,8 +43,8 @@
 
 -- ════════════════════════════════════════════════════ STEP 0 — a clean slate, both ways
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'vis2_green_suite', true);
 delete from iam.permissions where resource_type = 'record'
    and resource_id in (select id from custom.record where organization_id in (:ORG_A, :ORG_B));
@@ -78,8 +78,8 @@ commit;
 
 -- ═══════════════════════════ STEP 1 — the fixtures, in both organizations
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'vis2_green_suite', true);
 do $t$
 declare
@@ -195,8 +195,8 @@ commit;
 
 -- ════════════════════════════ PART 1 — MEMBER DEFAULT VISIBILITY IS THE ORGANIZATION'S
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'vis2_green_suite', true);
 do $t$
 declare
@@ -261,8 +261,8 @@ commit;
 -- identical rule in the identical words; it is gated behind `custom/associations_guard`, which
 -- is off platform-wide today and is not this lane's to flip.)
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'vis2_green_suite', true);
 
 create or replace function pg_temp.vis2_link(p_org uuid, p_from uuid, p_to uuid) returns void
@@ -367,8 +367,8 @@ commit;
 -- grant is made in one and revoked in another, so "while it was held" is a real interval and
 -- the moments come back out of history rather than being asserted by this file.
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'vis2_green_suite', true);
 insert into iam.permissions (id, resource_type, resource_id, granted_to_user_id, permission_level, created_by)
 values (:GRANT, 'record', '2f5e0000-0000-4a00-8a00-000000000301',
@@ -376,15 +376,15 @@ values (:GRANT, 'record', '2f5e0000-0000-4a00-8a00-000000000301',
 commit;
 
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'vis2_green_suite', true);
 delete from iam.permissions where id = :GRANT;
 commit;
 
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'vis2_green_suite', true);
 do $t$
 declare
@@ -470,8 +470,8 @@ commit;
 
 -- ═══════════════ PART 4 — A FIELD TYPE CHANGE LEAVES A MIGRATION ROW WHICHEVER DOOR IT CAME THROUGH
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'vis2_green_suite', true);
 do $t$
 declare
@@ -516,8 +516,8 @@ commit;
 
 -- ════════════════════════════════════════ TEARDOWN, AND THE CENSUS THAT PROVES IT
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'vis2_green_suite', true);
 delete from iam.permissions where id = :GRANT;
 delete from iam.permissions where resource_type = 'record'

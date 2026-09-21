@@ -18,7 +18,7 @@
 \timing off
 
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 
 \i migrations/inverse/storerel_the_delete_rules_land_down.sql
 \i migrations/inverse/storerel_pruning_can_be_asked_for_down.sql

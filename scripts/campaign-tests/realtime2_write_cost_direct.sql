@@ -65,7 +65,7 @@
 begin;
 set local statement_timeout = 0;
 set local idle_in_transaction_session_timeout = 0;
-set local lock_timeout = '10min';
+set local lock_timeout = '10s';
 
 create temp table rt2_direct (what text, arm text, rep int, rows int, ms numeric) on commit drop;
 create temp table rt2_write  (what text, rows int, total_ms numeric, outbox_rows int) on commit drop;

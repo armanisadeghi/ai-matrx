@@ -17,8 +17,8 @@
 
 begin;
 
-set local lock_timeout = '90s';
-set local statement_timeout = '180s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 -- The real inverse bytes, in the order a rollback of this lane would run them.
 \i migrations/inverse/orgarch_the_two_doors_archive_and_restore_down.sql

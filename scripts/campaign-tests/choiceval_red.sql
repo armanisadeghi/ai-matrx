@@ -18,8 +18,8 @@
 \timing off
 
 begin;
-set local statement_timeout = '900s';
-set local lock_timeout = '150s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 
 create temp table ironline_fixture (k text primary key, v uuid) on commit drop;
 

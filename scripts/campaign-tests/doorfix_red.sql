@@ -201,7 +201,7 @@ begin
   -- `custom.promote_field` builds an INDEX and holds no client grant, so this ONE statement
   -- steps out of the seat and says so. It asserts nothing about what a person may do.
   perform set_config('role', v_boss, true);
-  set local lock_timeout = '60s';
+  set local lock_timeout = '10s';
   begin
     perform custom.promote_field(v_org, v_tbl, v_f_name);
   exception when others then

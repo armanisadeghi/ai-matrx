@@ -50,8 +50,8 @@ begin;
 -- partitions other campaign lanes are indexing at the same time. MEASURED on main 2026-09-19:
 -- `lock_timeout` is 5s and `statement_timeout` is 30s by default, and under that traffic even
 -- the fixture writes lose on both.
-set local lock_timeout = '60s';
-set local statement_timeout = '600s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 do $t$
 declare
@@ -219,8 +219,8 @@ begin
   -- `CREATE INDEX` on the partitioned parent, children named by Postgres. OUT OF THE SEAT —
   -- it is CREATE INDEX, and it takes ACCESS EXCLUSIVE on all sixteen live partitions.
   perform set_config('role', v_boss, true);
-  set local lock_timeout = '60s';
-  set local statement_timeout = '600s';
+  set local lock_timeout = '10s';
+  set local statement_timeout = '60s';
   v_name := 'greenline_unrenamed_code_idx';
   execute format('create unique index %I on custom.record (organization_id, ((data->>''code''))) where table_id = %L::uuid and deleted_at is null',
                  v_name, v_table);

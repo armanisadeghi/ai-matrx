@@ -13,8 +13,8 @@
 
 \set ON_ERROR_STOP on
 begin;
-set local lock_timeout = '30s';
-set local statement_timeout = '600s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 -- ── THE PRE-FIX BODY, PUT BACK ────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION custom.assert_client_may_change(p_organization_id uuid, p_subject_id uuid, p_door text, p_required permission_level DEFAULT 'editor'::permission_level, p_subject_word text DEFAULT 'record'::text)

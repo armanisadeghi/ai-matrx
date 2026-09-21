@@ -17,8 +17,8 @@
 \timing off
 
 begin;
-set local lock_timeout = '45s';
-set local statement_timeout = '180s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 -- WHO THE CONNECTED ROLE IS, captured before any seat is taken, and never written as a literal
 -- (rule 15): planting bytes is an OPERATOR act and the seat may not do it. Every block that

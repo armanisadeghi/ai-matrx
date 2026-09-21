@@ -55,8 +55,8 @@ begin;
 -- stalling the rest of the campaign. A replaced function body is invisible to every other
 -- session until commit, and this transaction never commits — so the demonstration is exactly
 -- as strong and costs nobody anything.
-set local lock_timeout = '60s';
-set local statement_timeout = '240s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 -- OUT OF THE SEAT: no client door removes a production guard. Nothing is asserted here.
 create or replace function custom._field_type_parity_guard() returns trigger
@@ -166,8 +166,8 @@ begin;
 -- stalling the rest of the campaign. A replaced function body is invisible to every other
 -- session until commit, and this transaction never commits — so the demonstration is exactly
 -- as strong and costs nobody anything.
-set local lock_timeout = '60s';
-set local statement_timeout = '240s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 -- OUT OF THE SEAT: the guard that stamps every write-time answer.
 create or replace function custom._derived_fields() returns trigger
@@ -222,8 +222,8 @@ begin;
 -- stalling the rest of the campaign. A replaced function body is invisible to every other
 -- session until commit, and this transaction never commits — so the demonstration is exactly
 -- as strong and costs nobody anything.
-set local lock_timeout = '60s';
-set local statement_timeout = '240s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 -- OUT OF THE SEAT: W1-VAL's body, verbatim — `custom.derived_values` is simply not called.
 create or replace function custom.record_values(p_organization_id uuid, p_record_id uuid)
@@ -283,8 +283,8 @@ begin;
 -- stalling the rest of the campaign. A replaced function body is invisible to every other
 -- session until commit, and this transaction never commits — so the demonstration is exactly
 -- as strong and costs nobody anything.
-set local lock_timeout = '60s';
-set local statement_timeout = '240s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 -- OUT OF THE SEAT: the DISTINCT removed, and nothing else.
 create or replace function custom.relation_targets(p_organization_id uuid, p_record_id uuid, p_via_key text)
@@ -348,8 +348,8 @@ begin;
 -- stalling the rest of the campaign. A replaced function body is invisible to every other
 -- session until commit, and this transaction never commits — so the demonstration is exactly
 -- as strong and costs nobody anything.
-set local lock_timeout = '60s';
-set local statement_timeout = '240s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 -- OUT OF THE SEAT: the one predicate that asks whether this person may open this record is
 -- replaced by a body that always says yes. This is the wall clause K of the green suite

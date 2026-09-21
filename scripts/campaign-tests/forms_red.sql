@@ -13,8 +13,8 @@
 
 \set ON_ERROR_STOP on
 begin;
-set local lock_timeout = '30s';
-set local statement_timeout = '600s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 -- ── RED 1 and 2: the accept Rule's envelope, and the word `anonymous` ─────────────
 create or replace function custom.anon_clear(p_organization_id uuid, p_submission_id uuid)

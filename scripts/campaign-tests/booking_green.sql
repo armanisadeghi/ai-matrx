@@ -18,8 +18,8 @@
 
 \set ON_ERROR_STOP on
 begin;
-set local lock_timeout = '60s';
-set local statement_timeout = '600s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 do $suite$
 declare

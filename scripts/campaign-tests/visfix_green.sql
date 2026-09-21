@@ -37,12 +37,12 @@
 \timing off
 
 begin;
-set local statement_timeout = '300s';
+set local statement_timeout = '60s';
 -- CLAUSE 5's rebuild TRUNCATEs and refills the whole ladder cache, so it needs ACCESS
 -- EXCLUSIVE on `custom.visibility_cache`. Under traffic it dies on the two-second lock_timeout
 -- the runner sets; nothing here is a race — the clause is about whether the operator's job
 -- finishes, not how fast it can grab the lock.
-set local lock_timeout = '60s';
+set local lock_timeout = '10s';
 
 do $t$
 declare

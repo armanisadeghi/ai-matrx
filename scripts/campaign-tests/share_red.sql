@@ -23,8 +23,8 @@
 \set REC    '\'5bd50000-0000-4a00-8a00-000000000301\''
 
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'share_red_suite', true);
 
 -- ─────────────────────────────────────────────────────────── the fixture, inside the rollback

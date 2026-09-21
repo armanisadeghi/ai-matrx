@@ -10,7 +10,7 @@
 
 \set ON_ERROR_STOP on
 begin;
-set local lock_timeout = '180s';
+set local lock_timeout = '10s';
 
 -- ── the real bytes of migrations/inverse/fix7b_a_list_of_people_is_never_platform_content_down.sql
 update platform.entity_types

@@ -427,7 +427,7 @@ begin
   -- The index is built on sixteen LIVE hash partitions of `custom.record` and needs ACCESS
   -- EXCLUSIVE on each, so under traffic it dies on the two-second lock_timeout the runner sets.
   -- Nothing here is a race: the clause is about what promote_field builds, not how fast.
-  set local lock_timeout = '60s';
+  set local lock_timeout = '10s';
   v_res := custom.promote_field(v_org, v_tbl, v_f_code);
   if coalesce((v_res ->> 'unique')::boolean, false) is not true then
     raise exception '4b: promote_field did not build a unique index: %', v_res;

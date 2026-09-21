@@ -18,7 +18,7 @@
 \timing off
 
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 set local client_min_messages = notice;   -- the clauses below SAY what they found
 
 do $t$

@@ -32,8 +32,8 @@
 \timing off
 
 begin;
-set local statement_timeout = '900s';
-set local lock_timeout = '120s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 
 select set_config('mirror2.seat', :'seat', true);
 

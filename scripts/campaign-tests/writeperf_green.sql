@@ -4,7 +4,7 @@
 \set ON_ERROR_STOP on
 begin;
 set local statement_timeout = 0;
-set local lock_timeout = '10min';
+set local lock_timeout = '10s';
 do $$
 declare
   c_admin uuid := '87a6e699-3622-4869-8843-d0867456c0dd';

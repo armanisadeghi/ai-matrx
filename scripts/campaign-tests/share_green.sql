@@ -38,8 +38,8 @@
 
 -- ══════════════════════════════════════════════ STEP 0 — a clean slate, both ways
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'share_green_suite', true);
 delete from iam.permissions where resource_type = 'record'
    and resource_id in (select id from custom.record where organization_id in (:ORG, :ORG2));
@@ -80,7 +80,7 @@ commit;
 
 -- ═══════════════════════════════════════════════════════ STEP 1 — the fixtures
 begin;
-set local statement_timeout = '300s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'share_green_suite', true);
 do $t$
 declare
@@ -123,7 +123,7 @@ commit;
 
 -- ═══════════════════ PART 1 — THE GUARD CLASS: a guard that cannot read refuses everything
 begin;
-set local statement_timeout = '120s';
+set local statement_timeout = '60s';
 do $t$
 declare v_n int;
 begin
@@ -142,7 +142,7 @@ commit;
 
 -- ══════════ PART 2 — A REAL PERSON'S SHARE, through the role PostgREST actually serves
 begin;
-set local statement_timeout = '120s';
+set local statement_timeout = '60s';
 select set_config('request.jwt.claims', '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
 set local role authenticated;
 -- THE EXACT STATEMENT that raised `42501 permission denied for table record` for every record
@@ -163,7 +163,7 @@ commit;
 
 -- ═══════════ PART 3 — THE STORE'S SHARE DOOR: who, at what level, and WHY, and taking it back
 begin;
-set local statement_timeout = '120s';
+set local statement_timeout = '60s';
 select set_config('request.jwt.claims', '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
 set local role authenticated;
 
@@ -312,7 +312,7 @@ commit;
 
 -- ═══════════════════ PART 4 — THE ONE LADDER: admin decides who else may, editor does not
 begin;
-set local statement_timeout = '120s';
+set local statement_timeout = '60s';
 select set_config('request.jwt.claims', '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}', true);
 set local role authenticated;
 -- Dana holds EDITOR from part 3e. Editor may change the record; it may not decide who else may.
@@ -362,7 +362,7 @@ commit;
 
 -- ═══════════════════════ PART 5 — HISTORY, written in the same transaction as the grant
 begin;
-set local statement_timeout = '120s';
+set local statement_timeout = '60s';
 do $t$
 declare v_ins int; v_upd int; v_del int; v_org_null int;
 begin
@@ -393,7 +393,7 @@ commit;
 
 -- ═════════════════════════════════════════════════════ TEARDOWN — and the census
 begin;
-set local statement_timeout = '300s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'share_green_suite', true);
 delete from iam.permissions where resource_type = 'record'
    and resource_id in (select id from custom.record where organization_id in (:ORG, :ORG2));

@@ -15,7 +15,7 @@
 \timing off
 
 begin;
-set local statement_timeout = '900s';
+set local statement_timeout = '60s';
 
 do $t$
 declare

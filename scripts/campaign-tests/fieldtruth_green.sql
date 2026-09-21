@@ -26,8 +26,8 @@
 
 \set ON_ERROR_STOP on
 begin;
-set local lock_timeout = '120s';
-set local statement_timeout = '600s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 create temporary table _ft_ids (k text primary key, v uuid) on commit drop;
 -- The seat half reads the ids the owner half made. It is a scratch table inside this

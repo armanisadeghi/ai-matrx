@@ -39,8 +39,8 @@
 \timing off
 
 begin;
-set local lock_timeout = '120s';
-set local statement_timeout = '180s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 do $t$
 declare

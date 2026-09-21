@@ -66,8 +66,8 @@ begin;
 -- database (one was mid-`drop trigger … on custom.record` when this was measured), so a
 -- 20-second lock wait leaves a run's throwaway organizations behind and the NEXT run reads
 -- them as real. Nothing here is asserted on time; the assertions are all above.
-set local statement_timeout = '900s';
-set local lock_timeout = '120s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'guardswitch_green_suite', true);
 delete from iam.permissions where resource_type = 'record'
    and resource_id in (select id from custom.record where organization_id in (:ORG_A, :ORG_B));
@@ -112,8 +112,8 @@ commit;
 
 -- ═════════════ PART 1 — EVERY PER-OBJECT GUARD IN THE STORE FOLLOWS THE ORGANIZATION'S SWITCH
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'guardswitch_green_suite', true);
 do $t$
 declare
@@ -251,8 +251,8 @@ commit;
 -- seat in which the question means anything: `authenticated` holds INSERT on
 -- `platform.associations` and reaches the trigger exactly as a browser does.
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'guardswitch_green_suite', true);
 do $t$
 declare
@@ -457,8 +457,8 @@ commit;
 -- Separate transactions on purpose: history stamps the TRANSACTION timestamp, so the "before"
 -- and the "after" of a knob change have to be in two of them or there is no between.
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'guardswitch_green_suite', true);
 do $t$
 declare
@@ -499,8 +499,8 @@ end $t$;
 commit;
 
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'guardswitch_green_suite', true);
 -- THE CHANGE: this organization decides that membership alone shows nothing (VIS-33) — and an
 -- ORGANIZATION decides that on its settings screen, so it goes through the settings door from
@@ -521,8 +521,8 @@ end $t$;
 commit;
 
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'guardswitch_green_suite', true);
 do $t$
 declare
@@ -703,8 +703,8 @@ begin;
 -- database (one was mid-`drop trigger … on custom.record` when this was measured), so a
 -- 20-second lock wait leaves a run's throwaway organizations behind and the NEXT run reads
 -- them as real. Nothing here is asserted on time; the assertions are all above.
-set local statement_timeout = '900s';
-set local lock_timeout = '120s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'guardswitch_green_suite', true);
 delete from iam.permissions where resource_type = 'record'
    and resource_id in (select id from custom.record where organization_id in (:ORG_A, :ORG_B));
@@ -734,8 +734,8 @@ commit;
 -- every override cleared. Those rows are written INSIDE the transaction that did the deleting,
 -- so a history delete in that same transaction cannot see them. Census zero means zero.
 begin;
-set local statement_timeout = '900s';
-set local lock_timeout = '120s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 delete from history.row_versions where organization_id in (:ORG_A, :ORG_B);
 commit;
 

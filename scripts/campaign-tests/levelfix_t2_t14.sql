@@ -39,8 +39,8 @@
 \set HQ    '\'1ef10000-0000-4a00-8a00-000000000e11\''
 
 begin;
-set local statement_timeout = '600s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'levelfix_t2_t14', true);
 delete from iam.permissions where resource_type = 'record'
    and resource_id in (select id from custom.record where organization_id = :ORG);
@@ -73,7 +73,7 @@ commit;
 
 -- ═══════════════════════════════════════ the three Tables, the three records and the note
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'levelfix_t2_t14', true);
 -- 🚨 NO TEMPORARY TABLE. The main database is reached through the pooler in TRANSACTION mode,
 -- so two transactions in one psql session are two different backends and a temp table created
@@ -164,7 +164,7 @@ commit;
 
 -- ═══════════════════════════════════════ T2, clause by clause
 begin;
-set local statement_timeout = '300s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'levelfix_t2_t14', true);
 do $t$
 declare
@@ -278,7 +278,7 @@ commit;
 
 -- ═══════════════════════════════════════ T14, second half: the refusal below the floor
 begin;
-set local statement_timeout = '300s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'levelfix_t2_t14', true);
 do $t$
 declare
@@ -364,7 +364,7 @@ commit;
 -- THE TEARDOWN IS AN OPERATOR STEP, not a person's. There is no client door that empties an
 -- organization out of eleven tables, and there should not be; it asserts no product clause.
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'levelfix_t2_t14', true);
 delete from iam.permissions where resource_type = 'record'
    and resource_id in (select id from custom.record where organization_id = :ORG);

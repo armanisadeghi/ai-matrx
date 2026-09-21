@@ -43,7 +43,7 @@
 \timing off
 
 begin;
-set local lock_timeout = '60s';
+set local lock_timeout = '10s';
 
 -- BYPASSRLS on purpose, and it is the point rather than a convenience: RLS is a row VISIBILITY
 -- filter and the door is the write barrier. A role RLS happens to hide the row from proves
@@ -220,7 +220,7 @@ begin
   perform set_config('role', v_boss, true);
   insert into custom.record (organization_id, table_id, data)
   values (v_org_b, null, jsonb_build_object('note','hard delete me')) returning id into v_id;
-  set local lock_timeout = '60s';
+  set local lock_timeout = '10s';
   set local role ttj_archive_lane;
   v_n := 0; v_caught := null;
   begin

@@ -37,8 +37,8 @@
 
 -- ══════════════════════════════════════════════ STEP 0 — a clean slate
 begin;
-set local statement_timeout = '600s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'campaign-test/sharedonly_green', true);
 delete from iam.permissions where resource_type = 'record'
    and resource_id in (select id from custom.record where organization_id = :ORG);
@@ -71,7 +71,7 @@ values ('custom', 'system_enabled',             'organization', :ORG, :ORG, 'tru
 commit;
 
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'campaign-test/sharedonly_green', true);
 do $t$
 declare
@@ -130,7 +130,7 @@ commit;
 
 -- ══════════════════════════════════════ PARTS 1–6 — from the two seats, as `authenticated`
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'campaign-test/sharedonly_green', true);
 set local role authenticated;
 do $t$
@@ -311,7 +311,7 @@ rollback;
 
 -- ══════════════════════════════════════ PART 7 — THE THREE ANSWERS, AND THE DOOR'S OWN PARITY
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'campaign-test/sharedonly_green', true);
 do $t$
 declare
@@ -395,7 +395,7 @@ commit;
 
 -- ══════════════════════════════════════ TEARDOWN
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'campaign-test/sharedonly_green', true);
 delete from iam.permissions where resource_type = 'record'
    and resource_id in (select id from custom.record where organization_id = :ORG);

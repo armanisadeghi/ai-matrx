@@ -37,8 +37,8 @@
 \timing off
 
 begin;
-set local statement_timeout = '600s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'asof_red_suite', true);
 
 -- ══════════════════ THE FIXTURE, THE SEAT, AND THE ACCESS CLAUSES THIS SUITE COULD NOT ASK

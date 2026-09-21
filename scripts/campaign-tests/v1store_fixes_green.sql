@@ -59,7 +59,7 @@
 begin;
 -- Other lanes write this store all night and the server's lock_timeout is 5s; nothing here
 -- takes a lock stronger than an ordinary row lock, so it waits rather than dying on traffic.
-set local lock_timeout = '60s';
+set local lock_timeout = '10s';
 
 -- THE ONE OPERATOR FIXTURE, MADE BEFORE THE SEAT IS TAKEN AND NAMED AS WHAT IT IS.
 -- Block 2's REC-23 clause is about a BACK-END ROLE that holds DELETE on the store and is not
@@ -304,7 +304,7 @@ begin
   --        role and no client door connects as one, so these two statements run outside the
   --        seat and assert nothing about what a person may do.
   perform set_config('role', v_boss, true);
-  set local lock_timeout = '60s';
+  set local lock_timeout = '10s';
   set local role ttj_retention_lane;
   v_caught := null;
   begin

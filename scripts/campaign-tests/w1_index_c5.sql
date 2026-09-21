@@ -63,8 +63,8 @@ begin;
 -- again where they stand. MEASURED on main 2026-09-19: `lock_timeout` is 5s and
 -- `statement_timeout` is 30s by default, and with three other lanes queued on `custom.record`
 -- even inserting this suite's Home record loses on both.
-set local lock_timeout = '60s';
-set local statement_timeout = '600s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 do $t$
 declare
@@ -242,8 +242,8 @@ begin
   -- BUILDS, not about how long the build takes, so the timeouts are raised and the probe
   -- indexes are scoped to THIS SUITE'S OWN disposable organization — which is also the
   -- organization the EXPLAIN below asks about, so the planner still has to reach them.
-  set local lock_timeout = '60s';
-  set local statement_timeout = '600s';
+  set local lock_timeout = '10s';
+  set local statement_timeout = '60s';
 
   foreach v_arm in array v_arms loop
     v_expr := platform.custom_field_index_expr(v_arm, 'job_price', 'data');
@@ -391,8 +391,8 @@ begin
   -- person who is handed that refusal is the one writing the row.
   -- ════════════════════════════════════════════════════════════════════════════════════
   -- THE LOCK, again and for the same reason: sixteen live partitions, ACCESS EXCLUSIVE on each.
-  set local lock_timeout = '60s';
-  set local statement_timeout = '600s';
+  set local lock_timeout = '10s';
+  set local statement_timeout = '60s';
   v_json := custom.promote_field(v_org, v_table, v_fid);
   v_name := v_json ->> 'index_name';
   raise notice 'PART 4 —   promote_field answered %', v_json;
@@ -534,8 +534,8 @@ begin
   perform set_config('role', 'authenticated', true);
 
   -- THE LOCK: promote_table builds one index per promoted Field over sixteen live partitions.
-  set local lock_timeout = '60s';
-  set local statement_timeout = '600s';
+  set local lock_timeout = '10s';
+  set local statement_timeout = '60s';
   v_json := custom.promote_table(v_org, v_table);
   if (v_json ->> 'rows_moved')::bigint <> 0 then
     raise exception 'REC-5 — promotion moved % rows. It is CREATE INDEX and nothing else.', v_json ->> 'rows_moved';

@@ -57,7 +57,7 @@
 \pset pager off
 
 begin;
-set local lock_timeout = '60s';
+set local lock_timeout = '10s';
 
 do $t$
 declare

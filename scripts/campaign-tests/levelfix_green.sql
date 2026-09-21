@@ -40,8 +40,8 @@
 
 -- ══════════════════════════════════════════════ STEP 0 — a clean slate, both ways
 begin;
-set local statement_timeout = '600s';
-set local lock_timeout = '20s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 select set_config('app.actor_system', 'levelfix_green_suite', true);
 delete from iam.permissions where resource_type = 'record'
    and resource_id in (select id from custom.record where organization_id in (:ORG, :ORG2));
@@ -77,7 +77,7 @@ values ('custom', 'system_enabled', 'organization', :ORG,  :ORG,  'true'::jsonb,
 commit;
 
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'levelfix_green_suite', true);
 do $t$
 declare
@@ -115,7 +115,7 @@ commit;
 -- so part 1c can ask the access kernel a question about a row the suite owns instead of about
 -- somebody's real data, and prove the arm this lane did NOT change is still exactly as it was.
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'levelfix_green_suite', true);
 do $t$
 declare
@@ -135,7 +135,7 @@ commit;
 
 -- ═══════════════════════ PART 1 — THE RUNG. Membership alone is the organization's own level.
 begin;
-set local statement_timeout = '120s';
+set local statement_timeout = '60s';
 do $t$
 declare
   v_org   constant uuid := '1ef10000-0000-4a00-8a00-000000000b01';
@@ -183,7 +183,7 @@ commit;
 
 -- ═══════════════ PART 2 — THE TWO SEATS, THROUGH THE REAL DOORS. Viewer cannot write.
 begin;
-set local statement_timeout = '120s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'levelfix_green_suite', true);
 -- The admin shares the record at VIEWER, exactly as the Share dialog does.
 select set_config('request.jwt.claims', '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
@@ -267,14 +267,14 @@ commit;
 
 -- ═══════════════ PART 3 — RAISING IT WORKS, AND REVOKING IT TAKES EFFECT ON THE NEXT CALL.
 begin;
-set local statement_timeout = '120s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'levelfix_green_suite', true);
 update iam.permissions set permission_level = 'editor'
  where resource_type = 'record' and resource_id = :REC and granted_to_user_id = :DANA;
 commit;
 
 begin;
-set local statement_timeout = '120s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'levelfix_green_suite', true);
 select set_config('request.jwt.claims', '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}', true);
 set local role authenticated;
@@ -299,7 +299,7 @@ end $t$;
 commit;
 
 begin;
-set local statement_timeout = '120s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'levelfix_green_suite', true);
 delete from iam.permissions
  where resource_type = 'record' and resource_id = :REC and granted_to_user_id = :DANA;
@@ -308,7 +308,7 @@ commit;
 -- ═══════════════ PART 4 — REVOKED. The organization's own setting is what is left, and the
 --                 organization can say it is nothing.
 begin;
-set local statement_timeout = '120s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'levelfix_green_suite', true);
 select set_config('request.jwt.claims', '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}', true);
 set local role authenticated;
@@ -345,7 +345,7 @@ end $t$;
 commit;
 
 begin;
-set local statement_timeout = '120s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'levelfix_green_suite', true);
 insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
 values ('custom', 'member_default_visibility', 'organization', :ORG, :ORG, '"shared_only"'::jsonb,
@@ -353,7 +353,7 @@ values ('custom', 'member_default_visibility', 'organization', :ORG, :ORG, '"sha
 commit;
 
 begin;
-set local statement_timeout = '120s';
+set local statement_timeout = '60s';
 select set_config('request.jwt.claims', '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}', true);
 set local role authenticated;
 do $t$
@@ -377,7 +377,7 @@ commit;
 
 -- ═══════════════ PART 5 — THE ORGANIZATION MAY CHOOSE MORE, AND A SHARE STILL CAPS THE PERSON.
 begin;
-set local statement_timeout = '120s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'levelfix_green_suite', true);
 delete from platform.knob_override
  where organization_id = :ORG and feature = 'custom' and key = 'member_default_visibility';
@@ -387,7 +387,7 @@ values ('custom', 'member_default_level', 'organization', :ORG, :ORG, '"editor"'
 commit;
 
 begin;
-set local statement_timeout = '120s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'levelfix_green_suite', true);
 do $t$
 declare
@@ -428,7 +428,7 @@ commit;
 
 -- ═══════════════ PART 6 — THE CENSUS, ON THE WHOLE DATABASE.
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 do $t$
 declare v_n int; v_who text;
 begin
@@ -446,7 +446,7 @@ commit;
 
 -- ═══════════════════════════════════════════════════════════ TEARDOWN, AND THE CENSUS OF IT
 begin;
-set local statement_timeout = '600s';
+set local statement_timeout = '60s';
 select set_config('app.actor_system', 'levelfix_green_suite', true);
 delete from iam.permissions where resource_type = 'record'
    and resource_id in (select id from custom.record where organization_id in (:ORG, :ORG2));

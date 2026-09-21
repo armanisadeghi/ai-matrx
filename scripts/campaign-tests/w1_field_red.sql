@@ -50,8 +50,8 @@
 
 -- ── RED 1: THE DEFINITION GUARD ───────────────────────────────────────────────────────
 begin;
-set local lock_timeout = '60s';
-set local statement_timeout = '240s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 -- OUT OF THE SEAT: no client door removes a production guard. Nothing is asserted here.
 create or replace function custom._field_shape_guard() returns trigger
@@ -148,8 +148,8 @@ rollback;
 
 -- ── RED 2: THE VALIDATION TRIGGER (REC-51) ────────────────────────────────────────────
 begin;
-set local lock_timeout = '60s';
-set local statement_timeout = '240s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 do $r2$
 declare
@@ -220,8 +220,8 @@ rollback;
 
 -- ── RED 3: THE MERGE-FIELD GUARD (DYN-2) ──────────────────────────────────────────────
 begin;
-set local lock_timeout = '60s';
-set local statement_timeout = '240s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 -- OUT OF THE SEAT.
 create or replace function custom._merge_field_shape_guard() returns trigger
@@ -268,8 +268,8 @@ rollback;
 
 -- ── RED 4: REC-51's SECOND HALF, ON A STANDARD TABLE ──────────────────────────────────
 begin;
-set local lock_timeout = '60s';
-set local statement_timeout = '240s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 do $r4$
 declare
@@ -340,8 +340,8 @@ rollback;
 
 -- ── RED 5: THE ACCESS WALL ────────────────────────────────────────────────────────────
 begin;
-set local lock_timeout = '60s';
-set local statement_timeout = '240s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 do $r5$
 declare

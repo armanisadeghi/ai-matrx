@@ -9,8 +9,8 @@
 -- The three principals are synthesized identities created once for this lane's proof; they
 -- belong to nobody and are members of no organization, which is what makes them external
 -- principals (VIS-31).
-set local lock_timeout = '30s';
-set local statement_timeout = '600s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 do $suite$
 declare
   v_boss     text := current_user;

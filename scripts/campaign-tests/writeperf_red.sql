@@ -5,7 +5,7 @@
 \set ON_ERROR_STOP on
 begin;
 set local statement_timeout = 0;
-set local lock_timeout = '10min';
+set local lock_timeout = '10s';
 
 -- THE FIXTURE, built with the LANDED bodies so the rows exist before anything is undone.
 create temp table wp_red (k text primary key, v text) on commit drop;

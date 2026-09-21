@@ -17,8 +17,8 @@
 -- pooler hands each statement a different backend and a session-level SET would not survive
 -- to the statement that needs it — measured 2026-09-20, the suite still died at 5 s.
 begin;
-set local lock_timeout = '240s';
-set local statement_timeout = '900s';
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
 
 do $$
 declare

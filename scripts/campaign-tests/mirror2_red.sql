@@ -13,8 +13,8 @@
 \timing off
 
 begin;
-set local statement_timeout = '1800s';
-set local lock_timeout = '120s';
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 set local client_min_messages = notice;
 
 do $t$
