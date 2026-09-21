@@ -167,6 +167,14 @@ export function OrganizationCard({
                   {roleDisplay.icon}
                   {roleDisplay.label}
                 </Badge>
+                {organization.archivedAt && (
+                  <Badge
+                    data-testid="organization-archived-badge"
+                    className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100"
+                  >
+                    Archived
+                  </Badge>
+                )}
               </div>
               {organization.description && (
                 <p className="text-sm text-muted-foreground line-clamp-2 [overflow-wrap:anywhere]">

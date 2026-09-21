@@ -53,6 +53,7 @@ import { OrgIndustriesSection } from "@/features/industries/components/OrgIndust
 import { MemberManagement } from "./MemberManagement";
 import { InvitationManager } from "./InvitationManager";
 import { DangerZone } from "./DangerZone";
+import { ArchivedOrganizationBanner } from "./ArchivedOrganizationBanner";
 import { OrgEmailTab } from "./OrgEmailTab";
 import { OrgPrivacyTab } from "./OrgPrivacyTab";
 import { OrgScopeTree } from "./OrgScopeTree";
@@ -200,6 +201,11 @@ export function OrgManage({
         className="bg-textured pb-6 pt-[var(--shell-header-clearance)] [&_section[id]]:scroll-mt-[var(--section-scroll-clearance)]"
       >
         <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-5">
+          {/* An archived organization says so, with the Restore action for those
+              who may and a plain sentence for those who may not. It renders
+              nothing at all while the organization is live. */}
+          <ArchivedOrganizationBanner organization={displayOrganization} />
+
           {/* Identity header */}
           <Card className="p-5 relative overflow-hidden">
             <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-sky-500 to-emerald-500" />
@@ -619,15 +625,16 @@ export function OrgManage({
           {/* Danger zone */}
           {canDelete && (
             <section id="danger" tabIndex={-1}>
-              <Card className="p-5 border-red-200 dark:border-red-900/50">
+              <Card className="p-5 border-amber-200 dark:border-amber-900/50">
                 <div className="flex items-center gap-2 mb-1">
-                  <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                  <h2 className="text-base font-semibold text-red-700 dark:text-red-400">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <h2 className="text-base font-semibold text-amber-700 dark:text-amber-400">
                     Danger zone
                   </h2>
                 </div>
                 <p className="text-xs text-muted-foreground mb-4">
-                  Irreversible actions. Proceed with care.
+                  Closing this organization affects everyone in it. Nothing is
+                  deleted, and an owner can undo it.
                 </p>
                 <DangerZone organization={displayOrganization} />
               </Card>

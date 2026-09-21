@@ -44,21 +44,28 @@ import {
   acceptInvitation,
   isSlugAvailable,
 } from "./service";
+import type { OrganizationArchiveFilter } from "./service/organizationArchive";
 
 // ============================================================================
 // Organization Listing Hooks
 // ============================================================================
 
 /**
- * Hook to get all organizations for current user
+ * Hook to get all organizations for current user.
+ *
+ * THE ARCHIVED-ITEMS LAW: `archived` defaults to "active", so every caller
+ * hides archived organizations unless it asks for them. A surface that offers
+ * the reveal passes "all" and splits the rows itself.
  */
-export function useUserOrganizations() {
+export function useUserOrganizations(
+  archived: OrganizationArchiveFilter = "active",
+) {
   const authReady = useAppSelector(selectAuthReady);
   const userId = useAppSelector(selectUserId);
   const accessToken = useAppSelector(selectAccessToken);
   const canFetch = authReady && Boolean(userId) && Boolean(accessToken);
   const [nonce, setNonce] = useState(0);
-  const key = canFetch ? `${userId}:${nonce}` : null;
+  const key = canFetch ? `${userId}:${archived}:${nonce}` : null;
   const [resolved, setResolved] = useState<{
     key: string;
     organizations: OrganizationWithRole[];
@@ -70,7 +77,7 @@ export function useUserOrganizations() {
     let active = true;
     void (async () => {
       try {
-        const organizations = await getUserOrganizations();
+        const organizations = await getUserOrganizations(archived);
         if (active) setResolved({ key, organizations, error: null });
       } catch (err: unknown) {
         const message =
@@ -81,7 +88,7 @@ export function useUserOrganizations() {
     return () => {
       active = false;
     };
-  }, [key]);
+  }, [key, archived]);
 
   const current = resolved?.key === key ? resolved : null;
   const refresh = () => setNonce((value) => value + 1);

@@ -178,6 +178,27 @@ export function OrganizationList() {
         </div>
       )}
 
+      {/* Archived organizations — closed by default, one click to open
+          (THE ARCHIVED-ITEMS LAW). Archiving closes an organization; nothing
+          inside it was deleted, and an owner can restore it at any time. */}
+      <ArchivedDisclosure
+        count={archivedOrganizations.length}
+        open={showArchived}
+        onOpenChange={setShowArchived}
+        label="organizations"
+      >
+        <div className="space-y-3">
+          {archivedOrganizations.map((org) => (
+            <OrganizationCard
+              key={org.id}
+              organization={org}
+              onUpdate={refresh}
+              kpis={kpis}
+            />
+          ))}
+        </div>
+      </ArchivedDisclosure>
+
       {/* No Results */}
       {filteredOrgs.length === 0 && searchTerm && (
         <Card className="p-8">
