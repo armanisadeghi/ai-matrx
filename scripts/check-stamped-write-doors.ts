@@ -713,24 +713,57 @@ async function main(): Promise<number> {
       const leaning = recWriters.filter(
         (w) => w.has_door && !w.stamps && !bodyAssignsStamp(rec, w.src),
       ).length;
-      await db.query(`set local lock_timeout = '2s'`);
-      await db.query(`alter table custom.record disable trigger ${before.s.trigger}`);
-      const after = await stamperFor(db, rec);
-      const nowRed = doorAndStampArms(rec, recWriters, after.s).filter((f) => f.arm === "stamp");
-      await db.query(`alter table custom.record enable trigger ${before.s.trigger}`);
-      await db.query(`set local lock_timeout = default`);
-      if (after.findings.length === 0 || nowRed.length < leaning) {
+      // 🚨 CONTENTION IS NOT A VERDICT (the rule GUARD-SECRETS wrote for
+      // `check:anon-write-surface`, 2026-09-21). Disabling a trigger takes ACCESS EXCLUSIVE on
+      // `custom.record` — the live record store — so on a busy database this arm loses the race
+      // and the first version of it printed a bare `FAIL canceling statement due to lock
+      // timeout`, which reads as "the guard cannot see its own defect" and is a claim nobody
+      // measured. Three tries with backoff, a 2 s ceiling so it never becomes a write freeze,
+      // and on a lock/deadlock/serialization error it says NOT MEASURED. Never a pass, never a
+      // broken arm; the self-test still exits non-zero, because a guard whose one live arm did
+      // not run is a guard that is not proven today.
+      const CONTENTION = new Set(["55P03", "40P01", "40001"]);
+      let proved = false;
+      let contended = "";
+      for (let attempt = 1; attempt <= 3 && !proved; attempt++) {
+        await db.query("savepoint stamper_causation");
+        try {
+          await db.query(`set local lock_timeout = '2s'`);
+          await db.query(`alter table custom.record disable trigger ${before.s.trigger}`);
+          const after = await stamperFor(db, rec);
+          const nowRed = doorAndStampArms(rec, recWriters, after.s).filter((f) => f.arm === "stamp");
+          await db.query(`alter table custom.record enable trigger ${before.s.trigger}`);
+          if (after.findings.length === 0 || nowRed.length < leaning) {
+            console.log(
+              `${FAIL} self-test: with ${before.s.trigger} DISABLED the guard reported ` +
+                `${after.findings.length} stamper finding(s) and ${nowRed.length} of ${leaning} leaning door(s). ` +
+                `The exemption is not caused by the trigger, so the 'stamp' arm is measuring nothing.`,
+            );
+            return 1;
+          }
+          console.log(
+            `${OK} the stamp exemption is CAUSED by ${before.s.trigger}: disabling it turns ${leaning} silent ` +
+              `door(s) into ${nowRed.length} 'stamp' finding(s) plus the 'stamper' finding itself.`,
+          );
+          proved = true;
+        } catch (e) {
+          const code = (e as { code?: string }).code ?? "";
+          await db.query("rollback to savepoint stamper_causation");
+          if (!CONTENTION.has(code)) throw e;
+          contended = code;
+          if (attempt < 3) await new Promise((r) => setTimeout(r, attempt * 1500));
+        } finally {
+          await db.query(`set local lock_timeout = default`);
+        }
+      }
+      if (!proved) {
         console.log(
-          `${FAIL} self-test: with ${before.s.trigger} DISABLED the guard reported ` +
-            `${after.findings.length} stamper finding(s) and ${nowRed.length} of ${leaning} leaning door(s). ` +
-            `The exemption is not caused by the trigger, so the 'stamp' arm is measuring nothing.`,
+          `${C.y}[NOT MEASURED — contention]${C.x} the 'stamper' causation arm could not take ACCESS EXCLUSIVE on ` +
+            `custom.record in 3 tries (last ${contended}). Another session is writing the record store. ` +
+            `This is NOT a pass and NOT a broken arm — re-run on a quieter database; every other arm above did run.`,
         );
         return 1;
       }
-      console.log(
-        `${OK} the stamp exemption is CAUSED by ${before.s.trigger}: disabling it turns ${leaning} silent ` +
-          `door(s) into ${nowRed.length} 'stamp' finding(s) plus the 'stamper' finding itself.`,
-      );
     } finally {
       OUTER_TX = false;
       await db.query("rollback");
