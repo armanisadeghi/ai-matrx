@@ -197,6 +197,128 @@ const STATE_COLUMN = [
 
 export type Severity = "critical" | "warning";
 
+/**
+ * 🚨 THE CLASSIFIER DECIDES BY WHAT THE VALUE IS, NEVER BY THE COLUMN'S NAME.
+ * (SECURITY-SWEEP-2, 2026-09-21.)
+ *
+ * In this codebase the word "credential" means two unrelated things, and the name cannot tell
+ * them apart. In `users.credential_items` it means a VAULT ITEM — a saved login, an API key, a
+ * token bundle. In `hr` it means an OCCUPATIONAL QUALIFICATION: a forklift licence, a food
+ * handler card, a nursing registration. `hr.course.credential_name` is the NAME OF A
+ * QUALIFICATION, printed on a certificate; presenting that string authenticates nothing.
+ *
+ * So each such column is READ and classified INDIVIDUALLY, here, with the reason. This is
+ * deliberately NOT a name pattern (`/^credential_name$/` would clear the next real secret that
+ * happens to be called that) and deliberately NOT an exemption list (an entry carries the
+ * finding it answers and why the value is not a secret). THE LIVE RUN REFUSES A STALE ENTRY:
+ * a key naming a column that no longer exists, or that the client can no longer write, fails
+ * the guard — an entry can never quietly outlive the thing it explains.
+ *
+ * `descriptive` says: the VALUE is a name, a number printed on a document, a duration, a
+ * boolean, or a foreign key into our own catalog. It is not a bearer credential, so the
+ * "unpinned secret" rule does not apply. It says NOTHING about the column's other rules: an
+ * identity or state column keeps its own classification, and a `descriptive` verdict never
+ * clears a sibling column.
+ *
+ * SENSITIVE PERSONAL DATA IS A DIFFERENT QUESTION AND A DIFFERENT GUARD. An SSN or a national
+ * identifier is not a credential — it is special-category data, and it belongs to
+ * `check:fields-stay-masked`, not here. On this database those already live in
+ * `hr.employee_private` (`ssn_ciphertext`, `ssn_hmac`, `national_id_ciphertext`), are named in
+ * that table's `client_excluded_columns`, and are readable only through the audited
+ * `hr.reveal_ssn` door. `hr.credential.credential_number` is plain `text` with none of that
+ * machinery, because it is the number printed on a licence, not a national identifier — a
+ * deliberate separation in the schema, which is why it is classified here rather than masked.
+ */
+export interface ColumnClassification {
+  readonly verdict: "descriptive";
+  /** What the value IS, and why it is not a bearer credential. */
+  readonly reason: string;
+  /** Where that was read. */
+  readonly evidence: string;
+}
+
+export const COLUMN_CLASSIFICATION: Readonly<Record<string, ColumnClassification>> = {
+  // ── hr: "credential" means an OCCUPATIONAL QUALIFICATION ────────────────────────────────
+  "hr.course.grants_credential": {
+    verdict: "descriptive",
+    reason:
+      "a boolean on a COURSE DEFINITION saying whether finishing the course mints an hr.credential row. It is not an access grant and cannot escalate anybody's platform access.",
+    evidence: "migrations/hr_12_training.sql:69, with the CHECK at :93-95",
+  },
+  "hr.course.credential_name": {
+    verdict: "descriptive",
+    reason:
+      "the human-readable NAME of the qualification a course awards (\"Forklift Operator Certification\"), copied onto the minted hr.credential row. A name on a certificate authenticates nothing.",
+    evidence: "migrations/hr_12_training.sql:70, intent at :51-53",
+  },
+  "hr.course.credential_valid_months": {
+    verdict: "descriptive",
+    reason:
+      "a DURATION in months, used to compute hr.credential.expires_on. An integer, not a secret.",
+    evidence: "migrations/hr_12_training.sql:71",
+  },
+  "hr.credential.credential_kind": {
+    verdict: "descriptive",
+    reason:
+      "a CHECK-constrained enum classifying the qualification: license | certification | registration | clearance.",
+    evidence: "migrations/hr_05_identity_satellites.sql:389",
+  },
+  "hr.credential.credential_category_id": {
+    verdict: "descriptive",
+    reason:
+      "a foreign key into the shared platform.categories taxonomy — the organization's own classification of its licences and certificates.",
+    evidence: "migrations/hr_05_identity_satellites.sql:391",
+  },
+  "hr.credential.credential_number": {
+    verdict: "descriptive",
+    reason:
+      "the ISSUING BODY'S identifier for a licence or certificate — the number printed on a CDL, a nursing licence, a food-handler card. Holding the string authenticates nothing here: the truth of the credential comes from verification_state / verified_by_employment_id. It is NOT a national identifier; SSNs and national IDs live encrypted in hr.employee_private behind the audited hr.reveal_ssn door and are named in that table's client_excluded_columns.",
+    evidence: "migrations/hr_05_identity_satellites.sql:395, beside issuer_ref and issued_on; the SSN machinery at :42-47 and :87",
+  },
+  "hr.crew.required_credential_ids": {
+    verdict: "descriptive",
+    reason:
+      "the list of qualifications a member of this crew MUST HOLD — a requirements gate the scheduler reads, never anybody's credentials and never a grant. uuid[] because Postgres cannot foreign-key an array.",
+    evidence: "migrations/hr_07_scheduling.sql:86; meaning stated at migrations/hr_14_knobs_and_shareables.sql:363",
+  },
+  "hr.shift.required_credential_ids": {
+    verdict: "descriptive",
+    reason:
+      "the same requirements list denormalised onto one shift: which qualifications somebody must hold to work it.",
+    evidence: "migrations/hr_07_scheduling.sql:212; named as the denormalised copy at hr_14_knobs_and_shareables.sql:363",
+  },
+  "hr.staffing_requirement.required_credential_ids": {
+    verdict: "descriptive",
+    reason:
+      "the same requirements list on the demand side: which qualifications the headcount for this location and interval must hold.",
+    evidence: "migrations/hr_07_scheduling.sql:377",
+  },
+  "hr.training_assignment.source_credential_id": {
+    verdict: "descriptive",
+    reason:
+      "a foreign key to the hr.credential row that CAUSED this training assignment — the expiring certification whose recertification window opened. The schema declares this link NO-EDGE precisely so it can never convey access.",
+    evidence: "migrations/hr_12_training.sql:218, NO-EDGE declaration at :375-376",
+  },
+  "hr.transcript_entry.credential_id": {
+    verdict: "descriptive",
+    reason:
+      "a foreign key to the hr.credential row this completed-training record minted — the permanent transcript's pointer to the certification it produced.",
+    evidence: "migrations/hr_12_training.sql:346",
+  },
+  // ── hr: "token" means an ENTITY-TYPE REGISTRY NOUN ──────────────────────────────────────
+  "hr.checklist_item.related_token": {
+    verdict: "descriptive",
+    reason:
+      "the ENTITY-TYPE TOKEN (hr_credential, hr_course, files) naming what KIND of record a checklist item points at — the type half of a polymorphic (related_token, related_id) pointer. The value-level vocabulary proof cannot clear it only because the table is empty, and an empty table proves nothing; this is the reading the proof stands in for.",
+    evidence: "migrations/hr_11_onboarding.sql:245-246, beside related_id; the same pattern at hr_07_scheduling.sql:378-380",
+  },
+};
+
+/** `schema.table.column` → its read classification, if one was made. */
+export function classificationFor(schema: string, table: string, column: string): ColumnClassification | undefined {
+  return COLUMN_CLASSIFICATION[`${schema}.${table}.${column}`];
+}
+
 export interface PolicyFacts {
   readonly schema: string;
   readonly table: string;
@@ -393,9 +515,21 @@ export interface Finding {
  * needs a human's eye, but it is usually gated by `is_platform_admin()` or
  * `iam.has_access(...)` and failing on it would bury case 1 and 2 under hundreds of rows.
  */
-export function classify(column: string, ctx: PinContext, provenVocabulary = false): Severity | null {
+export function classify(
+  column: string,
+  ctx: PinContext,
+  provenVocabulary = false,
+  /**
+   * The column was READ and classified `descriptive` in `COLUMN_CLASSIFICATION`: its VALUE is
+   * a name, a number on a document, a duration, a boolean or a foreign key, so the
+   * unpinned-SECRET rule does not apply to it. It suppresses ONLY that rule — the identity and
+   * state rules below still judge the same column, because "not a bearer credential" is not
+   * "harmless".
+   */
+  descriptive = false,
+): Severity | null {
   const vocabulary = provenVocabulary || VOCABULARY_NOT_A_SECRET.some((re) => re.test(column));
-  if (!vocabulary && SECRET_COLUMN.some((re) => re.test(column))) return "critical";
+  if (!descriptive && !vocabulary && SECRET_COLUMN.some((re) => re.test(column))) return "critical";
   if (IDENTITY_COLUMN.some((re) => re.test(column))) {
     if (ctx.withCheckIsNull) return "critical";
     // 3. THE api_keys SHAPE. This policy IS in the business of pinning identity — it names
@@ -457,7 +591,12 @@ export function findingsFor(policy: PolicyFacts): Finding[] {
     // See `restrictiveChecks`: a RESTRICTIVE policy is ANDed with every permissive one, so a
     // column it genuinely names is pinned regardless of what `iam.apply_rls` regenerates.
     if (restrictivePinned.has(column)) continue;
-    const severity = classify(column, ctx, vocabulary.has(column));
+    const severity = classify(
+      column,
+      ctx,
+      vocabulary.has(column),
+      classificationFor(policy.schema, policy.table, column)?.verdict === "descriptive",
+    );
     if (severity === null) continue;
     if (isPinned(check, column)) continue;
     out.push({
@@ -864,6 +1003,47 @@ function selfTest(): number {
     "a restrictive INSERT pin does not clear the UPDATE policy — the pin is per command",
   );
 
+  // THE CLASSIFIER DECIDES BY WHAT THE VALUE IS, NOT BY THE NAME. `hr.course` is the real
+  // shape: in `hr`, "credential" means an occupational qualification, and `credential_name` is
+  // the name printed on a certificate. The two halves differ ONLY in whether the column has
+  // been read and classified.
+  const hrCourse = {
+    schema: "hr",
+    table: "course",
+    policy: "std_insert",
+    cmd: "a",
+    withCheck: "((created_by = ( SELECT auth.uid() AS uid)) AND iam.has_org_access(organization_id))",
+    usingExpr: null,
+    columns: ["id", "title", "credential_name", "credential_number", "created_by", "organization_id"],
+  } as const;
+  say(
+    findingsFor({ ...hrCourse, table: "unread_table" })
+      .some((f) => f.column === "credential_name" && f.severity === "critical"),
+    "an UNREAD `credential_name` is CRITICAL — the name rule fires until somebody reads the column",
+  );
+  say(
+    !findingsFor({ ...hrCourse }).some((f) => f.column === "credential_name"),
+    "hr.course.credential_name, READ and classified `descriptive` (the name of a qualification, " +
+      "not a bearer secret), is NOT a finding",
+  );
+  say(
+    findingsFor({ ...hrCourse }).some((f) => f.column === "credential_number" && f.severity === "critical"),
+    "…and classifying one column says nothing about the next: `credential_number` on the SAME " +
+      "table is unclassified there (it is read on hr.credential, not hr.course) and stays CRITICAL",
+  );
+  say(
+    classificationFor("hr", "credential", "credential_number")?.verdict === "descriptive" &&
+      /not a national identifier/i.test(classificationFor("hr", "credential", "credential_number")!.reason),
+    "hr.credential.credential_number is classified where it was read, and its reason records " +
+      "that it is a licence number and NOT a national identifier (SSNs live encrypted in " +
+      "hr.employee_private behind hr.reveal_ssn — sensitive data is a different guard)",
+  );
+  say(
+    Object.values(COLUMN_CLASSIFICATION).every((c) => c.reason.length > 40 && c.evidence.length > 0),
+    "every read classification carries what the value IS and where that was read — an entry " +
+      "without a reason is an exemption, not a judgement",
+  );
+
   // GREEN — the shape it has today: a restrictive refusal means the census never yields the
   // table at all, so the classifier is handed nothing to judge.
   say(
@@ -1024,6 +1204,30 @@ async function main(): Promise<number> {
           restrictiveChecks: (r.restrictive_checks ?? []) as RestrictiveCheck[],
         }),
       );
+    }
+
+    // 🚨 A READ CLASSIFICATION MAY NEVER OUTLIVE THE THING IT EXPLAINS. Every entry in
+    // COLUMN_CLASSIFICATION answers a real finding on a real, client-writable column. If the
+    // column is dropped, renamed, or withdrawn from the client grant, the entry stops being a
+    // judgement and becomes an unexamined exemption sitting in a security classifier waiting
+    // for a future column to walk into it. That is exactly how a baseline rots into permission,
+    // which this guard already refuses for the baseline — so it refuses it here too.
+    const seen = new Set<string>();
+    for (const r of rows) {
+      for (const c of (r.writable_columns ?? []) as string[]) {
+        seen.add(`${r.schema_name}.${r.table_name}.${c}`);
+      }
+    }
+    const stale = Object.keys(COLUMN_CLASSIFICATION).filter((k) => !seen.has(k));
+    if (stale.length > 0) {
+      console.error(
+        `\n[FAIL] ${stale.length} entry/entries in COLUMN_CLASSIFICATION no longer name a\n` +
+          `client-writable column — dropped, renamed, or withdrawn from the grant:\n` +
+          stale.map((k) => `  ${k}`).join("\n") +
+          `\n  Delete the entry. A read classification that outlives its column is an\n` +
+          `  unexamined exemption waiting for the next column of that name.`,
+      );
+      return 1;
     }
 
     const critical = findings.filter((f) => f.severity === "critical");
