@@ -206,13 +206,39 @@ async function useOrganization(page, target) {
     // the DOM to be still, then read.
     await page.waitForLoadState("domcontentloaded").catch(() => {});
     await page.waitForTimeout(2500);
-    const text = await page.evaluate(() => document.body.innerText).catch(async () => {
-      await page.waitForTimeout(3000);
-      return page.evaluate(() => document.body.innerText);
-    });
-    if (/need an organization|No organization selected|pick one below/i.test(text)) return false;
-    if (/not in the organization you are working in/i.test(text)) return false;
-    return true;
+    // 🚨 ABSENCE OF THE REFUSAL IS NOT ARRIVAL. This read used to return `true`
+    // whenever the three "pick an organization" sentences were not on screen —
+    // so on a cold Turbopack compile, where the page legitimately says
+    // "Checking whether Data records are available here…" for a minute, the
+    // helper declared the organization SET, returned, and the caller then sat
+    // on a table page that resolved to "Data records need an organization" and
+    // timed out 240s later waiting for a rail that was never going to exist
+    // (lane AGENT-BUILDS-2, 2026-09-21, walk 1). A screen that has not finished
+    // answering has not said yes. So: wait for the table's OWN rail — the
+    // positive signal, and the same one `settleOnTable` waits for — and treat
+    // the refusal sentences as the early, honest exit.
+    const arrived = await Promise.race([
+      page
+        .getByRole("button", { name: /^Forms$/ })
+        .first()
+        .waitFor({ state: "visible", timeout: 180000 })
+        .then(() => "rail")
+        .catch(() => null),
+      (async () => {
+        for (let i = 0; i < 180; i += 1) {
+          const text = await page
+            .evaluate(() => document.body.innerText)
+            .catch(() => "");
+          if (/need an organization|No organization selected|pick one below/i.test(text)) {
+            return "no-organization";
+          }
+          if (/not in the organization you are working in/i.test(text)) return "wrong-organization";
+          await page.waitForTimeout(1000);
+        }
+        return null;
+      })(),
+    ]);
+    return arrived === "rail";
   };
 
   if (await onTarget()) return;
