@@ -52,18 +52,19 @@ const only = argv.includes("--only") ? argv[argv.indexOf("--only") + 1] : null;
 const MEMBER = {
   full_name: "Naomi Okafor",
   email: "naomi.okafor@harborlinemail.example",
-  // 🚨 THE PHONE FIELD'S PATTERN IS `^[+0-9][0-9 ()\-\.]{4,}$` (custom.field rules) — it must
-  // START with a digit or a plus, so the very ordinary American way of writing a number,
-  // "(415) 555-0163", is refused with "Phone is not written the way this field expects".
-  // That refusal is real and reported; this walk writes a number the field accepts so the
-  // proof is about the submission, not about the parenthesis.
-  phone: "415-555-0163",
+  // FIXED 2026-09-21 by lane TAILS-3. The phone field's pattern used to be
+  // `^[+0-9][0-9 ()\-\.]{4,}$`, which had to START with a digit or a plus, so the very
+  // ordinary American way of writing a number was refused with "Phone is not written the way
+  // this field expects". Every phone Field now carries `custom.phone_pattern()`, which counts
+  // digits instead of policing punctuation, so this walk writes the number the way a person
+  // actually writes it.
+  phone: "(415) 555-0163",
   class: "Boxing Fundamentals — Tue 7:15 PM with Coach Reyes",
   notes: "Coming back after a shoulder injury — is the 7:15 Boxing class beginner friendly?",
 };
 const DRIVER = {
   "Customer Name": "Marcus Delgado",
-  Phone: "415-555-0178", // see MEMBER.phone — a leading "(" is refused by the field's pattern
+  Phone: "(415) 555-0178", // see MEMBER.phone — a leading "(" is accepted since TAILS-3
 
   Email: "marcus.delgado@harborlinemail.example",
   "Vehicle Make": "Honda",
