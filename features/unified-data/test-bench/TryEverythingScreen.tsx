@@ -57,7 +57,7 @@ import {
     personActor,
     recordsDataSource,
     refusalLineForAPerson,
-    rowName,
+    rowNameIn,
     tableName,
 } from "@ai-matrx/records-ui";
 
@@ -1552,7 +1552,7 @@ function HistoryTry({ table }: { table: Table }) {
                     >
                         {rows.map((row) => (
                             <option key={row.id} value={row.id}>
-                                {rowName(row, table.title_field)}
+                                {rowNameIn(table, row)}
                             </option>
                         ))}
                     </select>
@@ -1983,7 +1983,7 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                             >
                                 {rows.map((row) => (
                                     <option key={row.id} value={row.id}>
-                                        {rowName(row, table.title_field)}
+                                        {rowNameIn(table, row)}
                                     </option>
                                 ))}
                             </select>
