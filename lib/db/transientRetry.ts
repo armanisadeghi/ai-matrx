@@ -199,7 +199,11 @@ const DEFAULT_DELAYS = [150, 400] as const;
  */
 export async function withTransientRetry<T>(
   label: string,
-  run: () => Promise<T>,
+  // 🚨 `PromiseLike`, NOT `Promise`. A supabase-js `PostgrestBuilder` is a
+  // thenable that is not a Promise (no `catch`, no `finally`), so a `Promise<T>`
+  // parameter refuses every PostgREST call site by type — which is exactly what
+  // `pnpm type-check` said the first time this wrapper met one.
+  run: () => PromiseLike<T>,
   options: TransientRetryOptions = {},
 ): Promise<T> {
   const attempts = Math.max(1, options.attempts ?? 3);
