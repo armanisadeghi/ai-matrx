@@ -1602,6 +1602,14 @@ const UserTableViewer = ({
   // Handle delete row
   const handleDeleteRow = (rowId: string) => {
     setSelectedRowId(rowId);
+    // The confirmation NAMES the row (its row label), so it needs the row's
+    // cells — looked up here so every entry point (trash icon, right-click,
+    // keyboard) gets it, instead of each caller having to pass them.
+    const row =
+      data.find((r) => r.id === rowId) ??
+      fullDatasetCache?.find((r) => r.id === rowId) ??
+      null;
+    setSelectedRowData(row ? row.data : null);
     setShowDeleteModal(true);
   };
 
