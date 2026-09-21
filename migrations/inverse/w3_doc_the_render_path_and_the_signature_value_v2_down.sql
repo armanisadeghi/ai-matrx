@@ -41,9 +41,21 @@ drop function if exists custom.doc_sign(uuid, uuid, text, text, uuid);
 drop function if exists custom._doc_render_immutable();
 drop function if exists custom._doc_signature_immutable();
 drop function if exists custom.doc_signature_field_ok(jsonb);
-drop function if exists custom.doc_render_document(uuid, uuid, uuid);
-drop function if exists custom.doc_render_body(uuid, uuid, uuid);
-drop function if exists custom.doc_content_hash(text);
+
+-- 🚨 THE RENDER PATH STAYS STANDING (lane INVERSE-GUARD, 2026-09-21). This file used to drop
+-- `custom.doc_render_document`, and with it the two bodies that door is built out of,
+-- `custom.doc_render_body` and `custom.doc_content_hash`. `custom.sign_request_create` in
+-- `esign_asking_somebody_to_sign_is_a_door.sql` — a lane outside W3-DOC — has since adopted
+-- `custom.doc_render_document` and renders through it on the live path, so dropping it would
+-- not restore this lane's defect, it would break asking somebody to sign. Its two callees stay
+-- with it for the same reason: a door standing over a body that is gone is the same broken
+-- thing one level down.
+--
+-- WHAT THIS FILE TAKES BACK IS THE SIGNATURE VALUE — REC-68 · VAL-10's half. The seal door,
+-- the intactness question, both immutability triggers and their bodies, the field predicate
+-- and the two client-door register rows all go, so a render can no longer be sealed, a seal
+-- can no longer be asked whether it still means anything, and neither table is held immutable.
+-- That is the defect, put back, with the render path left standing underneath it.
 
 delete from platform.client_callable_door
  where schema_name = 'custom'

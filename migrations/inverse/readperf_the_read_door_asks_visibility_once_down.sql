@@ -8,11 +8,24 @@ delete from platform.client_callable_door
 
 drop function if exists custom.read_door_parity(uuid, uuid, uuid, public.permission_level);
 drop function if exists custom.read_door_parity(uuid, uuid, uuid, public.permission_level, integer);
-drop function if exists custom.visible_set(uuid, uuid, uuid, public.permission_level);
-drop function if exists custom.read_door_carried_ids(uuid, uuid, uuid, public.permission_level);
-drop function if exists custom.read_door_granted_ids(uuid, uuid);
-drop function if exists custom.carrying_edges_in(uuid);
-drop function if exists custom.read_door_ladder_ceiling();
+
+-- 🚨 FIVE OF THE SEVEN STAY STANDING (lane INVERSE-GUARD, 2026-09-21). This file used to drop
+-- `custom.visible_set`, `custom.read_door_carried_ids`, `custom.read_door_granted_ids`,
+-- `custom.carrying_edges_in` and `custom.read_door_ladder_ceiling` as well. Lanes outside
+-- READ-PERF have adopted all five on the live path since this file was written — `custom.list_door_disagreements` in
+-- `exportfix_the_census_follows_the_export.sql` reads `custom.visible_set` and
+-- `custom.read_door_ladder_ceiling`, and `custom.table_has_a_visible_record` in
+-- `sharedonly_a_shared_table_shows_its_rows.sql` reads `custom.read_door_granted_ids` and
+-- `custom.carrying_edges_in`, while `custom.visible_set` itself — an access-kernel root, and
+-- rewritten since by `leakt10_a_home_of_a_table_is_not_the_whole_table.sql` — reads
+-- `custom.read_door_carried_ids`.
+-- Dropping them would not put READ-PERF's defect back; it would take the export census and
+-- the shared-table read down with it, and the access kernel with them. The DEFECT is restored
+-- in full by the two bodies below:
+-- `custom.read_records` asks `custom.has_visibility` once PER ROW again and
+-- `custom.query_visible_ids` does the same, which is the slow shape this lane removed. The
+-- five set-based helpers standing underneath are not called by either restored body, so the
+-- read door is exactly as slow as it was before this lane — which is the point of the file.
 
 CREATE OR REPLACE FUNCTION custom.read_records(p_organization_id uuid, p_table_id uuid, p_by_id boolean DEFAULT false, p_limit integer DEFAULT 200, p_offset integer DEFAULT 0)
  RETURNS TABLE(id uuid, document jsonb, level permission_level)

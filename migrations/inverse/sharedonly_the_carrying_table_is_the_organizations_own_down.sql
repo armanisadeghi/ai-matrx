@@ -1,6 +1,17 @@
 -- SHARED-ONLY, the inverse: custom.visible_set asks the ladder about whatever id it was
 -- handed again, so a kernel Table in the global-readable system organization answers yes
 -- for everybody and a shared_only organization's Field rows come back whole.
+--
+-- 🚨 ONE OF THE TWO RUNS, AND IF BOTH RUN, THIS ONE FIRST (lane INVERSE-GUARD, 2026-09-21).
+-- The `custom.visible_set` body restored below calls `custom.reaches_directly`, and the
+-- sibling inverse `sharedonly_knowing_a_table_is_not_being_carried_by_it_down.sql` takes that
+-- function away — because it inverts the earlier half of SHARED-ONLY that created it, while
+-- this file inverts only the carrying-table fix that landed on top of it. They invert in the
+-- reverse of the order they landed: this file first, the earlier teardown second, and that
+-- teardown puts `custom.visible_set` back to a body that never asks for
+-- `custom.reaches_directly`. The other order is the only one that leaves the access kernel
+-- calling a function that is gone, and an inverse pair is never run in it.
+-- ground-standing-ok: b
 
 CREATE OR REPLACE FUNCTION custom.visible_set(p_user uuid, p_organization_id uuid, p_table_id uuid, p_required permission_level DEFAULT 'viewer'::permission_level, OUT o_all_visible boolean, OUT o_true_visibility platform.visibility[], OUT o_granted_all uuid[], OUT o_granted_visible uuid[], OUT o_carried_visible uuid[], OUT o_ladder_calls integer, OUT o_fallback boolean, OUT o_note text)
  RETURNS record

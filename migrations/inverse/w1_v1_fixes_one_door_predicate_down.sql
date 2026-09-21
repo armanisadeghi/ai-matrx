@@ -280,5 +280,23 @@ $function$
 
 
 drop function if exists custom._store_door();
-drop function if exists custom.assert_store_door(uuid, text);
-drop function if exists custom.caller_role();
+
+-- 🚨 `custom.assert_store_door(uuid, text)` AND `custom.caller_role()` STAY STANDING
+-- (lane INVERSE-GUARD, 2026-09-21). This file used to drop both here, and the header above already records what the
+-- trigger half of that cost. The body half is worse: `custom.assert_store_door` is THE
+-- predicate every write door in the record store reaches — an access-kernel root — and
+-- THIRTY-SEVEN triggers standing today on `custom.record`, `custom.field`, `custom.rule`,
+-- `custom.external_link`, `custom.external_source`, `custom.doc_render`,
+-- `custom.doc_signature`, `custom.io_outbox` and `iam.permissions` reach it through their own
+-- bodies. `custom.caller_role()` is read by `custom.io_record_changed` in
+-- `orgdel_a_deletion_event_asks_nobody_for_permission.sql`, a lane outside this one, on the
+-- same path. Dropping either would not restore the prior state this file claims to restore:
+-- it would leave every write to the store calling a function that does not exist. Detaching
+-- thirty-seven triggers instead would tear down the guard set of the whole record store,
+-- which is a great deal more than one lane's inverse.
+--
+-- THE DEFECT IS STILL PUT BACK by what remains: the five store-door triggers are detached
+-- above, `custom._store_door()` is gone, and the six SECURITY DEFINER bodies are back to the
+-- definitions the up-file's own `-- based-on:` hashes name — so no door judges its caller
+-- through one predicate any more, which is the finding. A predicate standing with nothing in
+-- this lane calling it is not the fix; the fix was the doors calling it.

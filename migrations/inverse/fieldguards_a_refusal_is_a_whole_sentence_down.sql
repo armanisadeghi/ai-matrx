@@ -1846,5 +1846,20 @@ $function$;
 
 
 drop function if exists custom.guard_refusals_are_complete();
-drop function if exists custom.is_a_retirement(timestamptz,timestamptz,jsonb,jsonb,uuid,uuid,uuid,uuid,text,text);
-drop function if exists custom.said(text, text);
+
+-- 🚨 `custom.said(text, text)` AND `custom.is_a_retirement(…)` STAY STANDING (lane INVERSE-GUARD, 2026-09-21). This
+-- file used to drop both here. Three guard bodies this file does NOT restore have adopted
+-- them since it was written, and all three hang off triggers standing on `custom.record`
+-- right now: `custom._field_class_guard` (`custom_record_field_shape_guard_class`) and
+-- `custom._table_columns_word_guard` (`zzz_table_columns_word`) build their refusals with
+-- `custom.said`, and `custom._undeclared_key_guard` (`zzzz_a_undeclared_key_guard`) asks
+-- `custom.is_a_retirement`. Dropping either helper would not restore FIELD-GUARDS' defect —
+-- the next write to the record store would die on a function that does not exist, before the
+-- red twin asked its first question. Detaching those three guards instead would take three
+-- refusals off the store that this lane never touched, which is a bigger hole than the one
+-- this file exists to open.
+--
+-- THE DEFECT IS STILL PUT BACK IN FULL by the bodies restored above: every guard this lane
+-- rewrote is back to the text it carried on 2026-09-19, so the store refuses in mid-air
+-- again — a sentence that names nothing, exactly as the red twin measures it. A helper
+-- standing underneath, called only by guards this lane did not write, refuses nothing.

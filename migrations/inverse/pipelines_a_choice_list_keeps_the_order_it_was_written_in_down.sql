@@ -4,6 +4,16 @@
 -- backfill function. IT DOES NOT STRIP `metadata -> 'option_position'` FROM ANY ROW: that key
 -- is additive, nothing in the restored bodies reads it, and deleting a key off live rows to
 -- undo a code change is how an inverse becomes the destructive act it exists to avoid.
+--
+-- 🚨 ONE OF THE TWO RUNS, AND IF BOTH RUN, THIS ONE FIRST (lane INVERSE-GUARD, 2026-09-21).
+-- A body restored below calls `custom._stage_field_key`, and the sibling inverse
+-- `pipelines_a_stage_is_a_field_and_its_moves_are_rules_down.sql` takes that function away —
+-- because it inverts the stage lane that created it, while this file inverts only the later
+-- ordering fix that landed on top of that lane. They invert in the reverse of the order they
+-- landed: this file first, the stage teardown second, and the stage teardown takes the bodies
+-- restored here with it, so after both have run nothing calls a function that is gone. The
+-- other order is the only one that breaks, and an inverse pair is never run in it.
+-- ground-standing-ok: b
 
 
 CREATE OR REPLACE FUNCTION custom._options_table_for(p_organization_id uuid, p_label text, p_options jsonb)

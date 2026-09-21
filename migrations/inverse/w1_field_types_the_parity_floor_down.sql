@@ -11,6 +11,17 @@
 -- in both runners. It rehearses on the branch with `--target branch`.
 --
 -- It is SAFE TO RUN TWICE: every drop is `if exists` and every delete is by primary key.
+--
+-- 🚨 ONE OF THE TWO RUNS, AND IF BOTH RUN, THIS ONE FIRST (lane INVERSE-GUARD, 2026-09-21). The two bodies restored
+-- at the foot of this file call `custom.applicable_fields` and `custom.table_type_field`, and
+-- the sibling inverse `w1_field_definitions_and_validation_down.sql` takes both away — because
+-- it inverts the W1-FIELD lane that created them, while this file inverts only the parity
+-- floor that landed on top of that lane. They invert in the reverse of the order they landed:
+-- this file first, the W1-FIELD teardown second, and that teardown replaces the two bodies
+-- restored here with the ones that predate W1-FIELD entirely. The other order is the only one
+-- that leaves a live body calling a function that is gone, and an inverse pair is never run
+-- in it.
+-- ground-standing-ok: b
 
 set lock_timeout = '5s';
 set statement_timeout = '300s';
@@ -57,16 +68,29 @@ delete from custom.record where organization_id = '39c38960-d30c-4840-b0c1-c9960
 drop function if exists custom.parity_values(uuid, uuid);
 drop function if exists custom._derived_fields();
 drop function if exists custom.derived_values(uuid, uuid);
-drop function if exists custom.derived_value(uuid, uuid, jsonb, jsonb);
-drop function if exists custom.formula_value(uuid, uuid, jsonb, jsonb);
-drop function if exists custom.rollup_value(uuid, uuid, jsonb);
-drop function if exists custom.lookup_value(uuid, uuid, jsonb);
-drop function if exists custom.relation_targets(uuid, uuid, text);
 drop function if exists custom._field_type_parity_guard();
-drop function if exists custom.parity_type(jsonb);
-drop function if exists custom.file_kernel_id();
-drop function if exists custom.person_kernel_id();
-drop function if exists custom.parity_field_types();
+
+-- 🚨 NINE OF THE THIRTEEN STAY STANDING (lane INVERSE-GUARD, 2026-09-21). This file used to drop
+-- `custom.derived_value`, `custom.parity_type`, `custom.file_kernel_id`,
+-- `custom.person_kernel_id`, `custom.parity_field_types`, and the three value kinds
+-- `custom.derived_value` itself resolves — `custom.formula_value`, `custom.rollup_value` and
+-- `custom.lookup_value` — plus `custom.relation_targets`, which `custom.lookup_value` walks.
+-- `leakt10_one_broken_formula_does_not_close_a_table.sql` rewrote `custom.derived_value` and
+-- still calls all three kinds, so they stand with it. Six lanes outside
+-- W1-FIELD-TYPES have adopted them on the live path since this file was written —
+-- `custom.derived_values_of` in `readinline_the_page_passes_the_row_it_already_holds.sql`,
+-- `custom.capture_open` in `capture_a_sheet_a_crew_fills_on_a_phone.sql`,
+-- `custom.capture_submit` in `capture_a_field_says_how_many_answers_it_holds.sql`,
+-- `custom._options_table_for` in `apprvtail_a_field_row_is_a_field.sql` and
+-- `custom._field_document_for` in `fieldadd_a_person_can_add_a_field.sql`, and
+-- `custom.derived_value` in `leakt10_one_broken_formula_does_not_close_a_table.sql`. Dropping them
+-- would not put the parity floor's defect back; it would break five doors that have nothing
+-- to do with this lane. THE DEFECT IS RESTORED IN FULL WITHOUT THEM: the two triggers are
+-- detached at the top of this file, `custom._derived_fields` and
+-- `custom._field_type_parity_guard` are gone, and `custom.record_values` /
+-- `custom.record_values_versioned` are back to the W1-VAL bodies that know nothing about a
+-- parity floor. Nine helper predicates standing underneath, called by nothing this lane
+-- leaves behind, do not raise the floor back up.
 
 -- W1-VAL's body, restored exactly (sha256 694cf0acfc37b0099c35093000f3318d580961c1ef703b2b5987d9bc6f4c7681).
 create or replace function custom.record_values(p_organization_id uuid, p_record_id uuid)

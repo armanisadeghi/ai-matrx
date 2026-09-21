@@ -23,8 +23,16 @@ drop trigger if exists custom_record_store_door on custom.record;
 drop trigger if exists custom_external_link_store_door_delete on custom.external_link;
 drop trigger if exists custom_external_source_store_door_delete on custom.external_source;
 
-drop function if exists custom.record_restore(uuid, uuid);
-drop function if exists custom.record_delete(uuid, uuid);
+-- 🚨 `custom.record_delete` AND `custom.record_restore` STAY STANDING (lane INVERSE-GUARD, 2026-09-21). This file
+-- used to drop both here. `custom.work_approval_decide` in
+-- `apprvtail_the_queue_holds_a_delete_and_a_new_table.sql` — a lane outside V1-STORE-FIXES —
+-- has since adopted them and calls both on the live path, so dropping them would not restore
+-- finding 2's defect, it would break the approval queue's decide door. THE DEFECT IS THE DOOR
+-- PREDICATE, and this file still takes it back in full: `custom._store_door` is replaced below
+-- with the INSERT-OR-UPDATE-only body (sha256 7d1c5574…), the three delete-side triggers are
+-- detached above, and the two client-door register rows go below — so no client can reach
+-- either verb and no DELETE on the store is judged at all, which is exactly the state finding
+-- 2 found. Two bodies standing for one in-database caller do not put the predicate back.
 
 -- A DOOR FOLLOWS ITS FUNCTION. `platform._provision_shape_settled` refuses at COMMIT when a
 -- row in `platform.client_callable_door` outlives the function it describes, and it is right

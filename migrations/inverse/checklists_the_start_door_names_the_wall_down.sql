@@ -5,6 +5,18 @@
 --
 -- The inverse of `checklists_the_start_door_names_the_wall.sql`: it puts the hole back, so the
 -- red twin can prove the refusal it fixed was real. Nothing else changes.
+--
+-- 🚨 ONE OF THE TWO RUNS, AND IF BOTH RUN, THIS ONE FIRST (lane INVERSE-GUARD, 2026-09-21).
+-- The body below calls `custom._checklist_instantiate`, and the sibling inverse
+-- `checklists_a_checklist_is_a_template_of_work_down.sql` takes that function away — because
+-- it inverts the WHOLE checklist lane, while this file inverts only the later start-door fix
+-- that landed on top of it. They invert in the reverse of the order they landed: this file
+-- first, the template teardown second, and the template teardown drops
+-- `custom.checklist_start` itself, so after both have run nothing is left calling a function
+-- that is not there. The template teardown first and this file second is the one order that
+-- leaves a live body reaching a dropped one, and it is the order an inverse pair is never run
+-- in: an inverse undoes the last thing that landed, not the first.
+-- ground-standing-ok: b
 
 set lock_timeout = '5s';
 
