@@ -184,6 +184,18 @@ if $STRICT; then
         # list the tree. `pnpm check:campaign-entry-points:self-test` proves it
         # can fail from committed fixtures.
         "Unified-data campaign entry points are registered and gated|pnpm check:campaign-entry-points"
+        # An inverse puts a DEFECT back; it may not take the ground out from under the
+        # platform. Seven instances in one session (RED-SUITES-3, 2026-09-21): inverses that
+        # dropped a function while nineteen — and in one case forty-two — live triggers still
+        # reached it, so the next write to custom.record exploded before the red twin beside
+        # it asked a single question; one that dropped a body no trigger runs, so its twin
+        # proved nothing; and three that demolished the memo store, two history columns and
+        # two access-kernel functions that later migrations had adopted. Static, no
+        # credential. RATCHETED — the counts may only go down.
+        # `pnpm check:inverses-leave-the-ground-standing:self-test` re-reads the seven
+        # instances' own PRE-FIX bytes out of git and requires every one to go red.
+        "Inverses leave the ground standing|pnpm check:inverses-leave-the-ground-standing"
+        "…and that guard can still fail|pnpm check:inverses-leave-the-ground-standing:self-test"
         "TypeScript type-check|pnpm type-check"
         "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts --strict"
         "Doc claims vs live config|pnpm exec tsx scripts/check-doc-claims.ts --strict"
