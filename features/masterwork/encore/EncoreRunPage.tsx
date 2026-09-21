@@ -41,6 +41,7 @@ import { MasterworkRulesProvider } from "../rules-context/MasterworkRulesContext
 import { setMasterworkReleased } from "../service";
 import { toast } from "@/lib/toast";
 import { OpenRunPanel, type OpenRunState } from "./OpenRunPanel";
+import { masterworkRunHref } from "../masterworkDoors";
 import {
   getEncoreMasterwork,
   getEncoreRunResult,
@@ -403,8 +404,9 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
                   <MasterworkRunRow
                     key={run.id}
                     run={run}
-                    // The Operator's door, not the developer's.
-                    href={`/masterwork/encore/${masterworkId}?run=${run.id}`}
+                    // The Operator's door, not the developer's — and it is
+                    // now the ONE spelling every Masterwork surface uses.
+                    href={masterworkRunHref(masterworkId, run.id)}
                     trailing={
                       /* 🚨 THE SIGNATURE OUTLIVES THE RUN BOX. The Try box shows
                        the thumbs the moment a run ends, and then forgets the

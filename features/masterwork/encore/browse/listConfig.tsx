@@ -11,6 +11,7 @@ import {
 import { EncoreBrowseCards } from "./EncoreBrowseCards";
 import { useEncoreRowActions } from "./useEncoreRowActions";
 import type { EncoreListRow } from "./types";
+import { masterworkHref } from "../../masterworkDoors";
 
 const ENCORE_SCOPES: ListScopeKind[] = ["mine", "orgs", "public"];
 
@@ -29,7 +30,7 @@ export const encoreListConfig: EntityListConfig<EncoreListRow> = {
   urlState: true,
   getRowId: (row) => row.id,
   getRowName: (row) => row.name,
-  door: { hrefFor: (row) => `/masterwork/encore/${row.id}` },
+  door: { hrefFor: (row) => masterworkHref(row.id) },
   sourceFeature: "masterwork",
   getRowEntity: (row) => ({
     type: "workflow",

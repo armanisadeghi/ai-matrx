@@ -28,11 +28,16 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
 import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
-import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
+// 🚨 THE ENGINE'S OWN DOORS ARE DELIBERATELY NOT IMPORTED HERE (cold walk 16,
+// blocking defect A). This page used to link a Masterwork's own name at
+// `WORKFLOWS_APP_URL` and its finished run at `/workflows/runs/<id>` — a
+// different product on a different host, and a console headed THE PLAN with
+// Pause / Resume / Stop / Cancel now. Every door on every Masterwork surface
+// is spelled once, in `../../masterworkDoors`, and lands inside this product.
 import {
-  runHref,
-  workflowRunsHref,
-} from "@/features/workflow-runtime/run-doors";
+  masterworkHref,
+  masterworkRunHref,
+} from "../../masterworkDoors";
 import { ScoutInterviewPanel } from "../detail/ScoutInterviewPanel";
 import { AuditionDialog } from "./AuditionDialog";
 import { CompareTwoDialog } from "./CompareTwoDialog";
@@ -117,15 +122,18 @@ export function MasterworkRunRow({
 }: {
   run: MasterworkRun;
   /**
-   * Where this row opens — walk 13, N10.
+   * Where this row opens — walk 13's N10, finished by walk 16's defect A.
    *
-   * The default is the in-app run permalink, which is the right door for the
-   * Expert standing in the Studio. It is the WRONG one for an Operator on
-   * Encore: they clicked their own finished work and landed on a page headed
-   * THE PLAN and LIVE ACTIVITY with Pause / Resume / Stop / Cancel. So the
-   * address is the host's to name, and Encore names its own.
+   * REQUIRED, and it has no default. It used to default to the engine's run
+   * permalink, and that default is exactly what walk 16 clicked: a finished
+   * run of her own Masterwork opened a console headed THE PLAN and LIVE
+   * ACTIVITY with Pause / Resume / Stop / Cancel now. Encore passed its own
+   * address and was right; the Rulebook's page took the default and was
+   * wrong. A safe path beside an unsafe default is not a fix, so the default
+   * is gone: every host must name the door, and `masterworkRunHref` is the
+   * one spelling of it.
    */
-  href?: string;
+  href: string;
   onFeedback?: (run: MasterworkRun) => void;
   /**
    * A host's own control for this run, right of the door. It STACKS below
@@ -142,13 +150,13 @@ export function MasterworkRunRow({
     : null;
   return (
     <div className="group flex flex-col items-start gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 sm:flex-row sm:items-start">
-      {/* THE DOOR IS IN THIS APP (wall W36). This row used to open
-          workflows.aimatrx.com in a new tab — the workflow author's Studio, not
-          the place the reader was standing — so a parent who closed the tab
-          could not read the answer anywhere in the product. `/workflows/runs/
-          {id}` rebuilds the finished run, showcase and all, right here. */}
+      {/* THE DOOR IS IN THIS APP, AND IT IS THE MASTERWORK'S OWN (wall W36,
+          then cold walk 16 defect A). This row opened workflows.aimatrx.com,
+          then the engine's run console; it now opens the run ON the
+          Masterwork's own page, where the deliverable renders through the
+          registered `masterwork_result` kind. The host names the address. */}
       <Link
-        href={href ?? runHref(run.id)}
+        href={href}
         className="flex w-full min-w-0 flex-col gap-0.5 hover:text-foreground sm:w-auto sm:flex-1"
       >
         <span className="flex min-w-0 items-center gap-2">
@@ -450,14 +458,17 @@ export function MasterworksPage({
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <a
-                          href={`${WORKFLOWS_APP_URL}/workflows/${masterwork.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        {/* THE NAME OF YOUR OWN WORK OPENS YOUR OWN WORK
+                          (cold walk 16, defect A). This was an `<a
+                          target="_blank">` at the workflow authoring host —
+                          the only control inside the card, and it left the
+                          product. */}
+                        <Link
+                          href={masterworkHref(masterwork.id)}
                           className="font-medium text-foreground hover:text-primary hover:underline hover:underline-offset-2"
                         >
                           {masterwork.name}
-                        </a>
+                        </Link>
                         {masterwork.masterwork_kind ? (
                           <Badge
                             variant="outline"
@@ -583,7 +594,7 @@ export function MasterworksPage({
                               className="h-8 w-8"
                             >
                               <Link
-                                href={`/masterwork/encore/${masterwork.id}`}
+                                href={masterworkHref(masterwork.id)}
                                 aria-label="Open in Encore"
                               >
                                 <Play className="h-4 w-4" />
@@ -593,44 +604,17 @@ export function MasterworksPage({
                           <TooltipContent>Open in Encore</TooltipContent>
                         </Tooltip>
                       ) : null}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            asChild
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                          >
-                            <a
-                              href={`${WORKFLOWS_APP_URL}/workflows/${masterwork.id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              aria-label="Open in Studio"
-                            >
-                              <SquareArrowOutUpRight className="h-4 w-4" />
-                            </a>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Open in Studio</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            asChild
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                          >
-                            <Link
-                              href={workflowRunsHref(masterwork.id)}
-                              aria-label="Past runs"
-                            >
-                              <History className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Past runs</TooltipContent>
-                      </Tooltip>
+                      {/* 🚨 THE TWO ESCAPES THAT USED TO SIT HERE ARE GONE
+                        (cold walk 16, defect A). "Open in Studio" was an
+                        `<a target="_blank">` at the workflow authoring host,
+                        and "Past runs" was `/workflows/{id}/runs` — the
+                        engine's own run list, one click from the console with
+                        Pause / Resume / Stop / Cancel now. Both are the
+                        engine's doors on an Expert's screen. The Masterwork's
+                        own page carries its run history, and the recent runs
+                        for this one are listed directly below. Leaving a safe
+                        door beside an unsafe one is not a fix, so the unsafe
+                        ones are removed rather than demoted. */}
                     </div>
                   </div>
                   {/* Try it right here — the Masterwork is a working checker, not
@@ -668,6 +652,7 @@ export function MasterworksPage({
                           <MasterworkRunRow
                             key={run.id}
                             run={run}
+                            href={masterworkRunHref(masterwork.id, run.id)}
                             onFeedback={
                               isOwner
                                 ? () =>

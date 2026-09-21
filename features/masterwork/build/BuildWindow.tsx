@@ -16,7 +16,7 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { LiveRunProgress } from "@/features/agents/components/live-run/LiveRunProgress";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
+import { masterworkHref } from "../masterworkDoors";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
@@ -304,7 +304,6 @@ function BuildWindowInner({
 
     // ── Built. Real doors, and it runs right here. ─────────────────────────
     if (result) {
-      const studioHref = `${WORKFLOWS_APP_URL}/workflows/${result.workflowId}`;
       return (
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
           <div className="mx-auto w-full max-w-3xl space-y-4">
@@ -392,14 +391,17 @@ function BuildWindowInner({
                 see what you&apos;ve built
               </Link>
               {" · "}
-              <a
-                href={studioHref}
-                target="_blank"
-                rel="noopener noreferrer"
+              {/* 🚨 IN THE PRODUCT, NOT THE AUTHORING HOST (cold walk 16,
+                defect A). This said "open the workings" and opened
+                workflows.aimatrx.com in a new tab — a different product,
+                built for a workflow author, handed to an Expert seconds
+                after she built her first Masterwork. */}
+              <Link
+                href={masterworkHref(result.workflowId)}
                 className="underline underline-offset-2 hover:text-foreground"
               >
-                open the workings
-              </a>
+                open this Masterwork
+              </Link>
             </p>
           </div>
         </div>

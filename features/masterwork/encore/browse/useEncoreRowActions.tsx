@@ -12,6 +12,7 @@ import type {
 import { setMasterworkReleased } from "../../service";
 import { invalidateEncoreRows } from "./service";
 import type { EncoreListRow } from "./types";
+import { masterworkHref } from "../../masterworkDoors";
 
 /**
  * Encore row actions.
@@ -27,7 +28,7 @@ export function useEncoreRowActions(
   list: EntityListController<EncoreListRow>,
 ): EntityRowActionsResult<EncoreListRow> {
   const router = useRouter();
-  const runHref = (row: EncoreListRow) => `/masterwork/encore/${row.id}`;
+  const doorHref = (row: EncoreListRow) => masterworkHref(row.id);
 
   const toggleReleased = useCallback(
     async (row: EncoreListRow) => {
@@ -67,7 +68,7 @@ export function useEncoreRowActions(
           label: "Run",
           icon: Play,
           kind: "link",
-          href: runHref(row),
+          href: doorHref(row),
         },
       ];
       if (row.rulebook) {
@@ -114,7 +115,7 @@ export function useEncoreRowActions(
             icon: Link2,
             onSelect: () => {
               void navigator.clipboard.writeText(
-                `${window.location.origin}${runHref(row)}`,
+                `${window.location.origin}${doorHref(row)}`,
               );
               toast.success("Link copied");
             },
@@ -127,7 +128,7 @@ export function useEncoreRowActions(
   );
 
   const onOpenRow = useCallback(
-    (row: EncoreListRow) => router.push(runHref(row)),
+    (row: EncoreListRow) => router.push(doorHref(row)),
     [router],
   );
 

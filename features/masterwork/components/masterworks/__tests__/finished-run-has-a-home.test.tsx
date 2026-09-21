@@ -32,7 +32,7 @@ import workflowRunsReducer, {
 import { selectRunEmissions } from "@/features/workflow-runtime/redux/workflow-runs.selectors";
 import { splitByPresentation } from "@/features/workflow-runtime/kind-emissions/emission-routing";
 import { presentedPreview } from "@/features/workflow-runtime/run-result/presented-result";
-import { runHref } from "@/features/workflow-runtime/run-doors";
+import { masterworkRunHref } from "../../../masterworkDoors";
 import type { WorkflowRunEvent } from "@/features/workflow-runtime/types";
 
 import records from "@/features/workflow-runtime/__tests__/fixtures/masterwork-run-records.json";
@@ -42,6 +42,8 @@ import type { MasterworkRun } from "../../../service";
 const WATSON = "cef6ae07-4562-4dbd-a8e4-403309cace08";
 const MONTESSORI = "10af94fd-bf7f-41c1-88ff-1098afff8351";
 const BROKEN = "94d48d9c-a571-42b4-9926-fe9c248513b2";
+/** The Masterwork those runs belong to — the page the row now opens. */
+const WATSON_MASTERWORK = "2e1cb4a2-71c3-4cf3-9a0d-53f2e1f9a4b1";
 
 type Records = {
   emissions: Record<string, WorkflowRunEvent[]>;
@@ -103,16 +105,35 @@ function rowFor(runId: string): MasterworkRun {
 }
 
 describe("the run that finished opens IN THIS APP", () => {
-  it("points a Recent-runs row at the in-app permalink, never the Studio host", () => {
-    const html = renderToString(<MasterworkRunRow run={rowFor(WATSON)} />);
-    expect(html).toContain(`href="/workflows/runs/${WATSON}"`);
+  // 🚨 REWRITTEN BY COLD WALK 16, defect A. W36 moved this row off the
+  // authoring host and onto the engine's in-app run permalink, and that was
+  // the right fix for W36's reader. It was the WRONG page for the person this
+  // row actually serves: walk 16 clicked her own finished Masterwork run and
+  // landed on a console headed "DONE · $0.61 · 16 of 16 steps", THE PLAN,
+  // LIVE ACTIVITY, and Pause / Resume / Stop / Cancel now. The door is now the
+  // Masterwork's own page, where the deliverable renders through the
+  // registered `masterwork_result` kind. `runHref` still exists and is still
+  // right for the ENGINE's own surfaces — it is simply not a Masterwork's door.
+  it("points a Recent-runs row at the Masterwork's own page, never a console", () => {
+    const html = renderToString(
+      <MasterworkRunRow
+        run={rowFor(WATSON)}
+        href={masterworkRunHref(WATSON_MASTERWORK, WATSON)}
+      />,
+    );
+    expect(html).toContain(
+      `href="/masterwork/encore/${WATSON_MASTERWORK}?run=${WATSON}"`,
+    );
+    expect(html).not.toContain(`/workflows/runs/${WATSON}`);
     expect(html).not.toContain("workflows.aimatrx.com");
     // A same-origin door navigates in place — never an escape into another app.
     expect(html).not.toContain('target="_blank"');
   });
 
-  it("keeps `runHref` the one spelling of that address", () => {
-    expect(runHref(WATSON)).toBe(`/workflows/runs/${WATSON}`);
+  it("keeps ONE spelling of the Masterwork's run address", () => {
+    expect(masterworkRunHref(WATSON_MASTERWORK, WATSON)).toBe(
+      `/masterwork/encore/${WATSON_MASTERWORK}?run=${WATSON}`,
+    );
   });
 });
 
@@ -120,7 +141,7 @@ describe("a Recent-runs row says what the run produced", () => {
   it("carries the first line of the Watson run's real deliverable", () => {
     const row = rowFor(WATSON);
     expect(row.deliverable_preview).not.toBeNull();
-    const text = visibleText(renderToString(<MasterworkRunRow run={row} />));
+    const text = visibleText(renderToString(<MasterworkRunRow run={row} href={masterworkRunHref(WATSON_MASTERWORK, row.id)} />));
     // The headline finding is the first thing the regimen says.
     expect(text).toContain("The morning shoe battle and the kitchen chase");
     // Status, time and cost still ride the row — in the Operator's word for
@@ -136,7 +157,7 @@ describe("a Recent-runs row says what the run produced", () => {
     const row = rowFor(MONTESSORI);
     expect(row.deliverable_preview).not.toBeNull();
     expect(row.deliverable_preview!.length).toBeGreaterThan(24);
-    expect(visibleText(renderToString(<MasterworkRunRow run={row} />))).toContain(
+    expect(visibleText(renderToString(<MasterworkRunRow run={row} href={masterworkRunHref(WATSON_MASTERWORK, row.id)} />))).toContain(
       row.deliverable_preview!.replace(/…$/, "").slice(0, 40),
     );
   });
@@ -153,7 +174,7 @@ describe("a Recent-runs row says what the run produced", () => {
     expect(row.error_message).toBe(
       "This step never received what the step before it was meant to hand over.",
     );
-    const text = visibleText(renderToString(<MasterworkRunRow run={row} />));
+    const text = visibleText(renderToString(<MasterworkRunRow run={row} href={masterworkRunHref(WATSON_MASTERWORK, row.id)} />));
     expect(text).toContain("never received what the step before it");
   });
 });

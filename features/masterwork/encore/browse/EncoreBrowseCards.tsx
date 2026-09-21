@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { timeCell } from "@/lib/entity-list/columns";
 import type { EncoreListRow } from "./types";
+import { masterworkHref } from "../../masterworkDoors";
 
 export function EncoreBrowseCards({
   rows,
@@ -31,7 +32,7 @@ export function EncoreBrowseCards({
       )}
     >
       {rows.map((row) => {
-        const href = hrefFor(row) ?? `/masterwork/encore/${row.id}`;
+        const href = hrefFor(row) ?? masterworkHref(row.id);
         return (
           <div
             key={row.id}

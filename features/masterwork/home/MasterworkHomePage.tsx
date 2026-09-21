@@ -79,6 +79,7 @@ import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { MASTERWORK_RULEBOOK_SURFACE } from "../assists";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { formatRelativeTime } from "@/utils/datetime";
+import { masterworkHref } from "../masterworkDoors";
 
 function when(iso: string): string {
   return formatRelativeTime(iso, { style: "short" });
@@ -203,7 +204,7 @@ function HomeMasterworkCard({ masterwork: m }: { masterwork: HomeMasterwork }) {
         <QualityTrend latest={m.qualityLatest} previous={m.qualityPrevious} />
         {m.released_at !== null && !m.is_archived ? (
           <Button asChild size="sm" variant="outline">
-            <Link href={`/masterwork/encore/${m.id}`}>
+            <Link href={masterworkHref(m.id)}>
               <Play className="mr-1 h-3.5 w-3.5" />
               Run
             </Link>
