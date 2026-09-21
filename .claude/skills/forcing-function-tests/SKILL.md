@@ -110,6 +110,43 @@ from reality:
   the orchestration fed the nondeterministic component the right inputs and used its output
   correctly, without testing that component itself.
 
+## 5a. Every value comes from a REAL USE CASE (the owner's law, 2026-09-21)
+
+Before entering any test data, name the real use case in one sentence: who the user is, what
+business they run, what job this exact feature does for them. A recycling company's pickup
+schedule. A dental practice's new-patient intake. A property manager's maintenance requests. Then
+make the values true to that business — field names a practitioner would use, statuses that follow
+a real lifecycle, money that adds up, dates that make sense together, and relationships true to the
+domain (an invoice belongs to a job that belongs to a client).
+
+**Banned outright:** `Acme`, `foo`/`bar`/`baz`, lorem ipsum, `test table`, `ZZZ …`, `Job 001`,
+sequential `Item 1…N`, `.example` mailboxes, and one stand-in person repeated everywhere. A
+screenshot of "Job 001 / Ada / 42" tells the owner nothing; a picture of a recycling route with
+today's pickups tells him whether the product works. Placeholder data does not fail a test — it
+destroys the only way anybody can tell whether the thing is finished.
+
+**Never real personal data.** Names, emails, phones and addresses are synthesized to look real and
+belong to nobody; no row is copied from a real customer, a real inbox, or the production tables.
+Realistic is the standard; real people are forbidden. Test identities stay `admin@admin.com` and
+`test@test.com`.
+
+**Name everything after the use case.** The organization, the tables, the form, the pipeline, the
+document, the notification — "the Harbor Dental new-patient intake", never "ZZZ FORMS-2 safe to
+delete". Cleanup finds a test organization by a tag in its settings, never by a junk name.
+
+**Do not invent your own.** The datasets live once, in `@ai-matrx/records/use-cases`
+(`aidream/apps/shared/records/src/use-cases/`, with a README on adding one). Draw from it; add a
+use case there when none fits, and the library's validator will refuse a dataset whose field types
+the store cannot resolve, whose relations point at rows that do not exist, or that carries junk.
+
+**Enforced:** `aidream/scripts/check_no_placeholder_data.mjs` and matrx-frontend's
+`pnpm check:no-placeholder-data`, both reading their banned patterns from that one library so they
+cannot disagree. They scan the data that reaches a SCREEN — demo harnesses, seeds, screenshot
+scripts and recorded fixtures — not every unit test's opaque handles: `user-1` in a cache
+assertion is a handle, and `example.com` in a URL-parser test is the reserved domain doing its job.
+A line genuinely needing a banned word carries `matrx-real-data:allow <reason>`, and the reason is
+required.
+
 ## 6. Bug fixes and guards: red first, for the right reason
 
 - Fixing a defect: write the test or guard FIRST and watch it fail on the unfixed code. It must sit
