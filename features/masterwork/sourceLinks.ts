@@ -55,7 +55,13 @@ import {
   listKeptSourcesBrief,
   type KeptSourceBrief,
 } from "./kept-sources/service";
-import { entityIdentity, keptIdentity, urlIdentity } from "./sourceIdentity";
+import {
+  entityIdentity,
+  interviewIdentity,
+  keptIdentity,
+  urlIdentity,
+} from "./sourceIdentity";
+import { tallySourceGroups } from "./sourceTally";
 
 /**
  * The registered source→rulebook pairs (`platform.association_types`,
@@ -76,6 +82,18 @@ export const DUMP_SOURCE_TOKENS: EntityTypeToken[] = [
 
 /** The edge role an ATTACHED source carries — a thing we are about to read. */
 export const DUMP_ROLE = "distillation_source";
+
+/**
+ * The edge role the conversation an interview happened IN carries.
+ *
+ * 🚨 IT IS MATERIAL (cold walk 18, defect 2). It was missing from this union,
+ * so a Rulebook whose only source was a recorded interview that had not been
+ * distilled yet counted ZERO — which is how `/masterwork/all` told six Experts
+ * their Rulebook came from "Nothing yet" while it held their own voice. Its
+ * identity is `interview:<conversation_id>`, the same key the sitting's kept
+ * row carries, so keeping it does not double-count a distilled interview.
+ */
+export const INTERVIEW_ROLE = "interview";
 
 /** The edge role a KEPT source carries — material we already hold. */
 export const KEPT_SOURCE_ROLE = "kept_source";
@@ -107,6 +125,8 @@ export interface RulebookSourceTally {
 export interface KeptIdentityRow {
   source_key: string;
   approach_key?: string | null;
+  /** `platform.masterwork_source.medium`, when the caller holds it. */
+  medium?: string | null;
 }
 
 export type RulebookSourceCount =
@@ -210,13 +230,19 @@ export function useRulebookSourceCount(
   const kept = useKeptSourceCount(rulebookId);
 
   const attached = useMemo(
-    () =>
-      DUMP_SOURCE_TOKENS.flatMap((token) =>
+    () => [
+      ...DUMP_SOURCE_TOKENS.flatMap((token) =>
         links
           .linksFor(token)
           .filter((l) => l.role === DUMP_ROLE)
           .map((l) => entityIdentity(token, l.resourceId)),
       ),
+      // The interview itself. See INTERVIEW_ROLE.
+      ...links
+        .linksFor("conversation")
+        .filter((l) => l.role === INTERVIEW_ROLE)
+        .map((l) => interviewIdentity(l.resourceId)),
+    ],
     // `linksFor` is stable per render over the hook's internal edges array —
     // the same dependency set `RulebookSourcesPanel` uses.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -272,18 +298,27 @@ export function tallyOf(
   kept: readonly KeptIdentityRow[],
   keptTotal: number = kept.length,
 ): { count: number; tally: RulebookSourceTally } {
-  const distinct = new Set<string>();
-  for (const key of attached) if (key) distinct.add(key);
-  for (const row of kept) {
-    const key = keptIdentity(row);
-    if (key) distinct.add(key);
-  }
+  // 🚨 ONE ARITHMETIC. The union runs through `sourceTally.ts`, the same
+  // function the SOURCE column on `/masterwork/all` folds its two reads with,
+  // so the panel and the list cannot say different numbers about one Rulebook
+  // (cold walk 18, defect 2). Identities the caller holds as bare strings
+  // carry no kind, so only the COUNT is taken here — the sentence is the
+  // column's, which reads the rows themselves.
+  const { total: distinct } = tallySourceGroups([
+    ...attached.map((sourceKey) => ({ sourceKey })),
+    ...kept.map((row) => ({
+      sourceKey: keptIdentity(row),
+      approachKey: row.approach_key,
+      medium: row.medium,
+      kept: true,
+    })),
+  ]);
   // Kept rows past the page this screen holds cannot be compared to anything,
   // so they are counted as themselves rather than guessed at. `keptTotal` is
   // the server's exact number; `kept` is the page. Saying a smaller number
   // than we hold would be the D7 defect wearing the N4 fix.
   const beyondThePage = Math.max(0, keptTotal - kept.length);
-  const total = distinct.size + beyondThePage;
+  const total = distinct + beyondThePage;
   const tally: RulebookSourceTally = {
     attached: attached.length,
     kept: keptTotal,

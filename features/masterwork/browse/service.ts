@@ -16,7 +16,9 @@ import type {
   RulebookStatus,
 } from "../types";
 import {
+  ATTACHED_ROLES,
   summarizeSources,
+  type AttachedTallyRow,
   type RulebookSourcesRead,
   type SourceTallyRow,
 } from "./sourceSummary";
@@ -206,26 +208,53 @@ function applyFilters<Q extends RulebookFilterable>(
  */
 export const SOURCE_SUMMARY_SCAN_CAP = 2000;
 
+/**
+ * 🚨 BOTH STORES, OR THE SENTENCE IS A LIE (cold walk 18, defect 2).
+ *
+ * This used to read `platform.masterwork_source` alone, so six Rulebooks
+ * holding a recorded interview and a pasted document — material that lives as
+ * `platform.associations` edges until something reads it — were told
+ * "Nothing yet". The two reads go out together and are folded by IDENTITY in
+ * `sourceSummary.ts`, so an upload that is BOTH an edge and a kept row counts
+ * once. EITHER read failing is `unavailable` for the whole page: half an
+ * answer to "what was this built from" is the defect, not a degraded mode.
+ */
 async function readSourceSummaries(
   rulebookIds: string[],
 ): Promise<Map<string, RulebookSourcesRead>> {
   if (rulebookIds.length === 0) return new Map();
-  const { data, count, error } = await supabase
-    .schema("platform")
-    .from("masterwork_source")
-    .select("rulebook_id,approach_key,medium", { count: "exact" })
-    .in("rulebook_id", rulebookIds)
-    .is("deleted_at", null)
-    .order("rulebook_id", { ascending: true })
-    .range(0, SOURCE_SUMMARY_SCAN_CAP - 1);
-  if (error) {
+  const [kept, attached] = await Promise.all([
+    supabase
+      .schema("platform")
+      .from("masterwork_source")
+      .select("rulebook_id,approach_key,medium,source_key", { count: "exact" })
+      .in("rulebook_id", rulebookIds)
+      .is("deleted_at", null)
+      .order("rulebook_id", { ascending: true })
+      .range(0, SOURCE_SUMMARY_SCAN_CAP - 1),
+    supabase
+      .schema("platform")
+      .from("associations")
+      .select("target_id,role,source_type,source_id", { count: "exact" })
+      .eq("target_type", "rulebook")
+      .in("target_id", rulebookIds)
+      .in("role", [...ATTACHED_ROLES])
+      .is("deleted_at", null)
+      .order("target_id", { ascending: true })
+      .range(0, SOURCE_SUMMARY_SCAN_CAP - 1),
+  ]);
+  if (kept.error || attached.error) {
     return new Map(
       rulebookIds.map((id) => [id, { state: "unavailable" } as const]),
     );
   }
-  const rows = (data ?? []) as SourceTallyRow[];
+  const rows = (kept.data ?? []) as SourceTallyRow[];
+  const edges = (attached.data ?? []) as AttachedTallyRow[];
   return summarizeSources(rulebookIds, rows, {
-    partial: (count ?? rows.length) > rows.length,
+    attached: edges,
+    partial:
+      (kept.count ?? rows.length) > rows.length ||
+      (attached.count ?? edges.length) > edges.length,
   });
 }
 

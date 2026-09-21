@@ -66,6 +66,19 @@ export function entityIdentity(token: string, id: string): string {
   return `entity:${name}:${resourceId}`;
 }
 
+/**
+ * `aidream` `interview_source_key`: an interview is identified by the
+ * conversation it happened in, NEVER as `entity:conversation:<id>`.
+ *
+ * It matters because the same sitting is reachable two ways — the
+ * `conversation --(role 'interview')--> rulebook` edge written the moment the
+ * interview starts, and the `platform.masterwork_source` row written when its
+ * turns are kept. Keyed differently, one interview would count as two.
+ */
+export function interviewIdentity(conversationId: string): string {
+  return `interview:${String(conversationId ?? "").trim()}`;
+}
+
 /** A kept row already carries its identity — it IS `source_key`. */
 export function keptIdentity(row: { source_key: string }): string {
   return String(row.source_key ?? "").trim();

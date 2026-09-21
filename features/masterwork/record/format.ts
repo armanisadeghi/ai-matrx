@@ -10,6 +10,7 @@ import {
   humanAuthoredTurns,
   type StoredUserMessage,
 } from "@/features/agents/utils/human-authored-text";
+import { entityTokenNouns } from "../sourceTally";
 
 /** Past this age an interview reads as a calendar date, not an age. */
 const RELATIVE_CUTOFF_MS = 30 * 24 * 60 * 60 * 1000;
@@ -49,7 +50,22 @@ export interface TallyableContribution {
   expertChars: number;
 }
 
-/** Her word for a piece of this kind, singular and plural. */
+/**
+ * Her word for a piece of this kind, singular and plural.
+ *
+ * 🚨 ONE VOCABULARY WITH THE REST OF THE PLATFORM (cold walk 18, defect 2).
+ * The kinds that are SOURCES — a document, a pasted note, a `udt_document`
+ * handed over through the dump lane — take their words from
+ * `../sourceTally.ts`, the same module the SOURCE column on `/masterwork/all`
+ * and the Rulebook's Sources block read. Before this, a pasted document read
+ * "1 resource" here and "1 document" there, about the same thing.
+ *
+ * What is deliberately NOT shared is the unit. This header counts what she
+ * CONTRIBUTED — five interview turns are five things she said — while the
+ * column counts SOURCES, where that whole sitting is one interview. Two
+ * honest units, one vocabulary; the walk that verified "5 interview turns and
+ * 3 documents" is not disturbed.
+ */
 function nounFor(kind: string, lane: string): [string, string] {
   switch (kind) {
     case "message":
@@ -64,10 +80,13 @@ function nounFor(kind: string, lane: string): [string, string] {
       return ["page", "pages"];
     case "recording":
       return ["recording", "recordings"];
-    case "note":
-      return ["note", "notes"];
-    default:
+    default: {
+      // A dump-lane piece carries its own entity token as its kind. The
+      // platform already has a word for every token the panel can attach.
+      const shared = entityTokenNouns(kind);
+      if (shared) return [shared.one, shared.many];
       return ["resource", "resources"];
+    }
   }
 }
 
