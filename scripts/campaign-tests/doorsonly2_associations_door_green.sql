@@ -10,7 +10,11 @@
 -- five pass. It ends in ROLLBACK and leaves nothing.
 
 begin;
-set local statement_timeout = '120s';
+-- AUTH-504's ceiling, applied by lane RED-SUITES-3 (2026-09-21): a suite that shares the
+-- instance people sign in to may not give itself a statement ceiling a person would wait
+-- behind. 60s statements, 10s lock waits, like the other 177 main-database suites.
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
 
 do $$
 declare
