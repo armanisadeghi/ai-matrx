@@ -15,7 +15,7 @@ export type MandateAlchemyCapture =
   | { status: "loading" }
   | { status: "error"; message: string };
 
-type CaptureRegistry = Map<MandateWorkspaceTab, MandateAlchemyCapture>;
+type CaptureRegistry = Map<string, MandateAlchemyCapture>;
 const CaptureContext = createContext<CaptureRegistry | null>(null);
 
 export function MandateAlchemyCaptureProvider({ children }: { children: ReactNode }) {
@@ -24,13 +24,14 @@ export function MandateAlchemyCaptureProvider({ children }: { children: ReactNod
 }
 
 /** A tab owns its asynchronous data and reports exactly whether it can be exported. */
-export function useMandateAlchemyTabCapture(tab: MandateWorkspaceTab, capture: MandateAlchemyCapture): void {
+export function useMandateAlchemyTabCapture(tab: MandateWorkspaceTab, capture: MandateAlchemyCapture, partId = "main"): void {
   const registry = useContext(CaptureContext);
   useEffect(() => {
     if (!registry) return;
-    registry.set(tab, capture);
-    return () => { registry.delete(tab); };
-  }, [capture, registry, tab]);
+    const key = `${tab}:${partId}`;
+    registry.set(key, capture);
+    return () => { registry.delete(key); };
+  }, [capture, partId, registry, tab]);
 }
 
 function scopeLabel(perspective: WorkspacePerspective, organizationName: string | null): string {
@@ -115,14 +116,21 @@ export function MandateAlchemy({
 }) {
   const registry = useContext(CaptureContext);
   const core = buildMandateDefinitionCore(data, perspective, organizationName);
+  const captureTab = (tab: MandateWorkspaceTab): MandateAlchemyCapture => {
+    const parts = [...(registry?.entries() ?? [])].filter(([key]) => key.startsWith(`${tab}:`)).map(([, capture]) => capture);
+    if (parts.length === 0) return buildTab(tab);
+    const blocked = parts.find((capture) => capture.status !== "ready");
+    if (blocked) return blocked;
+    return { status: "ready", savedOnly: parts.every((capture) => capture.savedOnly === true), data: Object.fromEntries(parts.map((capture, index) => [`part_${index + 1}`, (capture as Extract<MandateAlchemyCapture, { status: "ready" }>).data])) };
+  };
   const current = () => {
-    const captured = registry?.get(activeTab) ?? buildTab(activeTab);
+    const captured = captureTab(activeTab);
     if (captured.status === "loading") throw new Error(`${activeTab} is still loading. Wait for it to finish before exporting.`);
     if (captured.status === "error") throw new Error(`${activeTab} cannot be exported: ${captured.message}`);
     return { tab: activeTab, saved_only: captured.savedOnly === true, data: captured.data } as Json;
   };
   const all = () => {
-    const entries = tabs.map((tab) => [tab, registry?.get(tab) ?? buildTab(tab)] as const);
+    const entries = tabs.map((tab) => [tab, captureTab(tab)] as const);
     const blocked = entries.find(([, captured]) => captured.status !== "ready");
     if (blocked) throw new Error(`${blocked[0]} is ${blocked[1].status === "loading" ? "still loading" : "unavailable"}; all tabs cannot be exported yet.`);
     return { tabs: Object.fromEntries(entries.map(([tab, captured]) => [tab, (captured as Extract<MandateAlchemyCapture, { status: "ready" }>).data])) } as Json;
