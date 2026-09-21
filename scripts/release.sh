@@ -436,6 +436,10 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
         grep -q "refs/tags/$1\$" <<< "$SHIP_REMOTE_TAGS"
     }
 
+    if [[ -n "$SHIP_MIG_PID" ]] && ! wait "$SHIP_MIG_PID"; then
+        ship_finding "ERROR" "Migrations" "A pending migration failed to apply or was refused — see the release log" "pnpm check:migrations:strict"
+    fi
+    ship_mark "migrations done"
 
     # A rejected push is a lost race only when origin really moved. A network
     # blip is retried with a pause and does not count against SHIP_PUSH_ATTEMPTS.
@@ -501,15 +505,7 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
             || ship_finding "WARNING" "Git" "This checkout could not fast-forward to $NEW_TAG — pull when convenient" "git pull --no-rebase origin main"
     fi
 
-    SHIP_BUILD_SECONDS=$((SECONDS - SHIP_START))
-    # Migrations run alongside the push, never in front of it: Vercel's build takes
-    # minutes and the migration pass about a minute, so waiting for it BEFORE the
-    # push only delayed the build. A failure is an ERROR finding either way.
-    if [[ -n "$SHIP_MIG_PID" ]] && ! wait "$SHIP_MIG_PID"; then
-        ship_finding "ERROR" "Migrations" "A pending migration failed to apply or was refused — see the release log" "pnpm check:migrations:strict"
-    fi
-    ship_mark "migrations done"
-    echo "${NEW_TAG}  pushed, build started  (${SHIP_BUILD_SECONDS}s)"
+    echo "${NEW_TAG}  pushed, build started  ($((SECONDS - SHIP_START))s)"
     ship_print_findings
 
     # Everything that is not needed to make the build runs now, detached.
@@ -554,14 +550,52 @@ after_watch_rollout() {
     local rc=0
     release_outcome_report "$TARGET" "$RELEASE_COMMIT_MSG" "$RELEASE_SHA" "$NEW_VERSION" || rc=$?
     case "$rc" in
-        0) ;;
+        0) after_publish_route_manifest ;;
         2) SHIP_FINDINGS_JSON="$ROLLOUT_JSON" ship_finding "WARNING" "Rollout" "UNVERIFIED — ${NEW_TAG} was pushed but no Vercel credential could confirm the build" "bash scripts/release-outcome.sh --report $TARGET \"$RELEASE_COMMIT_MSG\" $RELEASE_SHA" ;;
         *) SHIP_FINDINGS_JSON="$ROLLOUT_JSON" ship_finding "ERROR" "Rollout" "ROLLOUT FAILED: ${NEW_TAG} (${RELEASE_SHA:0:10}) is pushed but NOT live — see the release log" "bash scripts/release-outcome.sh --report $TARGET \"$RELEASE_COMMIT_MSG\" $RELEASE_SHA" ;;
     esac
 }
+# ── Route manifest: THE DEPLOY THAT CHANGES THE ROUTES PUBLISHES THEM ───────
+#
+# 🚨 A LINK THE PLATFORM BELIEVES IS DEAD IS NEVER TEXTED. aidream's
+# notification spine asks `platform.route_manifest` whether a route can answer a
+# link BEFORE it puts that link in a text message (services/routes/liveness.py),
+# and `lib/route-manifest/generate.ts` is the only author of that truth.
+#
+# `pnpm route-manifest:sync` has existed since the manifest did, and until
+# 2026-09-21 it ran NOWHERE — not here, not in CI, not in any workflow. The
+# live table was 62 routes behind the repo, `/q/[token]` among them, so every
+# Personal Staff quick-action text was skipped with `deep_link_not_live` against
+# a route that had been serving for days. The link-honesty gate was doing its
+# job perfectly against a lie it had been told.
+#
+# IT RUNS HERE, AND ONLY ON A GREEN ROLLOUT. Publishing before the build is
+# live would claim a route answers while it still 404s — the same defect
+# pointed the other way, and this gate exists to stop a person receiving a dead
+# link. `release-outcome.sh` returning 0 means READY on every targeted project
+# AND serving on the live domain; that is the moment the routes became true.
+#
+# It reads the CHECKED-IN lockfile (never a fresh walk of this shared
+# checkout's half-written pages) and it is idempotent — a re-run of an
+# unchanged release writes nothing new. A failure is an ERROR finding, never a
+# stop: the build is already live, and the only thing at risk is the next text.
+after_publish_route_manifest() {
+    local out rc=0
+    out="$(cd "$REPO_ROOT" && pnpm -s route-manifest:sync 2>&1)" || rc=$?
+    printf '%s\n' "$out" >>"${RELEASE_LOG_FILE:-/dev/null}"
+    if (( rc != 0 )); then
+        SHIP_FINDINGS_JSON="$ROLLOUT_JSON" ship_finding "ERROR" "Route manifest" \
+            "UNPUBLISHED — ${NEW_TAG} is live but platform.route_manifest was not updated, so aidream will refuse to text any link to a route this release added" \
+            "pnpm route-manifest:sync"
+    fi
+}
+
 WATCH_PID=""
 if $NO_WATCH; then
     SHIP_FINDINGS_JSON="$ROLLOUT_JSON" ship_finding "WARNING" "Rollout" "UNWATCHED — ${NEW_TAG} was pushed with --no-watch; nothing here claims it is live" "bash scripts/release-outcome.sh --report $TARGET \"$RELEASE_COMMIT_MSG\" $RELEASE_SHA"
+    # No watch means nothing proved the routes are serving, so nothing may
+    # publish them as live. Say it rather than leave the manifest silently stale.
+    SHIP_FINDINGS_JSON="$ROLLOUT_JSON" ship_finding "WARNING" "Route manifest" "UNPUBLISHED — --no-watch skipped the rollout proof, so platform.route_manifest still describes the previous release" "pnpm route-manifest:sync"
 else
     after_watch_rollout &
     WATCH_PID=$!

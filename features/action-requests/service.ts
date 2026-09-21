@@ -245,6 +245,15 @@ export type ActionRequestCompleteResult =
 export interface ActionRequestRemint {
   state:
     | "sent"
+    /**
+     * 🚨 THE RE-MINT RAN AND THE LINK DID NOT REACH A PHONE. Until 2026-09-21
+     * the server answered `sent` whatever happened — `notify` creates a row per
+     * channel and returns their ids, including rows written
+     * `status='skipped' error_code='deep_link_not_live'`, and the page said
+     * "New link on its way — check your messages." while nothing was texted.
+     * `message` now carries the real reason, verbatim.
+     */
+    | "not_sent"
     | "done"
     | "withdrawn"
     | "superseded"
@@ -252,6 +261,10 @@ export interface ActionRequestRemint {
     | "too_soon"
     | "unavailable";
   message: string;
+  /** Channels the message is really on its way through. Empty is honest. */
+  channels?: string[];
+  /** Every channel that refused, with the server's own reason code. */
+  skipped?: { channel: string; reason: string }[];
   request_id?: string | null;
 }
 

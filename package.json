@@ -306,6 +306,7 @@
     "check:agent-list-reads:self-test": "tsx scripts/check-agent-list-reads.ts --self-test",
     "test:release-fail-forward": "node --test scripts/release-fail-forward.test.mjs",
     "test:release-outcome": "node --test scripts/release-outcome.test.mjs",
+    "test:release-route-manifest": "node --test scripts/release-publishes-the-route-manifest.test.mjs",
     "test:release-ship-path": "bash scripts/test-release-ship-path.sh",
     "test:release-checks": "node --test scripts/checks/run.test.mjs",
     "check:release-checks": "node scripts/checks/run.mjs",

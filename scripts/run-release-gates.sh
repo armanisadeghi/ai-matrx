@@ -125,8 +125,11 @@ if $STRICT; then
         # THE ROUTE MANIFEST THE SPINE ACTUALLY READS. `platform.route_manifest`
         # is what aidream/services/notifications/link_honesty.py asks before it
         # puts a deep link in an email, an in-app notice or a text — and it is
-        # written by ONE command a human has to remember, `pnpm route-manifest:sync`,
-        # which runs nowhere automatically. On 2026-09-21 it was measured EIGHT
+        # written by ONE command, `pnpm route-manifest:sync`, which until
+        # 2026-09-21 a human had to remember because it ran nowhere at all. It
+        # now runs from `release.sh` on a proven-green rollout
+        # (`after_publish_route_manifest`), guarded by
+        # `pnpm test:release-route-manifest`. On 2026-09-21 it was measured EIGHT
         # DAYS stale: 63 routes built since 13 September had no row, among them
         # the table-invitation accept page, `/notifications` (the deep link every
         # agent digest declares), the whole `/data-v2/**` store, `/approvals` and
@@ -142,6 +145,11 @@ if $STRICT; then
         # 2026-09-21 by adding a throwaway route under app/ — red naming it,
         # green once it was gone. (MANIFEST-SEAT)
         "Route manifest is registered where the notification spine reads it|pnpm check:route-manifest:live"
+        # …and the release actually PUBLISHES it. The check above screams when
+        # the live set and the repo set disagree; this one fails if the step
+        # that closes that gap leaves the release path again, which is exactly
+        # how the manifest went eight days stale with nothing red.
+        "The release publishes the route manifest|pnpm test:release-route-manifest"
         # THE UNIFIED-DATA CAMPAIGN SWITCH MUST COVER SOMETHING. The campaign's
         # code ships continuously — any lane's `release*:` commit builds the
         # whole pushed range — so campaign code must be inert until
