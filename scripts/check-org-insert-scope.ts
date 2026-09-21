@@ -745,6 +745,64 @@ const worst = (verdicts: Verdict[]): Verdict =>
     verdicts[0] ?? { status: "UNRESOLVED", reason: "empty payload" },
   );
 
+/**
+ * The declaration this identifier actually refers to.
+ *
+ * A file-wide "first declaration wins" map mis-binds a later `let organizationId:
+ * string` to an earlier `const organizationId = cond ? undefined : …` in another
+ * function. The later write then reads as NULLABLE and the trigger is blamed for
+ * a value that cannot be null. Walk outward and take the last declaration of
+ * that name that precedes the use.
+ */
+function bindingInScope(
+  id: ts.Identifier,
+): ts.VariableDeclaration | ts.ParameterDeclaration | undefined {
+  const name = id.text;
+  let cursor: ts.Node = id;
+  while (cursor.parent) {
+    const parent = cursor.parent;
+    if (ts.isBlock(parent) || ts.isSourceFile(parent) || ts.isModuleBlock(parent)) {
+      let found: ts.VariableDeclaration | undefined;
+      for (const stmt of parent.statements) {
+        if (stmt.end > cursor.getStart()) break;
+        if (!ts.isVariableStatement(stmt)) continue;
+        for (const decl of stmt.declarationList.declarations) {
+          if (ts.isIdentifier(decl.name) && decl.name.text === name) found = decl;
+        }
+      }
+      if (found) return found;
+    }
+    if (
+      (ts.isForStatement(parent) || ts.isForOfStatement(parent) || ts.isForInStatement(parent)) &&
+      parent.initializer &&
+      parent.initializer !== cursor &&
+      ts.isVariableDeclarationList(parent.initializer)
+    ) {
+      for (const decl of parent.initializer.declarations) {
+        if (ts.isIdentifier(decl.name) && decl.name.text === name) return decl;
+      }
+    }
+    if (ts.isCatchClause(parent) && parent.variableDeclaration) {
+      const decl = parent.variableDeclaration;
+      if (ts.isIdentifier(decl.name) && decl.name.text === name) return decl;
+    }
+    if (
+      (ts.isFunctionDeclaration(parent) ||
+        ts.isFunctionExpression(parent) ||
+        ts.isArrowFunction(parent) ||
+        ts.isMethodDeclaration(parent) ||
+        ts.isConstructorDeclaration(parent)) &&
+      parent.parameters
+    ) {
+      for (const param of parent.parameters) {
+        if (ts.isIdentifier(param.name) && param.name.text === name) return param;
+      }
+    }
+    cursor = parent;
+  }
+  return undefined;
+}
+
 function typeNodeIsNullable(type: ts.TypeNode | undefined): boolean {
   if (!type) return false;
   if (ts.isUnionTypeNode(type)) {
@@ -754,6 +812,71 @@ function typeNodeIsNullable(type: ts.TypeNode | undefined): boolean {
   if (type.kind === ts.SyntaxKind.UndefinedKeyword) return true;
   if (ts.isLiteralTypeNode(type) && type.literal.kind === ts.SyntaxKind.NullKeyword) {
     return true;
+  }
+  return false;
+}
+
+/** `if (!name) return` or `throw` earlier in the same function. */
+function conditionExcludesNull(expr: ts.Expression, name: string): boolean {
+  const node = unwrap(expr);
+  if (
+    ts.isPrefixUnaryExpression(node) &&
+    node.operator === ts.SyntaxKind.ExclamationToken
+  ) {
+    const inner = unwrap(node.operand);
+    return ts.isIdentifier(inner) && inner.text === name;
+  }
+  if (!ts.isBinaryExpression(node)) return false;
+  const op = node.operatorToken.kind;
+  if (
+    op !== ts.SyntaxKind.EqualsEqualsToken &&
+    op !== ts.SyntaxKind.EqualsEqualsEqualsToken
+  ) {
+    return false;
+  }
+  const left = unwrap(node.left);
+  const right = unwrap(node.right);
+  if (!ts.isIdentifier(left) || left.text !== name) return false;
+  return (
+    right.kind === ts.SyntaxKind.NullKeyword ||
+    (ts.isIdentifier(right) && right.text === "undefined")
+  );
+}
+
+function statementExits(stmt: ts.Statement): boolean {
+  if (ts.isReturnStatement(stmt) || ts.isThrowStatement(stmt)) return true;
+  if (!ts.isBlock(stmt)) return false;
+  return stmt.statements.some(
+    (inner) => ts.isReturnStatement(inner) || ts.isThrowStatement(inner),
+  );
+}
+
+function isNarrowedNonNull(id: ts.Identifier): boolean {
+  let cursor: ts.Node = id;
+  while (cursor.parent) {
+    const parent = cursor.parent;
+    if (ts.isBlock(parent)) {
+      for (const stmt of parent.statements) {
+        if (stmt.end > cursor.getStart()) break;
+        if (
+          ts.isIfStatement(stmt) &&
+          !stmt.elseStatement &&
+          conditionExcludesNull(stmt.expression, id.text) &&
+          statementExits(stmt.thenStatement)
+        ) {
+          return true;
+        }
+      }
+    }
+    if (
+      ts.isFunctionDeclaration(parent) ||
+      ts.isFunctionExpression(parent) ||
+      ts.isArrowFunction(parent) ||
+      ts.isMethodDeclaration(parent)
+    ) {
+      return false;
+    }
+    cursor = parent;
   }
   return false;
 }
@@ -790,9 +913,15 @@ function isNullableOrgValue(
   }
 
   if (ts.isIdentifier(node)) {
-    const decl = ctx.vars.get(node.text);
+    const decl = bindingInScope(node);
     if (!decl) return false;
-    if (typeNodeIsNullable(decl.type)) return true;
+    const typedNull = typeNodeIsNullable(decl.type);
+    const initNull =
+      !typedNull && decl.initializer
+        ? isNullableOrgValue(decl.initializer, ctx, depth + 1)
+        : false;
+    if ((typedNull || initNull) && isNarrowedNonNull(node)) return false;
+    if (typedNull) return true;
     if (decl.initializer) {
       return isNullableOrgValue(decl.initializer, ctx, depth + 1);
     }
@@ -914,8 +1043,10 @@ export function classifyPayload(
     if (ctx.imported.has(node.text)) {
       return { status: "UNRESOLVED", reason: `payload \`${node.text}\` is imported from another module` };
     }
-    const decl = ctx.vars.get(node.text);
-    if (decl?.initializer) return classifyPayload(decl.initializer, ctx, depth + 1);
+    const decl = bindingInScope(node);
+    if (decl && ts.isVariableDeclaration(decl) && decl.initializer) {
+      return classifyPayload(decl.initializer, ctx, depth + 1);
+    }
     return { status: "UNRESOLVED", reason: `payload \`${node.text}\` is not built in this file` };
   }
 
@@ -1267,6 +1398,22 @@ function selfTest(): number {
         "}",
       ].join("\n"),
     },
+    {
+      // A file-wide first-declaration map used to judge this later write by the
+      // earlier nullable binding, so a definite string read as NULLABLE.
+      label: "a later nullable organizationId is not hidden by an earlier string parameter",
+      expect: "NULLABLE",
+      expectTable: "chat.artifact",
+      code: [
+        "export async function earlier(db: any, title: string, organizationId: string) {",
+        '  await db.from("tasks").insert({ title, organization_id: organizationId });',
+        "}",
+        "export async function later(db: any, title: string) {",
+        "  const organizationId: string | null = null;",
+        '  await db.schema("chat").from("artifact").insert({ title, organization_id: organizationId });',
+        "}",
+      ].join("\n"),
+    },
   ];
 
   for (const [i, testCase] of offenders.entries()) {
@@ -1304,6 +1451,43 @@ function selfTest(): number {
     '  await db.from("app_telemetry").insert({ event: "created" });',
     "}",
   ].join("\n");
+  const shadowed = [
+    "export async function earlier(db: any) {",
+    "  const organizationId: string | null = null;",
+    "  void organizationId;",
+    "}",
+    "export async function later(db: any, title: string) {",
+    "  let organizationId: string;",
+    '  organizationId = "11111111-1111-1111-1111-111111111111";',
+    '  await db.schema("chat").from("artifact").insert({ title, organization_id: organizationId });',
+    "}",
+  ].join("\n");
+  const shadowedHits = scanSource("shadowed.ts", shadowed, index);
+  if (shadowedHits.length !== 0) {
+    console.error(
+      `[check:org-insert-scope] SELF-TEST FAILED — an earlier nullable organizationId poisoned a later definite string (${shadowedHits
+        .map((h) => `${h.line}:${h.status}:${h.reason}`)
+        .join(", ")}). Bind the declaration in scope, not the first one in the file.`,
+    );
+    return 1;
+  }
+
+  const narrowed = [
+    "export async function create(db: any, title: string, organizationId: string | null) {",
+    "  if (!organizationId) return;",
+    '  await db.schema("chat").from("artifact").insert({ title, organization_id: organizationId });',
+    "}",
+  ].join("\n");
+  const narrowedHits = scanSource("narrowed.ts", narrowed, index);
+  if (narrowedHits.length !== 0) {
+    console.error(
+      `[check:org-insert-scope] SELF-TEST FAILED — a write after \`if (!organizationId) return\` still reads as nullable (${narrowedHits
+        .map((h) => `${h.line}:${h.status}:${h.reason}`)
+        .join(", ")}).`,
+    );
+    return 1;
+  }
+
   const cleanHits = scanSource("clean.ts", clean, index);
   if (cleanHits.length !== 0) {
     console.error(

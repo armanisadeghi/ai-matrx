@@ -4,6 +4,7 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { hydrateNoteContextLinks } from "@/features/notes/service/noteContextAssociations";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { OrganizationContextError } from "@ai-matrx/agents/matrx";
 import type { Note, NoteListItem } from "@/features/notes/types";
 
 export interface StudyTerm {
@@ -79,7 +80,12 @@ export async function loadStudyAnnotations(noteId: string): Promise<Note[]> {
 }
 
 export async function saveStudyAnnotation(input: StudyAnnotationInput): Promise<Note> {
-  if (!input.organizationId) throw new Error("Choose an organization before saving a note.");
+  if (!input.organizationId.trim()) {
+    throw new OrganizationContextError(
+      "organization_context_required",
+      "Select an organization before sending this request.",
+    );
+  }
   if (!input.quote.trim()) throw new Error("Select a passage first.");
   const userId = requireUserId();
   const note = input.existingAnnotationId

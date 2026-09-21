@@ -1,7 +1,7 @@
 {
   "_comment": "RATCHET — organization-scoped writes that do not yet carry the organization. `public._stamp_org_default` stamps the writer's PERSONAL organization on any NULL, so every entry here is a row that can silently land in a workspace nobody selected (common-docs/policies/context-is-carried-never-rebuilt.md rule 4). This list may only SHRINK: a NEW site fails immediately, a fixed one fails as STALE until `tsx scripts/check-org-insert-scope.ts --fix` rewrites it downward, and NULLABLE is never carried here at all. Line numbers are deliberately absent — an entry is identified by file + table + payload text, so unrelated edits above it do not churn the file.",
-  "seeded_at": "2026-09-17T22:17:32.603Z",
-  "count": 40,
+  "seeded_at": "2026-09-21T05:07:08.476Z",
+  "count": 39,
   "sites": [
     {
       "file": "app/api/agent-shortcuts/route.ts",
@@ -230,12 +230,6 @@
       "table": "ui.ui_surface_write_target",
       "status": "UNRESOLVED",
       "signature": "writeTargetRows"
-    },
-    {
-      "file": "lib/agents/actions.ts",
-      "table": "agent.definition",
-      "status": "UNRESOLVED",
-      "signature": "{ ...seedToInsertPayload(seed), agent_type: \"builtin\", is_active: true, // organization_id intentionally omitted — the DB guard forces it to"
     },
     {
       "file": "lib/agents/actions.ts",

@@ -402,7 +402,17 @@ function detectHandRolledLadder(allow: Allowlist) {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const hitsRank = RANK_MAP_RE.test(line);
-      const hitsShape = LADDER_SHAPE_RE.test(lines.slice(i, i + 3).join("\n"));
+      const window = lines.slice(i, i + 3).join("\n");
+      const shapeMatch = window.match(LADDER_SHAPE_RE);
+      // A settings knob's `allowed: ["viewer", …, "editor", …, "admin"]` is a
+      // vocabulary of values, not a second permission ladder. The 3-line window
+      // also used to report the two lines ABOVE that vocabulary.
+      const shapeStartsHere =
+        shapeMatch !== null && window.indexOf(shapeMatch[0]) < line.length;
+      const shapeIsEnumVocabulary =
+        shapeStartsHere &&
+        /allowed\s*:\s*\[[\s\S]*$/.test(shapeMatch?.[0] ? window.slice(0, window.indexOf(shapeMatch[0])) + shapeMatch[0] : "");
+      const hitsShape = shapeStartsHere && !shapeIsEnumVocabulary;
       if (!hitsRank && !hitsShape) continue;
       const lineNo = i + 1;
       if (isAllowed(allow.handRolledLadder, rel, lineNo)) continue;

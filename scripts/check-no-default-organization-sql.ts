@@ -111,7 +111,7 @@ const RULES: Rule[] = [
     what: "substitutes the caller's personal organization in executable SQL",
     pattern: /\b(?:ensure_personal_organization|current_personal_org_id)\s*\(/i,
     remedy:
-      "Make the caller name the organization and REFUSE when it does not (a 23502 with a hint reads as an honest failure; a silently mis-tenanted row does not). Satisfying NOT NULL is not a reason to invent a tenant.",
+      "Make the caller name the organization and REFUSE when it does not (a 23502 with a hint reads as an honest failure; a silently mis-tenanted row does not). Satisfying NOT NULL is not a reason to invent a tenant. The function's own CREATE OR REPLACE header is the primitive, not a call, and is not this rule.",
   },
   {
     id: 8,
@@ -184,6 +184,17 @@ export function scanSource(rel: string, source: string): Violation[] {
   for (const rule of RULES) {
     for (let i = 0; i < lines.length; i++) {
       if (!rule.pattern.test(lines[i])) continue;
+      // CREATE FUNCTION current_personal_org_id() is the primitive's own
+      // header. A call is `select current_personal_org_id()` / `:= ensure_…()`.
+      // Treating the header as a call flags every rewrite of the primitive.
+      if (
+        rule.id === 7 &&
+        /create\s+(?:or\s+replace\s+)?function\s+(?:[\w]+\.)?(?:ensure_personal_organization|current_personal_org_id)\s*\(/i.test(
+          lines[i],
+        )
+      ) {
+        continue;
+      }
       found.push({
         file: rel,
         line: i + 1,
@@ -287,6 +298,11 @@ $$;`,
   // Parent-inherit is explicitly fine: it CARRIES an organization.
   "__self_test_ok_inherit__.sql": `create trigger _inherit_org before insert on child.table
   for each row execute function platform.inherit_org_from_parent('parent','table','parent_id');`,
+  // Rewriting the primitive's own header is not a caller substituting a tenant.
+  "__self_test_ok_define__.sql": `create or replace function public.current_personal_org_id()
+returns uuid language sql as $$
+  select iam.personal_org_id((select auth.uid()));
+$$;`,
 };
 
 function selfTest(): number {

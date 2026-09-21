@@ -284,6 +284,9 @@ export async function listAgentTasks(): Promise<AgendaTask[]> {
       ({ from, to }) =>
         schedulerDb(supabase)
           .schema("scheduler")
+          // VIEW LAW: the roster is the signed-in user's own schedules; RLS
+          // (sch_task owner policy) is the ceiling, and this list does not
+          // take an org filter because a schedule is owned by its user.
           .from("sch_task")
           .select(SELECT_AGENT_TASK, { count: "exact" })
           .eq("kind", "agent")

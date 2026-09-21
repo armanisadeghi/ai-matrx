@@ -9,6 +9,7 @@ import { stripNullish } from "@/utils/supabase/payload";
 import { pgErrorToError } from "@ai-matrx/data";
 import { sanitizeAgentToolIds } from "@/features/agents/redux/agent-definition/sanitize-tool-ids";
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 
 type AgentInsert = Omit<
   Database["agent"]["Tables"]["definition"]["Insert"],
@@ -120,8 +121,9 @@ export async function createAgentFromSeed(
  * Admin-only: creates a system ("builtin") agent from a seed and redirects
  * to the admin system-agents builder. Sets `agent_type = 'builtin'`; the
  * Matrx System org ownership that makes it globally visible (iam.has_access's
- * platform-global tier) is enforced at the DB edge by the
- * agent._enforce_builtin_system_org trigger — never write organization_id here.
+ * platform-global tier) is written here as SYSTEM_ORGANIZATION_ID. The DB
+ * guard agent._enforce_builtin_system_org still forces that same org — a
+ * trigger must not be the thing that CHOOSES the tenant.
  * Writes through the signed-in admin's OWN client, never the service-role
  * admin client: `platform._stamp_actor_tier` refuses a service-role write
  * (tier `code`, no actor_system) with 23514, and RLS's `platform_admin_all`
@@ -154,11 +156,11 @@ export async function createSystemAgentFromSeed(
     .from("definition")
     .insert({
       ...seedToInsertPayload(seed),
+      // org-fallback-deliberate: a builtin agent is platform catalog content owned by the system organization; the builtin guard forces the same id
+      organization_id: SYSTEM_ORGANIZATION_ID,
       agent_type: "builtin",
       is_active: true,
       created_by: user.id,
-      // organization_id intentionally omitted — the DB guard forces it to the
-      // Matrx System org for every builtin (see agent._enforce_builtin_system_org).
       task_id: null,
     })
     .select("id")

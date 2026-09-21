@@ -62,7 +62,6 @@
     "features/window-panels/windows/notes/NotesWindow.tsx",
     "hooks/canvas/useCanvasLike.ts",
     "hooks/useApiAuth.ts",
-    "lib/api/backend-client.ts",
     "lib/api/hr-contract-client.ts",
     "lib/api/matrx-transport.ts",
     "providers/usePreferenceSync.ts"
