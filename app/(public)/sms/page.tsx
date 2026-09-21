@@ -3,7 +3,9 @@ import { createRouteMetadata } from "@/utils/route-metadata";
 import { siteConfig } from "@/config/extras/site";
 import {
   SMS_CONSENT_DISCLOSURE,
+  SMS_FIRST_PARTY_SENDER_PHONE,
   SMS_HR_SENDER_PHONE,
+  SMS_PERSONAL_STAFF_SENDER_PHONE,
   SMS_PRIVACY_PATH,
   SMS_PROGRAM_NAME,
   SMS_SENDER_PHONE,
@@ -99,6 +101,14 @@ export default function SmsProgramPage() {
           <li>
             <strong>Employer and workforce notification number:</strong>{" "}
             {SMS_HR_SENDER_PHONE}
+          </li>
+          <li>
+            <strong>Product notification number:</strong>{" "}
+            {SMS_FIRST_PARTY_SENDER_PHONE}
+          </li>
+          <li>
+            <strong>Personal Staff assistant number:</strong>{" "}
+            {SMS_PERSONAL_STAFF_SENDER_PHONE}
           </li>
           <li>
             <strong>Message frequency:</strong> Varies based on the

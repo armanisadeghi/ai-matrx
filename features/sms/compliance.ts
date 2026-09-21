@@ -4,6 +4,10 @@ import { siteConfig } from "@/config/extras/site";
 export const SMS_PROGRAM_NAME = "AI Matrx SMS Notifications";
 export const SMS_SENDER_PHONE = "+14158059951";
 export const SMS_HR_SENDER_PHONE = "+16282965420";
+/** First-party AI Matrx product notifications (agent work completed/failed/action required, capture and daily-question reminders). One-way. */
+export const SMS_FIRST_PARTY_SENDER_PHONE = "+14159493803";
+/** Personal Staff number: the AI Matrx personal assistant a person texts and calls. Two-way, voice-capable. */
+export const SMS_PERSONAL_STAFF_SENDER_PHONE = "+14159808187";
 export const SMS_SUPPORT_EMAIL = "support@aimatrx.com";
 export const SMS_CONSENT_VERSION = "2026-08-26";
 

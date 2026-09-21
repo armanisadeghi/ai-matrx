@@ -55482,6 +55482,10 @@ export type Database = {
         }
         Returns: string
       }
+      may_address_user_in_org: {
+        Args: { p_org: string; p_user: string }
+        Returns: boolean
+      }
       may_touch_field: {
         Args: {
           p_action?: string
@@ -81709,6 +81713,10 @@ export type Database = {
       udt_list_example_tables: { Args: never; Returns: Json }
       udt_set_field_format: {
         Args: { p_field_id: string; p_format?: Json; p_table_id: string }
+        Returns: Json
+      }
+      udt_set_table_row_actions: {
+        Args: { p_row_actions?: Json; p_table_id: string }
         Returns: Json
       }
       udt_set_table_row_label: {

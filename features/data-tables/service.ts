@@ -977,3 +977,23 @@ export async function setTableRowLabel(args: {
   }
   return { success: true, data: { row_label: envelope.row_label ?? null } };
 }
+
+/**
+ * Replace the table's ROW ACTIONS — the one-click buttons on a row
+ * (`features/data-tables/row-actions.ts`). An empty list clears them.
+ */
+export async function setTableRowActions(args: {
+  tableId: string;
+  rowActions: import("./row-actions").RowAction[];
+}): Promise<ServiceResult<{ row_actions: unknown }>> {
+  const { data, error } = await supabase.rpc("udt_set_table_row_actions", {
+    p_table_id: args.tableId,
+    p_row_actions: args.rowActions as never,
+  });
+  if (error) return { success: false, error: error.message };
+  const envelope = data as unknown as { success?: boolean; error?: string; row_actions?: unknown } | null;
+  if (!envelope || envelope.success !== true) {
+    return { success: false, error: envelope?.error ?? "Failed to save the row actions" };
+  }
+  return { success: true, data: { row_actions: envelope.row_actions ?? [] } };
+}

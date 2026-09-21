@@ -3,7 +3,9 @@ import { createRouteMetadata } from "@/utils/route-metadata";
 import { siteConfig } from "@/config/extras/site";
 import {
   SMS_OPT_IN_PATH,
+  SMS_FIRST_PARTY_SENDER_PHONE,
   SMS_HR_SENDER_PHONE,
+  SMS_PERSONAL_STAFF_SENDER_PHONE,
   SMS_PRIVACY_PATH,
   SMS_PROGRAM_NAME,
   SMS_SENDER_PHONE,
@@ -44,8 +46,10 @@ export default function TermsAndConditionsPage() {
           credential reminders, onboarding tasks, and other non-marketing
           workplace updates. Account and assistant messages may be sent from{" "}
           {SMS_SENDER_PHONE}; employer and workforce notifications may be sent
-          from {SMS_HR_SENDER_PHONE}. AI Matrx may also use another number
-          registered for this program.
+          from {SMS_HR_SENDER_PHONE}; product and service notifications may be
+          sent from {SMS_FIRST_PARTY_SENDER_PHONE}; and the AI Matrx personal
+          assistant may be sent from {SMS_PERSONAL_STAFF_SENDER_PHONE}. AI
+          Matrx may also use another number registered for this program.
         </p>
 
         <h2>Consent and eligibility</h2>
