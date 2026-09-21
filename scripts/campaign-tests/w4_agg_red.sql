@@ -362,43 +362,77 @@ declare
   v_org uuid := current_setting('zz.org')::uuid;
   v_d1  uuid := current_setting('zz.d1')::uuid;
   v_n   int;
+  v_before int;
 begin
   if current_user = 'authenticated' then
     raise exception 'RED 4: this block must run as the server lane, not the seat.';
   end if;
+  -- 🚨 THE CONTROL IS MEASURED, NOT ASSUMED (lane RED-SUITES-3, 2026-09-21). This used to
+  -- fire twice and demand the literal number 1 — "the GREEN state leaves 1 delivery row after
+  -- a replay". It left 3, because the blocks above this one leave their own subscriptions
+  -- standing and the dedupe key carries the RULE, so three rules is three rows and always
+  -- was. The number was a fixture count wearing a promise. What the block actually means is
+  -- "a replay adds NOTHING", so it takes a reading first and asserts the DELTA — which is
+  -- true whatever the blocks above leave behind, and is the positive control the break below
+  -- is measured against.
+  -- One fire to put the event on the board, THEN the reading, then the replays. The first
+  -- fire is not a replay and is not supposed to add nothing.
+  perform custom.agg_subscription_fire(v_org, v_d1, current_setting('zz.tdeal')::uuid);
+  select count(*) into v_before from communication.notification
+   where organization_id = v_org and dedupe_key like 'custom.subscription:%';
+  if v_before = 0 then
+    raise exception 'RED 4 cannot run: the first fire delivered nothing, so there is no replay to be idempotent about';
+  end if;
   perform custom.agg_subscription_fire(v_org, v_d1, current_setting('zz.tdeal')::uuid);
   perform custom.agg_subscription_fire(v_org, v_d1, current_setting('zz.tdeal')::uuid);
   select count(*) into v_n from communication.notification
    where organization_id = v_org and dedupe_key like 'custom.subscription:%';
-  if v_n <> 1 then
-    raise exception 'RED 4 cannot run: the GREEN state leaves 1 delivery row after a replay, and left %', v_n;
+  if v_n <> v_before then
+    raise exception 'RED 4 cannot run: with the shipped sender in place two replays are supposed to add NOTHING, and they took the total from % to %', v_before, v_n;
   end if;
 
   -- THE BREAK: the delivery writes a dedupe key that is unique per CALL rather than per event,
   -- which is exactly what "we'll make the consumer idempotent later" looks like in production.
-  create or replace function custom.agg_deliver(p_organization_id uuid, p_rule_id uuid,
-      p_record_id uuid, p_channel text, p_recipient_user_id uuid, p_event_key text,
-      p_subject text, p_body text, p_payload jsonb default '{}'::jsonb)
-  returns uuid language plpgsql set search_path to 'pg_catalog' as $b$
-  declare v_id uuid;
+  -- 🚨 DERIVED FROM THE LIVE BODY, AND THE OLD PLANT NO LONGER PLANTED (lane RED-SUITES-3,
+  -- 2026-09-21). This block used to write out its own nine-argument `custom.agg_deliver`. The
+  -- live door grew a tenth argument, `p_dedupe_suffix`, and — more to the point — the live
+  -- firing path does not call `custom.agg_deliver` directly at all any more: it calls
+  -- `custom.agg_deliver_quietly`, which calls the TEN-argument `custom.agg_deliver`. So the
+  -- plant created a second, nine-argument overload that nothing resolved to, the real sender
+  -- kept deduping exactly as it should, and the block failed with "two more replays should
+  -- have written two more messages, and the total is 1" — a red twin reporting a defect it had
+  -- not managed to plant.
+  --
+  -- It now takes the LIVE bytes of `custom.agg_deliver` and replaces the one expression that
+  -- makes the dedupe key stable — the day stamp — with a fresh uuid, which is exactly "the
+  -- replay is not recognised as a replay". It refuses BY NAME if that expression is not there
+  -- to replace, so it can never again quietly plant nothing.
+  do $plant_red4$
+  declare
+    v_def  text;
+    v_stab constant text :=
+      '                  coalesce(nullif(btrim(p_dedupe_suffix), ''''),' || E'\n' ||
+      '                           to_char(now() at time zone ''utc'', ''YYYY-MM-DD''))';
   begin
-    insert into communication.notification
-      (organization_id, event_key, channel, recipient_user_id, recipient_kind, dedupe_key,
-       subject, body, payload, target_kind, target_id, visibility)
-    values (p_organization_id, p_event_key, p_channel, p_recipient_user_id, 'user',
-            format('custom.subscription:%s:%s:%s', p_rule_id, p_record_id, gen_random_uuid()),
-            p_subject, p_body, coalesce(p_payload, '{}'::jsonb), 'custom.record', p_record_id,
-            'personal'::platform.visibility)
-    returning id into v_id;
-    return v_id;
-  end $b$;
+    select pg_get_functiondef(p.oid) into v_def
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'custom' and p.proname = 'agg_deliver';
+    if v_def is null then
+      raise exception 'RED 4 precondition: custom.agg_deliver does not exist, so its dedupe key cannot be made unstable';
+    end if;
+    if position(v_stab in v_def) = 0 then
+      raise exception 'RED 4 precondition: the live custom.agg_deliver no longer builds its dedupe key the way this twin unmakes it, so the plant would prove nothing. Re-derive it from the live body before trusting anything below.';
+    end if;
+    execute replace(v_def, v_stab, '                  gen_random_uuid()::text');
+  end
+  $plant_red4$;
 
   perform custom.agg_subscription_fire(v_org, v_d1, current_setting('zz.tdeal')::uuid);
   perform custom.agg_subscription_fire(v_org, v_d1, current_setting('zz.tdeal')::uuid);
   select count(*) into v_n from communication.notification
    where organization_id = v_org and dedupe_key like 'custom.subscription:%';
-  if v_n < 3 then
-    raise exception 'RED 4 DID NOT GO RED: two more replays should have written two more messages, and the total is %', v_n;
+  if v_n <= v_before then
+    raise exception 'RED 4 DID NOT GO RED: with the dedupe key made unique per call, two more replays should have written more messages, and the total went from % to %', v_before, v_n;
   end if;
   raise notice 'RED 4 PASS (it went red): one change now stands at % delivery rows. This is the failure a person experiences as their phone buzzing four times about one edit', v_n;
 end $red4$;
