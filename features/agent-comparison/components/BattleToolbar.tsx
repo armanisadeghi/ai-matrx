@@ -21,6 +21,7 @@ import {
   Library,
   Zap,
   Activity,
+  Scale,
   Eraser,
   RotateCcw,
   ChevronDown,
@@ -66,6 +67,8 @@ interface BattleToolbarProps {
   onToggleContextWindow: () => void;
   runsWindowOpen: boolean;
   onToggleRunsWindow: () => void;
+  decisionsWindowOpen?: boolean;
+  onToggleDecisionsWindow?: () => void;
   runSettingsWindowOpen: boolean;
   onToggleRunSettingsWindow: () => void;
   masterInputWindowOpen: boolean;
@@ -77,6 +80,8 @@ export function BattleToolbar({
   onToggleContextWindow,
   runsWindowOpen,
   onToggleRunsWindow,
+  decisionsWindowOpen = false,
+  onToggleDecisionsWindow,
   runSettingsWindowOpen,
   onToggleRunSettingsWindow,
   masterInputWindowOpen,
@@ -289,6 +294,19 @@ export function BattleToolbar({
           <Activity className="w-3.5 h-3.5" />
           Runs
         </Button>
+
+        {onToggleDecisionsWindow && (
+          <Button
+            size="sm"
+            variant={decisionsWindowOpen ? "default" : "outline"}
+            onClick={onToggleDecisionsWindow}
+            className="h-7"
+            title="Every column's typed answers side by side, with the true answer per question"
+          >
+            <Scale className="w-3.5 h-3.5" />
+            Decisions
+          </Button>
+        )}
 
         <div className="w-px h-5 bg-border mx-1" />
 

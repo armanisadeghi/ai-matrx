@@ -44,6 +44,7 @@ import { BattleColumn } from "./BattleColumn";
 import { BattleAddColumnTile } from "./BattleAddColumnTile";
 import { SharedContextWindow } from "./SharedContextWindow";
 import { SharedRunsWindow } from "./SharedRunsWindow";
+import { DecisionComparisonWindow } from "./DecisionComparisonWindow";
 import { SharedRunSettingsWindow } from "./SharedRunSettingsWindow";
 import { MasterInputWindow } from "./MasterInputWindow";
 import { ModePicker } from "../shared/ModePicker";
@@ -53,6 +54,7 @@ const SHARED_CONTEXT_WINDOW_ID = "agent-comparison-shared-context";
 const SHARED_RUNS_WINDOW_ID = "agent-comparison-shared-runs";
 const SHARED_RUN_SETTINGS_WINDOW_ID = "agent-comparison-shared-run-settings";
 const MASTER_INPUT_WINDOW_ID = "agent-comparison-master-input";
+const DECISIONS_WINDOW_ID = "agent-comparison-decisions";
 
 export function BattlePage() {
   const dispatch = useAppDispatch();
@@ -64,6 +66,7 @@ export function BattlePage() {
   const [runsWindowOpen, setRunsWindowOpen] = useState(false);
   const [runSettingsWindowOpen, setRunSettingsWindowOpen] = useState(false);
   const [masterInputWindowOpen, setMasterInputWindowOpen] = useState(false);
+  const [decisionsWindowOpen, setDecisionsWindowOpen] = useState(false);
 
   // A battle has no meaning with a single column — always seed two columns
   // when the page is empty AND no saved set is active. Also re-seeds after
@@ -106,6 +109,8 @@ export function BattlePage() {
         onToggleRunSettingsWindow={() => setRunSettingsWindowOpen((v) => !v)}
         masterInputWindowOpen={masterInputWindowOpen}
         onToggleMasterInputWindow={() => setMasterInputWindowOpen((v) => !v)}
+        decisionsWindowOpen={decisionsWindowOpen}
+        onToggleDecisionsWindow={() => setDecisionsWindowOpen((v) => !v)}
       />
 
       <div className="flex-1 min-h-0 flex">
@@ -126,6 +131,13 @@ export function BattlePage() {
         <SharedContextWindow
           id={SHARED_CONTEXT_WINDOW_ID}
           onClose={() => setContextWindowOpen(false)}
+        />
+      )}
+
+      {decisionsWindowOpen && (
+        <DecisionComparisonWindow
+          id={DECISIONS_WINDOW_ID}
+          onClose={() => setDecisionsWindowOpen(false)}
         />
       )}
 
