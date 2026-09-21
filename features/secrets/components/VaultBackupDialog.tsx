@@ -605,6 +605,7 @@ export function VaultBackupDialog({
                       className="flex items-center gap-2 rounded-md p-2 text-sm hover:bg-muted/50"
                     >
                       <Checkbox
+                        id={`backup-item-${item.id}`}
                         checked={selectedIds.has(item.id)}
                         onCheckedChange={(value) => {
                           setSelectedIds((current) => {
@@ -621,6 +622,9 @@ export function VaultBackupDialog({
                       />
                       <span className="min-w-0 truncate">
                         {item.display_name}
+                      </span>
+                      <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                        {item.status === "active" ? "Active" : `Excluded: ${item.status}`}
                       </span>
                     </label>
                   ))
