@@ -27,6 +27,25 @@ export type SmsEnrollmentResult = {
 };
 
 /**
+ * Offer this browser's timezone to `communication.record_person_timezone`.
+ * Best-effort and silent: the server decides whether anything is written, and
+ * a failure must never surface on a successful enrolment. Never rejects.
+ */
+async function recordBrowserTimezone(): Promise<void> {
+  try {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (!timezone) return;
+    await fetchWithOrganization("/api/person/timezone", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ timezone, source: "sms_enrollment" }),
+    });
+  } catch {
+    /* best-effort */
+  }
+}
+
+/**
  * Owns the canonical SMS enrollment flow: explicit consent, Verify OTP,
  * enrollment status hydration, and web-form opt-out.
  */
@@ -143,6 +162,20 @@ export function useSmsEnrollment(source: "settings" | "sms-demo") {
     setResult(null);
     try {
       const payload = await requestVerification("verify");
+      // SMS is now ON for this person, and the send gate is about to start
+      // judging their quiet hours. It judges them in UTC unless someone tells
+      // it otherwise — which is how 749 of 766 people ended up with texts held
+      // back in the middle of their afternoon. The browser knows the answer;
+      // offer it at the one moment we are certain SMS matters to them.
+      //
+      // 🚨 NOT a `timezone` field on the /api/sms/preferences PUT body. That
+      // column is NOT NULL with a default of 'America/New_York', so a write
+      // there cannot express "only when nothing is known" and would overwrite a
+      // timezone the person actually declared. The ONE door is
+      // `communication.record_person_timezone`, which decides for itself
+      // whether to write. Fire-and-forget: a failure here is never allowed to
+      // turn a successful enrolment into an error the person sees.
+      void recordBrowserTimezone();
       setPhoneNumber(payload.data?.phoneNumber || phoneNumber);
       setVerificationCode("");
       setStep("complete");

@@ -122,6 +122,96 @@ function openAuthBroadcast(): BroadcastChannel | null {
   }
 }
 
+// --- Browser timezone capture (sign-in) -------------------------------------
+//
+// 749 of 766 people on the platform have no timezone recorded anywhere, so the
+// SMS send gate judges their quiet hours in UTC and holds texts back in the
+// middle of their afternoon. The browser has always known the answer; nothing
+// carried it. Sign-in is the one moment every person passes through, so this is
+// where it is offered — ONCE per browser session per user, best-effort.
+//
+// 🚨 THIS IS A FACT BEING OFFERED, NOT A USER-FACING ACTION. It must never
+// block sign-in, never raise a toast, never throw, and never open a dialog:
+//   • the module-level set makes it once per tab, the sessionStorage key makes
+//     it once per browser session across reloads (every access is wrapped —
+//     `sessionStorage` THROWS, not returns null, in some privacy modes);
+//   • it is skipped outright when no organization has been selected yet.
+//     `fetchWithOrganization` would otherwise meet the route's
+//     `organization_required` refusal and OPEN THE ORG PICKER — a modal nobody
+//     asked for, on top of a fresh sign-in, to answer a question the person was
+//     never posed. Skipping is silent and cheap: the next sign-in, or the SMS
+//     enrolment path, carries the same fact.
+// The server decides whether to write at all (`record_person_timezone` writes
+// only when nothing the person declared already answers), so there is nothing
+// to pre-check and nothing to retry here.
+const TIMEZONE_CAPTURE_STORAGE_PREFIX = "matrx.tz-captured.";
+const timezoneCapturedThisTab = new Set<string>();
+
+/** For tests, and for an in-place auth swap. */
+export function resetBrowserTimezoneCapture(): void {
+  timezoneCapturedThisTab.clear();
+}
+
+/**
+ * Offer this browser's timezone for `userId`, at most once per browser session.
+ * Resolves `true` when a request was actually sent. Never rejects.
+ */
+export async function captureBrowserTimezoneOnce(
+  userId: string | null | undefined,
+): Promise<boolean> {
+  if (!userId) return false;
+  if (timezoneCapturedThisTab.has(userId)) return false;
+
+  const storageKey = `${TIMEZONE_CAPTURE_STORAGE_PREFIX}${userId}`;
+  try {
+    if (sessionStorage.getItem(storageKey)) {
+      timezoneCapturedThisTab.add(userId);
+      return false;
+    }
+  } catch {
+    /* privacy mode: the in-memory set still holds for this tab */
+  }
+
+  // Older browsers (and a few locked-down ones) yield nothing here. An absent
+  // answer is not a wrong answer — send nothing.
+  let timezone: string | undefined;
+  try {
+    timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return false;
+  }
+  if (!timezone) return false;
+
+  try {
+    const { getActiveOrgId } = await import("@/lib/organizations/activeOrg");
+    if (!getActiveOrgId()) return false;
+
+    // Claim the slot BEFORE the request: a second SIGNED_IN arriving while this
+    // one is in flight must not send a second POST.
+    timezoneCapturedThisTab.add(userId);
+    try {
+      sessionStorage.setItem(storageKey, "1");
+    } catch {
+      /* privacy mode */
+    }
+
+    const { fetchWithOrganization } = await import(
+      "@/lib/organizations/fetchWithOrganization"
+    );
+    await fetchWithOrganization("/api/person/timezone", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ timezone, source: "sign_in" }),
+    });
+    return true;
+  } catch {
+    // Best-effort by definition: a failed offer of a fact the server may
+    // already know is not something to tell the person about, and it must not
+    // escape into the auth handler.
+    return false;
+  }
+}
+
 export default function AuthSessionWatcher() {
   const [sessionExpired, setSessionExpired] = useState(false);
   const [driftedToEmail, setDriftedToEmail] = useState<string | null>(null);
@@ -346,6 +436,19 @@ export default function AuthSessionWatcher() {
         event === "USER_UPDATED" ||
         (event === "INITIAL_SESSION" && session)
       ) {
+        // Offer this browser's timezone once per session — see the note above
+        // `captureBrowserTimezoneOnce`. Fire-and-forget, never rejects.
+        //
+        // 🚨 IT MUST INCLUDE `INITIAL_SESSION`, AND THAT IS NOT TIDINESS. A
+        // session restored from cookies never fires `SIGNED_IN` — verified on
+        // localhost 2026-09-21: a signed-in load of /dashboard sent no capture
+        // at all. The hole this closes is 749 people who ALREADY have accounts,
+        // and somebody who simply stays signed in for months would never once
+        // have been asked. The door is idempotent (it answers `already_known`
+        // and writes nothing), and the once-per-browser-session guard inside
+        // keeps a page reload from turning into a second POST.
+        void captureBrowserTimezoneOnce(session?.user?.id);
+
         // THE AUTH-HYDRATION RE-KICK (2026-08-31), rewritten same day under
         // 🚨 THE ZERO-PREFETCH LAW (Arman): a session that never met a
         // `__kind` fetches NOTHING Content-IR — not on page load, not on auth
