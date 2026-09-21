@@ -1,4 +1,4 @@
--- scripts/campaign-tests/limitsfix_backfill_declared_fields.sql — LANE LIMITS-FIX.
+-- scripts/campaign-repairs/limitsfix_backfill_declared_fields.sql — LANE LIMITS-FIX.
 --
 -- THE REPAIR for every table that already declared its columns and never got them.
 --
@@ -29,8 +29,8 @@
 -- one bad entry can never leave a table half recovered. The rehearsal run found 310 of 310
 -- entries buildable and zero refusals.
 --
--- Run:  <scratchpad>/prod.sh -f scripts/campaign-tests/limitsfix_backfill_declared_fields.sql
---       <scratchpad>/prod.sh -v commit_it=true -f scripts/campaign-tests/limitsfix_backfill_declared_fields.sql
+-- Run:  <scratchpad>/prod.sh -f scripts/campaign-repairs/limitsfix_backfill_declared_fields.sql
+--       <scratchpad>/prod.sh -v commit_it=true -f scripts/campaign-repairs/limitsfix_backfill_declared_fields.sql
 -- It runs as the store's owner: this is a repair of the store's own rows, not a client door.
 
 -- `-v commit_it=true` writes the repair; anything else rehearses and rolls back.

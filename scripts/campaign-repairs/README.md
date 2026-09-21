@@ -19,6 +19,7 @@ and it stays here so the next person can read what was done and re-run it to fin
 |---|---|---|
 | `fieldtruth_repair_undeclared_keys.sql` | FIELD-TRUTH | 223 values on 209 records over 60 Tables carrying keys no Field declared. Default knob `declare` made each a real column; `quarantine` is the alternative. |
 | `fieldtruth_repair_claimed_columns.sql` | FIELD-TRUTH | 53 column names across 48 Tables that a Table's `fields` array claimed with no Field record behind them. |
+| `limitsfix_backfill_declared_fields.sql` | LIMITS-FIX | 310 declared field names on 103 Tables across 15 organizations that `custom.table_declare` wrote into the table's own document and never made a Field record for. Rebuilt through `custom._field_document_for`, the same builder both doors use; census after the run is 0. |
 
 **One piece of doc-rot, on purpose.** Three FIELD-TRUTH migrations name these two files under
 their old home, `scripts/campaign-tests/`. Their bytes are ledgered with their SHA-256, so
