@@ -150,7 +150,16 @@ describe("overlapping refreshes never clobber the ledger", () => {
 
     const state = getUnderstudyRefreshState(rulebookId);
     expect(state.failed).toBe(true);
-    expect(state.message).toContain("refresh the Understudy");
+    // 🚨 THE SERVER'S OWN ACCOUNT, NOT THE WRAPPER'S (fifteenth cold walk,
+    // blocking C). This used to assert `operationFailed`'s sentence — "We
+    // couldn't refresh the Understudy." — which is exactly what buried the
+    // server's reason on the card: on 2026-09-20 aidream answered with "this
+    // part of the server was built wrong and cannot run… trying again will
+    // fail the same way until it is fixed" and the Expert read a retry prompt
+    // instead. The ledger now carries what the SERVER said, read through
+    // `serverRefusal`.
+    expect(state.message).toContain("the server refused the rebuild");
+    expect(state.retryIsPointless).toBe(false);
     // And the card must not claim the stand-in is current off that stale win.
     expect(
       readUnderstudyStandIn(state, STALE_ROW, 9).behind,

@@ -45,6 +45,7 @@ import {
   isSlugAvailable,
 } from "./service";
 import type { OrganizationArchiveFilter } from "./service/organizationArchive";
+import { DEFAULT_ARCHIVE_FILTER } from "@ai-matrx/design-system";
 
 // ============================================================================
 // Organization Listing Hooks
@@ -58,14 +59,14 @@ import type { OrganizationArchiveFilter } from "./service/organizationArchive";
  * the reveal passes "all" and splits the rows itself.
  */
 export function useUserOrganizations(
-  archived: OrganizationArchiveFilter = "active",
+  archiveFilter: OrganizationArchiveFilter = DEFAULT_ARCHIVE_FILTER,
 ) {
   const authReady = useAppSelector(selectAuthReady);
   const userId = useAppSelector(selectUserId);
   const accessToken = useAppSelector(selectAccessToken);
   const canFetch = authReady && Boolean(userId) && Boolean(accessToken);
   const [nonce, setNonce] = useState(0);
-  const key = canFetch ? `${userId}:${archived}:${nonce}` : null;
+  const key = canFetch ? `${userId}:${archiveFilter}:${nonce}` : null;
   const [resolved, setResolved] = useState<{
     key: string;
     organizations: OrganizationWithRole[];
@@ -77,7 +78,7 @@ export function useUserOrganizations(
     let active = true;
     void (async () => {
       try {
-        const organizations = await getUserOrganizations(archived);
+        const organizations = await getUserOrganizations(archiveFilter);
         if (active) setResolved({ key, organizations, error: null });
       } catch (err: unknown) {
         const message =
@@ -88,7 +89,7 @@ export function useUserOrganizations(
     return () => {
       active = false;
     };
-  }, [key, archived]);
+  }, [key, archiveFilter]);
 
   const current = resolved?.key === key ? resolved : null;
   const refresh = () => setNonce((value) => value + 1);

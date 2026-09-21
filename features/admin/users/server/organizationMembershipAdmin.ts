@@ -9,18 +9,36 @@ import type {
   AdminOrganizationRow,
 } from "@/features/admin/users/types";
 import type { OrgRole } from "@/features/organizations/types";
+import {
+  DEFAULT_ARCHIVE_FILTER,
+  type ArchiveFilterValue,
+} from "@ai-matrx/design-system";
 
-/** Load every organization and active organization membership for super-admin views. */
-export async function loadAdminOrganizationDirectory(): Promise<AdminOrganizationDirectory> {
+/**
+ * Load every organization and active organization membership for super-admin views.
+ *
+ * THE ARCHIVED-ITEMS LAW: `archiveFilter` defaults to "active", so the
+ * directory hides archived organizations, and "archived" / "all" are the
+ * reveal. Every row carries `archived_at`, so a surface showing "all" can
+ * label which of them are closed instead of mixing them in unlabelled.
+ */
+export async function loadAdminOrganizationDirectory(
+  archiveFilter: ArchiveFilterValue = DEFAULT_ARCHIVE_FILTER,
+): Promise<AdminOrganizationDirectory> {
   const admin = createAdminClient();
+  let organizationsQuery = admin
+    .schema("iam")
+    .from("organizations")
+    .select(
+      // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
+      "id, name, abbreviation, slug, description, website, created_at, created_by, is_personal, is_system, archived_at",
+    );
+  if (archiveFilter === "active")
+    organizationsQuery = organizationsQuery.is("archived_at", null);
+  else if (archiveFilter === "archived")
+    organizationsQuery = organizationsQuery.not("archived_at", "is", null);
   const [organizationsResult, membershipsResult] = await Promise.all([
-    admin
-      .schema("iam")
-      .from("organizations")
-      .select(
-        // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-        "id, name, abbreviation, slug, description, website, created_at, created_by, is_personal, is_system",
-      )
+    organizationsQuery
       .order("is_personal", { ascending: true })
       .order("name", { ascending: true }),
     admin
@@ -99,6 +117,7 @@ export async function loadAdminOrganizationDirectory(): Promise<AdminOrganizatio
       created_by: row.created_by ?? null,
       is_personal: row.is_personal === true,
       is_system: row.is_system,
+      archived_at: row.archived_at ?? null,
       member_count: counts.members,
       owner_count: counts.owners,
       admin_count: counts.admins,

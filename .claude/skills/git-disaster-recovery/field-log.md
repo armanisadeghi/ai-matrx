@@ -27,6 +27,8 @@ is shrink the dirty set, and owners are step 4 for whatever is left.
 
 | When | Repo | What we thought | What was true | Folded into SKILL.md? |
 |---|---|---|---|---|
+| 2026-09-21 | matrx-frontend | The install gate protecting the dev preview was a safeguard | It refused `pnpm sync-types` and the release loop while a preview ran; changed to warn-and-proceed with strict mode opt-in, self-test 10/10 both ways | Step 7 |
+| 2026-09-21 | matrx-frontend | Synced at 15:00 means synced | By 18:50 the shared folder was 62 behind with a stale conflicted index entry from someone's aborted merge; every pull refused. Resolve stray unmerged entries with GitHub's version, then the loop | Step 7 |
 | 2026-09-20 | matrx-frontend (afternoon) | A clean folder stays clean | A 5-hour usage pause at 13:00 stranded 81 dirty files from paused Claude sessions; Codex and Cursor lanes kept writing. Committed the hour-old ones in six clusters; Vercel built them green | Step 7 |
 | 2026-09-20 | matrx-frontend | Landing a lane's dirty helper is safe if origin never touched it | A one-line change to a helper reached from client bundles imported the server-only Supabase client and failed the Vercel build. Reverted one file. Client reach, not origin history, is the test for shared helpers | Step 7 type-check |
 | 2026-09-20 | matrx-frontend | A regenerated database.types.ts is truth, land it | It brought 136 type errors because no consumer had landed. Regenerated types land with their consumers, in the lane's own commit | Step 7 |

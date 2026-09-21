@@ -14,6 +14,7 @@ import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
 import { plainFromDeleteRefusal } from "./service/organizationStoreContents";
 import type { OrganizationArchiveFilter } from "./service/organizationArchive";
+import { DEFAULT_ARCHIVE_FILTER } from "@ai-matrx/design-system";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import {
@@ -371,7 +372,7 @@ export async function getOrganizationBySlugOrId(
  * @returns Array of organizations with user's role
  */
 export async function getUserOrganizations(
-  archived: OrganizationArchiveFilter = "active",
+  archiveFilter: OrganizationArchiveFilter = DEFAULT_ARCHIVE_FILTER,
 ): Promise<OrganizationWithRole[]> {
   requireUserId();
 
@@ -404,8 +405,9 @@ export async function getUserOrganizations(
     .from("organizations")
     .select("*")
     .in("id", orgIds);
-  if (archived === "active") orgQuery = orgQuery.is("archived_at", null);
-  else if (archived === "archived") orgQuery = orgQuery.not("archived_at", "is", null);
+  if (archiveFilter === "active") orgQuery = orgQuery.is("archived_at", null);
+  else if (archiveFilter === "archived")
+    orgQuery = orgQuery.not("archived_at", "is", null);
   const { data: orgRows, error: orgsError } = await orgQuery;
   if (orgsError) throw pgErrorToError(orgsError);
 

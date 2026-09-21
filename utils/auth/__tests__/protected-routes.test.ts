@@ -42,4 +42,17 @@ describe("protected workspace routes", () => {
   ])("keeps public acquisition route %s public", (pathname) => {
     expect(routeRequiresAuthentication(pathname)).toBe(false);
   });
+
+  // `/q/<token>` is an action request: an agent asked the person it works for
+  // for ONE thing and texted them a one-tap link. The link IS the capability,
+  // and the person tapping it usually has no session — bouncing them to /login
+  // would hand somebody a door they cannot open and strand a parked agent turn.
+  // aidream decides everything about identity from the bearer token it is
+  // forwarded (or is not); this route must never be gated here.
+  it.each([
+    "/q/8f2b1c4d5e6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2",
+    "/q/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  ])("never stops a guest on the action-request link %s", (pathname) => {
+    expect(routeRequiresAuthentication(pathname)).toBe(false);
+  });
 });

@@ -202,6 +202,8 @@ export interface AccountAddon {
 
 /** The org rows the picker needs — name and slug, never the whole record. */
 export interface OrganizationOption {
+  /** Set when the organization is archived (closed, not deleted). */
+  archived_at?: string | null;
   id: string;
   name: string;
   slug: string;

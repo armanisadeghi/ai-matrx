@@ -1,6 +1,27 @@
 // utils/headers.js
 
 exports.getHeaders = () => [
+    // THE ACTION-REQUEST LINK'S TOKEN MUST NOT LEAK.
+    //
+    // `/q/<token>` is a one-tap link texted to a person; the token in that path
+    // is the capability. Without `no-referrer`, every outbound request the page
+    // makes — and every link a person follows off it — hands the whole URL,
+    // token included, to somebody else's server and access log. `noindex` is
+    // belt-and-braces beside the page's own `robots` metadata: a header also
+    // covers a crawler that never parses the HTML.
+    {
+        source: "/q/:token",
+        headers: [
+            {
+                key: "Referrer-Policy",
+                value: "no-referrer",
+            },
+            {
+                key: "X-Robots-Tag",
+                value: "noindex",
+            },
+        ],
+    },
     {
         source: "/:path*.wasm",
         headers: [
