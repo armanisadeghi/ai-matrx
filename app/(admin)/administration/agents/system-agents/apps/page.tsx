@@ -1,24 +1,26 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { isPubliclyVisible, visibilityLabelShort } from "@/lib/visibility/labels";
+import {
+  isPubliclyVisible,
+  visibilityLabelShort,
+} from "@/lib/visibility/labels";
 import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import {
-  AppWindow,
   ArrowUpRight,
   ExternalLink,
   Loader2,
   Plus,
   RefreshCw,
-  Search,
   Trash2,
-  X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import {
   Select,
   SelectContent,
@@ -26,14 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,7 +46,7 @@ import {
   type UpdateAgentAppAdminInput,
 } from "@/lib/services/agent-apps-admin-service";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   AgentAppRef,
   agentAppExecutionsHref,
@@ -98,9 +92,9 @@ export default function AdminSystemAppsListPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [apps, setApps] = useState<AgentAppAdminView[]>([]);
+  const [visibleApps, setVisibleApps] = useState<AgentAppAdminView[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [search, setSearch] = useState("");
   // Per-row inflight flags so a slow update on one row doesn't disable the
   // whole table.
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
@@ -115,6 +109,7 @@ export default function AdminSystemAppsListPage() {
     try {
       const data = await fetchAgentAppsAdmin({ scope: "global", limit: 500 });
       setApps(data);
+      setVisibleApps(data);
     } catch (error) {
       console.error("Failed to load system apps:", error);
     } finally {
@@ -126,17 +121,6 @@ export default function AdminSystemAppsListPage() {
   useEffect(() => {
     void load(false);
   }, [load]);
-
-  const filtered = apps.filter((a) => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      (a.name ?? "").toLowerCase().includes(q) ||
-      (a.slug ?? "").toLowerCase().includes(q) ||
-      (a.category ?? "").toLowerCase().includes(q) ||
-      (a.id ?? "").toLowerCase().includes(q)
-    );
-  });
 
   const handleOpenEditor = (id: string) => {
     startTransition(() => {
@@ -202,22 +186,136 @@ export default function AdminSystemAppsListPage() {
     }
   };
 
+  const columns: MatrxColumnDef<AgentAppAdminView>[] = [
+    {
+      id: "name",
+      accessorKey: "name",
+      header: "Name",
+      width: 260,
+      cell: (app) => (
+        <AgentAppRef appId={app.id} name={app.name} slug={app.slug} />
+      ),
+    },
+    {
+      id: "slug",
+      accessorKey: "slug",
+      header: "Slug",
+      width: 180,
+      cell: (app) => <code className="text-xs">{app.slug}</code>,
+    },
+    {
+      id: "status",
+      accessorKey: "status",
+      header: "Status",
+      filter: "select",
+      width: 140,
+      cell: (app) => {
+        const isBusy = busyIds.has(app.id);
+        return (
+          <Select
+            value={app.status}
+            disabled={isBusy}
+            onValueChange={(status) =>
+              void patchRow(
+                app.id,
+                { status: status as AgentAppAdminView["status"] },
+                "Status",
+              )
+            }
+          >
+            <SelectTrigger className="h-7 text-xs">
+              <SelectValue>
+                <Badge
+                  variant={STATUS_VARIANT[app.status] ?? "outline"}
+                  className="text-[10px]"
+                >
+                  {app.status}
+                </Badge>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map((status) => (
+                <SelectItem key={status} value={status} className="text-xs">
+                  {status}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      },
+    },
+    {
+      id: "visibility",
+      header: "Public",
+      accessorFn: (app) =>
+        isPubliclyVisible(app.visibility) ? "Public" : "Internal",
+      filter: "select",
+      width: 90,
+      cell: (app) => {
+        const isBusy = busyIds.has(app.id);
+        return (
+          <div className="flex justify-center">
+            <Switch
+              checked={isPubliclyVisible(app.visibility)}
+              disabled={isBusy}
+              onCheckedChange={(checked) =>
+                void patchRow(
+                  app.id,
+                  { visibility: checked ? "public" : "internal" },
+                  "Visibility",
+                )
+              }
+              aria-label={
+                isPubliclyVisible(app.visibility)
+                  ? "Make internal"
+                  : "Make public"
+              }
+            />
+          </div>
+        );
+      },
+    },
+    {
+      id: "category",
+      accessorKey: "category",
+      header: "Category",
+      filter: "select",
+      width: 160,
+      cell: (app) => <span className="text-xs">{app.category ?? "—"}</span>,
+    },
+    {
+      id: "runs",
+      accessorFn: (app) => app.total_executions ?? 0,
+      header: "Runs",
+      width: 90,
+      cell: (app) => (
+        <AppLink
+          href={agentAppExecutionsHref(app.id)}
+          title={`Open the runs and errors for ${app.name}`}
+          className="block text-right text-xs underline-offset-2 hover:text-primary hover:underline"
+        >
+          {app.total_executions ?? 0}
+        </AppLink>
+      ),
+    },
+    {
+      id: "updated_at",
+      accessorKey: "updated_at",
+      header: "Updated",
+      width: 120,
+      cell: (app) => (
+        <span className="block text-right text-xs text-muted-foreground">
+          {app.updated_at ? new Date(app.updated_at).toLocaleDateString() : "—"}
+        </span>
+      ),
+    },
+  ];
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-shrink-0 px-4 py-3 border-b border-border bg-card">
         <div className="flex items-center justify-end gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => load(true)}
-              disabled={refreshing}
-            >
-              <RefreshCw
-                className={`h-4 w-4 mr-1.5 ${refreshing ? "animate-spin" : ""}`}
-              />
-              Refresh
-            </Button>
             <AppLink href="/administration/agents/system-agents/apps/new">
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-1.5" />
@@ -229,64 +327,7 @@ export default function AdminSystemAppsListPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="container mx-auto px-4 py-4 max-w-[1600px] space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="flex-1 relative">
-              <div className="flex items-center gap-3 p-1 pl-3 rounded-full border border-border bg-card">
-                <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search system apps..."
-                  className="flex-1 bg-transparent border-0 outline-none text-sm text-foreground placeholder:text-muted-foreground py-1"
-                />
-                {search && (
-                  <button
-                    onClick={() => setSearch("")}
-                    className="p-1.5 hover:bg-muted/50 rounded-lg transition-colors flex-shrink-0"
-                    aria-label="Clear search"
-                  >
-                    <X className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                )}
-              </div>
-            </div>
-            <span className="text-xs text-muted-foreground shrink-0 px-1">
-              {filtered.length} app{filtered.length !== 1 ? "s" : ""}
-            </span>
-            {filtered.length > 0 && (
-              <>
-                <CopyButtons
-                  size="icon"
-                  label="All system apps"
-                  human={() => filtered.map(agentAppAdminSummary).join("\n")}
-                  json={() => filtered}
-                  agent={() => ({
-                    kind: "agent-apps",
-                    location:
-                      "AI Matrx Admin — System Agents · Apps (/administration/agents/system-agents/apps)",
-                    description:
-                      "All global-scope system agent apps currently matching the search.",
-                    data: filtered,
-                    attributes: { count: filtered.length },
-                    context: { search: search || undefined, total: apps.length },
-                  })}
-                  export={{
-                    items: [
-                      jsonExportItem(() => filtered),
-                      csvExportItem(
-                        () =>
-                          filtered as unknown as Array<Record<string, unknown>>,
-                        "CSV",
-                      ),
-                    ],
-                  }}
-                />
-              </>
-            )}
-          </div>
-
+        <div className="container mx-auto max-w-[1600px] px-4 py-4">
           {loading ? (
             <Card>
               <CardContent className="p-12 flex items-center justify-center text-muted-foreground">
@@ -294,235 +335,133 @@ export default function AdminSystemAppsListPage() {
                 Loading system apps...
               </CardContent>
             </Card>
-          ) : filtered.length === 0 ? (
-            <Card>
-              <CardContent className="p-12 flex flex-col items-center text-center gap-3">
-                <div className="p-4 bg-primary/10 rounded-full">
-                  <AppWindow className="h-8 w-8 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold mb-1">
-                    {search
-                      ? "No system apps match your search"
-                      : "No system apps yet"}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {search
-                      ? "Try a different query."
-                      : "Create a system app to ship a global agent-backed mini-app."}
-                  </p>
-                </div>
-                {!search && (
-                  <AppLink href="/administration/agents/system-agents/apps/new">
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create System App
-                    </Button>
-                  </AppLink>
-                )}
-              </CardContent>
-            </Card>
           ) : (
             <Card>
               <CardContent className="p-0">
-                <Table wrapperClassName="phone-stack">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Slug</TableHead>
-                      <TableHead className="w-[140px]">Status</TableHead>
-                      <TableHead className="w-[80px] text-center">
-                        Public
-                      </TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead className="text-right">Runs</TableHead>
-                      <TableHead className="text-right">Updated</TableHead>
-                      <TableHead className="w-[120px] text-right">
-                        Actions
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtered.map((a) => {
-                      const isBusy = busyIds.has(a.id);
-                      return (
-                        <TableRow key={a.id} className="hover:bg-accent/30">
-                          <TableCell className="font-medium" data-phone="lead">
-                            {/*
-                              Was an onClick-only <button>: no href meant no
-                              cmd-click, no new tab, no peek. AgentAppRef is the
-                              real door (admin editor + new tab + peek + public
-                              page) — THE DOOR LAW.
-                            */}
-                            <AgentAppRef
-                              appId={a.id}
-                              name={a.name}
-                              slug={a.slug}
-                            />
-                          </TableCell>
-                          <TableCell
-                            className="text-muted-foreground text-xs"
-                            data-label="Slug"
-                            data-phone="inline"
+                {/* Intentional override — the global-scope endpoint returns only a
+                    bounded client snapshot (limit 500) and no count receipt. The
+                    shared table labels that window honestly; row actions remain the
+                    existing explicit mutation and navigation doors. */}
+                <MatrxDataTable
+                  urlState={{ id: "system-agent-apps" }}
+                  data={apps}
+                  columns={columns}
+                  getRowId={(app) => app.id}
+                  searchText={(app) => app.id}
+                  onViewChange={setVisibleApps}
+                  isLoading={loading}
+                  isFetching={refreshing}
+                  pageSize={50}
+                  coverage={{
+                    cap: 500,
+                    answeredBy: "client",
+                    noun: "loaded system app",
+                  }}
+                  emptyState={{
+                    title: "No system apps match",
+                    description:
+                      "Create a system app to ship a global agent-backed mini-app.",
+                  }}
+                  toolbar={{
+                    title: "System apps",
+                    search: true,
+                    searchPlaceholder: "Search system apps…",
+                    actions: (
+                      <div className="flex items-center gap-1">
+                        <CopyButtons
+                          size="icon"
+                          label="Visible system apps"
+                          human={() => visibleApps.map(agentAppAdminSummary).join("\n")}
+                          json={() => visibleApps}
+                          agent={() => ({
+                            kind: "agent-apps",
+                            location:
+                              "AI Matrx Admin — System Agents · Apps (/administration/agents/system-agents/apps)",
+                            description:
+                              "The filtered and sorted loaded system-app view on this page.",
+                            data: visibleApps,
+                            attributes: { count: visibleApps.length, cap: 500 },
+                          })}
+                          export={{
+                            items: [
+                              jsonExportItem(() => visibleApps, "JSON (visible loaded view)"),
+                              csvExportItem(
+                                () =>
+                                  visibleApps as unknown as Array<
+                                  Record<string, unknown>
+                                  >,
+                                "CSV (visible loaded view)",
+                              ),
+                            ],
+                          }}
+                        />
+                        <Button variant="outline" size="sm" onClick={() => void load(true)} disabled={refreshing}>
+                          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                          Refresh
+                        </Button>
+                      </div>
+                    ),
+                  }}
+                  copy={false}
+                  detail={{ enabled: false }}
+                  window={{ enabled: false }}
+                  rowActions={(app) => (
+                    <div className="flex items-center justify-end gap-0.5">
+                      <CopyButtons
+                        size="xs"
+                        label={app.name}
+                        human={() => agentAppAdminSummary(app)}
+                        json={() => app}
+                        agent={() => ({
+                          kind: "agent-app",
+                          location:
+                            "AI Matrx Admin — System Agents · Apps (/administration/agents/system-agents/apps)",
+                          description: "A single system agent app.",
+                          data: app,
+                          summary: agentAppAdminSummary(app),
+                          attributes: { id: app.id, slug: app.slug },
+                        })}
+                      />
+                      {app.status === "published" && (
+                        <Button
+                          asChild
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          title="Open public URL"
+                        >
+                          <AppLink
+                            href={`/p/${app.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
                           >
-                            {a.slug}
-                          </TableCell>
-                          <TableCell data-label="Status" data-phone="inline">
-                            <Select
-                              value={a.status}
-                              disabled={isBusy}
-                              onValueChange={(v) =>
-                                patchRow(
-                                  a.id,
-                                  {
-                                    status: v as AgentAppAdminView["status"],
-                                  },
-                                  "Status",
-                                )
-                              }
-                            >
-                              <SelectTrigger className="h-7 text-xs">
-                                <SelectValue>
-                                  <Badge
-                                    variant={
-                                      STATUS_VARIANT[a.status] ?? "outline"
-                                    }
-                                    className="text-[10px]"
-                                  >
-                                    {a.status}
-                                  </Badge>
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {STATUS_OPTIONS.map((s) => (
-                                  <SelectItem
-                                    key={s}
-                                    value={s}
-                                    className="text-xs"
-                                  >
-                                    {s}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell
-                            className="text-center"
-                            data-label="Public"
-                            data-phone="inline"
-                          >
-                            <Switch
-                              checked={isPubliclyVisible(a.visibility)}
-                              disabled={isBusy}
-                              onCheckedChange={(checked) =>
-                                patchRow(
-                                  a.id,
-                                  {
-                                    visibility: checked
-                                      ? "public"
-                                      : "internal",
-                                  },
-                                  "Visibility",
-                                )
-                              }
-                              aria-label={
-                                isPubliclyVisible(a.visibility)
-                                  ? "Make internal"
-                                  : "Make public"
-                              }
-                            />
-                          </TableCell>
-                          <TableCell
-                            className="text-xs"
-                            data-label="Category"
-                            data-phone="inline"
-                          >
-                            {a.category ?? "—"}
-                          </TableCell>
-                          {/* A count is a door: the runs total reaches those runs. */}
-                          <TableCell
-                            className="text-right text-xs"
-                            data-label="Runs"
-                            data-phone="inline"
-                          >
-                            <AppLink
-                              href={agentAppExecutionsHref(a.id)}
-                              title={`Open the runs and errors for ${a.name}`}
-                              className="underline-offset-2 hover:text-primary hover:underline"
-                            >
-                              {a.total_executions ?? 0}
-                            </AppLink>
-                          </TableCell>
-                          <TableCell
-                            className="text-right text-xs text-muted-foreground"
-                            data-label="Updated"
-                            data-phone="inline"
-                          >
-                            {a.updated_at
-                              ? new Date(a.updated_at).toLocaleDateString()
-                              : "—"}
-                          </TableCell>
-                          <TableCell className="text-right" data-phone="actions">
-                            <div className="flex items-center justify-end gap-0.5">
-                              <CopyButtons
-                                size="xs"
-                                label={a.name}
-                                human={() => agentAppAdminSummary(a)}
-                                json={() => a}
-                                agent={() => ({
-                                  kind: "agent-app",
-                                  location:
-                                    "AI Matrx Admin — System Agents · Apps (/administration/agents/system-agents/apps)",
-                                  description: "A single system agent app.",
-                                  data: a,
-                                  summary: agentAppAdminSummary(a),
-                                  attributes: { id: a.id, slug: a.slug },
-                                })}
-                              />
-                              {a.status === "published" && (
-                                <Button
-                                  asChild
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 w-7 p-0"
-                                  title="Open public URL"
-                                >
-                                  <AppLink
-                                    href={`/p/${a.slug}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                  >
-                                    <ExternalLink className="h-3.5 w-3.5" />
-                                  </AppLink>
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 w-7 p-0"
-                                disabled={isPending}
-                                onClick={() => handleOpenEditor(a.id)}
-                                title="Open editor"
-                              >
-                                <ArrowUpRight className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                disabled={isBusy || deleting}
-                                onClick={() => setDeleteTarget(a)}
-                                title="Delete system app"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </AppLink>
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0"
+                        disabled={isPending}
+                        onClick={() => handleOpenEditor(app.id)}
+                        title="Open editor"
+                      >
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        disabled={busyIds.has(app.id) || deleting}
+                        onClick={() => setDeleteTarget(app)}
+                        title="Delete system app"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  )}
+                />
               </CardContent>
             </Card>
           )}
