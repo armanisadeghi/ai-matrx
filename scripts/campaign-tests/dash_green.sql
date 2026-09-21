@@ -296,7 +296,10 @@ begin
     raise exception '7: a member rewrote the organization''s dashboard';
   exception when others then
     get stacked diagnostics v_msg = message_text;
-    if v_msg not like '%do not have access to this table%' then
+    -- lane TAILS 2026-09-21: the shared ladder refusal now names the rung HELD as well as
+    -- the rung needed, because "you do not have access to this table" was said to people
+    -- who plainly do. She holds viewer on this Table, so that is what it says.
+    if v_msg not like '%viewer level on this table%' or v_msg not like '%needs the admin level%' then
       raise exception '7: she was refused, but not for the right reason: %', v_msg;
     end if;
     raise notice 'PART 7a — "%"', v_msg;

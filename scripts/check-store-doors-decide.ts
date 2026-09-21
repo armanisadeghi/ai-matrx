@@ -38,6 +38,7 @@
  */
 
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { censusWithPatience } from "./lib/census-with-patience";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 function fail(message: string): never {
@@ -1104,14 +1105,14 @@ async function main(): Promise<void> {
     // 30 s default and died as a CRASH rather than returning a verdict, which is what
     // `[FAIL] canceling statement due to statement timeout` looked like on 2026-09-20.
     const mark12 = Date.now();
-    await client.query("begin");
-    let sharedOnlyAll: Row[];
-    try {
-      await client.query("set local statement_timeout = '900s'");
-      sharedOnlyAll = (await client.query<Row>(SHARED_ONLY_CENSUS(null))).rows;
-    } finally {
-      await client.query("rollback").catch(() => undefined);
-    }
+    const unmeasured: string[] = [];
+    const census12 = await censusWithPatience<Row>(
+      client,
+      "census 12 (the three answers in every shared_only organization)",
+      SHARED_ONLY_CENSUS(null),
+    );
+    const sharedOnlyAll: Row[] = census12.rows;
+    if (census12.unmeasured) unmeasured.push(census12.unmeasured);
     console.log(`[TIME] census 12 - the three answers in every shared_only organization: ${since(mark12)}`);
     const mirrorNarrower = sharedOnlyAll.filter((r) => r.why?.startsWith("mirror-admits-less"));
     const sharedOnly = sharedOnlyAll.filter(
@@ -1276,6 +1277,18 @@ async function main(): Promise<void> {
       // exitAfterDrain returns `never` (it always calls process.exit), so the `return`
       // that used to follow it here was unreachable — TS7027 caught it as dead code.
       exitAfterDrain(1);
+    }
+    if (unmeasured.length > 0) {
+      // NOT a door being wrong, and NOT a clean run. Its own exit code (2), so a caller can
+      // tell "something in the store is wrong" from "we could not look".
+      console.error(
+        `\n[NOT MEASURED - contention] ${unmeasured.length} census(es) could not be read:\n` +
+          unmeasured.map((line) => `  - ${line}`).join("\n") +
+          "\n  Every OTHER census above is green. This run proves nothing about the unmeasured" +
+          "\n  one - it is not a pass - and it is not a door that decides nothing either. Run it" +
+          "\n  again when the database is quieter.",
+      );
+      exitAfterDrain(2);
     }
     console.log(
       `\nEvery client door into the record store decides the caller and the row. (${since(started)})`,
