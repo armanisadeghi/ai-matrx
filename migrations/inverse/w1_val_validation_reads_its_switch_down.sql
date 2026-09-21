@@ -102,4 +102,27 @@ begin
 end;
 $function$;
 
-drop function if exists custom.store_is_open(uuid);
+-- 🚨 `custom.store_is_open` STAYS STANDING (lane INVERSE-GUARD, 2026-09-21). This file used to
+-- drop it, and FORTY-SEVEN triggers created by later files reach it — every shape guard, store
+-- door, history capture, outbox and organization wall on `custom.record`, `custom.external_link`,
+-- `custom.external_source`, `platform.associations`, `platform.custom_field_definition`,
+-- `iam.memberships`, `iam.permissions`, `custom.doc_render` and `custom.doc_signature`. As
+-- written this inverse left every one of them attached over a function that was gone, so the
+-- next write anywhere in the store died on
+--     function custom.store_is_open(uuid) does not exist
+-- before the red twin asked its first question. A store that cannot take a write is not the
+-- prior state this file claims to restore.
+--
+-- THE DEFECT IS RESTORED IN FULL BY THE BODY ABOVE, which is the whole of it: W1-VAL's
+-- `custom._record_field_validation()` with the switch UNREAD, byte for byte the definition
+-- `w1_val_the_value_envelope.sql` ledgered, so
+-- `encode(sha256(convert_to(pg_get_functiondef(oid),'utf8')),'hex')` still reads
+-- `da1507e77f2476850fc41876548b2018f061ddf13034df8144cb374b39b40bd3`. The switch stays standing
+-- and validation no longer asks it, which is precisely the defect.
+--
+-- ground-standing-ok: b — this inverse is run ALONE, by `scripts/campaign-tests/w1_val_t5.sql`
+-- inside a rolled-back transaction, never in the same transaction as
+-- `w1_table_table_home_containment_down.sql`, which drops `custom.table_kernel_id`,
+-- `custom.field_kernel_id` and `custom.table_type_field` that the body above calls. In a full
+-- un-apply this file runs FIRST and that one LAST: W1-VAL sits above W1-TABLE in the ledger,
+-- and an inverse stack comes off in the reverse of the order it went on.

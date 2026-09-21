@@ -1,3 +1,15 @@
+-- 🚨 WHICH LADDER-CAP INVERSE IS MEANT TO RUN, AND IN WHAT ORDER (lane INVERSE-GUARD, 2026-09-21).
+-- The `iam.member_lane_confers` body this file restores CALLS `custom.addressed_cap_specific`,
+-- which the SIBLING inverse
+-- `laddercap_the_organization_default_steps_aside_for_every_specific_rung_down.sql` takes away —
+-- this is the recorded clause (b) instance in the guard's own header. The two are ALTERNATIVES,
+-- not a sequence: each LADDER-CAP red twin opens its own transaction, applies exactly ONE of the
+-- two inverses, asks its questions and ends in ROLLBACK. Run this one ALONE. If both are ever
+-- wanted in the same transaction, the specific-rung inverse must run LAST and must take this
+-- restored `member_lane_confers` with it, because `addressed_cap_specific` is exactly what it
+-- exists to remove and a per-node loop that asks a function that is gone is not a defect put back.
+-- ground-standing-ok: b  — the sibling is named above, the order is stated, and this file is run alone.
+--
 -- INVERSE of migrations/campaign/laddercap_the_cap_is_resolved_once_and_governs_the_whole_ladder.sql
 --
 -- Puts the specificity rule back INSIDE the platform kernel's per-node loop (iam.member_lane_confers

@@ -17,6 +17,14 @@
 -- call. The row-level names stay in the drop list because they are `if exists` and a
 -- database that still carries the older shape must invert the same way.
 --
+-- ground-standing-ok: c  — `custom._relation_associations()` is the ROW-level body no trigger runs
+-- any more, and it is KEPT in the drop list ON PURPOSE: `writeperf2_the_after_triggers_fire_once_per_statement.sql`
+-- replaced it with the statement-level pair, and a database that has not yet taken that migration
+-- still carries the row-level shape and must invert the same way. Every drop here is `if exists`,
+-- so on a database carrying today's shape the line is a no-op, and the defect this file exists to
+-- restore is put back by the statement-level bodies named directly above it — which ARE what the
+-- live triggers run. The file is pointed at the live body; the old name is kept beside it.
+
 -- THE TRIGGERS COME OFF BEFORE THEIR FUNCTIONS. A dropped function under an attached trigger
 -- is not the defect this file exists to restore — it is a broken table.
 

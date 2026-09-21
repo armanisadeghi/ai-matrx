@@ -895,4 +895,10 @@ $function$
 
 -- ─── and the two the fix added ───────────────────────────────────────────
 drop function if exists custom.record_words(uuid, uuid, text);
-drop function if exists custom._first_words(jsonb);
+-- 🚨 `custom._first_words` STAYS STANDING (lane INVERSE-GUARD, 2026-09-21). TAILS-2 created it,
+-- and `custom._words_for` (`reldisp_a_relation_says_which_words_it_shows.sql`, a later lane on
+-- the live read path) has since adopted it. Dropping it would have taken the relation-display
+-- resolver down with this inverse, which is not the defect this file restores. The defect —
+-- thirteen bodies printing a uuid where a name belongs — is restored in full by the thirteen
+-- verbatim pre-fix bodies above, none of which calls it. The resolver stays; nothing those
+-- thirteen do reads it, which is precisely the defect.

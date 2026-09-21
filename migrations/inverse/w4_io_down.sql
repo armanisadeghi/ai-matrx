@@ -44,7 +44,12 @@ drop function if exists custom.io_record_changed_stmt_delete();
 drop function if exists custom.io_outbox_drain(uuid, text, integer, text);
 drop function if exists custom.io_outbox_release(uuid, text, interval);
 drop function if exists custom.io_changed_field_ids(uuid, uuid, jsonb, jsonb);
-drop function if exists custom.io_changed_keys(jsonb, jsonb);
+-- 🚨 `custom.io_changed_keys` STAYS STANDING (lane INVERSE-GUARD, 2026-09-21).
+-- `custom.history_changes` (`histscreens_a_record_can_say_who_changed_it.sql`, a later lane on
+-- the live read path) calls it to say which keys a revision moved. Dropping it took the
+-- history screen's ground away, which is not the defect this file restores: with the outbox
+-- triggers detached above and every io_* door gone below, nothing announces a change any more,
+-- which is precisely the prior state.
 drop function if exists custom.io_csv_parse(text, text);
 drop function if exists custom.io_csv_escape(text, text);
 drop function if exists custom.io_infer_type(jsonb);
@@ -69,7 +74,15 @@ delete from platform.client_callable_door
 
 drop table if exists custom.io_comment;
 drop table if exists custom.io_import;
-drop table if exists custom.io_outbox;
+-- 🚨 `custom.io_outbox` STAYS STANDING, AND IS EMPTIED INSTEAD (lane INVERSE-GUARD,
+-- 2026-09-21). `custom.agg_digest_assemble`
+-- (`digests_the_cadence_the_quiet_hours_and_the_real_digest.sql`, a later lane) reads this
+-- table to build a real digest, so dropping it took the digest's ground away. The table stays
+-- and carries nothing: the three statement-level capture triggers and `io_outbox_announce` are
+-- detached above and every door that drains or releases it is gone below, so nothing writes to
+-- it and nothing reads it for an outbox any more. That is the defect — no outbox behaviour —
+-- with the platform's ground left standing.
+delete from custom.io_outbox;
 
 -- 🚨 THE REGISTRY ROW IS NOT ALONE ANY MORE (lane RED-SUITES-3, 2026-09-21). A registered
 -- token has grown dependants since this inverse was written: the data-lifecycle platform

@@ -53,4 +53,16 @@ delete from platform.client_callable_door
    and function_name in ('provision_grant_assert_operator', 'provision_grant_close',
                          'provision_grant_list', 'provision_grant_open');
 
-alter table platform.client_callable_door drop column if exists argument_rules;
+-- 🚨 `platform.client_callable_door.argument_rules` STAYS STANDING, AND IS EMPTIED INSTEAD
+-- (lane INVERSE-GUARD, 2026-09-21). W1-PROV-CLOSED added the column, and
+-- `platform._provision_shape_settled`
+-- (`w2_pred_a_declared_door_is_honoured_in_either_spelling.sql`, a later lane on the live
+-- provisioning path) has since READ it by name. Dropping it took that body's ground away, and
+-- an inverse that breaks the provisioner is not the drift state this file exists to reproduce.
+-- So the column stays and carries nothing: every row's `argument_rules` goes back to NULL,
+-- which — with the view, the eight functions and this lane's four door rows all gone above —
+-- is exactly the state `pnpm -s check:branch-schema-drift` found on 2026-09-17 for the eight
+-- objects that are this file's to remove, and the ninth is a column nothing declares any more.
+update platform.client_callable_door
+   set argument_rules = null
+ where argument_rules is not null;

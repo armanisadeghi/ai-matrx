@@ -18,6 +18,16 @@
 -- file: measured, six consecutive attempts, always that pair. So the two tables every peer
 -- touches, `platform.associations` and `custom.record`, are taken LAST, in the same order the
 -- readers take them.
+--
+-- ground-standing-ok: c — `platform.memo_clear_stmt` and `platform.memo_clear_on_structure`
+-- look like bodies no trigger runs, and they are not. WRITE-PERF-3's up-file creates
+-- `zz_memo_clear_i` / `_u` / `_d` over them DYNAMICALLY, with `execute 'create trigger ...'`
+-- across every table `platform.memo_reach_tables()` names, so no static `create trigger`
+-- statement exists anywhere in the tree for a reader without a database to find. The DO block
+-- immediately below detaches exactly that set, by the same dynamic sweep and in the
+-- deadlock-safe order the header explains, BEFORE the two bodies are dropped. The `--live` arm
+-- reads `pg_trigger` and sees both the triggers and the detach; the static arm cannot, and
+-- this line is that answer rather than an excuse.
 do $do$
 declare r text; v_order text[];
 begin

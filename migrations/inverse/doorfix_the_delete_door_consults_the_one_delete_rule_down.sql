@@ -12,7 +12,14 @@
 --     migrations/inverse/doorfix_the_delete_door_consults_the_one_delete_rule_down.sql --target branch
 
 drop function if exists custom.delete_cascade_closure(uuid, uuid);
-drop function if exists custom.delete_rule(uuid, uuid, boolean);
+-- 🚨 `custom.delete_rule` STAYS STANDING (lane INVERSE-GUARD, 2026-09-21). DOOR-FIX 1 created
+-- it, and `custom.field_retire` (`leakt10_a_refusal_says_what_is_true.sql`, a later lane on the
+-- live write path) has since adopted it to say what a retirement would take with it. Dropping
+-- it would take that refusal down with this inverse, which is not the rollback this file
+-- describes. The defect IS restored in full: the delete door, the delete verb, the id resolver
+-- and the undo are put back below exactly as they stood on 2026-09-19, and NONE of those four
+-- bodies consults the one delete rule — which is the disagreement DOOR-FIX 1 closed. The rule
+-- stays standing and the door no longer asks it, which is precisely the defect.
 
 CREATE OR REPLACE FUNCTION custom.resolve_id(p_organization_id uuid, p_id uuid)
  RETURNS uuid

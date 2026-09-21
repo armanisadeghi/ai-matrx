@@ -373,11 +373,29 @@ end;
 $function$
 ;
 
--- The seven helpers this lane created. Nothing that survives this file calls them.
+-- 🚨 THREE OF THE SEVEN HELPERS ARE SHARED INFRASTRUCTURE NOW, AND THIS INVERSE STOPS
+-- DEMOLISHING THEM (lane INVERSE-GUARD, 2026-09-21).
+--
+-- This file used to drop all seven, because CHOICE-VAL's up-file created all seven. Three of
+-- them have since been adopted by bodies that live on the write path of OTHER lanes, and the
+-- catalogue says so out loud:
+--   · `custom.choice_field_map` and `custom.choice_key_of` are reached by `zz_ckl_step_guard`
+--     and `zz_ckl_watch` on `custom.record` (CHECKLISTS, through
+--     `custom._checklist_step_guard` / `custom._checklist_watch`) and by `zz_w3_work_shape_guard`
+--     on `custom.record` (W3-WORK, through `custom._work_shape_guard`);
+--   · `custom.choice_options` is called by `custom._pipeline_stage_key`
+--     (`pipelines_a_stage_is_a_field_and_its_moves_are_rules.sql`).
+-- Dropping them left those triggers attached over functions that were gone, so the next write
+-- to `custom.record` inside the red twin's transaction would have died on
+-- `function custom.choice_field_map(uuid, uuid) does not exist` before the twin asked its first
+-- question. That is not the defect this file exists to restore; it is a broken table.
+--
+-- WHAT THE DEFECT ACTUALLY IS: a choice value is an option record's uuid again, and the
+-- renderer, the validator and the applicability reader know nothing about choice WORDS. That is
+-- restored IN FULL by the four bodies above — the live catalogue's own bytes from 2026-09-20
+-- 06:35Z, none of which calls a choice helper. The three helpers stay standing and nothing on
+-- the choice path reads them any more, which is precisely the defect.
 drop function if exists custom.choice_synonyms(uuid, uuid, text);
-drop function if exists custom.choice_field_map(uuid, uuid);
-drop function if exists custom.choice_options(uuid, uuid);
-drop function if exists custom.choice_key_of(jsonb, text);
 drop function if exists custom.choice_words(jsonb);
 drop function if exists custom.choice_key_for(uuid, uuid, text, uuid);
 drop function if exists custom.choice_slug(text);

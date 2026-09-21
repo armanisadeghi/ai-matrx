@@ -3,6 +3,15 @@
 -- Puts custom.reaches_directly back to the EAGER-CAP body: the cap asked unconditionally
 -- between arm 1 and arm 2. Every answer is identical; what comes back is the cost, measured on
 -- the main database at +42.8% / +40.3% / +45.3% on LADDER-PERF's three ladder questions.
+--
+-- ground-standing-ok: b — the EAGER-CAP body restored below calls `custom.addressed_cap`, which
+-- the sibling inverse `laddercap_the_most_specific_grant_decides_the_level_down.sql` drops.
+-- THIS FILE IS THE ONE MEANT TO RUN: it is executed ALONE by `laddercap`'s red twin inside a
+-- rolled-back transaction, and the cost measurement it restores is about WHEN the cap is asked,
+-- not about what resolves it. If the two are ever run together they run in the reverse of the
+-- order their up-files went on — this one FIRST, while `custom.addressed_cap` still exists, and
+-- the grant-resolution inverse LAST. The other order leaves the access kernel calling a
+-- function that is gone and is never correct.
 
 create or replace function custom.reaches_directly(p_user_id uuid, p_type text, p_id uuid, p_required permission_level default 'viewer'::permission_level)
  returns boolean

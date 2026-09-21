@@ -7,9 +7,20 @@ DROP FUNCTION IF EXISTS custom.entity_value_write(uuid, text, uuid, jsonb);
 DROP FUNCTION IF EXISTS custom.entity_record_read(uuid, text, uuid);
 DROP FUNCTION IF EXISTS custom.entity_field_retire(uuid, uuid);
 DROP FUNCTION IF EXISTS custom.entity_field_update(uuid, uuid, jsonb);
-DROP FUNCTION IF EXISTS custom.entity_field_declare(uuid, text, jsonb);
+-- 🚨 `custom.entity_field_declare` STAYS STANDING (lane INVERSE-GUARD, 2026-09-21). The
+-- class guard `custom_record_field_shape_guard_class` on `custom.record` — created by
+-- `apprvtail_a_field_row_is_a_field.sql`, well after this lane — reaches it through
+-- `custom._field_class_guard`, so dropping it left a live trigger over a function that was
+-- gone and every write to the record store died before the red twin asked anything. The
+-- DOOR is what this lane added and the door is what goes: the DELETE below takes every
+-- `platform.client_callable_door` row this lane declared, `entity_field_declare` among them,
+-- so no client can reach it any more. That is the defect — the only way IN is gone — with the
+-- ground under `apprvtail`'s guard left standing.
 DROP FUNCTION IF EXISTS custom.entity_fields(uuid, text);
 DROP FUNCTION IF EXISTS custom.assert_entity_is_organization_scoped(text, text, boolean);
-DROP FUNCTION IF EXISTS custom.entity_table(text);
+-- 🚨 `custom.entity_table` STAYS STANDING for the same reason: the same class guard reaches it
+-- through `custom._field_class_guard` to answer "which table does this token mean". It is a
+-- pure resolver over `platform.entity_types` and resolves nothing this lane added once the
+-- door rows below are gone.
 DELETE FROM platform.client_callable_door
  WHERE declared_by = 'migrations/campaign/entityfields_the_doors_a_person_reaches.sql';

@@ -1,3 +1,12 @@
+-- 🚨 `custom.reaches_directly` IS LEFT STANDING, ON PURPOSE (lane INVERSE-GUARD, 2026-09-21).
+-- It was ADOPTED after this inverse was written: `custom.list_door_disagreements`
+-- (exportfix_the_census_follows_the_export.sql) calls it, and it is one of the access kernel's
+-- own roots. Dropping it would have taken a live kernel body away to restore a defect in one lane.
+--   THE DEFECT IS STILL RESTORED IN FULL: its `platform.client_callable_door` row is deleted, so
+-- no client can reach it, and `custom.has_visibility` and `custom.visible_set` below go back to
+-- their pre-SHARED-ONLY bodies — where arm 4 does not exist and "may I know this Table" and "does
+-- this Table carry its rows" are one question again, which is the whole defect.
+--
 -- SHARED-ONLY, the inverse: the ladder's first three arms stop having a name of their own,
 -- so `may I know this Table` and `does this Table carry its rows` are one question again and
 -- a single shared record makes its reader the reader of every row in the table.
@@ -419,4 +428,4 @@ begin
 end;
 $function$;
 
-drop function if exists custom.reaches_directly(uuid, text, uuid, public.permission_level);
+-- LEFT STANDING (lane INVERSE-GUARD, 2026-09-21): drop function if exists custom.reaches_directly(uuid, text, uuid, public.permission_level);

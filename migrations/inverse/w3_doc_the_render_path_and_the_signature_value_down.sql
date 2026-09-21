@@ -1,3 +1,13 @@
+-- 🚨 THREE BODIES ARE LEFT STANDING, ON PURPOSE (lane INVERSE-GUARD, 2026-09-21).
+-- `custom.doc_render_document` was ADOPTED after this inverse was written:
+-- `custom.sign_request_create` (esign_asking_somebody_to_sign_is_a_door.sql) calls it on the live
+-- path, so dropping it would have broken the e-sign door to restore a W3-DOC defect.
+-- `custom.doc_render_body` and `custom.doc_content_hash` stay with it because it calls them.
+--   THE DEFECT IS STILL RESTORED: the two immutability triggers come off `custom.doc_render` and
+-- `custom.doc_signature` and their bodies go, `custom.doc_sign`, `custom.doc_signature_intact` and
+-- `custom.doc_signature_field_ok` go, and the `platform.client_callable_door` rows go — so a
+-- render can be rewritten, a signature can be rewritten, and no client can reach the signing path.
+--
 -- target: branch
 --
 -- THE INVERSE of `migrations/campaign/w3_doc_the_render_path_and_the_signature_value.sql`
@@ -41,9 +51,9 @@ drop function if exists custom.doc_sign(uuid, uuid, text, text, uuid);
 drop function if exists custom._doc_render_immutable();
 drop function if exists custom._doc_signature_immutable();
 drop function if exists custom.doc_signature_field_ok(jsonb);
-drop function if exists custom.doc_render_document(uuid, uuid, uuid);
-drop function if exists custom.doc_render_body(uuid, uuid, uuid);
-drop function if exists custom.doc_content_hash(text);
+-- LEFT STANDING (lane INVERSE-GUARD, 2026-09-21): drop function if exists custom.doc_render_document(uuid, uuid, uuid);
+-- LEFT STANDING (lane INVERSE-GUARD, 2026-09-21): drop function if exists custom.doc_render_body(uuid, uuid, uuid);
+-- LEFT STANDING (lane INVERSE-GUARD, 2026-09-21): drop function if exists custom.doc_content_hash(text);
 
 delete from platform.client_callable_door
  where schema_name = 'custom'

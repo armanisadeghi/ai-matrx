@@ -53,8 +53,24 @@ drop function if exists custom.doc_signature_write(uuid, uuid, uuid, text, text,
 drop function if exists custom.doc_render_write(uuid, uuid, uuid, uuid, integer, text, text);
 
 -- ── the two tables, the seal first (it names the render it sealed) ─────────────
-drop table if exists custom.doc_signature;
-drop table if exists custom.doc_render;
+-- 🚨 THE TWO TABLES STAY STANDING, EMPTY AND UNREGISTERED (lane INVERSE-GUARD, 2026-09-21).
+-- This file used to DROP them. Two later lanes built on them: `custom.doc_sign`
+-- (`argsruled_four_arguments_in_the_store.sql`) writes a render and a seal through them, and
+-- `w3_doc_the_render_path_and_the_signature_value_v2.sql` attached `doc_render_immutable` and
+-- `doc_signature_immutable` over `custom._doc_render_immutable` / `custom._doc_signature_immutable`,
+-- both of which read the very tables that were dropped. So the inverse left two live triggers
+-- over missing relations and took a door in another lane down with it — which is not the
+-- teardown this file describes, it is a broken store. `storerel_red` lost a whole session to
+-- exactly this class.
+--
+-- WHAT THE DEFECT ACTUALLY IS: W3-DOC's render and seal, as a thing a person can reach, are
+-- gone. That is restored in full by what this file still does — both write doors are dropped
+-- above, and every `client_callable_door`, `stamped_write_table`, `entity_types` and
+-- `provision_spec` row this lane wrote goes below, so nothing declares these relations and no
+-- client can write to them. They are also EMPTY by construction: the refusal at the top of
+-- this file stops it by name when a single seal exists, so there is nothing in them to lose.
+-- Two unregistered, empty tables under their own immutability guards are precisely the prior
+-- state; two missing tables under live triggers are a different thing entirely.
 
 -- ── what platform.provision wrote beside the DDL ───────────────────────────────
 delete from platform.client_callable_door

@@ -1,3 +1,17 @@
+-- 🚨 FOUR BODIES ARE LEFT STANDING, ON PURPOSE (lane INVERSE-GUARD, 2026-09-21).
+-- `custom.checklist_start` was ADOPTED by another lane after this inverse was written:
+-- `custom._pipeline_on_entry` (pipelines_a_stage_is_a_field_and_its_moves_are_rules.sql) calls
+-- it, and that body runs under the LIVE trigger `zzz_pipelines_on_entry` on `custom.record`.
+-- Dropping it left the pipelines trigger over a function that was gone, so the next write to
+-- the record store exploded before `checklists_red` asked a single question — a broken table,
+-- not a defect put back. `custom._checklist_instantiate`, `custom.checklist_refusal` and
+-- `custom.checklist_steps_table` stay with it because `checklist_start` calls them.
+--   THE DEFECT IS STILL RESTORED, and by the things that actually carry it: the four watch and
+-- step-guard triggers come off `custom.record`, the watch and guard bodies go, the template
+-- index goes, every other checklist door goes, and the `platform.client_callable_door` rows go
+-- — so no client can reach a checklist and nothing watches a record for one. What stays is a
+-- door another lane holds a reference to, standing and unreachable.
+--
 -- target: branch,production
 -- chair-step: it DROPS the objects the up file created, which is what an inverse is for.
 --   Nothing it drops existed before that file. It also removes that file's own rows from
@@ -38,16 +52,16 @@ drop index if exists custom.checklist_template_trigger_idx;
 drop function if exists custom.checklist_step_complete(uuid, uuid, jsonb);
 drop function if exists custom.checklist_runs(uuid, uuid, uuid, boolean, integer);
 drop function if exists custom.checklist_run(uuid, uuid);
-drop function if exists custom.checklist_start(uuid, uuid, uuid, jsonb, timestamptz);
-drop function if exists custom._checklist_instantiate(uuid, uuid, uuid, jsonb, timestamptz, text);
+-- LEFT STANDING (lane INVERSE-GUARD, 2026-09-21): drop function if exists custom.checklist_start(uuid, uuid, uuid, jsonb, timestamptz);
+-- LEFT STANDING (lane INVERSE-GUARD, 2026-09-21): drop function if exists custom._checklist_instantiate(uuid, uuid, uuid, jsonb, timestamptz, text);
 drop function if exists custom.checklist_template_shape(uuid, uuid);
 drop function if exists custom.checklist_templates(uuid, uuid, integer);
 drop function if exists custom.checklist_declare(uuid, jsonb, uuid);
 drop function if exists custom.checklist_step_refusal(uuid, uuid);
 drop function if exists custom._checklist_refusal_for(uuid, uuid, jsonb);
 drop function if exists custom._checklist_finished(uuid, uuid, text);
-drop function if exists custom.checklist_steps_table(uuid);
-drop function if exists custom.checklist_refusal(jsonb);
+-- LEFT STANDING (lane INVERSE-GUARD, 2026-09-21): drop function if exists custom.checklist_steps_table(uuid);
+-- LEFT STANDING (lane INVERSE-GUARD, 2026-09-21): drop function if exists custom.checklist_refusal(jsonb);
 
 delete from platform.client_callable_door d
  where d.schema_name = 'custom'

@@ -19,6 +19,15 @@
 -- ORDER MATTERS: the trigger goes before the function it executes, the guard's helpers go
 -- after the guard, and the two replaced bodies are restored BEFORE this lane's functions are
 -- dropped, because W1-RULE's `custom.rule_eval` does not call any of them.
+--
+-- ground-standing-ok: b — W1-RULE's `custom.rule_eval` and `custom.rule_node_kinds`, restored
+-- below byte for byte, call `custom.rule_field_key` and `custom.rule_truth`, which the sibling
+-- inverse `w1_rule_object_and_uses_down.sql` drops. THIS FILE IS THE ONE MEANT TO RUN: it is
+-- executed alone, inside a rolled-back transaction, to put back the two uses W1-RULE-APPLY
+-- replaced. `w1_rule_object_and_uses_down.sql` un-applies the Rule OBJECT itself and belongs
+-- at the very bottom of the stack: in a full un-apply this file runs FIRST, while both callees
+-- still exist, and that one LAST. Running them the other way round leaves `rule_eval` calling
+-- functions that are gone and is never correct.
 
 set lock_timeout = '5s';
 set statement_timeout = '600s';

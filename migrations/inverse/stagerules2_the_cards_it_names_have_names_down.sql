@@ -1,5 +1,13 @@
 -- INVERSE of migrations/campaign/stagerules2_the_cards_it_names_have_names.sql
-drop function if exists custom._card_words(uuid, text, text);
+-- 🚨 `custom._card_words` STAYS STANDING (lane INVERSE-GUARD, 2026-09-21). It was dropped here
+-- because STAGE-RULES-2's up-file created it — and `trg_associations_zzz_relation_contract` on
+-- `platform.associations` reaches it through `platform.enforce_relation_edge`
+-- (`w1_rel_the_edge_enforces_the_declaration.sql`), so the drop left a live trigger on the
+-- association table over a function that was gone and no association could be written at all.
+-- The defect this file restores is the PREVIEW talking about cards by id instead of by name,
+-- and that is restored in full by the `custom.pipeline_gate_preview` body below — the bytes
+-- from before the fix, which call no word resolver. The helper stays; nothing on the preview
+-- path reads it any more, which is precisely the defect.
 
 CREATE OR REPLACE FUNCTION custom.pipeline_gate_preview(p_organization_id uuid, p_table_id uuid, p_stage text, p_gate jsonb)
  RETURNS jsonb

@@ -1,3 +1,14 @@
+-- 🚨 WHICH CHOICEVAL INVERSE IS MEANT TO RUN, AND IN WHAT ORDER (lane INVERSE-GUARD, 2026-09-21).
+-- The validator body this file restores CALLS `custom.choice_field_map`, `custom.choice_synonyms`
+-- and `custom.choice_words` — the three word helpers that the SIBLING inverse
+-- `choiceval_a_choice_is_its_own_word_down.sql` takes away. The two are ALTERNATIVES, not a
+-- sequence: each CHOICE-VAL red twin opens its own transaction, applies exactly ONE of the two
+-- inverses, asks its questions and ends in ROLLBACK. Run this one ALONE. If a rehearsal ever
+-- needs both defects in the same transaction, `choiceval_a_choice_is_its_own_word_down.sql` must
+-- run LAST and must take this validator with it — the word helpers are what it exists to remove,
+-- and a validator that calls them cannot outlive them.
+-- ground-standing-ok: b  — the sibling is named above, the order is stated, and this file is run alone.
+--
 -- chair-step: the inverse of migrations/campaign/choiceval_the_validator_reads_the_fields_it_was_given.sql.
 --   It puts back the validator that asked `custom.choice_field_map` for the Table named in the
 --   first field's `entity_definition_id` — which a standard entity's custom field does not carry,

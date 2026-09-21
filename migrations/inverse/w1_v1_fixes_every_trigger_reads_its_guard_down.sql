@@ -1,3 +1,13 @@
+-- 🚨 THE SIBLING IS A DIFFERENT LANE, NOT A LATER STEP (lane INVERSE-GUARD, 2026-09-21).
+-- The guard bodies this file restores CALL `custom.containment_parent`,
+-- `custom.containment_chain` and `custom.containment_depth_ceiling`, which
+-- `w1_table_table_home_containment_down.sql` takes away. The two share only the `w1_` filename
+-- prefix that the guard reads as a family: TABLE-HOME-CONTAINMENT and V1-FIXES are separate
+-- lanes with separate red twins, each applied ALONE inside its own transaction and rolled back.
+-- Run this one ALONE. If both are ever wanted in the same transaction, the containment inverse
+-- must run LAST and must take these guards with it — containment is the ground they stand on.
+-- ground-standing-ok: b  — the sibling is named above, the order is stated, and this file is run alone.
+--
 -- target: branch
 -- based-on: custom._containment_guard() 3bf209c1f5f1fc260f79b58065206ffd9b62686b8df437bf26681ca432dd29c7
 -- based-on: custom._derived_fields() 8da20479de223b78bf5c82810ceb444e079b4e35ed63b208a5231fac851c2a9b
