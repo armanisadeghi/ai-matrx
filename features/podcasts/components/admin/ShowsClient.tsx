@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo, useTransition } from "react";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
-import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Pencil,
@@ -30,6 +29,7 @@ import { InlineMediaRef } from "@ai-matrx/media/react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { PublicPageLink } from "./PublicPageLink";
 import { podcastShowAdminHref } from "../../utils";
+import { podcastShowSearchText } from "./shows-table-contract";
 import { pushAppHref, replaceAppHref } from "@/lib/deployment/navigate";
 
 function CopyLinkButton({ slug }: { slug: string }) {
@@ -91,18 +91,6 @@ export function ShowsClient() {
     load();
   }, []);
 
-  const filtered = useMemo(
-    () =>
-      shows.filter(
-        (s) =>
-          s.title.toLowerCase().includes(search.toLowerCase()) ||
-          s.slug.toLowerCase().includes(search.toLowerCase()) ||
-          (s.author ?? "").toLowerCase().includes(search.toLowerCase()) ||
-          idMatchesQuery(s, search),
-      ),
-    [shows, search],
-  );
-
   const handleDeleteConfirm = async () => {
     if (!pendingDeleteId) return;
     setIsDeleting(true);
@@ -131,14 +119,17 @@ export function ShowsClient() {
     <>
       <MatrxDataTable<PcShow>
         tableId="admin/podcasts/shows"
-        data={filtered}
+        data={shows}
         columns={columns}
         getRowId={(show) => show.id}
+        searchText={podcastShowSearchText}
         isLoading={isLoading}
         isFetching={isPending}
         density="condensed"
         copy={false}
         detail={{ enabled: false }}
+        hidePagination
+        coverage={{ noun: "show", answeredBy: "client" }}
         onRowOpen={(show) => startTransition(() => pushAppHref(router, podcastShowAdminHref(show.id)))}
         rowActions={(show) => <div className="flex items-center gap-0.5"><PublicPageLink slug={show.slug} label={show.title} /><CopyLinkButton slug={show.slug} /><button type="button" onClick={() => startTransition(() => pushAppHref(router, podcastShowAdminHref(show.id)))} className="p-1.5 text-muted-foreground hover:text-foreground" title="Edit show"><Pencil className="h-3.5 w-3.5" /></button><button type="button" onClick={() => setPendingDeleteId(show.id)} className="p-1.5 text-muted-foreground hover:text-destructive" title="Delete"><Trash2 className="h-3.5 w-3.5" /></button></div>}
         emptyState={{ title: search ? "No shows match your search." : "No shows yet. Create one to get started." }}
