@@ -28,7 +28,7 @@
   ],
   "portRange": {
     "min": 3001,
-    "max": 3035
+    "max": 3037
   },
   "reserved": [
     {
@@ -71,7 +71,8 @@
     "CAPTURE": 3032,
     "FIX-7B": 3033,
     "LAND-SCREENS": 3034,
-    "GRID-THREE": 3035
+    "GRID-THREE": 3035,
+    "SCREENS-2": 3036
   },
   "noDevServer": {
     "W6-DOCS": "Proves its contract through the document pipeline, not a browser.",

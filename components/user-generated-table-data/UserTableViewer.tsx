@@ -54,6 +54,7 @@ import {
 import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
 import { FormattedFieldValue } from "@/lib/field-formats/FormattedFieldValue";
 import { parseFieldInput, resolveFieldFormat } from "@/lib/field-formats/format";
+import { formatDateCellDisplay } from "@/features/data-tables/format-date-cell";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import {
   choicesForRow,
@@ -1964,7 +1965,16 @@ const UserTableViewer = ({
       case "date":
       case "datetime":
         try {
-          const dateDisplay = new Date(value).toLocaleString();
+          // `date` (grid-parity `formats.all`, defect #2): the stored value
+          // is a calendar day with no time or zone — `formatDateCellDisplay`
+          // reuses `utils/dateOnly.ts` (the same rule FIX-7B applied to the
+          // shared primitive's formatter) so it never shifts a day early and
+          // never grows a clock time. `datetime` is a real timestamp and
+          // still gets the local-zone-plus-time rendering it always had.
+          const dateDisplay = formatDateCellDisplay(
+            value,
+            dataType as "date" | "datetime",
+          );
           return {
             display: dateDisplay,
             isTruncated: false,
