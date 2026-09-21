@@ -127,6 +127,12 @@ interface VaultItemDetailProps {
 
 type Panel = "none" | "share" | "give" | "transfer" | "fork" | "audit";
 
+type CredentialEditBaseline = {
+  displayName: string;
+  description: string;
+  tags: string[];
+};
+
 export function VaultItemDetail({
   item,
   principal,
@@ -144,6 +150,55 @@ export function VaultItemDetail({
   const [descriptionDraft, setDescriptionDraft] = useState(
     item.description ?? "",
   );
+  const [tagsDraft, setTagsDraft] = useState(item.tags);
+  const [newTagDraft, setNewTagDraft] = useState("");
+  const [editSessionBaseline, setEditSessionBaseline] =
+    useState<CredentialEditBaseline | null>(null);
+  const [savingCredential, setSavingCredential] = useState(false);
+
+  const baseline = editSessionBaseline ?? {
+    displayName: item.display_name,
+    description: item.description ?? "",
+    tags: item.tags,
+  };
+  const nameChanged = nameDraft !== baseline.displayName;
+  const descriptionChanged = descriptionDraft !== baseline.description;
+  const tagsChanged =
+    tagsDraft.length !== baseline.tags.length ||
+    tagsDraft.some((tag, index) => tag !== baseline.tags[index]);
+  const credentialChanged = nameChanged || descriptionChanged || tagsChanged;
+  const metadataBusy = busy || savingCredential;
+  const addTag = () => {
+    const tag = newTagDraft.trim();
+    if (!tag || tagsDraft.includes(tag)) return;
+    setTagsDraft((current) => [...current, tag]);
+    setNewTagDraft("");
+  };
+  const saveCredential = async () => {
+    if (metadataBusy) return;
+    const body: Parameters<VaultActions["updateItem"]>[1] = {};
+    if (nameChanged) body.display_name = nameDraft.trim();
+    if (descriptionChanged) body.description = descriptionDraft.trim() || null;
+    // A tag-only save must not normalize or overwrite untouched metadata.
+    // Conversely, an explicit clear remains a meaningful empty-array patch.
+    if (tagsChanged) body.tags = tagsDraft;
+    if (!Object.keys(body).length) return;
+    const submittedSnapshot: CredentialEditBaseline = {
+      displayName: nameDraft,
+      description: descriptionDraft,
+      tags: [...tagsDraft],
+    };
+    setSavingCredential(true);
+    try {
+      await actions.updateItem(item.id, body);
+      setEditSessionBaseline(submittedSnapshot);
+    } catch {
+      // `useVault` already reports the failure. Keep every draft in place so
+      // the person can correct the issue and retry without re-entering it.
+    } finally {
+      setSavingCredential(false);
+    }
+  };
 
   const fieldLabels = new Map<string, string>(
     (definition?.payload.fields ?? []).map((f) => [f.field_key, f.label]),
@@ -266,15 +321,41 @@ export function VaultItemDetail({
               {item.description}
             </p>
           )}
+          {item.tags.length > 0 && !editingCredential && (
+            <div
+              className="mt-2 flex flex-wrap gap-1"
+              aria-label="Credential tags"
+            >
+              {item.tags.map((tag, index) => (
+                <Badge
+                  key={`${tag}-${index}`}
+                  variant="secondary"
+                  className="max-w-full break-all text-[10px] font-medium"
+                >
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
         {caps.can_edit && (
           <Button
             size="sm"
             variant={editingCredential ? "default" : "outline"}
             className="h-7 shrink-0 rounded-full px-3"
+            disabled={metadataBusy}
             onClick={() => {
-              setNameDraft(item.display_name);
-              setDescriptionDraft(item.description ?? "");
+              if (!editingCredential) {
+                setNameDraft(item.display_name);
+                setDescriptionDraft(item.description ?? "");
+                setTagsDraft(item.tags);
+                setNewTagDraft("");
+                setEditSessionBaseline({
+                  displayName: item.display_name,
+                  description: item.description ?? "",
+                  tags: [...item.tags],
+                });
+              }
               setEditingCredential((current) => !current);
             }}
           >
@@ -288,7 +369,7 @@ export function VaultItemDetail({
         )}
       </div>
 
-      {editingCredential && (
+      {editingCredential && caps.can_edit && (
         <div className="grid items-end gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
           <div className="space-y-1">
             <Label htmlFor={`credential-name-${item.id}`}>
@@ -298,6 +379,7 @@ export function VaultItemDetail({
               id={`credential-name-${item.id}`}
               value={nameDraft}
               onChange={(event) => setNameDraft(event.target.value)}
+              disabled={metadataBusy}
             />
           </div>
           <div className="space-y-1">
@@ -309,7 +391,76 @@ export function VaultItemDetail({
               value={descriptionDraft}
               onChange={(event) => setDescriptionDraft(event.target.value)}
               placeholder="What is this credential used for?"
+              disabled={metadataBusy}
             />
+          </div>
+          <div className="space-y-1 sm:col-span-2">
+            <Label htmlFor={`credential-tag-${item.id}`}>Tags</Label>
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5 rounded-md border border-input bg-background p-1.5">
+              {tagsDraft.map((tag, index) => (
+                <Badge
+                  key={`${tag}-${index}`}
+                  variant="secondary"
+                  className="max-w-full gap-0.5 break-all pr-1 text-[10px] font-medium"
+                >
+                  <span>{tag}</span>
+                  <button
+                    type="button"
+                    className="rounded-sm p-0.5 hover:bg-muted-foreground/20"
+                    onClick={() =>
+                      setTagsDraft((current) =>
+                        current.filter(
+                          (_, currentIndex) => currentIndex !== index,
+                        ),
+                      )
+                    }
+                    aria-label={`Remove tag ${tag}`}
+                    disabled={metadataBusy}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+              <Input
+                id={`credential-tag-${item.id}`}
+                value={newTagDraft}
+                onChange={(event) => setNewTagDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter") return;
+                  event.preventDefault();
+                  addTag();
+                }}
+                placeholder="Add a tag"
+                className="h-7 min-w-[8rem] flex-1 border-0 bg-transparent px-1 text-xs shadow-none focus-visible:ring-0"
+                disabled={metadataBusy}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-xs"
+                disabled={
+                  metadataBusy ||
+                  !newTagDraft.trim() ||
+                  tagsDraft.includes(newTagDraft.trim())
+                }
+                onClick={addTag}
+              >
+                Add tag
+              </Button>
+              {tagsDraft.length > 0 && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs text-muted-foreground"
+                  disabled={metadataBusy}
+                  onClick={() => setTagsDraft([])}
+                >
+                  Clear tags
+                </Button>
+              )}
+            </div>
           </div>
           <Button
             size="icon"
@@ -317,18 +468,8 @@ export function VaultItemDetail({
             className="h-11 w-11 sm:h-9 sm:w-9"
             aria-label="Save credential"
             title="Save credential"
-            disabled={
-              busy ||
-              !nameDraft.trim() ||
-              (nameDraft.trim() === item.display_name &&
-                descriptionDraft.trim() === (item.description ?? ""))
-            }
-            onClick={() =>
-              void actions.updateItem(item.id, {
-                display_name: nameDraft.trim(),
-                description: descriptionDraft.trim() || null,
-              })
-            }
+            disabled={metadataBusy || !nameDraft.trim() || !credentialChanged}
+            onClick={() => void saveCredential()}
           >
             <Save className="h-4 w-4" />
           </Button>

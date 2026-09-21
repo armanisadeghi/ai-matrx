@@ -368,6 +368,11 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
 
 ## Change Log
 
+- **2026-09-20** — Credential detail now shows tags as compact chips and edits
+  them through the existing item update boundary; new tags trim blank input,
+  deduplicate exact strings, and keep case, commas, and Unicode intact. The
+  desktop Vault toolbar gives search its own row so Sort and New cannot collapse it.
+
 - **2026-09-20** — Added metadata-only Vault search and deterministic local
   sorting (newest, recently updated, name A–Z/Z–A) without reading values.
 
