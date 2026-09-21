@@ -47,7 +47,7 @@ export interface VoiceOwnerBetaProgramSnapshot {
   ready: boolean;
   programKey: typeof VOICE_OWNER_BETA_PROGRAM_KEY;
   destinationBinding: "missing" | "ambiguous" | "exact";
-  verifiedCallerBinding: "missing" | "ambiguous" | "exact";
+  verifiedCallerBinding: "missing" | "enrolled";
 }
 
 interface VoiceOwnerBetaCandidates {
@@ -64,8 +64,21 @@ function normalizePhone(raw: string): string | null {
 }
 
 /**
- * Resolve one inbound call against an exact program destination and exactly one
- * previously verified caller. The caller's phone number is never returned.
+ * Resolve one inbound call against an exact program destination and THIS
+ * caller's own verified enrollment. The caller's phone number is never
+ * returned.
+ *
+ * PER-PARTY, NOT EXACTLY-ONE-PERSON (adjudication 2026-09-21, ruling 5).
+ * This used to read up to two enrollment rows for the destination and deny
+ * unless there was exactly ONE in the whole system — a rule that was
+ * indistinguishable from correct while a single person was enrolled, and that
+ * refuses EVERY call the moment a second person enrolls, including the owner's
+ * own. The first demo would have taken voice down for him.
+ *
+ * `verifiedCallers` now carries only the rows matching the number that is
+ * actually calling, so "exactly one" means "this number belongs to exactly one
+ * account" — a genuine ambiguity worth refusing — rather than "only one person
+ * in the world may use voice".
  */
 export function evaluateVoiceOwnerBetaAdmission(
   call: VoiceOwnerBetaCallIdentity,
@@ -99,6 +112,10 @@ export function evaluateVoiceOwnerBetaAdmission(
     return { status: "denied", reason: "called_number_mismatch" };
   }
 
+  // `verifiedCallers` holds only the enrollments for THIS number, so zero is
+  // "you are not enrolled" and two is "two accounts claim this number" — a
+  // real ambiguity we refuse rather than guess at. A hundred other people
+  // being enrolled on the program affects neither branch.
   if (candidates.verifiedCallers.length === 0) {
     return { status: "denied", reason: "caller_not_verified" };
   }
@@ -129,16 +146,25 @@ export function voiceOwnerBetaProgramSnapshot(
   candidates: VoiceOwnerBetaCandidates,
 ): VoiceOwnerBetaProgramSnapshot {
   const destinationBinding = bindingState(candidates.destinations.length);
-  const verifiedCallerBinding = bindingState(candidates.verifiedCallers.length);
+  // ENROLLING A SECOND PERSON IS NOT AMBIGUITY. This used to run the caller
+  // count through `bindingState`, so two enrolled people reported
+  // "ambiguous" and the program reported NOT READY — a readiness screen that
+  // turns red because the beta grew. The program is ready when its number is
+  // bound and at least one person is enrolled; whether a PARTICULAR caller is
+  // admitted is a per-call question this snapshot does not answer.
+  const verifiedCallerBinding: VoiceOwnerBetaProgramSnapshot["verifiedCallerBinding"] =
+    candidates.verifiedCallers.length === 0 ? "missing" : "enrolled";
   return {
-    ready: destinationBinding === "exact" && verifiedCallerBinding === "exact",
+    ready: destinationBinding === "exact" && verifiedCallerBinding === "enrolled",
     programKey: VOICE_OWNER_BETA_PROGRAM_KEY,
     destinationBinding,
     verifiedCallerBinding,
   };
 }
 
-async function readVoiceOwnerBetaCandidates(): Promise<VoiceOwnerBetaCandidates> {
+async function readVoiceOwnerBetaCandidates(
+  callerNumber?: string,
+): Promise<VoiceOwnerBetaCandidates> {
   const supabase = createAdminClient();
   const { data: destinations, error: destinationError } = await supabase
     .schema("communication")
@@ -160,15 +186,32 @@ async function readVoiceOwnerBetaCandidates(): Promise<VoiceOwnerBetaCandidates>
   }
 
   const destination = destinations[0];
-  const { data: verifiedCallers, error: callerError } = await supabase
+  let query = supabase
     .schema("communication")
     .from("sms_notification_preferences")
     .select("phone_number")
     .eq("assistant_destination_id", destination.id)
     .eq("assistant_program_key", VOICE_OWNER_BETA_PROGRAM_KEY)
     .not("phone_number", "is", null)
-    .is("deleted_at", null)
-    .limit(2);
+    .is("deleted_at", null);
+
+  // KEYED ON WHO IS CALLING. Without a caller the read is the readiness
+  // snapshot's ("is anyone enrolled at all?"), which is capped because a
+  // snapshot never needs more than the first couple of rows. With a caller it
+  // is narrowed to that exact E.164 — enrollment stores the canonical form —
+  // so the result set is at most the accounts claiming that one number, and it
+  // does not grow as the beta grows.
+  const canonicalCaller = callerNumber ? normalizePhone(callerNumber) : null;
+  if (callerNumber !== undefined) {
+    if (!canonicalCaller) {
+      // An unparseable caller id matches no enrollment. Return none rather
+      // than querying with a value that could match something by accident.
+      return { destinations, verifiedCallers: [] };
+    }
+    query = query.eq("phone_number", canonicalCaller);
+  }
+
+  const { data: verifiedCallers, error: callerError } = await query.limit(2);
   if (callerError) {
     throw new Error(`Failed to read verified owner Voice caller: ${callerError.message}`);
   }
@@ -182,7 +225,10 @@ async function readVoiceOwnerBetaCandidates(): Promise<VoiceOwnerBetaCandidates>
 export async function authorizeVoiceOwnerBetaCall(
   call: VoiceOwnerBetaCallIdentity,
 ): Promise<VoiceOwnerBetaAdmission> {
-  return evaluateVoiceOwnerBetaAdmission(call, await readVoiceOwnerBetaCandidates());
+  return evaluateVoiceOwnerBetaAdmission(
+    call,
+    await readVoiceOwnerBetaCandidates(call.callerNumber),
+  );
 }
 
 /** Secret-free readiness summary for the live Voice visibility endpoint. */

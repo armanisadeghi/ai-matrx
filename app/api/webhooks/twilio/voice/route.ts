@@ -364,7 +364,7 @@ export async function GET(): Promise<NextResponse> {
         ready: boolean;
         programKey: string;
         destinationBinding: "missing" | "ambiguous" | "exact";
-        verifiedCallerBinding: "missing" | "ambiguous" | "exact";
+        verifiedCallerBinding: "missing" | "enrolled";
       }
     | { status: "unavailable"; ready: false };
   try {
