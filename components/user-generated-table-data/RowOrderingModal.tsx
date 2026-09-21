@@ -1,6 +1,10 @@
 "use client";
 
-import { effectiveRowLabel } from "@/features/data-tables/row-label";
+import {
+  effectiveRowLabel,
+  rowLabelOrFallback,
+  type RowLabelConfig,
+} from "@/features/data-tables/row-label";
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
@@ -26,7 +30,6 @@ import {
   unwrapUserTableMutation,
 } from "@/utils/user-tables-rpc";
 import type { TableField } from "@/utils/user-table-utls/table-utils";
-import { formatFieldValue, resolveFieldFormat } from "@/lib/field-formats/format";
 
 interface RowOrderingModalProps {
   isOpen: boolean;
@@ -48,30 +51,43 @@ interface RowItem {
 }
 
 /**
- * Pick the column whose value labels each row in the reorder list.
+ * Which value labels each row in the reorder list.
  *
- * THE BUG THIS REPLACES: the old code did `Object.keys(row.data)` and took the
- * first string value — PER ROW. Postgres does not preserve jsonb key insertion
- * order (it sorts by key length then bytes), so "first key" had nothing to do
- * with the user's column order, and because the choice was made inside the row
- * loop, different rows could label themselves with different columns. That is
- * the "it's picking a random column" symptom.
+ * THE BUG THIS REPLACES (v1): the old code did `Object.keys(row.data)` and
+ * took the first string value — PER ROW. Postgres does not preserve jsonb key
+ * insertion order (it sorts by key length then bytes), so "first key" had
+ * nothing to do with the user's column order, and because the choice was made
+ * inside the row loop, different rows could label themselves with different
+ * columns. That is the "it's picking a random column" symptom.
  *
- * Now: the user's saved choice wins; otherwise the first text column by
- * `field_order`; otherwise the first column by `field_order`. One column, for
- * every row, chosen from the schema.
+ * THE BUG THIS REPLACES (v2): a later fix picked one SCHEMA column correctly,
+ * but reimplemented its own field-only resolver instead of calling
+ * `effectiveRowLabel`/`rowLabelText` from `features/data-tables/row-label.ts`
+ * — the ONE place every other row-naming surface (references, copies,
+ * the column-header key marker) reads from. A table whose row label is a
+ * merged/formula column (`{Country} & " — " & {Capital}`) showed this dialog
+ * labeling every row by the raw first column instead, silently disagreeing
+ * with the "Get Reference" text and the header key marker for the same row.
+ *
+ * Now: the DEFAULT is the table's actual row label (`effectiveRowLabel`,
+ * field or formula, from `table.metadata.row_label`) — the same config every
+ * other consumer uses. A user may still explicitly override the ordering
+ * list's display column (useful when the row label itself is unhelpful for
+ * a quick visual scan, e.g. a long formula) via the sentinel below; that
+ * override is a single field and is persisted on `row_ordering_config`.
  */
-function resolveLabelField(
+const DEFAULT_LABEL_OPTION = "__row_label_default__";
+
+function resolveSelectedLabelConfig(
   fields: TableField[],
-  saved: string | null | undefined,
-): TableField | null {
-  if (!fields.length) return null;
-  const ordered = [...fields].sort((a, b) => a.field_order - b.field_order);
-  if (saved) {
-    const match = ordered.find((f) => f.field_name === saved);
-    if (match) return match;
+  tableMetadata: unknown,
+  selected: string,
+): RowLabelConfig | null {
+  if (selected !== DEFAULT_LABEL_OPTION) {
+    const match = fields.some((f) => f.field_name === selected);
+    if (match) return { kind: "field", field: selected };
   }
-  return ordered.find((f) => f.data_type === "string") ?? ordered[0];
+  return effectiveRowLabel(tableMetadata, fields);
 }
 
 export default function RowOrderingModal({
@@ -83,26 +99,26 @@ export default function RowOrderingModal({
   onSuccess,
 }: RowOrderingModalProps) {
   const [rows, setRows] = useState<RowItem[]>([]);
-  const [labelFieldName, setLabelFieldName] = useState<string | null>(null);
+  // UI selection for "Label rows by": either the sentinel (use the table's
+  // actual row label — field or formula) or an explicit field_name override.
+  const [labelSelection, setLabelSelection] = useState<string>(DEFAULT_LABEL_OPTION);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Resolve the label column whenever the modal opens or the schema changes.
+  // Resolve the label selection whenever the modal opens or the schema changes.
   useEffect(() => {
     if (!isOpen) return;
-    // The table's ROW LABEL is the natural default; an explicit ordering
-    // label_field still wins (it may deliberately differ).
-    const tableLabel = effectiveRowLabel(tableInfo?.metadata, fields);
-    const resolved = resolveLabelField(
-      fields,
-      tableInfo?.row_ordering_config?.label_field ??
-        (tableLabel?.kind === "field" ? tableLabel.field : undefined),
-    );
-    setLabelFieldName(resolved?.field_name ?? null);
+    // An explicit, still-valid ordering override wins; otherwise default to
+    // the table's actual row label (which may be a merged/formula label).
+    const saved = tableInfo?.row_ordering_config?.label_field;
+    const savedStillValid = !!saved && fields.some((f) => f.field_name === saved);
+    setLabelSelection(savedStillValid ? saved! : DEFAULT_LABEL_OPTION);
   }, [isOpen, fields, tableInfo?.row_ordering_config?.label_field]);
+
+  const labelConfig = resolveSelectedLabelConfig(fields, tableInfo?.metadata, labelSelection);
 
   const loadAllRows = useCallback(async () => {
     setLoading(true);
@@ -168,18 +184,14 @@ export default function RowOrderingModal({
     }
   }, [isOpen, tableId, loadAllRows]);
 
-  const labelField = fields.find((f) => f.field_name === labelFieldName) ?? null;
-
-  /** One column, every row — formatted exactly as the grid would show it. */
+  /**
+   * The row's actual row label (field or formula) — the same value shown by
+   * "Get Reference", the header key marker, and everywhere else a row is
+   * named. `rowLabelOrFallback` never throws and never shows a blank row.
+   */
   const labelFor = (row: RowItem): string => {
-    if (!labelField) return "(no columns)";
-    const raw = row.data[labelField.field_name];
-    const result = formatFieldValue(
-      raw,
-      resolveFieldFormat(labelField.data_type, labelField.metadata),
-      labelField.data_type,
-    );
-    const text = result.empty ? "(empty)" : result.text;
+    if (!labelConfig) return "(no columns)";
+    const text = rowLabelOrFallback({ id: row.id, data: row.data }, fields, labelConfig);
     return text.length > 80 ? `${text.slice(0, 77)}...` : text;
   };
 
@@ -270,9 +282,13 @@ export default function RowOrderingModal({
           p_table_id: tableId,
           p_enabled: true,
           p_order: newOrder,
-          // Persist the label column alongside the order so the next open shows
-          // the same column instead of re-guessing.
-          ...(labelFieldName ? { p_label_field: labelFieldName } : {}),
+          // Persist an explicit override alongside the order so the next open
+          // shows the same column instead of re-resolving; the default
+          // sentinel persists nothing, so the next open re-reads the table's
+          // actual (possibly changed) row label.
+          ...(labelSelection !== DEFAULT_LABEL_OPTION
+            ? { p_label_field: labelSelection }
+            : {}),
         },
       );
 
@@ -329,13 +345,14 @@ export default function RowOrderingModal({
             Label rows by
           </Label>
           <Select
-            value={labelFieldName ?? ""}
-            onValueChange={(v) => setLabelFieldName(v)}
+            value={labelSelection}
+            onValueChange={(v) => setLabelSelection(v)}
           >
             <SelectTrigger className="h-7 w-56 text-xs">
               <SelectValue placeholder="Choose a column" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value={DEFAULT_LABEL_OPTION}>Row label (default)</SelectItem>
               {[...fields]
                 .sort((a, b) => a.field_order - b.field_order)
                 .map((f) => (
