@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { createClient } from "@/utils/supabase/server";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { notFound } from "next/navigation";
 import type { Note, NoteListItem } from "@/features/notes/types";
 
@@ -12,7 +13,7 @@ export const getNoteListSeed = cache(async (): Promise<NoteListItem[]> => {
     const supabase = await createClient();
     const {
         data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!user) return [];
 

@@ -9,6 +9,7 @@ import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
 import { createClient } from "@/utils/supabase/server";
 import { mapPublicDeck, type PublicDeck, type PublicDeckRow } from "./types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 /**
  * How many OPEN suggestions sit on the caller's own decks — the number the
  * library renders on the door into `/education/library/suggestions`.
@@ -23,7 +24,7 @@ export async function fetchOwnerOpenSuggestionCount(): Promise<number> {
   const sb = await createClient();
   const {
     data: { user },
-  } = await sb.auth.getUser();
+  } = await getClaimsUser(sb);
   if (!user) return 0;
   const { count, error } = await sb
     .schema("education")

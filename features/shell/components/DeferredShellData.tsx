@@ -20,6 +20,8 @@ import {
 } from "@/features/ai-models/redux/modelRegistrySlice";
 // smsSlice imported lazily — avoids pulling the full SMS feature into the shell bundle
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { fetchAuthUserRecord } from "@/utils/supabase/authUserRecord.client";
 import { getSSRShellData } from "@/utils/supabase/ssrShellData";
 import { mapUserData } from "@/utils/userDataMapper";
 import { bootstrapActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
@@ -41,19 +43,29 @@ export default function DeferredShellData() {
 
     // Did the org bootstrap actually START? If it did, IT owns the answer
     // (its own `finally` always marks the question answered, success or not).
-    // If it never started — no session, or `getUser()` itself threw — this
+    // If it never started — no session, or the claims read itself threw — this
     // island must answer, or every gated surface waits forever.
     let bootstrapStarted = false;
 
     async function load() {
       try {
         const t1 = performance.now();
+        // Identity is LOCAL: the access token's claims, verified against the
+        // project JWKS in the browser. No auth-server round trip decides who
+        // this is — on 2026-09-21 that round trip was a 10s stall per page.
         const {
           data: { user },
-        } = await supabase.auth.getUser();
+          error: claimsError,
+        } = await getClaimsUser(supabase);
         console.debug(
-          `⚡DeferredShellData getUser: ${(performance.now() - t1).toFixed(2)}ms`,
+          `⚡DeferredShellData getClaims: ${(performance.now() - t1).toFixed(2)}ms`,
         );
+        if (claimsError) {
+          console.warn(
+            "[DeferredShellData] the session token could not be verified locally; " +
+              `treating this load as signed out for the shell only. ${claimsError.name}: ${claimsError.message}`,
+          );
+        }
         if (!user) {
           // Not signed in: the organization question is ANSWERED (there is no
           // organization and never will be this session), so say so rather
@@ -90,6 +102,32 @@ export default function DeferredShellData() {
         const userData = mapUserData(user, accessToken, shellData.is_admin);
 
         dispatch(setUser(userData));
+
+        // THE ONE record read. The JWT does not carry `created_at`,
+        // `identities`, `last_sign_in_at` or `*_confirmed_at`; the profile page
+        // and the user menus show them, so they are fetched ONCE here, after
+        // the shell is already interactive, and merged into Redux when they
+        // arrive. A stalled auth server delays these four fields, nothing else.
+        void fetchAuthUserRecord().then(({ user: record, error }) => {
+          if (!record || record.id !== user.id) {
+            if (error) {
+              console.warn(
+                "[DeferredShellData] the auth-server user record did not arrive; " +
+                  `created_at / identities / last_sign_in_at stay empty this session. ${error.message}`,
+              );
+            }
+            return;
+          }
+          const full = mapUserData(record, accessToken, shellData.is_admin);
+          dispatch(
+            setUser({
+              createdAt: full.createdAt,
+              emailConfirmedAt: full.emailConfirmedAt,
+              lastSignInAt: full.lastSignInAt,
+              identities: full.identities,
+            }),
+          );
+        });
 
         if (shellData.preferences_exists && shellData.preferences) {
           // Load boundary: normalize every known legacy shape drift

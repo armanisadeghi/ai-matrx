@@ -11,6 +11,8 @@ import {
 } from "@/lib/redux/slices/userSlice";
 import { clearUserAuth } from "@/lib/redux/slices/userAuthSlice";
 import { createClient } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { fetchAuthUserRecord } from "@/utils/supabase/authUserRecord.client";
 import { getFingerprint } from "@/lib/services/fingerprint-service";
 import type { AdminLevel } from "@/utils/supabase/userSessionData";
 import { rememberValidatedAccount } from "@/utils/auth/remembered-account";
@@ -64,11 +66,12 @@ export function usePublicAuthSync() {
       try {
         const supabase = createClient();
 
-        // First check local session — this is a fast local-only read with
-        // no network call and no error when no session exists. Only call
-        // getUser() (which validates against the server) when a session is
-        // present. This avoids the noisy AuthSessionMissingError on public
-        // routes where the user is a guest.
+        // First check the local session — a fast local-only read with no
+        // network call and no error when no session exists. Only when one is
+        // present is the token VERIFIED — locally, against the project JWKS via
+        // getClaims(); never with an auth-server round trip. That keeps public
+        // routes quiet for guests and keeps a stalled auth server from
+        // deciding anything here.
         const {
           data: { session: localSession },
         } = await supabase.auth.getSession();
@@ -76,15 +79,43 @@ export function usePublicAuthSync() {
         let user = localSession?.user ?? null;
 
         if (localSession) {
-          // Session exists locally — validate it against the server
           const {
-            data: { user: validatedUser },
-            error: userError,
-          } = await supabase.auth.getUser();
-          if (userError && !isExpectedMissingAuthSession(userError)) {
-            console.error("Auth validation error:", userError);
+            data: { claimsUser },
+            error: claimsError,
+          } = await getClaimsUser(supabase).then((r) => ({
+            data: { claimsUser: r.data.user },
+            error: r.error,
+          }));
+          if (claimsError && !isExpectedMissingAuthSession(claimsError)) {
+            console.error("Auth validation error:", claimsError);
           }
-          user = validatedUser;
+          if (!claimsUser) {
+            user = null;
+          } else {
+            // The record-only fields (created_at, identities, last_sign_in_at,
+            // *_confirmed_at) come from THE ONE record door, once. If it does
+            // not answer, identity still stands on the verified claims.
+            const { user: record, error: recordError } = await fetchAuthUserRecord();
+            if (record && record.id === claimsUser.id) {
+              user = record;
+            } else {
+              if (recordError) {
+                console.warn(
+                  "[usePublicAuthSync] auth-server user record unavailable; " +
+                    `proceeding on verified claims. ${recordError.message}`,
+                );
+              }
+              user = {
+                ...(localSession.user ?? {}),
+                id: claimsUser.id,
+                email: claimsUser.email ?? localSession.user?.email,
+                phone: claimsUser.phone ?? localSession.user?.phone,
+                is_anonymous: claimsUser.is_anonymous ?? localSession.user?.is_anonymous,
+                app_metadata: claimsUser.app_metadata,
+                user_metadata: claimsUser.user_metadata,
+              } as typeof localSession.user;
+            }
+          }
         }
 
         if (user) {
@@ -231,7 +262,7 @@ export function usePublicAuthSync() {
     // browser cannot back with a session, drop the identity.
     //
     // It has to be its own pass because the full sync is deliberately delayed
-    // 100ms and then validates against the server (`getUser()`), and every
+    // 100ms and then verifies the token locally (`getClaims()`), and every
     // millisecond in between is a window where consumers read a signed-in
     // `userId` out of Redux and issue authenticated-only calls as `anon`. That
     // window is what produced the `42501` bursts on `/chat/new`: seven

@@ -233,6 +233,7 @@ import {
 import { TableCopyControls } from "@/features/data-tables/components/TableCopyControls";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 interface TableDataRow {
   id: string;
   data: Record<string, unknown>;
@@ -679,7 +680,7 @@ const UserTableViewer = ({
     const fetchCurrentUser = async () => {
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await getClaimsUser(supabase);
       setCurrentUserId(user?.id || null);
     };
     fetchCurrentUser();

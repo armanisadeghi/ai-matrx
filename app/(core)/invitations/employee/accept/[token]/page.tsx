@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { acceptHrEmployeeInvite } from "@/features/hr/service";
 import { isHrDenied } from "@/features/hr/types";
 import { invitationSignUpHref } from "@/utils/auth/invitation-links";
@@ -50,8 +51,21 @@ export default function AcceptEmployeeInvitationPage() {
     void (async () => {
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+        error: authError,
+      } = await getClaimsUser(supabase);
       if (cancelled) return;
+
+      // A verification failure is NOT "no account" — sending them to sign-up
+      // would ask a signed-in employee to make a second account, and this page
+      // links whoever accepts to an HR record permanently.
+      if (!user && authError) {
+        console.warn("[invitations/employee/accept] identity could not be verified — showing the retry notice, not sign-up.");
+        setError(
+          "We could not verify who you are right now — the sign-in service did not answer. You have not been signed out; reload this page in a moment.",
+        );
+        setChecking(false);
+        return;
+      }
 
       if (!user) {
         // Sign-up, not login: an employee being given platform access usually

@@ -22,6 +22,7 @@ import { operationFailed } from "@/utils/errors";
 import type { Database } from "@/types/database.types";
 import type { GeneratedContentBlock } from "@/features/content-ir/registry/kind-content-block-generator";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 export interface AdminUpsertContentBlockResult {
   id: string;
   blockId: string;
@@ -74,7 +75,7 @@ export async function adminUpsertKindContentBlock(
 export async function ownerUpsertKindContentBlock(
   block: GeneratedContentBlock,
 ): Promise<void> {
-  const { data: userData } = await browserSupabase.auth.getUser();
+  const { data: userData } = await getClaimsUser(browserSupabase);
   const userId = userData?.user?.id ?? null;
 
   const { data: existing, error: findError } = await browserSupabase

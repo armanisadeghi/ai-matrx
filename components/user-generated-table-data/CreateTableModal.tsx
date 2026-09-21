@@ -28,6 +28,7 @@ import {
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 interface CreateTableModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -64,7 +65,7 @@ export default function CreateTableModal({
 
     setCheckingName(true);
     try {
-      const userId = (await supabase.auth.getUser()).data.user?.id;
+      const userId = (await getClaimsUser(supabase)).data.user?.id;
       if (!userId) {
         setTableNameWarning(null);
         return;

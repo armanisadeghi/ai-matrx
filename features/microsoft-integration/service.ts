@@ -16,6 +16,7 @@
 
 import { apiPost } from "@/lib/api/typed-client";
 import { createClient } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { operationFailed } from "@/utils/errors";
 import type { MicrosoftCampaign } from "@/features/microsoft-integration/campaigns";
 import type {
@@ -49,11 +50,17 @@ export async function listMicrosoftConnections(
   signal?: AbortSignal,
 ): Promise<MicrosoftConnection[]> {
   const supabase = createClient();
+  // Identity from the access token's locally verified claims — `getSession()`
+  // believes the cookie and `getUser()` costs an auth-server round trip.
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const userId = session?.user?.id;
-  if (!session?.access_token || !userId) return [];
+    data: { user },
+    error: authError,
+  } = await getClaimsUser(supabase);
+  if (authError) {
+    throw operationFailed("load your Microsoft connections", authError);
+  }
+  const userId = user?.id;
+  if (!userId) return [];
 
   const result = await supabase
     .schema("users")

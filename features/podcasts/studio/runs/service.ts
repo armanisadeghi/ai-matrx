@@ -8,6 +8,7 @@
 // reopened at /podcast/studio/run/[id].
 
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { PcStudioRun } from "@/features/podcasts/types";
 import type { PodcastGenerateRequest } from "@/features/podcasts/generator/types";
@@ -35,7 +36,14 @@ export const studioRunsService = {
   async createRun(payload: PcStudioRunInsert): Promise<PcStudioRun> {
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+      error: authError,
+    } = await getClaimsUser(supabase);
+    if (authError) {
+      throw new Error(
+        "Your identity could not be verified just now, so the run was not created. Try again in a moment.",
+        { cause: authError },
+      );
+    }
     if (!user?.id) {
       throw new Error("Not authenticated");
     }

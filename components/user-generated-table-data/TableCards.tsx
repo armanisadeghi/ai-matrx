@@ -58,6 +58,7 @@ import { toast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 interface UserTable {
   id: string;
   table_name: string;
@@ -275,7 +276,7 @@ export default function TableCards() {
   const fetchCurrentUser = async () => {
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     setCurrentUserId(user?.id || null);
   };
 

@@ -6,15 +6,21 @@ import {
   type AuthRetryableResult,
 } from "@/lib/supabase/authRetry";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 /** Prevent a server-seeded Redux identity from issuing an RPC as anon. */
 export async function hasMatchingFileTreeSession(
   requestedUserId: string,
 ): Promise<boolean> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  // `getSession()` is kept ONLY for the access-token string; WHO the caller is
+  // comes from the token's locally verified claims, not from the cookie.
+  const [{ data: sessionData }, { data: claims }] = await Promise.all([
+    supabase.auth.getSession(),
+    getClaimsUser(supabase),
+  ]);
 
-  return Boolean(session?.access_token && session.user.id === requestedUserId);
+  return Boolean(
+    sessionData.session?.access_token && claims.user?.id === requestedUserId,
+  );
 }
 
 /** Close the time-of-check/time-of-use gap around the authenticated RPC. */

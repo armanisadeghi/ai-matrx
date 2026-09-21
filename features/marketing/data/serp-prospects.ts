@@ -23,6 +23,7 @@
 import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 import { assertData } from "@/features/marketing/data/service";
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import type { Json } from "@/types/database.types";
 
@@ -300,7 +301,7 @@ export async function setSerpReviewStatus(
 ): Promise<number> {
   if (!serpOpportunityIds.length) return 0;
   const db = await seoDb();
-  const auth = await supabase.auth.getUser();
+  const auth = await getClaimsUser(supabase);
   if (auth.error) throw auth.error;
   const userId = auth.data.user?.id;
   if (!userId) throw new Error("Sign in again before reviewing prospects.");

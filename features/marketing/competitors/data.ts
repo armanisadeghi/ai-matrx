@@ -1,5 +1,6 @@
 import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { callApi } from "@/lib/api/call-api";
 import { readAllRows } from "@ai-matrx/data/db";
 import type { AppDispatch } from "@/lib/redux/store";
@@ -102,7 +103,13 @@ export async function addCompetitor(
   result: CompetitorLookupResult,
 ): Promise<CompetitorRow> {
   const now = new Date().toISOString();
-  const { data: auth } = await supabase.auth.getUser();
+  const { data: auth, error: authError } = await getClaimsUser(supabase);
+  if (authError) {
+    throw new Error(
+      "Your identity could not be verified just now, so nothing was added. Try again in a moment.",
+      { cause: authError },
+    );
+  }
   if (!auth.user) throw new Error("Sign in to add a competitor.");
   if (!site.organization_id) throw new Error("This site is missing its organization identity.");
   const { data, error } = await supabase
@@ -161,7 +168,13 @@ export async function saveCompetitorClassification(
   confirm: boolean,
   ruling?: CompetitorRuling,
 ): Promise<void> {
-  const { data: auth } = await supabase.auth.getUser();
+  const { data: auth, error: authError } = await getClaimsUser(supabase);
+  if (authError) {
+    throw new Error(
+      "Your identity could not be verified just now, so nothing was saved. Try again in a moment.",
+      { cause: authError },
+    );
+  }
   if (!auth.user) throw new Error("Sign in to classify a competitor.");
   const now = new Date().toISOString();
   const { error } = await supabase.schema("seo").from("competitor").update({

@@ -5,16 +5,24 @@
 // entity-isolation migration so that both `app/(authenticated)/layout.tsx`
 // and the new `app/(legacy)/layout.tsx` can stay thin.
 //
-// `loadAuthedLayoutData()` redirects to /login if there is no session, so
-// callers can treat the return value as guaranteed-authenticated. The
-// `accessToken` may still be undefined if `getSession()` returns no session
+// `loadAuthedLayoutData()` redirects to /login when the request carries no
+// session, so callers can treat the return value as guaranteed-authenticated.
+// The `accessToken` may still be undefined if `getSession()` returns no session
 // for some edge case — preserved as the original layouts treated it.
+//
+// 🚨 Identity comes from `getServerAuth()` — the access token's claims, verified
+// LOCALLY — never from `auth.getUser()`, which is an auth-server round trip per
+// page render (the 2026-09-21 `504 FUNCTION_INVOCATION_TIMEOUT` class). A
+// request whose identity could NOT be verified is not a signed-out person and
+// must never be bounced to /login: it throws, so the error boundary says "try
+// again" instead of the screen lying about a sign-out.
 
 import "server-only";
 
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { mapUserData, type UserData } from "@/utils/userDataMapper";
 import {
   getAdminStatus,
@@ -40,9 +48,13 @@ export async function loadAuthedLayoutData(): Promise<AuthedLayoutData> {
   const viewport = headersList.get("viewport-width") || "0";
   const isMobile = Number(viewport) < 768;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, authUnavailable } = await getServerAuth();
+
+  if (authUnavailable) {
+    throw new Error(
+      "Your identity could not be verified on this request. You are still signed in — reload in a moment.",
+    );
+  }
 
   if (!user) {
     redirect(await currentRequestLoginHref());

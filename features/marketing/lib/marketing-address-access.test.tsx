@@ -10,7 +10,9 @@ jest.mock("next/navigation", () => ({
 }));
 jest.mock("@/utils/supabase/server", () => ({
   createClient: async () => ({
-    auth: { getUser: async () => ({ data: { user: { id: "viewer" } } }) },
+    auth: jest
+      .requireActual("@/test-utils/supabase-auth")
+      .withClaims({ getUser: async () => ({ data: { user: { id: "viewer" } } }) }),
   }),
 }));
 jest.mock("@/features/marketing/lib/keys-server", () => ({

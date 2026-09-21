@@ -13,7 +13,7 @@ import { MarketingAddressUnavailable } from "@/features/marketing/components/sha
 
 import { redirect } from "next/navigation";
 
-import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 
 import { CanonicalBrandSegment } from "@/features/marketing/components/brand/CanonicalSegment";
 import { MarketingBrandCrumb } from "@/features/marketing/components/brand/MarketingBrandCrumb";
@@ -33,10 +33,18 @@ export default async function MarketingBrandLayout({
   // web.brand) — send the visitor to login carrying their destination instead
   // of rendering a not-found over a link that is perfectly real (THE auth
   // doctrine: a bounced user never loses where they were going).
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, authUnavailable } = await getServerAuth();
+  if (!user && authUnavailable) {
+    console.warn(
+      "[marketing/[brandId]/layout] identity could not be verified — showing the retry notice, NOT redirecting to /login.",
+    );
+    return (
+      <div className="p-4 text-sm text-muted-foreground">
+        We could not verify who you are on this request, so this page is not
+        loading. You have not been signed out — reload in a moment.
+      </div>
+    );
+  }
   if (!user) {
     redirect(`/login?redirectTo=${encodeURIComponent(`/marketing/${brandId}`)}`);
   }

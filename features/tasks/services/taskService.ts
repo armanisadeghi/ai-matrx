@@ -1,5 +1,6 @@
 // Task service for database operations
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
@@ -841,7 +842,7 @@ export async function getSharedWithMeTasks(): Promise<DatabaseTask[]> {
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (userError || !user) return [];
 
     const grants = await getSharedWithMe("task");

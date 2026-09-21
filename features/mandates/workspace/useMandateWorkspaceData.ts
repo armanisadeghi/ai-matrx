@@ -20,6 +20,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { operationFailed } from "@/utils/errors";
 import { isUuidValue } from "@/components/official/entity-ref/doors";
 import {
@@ -106,7 +107,7 @@ type MandateAuthClient = Pick<ReturnType<typeof createClient>, "auth">;
 export async function requireMandateWorkspaceUser(
   client: MandateAuthClient,
 ): Promise<string> {
-  const { data, error } = await client.auth.getUser();
+  const { data, error } = await getClaimsUser(client);
   const userId = data.user?.id;
   if (error || !userId) {
     throw new Error("Opening a mandate requires an authenticated session.", {

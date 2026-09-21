@@ -25,6 +25,7 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { TopicalMapDoorBody } from "@/features/marketing/seo/topical-map/door/TopicalMapDoorBody";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { webDb } from "@/utils/supabase/webDb";
 
 const UUID_RE =
@@ -48,9 +49,18 @@ export default async function TopicalMapDoor({
   // seo.* has no anonymous grants — an anon query errors (42501) rather than
   // returning empty. Send signed-out visitors to login and back here, carrying
   // their destination (THE auth doctrine: a bounced user never loses it).
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, authUnavailable } = await getServerAuth();
+  if (!user && authUnavailable) {
+    console.warn(
+      "[marketing/topical-maps/[mapId]] identity could not be verified — showing the retry notice, NOT redirecting to /login.",
+    );
+    return (
+      <div className="p-4 text-sm text-muted-foreground">
+        We could not verify who you are on this request, so this page is not
+        loading. You have not been signed out — reload in a moment.
+      </div>
+    );
+  }
   if (!user) redirect(`/login?redirectTo=/marketing/topical-maps/${mapId}`);
 
   const mapResponse = await supabase

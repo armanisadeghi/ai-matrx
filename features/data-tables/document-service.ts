@@ -25,6 +25,7 @@ import type {
   ServiceResult,
 } from "./types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 // ─── documents ───────────────────────────────────────────────────────────────
 
 export type CreateDocumentArgs = {
@@ -60,7 +61,7 @@ export async function createDocument(
     };
   }
 
-  const { data: userData, error: userErr } = await supabase.auth.getUser();
+  const { data: userData, error: userErr } = await getClaimsUser(supabase);
   if (userErr || !userData?.user) {
     return {
       success: false,
@@ -246,7 +247,7 @@ export type SaveDocumentSnapshotArgs = {
 export async function saveDocumentSnapshot(
   args: SaveDocumentSnapshotArgs,
 ): Promise<ServiceResult<DocumentSnapshot>> {
-  const { data: userData } = await supabase.auth.getUser();
+  const { data: userData } = await getClaimsUser(supabase);
   const { data, error } = await supabase
     .schema("workbench")
     .from("udt_document_snapshots")

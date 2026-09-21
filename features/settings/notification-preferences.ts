@@ -40,6 +40,7 @@
 
 import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
 import { fetchHrContext } from "@/features/hr/service";
 import { isHrGranted } from "@/features/hr/types";
@@ -250,7 +251,7 @@ export async function setNotificationPreference(
   organizationId?: string | null,
 ): Promise<void> {
   const [{ data: auth, error: authError }, personalOrgId] = await Promise.all([
-    supabase.auth.getUser(),
+    getClaimsUser(supabase),
     resolvePersonalOrgId(),
   ]);
   if (authError) throw authError;
@@ -297,7 +298,7 @@ export async function clearNotificationPreference(
   channel: string,
   organizationId: string,
 ): Promise<void> {
-  const { data: auth, error: authError } = await supabase.auth.getUser();
+  const { data: auth, error: authError } = await getClaimsUser(supabase);
   if (authError) throw authError;
   const userId = auth.user?.id;
   if (!userId) throw new Error("Sign in to change notification preferences.");

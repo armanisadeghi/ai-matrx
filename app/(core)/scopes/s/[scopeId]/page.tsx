@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { contextDb } from "@/utils/supabase/contextDb";
 import { scopeHref, scopeSeg } from "@/features/scopes/lib/scopeRoutes";
 
@@ -33,9 +34,18 @@ export default async function ScopeShortLink({
   const supabase = await createClient();
   // context.* has no anonymous grants — an anon query errors rather than
   // returning empty. Send signed-out visitors to login and back here.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, authUnavailable } = await getServerAuth();
+  if (!user && authUnavailable) {
+    console.warn(
+      "[scopes/s/[scopeId]] identity could not be verified — showing the retry notice, NOT redirecting to /login.",
+    );
+    return (
+      <div className="p-4 text-sm text-muted-foreground">
+        We could not verify who you are on this request, so this page is not
+        loading. You have not been signed out — reload in a moment.
+      </div>
+    );
+  }
   if (!user) redirect(`/login?next=/scopes/s/${scopeId}`);
 
   const { data, error } = await contextDb(supabase)

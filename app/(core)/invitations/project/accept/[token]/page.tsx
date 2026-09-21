@@ -11,6 +11,7 @@ import { acceptProjectInvitation, getProject } from '@/features/projects/service
 import { invitationsService } from '@/features/organizations/service/invitationsService';
 import { isScopesRpcErr } from '@/features/scopes/types';
 import { supabase } from '@/utils/supabase/client';
+import { getClaimsUser } from '@/utils/supabase/claimsUser';
 import type { ProjectInvitation, Project } from '@/features/projects/types';
 import type { ProjectRole } from '@/features/projects/types';
 import PageHeader from '@/features/shell/components/header/PageHeader';
@@ -46,7 +47,17 @@ export default function AcceptProjectInvitationPage() {
       const {
         data: { user },
         error: authError,
-      } = await supabase.auth.getUser();
+      } = await getClaimsUser(supabase);
+
+      // A verification failure is NOT "no account" — sending them to sign-up
+      // would ask a signed-in invitee to make a second account.
+      if (!user && authError) {
+        console.warn("[invitations/project/accept] identity could not be verified — showing the retry notice, not sign-up.");
+        setError(
+          "We could not verify who you are right now — the sign-in service did not answer. You have not been signed out; reload this page in a moment.",
+        );
+        return;
+      }
 
       if (!user) {
         // Sign-up, not login: an invitee usually has no account yet (DD-091).

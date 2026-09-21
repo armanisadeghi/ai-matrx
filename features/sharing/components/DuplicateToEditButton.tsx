@@ -6,6 +6,7 @@ import { Copy, Loader2, MessageSquare, GraduationCap, ListChecks } from "lucide-
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { forkSharedResource } from "@/utils/permissions/shareLinks";
 
 /**
@@ -76,7 +77,12 @@ export function DuplicateToEditButton({
     try {
       const {
         data: { user },
-      } = await createClient().auth.getUser();
+        error: authError,
+      } = await getClaimsUser(createClient());
+      if (authError) {
+        toast.error("We couldn't verify your sign-in just now. Try again in a moment.");
+        return;
+      }
       if (!user) {
         router.push(`/sign-up?redirectTo=${encodeURIComponent(returnPath)}`);
         return;

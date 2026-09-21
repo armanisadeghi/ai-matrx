@@ -28,6 +28,7 @@ import { createClient } from "@/utils/supabase/client";
 import { pdfDb } from "@/utils/supabase/pdfDb";
 import { saveSession, type StoredSession } from "./session-keys";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 function base64ToBytes(b64: string): Uint8Array<ArrayBuffer> {
   const binary = atob(b64);
   // Explicit ArrayBuffer backing so the result satisfies WebCrypto's
@@ -83,7 +84,7 @@ export async function escrowSessionKey(
   const {
     data: { user },
     error: authError,
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
   if (authError || !user) {
     throw new Error(
       `Escrow write failed: no authenticated Supabase user (${authError?.message ?? "unknown"})`,

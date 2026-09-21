@@ -133,15 +133,18 @@ jest.mock("@/utils/supabase/client", () => ({
         return chain;
       },
     }),
-    auth: {
+    // `resolveMandate` reads the caller from locally verified claims
+    // (getClaimsUser → auth.getClaims), so the fake answers that door.
+    auth: withClaims({
       getUser: async () => ({ data: { user: { id: USER_ID } }, error: null }),
-    },
+    }),
   }),
 }));
 
 import { resolveMandate } from "../service";
 import { useMandateChain } from "../useMandateChain";
 import { useMandateSet } from "../useMandateSet";
+import { withClaims } from "@/test-utils/supabase-auth";
 
 let container: HTMLDivElement;
 let root: Root;

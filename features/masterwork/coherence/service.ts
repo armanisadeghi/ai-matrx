@@ -20,6 +20,7 @@
 // never got the structure.
 
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { operationFailed } from "@/utils/errors";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import type { RulebookRow, RulebookRule } from "../types";
@@ -55,7 +56,7 @@ export async function settleTension(opts: {
   // Who is ruling. Stamped on the rules so a reader of either one alone can see
   // a human decided this — never a guess, and never blocking the save if the
   // session read fails.
-  const settledBy = (await supabase.auth.getUser()).data.user?.id;
+  const settledBy = (await getClaimsUser(supabase)).data.user?.id;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const { data, error } = await rulebookTable()
       .select("id, version, metadata, rules")

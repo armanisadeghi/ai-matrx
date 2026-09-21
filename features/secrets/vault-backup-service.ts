@@ -2,6 +2,7 @@ import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
 import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 import { createClient } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 
 import type { VaultExpectedActor } from "./vault-service";
 
@@ -116,7 +117,7 @@ async function authorizedRequest(
   const {
     data: { user },
     error,
-  } = await supabase.auth.getUser(session.access_token);
+  } = await getClaimsUser(supabase, session.access_token);
   if (error || !user || user.id !== expectedActor.userId)
     throw new VaultBackupTransportError("context_changed");
   const headers = applyOrganizationContextHeader(
@@ -146,7 +147,7 @@ async function authorizedRequest(
   const actualOrganizationId = requireSelectedOrgId();
   const {
     data: { user: currentUser },
-  } = await supabase.auth.getUser(session.access_token);
+  } = await getClaimsUser(supabase, session.access_token);
   if (
     !currentUser ||
     currentUser.id !== expectedActor.userId ||

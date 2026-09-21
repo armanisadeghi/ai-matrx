@@ -26,6 +26,7 @@
 
 import { executeSqlQuery } from "@/actions/admin/database";
 import { createClient } from "@/utils/supabase/server";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { checkIsUserAdmin } from "@/utils/supabase/userSessionData";
 import {
   assertSafeIdentifier,
@@ -55,9 +56,13 @@ const MAX_PAGE_SIZE = 200;
 
 async function requireAdmin(): Promise<string | null> {
   const supabase = await createClient();
+  // Identity from the access token's locally verified claims — no auth-server
+  // round trip per action.
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+    error,
+  } = await getClaimsUser(supabase);
+  if (error) return "Your identity could not be verified just now. Try again in a moment.";
   if (!user) return "Not signed in.";
   const isAdmin = await checkIsUserAdmin(supabase, user.id);
   if (!isAdmin) return "Admin access required.";

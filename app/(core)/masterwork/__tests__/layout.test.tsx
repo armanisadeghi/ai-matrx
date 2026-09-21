@@ -89,6 +89,7 @@ describe("MasterworkLayout", () => {
       mockedGetServerAuth.mockResolvedValue({
         isAuthenticated: false,
         user: null,
+        authUnavailable: false,
       });
 
       const destination = `${pathname}${search}`;
@@ -136,6 +137,7 @@ describe("MasterworkLayout", () => {
     mockedGetServerAuth.mockResolvedValue({
       isAuthenticated: true,
       user: {} as Awaited<ReturnType<typeof getServerAuth>>["user"],
+      authUnavailable: false,
     });
     const rendered = await renderLayout(<div>private Masterwork reader</div>);
 

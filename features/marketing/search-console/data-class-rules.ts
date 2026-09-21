@@ -16,6 +16,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import type {
   ClassRuleDraft,
@@ -77,7 +78,9 @@ export async function createClassRule(
   const db = await seoDb();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+    error: authError,
+  } = await getClaimsUser(supabase);
+  if (authError) throw authError;
   if (!user) throw new Error("Not authenticated");
   const response = await db
     .from("keyword_class_rule")
@@ -125,7 +128,9 @@ export async function adoptClassTemplate(
   const db = await seoDb();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+    error: authError,
+  } = await getClaimsUser(supabase);
+  if (authError) throw authError;
   if (!user) throw new Error("Not authenticated");
   const response = await db
     .from("keyword_class_rule")
@@ -196,7 +201,9 @@ export async function createValueRule(
   const db = await seoDb();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+    error: authError,
+  } = await getClaimsUser(supabase);
+  if (authError) throw authError;
   if (!user) throw new Error("Not authenticated");
   const response = await db
     .from("keyword_class_rule")

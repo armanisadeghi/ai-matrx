@@ -307,7 +307,15 @@ export function auditRepoIdentityCalls(
       });
     }
 
+    // Server code only: a browser hook reading `getSession().user` is the
+    // ordinary local session read. "Server" here means the file reaches for
+    // the server client or Next's request headers, or declares "use server".
+    const isServerFile =
+      /from\s+["']@\/utils\/supabase\/server["']/.test(body) ||
+      /from\s+["']next\/headers["']/.test(body) ||
+      /^\s*["']use server["']/m.test(body);
     if (
+      isServerFile &&
       /\.auth\s*\.\s*getSession\s*\(/.test(body) &&
       /\bsession\??\.user\b|\bdata\.session\??\.user\b/.test(body) &&
       !/^\s*["']use client["']/m.test(body)
@@ -522,8 +530,13 @@ function selfTest(): boolean {
     ],
     [
       "server code deciding identity from getSession().user is caught",
-      { "features/y/service.ts": "const { data: { session } } = await supabase.auth.getSession(); if (!session?.user) throw x;" },
+      { "features/y/service.ts": 'import { createClient } from "@/utils/supabase/server";\nconst { data: { session } } = await supabase.auth.getSession(); if (!session?.user) throw x;' },
       1,
+    ],
+    [
+      "a browser hook reading getSession().user is the ordinary local read",
+      { "hooks/useGuestLimit.ts": "supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null));" },
+      0,
     ],
     [
       "getSession() for the access token alone is fine",

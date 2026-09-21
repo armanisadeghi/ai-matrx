@@ -56,6 +56,7 @@ import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { toast } from "@/lib/toast";
 import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
 import { assistPriority } from "@/features/assists/types";
@@ -360,7 +361,7 @@ export default function CompetitorAutopsyWorkspace({
 
   useEffect(() => {
     if (!resolvedSiteId || !proposed.length) return;
-    void supabase.auth.getUser().then(({ data: auth }) => {
+    void getClaimsUser(supabase).then(({ data: auth }) => {
       if (!auth.user) return;
       for (const competitor of proposed) {
         if (!competitor.business_overlap || !competitor.market_overlap || !competitor.entity_role || !competitor.posture) continue;

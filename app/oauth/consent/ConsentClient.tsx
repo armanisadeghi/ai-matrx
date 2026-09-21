@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { getClaimsUser, type ApiClaimsUser } from "@/utils/supabase/claimsUser";
 import { extractErrorMessage } from "@/utils/errors";
 import { Logo } from "@/components/branding/MatrixLogo";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,6 @@ import {
   XCircle,
   ShieldAlert,
 } from "lucide-react";
-import type { User as SupabaseUser } from "@supabase/supabase-js";
 // THE package initials formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). Recorded display decision: a multi-part name takes FIRST +
 // LAST, so "Ana Maria Rivera" is AR — this surface previously printed AM.
@@ -72,7 +72,7 @@ type PageState =
       detail?: ErrorDetail;
     }
   | { kind: "redirecting"; message: string; redirectUrl: string }
-  | { kind: "consent"; details: OAuthAuthorizationDetails; user: SupabaseUser };
+  | { kind: "consent"; details: OAuthAuthorizationDetails; user: ApiClaimsUser };
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -235,15 +235,31 @@ export default function ConsentClient() {
 
       const supabase = createClient();
 
-      // Step 1: Check auth
+      // Step 1: Check auth — the access token's claims, verified locally
+      // against the project JWKS. No auth-server round trip on this hop.
       const {
         data: { user },
         error: userError,
-      } = await supabase.auth.getUser();
+      } = await getClaimsUser(supabase);
 
       console.log("[OAuth Consent] User:", user?.email ?? "NOT LOGGED IN");
 
-      if (userError || !user) {
+      // 🚨 COULD-NOT-VERIFY IS NOT SIGNED OUT. A login bounce here throws a
+      // signed-in person out of an authorization they were mid-way through;
+      // say what happened and let them retry instead.
+      if (!user && userError) {
+        console.warn("[OAuth Consent] identity could not be verified — showing the retry state, NOT redirecting to /login.");
+        setPageState({
+          kind: "error",
+          title: "We could not verify your sign-in",
+          message:
+            "The sign-in service did not answer, so this authorization cannot continue. You have not been signed out — try again in a moment.",
+          retryable: true,
+        });
+        return;
+      }
+
+      if (!user) {
         const currentUrl = window.location.pathname + window.location.search;
         router.push(`/login?redirectTo=${encodeURIComponent(currentUrl)}`);
         return;
@@ -571,7 +587,7 @@ function ConsentForm({
   onDeny,
 }: {
   details: OAuthAuthorizationDetails;
-  user: SupabaseUser;
+  user: ApiClaimsUser;
   actionLoading: "approve" | "deny" | null;
   onApprove: () => void;
   onDeny: () => void;

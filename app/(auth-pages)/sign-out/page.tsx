@@ -10,6 +10,7 @@ import AuthPageContainer from "@/components/auth/auth-page-container";
 import { SignOutConfirmButton } from "@/features/shell/auth/SignOutConfirmButton";
 import { loginHref } from "@/utils/auth/auth-destination";
 import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 
 interface SignOutProps {
@@ -29,15 +30,22 @@ export default async function SignOut({ searchParams }: SignOutProps) {
     }
 
     const supabase = await createClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+    const { user, authUnavailable } = await getServerAuth();
 
     if (!user) {
+        // "You are not signed in" is a claim; when the auth authority could not
+        // be reached we do not know that, and a screen never lies.
+        if (authUnavailable) {
+            console.warn("[/sign-out] identity could not be verified — saying so instead of claiming the visitor is signed out.");
+        }
         return (
             <AuthPageContainer
                 title="Sign Out"
-                subtitle="You are not signed in on this device."
+                subtitle={
+                    authUnavailable
+                        ? "We could not check your session just now — reload in a moment."
+                        : "You are not signed in on this device."
+                }
                 message={message}
             >
                 <div className="text-center">

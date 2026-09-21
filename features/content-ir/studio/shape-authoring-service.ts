@@ -14,6 +14,7 @@ import type { Database, Json } from "@/types/database.types";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@/features/content-ir/registry/schema-source-kind-components";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 export type ShapeWriteClient = SupabaseClient<Database>;
 export type ShapeVisibility = Database["platform"]["Enums"]["visibility"];
 
@@ -95,7 +96,7 @@ export function mergeEditableShapeMetadata(
 }
 
 async function requireCurrentUserId(client: ShapeWriteClient): Promise<string> {
-  const { data, error } = await client.auth.getUser();
+  const { data, error } = await getClaimsUser(client);
   if (error)
     throw new Error(`Failed to verify the signed-in user: ${error.message}`);
   if (!data.user) throw new Error("Not signed in — cannot edit this Shape.");

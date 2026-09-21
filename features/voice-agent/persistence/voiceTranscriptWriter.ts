@@ -14,6 +14,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import {
   presentOrganizationRefusal,
@@ -86,7 +87,7 @@ export async function ensureConversation(
   const {
     data: { user },
     error: userErr,
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
   if (userErr || !user) {
     return {
       ok: false,

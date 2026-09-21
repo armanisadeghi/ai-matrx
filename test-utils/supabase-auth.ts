@@ -32,12 +32,21 @@
  *  - the fake's own error → `{ data: null, error }`
  */
 
-/** A fake `auth` object — the only thing this wrapper needs is `getUser`. */
+/**
+ * A fake `auth` object — the only thing this wrapper needs is `getUser`.
+ *
+ * The index signature is load-bearing: a suite's fake usually carries
+ * `getSession`, `signOut` and friends alongside `getUser`, and without it
+ * TypeScript's excess-property check rejects that object literal at the
+ * `withClaims({ ... })` call even though the wrapper preserves every one of
+ * those methods.
+ */
 type FakeAuthWithGetUser = {
   getUser: (...args: never[]) => Promise<{
     data?: { user?: Record<string, unknown> | null } | null;
     error?: unknown;
   }>;
+  [otherMethod: string]: unknown;
 };
 
 /** The JWT claims a real access token carries for that user. */

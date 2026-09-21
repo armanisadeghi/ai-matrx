@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { WhatsAppWindowDemoClient } from "./WhatsAppWindowDemoClient";
 
 interface PageProps {
@@ -11,10 +11,7 @@ export default async function WhatsAppWindowDemoPage({
   const params = await searchParams;
   const initialMode = params.mock === "1" ? "mock" : "live";
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getServerAuth();
 
   return (
     <WhatsAppWindowDemoClient

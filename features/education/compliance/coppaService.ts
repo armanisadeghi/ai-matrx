@@ -22,6 +22,7 @@ import {
   type CoppaGateRow,
 } from "./types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 export const coppaService = {
   /** The authoritative AI/data gate for the current user. */
   async getGate(): Promise<StudyResult<CoppaGate>> {
@@ -69,7 +70,7 @@ export const coppaService = {
    */
   async signupAgeBand(): Promise<AgeBand | null> {
     try {
-      const { data } = await supabase.auth.getUser();
+      const { data } = await getClaimsUser(supabase);
       const band = data.user?.user_metadata?.education_age_band;
       return band === "under_13" || band === "13_17" || band === "adult"
         ? band

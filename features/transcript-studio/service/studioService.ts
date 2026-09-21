@@ -12,6 +12,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { NEW_SESSION_DEFAULT_TITLE, DEFAULT_MODULE_ID } from "../constants";
@@ -299,7 +300,7 @@ export async function listSessionsServer(
   const looseClient = serverClient as unknown as LooseSupabase;
   const {
     data: { user },
-  } = await serverClient.auth.getUser();
+  } = await getClaimsUser(serverClient);
   if (!user) {
     throw new Error("[studio] listSessionsServer: no authenticated user");
   }

@@ -2,17 +2,14 @@
 // 100% server component. No "use client" anywhere in this file.
 // Layout wrapper (PageHeader + content div) lives in layout.tsx.
 
-import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import DashboardGrid from "./components/DashboardGrid";
 import QuickActions from "./components/QuickActions";
 import WelcomeCard from "./components/WelcomeCard";
 import RecentActivity from "./components/RecentActivity";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getServerAuth();
 
   let dashboardUser: {
     name: string;

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { TemplateViewPage } from "@/features/message-templates/components/TemplateViewPage";
 import type { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
 
@@ -23,7 +24,7 @@ export default async function TemplateDetailPage({
       .select("*")
       .eq("id", id)
       .single(),
-    supabase.auth.getUser(),
+    getClaimsUser(supabase),
   ]);
 
   if (templateResult.error || !templateResult.data) notFound();

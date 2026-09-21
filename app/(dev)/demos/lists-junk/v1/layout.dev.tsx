@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ListsSidebarClient } from "@/features/user-lists/components/ListsSidebarClient";
 import type { UserList, UserListSummaryRaw } from "@/features/user-lists/types";
 import { normalizeUserList } from "@/features/user-lists/types";
@@ -16,7 +17,7 @@ async function getSidebarLists(): Promise<UserList[]> {
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (!user) return [];
 
     const { data, error } = await supabase.rpc("get_user_lists_summary", {

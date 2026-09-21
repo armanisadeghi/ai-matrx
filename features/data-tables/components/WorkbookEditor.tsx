@@ -54,6 +54,7 @@ import { downloadUniverAsXlsx } from "../univer-to-xlsx";
 import { WorkbookHistoryViewer } from "./WorkbookHistoryViewer";
 import { WorkbookSheetReferenceCopyButton } from "./WorkbookSheetReferenceCopyButton";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 type SaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
 
 /**
@@ -322,7 +323,7 @@ export default function WorkbookEditor({
   // free of yjs / y-protocols. Resolved at session-start time only.
   const startCollabSession = useCallback(async () => {
     if (!univerRef.current) return;
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getClaimsUser(supabase);
     const uid = userData?.user?.id;
     if (!uid) return;
     setCollabSelfUid(uid);
@@ -459,7 +460,7 @@ export default function WorkbookEditor({
       const snapshot = workbook.getSnapshot();
       setSaveStatus("saving");
 
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData } = await getClaimsUser(supabase);
       lastSaveByUserRef.current = userData?.user?.id ?? null;
 
       const res = await saveSnapshot({ workbookId, snapshot, origin });
