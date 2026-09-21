@@ -7,6 +7,7 @@ import type {
 export type VaultListSort =
   | "newest"
   | "recently-updated"
+  | "recently-viewed"
   | "name-asc"
   | "name-desc";
 
@@ -16,6 +17,7 @@ export const VAULT_LIST_SORT_OPTIONS: ReadonlyArray<{
 }> = [
   { value: "newest", label: "Newest added" },
   { value: "recently-updated", label: "Recently updated" },
+  { value: "recently-viewed", label: "Recently viewed" },
   { value: "name-asc", label: "Name A–Z" },
   { value: "name-desc", label: "Name Z–A" },
 ];
@@ -31,12 +33,14 @@ export function filterAndSortVaultItems({
   family,
   query,
   sort,
+  stateById,
 }: {
   items: readonly VaultItem[];
   definitions: readonly CredentialDefinition[];
   family: "all" | CredentialFamily;
   query: string;
   sort: VaultListSort;
+  stateById?: ReadonlyMap<string, { isFavorite: boolean; lastViewedAt: string | null }>;
 }): VaultItem[] {
   const definitionsByKey = new Map(definitions.map((definition) => [definition.key, definition]));
   const normalizedQuery = query.trim().toLocaleLowerCase("en");
@@ -50,7 +54,7 @@ export function filterAndSortVaultItems({
         .toLocaleLowerCase("en")
         .includes(normalizedQuery);
     })
-    .sort((left, right) => compareVaultItems(left, right, sort));
+    .sort((left, right) => compareVaultItems(left, right, sort, stateById));
 }
 
 function searchableMetadata(
@@ -74,6 +78,7 @@ function compareVaultItems(
   left: VaultItem,
   right: VaultItem,
   sort: VaultListSort,
+  stateById: ReadonlyMap<string, { isFavorite: boolean; lastViewedAt: string | null }> | undefined,
 ): number {
   if (sort === "name-asc" || sort === "name-desc") {
     const nameComparison = NAME_COLLATOR.compare(left.display_name, right.display_name);
@@ -82,8 +87,8 @@ function compareVaultItems(
   }
 
   const dateComparison = compareNewestDate(
-    sort === "newest" ? left.created_at : left.updated_at,
-    sort === "newest" ? right.created_at : right.updated_at,
+    sort === "newest" ? left.created_at : sort === "recently-viewed" ? stateById?.get(left.id)?.lastViewedAt ?? null : left.updated_at,
+    sort === "newest" ? right.created_at : sort === "recently-viewed" ? stateById?.get(right.id)?.lastViewedAt ?? null : right.updated_at,
   );
   return dateComparison !== 0 ? dateComparison : compareId(left.id, right.id);
 }
