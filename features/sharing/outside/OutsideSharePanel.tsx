@@ -25,7 +25,17 @@
 // invitation primitive. Nothing new was invented to hold either.
 
 import React, { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Globe2, Loader2, RotateCw, Send, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  Globe2,
+  Link2,
+  Loader2,
+  MailWarning,
+  RotateCw,
+  Send,
+  Trash2,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -39,8 +49,10 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 
 import {
+  absoluteInviteUrl,
   inviteOutside,
   openOutsideLane,
   readOutsideShare,
@@ -66,6 +78,8 @@ export function OutsideSharePanel({
   const [busy, setBusy] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [level, setLevel] = useState("viewer");
+  /** Which row's link was just copied, so the button can say so for a moment. */
+  const [copied, setCopied] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoadError(null);
@@ -91,11 +105,41 @@ export function OutsideSharePanel({
     void refresh();
   }, [refresh]);
 
-  const run = async (key: string, work: () => Promise<{ say: string }>) => {
+  /**
+   * 🚨 PUTTING THE LINK IN SOMEBODY'S HAND IS THE ORDINARY CASE, NOT A FALLBACK.
+   * A plumber texts his customer the link. So this control is drawn beside every
+   * pending row whether or not email works here, and it goes through THE ONE copy
+   * primitive — which, when the browser refuses to write the clipboard, puts the
+   * text in front of the person instead of lying that it copied.
+   */
+  const copyLink = useCallback(
+    async (invitationId: string, acceptPath: string, who: string) => {
+      const url = absoluteInviteUrl(acceptPath);
+      // It routes its own terminal failure to the manual-copy dialog, which puts
+      // the text in front of the person — so a `false` here means the copy has
+      // NOT happened and saying "Copied" would be a lie.
+      const ok = await copyToClipboard(url);
+      if (!ok) return;
+      setCopied(invitationId);
+      toast({ title: `Link copied. Send it to ${who} however you like.` });
+      window.setTimeout(
+        () => setCopied((c) => (c === invitationId ? null : c)),
+        2000,
+      );
+    },
+    [toast],
+  );
+
+  const run = async (
+    key: string,
+    work: () => Promise<{ say: string; delivery?: { say: string } }>,
+  ) => {
     setBusy(key);
     try {
       const answer = await work();
-      toast({ title: answer.say });
+      // TWO facts, not one: what happened to the share, and what happened to the
+      // message. Collapsing them is how "invited" came to mean "told".
+      toast({ title: answer.say, description: answer.delivery?.say });
       await refresh();
     } catch (error) {
       toast({
@@ -188,6 +232,22 @@ export function OutsideSharePanel({
         </Button>
       ) : null}
 
+      {/* 🚨 WHAT THIS SERVER CAN ACTUALLY DO ABOUT EMAIL, said BEFORE anybody
+          presses Invite — never a promise the server cannot keep. The store
+          answers yes / no / unknown; only the two that are not "yes" get a
+          notice, because "it emails them, and you can also copy the link"
+          already reads on the invite row itself. */}
+      {state.lane_open &&
+      state.may_invite &&
+      state.email_delivery?.answer !== "yes" ? (
+        <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2">
+          <MailWarning className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+          <p className="text-xs text-muted-foreground">
+            {state.email_say}
+          </p>
+        </div>
+      ) : null}
+
       {/* THE INVITE. */}
       {state.lane_open && state.may_invite ? (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
@@ -264,6 +324,34 @@ export function OutsideSharePanel({
               </div>
               {state.may_invite ? (
                 <div className="flex flex-shrink-0 gap-1">
+                  {/* 🚨 COPY THE LINK — beside the pending row, always, whether
+                      or not email works here. The real case is a plumber texting
+                      his customer; the email is the convenience, not the other
+                      way round. Absent only when there is no link to give: an
+                      accepted row has nothing left to open. */}
+                  {row.accept_path ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      title="Copy invitation link"
+                      onClick={() =>
+                        void copyLink(
+                          row.invitation_id,
+                          row.accept_path!,
+                          row.email,
+                        )
+                      }
+                    >
+                      {copied === row.invitation_id ? (
+                        <Check className="mr-1.5 h-4 w-4" />
+                      ) : (
+                        <Link2 className="mr-1.5 h-4 w-4" />
+                      )}
+                      <span className="text-xs">
+                        {copied === row.invitation_id ? "Copied" : "Copy link"}
+                      </span>
+                    </Button>
+                  ) : null}
                   {!row.joined ? (
                     <Button
                       size="sm"

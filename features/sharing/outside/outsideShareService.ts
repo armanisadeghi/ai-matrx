@@ -61,6 +61,40 @@ export interface OutsideShareInvitation {
   expires_at: string | null;
   invited_at: string;
   expired: boolean;
+  /**
+   * 🚨 THE LINK THE SHARER CAN HAND OVER THEMSELVES — the ordinary case, not a
+   * fallback. A plumber texts his customer the link; a lab emails a
+   * collaborator from their own address. `null` when the row has been accepted
+   * (nothing left to open) or when this viewer may not invite.
+   */
+  accept_path: string | null;
+}
+
+/**
+ * WHETHER THIS SERVER CAN ACTUALLY SEND AN EMAIL — three answers, never two.
+ *
+ * The browser cannot know whether `RESEND_API_KEY` is set on the server, so the
+ * server stamps what its channel adapters found at boot
+ * (`communication.channel_readiness`) and the door reads the stamp. `unknown`
+ * means NOBODY HAS CHECKED — deliberately not `configured: false`, so "we could
+ * not look" can never be drawn as "email is off".
+ */
+export interface ChannelReadiness {
+  channel: string;
+  answer: "yes" | "no" | "unknown";
+  configured: boolean | null;
+  checked_at: string | null;
+  detail?: string;
+  say: string;
+}
+
+/** What actually happened to the message, and the link either way. */
+export interface OutsideShareDelivery {
+  accept_path: string;
+  queued: string[];
+  skipped: { channel: string; why: string }[];
+  email_answer: ChannelReadiness["answer"];
+  say: string;
 }
 
 /** Everything the dialog needs to draw itself without guessing anything. */
@@ -79,6 +113,10 @@ export interface OutsideShareState {
   invitations: OutsideShareInvitation[];
   /** One sentence for the person, whatever the state. Never a knob key. */
   say: string;
+  /** What this server can actually do about email, observed and stamped. */
+  email_delivery: ChannelReadiness;
+  /** That answer as one sentence — and it ALWAYS names the copy-the-link route. */
+  email_say: string;
 }
 
 function custom(): StoreCaller {
@@ -102,7 +140,7 @@ export async function inviteOutside(
   tableId: string,
   email: string,
   level: string,
-): Promise<{ say: string }> {
+): Promise<{ say: string; accept_path: string; delivery: OutsideShareDelivery }> {
   const { data, error } = await custom().rpc("table_share_outside_invite", {
     p_organization_id: organizationId,
     p_table_id: tableId,
@@ -110,19 +148,19 @@ export async function inviteOutside(
     p_level: level,
   });
   if (error) throw new Error(error.message);
-  return data as unknown as { say: string };
+  return data as unknown as Awaited<ReturnType<typeof inviteOutside>>;
 }
 
 export async function resendOutside(
   organizationId: string,
   invitationId: string,
-): Promise<{ say: string }> {
+): Promise<{ say: string; accept_path: string; delivery: OutsideShareDelivery }> {
   const { data, error } = await custom().rpc("table_share_outside_resend", {
     p_organization_id: organizationId,
     p_invitation_id: invitationId,
   });
   if (error) throw new Error(error.message);
-  return data as unknown as { say: string };
+  return data as unknown as Awaited<ReturnType<typeof resendOutside>>;
 }
 
 export async function revokeOutside(
@@ -135,6 +173,76 @@ export async function revokeOutside(
   });
   if (error) throw new Error(error.message);
   return data as unknown as { say: string; grants_removed: number };
+}
+
+/**
+ * WHAT THE PERSON HOLDING THE LINK IS BEING OFFERED — read BEFORE they are asked
+ * to make an account.
+ *
+ * 🚨 IT IS THE ONLY CALL ON THIS PAGE THAT A SIGNED-OUT READER CAN MAKE, and
+ * that is deliberate: somebody outside an organization usually has no account
+ * at all, so a page that redirects to sign-up before it explains anything is
+ * asking a stranger to make an account for a reason it never gave them. It
+ * lives in schema `public` — beside `inv_peek_invited_email`, which has
+ * answered anonymously off a token for far longer — because schema `custom` is
+ * revoked from `anon` by design and one door is not worth opening it.
+ *
+ * `state` is one of: `ready` · `sign_in_needed` · `wrong_account` · `accepted`
+ * · `revoked` · `expired` · `lane_closed` · `unknown`. An UNKNOWN token gets
+ * one sentence and nothing else, so a link can never be used to learn that
+ * something is there.
+ */
+export interface TableSharePeek {
+  state:
+    | "ready"
+    | "sign_in_needed"
+    | "wrong_account"
+    | "accepted"
+    | "revoked"
+    | "expired"
+    | "lane_closed"
+    | "unknown";
+  usable: boolean;
+  /** Absent on an unknown token — there is nothing to describe. */
+  table?: string;
+  table_id?: string;
+  organization?: string;
+  organization_id?: string;
+  level?: string;
+  level_label?: string;
+  means?: string;
+  inviter?: string;
+  /** Masked (`j••••@example.com`) unless the caller IS that person. */
+  invited_email?: string;
+  signed_in_as?: string | null;
+  expires_at?: string | null;
+  /** One sentence naming the table, the organization and who shared it. */
+  offer?: string;
+  say: string;
+  /** Who to ask. Never absent — a dead link with nobody to ask is a dead end. */
+  ask: string;
+}
+
+export async function peekTableShare(token: string): Promise<TableSharePeek> {
+  const { data, error } = await (
+    createClient() as unknown as StoreCaller
+  ).rpc("table_share_peek", { p_token: token });
+  if (error) throw new Error(error.message);
+  return data as unknown as TableSharePeek;
+}
+
+/**
+ * The link somebody can actually paste into a text message. The store answers a
+ * PATH — it has no idea what hostname this app is served on — so the origin is
+ * added here, from the browser the sharer is standing in.
+ */
+export function absoluteInviteUrl(acceptPath: string): string {
+  if (/^https?:\/\//.test(acceptPath)) return acceptPath;
+  const origin =
+    typeof window !== "undefined" && window.location?.origin
+      ? window.location.origin
+      : (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.aimatrx.com");
+  return `${origin}${acceptPath}`;
 }
 
 export async function acceptOutsideShare(token: string): Promise<{
