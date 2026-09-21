@@ -588,9 +588,25 @@ begin
   --          READS THE GUARD (ruling (a), REC-N-1). OUT OF THE SEAT throughout: every
   --          function and table here is platform-admin work.
   -- ════════════════════════════════════════════════════════════════════════════════════
-  -- Two registered Entity tables, chosen because they DISAGREE about the column's name:
-  -- `crm.party` keeps custom fields in `custom_fields` (W1-STORE put it there) and
-  -- `hr.employee` keeps them in `custom`. One generator, no literal, both right.
+  -- THREE registered tables, chosen because they DISAGREE about the column's name, and
+  -- because one of them carries BOTH names and the generator has to pick the right one.
+  --
+  -- 🚨 RE-PINNED (lane RED-SUITES-3, 2026-09-21). This clause used to name `hr.employee` as
+  -- the table that keeps its custom fields in `custom`, and it stopped being true:
+  -- `entityfields_every_entity_and_detail_can_hold_one.sql` retrofitted REC-40's canonical
+  -- `custom_fields jsonb NOT NULL DEFAULT '{}'` column onto every standard Entity and Detail
+  -- (26 tables across hr.* and seo.* now carry both names), and the live validation trigger
+  -- `custom._entity_custom_fields_guard` reads `to_jsonb(new) -> 'custom_fields'` — so on
+  -- hr.employee an index over `custom` would index a column nothing writes to. The generator
+  -- prefers `custom_fields` when both exist, and that is the RIGHT answer, not a drift.
+  --
+  -- The old table that DISAGREES is still there, so the clause keeps its original point as
+  -- well as gaining the new one: `hr.incident` is `restricted` with `custom_fields_enabled`
+  -- false, so the retrofit correctly skipped it and it keeps its custom fields in `custom`.
+  --   crm.party    -> custom_fields  (the canonical name, W1-STORE put it there)
+  --   hr.employee  -> custom_fields  (BOTH columns live; the canonical one wins)
+  --   hr.incident  -> custom         (the older name, and still right for this table)
+  -- One generator, no literal, all three right.
   -- A token only takes custom fields once a platform admin has ADOPTED it —
   -- `platform.custom_field_target`. MEASURED on main 2026-09-19: `hr_employee` is adopted and
   -- `party` is not, and the refusal says so: 'Participation is a row in
@@ -600,6 +616,8 @@ begin
                                        'w1_index_c5.sql, rolled back');
   perform platform.adopt_custom_fields('hr_employee', 'strict', 'standard', 'never', 8, 100000,
                                        'w1_index_c5.sql, rolled back');
+  perform platform.adopt_custom_fields('hr_incident', 'strict', 'standard', 'never', 8, 100000,
+                                       'w1_index_c5.sql, rolled back');
 
   insert into platform.custom_field_definition
     (id, target_kind, target_token, field_key, display_name, field_type, field_order,
@@ -607,6 +625,8 @@ begin
   values ('11111111-9999-4000-8000-00000000c501', 'entity_table', 'party',
           'job_price', 'Probe', 'text', 1, true, false, 'standard', 'never', v_org, 'internal'),
          ('11111111-9999-4000-8000-00000000c502', 'entity_table', 'hr_employee',
+          'job_price', 'Probe', 'number', 1, true, false, 'standard', 'never', v_org, 'internal'),
+         ('11111111-9999-4000-8000-00000000c503', 'entity_table', 'hr_incident',
           'job_price', 'Probe', 'number', 1, true, false, 'standard', 'never', v_org, 'internal');
 
   v_plan := platform.custom_field_index_ddl('11111111-9999-4000-8000-00000000c501'::uuid, false);
@@ -616,13 +636,29 @@ begin
   end if;
   raise notice 'PART 9 —   crm.party      -> %', v_plan;
 
+  -- hr.employee carries BOTH columns, and the one the live guard writes is `custom_fields`.
+  -- An index over `custom` here would be an index over a column nothing writes to.
   v_plan := platform.custom_field_index_ddl('11111111-9999-4000-8000-00000000c502'::uuid, false);
-  if position('((custom->>' in v_plan) = 0 then
-    raise exception 'PART 9 — hr.employee keeps its custom fields in custom and the generator emitted %', v_plan;
+  if position('((custom_fields->>' in v_plan) = 0 or position('((custom->>' in v_plan) > 0 then
+    raise exception 'PART 9 — hr.employee carries both columns and its writes go to custom_fields, and the generator emitted %', v_plan
+      using hint = 'custom._entity_custom_fields_guard reads to_jsonb(new) -> ''custom_fields''. An index over the older `custom` column on this table would index values nothing writes.';
+  end if;
+  if position('::numeric' in v_plan) = 0 then
+    raise exception 'PART 9 — hr.employee''s Probe is a number field and the generator emitted % with no numeric cast', v_plan;
   end if;
   raise notice 'PART 9 —   hr.employee    -> %', v_plan;
 
-  raise notice 'PART 9 PASS — one generator, the column read from the catalogue for each table.';
+  -- hr.incident is `restricted` with custom_fields_enabled false, so REC-40's retrofit
+  -- correctly skipped it: it still keeps its custom fields in `custom`, and the SAME
+  -- generator, with the SAME field_type, emits the older column for it.
+  v_plan := platform.custom_field_index_ddl('11111111-9999-4000-8000-00000000c503'::uuid, false);
+  if position('((custom->>' in v_plan) = 0 or position('custom_fields' in v_plan) > 0 then
+    raise exception 'PART 9 — hr.incident keeps its custom fields in custom and the generator emitted %', v_plan
+      using hint = 'A hard-coded column name is right for half this database and builds an index over a column that does not exist for the other half.';
+  end if;
+  raise notice 'PART 9 —   hr.incident    -> %', v_plan;
+
+  raise notice 'PART 9 PASS — one generator, the column read from the catalogue for each table: the canonical name where the writes go, the older name where it is still the only one.';
 
   perform set_config('role', 'authenticated', true);
 
