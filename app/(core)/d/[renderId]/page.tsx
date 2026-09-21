@@ -29,6 +29,7 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
+import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { createClient } from "@/utils/supabase/client";
 import { recordsDataSource } from "@ai-matrx/records-ui";
 
@@ -54,7 +55,7 @@ export default function RenderedDocumentRoute({
     const campaign = useUnifiedDataCampaign({
         organizationId,
         organizationState,
-        storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.enabled(organization),
+        storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
     });
 
     const [document, setDocument] = useState<RenderedDocument | null>(null);
@@ -99,8 +100,10 @@ export default function RenderedDocumentRoute({
             <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
                 {organizationState !== "ready" ? (
                     <OrganizationContextNotice state={organizationState} what="Documents" />
-                ) : campaign.on === null ? null : !campaign.on ? (
-                    <p className="max-w-2xl text-sm opacity-80">{campaign.because}</p>
+                ) : campaign.state !== "on" ? (
+                    /* THE ONE NOTICE — resolving, could-not-check and off are three
+                       different things (lane SHARE-OUT, item 3). */
+                    <UnifiedDataSwitchNotice gate={campaign} what="Documents" />
                 ) : refusal ? (
                     <p className="max-w-2xl text-sm text-destructive">{refusal}</p>
                 ) : document === null ? (

@@ -167,7 +167,7 @@ function main(): void {
             `${runtime} runtime entry point(s) behind the switch` +
             (runtime === 0
                 ? " — ZERO: no campaign code is served to a user yet, which is the register's stated state, not an unchecked one."
-                : " — each proven to call UNIFIED_DATA_CAMPAIGN.enabled()."),
+                : " — each proven to call UNIFIED_DATA_CAMPAIGN.enabled() or .check()."),
         );
         return;
     }

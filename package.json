@@ -563,6 +563,8 @@
     "check:people-lists-stay-in-your-organizations": "tsx scripts/check-people-lists-stay-in-your-organizations.ts",
     "check:people-lists-stay-in-your-organizations:self-test": "tsx scripts/check-people-lists-stay-in-your-organizations.ts --self-test",
     "check:fields-stay-masked:self-test": "tsx scripts/check-fields-stay-masked.ts --self-test",
+    "check:failed-check-is-not-a-fact": "tsx scripts/check-failed-check-is-not-a-fact.ts",
+    "check:failed-check-is-not-a-fact:self-test": "tsx scripts/check-failed-check-is-not-a-fact.ts --self-test",
     "check:store-doors-decide": "tsx scripts/check-store-doors-decide.ts",
     "check:one-freshness-ceiling": "tsx scripts/check-one-freshness-ceiling.ts",
     "check:store-doors-decide:self-test": "tsx scripts/check-store-doors-decide.ts --self-test",

@@ -34,6 +34,7 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { createClient } from "@/utils/supabase/client";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
+import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { uploadCaptureFile } from "@/features/capture/uploadCaptureFile";
 
 export default function CrewCaptureRoute({
@@ -51,7 +52,7 @@ export default function CrewCaptureRoute({
   const campaign = useUnifiedDataCampaign({
     organizationId,
     organizationState,
-    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.enabled(organization),
+    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
   });
 
   return (
@@ -60,8 +61,12 @@ export default function CrewCaptureRoute({
         <div className="p-4">
           <OrganizationContextNotice state={organizationState} what="Capture" />
         </div>
-      ) : campaign.on === null ? null : !campaign.on ? (
-        <p className="max-w-2xl p-4 text-sm opacity-80">{campaign.because}</p>
+      ) : campaign.state !== "on" ? (
+        /* THE ONE NOTICE — resolving, could-not-check and off are three
+           different things (lane SHARE-OUT, item 3). */
+        <div className="p-4">
+          <UnifiedDataSwitchNotice gate={campaign} what="Capture" />
+        </div>
       ) : (
         <RecordsMount
           letTheStoreDecideRights

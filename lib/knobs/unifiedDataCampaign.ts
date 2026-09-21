@@ -37,6 +37,25 @@
 // failure here returns `false` — and ANNOUNCES itself, naming the door and the
 // remedy, because nothing fails silently.
 //
+// 🚨 BUT A FAILED CHECK IS NOT A FACT ABOUT THE ORGANIZATION (lane SHARE-OUT,
+// item 3, 21 September). Reading OFF is the right thing for a READ PATH and the
+// wrong thing to SAY to a person. Lane PEEK-SHARE watched `/data-v2` print
+// "This organization does not keep its data in the unified record store yet" —
+// a definite claim, about an organization whose switch was demonstrably `true` —
+// through a transient PostgREST schema-cache reload (`PGRST002`) caused by
+// another lane's DDL. The organization picker two screens earlier gets this
+// right ("We could not check your organization"); this surface did not, because
+// `enabled()` collapsed "off" and "could not look" into one `false`.
+//
+// So there are now TWO readers and they are different on purpose:
+//   `check()`   — the honest three-state answer, `on` | `off` | `unavailable`
+//                 with the cause. EVERY surface that SAYS something to a person
+//                 reads this one.
+//   `enabled()` — the boolean, implemented in terms of `check()`, for a READ
+//                 PATH that must choose a store or a nav entry that must choose
+//                 whether to appear. It still fails closed and still announces
+//                 itself; it simply never becomes a sentence.
+//
 // NOT AN ENV VAR. The process environment is not consulted here and must never
 // be (this module's own test asserts that by reading its source): an env var is
 // a value, never a toggle (repo law,
@@ -95,25 +114,42 @@ export type {
  * chosen one has no store to be in and the sidebar asks this on every boot.
  */
 async function enabled(organizationId: string | null | undefined): Promise<boolean> {
-    if (!organizationId) return UNIFIED_DATA_CAMPAIGN_DEFAULT;
+    // FAILS CLOSED, STILL. `unavailable` is not `on`, so an unreachable database can
+    // never turn the store on for a read path — and it is no longer indistinguishable
+    // from `off` for anybody who has to say something to a person.
+    return (await check(organizationId)).state === "on";
+}
+
+/**
+ * THE THREE-STATE ANSWER. `on`, `off`, or `unavailable` — and `unavailable`
+ * carries the cause, so a screen can say "we could not check" and offer a retry
+ * instead of stating a fact about somebody's organization that nobody measured.
+ *
+ * No organization picked yet is `off` and not `unavailable`: there is nothing to
+ * check, which is a real answer, and the sidebar asks this on every boot.
+ */
+async function check(organizationId: string | null | undefined): Promise<StoreSwitchAnswer> {
+    if (!organizationId) return { state: UNIFIED_DATA_CAMPAIGN_DEFAULT ? "on" : "off" };
     try {
         const { data, error } = await createClient()
             .schema("platform")
             .rpc(UNIFIED_DATA_STORE_DOOR, { p_organization_id: organizationId });
         if (error) throw new Error(error.message);
         const answer = (data ?? null) as { on?: boolean } | null;
-        return answer?.on === true;
+        return { state: answer?.on === true ? "on" : "off" };
     } catch (error) {
+        const cause = error instanceof Error ? error.message : String(error);
         console.warn(
             `[unified-data-campaign] could not read platform.${UNIFIED_DATA_STORE_DOOR}` +
-                `(${organizationId}) — the record store's pages stay OFF for this organization. ` +
-                `Remedy: an owner or an administrator of this organization turns the store on ` +
-                `once, for everybody, on the unified data ramp screen ` +
+                `(${organizationId}) — this is NOT an answer about the organization. A read path ` +
+                `stays on the old table and a screen says it could not check, with a retry. ` +
+                `Remedy: retry; if it persists, an owner or an administrator of this organization ` +
+                `turns the store on once, for everybody, on the unified data ramp screen ` +
                 `(/administration/database/unified-data-ramp), which writes ` +
                 `${UNIFIED_DATA_CAMPAIGN_FEATURE}.${UNIFIED_DATA_CAMPAIGN_KEY} for the organization. ` +
-                `Cause: ${error instanceof Error ? error.message : String(error)}`,
+                `Cause: ${cause}`,
         );
-        return UNIFIED_DATA_CAMPAIGN_DEFAULT;
+        return { state: "unavailable", cause };
     }
 }
 
@@ -128,7 +164,17 @@ export const UNIFIED_DATA_CAMPAIGN = {
     CAMPAIGN_MODULES,
     CAMPAIGN_STORE_TABLES,
     enabled,
+    check,
 } as const;
+
+/**
+ * What the one switch actually answered. `unavailable` is NOT `off`: it means
+ * nobody could look, which is a different thing and gets a different sentence.
+ */
+export type StoreSwitchAnswer =
+    | { state: "on" }
+    | { state: "off" }
+    | { state: "unavailable"; cause: string };
 
 /**
  * What a campaign route says when the switch is off. Never a blank screen, and
@@ -142,3 +188,18 @@ export const UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE =
     "This organization does not keep its data in the unified record store yet, so there are no " +
     "tables here. An owner or an administrator of it turns that on once, for everybody, on the " +
     "unified data ramp screen. Your existing data pages are unaffected.";
+
+/**
+ * What a campaign route says when the switch COULD NOT BE READ. It states
+ * nothing about the organization, because nothing was measured — it says what
+ * happened and what to do about it, which is the organization picker's own
+ * shape ("We could not check your organization", `useOrganizationRequired.ts`).
+ *
+ * THE RULE THIS SENTENCE EXISTS FOR: a failed read is "could not check —
+ * retry", never "you do not have / are not / have not". Guard:
+ * `pnpm check:failed-check-is-not-a-fact`.
+ */
+export const UNIFIED_DATA_CAMPAIGN_UNAVAILABLE_SENTENCE =
+    "We could not check whether this organization keeps its data in the unified record store, so " +
+    "nothing was loaded. This does not mean it is switched off — we simply could not look. Try " +
+    "again, and if it keeps happening, reload the page.";

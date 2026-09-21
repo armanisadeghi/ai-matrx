@@ -166,7 +166,7 @@ export function judge(
                 `reaches campaign code but is NOT in ENTRY_POINTS (${detail}). ` +
                 `Register it in lib/knobs/unifiedDataCampaign.ts with a kind and a reason — ` +
                 `and if it is code the app serves, kind "runtime", which must also call ` +
-                `UNIFIED_DATA_CAMPAIGN.enabled().`,
+                `UNIFIED_DATA_CAMPAIGN.enabled() or .check().`,
         });
     }
 
@@ -181,12 +181,18 @@ export function judge(
             violations.push({ file: entry.file, message: `${entry.id}: registered with no reason.` });
         }
         const src = readFileSync(abs, "utf8");
-        const gated = /UNIFIED_DATA_CAMPAIGN\.enabled\s*\(/.test(src);
+        // 🚨 TWO SPELLINGS OF ONE READ (lane SHARE-OUT, item 3, 21 September).
+        // `UNIFIED_DATA_CAMPAIGN.check()` is the SAME switch read as `.enabled()` —
+        // `enabled()` is now literally `(await check(org)).state === "on"`. `check()`
+        // exists because a surface that SAYS something to a person has to tell "off"
+        // from "the read failed", and a boolean cannot. A guard that only knew the
+        // older spelling would have reported every honest surface as ungated.
+        const gated = /UNIFIED_DATA_CAMPAIGN\.(enabled|check)\s*\(/.test(src);
         if (entry.kind === "runtime" && !gated) {
             violations.push({
                 file: entry.file,
                 message:
-                    `${entry.id}: kind "runtime" but never calls UNIFIED_DATA_CAMPAIGN.enabled() — ` +
+                    `${entry.id}: kind "runtime" but never calls UNIFIED_DATA_CAMPAIGN.enabled() or .check() — ` +
                     `this code ships to users on any lane's release commit with the switch bypassed.`,
             });
         }

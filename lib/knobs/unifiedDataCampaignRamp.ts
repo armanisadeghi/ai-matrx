@@ -89,7 +89,24 @@ export async function resolveConsumerStore(args: {
   // record store at all? Until 19 September this asked a platform-wide kill
   // switch with a per-person rung on it (lane NAV-FIX); one organization, one
   // answer, and a consumer knob only ever narrows it further.
-  if (!(await UNIFIED_DATA_CAMPAIGN.enabled(organizationId))) {
+  // 🚨 AND IT SAYS WHICH ANSWER IT GOT (lane SHARE-OUT, item 3). `enabled()` used to
+  // collapse "switched off" and "the read failed" into one `false`, so `because` — which
+  // is the sentence a person or an engineer reads when they ask why they are on the old
+  // table — claimed the organization had not switched the store on when in fact nobody
+  // could look. The store choice is identical either way (a ramp never moves anybody
+  // because a read failed); only the sentence differs, and only one of them is true.
+  const kill = await UNIFIED_DATA_CAMPAIGN.check(organizationId);
+  if (kill.state === "unavailable") {
+    return {
+      store: "legacy",
+      because:
+        `Could not read whether organization ${organizationId ?? "(none)"} keeps its data in the ` +
+        "unified record store, so this consumer stays on the old table — a ramp never moves " +
+        "anybody because a read failed. This is NOT a statement that the store is switched off; " +
+        `nobody could look. Remedy: retry. Cause: ${kill.cause}`,
+    };
+  }
+  if (kill.state !== "on") {
     return { store: "legacy", because: OFF_BECAUSE_KILL_SWITCH };
   }
 

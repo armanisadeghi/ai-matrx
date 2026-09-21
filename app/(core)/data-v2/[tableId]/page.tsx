@@ -25,6 +25,7 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { createClient } from "@/utils/supabase/client";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
+import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 
 export default function UnifiedDataTableRoute({
   params,
@@ -54,7 +55,7 @@ export default function UnifiedDataTableRoute({
   const campaign = useUnifiedDataCampaign({
     organizationId,
     organizationState,
-    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.enabled(organization),
+    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
   });
 
   /**
@@ -85,10 +86,10 @@ export default function UnifiedDataTableRoute({
       <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
         {organizationState !== "ready" ? (
           <OrganizationContextNotice state={organizationState} what="Data records" />
-        ) : campaign.on === null ? null : !campaign.on ? (
-          /* ONE sentence, in plain English, naming the one thing that turns
-             it on — never a knob key, and never two sentences saying it twice. */
-          <p className="max-w-2xl text-sm opacity-80">{campaign.because}</p>
+        ) : campaign.state !== "on" ? (
+          /* THE ONE NOTICE — resolving, could-not-check and off are three
+             different things (lane SHARE-OUT, item 3). */
+          <UnifiedDataSwitchNotice gate={campaign} what="Data records" />
         ) : (
           <RecordsMount
             letTheStoreDecideRights
