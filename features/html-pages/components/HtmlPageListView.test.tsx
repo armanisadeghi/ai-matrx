@@ -116,9 +116,10 @@ describe("HtmlPageListView", () => {
         "HTML pages table did not expose controlled local query state",
       );
     }
+    const controlledQuery = tableProps.query;
 
     act(() => {
-      tableProps.query.onStateChange({
+      controlledQuery.onStateChange({
         page: 1,
         pageSize: 25,
         search: "description",
