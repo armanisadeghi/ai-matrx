@@ -520,15 +520,30 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
     await door(env, `create table ${schema}.t (id uuid primary key default gen_random_uuid())`);
     await door(env, `grant select on ${schema}.t to authenticated`);
     // A view over it with security_invoker OFF — arms B and D.
-    await door(env, `create view ${schema}.v as select id from ${schema}.t`);
+    //
+    // 🚨 THE PLANT CANNOT BE CREATED OWNER-RIGHTS ANY MORE, AND MUST NOT DISABLE THE
+    // GUARD THAT SAYS SO. Since `provision_shape_guard` (event trigger, tags include
+    // CREATE VIEW) a bare `create view` over a live schema raises 23514 with exactly
+    // this guard's own remedy text — which is the live DDL guard doing its job, and is
+    // why this self-test crashed on 2026-09-21. `ALTER EVENT TRIGGER … DISABLE` would
+    // clear it, and would also open a database-wide window in which ANY concurrent
+    // session could land a real owner-rights view: never delete a peer's guard to clear
+    // an error. `provision_shape_guard` carries no ALTER VIEW tag, so the honest plant
+    // is to create the view the way the guard demands and then RESET the option — the
+    // resulting relation is byte-identical to the shape arm B has to find (reloptions
+    // null, `relkind = 'v'`, owner rights), and no guard was touched to get there.
+    await door(env, `create view ${schema}.v with (security_invoker = true) as select id from ${schema}.t`);
+    await door(env, `alter view ${schema}.v reset (security_invoker)`);
     // An UNREGISTERED view, two levels up, over a table that DOES carry RLS. It
     // proves the two halves the registry-scoped guard could not: that arm B looks
     // past the registry, and that the classed-base derivation recurses through a
     // view sitting on a view.
     await door(env, `create table ${schema}.classed (id uuid primary key default gen_random_uuid())`);
     await door(env, `alter table ${schema}.classed enable row level security`);
-    await door(env, `create view ${schema}.mid as select id from ${schema}.classed`);
-    await door(env, `create view ${schema}.leaf as select id from ${schema}.mid`);
+    await door(env, `create view ${schema}.mid with (security_invoker = true) as select id from ${schema}.classed`);
+    await door(env, `alter view ${schema}.mid reset (security_invoker)`);
+    await door(env, `create view ${schema}.leaf with (security_invoker = true) as select id from ${schema}.mid`);
+    await door(env, `alter view ${schema}.leaf reset (security_invoker)`);
     await door(env, `grant select on ${schema}.leaf to authenticated`);
     // SELECT plus the write grants, so arm E has something to find too.
     await door(env, `grant select, insert, update, delete on ${schema}.v to authenticated`);
