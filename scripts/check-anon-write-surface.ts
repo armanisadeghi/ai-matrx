@@ -208,20 +208,86 @@ function report(live: LiveAnonWrite): number {
 
 /** One forced RED, always inside a transaction that is always rolled back. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function red(client: any, label: string, setup: string[], state: { reds: number }) {
-  await client.query("begin");
-  try {
-    for (const sql of setup) await client.query(sql);
-    const n = report(await measure(client));
-    if (n === 0) {
-      console.error(`\n${C.r}FAIL${C.x} ${label} did NOT fail the guard. That arm cannot see its own defect.`);
-      exitAfterDrain(1);
+/**
+ * CONTENTION IS NOT A VERDICT. Several arms take a row or object lock on
+ * something the live platform writes constantly — ARM 5 deletes from
+ * `platform.client_callable_door`, which `platform_reopen_declared_doors` (an
+ * event trigger on every GRANT / CREATE FUNCTION / ALTER FUNCTION) writes on
+ * any concurrent migration, release or fixer run. On 2026-09-21 ARM 5 died on a
+ * lock timeout and the whole self-test reported a hard FAIL, which reads as "the
+ * arm cannot see its own defect" — a claim nobody measured.
+ *
+ * So each arm sets its OWN short `lock_timeout` (contention surfaces fast as
+ * 55P03 instead of parking the run behind someone else's transaction), retries
+ * with backoff, and if it still cannot get the lock it is recorded as
+ * NOT MEASURED — never as a pass and never as a broken arm. Unmeasured is still
+ * a failure of the RUN (the exit code is 1), because a guard that quietly skipped
+ * an arm is a guard you cannot cite; it is simply a DIFFERENT failure, with a
+ * different remedy: re-run when the database is quiet.
+ */
+const LOCK_TIMEOUT = "1500ms";
+const RED_ATTEMPTS = 3;
+const isContention = (e: unknown): boolean => {
+  const code = (e as { code?: string } | null)?.code;
+  // 55P03 lock_not_available (lock_timeout), 40P01 deadlock_detected,
+  // 40001 serialization_failure — all three mean "someone else had it", never
+  // "the arm is wrong".
+  return code === "55P03" || code === "40P01" || code === "40001";
+};
+
+type SelfTestState = { reds: number; unmeasured: string[] };
+
+/** Run one arm inside an always-rolled-back transaction, retrying on contention. */
+async function arm(
+  client: any,
+  label: string,
+  body: () => Promise<void>,
+  state: SelfTestState,
+) {
+  for (let attempt = 1; attempt <= RED_ATTEMPTS; attempt++) {
+    await client.query("begin");
+    try {
+      await client.query(`set local lock_timeout = '${LOCK_TIMEOUT}'`);
+      await body();
+      state.reds++;
+      return;
+    } catch (e) {
+      if (!isContention(e)) throw e;
+      if (attempt < RED_ATTEMPTS) {
+        console.log(
+          `${C.d}   contention (${(e as { code?: string }).code}) on "${label}" — attempt ${attempt}/${RED_ATTEMPTS}, retrying${C.x}`,
+        );
+      } else {
+        state.unmeasured.push(label);
+        console.log(
+          `${C.y}[NOT MEASURED — contention]${C.x} ${label} ${C.d}(${(e as { code?: string }).code} after ${RED_ATTEMPTS} attempts; ` +
+            `another session holds the lock. This arm was NOT proven and NOT cleared — re-run when the database is quiet.)${C.x}\n`,
+        );
+        return;
+      }
+    } finally {
+      await client.query("rollback");
     }
-    state.reds++;
-    console.log(`${C.g}RED proven${C.x} ${C.d}(${label} -> ${n} finding(s))${C.x}\n`);
-  } finally {
-    await client.query("rollback");
+    // Backoff OUTSIDE the transaction, so nothing is held while we wait.
+    await new Promise((r) => setTimeout(r, 400 * attempt));
   }
+}
+
+async function red(client: any, label: string, setup: string[], state: SelfTestState) {
+  await arm(
+    client,
+    label,
+    async () => {
+      for (const sql of setup) await client.query(sql);
+      const n = report(await measure(client));
+      if (n === 0) {
+        console.error(`\n${C.r}FAIL${C.x} ${label} did NOT fail the guard. That arm cannot see its own defect.`);
+        exitAfterDrain(1);
+      }
+      console.log(`${C.g}RED proven${C.x} ${C.d}(${label} -> ${n} finding(s))${C.x}\n`);
+    },
+    state,
+  );
 }
 
 /**
@@ -255,7 +321,7 @@ async function main() {
     }
     console.log(`${C.g}GREEN${C.x} baseline: no signed-out caller can write anything.\n`);
 
-    const state = { reds: 0 };
+    const state: SelfTestState = { reds: 0, unmeasured: [] };
 
     // ARM 1a - a table grant comes back, on the roster of platform admins.
     await red(client, "anon granted INSERT on admin.admins", ["grant insert on admin.admins to anon"], state);
@@ -292,22 +358,25 @@ async function main() {
 
     // A restrictive policy is a veto, never a write authorization. Verify the
     // actual catalog query, then prove a permissive sibling still goes RED.
-    await client.query("begin");
-    try {
-      await client.query("create policy b87_self_test_restrictive_write on admin.admins as restrictive for insert to public with check (true)");
-      if (report(await measure(client)) !== 0) {
-        throw new Error("Restrictive policy incorrectly classified as a write authorization");
-      }
-      await client.query("create policy b87_self_test_permissive_write on admin.admins for insert to public with check (true)");
-      const findings = classifyAnonWrites(await measure(client));
-      if (!findings.some((finding) => finding.arm === "policy" && finding.object === "admin.admins :: b87_self_test_permissive_write")) {
-        throw new Error("Permissive policy hidden by a restrictive sibling");
-      }
-      state.reds++;
-      console.log(`${C.g}RED proven${C.x} permissive authorization remains visible beside a restrictive policy`);
-    } finally {
-      await client.query("rollback");
-    }
+    // `create policy` takes ACCESS EXCLUSIVE on admin.admins, so this arm
+    // contends exactly like the others and carries the same retry.
+    await arm(
+      client,
+      "permissive authorization remains visible beside a restrictive policy",
+      async () => {
+        await client.query("create policy b87_self_test_restrictive_write on admin.admins as restrictive for insert to public with check (true)");
+        if (report(await measure(client)) !== 0) {
+          throw new Error("Restrictive policy incorrectly classified as a write authorization");
+        }
+        await client.query("create policy b87_self_test_permissive_write on admin.admins for insert to public with check (true)");
+        const findings = classifyAnonWrites(await measure(client));
+        if (!findings.some((finding) => finding.arm === "policy" && finding.object === "admin.admins :: b87_self_test_permissive_write")) {
+          throw new Error("Permissive policy hidden by a restrictive sibling");
+        }
+        console.log(`${C.g}RED proven${C.x} permissive authorization remains visible beside a restrictive policy`);
+      },
+      state,
+    );
 
     // ARM 4 - a write policy reaching every role that nobody declared.
     await red(
@@ -326,10 +395,59 @@ async function main() {
     );
 
     // ARM 6 - the default privilege that publishes the next table to the internet (DD-196).
-    await red(
+    //
+    // 🚨 THIS ARM'S PLANT CAN NO LONGER BE BUILT, AND THAT IS THE POINT. Since 0896 the
+    // event trigger `iam.anon_key_needs_a_class_lane` (tags GRANT, ALTER DEFAULT
+    // PRIVILEGES) refuses ANY default privilege giving `anon` SELECT on tables, in every
+    // schema except the three vendor ones it grandfathers — and all three of those are in
+    // VENDOR_MANAGED_SCHEMAS, which ANON_SELECT_DEFAULT_QUERY excludes. So there is no
+    // schema left where this shape can be created AND seen, and the old plant
+    // (`… in schema communication grant select on tables to anon`) now dies with 22023
+    // before the census ever runs. Weakening either guard to restore the plant would be
+    // deleting a live defence to make a test green.
+    //
+    // So ARM 6 is proven in the two halves that are actually true today:
+    //   1. THE RULE — the classifier still turns a read default into a `birth` finding.
+    //      Fed a row shaped exactly like ANON_SELECT_DEFAULT_QUERY's output.
+    //   2. THE WORLD — the shape cannot be BORN. We attempt the real DDL and require it
+    //      to be refused by that event trigger. If the trigger is ever dropped, this half
+    //      goes red and says so, which is the signal to restore the live plant above.
+    await arm(
       client,
-      "default privileges grant anon SELECT on every new communication table",
-      ["alter default privileges for role postgres in schema communication grant select on tables to anon"],
+      "a read default is a `birth` finding, and the shape can no longer be created",
+      async () => {
+        const synthetic = {
+          ...(await measure(client)),
+          selectDefaults: [{ object: "communication (tables, granted by postgres)", grantee: "anon" }],
+        };
+        const findings = classifyAnonWrites(synthetic);
+        if (!findings.some((f) => f.arm === "birth" && f.object === "communication (tables, granted by postgres)")) {
+          console.error(`\n${C.r}FAIL${C.x} the classifier no longer turns an anon SELECT default into a birth finding.`);
+          exitAfterDrain(1);
+        }
+        let refused: string | null = null;
+        try {
+          await client.query("alter default privileges for role postgres in schema communication grant select on tables to anon");
+        } catch (e) {
+          const code = (e as { code?: string }).code;
+          if (isContention(e)) throw e;
+          refused = code ?? "unknown";
+        }
+        if (refused !== "22023") {
+          console.error(
+            `\n${C.r}FAIL${C.x} a default privilege giving anon SELECT on every new communication table was ` +
+              `${refused === null ? "ACCEPTED" : `refused with ${refused}, not 22023`}.\n` +
+              `     iam.anon_key_needs_a_class_lane is meant to refuse it. If that event trigger was removed on ` +
+              `purpose, restore this arm's\n     live plant (alter default privileges … grant select on tables to ` +
+              `anon) and delete this branch — the shape is constructible again.`,
+          );
+          exitAfterDrain(1);
+        }
+        console.log(
+          `${C.g}RED proven${C.x} ${C.d}(the classifier flags an anon SELECT default as a birth finding, and ` +
+            `iam.anon_key_needs_a_class_lane refuses to let one be created: 22023)${C.x}\n`,
+        );
+      },
       state,
     );
 
@@ -342,6 +460,16 @@ async function main() {
       exitAfterDrain(1);
     }
     console.log(`${C.g}GREEN${C.x} teardown verified: ${state.reds} RED proof(s), live grants, policies and doors unchanged.`);
+    if (state.unmeasured.length > 0) {
+      console.error(
+        `\n${C.y}[NOT MEASURED — contention]${C.x} ${state.unmeasured.length} arm(s) never got their lock: ` +
+          `${state.unmeasured.join(", ")}.\n` +
+          `     This is NOT a pass. The live surface is green (above) and every arm that ran was proven, but ` +
+          `these arms\n     proved nothing either way. Re-run when no migration, release or fixer agent is ` +
+          `writing to the database.`,
+      );
+      exitAfterDrain(1);
+    }
     exitAfterDrain(0);
   } finally {
     await client.end();
