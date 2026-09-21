@@ -99,8 +99,28 @@ export interface Finding {
   readonly refusedBy: string | null;
 }
 
-export function keyOf(f: Pick<Finding, "schema" | "table" | "cmd" | "role">): string {
-  return `${f.schema}.${f.table}|${f.cmd}|${f.role}`;
+/**
+ * 🚨 THE TIER IS PART OF THE KEY, AND LEAVING IT OUT MADE THE RATCHET BLIND TO HALF OF THE FIX.
+ * (DOORS-ONLY, 2026-09-21 — measured, not predicted.)
+ *
+ * The first version of this key was `schema.table|CMD|role`. Then this lane closed ten tables:
+ * `platform.route_manifest`'s INSERT went from answering a plain member **201 Created** to
+ * `403 42501 route_manifest_client_insert_refused`, and thirty triples moved OPEN → RESIDUAL.
+ * The baseline did not move by one entry, because the triple still existed — only its TIER had
+ * changed. A closure proven over the wire was invisible to the thing meant to measure it.
+ *
+ * That is the fifth time in this campaign that trap has closed, and SECURITY-SWEEP left the
+ * instruction in capital letters: check that the guard can see your fix BEFORE you build it.
+ * This one was caught the same session it was made, by re-running the live guard after the
+ * apply instead of assuming the number would move.
+ *
+ * So the tier is in the key. Withdrawing a grant removes the entry outright; refusing a write
+ * REPLACES `…|open` with `…|residual`, which reads in the diff as one improvement rather than
+ * as nothing — and a REGRESSION (residual → open, somebody dropping a refusal) appears as a
+ * NEW `…|open` entry and fails, which the tier-less key could never have caught either.
+ */
+export function keyOf(f: Pick<Finding, "schema" | "table" | "cmd" | "role" | "tier">): string {
+  return `${f.schema}.${f.table}|${f.cmd}|${f.role}|${f.tier}`;
 }
 
 function readBaseline(): Set<string> {
@@ -391,9 +411,31 @@ function selfTest(): number {
     findingsFor(policyOnly).filter((f) => f.role === "authenticated").length === 3,
   );
 
+  // 6 — 🚨 THE RATCHET CAN SEE A REFUSAL. This is the assertion the first version of this
+  // guard did not have, and the live run caught it: closing a write without withdrawing the
+  // grant moves a triple OPEN -> RESIDUAL, and with a tier-less key the baseline did not move
+  // by one entry while `platform.route_manifest` went from answering a plain member 201 to
+  // refusing him by policy name. A closure the ratchet cannot see is a closure nobody gets
+  // credit for and, worse, a REGRESSION nobody gets warned about.
+  const openKeys = new Set(findingsFor(associations).map(keyOf));
+  const refusedAssociations: TableFacts = {
+    ...associations,
+    policies: [
+      ...associations.policies,
+      { name: "associations_client_insert_refused", cmd: "INSERT", permissive: false, roles: ["authenticated", "anon"], usingExpr: null, withCheck: "false" },
+      { name: "associations_client_update_refused", cmd: "UPDATE", permissive: false, roles: ["authenticated", "anon"], usingExpr: "false", withCheck: "false" },
+      { name: "associations_client_delete_refused", cmd: "DELETE", permissive: false, roles: ["authenticated", "anon"], usingExpr: "false", withCheck: null },
+    ],
+  };
+  const refusedKeys = new Set(findingsFor(refusedAssociations).map(keyOf));
+  check(
+    "THE RATCHET SEES A REFUSAL: adding the restrictive refusals changes every key, so the baseline moves",
+    [...openKeys].every((k) => !refusedKeys.has(k)) && refusedKeys.size === openKeys.size,
+  );
+
   console.log(
     failures.length === 0
-      ? `\n[OK] check:doors-only-schemas self-test — 6 assertions green.`
+      ? `\n[OK] check:doors-only-schemas self-test — 7 assertions green.`
       : `\n[FAIL] ${failures.length} assertion(s) red.`,
   );
   return failures.length === 0 ? 0 : 1;
