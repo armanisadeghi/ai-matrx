@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@ai-matrx/design-system";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Select,
   SelectContent,
   SelectItem,
@@ -32,10 +35,7 @@ import {
   Loader2,
   X,
   Search,
-  ArrowUp,
-  ArrowDown,
-  ArrowUpDown,
-  FilterX,
+  SlidersHorizontal,
 } from "lucide-react";
 import { aiModelService } from "../service";
 import type { AiModel, ModelUsageResult } from "../types";
@@ -47,14 +47,16 @@ import {
 import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
 import { toast } from "@/lib/toast";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
-import { cn } from "@/lib/utils";
-import { MOBILE_TABLE_FROZEN } from "@/components/official/mobile-table/mobileTable";
-import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+  type MatrxDataTableQueryState,
+} from "@ai-matrx/design-system/data-table";
 
 interface DeprecatedModelsAuditProps {
   allModels: AiModel[];
   onClose: () => void;
-  onModelsChanged: () => void;
+  onModelsChanged: () => void | Promise<void>;
 }
 
 interface DeprecatedEntry {
@@ -127,7 +129,14 @@ export default function DeprecatedModelsAudit({
   const [globalError, setGlobalError] = useState<string | null>(null);
 
   // ── Filter / sort state ───────────────────────────────────────────────────
-  const [q, setQ] = useState("");
+  const [tableQuery, setTableQuery] = useState<MatrxDataTableQueryState>({
+    page: 1,
+    pageSize: 50,
+    search: "",
+    anyOf: "",
+    columnFilters: {},
+    sort: { id: "total", direction: "desc" },
+  });
   const [filterProvider, setFilterProvider] = useState("__all__");
   const [filterMinTotal, setFilterMinTotal] = useState<number | undefined>(
     undefined,
@@ -139,7 +148,10 @@ export default function DeprecatedModelsAudit({
     "all" | "with" | "without"
   >("all");
 
-  const activeModels = allModels.filter((m) => !m.is_deprecated);
+  const activeModels = useMemo(
+    () => allModels.filter((model) => !model.is_deprecated),
+    [allModels],
+  );
 
   const deprecatedProviders = useMemo(
     () =>
@@ -156,8 +168,9 @@ export default function DeprecatedModelsAudit({
 
   const initEntries = useCallback(() => {
     const deprecated = allModels.filter((m) => m.is_deprecated);
-    setEntries(
-      deprecated.map((model) => ({
+    return {
+      deprecated,
+      entries: deprecated.map((model) => ({
         model,
         usage: null,
         loading: true,
@@ -166,37 +179,42 @@ export default function DeprecatedModelsAudit({
         replacing: false,
         replaced: false,
       })),
-    );
-    return deprecated;
+    };
   }, [allModels]);
 
   useEffect(() => {
-    const deprecated = initEntries();
-    deprecated.forEach((model) => {
-      aiModelService
-        .fetchUsage(model.id)
-        .then((usage) => {
-          setEntries((prev) =>
-            prev.map((e) =>
-              e.model.id === model.id ? { ...e, usage, loading: false } : e,
-            ),
-          );
-        })
-        .catch((err) => {
-          setEntries((prev) =>
-            prev.map((e) =>
-              e.model.id === model.id
-                ? {
-                    ...e,
-                    loading: false,
-                    error:
-                      err instanceof Error ? err.message : "Failed to load",
-                  }
-                : e,
-            ),
-          );
-        });
-    });
+    const { deprecated, entries: initialEntries } = initEntries();
+    const initialize = window.setTimeout(() => {
+      setEntries(initialEntries);
+      deprecated.forEach((model) => {
+        aiModelService
+          .fetchUsage(model.id)
+          .then((usage) => {
+            setEntries((prev) =>
+              prev.map((entry) =>
+                entry.model.id === model.id
+                  ? { ...entry, usage, loading: false }
+                  : entry,
+              ),
+            );
+          })
+          .catch((err) => {
+            setEntries((prev) =>
+              prev.map((entry) =>
+                entry.model.id === model.id
+                  ? {
+                      ...entry,
+                      loading: false,
+                      error:
+                        err instanceof Error ? err.message : "Failed to load",
+                    }
+                  : entry,
+              ),
+            );
+          });
+      });
+    }, 0);
+    return () => window.clearTimeout(initialize);
   }, [initEntries]);
 
   const totalUsage = (entry: DeprecatedEntry) =>
@@ -215,14 +233,14 @@ export default function DeprecatedModelsAudit({
   const visibleEntries = useMemo(() => {
     let result = entries.filter((e) => !e.replaced);
 
-    if (q) {
-      const lq = q.toLowerCase();
+    if (tableQuery.search) {
+      const search = tableQuery.search.toLowerCase();
       result = result.filter(
         (e) =>
-          e.model.id.toLowerCase().includes(lq) ||
-          (e.model.common_name ?? "").toLowerCase().includes(lq) ||
-          e.model.name.toLowerCase().includes(lq) ||
-          (e.model.maker ?? "").toLowerCase().includes(lq),
+          e.model.id.toLowerCase().includes(search) ||
+          (e.model.common_name ?? "").toLowerCase().includes(search) ||
+          e.model.name.toLowerCase().includes(search) ||
+          (e.model.maker ?? "").toLowerCase().includes(search),
       );
     }
 
@@ -248,7 +266,14 @@ export default function DeprecatedModelsAudit({
     }
 
     return result;
-  }, [entries, q, filterProvider, filterHasUsage, filterMinTotal, filterMaxTotal]);
+  }, [
+    entries,
+    tableQuery.search,
+    filterProvider,
+    filterHasUsage,
+    filterMinTotal,
+    filterMaxTotal,
+  ]);
 
   const replacedEntries = useMemo(
     () => entries.filter((e) => e.replaced),
@@ -257,20 +282,23 @@ export default function DeprecatedModelsAudit({
   const allLoaded = entries.every((e) => !e.loading);
 
   const entriesReadyForBulk = visibleEntries.filter(
-    (e) => e.replacementId && !e.replaced,
+    (entry): entry is DeprecatedEntry & { replacementId: string } =>
+      Boolean(entry.replacementId) && !entry.replaced,
   );
 
-  const hasAnyFilter = !!(
-    q ||
+  const hasAnyDomainFilter = !!(
     filterProvider !== "__all__" ||
     filterHasUsage !== "all" ||
     filterMinTotal !== undefined ||
     filterMaxTotal !== undefined
   );
+  const activeDomainFilterCount =
+    Number(filterProvider !== "__all__") +
+    Number(filterHasUsage !== "all") +
+    Number(filterMinTotal !== undefined || filterMaxTotal !== undefined);
 
 
-  const clearFilters = () => {
-    setQ("");
+  const clearDomainFilters = () => {
     setFilterProvider("__all__");
     setFilterHasUsage("all");
     setFilterMinTotal(undefined);
@@ -342,7 +370,7 @@ export default function DeprecatedModelsAudit({
       const settled = await Promise.allSettled(
         batch.map((entry) =>
           aiModelService
-            .replaceModelReferences(entry.model.id, entry.replacementId!)
+            .replaceModelReferences(entry.model.id, entry.replacementId)
             .then((result) => {
               updateEntry(entry.model.id, { replaced: true });
               return result;
@@ -394,174 +422,153 @@ export default function DeprecatedModelsAudit({
   );
   const auditColumns = useMemo<MatrxColumnDef<DeprecatedEntry>[]>(
     () => [
-      { id: "model", header: "Deprecated model", accessorFn: (entry) => entry.model.common_name || entry.model.name, cell: (entry) => <div><span className="block font-medium">{entry.model.common_name || entry.model.name}</span><span className="font-mono text-[10px] text-muted-foreground">{entry.model.name}</span></div> },
-      { id: "provider", header: "Provider", accessorFn: (entry) => entry.model.maker ?? "", cell: (entry) => entry.model.maker ?? "—" },
-      { id: "prompts", header: "Prompts", accessorFn: (entry) => entry.usage?.prompts.length ?? 0, defaultSortDirection: "desc", align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant="outline">{entry.usage?.prompts.length ?? 0}</Badge> },
-      { id: "builtins", header: "Builtins", accessorFn: (entry) => entry.usage?.promptBuiltins.length ?? 0, defaultSortDirection: "desc", align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant="outline">{entry.usage?.promptBuiltins.length ?? 0}</Badge> },
-      { id: "agents", header: "Agents", accessorFn: (entry) => entry.usage?.agents.length ?? 0, defaultSortDirection: "desc", align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant="outline">{entry.usage?.agents.length ?? 0}</Badge> },
-      { id: "templates", header: "Templates", accessorFn: (entry) => entry.usage?.agentTemplates.length ?? 0, defaultSortDirection: "desc", align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant="outline">{entry.usage?.agentTemplates.length ?? 0}</Badge> },
-      { id: "total", header: "Total", accessorFn: totalUsage, defaultSortDirection: "desc", align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant={totalUsage(entry) > 0 ? "default" : "outline"}>{totalUsage(entry)}</Badge> },
-      { id: "replacement", header: "Replace with", accessorFn: (entry) => entry.replacementId, sortable: false, filter: false, cell: (entry) => totalUsage(entry) === 0 && !entry.loading ? <span className="text-xs italic text-muted-foreground">No active usage</span> : <ModelListDropdown value={entry.replacementId || undefined} onValueChange={(replacementId) => updateEntry(entry.model.id, { replacementId })} inputModalities={[]} allowedModelIds={activeModels.filter((candidate) => hasCompatibleDecisionInteraction(entry.model.capabilities, candidate.capabilities)).map((candidate) => candidate.id)} catalogVariant="admin" selectionPurpose="admin" placeholder="Select replacement..." className="h-7 w-full max-w-[240px] justify-between text-xs" disabled={entry.replacing} /> },
+      {
+        id: "model",
+        header: "Deprecated model",
+        accessorFn: (entry) => entry.model.common_name || entry.model.name,
+        searchText: (entry: DeprecatedEntry) =>
+          [entry.model.id, entry.model.common_name, entry.model.name]
+            .filter(Boolean)
+            .join(" "),
+        cell: (entry) => (
+          <span
+            className="block max-w-[180px] truncate whitespace-nowrap font-medium"
+            title={entry.model.common_name || entry.model.name}
+          >
+            {entry.model.common_name || entry.model.name}
+          </span>
+        ),
+      },
+      {
+        id: "identifier",
+        header: "Identifier",
+        accessorFn: (entry) => entry.model.name,
+        cell: (entry) => (
+          <span
+            className="block max-w-[220px] truncate whitespace-nowrap font-mono text-[10px] text-muted-foreground"
+            title={entry.model.name}
+          >
+            {entry.model.name}
+          </span>
+        ),
+      },
+      {
+        id: "provider",
+        header: "Provider",
+        accessorFn: (entry) => entry.model.maker ?? "",
+        cell: (entry) => entry.model.maker ?? "—",
+      },
+      {
+        id: "prompts",
+        header: "Prompts",
+        accessorFn: (entry) => entry.usage?.prompts.length ?? 0,
+        defaultSortDirection: "desc",
+        align: "center",
+        cell: (entry) =>
+          entry.loading ? (
+            <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" />
+          ) : (
+            <Badge variant="outline">{entry.usage?.prompts.length ?? 0}</Badge>
+          ),
+      },
+      {
+        id: "builtins",
+        header: "Builtins",
+        accessorFn: (entry) => entry.usage?.promptBuiltins.length ?? 0,
+        defaultSortDirection: "desc",
+        align: "center",
+        cell: (entry) =>
+          entry.loading ? (
+            <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" />
+          ) : (
+            <Badge variant="outline">
+              {entry.usage?.promptBuiltins.length ?? 0}
+            </Badge>
+          ),
+      },
+      {
+        id: "agents",
+        header: "Agents",
+        accessorFn: (entry) => entry.usage?.agents.length ?? 0,
+        defaultSortDirection: "desc",
+        align: "center",
+        cell: (entry) =>
+          entry.loading ? (
+            <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" />
+          ) : (
+            <Badge variant="outline">{entry.usage?.agents.length ?? 0}</Badge>
+          ),
+      },
+      {
+        id: "templates",
+        header: "Templates",
+        accessorFn: (entry) => entry.usage?.agentTemplates.length ?? 0,
+        defaultSortDirection: "desc",
+        align: "center",
+        cell: (entry) =>
+          entry.loading ? (
+            <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" />
+          ) : (
+            <Badge variant="outline">
+              {entry.usage?.agentTemplates.length ?? 0}
+            </Badge>
+          ),
+      },
+      {
+        id: "total",
+        header: "Total",
+        accessorFn: totalUsage,
+        defaultSortDirection: "desc",
+        align: "center",
+        cell: (entry) =>
+          entry.loading ? (
+            <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" />
+          ) : (
+            <Badge variant={totalUsage(entry) > 0 ? "default" : "outline"}>
+              {totalUsage(entry)}
+            </Badge>
+          ),
+      },
+      {
+        id: "replacement",
+        header: "Replace with",
+        accessorFn: (entry) => entry.replacementId,
+        sortable: false,
+        filter: false,
+        cell: (entry) =>
+          totalUsage(entry) === 0 && !entry.loading ? (
+            <span className="text-xs italic text-muted-foreground">
+              No active usage
+            </span>
+          ) : (
+            <ModelListDropdown
+              value={entry.replacementId || undefined}
+              onValueChange={(replacementId) =>
+                updateEntry(entry.model.id, { replacementId })
+              }
+              inputModalities={[]}
+              allowedModelIds={activeModels
+                .filter((candidate) =>
+                  hasCompatibleDecisionInteraction(
+                    entry.model.capabilities,
+                    candidate.capabilities,
+                  ),
+                )
+                .map((candidate) => candidate.id)}
+              catalogVariant="admin"
+              selectionPurpose="admin"
+              placeholder="Select replacement..."
+              className="h-7 w-full max-w-[240px] justify-between text-xs"
+              disabled={entry.replacing}
+            />
+          ),
+      },
     ],
-    [activeModels, entries],
+    [activeModels],
   );
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b shrink-0 bg-card">
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
-          <span className="text-sm font-semibold">Deprecated Models Audit</span>
-          {allLoaded && (
-            <>
-              <Badge variant="outline" className="text-[10px] h-4 px-1">
-                {entries.length} deprecated
-              </Badge>
-              {visibleEntries.filter((e) => totalUsage(e) > 0).length > 0 && (
-                <Badge
-                  variant="outline"
-                  className="text-[10px] h-4 px-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300"
-                >
-                  {visibleEntries.filter((e) => totalUsage(e) > 0).length} with
-                  usage
-                </Badge>
-              )}
-              {replacedEntries.length > 0 && (
-                <Badge
-                  variant="outline"
-                  className="text-[10px] h-4 px-1 text-green-600"
-                >
-                  {replacedEntries.length} replaced
-                </Badge>
-              )}
-            </>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {entriesReadyForBulk.length > 0 && (
-            <Button
-              size="sm"
-              className="h-7 text-xs gap-1"
-              disabled={bulkReplacing}
-              onClick={() => setBulkConfirmOpen(true)}
-            >
-              {bulkReplacing ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <ArrowRightLeft className="h-3 w-3" />
-              )}
-              Replace All ({entriesReadyForBulk.length})
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
-            onClick={onClose}
-            title="Close"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Filter bar ─────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-3 py-2 border-b shrink-0 bg-muted/20">
-        {/* Search */}
-        <div className="relative shrink-0">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search model name, id…"
-            className="h-7 pl-6 pr-6 text-xs w-48"
-          />
-          {q && (
-            <button
-              onClick={() => setQ("")}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-
-        {/* Provider */}
-        <Select value={filterProvider} onValueChange={setFilterProvider}>
-          <SelectTrigger className="h-7 text-xs w-32 shrink-0">
-            <SelectValue placeholder="Provider" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">All Providers</SelectItem>
-            {deprecatedProviders.map((p) => (
-              <SelectItem key={p} value={p}>
-                {p}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Usage filter */}
-        <Select
-          value={filterHasUsage}
-          onValueChange={(v) =>
-            setFilterHasUsage(v as "all" | "with" | "without")
-          }
-        >
-          <SelectTrigger className="h-7 text-xs w-36 shrink-0">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All (any usage)</SelectItem>
-            <SelectItem value="with">Has references (&gt;0)</SelectItem>
-            <SelectItem value="without">No references (0)</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {/* Total usage range */}
-        <div className="flex items-center gap-1 shrink-0">
-          <span className="text-xs text-muted-foreground">Total refs</span>
-          <Input
-            value={filterMinTotal !== undefined ? String(filterMinTotal) : ""}
-            onChange={(e) => {
-              const v = parseInt(e.target.value, 10);
-              setFilterMinTotal(isNaN(v) ? undefined : v);
-            }}
-            placeholder="min"
-            className="h-7 text-xs w-14 font-mono"
-          />
-          <span className="text-xs text-muted-foreground">–</span>
-          <Input
-            value={filterMaxTotal !== undefined ? String(filterMaxTotal) : ""}
-            onChange={(e) => {
-              const v = parseInt(e.target.value, 10);
-              setFilterMaxTotal(isNaN(v) ? undefined : v);
-            }}
-            placeholder="max"
-            className="h-7 text-xs w-14 font-mono"
-          />
-        </div>
-
-        {/* Clear */}
-        {hasAnyFilter && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
-            onClick={clearFilters}
-          >
-            <FilterX className="h-3.5 w-3.5" />
-            Clear
-          </Button>
-        )}
-
-        <div className="flex-1" />
-        <span className="text-xs text-muted-foreground">
-          {visibleEntries.length} shown
-        </span>
-      </div>
-
       {globalError && (
         <div
           role="alert"
@@ -573,38 +580,246 @@ export default function DeprecatedModelsAudit({
       )}
 
       {/* ── Table ──────────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-auto min-h-0">
-        {entries.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
-            <CheckCircle2 className="h-10 w-10 opacity-30" />
-            <p className="text-sm">No deprecated models found</p>
-          </div>
-        ) : visibleEntries.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
-            <Search className="h-10 w-10 opacity-30" />
-            <p className="text-sm">No models match the current filters</p>
-            <Button variant="ghost" size="sm" onClick={clearFilters}>
-              Clear filters
-            </Button>
-          </div>
-        ) : (
-          <MatrxDataTable<DeprecatedEntry>
-            tableId="ai-models/deprecated-audit"
-            data={visibleEntries}
-            columns={auditColumns}
-            getRowId={(entry) => entry.model.id}
-            density="condensed"
-            defaultSort={{ id: "total", direction: "desc" }}
-            pageSize={0}
-            hidePagination
-            coverage={{ noun: "deprecated model", answeredBy: "client" }}
-            copy={false}
-            toolbar={{ search: false }}
-            detail={{ enabled: false }}
-            window={{ enabled: false }}
-            rowActions={(entry) => totalUsage(entry) > 0 && <div className="flex items-center gap-1">{entry.error && <span role="status" className="text-[11px] font-medium text-destructive">Couldn't replace</span>}<Button variant="outline" size="sm" className="h-6 px-2 text-[11px]" disabled={!entry.replacementId || entry.replacing || entry.loading} onClick={() => handleOpenSettingsReview(entry)}><Settings className="h-3 w-3" />Review</Button><Button size="sm" className="h-6 px-2 text-[11px]" disabled={!entry.replacementId || entry.replacing || entry.loading} onClick={() => handleQuickReplace(entry)}>{entry.replacing ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowRightLeft className="h-3 w-3" />}Quick</Button></div>}
-          />
-        )}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <MatrxDataTable<DeprecatedEntry>
+          tableId="ai-models/deprecated-audit"
+          data={visibleEntries}
+          columns={auditColumns}
+          getRowId={(entry) => entry.model.id}
+          density="condensed"
+          className="min-h-0 flex-1"
+          query={{
+            mode: "controlled-local",
+            state: tableQuery,
+            onStateChange: setTableQuery,
+          }}
+          isLoading={
+            entries.length === 0 && allModels.some((model) => model.is_deprecated)
+          }
+          defaultSort={{ id: "total", direction: "desc" }}
+          coverage={{ noun: "deprecated model", answeredBy: "client" }}
+          copy={false}
+          emptyState={{
+            icon: entries.length === 0 ? (
+              <CheckCircle2 className="h-10 w-10 opacity-30" />
+            ) : (
+              <Search className="h-10 w-10 opacity-30" />
+            ),
+            title:
+              entries.length === 0
+                ? "No deprecated models found"
+                : "No models match the current filters",
+          }}
+          toolbar={{
+            title: "Deprecated models",
+            search: true,
+            searchPlaceholder: "Search model name, identifier, or provider…",
+            refresh: {
+              onRefresh: async () => {
+                await onModelsChanged();
+              },
+            },
+            facets: [
+              {
+                type: "custom",
+                id: "deprecated-model-filters",
+                filter: {
+                  active: hasAnyDomainFilter,
+                  onReset: clearDomainFilters,
+                },
+                render: () => (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-1 text-xs"
+                      >
+                        <SlidersHorizontal className="h-3.5 w-3.5" />
+                        Filters
+                        {activeDomainFilterCount > 0 && (
+                          <Badge variant="secondary" className="h-4 px-1 text-[10px]">
+                            {activeDomainFilterCount}
+                          </Badge>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-80 space-y-3">
+                      <div className="space-y-1">
+                        <span className="text-xs font-medium">Provider</span>
+                        <Select
+                          value={filterProvider}
+                          onValueChange={setFilterProvider}
+                        >
+                          <SelectTrigger className="h-8 w-full text-xs">
+                            <SelectValue placeholder="Provider" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">All providers</SelectItem>
+                            {deprecatedProviders.map((provider) => (
+                              <SelectItem key={provider} value={provider}>
+                                {provider}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-xs font-medium">Usage</span>
+                        <Select
+                          value={filterHasUsage}
+                          onValueChange={(value) =>
+                            setFilterHasUsage(value as "all" | "with" | "without")
+                          }
+                        >
+                          <SelectTrigger className="h-8 w-full text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All usage</SelectItem>
+                            <SelectItem value="with">Has references (&gt;0)</SelectItem>
+                            <SelectItem value="without">No references (0)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-xs font-medium">Total references</span>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={
+                              filterMinTotal !== undefined
+                                ? String(filterMinTotal)
+                                : ""
+                            }
+                            onChange={(event) => {
+                              const value = parseInt(event.target.value, 10);
+                              setFilterMinTotal(
+                                Number.isNaN(value) ? undefined : value,
+                              );
+                            }}
+                            placeholder="min"
+                            className="h-8 w-full font-mono text-xs"
+                            aria-label="Minimum total references"
+                          />
+                          <span className="text-xs text-muted-foreground">to</span>
+                          <Input
+                            value={
+                              filterMaxTotal !== undefined
+                                ? String(filterMaxTotal)
+                                : ""
+                            }
+                            onChange={(event) => {
+                              const value = parseInt(event.target.value, 10);
+                              setFilterMaxTotal(
+                                Number.isNaN(value) ? undefined : value,
+                              );
+                            }}
+                            placeholder="max"
+                            className="h-8 w-full font-mono text-xs"
+                            aria-label="Maximum total references"
+                          />
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                ),
+              },
+            ],
+            actions: (
+              <div className="flex items-center gap-2">
+                {allLoaded &&
+                  visibleEntries.filter((entry) => totalUsage(entry) > 0).length >
+                    0 && (
+                    <Badge
+                      variant="outline"
+                      className="border-amber-300 bg-amber-50 px-1 text-[10px] text-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                    >
+                      {
+                        visibleEntries.filter((entry) => totalUsage(entry) > 0)
+                          .length
+                      }{" "}
+                      with usage
+                    </Badge>
+                  )}
+                {replacedEntries.length > 0 && (
+                  <Badge
+                    variant="outline"
+                    className="px-1 text-[10px] text-green-600"
+                  >
+                    {replacedEntries.length} replaced
+                  </Badge>
+                )}
+                {entriesReadyForBulk.length > 0 && (
+                  <Button
+                    size="sm"
+                    className="gap-1 text-xs"
+                    disabled={bulkReplacing}
+                    onClick={() => setBulkConfirmOpen(true)}
+                  >
+                    {bulkReplacing ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <ArrowRightLeft className="h-3 w-3" />
+                    )}
+                    Replace all ({entriesReadyForBulk.length})
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={onClose}
+                  aria-label="Close deprecated models audit"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ),
+          }}
+          detail={{ enabled: false }}
+          window={{ enabled: false }}
+          rowActions={(entry) =>
+            totalUsage(entry) > 0 && (
+              <div className="flex items-center gap-1">
+                {entry.error && (
+                  <span
+                    role="status"
+                    className="text-[11px] font-medium text-destructive"
+                  >
+                    Couldn&apos;t replace
+                  </span>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 px-2 text-[11px]"
+                  disabled={
+                    !entry.replacementId || entry.replacing || entry.loading
+                  }
+                  onClick={() => handleOpenSettingsReview(entry)}
+                >
+                  <Settings className="h-3 w-3" />
+                  Review
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-6 px-2 text-[11px]"
+                  disabled={
+                    !entry.replacementId || entry.replacing || entry.loading
+                  }
+                  onClick={() => handleQuickReplace(entry)}
+                >
+                  {entry.replacing ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <ArrowRightLeft className="h-3 w-3" />
+                  )}
+                  Quick
+                </Button>
+              </div>
+            )
+          }
+        />
 
       </div>
 

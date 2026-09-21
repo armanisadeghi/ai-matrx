@@ -439,6 +439,74 @@ function PriceCell({ pricing }: { pricing: ProviderSyncRowPricing }) {
   );
 }
 
+type PriceField = "input" | "output" | "cached";
+
+/** One independently sortable price, with the provider comparison kept on it. */
+function PriceValueCell({
+  pricing,
+  field,
+}: {
+  pricing: ProviderSyncRowPricing;
+  field: PriceField;
+}) {
+  if (pricing.state === "no_offering") {
+    return (
+      <span
+        className="whitespace-nowrap text-[10px] italic text-muted-foreground"
+        title="This provider model has no ai.offering row, so nothing prices it."
+      >
+        no offering
+      </span>
+    );
+  }
+  if (pricing.state === "no_price") {
+    return (
+      <span
+        className="whitespace-nowrap text-[10px] text-amber-600 dark:text-amber-400"
+        title="The preferred offering exists but carries no pricing tier."
+      >
+        no price
+      </span>
+    );
+  }
+
+  const mismatch = pricing.mismatches.find((item) => item.field === field);
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 whitespace-nowrap tabular-nums",
+        mismatch && "font-semibold text-red-600 dark:text-red-400",
+      )}
+      title={
+        mismatch
+          ? `Ours ${formatPerMTok(mismatch.ours)}; provider ${formatPerMTok(mismatch.theirs)}`
+          : undefined
+      }
+    >
+      {mismatch && <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden />}
+      {formatPerMTok(pricing.ours?.[field] ?? null)}
+    </span>
+  );
+}
+
+/** Provider prices remain sortable and available from the canonical Columns menu. */
+function ProviderPriceValueCell({
+  pricing,
+  field,
+}: {
+  pricing: ProviderSyncRowPricing;
+  field: PriceField;
+}) {
+  return (
+    <span
+      className="whitespace-nowrap tabular-nums text-muted-foreground"
+      title={`Provider ${field} price per 1M ${pricing.usage_basis ?? "units"}`}
+    >
+      {formatPerMTok(pricing.theirs?.[field] ?? null)}
+    </span>
+  );
+}
+
 /** How old our confidence in the price is — or that nobody tracks it yet. */
 function PriceVerifiedCell({ pricing }: { pricing: ProviderSyncRowPricing }) {
   if (pricing.state === "no_offering") {
@@ -915,7 +983,13 @@ function ComparisonTable({
       { id: "max_out", header: "Max out", accessorFn: (comparison) => comparison.providerEntry?.max_tokens ?? comparison.localEntry?.max_tokens ?? null, defaultSortDirection: "desc", align: "right", cell: (comparison) => formatNum(comparison.providerEntry?.max_tokens ?? comparison.localEntry?.max_tokens) },
       { id: "released", header: "Released", accessorFn: (comparison) => comparison.providerEntry?.created_at ?? "", sortValue: (comparison) => parseTimestamp(comparison.providerEntry?.created_at) ?? -Infinity, defaultSortDirection: "desc", cell: (comparison) => formatDate(comparison.providerEntry?.created_at) },
       { id: "our_name", header: "Our name", accessorFn: (comparison) => comparison.localEntry?.common_name ?? "", cell: (comparison) => comparison.localEntry?.common_name ?? "—" },
-      { id: "price", header: "Price", accessorFn: (comparison) => comparison.pricing.ours?.input ?? null, cell: (comparison) => <PriceCell pricing={comparison.pricing} /> },
+      { id: "input_price", header: "Input / 1M", accessorFn: (comparison) => comparison.pricing.ours?.input ?? null, align: "right", cell: (comparison) => <PriceValueCell pricing={comparison.pricing} field="input" /> },
+      { id: "output_price", header: "Output / 1M", accessorFn: (comparison) => comparison.pricing.ours?.output ?? null, align: "right", cell: (comparison) => <PriceValueCell pricing={comparison.pricing} field="output" /> },
+      { id: "cached_input_price", header: "Cached / 1M", accessorFn: (comparison) => comparison.pricing.ours?.cached ?? null, align: "right", cell: (comparison) => <PriceValueCell pricing={comparison.pricing} field="cached" /> },
+      { id: "usage_basis", header: "Pricing basis", accessorFn: (comparison) => comparison.pricing.usage_basis ?? "", cell: (comparison) => comparison.pricing.usage_basis ?? "—" },
+      { id: "provider_input_price", header: "Provider input / 1M", accessorFn: (comparison) => comparison.pricing.theirs?.input ?? null, align: "right", hidden: true, cell: (comparison) => <ProviderPriceValueCell pricing={comparison.pricing} field="input" /> },
+      { id: "provider_output_price", header: "Provider output / 1M", accessorFn: (comparison) => comparison.pricing.theirs?.output ?? null, align: "right", hidden: true, cell: (comparison) => <ProviderPriceValueCell pricing={comparison.pricing} field="output" /> },
+      { id: "provider_cached_input_price", header: "Provider cached / 1M", accessorFn: (comparison) => comparison.pricing.theirs?.cached ?? null, align: "right", hidden: true, cell: (comparison) => <ProviderPriceValueCell pricing={comparison.pricing} field="cached" /> },
       { id: "verified", header: "Price checked", accessorFn: (comparison) => comparison.pricing.verified_at ?? "", cell: (comparison) => <PriceVerifiedCell pricing={comparison.pricing} /> },
       { id: "primary", header: "Primary", accessorFn: (comparison) => Boolean(comparison.localEntry?.is_primary), defaultSortDirection: "desc", cell: (comparison) => comparison.localEntry?.is_primary ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : "—" },
       { id: "deprecated", header: "Deprecated", accessorFn: (comparison) => Boolean(comparison.localEntry?.is_deprecated), defaultSortDirection: "desc", cell: (comparison) => comparison.localEntry?.is_deprecated ? <span className="font-medium text-amber-500">yes</span> : "—" },
