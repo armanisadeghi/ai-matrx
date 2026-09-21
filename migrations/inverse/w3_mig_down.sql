@@ -25,18 +25,37 @@
 --   node node_modules/tsx/dist/cli.mjs scripts/apply-migration.ts \
 --     migrations/inverse/w3_mig_down.sql --target branch
 
-drop function if exists custom.migrate_purge(uuid, uuid, boolean);
+-- 🚨 FOUR OF W3-MIG'S OBJECTS ARE SHARED INFRASTRUCTURE NOW, AND THIS INVERSE STOPS
+-- DEMOLISHING THEM (lane INVERSE-GUARD, 2026-09-21). `custom.migrate_purge`,
+-- `custom.migrate_retype`, `custom.field_dependants` and the table `custom.record_alias` are
+-- all reached by bodies that landed after this file was written:
+--   · `custom._store_door` — the ONE body behind `custom_record_store_door`,
+--     `custom_external_link_store_door` and their `_delete` twins — calls
+--     `custom.migrate_purge`;
+--   · `custom._field_type_converts_values` (`custom_record_field_type_converts_values` on
+--     `custom.record`) calls `custom.migrate_retype`;
+--   · `custom.delete_rule` (`doorfix_the_delete_door_consults_the_one_delete_rule.sql`) calls
+--     `custom.field_dependants`, and `history.migration_undo` reads `custom.record_alias`.
+-- As written this inverse left every write door in the record store calling functions that
+-- were gone, so the next write died on `function custom.migrate_purge(uuid,uuid,boolean) does
+-- not exist` before the red twin asked anything. A broken store is not the defect this file
+-- exists to restore.
+--
+-- WHAT THE DEFECT ACTUALLY IS: the Migration LAYER a person can reach is gone. That is
+-- restored in full — eight of the ten verbs, the id resolver and the door rows all go below,
+-- so there is no Migration surface left to use. The four stay standing under the bodies that
+-- adopted them, and `custom.record_alias` keeps REC-21's "the losing id resolves to the
+-- winner FOREVER" instead of ending every forever this store has issued, which the header
+-- above already warned was this file's most dangerous act.
 drop function if exists custom.migrate_delete(uuid, uuid, text);
 drop function if exists custom.migrate_merge(uuid, uuid, uuid, text);
 drop function if exists custom.migrate_split(uuid, uuid, text[], text);
-drop function if exists custom.migrate_retype(uuid, uuid, text, text);
 drop function if exists custom.migrate_rename(uuid, uuid, text, text);
 drop function if exists custom.migrate_reparent(uuid, uuid, uuid, text);
 drop function if exists custom.migrate_extract_parent(uuid, uuid, uuid, text[], text);
 drop function if exists custom.migrate_promote(uuid, uuid, text);
 drop function if exists custom.migrate_demote(uuid, uuid, text);
 
-drop function if exists custom.field_dependants(uuid, uuid);
 drop function if exists custom.resolve_id(uuid, uuid);
 
-drop table if exists custom.record_alias;
+-- `custom.record_alias` is NOT dropped — see the note above the verbs.

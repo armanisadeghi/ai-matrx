@@ -1,5 +1,15 @@
 -- READ-PERF, the inverse of the class probe: the sixteen creator indexes dropped and
--- custom.visible_set put back to the single scanning probe it carried before.
+-- custom.visible_set put back to the single scanning probe it carried before.--
+-- ground-standing-ok: b — the `custom.visible_set` body restored below calls
+-- `custom.read_door_granted_ids`, `custom.read_door_ladder_ceiling` and
+-- `custom.read_door_carried_ids`, which the sibling inverse
+-- `readperf_the_read_door_asks_visibility_once_down.sql` drops. THIS FILE IS THE ONE MEANT TO
+-- RUN: READ-PERF's class probe is measured by running this alone, inside a rolled-back
+-- transaction, so the sixteen creator indexes go and the single scanning probe comes back. If
+-- the two are ever run together they come off in the reverse of the order their up-files went
+-- on — this one FIRST, while the three read-door helpers still exist, and the read-door inverse
+-- LAST. The other order leaves the read door calling three functions that are gone.
+
 drop index concurrently if exists custom.record_org_table_vis_creator_rp_00;
 drop index concurrently if exists custom.record_org_table_vis_creator_rp_01;
 drop index concurrently if exists custom.record_org_table_vis_creator_rp_02;

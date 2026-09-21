@@ -4,6 +4,14 @@
 -- listed twice, the refusals speaking out of order and every generated sentence talking about
 -- the stage column instead of about the deal. It also drops the ten-argument
 -- `custom._pipeline_rule`, which is the one thing the up ADDED rather than replaced.
+--
+-- ground-standing-ok: b — the four bodies restored below call `custom._stage_field_key`, which
+-- the sibling inverse `pipelines_a_stage_is_a_field_and_its_moves_are_rules_down.sql` drops.
+-- THIS FILE IS THE ONE MEANT TO RUN: PIPELINES' red twin executes it ALONE inside a rolled-back
+-- transaction to prove the board speaks out of order again, and that has nothing to do with
+-- whether a stage is a field at all. If the two are ever run together they come off in the
+-- reverse of the order their up-files went on — this one FIRST, while `custom._stage_field_key`
+-- still exists, and the stage-is-a-field inverse LAST, which takes the whole board with it.
 
 drop function if exists custom._pipeline_rule(uuid, uuid, text, text, text, text, jsonb, jsonb, jsonb, integer);
 

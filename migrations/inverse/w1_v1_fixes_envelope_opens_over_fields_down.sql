@@ -13,6 +13,16 @@
 -- the point: the inverse restores the prior state, defect included.
 --
 -- Branch-only: schema `custom` does not exist on production (measured SELECT-only 2026-09-17).
+--
+-- ground-standing-ok: b — the four NULL-BLIND guards and `custom._value_envelope()` restored
+-- below call `custom.assert_store_door`, `custom.size_refusal` and `custom.actor_word`, which
+-- the sibling inverse `w1_v1_fixes_one_door_predicate_down.sql` drops. THIS FILE IS THE ONE
+-- MEANT TO RUN: its own red twin executes it alone inside a rolled-back transaction to make
+-- three green campaign suites go red again. `w1_v1_fixes_one_door_predicate_down.sql` takes the
+-- ONE door predicate out from under the whole record store and is the last inverse of this
+-- family to come off: in a full un-apply this file runs FIRST, while all three callees still
+-- exist, and that one LAST. Running them the other way round leaves every guard in the store
+-- calling a function that is gone.
 
 set lock_timeout = '5s';
 set statement_timeout = '300s';

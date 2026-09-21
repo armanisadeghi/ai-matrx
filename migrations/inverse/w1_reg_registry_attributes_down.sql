@@ -34,10 +34,29 @@ alter table platform.entity_types
   drop constraint if exists entity_types_custom_fields_follow_type,
   drop constraint if exists entity_types_type_is_one_of_seven;
 
+-- 🚨 TWO OF THE THREE COLUMNS STAY STANDING, AND ARE EMPTIED INSTEAD (lane INVERSE-GUARD,
+-- 2026-09-21). W1-REG added all three, and two of them have since been adopted by bodies
+-- outside this lane on the live path: `platform.custom_fields_retrofit`
+-- (`entitytail_the_retrofit_reaches_the_last_table.sql`) reads
+-- `platform.entity_types.custom_fields_enabled` to decide which standard Entity gets REC-40's
+-- canonical column, and `hr.wf_request`
+-- (`hr_l1_82_a_person_with_no_spell_is_named_not_substituted.sql`) names
+-- `platform.entity_types.type`. Dropping either took those bodies' ground away, which is not
+-- the classification rollback this file describes.
+--
+-- SO THE CLASSIFICATION IS REMOVED RATHER THAN THE COLUMNS. `type` is already NULL on every
+-- row — the refusal above guarantees it, by name and by count — and `custom_fields_enabled`
+-- goes back to the `false` the up-file defaulted it to, so the retrofit enables nothing and no
+-- row carries a type. `type_reason` is nobody else's and goes. Its three constraints went with
+-- the ALTER above, so nothing holds the emptied columns to a shape either. This is the same
+-- remedy `mergehist_a_compound_operation_signs_its_revision_down.sql` carries for
+-- `history.row_versions.migration_id`: the column stays, the fact it recorded does not.
+update platform.entity_types
+   set custom_fields_enabled = false
+ where custom_fields_enabled;
+
 alter table platform.entity_types
-  drop column if exists custom_fields_enabled,
-  drop column if exists type_reason,
-  drop column if exists type;
+  drop column if exists type_reason;
 
 do $$
 declare
@@ -46,9 +65,15 @@ begin
   select count(*) into n
     from information_schema.columns
    where table_schema = 'platform' and table_name = 'entity_types'
-     and column_name in ('type', 'type_reason', 'custom_fields_enabled');
+     and column_name = 'type_reason';
   if n <> 0 then
-    raise exception 'platform.entity_types: % attribute column(s) survived the inverse', n;
+    raise exception 'platform.entity_types: type_reason survived the inverse';
   end if;
-  raise notice 'platform.entity_types: the three registry attribute columns and their three constraints are gone.';
+  select count(*) into n from platform.entity_types
+   where type is not null or custom_fields_enabled;
+  if n <> 0 then
+    raise exception
+      'platform.entity_types: % row(s) still carry a classification after the inverse', n;
+  end if;
+  raise notice 'platform.entity_types: type_reason and the three constraints are gone, and no row carries a type or an enabled custom-fields switch. The two columns two later lanes read stay standing and empty.';
 end $$;

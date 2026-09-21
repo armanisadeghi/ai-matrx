@@ -12,6 +12,14 @@
 -- it: that file superseded this one's trigger body, so the two inverses come off the stack
 -- in the order they went on.
 --
+-- ground-standing-ok: b — the body restored below calls `custom.actor_word`,
+-- `custom.intern_provenance` and `custom.stamp_value_envelopes`, which the sibling inverse
+-- `w1_val_the_value_envelope_down.sql` drops. This file is run ALONE by its red twin inside a
+-- rolled-back transaction; in a full un-apply it runs FIRST and `w1_val_the_value_envelope_down.sql`
+-- LAST, because W1-V1-FIXES sits above W1-VAL in the ledger and an inverse stack comes off in
+-- the reverse of the order it went on. Running the two the other way round leaves this body
+-- calling three functions that are gone, and is never correct.
+--
 -- Branch-only: it DROPs and DELETEs, and schema `custom` does not exist on production.
 
 set lock_timeout = '5s';
@@ -63,4 +71,12 @@ end;
 $function$;
 
 
-drop function if exists custom.size_refusal(uuid, jsonb);
+-- 🚨 `custom.size_refusal` STAYS STANDING (lane INVERSE-GUARD, 2026-09-21).
+-- `custom_fields_validation` on `crm.party` runs `custom._entity_custom_fields_guard`
+-- (`w1_field_entity_custom_fields.sql`), and that body calls `custom.size_refusal` to say what
+-- an oversized document would cost. Dropping it left a live trigger on a standard Entity over
+-- a function that was gone, so the next write to `crm.party` died before the red twin asked
+-- anything. The defect IS restored: the two ceiling knobs are deleted above and
+-- `custom._value_envelope()` is back to the body with no door and no ceiling, so the record
+-- store measures nothing. The refusal-sentence builder stays standing with no ceiling to
+-- report, which is precisely the defect.
