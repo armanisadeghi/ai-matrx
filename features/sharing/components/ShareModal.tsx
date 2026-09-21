@@ -32,6 +32,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { PermissionsList } from "./PermissionsList";
 import { AccessSummaryPanel } from "./AccessSummaryPanel";
 import { ShareWithUserTab } from "./tabs/ShareWithUserTab";
+import { OutsideSharePanel } from "@/features/sharing/outside/OutsideSharePanel";
 import { ShareWithOrgTab } from "./tabs/ShareWithOrgTab";
 import { PublicAccessTab } from "./tabs/PublicAccessTab";
 import { useToast } from "@/components/ui/use-toast";
@@ -65,6 +66,21 @@ interface ShareModalProps {
    * owns the record.
    */
   isOwner?: boolean;
+  /**
+   * SHARING WITH SOMEBODY OUTSIDE THE ORGANIZATION (lane SHARE-OUT, 21 September).
+   *
+   * Pass this when the subject is a TABLE in the unified record store and the
+   * caller knows which organization it belongs to. The Users tab then carries
+   * the outside lane: invite by email, "invited, not yet joined", resend and
+   * revoke. Leave it out and the dialog is exactly what it was — this is not a
+   * capability every resource type has, and a panel that could not work is a
+   * panel that must not be drawn.
+   *
+   * It is NOT a second share surface: the grant it produces is an ordinary
+   * `iam.permissions` row read by the same ladder, and the pending state is an
+   * `iam.invitations` row, the platform's one invitation primitive.
+   */
+  outsideShare?: { organizationId: string; tableId: string };
 }
 
 /**
@@ -95,6 +111,7 @@ export function ShareModal({
   organizationId,
   resourceNoun,
   isOwner: isOwnerOverride,
+  outsideShare,
 }: ShareModalProps) {
   const [activeTab, setActiveTab] = useState<
     "users" | "organizations" | "public" | "access"
@@ -388,6 +405,22 @@ export function ShareModal({
                 ) : (
                   manageBlockedNotice
                 )}
+
+                {/* THE ROUTE FROM THE REFUSAL TO THE REMEDY (lane SHARE-OUT).
+                    The people picker above offers this organization's members
+                    and nobody else, and the store refuses an outsider by name.
+                    This is where that refusal now leads: one section, drawn only
+                    for a table in the record store, showing exactly the controls
+                    the store says this person may use. It is shown to non-owners
+                    too — the panel itself says who can invite, which is more use
+                    than hiding the fact that the capability exists. */}
+                {outsideShare ? (
+                  <OutsideSharePanel
+                    organizationId={outsideShare.organizationId}
+                    tableId={outsideShare.tableId}
+                    tableName={resourceName}
+                  />
+                ) : null}
               </TabsContent>
 
               <TabsContent value="organizations" className="mt-0 space-y-3">

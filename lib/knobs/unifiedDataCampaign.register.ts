@@ -575,6 +575,28 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         kind: "tooling",
         why: "Jest proof that both gate-corpus runners refuse a connection whose pg_control_system().system_identifier is production's (ATTACK-9 finding 34). Reads plan/BRANCH-REF and two source files; opens no socket, holds no credential, never part of a served request.",
     },
+    // ── SHARE-OUT (21 September): sharing a table with somebody OUTSIDE the
+    //    organization. The plumber's customer, the lab's collaborator at another
+    //    university. All three files reach the store only through the six
+    //    custom.table_share_outside* doors, which read the switch themselves.
+    {
+        id: "outside-share-service",
+        file: "features/sharing/outside/outsideShareService.ts",
+        kind: "door_gated",
+        why: "The client half of SHARE-OUT. It calls custom.table_share_outside, _invite, _resend, _revoke and _accept and decides nothing itself — each of those doors calls custom.assert_store_door and custom.assert_client_may_reach / _may_open / _may_change for the organization the table belongs to, so the switch is read one layer down, in the store, for the right organization. It holds the one schema('custom') cast for this feature and nothing widens it.",
+    },
+    {
+        id: "outside-share-panel",
+        file: "features/sharing/outside/OutsideSharePanel.tsx",
+        kind: "door_gated",
+        why: "The Share dialog's outside-lane section. It draws only what custom.table_share_outside answered (lane_open, may_invite, may_open_lane, my_level, levels), so no control is live when the door behind it would refuse; it reaches the store only through features/sharing/outside/outsideShareService.ts, whose doors read the switch.",
+    },
+    {
+        id: "outside-share-accept-page",
+        file: "app/(core)/invitations/table/accept/[token]/page.tsx",
+        kind: "door_gated",
+        why: "Where an outside person's invitation link lands. The caller is not in the organization and has no knob to resolve against, so it names no organization at all: custom.table_share_outside_accept matches the token to a pending invitation addressed to this signed-in person, and reads the switch inside itself for the organization that invitation belongs to.",
+    },
     {
         id: "client-portal-service",
         file: "features/portals/service.ts",

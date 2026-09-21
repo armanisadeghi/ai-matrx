@@ -54,6 +54,21 @@ export function recordStoreShare(subject: ShareSubject) {
       resourceName={subject.name}
       organizationId={subject.organizationId}
       resourceNoun={subject.kind === "table" ? "Table" : "Record"}
+      // SHARING WITH SOMEBODY OUTSIDE THE ORGANIZATION (lane SHARE-OUT).
+      // A TABLE only, and only when we know which organization it belongs to:
+      // the store's outside lane grants a whole table ("this customer sees your
+      // Jobs"), never one row, and the panel has to name the organization whose
+      // outside door is being asked about. For a record the prop is omitted and
+      // the dialog is exactly what it was — a panel that could not work is a
+      // panel that must not be drawn.
+      {...(subject.kind === "table" && subject.organizationId
+        ? {
+            outsideShare: {
+              organizationId: subject.organizationId,
+              tableId: subject.subjectId,
+            },
+          }
+        : {})}
     />
   );
 }

@@ -24,7 +24,7 @@
 // share; the pending state is an `iam.invitations` row, the platform's one
 // invitation primitive. Nothing new was invented to hold either.
 
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, Globe2, Loader2, RotateCw, Send, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -164,7 +164,7 @@ export function OutsideSharePanel({
                 title: "Let this organization share with people outside it?",
                 description:
                   "This applies to the whole organization, not just this table: after it, anyone who may share a table can invite somebody with no account here to one. Nobody gains access from this on its own — each invitation is still a separate act, and each one can be taken back.",
-                confirmText: "Turn it on",
+                confirmLabel: "Turn it on",
               });
               if (!ok) return;
               setBusy("lane");
@@ -200,7 +200,7 @@ export function OutsideSharePanel({
               type="email"
               placeholder="name@theircompany.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
             />
           </div>
           <div className="sm:w-44">
@@ -298,7 +298,7 @@ export function OutsideSharePanel({
                           description: row.joined
                             ? `They lose ${tableName} immediately — anything they have open refuses the next time it asks — and, because this table is the only reason they can reach this organization at all, they lose that too. You can invite them again afterwards.`
                             : "Their link stops working. They never had access, so there is nothing to take away.",
-                          confirmText: row.joined ? "Take it away" : "Withdraw",
+                          confirmLabel: row.joined ? "Take it away" : "Withdraw",
                           variant: "destructive",
                         });
                         if (!ok) return;
