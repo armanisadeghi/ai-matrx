@@ -20,8 +20,20 @@
 set lock_timeout = '5s';
 set statement_timeout = '300s';
 
-drop trigger if exists custom_external_link_store_door on custom.external_link;
-drop trigger if exists custom_external_source_store_door on custom.external_source;
+-- 🚨 EVERY TRIGGER OVER THE BODIES THIS FILE DROPS COMES OFF FIRST (lane RED-SUITES-3,
+-- 2026-09-21). When this inverse was written, `custom._store_door` carried exactly the two
+-- triggers named below. It carries NINETEEN now — the two `_delete` twins added since, and
+-- `custom_record_store_door` on `custom.record` and each of its sixteen partitions — and this
+-- file drops `custom._store_door()` and `custom.assert_store_door(uuid,text)` two hundred and
+-- fifty lines down. As written it would have left every write to the record store calling a
+-- function that no longer exists, which is not the prior state this file claims to restore;
+-- it is a broken table. `storerel_red` lost a whole session to the same class.
+-- Dropping the parent's trigger takes the partitions' with it.
+drop trigger if exists custom_external_link_store_door          on custom.external_link;
+drop trigger if exists custom_external_link_store_door_delete   on custom.external_link;
+drop trigger if exists custom_external_source_store_door        on custom.external_source;
+drop trigger if exists custom_external_source_store_door_delete on custom.external_source;
+drop trigger if exists custom_record_store_door                 on custom.record;
 
 CREATE OR REPLACE FUNCTION custom.external_history_event(p_organization_id uuid, p_link_id uuid, p_operation text)
  RETURNS bigint
