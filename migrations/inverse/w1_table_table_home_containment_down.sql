@@ -30,34 +30,86 @@ set statement_timeout = '300s';
 -- store or its door, means a later lane has landed and this teardown is not safe.
 do $guard$
 declare
-  v_strays text;
+  -- EXACTLY THE BODIES THIS FILE REMOVES, and no others: `custom.record_reparent` and
+  -- `custom.home_relations` are left standing because later lanes call them (see the note
+  -- further down), so they are not this guard's business either.
+  v_mine text[] := array[
+    'custom._table_shape_guard', 'custom._containment_guard',
+    'custom.home_add', 'custom.reachable_from'];
+  v_missing text;
+  v_strays  text;
 begin
-  select string_agg(format('%s.%s', n.nspname, p.proname), ', ' order by p.proname)
+  -- ── 1. ITS OWN OBJECTS ARE PRESENT ──────────────────────────────────────────
+  -- A teardown run against a world that does not carry the thing is not a teardown, it is a
+  -- no-op that reports success — and the red twin beside it then passes with the defect never
+  -- put back. So this refuses rather than shrugging.
+  select string_agg(x, ', ' order by x) into v_missing from (
+    select unnest(v_mine) as x
+    except
+    select n.nspname || '.' || p.proname
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'custom'
+  ) q;
+  if v_missing is not null then
+    raise exception 'refusing to tear down W1-TABLE: the objects this file removes are not here (%)', v_missing
+      using hint = 'This lane never landed on this database, or its teardown already ran. Nothing to put back.';
+  end if;
+  if not exists (select 1 from pg_class where relnamespace = 'custom'::regnamespace and relname = 'home')
+     or not exists (select 1 from pg_class where relnamespace = 'custom'::regnamespace and relname = 'table') then
+    raise exception 'refusing to tear down W1-TABLE: custom.home / custom."table" are not both here'
+      using hint = 'This lane never landed on this database, or its teardown already ran.';
+  end if;
+
+  -- ── 2. NOTHING OUTSIDE THIS FILE DEPENDS ON WHAT IT REMOVES ─────────────────
+  -- 🚨 THIS REPLACES A GUARD THAT COULD NEVER PASS (lane INVERSE-GUARD, 2026-09-21). It used
+  -- to refuse unless schema `custom` held NOTHING but this lane's own fifteen names. Thirty
+  -- lanes have landed in `custom` since; the branch holds 268 functions there, so the first
+  -- statement raised on every database in existence, naming 250 of them, and this inverse
+  -- could not run at all — which means the red twin beside it proved nothing, for months.
+  -- The header always said what it actually needs: "every object this file is about to drop
+  -- has no dependant outside this file's own list". That is what it asks now.
+  select string_agg(format('trigger %s on %s.%s -> %s', t.tgname, n.nspname, c.relname,
+                           pn.nspname || '.' || p.proname), ', ' order by t.tgname)
+    into v_strays
+    from pg_trigger t
+    join pg_class c  on c.oid = t.tgrelid
+    join pg_namespace n on n.oid = c.relnamespace
+    join pg_proc p   on p.oid = t.tgfoid
+    join pg_namespace pn on pn.oid = p.pronamespace
+   where not t.tgisinternal
+     and pn.nspname || '.' || p.proname = any (v_mine)
+     and t.tgname not in ('custom_record_table_shape_guard', 'custom_record_containment_guard');
+  if v_strays is not null then
+    raise exception 'refusing to tear down W1-TABLE: a live trigger this file does not detach runs a body it removes (%)', v_strays
+      using hint = 'Detach the trigger first, or stop dropping the body: a dropped function under an attached trigger is a broken table, not a defect put back.';
+  end if;
+
+  select string_agg(format('%s.%s calls %s', n.nspname, p.proname, m.name), ', ' order by p.proname)
     into v_strays
     from pg_proc p
     join pg_namespace n on n.oid = p.pronamespace
-   where n.nspname = 'custom'
-     and p.proname not in ('record_write',
-                           'table_kernel_id', 'containment_depth_ceiling', 'containment_parent',
-                           'containment_chain', 'containment_edges', 'reachable_from',
-                           'home_relations', 'tables_at_home', 'table_declare', 'home_add',
-                           'relation_own', 'record_reparent',
-                           '_containment_guard', '_table_shape_guard');
+    cross join lateral unnest(v_mine) as m(name)
+   where n.nspname not in ('pg_catalog', 'information_schema')
+     and n.nspname || '.' || p.proname <> all (v_mine)
+     -- AN INVOCATION, NOT A MENTION. `custom.query_table_homes` and `custom.relation_own` both
+     -- NAME two of these bodies in a `--` comment and call neither, so the comments come out
+     -- before the match and the match requires the opening parenthesis of a call.
+     and regexp_replace(p.prosrc, '--[^\n]*', ' ', 'g') ~ ('\m' || replace(m.name, '.', '\.') || '\s*\(');
   if v_strays is not null then
-    raise exception 'refusing to tear down W1-TABLE: schema custom holds functions this lane did not create (%)', v_strays
-      using hint = 'A later LOCK:custom lane has landed. Run ITS inverse first, or this teardown takes its work with it.';
+    raise exception 'refusing to tear down W1-TABLE: a body outside this file calls one it removes (%)', v_strays
+      using hint = 'A later lane adopted it. Run ITS inverse first, or leave that object standing and neuter the behaviour instead.';
   end if;
 
   select string_agg(format('%s.%s', n.nspname, c.relname), ', ' order by c.relname)
     into v_strays
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
-   where n.nspname = 'custom'
-     and c.relkind in ('v', 'm')
-     and c.relname not in ('table', 'home');
+   where c.relkind in ('v', 'm')
+     and not (n.nspname = 'custom' and c.relname in ('home', 'table'))
+     and pg_get_viewdef(c.oid) ~ '\mcustom\.(home|"?table"?|record_reparent|home_add|home_relations|reachable_from)\M';
   if v_strays is not null then
-    raise exception 'refusing to tear down W1-TABLE: schema custom holds views this lane did not create (%)', v_strays
-      using hint = 'A later LOCK:custom lane has landed. Run ITS inverse first.';
+    raise exception 'refusing to tear down W1-TABLE: a view outside this file reads one of its projections (%)', v_strays
+      using hint = 'A later lane adopted it. Run ITS inverse first.';
   end if;
 end;
 $guard$;
@@ -73,10 +125,20 @@ drop trigger if exists custom_record_containment_guard on custom.record;
 -- ── the bodies, dependants first ───────────────────────────────────────────────
 drop function if exists custom._table_shape_guard();
 drop function if exists custom._containment_guard();
-drop function if exists custom.record_reparent(uuid, uuid, uuid);
 drop function if exists custom.home_add(uuid, uuid, uuid);
-drop function if exists custom.home_relations();
 drop function if exists custom.reachable_from(uuid, uuid[]);
+
+-- 🚨 TWO MORE STAY STANDING, and the guard above is what found them (lane INVERSE-GUARD,
+-- 2026-09-21). `custom.record_reparent(uuid, uuid, uuid)` is called by W3-MIG's
+-- `custom.migrate_extract_parent` and `custom.migrate_reparent`, and
+-- `custom.home_relations()` by CHOICE-VAL's `custom.query_table_homes` — measured on the
+-- rehearsal branch, as invocations and not as the `--` comments two other bodies write about
+-- them. Dropping either would take a later lane's door down with W1-TABLE's defect, which is
+-- not what an inverse is for. They stay, and they hold nothing to anything: the two
+-- projections, both guards on `custom.record` and their bodies are gone, so no Table has a
+-- home it is held to, nothing refuses a containment cycle and nothing enforces a depth
+-- ceiling. That is the world W1-TABLE found, which is the whole of what this file owes.
+-- ground-standing-ok: d — both are named above with the bodies that adopted them.
 
 -- 🚨 EIGHT OF THE FOURTEEN STAY STANDING (lane INVERSE-GUARD, 2026-09-21). This file used
 -- to drop
