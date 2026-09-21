@@ -1,7 +1,12 @@
 // features/crm/saved-views/service.ts
 //
-// Reads/writes for CRM smart views — direct browser → Supabase
-// (`supabase.schema("crm")`), RLS as the authorization layer.
+// Reads for CRM smart views go direct to Supabase (`supabase.schema("platform")`) under RLS.
+// WRITES GO THROUGH THE DOORS. `platform` is not a client-writable schema (chair ruling,
+// VERIFIER-8 HIGH-3, 2026-09-21): the base table refuses every client INSERT/UPDATE/DELETE and
+// `public.saved_view_save` / `saved_view_set_default` / `saved_view_archive` decide on the one
+// ladder instead. Those doors also resolve a row by (id, SURFACE KEY) together, which no policy
+// on this multiplexed table has ever done — so a CRM view can no longer be reached from another
+// surface's code path by id alone.
 //
 // THE VIEW LAW: the list read declares its scope explicitly — views I created
 // OR views in one of my organizations. It is a work console (like the outreach
@@ -16,7 +21,6 @@ import type {
   SavedView,
   SavedViewListKey,
   SavedViewRow,
-  SavedViewUpdate,
   SavedViewVisibility,
 } from "./types";
 
@@ -107,6 +111,20 @@ export async function fetchSavedView<TDef>(
   return hydrate(data, codec);
 }
 
+/**
+ * A door answers with the row as jsonb, or NULL when the view is not reachable
+ * under the surface key it was asked for. NULL is never an empty success here:
+ * the caller is told the view is gone rather than shown a silent no-op.
+ */
+function requireRow(row: unknown, what: string): SavedViewRow {
+  if (row === null || row === undefined) {
+    throw new Error(
+      `${what}: this view is no longer available on this list. Reload your saved views.`,
+    );
+  }
+  return row as SavedViewRow;
+}
+
 export async function createSavedView<TDef>(input: {
   name: string;
   description?: string;
@@ -117,32 +135,35 @@ export async function createSavedView<TDef>(input: {
 }): Promise<SavedView<TDef>> {
   const name = input.name.trim();
   if (!name) throw new Error("Name the view so the team can find it again");
-  const { data, error } = await savedViewDb()
-    .from("saved_view")
-    .insert({
-      name,
-      description: input.description?.trim() || null,
-      // Serialized as-is: every codec's TDef is a plain JSON object.
-      definition: input.definition as SavedViewRow["definition"],
-      surface_key: surfaceKeyFor(input.codec.listKey),
-      organization_id: input.orgId,
-      visibility: input.visibility,
-      last_used_at: new Date().toISOString(),
-    })
-    .select("*")
-    .single();
+  const { data, error } = await supabase.rpc("saved_view_save", {
+    p_surface_key: surfaceKeyFor(input.codec.listKey),
+    p_organization_id: input.orgId,
+    p_name: name,
+    p_description: input.description?.trim() || null,
+    p_set_description: true,
+    // Serialized as-is: every codec's TDef is a plain JSON object.
+    p_definition: input.definition as never,
+    p_visibility: input.visibility,
+    p_touch: true,
+  });
   if (error) {
     if (error.code === "23505") {
       throw new Error(`You already have a view called "${name}"`);
     }
     throw pgError(error);
   }
-  return hydrate(data, input.codec);
+  return hydrate(requireRow(data, "Save view"), input.codec);
 }
 
-/** Rename / re-describe / re-share / re-define — whatever the caller passes. */
+/**
+ * Rename / re-describe / re-share / re-define — whatever the caller passes.
+ *
+ * The door takes the surface key as well as the id, so this can only ever touch
+ * a view belonging to THIS list.
+ */
 export async function updateSavedView<TDef>(
   id: string,
+  listKey: SavedViewListKey,
   patch: {
     name?: string;
     description?: string | null;
@@ -150,30 +171,27 @@ export async function updateSavedView<TDef>(
     visibility?: SavedViewVisibility;
   },
 ): Promise<void> {
-  const next: SavedViewUpdate = {};
-  if (patch.name !== undefined) {
-    const name = patch.name.trim();
-    if (!name) throw new Error("A view needs a name");
-    next.name = name;
+  if (Object.keys(patch).length === 0) return;
+  if (patch.name !== undefined && !patch.name.trim()) {
+    throw new Error("A view needs a name");
   }
-  if (patch.description !== undefined) {
-    next.description = patch.description?.trim() || null;
-  }
-  if (patch.definition !== undefined)
-    next.definition = patch.definition as SavedViewRow["definition"];
-  if (patch.visibility !== undefined) next.visibility = patch.visibility;
-  if (Object.keys(next).length === 0) return;
-
-  const { error } = await savedViewDb()
-    .from("saved_view")
-    .update(next)
-    .eq("id", id);
+  const { data, error } = await supabase.rpc("saved_view_save", {
+    p_surface_key: surfaceKeyFor(listKey),
+    p_id: id,
+    p_name: patch.name === undefined ? null : patch.name.trim(),
+    p_description:
+      patch.description === undefined ? null : patch.description?.trim() || null,
+    p_set_description: patch.description !== undefined,
+    p_definition: patch.definition === undefined ? null : (patch.definition as never),
+    p_visibility: patch.visibility ?? null,
+  });
   if (error) {
     if (error.code === "23505") {
       throw new Error(`You already have a view called "${patch.name?.trim()}"`);
     }
     throw pgError(error);
   }
+  requireRow(data, "Update view");
 }
 
 /**
@@ -181,21 +199,29 @@ export async function updateSavedView<TDef>(
  * forget: a failed touch must never break opening the view, but it IS logged,
  * never swallowed silently.
  */
-export async function touchSavedView(id: string): Promise<void> {
-  const { error } = await savedViewDb()
-    .from("saved_view")
-    .update({ last_used_at: new Date().toISOString() })
-    .eq("id", id);
+export async function touchSavedView(
+  id: string,
+  listKey: SavedViewListKey,
+): Promise<void> {
+  const { error } = await supabase.rpc("saved_view_save", {
+    p_surface_key: surfaceKeyFor(listKey),
+    p_id: id,
+    p_touch: true,
+  });
   if (error) {
     console.error("[crm] saved view touch failed:", pgError(error).message);
   }
 }
 
 /** Soft-delete. The query is gone from the bar; the records are untouched. */
-export async function deleteSavedView(id: string): Promise<void> {
-  const { error } = await savedViewDb()
-    .from("saved_view")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+export async function deleteSavedView(
+  id: string,
+  listKey: SavedViewListKey,
+): Promise<void> {
+  const { data, error } = await supabase.rpc("saved_view_archive", {
+    p_surface_key: surfaceKeyFor(listKey),
+    p_id: id,
+  });
   if (error) throw pgError(error);
+  requireRow(data, "Remove view");
 }

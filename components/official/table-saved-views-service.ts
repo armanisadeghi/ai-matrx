@@ -1,6 +1,6 @@
 "use client";
 
-import { guardedUpdate, readAllRows } from "@ai-matrx/data/db";
+import { readAllRows } from "@ai-matrx/data/db";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import { parseTableViewSnapshot, type TableViewSnapshot } from "@ai-matrx/design-system/data-table";
 import { supabase } from "@/utils/supabase/client";
@@ -55,28 +55,29 @@ export async function listPersonalTableViews(actor: TableViewActor, tableId: str
 export async function createPersonalTableView(actor: TableViewActor, tableId: string, name: string, snapshot: TableViewSnapshot, signal: AbortSignal) {
   if (!actor.organizationId) throw new Error("Choose an organization from the page header before saving a view.");
   if (!name.trim()) throw new Error("Give this view a name.");
-  const { data, error } = await supabase.schema("platform").from("saved_view")
-    .insert({ name: name.trim(), organization_id: actor.organizationId, created_by: actor.userId,
-      surface_key: surfaceKey(tableId), visibility: "personal", definition_version: 1,
-      definition: definition(snapshot) })
-    .select("*").abortSignal(signal).single().setHeader("Authorization", `Bearer ${actor.accessToken}`);
+  const { data, error } = await supabase.rpc("saved_view_save", {
+    p_surface_key: surfaceKey(tableId), p_organization_id: actor.organizationId,
+    p_name: name.trim(), p_visibility: "personal", p_definition_version: 1,
+    p_definition: definition(snapshot) as never,
+  }).abortSignal(signal).setHeader("Authorization", `Bearer ${actor.accessToken}`);
   if (error) throw error;
-  return decode(data);
+  if (!data) throw new Error("This table's saved views could not be written. Save your current layout with a new name.");
+  return decode(data as unknown as ViewRow);
 }
+/**
+ * THE CAS MOVED INTO THE DOOR. `saved_view_save` takes `p_expected_version` and answers NULL on
+ * a miss, which is one statement instead of the read-then-write round trip `guardedUpdate` ran
+ * from the browser — and the door resolves the row by (id, SURFACE KEY) together, so a personal
+ * table view can no longer be reached by id from another list surface's code path.
+ */
 export async function updatePersonalTableView(actor: TableViewActor, tableId: string, view: PersonalTableView, snapshot: TableViewSnapshot, signal: AbortSignal) {
-  const result = await guardedUpdate<ViewRow>({
-    expectedVersion: view.version,
-    applyUpdate: ({ expectedVersion, nextVersion }) => supabase.schema("platform").from("saved_view")
-      .update({ definition: definition(snapshot), version: nextVersion, updated_by: actor.userId })
-      .eq("id", view.id).eq("version", expectedVersion).eq("created_by", actor.userId)
-      .eq("surface_key", surfaceKey(tableId)).eq("visibility", "personal").is("deleted_at", null)
-      .select("*").abortSignal(signal).maybeSingle().setHeader("Authorization", `Bearer ${actor.accessToken}`),
-    fetchCurrent: () => supabase.schema("platform").from("saved_view").select("*")
-      .eq("id", view.id).eq("created_by", actor.userId).eq("surface_key", surfaceKey(tableId))
-      .eq("visibility", "personal").is("deleted_at", null)
-      .abortSignal(signal).maybeSingle().setHeader("Authorization", `Bearer ${actor.accessToken}`),
-  });
-  if (result.status === "conflict") throw new Error("This saved view changed elsewhere. Your table is unchanged. Reload saved views and select the newer view, or save your current layout with a new name.");
-  if (result.status === "not_found") throw new Error("This saved view is no longer available. Save your current layout with a new name.");
-  return decode(result.row);
+  const { data, error } = await supabase.rpc("saved_view_save", {
+    p_surface_key: surfaceKey(tableId), p_id: view.id, p_expected_version: view.version,
+    p_definition: definition(snapshot) as never,
+  }).abortSignal(signal).setHeader("Authorization", `Bearer ${actor.accessToken}`);
+  if (error) throw error;
+  // NULL is the CAS miss OR an absent row, and the door deliberately does not say which — a
+  // door never tells a caller that somebody else`s row exists. Both mean the same thing here.
+  if (!data) throw new Error("This saved view changed elsewhere or is no longer available. Your table is unchanged. Reload saved views and select the newer view, or save your current layout with a new name.");
+  return decode(data as unknown as ViewRow);
 }

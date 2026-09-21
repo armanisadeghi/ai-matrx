@@ -1,9 +1,13 @@
 /**
  * Saved views — the typed read/write layer over `platform.saved_view`.
  *
- * Direct Supabase, RLS as the authorization layer, per the repo's data-flow
- * rule: this is a plain table read/write, so it never routes through Next.js or
- * the Python server.
+ * Direct Supabase for READS, RLS as the authorization layer, per the repo's
+ * data-flow rule: a plain table read never routes through Next.js or the Python
+ * server. WRITES GO THROUGH THE DOORS — `platform` is not a client-writable
+ * schema (chair ruling, VERIFIER-8 HIGH-3, 2026-09-21), so create, re-define,
+ * rename, default and archive call `public.saved_view_save`,
+ * `public.saved_view_set_default` and `public.saved_view_archive`, each of which
+ * decides on the one ladder and resolves the row by (id, SURFACE KEY) together.
  *
  * ONE TABLE, EVERY LIST. `surface_key` says which list a view belongs to and
  * `subject_id` narrows it to one record of that list (the dataset, for data
@@ -119,6 +123,14 @@ export async function getTableOrganizationId(
   return { success: true, data: org };
 }
 
+/**
+ * A door returns the row as jsonb, or NULL when the view is not reachable under
+ * the surface key it was asked for. NULL is a REFUSAL the caller must see, never
+ * a silent success — so it becomes the service's own error result.
+ */
+const GONE =
+  "This saved view is no longer available on this table. Reload your saved views.";
+
 export async function createSavedView(args: {
   tableId: string;
   organizationId: string;
@@ -127,23 +139,20 @@ export async function createSavedView(args: {
   makeDefault?: boolean;
 }): Promise<ServiceResult<SavedView>> {
   // THE ORG IS EXPLICIT ON EVERY WRITE — no resolver, no trigger, chooses one.
-  const { data, error } = await db()
-    .from(TABLE)
-    .insert({
-      name: args.name.trim() || "Untitled view",
-      surface_key: DATA_TABLE_SURFACE_KEY,
-      subject_id: args.tableId,
-      organization_id: args.organizationId,
-      definition: args.definition as never,
-      definition_version: SAVED_VIEW_DEFINITION_VERSION,
-      is_default: args.makeDefault === true,
-    })
-    .select(
-      "id,name,description,definition,is_default,visibility,created_by,updated_at",
-    )
-    .single();
+  // The door refuses a NULL organization by name rather than letting the insert
+  // fail on a NOT NULL nobody reads.
+  const { data, error } = await supabase.rpc("saved_view_save", {
+    p_surface_key: DATA_TABLE_SURFACE_KEY,
+    p_subject_id: args.tableId,
+    p_organization_id: args.organizationId,
+    p_name: args.name.trim() || "Untitled view",
+    p_definition: args.definition as never,
+    p_definition_version: SAVED_VIEW_DEFINITION_VERSION,
+    p_is_default: args.makeDefault === true,
+  });
 
   if (error) return { success: false, error: error.message };
+  if (!data) return { success: false, error: GONE };
   return { success: true, data: toSavedView(data as Record<string, unknown>) };
 }
 
@@ -152,19 +161,15 @@ export async function updateSavedViewDefinition(args: {
   id: string;
   definition: SavedViewDefinition;
 }): Promise<ServiceResult<SavedView>> {
-  const { data, error } = await db()
-    .from(TABLE)
-    .update({
-      definition: args.definition as never,
-      definition_version: SAVED_VIEW_DEFINITION_VERSION,
-    })
-    .eq("id", args.id)
-    .select(
-      "id,name,description,definition,is_default,visibility,created_by,updated_at",
-    )
-    .single();
+  const { data, error } = await supabase.rpc("saved_view_save", {
+    p_surface_key: DATA_TABLE_SURFACE_KEY,
+    p_id: args.id,
+    p_definition: args.definition as never,
+    p_definition_version: SAVED_VIEW_DEFINITION_VERSION,
+  });
 
   if (error) return { success: false, error: error.message };
+  if (!data) return { success: false, error: GONE };
   return { success: true, data: toSavedView(data as Record<string, unknown>) };
 }
 
@@ -172,47 +177,39 @@ export async function renameSavedView(args: {
   id: string;
   name: string;
 }): Promise<ServiceResult<SavedView>> {
-  const { data, error } = await db()
-    .from(TABLE)
-    .update({ name: args.name.trim() || "Untitled view" })
-    .eq("id", args.id)
-    .select(
-      "id,name,description,definition,is_default,visibility,created_by,updated_at",
-    )
-    .single();
+  const { data, error } = await supabase.rpc("saved_view_save", {
+    p_surface_key: DATA_TABLE_SURFACE_KEY,
+    p_id: args.id,
+    p_name: args.name.trim() || "Untitled view",
+  });
 
   if (error) return { success: false, error: error.message };
+  if (!data) return { success: false, error: GONE };
   return { success: true, data: toSavedView(data as Record<string, unknown>) };
 }
 
 /**
  * Make one view the default, clearing any previous one.
  *
- * Two statements, and the CLEAR runs first on purpose: a partial unique index
- * enforces one default per person per table, so setting before clearing would
- * be refused by the database. Clearing first can at worst leave no default —
- * recoverable and visible — where the other order simply fails.
+ * ONE CALL, because the ordering is not the client's to get right. A partial
+ * unique index enforces one default per person per table, so the clear has to
+ * run before the set — and doing that in two round trips could leave a table
+ * with NO default when the second one failed. `saved_view_set_default` does
+ * both inside the database, and scopes the clear to the caller's own rows,
+ * which is what the index is actually keyed on.
  */
 export async function setDefaultSavedView(args: {
   tableId: string;
   id: string | null;
 }): Promise<ServiceResult<null>> {
-  const clear = await db()
-    .from(TABLE)
-    .update({ is_default: false })
-    .eq("surface_key", DATA_TABLE_SURFACE_KEY)
-    .eq("subject_id", args.tableId)
-    .eq("is_default", true);
-
-  if (clear.error) return { success: false, error: clear.error.message };
-  if (args.id === null) return { success: true, data: null };
-
-  const { error } = await db()
-    .from(TABLE)
-    .update({ is_default: true })
-    .eq("id", args.id);
+  const { data, error } = await supabase.rpc("saved_view_set_default", {
+    p_surface_key: DATA_TABLE_SURFACE_KEY,
+    p_subject_id: args.tableId,
+    p_id: args.id,
+  });
 
   if (error) return { success: false, error: error.message };
+  if (!data) return { success: false, error: GONE };
   return { success: true, data: null };
 }
 
@@ -226,11 +223,12 @@ export async function setDefaultSavedView(args: {
 export async function deleteSavedView(args: {
   id: string;
 }): Promise<ServiceResult<null>> {
-  const { error } = await db()
-    .from(TABLE)
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", args.id);
+  const { data, error } = await supabase.rpc("saved_view_archive", {
+    p_surface_key: DATA_TABLE_SURFACE_KEY,
+    p_id: args.id,
+  });
 
   if (error) return { success: false, error: error.message };
+  if (!data) return { success: false, error: GONE };
   return { success: true, data: null };
 }
