@@ -16,7 +16,7 @@
  * the builder (`HighlightedText`).
  */
 
-import { Fragment, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   AlertTriangle,
   ChevronDown,
@@ -191,7 +191,9 @@ function BudgetMeter({ reading }: BudgetMeterProps) {
         estimate ·{" "}
         {limits.source === "catalog"
           ? "limits from the model catalog"
-          : "platform default limits — this model's catalog row declares none"}
+          : limits.source === "unloaded"
+            ? "platform default limits — the model's own limits have not loaded yet"
+            : "platform default limits — this model's catalog row declares none"}
       </span>
       {(reading.overTotal || reading.overStatePlusLongest) && (
         <span className="text-destructive">
@@ -551,7 +553,7 @@ export function DecisionQuestionsEditor({
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 w-full rounded-lg border border-border bg-card p-2",
+        "@container/dq flex flex-col gap-2 w-full rounded-lg border border-border bg-card p-2",
         refused && "opacity-50 grayscale",
         className,
       )}
@@ -593,7 +595,9 @@ export function DecisionQuestionsEditor({
             "flex items-start gap-1.5 rounded-md border px-2 py-1.5 text-[11px]",
             compatibility.verdict === "refused"
               ? "border-destructive/40 bg-destructive/10 text-destructive"
-              : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+              : compatibility.verdict === "unknown"
+                ? "border-border bg-muted/50 text-muted-foreground"
+                : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
           )}
         >
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
@@ -601,28 +605,35 @@ export function DecisionQuestionsEditor({
         </div>
       )}
 
-      <table className="w-full text-xs border-collapse">
-        <thead>
-          <tr className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            <th className="text-left font-medium py-1 pr-2 w-[9rem]">Name</th>
-            <th className="text-left font-medium py-1 pr-2 w-[13rem]">Type</th>
-            <th className="text-left font-medium py-1 pr-2">Instruction</th>
-            <th className="text-left font-medium py-1 pr-2 w-[5.5rem]">
-              Threshold
-            </th>
-            <th className="w-6" />
-          </tr>
-        </thead>
-        <tbody>
-          {questions.map((question, index) => {
-            const lint = lintQuestion(question);
-            const duplicate = duplicateNames.has(index);
-            const criteriaOpen = openCriteria.has(index);
-            const tokens = reading.questionTokens[index] ?? 0;
-            return (
-              <Fragment key={`q-${index}`}>
-              <tr className="align-top border-t border-border/60">
-                <td className="py-1.5 pr-2">
+      {/*
+        The table is a GRID, and it collapses to one field per line when the
+        panel is narrow — the agent builder's message column is ~400px, and a
+        five-column table crammed into it is unreadable, which is worse than
+        not being a table. Container query, not a viewport breakpoint: the
+        same editor renders in a narrow builder panel and a wide full-screen
+        editor on the same screen.
+      */}
+      <div className="text-xs">
+        <div className="hidden @[46rem]/dq:grid grid-cols-[9rem_13rem_1fr_5.5rem_1.5rem] gap-2 text-[10px] uppercase tracking-wide text-muted-foreground pb-1">
+          <span>Name</span>
+          <span>Type</span>
+          <span>Instruction</span>
+          <span>Threshold</span>
+          <span />
+        </div>
+
+        {questions.map((question, index) => {
+          const lint = lintQuestion(question);
+          const duplicate = duplicateNames.has(index);
+          const criteriaOpen = openCriteria.has(index);
+          const tokens = reading.questionTokens[index] ?? 0;
+          return (
+            <div
+              key={`q-${index}`}
+              className="border-t border-border/60 py-1.5"
+            >
+              <div className="grid grid-cols-1 @[46rem]/dq:grid-cols-[9rem_13rem_1fr_5.5rem_1.5rem] gap-2 items-start">
+                <div>
                   <Input
                     value={question.name}
                     onChange={(e) => {
@@ -643,9 +654,9 @@ export function DecisionQuestionsEditor({
                       Two questions cannot answer into the same field.
                     </p>
                   )}
-                </td>
+                </div>
 
-                <td className="py-1.5 pr-2">
+                <div>
                   <div className="inline-flex rounded-md border border-border bg-muted p-0.5">
                     {TYPE_ORDER.map((type) => (
                       <button
@@ -681,9 +692,9 @@ export function DecisionQuestionsEditor({
                     )}
                     Criteria
                   </button>
-                </td>
+                </div>
 
-                <td className="py-1.5 pr-2">
+                <div className="min-w-0">
                   <ProTextarea
                     value={question.instructions ?? ""}
                     onChange={(e) => setInstruction(index, e.target.value)}
@@ -711,9 +722,12 @@ export function DecisionQuestionsEditor({
                   <span className="mt-0.5 block text-[10px] font-mono text-muted-foreground">
                     {formatTokens(tokens)} tokens
                   </span>
-                </td>
+                </div>
 
-                <td className="py-1.5 pr-2">
+                <div className="flex items-center gap-1">
+                  <span className="@[46rem]/dq:hidden text-[10px] text-muted-foreground">
+                    Threshold
+                  </span>
                   <Input
                     value={
                       question.suggested_threshold == null
@@ -733,41 +747,36 @@ export function DecisionQuestionsEditor({
                     inputMode="decimal"
                     placeholder="0.7"
                     aria-label={`Question ${index + 1} suggested threshold`}
-                    className="h-6 text-[11px] font-mono"
+                    className="h-6 w-[4.5rem] text-[11px] font-mono"
                   />
-                </td>
+                </div>
 
-                <td className="py-1.5">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onChange(questions.filter((_, i) => i !== index))
-                    }
-                    aria-label={`Remove question ${index + 1}`}
-                    className="p-1 rounded text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                </td>
-              </tr>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onChange(questions.filter((_, i) => i !== index))
+                  }
+                  aria-label={`Remove question ${index + 1}`}
+                  className="p-1 rounded text-muted-foreground hover:text-destructive justify-self-start"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+
               {criteriaOpen && (
-                <tr className="border-t border-border/30">
-                  <td />
-                  <td colSpan={4} className="py-1.5 pr-2">
-                    <CriteriaCell
-                      question={question}
-                      questionKey={`q-${index}`}
-                      validVariables={validVariables}
-                      onChange={(criteria) => update(index, { criteria })}
-                    />
-                  </td>
-                </tr>
+                <div className="mt-1.5 @[46rem]/dq:pl-[9.5rem]">
+                  <CriteriaCell
+                    question={question}
+                    questionKey={`q-${index}`}
+                    validVariables={validVariables}
+                    onChange={(criteria) => update(index, { criteria })}
+                  />
+                </div>
               )}
-              </Fragment>
-            );
-          })}
-        </tbody>
-      </table>
+            </div>
+          );
+        })}
+      </div>
 
       {questions.length === 0 && (
         <p className="text-[11px] text-muted-foreground">

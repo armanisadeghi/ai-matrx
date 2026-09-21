@@ -36,7 +36,7 @@ export const DECISION_BUDGET_DEFAULTS = {
   statePlusLongestQuestionTokens: 32_000,
 } as const;
 
-export type DecisionBudgetSource = "catalog" | "default";
+export type DecisionBudgetSource = "catalog" | "default" | "unloaded";
 
 export interface DecisionBudgetLimits {
   totalTokens: number;
@@ -93,7 +93,13 @@ export function decisionBudgetForModel(
       source: "catalog",
     };
   }
-  return { ...DECISION_BUDGET_DEFAULTS, source: "default" };
+  // "unloaded" and "default" both fall back to the same numbers, but they are
+  // different sentences on screen: one says the catalog row declares none, the
+  // other says we have not read the row yet.
+  return {
+    ...DECISION_BUDGET_DEFAULTS,
+    source: model ? "default" : "unloaded",
+  };
 }
 
 export interface DecisionBudgetReading {

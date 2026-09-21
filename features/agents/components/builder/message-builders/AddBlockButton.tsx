@@ -187,6 +187,8 @@ function getConfig(type: string): BlockTypeConfig | undefined {
  */
 export interface DecisionPartContext {
   model: AIModelRecord | null | undefined;
+  /** The agent's chosen model id — set even while `model` is still loading. */
+  modelId?: string | null;
   stateText: string;
 }
 
@@ -803,7 +805,10 @@ export function BlockList({
 
   const model = decisionContext?.model ?? null;
   const hasQuestionsPart = blocks.some(isDecisionQuestionsPart);
-  const questionsVerdict = decisionQuestionsCompatibility(model);
+  const questionsVerdict = decisionQuestionsCompatibility(
+    model,
+    decisionContext?.modelId ?? null,
+  );
 
   // "Questions" has no field form — picking it adds the part with one empty
   // question and the table opens on it. Nothing to confirm, nothing to type

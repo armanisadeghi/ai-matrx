@@ -26,6 +26,10 @@ import { partKind } from "./types";
 export type PartCompatibility =
   | { verdict: "native" }
   | { verdict: "converted"; reason: string }
+  /** The model is chosen but its catalog record has not arrived yet. Saying
+   *  "this model cannot take questions" during that window would be a lie
+   *  about the model rather than about our own loading. */
+  | { verdict: "unknown"; reason: string }
   | { verdict: "refused"; reason: string };
 
 /** Part kinds whose content is not text and so cannot be decision state. */
@@ -53,11 +57,22 @@ function modelTakesText(model: AIModelRecord | null | undefined): boolean {
   return conversational && capabilities.input.includes("text");
 }
 
-/** The verdict on the questions part itself for the selected model. */
+/**
+ * The verdict on the questions part itself for the selected model.
+ * `modelId` separates "nothing chosen" from "chosen, record still loading".
+ */
 export function decisionQuestionsCompatibility(
   model: AIModelRecord | null | undefined,
+  modelId?: string | null,
 ): PartCompatibility {
   if (!model) {
+    if (modelId) {
+      return {
+        verdict: "unknown",
+        reason:
+          "This model's capabilities are still loading, so nothing can say yet whether it can run these questions.",
+      };
+    }
     return {
       verdict: "refused",
       reason:

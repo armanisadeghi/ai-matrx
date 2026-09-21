@@ -24,7 +24,7 @@ import {
   selectAgentModelId,
   selectAgentVariableDefinitions,
 } from "@/features/agents/redux/agent-definition/selectors";
-import { selectModelById } from "@/features/ai-models/redux/modelRegistrySlice";
+import { useModelFull } from "@/features/ai-models/hooks/useModels";
 import { isDecisionQuestionsPart } from "@/features/agents/decision-questions/types";
 import { setAgentMessages } from "@/features/agents/redux/agent-definition/slice";
 
@@ -144,9 +144,10 @@ export function MessageItem({
   // The decision budget meter reads the model the agent will actually run on
   // and the state it will read — every OTHER part of this same message.
   const modelId = useAppSelector((state) => selectAgentModelId(state, agentId));
-  const selectedModel = useAppSelector((state) =>
-    modelId ? selectModelById(state, modelId) : undefined,
-  );
+  // The FULL record — `context_window` and `capabilities` are what the meter
+  // and the compatibility sentence are made of, and an options-only row has
+  // neither. The hook triggers the one fetch and is a no-op afterwards.
+  const selectedModel = useModelFull(modelId);
 
   const { canUndo, canRedo, undo, redo, undoHint, redoHint } = useAgentUndoRedo(
     { agentId },
@@ -812,6 +813,7 @@ export function MessageItem({
               validVariables={variableNames}
               decisionContext={{
                 model: selectedModel ?? null,
+                modelId,
                 stateText: decisionStateText,
               }}
             />
