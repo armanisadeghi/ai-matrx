@@ -256,6 +256,19 @@ The folder is clean, but dozens of sessions write into it every minute, and
 the next usage pause or crash strands their half-finished files as dirty
 paths nobody owns. Do not let that pile grow back. Every 30 minutes:
 
+- The loop between releases, in this order, every 30 minutes or sooner:
+  pull with no rebase, merge, `pnpm sync-types` (API shapes and database
+  types from the live schema), type-check, fix what it names, release.
+  Arman, 2026-09-21: "if you've been having people merge things in and
+  commit locally, then you have to pull, merge and release and you have to
+  consistently run sync-types and run a type check and fix those between
+  releases." A sync that happened three hours ago is not a state.
+- A gate that stops a primary script is a bug, not a safeguard. On
+  2026-09-21 the install gate refused `pnpm sync-types` for hours because a
+  dev preview was running. Arman: "Nothing should ever stop our primary
+  scripts from doing their jobs." Such a gate warns with the remedy and
+  proceeds; refusal is opt-in. Fix the gate the same hour, with its
+  self-test proving both modes.
 - Fetch, `pull --no-rebase`, push. If the pull is refused because an
   untracked file "would be overwritten", a lane pushed that file from its
   own worktree and left a copy here: if the copy is byte-identical to

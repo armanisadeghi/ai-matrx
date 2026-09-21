@@ -28,9 +28,14 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
+import type { ArchiveFilterValue } from "@ai-matrx/design-system";
 
-/** THE ARCHIVED-ITEMS LAW's three values, and no fourth. */
-export type OrganizationArchiveFilter = "active" | "archived" | "all";
+/**
+ * THE ARCHIVED-ITEMS LAW's three values, and no fourth — the PLATFORM'S own
+ * type (`@ai-matrx/design-system`), never a second one coined here. The same
+ * three words are what `public.list_user_organizations` takes on the server.
+ */
+export type OrganizationArchiveFilter = ArchiveFilterValue;
 
 /** What one organization's archive looks like, in the door's own words. */
 export interface OrganizationArchiveState {
@@ -87,7 +92,9 @@ export async function archiveOrganization(
     {
       p_org: organizationId,
       p_confirm_name: confirmName,
-      p_reason: reason && reason.trim() ? reason.trim() : null,
+      // The door's own argument default is null; omitting it says the same
+      // thing and matches the generated optional-argument type.
+      p_reason: reason && reason.trim() ? reason.trim() : undefined,
     },
   );
   if (error) throw pgErrorToError(error);

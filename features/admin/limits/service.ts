@@ -12,6 +12,10 @@ import { createClient } from "@/utils/supabase/client";
 import { invalidateEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import { isJsonObject } from "@/types/json";
 import type { Database } from "@/types/database.types";
+import {
+  DEFAULT_ARCHIVE_FILTER,
+  type ArchiveFilterValue,
+} from "@ai-matrx/design-system";
 import type {
   AccountAddon,
   Capability,
@@ -187,18 +191,29 @@ export async function fetchAccountAddons(): Promise<AccountAddon[]> {
  * `personal-pro` account IS an org here, and it is the likeliest recipient of
  * a points add-on.
  */
-export async function fetchOrganizationOptions(): Promise<OrganizationOption[]> {
+export async function fetchOrganizationOptions(
+  // THE ARCHIVED-ITEMS LAW: the default HIDES archived organizations — an
+  // archived organization is closed, so offering it a points add-on would be a
+  // grant nobody could ever use. "archived" / "all" are the reveal, and the
+  // rows carry `archived_at` so a surface can label what it shows.
+  archiveFilter: ArchiveFilterValue = DEFAULT_ARCHIVE_FILTER,
+): Promise<OrganizationOption[]> {
   const supabase = createClient();
   const rows = await readAllRows<OrganizationOption>(
-    ({ from, to }) =>
-      supabase
+    ({ from, to }) => {
+      let query = supabase
         .schema("iam")
         .from("organizations")
-        .select("id, name, slug, is_personal", { count: "exact" })
+        .select("id, name, slug, is_personal, archived_at", { count: "exact" });
+      if (archiveFilter === "active") query = query.is("archived_at", null);
+      else if (archiveFilter === "archived")
+        query = query.not("archived_at", "is", null);
+      return query
         .order("name")
         .order("id")
         .range(from, to)
-        .returns<OrganizationOption[]>(),
+        .returns<OrganizationOption[]>();
+    },
     { label: "iam.organizations (account add-ons)" },
   );
   return rows.map((row) => ({ ...row, is_personal: row.is_personal === true }));

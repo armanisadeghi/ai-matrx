@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Building2, Plus, Search, Loader2 } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { ArchivedDisclosure, Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useUserOrganizations } from "../hooks";
@@ -40,7 +40,20 @@ export function OrganizationList() {
     () => searchParams?.get("create") === "1",
   );
 
-  const { organizations, loading, error, refresh } = useUserOrganizations();
+  // THE ARCHIVED-ITEMS LAW: the reveal reads "all" and splits the rows here,
+  // so an archived organization is one click away instead of invisible.
+  const {
+    organizations: allOrganizations,
+    loading,
+    error,
+    refresh,
+  } = useUserOrganizations("all");
+  const [showArchived, setShowArchived] = useState(false);
+
+  const organizations = allOrganizations.filter((o) => !o.archivedAt);
+  const archivedOrganizations = allOrganizations.filter((o) =>
+    Boolean(o.archivedAt),
+  );
 
   // Filter organizations based on search
   const filteredOrgs = searchTerm
@@ -85,8 +98,10 @@ export function OrganizationList() {
     );
   }
 
-  // Empty state - no organizations at all (shouldn't happen if personal org exists)
-  if (organizations.length === 0) {
+  // Empty state - no organizations at all (shouldn't happen if personal org
+  // exists). Counted across live AND archived: a viewer whose only
+  // organizations are archived still reaches them through the reveal below.
+  if (allOrganizations.length === 0) {
     return (
       <Card className="p-8 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-800">
         <div className="text-center">

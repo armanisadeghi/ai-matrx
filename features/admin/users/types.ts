@@ -53,6 +53,8 @@ export interface AdminOrganizationRow {
   created_by: string | null;
   is_personal: boolean;
   is_system: boolean;
+  /** Set when the organization is archived (closed, not deleted). */
+  archived_at: string | null;
   member_count: number;
   owner_count: number;
   admin_count: number;
