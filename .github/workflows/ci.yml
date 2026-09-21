@@ -142,6 +142,27 @@ jobs:
         run: pnpm test:vercel-ignore
       - name: Matrx-owned packages are declared and installed at npm latest
         run: pnpm check:matrx-packages
+      - name: THE OWNER'S NO-FAKE-TEST-DATA LAW
+        # 2026-09-21. Every demo, seed, fixture, campaign suite and screenshot
+        # script in this repo draws its data from a REAL USE CASE a real
+        # business would have. No Acme, no ZZZ, no Job 001, no lorem, no
+        # .example mailbox, no "(test fixture)" in a name. A screenshot of
+        # "Job 001 / Ada / 42" tells the owner nothing about whether the
+        # product works.
+        #
+        # THE PATTERNS ARE NOT DEFINED HERE. They live once, in
+        # `@ai-matrx/records/use-cases`, shared with that library's validator
+        # and with aidream's twin of this guard, so all three can never
+        # disagree about what junk means. The guard STOOD DOWN — loudly, and
+        # exiting 0 — until records 0.29.0 shipped that subpath; it has been
+        # enforcing since. 452 hits across 82 files went to 0 the same day.
+        run: pnpm check:no-placeholder-data
+      - name: the no-fake-data guard can still fail (self-test)
+        # A guard you cannot demonstrate failing is not a guard. This plants a
+        # seed file carrying Acme, a sequential name and an example.com mailbox
+        # plus one pragma-exempted line, and asserts the guard catches exactly
+        # the three and honours the exemption.
+        run: pnpm check:no-placeholder-data:self-test
       - name: EVERY TYPESCRIPT FILE PARSES
         # ~4s over 14,716 files, zero backlog, and the only finding in this
         # repo that is not an opinion. On 2026-09-07 the census-H1 codemod
