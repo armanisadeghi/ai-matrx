@@ -195,6 +195,9 @@ if (process.argv.includes("--self-test")) {
     );
     exitAfterDrain(1);
   }
+  // The RED output, printed verbatim — a self-test that only says "it failed"
+  // asks to be believed. This shows exactly what the guard says on the bytes.
+  report(findings);
   console.log(
     `[ OK ] SELF-TEST: the shipped bytes are refused (${findings.length} finding(s)), ` +
       "so this guard is known to be able to fail.",
