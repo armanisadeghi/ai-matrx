@@ -1084,6 +1084,8 @@ function ProviderSection({
       <div className="flex items-center gap-3 px-3 py-2 bg-card">
         <button
           onClick={() => summary.has_cache && handleExpand()}
+          aria-label={`${expanded ? "Collapse" : "Expand"} ${summary.name ?? summary.id} models`}
+          aria-expanded={expanded}
           className={`shrink-0 text-muted-foreground ${summary.has_cache ? "hover:text-foreground cursor-pointer" : "cursor-default opacity-30"}`}
           disabled={!summary.has_cache}
         >
