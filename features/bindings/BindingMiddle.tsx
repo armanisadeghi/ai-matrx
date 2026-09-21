@@ -193,7 +193,7 @@ export function BindingMiddleRow({
     chosen.length > 0 ? { [target.name]: chosen } : {},
     // R5-1: this row's own label, so the refusal under the header says the same
     // words the header does.
-    { targets: [target] },
+    { targets: [target], holderKind },
   );
   const unfedRequired =
     target.required === true &&
@@ -276,23 +276,37 @@ export function BindingMiddleRow({
           {awaitingPick ? (
             <p className="flex items-start gap-1.5 px-0.5 text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              Source selection: Missing
+              Source selection: Missing — pick the offered value that should
+              feed this input, or remove the source.
             </p>
           ) : null}
 
+          {/* 🚨 THE REFUSAL IS ON THE SCREEN, NOT BEHIND A HOVER (2026-09-20,
+                Arman on `feedback.item_triage_decision`). This used to be a
+                PropertyRow whose only words were "Mapping issue 1 — Invalid",
+                with the actual sentence hidden in a `help` popover that opens
+                on hover or on a click of a small "?" — so the one thing that
+                explains why Save is dead was the one thing the page never
+                said. A refusal that blocks a write is never optional reading:
+                `SAVE-BLOCKING REFUSALS ARE PRINTED` is now the rule for this
+                whole workspace (the Save refusal below follows it too). */}
           {rowProblems.map((problem, index) => (
-            <PropertyRow
+            <div
               key={problem}
-              label={`Mapping issue ${index + 1}`}
-              value={<StatusToken status="error" label="Invalid" />}
-              help={<TextWithDoors text={problem} defaultToken="agent" />}
-            />
+              className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-2.5 py-2"
+            >
+              <StatusToken status="error" label="Invalid" />
+              <p className="min-w-0 flex-1 text-[12px] leading-relaxed text-destructive">
+                <span className="sr-only">{`Mapping issue ${index + 1}: `}</span>
+                <TextWithDoors text={problem} defaultToken="agent" />
+              </p>
+            </div>
           ))}
 
           {unfedRequired ? (
             <StatusToken
               status="caution"
-              label="Required destination has no source or default"
+              label={`${holderKind === "workflow" ? "This workflow input" : "This variable"} is required and nothing feeds it — pick a source above, or give the ${holderKind} a default of its own`}
             />
           ) : null}
 

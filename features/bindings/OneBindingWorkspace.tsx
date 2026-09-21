@@ -992,6 +992,9 @@ function BindingDraft({
     ? consumptionMapProblems(offer, withoutUnpicked(draftMap), {
         // R5-1: the refusal names the input the way its own row does.
         targets: holderInputs.targets,
+        // The remedy has to be performable, and "give the holder a context
+        // slot" is only true of the holder actually chosen.
+        holderKind: holder.kind,
       })
     : [];
   // 🚨 H1, at its class and in BOTH modes (P17 — batch is the middle
@@ -2521,12 +2524,16 @@ function BindingDraft({
 
           <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/40 pt-3">
             {saveRefusal ? (
-              <p className="mr-auto flex items-start gap-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
+              /* 🚨 SAVE-BLOCKING REFUSALS ARE PRINTED (2026-09-20). The reason
+                 Save is disabled used to live in a hover popover behind a "?",
+                 so the screen said "Save unavailable" and stopped. A person
+                 cannot fix what the page will not say. */
+              <p className="mr-auto flex min-w-0 max-w-[46rem] items-start gap-1.5 text-[11.5px] leading-relaxed text-destructive">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span>Save unavailable</span>
-                <FieldHelp label="Save unavailable">
+                <span className="min-w-0">
+                  <span className="font-medium">Save unavailable: </span>
                   <TextWithDoors text={saveRefusal} defaultToken="agent" />
-                </FieldHelp>
+                </span>
               </p>
             ) : null}
             {binding ? (

@@ -609,6 +609,46 @@ export interface PreflightContext {
    * `"variable-only"`.
    */
   channels?: "variable-and-context" | "variable-only";
+  /**
+   * What the holder IS, in the person's words — "agent" or "workflow".
+   *
+   * 🚨 THE REMEDY HAS TO BE PERFORMABLE (2026-09-20, Arman on
+   * `feedback.item_triage_decision`). The structured-on-a-variable refusal used
+   * to end "deliver it as context, never as a blob variable" — an instruction
+   * nobody on that screen can follow: the delivery channel is NOT a control,
+   * it is derived from whether the holder input is a prompt variable or a
+   * context slot (`BindingMiddle`'s `isContext`). A person staring at a
+   * variable row was told to flip a switch that does not exist, and the only
+   * real exits — feed the variable a value that has a text form, or give the
+   * holder a context slot for this value — were never named. This is how the
+   * sentence names the right one.
+   */
+  holderKind?: "agent" | "workflow";
+}
+
+/**
+ * The one refusal for "this value has no text form and this input carries
+ * text". Named, reasoned, and ended with an exit the reader can actually take.
+ */
+function noTextFormRefusal({
+  input,
+  value,
+  kind,
+  holderKind,
+  twoChannels,
+}: {
+  input: string;
+  value: string;
+  kind: string;
+  holderKind: "agent" | "workflow";
+  twoChannels: boolean;
+}): string {
+  const head = `“${input}” is a prompt variable, which carries text only, and “${value}” is ${kindPhrase(kind)} — it has no text form`;
+  // A surface / shortcut binding has ONE channel, so "give it a context slot"
+  // is not a truth about it and must not be offered as a way out.
+  return twoChannels
+    ? `${head}. Feed this input a value that is text instead, or give the ${holderKind} a context slot for “${value}” and map it there.`
+    : `${head}. Feed this input a value that is text instead.`;
 }
 
 /**
@@ -650,6 +690,7 @@ export function consumptionMapProblems(
   const offered = new Map((offer?.values ?? []).map((v) => [v.name, v]));
   const twoChannels = (context.channels ?? "variable-and-context") !==
     "variable-only";
+  const holderKind = context.holderKind ?? "agent";
   const targetLabels = new Map(
     (context.targets ?? []).map((t) => [t.name, displayLabelForKey(t.name, t.label)]),
   );
@@ -676,9 +717,17 @@ export function consumptionMapProblems(
           problems.push(
             `“${inputName(name)}” has a structured fixed value, which has no text form — it can't be joined with other values; give it an input of its own`,
           );
-        } else if (structured && twoChannels && sourceChannel(entry) === "variable") {
+        } else if (
+          structured &&
+          twoChannels &&
+          sourceChannel(entry) === "variable"
+        ) {
+          // Still gated on `twoChannels` — a surface map has one channel and
+          // this sentence is not a truth about it (one-preflight-every-writer
+          // "does not invent the mandate's two-channel sentences").
           problems.push(
-            `“${inputName(name)}” has a structured fixed value — deliver it as context, never as a blob variable`,
+            `“${inputName(name)}” is a prompt variable, which carries text only, and its fixed value is a structured shape — it has no text form. ` +
+              `Write the fixed value as text instead, or give the ${holderKind} a context slot for it and map it there.`,
           );
         }
         continue;
@@ -699,7 +748,7 @@ export function consumptionMapProblems(
       const value = offered.get(source);
       if (!value) {
         problems.push(
-          `“${inputName(name)}” consumes “${valueName(source)}”, which this job does not offer`,
+          `“${inputName(name)}” consumes “${valueName(source)}”, which this job does not offer — pick one of the values in the offered list, or leave this input on the ${holderKind}'s own default`,
         );
         continue;
       }
@@ -719,26 +768,29 @@ export function consumptionMapProblems(
         !MEDIA_VALUE_KINDS.has(value.kind)
       ) {
         problems.push(
-          `“${inputName(name)}” is fed “${valueName(source)}”, which is ${kindPhrase(value.kind)} — deliver it as context, never as a blob variable`,
+          noTextFormRefusal({
+            input: inputName(name),
+            value: valueName(source),
+            kind: value.kind,
+            holderKind,
+            twoChannels,
+          }),
         );
       }
       // D18.2 — MANY-TO-ONE IS A TEXT OPERATION. Several values become one
       // input by being joined with a blank line, so every source in a
       // multi-source target must have a text form. A media ref has none (it
       // becomes a turn block) and a structured shape has none either.
-      if (multi && MEDIA_VALUE_KINDS.has(value.kind)) {
+      if (multi && !SCALAR_VALUE_KINDS.has(value.kind)) {
         problems.push(
-          `“${valueName(source)}” is a file and can't be joined with other values — give it an input of its own`,
-        );
-      } else if (multi && !SCALAR_VALUE_KINDS.has(value.kind)) {
-        problems.push(
-          `“${valueName(source)}” is ${kindPhrase(value.kind)} and can't be joined with other values — give it an input of its own`,
+          `“${inputName(name)}” joins several values into one block of text, and “${valueName(source)}” is ${kindPhrase(value.kind)} — it has no text form to join. ` +
+            `Remove it from “${inputName(name)}” and give it an input of its own.`,
         );
       }
     }
     if (twoChannels && channels.size > 1) {
       problems.push(
-        `“${inputName(name)}” has sources going to different places — everything feeding one input lands the same way`,
+        `“${inputName(name)}” has sources going to different places — everything feeding one input lands the same way. Remove the sources that do not belong here and give them inputs of their own.`,
       );
     }
   }
