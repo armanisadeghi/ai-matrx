@@ -44,7 +44,6 @@ function Probe() {
 
 function note(overrides: Partial<Note> = {}): Note {
   return {
-    custom_fields: {},
     id: "note-1",
     content: "body",
     content_hash: null,

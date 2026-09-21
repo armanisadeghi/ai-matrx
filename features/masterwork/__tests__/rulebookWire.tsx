@@ -225,7 +225,6 @@ export const knobWire = {
 
 export function rulebookRow(id: string, name: string): RulebookRow {
   return {
-    custom_fields: {},
     assurance_level: null,
     created_at: "2026-09-16T20:00:00.000Z",
     created_by: USER_ID,

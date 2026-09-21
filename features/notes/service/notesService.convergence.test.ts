@@ -26,7 +26,6 @@ const TASK_ID = "55555555-5555-4555-8555-555555555555";
 
 function noteRow(overrides: Partial<NoteRow> = {}): NoteRow {
   return {
-    custom_fields: {},
     id: NOTE_ID,
     content: "before",
     content_preview: "before",
