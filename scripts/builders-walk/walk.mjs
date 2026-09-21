@@ -74,14 +74,71 @@ export const CASES = {
 const argv = process.argv.slice(2);
 const only = argv.includes("--only") ? argv[argv.indexOf("--only") + 1] : null;
 
-async function signIn(page, next) {
+/**
+ * ONE ATTEMPT AT THE HANDSHAKE — and the honest reason when it does not take.
+ *
+ * `page.goto` on `/api/dev-login` lands on the DESTINATION when the handshake
+ * worked (the route 307s) and on the route's own JSON body when it did not.
+ * Reading that body is the difference between a walk that says
+ * "dev-login refused: transport failure reaching the auth host, retrying"
+ * and a walk that says nothing and looks like the product broke.
+ */
+async function attemptDevLogin(page, next) {
   const nonce = randomBytes(16).toString("hex");
   writeFileSync(resolve(ROOT, `.dev-login-nonce.${HOST}`), `${nonce}\n`);
-  await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent(next)}`, {
-    waitUntil: "domcontentloaded",
-    timeout: 240000,
-  });
-  let who = await page.evaluate(async () => (await fetch("/api/whoami")).json()).catch(() => null);
+  const response = await page
+    .goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent(next)}`, {
+      waitUntil: "domcontentloaded",
+      timeout: 240000,
+    })
+    .catch((error) => ({ status: () => 0, navigationError: String(error) }));
+
+  const who = await page.evaluate(async () => (await fetch("/api/whoami")).json()).catch(() => null);
+  if (who?.email === "admin@admin.com") return { who };
+
+  const status = typeof response?.status === "function" ? response.status() : 0;
+  let reason = response?.navigationError ?? `dev-login answered HTTP ${status}`;
+  // The route now returns 503 + `attempts[]` for a transport failure and 401
+  // for a real refusal. Print WHICH, with every attempt, so nobody has to
+  // guess again. Nothing here can carry a credential — the route never puts
+  // one in a body.
+  try {
+    const body = await response.json();
+    if (body?.error) {
+      reason = `HTTP ${status}: ${body.error}`;
+      if (Array.isArray(body.attempts) && body.attempts.length) {
+        reason += ` :: ${body.attempts.join(" | ")}`;
+      }
+    }
+  } catch {
+    /* not a JSON body — the status line is the whole reason */
+  }
+  return { who, reason, retryable: status === 503 || status === 0 };
+}
+
+async function signIn(page, next) {
+  let attempt = await attemptDevLogin(page, next);
+
+  // RETRY ONCE, OUT LOUD. `dev-login` reaches the auth host over the network
+  // from a long-lived dev-server process, so a single call can fail on a
+  // pooled socket that a fresh `curl` would never hit — the route itself now
+  // retries the transport and answers 503 when it still cannot get through.
+  // A walk that treated that as a defect would be reporting a network blip as
+  // a product failure, and a walk that retried SILENTLY would hide a genuine
+  // outage. So: say the reason, try once more, say the reason again.
+  if (!attempt.who || attempt.who.email !== "admin@admin.com") {
+    console.warn(`[walk] dev-login did not take — ${attempt.reason}`);
+    if (attempt.retryable !== false) {
+      await page.waitForTimeout(2000);
+      attempt = await attemptDevLogin(page, next);
+      if (!attempt.who || attempt.who.email !== "admin@admin.com") {
+        console.warn(`[walk] dev-login failed on the retry too — ${attempt.reason}`);
+      } else {
+        console.warn("[walk] dev-login succeeded on the retry — the first failure was transient");
+      }
+    }
+  }
+  let who = attempt.who;
 
   // THE SECOND SANCTIONED WAY IN (CLAUDE.md § dev server): the real sign-in
   // form with the test admin's own credentials. `dev-login` answered
