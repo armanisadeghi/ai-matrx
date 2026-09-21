@@ -737,14 +737,18 @@ async function liveArm(inverses: string[]): Promise<number> {
 /* ----------------------------------------------------------------------- main */
 
 /**
- * THE RATCHET. 103 findings stood on the day this guard was written (2026-09-21) — the class
- * had been growing unwatched for the whole campaign, and a guard that fails the release on all
- * of them on day one gets switched off, which is worse than no guard. So the counts may only
- * ever go DOWN: a NEW inverse written with any of the four defects is refused on the day it is
- * written, and every existing one is NAMED on every run rather than hidden behind a number.
- * There is no excuse list and there never will be one — lower these as you fix.
+ * THE RATCHET, AND IT IS AT ZERO. 103 findings stood on the day this guard was written
+ * (2026-09-21) — the class had been growing unwatched for the whole campaign. They were all
+ * CLOSED the same day across 90 files, so the baseline is ZERO on all four clauses: ANY finding
+ * is a new one, and an inverse written with one of these defects is refused on the day it is
+ * written. Every finding is NAMED on every run rather than hidden behind a number, and there is
+ * no excuse list — a file that has genuinely handled a clause says so in its own bytes,
+ * `-- ground-standing-ok: <clauses>`, with the sentence that explains why beside it.
+ *
+ * 🚨 These may only ever go DOWN. Raising one to make a release pass re-admits the whole class
+ * silently, which is the state this guard exists to end.
  */
-const BASELINE: Record<"a" | "b" | "c" | "d", number> = { a: 32, b: 30, c: 2, d: 39 };
+const BASELINE: Record<"a" | "b" | "c" | "d", number> = { a: 0, b: 0, c: 0, d: 0 };
 
 /**
  * The same ratchet for `--live`, which judges clauses (a) and (c) against the REAL catalogue —
