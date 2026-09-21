@@ -62,6 +62,10 @@ export async function POST(request: Request) {
       senderName,
       messagePreview,
       conversationId,
+      // A DM thread is account-level: `/messages` is declared organization-free in
+      // platform.organization_free_link_prefixes(), so there is no organization to
+      // name and none is invented. The helper is still what decides, one call down.
+      organizationId: null,
     });
 
     if (result.success) {

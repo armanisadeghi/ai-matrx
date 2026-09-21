@@ -9,6 +9,10 @@ import {
   FeedbackAssignedEmail,
 } from "./templates/NotificationEmail";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+// 🚨 THE ONE HELPER. Every link this file mails goes through it, so the rule that
+// decides what an organization-bearing link looks like lives once, in the database,
+// where the notice/assist/DM triggers read it too. Never build `?org=` by hand here.
+import { linkCarriesItsOrganization } from "@/lib/organizations/linkCarriesItsOrganization";
 import type { Database } from "@/types/database.types";
 
 type UserEmailPreferencesRow =
@@ -190,6 +194,8 @@ export async function sendTaskAssignmentEmail(options: {
  * Send comment notification email
  */
 export async function sendCommentNotificationEmail(options: {
+  /** The organization the resource is filed under, so the link names it. */
+  organizationId?: string | null;
   resourceOwnerId: string;
   commenterName: string;
   commentText: string;
@@ -204,6 +210,7 @@ export async function sendCommentNotificationEmail(options: {
     resourceTitle,
     resourceType,
     resourceId,
+    organizationId,
   } = options;
 
   // Check user preferences
@@ -222,15 +229,19 @@ export async function sendCommentNotificationEmail(options: {
     return { success: false, message: "Could not find resource owner email" };
   }
 
-  // Generate resource URL
+  // Generate resource URL. The map holds PATHS, and the link is built exactly once,
+  // on the line below, so there is one place where an organization can be forgotten —
+  // and it is the line that cannot forget, because the helper is the thing on it.
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://aimatrx.com";
-  const resourceUrls: Record<string, string> = {
-    task: `${baseUrl}/tasks?task=${resourceId}`,
-    canvas: `${baseUrl}/canvas/${resourceId}`,
-    note: `${baseUrl}/notes/${resourceId}`,
+  const resourcePaths: Record<string, string> = {
+    task: `/tasks?task=${resourceId}`,
+    canvas: `/canvas/${resourceId}`,
+    note: `/notes/${resourceId}`,
   };
-  const resourceUrl =
-    resourceUrls[resourceType] || `${baseUrl}/${resourceType}/${resourceId}`;
+  const resourceUrl = await linkCarriesItsOrganization(
+    `${baseUrl}${resourcePaths[resourceType] || `/${resourceType}/${resourceId}`}`,
+    organizationId,
+  );
 
   // Render React Email template
   const html = await renderTemplate(
@@ -271,12 +282,20 @@ export async function sendCommentNotificationEmail(options: {
  * Send message notification email (for offline users)
  */
 export async function sendMessageNotificationEmail(options: {
+  /** The organization the conversation is filed under, when the caller knows it. */
+  organizationId?: string | null;
   recipientId: string;
   senderName: string;
   messagePreview: string;
   conversationId: string;
 }): Promise<NotificationResult> {
-  const { recipientId, senderName, messagePreview, conversationId } = options;
+  const {
+    recipientId,
+    senderName,
+    messagePreview,
+    conversationId,
+    organizationId,
+  } = options;
 
   // Check user preferences
   const preferences = await getUserEmailPreferences(recipientId);
@@ -296,7 +315,14 @@ export async function sendMessageNotificationEmail(options: {
 
   // Generate conversation URL
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://aimatrx.com";
-  const conversationUrl = `${baseUrl}/messages/${conversationId}`;
+  // /messages is declared organization-free in platform.organization_free_link_prefixes()
+  // — a DM thread is the same thread from whichever organization somebody is working
+  // in — so this comes back unchanged today. It goes through the helper anyway: the day
+  // that ruling changes, it changes in one place and this link follows.
+  const conversationUrl = await linkCarriesItsOrganization(
+    `${baseUrl}/messages/${conversationId}`,
+    organizationId,
+  );
 
   // Render React Email template
   const html = await renderTemplate(
@@ -413,6 +439,8 @@ export async function sendDueDateReminderEmail(options: {
  * conceptually the same kind of "you have a new work item" notification.
  */
 export async function sendFeedbackAssignmentEmail(options: {
+  /** The organization the feedback is filed under, so the link names it. */
+  organizationId?: string | null;
   assigneeId: string;
   assignerName: string;
   feedbackId: string;
@@ -429,6 +457,7 @@ export async function sendFeedbackAssignmentEmail(options: {
     feedbackPreview,
     feedbackRoute,
     categoryName,
+    organizationId,
   } = options;
 
   // Check user preferences (reuse task_notifications — same surface)
@@ -447,7 +476,10 @@ export async function sendFeedbackAssignmentEmail(options: {
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://aimatrx.com";
-  const feedbackUrl = `${baseUrl}/administration/users/feedback?feedback=${feedbackId}`;
+  const feedbackUrl = await linkCarriesItsOrganization(
+    `${baseUrl}/administration/users/feedback?feedback=${feedbackId}`,
+    organizationId,
+  );
 
   const preview =
     feedbackPreview.length > 200

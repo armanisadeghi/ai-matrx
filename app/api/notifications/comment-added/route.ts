@@ -7,6 +7,35 @@ import { getClaimsUser } from "@/utils/supabase/resolveUser";
  * POST /api/notifications/comment-added
  * Send comment notification email
  */
+/**
+ * The organization a commentable resource is filed under, or null when this platform
+ * does not know one. Never guesses: a null goes to
+ * `platform.link_carries_its_organization`, which returns the link untouched.
+ */
+async function resolveResourceOrganization(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  resourceType: string,
+  resourceId: string,
+): Promise<string | null> {
+  const source: Record<string, { schema: string; table: string }> = {
+    canvas: { schema: "canvas", table: "canvas_items" },
+    note: { schema: "workbench", table: "notes" },
+  };
+  const where = source[resourceType];
+  if (!where) return null;
+  try {
+    const { data } = await supabase
+      .schema(where.schema as never)
+      .from(where.table)
+      .select("organization_id")
+      .eq("id", resourceId)
+      .single();
+    return (data as { organization_id?: string | null } | null)?.organization_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -69,8 +98,22 @@ export async function POST(request: Request) {
         : null) ||
       "Someone";
 
+    // THE LINK MUST NAME THE ORGANIZATION THE RESOURCE IS FILED UNDER. The owner
+    // follows this link COLD, out of an email, possibly while working in a different
+    // organization — the arrival TAILS-3 measured landing on "Select an organization
+    // first". `/tasks` is declared organization-free (it is the same personal list from
+    // every organization), and a resource type with no backing table yet resolves to
+    // null, which the rule handles by returning the link unchanged rather than
+    // inventing an organization.
+    const organizationId = await resolveResourceOrganization(
+      supabase,
+      resourceType,
+      resourceId,
+    );
+
     const result = await sendCommentNotificationEmail({
       resourceOwnerId,
+      organizationId,
       commenterName,
       commentText,
       resourceTitle,

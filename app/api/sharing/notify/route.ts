@@ -8,6 +8,10 @@ import { createClient } from "@/utils/supabase/server";
 import { sendEmail, emailTemplates } from "@/lib/email/client";
 import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+// 🚨 THE ONE HELPER. A share link is followed COLD, out of an email, by somebody who
+// may be working in a different organization — the exact arrival TAILS-3 measured
+// landing on "Select an organization first". Never build `?org=` by hand here.
+import { linkCarriesItsOrganization } from "@/lib/organizations/linkCarriesItsOrganization";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -46,14 +50,17 @@ async function getResourceDetails(
         const { data } = await supabase
           .schema("canvas")
           .from("canvas_items")
-          .select("title")
+          .select("title, organization_id")
           .eq("id", resourceId)
           .single();
 
         return data
           ? {
               title: data.title || "Untitled Canvas",
-              url: `${siteUrl}/canvases/${resourceId}`,
+              url: await linkCarriesItsOrganization(
+                `${siteUrl}/canvases/${resourceId}`,
+                data.organization_id,
+              ),
             }
           : null;
       }
@@ -75,22 +82,32 @@ async function getResourceDetails(
         const { data } = await supabase
           .schema("workbench")
           .from("notes")
-          .select("label")
+          .select("label, organization_id")
           .eq("id", resourceId)
           .single();
 
         return data
           ? {
               title: data.label || "Untitled Note",
-              url: `${siteUrl}/notes/${resourceId}`,
+              url: await linkCarriesItsOrganization(
+                `${siteUrl}/notes/${resourceId}`,
+                data.organization_id,
+              ),
             }
           : null;
       }
 
       default:
+        // No backing table is known for this resource type, so no organization is
+        // known either. The helper is still the one that decides — it returns the link
+        // unchanged rather than inventing an organization, which is the rule's own
+        // contract, and the day this branch learns its table it needs no new code.
         return {
           title: `Shared ${resourceType}`,
-          url: `${siteUrl}/${resourceType}s/${resourceId}`,
+          url: await linkCarriesItsOrganization(
+            `${siteUrl}/${resourceType}s/${resourceId}`,
+            null,
+          ),
         };
     }
   } catch (error) {
