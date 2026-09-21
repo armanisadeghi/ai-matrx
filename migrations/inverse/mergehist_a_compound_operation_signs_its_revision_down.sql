@@ -6,6 +6,11 @@
 -- this file exists to be RUN ONCE in a rolled-back transaction (the red twin does exactly that)
 -- and never on purpose otherwise.
 
+-- ground-standing-ok: c — `history.record_capture()` is the ROW-level body no trigger runs
+-- since the statement-level capture replaced it; it is named here only so a database still on
+-- the older shape inverts the same way. What actually bites is the part above, which empties
+-- the two columns rather than dropping them. Ruled by lane INVERSE-GUARD, 2026-09-21.
+
 set lock_timeout = '3s';
 set statement_timeout = '5min';
 

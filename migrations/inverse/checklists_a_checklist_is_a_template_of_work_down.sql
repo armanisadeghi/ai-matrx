@@ -26,6 +26,11 @@
 -- and two classes of record (`checklist_template`, `checklist_run`) that nothing reads. That is
 -- the honest outcome; deleting somebody's onboarding runs to undo a migration would not be.
 
+-- ground-standing-ok: c — `custom._checklist_watch()` is the ROW-level body no trigger runs
+-- since the statement-level pair replaced it. It stays in the drop list because a database
+-- still carrying the older shape must invert the same way, and the pair the LIVE triggers do
+-- run is detached above. Ruled by lane INVERSE-GUARD, 2026-09-21, against the live catalogue.
+
 set lock_timeout = '5s';
 
 -- 🚨 RE-POINTED TO THE LIVE TRIGGERS (lane RED-SUITES-3, 2026-09-21). This file named only the
