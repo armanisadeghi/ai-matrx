@@ -205,7 +205,10 @@ export async function setDefaultSavedView(args: {
   const { data, error } = await supabase.rpc("saved_view_set_default", {
     p_surface_key: DATA_TABLE_SURFACE_KEY,
     p_subject_id: args.tableId,
-    p_id: args.id,
+    // `undefined` and not `null`: a defaulted plpgsql parameter is ABSENT from the
+    // call, which is what the generated Args type says, and the door reads a
+    // missing p_id as "clear the default without setting a new one".
+    p_id: args.id ?? undefined,
   });
 
   if (error) return { success: false, error: error.message };
