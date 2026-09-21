@@ -48,8 +48,8 @@ declare
 begin
   -- ── fixtures, as the connected role (a seat is a PERSON; these make one) ───────
   insert into iam.organizations (id, name, slug, created_by)
-  values (v_org, 'ZZZ BOOKING suite ' || left(v_org::text, 8),
-          'zzz-booking-suite-' || left(v_org::text, 8), c_admin);
+  values (v_org, 'Sunrise Yoga Studio ' || left(v_org::text, 8),
+          'sunrise-yoga-studio-' || left(v_org::text, 8), c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status, created_by)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active', c_admin),
          (v_org, 'organization', v_org, c_dana, 'member', 'active', c_admin);

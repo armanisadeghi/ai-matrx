@@ -306,7 +306,7 @@ begin
     'title_field', 'title', 'parent_id', v_hq_b::text));
 
   v_rec_a := custom.record_write(v_a, v_tbl_a, jsonb_build_object('title', 'GS Case 1'));
-  v_rec_b := custom.record_write(v_b, v_tbl_b, jsonb_build_object('title', 'Acme Ltd'));
+  v_rec_b := custom.record_write(v_b, v_tbl_b, jsonb_build_object('title', 'Redwood Print and Supply'));
 
   -- ── THE ONE FIXTURE WITH NO CLIENT DOOR, AND THE FINDING IT NAMES ──────────────────────
   -- The relation FIELD in A. SEAT-SUITES, 2026-09-19: `custom.field_declare` CANNOT declare a
@@ -402,7 +402,7 @@ begin
     raise exception '2d FAILED — the door does not say the target it just handed back belongs to another organization.'; end if;
   if coalesce(v_masked, true) then
     raise exception '2d FAILED — both organizations said yes and the door still masks the target, so the wall it reports is not the wall the edge went through.'; end if;
-  if (v_card ->> 'title') is distinct from 'Acme Ltd' then
+  if (v_card ->> 'title') is distinct from 'Redwood Print and Supply' then
     raise exception '2d FAILED — the person is shown a foreign target with no card to read: %', coalesce(v_card::text, 'nothing'); end if;
   if v_why ilike '%wall is shut%' then
     raise exception '2d FAILED — both organizations said yes and the door still tells the person the wall is shut: %', v_why; end if;

@@ -1,0 +1,24 @@
+[
+  {
+    "version": 1,
+    "changed_at": "2026-09-21T00:51:12.147551+00:00",
+    "changed_by": "87a6e699-3622-4869-8843-d0867456c0dd",
+    "summary": "version 1, created, 2026-09-21 00:51, 9 field(s) changed: episode_number, guest, publish_date, record_date, show_notes, sponsor, sponsor_read_status, status, title",
+    "operation": "insert",
+    "changed_fields": {
+      "keys": [
+        "episode_number",
+        "guest",
+        "publish_date",
+        "record_date",
+        "show_notes",
+        "sponsor",
+        "sponsor_read_status",
+        "status",
+        "title"
+      ],
+      "field_ids": [],
+      "migration_id": null
+    }
+  }
+]

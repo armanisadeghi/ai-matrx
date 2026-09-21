@@ -226,7 +226,7 @@ declare
   v_pub     boolean;
 begin
   insert into iam.organizations (id, name, slug, created_by)
-  values (v_org, 'ZZZ CAPTURE red ' || left(v_org::text, 8), 'zzz-capture-red-' || left(v_org::text, 8), c_admin);
+  values (v_org, 'Hands & Hope Alliance Red ' || left(v_org::text, 8), 'hands-hope-red-' || left(v_org::text, 8), c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status, created_by)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active', c_admin);
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note, updated_by)

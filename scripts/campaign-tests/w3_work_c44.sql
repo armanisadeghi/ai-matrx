@@ -124,7 +124,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W3-WORK C44', 'zz-w3work-c44-' || substr(v_org::text, 1, 8), 'ZWW', c_admin);
+  values (v_org, 'Meridian Auto Body Work C44', 'meridian-auto-body-work-c44-' || substr(v_org::text, 1, 8), 'MWC', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -200,8 +200,8 @@ begin
   foreach v_msg in array array[
       format('select custom.work_take_assignment(%L::uuid, %L::uuid)', v_org, v_org),
       format('select count(*) from custom.work_whose_turn(%L::uuid, %L::uuid)', v_org, v_org),
-      format('select custom.work_slots_declare(%L::uuid, %L, %L, %L::uuid)', v_org, 'ZZ', 'zz_probe', v_org),
-      format('select custom.work_template_declare(%L::uuid, %L, %L::jsonb)', v_org, 'ZZ', '{"nodes":[],"relations":[]}')]
+      format('select custom.work_slots_declare(%L::uuid, %L, %L, %L::uuid)', v_org, 'Bay Schedule Probe', 'bay_schedule_probe', v_org),
+      format('select custom.work_template_declare(%L::uuid, %L, %L::jsonb)', v_org, 'Probe Template', '{"nodes":[],"relations":[]}')]
   loop
     begin
       execute v_msg;
@@ -221,7 +221,7 @@ begin
   -- ════════════════════════════════════════════════════════════════════════════════════
   -- The Table and its one column are the person's, through the doors.
   v_table := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ W3 Work C44','slug','zz_w3_work_c44','type','entity',
+    'name','Body Shop Tasks','slug','body_shop_tasks','type','entity',
     'label_singular','Task','label_plural','Tasks','title_field','title',
     'display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
@@ -382,7 +382,7 @@ begin
 
   v_tpl := custom.work_template_declare(v_org, 'Client onboarding', jsonb_build_object(
     'nodes', jsonb_build_array(
-      jsonb_build_object('ref','project','table',v_table::text,'data',jsonb_build_object('title','Onboard Acme')),
+      jsonb_build_object('ref','project','table',v_table::text,'data',jsonb_build_object('title','Onboard Cascade Fleet Services')),
       jsonb_build_object('ref','kickoff','table',v_table::text,'data',jsonb_build_object('title','Kick-off call')),
       jsonb_build_object('ref','access', 'table',v_table::text,'data',jsonb_build_object('title','Grant access'))),
     'relations', jsonb_build_array(
@@ -444,7 +444,7 @@ begin
 
   -- WHAT W1-REL HAS NOT BUILT IS REFUSED BY NAME rather than written as an owned edge.
   begin
-    perform custom.work_template_declare(v_org, 'ZZ referenced', jsonb_build_object(
+    perform custom.work_template_declare(v_org, 'Reference Test Template', jsonb_build_object(
       'nodes', jsonb_build_array(jsonb_build_object('ref','a','table',v_table::text),
                                  jsonb_build_object('ref','b','table',v_table::text)),
       'relations', jsonb_build_array(jsonb_build_object('kind','referenced','from','a','to','b'))));
@@ -469,7 +469,7 @@ begin
   declare v_before bigint := v_n;
   begin
     begin
-      perform custom.work_template_instantiate(v_org, custom.work_template_declare(v_org, 'ZZ half', jsonb_build_object(
+      perform custom.work_template_instantiate(v_org, custom.work_template_declare(v_org, 'Half Graph Template', jsonb_build_object(
         'nodes', jsonb_build_array(
           jsonb_build_object('ref','a','table',v_table::text,'data',jsonb_build_object('title','A','status',v_ns::text)),
           jsonb_build_object('ref','b','table',v_table::text,'data',jsonb_build_object('title','B','status',v_ns::text)),
@@ -508,7 +508,7 @@ begin
   update platform.knob_override set value = 'false'::jsonb
    where feature = 'custom' and key = 'system_enabled' and scope_id = v_org;
   begin
-    perform custom.work_slots_declare(v_org, 'ZZ Rooms', 'zz_w3_work_c44_slots', v_home);
+    perform custom.work_slots_declare(v_org, 'Repair Bays', 'repair_bays', v_home);
     raise exception 'PART 3 — slots were declared while this organization''s store was switched off';
   exception when sqlstate '0A000' then
     get stacked diagnostics v_msg = message_text;
@@ -520,7 +520,7 @@ begin
   update platform.knob_override set value = 'true'::jsonb
    where feature = 'custom' and key = 'system_enabled' and scope_id = v_org;
 
-  v_slots  := custom.work_slots_declare(v_org, 'ZZ Rooms', 'zz_w3_work_c44_slots', v_home);
+  v_slots  := custom.work_slots_declare(v_org, 'Repair Bays', 'repair_bays', v_home);
   v_stable := (v_slots ->> 'table_id')::uuid;
   v_idx    := v_slots ->> 'index_name';
   if not (v_slots ->> 'unique')::boolean then
@@ -653,7 +653,7 @@ begin
   perform set_config('role', 'authenticated', true);
   begin
     perform custom.record_write(v_org, v_stable, jsonb_build_object(
-      '_actor','user','slot_key','zz-shut','holder','probe',
+      '_actor','user','slot_key','bay-shut','holder','probe',
       'expires_at', to_char((now()+interval '1 hour') at time zone 'utc','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')));
     raise exception 'PART 4 — a signed-in person wrote a hold into a switched-off store';
   exception when insufficient_privilege then
@@ -665,7 +665,7 @@ begin
    where feature = 'custom' and key = 'system_enabled' and scope_id = v_org;
   perform set_config('role', 'authenticated', true);
   if custom.record_write(v_org, v_stable, jsonb_build_object(
-       '_actor','user','slot_key','zz-open','holder','probe',
+       '_actor','user','slot_key','bay-open','holder','probe',
        'expires_at', to_char((now()+interval '1 hour') at time zone 'utc','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))) is null then
     raise exception 'PART 4 — the switch was turned back on and the same person could not write the same hold, so the refusal above was not the door';
   end if;

@@ -49,8 +49,8 @@ begin
   -- ── FIXTURE, as the connected role. No client door makes an organization, a
   --    membership or a knob override, and this suite asserts nothing while it is out here.
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ IMPORT green — safe to delete',
-          'zzz-import-green-' || substr(md5(random()::text), 1, 8), 'ZIG', c_admin)
+  values ('Blue Ridge Recycling — safe to delete',
+          'blue-ridge-recycling-green-' || substr(md5(random()::text), 1, 8), 'BRR', c_admin)
   returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
   values (v_org, c_admin, 'owner',  'active', 'organization', v_org),
@@ -89,7 +89,7 @@ begin
     'parent_id', v_home::text));
   perform custom.field_declare(v_org, v_acct, jsonb_build_object('label','Title','key','title','type','text'));
   v_north := custom.record_write(v_org, v_acct, jsonb_build_object('title','Northwind Trading'));
-  v_acme  := custom.record_write(v_org, v_acct, jsonb_build_object('title','Acme Supplies'));
+  v_acme  := custom.record_write(v_org, v_acct, jsonb_build_object('title','Fairbanks Wholesale Supply'));
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
     'name','ZZ IMP Deal','slug','zz_imp_deal','type','entity',
@@ -113,7 +113,7 @@ begin
     jsonb_build_object('header','Amount',  'samples', jsonb_build_array('$1,250.00','$90')),
     jsonb_build_object('header','Region',  'samples', jsonb_build_array('North','South','North','South','North','South')),
     jsonb_build_object('header','Contact', 'samples', jsonb_build_array('admin@admin.com')),
-    jsonb_build_object('header','Stranger','samples', jsonb_build_array('nobody@example.com'))));
+    jsonb_build_object('header','Stranger','samples', jsonb_build_array('dispatch@blueridgerecycling.com'))));
 
   select c into v_col from jsonb_array_elements(v_plan -> 'columns') c where c ->> 'header' = 'Deal';
   if not (v_col ->> 'matched')::boolean or v_col ->> 'field_key' <> 'deal' then
@@ -158,7 +158,7 @@ begin
 
   v_r := custom.io_import_rows(v_org, v_imp, jsonb_build_array(
     jsonb_build_object('Deal','Roof job','Amount','$1,250.00','Closes','2026-10-01','Stage','Open','Owner','admin@admin.com','Account','Northwind Trading','Region','North'),
-    jsonb_build_object('Deal','Yard job','Amount','(45.50)','Closes','11/30/2026','Stage','Won','Owner','admin@admin.com','Account','Acme Supplies','Region','South'),
+    jsonb_build_object('Deal','Yard job','Amount','(45.50)','Closes','11/30/2026','Stage','Won','Owner','admin@admin.com','Account','Fairbanks Wholesale Supply','Region','South'),
     jsonb_build_object('Deal','Bad job','Amount','about a grand','Closes','2026-10-02','Stage','Open'),
     jsonb_build_object('Deal','Ghost job','Amount','$10','Account','Nobody Ltd'),
     jsonb_build_object('Deal','Roof job','Amount','$9','Stage','Lost')
@@ -215,7 +215,7 @@ begin
     raise exception '3e: an email in a person column should be the person this organization keeps, and it is %', v_doc ->> 'owner';
   end if;
   if (v_doc ->> 'account')::uuid <> v_acme then
-    raise exception '3f: "Acme Supplies" in a pointing column should be that record, and it is %', v_doc ->> 'account';
+    raise exception '3f: "Fairbanks Wholesale Supply" in a pointing column should be that record, and it is %', v_doc ->> 'account';
   end if;
   if v_doc -> '_source' ->> 'via' <> 'import' or v_doc -> '_source' ->> 'file' <> 'deals.csv' then
     raise exception '3g: a record that came from a file says so, and this one says %', v_doc -> '_source';

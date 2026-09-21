@@ -1,0 +1,51 @@
+{
+  "Signal & Scale Podcast": {
+    "orgId": "60e17095-583e-40e2-8e8d-9bb00eacc6f5",
+    "tableIds": {
+      "guests": "f26647cc-68bd-4e83-a0e4-f355b62abd1e",
+      "sponsors": "7363f01d-c78f-455d-90cd-44adc9ea7b26",
+      "episodes": "a4820ec3-a065-4566-a33a-91d97462da3a",
+      "edit_tasks": "28959114-c454-4784-b447-124e45d4f7ba"
+    },
+    "rowCounts": {
+      "guests": 12,
+      "sponsors": 5,
+      "episodes": 15,
+      "edit_tasks": 15
+    }
+  },
+  "Kessler Lab for Applied Microbial Ecology": {
+    "orgId": "1c86ace6-0219-4393-88fd-d0aef836acd3",
+    "tableIds": {
+      "researchers": "6a18531b-60e8-4073-b2c0-2a23b7d63af5",
+      "protocols": "611127f9-17c9-4b1e-be2e-2809f0a5d723",
+      "experiments": "7929e197-cba4-4128-8445-870209dd0335",
+      "measurements": "1d4ee462-631c-4587-96a2-d896a66e6344",
+      "publications": "8d6b5ea2-c7d0-47c3-a02a-63ab8eaf51e8"
+    },
+    "rowCounts": {
+      "researchers": 8,
+      "protocols": 6,
+      "experiments": 15,
+      "measurements": 20,
+      "publications": 6
+    }
+  },
+  "Wraithmoor Regional Museum of Art & Craft": {
+    "orgId": "a3df9bf9-dbdd-47dd-912d-13130bfe5626",
+    "tableIds": {
+      "makers": "ce333886-9253-45e9-a7d5-807e4860d4cf",
+      "objects": "aa3f1723-ba82-443b-b255-62adcaf74ebf",
+      "exhibitions": "1c9bae6d-f8be-4999-a513-2194c97d44bc",
+      "provenance_records": "d2f5059e-bb71-4741-aa1b-413acc4bb1c1",
+      "loans": "fb5e8df1-7f82-467d-b83d-75567a91bdee"
+    },
+    "rowCounts": {
+      "makers": 10,
+      "objects": 20,
+      "exhibitions": 6,
+      "provenance_records": 18,
+      "loans": 10
+    }
+  }
+}

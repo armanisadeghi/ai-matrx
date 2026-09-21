@@ -24,7 +24,7 @@ begin
   c_dana_j  := jsonb_build_object('sub', c_dana,  'role', 'authenticated')::text;
 
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ WRITEPERF2 GREEN', 'zzz-wp2-green-' || substr(md5(random()::text),1,8), 'ZWP', c_admin)
+  values ('Coastal Veterinary Clinic Green', 'coastal-vet-green-' || substr(md5(random()::text),1,8), 'CVG', c_admin)
   returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
   values (v_org, c_admin, 'owner', 'active', 'organization', v_org),
@@ -55,7 +55,7 @@ begin
   -- ── FIXTURE, through the doors ─────────────────────────────────────────────────────────
   v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Green Home'));
   v_acct := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WP2G Account','slug','zz_wp2g_acct_' || substr(md5(random()::text),1,8),'type','entity',
+    'name','Patient Accounts','slug','patient_accounts_' || substr(md5(random()::text),1,8),'type','entity',
     'label_singular','Account','label_plural','Accounts','title_field','title','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
@@ -65,12 +65,12 @@ begin
     v_accts := v_accts || custom.record_write(v_org, v_acct, jsonb_build_object('title','Account ' || i));
   end loop;
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WP2G Deal','slug','zz_wp2g_deal_' || substr(md5(random()::text),1,8),'type','entity',
-    'label_singular','Deal','label_plural','Deals','title_field','deal','display','page',
+    'name','Treatment Plans','slug','treatment_plans_' || substr(md5(random()::text),1,8),'type','entity',
+    'label_singular','Treatment','label_plural','Treatments','title_field','treatment','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
-    'fields', jsonb_build_array(jsonb_build_object('name','deal')), 'parent_id', v_home::text));
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Deal','key','deal','type','text'));
+    'fields', jsonb_build_array(jsonb_build_object('name','treatment')), 'parent_id', v_home::text));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Treatment','key','treatment','type','text'));
   perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Amount','key','amount','type','currency','unit','USD'));
   perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Stage','key','stage','type','select','options', jsonb_build_array('Open','Won','Lost')));
   perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Account','key','account','type','relation','relation_target', v_acct::text));
@@ -86,7 +86,7 @@ begin
   select string_agg(t.tgname, ', ' order by t.tgname) into v_txt from pg_trigger t
    where t.tgrelid='custom.record'::regclass and not t.tgisinternal
      and (t.tgtype & 2) = 0 and (t.tgtype & 1) = 1;
-  if v_txt <> 'custom_record_field_type_converts_values, zzz_pipelines_on_entry' then
+  if v_txt <> 'custom_record_field_type_converts_values, zzz_pipelines_on_entry' then  -- matrx-real-data:allow zzz_pipelines_on_entry is the real live trigger name from migrations/campaign/pipelines_a_stage_is_a_field_and_its_moves_are_rules.sql, not fixture data
     raise exception '1b: the two AFTER-ROW triggers left are "%" — not the two this lane named', v_txt;
   end if;
   -- COUNTED BY NAME, NOT BY TOTAL (amended by lane WRITE-PERF-3, 2026-09-21). This clause used
@@ -129,7 +129,7 @@ begin
 
   -- ── 2  THE BATCHED DOOR: 500 RECORDS IN ONE STATEMENT, IDS IN INPUT ORDER ──────────────
   select array_agg(jsonb_strip_nulls(jsonb_build_object(
-           'deal', 'Deal ' || g.i,
+           'treatment', 'Treatment ' || g.i,
            'amount', round((g.i * 12.37 + 100)::numeric, 2),
            'stage', (array['Open','Won','Lost'])[1 + (g.i % 3)],
            'account', case when g.i % 7 = 0 then null else v_accts[1 + (g.i % 10)]::text end)) order by g.i)
@@ -139,9 +139,9 @@ begin
     raise exception '2a: the batched door handed back % ids for 500 records', coalesce(cardinality(v_ids), 0);
   end if;
   for i in 1..500 loop
-    if (custom.read_record(v_org, v_ids[i], false) ->> 'deal') <> ('Deal ' || i) then
-      raise exception '2b: id % of the batch resolves to "%", not "Deal %"',
-        i, custom.read_record(v_org, v_ids[i], false) ->> 'deal', i;
+    if (custom.read_record(v_org, v_ids[i], false) ->> 'treatment') <> ('Treatment ' || i) then
+      raise exception '2b: id % of the batch resolves to "%", not "Treatment %"',
+        i, custom.read_record(v_org, v_ids[i], false) ->> 'treatment', i;
     end if;
   end loop;
   -- the read door sees all 500 (paged at the ceiling the page contract declares)
@@ -206,7 +206,7 @@ begin
   raise notice '6  a 100-row UPDATE left 100 UPDATE versions, a 50-row soft delete left 50 SOFT_DELETE versions, 50 "deleted" events and % collected edges', n;
 
   -- ── 7  ONE BAD ROW REFUSES THE WHOLE BATCH, BY NAME, AND NOTHING LANDS ────────────────
-  select array_agg(jsonb_build_object('deal','Bad '||g.i,
+  select array_agg(jsonb_build_object('treatment','Bad '||g.i,
            'stage', case when g.i = 7 then 'Nonsense' else 'Open' end) order by g.i)
     into v_docs from generate_series(1, 10) g(i);
   v_ok := false;
@@ -218,7 +218,7 @@ begin
   end;
   if v_ok then raise exception '7a: a batch carrying a choice nothing offers was accepted'; end if;
   select count(*) into n from custom.read_records(v_org, v_tbl, true, 1000, 0) x
-   where (x.document ->> 'deal') like 'Bad %';
+   where (x.document ->> 'treatment') like 'Bad %';
   if n <> 0 then raise exception '7b: % rows of the refused batch landed anyway', n; end if;
   raise notice '7  one bad row refused all ten, by name ("%"), and none of them landed', left(v_txt, 70);
 
@@ -226,7 +226,7 @@ begin
   perform set_config('request.jwt.claims', c_dana_j, true);
   v_ok := false;
   begin
-    perform custom.record_write_many(v_org, v_tbl, array[jsonb_build_object('deal','Dana tried')]);
+    perform custom.record_write_many(v_org, v_tbl, array[jsonb_build_object('treatment','Dana tried')]);
     v_ok := true;
   exception when others then v_txt := sqlerrm;
   end;

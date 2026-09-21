@@ -29,7 +29,7 @@ select set_config('app.actor_system', 'share_red_suite', true);
 
 -- ─────────────────────────────────────────────────────────── the fixture, inside the rollback
 insert into iam.organizations (id, name, slug, abbreviation, created_by)
-values (:ORG, 'SHARE Red Throwaway', 'share-red-throwaway', 'SRT', :ADMIN);
+values (:ORG, 'Ironclad Mobile Mechanic', 'ironclad-mobile-mechanic-share-red', 'IMM', :ADMIN);
 insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
 values (:ORG, 'organization', :ORG, :ADMIN, 'owner',  'active'),
        (:ORG, 'organization', :ORG, :DANA,  'member', 'active');
@@ -38,9 +38,9 @@ values ('custom', 'system_enabled',            'organization', :ORG, :ORG, 'true
        ('custom', 'member_default_visibility', 'organization', :ORG, :ORG, '"shared_only"'::jsonb, 'SHARE red twin');
 insert into custom.record (id, organization_id, table_id, data_class, data, created_by)
 values (:HQ,  :ORG, '11111111-0000-4000-8000-000000000004', 'record',
-        jsonb_build_object('name', 'SHARE Red HQ'), :ADMIN),
+        jsonb_build_object('name', 'Ironclad Mobile Mechanic HQ'), :ADMIN),
        (:REC, :ORG, '11111111-0000-4000-8000-000000000004', 'record',
-        jsonb_build_object('name', 'Red case', 'parent_id', :HQ), :ADMIN);
+        jsonb_build_object('name', 'Roadside Call #4471 - Alternator Replacement', 'parent_id', :HQ), :ADMIN);
 
 -- ══════ BLOCK 1 — the guard that cannot read what it guards refuses every share
 alter function iam._per_table_grant_guard() security invoker;
@@ -132,7 +132,7 @@ begin
 end $t$;
 
 -- ══════ BLOCK 4 — the capture gone: a share that reaches history nowhere
-alter table iam.permissions disable trigger zzz_history_grant_capture;
+alter table iam.permissions disable trigger zzz_history_grant_capture;  -- matrx-real-data:allow zzz_history_grant_capture is the real live trigger name from migrations/campaign/w3_hist_grant_capture.sql, not fixture data
 do $t$
 declare v_id uuid; v_n int;
 begin
@@ -148,7 +148,7 @@ begin
   end if;
   raise notice 'BLOCK 4 IS RED — a share lands and history records nothing, so "who could see this, and when" answers nobody and the audit this lane relies on is a second store away from being needed.';
 end $t$;
-alter table iam.permissions enable trigger zzz_history_grant_capture;
+alter table iam.permissions enable trigger zzz_history_grant_capture;  -- matrx-real-data:allow zzz_history_grant_capture is the real live trigger name from migrations/campaign/w3_hist_grant_capture.sql, not fixture data
 
 -- ══════ BLOCK 5 — a flat lane list: the four choices collapse and one of them disappears
 create or replace function custom.share_lanes()
@@ -203,7 +203,7 @@ begin
   if v_n <> 0 then raise exception 'ROLLBACK NOT VERIFIED — the throwaway organization survived.'; end if;
   if not exists (select 1 from pg_trigger t
                   where t.tgrelid = 'iam.permissions'::regclass
-                    and t.tgname = 'zzz_history_grant_capture' and t.tgenabled <> 'D') then
+                    and t.tgname = 'zzz_history_grant_capture' and t.tgenabled <> 'D') then  -- matrx-real-data:allow zzz_history_grant_capture is the real live trigger name from migrations/campaign/w3_hist_grant_capture.sql, not fixture data
     raise exception 'ROLLBACK NOT VERIFIED — the grant capture trigger is still disabled.';
   end if;
   raise notice 'ROLLBACK VERIFIED — every reversal is gone and census is zero.';

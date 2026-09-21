@@ -74,8 +74,8 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZZ FIX7B RELATION — safe to delete',
-          'zzz-fix7b-relation-' || substr(v_org::text, 1, 8), 'ZFR', c_admin);
+  values (v_org, 'Timberline Roofing — safe to delete',
+          'timberline-roofing-' || substr(v_org::text, 1, 8), 'TLR', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -106,14 +106,14 @@ begin
 
   -- Two tables of this person's own — a Customer and a Job — both through the door.
   v_cust := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZZ Customer','slug','zzz_fix7b_customer_'||substr(v_org::text,1,8),'type','entity',
+    'name','Customer','slug','customer_fix7b_'||substr(v_org::text,1,8),'type','entity',
     'label_singular','Customer','label_plural','Customers','title_field','cname',
     'display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','cname')),
     'parent_id', v_home::text));
   v_job := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZZ Job','slug','zzz_fix7b_job_'||substr(v_org::text,1,8),'type','entity',
+    'name','Job','slug','job_fix7b_'||substr(v_org::text,1,8),'type','entity',
     'label_singular','Job','label_plural','Jobs','title_field','jname',
     'display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
@@ -149,8 +149,8 @@ begin
 
   -- 1b. And it is a LINK, not a text box: a record written through the door holds the
   --     customer's id and the store keeps the edge.
-  v_acme   := custom.record_write(v_org, v_cust, jsonb_build_object('cname','Acme'));
-  v_globex := custom.record_write(v_org, v_cust, jsonb_build_object('cname','Globex'));
+  v_acme   := custom.record_write(v_org, v_cust, jsonb_build_object('cname','Meridian Property Group'));
+  v_globex := custom.record_write(v_org, v_cust, jsonb_build_object('cname','Fairview Estates'));
   v_rec    := custom.record_write(v_org, v_job,  jsonb_build_object('jname','Re-roof', 'customer', v_acme::text));
   if (custom.read_record(v_org, v_rec, true) ->> 'jname') <> 'Re-roof' then
     raise exception '1b: the job did not read back';
@@ -276,7 +276,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform custom.share_grant(v_org, v_acme, 'user', c_dana, 'viewer'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
-  if (custom.read_record(v_org, v_acme, true) ->> 'cname') <> 'Acme' then
+  if (custom.read_record(v_org, v_acme, true) ->> 'cname') <> 'Meridian Property Group' then
     raise exception '3c: the record shared with test@test.com at viewer does not read back for her';
   end if;
   perform set_config('request.jwt.claims', c_admin_j, true);

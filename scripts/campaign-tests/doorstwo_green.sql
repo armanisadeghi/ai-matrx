@@ -41,7 +41,7 @@ declare
 begin
   -- ── fixtures, as the connected role (a seat is a PERSON; these make one) ───────
   insert into iam.organizations (id, name, slug, created_by)
-  values (v_org, 'ZZZ DOORSTWO suite ' || left(v_org::text, 8), 'zzz-doorstwo-' || left(v_org::text, 8), c_admin);
+  values (v_org, 'The Alvarado-Chen Kitchen suite ' || left(v_org::text, 8), 'alvarado-chen-kitchen-' || left(v_org::text, 8), c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status, created_by)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active', c_admin),
          (v_org, 'organization', v_org, c_dana, 'member', 'active', c_admin);
@@ -109,7 +109,7 @@ begin
   v_f_name := custom.field_declare(v_org, v_table, jsonb_build_object('label', 'client', 'key', 'client', 'type', 'text', 'required', true));
   v_f_fee  := custom.field_declare(v_org, v_table, jsonb_build_object('label', 'fee', 'key', 'fee', 'type', 'text'));
   v_rec := custom.record_write(v_org, v_table,
-             jsonb_build_object('client', 'Acme Recycling', 'fee', '1200', '_actor', 'user'));
+             jsonb_build_object('client', 'Marchetti Events Group', 'fee', '1200', '_actor', 'user'));
   raise notice 'PART 1 PASSED — table %, record %', v_table, v_rec;
 
   -- ══ PART 2 — custom.doc_templates: the list that used to be a refusal ═════════
@@ -167,7 +167,7 @@ begin
   end if;
   -- THE MERGE ACTUALLY HAPPENED. A token is a Field ID, so the body carries the value and
   -- not the token — this is REC-68's whole point and the one thing a screen cannot fake.
-  if v_row.body not like '%Acme Recycling%' then
+  if v_row.body not like '%Marchetti Events Group%' then
     raise exception '3d: the rendered document does not carry the record''s value — it reads %', left(v_row.body, 120);
   end if;
   if v_row.body like '%{{field:%' then
@@ -204,7 +204,7 @@ begin
     raise exception '4c: retiring the template took the rendered document with it — % left', v_n;
   end if;
   select * into v_row from custom.doc_renders(v_org, v_rec) limit 1;
-  if v_row.body not like '%Acme Recycling%' then
+  if v_row.body not like '%Marchetti Events Group%' then
     raise exception '4d: the rendered document lost its bytes when its template was retired';
   end if;
 

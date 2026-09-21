@@ -40,7 +40,7 @@ declare
   v_org uuid; v_home uuid; v_tbl uuid; v_acct uuid; v_accts uuid[]; i int;
 begin
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ WRITEPERF3 PROFILE', p_slug, 'ZWC', c_admin) returning id into v_org;
+  values ('Peak Ridge Roofing', p_slug, 'PRR', c_admin) returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
   values (v_org, c_admin, 'owner', 'active', 'organization', v_org),
          (v_org, c_dana,  'member','active', 'organization', v_org);
@@ -103,7 +103,7 @@ begin
 end;
 $$;
 
-select pg_temp.build('zzz-wp3-prof-' || substr(md5(random()::text),1,8));
+select pg_temp.build('peak-ridge-wp3-' || substr(md5(random()::text),1,8));
 
 \if :write
 

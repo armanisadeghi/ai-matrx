@@ -26,7 +26,7 @@ declare
   v_seen int := 0; v_landed int := 0; v_dupe int := 0; v_bad int := 0; n int;
 begin
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ WRITEPERF2 5K', 'zzz-wp2-5k-' || substr(md5(random()::text),1,8), 'ZWP', c_admin)
+  values ('Coastal Veterinary Clinic 5K', 'coastal-vet-5k-' || substr(md5(random()::text),1,8), 'CVK', c_admin)
   returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
   values (v_org, c_admin, 'owner', 'active', 'organization', v_org);
@@ -43,31 +43,31 @@ begin
 
   v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','5K Home'));
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WP2 5K Deal','slug','zz_wp2_5k_' || substr(md5(random()::text),1,8),'type','entity',
-    'label_singular','Deal','label_plural','Deals','title_field','deal','display','page',
+    'name','Treatment Plans','slug','treatment_plans_' || substr(md5(random()::text),1,8),'type','entity',
+    'label_singular','Treatment','label_plural','Treatments','title_field','treatment','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
-    'fields', jsonb_build_array(jsonb_build_object('name','deal')), 'parent_id', v_home::text));
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Deal','key','deal','type','text'));
+    'fields', jsonb_build_array(jsonb_build_object('name','treatment')), 'parent_id', v_home::text));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Treatment','key','treatment','type','text'));
   perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Amount','key','amount','type','currency','unit','USD'));
   perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Closes','key','closes','type','datetime'));
 
   -- THE HUNDRED THAT ARE ALREADY HERE.
   for i in 1..100 loop
-    perform custom.record_write(v_org, v_tbl, jsonb_build_object('deal','Deal ' || i, 'amount', 1));
+    perform custom.record_write(v_org, v_tbl, jsonb_build_object('treatment','Treatment ' || i, 'amount', 1));
   end loop;
 
   v_run := (custom.io_import_begin(v_org, v_tbl,
              p_format => 'csv',
              p_source_name => 'writeperf2-5k.csv',
              p_policy => jsonb_build_object('on_duplicate','skip'),
-             p_dedupe_key => 'deal') ->> 'import_id')::uuid;
+             p_dedupe_key => 'treatment') ->> 'import_id')::uuid;
 
   t0 := clock_timestamp();
   for b in 0..9 loop
     -- FIFTY REFUSED IN ALL: every hundredth row carries a date nothing can read.
     select jsonb_agg(jsonb_build_object(
-             'deal',   'Deal ' || g.i,
+             'treatment',   'Treatment ' || g.i,
              'amount', round((g.i * 3.21 + 10)::numeric, 2)::text,
              'closes', case when g.i % 100 = 0 then 'the thirty-first of Smarch'
                             else to_char(date '2026-01-01' + ((g.i % 360) || ' days')::interval, 'YYYY-MM-DD') end)

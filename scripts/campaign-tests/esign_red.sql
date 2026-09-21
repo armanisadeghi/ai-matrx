@@ -39,7 +39,7 @@ declare
   v_red     integer := 0;
 begin
   insert into iam.organizations (id, name, slug, created_by)
-  values (v_org, 'ZZZ ESIGN red ' || left(v_org::text, 8), 'zzz-esign-r-' || left(v_org::text, 8), c_admin);
+  values (v_org, 'Signal & Scale Podcast Red ' || left(v_org::text, 8), 'signal-scale-red-' || left(v_org::text, 8), c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status, created_by)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active', c_admin);
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note, updated_by)
@@ -68,9 +68,9 @@ begin
       jsonb_build_object('label', 'client signature', 'key', 'client_signature',
                          'type', 'text', 'format', 'signature'));
   v_rec  := custom.record_write(v_org, v_table,
-              jsonb_build_object('client', 'Acme Recycling', 'fee', '1200', '_actor', 'user'));
+              jsonb_build_object('client', 'Northwind Coffee Roasters', 'fee', '1200', '_actor', 'user'));
   v_rec2 := custom.record_write(v_org, v_table,
-              jsonb_build_object('client', 'Beta Holdings', 'fee', '900', '_actor', 'user'));
+              jsonb_build_object('client', 'Lakeview Outdoor Gear', 'fee', '900', '_actor', 'user'));
   v_tmpl := custom.doc_template_save(v_org, v_table, 'Proposal',
               'Dear {{field:' || v_f_name || '}}, our fee is {{field:' || v_f_fee || '}}.', null);
   v_render  := custom.doc_render_document(v_org, v_tmpl, v_rec);

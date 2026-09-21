@@ -57,7 +57,7 @@ declare
   i int; b int; v_docs jsonb[];
 begin
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ WRITEPERF2 PARITY ' || p_half, p_slug, 'ZWP', c_admin) returning id into v_org;
+  values ('Coastal Veterinary Clinic Parity ' || p_half, p_slug, 'ZWP', c_admin) returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
   values (v_org, c_admin, 'owner', 'active', 'organization', v_org),
          (v_org, c_dana,  'member','active', 'organization', v_org);
@@ -74,7 +74,7 @@ begin
 
   v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Parity Home'));
   v_acct := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WP2 Account','slug','zz_wp2_acct_' || lower(p_half) || substr(md5(random()::text),1,6),'type','entity',
+    'name','Patient Accounts','slug','patient_accounts_' || lower(p_half) || substr(md5(random()::text),1,6),'type','entity',
     'label_singular','Account','label_plural','Accounts','title_field','title','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
@@ -85,12 +85,12 @@ begin
   end loop;
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WP2 Deal','slug','zz_wp2_deal_' || lower(p_half) || substr(md5(random()::text),1,6),'type','entity',
-    'label_singular','Deal','label_plural','Deals','title_field','deal','display','page',
+    'name','Treatment Plans','slug','treatment_plans_' || lower(p_half) || substr(md5(random()::text),1,6),'type','entity',
+    'label_singular','Treatment','label_plural','Treatments','title_field','treatment','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
-    'fields', jsonb_build_array(jsonb_build_object('name','deal')), 'parent_id', v_home::text));
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Deal','key','deal','type','text'));
+    'fields', jsonb_build_array(jsonb_build_object('name','treatment')), 'parent_id', v_home::text));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Treatment','key','treatment','type','text'));
   perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Amount','key','amount','type','currency','unit','USD'));
   perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Closes','key','closes','type','datetime'));
   perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Stage','key','stage','type','select','options', jsonb_build_array('Open','Won','Lost')));
@@ -105,7 +105,7 @@ begin
     -- exercised with more than one row at all.
     for b in 0..3 loop
       select array_agg(jsonb_strip_nulls(jsonb_build_object(
-               'deal',   'Deal ' || g.i,
+               'treatment',   'Treatment ' || g.i,
                'amount', round((g.i * 12.37 + 100)::numeric, 2),
                'closes', to_char(date '2026-01-01' + ((g.i % 360) || ' days')::interval, 'YYYY-MM-DD'),
                'stage',  (array['Open','Won','Lost'])[1 + (g.i % 3)],
@@ -119,7 +119,7 @@ begin
   else
     for i in 1..2000 loop
       v_ids := v_ids || custom.record_write(v_org, v_tbl, jsonb_strip_nulls(jsonb_build_object(
-        'deal',   'Deal ' || i,
+        'treatment',   'Treatment ' || i,
         'amount', round((i * 12.37 + 100)::numeric, 2),
         'closes', to_char(date '2026-01-01' + ((i % 360) || ' days')::interval, 'YYYY-MM-DD'),
         'stage',  (array['Open','Won','Lost'])[1 + (i % 3)],
@@ -174,7 +174,7 @@ end;
 $$;
 
 \echo '=== HALF A: the batched door over WRITE-PERF-2 statement-level triggers ==='
-select pg_temp.build('A', 'zzz-wp2-parity-a-' || substr(md5(random()::text),1,8), true);
+select pg_temp.build('A', 'coastal-vet-parity-a-' || substr(md5(random()::text),1,8), true);
 
 \echo '=== restoring the store this lane found, from the real inverses ==='
 \i migrations/inverse/writeperf2_a_batch_of_records_is_one_statement_down.sql
@@ -183,7 +183,7 @@ select pg_temp.build('A', 'zzz-wp2-parity-a-' || substr(md5(random()::text),1,8)
 \i migrations/inverse/writeperf2_the_rest_of_the_write_path_plans_once_down.sql
 
 \echo '=== HALF B: one custom.record_write per row over the row-level triggers ==='
-select pg_temp.build('B', 'zzz-wp2-parity-b-' || substr(md5(random()::text),1,8), false);
+select pg_temp.build('B', 'coastal-vet-parity-b-' || substr(md5(random()::text),1,8), false);
 
 \echo '=== PARITY ==='
 select kind,

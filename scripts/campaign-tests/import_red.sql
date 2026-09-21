@@ -36,8 +36,8 @@ begin
   perform set_config('app.actor_system', 'campaign-test/import_red.sql', true);
 
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ IMPORT red — safe to delete',
-          'zzz-import-red-' || substr(md5(random()::text), 1, 8), 'ZIR', c_admin)
+  values ('Blue Ridge Recycling RED — safe to delete',
+          'blue-ridge-recycling-red-' || substr(md5(random()::text), 1, 8), 'BRD', c_admin)
   returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
   values (v_org, c_admin, 'owner', 'active', 'organization', v_org);

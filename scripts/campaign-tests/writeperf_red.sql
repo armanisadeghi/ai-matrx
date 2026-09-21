@@ -16,7 +16,7 @@ declare
   v_org uuid; v_home uuid; v_tbl uuid; i int;
 begin
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ WRITEPERF RED', 'zzz-wp-red-' || substr(md5(random()::text),1,8), 'ZWR', c_admin)
+  values ('Ironline Fitness Red', 'ironline-fitness-red-' || substr(md5(random()::text),1,8), 'IFR', c_admin)
   returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
   values (v_org, c_admin, 'owner', 'active', 'organization', v_org);
@@ -29,7 +29,7 @@ begin
   if current_user <> 'authenticated' then raise exception 'red: not seated'; end if;
   v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Red Home'));
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WP Red','slug','zz_wp_red','type','entity',
+    'name','Member Check-ins','slug','member_checkins','type','entity',
     'label_singular','Row','label_plural','Rows','title_field','title','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',

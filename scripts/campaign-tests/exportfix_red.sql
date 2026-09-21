@@ -254,7 +254,7 @@ begin
   perform custom.field_declare(v_org, v_tbl, jsonb_build_object(
     'label','Stage','parity_type','select','options', jsonb_build_array('Open','Won','Lost')));
   v_r1 := custom.record_write(v_org, v_tbl, jsonb_build_object(
-    'title','first deal',  'client','Acme',   'internal_margin', 11, 'stage','Won'));
+    'title','first deal',  'client','Thistledown Wine Merchants',   'internal_margin', 11, 'stage','Won'));
   v_r2 := custom.record_write(v_org, v_tbl, jsonb_build_object(
     'title','second deal', 'client','Globex', 'internal_margin', 22, 'stage','Open'));
   v_r3 := custom.record_write(v_org, v_tbl, jsonb_build_object(

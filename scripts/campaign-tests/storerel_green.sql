@@ -129,7 +129,7 @@ begin
       'relation_target', v_sup_t, 'relation_max', 1, 'on_target_delete', 'restrict'))
     returning id into v_f_sup;
 
-  v_sup := custom.record_write(v_org, v_sup_t, jsonb_build_object('sname','Acme','parent_id',v_home::text));
+  v_sup := custom.record_write(v_org, v_sup_t, jsonb_build_object('sname','Cascade Irrigation Supply','parent_id',v_home::text));
   v_po  := custom.record_write(v_org, v_po_t,
              jsonb_build_object('ponum','PO-1','supplier', v_sup::text, 'parent_id', v_home::text));
 

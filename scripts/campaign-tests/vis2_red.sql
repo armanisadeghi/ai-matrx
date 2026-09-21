@@ -763,7 +763,7 @@ begin
   perform custom.field_declare(v_b, v_bt, jsonb_build_object('key','name','label','Name','plain','text','sort',10));
 
   v_rec  := custom.record_write(v_a, v_tbl, jsonb_build_object('title','Patient 7','severity','3','parent_id', v_hq::text));
-  v_recb := custom.record_write(v_b, v_bt,  jsonb_build_object('name','Acme Ltd','parent_id', v_hq_b::text));
+  v_recb := custom.record_write(v_b, v_bt,  jsonb_build_object('name','Fairmont Office Supply','parent_id', v_hq_b::text));
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- R1 — the organization says shared_only and IS IGNORED.
