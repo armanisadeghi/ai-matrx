@@ -55,17 +55,19 @@ export type ActionRequestForm =
   | "browser_takeover"
   | "one_time_code";
 
+/**
+ * What EVERY render spec carries. Verified against the live doors on
+ * 2026-09-20: a render is exactly `__kind`, `form`, `title`, and whichever of
+ * `subtitle` / `footnote` / `note` and the form-specific keys that form builds.
+ * It does NOT carry the consequence class, `requires_session` or `can_complete`
+ * — those are top-level on the open answer, where they belong, because they are
+ * facts about THIS request and this viewer rather than about the form.
+ */
 interface RenderCommon {
   __kind: "action_request.render";
   form: ActionRequestForm;
   title: string;
   subtitle?: string | null;
-  /** The consequence class: `credential`, and the rest. Never re-derived here. */
-  consequence: string;
-  requires_session: boolean;
-  /** The kind key — carried for honesty in reports, never switched on. */
-  kind: string;
-  message: string;
   footnote?: string | null;
   note?: string | null;
 }
@@ -318,21 +320,7 @@ export async function completeActionRequest(args: {
   });
 
   if (response.status === 409) {
-    // THE SERVER'S OWN SENTENCE AND ITS OWN REMEDY, CARRIED WHOLE. Paraphrasing
-    // a refusal is how a person ends up staring at a form with no idea what to
-    // do; these two strings are the ones that tell them.
-    const body = (await response.json().catch(() => null)) as {
-      detail?: Partial<ActionRequestRefusal>;
-    } | null;
-    const detail = body?.detail;
-    return {
-      outcome: "refused",
-      refusal: {
-        code: detail?.code ?? "refused",
-        message: detail?.message ?? GENERIC_REFUSAL,
-        remedy: detail?.remedy ?? null,
-      },
-    };
+    return { outcome: "refused", refusal: await refusalFrom(response) };
   }
   if (!response.ok) {
     throw new Error(
@@ -357,13 +345,7 @@ export async function remintActionRequest(
     cache: "no-store",
   });
   if (response.status === 409) {
-    const body = (await response.json().catch(() => null)) as {
-      detail?: Partial<ActionRequestRefusal>;
-    } | null;
-    return {
-      state: "unavailable",
-      message: body?.detail?.message ?? GENERIC_REFUSAL,
-    };
+    return { state: "unavailable", message: (await refusalFrom(response)).message };
   }
   if (!response.ok) {
     throw new Error(
@@ -371,6 +353,28 @@ export async function remintActionRequest(
     );
   }
   return (await response.json()) as ActionRequestRemint;
+}
+
+/**
+ * A 409's body, read as aidream actually sends it.
+ *
+ * 🚨 IT IS FLAT, NOT NESTED UNDER `detail`. The routers raise
+ * `HTTPException(409, detail={code, message, remedy})`, but aidream's own
+ * `register_error_handlers` unwraps that detail before it reaches the wire, so
+ * what arrives is `{code, message, user_message, remedy, error, request_id}`.
+ * Verified against the live door on 2026-09-20; reading `detail.message` here
+ * returned nothing and printed the generic sentence over the real one, which is
+ * exactly the failure "carry the server's sentences verbatim" exists to stop.
+ */
+async function refusalFrom(response: Response): Promise<ActionRequestRefusal> {
+  const body = (await response.json().catch(() => null)) as Partial<
+    ActionRequestRefusal
+  > | null;
+  return {
+    code: body?.code ?? "refused",
+    message: body?.message ?? GENERIC_REFUSAL,
+    remedy: body?.remedy ?? null,
+  };
 }
 
 /** The one sentence for a refusal that arrived without one of its own. */
