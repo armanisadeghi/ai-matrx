@@ -536,6 +536,7 @@
     "check:route-manifest:strict": "tsx scripts/check-route-manifest.ts --strict",
     "route-manifest:sync": "tsx scripts/sync-route-manifest.ts",
     "check:route-manifest:live": "tsx scripts/check-route-manifest-live.ts",
+    "check:links-carry-their-organization": "bash scripts/check-links-carry-their-organization.sh",
     "check:route-manifest:live:self-test": "tsx scripts/check-route-manifest-live.ts --self-test",
     "check:record-toasts": "tsx scripts/check-record-toasts.ts",
     "check:record-toasts:strict": "tsx scripts/check-record-toasts.ts --strict",

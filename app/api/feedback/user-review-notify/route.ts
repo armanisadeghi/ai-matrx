@@ -15,6 +15,9 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import { checkIsUserAdmin } from "@/utils/supabase/userSessionData";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+// 🚨 THE ONE HELPER. Never build `?org=` by hand — the rule lives once, in the
+// database, where the notice/assist/DM triggers read it too.
+import { linkCarriesItsOrganization } from "@/lib/organizations/linkCarriesItsOrganization";
 
 export async function POST(request: NextRequest) {
   try {
@@ -82,7 +85,7 @@ export async function POST(request: NextRequest) {
       .schema("users")
       .from("user_feedback")
       .select(
-        "id, user_id, created_by, username, feedback_type, description, deleted_at",
+        "id, user_id, created_by, username, feedback_type, description, deleted_at, organization_id",
       )
       .eq("id", storedMessage.feedback_id)
       .is("deleted_at", null)
@@ -148,7 +151,14 @@ export async function POST(request: NextRequest) {
         feedback.description,
         storedMessage.content,
         storedMessage.sender_name || "Admin",
-        `${siteUrl}/settings/feedback`,
+        // /settings is declared organization-free in
+        // platform.organization_free_link_prefixes() — account settings are about the
+        // person — so this comes back unchanged. It goes through the helper anyway, so
+        // the day that ruling changes this link follows it without an edit here.
+        await linkCarriesItsOrganization(
+          `${siteUrl}/settings/feedback`,
+          feedback.organization_id,
+        ),
       );
       const emailResult = await sendEmail({
         to: recipientEmail,
@@ -183,7 +193,10 @@ export async function POST(request: NextRequest) {
         feedback.description,
         storedMessage.content,
         feedback.username || storedMessage.sender_name || "User",
-        `${siteUrl}/administration/users/feedback`,
+        await linkCarriesItsOrganization(
+          `${siteUrl}/administration/users/feedback`,
+          feedback.organization_id,
+        ),
       );
       const emailResult = await sendEmail({
         to: adminEmail,

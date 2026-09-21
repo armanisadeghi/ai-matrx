@@ -153,6 +153,18 @@ if $STRICT; then
         # 2026-09-21 by adding a throwaway route under app/ — red naming it,
         # green once it was gone. (MANIFEST-SEAT)
         "Route manifest is registered where the notification spine reads it|pnpm check:route-manifest:live"
+        # EVERY DEEP LINK THIS PLATFORM HANDS A READER NAMES ITS ORGANIZATION.
+        # Same defect family as the gate above and found the same day: a link
+        # that is right and says nothing about which organization it is about
+        # drops its reader on "Select an organization first". The guard lives in
+        # aidream (it censuses BOTH repos) and this runs its LIVE half: the three
+        # BEFORE triggers are attached AND enabled, the rule answers correctly on
+        # sixteen cases, and no link was built today that lands nowhere covered.
+        # A disabled trigger looks exactly like a working one from outside the
+        # database, which is why the gate asks rather than assumes. No aidream
+        # checkout or no `uv` exits 2 as UNMEASURED, never a quiet green.
+        # (LINKS-2, extending TAILS-4)
+        "Deep links carry their organization (notice, chip and DM)|pnpm check:links-carry-their-organization"
         # …and the release actually PUBLISHES it. The check above screams when
         # the live set and the repo set disagree; this one fails if the step
         # that closes that gap leaves the release path again, which is exactly
@@ -709,6 +721,18 @@ else
         # `--list`, which is this (non-strict) branch, so a gate that lived only
         # in the strict list would never run on a release at all. (MANIFEST-SEAT)
         "Route manifest is registered where the notification spine reads it|pnpm check:route-manifest:live"
+        # EVERY DEEP LINK THIS PLATFORM HANDS A READER NAMES ITS ORGANIZATION.
+        # Same defect family as the gate above and found the same day: a link
+        # that is right and says nothing about which organization it is about
+        # drops its reader on "Select an organization first". The guard lives in
+        # aidream (it censuses BOTH repos) and this runs its LIVE half: the three
+        # BEFORE triggers are attached AND enabled, the rule answers correctly on
+        # sixteen cases, and no link was built today that lands nowhere covered.
+        # A disabled trigger looks exactly like a working one from outside the
+        # database, which is why the gate asks rather than assumes. No aidream
+        # checkout or no `uv` exits 2 as UNMEASURED, never a quiet green.
+        # (LINKS-2, extending TAILS-4)
+        "Deep links carry their organization (notice, chip and DM)|pnpm check:links-carry-their-organization"
         "Notes: a failed + is announced (the shared draft control and the real surfaces)|npx jest features/notes/hooks/useDraftInitializationControl.test.tsx features/notes/redux/draftInitialization.control.integration.test.tsx --silent"
         # EVERY FILE PARSES — the cheapest gate here (~4s over 14,716 files)
         # and the only one whose finding is not an opinion. On 2026-09-07 the

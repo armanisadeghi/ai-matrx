@@ -56,6 +56,8 @@ export interface FeedbackCategory {
 export interface UserFeedback {
   id: string;
   user_id: string;
+  /** The organization the report is filed under — what a notification link names. */
+  organization_id: string | null;
   username: string | null;
   feedback_type: FeedbackType;
   route: string;

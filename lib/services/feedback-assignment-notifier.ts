@@ -140,6 +140,7 @@ export async function notifyFeedbackAssigned(
       feedbackPreview: feedback.description,
       feedbackRoute: feedback.route,
       categoryName,
+      organizationId: feedback.organization_id ?? null,
     }),
   ]);
 
