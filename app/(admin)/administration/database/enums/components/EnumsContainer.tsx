@@ -18,14 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import { List, Search, RefreshCw, Plus, X } from "lucide-react";
 import EnumsList from "../../sql-functions/components/EnumsList";
 import EnumDetail, {
@@ -37,7 +29,6 @@ import {
   booleanUrlCodec,
   enumUrlCodec,
   jsonUrlCodec,
-  positiveIntegerUrlCodec,
   stringUrlCodec,
   useUrlState,
 } from "@ai-matrx/kit/url-state";
@@ -50,15 +41,6 @@ interface EnumsContainerProps {
 export default function EnumsContainer({
   initialEnums = [],
 }: EnumsContainerProps) {
-  // State for pagination
-  const [currentPage, setCurrentPage] = useUrlState(
-    "p",
-    positiveIntegerUrlCodec(1),
-  );
-  const [itemsPerPage, setItemsPerPage] = useUrlState(
-    "ps",
-    positiveIntegerUrlCodec(10),
-  );
   const [activeTab, setActiveTab] = useUrlState(
     "tab",
     enumUrlCodec(["list", "create", "edit"] as const, "list"),
@@ -244,32 +226,6 @@ export default function EnumsContainer({
     }
   };
 
-  // Handle items per page change
-  const handleItemsPerPageChange = (value: string) => {
-    setItemsPerPage(Number(value));
-    setCurrentPage(1); // Reset to first page when changing items per page
-  };
-
-  // Calculate pagination values
-  const totalPages = Math.ceil(enums.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, enums.length);
-  const currentEnums = enums.slice(startIndex, endIndex);
-
-  // Generate page numbers for pagination
-  const pageNumbers: number[] = [];
-  const maxVisiblePages = 5;
-  let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-  let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-  if (endPage - startPage + 1 < maxVisiblePages) {
-    startPage = Math.max(1, endPage - maxVisiblePages + 1);
-  }
-
-  for (let i = startPage; i <= endPage; i++) {
-    pageNumbers.push(i);
-  }
-
   return (
     <Card className="w-full bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-700">
       <Tabs
@@ -448,7 +404,7 @@ export default function EnumsContainer({
             ) : (
               <>
                 <EnumsList
-                  enums={currentEnums}
+                  enums={enums}
                   loading={loading || isRefreshing}
                   onViewDetails={handleViewDetails}
                   onEditEnum={handleEditEnum}
@@ -457,122 +413,6 @@ export default function EnumsContainer({
                   sortField={sort.field}
                   sortDirection={sort.direction}
                 />
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="mt-4 grid grid-cols-3 items-center">
-                    <div className="text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                      Showing {startIndex + 1}-{endIndex} of {enums.length}{" "}
-                      enums
-                    </div>
-
-                    <div className="flex justify-center">
-                      <Pagination>
-                        <PaginationContent>
-                          <PaginationItem>
-                            <PaginationPrevious
-                              onClick={() =>
-                                setCurrentPage(Math.max(1, currentPage - 1))
-                              }
-                              className={`cursor-pointer ${
-                                currentPage === 1
-                                  ? "pointer-events-none opacity-50"
-                                  : ""
-                              }`}
-                            />
-                          </PaginationItem>
-
-                          {startPage > 1 && (
-                            <>
-                              <PaginationItem>
-                                <PaginationLink
-                                  onClick={() => setCurrentPage(1)}
-                                  className="cursor-pointer"
-                                >
-                                  1
-                                </PaginationLink>
-                              </PaginationItem>
-                              {startPage > 2 && (
-                                <PaginationItem>
-                                  <span className="px-2 text-slate-400">
-                                    ...
-                                  </span>
-                                </PaginationItem>
-                              )}
-                            </>
-                          )}
-
-                          {pageNumbers.map((page) => (
-                            <PaginationItem key={page}>
-                              <PaginationLink
-                                onClick={() => setCurrentPage(page)}
-                                isActive={currentPage === page}
-                                className="cursor-pointer"
-                              >
-                                {page}
-                              </PaginationLink>
-                            </PaginationItem>
-                          ))}
-
-                          {endPage < totalPages && (
-                            <>
-                              {endPage < totalPages - 1 && (
-                                <PaginationItem>
-                                  <span className="px-2 text-slate-400">
-                                    ...
-                                  </span>
-                                </PaginationItem>
-                              )}
-                              <PaginationItem>
-                                <PaginationLink
-                                  onClick={() => setCurrentPage(totalPages)}
-                                  className="cursor-pointer"
-                                >
-                                  {totalPages}
-                                </PaginationLink>
-                              </PaginationItem>
-                            </>
-                          )}
-
-                          <PaginationItem>
-                            <PaginationNext
-                              onClick={() =>
-                                setCurrentPage(
-                                  Math.min(totalPages, currentPage + 1),
-                                )
-                              }
-                              className={`cursor-pointer ${
-                                currentPage === totalPages
-                                  ? "pointer-events-none opacity-50"
-                                  : ""
-                              }`}
-                            />
-                          </PaginationItem>
-                        </PaginationContent>
-                      </Pagination>
-                    </div>
-
-                    <div className="flex items-center justify-end gap-2">
-                      <span className="text-sm text-slate-500 dark:text-slate-400">
-                        Rows per page:
-                      </span>
-                      <Select
-                        value={itemsPerPage.toString()}
-                        onValueChange={handleItemsPerPageChange}
-                      >
-                        <SelectTrigger className="h-8 w-[70px] bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="10">10</SelectItem>
-                          <SelectItem value="25">25</SelectItem>
-                          <SelectItem value="50">50</SelectItem>
-                          <SelectItem value="100">100</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                )}
               </>
             )}
           </TabsContent>

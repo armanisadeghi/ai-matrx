@@ -13,14 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import { Search, RefreshCw, Plus, X } from "lucide-react";
 import SqlFunctionsList from "./SqlFunctionsList";
 import SqlFunctionDetail from "./SqlFunctionDetail";
@@ -31,7 +23,6 @@ import {
   booleanUrlCodec,
   enumUrlCodec,
   jsonUrlCodec,
-  positiveIntegerUrlCodec,
   stringUrlCodec,
   useUrlState,
 } from "@ai-matrx/kit/url-state";
@@ -44,14 +35,6 @@ interface SqlFunctionsContainerProps {
 export default function SqlFunctionsContainer({
   initialFunctions = [],
 }: SqlFunctionsContainerProps) {
-  const [currentPage, setCurrentPage] = useUrlState(
-    "p",
-    positiveIntegerUrlCodec(1),
-  );
-  const [itemsPerPage, setItemsPerPage] = useUrlState(
-    "ps",
-    positiveIntegerUrlCodec(10),
-  );
   const [activeTab, setActiveTab] = useUrlState(
     "tab",
     enumUrlCodec(["list", "create", "edit"] as const, "list"),
@@ -165,7 +148,6 @@ export default function SqlFunctionsContainer({
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setCurrentPage(1);
   };
 
   const selectedFunctionKey = selectedFunction
@@ -221,24 +203,6 @@ export default function SqlFunctionsContainer({
       updateUrlFilter({ schema: value === "all" ? undefined : value });
     }
   };
-
-  const handleItemsPerPageChange = (value: string) => {
-    setItemsPerPage(Number(value));
-    setCurrentPage(1);
-  };
-
-  const totalPages = Math.ceil(functions.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, functions.length);
-  const currentFunctions = functions.slice(startIndex, endIndex);
-
-  const pageNumbers: number[] = [];
-  const maxVisiblePages = 5;
-  let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-  let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-  if (endPage - startPage + 1 < maxVisiblePages)
-    startPage = Math.max(1, endPage - maxVisiblePages + 1);
-  for (let i = startPage; i <= endPage; i++) pageNumbers.push(i);
 
   return (
     <div className="flex flex-col h-full w-full bg-white dark:bg-slate-900 overflow-hidden">
@@ -500,106 +464,6 @@ export default function SqlFunctionsContainer({
                     />
                   )}
                 </div>
-
-                {totalPages > 1 && (
-                  <div className="shrink-0 px-3 py-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 grid grid-cols-3 items-center">
-                    <div className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                      Showing {startIndex + 1}–{endIndex} of {functions.length}
-                    </div>
-                    <div className="flex justify-center">
-                      <Pagination>
-                        <PaginationContent>
-                          <PaginationItem>
-                            <PaginationPrevious
-                              onClick={() =>
-                                setCurrentPage(Math.max(1, currentPage - 1))
-                              }
-                              className={`cursor-pointer ${currentPage === 1 ? "pointer-events-none opacity-50" : ""}`}
-                            />
-                          </PaginationItem>
-                          {startPage > 1 && (
-                            <>
-                              <PaginationItem>
-                                <PaginationLink
-                                  onClick={() => setCurrentPage(1)}
-                                  className="cursor-pointer"
-                                >
-                                  1
-                                </PaginationLink>
-                              </PaginationItem>
-                              {startPage > 2 && (
-                                <PaginationItem>
-                                  <span className="px-2 text-slate-400">
-                                    ...
-                                  </span>
-                                </PaginationItem>
-                              )}
-                            </>
-                          )}
-                          {pageNumbers.map((page) => (
-                            <PaginationItem key={page}>
-                              <PaginationLink
-                                onClick={() => setCurrentPage(page)}
-                                isActive={currentPage === page}
-                                className="cursor-pointer"
-                              >
-                                {page}
-                              </PaginationLink>
-                            </PaginationItem>
-                          ))}
-                          {endPage < totalPages && (
-                            <>
-                              {endPage < totalPages - 1 && (
-                                <PaginationItem>
-                                  <span className="px-2 text-slate-400">
-                                    ...
-                                  </span>
-                                </PaginationItem>
-                              )}
-                              <PaginationItem>
-                                <PaginationLink
-                                  onClick={() => setCurrentPage(totalPages)}
-                                  className="cursor-pointer"
-                                >
-                                  {totalPages}
-                                </PaginationLink>
-                              </PaginationItem>
-                            </>
-                          )}
-                          <PaginationItem>
-                            <PaginationNext
-                              onClick={() =>
-                                setCurrentPage(
-                                  Math.min(totalPages, currentPage + 1),
-                                )
-                              }
-                              className={`cursor-pointer ${currentPage === totalPages ? "pointer-events-none opacity-50" : ""}`}
-                            />
-                          </PaginationItem>
-                        </PaginationContent>
-                      </Pagination>
-                    </div>
-                    <div className="flex items-center justify-end gap-2">
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        Rows:
-                      </span>
-                      <Select
-                        value={itemsPerPage.toString()}
-                        onValueChange={handleItemsPerPageChange}
-                      >
-                        <SelectTrigger className="h-7 w-16 text-xs border-slate-300 dark:border-slate-700">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="10">10</SelectItem>
-                          <SelectItem value="25">25</SelectItem>
-                          <SelectItem value="50">50</SelectItem>
-                          <SelectItem value="100">100</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </TabsContent>
