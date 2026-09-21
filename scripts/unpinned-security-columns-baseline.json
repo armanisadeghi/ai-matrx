@@ -3,8 +3,6 @@
   "agent.message_template|std_update|w|role",
   "billing.spend_guardrail|std_insert|a|scope_user_id",
   "billing.spend_guardrail|std_update|w|scope_user_id",
-  "browser.account_binding|std_insert|a|credential_item_id",
-  "browser.account_binding|std_update|w|credential_item_id",
   "browser.authenticator_window|std_insert|a|credential_item_id",
   "browser.authenticator_window|std_update|w|credential_item_id",
   "browser.profile|std_insert|a|owner_user_id",

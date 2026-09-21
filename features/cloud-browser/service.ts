@@ -47,7 +47,26 @@ type ProfileRow = Database["browser"]["Tables"]["profile"]["Row"];
 type RunRow = Database["browser"]["Tables"]["run"]["Row"];
 type EventRow = Database["browser"]["Tables"]["action_event"]["Row"];
 type HandoffRow = Database["browser"]["Tables"]["handoff"]["Row"];
-type BindingRow = Database["browser"]["Tables"]["account_binding"]["Row"];
+/**
+ * 🚨 NOT `Row` and NOT `select("*")`. (SECURITY-SWEEP, 2026-09-21.)
+ * `browser.account_binding.credential_item_id` names WHICH SAVED LOGIN this binding spends, and
+ * choosing it client-side is choosing somebody else's. It is on its way out of the client
+ * grant, so a `select("*")` here would become a 42501; `mapBinding` never wanted it anyway.
+ */
+type BindingRow = Pick<
+  Database["browser"]["Tables"]["account_binding"]["Row"],
+  | "id"
+  | "profile_id"
+  | "normalized_origin"
+  | "account_key"
+  | "account_label"
+  | "health_state"
+  | "next_check_at"
+  | "last_checked_at"
+>;
+const ACCOUNT_BINDING_COLUMNS =
+  "id, profile_id, normalized_origin, account_key, account_label, health_state, " +
+  "next_check_at, last_checked_at";
 const LIVE_STATES = [
   "provisioning",
   "agent_control",
@@ -826,7 +845,7 @@ export async function loadSnapshot(
       supabase
         .schema("browser")
         .from("account_binding")
-        .select("*")
+        .select(ACCOUNT_BINDING_COLUMNS)
         .eq("profile_id", selected.id)
         .is("deleted_at", null),
       supabase
