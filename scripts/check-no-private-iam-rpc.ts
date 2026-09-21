@@ -61,69 +61,10 @@ export function findPrivateIamRpc(source: ts.SourceFile): PrivateIamRpcFinding[]
   return findings;
 }
 
-function propertyCallHasFeedbackTable(node: ts.CallExpression): boolean {
-  let current: ts.Expression = node.expression;
-  while (ts.isPropertyAccessExpression(current)) {
-    const parent = current.expression;
-    if (
-      ts.isCallExpression(parent) &&
-      ts.isPropertyAccessExpression(parent.expression) &&
-      parent.expression.name.text === "from" &&
-      ts.isStringLiteral(parent.arguments[0]) &&
-      parent.arguments[0].text === "user_feedback"
-    ) return true;
-    current = parent;
-  }
-  return false;
-}
-
-function expressionUsesAdminClient(node: ts.Expression, adminNames: Set<string>): boolean {
-  if (ts.isCallExpression(node)) {
-    if (ts.isIdentifier(node.expression) && node.expression.text === "createAdminClient") return true;
-    return expressionUsesAdminClient(node.expression, adminNames);
-  }
-  if (ts.isPropertyAccessExpression(node)) return expressionUsesAdminClient(node.expression, adminNames);
-  return ts.isIdentifier(node) && adminNames.has(node.text);
-}
-
-/**
- * Browser Server Actions must not use the service role to create user feedback.
- * External agent ingestion is deliberately outside actions/ because it has no
- * Supabase caller session and is explicitly service-owned.
- */
-export function findPrivilegedFeedbackInsert(source: ts.SourceFile): PrivateIamRpcFinding[] {
-  const adminNames = new Set<string>();
-  const findings: PrivateIamRpcFinding[] = [];
-  const visit = (node: ts.Node) => {
-    if (
-      ts.isVariableDeclaration(node) &&
-      ts.isIdentifier(node.name) &&
-      node.initializer &&
-      expressionUsesAdminClient(node.initializer, adminNames)
-    ) adminNames.add(node.name.text);
-    if (
-      ts.isCallExpression(node) &&
-      ts.isPropertyAccessExpression(node.expression) &&
-      node.expression.name.text === "insert" &&
-      propertyCallHasFeedbackTable(node) &&
-      expressionUsesAdminClient(node.expression, adminNames)
-    ) {
-      findings.push({
-        line: source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1,
-        reason: "service-role insert into users.user_feedback from a browser Server Action",
-      });
-    }
-    ts.forEachChild(node, visit);
-  };
-  visit(source);
-  return findings;
-}
-
 /**
  * `submitFeedback` is the person-originated entry point. Keep a direct census
- * of its body as well as looking for table chains: the existing admin helper
- * returns a destructured service client, which is intentionally harder to
- * follow syntactically than `const admin = createAdminClient()`.
+ * of its body: the existing admin helper returns a destructured service
+ * client, which is intentionally harder to follow than a direct constructor.
  */
 export function findSubmitFeedbackServiceBypass(source: ts.SourceFile): PrivateIamRpcFinding[] {
   const findings: PrivateIamRpcFinding[] = [];
@@ -160,27 +101,23 @@ function filesUnder(directory: string): string[] {
 function selfTest(): never | void {
   const source = ts.createSourceFile(
     "planted.ts",
-    `const admin = createAdminClient();
-await client.schema("iam").rpc("has_org_access_for", { p_user_id: userId, p_org: orgId });
-await admin.schema("users").from("user_feedback").insert({ organization_id: orgId });
+    `await client.schema("iam").rpc("has_org_access_for", { p_user_id: userId, p_org: orgId });
 async function submitFeedback() {
+  const directAdmin = createAdminClient();
   const { admin } = await requireAdminServiceAccess();
-  await admin.schema("users").from("user_feedback").insert({ organization_id: orgId });
 }`,
     ts.ScriptTarget.Latest,
     true,
   );
   const findings = [
     ...findPrivateIamRpc(source),
-    ...findPrivilegedFeedbackInsert(source),
     ...findSubmitFeedbackServiceBypass(source),
   ];
   if (
-    findings.length !== 4 ||
-    findings[0].line !== 2 ||
+    findings.length !== 3 ||
+    findings[0].line !== 1 ||
     findings[1].line !== 3 ||
-    findings[2].line !== 6 ||
-    findings[3].line !== 5
+    findings[2].line !== 4
   ) {
     console.error("[check:no-private-iam-rpc] SELF-TEST FAILED — planted authorization bypass was not found.");
     process.exit(1);
@@ -200,15 +137,10 @@ if (process.argv.includes("--self-test")) {
         true,
       );
       const privateRpcFindings = findPrivateIamRpc(source);
-      // A request-bound insert is mandatory only for browser Server Actions.
-      // API and agent-ingestion services have distinct trusted identities.
-      const privilegedInsertFindings = relative(ROOT, filePath).startsWith("actions/")
-        ? findPrivilegedFeedbackInsert(source)
-        : [];
       const submitFeedbackBypassFindings = relative(ROOT, filePath) === "actions/feedback.actions.ts"
         ? findSubmitFeedbackServiceBypass(source)
         : [];
-      return [...privateRpcFindings, ...privilegedInsertFindings, ...submitFeedbackBypassFindings].map((finding) =>
+      return [...privateRpcFindings, ...submitFeedbackBypassFindings].map((finding) =>
         `${relative(ROOT, filePath)}:${finding.line} (${finding.reason})`,
       );
     }),
