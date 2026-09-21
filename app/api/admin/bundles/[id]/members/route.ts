@@ -57,18 +57,22 @@ export async function POST(
     }
 
     // One tool → tool_bundle 'member' edge: position = sort_order, alias in metadata.
-    const { error } = await supabase
-      .schema("platform").from("associations")
-      .insert({
-        source_type: "tool",
-        source_id: tool_id,
-        target_type: "tool_bundle",
-        target_id: bundleId,
-        organization_id: bundleRes.data.organization_id,
-        role: "member",
-        position: typeof sort_order === "number" ? sort_order : 100,
-        metadata: { local_alias },
-      });
+    // DOORS-ONLY: `platform` is not a client-writable schema. `assoc_add` is the
+    // canonical association door — it decides through the one ladder
+    // (`iam.has_access` on both ends, then the container's organization) and
+    // upserts on (source_type, source_id, target_type, target_id, role), so
+    // adding a tool that is already a member updates its alias and position
+    // instead of failing on the unique index.
+    const { error } = await supabase.rpc("assoc_add", {
+      p_source_type: "tool",
+      p_source_id: tool_id,
+      p_target_type: "tool_bundle",
+      p_target_id: bundleId,
+      p_org_id: bundleRes.data.organization_id,
+      p_role: "member",
+      p_position: typeof sort_order === "number" ? sort_order : 100,
+      p_metadata: { local_alias },
+    } as never);
 
     if (error) {
       return NextResponse.json(

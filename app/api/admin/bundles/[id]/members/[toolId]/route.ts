@@ -72,15 +72,22 @@ export async function PATCH(
       ? existing.data.metadata
       : {};
 
-    const { error } = await supabase
-      .schema("platform").from("associations")
-      .update({ metadata: { ...prevMeta, local_alias: body.local_alias } })
-      .eq("source_type", "tool")
-      .eq("source_id", toolId)
-      .eq("target_type", "tool_bundle")
-      .eq("target_id", bundleId)
-      .eq("role", "member")
-      .is("deleted_at", null);
+    // DOORS-ONLY: `platform` is not a client-writable schema. `assoc_add` is the
+    // canonical association door and upserts on
+    // (source_type, source_id, target_type, target_id, role) — with the edge
+    // already present this IS the update, and the door decides through the one
+    // ladder instead of this table's RLS. `metadata` is replaced wholesale by
+    // the door, which is why the previous value is merged here first, exactly as
+    // the direct UPDATE did. `p_position` and `p_label` are left out on purpose:
+    // the door coalesces them, so the member keeps its sort order and label.
+    const { error } = await supabase.rpc("assoc_add", {
+      p_source_type: "tool",
+      p_source_id: toolId,
+      p_target_type: "tool_bundle",
+      p_target_id: bundleId,
+      p_role: "member",
+      p_metadata: { ...prevMeta, local_alias: body.local_alias },
+    } as never);
 
     if (error) {
       return NextResponse.json(
@@ -112,14 +119,16 @@ export async function DELETE(
     const { id: bundleId, toolId } = await params;
 
     const supabase = await createClient();
-    const { error } = await supabase
-      .schema("platform").from("associations")
-      .delete()
-      .eq("source_type", "tool")
-      .eq("source_id", toolId)
-      .eq("target_type", "tool_bundle")
-      .eq("target_id", bundleId)
-      .eq("role", "member");
+    // DOORS-ONLY: `platform` is not a client-writable schema. `assoc_remove` is
+    // the canonical door for taking an edge down, and it decides through the one
+    // ladder rather than this table's RLS.
+    const { error } = await supabase.rpc("assoc_remove", {
+      p_source_type: "tool",
+      p_source_id: toolId,
+      p_target_type: "tool_bundle",
+      p_target_id: bundleId,
+      p_role: "member",
+    } as never);
 
     if (error) {
       return NextResponse.json(

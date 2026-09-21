@@ -202,22 +202,29 @@ export async function POST(request: NextRequest) {
         scopedProjectId ? { type: "project", id: scopedProjectId } : null,
         scopedTaskId ? { type: "task", id: scopedTaskId } : null,
       ].filter((t): t is { type: string; id: string } => t !== null);
-      const { error: edgeError } = await supabase
-        .schema("platform")
-        .from("associations")
-        .insert(
-          edgeTargets.map((target) => ({
-            source_type: "agent_shortcut",
-            source_id: (data as { id: string }).id,
-            target_type: target.type,
-            target_id: target.id,
-            // The edge is filed in the SAME organization as the row it
-            // describes — never `?? null`, which `_stamp_org_default` would
-            // turn into the writer's personal organization.
-            organization_id: scoped.organization_id as string,
-            created_by: user.id,
-          })) as never,
-        );
+      // DOORS-ONLY: `platform` is not a client-writable schema. The scoping edge
+      // goes through `assoc_add`, the canonical association door, which decides
+      // through the one ladder (`iam.has_access` on BOTH ends, then the
+      // container's organization) instead of relying on this table's RLS. The
+      // door upserts on (source_type, source_id, target_type, target_id, role),
+      // so a retry of this create writes the same edge rather than a second one.
+      let edgeError: { message: string } | null = null;
+      for (const target of edgeTargets) {
+        const { error } = await supabase.rpc("assoc_add", {
+          p_source_type: "agent_shortcut",
+          p_source_id: (data as { id: string }).id,
+          p_target_type: target.type,
+          p_target_id: target.id,
+          // The edge is filed in the SAME organization as the row it
+          // describes — never `?? null`, which `_stamp_org_default` would
+          // turn into the writer's personal organization.
+          p_org_id: scoped.organization_id as string,
+        } as never);
+        if (error) {
+          edgeError = error;
+          break;
+        }
+      }
       if (edgeError) {
         // Loud, never silent: a shortcut without its scoping edge is a broken create.
         console.error("Shortcut created but scoping edge failed:", edgeError);
