@@ -139,7 +139,7 @@ export function SavedViewBar<TDef>({
     onActiveViewIdChange(target.id);
     onActiveViewChange?.({ id: target.id, name: target.name });
     onApply(target.definition);
-    void touchSavedView(target.id);
+    void touchSavedView(target.id, codec.listKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per URL
   }, [autoOpenViewId, views, openedFromUrl]);
 
@@ -153,7 +153,7 @@ export function SavedViewBar<TDef>({
     onActiveViewIdChange(view.id);
     onActiveViewChange?.({ id: view.id, name: view.name });
     onApply(view.definition);
-    void touchSavedView(view.id);
+    void touchSavedView(view.id, codec.listKey);
     setViews((prev) =>
       prev.map((v) =>
         v.id === view.id ? { ...v, last_used_at: new Date().toISOString() } : v,
@@ -183,7 +183,7 @@ export function SavedViewBar<TDef>({
   const updateDefinition = async (view: SavedView<TDef>) => {
     if (current === null) return;
     try {
-      await updateSavedView(view.id, { definition: current });
+      await updateSavedView(view.id, codec.listKey, { definition: current });
       const next = current;
       setViews((prev) =>
         prev.map((v) => (v.id === view.id ? { ...v, definition: next } : v)),
@@ -198,7 +198,7 @@ export function SavedViewBar<TDef>({
   };
 
   const rename = async (view: SavedView<TDef>, name: string) => {
-    await updateSavedView(view.id, { name });
+    await updateSavedView(view.id, codec.listKey, { name });
     dismissRecordToasts({ type: "saved_view", id: view.id });
     setViews((prev) =>
       prev.map((v) => (v.id === view.id ? { ...v, name: name.trim() } : v)),
@@ -249,7 +249,7 @@ export function SavedViewBar<TDef>({
               const nextVisibility =
                 view.visibility === "internal" ? "personal" : "internal";
               try {
-                await updateSavedView(view.id, { visibility: nextVisibility });
+                await updateSavedView(view.id, codec.listKey, { visibility: nextVisibility });
                 setViews((prev) =>
                   prev.map((v) =>
                     v.id === view.id ? { ...v, visibility: nextVisibility } : v,
@@ -284,7 +284,7 @@ export function SavedViewBar<TDef>({
               });
               if (!ok) return;
               try {
-                await deleteSavedView(view.id);
+                await deleteSavedView(view.id, codec.listKey);
                 dismissRecordToasts({ type: "saved_view", id: view.id });
                 setViews((prev) => prev.filter((v) => v.id !== view.id));
                 if (activeViewId === view.id) {

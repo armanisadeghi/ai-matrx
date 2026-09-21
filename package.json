@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2132",
+  "version": "0.4.2131",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
@@ -588,6 +588,8 @@
     "check:store-doors-decide:exhaustive": "tsx scripts/check-store-doors-decide.ts --exhaustive",
     "check:doors-only-schemas": "tsx scripts/check-doors-only-schemas.ts && tsx scripts/check-assist-emit-door.ts",
     "check:doors-only-schemas:self-test": "tsx scripts/check-doors-only-schemas.ts --self-test && tsx scripts/check-assist-emit-door.ts --self-test",
+    "check:door-names-resolve": "tsx scripts/check-door-names-resolve.ts",
+    "check:door-names-resolve:self-test": "tsx scripts/check-door-names-resolve.ts --self-test",
     "check:assist-emit-door": "tsx scripts/check-assist-emit-door.ts",
     "check:assist-emit-door:self-test": "tsx scripts/check-assist-emit-door.ts --self-test",
     "check:proxy-auth-hot-path": "tsx scripts/check-proxy-auth-hot-path.ts",
