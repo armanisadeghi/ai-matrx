@@ -3,6 +3,14 @@ import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { createClient } from "@/utils/supabase/server";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import {
+  describeFailure,
+  formatAttempts,
+  isTransportFailure,
+  retryTransport,
+  tracingFetch,
+  type TransportAttempt,
+} from "./authTransport";
 
 /**
  * THE NONCE HANDSHAKE — the ONLY way into this route.
@@ -233,8 +241,54 @@ export async function GET(request: NextRequest) {
     await supabase.auth.signOut({ scope: "local" });
   }
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (!error) return NextResponse.redirect(destination);
+  // 🚨 A DROPPED SOCKET IS NOT A BAD PASSWORD (2026-09-21, lane DEV-LOGIN).
+  // This route lives in a dev server that runs for hours and keeps a warm
+  // connection pool to the auth host; a shell `curl` opens a fresh socket
+  // every time. That is the whole difference between "the auth host answers a
+  // normal 401 in 110 ms from a terminal" and this route answering
+  // `OTP fallback failed: fetch failed` — the failure was never the account,
+  // it was one pooled request that did not complete, unretried, and then
+  // reported as the NEXT call's problem. Every auth call below is now retried
+  // when and only when the failure is transport, and everything that happened
+  // is carried in `attempts` so the reason a lane reads is the real one.
+  // Full WHY: ./authTransport.ts.
+  const attempts: TransportAttempt[] = [];
+  const { error } = await retryTransport(
+    "signInWithPassword",
+    () => supabase.auth.signInWithPassword({ email, password }),
+    attempts,
+  );
+  if (!error) {
+    if (attempts.length) {
+      console.warn(
+        `[dev-login] signed in after a transport retry — ${formatAttempts(attempts)}`,
+      );
+    }
+    return NextResponse.redirect(destination);
+  }
+
+  // The auth host never answered. Saying "your password is stale" here — and
+  // then running a fallback that goes to the SAME host over the SAME pool —
+  // is how this route spent a day telling lanes their product was broken.
+  if (isTransportFailure(error)) {
+    console.error(
+      `[dev-login] could not reach the auth host for ${email} — ${formatAttempts(attempts)}`,
+    );
+    return NextResponse.json(
+      {
+        error:
+          "dev-login could not REACH the auth host — this is a transport failure, " +
+          "not a bad credential and not a product defect. The call was retried " +
+          `${attempts.length} time(s) and each attempt is below. Re-running the ` +
+          "handshake usually succeeds; if every attempt names the same cause, the " +
+          "network or the auth host is genuinely down. Nothing about the admin " +
+          "account or your walk is implicated.",
+        attempts: attempts.map((a) => `${a.label} #${a.attempt} (${a.ms}ms): ${a.reason}`),
+        retryable: true,
+      },
+      { status: 503, headers: { "Retry-After": "2" } },
+    );
+  }
 
   // 🚨 A DRIFTED PASSWORD MUST NOT TAKE AGENT TESTING OFFLINE (2026-08-30).
   // AI_ADMIN_PASSWORD is a copy of a secret that lives in Supabase, so the two
@@ -247,36 +301,77 @@ export async function GET(request: NextRequest) {
   // session cookie, same eviction rules — only the proof-of-identity differs,
   // and it is still gated by the single-use nonce handshake plus the dev-only
   // guard above.
+  // Past this line the auth host DID answer and the answer was no — a real
+  // credential drift, which is the only case the OTP fallback was built for.
+  const credentialReason = describeFailure(error);
   const serviceKey = process.env.SUPABASE_SECRET_KEY;
   if (!serviceKey) {
     return NextResponse.json(
       {
-        error: `Password sign-in failed (${error.message}) and no SUPABASE_SECRET_KEY is set for the OTP fallback.`,
+        error: `Password sign-in was REFUSED by the auth host (${credentialReason}) and no SUPABASE_SECRET_KEY is set for the OTP fallback.`,
       },
       { status: 401 },
     );
   }
   console.warn(
-    `[dev-login] AI_ADMIN_PASSWORD is stale for ${email} (${error.message}); ` +
+    `[dev-login] AI_ADMIN_PASSWORD is stale for ${email} (${credentialReason}); ` +
       "falling back to a service-role OTP. Refresh the env value when convenient.",
   );
   const { createClient: createServiceClient } = await import("@supabase/supabase-js");
   const service = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL as string,
     serviceKey,
-    { auth: { autoRefreshToken: false, persistSession: false } },
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+      // The ONE frame that can still see WHY a fetch died: auth-js keeps the
+      // message and drops the `cause`, so "fetch failed" arrives naked unless
+      // we look first. See ./authTransport.ts.
+      global: { fetch: tracingFetch("generateLink", attempts) },
+    },
   );
-  const link = await service.auth.admin.generateLink({ type: "magiclink", email });
-  const otp = link.data?.properties?.email_otp;
+  const link = await retryTransport(
+    "generateLink",
+    () => service.auth.admin.generateLink({ type: "magiclink", email }),
+    attempts,
+  );
+  const otp = (link.data as { properties?: { email_otp?: string } } | undefined)
+    ?.properties?.email_otp;
   if (link.error || !otp) {
+    const transport = isTransportFailure(link.error);
     return NextResponse.json(
-      { error: `OTP fallback failed: ${link.error?.message ?? "no otp returned"}` },
-      { status: 401 },
+      {
+        error:
+          (transport
+            ? "dev-login could not REACH the auth host on the OTP fallback either — " +
+              "this is a transport failure, not a product defect. "
+            : "The OTP fallback was refused by the auth host. ") +
+          `The password sign-in before it said: ${credentialReason}.`,
+        attempts: attempts.map((a) => `${a.label} #${a.attempt} (${a.ms}ms): ${a.reason}`),
+        retryable: transport,
+      },
+      transport
+        ? { status: 503, headers: { "Retry-After": "2" } }
+        : { status: 401 },
     );
   }
-  const verified = await supabase.auth.verifyOtp({ email, token: otp, type: "email" });
+  const verified = await retryTransport(
+    "verifyOtp",
+    () => supabase.auth.verifyOtp({ email, token: otp, type: "email" }),
+    attempts,
+  );
   if (verified.error) {
-    return NextResponse.json({ error: verified.error.message }, { status: 401 });
+    const transport = isTransportFailure(verified.error);
+    return NextResponse.json(
+      {
+        error: `${transport ? "Transport failure while redeeming the OTP" : "The auth host refused the OTP"}: ${describeFailure(verified.error)}`,
+        attempts: attempts.map((a) => `${a.label} #${a.attempt} (${a.ms}ms): ${a.reason}`),
+        retryable: transport,
+      },
+      transport
+        ? { status: 503, headers: { "Retry-After": "2" } }
+        : { status: 401 },
+    );
   }
+  console.warn(`[dev-login] signed in via the OTP fallback — ${formatAttempts(attempts)}`);
   return NextResponse.redirect(destination);
 }

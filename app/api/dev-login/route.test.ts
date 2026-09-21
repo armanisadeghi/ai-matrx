@@ -205,3 +205,85 @@ it("no longer reads DEV_LOGIN_TOKEN at all", () => {
   ) as string;
   expect(source).not.toContain("env.DEV_LOGIN_TOKEN");
 });
+
+/**
+ * A DROPPED SOCKET IS NOT A BAD PASSWORD (2026-09-21, lane DEV-LOGIN).
+ *
+ * The shared dev server answered `{"error":"OTP fallback failed: fetch
+ * failed"}` intermittently, and lanes reading that sentence stopped their
+ * walks believing the product was broken. It was one unretried HTTP call that
+ * did not complete, reported as the SECOND call's problem, under a log line
+ * blaming a stale AI_ADMIN_PASSWORD.
+ *
+ * Against the pre-2026-09-21 route: the first case fails (no retry — one
+ * transport error is final) and the second fails (it falls through to the OTP
+ * fallback and returns 401 with the password branch's wording).
+ */
+describe("a transport failure is retried, and never called a bad credential", () => {
+  const HOST = "stransport9.localhost";
+  const PORT = ":3001";
+
+  /** Exactly what `@supabase/auth-js` produces when the fetch never completed. */
+  function retryableFetchError() {
+    const error = new Error("fetch failed");
+    error.name = "AuthRetryableFetchError";
+    (error as unknown as { status: number }).status = 0;
+    return error;
+  }
+
+  // The mock is shared with every describe above, so the call count is only
+  // this test's if it starts from zero.
+  const resetSignIn = () => {
+    signInWithPassword.mockReset();
+    signInWithPassword.mockImplementation(async () => ({ error: null }));
+  };
+  beforeEach(resetSignIn);
+  afterEach(resetSignIn);
+
+  it("signs in anyway when the retry goes through", async () => {
+    signInWithPassword
+      .mockImplementationOnce(async () => ({ error: retryableFetchError() }))
+      .mockImplementationOnce(async () => ({ error: null }));
+    writeFileSync(nonceFile(HOST), "11111111111111111111111111111111\n");
+
+    const response = await GET(
+      get("?nonce=11111111111111111111111111111111&next=/tasks", HOST + PORT),
+    );
+
+    expect(signInWithPassword).toHaveBeenCalledTimes(2);
+    expect(response.status).toBeGreaterThanOrEqual(300);
+    expect(response.status).toBeLessThan(400);
+  });
+
+  it("answers 503 naming the transport, not 401 naming the account", async () => {
+    signInWithPassword.mockImplementation(async () => ({
+      error: retryableFetchError(),
+    }));
+    writeFileSync(nonceFile(HOST), "22222222222222222222222222222222\n");
+
+    const response = await GET(
+      get("?nonce=22222222222222222222222222222222&next=/tasks", HOST + PORT),
+    );
+    const body = (await response.json()) as {
+      error?: string;
+      attempts?: string[];
+      retryable?: boolean;
+    };
+
+    // 503 + Retry-After, because this IS retryable and a 401 says "you are
+    // not who you say you are", which was never true.
+    expect(response.status).toBe(503);
+    expect(response.headers.get("retry-after")).toBe("2");
+    expect(body.retryable).toBe(true);
+    // The sentence a lane reads must exonerate the product and the account.
+    expect(body.error ?? "").toMatch(/transport failure/i);
+    expect(body.error ?? "").toMatch(/not a product defect/i);
+    // Every attempt is shown, so "intermittent" stops being a rumour.
+    expect(body.attempts?.length).toBeGreaterThanOrEqual(2);
+    expect((body.attempts ?? []).join(" ")).toContain("signInWithPassword");
+    // THE OLD BUG: the OTP fallback ran on a dead network and got the last
+    // word, so the answer named the fallback instead of the cause.
+    expect(body.error ?? "").not.toContain("OTP fallback failed");
+    expect(body.error ?? "").not.toMatch(/stale/i);
+  });
+});
