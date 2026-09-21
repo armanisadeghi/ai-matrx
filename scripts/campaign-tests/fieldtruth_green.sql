@@ -299,6 +299,30 @@ begin
   end if;
   raise notice 'PART 8 PASSED — a record carrying an old orphan key is still editable, and the orphan value is not lost.';
 
+  -- ── PART 9 — A TABLE CANNOT CLAIM A COLUMN IT NEVER DEFINED. ────────────────────────
+  -- The same one-source-of-truth rule read from the other side. Real-data crew E put
+  -- `client_site` into a table's `fields` array with no Field record behind it and nothing
+  -- said a word. The check is DEFERRED, because both doors legitimately write the two halves
+  -- in two statements — PART 3 above declared a column through custom.field_declare with
+  -- this trigger live — so the suite asks for it early with SET CONSTRAINTS ALL IMMEDIATE,
+  -- which is the same moment COMMIT would ask.
+  begin
+    perform custom.record_update(v_org, v_lots, jsonb_build_object('fields',
+      (select jsonb_agg(e) || jsonb_build_array(jsonb_build_object('name','press_date'))
+         from jsonb_array_elements(
+                (select jsonb_agg(jsonb_build_object('name', f.data ->> 'key'))
+                   from custom.applicable_fields(v_org, v_lots, null) f)) e)));
+    set constraints all immediate;
+    raise exception 'PART 9 FAILED — Harvest Lots now claims a "press_date" column that no field defines, and nothing said a word.';
+  exception when sqlstate '23514' then
+    get stacked diagnostics v_msg = message_text;
+    if position('"press_date"' in v_msg) = 0 then
+      raise exception 'PART 9 FAILED — the refusal never names the claimed column: %', v_msg;
+    end if;
+  end;
+  set constraints all deferred;
+  raise notice 'PART 9 PASSED — a table that ends a transaction claiming an undefined column is refused, by name.';
+
   raise notice 'ALL PARTS PASSED — Kestrel Ridge Orchard.';
 end $t$;
 
