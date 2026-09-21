@@ -22,6 +22,7 @@ import {
   ListChecks,
   Plus,
   Settings as SettingsIcon,
+  Undo2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,11 @@ import { ScopeOnboarding } from "@/features/scopes/components/management/ScopeOn
 import { AddScopeModal } from "@/features/scopes/components/management/AddScopeModal";
 import { TemplateGalleryDrawer } from "@/features/scopes/components/management/TemplateGalleryDrawer";
 import { ReorderDialog } from "@/features/scopes/components/management/ReorderDialog";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { scopesService } from "@/features/scopes/service/scopesService";
+import { ScopeGlyph } from "@/features/scopes/components/ScopeGlyph";
+import type { ArchivedScopeTypeRow } from "@/features/scopes/types";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
 import { isScopesRpcErr } from "@/features/scopes/types";
@@ -62,6 +68,15 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
   const [addScopeOpen, setAddScopeOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [reorderTypesOpen, setReorderTypesOpen] = useState(false);
+  // THE ARCHIVED-ITEMS LAW (common-docs/policies/archived-items.md): the
+  // default list hides removed scope types, and revealing them is ONE click
+  // here — the canonical `ArchivedDisclosure`, never a local copy. The rows
+  // are read on demand; the boot tree stays the live working set (F6).
+  const [showArchived, setShowArchived] = useState(false);
+  const [archivedTypes, setArchivedTypes] = useState<ArchivedScopeTypeRow[]>([]);
+  const [restoreTarget, setRestoreTarget] =
+    useState<ArchivedScopeTypeRow | null>(null);
+  const [restoring, setRestoring] = useState(false);
   const suggestions = useScopeSuggestions();
   const orgScopes = useMemo(
     () => scopeTypes.flatMap((t) => t.scopes),
@@ -72,6 +87,40 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
   useEffect(() => {
     void dispatch(ensureScopeTree());
   }, [dispatch]);
+
+  const loadArchived = React.useCallback(async () => {
+    const res = await scopesService.listArchivedScopeTypes(organization.id);
+    if (isScopesRpcErr(res)) {
+      // Nothing fails silently: an archive we could not read says so instead
+      // of rendering as "Archived (0)".
+      toast.error(`Could not read the archive: ${res.error.message}`);
+      return;
+    }
+    setArchivedTypes(res.data.types);
+  }, [organization.id]);
+
+  useEffect(() => {
+    void loadArchived();
+  }, [loadArchived]);
+
+  async function restoreType(row: ArchivedScopeTypeRow) {
+    setRestoring(true);
+    try {
+      const res = await scopesService.restoreScopeType(row.id);
+      if (isScopesRpcErr(res)) {
+        toast.error(`Restore failed: ${res.error.message}`);
+        return;
+      }
+      toast.success(`${row.label_plural} restored`);
+      setRestoreTarget(null);
+      await Promise.all([
+        dispatch(ensureScopeTree({ refresh: true })),
+        loadArchived(),
+      ]);
+    } finally {
+      setRestoring(false);
+    }
+  }
 
   const slug = organization.slug ?? organization.id;
   const totalScopes = orgScopes.length;
@@ -241,6 +290,77 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
           </div>
         </>
       )}
+
+      <ArchivedDisclosure
+        count={archivedTypes.length}
+        open={showArchived}
+        onOpenChange={setShowArchived}
+        className="mt-2"
+        contentClassName="space-y-2"
+      >
+        {archivedTypes.map((row) => (
+          <Card
+            key={row.id}
+            className="p-3 flex items-center gap-3 border-dashed opacity-90"
+          >
+            <ScopeGlyph icon={row.icon} className="h-4 w-4 text-muted-foreground" />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-medium text-foreground truncate">
+                {row.label_plural}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Removed{" "}
+                {new Date(row.deleted_at).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })}
+                {row.archived_scope_count > 0
+                  ? ` \u00b7 ${row.archived_scope_count} ${
+                      row.archived_scope_count === 1
+                        ? row.label_singular.toLowerCase()
+                        : row.label_plural.toLowerCase()
+                    } went with it`
+                  : ""}
+              </div>
+            </div>
+            {canManage && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRestoreTarget(row)}
+              >
+                <Undo2 className="h-3.5 w-3.5 mr-1.5" />
+                Restore
+              </Button>
+            )}
+          </Card>
+        ))}
+      </ArchivedDisclosure>
+
+      <ConfirmDialog
+        open={!!restoreTarget}
+        onOpenChange={(open) => {
+          if (!open) setRestoreTarget(null);
+        }}
+        title={`Restore ${restoreTarget?.label_plural ?? ""}?`}
+        description={
+          restoreTarget
+            ? restoreTarget.archived_scope_count > 0
+              ? `This brings the type back on this page, together with the ${restoreTarget.archived_scope_count} ${
+                  restoreTarget.archived_scope_count === 1
+                    ? restoreTarget.label_singular.toLowerCase()
+                    : restoreTarget.label_plural.toLowerCase()
+                } and the context items that were removed with it. Anything removed separately beforehand stays removed.`
+              : "This brings the type back on this page, together with the context items that were removed with it. Anything removed separately beforehand stays removed."
+            : ""
+        }
+        confirmLabel={restoring ? "Restoring\u2026" : "Restore"}
+        busy={restoring}
+        onConfirm={() => {
+          if (restoreTarget) void restoreType(restoreTarget);
+        }}
+      />
 
       <AddScopeModal
         open={addScopeOpen}

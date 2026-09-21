@@ -181,6 +181,23 @@ export interface ScopeTypeNode {
   scopes: ScopeNode[];
 }
 
+/**
+ * A REMOVED scope type, as the scopes page's archive disclosure shows it.
+ * Never part of `ScopeTypeNode` / the boot tree: the tree is the live working
+ * set (F6, 2026-09-21) and archived rows are read on demand.
+ */
+export interface ArchivedScopeTypeRow {
+  id: string;
+  organization_id: string;
+  label_singular: string;
+  label_plural: string;
+  icon: string;
+  color: string;
+  deleted_at: string;
+  /** Scopes that went with this removal and come back with a restore. */
+  archived_scope_count: number;
+}
+
 export interface ProjectNode {
   id: string;
   organization_id: string | null;

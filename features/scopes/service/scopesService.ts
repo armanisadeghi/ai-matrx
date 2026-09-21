@@ -56,6 +56,7 @@ import {
 } from "@/features/scopes/utils/slugify";
 import type {
   ApplyTemplateResult,
+  ArchivedScopeTypeRow,
   ContextItemRow,
   ContextItemValue,
   ContextTemplate,
@@ -238,6 +239,13 @@ export const scopesService = {
 
       // VIEW LAW: org-scoped — restricted to orgIds (the caller's own
       // memberships, resolved above via iam.memberships), never a bare RLS-only read.
+      // The boot tree is the LIVE working set every
+      // picker, context surface and org page reads; a removed scope type must
+      // not reach any of them. The archive reveal for the scopes page is
+      // `listArchivedScopeTypes` behind `ArchivedDisclosure` (ScopesManager),
+      // not a widening of this cache. THE F6 DEFECT: until 2026-09-21 this
+      // read carried no `deleted_at` filter at all, so a type deleted from its
+      // own page came back as a card with an "Open" door after a full reload.
       const scopeTypesP = contextDb(supabase)
         .from("scope_types")
         .select(
@@ -246,9 +254,13 @@ export const scopesService = {
            default_variable_keys`,
         )
         .in("organization_id", orgIds)
+        .is("deleted_at", null)
         .order("sort_order", { ascending: true });
 
       // VIEW LAW: org-scoped — restricted to orgIds (see scopeTypesP above).
+      // Same working-set rule as scope_types above
+      // — a removed scope leaves the tree, and the scopes page's archive
+      // disclosure is the one place archived rows are revealed.
       const scopesP = contextDb(supabase)
         .from("scopes")
         .select(
@@ -256,6 +268,7 @@ export const scopesService = {
            parent_scope_id, settings`,
         )
         .in("organization_id", orgIds)
+        .is("deleted_at", null)
         .order("name", { ascending: true });
 
       // VIEW LAW: org-scoped — restricted to orgIds (see scopeTypesP above).
@@ -488,6 +501,7 @@ export const scopesService = {
         .from("context_items")
         .select("*")
         .eq("scope_type_id", scopeTypeId)
+        .is("deleted_at", null)
         .eq("is_active", true);
       if (error) return err(...mapPgErrorPair(error));
       return ok({ items: data ?? [] });
@@ -508,6 +522,7 @@ export const scopesService = {
         .from("context_items")
         .select("*")
         .in("scope_type_id", scopeTypeIds)
+        .is("deleted_at", null)
         .eq("is_active", true);
       if (error) return err(...mapPgErrorPair(error));
       return ok({ items: data ?? [] });
@@ -650,6 +665,7 @@ export const scopesService = {
         .from("scopes")
         .select("id, slug, name, description, scope_type_id, organization_id")
         .eq("id", args.scopeId)
+        .is("deleted_at", null)
         .single();
       if (scopeErr) return err(...mapPgErrorPair(scopeErr));
       if (!scope)
@@ -668,6 +684,7 @@ export const scopesService = {
         .from("scope_types")
         .select("id, slug, label_singular, label_plural, icon, color")
         .eq("id", scope.scope_type_id)
+        .is("deleted_at", null)
         .single();
 
       const orgP = supabase
@@ -681,6 +698,7 @@ export const scopesService = {
         .from("context_items")
         .select("id, slug, key, display_name, value_type, sort_order")
         .eq("scope_type_id", scope.scope_type_id)
+        .is("deleted_at", null)
         .eq("is_active", true)
         .order("sort_order", { ascending: true });
 
@@ -1205,6 +1223,87 @@ export const scopesService = {
     }
   },
 
+  // ──────────────────────────────────────────────────────────────────
+  //  READ — ARCHIVED SCOPE TYPES (THE ARCHIVED-ITEMS LAW's reveal half)
+  // ──────────────────────────────────────────────────────────────────
+
+  /**
+   * The org's REMOVED scope types, newest first, with the live counts of what
+   * went with each one.
+   *
+   * The boot tree (`getScopeTree`) is the live working set and never carries
+   * these rows — that is what the F6 defect was: no filter there at all, so a
+   * deleted type stayed on the scopes page as an openable card. The archive is
+   * a SEPARATE, on-demand read so the reveal is one click on the surface
+   * (`ArchivedDisclosure`) without widening the cache every picker shares.
+   */
+  async listArchivedScopeTypes(
+    orgId: string,
+  ): Promise<ScopesRpcResult<{ types: ArchivedScopeTypeRow[] }>> {
+    try {
+      requireUserId();
+      const { data, error } = await contextDb(supabase)
+        .from("scope_types")
+        .select(
+          "id, organization_id, label_singular, label_plural, icon, color, deleted_at",
+        )
+        .eq("organization_id", orgId)
+        .not("deleted_at", "is", null)
+        .order("deleted_at", { ascending: false });
+      if (error) return err(...mapPgErrorPair(error));
+
+      const rows = (data ?? []) as ArchivedScopeTypeRow[];
+      if (rows.length === 0) return ok({ types: [] });
+
+      // What each removal took with it, so the disclosure states the
+      // consequence of a restore instead of a bare name.
+      const { data: scopeRows, error: scopeErr } = await contextDb(supabase)
+        .from("scopes")
+        .select("id, scope_type_id, deleted_at")
+        .in(
+          "scope_type_id",
+          rows.map((r) => r.id),
+        )
+        .not("deleted_at", "is", null);
+      if (scopeErr) return err(...mapPgErrorPair(scopeErr));
+
+      const counts = new Map<string, number>();
+      for (const row of scopeRows ?? []) {
+        counts.set(row.scope_type_id, (counts.get(row.scope_type_id) ?? 0) + 1);
+      }
+
+      return ok({
+        types: rows.map((row) => ({
+          ...row,
+          archived_scope_count: counts.get(row.id) ?? 0,
+        })),
+      });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /**
+   * `restore_scope_type` — clears the type's `deleted_at`; the platform
+   * soft-delete cascade brings back exactly the scopes and context items that
+   * THIS removal took (matched on the shared timestamp), never rows somebody
+   * had removed by hand beforehand.
+   */
+  async restoreScopeType(
+    typeId: string,
+  ): Promise<ScopesRpcResult<{ id: string }>> {
+    try {
+      requireUserId();
+      const { error } = await supabase.rpc("restore_scope_type", {
+        p_type_id: typeId,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      return ok({ id: typeId });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
   /** `delete_scope_type` — soft archive; owner/admin membership checked inside. */
   async deleteScopeType(
     typeId: string,
@@ -1621,7 +1720,10 @@ async function fetchScopeDisplays(
     .from("scopes")
     .select(
       "id, name, scope_type:scope_types(id, label_singular, label_plural, icon, color)",
-    );
+    )
+    // A removed scope is not a tag anybody can still be shown. Same working-set
+    // rule as the boot tree (F6).
+    .is("deleted_at", null);
   const { data, error } = scopeIds ? await base.in("id", scopeIds) : await base;
   if (error) return err(...mapPgErrorPair(error));
   // MATRX-EXCEPTION: `scope_type:scope_types(...)` is an aliased single-object

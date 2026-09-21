@@ -144,6 +144,60 @@ const DB_TYPES = path.join(ROOT, "types", "database.types.ts");
 
 const ARCHIVE_COLUMNS = ["is_archived", "archived_at"] as const;
 
+/**
+ * THE ENTITIES WHOSE ARCHIVE *IS* THE SOFT DELETE — `schema.table` → why.
+ *
+ * WHY THIS EXISTS (row F6, 2026-09-21). This guard deliberately ignores
+ * `deleted_at`: deletion is not archiving (db-rules §6d), and treating every
+ * soft-deletable table as archivable would make a hundred correct reads a
+ * finding. But a handful of entities have no `is_archived`/`archived_at`
+ * column at all AND the product's own words for removing one are the archive's
+ * words — `context.scope_types`' delete confirmation says it "archives the
+ * type and hides its scopes and context items". For those, `deleted_at` is the
+ * archive column, and the law applies to it. F6 is what the hole costs: the
+ * boot tree read `context.scope_types` with no `deleted_at` predicate and no
+ * projection of it, so a type deleted from its own page came back as an
+ * openable card after a full reload, and this guard was green throughout
+ * because it was not looking at that column.
+ *
+ * ONLY RULE 3 APPLIES TO THESE. Filtering `deleted_at` is the correct default
+ * for every reader in the repo, so rule 1 (a hardcoded predicate with no
+ * control) would fire on hundreds of right answers; a declared entity is
+ * judged solely on whether a LIST read can tell a removed row from a live one.
+ * Nor do they wait for precedent: the declaration below IS the ruling, so the
+ * rule covers them from the first run instead of from the day some other file
+ * happens to import a control beside a read.
+ *
+ * A NEW ENTITY JOINS BY ONE LINE, WITH ITS REASON. Never by a bare name.
+ */
+const SOFT_DELETE_IS_THE_ARCHIVE: ReadonlyMap<string, string> = new Map([
+  [
+    "context.scope_types",
+    "A scope type carries no archive column; `delete_scope_type` soft-deletes it and the " +
+      "scopes page's own confirmation calls that archiving. F6.",
+  ],
+  [
+    "context.scopes",
+    "A scope is removed by the same soft delete, cascaded from its type " +
+      "(platform.soft_delete_edge). Same words on screen, same column.",
+  ],
+  [
+    "context.context_items",
+    "A context item is removed with its type by the platform cascade. `is_active` is a " +
+      "DIFFERENT thing — the person's own on/off switch — and reading it as the archive is " +
+      "how F6's orphans stayed live under a removed parent.",
+  ],
+]);
+
+const SOFT_DELETE_COLUMN = "deleted_at";
+
+/** The columns that mean "archived" for THIS entity. */
+function archiveColumnsFor(entity: string): readonly string[] {
+  return SOFT_DELETE_IS_THE_ARCHIVE.has(entity)
+    ? [SOFT_DELETE_COLUMN]
+    : ARCHIVE_COLUMNS;
+}
+
 const EXEMPTION = /archived-items-law-exempt:\s*(.{12,})/;
 
 /**
@@ -193,6 +247,14 @@ const WRITE_SIGNALS: readonly RegExp[] = [
   /\.upsert\s*\(/,
   /\.delete\s*\(/,
 ];
+
+/**
+ * The `deleted_at` predicate, for the declared soft-delete-as-archive entities.
+ * `.not("deleted_at", "is", null)` counts too — a reader asking for ONLY the
+ * removed rows (the archive disclosure's own read) is the opposite of blind.
+ */
+const SOFT_DELETE_PREDICATE =
+  /\.(?:is|not)\s*\(\s*['"`]deleted_at['"`]\s*,/;
 
 const HARDCODED_PREDICATE =
   /\.(?:eq|is)\s*\(\s*['"`](is_archived|archived_at)['"`]\s*,\s*(?:false|true|null)\s*\)/;
@@ -264,6 +326,17 @@ export function archivableEntities(dbTypesText: string): ArchivableEntities {
         entities.set(currentTable, schemas);
       }
     }
+  }
+  // The declared soft-delete-as-archive entities (see SOFT_DELETE_IS_THE_ARCHIVE)
+  // carry no `is_archived`/`archived_at` column, so the derivation above cannot
+  // find them — they are ruled in by name, with a reason, and judged on
+  // `deleted_at`.
+  for (const key of SOFT_DELETE_IS_THE_ARCHIVE.keys()) {
+    const [schema, table] = key.split(".");
+    if (!schema || !table) continue;
+    const schemas = entities.get(table) ?? new Set<string>();
+    schemas.add(schema);
+    entities.set(table, schemas);
   }
   return entities;
 }
@@ -545,12 +618,19 @@ export function scanFile(
     if (EXEMPTION.test(rawWindow)) continue;
 
     const line = lineFor(code, match.index);
-    const predicate = HARDCODED_PREDICATE.exec(window);
+    // A DECLARED soft-delete-as-archive entity is judged on `deleted_at` and by
+    // RULE 3 ONLY — see SOFT_DELETE_IS_THE_ARCHIVE for why rules 1 and 2 would
+    // fire on hundreds of correct reads there.
+    const declared = SOFT_DELETE_IS_THE_ARCHIVE.has(entity);
+    const columns = archiveColumnsFor(entity);
+    const predicate = declared
+      ? SOFT_DELETE_PREDICATE.exec(window)
+      : HARDCODED_PREDICATE.exec(window);
     // Per-query, not per-file: the control must live in the same top-level
     // declaration as the query it is supposed to govern.
     const hasControl = anyMatch(declBlock(code, match.index), CONTROL_SIGNALS);
 
-    if (predicate && !hasControl) {
+    if (predicate && !hasControl && !declared) {
       findings.push({
         file,
         line,
@@ -581,13 +661,13 @@ export function scanFile(
       : "";
     const projectsArchiveColumn =
       SELECT_STAR.test(window) ||
-      ARCHIVE_COLUMNS.some(
+      columns.some(
         (column) =>
           new RegExp(`\\.select\\s*\\([\\s\\S]{0,600}?\\b${column}\\b`).test(
             window,
           ) || new RegExp(`\\b${column}\\b`).test(constantProjection),
       );
-    if (!predicate && !hasControl && rendersRows && projectsArchiveColumn) {
+    if (!predicate && !hasControl && rendersRows && projectsArchiveColumn && !declared) {
       findings.push({
         file,
         line,
@@ -621,14 +701,18 @@ export function scanFile(
       // positive the day any control-carrying file makes a schema-less
       // `definition` read. LIMITS, closed 2026-09-10.
       !entity.startsWith("?.") &&
-      lawfulEntities.has(entity)
+      // A declared soft-delete-as-archive entity needs no precedent: the
+      // declaration is the ruling.
+      (declared || lawfulEntities.has(entity))
     ) {
       findings.push({
         file,
         line,
         table,
         reason:
-          `list read of \`${entity}\` neither filters nor selects the archive column, so ` +
+          `list read of \`${entity}\` neither filters nor selects ` +
+          (declared ? `\`${SOFT_DELETE_COLUMN}\` (this entity's archive column — ` +
+            `${SOFT_DELETE_IS_THE_ARCHIVE.get(entity)}), so ` : "the archive column, so ") +
           "archived rows render indistinguishable from live ones — and this repo already " +
           "gives that entity's lists an archive control elsewhere",
       });
@@ -971,6 +1055,58 @@ export async function listTools() {
 }
 `;
 
+/**
+ * RED — THE F6 SHAPE, byte for byte as `getScopeTree` carried it until
+ * 2026-09-21: a list read of `context.scope_types` with no `deleted_at`
+ * predicate and no projection of it, so the deleted type reached the scopes
+ * page as an openable card. Before SOFT_DELETE_IS_THE_ARCHIVE this file was
+ * GREEN on it, because the guard was looking only at `is_archived` /
+ * `archived_at` and that table has neither.
+ */
+const RED_SOFT_DELETE_BLIND = `
+const scopeTypesP = contextDb(supabase)
+  .from("scope_types")
+  .select("id, organization_id, label_singular, label_plural, icon, color")
+  .in("organization_id", orgIds)
+  .order("sort_order", { ascending: true });
+`;
+
+/** GREEN — the same read once it filters the column. */
+const GREEN_SOFT_DELETE_FILTERED = `
+const scopeTypesP = contextDb(supabase)
+  .from("scope_types")
+  .select("id, organization_id, label_singular, label_plural, icon, color")
+  .in("organization_id", orgIds)
+  .is("deleted_at", null)
+  .order("sort_order", { ascending: true });
+`;
+
+/** GREEN — the archive disclosure's own read: removed rows ONLY. */
+const GREEN_SOFT_DELETE_ARCHIVE_READ = `
+const { data } = await contextDb(supabase)
+  .from("scope_types")
+  .select("id, label_plural, deleted_at")
+  .eq("organization_id", orgId)
+  .not("deleted_at", "is", null)
+  .order("deleted_at", { ascending: false });
+`;
+
+/**
+ * GREEN — a declared entity read that FILTERS `deleted_at` and offers no
+ * control. Rules 1 and 2 must stay off these entities: filtering the soft
+ * delete is what every correct reader in the repo does, and a guard that
+ * called each of them a violation would be deleted by the end of the week.
+ */
+const GREEN_SOFT_DELETE_FILTERED_NO_CONTROL = `
+const { data } = await contextDb(supabase)
+  .from("context_items")
+  .select("*")
+  .in("scope_type_id", scopeTypeIds)
+  .is("deleted_at", null)
+  .eq("is_active", true)
+  .order("sort_order");
+`;
+
 function selfTest(): void {
   const failures: string[] = [];
   const helpers = schemaHelpers([
@@ -1003,6 +1139,40 @@ function selfTest(): void {
   expectRed("BLIND-BESIDE-LAWFUL", RED_BLIND_BESIDE_LAWFUL);
   expectRed("HELPER-BOUND-BLIND", RED_HELPER_BOUND_BLIND);
   expectRed("HELPER-INLINE-BLIND", RED_HELPER_INLINE_BLIND);
+  // The declared soft-delete-as-archive entities (F6). These use the REAL
+  // entity set, because the declaration — not a fixture table — is what rules
+  // them in; a self-test map would prove nothing about the live list.
+  const scanDeclared = (source: string, file = "self-test.ts") =>
+    scanFile(
+      file,
+      source,
+      archivableEntities(readFileSync(DB_TYPES, "utf8")),
+      new Set<string>(),
+      new Map([["contextDb", "context"]]),
+    );
+  if (scanDeclared(RED_SOFT_DELETE_BLIND).length === 0) {
+    failures.push(
+      "SOFT-DELETE-BLIND: the detector stayed GREEN on the exact `getScopeTree` read " +
+        "that shipped F6 — a list of `context.scope_types` that can neither filter nor " +
+        "see a removed row.",
+    );
+  }
+  for (const [name, source] of [
+    ["SOFT-DELETE-FILTERED", GREEN_SOFT_DELETE_FILTERED],
+    ["SOFT-DELETE-ARCHIVE-READ", GREEN_SOFT_DELETE_ARCHIVE_READ],
+    ["SOFT-DELETE-FILTERED-NO-CONTROL", GREEN_SOFT_DELETE_FILTERED_NO_CONTROL],
+  ] as const) {
+    const found = scanDeclared(source);
+    if (found.length > 0) {
+      failures.push(`${name}: false positive — ${found[0]?.reason}.`);
+    }
+  }
+  if (!SOFT_DELETE_IS_THE_ARCHIVE.has("context.scope_types")) {
+    failures.push(
+      "SOFT-DELETE-DECLARATION: `context.scope_types` left the declared set — F6's " +
+        "whole class goes invisible again the moment it does.",
+    );
+  }
   expectGreen("HELPER-OTHER-SCHEMA", GREEN_HELPER_OTHER_SCHEMA);
   if (helpers.get("agentDb") !== "agent" || helpers.get("toolDb") !== "tool") {
     failures.push(
@@ -1071,13 +1241,17 @@ function selfTest(): void {
       "   'control' is a comment, RED on an archive-blind list read of a settled entity,\n" +
       "   RED on a blind read sitting beside a lawful one in the same file, RED on a\n" +
       "   blind read of a settled entity reached through a schema-binding helper, both\n" +
-      "   bound to a name and applied inline;\n" +
+      "   bound to a name and applied inline, RED on the F6 shape — a list read of a\n" +
+      "   DECLARED soft-delete-as-archive entity (context.scope_types) that neither\n" +
+      "   filters nor projects `deleted_at`;\n" +
       "   GREEN on an option-driven predicate, a blind read of an unsettled entity, a\n" +
       "   `select(\"*\")` hand-off, a named select-constant that carries the archive\n" +
       "   column, a schema-less read of an ambiguous table name, another schema's\n" +
       "   same-named table, a helper-bound read of ANOTHER schema's same-named\n" +
       "   table, a disclosure-backed\n" +
-      "   client split, a single-record read, a write, a reasoned exemption, and a table\n" +
+      "   client split, a single-record read, a write, a reasoned exemption, a declared\n" +
+      "   entity read that filters `deleted_at`, the archive disclosure's own\n" +
+      "   removed-rows-only read, and a table\n" +
       `   with no archive column. Entity set derived from types/database.types.ts (${derived.size} tables).`,
   );
 }
