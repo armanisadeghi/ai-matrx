@@ -38,8 +38,11 @@ import type { Table } from "@ai-matrx/records";
 import { useRecords, useRecordsClient, useTables } from "@ai-matrx/records/react";
 import {
     ActionInbox,
+    BookingSlots,
+    ChecklistsPanel,
     CustomFieldsSection,
     DashboardCanvas,
+    EnrichPanel,
     FieldEditor,
     FormBuilder,
     FormsPanel,
@@ -50,6 +53,7 @@ import {
     RecordsMount,
     ShareControl,
     TablesHome,
+    ViewSwitcher,
     personActor,
     recordsDataSource,
     refusalLineForAPerson,
@@ -118,6 +122,10 @@ const CONTENTS: ReadonlyArray<string> = [
     "Outsider portal",
     "Documents",
     "Notifications and digests",
+    "Checklists and SOP runs",
+    "Booking a time",
+    "A column a model fills in",
+    "The pipeline board",
 ];
 
 /**
@@ -359,6 +367,38 @@ function Bench({
             "The portal doors answer this browser: you can open a portal, invite a client to it, see what " +
             "she will see, and take her way in away again.",
         whatWouldMakeItAppear: "the store opening the portal doors to a signed-in browser.",
+    });
+    const checklistDoors = useDoor({
+        needs: ["checklistTemplates", "checklistRuns", "checklistRun", "checklistStepComplete"],
+        ask: (client) => client.checklistTemplates({}),
+        whenItAnswers:
+            "The checklist doors answer this browser: a checklist can be written whole, run on a record, and " +
+            "each step ticked off with whatever it asks for — refused by name while the step before it is open.",
+        whatWouldMakeItAppear: "the screens package this deployment installs carrying the checklist doors.",
+    });
+    const bookingDoors = useDoor({
+        needs: ["bookings", "anonPublish"],
+        ask: (client) => client.bookings({}),
+        whenItAnswers:
+            "The booking doors answer this browser: your booking pages, what is coming up, what somebody is " +
+            "holding right now, and the link you send.",
+        whatWouldMakeItAppear: "the screens package this deployment installs carrying the bookings door.",
+    });
+    const enrichDoors = useDoor({
+        needs: ["enrichments", "enrichDeclare", "enrichCells", "enrichPin"],
+        ask: (client) => client.enrichments({}),
+        whenItAnswers:
+            "The enrichment doors answer this browser: a column a model keeps filled in, with who filled each " +
+            "cell, when, what it read and how sure it was — and your own answer able to take it back.",
+        whatWouldMakeItAppear: "the screens package this deployment installs carrying the enrichment doors.",
+    });
+    const pipelineDoors = useDoor({
+        needs: ["pipelineRead", "pipelineBoard", "pipelineTransitionRefusal", "pipelineMove"],
+        ask: (client) => client.pipelineRead({ table_id: workingTable?.id ?? ("00000000-0000-0000-0000-000000000000" as never) }),
+        whenItAnswers:
+            "The pipeline doors answer this browser: the board asks the store before every drag, and a move the " +
+            "rules refuse snaps back carrying the store's own sentence.",
+        whatWouldMakeItAppear: "the screens package this deployment installs carrying the pipeline doors.",
     });
     const portalRoute = routeCapability(
         routes.portal,
@@ -623,6 +663,114 @@ function Bench({
                             </Aside>
                             <NotificationsTry table={table} organizationId={organizationId} />
                         </>
+                    )}
+                </NeedsTable>
+            </Section>
+
+            {/* 13 — CHECKLISTS AND SOP RUNS */}
+            <Section
+                n={13}
+                title={CONTENTS[12]}
+                capability={checklistDoors}
+                what="Write down a process once — the steps, whose each one is, how many days in it is due, what it waits for and what it asks for — and every new record it is about starts a run of it on its own. A step is ordinary work, so it lands in its owner's inbox beside everything else waiting on her."
+            >
+                <NeedsTable table={workingTable}>
+                    {(table) => (
+                        <TryIt hint={`writes a real checklist about ${tableName(table)}`}>
+                            <div className="rounded-md border border-border p-3">
+                                <ChecklistsPanel tableId={table.id} />
+                            </div>
+                            <Aside>
+                                Press <span className="font-medium">Write one</span> and type the steps as plain
+                                rows. The store judges the whole checklist while you type — a step that waits for
+                                one below it is refused in a sentence before you can save. Starting a run is on the
+                                record itself: open a record from the grid in section 1 and the checklists about
+                                that table are offered under it.
+                            </Aside>
+                        </TryIt>
+                    )}
+                </NeedsTable>
+            </Section>
+
+            {/* 14 — BOOKING A TIME */}
+            <Section
+                n={14}
+                title={CONTENTS[13]}
+                capability={bookingDoors}
+                what="Let somebody with no account take a half hour of your time. The page offers only the times you are free, the slot is held the moment they pick it and released if they wander off, and the appointment arrives as an ordinary record in one of your tables."
+            >
+                <NeedsTable table={workingTable}>
+                    {(table) => (
+                        <TryIt hint={`the booking pages already open on ${tableName(table)}`}>
+                            <div className="rounded-md border border-border p-3">
+                                <BookingSlots tableId={table.id} />
+                            </div>
+                            <Aside>
+                                The panel above is the owner&apos;s side: what is coming up, what somebody is
+                                holding right now, the link, and opening or closing the page. The page a visitor
+                                sees is the link itself — nothing here works out what is on offer, because a
+                                browser that decided that could hold a time you never offered.
+                            </Aside>
+                        </TryIt>
+                    )}
+                </NeedsTable>
+            </Section>
+
+            {/* 15 — A COLUMN A MODEL FILLS IN */}
+            <Section
+                n={15}
+                title={CONTENTS[14]}
+                capability={enrichDoors}
+                what="A column a model keeps filled in — each company's industry, each contact's job title — and every cell says so on its face: who filled it, when, what it read, how sure it was and what it nearly said instead. Type over one and it is yours; the model stops touching it."
+            >
+                <NeedsTable table={workingTable}>
+                    {(table) => (
+                        <TryIt hint={`this really runs a model over ${tableName(table)} and really costs money`}>
+                            <div className="rounded-md border border-border p-3">
+                                <EnrichPanel tableId={table.id} />
+                            </div>
+                            <Aside>
+                                Back in the grid in section 1, every cell the model owns carries a small badge;
+                                hovering it opens what it read, how sure it was, the answers it nearly gave, and
+                                the control that takes the cell back. A value past its freshness date says
+                                <span className="font-medium"> stale</span> beside the badge in words, never as a
+                                colour somebody has to know the meaning of.
+                            </Aside>
+                        </TryIt>
+                    )}
+                </NeedsTable>
+            </Section>
+
+            {/* 16 — THE PIPELINE BOARD */}
+            <Section
+                n={16}
+                title={CONTENTS[15]}
+                capability={pipelineDoors}
+                what="Deals, jobs or applicants as cards in columns you drag between — with the store judging every drag. A move your rules forbid snaps back carrying the sentence that says why, and a stage that demands a value asks for it on the card instead of sending you away."
+            >
+                <NeedsTable table={workingTable}>
+                    {(table) => (
+                        <TryIt hint={`dragging a card really moves the record in ${tableName(table)}`}>
+                            <div className="rounded-md border border-border p-3">
+                                {/* THE BOARD IS THE KANBAN LAYOUT OF THE SAME SAVED VIEW, never a
+                                    second screen beside it — the cards are the very rows the grid
+                                    draws, and the headings carry the store's own count, total and
+                                    limit over every record this person may see. */}
+                                <ViewSwitcher
+                                    view={{
+                                        name: `${tableName(table)} board`,
+                                        subject: table.id,
+                                        layout: "kanban",
+                                    }}
+                                />
+                            </div>
+                            <Aside>
+                                A table that is not a pipeline draws the plain board instead, and says which
+                                column it would group by. Making one a pipeline — the stages, their order, the
+                                moves each one allows, what each demands on entry and how many cards it will hold
+                                — is one sentence to the agent in section 7.
+                            </Aside>
+                        </TryIt>
                     )}
                 </NeedsTable>
             </Section>
