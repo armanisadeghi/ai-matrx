@@ -189,6 +189,21 @@ export function MatrxFloatingFrame({
   const dispatch = useAppDispatch();
   const zIndex = useAppSelector(selectTransientZIndex(id));
   const isNarrow = useIsMobile();
+  /**
+   * THE OPENER — captured in the very first render, before this window's body
+   * has mounted. It cannot be read later: a form whose first field carries
+   * `autoFocus` (the real Add-a-scope-type form does) has already taken focus
+   * by the time an effect runs, and the "opener" we would return focus to is
+   * then a field inside the window that is about to be destroyed. That is
+   * exactly how the first live pass closed with focus on nothing.
+   */
+  const [opener] = useState<HTMLElement | null>(() =>
+    typeof document !== "undefined" &&
+    document.activeElement instanceof HTMLElement &&
+    document.activeElement !== document.body
+      ? document.activeElement
+      : null,
+  );
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const [frameEl, setFrameEl] = useState<HTMLDivElement | null>(null);
   const titleId = useId();
@@ -204,6 +219,13 @@ export function MatrxFloatingFrame({
     };
   });
   const [placed, setPlaced] = useState(false);
+  const [viewport, setViewport] = useState(() => ({
+    w: typeof window === "undefined" ? 1280 : window.innerWidth,
+    h: typeof window === "undefined" ? 800 : window.innerHeight,
+  }));
+
+  /** What actually gets drawn: the person's rect, kept on screen. */
+  const view = clampRect(rect, viewport.w, viewport.h);
 
   useEffect(() => {
     setPortalTarget(document.getElementById("glass-layer") ?? document.body);
@@ -220,29 +242,29 @@ export function MatrxFloatingFrame({
     };
   }, [dispatch, id]);
 
-  // Centre on first paint, then keep the rect inside the viewport on resize.
+  /**
+   * Centre on first paint, and track the viewport.
+   *
+   * `rect` is the size and place the PERSON chose; it is never shrunk by a
+   * viewport change. The clamp happens at render time only, so a window
+   * squeezed at 375 comes back at its own size when there is room again —
+   * a window that returned from a phone width permanently 359px wide was
+   * the first thing this cost us.
+   */
   useLayoutEffect(() => {
     if (typeof window === "undefined") return undefined;
     if (!placed) {
-      setRect((current) =>
-        clampRect(
-          {
-            ...current,
-            x: Math.round((window.innerWidth - current.width) / 2),
-            y: Math.round(
-              Math.max(56, (window.innerHeight - current.height) / 2.4),
-            ),
-          },
-          window.innerWidth,
-          window.innerHeight,
+      setRect((current) => ({
+        ...current,
+        x: Math.round((window.innerWidth - current.width) / 2),
+        y: Math.round(
+          Math.max(56, (window.innerHeight - current.height) / 2.4),
         ),
-      );
+      }));
       setPlaced(true);
     }
     const onResize = () =>
-      setRect((current) =>
-        clampRect(current, window.innerWidth, window.innerHeight),
-      );
+      setViewport({ w: window.innerWidth, h: window.innerHeight });
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [placed]);
@@ -265,10 +287,6 @@ export function MatrxFloatingFrame({
   // Focus in on open; back to the opener on close.
   useEffect(() => {
     if (!initialFocus || !frameEl) return undefined;
-    const returnFocusTo =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
     const frame = requestAnimationFrame(() => {
       const content =
         frameEl.querySelector<HTMLElement>("[data-panel-content]") ?? frameEl;
@@ -280,13 +298,11 @@ export function MatrxFloatingFrame({
     });
     return () => {
       cancelAnimationFrame(frame);
-      if (returnFocusTo?.isConnected) {
-        requestAnimationFrame(() =>
-          returnFocusTo.focus({ preventScroll: true }),
-        );
+      if (opener?.isConnected && !frameEl.contains(opener)) {
+        requestAnimationFrame(() => opener.focus({ preventScroll: true }));
       }
     };
-  }, [initialFocus, frameEl]);
+  }, [initialFocus, frameEl, opener]);
 
   const raise = useCallback(() => {
     dispatch(raiseTransientWindow(id));
@@ -308,19 +324,13 @@ export function MatrxFloatingFrame({
       raise();
       const startX = e.clientX;
       const startY = e.clientY;
-      const origin = { ...rect };
+      const origin = { ...view };
       const onMove = (move: PointerEvent) => {
-        setRect(
-          clampRect(
-            {
-              ...origin,
-              x: origin.x + (move.clientX - startX),
-              y: origin.y + (move.clientY - startY),
-            },
-            window.innerWidth,
-            window.innerHeight,
-          ),
-        );
+        setRect({
+          ...origin,
+          x: origin.x + (move.clientX - startX),
+          y: origin.y + (move.clientY - startY),
+        });
       };
       const onUp = () => {
         window.removeEventListener("pointermove", onMove);
@@ -329,7 +339,7 @@ export function MatrxFloatingFrame({
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
     },
-    [draggable, isNarrow, raise, rect],
+    [draggable, isNarrow, raise, view],
   );
 
   const startResize = useCallback(
@@ -340,7 +350,7 @@ export function MatrxFloatingFrame({
       raise();
       const startX = e.clientX;
       const startY = e.clientY;
-      const origin = { ...rect };
+      const origin = { ...view };
       const onMove = (move: PointerEvent) => {
         const next = { ...origin };
         if (edge === "e" || edge === "se") {
@@ -352,7 +362,7 @@ export function MatrxFloatingFrame({
             origin.height + (move.clientY - startY),
           );
         }
-        setRect(clampRect(next, window.innerWidth, window.innerHeight));
+        setRect(next);
       };
       const onUp = () => {
         window.removeEventListener("pointermove", onMove);
@@ -361,7 +371,7 @@ export function MatrxFloatingFrame({
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
     },
-    [isNarrow, minHeight, minWidth, raise, rect, resizable],
+    [isNarrow, minHeight, minWidth, raise, resizable, view],
   );
 
   /** Drag is never mouse-only: the handle is focusable and arrow keys move it. */
@@ -381,13 +391,11 @@ export function MatrxFloatingFrame({
                 : null;
       if (!delta) return;
       e.preventDefault();
-      setRect((current) =>
-        clampRect(
-          { ...current, x: current.x + delta.x, y: current.y + delta.y },
-          window.innerWidth,
-          window.innerHeight,
-        ),
-      );
+      setRect((current) => ({
+        ...current,
+        x: current.x + delta.x,
+        y: current.y + delta.y,
+      }));
     },
     [draggable, isNarrow],
   );
@@ -401,10 +409,10 @@ export function MatrxFloatingFrame({
     ? { zIndex }
     : {
         zIndex,
-        left: rect.x,
-        top: rect.y,
-        width: rect.width,
-        height: rect.height,
+        left: view.x,
+        top: view.y,
+        width: view.width,
+        height: view.height,
       };
 
   const frameClass = isNarrow
@@ -447,12 +455,7 @@ export function MatrxFloatingFrame({
             onKeyDown={onHandleKeyDown}
             className="h-4 w-1.5 shrink-0 rounded-full bg-border outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
-        ) : (
-          <span
-            aria-hidden
-            className="mx-auto h-1 w-10 shrink-0 rounded-full bg-border sm:hidden"
-          />
-        )}
+        ) : null}
         <div className="min-w-0 flex-1">
           <h2
             id={titleId}
