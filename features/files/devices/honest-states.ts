@@ -10,9 +10,12 @@
  * the tray and this browser list must all say the same sentence about the same
  * condition — that is the whole point of the enum.
  *
- * 🚨 The guard is `honest-states-parity.ts`: it diffs the titles below against
- * the engine artifact AND against the live CHECK constraint. Adding a value
- * here that the engine does not emit, or letting a title drift, fails it.
+ * 🚨 The guard is `honest-states-parity.ts` — `pnpm check:honest-states-parity`,
+ * run by CI and by the release gates, with `:self-test` proving it can still go
+ * red. It diffs the values, titles and remedy actions below against the engine
+ * artifact, both directions. It does NOT read the live CHECK constraint: that
+ * constraint is generated from the same artifact by SPEC-SERVER's own test,
+ * which is the half aidream owns.
  *
  * What IS ours: the remedy SENTENCE the browser shows, and whether the browser
  * can perform the remedy at all. Most remedies are physical acts on a machine
@@ -298,3 +301,83 @@ export function describeMappingState(value: string | null): HonestState {
  * normal gap without crying wolf over a laptop lid.
  */
 export const DEVICE_SILENT_AFTER_MS = 15 * 60 * 1000;
+
+/**
+ * THE ONE SENTENCE A FOLDER ROW SAYS (folder-sync L5-2).
+ *
+ * A state is an OBSERVATION with a timestamp, and most of the titles are in
+ * the present tense ("Files are moving between this folder and the cloud").
+ * Rendering one of those beside a card that already says "Silent since 6 days
+ * ago" puts two contradictory claims on one card — which is the screen lying,
+ * even though each half came from a real column.
+ *
+ * So the freshness of `last_seen_at` decides the tense. Past the silence
+ * threshold the row stops asserting anything in the present and says what was
+ * last reported and when; the engine's own `state_reason` is dropped in that
+ * case for the same reason (it is a present-tense sentence about a moment six
+ * days ago). The badge is prefixed the same way, so a glance cannot mislead
+ * either.
+ */
+export interface MappingReport {
+  state: HonestState;
+  /** True when the observation is too old to be spoken in the present tense. */
+  stale: boolean;
+  /** What the badge shows. The enum TITLE is never reworded, only prefixed. */
+  badge: string;
+  /** The ONE sentence under the row. */
+  sentence: string;
+  tone: HonestState["tone"];
+}
+
+/** "6 days", "3 hours", "12 minutes" — the age of an observation. */
+function ageLabel(ms: number): string {
+  const minutes = Math.max(1, Math.round(ms / 60_000));
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"}`;
+  const days = Math.round(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"}`;
+}
+
+export function describeMappingReport(input: {
+  state: string | null;
+  /** The daemon's own remedy sentence, when it sent one. */
+  stateReason: string | null;
+  /** `files.sync_mappings.last_seen_at` — when this observation was made. */
+  lastSeenAt: string | null;
+  /** The shared clock. */
+  now: number;
+}): MappingReport {
+  const state = describeMappingState(input.state);
+  const seenMs = input.lastSeenAt ? new Date(input.lastSeenAt).getTime() : null;
+  const age = seenMs === null || Number.isNaN(seenMs) ? null : input.now - seenMs;
+  const stale = age === null || age > DEVICE_SILENT_AFTER_MS;
+
+  if (!stale)
+    return {
+      state,
+      stale: false,
+      badge: state.title,
+      sentence: input.stateReason ?? state.detail,
+      tone: state.tone,
+    };
+
+  if (age === null)
+    return {
+      state,
+      stale: true,
+      badge: `Last reported · ${state.title}`,
+      sentence: `This device has never said when it looked at this folder, so “${state.title}” is not a claim about right now.`,
+      tone: state.tone === "active" ? "warning" : state.tone,
+    };
+
+  return {
+    state,
+    stale: true,
+    badge: `Last reported · ${state.title}`,
+    sentence: `Nothing has been heard from this folder for ${ageLabel(age)}. “${state.title}” is the last thing this device reported, not what is happening now.`,
+    // A present-tense "everything is fine" tone over a stale observation is
+    // the same lie in colour, so an otherwise-active row goes amber.
+    tone: state.tone === "active" || state.tone === "neutral" ? "warning" : state.tone,
+  };
+}

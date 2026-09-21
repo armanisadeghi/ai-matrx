@@ -50,6 +50,7 @@ declare
   v_inv     uuid;
   v_f_name  uuid;
   v_f_phone uuid;
+  v_notes   uuid;
   v_f_amt   uuid;
   v_f_tax   uuid;
   v_f_code  uuid;
@@ -104,20 +105,16 @@ begin
                                 jsonb_build_object('name', 'phone')),
     'parent_id', v_home::text));
 
-  insert into custom.record (organization_id, table_id, data_class, data) values
-    (v_org, custom.field_kernel_id(), 'field', jsonb_build_object(
-      'key','pname','label','Name','type','text','sort',10,'required',false,'multi',false,
-      'dated',false,'source','manual','config','{}'::jsonb,'rules','[]'::jsonb,
-      'depends_on','[]'::jsonb,'sensitivity','internal','source_config','{}'::jsonb,
-      'context_policy','include','applies_to_types','[]'::jsonb,'entity_definition_id',v_tbl))
-    returning id into v_f_name;
-  insert into custom.record (organization_id, table_id, data_class, data) values
-    (v_org, custom.field_kernel_id(), 'field', jsonb_build_object(
-      'key','phone','label','Phone','type','text','sort',20,'required',false,'multi',false,
-      'dated',false,'source','manual','config','{}'::jsonb,'rules','[]'::jsonb,
-      'depends_on','[]'::jsonb,'sensitivity','internal','source_config','{}'::jsonb,
-      'context_policy','include','applies_to_types','[]'::jsonb,'entity_definition_id',v_tbl))
-    returning id into v_f_phone;
+  -- 🚨 DECLARED THROUGH THE DOOR (lane RED-SUITES-2, 2026-09-21), the same repair its green
+  -- twin got and for the same reason: a hand-written Field document is not the shape
+  -- `custom._field_document_for` produces, so RED 4's conversion rebuilt the column into a
+  -- number and the validator refused the values the conversion had just written. And since
+  -- LIMITS-FIX `custom.table_declare` materialises the columns a table's spec names, these
+  -- INSERTs were adding a SECOND Field row claiming the same key.
+  v_f_name  := custom.field_declare(v_org, v_tbl, jsonb_build_object(
+    'key','pname','label','Name','plain','text','sort',10));
+  v_f_phone := custom.field_declare(v_org, v_tbl, jsonb_build_object(
+    'key','phone','label','Phone','plain','text','sort',20));
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 0 — THE SEAT. Every block below runs as a signed-in person.
@@ -178,8 +175,7 @@ begin
   -- Made red by: the trigger custom_record_field_type_converts_values.
   -- ════════════════════════════════════════════════════════════════════════════
   v_ann := custom.record_write(v_org, v_tbl, jsonb_build_object('pname','Ann','phone','abc'));
-  perform custom.field_update(v_org, v_f_phone,
-    jsonb_build_object('type','range','config', jsonb_build_object('kind','number')));
+  perform custom.field_update(v_org, v_f_phone, jsonb_build_object('plain','number'));
   v_caught := null;
   begin
     perform custom.record_update(v_org, v_ann, jsonb_build_object('pname','Ann Lee'));
@@ -239,6 +235,24 @@ begin
   -- RED 7 (SEAT-SUITES) — the read door drops what was retired.
   -- Made red by: custom.read_record carrying `_retired` the way it already carried `_alternates`.
   -- ════════════════════════════════════════════════════════════════════════════
+  -- 🚨 THE FIXTURE MOVED TO A DOCUMENT TABLE (lane RED-SUITES-2, 2026-09-21), exactly as
+  -- FIELD-TRUTH moved its green twin's. `nickname` used to be written onto a record of
+  -- Patients, a table whose Field rows ARE its columns, and `custom._undeclared_key_guard`
+  -- refuses that now — "Patient has no field called "nickname", so there is nowhere to keep
+  -- that value" — which is the guard working. What RED 7 is about has not moved: a DOCUMENT
+  -- table (`columns: free_form`) may carry a key no Field declares, and the read door must
+  -- carry what a merge retired. Asked on such a table, as its green twin already does.
+  v_notes := custom.table_declare(v_org, jsonb_build_object(
+    'name','Intake Notes','slug','intake_notes','type','entity',
+    'label_singular','Intake Note','label_plural','Intake Notes','title_field','pname',
+    'display','page','weight','light','ordered',false,'row_order','sorted',
+    'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
+    'columns','free_form',
+    'fields', jsonb_build_array(jsonb_build_object('name','pname')),
+    'parent_id', v_home::text));
+  perform custom.field_declare(v_org, v_notes, jsonb_build_object('key','pname','label','Patient','type','text'));
+  v_a := custom.record_write(v_org, v_notes, jsonb_build_object('pname','Chen'));
+  v_b := custom.record_write(v_org, v_notes, jsonb_build_object('pname','Chen'));
   perform custom.record_update(v_org, v_a, jsonb_build_object('nickname','Chenny'));
   perform custom.record_update(v_org, v_b, jsonb_build_object('nickname','Chen-Chen'));
   v_res := custom.migrate_merge(v_org, v_a, v_b, 'red 7');

@@ -135,43 +135,84 @@ interface PlanStatusRow {
 }
 
 /**
- * "Where am I at?" — the org's plan and every dimension in one round trip.
- *
- * Fails soft to `null`: a usage screen that cannot load must say so, not throw.
- * Nothing here authorizes anything — the enforcing check is the server's.
+ * The plan read WITH ITS FAILURE. `fetchPlanStatus` below collapses everything
+ * that went wrong into `null`, which is fine for a panel that renders nothing
+ * without a plan and a lie for a meter that would otherwise draw a number from
+ * somewhere else (folder-sync L5-1: a silent `null` here is what let a retired
+ * ladder's 5 GB appear under billing's plan name). A caller that must SAY why
+ * it has no number reads this instead.
  */
-export async function fetchPlanStatus(
+export type PlanStatusRead =
+  | { ok: true; status: PlanStatus }
+  /** `reason` is already a sentence a person can read. */
+  | { ok: false; reason: string };
+
+/**
+ * "Where am I at?" — the org's plan and every dimension in one round trip,
+ * with the reason attached when there is no answer.
+ *
+ * Every dimension's `limit` is `billing.resolve_capability(user, capability,
+ * org)` (read from `pg_proc`, 2026-09-21) — D11's ONE resolver, plan plus
+ * add-on, metered to the organization. Nothing here authorizes anything; the
+ * enforcing check is the server's.
+ */
+export async function readPlanStatus(
   organizationId: string,
-): Promise<PlanStatus | null> {
+): Promise<PlanStatusRead> {
   try {
     const supabase = createClient();
     const { data, error } = await supabase
       .schema("billing")
       .rpc("plan_status", { p_org: organizationId });
-    if (error || !data) return null;
+    if (error)
+      return {
+        ok: false,
+        reason: error.message || "the plan service refused the read",
+      };
+    if (!data)
+      return { ok: false, reason: "the plan service returned nothing" };
     const row = data as unknown as PlanStatusRow;
-    if (!row.signed_in) return null;
+    if (!row.signed_in)
+      return { ok: false, reason: "this browser is not signed in" };
     return {
-      organizationId,
-      plan: mapPlan(row.plan),
-      nextPlan: mapPlan(row.next_plan),
-      tier: row.tier,
-      dimensions: (row.dimensions ?? []).map((d) => ({
-        capability: d.capability,
-        period: d.period,
-        enforced: d.enforced,
-        used: d.used,
-        limit: d.limit,
-        remaining: d.remaining,
-        unlimited: d.unlimited,
-        fromAddon: d.from_addon,
-        resetsAt: d.resets_at,
-        nextPlanLimit: d.next_plan_limit,
-      })),
+      ok: true,
+      status: {
+        organizationId,
+        plan: mapPlan(row.plan),
+        nextPlan: mapPlan(row.next_plan),
+        tier: row.tier,
+        dimensions: (row.dimensions ?? []).map((d) => ({
+          capability: d.capability,
+          period: d.period,
+          enforced: d.enforced,
+          used: d.used,
+          limit: d.limit,
+          remaining: d.remaining,
+          unlimited: d.unlimited,
+          fromAddon: d.from_addon,
+          resetsAt: d.resets_at,
+          nextPlanLimit: d.next_plan_limit,
+        })),
+      },
     };
-  } catch {
-    return null;
+  } catch (err) {
+    return {
+      ok: false,
+      reason: err instanceof Error ? err.message : String(err),
+    };
   }
+}
+
+/**
+ * The same read, collapsed to `null` on any failure — for surfaces that render
+ * nothing without a plan. If your surface would put a DIFFERENT number on
+ * screen when this returns `null`, use {@link readPlanStatus} and say why.
+ */
+export async function fetchPlanStatus(
+  organizationId: string,
+): Promise<PlanStatus | null> {
+  const read = await readPlanStatus(organizationId);
+  return read.ok ? read.status : null;
 }
 
 /** Every purchasable plan + what it includes. Readable signed-out (pricing page). */

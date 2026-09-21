@@ -85,6 +85,7 @@ jobs:
     outputs:
       supabase: ${{ steps.probe.outputs.supabase }}
       aidream_repo: ${{ steps.probe.outputs.aidream_repo }}
+      matrx_local_repo: ${{ steps.probe.outputs.matrx_local_repo }}
     steps:
       - name: Probe the credentials the live gates depend on
         id: probe
@@ -92,6 +93,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           AIDREAM_REPO_TOKEN: ${{ secrets.AIDREAM_REPO_TOKEN }}
+          MATRX_LOCAL_REPO_TOKEN: ${{ secrets.MATRX_LOCAL_REPO_TOKEN }}
         run: |
           if [ -n "$SUPABASE_SECRET_KEY" ] && [ -n "$NEXT_PUBLIC_SUPABASE_URL" ]; then
             echo "supabase=true" >> "$GITHUB_OUTPUT"
@@ -106,6 +108,13 @@ jobs:
           else
             echo "aidream_repo=false" >> "$GITHUB_OUTPUT"
             echo "::warning title=UNMEASURED — the realtime publication census did NOT run::AIDREAM_REPO_TOKEN is not configured for this repository. That census has to read aidream/apps/shared, which lives in a DIFFERENT GitHub org (AI-Matrix-Engine/aidream) that this workflow's default GITHUB_TOKEN cannot see, so the checkout returns 'Not Found' and the job is SKIPPED, not passed. A postgres_changes subscription may again be joined to a table that publishes nothing — silent, error-free, and permanent. Fix: add a repository secret named AIDREAM_REPO_TOKEN holding a fine-grained personal access token with Contents:Read on AI-Matrix-Engine/aidream (a classic PAT with the 'repo' scope also works)."
+          fi
+          if [ -n "$MATRX_LOCAL_REPO_TOKEN" ]; then
+            echo "matrx_local_repo=true" >> "$GITHUB_OUTPUT"
+            echo "measured: the honest-state vocabulary parity (matrx-local's generated artifact reachable)"
+          else
+            echo "matrx_local_repo=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=UNMEASURED — the honest-state parity guard did NOT run::MATRX_LOCAL_REPO_TOKEN is not configured for this repository. The sync engine GENERATES the honest-state vocabulary into armanisadeghi/matrx-local (crates/matrx-sync/contracts/honest_states.json), a different repository this workflow's default GITHUB_TOKEN cannot read, so the checkout returns 'Not Found' and the job is SKIPPED, not passed. The desktop app, the tray and the browser's Devices & sync page must say the SAME sentence about the same condition; nothing is currently checking that they do, so a state added or reworded in the engine will render in the browser as an unrecognised value or, worse, as a stale sentence. Fix: add a repository secret named MATRX_LOCAL_REPO_TOKEN holding a fine-grained personal access token with Contents:Read on armanisadeghi/matrx-local."
           fi
   # ---------------------------------------------------------------------------
   # marker-law — the cheapest and most load-bearing gate in the repo. `__kind`
@@ -849,6 +858,59 @@ jobs:
         run: pnpm check:realtime-publication:self-test
       - name: Every subscribed table is in the supabase_realtime publication
         run: pnpm check:realtime-publication
+
+  # ---------------------------------------------------------------------------
+  # honest-states-parity — ONE VOCABULARY, THREE SCREENS.
+  #
+  # `files.sync_mappings.state` is written by the sync daemon and rendered by
+  # the desktop app, the tray and the browser's Devices & sync page. The VALUES
+  # and the TITLES are generated ONCE, by the engine, into
+  # matrx-local/crates/matrx-sync/contracts/honest_states.json; SPEC-SERVER
+  # generates the live CHECK constraint from the same file, and
+  # features/files/devices/honest-states.ts transcribes it for the browser.
+  #
+  # Until 2026-09-21 the browser's guard existed but was wired to NOTHING — no
+  # `check:*` script, no release gate, no CI job (folder-sync L5-4). A guard
+  # nothing runs is a comment. The day the engine adds or rewords a state, the
+  # browser would render "Unrecognised state: <value>" to a user with no
+  # warning to anybody first.
+  #
+  # Cross-repo, so it is gated exactly like realtime-publication and
+  # migration-judgment: SKIPPED with a loud UNMEASURED warning when the token
+  # is absent, never green over an unmeasured claim. The self-test plants three
+  # real drifts and proves each is caught; it runs first, in the same job.
+  # ---------------------------------------------------------------------------
+  honest-states-parity:
+    name: the browser says the engine's honest-state sentences (UNMEASURED without the token)
+    runs-on: ubuntu-latest
+    needs: secrets-preflight
+    if: needs.secrets-preflight.outputs.matrx_local_repo == 'true'
+    env:
+      # Locally the guard resolves the artifact as a SIBLING of this checkout.
+      # actions/checkout refuses a path outside the workspace, so CI checks the
+      # engine out INSIDE it and names the file explicitly.
+      HONEST_STATES_ARTIFACT: ${{ github.workspace }}/matrx-local/crates/matrx-sync/contracts/honest_states.json
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out the sync engine's generated vocabulary
+        uses: actions/checkout@v4
+        with:
+          repository: armanisadeghi/matrx-local
+          path: matrx-local
+          token: ${{ secrets.MATRX_LOCAL_REPO_TOKEN }}
+          sparse-checkout: crates/matrx-sync/contracts
+          sparse-checkout-cone-mode: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: The guard can still fail (three planted drifts)
+        run: pnpm check:honest-states-parity:self-test
+      - name: Every mapping state the engine emits is rendered, verbatim
+        run: pnpm check:honest-states-parity
 
   # ---------------------------------------------------------------------------
   # migration-judgment — ONE JUDGEMENT, OR THE CAMPAIGN HAS TWO (ATTACK-7).

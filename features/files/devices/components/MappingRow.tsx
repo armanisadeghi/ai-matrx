@@ -47,7 +47,7 @@ import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { formatFileSize } from "@/features/files/utils/format";
 
-import { describeMappingState } from "../honest-states";
+import { describeMappingReport } from "../honest-states";
 import { setDesiredState, setDirection, setKnob } from "../service";
 import {
   DIRECTION_LABELS,
@@ -93,7 +93,13 @@ export function MappingRow({
   onChanged: () => void;
 }) {
   const [busy, setBusy] = useState(false);
-  const state = describeMappingState(mapping.state);
+  const report = describeMappingReport({
+    state: mapping.state,
+    stateReason: mapping.state_reason,
+    lastSeenAt: mapping.last_seen_at,
+    now,
+  });
+  const state = report.state;
   const DirectionIcon = DIRECTION_ICON[mapping.direction];
   const indexing = Boolean(mapping.knobs?.[KNOWLEDGE_KNOB]);
 
@@ -157,9 +163,9 @@ export function MappingRow({
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
           <Badge
             variant="outline"
-            className={cn("h-4 px-1.5 text-[10px]", TONE_CLASS[state.tone])}
+            className={cn("h-4 px-1.5 text-[10px]", TONE_CLASS[report.tone])}
           >
-            {state.title}
+            {report.badge}
           </Badge>
           {converging ? (
             <span className="flex items-center gap-1 text-muted-foreground">
@@ -183,9 +189,10 @@ export function MappingRow({
           </span>
         </div>
 
-        {/* The daemon's own remedy sentence always wins over ours. */}
+        {/* ONE sentence. Fresh: the daemon's own remedy sentence wins over
+            ours. Stale: neither is spoken in the present tense (L5-2). */}
         <p className="mt-1 text-[11px] text-muted-foreground">
-          {mapping.state_reason ?? state.detail}
+          {report.sentence}
         </p>
 
         {state.remedy.kind === "on_device" ? (
@@ -229,8 +236,8 @@ export function MappingRow({
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
             {indexing
-              ? "Files in this folder are indexed so agents can search and cite them."
-              : "Files here sync but are not indexed for knowledge."}
+              ? "Saved for this folder: its files should feed knowledge, so agents can search and cite them. Indexing starts when the file service begins honouring this setting — nothing from this folder is searchable yet."
+              : "Files here sync and are not marked to feed knowledge."}
           </TooltipContent>
         </Tooltip>
 
@@ -305,7 +312,7 @@ export function MappingRow({
                     title: "Stop syncing this folder?",
                     // The consequence, stated before the click (law: a
                     // destructive click names what is lost).
-                    description: `${deviceName} will stop syncing ${mapping.local_path_display ?? mapping.local_path}. The files already on that device stay where they are, and the copies in the cloud stay too — but changes stop flowing in both directions, and anything indexed from this folder is removed from knowledge.`,
+                    description: `${deviceName} will stop syncing ${mapping.local_path_display ?? mapping.local_path}. The files already on that device stay where they are, and the copies in the cloud stay too — but changes stop flowing in both directions, and this folder stops being marked to feed knowledge.`,
                     confirmLabel: "Stop syncing",
                     variant: "destructive",
                   });

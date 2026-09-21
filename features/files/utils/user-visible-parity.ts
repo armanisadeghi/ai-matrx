@@ -25,6 +25,20 @@
  *      DATABASE for the verdict on every candidate row's path (never by
  *      re-deciding in TypeScript, which would make the test circular).
  *
+ * 🚨 SET-BASED, because the first version was not. It asked
+ * `files.is_user_visible_path` once PER DISTINCT PATH — 18,710 rows on the
+ * heaviest owner — and a verification seat killed it three times without ever
+ * reaching part B's verdict (2026-09-21). An unfinishable guard is an
+ * unmeasured guard. Both halves now go through
+ * `files.is_user_visible_paths(text[])`, one round trip per batch.
+ *
+ * Knobs (limits are knobs — `common-docs/policies/limits-are-knobs-agents-set-them.md`):
+ *   PARITY_PATH_BATCH   paths per round trip. Default 2000.
+ *   PARITY_MAX_PATHS    0 (default) = the whole corpus. Above zero, the run is
+ *                       BOUNDED to that many distinct paths and BOTH sides are
+ *                       scoped to the rows carrying them; the report says so,
+ *                       so a sampled run can never read as a full one.
+ *
  * There is no "skip when unconfigured": a missing credential is a FAILURE with
  * the remedy, never a silent pass.
  */
@@ -64,6 +78,15 @@ const PATH_CORPUS = [
   "Inbox/note.md",
 ];
 
+/** Paths per round trip. A knob, not a constant (limits are knobs). */
+const PATH_BATCH = Math.max(
+  1,
+  Number(process.env.PARITY_PATH_BATCH ?? "2000") || 2000,
+);
+
+/** 0 = the whole corpus. Above zero the run is BOUNDED and says so. */
+const MAX_PATHS = Math.max(0, Number(process.env.PARITY_MAX_PATHS ?? "0") || 0);
+
 /** The readable branch of `files.is_crawl_artifact` — the metadata marker. */
 function isCrawlArtifactByMetadata(
   metadata: Record<string, unknown> | null,
@@ -78,6 +101,38 @@ function isCrawlArtifactByMetadata(
 function fail(message: string): never {
   console.error(`\nFAIL — ${message}\n`);
   process.exit(1);
+}
+
+/**
+ * Every path's verdict in one round trip per batch, from the DATABASE.
+ * `files.is_user_visible_paths(text[])` is the set-based form of the scalar
+ * predicate (pure, IMMUTABLE, same body) — added 2026-09-21 precisely so this
+ * guard can finish.
+ */
+async function verdicts(
+  filesSchema: ReturnType<ReturnType<typeof createClient>["schema"]>,
+  paths: string[],
+): Promise<Map<string, boolean>> {
+  const out = new Map<string, boolean>();
+  for (let i = 0; i < paths.length; i += PATH_BATCH) {
+    const batch = paths.slice(i, i + PATH_BATCH);
+    const { data, error } = await filesSchema.rpc("is_user_visible_paths", {
+      p_paths: batch,
+    });
+    if (error)
+      fail(
+        `files.is_user_visible_paths failed on a batch of ${batch.length}: ${error.message}`,
+      );
+    // The RPC answers with a jsonb path->boolean OBJECT, not a row set:
+    // PostgREST caps a set-returning RPC at db-max-rows (1000) and would drop
+    // the rest of the batch without an error — an unmeasured guard wearing a
+    // measured one's output. Measured 2026-09-21 before the return type
+    // changed: a 2000-path batch came back with 1000 verdicts.
+    const verdictsInBatch = (data ?? {}) as Record<string, boolean>;
+    for (const [path, visible] of Object.entries(verdictsInBatch))
+      out.set(path, Boolean(visible));
+  }
+  return out;
 }
 
 async function main(): Promise<void> {
@@ -146,13 +201,16 @@ async function main(): Promise<void> {
   }
   const corpus = Array.from(new Set([...PATH_CORPUS, ...livePaths])).sort();
 
+  // ONE round trip per batch for the file rule — never one per path.
+  const corpusVerdicts = await verdicts(filesSchema, corpus);
+
   let mismatches = 0;
   for (const path of corpus) {
-    const { data: sqlFile, error: e1 } = await filesSchema.rpc(
-      "is_user_visible_path",
-      { p_file_path: path },
-    );
-    if (e1) fail(`files.is_user_visible_path('${path}') failed: ${e1.message}`);
+    const sqlFile = corpusVerdicts.get(path);
+    if (sqlFile === undefined)
+      fail(
+        `files.is_user_visible_paths returned no verdict for ${JSON.stringify(path)} — the batch RPC dropped a path, which would silently shrink this comparison.`,
+      );
     const { data: sqlSystem, error: e2 } = await supabase.rpc("is_system_path", {
       p_path: path,
     });
@@ -208,27 +266,59 @@ async function main(): Promise<void> {
   // The client pipeline applies NO further visibility filter (that is the
   // point of this cutover), so the rendered set is the RPC's set.
 
-  const predicate = new Set<string>();
-  const verdictByPath = new Map<string, boolean>();
-  for (const row of rows) {
-    const path = row.file_path;
-    if (typeof path !== "string") continue;
-    if (row.parent_file_id !== null || row.derivation_kind !== null) continue;
+  const candidates = rows.filter((row) => {
+    if (typeof row.file_path !== "string") return false;
+    if (row.parent_file_id !== null || row.derivation_kind !== null)
+      return false;
     // The RPC's SECOND conjunct: `NOT files.is_crawl_artifact(id)`. Its
     // metadata branch is readable from here; its web.snapshot / web.screenshot
     // branches are not (those tables are not exposed to the browser), so a row
     // excluded only by those still fails below, loudly and by id.
-    if (isCrawlArtifactByMetadata(row.metadata)) continue;
-    let verdict = verdictByPath.get(path);
-    if (verdict === undefined) {
-      const { data, error } = await filesSchema.rpc("is_user_visible_path", {
-        p_file_path: path,
-      });
-      if (error) fail(`is_user_visible_path failed: ${error.message}`);
-      verdict = Boolean(data);
-      verdictByPath.set(path, verdict);
-    }
+    return !isCrawlArtifactByMetadata(row.metadata);
+  });
+  let distinctPaths = [
+    ...new Set(candidates.map((row) => row.file_path as string)),
+  ].sort();
+  const bounded = MAX_PATHS > 0 && distinctPaths.length > MAX_PATHS;
+  if (bounded) distinctPaths = distinctPaths.slice(0, MAX_PATHS);
+  const inScope = new Set(distinctPaths);
+  const started = Date.now();
+  const verdictByPath = await verdicts(filesSchema, distinctPaths);
+  console.log(
+    `B. ${distinctPaths.length} distinct path(s) judged by the database in ${
+      Math.round(Date.now() - started) / 1000
+    }s (batch ${PATH_BATCH})${
+      bounded
+        ? ` — BOUNDED RUN: PARITY_MAX_PATHS=${MAX_PATHS}, this is a SAMPLE, not the whole corpus`
+        : ""
+    }.`,
+  );
+
+  const predicate = new Set<string>();
+
+  for (const row of candidates) {
+    const path = row.file_path as string;
+    if (!inScope.has(path)) continue;
+
+    const verdict = verdictByPath.get(path);
+    if (verdict === undefined)
+      fail(
+        `no verdict came back for ${JSON.stringify(path)} — the batch RPC dropped a path.`,
+      );
     if (verdict) predicate.add(row.id);
+  }
+  // A bounded run compares like with like: the rendered side is scoped to the
+  // same rows, so a sample can never look like a disagreement. A rendered id
+  // this account does not own a row for is NEVER dropped — that is an anomaly,
+  // not an out-of-sample row.
+  if (bounded) {
+    const ownedPathById = new Map(
+      rows.map((row) => [row.id, row.file_path] as const),
+    );
+    for (const id of [...rendered]) {
+      const path = ownedPathById.get(id);
+      if (typeof path === "string" && !inScope.has(path)) rendered.delete(id);
+    }
   }
 
   // The RPC carries ONE conjunct this guard cannot evaluate: `files.is_crawl_artifact`
