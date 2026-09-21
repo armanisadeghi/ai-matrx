@@ -10,6 +10,7 @@ import {
   ArrowLeftToLine,
   ArrowRightToLine,
   EyeOff,
+  KeyRound,
   ArrowUp,
   Filter,
   ListX,
@@ -93,6 +94,8 @@ interface ColumnHeaderMenuProps {
   onInsert?: (side: "left" | "right") => void;
   /** Hide this column in the viewer's own view. Omitted when it is the last visible column. */
   onHide?: () => void;
+  /** Make this column the table's row label. Omitted on read-only mounts and when it already is. */
+  onUseAsRowLabel?: () => void;
   /**
    * Remove this column. Omitted on read-only mounts and on the last remaining
    * column. Goes through the same confirm + RPC as the settings dialog — there
@@ -142,6 +145,7 @@ const ColumnHeaderMenu = ({
   labelForValue,
   onInsert,
   onHide,
+  onUseAsRowLabel,
   onDelete,
 }: ColumnHeaderMenuProps) => {
   const hasFilter = isActiveFilter(filter);
@@ -573,7 +577,7 @@ const ColumnHeaderMenu = ({
           )}
         </div>
 
-        {(onConfigure || onDelete || onRename || onInsert || onHide) && (
+        {(onConfigure || onDelete || onRename || onInsert || onHide || onUseAsRowLabel) && (
           <>
             <div className="my-2 h-px bg-border" />
             <div className="flex flex-col gap-1">
@@ -631,6 +635,21 @@ const ColumnHeaderMenu = ({
                 >
                   <EyeOff className="h-3.5 w-3.5" />
                   Hide column
+                </Button>
+              )}
+              {onUseAsRowLabel && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 justify-start gap-2 px-2 text-xs font-normal"
+                  onClick={() => {
+                    setOpen(false);
+                    onUseAsRowLabel();
+                  }}
+                  title="Rows of this table are then called by this column wherever they are referred to"
+                >
+                  <KeyRound className="h-3.5 w-3.5" />
+                  Use as row label
                 </Button>
               )}
               {onConfigure && (

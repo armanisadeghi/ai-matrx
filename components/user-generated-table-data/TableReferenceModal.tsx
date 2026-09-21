@@ -1,5 +1,6 @@
 "use client";
 
+import { effectiveRowLabel, rowLabelText } from "@/features/data-tables/row-label";
 import React, { useState } from "react";
 import {
   Dialog,
@@ -23,6 +24,8 @@ interface TableField {
 }
 
 interface TableInfo {
+  /** The full `udt_datasets.metadata` blob; `metadata.row_label` names rows (row-label.ts). */
+  metadata?: unknown;
   table_name: string;
   description?: string;
 }
@@ -78,12 +81,23 @@ export default function TableReferenceModal({
     });
 
   // Canonical ```matrx``` reference fence for a single row.
+  // The row's LABEL rides along so the reference reads as a name ("Emily
+  // Parson"), not a UUID, wherever it is pasted (features/data-tables/row-label.ts).
+  const rowLabel =
+    rowData && typeof rowData === "object"
+      ? rowLabelText(
+          { data: rowData as Record<string, unknown> },
+          fields,
+          effectiveRowLabel(tableInfo?.metadata, fields),
+        ).text
+      : "";
   const generateRowReference = (rowId: string) =>
     buildBookmarkReferenceFence({
       type: "table_row",
       table_id: tableId,
       table_name: tableName,
       row_id: rowId,
+      ...(rowLabel ? { row_label: rowLabel } : {}),
     });
 
   // Canonical ```matrx``` reference fence for a single cell.
@@ -99,6 +113,7 @@ export default function TableReferenceModal({
       row_id: rowId,
       column_name: fieldName,
       column_display_name: fieldDisplayName,
+      ...(rowLabel ? { row_label: rowLabel } : {}),
     });
 
   if (!rowId) return null;

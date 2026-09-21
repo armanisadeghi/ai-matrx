@@ -19,6 +19,8 @@ export interface UserDataReference {
   row_id?: string;
   column_name?: string;
   column_display_name?: string;
+  /** What the row is called (the table's row label) — so a reference reads as a name, not an id. */
+  row_label?: string;
 }
 
 /**
@@ -64,11 +66,13 @@ export function getUserDataReferenceTitle(reference: UserDataReference): string 
     case 'full_table':
       return `Table: ${reference.table_name}`;
     case 'table_row':
-      return `Row ${reference.row_id} from ${reference.table_name}`;
+      return reference.row_label
+        ? `Row "${reference.row_label}" from ${reference.table_name}`
+        : `Row ${reference.row_id} from ${reference.table_name}`;
     case 'table_column':
       return `Column "${reference.column_display_name}" from ${reference.table_name}`;
     case 'table_cell':
-      return `Cell "${reference.column_display_name}" in row ${reference.row_id}`;
+      return `Cell "${reference.column_display_name}" in row ${reference.row_label ? `"${reference.row_label}"` : reference.row_id}`;
     default:
       return 'Unknown Reference';
   }

@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RowLabelPicker } from "@/features/data-tables/components/RowLabelPicker";
 import { Badge } from "@/components/ui/badge";
 import {
   GripVertical,
@@ -90,6 +91,8 @@ interface TableField {
 }
 
 interface TableInfo {
+  /** The full `udt_datasets.metadata` blob; `metadata.row_label` names rows (row-label.ts). */
+  metadata?: unknown;
   id: string;
   table_name: string;
   description: string;
@@ -112,6 +115,8 @@ interface TableConfigModalProps {
   tableInfo: TableInfo;
   fields: TableField[];
   onSuccess: () => void;
+  /** One loaded row, so the row-label picker can show an example. */
+  sampleRow?: { data: Record<string, unknown> } | null;
   /**
    * Open the add-column form. The place columns are MANAGED must be able to
    * add one. Omitted on mounts that cannot add a column.
@@ -137,6 +142,7 @@ export default function TableConfigModal({
   tableInfo: initialTableInfo,
   fields: initialFields,
   onAddColumn,
+  sampleRow,
   onSuccess,
 }: TableConfigModalProps) {
   const [loading, setLoading] = useState(false);
@@ -1119,6 +1125,26 @@ export default function TableConfigModal({
                   />
                 </div>
               </div>
+
+              {/* Row label — saved immediately (a table property, like colors),
+                  so it is deliberately outside this dialog's Save / Cancel. */}
+              <RowLabelPicker
+                tableId={tableId}
+                metadata={tableInfo.metadata}
+                fields={fields}
+                sampleRow={sampleRow ?? null}
+                onSaved={(next) => {
+                  setTableInfo((prev) => {
+                    const metadata = {
+                      ...((prev.metadata as Record<string, unknown> | null | undefined) ?? {}),
+                    };
+                    if (next) metadata.row_label = next;
+                    else delete metadata.row_label;
+                    return { ...prev, metadata };
+                  });
+                  onSuccess();
+                }}
+              />
             </div>
           </TabsContent>
         </Tabs>

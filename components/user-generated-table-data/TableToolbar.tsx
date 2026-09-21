@@ -96,6 +96,8 @@ interface TableToolbarProps {
   setShowDeleteModal: (show: boolean) => void;
   setShowAddColumnModal: (show: boolean) => void;
   setShowAddRowModal: (show: boolean) => void;
+  /** One loaded row for the row-label example in Table settings. */
+  sampleRow?: { data: Record<string, unknown> } | null;
   setShowTableConfigModal: (show: boolean) => void;
   setShowReferenceOverlay: (show: boolean) => void;
   setShowRowOrderingModal: (show: boolean) => void;
@@ -166,6 +168,7 @@ export default function TableToolbar({
   setShowDeleteModal,
   setShowAddColumnModal,
   setShowAddRowModal,
+  sampleRow,
   setShowTableConfigModal,
   setShowReferenceOverlay,
   setShowRowOrderingModal,
@@ -527,6 +530,7 @@ export default function TableToolbar({
             onClose={() => setShowTableConfigModal(false)}
             onSuccess={() => loadTableData(true)}
             onAddColumn={() => setShowAddColumnModal(true)}
+            sampleRow={sampleRow ?? null}
           />
           <RowOrderingModal
             isOpen={showRowOrderingModal}

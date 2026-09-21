@@ -81711,6 +81711,10 @@ export type Database = {
         Args: { p_field_id: string; p_format?: Json; p_table_id: string }
         Returns: Json
       }
+      udt_set_table_row_label: {
+        Args: { p_row_label?: Json; p_table_id: string }
+        Returns: Json
+      }
       udt_set_table_style: {
         Args: { p_path: string[]; p_table_id: string; p_value?: Json }
         Returns: Json

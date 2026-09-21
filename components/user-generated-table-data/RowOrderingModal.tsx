@@ -1,5 +1,6 @@
 "use client";
 
+import { effectiveRowLabel } from "@/features/data-tables/row-label";
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
@@ -92,9 +93,13 @@ export default function RowOrderingModal({
   // Resolve the label column whenever the modal opens or the schema changes.
   useEffect(() => {
     if (!isOpen) return;
+    // The table's ROW LABEL is the natural default; an explicit ordering
+    // label_field still wins (it may deliberately differ).
+    const tableLabel = effectiveRowLabel(tableInfo?.metadata, fields);
     const resolved = resolveLabelField(
       fields,
-      tableInfo?.row_ordering_config?.label_field,
+      tableInfo?.row_ordering_config?.label_field ??
+        (tableLabel?.kind === "field" ? tableLabel.field : undefined),
     );
     setLabelFieldName(resolved?.field_name ?? null);
   }, [isOpen, fields, tableInfo?.row_ordering_config?.label_field]);

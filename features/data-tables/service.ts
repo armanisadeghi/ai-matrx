@@ -954,3 +954,26 @@ export async function getTableProfile(
   }
   return { success: true, data: data as unknown as TableProfile };
 }
+
+// ─── udt_set_table_row_label ─────────────────────────────────────────────────
+
+/**
+ * Set or clear the table's ROW LABEL — the value that names a row wherever the
+ * row is referred to (`features/data-tables/row-label.ts`). `null` clears it
+ * and the readers fall back to the first ordinary column.
+ */
+export async function setTableRowLabel(args: {
+  tableId: string;
+  rowLabel: import("./row-label").RowLabelConfig | null;
+}): Promise<ServiceResult<{ row_label: unknown }>> {
+  const { data, error } = await supabase.rpc("udt_set_table_row_label", {
+    p_table_id: args.tableId,
+    p_row_label: (args.rowLabel ?? null) as never,
+  });
+  if (error) return { success: false, error: error.message };
+  const envelope = data as unknown as { success?: boolean; error?: string; row_label?: unknown } | null;
+  if (!envelope || envelope.success !== true) {
+    return { success: false, error: envelope?.error ?? "Failed to save the row label" };
+  }
+  return { success: true, data: { row_label: envelope.row_label ?? null } };
+}

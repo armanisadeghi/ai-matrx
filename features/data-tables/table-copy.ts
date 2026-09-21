@@ -1,4 +1,5 @@
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
+import { rowLabelText, type RowLabelConfig } from "./row-label";
 
 export interface DataTableCopyField {
   id: string;
@@ -78,7 +79,23 @@ export function dataTableRowsToMarkdown(
 export function dataTableRowLabel(
   row: DataTableCopyRow,
   fields: DataTableCopyField[],
+  /** The table's row label (`row-label.ts`); when given it names the row. */
+  rowLabel?: RowLabelConfig | null,
 ): string {
+  if (rowLabel) {
+    const labelled = rowLabelText(
+      row,
+      fields.map((f) => ({
+        field_name: f.field_name,
+        display_name: f.display_name,
+        data_type: f.data_type ?? "string",
+        field_order: f.field_order ?? 0,
+        metadata: (f as { metadata?: unknown }).metadata,
+      })),
+      rowLabel,
+    ).text;
+    if (labelled) return labelled;
+  }
   const values = fields
     .map((field) => dataTableCopyValueText(row.data[field.field_name]).trim())
     .filter(Boolean)

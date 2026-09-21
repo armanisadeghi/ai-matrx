@@ -80,6 +80,9 @@ import {
 import { useTableLayoutDefaults } from "@/features/data-tables/hooks/useTableLayoutDefaults";
 import { ColumnSummaryCell } from "@/features/data-tables/components/ColumnSummaryCell";
 import { computeColumnSummary } from "@/features/data-tables/column-summaries";
+import { isRowLabelField } from "@/features/data-tables/row-label";
+import { setTableRowLabel } from "@/features/data-tables/service";
+import { KeyRound } from "lucide-react";
 import { ColumnViewMenu } from "@/features/data-tables/components/ColumnViewMenu";
 import {
   useTableRealtime,
@@ -3448,6 +3451,7 @@ const UserTableViewer = ({
           setShowAddColumnModal(show);
         }}
         setShowAddRowModal={setShowAddRowModal}
+        sampleRow={displayRows[0] ?? null}
         addColumnInsertAtOrder={pendingColumnInsert?.order}
         onColumnAdded={async () => {
           const insert = pendingColumnInsert;
@@ -4120,6 +4124,13 @@ const UserTableViewer = ({
                         className="flex min-w-0 flex-1 items-center gap-1 rounded px-1 py-0.5"
                         title={`Sort by ${field.display_name}`}
                       >
+                        {/* The row label: the column that names a row
+                            everywhere it is referred to (row-label.ts). */}
+                        {isRowLabelField(field.field_name, tableInfo?.metadata, fields) && (
+                          <span title="Row label — rows of this table are called by this column">
+                            <KeyRound className="h-3 w-3 shrink-0 text-amber-600" aria-label="Row label column" />
+                          </span>
+                        )}
                         <span className="truncate">{field.display_name}</span>
                         {isSorted && (
                           <span className="flex-shrink-0">
@@ -4197,6 +4208,37 @@ const UserTableViewer = ({
                                     ? hiddenColumns
                                     : [...hiddenColumns, field.field_name],
                                 )
+                        }
+                        onUseAsRowLabel={
+                          isReadOnly || isRowLabelField(field.field_name, tableInfo?.metadata, fields)
+                            ? undefined
+                            : () =>
+                                void (async () => {
+                                  const result = await setTableRowLabel({
+                                    tableId,
+                                    rowLabel: { kind: "field", field: field.field_name },
+                                  });
+                                  if (isServiceFailure(result)) {
+                                    toast({ title: "Could not set the row label", description: result.error, variant: "destructive" });
+                                    return;
+                                  }
+                                  setTableInfo((prev) =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          metadata: {
+                                            ...((prev.metadata as Record<string, unknown> | null | undefined) ?? {}),
+                                            row_label: { kind: "field", field: field.field_name },
+                                          },
+                                        }
+                                      : prev,
+                                  );
+                                  toast({
+                                    title: `Rows are now called by ${field.display_name}`,
+                                    description: "References, copies and links to this table's rows use it.",
+                                    variant: "success",
+                                  });
+                                })()
                         }
                         onConfigure={
                           isReadOnly
