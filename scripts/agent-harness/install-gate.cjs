@@ -38,8 +38,9 @@
 // WHAT THE GATE DOES, in order:
 //   1. Ignores every pnpm command that cannot move a symlink (run, exec, list,
 //      --lockfile-only, ...).
-//   2. Refuses while this checkout's shared preview lease is live, with the
-//      remedy. Override: MATRX_ALLOW_INSTALL_WITH_PREVIEW=1.
+//   2. WARNS (never refuses) while this checkout's shared preview lease is
+//      live. Refusal is opt-in: MATRX_STRICT_INSTALL_GATE=1 (Arman, 2026-09-21:
+//      nothing stops a primary script).
 //   3. Serialises installs across the sessions that share this checkout: one
 //      install at a time, the second waits, then refuses naming the first's pid.
 //
@@ -191,38 +192,38 @@ function checkPreviewLease(command) {
   if (!alive(pid)) return;            // a dead lease must never block an install
   if (real(root) !== real(REPO_ROOT)) return; // another checkout's preview, another node_modules
 
-  if (process.env.MATRX_ALLOW_INSTALL_WITH_PREVIEW) {
-    process.stderr.write('\n');
-    say(`OVERRIDE IN FORCE — running "pnpm ${command}" with the preview live.`);
-    say(`The dev server on port ${port} (pid ${pid}) may die with`);
-    say('"RangeError: Invalid string length" while packages relink, and every');
-    say('agent signed in to it loses its session.');
-    process.stderr.write('\n');
-    return;
+  // Arman, 2026-09-21: "Nothing should ever stop our primary scripts from
+  // doing their jobs." A live preview is a WARNING, never a refusal. The dev
+  // server may die while packages relink; it restarts in seconds and the
+  // preview announces the cause itself (NODE_MODULES_CHANGED in the lease).
+  // The old refusal blocked `pnpm sync-types` and the release loop for hours.
+  // Strict refusal is opt-in only: MATRX_STRICT_INSTALL_GATE=1.
+  if (process.env.MATRX_STRICT_INSTALL_GATE && !process.env.MATRX_ALLOW_INSTALL_WITH_PREVIEW) {
+    refuse([
+      'INSTALL REFUSED — the shared preview is running right now (MATRX_STRICT_INSTALL_GATE=1).',
+      '',
+      `Command: pnpm ${command}`,
+      `Preview: port ${port}, pid ${pid}, this checkout.`,
+      '',
+      'What to do instead:',
+      '  1. pnpm preview:stop',
+      `  2. pnpm ${command}`,
+      '  3. pnpm preview:start',
+      '',
+      'To refresh only the lockfile (never touches node_modules):',
+      '  pnpm install --lockfile-only',
+      '',
+      'To proceed anyway: unset MATRX_STRICT_INSTALL_GATE, or MATRX_ALLOW_INSTALL_WITH_PREVIEW=1.',
+    ]);
   }
 
-  refuse([
-    'INSTALL REFUSED — the shared preview is running right now.',
-    '',
-    `Command: pnpm ${command}`,
-    `Preview: port ${port}, pid ${pid}, this checkout.`,
-    '',
-    'Relinking node_modules under a compiling Turbopack server floods it with',
-    'module-not-found traces (~460 MB measured) and kills it. Everyone on',
-    `http://localhost:${port} loses their session.`,
-    '',
-    'What to do instead:',
-    '  1. Tell whoever owns the preview you need to install.',
-    '  2. pnpm preview:stop',
-    `  3. pnpm ${command}`,
-    '  4. pnpm preview:start',
-    '',
-    'To refresh only the lockfile (safe while the preview runs):',
-    '  pnpm install --lockfile-only',
-    '',
-    'To accept the risk anyway:',
-    `  MATRX_ALLOW_INSTALL_WITH_PREVIEW=1 pnpm ${command}`,
-  ]);
+  process.stderr.write('\n');
+  say(`PREVIEW LIVE — running "pnpm ${command}" anyway (port ${port}, pid ${pid}, this checkout).`);
+  say('The dev server may die with "RangeError: Invalid string length" while packages');
+  say('relink, and every agent signed in to it loses its session. Restart it with');
+  say('`pnpm preview:start`. A primary script is never refused for a preview;');
+  say('set MATRX_STRICT_INSTALL_GATE=1 to get the old refusal.');
+  process.stderr.write('\n');
 }
 
 // ------------------------------------------------------------- install serialiser

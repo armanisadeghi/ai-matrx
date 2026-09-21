@@ -22,7 +22,7 @@
 // Wired as `pnpm check:install-gate:self-test`.
 
 import assert from "node:assert/strict";
-import { execFileSync, spawn } from "node:child_process";
+import { spawnSync, execFileSync, spawn } from "node:child_process";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, copyFileSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
@@ -91,20 +91,18 @@ function writeLiveLease(stateDir, root, pid) {
 }
 
 function runInstall(dir, stateDir, extraEnv = {}, args = ["install", "--prefer-offline"]) {
-  try {
-    const stdout = execFileSync("pnpm", args, {
-      cwd: dir,
-      env: { ...process.env, MATRX_PREVIEW_STATE_DIR: stateDir, MATRX_ALLOW_INSTALL_WITH_PREVIEW: "", ...extraEnv },
-      stdio: "pipe",
-      encoding: "utf8",
-    });
-    return { status: 0, output: stdout };
-  } catch (error) {
-    return {
-      status: typeof error.status === "number" ? error.status : 1,
-      output: `${error.stdout ?? ""}${error.stderr ?? ""}`,
-    };
-  }
+  // spawnSync, not execFileSync: a WARNING goes to stderr on a SUCCESSFUL run,
+  // and the test must be able to read it (the gate warns-and-proceeds by default).
+  const result = spawnSync("pnpm", args, {
+    cwd: dir,
+    env: { ...process.env, MATRX_PREVIEW_STATE_DIR: stateDir, MATRX_ALLOW_INSTALL_WITH_PREVIEW: "", ...extraEnv },
+    stdio: "pipe",
+    encoding: "utf8",
+  });
+  return {
+    status: typeof result.status === "number" ? result.status : 1,
+    output: `${result.stdout ?? ""}${result.stderr ?? ""}`,
+  };
 }
 
 // A process that is genuinely alive for the duration of the test, standing in
@@ -131,30 +129,30 @@ check("FAILING BASELINE: a root preinstall refusal still leaves node_modules lin
   }
 });
 
-check("a live preview lease refuses a real pnpm install, before anything is linked", () => {
+check("a live preview lease WARNS and lets a real pnpm install proceed (Arman, 2026-09-21: nothing stops a primary script)", () => {
   const { dir, stateDir } = makeFixture({ mode: "pnpmfile" });
   try {
     writeLiveLease(stateDir, dir, holder.pid);
     const { status, output } = runInstall(dir, stateDir);
-    assert.equal(status, 1, `the install must be refused; got:\n${output}`);
-    assert.ok(output.includes("INSTALL REFUSED"), "the refusal must say so in plain words");
-    assert.ok(output.includes("pnpm preview:stop"), "the refusal must carry the remedy");
-    assert.ok(
-      !existsSync(join(dir, "node_modules")),
-      "the gate must refuse BEFORE pnpm links anything — node_modules must not exist",
-    );
+    assert.equal(status, 0, `the install must proceed; got:\n${output}`);
+    assert.ok(output.includes("PREVIEW LIVE"), "the warning must name the live preview in plain words");
+    assert.ok(output.includes("pnpm preview:start"), "the warning must carry the restart remedy");
+    assert.ok(!output.includes("INSTALL REFUSED"), "a live preview is never a refusal by default");
+    assert.ok(existsSync(join(dir, "node_modules")), "pnpm must actually have linked node_modules");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 });
 
-check("the same refusal covers `pnpm add`, which never ran preinstall at all", () => {
+check("MATRX_STRICT_INSTALL_GATE=1 restores the refusal, before anything is linked", () => {
   const { dir, stateDir } = makeFixture({ mode: "pnpmfile" });
   try {
     writeLiveLease(stateDir, dir, holder.pid);
-    const { status, output } = runInstall(dir, stateDir, {}, ["add", "is-odd@3.0.1"]);
-    assert.equal(status, 1, `pnpm add must be refused too; got:\n${output}`);
-    assert.ok(!existsSync(join(dir, "node_modules")), "nothing may be linked");
+    const { status, output } = runInstall(dir, stateDir, { MATRX_STRICT_INSTALL_GATE: "1" });
+    assert.equal(status, 1, `strict mode must refuse; got:\n${output}`);
+    assert.ok(output.includes("INSTALL REFUSED"), "the refusal must say so in plain words");
+    assert.ok(output.includes("pnpm preview:stop"), "the refusal must carry the remedy");
+    assert.ok(!existsSync(join(dir, "node_modules")), "strict mode must refuse BEFORE pnpm links anything");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
