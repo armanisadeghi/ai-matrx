@@ -88,6 +88,14 @@ local work is `git cherry origin/main HEAD`.
 Open one intake worktree from current `origin/main`. All landing goes
 through it. Refresh it from `origin/main` before every land.
 
+Then run the same count in **every sibling repo** under the workspace, and
+list every registered worktree, every local branch, every remote branch
+besides main, and every unregistered directory under `.wt/`. The disease
+is never in one repo: on 2026-09-20 the frontend was the loud one while
+aidream, matrx-extend, matrx-local and common-docs each carried dozens of
+branches and worktrees of their own. One inventory table for all repos is
+what Arman and the other lanes work from.
+
 Report two sentences: what the status line implied, what the patches say.
 Then start step 2 immediately. No approval is needed for anything below
 except a real conflict.
@@ -158,12 +166,45 @@ and delete what is junk. A whole feature that simply missed the boat for a
 week is not junk. If it is a clearly separated chunk, land it. If it is
 questionable, hold it as one line.
 
-### 4. What is left is small. Find its owners
+### 4. What is left is small. Decide it, in this order
 
-By now the pile should be a handful of items: held product hunks, held
-migrations, and leftover work that only its author can finish. Only now
-does the owner hunt start, and only for these. Read
-[owners-and-prompts.md](owners-and-prompts.md).
+**The target is zero: zero dirty files, zero worktrees, zero local branches,
+zero remote branches besides main, zero PRs, everything on main and pushed.
+And nothing lost.** Arman, 2026-09-21: one missed twice-hourly release cost
+two full days of programming and put 35 developers and agents on hold. For
+every leftover that still holds work not on main, apply these three options
+in order. An agent with no access to Arman stops at option 2 and ships.
+
+**Option 1. Find the owner and hand it back.** Send a quick lane (Sonnet)
+to find the conversation that wrote it: worktree or branch name, distinctive
+paths, transcripts from the last 48 hours across Claude Code, Cursor and
+Codex. If it has a real send door to that chat, it sends the four-line
+message from [owners-and-prompts.md](owners-and-prompts.md). If not, it
+writes the one paste line for Arman. Do not wait on the reply; go to
+option 2 at once.
+
+**Option 2. Judge the code and ship it.** Read the actual diff. Write down
+three facts: the feature it belongs to, the time of its last change, and
+whether it is destructive (drops, deletes, rewinds, or replaces a live
+behavior with an older one) or obviously bad (does not compile, breaks a
+guard, contradicts a ruling). If it is not destructive, not obviously bad,
+and cannot break the whole app, put it on main, delete the worktree or
+branch, push, and have a subagent verify the touched area compiles and its
+tests pass. You ship regardless of whether the owner ever answers. Stale is
+not a reason to hold: a lane that missed a week still wrote product.
+
+**Option 3. Bring the rest to Arman, one item, three facts.** Only what
+failed option 2: destructive, obviously bad, or would break the whole app.
+Give him the feature, the time of the last change, and exactly why it is
+dangerous, with your recommendation. Never a list of paths, never a
+question without a recommendation.
+
+Two owners on one file is a real conflict: option 3.
+
+#### Finding owners
+
+Read [owners-and-prompts.md](owners-and-prompts.md) for the hunt and the
+three messages.
 
 The deliverable is a paste-ready list for Arman, one line per item:
 **exact conversation title, one sentence of what that agent must do.** Not a
@@ -231,6 +272,13 @@ paths nobody owns. Do not let that pile grow back. Every 30 minutes:
   unique files on main first. Idle or live makes no difference: nothing
   waits in a worktree. A slow filesystem makes `worktree remove` hang: unregister it under
   `.git/worktrees/` and delete the directory in the background.
+- Install the standing guard: matrx-frontend has `pnpm worktree:janitor`
+  (scripts/worktree-janitor.sh, self-tested), run by the release script
+  after every push. It removes every worktree and local branch whose tip is
+  already on `origin/main`, deletes unregistered `.wt/` leftovers, and
+  names the rest with "land it on main and remove it". Port it to any repo
+  that shows the same disease; a guard you cannot demonstrate failing is
+  not a guard, so keep its self-test.
 - The shared-checkout guard reads the whole command line. One `checkout -- .`
   or `add -A` anywhere in a chained command refuses the entire chain before
   any of it runs. Name every path.
