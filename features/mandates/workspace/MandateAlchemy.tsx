@@ -58,12 +58,15 @@ export function buildMandateDefinitionCore(data: MandateWorkspaceData, perspecti
         kind: value.kind ?? null,
         required: value.required ?? null,
       }));
+  const declaredProvision = provision.length > 0
+    ? provision
+    : data.contract.requiredVariables.map((name) => ({ name, description: "", kind: null, required: true }));
   return {
     scope: scopeLabel(perspective, organizationName),
     feature: data.mandate.mandate_key.split(".")[0] ?? data.mandate.mandate_key,
     enabled: data.mandate.is_enabled ?? null,
     goal,
-    provision: normalizeTransferJson(provision),
+    provision: normalizeTransferJson(declaredProvision),
     human_input: definition.accepts_user_input === true,
     output: {
       format: data.mandate.output_kind ?? null,
@@ -116,12 +119,21 @@ export function MandateAlchemy({
 }) {
   const registry = useContext(CaptureContext);
   const core = buildMandateDefinitionCore(data, perspective, organizationName);
+  const coreSource = () => {
+    if (data.provisionKey && !data.offer) {
+      throw new Error("The declared Provision has not loaded. Wait for it before exporting the saved definition Core.");
+    }
+    return core;
+  };
   const captureTab = (tab: MandateWorkspaceTab): MandateAlchemyCapture => {
-    const parts = [...(registry?.entries() ?? [])].filter(([key]) => key.startsWith(`${tab}:`)).map(([, capture]) => capture);
-    if (parts.length === 0) return buildTab(tab);
-    const blocked = parts.find((capture) => capture.status !== "ready");
+    const base = buildTab(tab);
+    const parts = [...(registry?.entries() ?? [])].filter(([key]) => key.startsWith(`${tab}:`));
+    if (parts.length === 0) return base;
+    const blocked = parts.map(([, capture]) => capture).find((capture) => capture.status !== "ready");
     if (blocked) return blocked;
-    return { status: "ready", savedOnly: parts.every((capture) => capture.savedOnly === true), data: Object.fromEntries(parts.map((capture, index) => [`part_${index + 1}`, (capture as Extract<MandateAlchemyCapture, { status: "ready" }>).data])) };
+    if (base.status !== "ready") return base;
+    const readyParts = parts as Array<[string, Extract<MandateAlchemyCapture, { status: "ready" }>] >;
+    return { status: "ready", savedOnly: base.savedOnly === true && readyParts.every(([, capture]) => capture.savedOnly === true), data: { base: base.data, ...Object.fromEntries(readyParts.map(([key, capture]) => [key.slice(tab.length + 1), capture.data])) } };
   };
   const current = () => {
     const captured = captureTab(activeTab);
@@ -139,8 +151,8 @@ export function MandateAlchemy({
   const variants = [
     { id: "all-tabs", label: "All tabs", source: source(`mandate:${key}:all-tabs`, "All mandate tabs", all) },
     ...(activeTab === "definition" ? [
-      { id: "core-json", label: "Core JSON", source: source(`mandate:${key}:core-json`, "Mandate definition core (JSON)", () => core) },
-      { id: "core-xml", label: "Core XML", source: source(`mandate:${key}:core-xml`, "Mandate definition core (XML)", () => xml(core, "mandate")) },
+      { id: "core-json", label: "Core JSON", source: source(`mandate:${key}:core-json`, "Mandate definition core (JSON)", coreSource) },
+      { id: "core-xml", label: "Core XML", source: source(`mandate:${key}:core-xml`, "Mandate definition core (XML)", () => xml(coreSource(), "mandate")) },
     ] : []),
   ];
   return <div className="ml-auto"><ContentTransferMenu label="Current tab" triggerVariant="transparent" triggerSize="compact" source={source(`mandate:${key}:tab:${activeTab}`, "Current mandate tab", current)} variants={variants} /></div>;

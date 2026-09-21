@@ -73,6 +73,8 @@ import {
   selectSettingsOverridesForApi,
 } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { buildInstanceBaseSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/base-settings";
+import { useMandateAlchemyTabCapture } from "@/features/mandates/workspace/MandateAlchemy";
+import { normalizeTransferJson } from "@ai-matrx/alchemy/core";
 import { fetchMandateLadder } from "@/features/mandates/workspace/useMandateLadder";
 import { inheritedModelOverrides, MODEL_OVERRIDE_SOURCE } from "./inherited-model-overrides";
 import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
@@ -379,6 +381,7 @@ function OneMandateBindingWorkspace({
       <BindingDraft
         key={bindingIdentity}
         jobSurfaceName={jobSurfaceName}
+        proposedWritePolicies={proposedPolicies}
         onProposedPolicies={setProposedPolicies}
         data={data}
         binding={binding}
@@ -474,6 +477,7 @@ function OneMandateBindingWorkspace({
 function BindingDraft({
   data,
   jobSurfaceName,
+  proposedWritePolicies,
   onProposedPolicies,
   binding,
   rung,
@@ -494,6 +498,7 @@ function BindingDraft({
   onChanged,
 }: {
   jobSurfaceName: string | null;
+  proposedWritePolicies: WritePolicyMap | null;
   onProposedPolicies: (policies: WritePolicyMap) => void;
   activeSection?: BindingWorkspaceSection;
   data: MandateWorkspaceData;
@@ -803,6 +808,7 @@ function BindingDraft({
     Boolean(selectInstanceOverrideState(overridesId)(s)),
   );
   const overriddenKeys = useAppSelector(selectOverriddenKeys(overridesId));
+  const draftOverrides = useAppSelector(selectSettingsOverridesForApi(overridesId));
   const overriddenCount =
     (overriddenKeys?.changed.length ?? 0) +
     (overriddenKeys?.removed.length ?? 0);
@@ -1522,6 +1528,58 @@ function BindingDraft({
     storedDraft.autoRun,
   ]);
   const dirty = draftSignature !== storedSignature;
+
+  // These are the same live records each binding tab renders. Keeping the
+  // capture here prevents an export from guessing at an invisible rung or
+  // silently replacing a person's unsaved map/settings with stored values.
+  const bindingCapture = {
+    rung,
+    organization_id: rung === "org" ? organizationId : null,
+    holder: {
+      kind: holder.kind,
+      agent_id: holder.kind === "agent" ? holder.agentId : null,
+      agent_version_id: holder.kind === "agent" ? holder.agentVersionId : null,
+      workflow_id: holder.kind === "workflow" ? holder.workflowId : null,
+    },
+    saved_mapping: storedDraft.consumptionMap,
+    draft_mapping: withoutUnpicked(draftMap),
+    auto_run: autoRun,
+    unsaved_changes: dirty,
+  };
+  useMandateAlchemyTabCapture("holder", {
+    status: "ready",
+    data: normalizeTransferJson({
+      ...bindingCapture,
+      holder_inputs: holderInputs.status === "ready" ? holderInputs.targets.map((target) => ({ name: target.name, label: target.label ?? null, required: target.required ?? false })) : { status: holderInputs.status, message: holderInputs.message },
+      offer: { status: offerColumn.status, detail: offerColumn.sourceLine },
+    }),
+  }, "binding");
+  useMandateAlchemyTabCapture("overrides", {
+    status: "ready",
+    data: normalizeTransferJson({
+      saved_overrides: storedOverrides,
+      draft_overrides: draftOverrides ?? null,
+      holder_defaults: overrideBaseline.holderSettings,
+      holder_default_sources: overrideBaseline.sources,
+      unsaved_changes: dirty,
+    }),
+  }, "binding");
+  useMandateAlchemyTabCapture("display", {
+    status: "ready",
+    data: normalizeTransferJson({
+      treatment_surface: jobSurfaceName,
+      effective_display_defaults: proposedWritePolicies ?? null,
+      status: jobSurfaceName ? "loaded" : "No display treatment is configured.",
+    }),
+  }, "binding");
+  useMandateAlchemyTabCapture("permissions", {
+    status: "ready",
+    data: normalizeTransferJson({
+      treatment_surface: jobSurfaceName,
+      proposed_write_policies: proposedWritePolicies,
+      status: jobSurfaceName ? "Loaded from the mandate treatment." : "No surface write policies are configured.",
+    }),
+  }, "binding");
 
   // The server's report describes THE ROW IT WROTE. The instant the draft moves
   // off THAT — not off whatever the client last read from the server — it is a
