@@ -8,7 +8,7 @@ import { resolveMandateGoal } from "../goal";
 import { parseDraftInputs } from "../authoring/service";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
 import type { MandateWorkspaceTab, WorkspacePerspective } from "./MandateWorkspace";
-import { outputConstraintsOf } from "./TriadSections";
+import { outputConstraintsOf } from "./definition-output";
 
 export type MandateAlchemyCapture =
   | { status: "ready"; data: Json; savedOnly?: boolean }
@@ -39,7 +39,7 @@ function scopeLabel(perspective: WorkspacePerspective, organizationName: string 
   return "Personal";
 }
 
-function definitionCore(data: MandateWorkspaceData, perspective: WorkspacePerspective, organizationName: string | null): Json {
+export function buildMandateDefinitionCore(data: MandateWorkspaceData, perspective: WorkspacePerspective, organizationName: string | null): Json {
   const definition = contractOfMandate(data.mandate) as Record<string, unknown>;
   const goal = resolveMandateGoal({ stored: goalOfMandate(data.mandate) }).goal ?? "";
   const provision = data.offer
@@ -106,7 +106,7 @@ export function MandateAlchemy({
   buildTab: (tab: MandateWorkspaceTab) => MandateAlchemyCapture;
 }) {
   const registry = useContext(CaptureContext);
-  const core = definitionCore(data, perspective, organizationName);
+  const core = buildMandateDefinitionCore(data, perspective, organizationName);
   const current = () => {
     const captured = registry?.get(activeTab) ?? buildTab(activeTab);
     if (captured.status === "loading") throw new Error(`${activeTab} is still loading. Wait for it to finish before exporting.`);
