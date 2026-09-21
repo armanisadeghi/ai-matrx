@@ -3300,6 +3300,8 @@ const UserTableViewer = ({
     selectedRows: tickedRows,
     tableName: tableInfo?.table_name,
     tableDescription: tableInfo?.description,
+    rowLabel: effectiveRowLabel(tableInfo?.metadata, fields),
+    rowActions,
     isReadOnly: surfacePermissionKnown ? isReadOnly : null,
     fields: surfaceFields,
     visibleRows: displayRows,
