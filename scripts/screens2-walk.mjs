@@ -122,13 +122,16 @@ const main = async () => {
     console.log("  SKIPPED 03 — this build's records-ui does not read ?record= yet (needs 0.44.0)");
   }
 
-  // 4 — THE TABLE'S OWN RAILS: bookings and checklists.
-  await page.goto(`${ORIGIN}/data-v2/${DEALS}`, { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(2500);
-  for (const [rail, name, mustSee] of [
-    ["Bookings", "04-bookings-panel", ["Book a new-patient consult"]],
-    ["Checklists", "05-checklists-panel", ["Checklists"]],
+  // 4 — THE TABLE'S OWN RAILS, each on the table that actually owns the thing. The booking
+  //     page is declared over the plans table; the checklist is written ABOUT Staff. Opening
+  //     both on one table would have photographed an honest empty state and called it the
+  //     screen — which it did once, before this line.
+  for (const [table, rail, name, mustSee] of [
+    [DEALS, "Bookings", "04-bookings-panel", ["Book a new-patient consult"]],
+    [PEOPLE, "Checklists", "05-checklists-panel", ["New hygienist onboarding"]],
   ]) {
+    await page.goto(`${ORIGIN}/data-v2/${table}`, { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(3000);
     const control = page.getByRole("button", { name: rail, exact: true }).first();
     if ((await control.count()) === 0) {
       console.log(`  SKIPPED ${name} — this build's records-ui has no "${rail}" rail yet`);
