@@ -13,6 +13,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
 import { plainFromDeleteRefusal } from "./service/organizationStoreContents";
+import type { OrganizationArchiveFilter } from "./service/organizationArchive";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import {
@@ -369,7 +370,9 @@ export async function getOrganizationBySlugOrId(
  * Get all organizations for current user
  * @returns Array of organizations with user's role
  */
-export async function getUserOrganizations(): Promise<OrganizationWithRole[]> {
+export async function getUserOrganizations(
+  archived: OrganizationArchiveFilter = "active",
+): Promise<OrganizationWithRole[]> {
   requireUserId();
 
   // Canonical membership read — the current user's org memberships from
@@ -394,11 +397,16 @@ export async function getUserOrganizations(): Promise<OrganizationWithRole[]> {
   const orgIds = [...roleByOrgId.keys()];
 
   // Resolve the org rows (public table — direct read, RLS-scoped).
-  const { data: orgRows, error: orgsError } = await supabase
+  // THE ARCHIVED-ITEMS LAW: the default HIDES archived organizations, and the
+  // reveal is this one parameter — never a literal predicate nothing can flip.
+  let orgQuery = supabase
     .schema("iam")
     .from("organizations")
     .select("*")
     .in("id", orgIds);
+  if (archived === "active") orgQuery = orgQuery.is("archived_at", null);
+  else if (archived === "archived") orgQuery = orgQuery.not("archived_at", "is", null);
+  const { data: orgRows, error: orgsError } = await orgQuery;
   if (orgsError) throw pgErrorToError(orgsError);
 
   // Batch member counts — one round-trip instead of N.
@@ -419,8 +427,11 @@ export async function getUserOrganizations(): Promise<OrganizationWithRole[]> {
     };
   });
 
-  // Sort: personal first, then by name
+  // Sort: live before archived, then personal first, then by name.
   return orgs.sort((a, b) => {
+    const aArchived = Boolean(a.archivedAt);
+    const bArchived = Boolean(b.archivedAt);
+    if (aArchived !== bArchived) return aArchived ? 1 : -1;
     if (a.isPersonal && !b.isPersonal) return -1;
     if (!a.isPersonal && b.isPersonal) return 1;
     return a.name.localeCompare(b.name);
@@ -1011,6 +1022,9 @@ function transformOrganizationFromDb(dbRecord: OrganizationRow): Organization {
     createdBy: dbRecord.created_by,
     isPersonal: dbRecord.is_personal ?? false,
     settings: isJsonObject(dbRecord.settings) ? dbRecord.settings : {},
+    archivedAt: dbRecord.archived_at,
+    archivedBy: dbRecord.archived_by,
+    archiveReason: dbRecord.archive_reason,
   };
 }
 

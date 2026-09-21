@@ -54090,6 +54090,9 @@ export type Database = {
       organizations: {
         Row: {
           abbreviation: string
+          archive_reason: string | null
+          archived_at: string | null
+          archived_by: string | null
           created_at: string | null
           created_by: string | null
           description: string | null
@@ -54108,6 +54111,9 @@ export type Database = {
         }
         Insert: {
           abbreviation: string
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
@@ -54126,6 +54132,9 @@ export type Database = {
         }
         Update: {
           abbreviation?: string
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
@@ -55396,6 +55405,7 @@ export type Database = {
         Returns: Json
       }
       my_orgs: { Args: never; Returns: string[] }
+      my_orgs_all: { Args: never; Returns: string[] }
       org_access_log: {
         Args: { p_limit?: number; p_organization_id: string }
         Returns: Json
@@ -55403,6 +55413,15 @@ export type Database = {
       org_readable: {
         Args: { p_org: string; p_token: string }
         Returns: boolean
+      }
+      organization_archive: {
+        Args: { p_confirm_name: string; p_org: string; p_reason?: string }
+        Returns: Json
+      }
+      organization_archive_state: { Args: { p_org: string }; Returns: Json }
+      organization_restore: {
+        Args: { p_confirm_name: string; p_org: string }
+        Returns: Json
       }
       organization_roles: {
         Args: never
@@ -61384,6 +61403,155 @@ export type Database = {
           },
           {
             foreignKeyName: "acquisition_block_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      action_request: {
+        Row: {
+          agent_id: string | null
+          call_resolved_at: string | null
+          claim_id: string | null
+          claimed_at: string | null
+          close_reason: string | null
+          completed_at: string | null
+          completed_via: string | null
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          kind: string
+          link_expires_at: string
+          metadata: Json
+          organization_id: string
+          payload: Json
+          remint_count: number
+          render: Json
+          result: Json | null
+          session_ttl_minutes: number
+          status: string
+          subject_user_id: string
+          supersedes_id: string | null
+          token_hash: string
+          tool_call_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          agent_id?: string | null
+          call_resolved_at?: string | null
+          claim_id?: string | null
+          claimed_at?: string | null
+          close_reason?: string | null
+          completed_at?: string | null
+          completed_via?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          kind: string
+          link_expires_at: string
+          metadata?: Json
+          organization_id: string
+          payload?: Json
+          remint_count?: number
+          render?: Json
+          result?: Json | null
+          session_ttl_minutes?: number
+          status?: string
+          subject_user_id: string
+          supersedes_id?: string | null
+          token_hash: string
+          tool_call_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          agent_id?: string | null
+          call_resolved_at?: string | null
+          claim_id?: string | null
+          claimed_at?: string | null
+          close_reason?: string | null
+          completed_at?: string | null
+          completed_via?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          kind?: string
+          link_expires_at?: string
+          metadata?: Json
+          organization_id?: string
+          payload?: Json
+          remint_count?: number
+          render?: Json
+          result?: Json | null
+          session_ttl_minutes?: number
+          status?: string
+          subject_user_id?: string
+          supersedes_id?: string | null
+          token_hash?: string
+          tool_call_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_request_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_request_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_request_subject_user_id_fkey"
+            columns: ["subject_user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_request_subject_user_id_fkey"
+            columns: ["subject_user_id"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_request_supersedes_fk"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "action_request"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_request_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_request_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "visible_user_identity"
@@ -69022,6 +69190,7 @@ export type Database = {
       }
     }
     Functions: {
+      _action_request_gone: { Args: never; Returns: string }
       _cf_as_double: { Args: { p_value: Json }; Returns: number }
       _cf_int_opt: { Args: { p_name: string; p_rules: Json }; Returns: number }
       _cf_num_opt: { Args: { p_name: string; p_rules: Json }; Returns: number }
@@ -69095,6 +69264,55 @@ export type Database = {
           rows_with_recipients: number
           token: string
         }[]
+      }
+      action_request_call_resolved: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
+      action_request_claim: {
+        Args: { p_completed_via: string; p_token_hash: string }
+        Returns: Json
+      }
+      action_request_close: {
+        Args: { p_id: string; p_reason: string; p_status: string }
+        Returns: Json
+      }
+      action_request_due: {
+        Args: { p_limit: number }
+        Returns: {
+          conversation_id: string
+          id: string
+          kind: string
+          link_expires_at: string
+          organization_id: string
+          subject_user_id: string
+          tool_call_id: string
+        }[]
+      }
+      action_request_finish: {
+        Args: {
+          p_claim_id: string
+          p_completed_via: string
+          p_id: string
+          p_result: Json
+        }
+        Returns: Json
+      }
+      action_request_open: {
+        Args: { p_token_hash: string; p_viewer_user_id: string }
+        Returns: Json
+      }
+      action_request_release: {
+        Args: { p_claim_id: string; p_id: string }
+        Returns: Json
+      }
+      action_request_remint: {
+        Args: {
+          p_link_expires_at: string
+          p_new_token_hash: string
+          p_token_hash: string
+        }
+        Returns: Json
       }
       actor_declaration_report: {
         Args: never
@@ -72178,6 +72396,9 @@ export type Database = {
       }
       sandbox_instances: {
         Row: {
+          boot_kind: string | null
+          boot_phase_seconds: Json | null
+          boot_seconds: number | null
           cold_path: string | null
           config: Json | null
           container_id: string | null
@@ -72195,6 +72416,7 @@ export type Database = {
           organization_id: string
           persistence_volume: string | null
           project_id: string | null
+          ready_at: string | null
           sandbox_id: string
           status: string
           stop_reason: string | null
@@ -72210,6 +72432,9 @@ export type Database = {
           version: number
         }
         Insert: {
+          boot_kind?: string | null
+          boot_phase_seconds?: Json | null
+          boot_seconds?: number | null
           cold_path?: string | null
           config?: Json | null
           container_id?: string | null
@@ -72227,6 +72452,7 @@ export type Database = {
           organization_id: string
           persistence_volume?: string | null
           project_id?: string | null
+          ready_at?: string | null
           sandbox_id: string
           status?: string
           stop_reason?: string | null
@@ -72242,6 +72468,9 @@ export type Database = {
           version?: number
         }
         Update: {
+          boot_kind?: string | null
+          boot_phase_seconds?: Json | null
+          boot_seconds?: number | null
           cold_path?: string | null
           config?: Json | null
           container_id?: string | null
@@ -72259,6 +72488,7 @@ export type Database = {
           organization_id?: string
           persistence_volume?: string | null
           project_id?: string | null
+          ready_at?: string | null
           sandbox_id?: string
           status?: string
           stop_reason?: string | null
@@ -79319,6 +79549,18 @@ export type Database = {
         Returns: Json
       }
       list_udt_dataset_templates: { Args: { p_org_id: string }; Returns: Json }
+      list_user_organizations: {
+        Args: { p_archived?: string; p_user_id: string }
+        Returns: {
+          archive_reason: string
+          archived_at: string
+          id: string
+          is_personal: boolean
+          name: string
+          role: Database["public"]["Enums"]["org_role"]
+          slug: string
+        }[]
+      }
       list_wizard_archetypes: { Args: never; Returns: Json }
       log_client_error:
         | {

@@ -38,7 +38,6 @@ import {
   canManageSettings,
   type OrgRole,
 } from "@/features/organizations/types";
-import { deleteOrganization } from "@/features/organizations/service";
 import {
   orgHref,
   orgScopesHref,
@@ -187,32 +186,6 @@ export function ScopesRouteHeader() {
       }
     : null;
 
-  async function handleDeleteOrg() {
-    // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-    if (!org || org.is_personal) return;
-    const ok = await confirm({
-      title: `Delete ${org.name}?`,
-      description: `This permanently deletes “${org.name}” and all of its data — members lose access, shared resources become private, and pending invitations are cancelled. This cannot be undone.`,
-      confirmLabel: "Delete organization",
-      variant: "destructive",
-    });
-    if (!ok) return;
-    setDeleting(true);
-    try {
-      const result = await deleteOrganization(org.id);
-      if (result.success) {
-        toast.success(`Deleted “${org.name}”`);
-        router.push("/organizations");
-      } else {
-        toast.error(result.error || "Failed to delete organization");
-        setDeleting(false);
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete");
-      setDeleting(false);
-    }
-  }
-
   async function handleDeleteScope() {
     if (!scope || !scopeType) return;
     const ok = await confirm({
@@ -249,16 +222,13 @@ export function ScopesRouteHeader() {
         href: `/organizations/${orgSlugOrId}/settings`,
       });
     }
-    if (org.role === "owner" && !org.is_personal) {
-      actions.push({
-        key: "delete",
-        icon: "delete",
-        label: "Delete organization",
-        danger: true,
-        busy: deleting,
-        onClick: handleDeleteOrg,
-      });
-    }
+    // NO ORGANISATION DELETE HERE. The owner ruled on 2026-09-20 that an
+    // organization is archived and never deleted, and archiving has ONE
+    // confirmation surface: the Danger Zone on the organization's own settings
+    // page, which says what archiving does and does not do, reads what the
+    // organization holds, takes a reason and wants the name typed back. The
+    // "Manage settings" action directly above reaches it, so this header grows
+    // no second, weaker confirmation beside it.
   } else if (isOrgContextItems) {
     // /organizations/[orgId]/context-items — every type's items, grouped.
     trail.push({ label: "Context items" });

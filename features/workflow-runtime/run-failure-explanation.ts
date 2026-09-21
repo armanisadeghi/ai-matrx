@@ -44,6 +44,7 @@
 // per-step readout body). A failure explained once is explained everywhere.
 
 import { describeBackendFailure } from "@/lib/api/errors";
+import { retryIsPointless, serverRefusal } from "@/lib/progress/failureSentence";
 
 export interface RunFailureExplanation {
   /** One plain sentence naming what was being run and what went wrong. */
@@ -393,6 +394,35 @@ function technicalLine(structured: StructuredRunFailure | null, raw: string): st
  *                  "Your Masterwork". Capitalised by the caller.
  */
 export function explainRunFailure(
+  input: RunFailureInput,
+  whatItRan: string,
+): RunFailureExplanation {
+  const explanation = resolveRunFailure(input, whatItRan);
+
+  // 🚨 A RETRY THE SERVER ALREADY REFUSED IS NEVER OFFERED (fifteenth cold
+  // walk, blocking C). `engine_error` says the right thing by hand — "running
+  // it again will most likely stop at the same place" — but every OTHER path
+  // through this resolver can end on "Press Run it again", including the two
+  // that fire when the client does not recognise the cause. When the server's
+  // own message says retrying is futile (aidream's `build_defect`: "this part
+  // of the server was built wrong and cannot run… trying again will fail the
+  // same way until it is fixed"), that sentence is the next step, and the
+  // module path and trace id in it are dropped exactly as they are on every
+  // other Masterwork surface — one reading, in
+  // `lib/progress/failureSentence.ts`.
+  const structured = readStructured(input);
+  const serverText =
+    typeof input === "string" ? input : (structured?.message ?? "");
+  if (serverText && retryIsPointless(serverText)) {
+    const refusal = serverRefusal(serverText, { remedy: "" });
+    // `unrecognized` is untouched on purpose: it is the metric for "we had no
+    // specific cause for this", and a build defect is still exactly that.
+    return { ...explanation, nextStep: refusal.text };
+  }
+  return explanation;
+}
+
+function resolveRunFailure(
   input: RunFailureInput,
   whatItRan: string,
 ): RunFailureExplanation {

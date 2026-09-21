@@ -44,6 +44,10 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
+import {
+  serverRefusal,
+  type ServerRefusal,
+} from "@/lib/progress/failureSentence";
 import { getRulebook } from "../service";
 import type { Rulebook } from "../types";
 import { getExpertCorpus, type ExpertContribution, type ExpertCorpus } from "./service";
@@ -243,7 +247,16 @@ export function ExpertRecordPage({
 }: ExpertRecordPageProps) {
   const [rulebook, setRulebook] = useState<Rulebook | null>(null);
   const [corpus, setCorpus] = useState<ExpertCorpus | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // 🚨 THE REFUSAL, NOT A REMEMBERED SENTENCE (fifteenth cold walk, blocking
+  // C). This was a hardcoded string — "We couldn't load your words right now.
+  // Nothing is lost — try again." — printed over the top of a server that had
+  // just answered `build_defect`: "this part of the server was built wrong and
+  // cannot run… trying again will fail the same way until it is fixed." The
+  // screen told the Expert to retry what the server had already refused, and
+  // put a Try again button under it. Every server refusal on every Masterwork
+  // surface now goes through the one reading in
+  // `lib/progress/failureSentence.ts`.
+  const [refusal, setRefusal] = useState<ServerRefusal | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -255,8 +268,11 @@ export function ExpertRecordPage({
       setCorpus(await getExpertCorpus(rulebookId));
     } catch (err) {
       console.error("[masterwork/record] failed to load the Record", err);
-      setError(
-        "We couldn't load your words right now. Nothing is lost — try again.",
+      setRefusal(
+        serverRefusal(err, {
+          remedy:
+            "We couldn't load your words right now. Nothing is lost — try again.",
+        }),
       );
     }
   }, [rulebookId]);
@@ -272,13 +288,25 @@ export function ExpertRecordPage({
     [corpus],
   );
 
-  if (error) {
+  if (refusal) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="text-sm text-muted-foreground">{error}</p>
-        <Button size="sm" variant="outline" onClick={() => void load()}>
-          Try again
-        </Button>
+        <p className="text-sm text-muted-foreground">
+          {refusal.retryIsPointless
+            ? refusal.text
+            : `We couldn't load your words right now. Nothing is lost. ${refusal.text}`}
+        </p>
+        {/* A retry the server has already refused is not offered. */}
+        {refusal.retryIsPointless ? null : (
+          <Button size="sm" variant="outline" onClick={() => void load()}>
+            Try again
+          </Button>
+        )}
+        {refusal.traceId ? (
+          <p className="text-[11px] text-muted-foreground/70">
+            Recorded as {refusal.traceId}
+          </p>
+        ) : null}
       </div>
     );
   }

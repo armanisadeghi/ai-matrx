@@ -39,7 +39,7 @@ async function main() {
     p_abbreviation: "FRC",
     p_slug: slugBase,
     p_description:
-      "Electronics recycling operator: schedules pickups, tracks material weights, issues certificates of destruction to client sites. Synthesized test fixture, no production data.",
+      "Electronics recycling operator: schedules pickups, tracks material weights, issues certificates of destruction to client sites. Every client, site and person here is synthesized and belongs to nobody.",
     p_logo_url: null,
     p_logo_file_id: null,
     p_website: null,

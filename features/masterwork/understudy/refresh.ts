@@ -10,6 +10,7 @@
 // funnel (the Scout's rulebook tool) pokes it on its own for interview writes.
 
 import { callApi } from "@/lib/api/call-api";
+import { serverRefusal } from "@/lib/progress/failureSentence";
 import { operationFailed } from "@/utils/errors";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import type { paths } from "@/types/python-generated/api-types";
@@ -87,8 +88,26 @@ export interface UnderstudyRefreshState {
   pending: boolean;
   /** The last failure, still unrepaired by a later success. */
   failed: boolean;
-  /** What went wrong, for the card's detail line. */
+  /**
+   * What went wrong, for the card's detail line — ALWAYS read through
+   * `serverRefusal`, never `err.message`.
+   *
+   * 🚨 (fifteenth cold walk, blocking C). This used to be
+   * `err.message`, which `operationFailed` had already overwritten with
+   * "We couldn't refresh the Understudy." — so the server's own account of
+   * WHY ("this part of the server was built wrong and cannot run… trying
+   * again will fail the same way until it is fixed") never reached the card,
+   * and the card offered a retry over the top of it.
+   */
   message: string | null;
+  /**
+   * The server said retrying cannot work. The card MUST hide its retry
+   * control when this is true — a button that cannot work is a dead end
+   * wearing a label (law #4).
+   */
+  retryIsPointless: boolean;
+  /** The trace id the server recorded this under, for a muted detail line. */
+  traceId: string | null;
   /** When the last attempt finished (epoch ms). */
   at: number | null;
   /**
@@ -112,6 +131,8 @@ const IDLE: UnderstudyRefreshState = {
   pending: false,
   failed: false,
   message: null,
+  retryIsPointless: false,
+  traceId: null,
   at: null,
   result: null,
   resultAt: null,
@@ -173,6 +194,8 @@ export async function refreshUnderstudyTracked(
     pending: true,
     failed: false,
     message: null,
+    retryIsPointless: false,
+    traceId: null,
     at: null,
     result: previous.result,
     resultAt: previous.resultAt,
@@ -187,6 +210,8 @@ export async function refreshUnderstudyTracked(
         pending: false,
         failed: false,
         message: null,
+        retryIsPointless: false,
+        traceId: null,
         at: landedAt,
         result,
         resultAt: landedAt,
@@ -194,12 +219,18 @@ export async function refreshUnderstudyTracked(
     }
     return result;
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    // THE ONE READING of a server refusal (lib/progress/failureSentence.ts):
+    // it digs the aidream envelope back out from under `operationFailed`,
+    // drops the module path and the trace id, and says whether retrying can
+    // possibly help.
+    const refusal = serverRefusal(err, { remedy: "" });
     if (isCurrent(rulebookId, generation)) {
       setState(rulebookId, {
         pending: false,
         failed: true,
-        message,
+        message: refusal.text,
+        retryIsPointless: refusal.retryIsPointless,
+        traceId: refusal.traceId ?? null,
         at: Date.now(),
         // The stand-in is still performing from the last build that landed —
         // keep it, AND keep the time it landed, so the banner can name the

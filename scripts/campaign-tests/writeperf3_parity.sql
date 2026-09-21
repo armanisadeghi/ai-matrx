@@ -95,8 +95,8 @@ declare
   v_boss text := current_user;
 begin
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ Cascade Cold Chain — WRITE-PERF-3 parity ' || p_half,
-          'zzz-wp3-par-' || lower(p_half) || '-' || substr(md5(random()::text),1,8), 'ZWC', c_admin)
+  values ('Cascade Cold Chain — WRITE-PERF-3 parity ' || p_half,
+          'ccc-wp3-par-' || lower(p_half) || '-' || substr(md5(random()::text),1,8), 'CCC', c_admin)
   returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
   values (v_org, c_admin, 'owner', 'active', 'organization', v_org),

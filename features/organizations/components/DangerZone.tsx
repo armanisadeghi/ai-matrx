@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { AlertTriangle, Trash2, Loader2 } from "lucide-react";
+import { Archive, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Textarea } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
@@ -17,9 +17,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/lib/toast";
 import { useRouter } from "next/navigation";
-import { deleteOrganization } from "../service";
+import { archiveOrganization } from "../service/organizationArchive";
 import {
-  clearOrganizationStore,
   organizationStoreContents,
   type OrganizationStoreContents,
 } from "../service/organizationStoreContents";
@@ -30,41 +29,49 @@ interface DangerZoneProps {
 }
 
 /**
- * DangerZone - Tab for destructive organization actions
+ * DangerZone — ARCHIVE ORGANIZATION.
  *
- * Features:
- * - Delete organization (owner only)
- * - Requires typing org name to confirm
- * - Shows warning about consequences
- * - Redirects to org list after deletion
- * - Cannot delete personal organizations
+ * THE OWNER'S RULING, 2026-09-20: "We certainly would not delete organizations
+ * directly. It's absolutely an archive and we would store it for much more than
+ * 30 days just in case."
+ *
+ * So this screen no longer offers a delete. It offers the one supported act and
+ * says, in plain words, exactly what that act does and does not do — nothing is
+ * deleted, members lose access, an owner can restore it at any time — before
+ * anybody types anything. The name is still typed back, because closing a
+ * workspace for every one of its members is not a click you make by accident.
+ *
+ * The refusals and the confirmations are the DOOR'S OWN SENTENCES
+ * (`iam.organization_archive`), never rewritten here and never a constraint
+ * name.
  */
 export function DangerZone({ organization }: DangerZoneProps) {
   const router = useRouter();
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [confirmName, setConfirmName] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [reason, setReason] = useState("");
+  const [isArchiving, setIsArchiving] = useState(false);
   // WHAT THIS ORGANIZATION HOLDS, read from the store's own door the moment the
   // dialog opens. `null` while we are still asking, and when the store is
   // switched off for this organization — there is then nothing of this kind to
   // say, and a screen never invents a sentence it cannot stand behind.
   const [held, setHeld] = useState<OrganizationStoreContents | null>(null);
   const [isCounting, setIsCounting] = useState(false);
-  // The store's own answer when it could not let everything go: what is
-  // waiting, and the date it can. Never a foreign key.
-  const [storeRefusal, setStoreRefusal] = useState<string | null>(null);
+  // What the door said when it refused. Never a foreign key, never a code.
+  const [refusal, setRefusal] = useState<string | null>(null);
   const confirmInputRef = useRef<HTMLInputElement>(null);
   const confirmationId = React.useId();
 
   const isConfirmationValid = confirmName === organization.name;
 
   const handleDialogOpenChange = (open: boolean) => {
-    if (isDeleting) return;
-    setIsDeleteDialogOpen(open);
+    if (isArchiving) return;
+    setIsDialogOpen(open);
     if (!open) {
       setConfirmName("");
+      setReason("");
       setHeld(null);
-      setStoreRefusal(null);
+      setRefusal(null);
       return;
     }
     // SAY WHAT IS IN HERE BEFORE ANYBODY DECIDES ANYTHING.
@@ -74,89 +81,79 @@ export function DangerZone({ organization }: DangerZoneProps) {
       .finally(() => setIsCounting(false));
   };
 
-  // Handle organization deletion
-  const handleDeleteOrganization = async () => {
+  const handleArchive = async () => {
     if (!isConfirmationValid) {
       toast.error("Please type the organization name correctly");
       return;
     }
-
-    setIsDeleting(true);
-    setStoreRefusal(null);
-
+    setIsArchiving(true);
+    setRefusal(null);
     try {
-      // FIRST, THE SUPPORTED PATH. The store's own door retires everything this
-      // organization holds — one undoable operation per table — and then lets go
-      // of whatever the retention rule no longer protects. When something is
-      // still inside its undo window the door says so, with the date, and we
-      // stop there: destroying it would throw away an undo somebody was
-      // promised, and nothing is lost by waiting.
-      const cleared = await clearOrganizationStore(organization.id, confirmName);
-      if (!cleared.isEmpty) {
-        setStoreRefusal(cleared.sentence);
-        toast.error(cleared.sentence);
-        return;
-      }
-
-      const result = await deleteOrganization(organization.id);
-
-      if (result.success) {
-        toast.success("Organization deleted successfully");
-        setIsDeleteDialogOpen(false);
-
-        // Redirect to organizations list
-        router.push("/organizations");
-      } else {
-        setStoreRefusal(result.error ?? null);
-        toast.error(result.error || "Failed to delete organization");
-      }
+      const outcome = await archiveOrganization(
+        organization.id,
+        confirmName,
+        reason,
+      );
+      toast.success(outcome.sentence || `${organization.name} is archived.`);
+      setIsDialogOpen(false);
+      router.push("/organizations");
+      router.refresh();
     } catch (error: unknown) {
-      console.error("Error deleting organization:", error);
       const message =
-        error instanceof Error ? error.message : "An unexpected error occurred";
-      setStoreRefusal(message);
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred";
+      setRefusal(message);
       toast.error(message);
     } finally {
-      setIsDeleting(false);
+      setIsArchiving(false);
     }
   };
 
+  if (organization.isPersonal) {
+    return (
+      <div className="border border-border rounded-lg p-4">
+        <h3 className="font-medium">Archive Organization</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          This is your personal workspace, so it cannot be archived — it is where
+          your own work lives.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {/* Delete Organization Section */}
-      <div className="border border-red-200 dark:border-red-800 rounded-lg p-4 space-y-4">
+      <div className="border border-amber-200 dark:border-amber-900 rounded-lg p-4 space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <h3 className="font-medium text-red-900 dark:text-red-100">
-              Delete Organization
+            <h3 className="font-medium text-amber-900 dark:text-amber-100">
+              Archive Organization
             </h3>
             <p className="text-sm text-muted-foreground">
-              Permanently remove this organization and all data. This cannot be
-              undone.
+              Close this organization. Nothing is deleted, and you can restore it
+              at any time.
             </p>
           </div>
           <Button
-            variant="destructive"
+            variant="outline"
             size="sm"
-            onClick={() => setIsDeleteDialogOpen(true)}
+            onClick={() => setIsDialogOpen(true)}
           >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Delete
+            <Archive className="h-4 w-4 mr-1" />
+            Archive
           </Button>
         </div>
 
         <ul className="text-xs text-muted-foreground space-y-0.5 border-t pt-3">
-          <li>• All members lose access immediately</li>
-          <li>• Shared resources become personal</li>
-          <li>• Pending invitations are cancelled</li>
+          <li>• Every member loses access immediately</li>
+          <li>• Agents, schedules and automations stop running</li>
+          <li>• Everything inside it is kept exactly as it is</li>
+          <li>• An owner can restore it later — there is no time limit</li>
         </ul>
       </div>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={handleDialogOpenChange}
-      >
+      <AlertDialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
         <AlertDialogContent
           className="max-w-lg"
           onOpenAutoFocus={(event) => {
@@ -168,25 +165,23 @@ export function DangerZone({ organization }: DangerZoneProps) {
             className="space-y-4"
             onSubmit={(event) => {
               event.preventDefault();
-              void handleDeleteOrganization();
+              void handleArchive();
             }}
           >
             <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                <AlertTriangle className="h-5 w-5" />
-                Delete Organization?
+              <AlertDialogTitle className="flex items-center gap-2">
+                <Archive className="h-5 w-5" />
+                Archive {organization.name}?
               </AlertDialogTitle>
               <AlertDialogDescription asChild>
                 <div className="space-y-4">
                   <p>
-                    This action will permanently delete{" "}
-                    <strong>{organization.name}</strong> and all of its data.
-                    This cannot be undone.
+                    Archiving closes <strong>{organization.name}</strong> for
+                    everyone. Nothing is deleted.
                   </p>
 
                   {/* WHAT IT HOLDS, IN ITS OWN WORDS — read from the store
-                      before anybody decides anything, so a person is never
-                      shown a foreign key after the fact. */}
+                      before anybody decides anything. */}
                   {isCounting && (
                     <p className="text-sm text-muted-foreground">
                       Checking what this organization holds…
@@ -201,15 +196,52 @@ export function DangerZone({ organization }: DangerZoneProps) {
                     </p>
                   )}
 
-                  {/* AND WHAT THE STORE SAID WHEN IT COULD NOT LET GO. */}
-                  {storeRefusal && (
+                  {refusal && (
                     <p
-                      data-testid="organization-delete-refusal"
+                      data-testid="organization-archive-refusal"
                       className="text-sm text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-800 rounded p-3"
                     >
-                      {storeRefusal}
+                      {refusal}
                     </p>
                   )}
+
+                  <div className="p-3 bg-muted/50 border border-border rounded space-y-2">
+                    <p className="text-sm font-medium text-foreground">
+                      What happens
+                    </p>
+                    <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                      <li>Members cannot open it or see anything inside it</li>
+                      <li>
+                        Agents, schedules, pipelines and digests bound to it stop
+                        running
+                      </li>
+                      <li>
+                        Every record, file and conversation stays exactly where
+                        it is
+                      </li>
+                      <li>
+                        An owner can restore it at any time and everyone gets
+                        their access back
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor={`${confirmationId}-reason`}
+                      className="text-foreground"
+                    >
+                      Why are you archiving it? (optional)
+                    </Label>
+                    <Textarea
+                      id={`${confirmationId}-reason`}
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      placeholder="Shown on the archived organization's page"
+                      rows={2}
+                      disabled={isArchiving}
+                    />
+                  </div>
 
                   <div className="space-y-2">
                     <Label
@@ -221,9 +253,7 @@ export function DangerZone({ organization }: DangerZoneProps) {
                     <Input
                       ref={confirmInputRef}
                       id={`${confirmationId}-name`}
-                      aria-invalid={
-                        Boolean(confirmName) && !isConfirmationValid
-                      }
+                      aria-invalid={Boolean(confirmName) && !isConfirmationValid}
                       aria-describedby={
                         confirmName && !isConfirmationValid
                           ? `${confirmationId}-error`
@@ -237,7 +267,7 @@ export function DangerZone({ organization }: DangerZoneProps) {
                           ? "border-red-500"
                           : ""
                       }
-                      disabled={isDeleting}
+                      disabled={isArchiving}
                       autoComplete="off"
                     />
                     {confirmName && !isConfirmationValid && (
@@ -245,44 +275,30 @@ export function DangerZone({ organization }: DangerZoneProps) {
                         id={`${confirmationId}-error`}
                         className="text-xs text-red-600 dark:text-red-400"
                       >
-                        The name doesn't match. Please type it exactly.
+                        The name doesn&apos;t match. Please type it exactly.
                       </p>
                     )}
-                  </div>
-
-                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
-                    <p className="flex items-center gap-1.5 text-sm text-red-800 dark:text-red-200 font-medium">
-                      <AlertTriangle className="h-4 w-4 shrink-0" />
-                      This will permanently delete:
-                    </p>
-                    <ul className="text-sm text-red-700 dark:text-red-300 mt-2 space-y-1 list-disc list-inside">
-                      <li>Organization settings and data</li>
-                      <li>All member associations</li>
-                      <li>All pending invitations</li>
-                      <li>Shared resource permissions</li>
-                    </ul>
                   </div>
                 </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel type="button" disabled={isDeleting}>
+              <AlertDialogCancel type="button" disabled={isArchiving}>
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
                 type="submit"
-                disabled={!isConfirmationValid || isDeleting}
-                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                disabled={!isConfirmationValid || isArchiving}
               >
-                {isDeleting ? (
+                {isArchiving ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Deleting...
+                    Archiving…
                   </>
                 ) : (
                   <>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Permanently
+                    <Archive className="h-4 w-4 mr-2" />
+                    Archive organization
                   </>
                 )}
               </AlertDialogAction>

@@ -52,8 +52,8 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'Birchwood Ave Renovation ' || substr(v_org::text, 1, 8),
-          'birchwood-red-' || substr(v_org::text, 1, 8), 'BAR', c_admin);
+  values (v_org, 'Birchwood Avenue Renovation ' || substr(v_org::text, 1, 8),
+          'birchwood-red-' || substr(v_org::text, 1, 8), 'BAR', c_admin);  -- matrx-real-data:allow BAR is Birchwood Avenue Renovation's own initials, the abbreviation the organization really carries, not a metasyntactic variable
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)

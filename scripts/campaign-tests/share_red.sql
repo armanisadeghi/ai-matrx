@@ -29,7 +29,7 @@ select set_config('app.actor_system', 'share_red_suite', true);
 
 -- ─────────────────────────────────────────────────────────── the fixture, inside the rollback
 insert into iam.organizations (id, name, slug, abbreviation, created_by)
-values (:ORG, 'Ironclad Mobile Mechanic', 'ironclad-mobile-mechanic', 'IMM', :ADMIN);
+values (:ORG, 'Ironclad Mobile Mechanic', 'ironclad-mobile-mechanic-share-red', 'IMM', :ADMIN);
 insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
 values (:ORG, 'organization', :ORG, :ADMIN, 'owner',  'active'),
        (:ORG, 'organization', :ORG, :DANA,  'member', 'active');

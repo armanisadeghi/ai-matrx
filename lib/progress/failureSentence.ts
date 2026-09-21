@@ -335,3 +335,296 @@ export function personFacingSentence(
     detail: value,
   };
 }
+
+// =============================================================================
+// 🚨 A RETRY THE SERVER ALREADY REFUSED IS NEVER OFFERED
+// =============================================================================
+//
+// ## The defect this closes (fifteenth cold walk, 2026-09-20, blocking C)
+//
+// One missing import took down five surfaces at once, and the SERVER wrote the
+// best sentence in the product about it:
+//
+//   This part of the server was built wrong and cannot run: it is missing
+//   'origin_override_for' from aidream.services.conversation_context.scope.
+//   That is our defect, not anything you did, and trying again will fail the
+//   same way until it is fixed. It was recorded as 4f3c…<32 hex> so it can be
+//   traced. Nothing you sent was changed or lost.
+//
+// Then the screens threw that honesty away. The Understudy box said *"Try
+// again, or reload the page; it costs nothing and takes a second."* and the
+// Your-words panel said *"try again"* — two screens telling the Expert to do
+// the one thing the server had just finished saying cannot work, each with a
+// live **Try again** button under it. The run box was the single surface that
+// repeated the server's warning, and it only got there because someone wrote
+// that sentence by hand in `run-failure-explanation.ts`.
+//
+// A per-surface habit is not a rule. So the rule lives once, here, beside the
+// other two halves of "how a failing run talks":
+//
+//   * `serverRefusal` reads the ENVELOPE, not just its prose. `error:
+//     "build_defect"` — the aidream code for "the code that shipped does not
+//     fit the packages that shipped with it" (`aidream/api/errors.py`
+//     `_build_defect_user_message`) — means retrying is futile as a matter of
+//     fact, not of phrasing. The prose test is a second net for envelopes that
+//     never reach the client intact.
+//   * when retrying is pointless the surface renders THE SERVER'S OWN REMEDY
+//     and must not offer a retry control (`retryIsPointless` is what a caller
+//     branches on). A control that cannot work is the fourth law's dead end
+//     wearing a button.
+//   * the sentence carries NO module path and NO trace id. The bench printed
+//     `aidream.services.conversation_context.scope` and a 32-hex id straight
+//     at the Expert. A dotted server path is the same class as the exception
+//     class name the top of this file kills; the trace id is real and useful,
+//     so it comes back separately as `traceId` for a MUTED detail line, never
+//     inside the sentence.
+
+/** `X.y.z` — a server module path, as a Python import error renders one. */
+const DOTTED_MODULE_PATH =
+  /(?<![/\w.])[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*){2,}(?![\w.])/g;
+
+/** The whole "it is missing 'sym' from a.b.c" clause a build defect writes. */
+const MISSING_SYMBOL_CLAUSE =
+  /it is missing\s+['"«][^'"»]+['"»]\s+from\s+[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+/gi;
+
+/** A 32-hex request/trace id, alone or inside the clause that introduces it. */
+const TRACE_ID = /\b[0-9a-f]{32}\b/gi;
+const RECORDED_CLAUSE =
+  /\s*It (?:was recorded as\s+[0-9a-f-]{8,}|has been recorded)[^.]*\.\s*/gi;
+
+/**
+ * Envelope codes aidream uses for "this cannot work until we fix it".
+ * `build_defect` is written by `aidream/api/errors.py`; the others are the
+ * refusal codes that are equally deterministic.
+ */
+const RETRY_IS_POINTLESS_CODES: ReadonlySet<string> = new Set([
+  "build_defect",
+  "definition_invalid",
+]);
+
+/**
+ * What a server sentence says when retrying it cannot possibly help. Kept
+ * narrow and quoted from the sentences aidream actually writes — a vague
+ * "something went wrong" is NOT in here, because claiming a retry is futile
+ * when it might work is the same lie in the other direction.
+ */
+const RETRY_IS_POINTLESS_PROSE: readonly RegExp[] = [
+  /\bfail the same way\b/i,
+  /\bwill fail again\b/i,
+  /\bstop at the same place\b/i,
+  /\bwas built wrong and cannot run\b/i,
+  /\buntil it is fixed\b/i,
+];
+
+/** What a surface renders for one server refusal. */
+export interface ServerRefusal {
+  /**
+   * The sentence to show. Never a module path, never a trace id, never an
+   * exception class name, never SQL.
+   */
+  text: string;
+  /**
+   * The server said retrying cannot work. A surface that reads `true` shows
+   * {@link ServerRefusal.text} as-is and REMOVES its retry control — it never
+   * appends a remedy of its own on top of the server's.
+   */
+  retryIsPointless: boolean;
+  /**
+   * The trace id the server recorded this under, when it gave one. For a
+   * muted secondary line ("Recorded as …"), never inside the sentence.
+   */
+  traceId?: string;
+  /**
+   * The raw server text, when it was not fit to show. Admin-only detail.
+   */
+  detail?: string;
+}
+
+/** The envelope shape aidream returns and `callApi` preserves as `serverDetail`. */
+interface ServerErrorEnvelope {
+  error?: unknown;
+  message?: unknown;
+  user_message?: unknown;
+  request_id?: unknown;
+}
+
+/**
+ * Pull the envelope out of whatever a caller is holding: the envelope itself,
+ * a `callApi` `ApiCallError` (whose `serverDetail` is the envelope), or an
+ * `Error` thrown by `operationFailed` (whose `cause` is one of those).
+ */
+function readEnvelope(raw: unknown, depth = 0): {
+  code: string | null;
+  sentence: string;
+  requestId: string | null;
+} {
+  if (depth > 4 || raw === null || raw === undefined) {
+    return { code: null, sentence: "", requestId: null };
+  }
+  if (typeof raw === "string") {
+    return { code: null, sentence: raw.trim(), requestId: null };
+  }
+  if (typeof raw !== "object") {
+    return { code: null, sentence: "", requestId: null };
+  }
+
+  const holder = raw as Record<string, unknown> & ServerErrorEnvelope;
+  const nested =
+    holder.serverDetail !== undefined
+      ? readEnvelope(holder.serverDetail, depth + 1)
+      : holder.cause !== undefined
+        ? readEnvelope(holder.cause, depth + 1)
+        : null;
+
+  const code =
+    typeof holder.error === "string" && holder.error.trim()
+      ? holder.error.trim()
+      : (nested?.code ?? null);
+  const requestId =
+    typeof holder.request_id === "string" && holder.request_id.trim()
+      ? holder.request_id.trim()
+      : (nested?.requestId ?? null);
+
+  // A nested envelope's own `user_message` beats the wrapper's generic
+  // sentence: `operationFailed` writes "We couldn't refresh the Understudy."
+  // over the top of the server's account of WHY.
+  const own =
+    typeof holder.user_message === "string" && holder.user_message.trim()
+      ? holder.user_message.trim()
+      : "";
+  const wrapper =
+    typeof holder.message === "string" && holder.message.trim()
+      ? holder.message.trim()
+      : "";
+  const sentence = own || nested?.sentence || wrapper;
+
+  return { code, sentence, requestId };
+}
+
+/**
+ * Does this server envelope or sentence say that retrying cannot work?
+ * Exported so a guard can assert it over the real aidream envelope.
+ */
+export function retryIsPointless(raw: unknown): boolean {
+  const { code, sentence } = readEnvelope(raw);
+  if (code && RETRY_IS_POINTLESS_CODES.has(code)) return true;
+  return RETRY_IS_POINTLESS_PROSE.some((shape) => shape.test(sentence));
+}
+
+/**
+ * The census predicate for the bench's defect: a dotted server module path in
+ * a sentence a person reads. Exported so a guard can assert it over the copy
+ * every Masterwork surface renders.
+ */
+export function namesAModulePath(text: string | null | undefined): boolean {
+  const value = (text ?? "").trim();
+  if (!value) return false;
+  DOTTED_MODULE_PATH.lastIndex = 0;
+  const found = DOTTED_MODULE_PATH.test(value);
+  DOTTED_MODULE_PATH.lastIndex = 0;
+  return found;
+}
+
+/** The census predicate for a 32-hex trace id in prose. */
+export function namesATraceId(text: string | null | undefined): boolean {
+  const value = (text ?? "").trim();
+  if (!value) return false;
+  TRACE_ID.lastIndex = 0;
+  const found = TRACE_ID.test(value);
+  TRACE_ID.lastIndex = 0;
+  return found;
+}
+
+/** Lift the trace id out of a sentence, returning the sentence without it. */
+function liftTraceId(sentence: string): { text: string; traceId?: string } {
+  TRACE_ID.lastIndex = 0;
+  const match = TRACE_ID.exec(sentence);
+  TRACE_ID.lastIndex = 0;
+  const traceId = match?.[0];
+  const text = sentence
+    .replace(RECORDED_CLAUSE, " ")
+    .replace(TRACE_ID, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return traceId ? { text, traceId } : { text };
+}
+
+/**
+ * THE ONE READING of a server refusal, for every surface that shows one.
+ *
+ * `raw` is whatever the surface is holding — the aidream envelope, a
+ * `callApi` error, an `Error` from `operationFailed`, or a bare sentence.
+ *
+ * `remedy` is the surface's own way out, and — exactly as in
+ * `humanFailureSentence` — it is attached ONLY where there is nothing else: a
+ * server sentence that explained itself is never edited. When the server said
+ * retrying is futile, `retryIsPointless` comes back true and the SURFACE must
+ * take its retry control away; bolting "try again" onto the server's own
+ * refusal, in prose or as a button, is precisely the contradiction this closes.
+ */
+export function serverRefusal(
+  raw: unknown,
+  {
+    remedy = DEFAULT_FAILURE_REMEDY,
+    noReason = "The server did not say why.",
+  }: { remedy?: string; noReason?: string } = {},
+): ServerRefusal {
+  const { code, sentence, requestId } = readEnvelope(raw);
+  const pointless =
+    (code !== null && RETRY_IS_POINTLESS_CODES.has(code)) ||
+    RETRY_IS_POINTLESS_PROSE.some((shape) => shape.test(sentence));
+
+  if (!sentence) {
+    return {
+      text: pointless ? noReason : `${noReason} ${remedy}`.trim(),
+      retryIsPointless: pointless,
+      ...(requestId ? { traceId: requestId } : {}),
+    };
+  }
+
+  // MACHINE TEXT NEVER SURVIVES. SQL, a stack, an ORM banner — the sentence
+  // becomes our own and the raw value rides as admin-only detail.
+  if (namesMachineText(sentence)) {
+    const lifted = liftTraceId(sentence);
+    return {
+      text: pointless
+        ? SYSTEM_ERROR_SENTENCE
+        : `${SYSTEM_ERROR_SENTENCE} ${remedy}`.trim(),
+      retryIsPointless: pointless,
+      traceId: lifted.traceId ?? requestId ?? undefined,
+      detail: sentence,
+    };
+  }
+
+  // The server's own words, minus the two things that are ours and not the
+  // Expert's: the module path and the trace id.
+  const withoutSymbol = sentence.replace(
+    MISSING_SYMBOL_CLAUSE,
+    "a piece of it is missing",
+  );
+  const withoutPath = withoutSymbol.replace(DOTTED_MODULE_PATH, "").trim();
+  const lifted = liftTraceId(withoutPath);
+  const cleaned = lifted.text
+    .replace(/\bfrom\s*([.,;:]|$)/g, "$1")
+    .replace(/\s+([.,;:])/g, "$1")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  // THE EXCEPTION-CLASS RULE STILL APPLIES. A refusal is a failure sentence
+  // like any other, so it goes through the same reading the rest of this file
+  // owns rather than growing a second, drifting copy of it. When the server
+  // said retrying is futile its own remedy stands alone — the empty `remedy`
+  // is how that is said to `humanFailureSentence`.
+  const human = humanFailureSentence(cleaned || sentence, {
+    remedy: pointless ? "" : remedy,
+    noReason,
+  });
+
+  const changed = human.text !== sentence;
+  return {
+    text: human.text,
+    retryIsPointless: pointless,
+    traceId: lifted.traceId ?? requestId ?? undefined,
+    ...(changed ? { detail: sentence } : {}),
+  };
+}

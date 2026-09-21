@@ -47,6 +47,15 @@ export interface Organization {
   createdBy?: string | null;
   isPersonal: boolean;
   settings?: JsonObject;
+  /**
+   * When this organization was archived, or null when it is live (THE
+   * ARCHIVED-ITEMS LAW). An archived organization is CLOSED, not deleted:
+   * its members lose access, nothing bound to it fires, every row inside it
+   * stays where it is, and an owner can restore it at any time with no expiry.
+   */
+  archivedAt?: string | null;
+  archivedBy?: string | null;
+  archiveReason?: string | null;
 }
 
 /**
