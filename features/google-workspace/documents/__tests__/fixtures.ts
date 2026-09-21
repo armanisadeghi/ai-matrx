@@ -42,6 +42,7 @@ export function googleDocumentRow(
   overrides: Partial<GoogleDocumentRow> = {},
 ): GoogleDocumentRow {
   return {
+    custom_fields: {},
     id: DOC_ID,
     resource_id: RESOURCE_ID,
     external_id: FILE_ID,

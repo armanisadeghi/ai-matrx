@@ -436,10 +436,6 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
         grep -q "refs/tags/$1\$" <<< "$SHIP_REMOTE_TAGS"
     }
 
-    if [[ -n "$SHIP_MIG_PID" ]] && ! wait "$SHIP_MIG_PID"; then
-        ship_finding "ERROR" "Migrations" "A pending migration failed to apply or was refused — see the release log" "pnpm check:migrations:strict"
-    fi
-    ship_mark "migrations done"
 
     # A rejected push is a lost race only when origin really moved. A network
     # blip is retried with a pause and does not count against SHIP_PUSH_ATTEMPTS.
@@ -505,7 +501,15 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
             || ship_finding "WARNING" "Git" "This checkout could not fast-forward to $NEW_TAG — pull when convenient" "git pull --no-rebase origin main"
     fi
 
-    echo "${NEW_TAG}  pushed, build started  ($((SECONDS - SHIP_START))s)"
+    SHIP_BUILD_SECONDS=$((SECONDS - SHIP_START))
+    # Migrations run alongside the push, never in front of it: Vercel's build takes
+    # minutes and the migration pass about a minute, so waiting for it BEFORE the
+    # push only delayed the build. A failure is an ERROR finding either way.
+    if [[ -n "$SHIP_MIG_PID" ]] && ! wait "$SHIP_MIG_PID"; then
+        ship_finding "ERROR" "Migrations" "A pending migration failed to apply or was refused — see the release log" "pnpm check:migrations:strict"
+    fi
+    ship_mark "migrations done"
+    echo "${NEW_TAG}  pushed, build started  (${SHIP_BUILD_SECONDS}s)"
     ship_print_findings
 
     # Everything that is not needed to make the build runs now, detached.

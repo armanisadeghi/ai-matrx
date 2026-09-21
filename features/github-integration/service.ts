@@ -23,7 +23,7 @@ import { operationFailed } from "@/utils/errors";
 const CONNECTION_SELECT =
   "id, owner_type, owner_user_id, organization_id, provider, provider_subject, account_email, account_name, scopes, status, last_verified_at, last_error, created_at, updated_at, metadata, deleted_at";
 const RESOURCE_SELECT =
-  "id, connection_id, resource_type, resource_ref, display_name, permission_level, discovered_at, metadata, created_at, updated_at, deleted_at";
+  "id, connection_id, resource_type, resource_ref, display_name, permission_level, discovered_at, metadata, custom_fields, created_at, updated_at, deleted_at";
 
 function requiredMetadataString(
   metadata: GitHubResourceRow["metadata"],

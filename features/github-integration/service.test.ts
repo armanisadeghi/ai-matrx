@@ -11,6 +11,7 @@ jest.mock("@/utils/supabase/client", () => ({
 }));
 
 const ROW: GitHubResourceRow = {
+  custom_fields: {},
   id: "resource-id",
   connection_id: "connection-id",
   resource_type: "github_repository",

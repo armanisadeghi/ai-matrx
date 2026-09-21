@@ -51,6 +51,7 @@ interface RecordedQuery {
 
 function annotationNote(overrides: Partial<Note> = {}): Note {
   return {
+    custom_fields: {},
     id: "annotation-1",
     created_by: "learner-1",
     organization_id: "org-1",

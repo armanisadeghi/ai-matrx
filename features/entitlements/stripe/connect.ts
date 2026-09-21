@@ -191,7 +191,7 @@ export interface PendingPurchaseInput {
   buyerUserId: string;
   classId: string;
   creatorUserId: string;
-  organizationId: string | null;
+  organizationId: string;
   stripeCheckoutSessionId: string;
   stripeAccountId: string;
   amountTotal: number;

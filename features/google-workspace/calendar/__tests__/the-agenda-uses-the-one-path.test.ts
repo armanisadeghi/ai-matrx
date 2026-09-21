@@ -137,6 +137,7 @@ const USER = "1f2e3d4c-5b6a-4978-8877-665544332211";
 
 function event(overrides: Partial<CalendarEventRow> & { id: string }): CalendarEventRow {
   return {
+    custom_fields: {},
     all_day: false,
     attendees: { __kind: CALENDAR_EVENT_ATTENDEES_KIND, attendees: [] },
     calendar_id: "primary",
