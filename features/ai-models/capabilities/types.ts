@@ -154,17 +154,43 @@ export function isDecisionModelCapability(
   return capabilities.interaction === "decision";
 }
 
-/** Catalog visibility never changes the execution contract of a picker. */
+/**
+ * What a picker is allowed to select, by execution contract.
+ *
+ *   chat     — a conversational turn only (`/chat`, launchers, prompt runs).
+ *   agent    — an AGENT's model. An agent is not necessarily a conversation:
+ *              its message may carry a `decision_questions` part and be
+ *              answered by a decision holder that emits no text at all. So
+ *              this purpose admits BOTH contracts and the picker labels the
+ *              decision rows for what they are. Ruled by
+ *              `common-docs/systems/agents/typed-messages/FEATURE.md`
+ *              ("the picker shows only parts the selected model can consume"
+ *              — the author chooses the model first, so the model list may
+ *              never be the thing that hides the decision modality).
+ *   decision — a decision holder only (the decision playground, a decision
+ *              knob): a conversational model would answer in prose.
+ *   admin    — catalog editing; every contract stays selectable.
+ *
+ * Catalog visibility never changes the execution contract of a picker.
+ */
+export type ModelSelectionPurpose = "chat" | "agent" | "decision" | "admin";
+
 export function modelsForSelectionPurpose<
   T extends Pick<ModelCapabilities, "interaction">,
->(models: readonly T[], purpose: "chat" | "decision" | "admin" = "chat"): T[] {
-  return models.filter(
-    (model) =>
-      purpose === "admin" ||
-      (purpose === "decision"
-        ? isDecisionModelCapability(model)
-        : isConversationalModelCapability(model)),
-  );
+>(
+  models: readonly T[],
+  purpose: ModelSelectionPurpose = "chat",
+): T[] {
+  return models.filter((model) => {
+    if (purpose === "admin") return true;
+    if (purpose === "decision") return isDecisionModelCapability(model);
+    if (purpose === "agent")
+      return (
+        isConversationalModelCapability(model) ||
+        isDecisionModelCapability(model)
+      );
+    return isConversationalModelCapability(model);
+  });
 }
 
 /** Chat and agent launchers may select turn/single models only. */

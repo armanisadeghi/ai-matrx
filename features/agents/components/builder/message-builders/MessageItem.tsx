@@ -26,6 +26,7 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { useModelFull } from "@/features/ai-models/hooks/useModels";
 import { isDecisionQuestionsPart } from "@/features/agents/decision-questions/types";
+import { modelTakesDecisions } from "@/features/agents/decision-questions/budget";
 import { setAgentMessages } from "@/features/agents/redux/agent-definition/slice";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
@@ -186,6 +187,15 @@ export function MessageItem({
   // out). Listed in their `content` order so the indices passed to
   // remove/update map back deterministically.
   const extraBlocks = rawBlocks.filter((_, i) => i !== primaryIndex);
+
+  // A decision holder answers a Questions part and writes nothing else. A user
+  // message on a decision model with no Questions part therefore produces no
+  // answer at all — say so here rather than letting the author discover it as
+  // an empty run. (THE LAW: a screen is absent or honest, never silent.)
+  const needsQuestionsPart =
+    message?.role === "user" &&
+    modelTakesDecisions(selectedModel) &&
+    !rawBlocks.some(isDecisionQuestionsPart);
 
   // The decision state: the primary text plus every non-questions part that
   // carries text. Media parts contribute nothing here — a decision reads text
@@ -818,6 +828,19 @@ export function MessageItem({
               }}
             />
           </div>
+        )}
+
+        {needsQuestionsPart && (
+          <p
+            className="mt-2 rounded border border-amber-400/50 bg-amber-400/10 px-2 py-1.5 text-xs text-amber-700 dark:text-amber-300"
+            data-testid="decision-model-needs-questions"
+          >
+            {selectedModel?.common_name?.trim() ||
+              selectedModel?.name?.trim() ||
+              "This model"}{" "}
+            answers questions instead of writing, so this message returns
+            nothing until you add a Questions part to it.
+          </p>
         )}
       </div>
     </div>

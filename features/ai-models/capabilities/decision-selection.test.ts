@@ -27,6 +27,18 @@ it("admits decision models only for an explicit decision or catalog editing purp
   ]);
 });
 
+it("offers an agent author BOTH contracts and nothing else", () => {
+  // The agent builder's picker: a message may be a conversational turn or a
+  // Questions part answered by a decision holder, so both are selectable —
+  // but an embedding/extraction/realtime/background model still is not.
+  expect(
+    modelsForSelectionPurpose(
+      [chat, decision, hiddenChat, ...otherContracts],
+      "agent",
+    ),
+  ).toEqual([chat, decision, hiddenChat]);
+});
+
 it("prevents fallback and replacement routes from crossing the decision boundary", () => {
   expect(hasCompatibleDecisionInteraction(chat, decision)).toBe(false);
   expect(hasCompatibleDecisionInteraction(decision, chat)).toBe(false);

@@ -95,7 +95,10 @@ import {
   FEATURE_BUCKET_ORDER,
   type FeatureBucket,
 } from "@/features/ai-models/capabilities/feature-map";
-import { isDecisionModelCapability } from "@/features/ai-models/capabilities/types";
+import {
+  isDecisionModelCapability,
+  type ModelSelectionPurpose,
+} from "@/features/ai-models/capabilities/types";
 import {
   costRatingTier,
   speedRatingLabel,
@@ -185,8 +188,13 @@ interface ModelListDropdownProps {
   inputModalities: Modality[];
   /** Optional — output modalities the model must produce (seeds the filter). */
   outputModalities?: Modality[];
-  /** The execution contract this picker selects for. */
-  selectionPurpose?: "chat" | "decision" | "admin";
+  /**
+   * The execution contract this picker selects for. `"agent"` admits both
+   * conversational models and decision holders, because an agent's message
+   * may be a `decision_questions` part rather than a conversational turn —
+   * see `ModelSelectionPurpose` in the capabilities module.
+   */
+  selectionPurpose?: ModelSelectionPurpose;
   /**
    * Optional catalog constraint for specialized surfaces (for example a
    * user's active-model preference or a replacement-model allowlist). The
@@ -1416,6 +1424,17 @@ function ModelRow({
             {model.name}
           </span>
         </DelayedHint>
+        {/* A decision holder sits in the same list as chat models under the
+            `agent` purpose, and it does something else entirely — so the row
+            says so rather than letting the author assume it writes. */}
+        {isDecisionModelCapability(model) && (
+          <span
+            className="shrink-0 rounded border border-primary/40 bg-primary/10 px-1 text-[9px] font-medium text-foreground/80"
+            title="Decision model — it answers a Questions part with probabilities and generates no text."
+          >
+            decision
+          </span>
+        )}
         {model.isDeprecated && !retired && (
           <span
             className="shrink-0 rounded bg-destructive/15 px-1 text-[9px] text-destructive"
@@ -1622,13 +1641,9 @@ export function ModelListDropdown({
     const hasAvailable = (m: CatalogModel) =>
       (m.admin?.offerings ?? []).some((o) => o.isAvailable);
     const rows = eligibleModels.filter((m) => {
-      if (effectiveSelectionPurpose === "chat" && isDecisionModelCapability(m))
-        return false;
-      if (
-        effectiveSelectionPurpose === "decision" &&
-        !isDecisionModelCapability(m)
-      )
-        return false;
+      const isDecision = isDecisionModelCapability(m);
+      if (effectiveSelectionPurpose === "chat" && isDecision) return false;
+      if (effectiveSelectionPurpose === "decision" && !isDecision) return false;
       if (tab === "favorites" && !favoriteSet.has(m.id)) return false;
       // Search matches name, maker, branded Service names — and, in the
       // admin variant, real vendor / api / provider_model_id too.
@@ -1688,7 +1703,18 @@ export function ModelListDropdown({
         if ((filters.premium === "yes") !== m.isPremium) return false;
       }
       for (const m2 of filters.input) if (!m.input.includes(m2)) return false;
-      for (const m2 of filters.output) if (!m.output.includes(m2)) return false;
+      // A decision holder's output modality is `decision`, not `text` — it
+      // answers typed questions instead of writing. Under the `agent` purpose
+      // the author is choosing between exactly those two contracts, so the
+      // agent builder's `text` output seed (which is there to keep image and
+      // video generators out of an agent's model list) is met by a decision
+      // answer too. Every other purpose keeps the literal modality test.
+      const outputSatisfied = (want: Modality) =>
+        m.output.includes(want) ||
+        (effectiveSelectionPurpose === "agent" &&
+          isDecision &&
+          want === "text");
+      for (const m2 of filters.output) if (!outputSatisfied(m2)) return false;
       for (const b of filters.features)
         if (!m.features.buckets.includes(b)) return false;
       if (

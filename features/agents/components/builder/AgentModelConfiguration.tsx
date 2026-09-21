@@ -125,6 +125,11 @@ export function AgentModelConfiguration({
           onValueChange={handleModelChange}
           inputModalities={[]}
           outputModalities={["text"]}
+          // An agent is not necessarily a conversation: a message carrying a
+          // Questions part is answered by a decision holder that writes no
+          // text. The `agent` purpose admits both contracts and the picker
+          // labels the decision rows; `chat` would hide them entirely.
+          selectionPurpose="agent"
           pinnedOfferingId={pinnedOfferingId}
           onOfferingPinChange={handleOfferingPinChange}
         />
