@@ -2,12 +2,15 @@
 //
 // Admin-gated alias update + removal of one bundle member. The legacy tool↔bundle
 // junction collapsed into `platform.associations` (a tool → tool_bundle edge,
-// role='member'); the alias lives in the edge's metadata.local_alias. The
-// service-role admin client is required — authenticated has no direct grant on
-// platform.associations, and this route has no user JWT for the assoc_* RPCs.
+// role='member'); the alias lives in the edge's metadata.local_alias.
+// Writes go through the signed-in admin's OWN client, never the service-role
+// admin client: `platform._stamp_actor_tier` refuses a service-role write to
+// platform.associations (tier `code`, no actor_system → 23514), and RLS's
+// `platform_admin_all` already lets a platform admin write every edge. The
+// admin clicking is the author; their session stamps `human` + their id.
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/utils/supabase/adminClient";
+import { createClient } from "@/utils/supabase/server";
 import { requireAdmin } from "@/utils/auth/adminUtils";
 import { isJsonObject } from "@/types/json";
 
@@ -38,7 +41,7 @@ export async function PATCH(
       );
     }
 
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     // The alias lives in the edge's metadata; merge to preserve other keys
     // (e.g. the legacy_table / legacy_id provenance from the collapse).
@@ -108,7 +111,7 @@ export async function DELETE(
     await requireAdmin();
     const { id: bundleId, toolId } = await params;
 
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     const { error } = await supabase
       .schema("platform").from("associations")
       .delete()

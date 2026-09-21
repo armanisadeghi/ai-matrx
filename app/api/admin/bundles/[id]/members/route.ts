@@ -1,13 +1,15 @@
 // app/api/admin/bundles/[id]/members/route.ts
 //
 // Admin-gated add of a bundle member. The legacy tool↔bundle junction collapsed
-// into `platform.associations` (a tool → tool_bundle edge, role='member'). The
-// service-role admin client is required: authenticated has NO direct grant on
-// platform.associations (writes normally go through the org-gated assoc_* RPCs),
-// and this server route has no user JWT for those RPCs to key off.
+// into `platform.associations` (a tool → tool_bundle edge, role='member').
+// Writes go through the signed-in admin's OWN client, never the service-role
+// admin client: `platform._stamp_actor_tier` refuses a service-role write to
+// platform.associations (tier `code`, no actor_system → 23514), and RLS's
+// `platform_admin_all` already lets a platform admin write every edge. The
+// admin clicking is the author; their session stamps `human` + their id.
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/utils/supabase/adminClient";
+import { createClient } from "@/utils/supabase/server";
 import { requireAdmin } from "@/utils/auth/adminUtils";
 
 function authErrorResponse(error: unknown): NextResponse | null {
@@ -38,7 +40,7 @@ export async function POST(
       );
     }
 
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     // The bundle owns the org the membership edge belongs to (mirrors the collapse).
     const bundleRes = await supabase

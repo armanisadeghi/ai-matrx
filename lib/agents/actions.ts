@@ -1,7 +1,6 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { createAdminClient } from "@/utils/supabase/adminClient";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { redirect } from "next/navigation";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
@@ -123,8 +122,11 @@ export async function createAgentFromSeed(
  * Matrx System org ownership that makes it globally visible (iam.has_access's
  * platform-global tier) is enforced at the DB edge by the
  * agent._enforce_builtin_system_org trigger — never write organization_id here.
- * Uses the admin client to bypass RLS since `user_id = null` would otherwise
- * fail the INSERT policy.
+ * Writes through the signed-in admin's OWN client, never the service-role
+ * admin client: `platform._stamp_actor_tier` refuses a service-role write
+ * (tier `code`, no actor_system) with 23514, and RLS's `platform_admin_all`
+ * already lets a platform admin insert any agent.definition row. The person
+ * clicking is the author, and their session stamps `human` + their id.
  */
 export async function createSystemAgentFromSeed(
   seed: Omit<Partial<AgentDefinition>, "id">,
@@ -147,14 +149,14 @@ export async function createSystemAgentFromSeed(
     throw new Error("Forbidden: admin privileges required");
   }
 
-  const admin = createAdminClient();
-  const { data, error } = await admin
+  const { data, error } = await supabase
     .schema("agent")
     .from("definition")
     .insert({
       ...seedToInsertPayload(seed),
       agent_type: "builtin",
       is_active: true,
+      created_by: user.id,
       // organization_id intentionally omitted — the DB guard forces it to the
       // Matrx System org for every builtin (see agent._enforce_builtin_system_org).
       task_id: null,

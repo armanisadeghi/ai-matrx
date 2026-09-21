@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { createAdminClient } from "@/utils/supabase/adminClient";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
@@ -13,6 +12,17 @@ import { getClaimsUser } from "@/utils/supabase/resolveUser";
  * on `agent.definition` (there's no separate `agent_builtins` table — system agents
  * live in the same table with `agent_type = 'builtin'`).
  *
+ * Every read and write here goes through the SIGNED-IN admin's own client, never
+ * the service-role admin client. Two reasons, both real:
+ *   1. Provenance. `platform._stamp_actor_tier` refuses (23514) any write that
+ *      resolves to tier `code` with no `app.actor_system` — which is exactly what
+ *      a service-role write is (no auth.uid(), no GUC). The person clicking
+ *      "Create system agent" IS the author, and their own session stamps
+ *      `human` + their id. That is the correct provenance, not a workaround.
+ *   2. RLS already lets a platform admin insert/update/select every
+ *      agent.definition row (`platform_admin_all`), so the bypass bought nothing.
+ * This was the "Failed to create system agent" defect of 2026-09-20.
+ *
  * Body:
  *   - `agent_id` (required): the source user agent to copy from
  *   - `system_agent_id` (optional): if provided, updates the existing system
@@ -23,7 +33,6 @@ import { getClaimsUser } from "@/utils/supabase/resolveUser";
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-    const adminClient = createAdminClient();
 
     const {
       data: { user },
@@ -58,7 +67,7 @@ export async function POST(request: Request) {
     if (agent_data) {
       src = agent_data;
     } else {
-      const { data: agent, error: fetchError } = await adminClient
+      const { data: agent, error: fetchError } = await supabase
         .schema("agent")
         .from("definition")
         .select("*")
@@ -108,7 +117,7 @@ export async function POST(request: Request) {
       // Verify the target is actually a builtin AND was originally derived from
       // the source agent. Prevents admins from accidentally (or intentionally)
       // clobbering an unrelated system agent via a stale/forged id.
-      const { data: target, error: targetError } = await adminClient
+      const { data: target, error: targetError } = await supabase
         .schema("agent")
         .from("definition")
         .select("id, agent_type, source_agent_id")
@@ -140,7 +149,7 @@ export async function POST(request: Request) {
         );
       }
 
-      const { error: updateError } = await adminClient
+      const { error: updateError } = await supabase
         .schema("agent")
         .from("definition")
         .update({
@@ -165,7 +174,7 @@ export async function POST(request: Request) {
       finalSystemAgentId = system_agent_id;
     } else {
       // CREATE new system agent
-      const { data: created, error: insertError } = await adminClient
+      const { data: created, error: insertError } = await supabase
         .schema("agent")
         .from("definition")
         .insert({
@@ -181,7 +190,8 @@ export async function POST(request: Request) {
           // org-fallback-deliberate: a builtin agent is platform-shipped content with
           //   no tenant, and agent._enforce_builtin_system_org forces this org in the
           //   database anyway; the route is behind checkIsSuperAdmin
-          organization_id: await resolveSystemOrgId(adminClient),
+          organization_id: await resolveSystemOrgId(supabase),
+          created_by: user.id,
           task_id: null,
           source_agent_id: agent_id,
           source_snapshot_at: new Date().toISOString(),
