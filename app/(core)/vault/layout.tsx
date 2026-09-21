@@ -1,4 +1,5 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { VaultRouteWorkspaceStateBoundary } from "@/features/secrets/components/VaultRouteWorkspaceState";
 
 export const metadata = createRouteMetadata("/vault", {
   title: "Vault",
@@ -12,5 +13,5 @@ export default function VaultLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return <VaultRouteWorkspaceStateBoundary>{children}</VaultRouteWorkspaceStateBoundary>;
 }

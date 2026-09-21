@@ -104,4 +104,16 @@ describe("filterAndSortVaultItems", () => {
     expect(list([old, newItem], "", "name-asc").map((value) => value.id)).toEqual(["a", "z"]);
     expect(list([old, newItem], "", "name-desc").map((value) => value.id)).toEqual(["a", "z"]);
   });
+
+  it("orders recent views from server timestamps and keeps unknown times last", () => {
+    const a = item("a", "A");
+    const b = item("b", "B");
+    const c = item("c", "C");
+    const stateById = new Map([
+      ["a", { isFavorite: false, lastViewedAt: "2026-09-03T00:00:00.000Z" }],
+      ["b", { isFavorite: true, lastViewedAt: "invalid" }],
+    ]);
+    expect(filterAndSortVaultItems({ items: [b, c, a], definitions, family: "all", query: "", sort: "recently-viewed", stateById }).map((value) => value.id))
+      .toEqual(["a", "b", "c"]);
+  });
 });

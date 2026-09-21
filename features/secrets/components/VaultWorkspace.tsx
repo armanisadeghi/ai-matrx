@@ -10,7 +10,7 @@
  * one concise supporting line. Values and full metadata belong in detail.
  */
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   Building2,
@@ -21,6 +21,7 @@ import {
   Search,
   Share2,
   ShieldCheck,
+  Star,
   Upload,
   UserRound,
   X,
@@ -34,6 +35,7 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 import {
   Select,
@@ -76,6 +78,8 @@ import {
   VAULT_LIST_SORT_OPTIONS,
   type VaultListSort,
 } from "../vault-list";
+import { useVaultItemState } from "../use-vault-item-state";
+import { useVaultRouteWorkspaceState } from "./VaultRouteWorkspaceState";
 import { VaultContextMenu } from "./VaultContextMenu";
 import { VaultCreateDialog } from "./VaultCreateDialog";
 import { VaultEnvImportDialog } from "./VaultEnvImportDialog";
@@ -116,6 +120,8 @@ export function VaultWorkspace({
   // and changes nothing; the Select beside it stays the explicit picker.
   // common-docs/policies/context-is-carried-never-rebuilt.md
   const selectedOrganizationId = useAppSelector(selectOrganizationId);
+  const actorId = useAppSelector(selectUserId);
+  const routeWorkspaceState = useVaultRouteWorkspaceState();
   const scopeSwitchOrganizationId =
     availableOrganizations.find((org) => org.id === selectedOrganizationId)
       ?.id ?? null;
@@ -128,9 +134,11 @@ export function VaultWorkspace({
     }
     return scopeSwitchOrganizationId;
   };
-  const [uncontrolledScope, setUncontrolledScope] = useState<VaultScope>({
+  const [localUncontrolledScope, setLocalUncontrolledScope] = useState<VaultScope>({
     kind: "mine",
   });
+  const uncontrolledScope = routeWorkspaceState?.scope ?? localUncontrolledScope;
+  const setUncontrolledScope = routeWorkspaceState?.setScope ?? setLocalUncontrolledScope;
   const requestedUserScope =
     parseVaultScopeKey(controlledScope) ?? uncontrolledScope;
   const userScope: VaultScope =
@@ -170,9 +178,18 @@ export function VaultWorkspace({
 
   const defsByKey = new Map(definitions.map((d) => [d.key, d]));
 
-  const [search, setSearch] = useState("");
-  const [family, setFamily] = useState<"all" | CredentialFamily>("all");
-  const [sort, setSort] = useState<VaultListSort>("newest");
+  const [localSearch, setLocalSearch] = useState("");
+  const [localFamily, setLocalFamily] = useState<"all" | CredentialFamily>("all");
+  const [localSort, setLocalSort] = useState<VaultListSort>("newest");
+  const [localFavoritesOnly, setLocalFavoritesOnly] = useState(false);
+  const search = routeWorkspaceState?.search ?? localSearch;
+  const setSearch = routeWorkspaceState?.setSearch ?? setLocalSearch;
+  const family = routeWorkspaceState?.family ?? localFamily;
+  const setFamily = routeWorkspaceState?.setFamily ?? setLocalFamily;
+  const sort = routeWorkspaceState?.sort ?? localSort;
+  const setSort = routeWorkspaceState?.setSort ?? setLocalSort;
+  const favoritesOnly = routeWorkspaceState?.favoritesOnly ?? localFavoritesOnly;
+  const setFavoritesOnly = routeWorkspaceState?.setFavoritesOnly ?? setLocalFavoritesOnly;
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
@@ -192,6 +209,12 @@ export function VaultWorkspace({
   // Export is deliberately narrower than the general item capabilities: only
   // the currently loaded Mine scope can request a selected personal export.
   const canExport = principal.type === "user" && scope.kind === "mine";
+  const vaultItemState = useVaultItemState({
+    actorId,
+    organizationId: selectedOrganizationId,
+    scopeKey: vaultScopeKey(scope),
+    itemIds: vault.items.map((item) => item.id),
+  });
 
   const familiesPresent = (() => {
     const present = new Set<CredentialFamily>();
@@ -203,13 +226,17 @@ export function VaultWorkspace({
   })();
 
   const query = search.trim();
-  const filtered = filterAndSortVaultItems({
+  const listed = filterAndSortVaultItems({
     items: vault.items,
     definitions,
     family,
     query,
     sort,
+    stateById: vaultItemState.stateById,
   });
+  const filtered = favoritesOnly && vaultItemState.status === "ready"
+    ? listed.filter((item) => vaultItemState.stateById.get(item.id)?.isFavorite)
+    : listed;
 
   const selected = selectedId
     ? (vault.items.find((i) => i.id === selectedId) ?? null)
@@ -225,7 +252,20 @@ export function VaultWorkspace({
     : null;
   const SelectedIcon = selectedIdentity?.icon ?? KeyRound;
 
-  const filtering = query.length > 0 || family !== "all";
+  const filtering = query.length > 0 || family !== "all" || favoritesOnly;
+  const deepLinkTouch = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedItemId || !selected) return;
+    const touchKey = `${actorId ?? ""}\u0000${selectedOrganizationId ?? ""}\u0000${vaultScopeKey(scope)}\u0000${selectedItemId}`;
+    if (!touchKey || vaultItemState.status !== "ready" || deepLinkTouch.current === touchKey) return;
+    void vaultItemState.touch(selectedItemId).then((touched) => {
+      if (touched) deepLinkTouch.current = touchKey;
+    });
+  }, [actorId, selectedItemId, selected, selectedOrganizationId, scope, vaultItemState]);
+  const openItem = (itemId: string) => {
+    setSelectedId(itemId);
+    void vaultItemState.touch(itemId);
+  };
 
   // ONE menu per pane, wrapped around BOTH presentations, so the /vault page
   // and the floating Vault window share a single wiring (and the window
@@ -236,7 +276,7 @@ export function VaultWorkspace({
     <VaultContextMenu
       items={vault.items}
       definitionsByKey={defsByKey}
-      onOpenItem={setSelectedId}
+      onOpenItem={openItem}
     >
       {body}
     </VaultContextMenu>
@@ -284,6 +324,15 @@ export function VaultWorkspace({
                       setUserScope({ kind: "mine" });
                       setSelectedId(null);
                     }}
+                  />
+                  <VaultNavButton
+                    active={favoritesOnly}
+                    icon={Star}
+                    label="Favorites"
+                    count={vaultItemState.status === "ready"
+                      ? [...vaultItemState.stateById.values()].filter((state) => state.isFavorite).length
+                      : null}
+                    onClick={() => setFavoritesOnly((value) => !value)}
                   />
                   <VaultNavButton
                     active={scope.kind === "shared"}
@@ -507,6 +556,9 @@ export function VaultWorkspace({
                   </Select>
                 )}
                 <VaultSortControl sort={sort} onSortChange={setSort} />
+                <Button variant={favoritesOnly ? "secondary" : "outline"} size="sm" className="h-8 shrink-0" onClick={() => setFavoritesOnly((value) => !value)} aria-pressed={favoritesOnly}>
+                  <Star className="mr-1 h-3.5 w-3.5" /> Favorites
+                </Button>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -602,25 +654,32 @@ export function VaultWorkspace({
                 {vault.error}
               </div>
             )}
+            {vaultItemState.status === "error" && !favoritesOnly && (
+              <VaultItemStateUnavailable error={vaultItemState.error} onRetry={vaultItemState.retry} />
+            )}
 
             <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
-              {vault.loading ? (
-                <VaultWorkspaceListSkeleton />
+            {vault.loading ? (
+              <VaultWorkspaceListSkeleton />
+            ) : favoritesOnly && vaultItemState.status !== "ready" ? (
+              <VaultItemStateUnavailable error={vaultItemState.error} onRetry={vaultItemState.retry} />
               ) : filtered.length === 0 ? (
                 <VaultEmptyState
                   filtering={filtering}
+                  favoritesOnly={favoritesOnly}
                   isShared={isShared}
                   canCreate={canCreate}
                   onClearFilters={() => {
                     setSearch("");
                     setFamily("all");
+                    setFavoritesOnly(false);
                   }}
                   onCreate={() => setCreateOpen(true)}
                 />
               ) : (
                 <div
                   className="space-y-1"
-                  role="listbox"
+                  role="list"
                   aria-label="Credentials"
                 >
                   {filtered.map((item) => (
@@ -629,7 +688,10 @@ export function VaultWorkspace({
                       item={item}
                       definition={defsByKey.get(item.definition_key)}
                       selected={detailItem?.id === item.id}
-                      onOpen={() => setSelectedId(item.id)}
+                      favorite={vaultItemState.stateById.get(item.id)?.isFavorite ?? false}
+                      stateReady={vaultItemState.status === "ready" && !vaultItemState.pendingItemIds.has(item.id)}
+                      onOpen={() => openItem(item.id)}
+                      onToggleFavorite={() => void vaultItemState.toggleFavorite(item.id)}
                     />
                   ))}
                 </div>
@@ -885,6 +947,16 @@ export function VaultWorkspace({
           </Select>
         )}
         <VaultSortControl sort={sort} onSortChange={setSort} />
+        <Button
+          variant={favoritesOnly ? "secondary" : "outline"}
+          size="sm"
+          className="h-9 shrink-0"
+          onClick={() => setFavoritesOnly((value) => !value)}
+          aria-pressed={favoritesOnly}
+        >
+          <Star className="mr-1.5 h-4 w-4" />
+          Favorites
+        </Button>
 
         {canCreate && (
           <>
@@ -939,18 +1011,25 @@ export function VaultWorkspace({
           {vault.error}
         </div>
       )}
+      {vaultItemState.status === "error" && !favoritesOnly && (
+        <VaultItemStateUnavailable error={vaultItemState.error} onRetry={vaultItemState.retry} />
+      )}
 
       {/* List */}
       {vault.loading ? (
         <VaultListSkeleton />
+      ) : favoritesOnly && vaultItemState.status !== "ready" ? (
+        <VaultItemStateUnavailable error={vaultItemState.error} onRetry={vaultItemState.retry} />
       ) : filtered.length === 0 ? (
         <VaultEmptyState
           filtering={filtering}
+          favoritesOnly={favoritesOnly}
           isShared={isShared}
           canCreate={canCreate}
           onClearFilters={() => {
             setSearch("");
             setFamily("all");
+            setFavoritesOnly(false);
           }}
           onCreate={() => setCreateOpen(true)}
         />
@@ -962,7 +1041,10 @@ export function VaultWorkspace({
                 key={item.id}
                 item={item}
                 definition={defsByKey.get(item.definition_key)}
-                onOpen={() => setSelectedId(item.id)}
+                favorite={vaultItemState.stateById.get(item.id)?.isFavorite ?? false}
+                stateReady={vaultItemState.status === "ready" && !vaultItemState.pendingItemIds.has(item.id)}
+                onOpen={() => openItem(item.id)}
+                onToggleFavorite={() => void vaultItemState.toggleFavorite(item.id)}
               />
             ))}
           </div>
@@ -1079,7 +1161,7 @@ function VaultSortControl({
       onValueChange={(value) => onSortChange(value as VaultListSort)}
     >
       <SelectTrigger
-        className={cn("h-9 w-auto min-w-36 shrink-0", className)}
+        className={cn("h-9 w-40 shrink-0", className)}
         aria-label="Sort credentials"
       >
         <SelectValue />
@@ -1139,12 +1221,18 @@ function VaultWorkspaceListRow({
   item,
   definition,
   selected,
+  favorite,
+  stateReady,
   onOpen,
+  onToggleFavorite,
 }: {
   item: VaultItem;
   definition: CredentialDefinition | undefined;
   selected: boolean;
+  favorite: boolean;
+  stateReady: boolean;
   onOpen: () => void;
+  onToggleFavorite: () => void;
 }) {
   const identity = credentialIdentity(item, definition);
   const Icon = identity.icon;
@@ -1152,15 +1240,12 @@ function VaultWorkspaceListRow({
     identity.subtitle ?? identity.host ?? identity.kindLabel;
 
   return (
-    <button
-      type="button"
-      role="option"
-      aria-selected={selected}
+    <div
+      role="listitem"
       // The delegated context menu reads the clicked credential off this
       // attribute (`VAULT_ITEM_ATTR`) — never off the DOM text, which can hold
       // a revealed value.
       data-vault-item-id={item.id}
-      onClick={onOpen}
       className={cn(
         "flex w-full min-w-0 items-start gap-2.5 rounded-md border px-2.5 py-2.5 text-left transition-colors",
         selected
@@ -1168,22 +1253,15 @@ function VaultWorkspaceListRow({
           : "border-transparent hover:border-border hover:bg-accent/50",
       )}
     >
-      <span className={cn(IDENTITY_TILE_CLASS, "mt-0.5 h-9 w-9")}>
-        <Icon className={cn("h-4.5 w-4.5", identity.iconClass)} />
-      </span>
-      <div className="min-w-0 flex-1 overflow-hidden">
-        <p className="truncate text-sm font-semibold leading-5 text-foreground">
-          {item.display_name}
-        </p>
-        {supportingLine && (
-          <p
-            className="mt-0.5 truncate text-xs leading-4 text-muted-foreground"
-            title={supportingLine}
-          >
-            {supportingLine}
-          </p>
-        )}
-      </div>
+      <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-start gap-2.5 text-left" aria-label={`Open ${item.display_name}`}>
+        <span className={cn(IDENTITY_TILE_CLASS, "mt-0.5 h-9 w-9")}>
+          <Icon className={cn("h-4.5 w-4.5", identity.iconClass)} />
+        </span>
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <p className="whitespace-normal break-words text-sm font-semibold leading-5 text-foreground">{item.display_name}</p>
+          {supportingLine && <p className="mt-0.5 truncate text-xs leading-4 text-muted-foreground" title={supportingLine}>{supportingLine}</p>}
+        </div>
+      </button>
       {item.status !== "active" && (
         <Badge
           variant="outline"
@@ -1192,7 +1270,10 @@ function VaultWorkspaceListRow({
           {item.status.replaceAll("_", " ")}
         </Badge>
       )}
-    </button>
+      <button type="button" onClick={onToggleFavorite} disabled={!stateReady} aria-pressed={favorite} aria-label={`${favorite ? "Remove" : "Add"} ${item.display_name} ${favorite ? "from" : "to"} favorites`} className="rounded p-1 text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50">
+        <Star className={cn("h-4 w-4", favorite && "fill-current text-warning")} />
+      </button>
+    </div>
   );
 }
 
@@ -1295,11 +1376,17 @@ function familyOf(
 function VaultItemCard({
   item,
   definition,
+  favorite,
+  stateReady,
   onOpen,
+  onToggleFavorite,
 }: {
   item: VaultItem;
   definition: CredentialDefinition | undefined;
+  favorite: boolean;
+  stateReady: boolean;
   onOpen: () => void;
+  onToggleFavorite: () => void;
 }) {
   const identity = credentialIdentity(item, definition);
   const Icon = identity.icon;
@@ -1307,20 +1394,17 @@ function VaultItemCard({
     identity.subtitle ?? identity.host ?? identity.kindLabel;
 
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="group relative flex w-full min-w-0 items-start gap-2.5 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      aria-label={`Open ${item.display_name}`}
+    <div
+      className="group relative flex w-full min-w-0 items-start gap-2.5 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-accent/30"
       data-vault-item-id={item.id}
     >
-      <div className="flex min-w-0 flex-1 items-start gap-2.5">
+      <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-start gap-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Open ${item.display_name}`}>
         <span className={cn(IDENTITY_TILE_CLASS, "mt-0.5 h-9 w-9")}>
           <Icon className={cn("h-4.5 w-4.5", identity.iconClass)} />
         </span>
         <div className="min-w-0 flex-1 overflow-hidden">
           <div className="flex min-w-0 items-center gap-1.5">
-            <p className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+            <p className="min-w-0 flex-1 whitespace-normal break-words text-sm font-semibold text-foreground">
               {item.display_name}
             </p>
             {item.status !== "active" && (
@@ -1346,9 +1430,19 @@ function VaultItemCard({
             Restricted
           </Badge>
         )}
-      </div>
-    </button>
+      </button>
+      <button type="button" onClick={onToggleFavorite} disabled={!stateReady} aria-pressed={favorite} aria-label={`${favorite ? "Remove" : "Add"} ${item.display_name} ${favorite ? "from" : "to"} favorites`} className="rounded p-1 text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50">
+        <Star className={cn("h-4 w-4", favorite && "fill-current text-warning")} />
+      </button>
+    </div>
   );
+}
+
+function VaultItemStateUnavailable({ error, onRetry }: { error: string | null; onRetry: () => void }) {
+  return <div className="m-3 flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+    <span>{error ?? "Favorites are unavailable. Retry."}</span>
+    <Button type="button" size="sm" variant="outline" onClick={onRetry}>Retry</Button>
+  </div>;
 }
 
 function VaultListSkeleton() {
@@ -1371,12 +1465,14 @@ function VaultListSkeleton() {
 
 function VaultEmptyState({
   filtering,
+  favoritesOnly,
   isShared,
   canCreate,
   onClearFilters,
   onCreate,
 }: {
   filtering: boolean;
+  favoritesOnly: boolean;
   isShared: boolean;
   canCreate: boolean;
   onClearFilters: () => void;
@@ -1388,7 +1484,7 @@ function VaultEmptyState({
         <Search className="mx-auto h-6 w-6 text-muted-foreground" />
         <p className="mt-2.5 text-sm font-medium">No credentials match</p>
         <p className="mx-auto mt-1 max-w-xs text-xs text-muted-foreground">
-          Nothing here matches your search or type filter.
+          Nothing here matches your active search, type, or favorites filter.
         </p>
         <Button
           variant="outline"

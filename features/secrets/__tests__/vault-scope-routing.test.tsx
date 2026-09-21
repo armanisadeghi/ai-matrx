@@ -72,7 +72,19 @@ jest.mock("@/lib/redux/hooks", () => ({
   // it against the shape the real appContext slice holds keeps the selector
   // itself real.
   useAppSelector: (selector: (state: unknown) => unknown) =>
-    selector({ appContext: { organization_id: selectedOrganizationId } }),
+    selector({ appContext: { organization_id: selectedOrganizationId }, userAuth: { id: selectedActorId } }),
+}));
+
+let selectedActorId = "user-1";
+const getBulk = jest.fn(async (..._args: unknown[]) => ({ ok: true, data: { items: [] } }));
+const setFavorite = jest.fn(async (..._args: unknown[]) => ({ ok: true, data: null }));
+const touch = jest.fn(async (..._args: unknown[]) => ({ ok: true, data: null }));
+jest.mock("@/features/scopes/service/favoritesService", () => ({
+  favoritesService: {
+    getBulk: (...args: unknown[]) => getBulk(...args),
+    setFavorite: (...args: unknown[]) => setFavorite(...args),
+    touch: (...args: unknown[]) => touch(...args),
+  },
 }));
 
 jest.mock("@/features/organizations/hooks", () => ({
@@ -96,6 +108,7 @@ jest.mock("@/hooks/use-media-query", () => ({
 }));
 
 import { VaultWorkspace } from "../components/VaultWorkspace";
+import { VaultRouteWorkspaceStateProvider, VaultRouteWorkspaceStateBoundary } from "../components/VaultRouteWorkspaceState";
 
 (
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
@@ -180,7 +193,7 @@ async function mount(
   root = createRoot(container);
   await act(async () => {
     root.render(
-      <VaultWorkspace principal={{ type: "user" }} presentation="full" {...props} />,
+      <VaultRouteWorkspaceStateProvider><VaultWorkspace principal={{ type: "user" }} presentation="full" {...props} /></VaultRouteWorkspaceStateProvider>,
     );
   });
 }
@@ -231,13 +244,18 @@ describe("VaultWorkspace scope routing", () => {
   beforeEach(() => {
     fetchVaultItems.mockReset();
     toastError.mockReset();
+    getBulk.mockClear();
+    setFavorite.mockClear();
+    touch.mockClear();
     fetchVaultItems.mockImplementation(async (scope: VaultScope) => {
       const key = scopeKey(scope);
       if (!(key in ROWS)) throw new Error(`Unexpected vault scope: ${key}`);
       return ROWS[key];
     });
     selectedOrganizationId = null;
+    selectedActorId = "user-1";
     desktopWorkspace = true;
+    ROWS.mine = [row("mine-row", "My Personal Login")];
   });
 
   afterEach(async () => {
@@ -327,7 +345,7 @@ describe("VaultWorkspace scope routing", () => {
     await chooseRenderedSort("Name Z–A");
     expect(renderedItemIds()).toEqual(["z", "a"]);
 
-    const alpha = container.querySelector<HTMLButtonElement>('[data-vault-item-id="a"]');
+    const alpha = container.querySelector<HTMLButtonElement>('[aria-label="Open Alpha Login"]');
     if (!alpha) throw new Error("Missing credential row");
     await act(async () => alpha.click());
     expect(onSelectedItemIdChange).toHaveBeenCalledWith("a");
@@ -371,4 +389,79 @@ describe("VaultWorkspace scope routing", () => {
     await chooseRenderedSort("Name Z–A");
     expect(renderedItemIds()).toEqual(["compact-z", "compact-a"]);
   });
+
+  it("does not touch a default full-pane item or when its star is clicked", async () => {
+    await mount();
+    await act(async () => { await Promise.resolve(); });
+    expect(touch).not.toHaveBeenCalled();
+    const star = container.querySelector<HTMLButtonElement>('[aria-label="Add My Personal Login to favorites"]');
+    if (!star) throw new Error("Missing favorite control");
+    await act(async () => star.click());
+    expect(setFavorite).toHaveBeenCalledWith("credential_item", "mine-row", true);
+    expect(touch).not.toHaveBeenCalled();
+  });
+
+  it("keeps compact stars separate from opening a credential", async () => {
+    await mount({ presentation: "compact" });
+    await act(async () => { await Promise.resolve(); });
+    const star = container.querySelector<HTMLButtonElement>('[aria-label="Add My Personal Login to favorites"]');
+    if (!star) throw new Error("Missing compact favorite control");
+    await act(async () => star.click());
+    expect(setFavorite).toHaveBeenCalledWith("credential_item", "mine-row", true);
+    expect(touch).not.toHaveBeenCalled();
+  });
+
+  it("keeps route-local search and sort when the item route remounts the workspace", async () => {
+    await mount();
+    const search = container.querySelector<HTMLInputElement>('input[aria-label="Search credentials"]');
+    if (!search) throw new Error("Missing Vault search control");
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    if (!setValue) throw new Error("Missing input value setter");
+    await act(async () => { setValue.call(search, "personal"); search.dispatchEvent(new Event("input", { bubbles: true })); });
+    await chooseRenderedSort("Recently viewed");
+    await act(async () => {
+      root.render(<VaultRouteWorkspaceStateProvider><VaultWorkspace key="item-route" principal={{ type: "user" }} presentation="full" selectedItemId="mine-row" /></VaultRouteWorkspaceStateProvider>);
+    });
+    expect(container.querySelector<HTMLInputElement>('input[aria-label="Search credentials"]')?.value).toBe("personal");
+    expect(container.querySelector('[aria-label="Sort credentials"]')?.textContent).toContain("Recently viewed");
+  });
+
+  it("keeps the chosen Vault scope when the item route remounts", async () => {
+    selectedOrganizationId = "org-selected";
+    await mount();
+    await clickScope("Organization");
+    await act(async () => {
+      root.render(<VaultRouteWorkspaceStateProvider><VaultWorkspace key="organization-item-route" principal={{ type: "user" }} presentation="full" selectedItemId="selected-row" /></VaultRouteWorkspaceStateProvider>);
+    });
+    expect(requestedScopes().at(-1)).toBe("organization:org-selected");
+    expect(container.textContent).toContain("Selected Org Login");
+  });
+
+  it("keeps the Favorites filter when the item route remounts", async () => {
+    await mount();
+    await clickScope("Favorites");
+    expect(container.textContent).toContain("No credentials match");
+    await act(async () => {
+      root.render(<VaultRouteWorkspaceStateProvider><VaultWorkspace key="favorite-item-route" principal={{ type: "user" }} presentation="full" selectedItemId="mine-row" /></VaultRouteWorkspaceStateProvider>);
+    });
+    const favoriteButton = Array.from(container.querySelectorAll("button")).find((button) => button.textContent?.includes("Favorites"));
+    expect(favoriteButton?.getAttribute("aria-current")).toBe("page");
+    expect(container.textContent).toContain("No credentials match");
+  });
+
+  it.each(["actor", "organization"])("resets route view state on %s change", async (changed) => {
+    await mount();
+    const renderBoundary = () => <VaultRouteWorkspaceStateBoundary><VaultWorkspace principal={{ type: "user" }} presentation="full" /></VaultRouteWorkspaceStateBoundary>;
+    await act(async () => root.render(renderBoundary()));
+    await clickScope("Favorites");
+    await chooseRenderedSort("Recently viewed");
+    if (changed === "actor") selectedActorId = "user-2";
+    else selectedOrganizationId = "org-selected";
+    await act(async () => root.render(renderBoundary()));
+    const favoriteButton = Array.from(container.querySelectorAll("button")).find((button) => button.textContent?.includes("Favorites"));
+    expect(favoriteButton?.getAttribute("aria-current")).toBeNull();
+    expect(container.querySelector('[aria-label="Sort credentials"]')?.textContent).toContain("Newest added");
+    expect(container.textContent).toContain("My Personal Login");
+  });
+
 });

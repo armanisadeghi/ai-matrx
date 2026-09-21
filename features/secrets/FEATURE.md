@@ -86,6 +86,10 @@ Organization is one bounded destination with an explicit membership dropdown;
 it never expands into an unbounded chip row and never follows the active org.
 The organization-management embed remains fixed to its host organization.
 
+## Saved views (2026-09-20)
+
+Favorites and recent views are per-user `platform.user_entity_state` records reached only through `favoritesService` for `credential_item`. `use-vault-item-state.ts` bulk-reads only IDs authorized by the current Vault list and fences actor, selected organization, scope, list identity, and request order; late results and removed IDs never render; new actions require the current authorized list. An already-dispatched request may finish in the per-user state service, which does not change credential permissions. Both list presentations use separate Open and Favorite controls, so starring never opens or marks an item viewed. Only an explicit Open, context-menu open, or controlled deep-link selection touches a recent view; the automatic first full-pane detail does not. Successful changes reconcile server state; failures show Retry.
+
 ## Sharing, ownership, and assignment (2026-07-26)
 
 **Grants are per-recipient operations, never a batch overwrite.** The share
@@ -367,6 +371,8 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- `2026-09-20` — Added per-user Vault favorites and server-backed recent views with authorized-list-only state, context/request fences, reconciliation, fixed retry messaging, and separate Open/Favorite controls in both presentations.
 
 - **2026-09-20** — Credential detail now shows tags as compact chips and edits
   them through the existing item update boundary; new tags trim blank input,

@@ -63,7 +63,7 @@ describe("shared vault UI contract", () => {
       /className=(?:"[^"]*|\{[^}]*)(?:\btruncate\b|\bline-clamp-\d+\b|\btext-ellipsis\b)/,
     );
     expect(workspaceSource).toContain(
-      'className="mt-0.5 truncate text-xs leading-4 text-muted-foreground"',
+      "whitespace-normal break-words text-sm font-semibold",
     );
     expect(workspaceSource).not.toContain("item.login_urls.join");
   });
