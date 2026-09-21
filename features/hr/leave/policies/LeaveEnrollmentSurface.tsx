@@ -303,18 +303,18 @@ export function LeaveEnrollmentSurface({ policyId }: { policyId: string }) {
     */
     {
       id: "available",
-      accessorFn: (row) => row.bookableNow ?? Number.NEGATIVE_INFINITY,
+      accessorFn: (row) => (row.unlimited === true ? null : row.bookableNow),
       header: "Available",
       sortable: true,
-      filter: false,
+      filter: "number",
       cell: (row) => <LeaveBookableCell row={row} />,
     },
     {
       id: "after-pending",
-      accessorFn: (row) => row.available ?? Number.NEGATIVE_INFINITY,
+      accessorFn: (row) => (row.unlimited === true ? null : row.available),
       header: <LeaveAfterPendingHeader />,
       sortable: true,
-      filter: false,
+      filter: "number",
       cell: (row) => <LeaveAfterPendingCell row={row} />,
     },
   ];

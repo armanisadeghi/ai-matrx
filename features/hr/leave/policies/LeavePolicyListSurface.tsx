@@ -154,10 +154,10 @@ export function LeavePolicyListSurface() {
     },
     {
       id: "enrolled",
-      accessorFn: (row) => row.enrolledCount ?? -1,
+      accessorFn: (row) => row.enrolledCount,
       header: "Enrolled",
       sortable: true,
-      filter: false,
+      filter: "number",
       cell: (row) =>
         // §2.1: the enrolled headcount IS a door. A count the server did not send stays dark
         // rather than rendering a link to "0 people".
@@ -187,10 +187,10 @@ export function LeavePolicyListSurface() {
     },
     {
       id: "version",
-      accessorFn: (row) => row.version ?? -1,
+      accessorFn: (row) => row.version,
       header: "Version",
       sortable: true,
-      filter: false,
+      filter: "number",
       mobileHidden: true,
       cell: (row) =>
         row.version === null ? (

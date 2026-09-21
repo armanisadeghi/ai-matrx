@@ -308,10 +308,10 @@ export function LeaveQueueSurface() {
     },
     {
       id: "hours",
-      accessorFn: (row) => row.request?.requestedHours ?? Number.NEGATIVE_INFINITY,
+      accessorFn: (row) => row.request?.requestedHours ?? null,
       header: "Hours",
       sortable: true,
-      filter: false,
+      filter: "number",
       cell: (row) => (
         <span className="tabular-nums text-foreground">
           {hoursLabel(row.request?.requestedHours)}
@@ -320,11 +320,10 @@ export function LeaveQueueSurface() {
     },
     {
       id: "balance",
-      accessorFn: (row) =>
-        row.request?.conflictCheck?.projectedBalanceAtStart ?? Number.NEGATIVE_INFINITY,
+      accessorFn: (row) => row.request?.conflictCheck?.projectedBalanceAtStart ?? null,
       header: "Balance on the start date",
       sortable: true,
-      filter: false,
+      filter: "number",
       cell: (row) => {
         const projected = row.request?.conflictCheck?.projectedBalanceAtStart;
         if (projected === null || projected === undefined) {
@@ -345,12 +344,13 @@ export function LeaveQueueSurface() {
     },
     {
       id: "findings",
-      accessorFn: (row) =>
-        (row.request?.conflictCheck?.hard.length ?? 0) +
-        (row.request?.conflictCheck?.advisory.length ?? 0),
+      accessorFn: (row) => {
+        const check = row.request?.conflictCheck;
+        return check ? check.hard.length + check.advisory.length : null;
+      },
       header: "What the checks found",
       sortable: true,
-      filter: false,
+      filter: "number",
       cell: (row) => {
         const check = row.request?.conflictCheck;
         if (!check) {

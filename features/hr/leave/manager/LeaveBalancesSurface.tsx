@@ -224,34 +224,34 @@ export function LeaveBalancesSurface() {
     },
     {
       id: "accrued",
-      accessorFn: (row) => row.accruedToDate ?? Number.NEGATIVE_INFINITY,
+      accessorFn: (row) => (row.unlimited === true ? null : row.accruedToDate),
       header: "Accrued to date",
       sortable: true,
-      filter: false,
+      filter: "number",
       cell: (row) => <LeaveFigureCell row={row} value={row.accruedToDate} />,
     },
     {
       id: "used",
-      accessorFn: (row) => row.usedTaken ?? Number.NEGATIVE_INFINITY,
+      accessorFn: (row) => (row.unlimited === true ? null : row.usedTaken),
       header: "Used (taken)",
       sortable: true,
-      filter: false,
+      filter: "number",
       cell: (row) => <LeaveFigureCell row={row} value={row.usedTaken} />,
     },
     {
       id: "upcoming",
-      accessorFn: (row) => row.approvedUpcoming ?? Number.NEGATIVE_INFINITY,
+      accessorFn: (row) => (row.unlimited === true ? null : row.approvedUpcoming),
       header: "Approved upcoming",
       sortable: true,
-      filter: false,
+      filter: "number",
       cell: (row) => <LeaveFigureCell row={row} value={row.approvedUpcoming} />,
     },
     {
       id: "pending",
-      accessorFn: (row) => row.pendingApproval ?? Number.NEGATIVE_INFINITY,
+      accessorFn: (row) => (row.unlimited === true ? null : row.pendingApproval),
       header: "Pending approval",
       sortable: true,
-      filter: false,
+      filter: "number",
       cell: (row) => <LeaveFigureCell row={row} value={row.pendingApproval} />,
     },
     /*
@@ -267,18 +267,18 @@ export function LeaveBalancesSurface() {
     */
     {
       id: "available",
-      accessorFn: (row) => row.bookableNow ?? Number.NEGATIVE_INFINITY,
+      accessorFn: (row) => (row.unlimited === true ? null : row.bookableNow),
       header: "Available",
       sortable: true,
-      filter: false,
+      filter: "number",
       cell: (row) => <LeaveBookableCell row={row} />,
     },
     {
       id: "after-pending",
-      accessorFn: (row) => row.available ?? Number.NEGATIVE_INFINITY,
+      accessorFn: (row) => (row.unlimited === true ? null : row.available),
       header: <LeaveAfterPendingHeader />,
       sortable: true,
-      filter: false,
+      filter: "number",
       cell: (row) => <LeaveAfterPendingCell row={row} />,
     },
     {
@@ -291,10 +291,10 @@ export function LeaveBalancesSurface() {
     },
     {
       id: "cap",
-      accessorFn: (row) => row.balanceCap ?? Number.NEGATIVE_INFINITY,
+      accessorFn: (row) => (row.unlimited === true ? null : row.balanceCap),
       header: "Holding cap",
       sortable: true,
-      filter: false,
+      filter: "number",
       mobileHidden: true,
       cell: (row) =>
         row.unlimited === true ? (
