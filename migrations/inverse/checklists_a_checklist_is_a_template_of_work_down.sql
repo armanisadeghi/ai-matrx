@@ -14,10 +14,23 @@
 
 set lock_timeout = '5s';
 
-drop trigger if exists zz_ckl_watch on custom.record;
+-- 🚨 RE-POINTED TO THE LIVE TRIGGERS (lane RED-SUITES-3, 2026-09-21). This file named only the
+-- ROW-level trigger `zz_ckl_watch`, and
+-- `writeperf2_the_after_triggers_fire_once_per_statement.sql` replaced it with a STATEMENT-level
+-- pair (`zz_ckl_watch_s_i` / `_s_u` over `custom._checklist_watch_stmt_insert` / `_stmt_update`,
+-- both of which call `custom._checklist_watch_for`). So this inverse dropped a body nothing
+-- calls, the watcher kept running, and the block it exists to turn red stayed green for the
+-- previous block's reason — which is exactly what `checklists_red` RED 4 was found doing.
+-- The triggers come off BEFORE their functions.
+drop trigger if exists zz_ckl_watch     on custom.record;
+drop trigger if exists zz_ckl_watch_s_i on custom.record;
+drop trigger if exists zz_ckl_watch_s_u on custom.record;
 drop trigger if exists zz_ckl_step_guard on custom.record;
 
 drop function if exists custom._checklist_watch();
+drop function if exists custom._checklist_watch_stmt_insert();
+drop function if exists custom._checklist_watch_stmt_update();
+drop function if exists custom._checklist_watch_for(text, custom.record, custom.record);
 drop function if exists custom._checklist_step_guard();
 
 drop index if exists custom.checklist_template_trigger_idx;
