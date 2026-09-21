@@ -1,0 +1,26 @@
+[
+  {
+    "when": "2026-09-21T01:01:15.442Z",
+    "crew": "C",
+    "use_case": "US large airports relocation route planning",
+    "doing": "create a new table by name through /data-v2's own UI",
+    "said": "Favorites\nAI Matrx\nLaunchpad\nAI Work\nChat\nAgents\nMasterwork\nDocs\nData\nMy Orgs\nKnowledge\nAgent Apps\nWorkflows\nShapes\nReports\nPublish\nWorkspaces\nFiles\nHR\nCRM\nUtilities\nMedia\nLibraries\nTranscripts\nCode\nAutomations\nLegal Hub\nMedical Hub (Soon)\nEducation Hub\nPrint\nMarketing\nGames\nCommunication\nWorkflow Studio\nAdmin Launchpad\nAdministration\nError Inspector\nShow Indicator\nProduction\nAI v2\nWindows\nSettings\nData\n99+\nadmin@admin.com\nAll records\ndefault\nNew view\nAdd field\nSettings\nImport\nDashboards\nForms\nNotifications\nPortals\nInbox\nShare\nCSV\nXLSX\nAll records\nGrid\nKanban\nCalendar\nGallery\nCompass Route Relocation Advisors: US Large Airports\n\nNot live: this host bound no realtime port, so this list updates when you reload it.\n\nDefault view\nDefault view\nNo groups\nNew record\nUnknown total\nShowing the 0 records loaded so far. The total number of records in this table is not known.\nTITLE\n\tACTIONS\n\n\nNo records yet\n\nAdd the first one and it appears here.",
+    "expected": "an empty table ready for columns"
+  },
+  {
+    "when": "2026-09-21T01:01:29.023Z",
+    "crew": "C",
+    "use_case": "US large airports relocation route planning",
+    "doing": "look for a bulk-paste-rows control on the /data-v2 grid before entering 50 airports one at a time",
+    "said": "no 'Paste' control was found on this table's toolbar",
+    "expected": "a way to paste many rows at once (as a spreadsheet or the older /data 'Paste' button offers), since typing 50 rows through individual cell clicks is not how a practitioner would enter this dataset"
+  },
+  {
+    "when": "2026-09-21T01:01:34.590Z",
+    "crew": "C",
+    "use_case": "US large airports relocation route planning",
+    "doing": "enter real per-cell values for the added rows",
+    "said": "Added 8 blank rows via the \"New record\" control, but each cell must be opened and typed individually (double-click to edit, per the product's own tour doc) with no multi-cell fill or paste observed on this grid — entering all 50 real airports this way would take one interaction per cell (250 cell edits)",
+    "expected": "a grid that supports pasting a block of cells (row x column) at once for a dataset of this size, the way Excel/Sheets/Airtable do"
+  }
+]
