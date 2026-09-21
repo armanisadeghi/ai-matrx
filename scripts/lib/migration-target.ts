@@ -227,6 +227,15 @@ const HEADER_TARGET_RE = /^\s*--\s*target\s*:\s*(.+?)\s*$/i;
 const HEADER_ADDITIVE_RE = /^\s*--\s*additive\s*:\s*yes\s*$/i;
 const HEADER_SEEDS_GUARDS_RE = /^\s*--\s*seeds-guards\s*:\s*yes\s*$/i;
 const HEADER_GUARD_RE = /^\s*--\s*guard\s*:\s*([a-z0-9_]+)\s*\/\s*([a-z0-9_.]+)\s*$/i;
+/**
+ * A knob-directive ATTEMPT: one identifier, or one `feature/key`, and nothing else.
+ * `-- guard: custom` is this (malformed). A sentence — `-- Guard: the test at
+ * features/ai-work/…/file.test.ts` — is not: migrations use "Guard:" as English
+ * for the witness that watches the file, and refusing those blocked every runner
+ * that read the header, including `--accept-drift`, which executes nothing.
+ */
+const HEADER_GUARD_ATTEMPT_RE =
+  /^\s*--\s*guard\s*:\s*[A-Za-z0-9_]+(?:\/[A-Za-z0-9_.]+)?\s*$/i;
 const HEADER_ALLOWS_RE = /^\s*--\s*allows\s*:\s*(.+?)\s*$/i;
 const HEADER_ALLOWS_REVOKE_RE = /^revoke\s+([a-z_][a-z0-9_]*)$/;
 const HEADER_CHAIR_STEP_RE = /^\s*--\s*chair-step\s*:\s*(.+?)\s*$/i;
@@ -324,7 +333,7 @@ export function readHeader(sql: string): MigrationHeader {
     if (HEADER_SEEDS_GUARDS_RE.test(line)) seedsGuards = true;
     const g = line.match(HEADER_GUARD_RE);
     if (g) guard = { feature: g[1]!, key: g[2]! };
-    if (/^\s*--\s*guard\s*:/.test(line) && !g) {
+    else if (HEADER_GUARD_ATTEMPT_RE.test(line)) {
       fail([
         `\`${line.trim()}\` is not a guard key.`,
         `  platform.feature_knob's primary key is TWO columns, (feature, key), so the guard`,

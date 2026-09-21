@@ -127,7 +127,7 @@ the two named above.
 | `-- target: branch,production` | the campaign contract | Judged by the ALLOW-LIST **at both targets** — see §4. |
 | *(no `-- target:` line)* | production-only by AMNESTY | Every migration written before `--target` existed. Judged by the DENY-LIST at production; reaches the branch only with `-- chair-step:`. |
 | `-- additive: yes` | required by any header that names production | |
-| `-- guard: <feature>/<key>` | required by any header that names production | `platform.feature_knob`'s key is two columns, so the form is `feature/key`. |
+| `-- guard: <feature>/<key>` | required by any header that names production | `platform.feature_knob`'s key is two columns, so the form is `feature/key`. A line that is only an identifier (`-- guard: custom`) is still this directive and is refused as malformed. A sentence that happens to start with "Guard:" — a test path, a witness command — is prose, not a directive, and is ignored. |
 | `-- seeds-guards: yes` | stands in for `-- guard:` for the ONE file that seeds the knob register | Bounded to `platform.feature_knob`, `platform.knob_override`, `platform.knob_rung_lock`; may not also carry `-- guard:`; may not create a trigger. |
 | `-- allows: revoke <schema>` | the ONE bounded escape from "a REVOKE" | Schema may not be protected; EVERY `REVOKE` in the body must stay inside it; the file still needs `-- additive: yes` and `-- guard:`; an unused exemption is refused. |
 | `-- chair-step: <why ≥ 12 chars>` | the HEADER-LESS route for anything non-additive by construction | Waives the deny-list on a header-less file; **waives nothing on a header that names production**, where carrying both is refused. See §5. |
