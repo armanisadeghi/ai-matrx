@@ -290,8 +290,52 @@ begin
 end;
 $function$;
 
-drop function if exists iam.member_lane_confers(uuid, uuid, text, uuid, uuid);
-drop function if exists iam.grant_addressed_level(uuid, text, uuid);
+-- 🚨 THE LANE IS NEUTERED, NOT DROPPED (lane RED-SUITES-3, 2026-09-21). `custom.addressed_cap`
+-- — the access kernel's own body, reached by `reaches_directly` → `has_visibility` →
+-- `effective_level` and so by every share door — CALLS `iam.member_lane_confers` on its
+-- twenty-fifth line. Dropping it left the kernel calling a function that does not exist, and
+-- the twin died inside `custom.share_revoke` before asking any of its five questions. The
+-- defect LEVEL-FIX closed is BEHAVIOURAL — membership alone confers the organization's level —
+-- so the way to put it back is to make the lane confer nothing, which is exactly what the
+-- kernel saw before LEVEL-FIX existed. Same for `iam.grant_addressed_level`, which
+-- `custom.addressed_cap_specific` calls on its rung 1 and which this file used to drop too.
+do $plant_lane$
+declare
+  v_def  text;
+  v_arm  constant text :=
+    '  if p_id is not null' || E'\n' ||
+    '     and iam.grant_addressed_level(p_user_id, p_type, p_id) is not null then' || E'\n' ||
+    '    return null;' || E'\n' ||
+    '  end if;' || E'\n';
+begin
+  select pg_get_functiondef(p.oid) into v_def
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'iam' and p.proname = 'member_lane_confers';
+  if v_def is null then
+    raise exception 'RED precondition: iam.member_lane_confers does not exist, so its override arm cannot be taken out';
+  end if;
+  if position(v_arm in v_def) = 0 then
+    raise exception 'RED precondition: the live iam.member_lane_confers no longer carries the VIS-19 override arm this twin removes, so the plant would prove nothing. Re-derive it from the live body before trusting anything below.';
+  end if;
+  v_def := replace(v_def, v_arm, '');
+  -- and the two switches, so the lane confers unconditionally, which is what the kernel saw
+  -- before LEVEL-FIX gave it any of these three arms.
+  v_def := replace(v_def, '  if not v_store_on then' || E'\n' || '    return null;' || E'\n' || '  end if;' || E'\n', '');
+  v_def := replace(v_def, '  if not iam.member_lane_open(p_organization_id) then' || E'\n' || '    return null;' || E'\n' || '  end if;' || E'\n', '');
+  execute v_def;
+end
+$plant_lane$;
+-- 🚨 `iam.grant_addressed_level` IS KERNEL INFRASTRUCTURE NOW AND IS NO LONGER DROPPED
+-- (lane RED-SUITES-3, 2026-09-21). LEVEL-FIX created it, so this took it away again — and
+-- `custom.addressed_cap_specific`, the access kernel's own rung-1 body, calls it on its
+-- fifteenth line. Dropping it left the kernel calling a function that no longer exists and
+-- `levelfix_red.sql` died there:
+--     ERROR:  function iam.grant_addressed_level(uuid, text, uuid) does not exist
+--     CONTEXT: PL/pgSQL function custom.addressed_cap_specific(...) line 10 at assignment
+-- before any of its five blocks was asked. A kernel that cannot answer is not the defect this
+-- restores. The defect IS restored, in full, by the `iam.member_lane_confers` drop and the
+-- knob revert: membership alone stops conferring the organization's level.
+-- (drop of iam.grant_addressed_level removed here for the reason above)
 
 delete from platform.client_callable_door
- where schema_name = 'iam' and function_name in ('member_lane_confers', 'grant_addressed_level');
+ where schema_name = 'iam' and function_name in ('member_lane_confers');
