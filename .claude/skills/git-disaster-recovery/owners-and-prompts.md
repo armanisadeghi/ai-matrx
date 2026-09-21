@@ -63,8 +63,8 @@ Each is four plain lines. Pick the one that matches where the shared folder is.
 **A. The shared folder is still dirty. Isolate your work.**
 
 ```
-Create a new local branch (not main) and commit only your files to it.
-If your work already sits on a branch, worktree, or PR, leave it there and name it.
+Commit only your files, by explicit path, in the shared checkout on main and push.
+If your work already sits on a remote branch or PR, name it; local branches and worktrees are forbidden.
 Do not pull, reset, merge, or resolve conflicts. Do not touch the shared folder.
 Reply: what you own, the branch or PR name, and whether GitHub main already has it.
 ```

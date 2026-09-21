@@ -149,15 +149,15 @@ Mechanics:
   under a newer namesake tip; merging it can delete an enormous amount of
   later work. Extract the unique commit or hunk, never merge the ancestor.
 - Unique commits that exist only on stale local `main` are cherry-picked in
-  order onto the intake tip, not merged as objects.
-- One leftover at a time onto intake, then push. Re-probe `merge-tree`
+  order onto `origin/main` in git's database, not merged as objects.
+- One leftover at a time onto `origin/main`, then push. Re-probe `merge-tree`
   against the new tip after every push.
 - Mechanical git conflicts (two imports, two changelog lines, two ledger IDs)
   are keep-both, with the later filing taking the next free ID.
 - After the work is reachable from `origin/main`, delete the branch, the PR,
   and the worktree. Re-cherry immediately before each delete.
-- A worktree whose commit is on `origin/main` is a delete, unless it is the
-  intake you are using. A hollow tree (thousands of ` D`) is not product; if
+- A worktree whose commit is on `origin/main` is a delete, unless another
+  session is landing from it this minute. A hollow tree (thousands of ` D`) is not product; if
   `worktree remove --force` hangs, skip it and keep going.
 - A stash is dropped only when every file in it is on GitHub. A mixed stash
   has its unique lines landed first.
@@ -331,7 +331,7 @@ done. A parked cluster is not done.
 | "A git conflict is a real conflict" | A real conflict is one behavior written twice, two ways. |
 | "The inventory script will finish eventually" | Kill it after a minute. Count with plain git. |
 | "Cherry said plus, so this leftover is newer" | A plus on an old branch is often a stale ancestor. Merging it unwinds main. |
-| "It is on origin/main, delete the worktree" | Unless it is the live intake. |
+| "It is on origin/main, delete the worktree" | Yes. Delete it. |
 | "The hung worktree blocks the repo" | Skip it. Finish the rest. |
 | "The first release shipped, so we are done" | Done is the 30-minute loop running again. |
 | "I'll write a wave report" | Arman wants: folder state in one sentence, named branches, one-line conflicts, paste-ready owner lines. |
