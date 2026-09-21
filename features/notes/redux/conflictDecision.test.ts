@@ -22,6 +22,7 @@ const ORG = "22222222-2222-4222-8222-222222222222";
 
 function row(overrides: Partial<Note> = {}): Note {
   return {
+    custom_fields: {},
     id: ID, label: "Original", content: "base", folder_name: "Draft", folder_id: null,
     tags: [], metadata: { source: "test" }, organization_id: ORG, project_id: null,
     task_id: null, deleted_at: null, visibility: "personal", version: 4, sync_version: 0,

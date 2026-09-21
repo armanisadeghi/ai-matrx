@@ -87,6 +87,7 @@ const ORG = "11111111-1111-4111-8111-111111111111";
 const ACTOR = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
 const row = (overrides: Partial<Note> = {}): Note => ({
+  custom_fields: {},
   id: ID, organization_id: ORG, version: 4, content: "base", label: "N",
   folder_name: null, folder_id: null, tags: [], metadata: {}, visibility: "personal",
   position: 0, project_id: null, task_id: null, created_at: "2026-09-14T00:00:00.000Z",

@@ -17,6 +17,7 @@ const ORG_ID = "11111111-1111-4111-8111-111111111111";
 
 function note(overrides: Partial<Note> = {}): Note {
   return {
+    custom_fields: {},
     id: NOTE_ID,
     content: "acknowledged body",
     content_hash: null,

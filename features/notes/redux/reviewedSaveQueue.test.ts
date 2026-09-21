@@ -20,7 +20,7 @@ enableMapSet();
 const ORG = "11111111-1111-4111-8111-111111111111";
 const USER = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const ID = "22222222-2222-4222-8222-222222222222";
-const note = (overrides: Partial<Note> = {}): Note => ({ id: ID, organization_id: ORG, content: "before", label: "note", folder_id: null, folder_name: null, tags: [], metadata: {}, position: 0, project_id: null, task_id: null, visibility: "personal", version: 7, updated_at: "2026-09-13T00:00:00.000Z", created_at: "2026-09-13T00:00:00.000Z", created_by: USER, updated_by: null, deleted_at: null, content_hash: null, file_path: null, last_device_id: null, sync_version: 0, ...overrides });
+const note = (overrides: Partial<Note> = {}): Note => ({ custom_fields: {}, id: ID, organization_id: ORG, content: "before", label: "note", folder_id: null, folder_name: null, tags: [], metadata: {}, position: 0, project_id: null, task_id: null, visibility: "personal", version: 7, updated_at: "2026-09-13T00:00:00.000Z", created_at: "2026-09-13T00:00:00.000Z", created_by: USER, updated_by: null, deleted_at: null, content_hash: null, file_path: null, last_device_id: null, sync_version: 0, ...overrides });
 
 function query(result: unknown) {
   const value = { select: jest.fn(), eq: jest.fn(), is: jest.fn(), update: jest.fn(), single: jest.fn(), maybeSingle: jest.fn() };
