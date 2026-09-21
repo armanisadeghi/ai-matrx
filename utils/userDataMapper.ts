@@ -1,6 +1,22 @@
 // File: utils/userDataMapper.ts
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+import type { ApiClaimsUser } from "@/utils/supabase/claimsUser";
 import type { AdminLevel } from "@/utils/supabase/userSessionData";
+
+/**
+ * What this mapper accepts: the auth server's full user RECORD (from the one
+ * `fetchAuthUserRecord` door, in the browser, after hydration) OR the verified
+ * access-token CLAIMS (from `getServerAuth()` on every page render). The
+ * claims carry `id`, `email`, `phone`, `is_anonymous`, `app_metadata` and
+ * `user_metadata`; the record adds `created_at`, `*_confirmed_at`,
+ * `last_sign_in_at` and `identities`, which map to `null` until the browser
+ * fills them in. A page render never waits on the auth server for them.
+ */
+export type MappableUser = SupabaseUser | ApiClaimsUser;
+
+type RecordOnlyFields = Partial<
+  Pick<SupabaseUser, "created_at" | "email_confirmed_at" | "last_sign_in_at" | "identities">
+>;
 
 export interface AppMetadata {
   provider: string | null;
@@ -56,20 +72,21 @@ export interface UserData {
  * @returns Mapped UserData object
  */
 export function mapUserData(
-  user: SupabaseUser | null | undefined,
+  user: MappableUser | null | undefined,
   accessToken?: string | null,
   isAdmin?: boolean,
   adminLevel?: AdminLevel | null,
 ): UserData {
   const userId = user?.id || null;
+  const record = (user ?? {}) as RecordOnlyFields;
   return {
     id: userId,
-    createdAt: user?.created_at || null,
+    createdAt: record.created_at || null,
     isAnonymous: user?.is_anonymous === true,
     email: user?.email || null,
     phone: user?.phone || null,
-    emailConfirmedAt: user?.email_confirmed_at || null,
-    lastSignInAt: user?.last_sign_in_at || null,
+    emailConfirmedAt: record.email_confirmed_at || null,
+    lastSignInAt: record.last_sign_in_at || null,
     appMetadata: {
       provider: user?.app_metadata?.provider || null,
       providers: user?.app_metadata?.providers || [],
@@ -82,7 +99,7 @@ export function mapUserData(
       picture: user?.user_metadata?.picture || null,
     },
     identities:
-      user?.identities?.map((identity) => ({
+      record.identities?.map((identity) => ({
         provider: identity?.provider || null,
         id: identity?.id || null,
         user_id: identity?.user_id || null,

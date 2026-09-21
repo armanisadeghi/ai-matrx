@@ -17,6 +17,7 @@
 import { NextResponse } from "next/server";
 
 import { bucketFor, confirmBooking, publicBooking } from "@/features/booking/service";
+import { typedAnswersFor } from "@/features/unified-data/typedAnswers";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +63,25 @@ export async function POST(
     delete values[page.honeypot_key];
   }
 
+  // A BROWSER INPUT HANDS OVER A STRING AND A FIELD TAKES A VALUE. Until
+  // 2026-09-21 these answers went to the door exactly as typed, so a booking
+  // page over any table with a number field answered "Vehicle Year takes a
+  // number, and it was given a string" and made no appointment. The coercion
+  // is `@ai-matrx/records`' — the same body the grid's paste uses — and the
+  // refusal it gives back names the question in the person's own words.
+  const typed = typedAnswersFor(page.fields, values);
+  if (typed.refusal) {
+    return NextResponse.json(
+      {
+        ok: false,
+        state: "error",
+        message: typed.refusal,
+        hint: "Your time is still held. Change the answer it names and book again.",
+      },
+      { status: 400 },
+    );
+  }
+
   const { origin, bucket } = bucketFor(request);
   try {
     const outcome = await confirmBooking({
@@ -69,7 +89,7 @@ export async function POST(
       holdId: body.holdId,
       origin,
       bucket,
-      values,
+      values: typed.values,
       honeypot,
       clientKey: typeof body.clientKey === "string" ? body.clientKey : null,
     });

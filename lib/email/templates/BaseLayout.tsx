@@ -8,7 +8,7 @@ import {
   Text,
   Hr,
   Img,
-} from "@react-email/components";
+} from "react-email";
 import * as React from "react";
 
 interface BaseLayoutProps {

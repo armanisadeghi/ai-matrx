@@ -23,6 +23,7 @@
 import { NextResponse } from "next/server";
 
 import { publicForm, submitPublicForm } from "@/features/forms/service";
+import { typedAnswersFor } from "@/features/unified-data/typedAnswers";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +62,20 @@ export async function POST(
     delete values[form.honeypot_key];
   }
 
+  // THE SAME CONTRACT AS THE BOOKING'S CONFIRM ROUTE, AND FOR THE SAME REASON.
+  // `FormRunner` draws real editors, so a browser usually sends a number as a
+  // number — but this route is the PUBLIC boundary, and a route that trusted
+  // the browser to have coerced would be one hand-written POST away from the
+  // store's "takes a number, and it was given a string". A value that is
+  // already the right shape is left alone.
+  const typed = typedAnswersFor(form.fields, values);
+  if (typed.refusal) {
+    return NextResponse.json(
+      { ok: false, state: "error", message: typed.refusal, hint: null },
+      { status: 400 },
+    );
+  }
+
   const origin = request.headers.get("origin") ?? new URL(request.url).origin;
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   const bucket = forwarded && forwarded.length > 0 ? forwarded : origin;
@@ -70,7 +85,7 @@ export async function POST(
       formId,
       origin,
       bucket,
-      values,
+      values: typed.values,
       honeypot,
       clientKey: typeof body.clientKey === "string" ? body.clientKey : null,
     });

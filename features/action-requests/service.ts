@@ -127,6 +127,15 @@ export interface OneTimeCodeRender extends RenderCommon {
   form: "one_time_code";
   origin: string;
   submit_label: string;
+  /**
+   * WHERE the code comes from, when the server actually knows. Nothing detects
+   * it today, so `unknown` is what arrives and the footnote says "the code this
+   * site just asked you for" rather than sending people to an app they may not
+   * be using. The page never re-derives this — the sentence is already written.
+   */
+  challenge_kind: "authenticator_app" | "text_message" | "email" | "unknown";
+  /** The challenge's own step, in seconds. What "about thirty seconds" means. */
+  period_seconds: number;
 }
 
 export type ActionRequestRender =
@@ -148,7 +157,10 @@ export interface ActionRequestReady {
   state: "ready";
   id: string;
   kind: string;
-  payload: Record<string, unknown>;
+  // `payload` is deliberately ABSENT. aidream drops it before answering: the
+  // page draws the render spec, and since 2026-09-21 the payload also carries
+  // the fencing token that proves a code belongs to the browser hold it was
+  // minted for. A token that reaches a browser is a token somebody can forward.
   render: ActionRequestRender;
   organization_id: string;
   subject_user_id: string;

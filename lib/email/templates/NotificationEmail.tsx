@@ -1,4 +1,4 @@
-import { Button, Heading, Text, Section, Hr } from "@react-email/components";
+import { Button, Heading, Text, Section, Hr } from "react-email";
 import * as React from "react";
 import { BaseLayout } from "./BaseLayout";
 

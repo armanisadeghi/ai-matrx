@@ -447,8 +447,8 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
   const disarm = armScratchSignals(scratch);
   try {
     await door(env, `create schema ${schema}`);
-    // personal-justified: the self-test creates a deliberately private probe so
-    // the live detector can prove that a bare policy leaves that tier exposed.
+    // The live detector must see a deliberately bare private probe.
+    // personal-justified: the self-test creates that private probe to prove the bare policy is exposed.
     await door(env, `create table ${schema}.probe (id uuid primary key default gen_random_uuid(),
                      created_by uuid, organization_id uuid,
                      visibility platform.visibility not null default 'personal')`);

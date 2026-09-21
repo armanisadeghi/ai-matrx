@@ -253,31 +253,36 @@ function parseRssSettings(raw: Json | null): PcShowRssSettings | null {
 /**
  * THE SIGNED-OUT ROW SHAPE (DD-230, 2026-09-14).
  *
- * `anon` holds a COLUMN grant on the podcast tables, and the six columns it
+ * `anon` holds a COLUMN grant on the podcast tables, and the five columns it
  * never holds are always the same: `created_by`, `updated_by`,
- * `organization_id`, `version`, `metadata` (DD-186 — identity, bookkeeping and
- * metadata leave regardless) and `custom_fields` (the platform extensibility
- * column, added to these tables 2026-09-20; it is NOT in
- * `PC_EPISODE_PUBLIC_COLUMNS` / `PC_SHOW_PUBLIC_COLUMNS`, so asking for it
- * would 401 the public surfaces exactly the way `select("*")` did). A public
- * reader therefore hands the display mappers a row that genuinely does not
- * carry them, and a type that REQUIRES them makes the only correct query
- * un-typable — which is exactly the pressure that kept `select("*")` in these
- * routes until /podcast was telling four published shows they did not exist.
+ * `organization_id`, `version`, `metadata`, `custom_fields` (DD-186 — identity, bookkeeping and
+ * metadata leave regardless). A public reader therefore hands the display
+ * mappers a row that genuinely does not carry them, and a type that REQUIRES
+ * them makes the only correct query un-typable — which is exactly the pressure
+ * that kept `select("*")` in these routes until /podcast was telling four
+ * published shows they did not exist.
  *
- * So the mappers take this shape: the table's row with those six optional.
+ * So the mappers take this shape: the table's row with those five optional.
  * Present for a signed-in reader, absent for a guest, never silently wrong.
  */
-type SignedOutOnlyColumns =
+type SignedOutReadable<T> = Omit<
+  T,
   | "created_by"
   | "updated_by"
   | "organization_id"
   | "version"
   | "metadata"
-  | "custom_fields";
-
-type SignedOutReadable<T> = Omit<T, SignedOutOnlyColumns> &
-  Partial<Pick<T, Extract<keyof T, SignedOutOnlyColumns>>>;
+  | "custom_fields"
+> &
+  Partial<
+    Pick<
+      T,
+      Extract<
+        keyof T,
+        "created_by" | "updated_by" | "organization_id" | "version" | "metadata"
+      >
+    >
+  >;
 
 /** `podcast.pc_articles` as a signed-out reader sees it. */
 export type PcArticleDisplayRow = SignedOutReadable<PcArticle>;

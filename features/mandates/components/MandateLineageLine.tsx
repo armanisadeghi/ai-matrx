@@ -1,5 +1,8 @@
 "use client";
 
+import { normalizeTransferJson } from "@ai-matrx/alchemy/core";
+import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
+
 // features/mandates/components/MandateLineageLine.tsx
 //
 // WHERE THIS JOB CAME FROM, AND WHAT CAME FROM IT.
@@ -67,6 +70,14 @@ export function MandateLineageLine({
       cancelled = true;
     };
   }, [mandateId, sourceMandateId]);
+
+  useMandateAlchemyTabCapture("definition", readState === "loading"
+    ? { status: "loading" }
+    : { status: "ready", data: normalizeTransferJson({
+        status: readState,
+        lineage: readState === "ready" ? lineage : null,
+        error: readState === "error" ? "The mandate lineage could not be read." : null,
+      }) }, "lineage");
 
   const base =
     host === "admin-route" ? "/administration/mandates" : "/mandates";

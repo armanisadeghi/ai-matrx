@@ -52,6 +52,7 @@ import React from "react";
 import { Database, EyeOff, Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
 import { humanizeKey } from "@/features/tool-call-visualization/result-fields/shape";
 import {
@@ -251,7 +252,14 @@ const PlatformRecordBlock: React.FC<ResultKindBlockProps> = ({
       {organizationId ? (
         <div className="text-xs text-muted-foreground">
           <span>Organization stamp: </span>
-          <span className="break-all font-medium text-foreground">{organizationId}</span>
+          <EntityRef
+            token="organization"
+            id={organizationId}
+            name={organizationId}
+            showIcon={false}
+            wrap
+            labelClassName="font-mono text-foreground"
+          />
         </div>
       ) : fields ? (
         <HonestNotice

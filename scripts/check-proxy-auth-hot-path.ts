@@ -229,6 +229,142 @@ function readApiRoutes(): Record<string, string> {
   return out;
 }
 
+
+/**
+ * THE WHOLE-REPO HALF — added 2026-09-21, the day the proxy fix from the day
+ * before was found to have left every LAYOUT on the old round trip.
+ *
+ * The proxy and the API routes were guarded; `app/(core)/layout.tsx`,
+ * `getServerAuth()`, 80-odd `features/** /service.ts` and Server Actions were
+ * not, and a locked database turned each of their `getUser()` calls into a 15s
+ * Lambda timeout. So the rule is now the whole tree, by construction:
+ *
+ *  - `.auth.getUser(` may appear ONLY in the doors named in `GETUSER_DOORS`.
+ *  - `fetchAuthUserRecord` (what those doors export) may be imported ONLY by
+ *    the callers named in `RECORD_DOOR_CALLERS`, each with its reason.
+ *  - A server file that calls `.auth.getSession(` may not read `.user` off it:
+ *    that session is whatever the cookie says, unverified. Identity comes from
+ *    `getServerAuth()` / `getClaimsUser()`.
+ *
+ * Tests and fakes are not swept; they are allowed to model the old call.
+ */
+const GETUSER_DOORS: Record<string, string> = {
+  "utils/supabase/authUserRecord.ts":
+    "THE server door to the auth-server user record (read-after-write only).",
+  "utils/supabase/authUserRecord.client.ts":
+    "THE browser door to the auth-server user record (created_at, identities, " +
+    "last_sign_in_at, *_confirmed_at) — once per browser session, after hydration.",
+  "app/api/user/profile/route.ts":
+    "PATCH echoes user_metadata back AFTER auth.updateUser wrote it; the JWT's " +
+    "user_metadata is a snapshot from issuance. Kept inline (see API_ROUTE_ALLOWED).",
+};
+
+const RECORD_DOOR_CALLERS: Record<string, string> = {
+  "features/shell/components/DeferredShellData.tsx":
+    "Fills the Redux user with the record-only fields ONCE after hydration of the " +
+    "signed-in shell; every profile / menu surface reads them from Redux.",
+  "hooks/usePublicAuthSync.ts":
+    "The same fill for public routes, once, after the local session check.",
+};
+
+const SWEPT_ROOTS = ["app", "features", "lib", "utils", "components", "hooks", "providers", "actions", "config"];
+const SWEPT_EXT = /\.(ts|tsx)$/;
+const NOT_SWEPT = /(\.test\.|\.spec\.|\.stories\.|\.d\.ts$|(^|\/)__tests__\/|(^|\/)__mocks__\/|(^|\/)test-utils\/|(^|\/)node_modules\/)/;
+
+export function auditRepoIdentityCalls(
+  files: Record<string, string>,
+  doors: Record<string, string> = GETUSER_DOORS,
+  callers: Record<string, string> = RECORD_DOOR_CALLERS,
+): Finding[] {
+  const findings: Finding[] = [];
+  for (const [path, raw] of Object.entries(files)) {
+    if (NOT_SWEPT.test(path)) continue;
+    const body = code(raw);
+
+    if (/\.auth\s*\.\s*getUser\s*\(/.test(body) && !(path in doors)) {
+      findings.push({
+        where: path,
+        what: "calls auth.getUser() outside the one allow-listed door — an auth-server round trip",
+        remedy:
+          "Server: `const { user, isAuthenticated, authUnavailable } = await getServerAuth()` " +
+          "(layouts, pages, Server Actions, services) or `getClaimsUser(client)` when you " +
+          "already hold a client. Browser: `getClaimsUser(createClient())`, or read the user " +
+          "from Redux. Need created_at / identities / last_sign_in_at / *_confirmed_at? They " +
+          "arrive in Redux via fetchAuthUserRecord from DeferredShellData; read them there. " +
+          "A read-after-write of auth.updateUser is the ONLY reason to add a door here.",
+      });
+    }
+
+    const importsDoor = /from\s+["'][^"']*utils\/supabase\/authUserRecord(\.client)?["']/.test(body);
+    if (importsDoor && !(path in callers) && !(path in doors)) {
+      findings.push({
+        where: path,
+        what: "imports fetchAuthUserRecord but is not an allow-listed caller of the record door",
+        remedy:
+          "The record door is for the fields the JWT does not carry, read ONCE after hydration " +
+          "by the shell. Read them from Redux instead. If this surface truly must go to the " +
+          "auth server itself, add it to RECORD_DOOR_CALLERS in this script with the reason.",
+      });
+    }
+
+    if (
+      /\.auth\s*\.\s*getSession\s*\(/.test(body) &&
+      /\bsession\??\.user\b|\bdata\.session\??\.user\b/.test(body) &&
+      !/^\s*["']use client["']/m.test(body)
+    ) {
+      findings.push({
+        where: path,
+        what: "reads `.user` off auth.getSession() on the server — an UNVERIFIED identity, and a hidden refresh round trip",
+        remedy:
+          "getSession() believes whatever the cookie says and may trigger a token refresh. Decide " +
+          "identity with getServerAuth() / getClaimsUser(client); keep getSession() only for the " +
+          "access token string.",
+      });
+    }
+  }
+
+  for (const path of Object.keys(doors)) {
+    if (!(path in files)) continue;
+    if (/\.auth\s*\.\s*getUser\s*\(/.test(code(files[path]))) continue;
+    findings.push({
+      where: path,
+      what: "is named in GETUSER_DOORS but no longer calls auth.getUser()",
+      remedy: "Delete the entry. A stale door hides the next real one.",
+    });
+  }
+  for (const path of Object.keys(callers)) {
+    if (!(path in files)) continue;
+    if (/authUserRecord/.test(code(files[path]))) continue;
+    findings.push({
+      where: path,
+      what: "is named in RECORD_DOOR_CALLERS but no longer uses the record door",
+      remedy: "Delete the entry. A stale exemption hides the next real one.",
+    });
+  }
+  return findings;
+}
+
+/** Every swept `.ts`/`.tsx` in the repo, keyed by repo-relative path. */
+function readSweptFiles(): Record<string, string> {
+  const out: Record<string, string> = {};
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const abs = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === "node_modules" || entry.name === ".next") continue;
+        walk(abs);
+      } else if (SWEPT_EXT.test(entry.name)) {
+        out[relative(ROOT, abs)] = readFileSync(abs, "utf8");
+      }
+    }
+  };
+  for (const root of SWEPT_ROOTS) {
+    const abs = join(ROOT, root);
+    if (existsSync(abs)) walk(abs);
+  }
+  return out;
+}
+
 /**
  * The matcher this repo actually ships. The "clean" fixtures use it verbatim so a
  * self-test pass means the real pattern satisfies MATCHER_CASES — a toy matcher
@@ -340,6 +476,72 @@ function selfTest(): boolean {
     ],
   ];
 
+  const repoCases: [string, Record<string, string>, number][] = [
+    [
+      "a layout on getServerAuth is clean",
+      { "app/(core)/data/layout.tsx": 'import { getServerAuth } from "@/utils/supabase/getServerAuth";\nconst { isAuthenticated } = await getServerAuth();' },
+      0,
+    ],
+    [
+      "getUser() in a layout is caught",
+      { "app/(core)/data/layout.tsx": "const { data: { user } } = await supabase.auth.getUser();" },
+      1,
+    ],
+    [
+      "getUser() in a feature service is caught",
+      { "features/hr/service.ts": "const { data } = await supabase.auth.getUser();" },
+      1,
+    ],
+    [
+      "getUser() in a Client Component is caught too — the browser has getClaims",
+      { "features/x/Thing.tsx": '"use client";\nconst { data } = await supabase.auth.getUser();' },
+      1,
+    ],
+    [
+      "the doors themselves are allowed",
+      {
+        "utils/supabase/authUserRecord.ts": "const { data, error } = await client.auth.getUser();",
+        "utils/supabase/authUserRecord.client.ts": "const { data, error } = await createClient().auth.getUser();",
+      },
+      0,
+    ],
+    [
+      "a door that stopped calling getUser is a stale entry",
+      { "utils/supabase/authUserRecord.ts": "export const x = 1;" },
+      1,
+    ],
+    [
+      "an allow-listed caller may import the record door",
+      { "features/shell/components/DeferredShellData.tsx": 'import { fetchAuthUserRecord } from "@/utils/supabase/authUserRecord.client";\nawait fetchAuthUserRecord();' },
+      0,
+    ],
+    [
+      "any other importer of the record door is caught",
+      { "features/profile/Page.tsx": 'import { fetchAuthUserRecord } from "@/utils/supabase/authUserRecord.client";' },
+      1,
+    ],
+    [
+      "server code deciding identity from getSession().user is caught",
+      { "features/y/service.ts": "const { data: { session } } = await supabase.auth.getSession(); if (!session?.user) throw x;" },
+      1,
+    ],
+    [
+      "getSession() for the access token alone is fine",
+      { "app/(core)/layout.tsx": "const { data: { session } } = await supabase.auth.getSession(); const t = session?.access_token;" },
+      0,
+    ],
+    [
+      "tests and fakes are not swept",
+      { "utils/supabase/middleware.test.ts": "getUser: async () => supabase.auth.getUser()", "test-utils/supabase-auth.ts": "auth.getUser()" },
+      0,
+    ],
+    [
+      "a comment NAMING getUser is not a call",
+      { "features/z/service.ts": "// we used to call supabase.auth.getUser() here\nconst x = 1;" },
+      0,
+    ],
+  ];
+
   let ok = true;
   for (const [name, files, expected] of cases) {
     const got = auditProxyAuth(files).length;
@@ -349,6 +551,12 @@ function selfTest(): boolean {
   }
   for (const [name, files, expected, allowed] of routeCases) {
     const got = auditApiRoutes(files, allowed ?? {}).length;
+    const pass = got === expected;
+    if (!pass) ok = false;
+    console.log(`  ${pass ? "PASS" : "FAIL"}  ${name} — expected ${expected}, got ${got}`);
+  }
+  for (const [name, files, expected] of repoCases) {
+    const got = auditRepoIdentityCalls(files).length;
     const pass = got === expected;
     if (!pass) ok = false;
     console.log(`  ${pass ? "PASS" : "FAIL"}  ${name} — expected ${expected}, got ${got}`);
@@ -371,12 +579,19 @@ function main(): void {
   }
 
   const apiRoutes = readApiRoutes();
-  const findings = [...auditProxyAuth(files), ...auditApiRoutes(apiRoutes)];
+  const swept = readSweptFiles();
+  const findings = [
+    ...auditProxyAuth(files),
+    ...auditApiRoutes(apiRoutes),
+    ...auditRepoIdentityCalls(swept),
+  ];
   if (findings.length === 0) {
     console.log(
       "check:proxy-auth-hot-path — OK. The proxy resolves identity locally, " +
         "bounded, and reads authUnavailable; the matcher leaves static bytes alone. " +
-        `All ${Object.keys(apiRoutes).length} app/api routes resolve the caller from the JWT.`,
+        `All ${Object.keys(apiRoutes).length} app/api routes resolve the caller from the JWT, ` +
+        `and across ${Object.keys(swept).length} swept files auth.getUser() exists only behind ` +
+        `the ${Object.keys(GETUSER_DOORS).length} named doors.`,
     );
     return;
   }

@@ -362,6 +362,17 @@ describe("platform_record routes to its own component", () => {
     expect(markup).toContain("Open Q3 Plan in AI Matrx");
   });
 
+  it("the organization stamp is a canonical organization door, not a bare id", () => {
+    const organizationId = String(CANONICAL.organization_id);
+    const markup = mount(
+      <PlatformRecordBlock content={JSON.stringify({ __kind: KIND, ...CANONICAL })} />,
+    );
+
+    expect(markup).toContain(`title="Open ${organizationId}"`);
+    expect(markup).toContain(`href="/organizations/${organizationId}"`);
+    expect(markup).toContain(`title="Open ${organizationId} in a new tab"`);
+  });
+
   it("a Record whose entity token has no wired opener renders no control at all", () => {
     // Derived from the F-93 census, never hard-coded: a token this suite
     // names as doorless today can gain a door tomorrow (it happened to
