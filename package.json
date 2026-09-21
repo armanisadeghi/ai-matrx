@@ -184,6 +184,8 @@
     "check:migrations": "tsx scripts/check-migrations.ts",
     "check:kernel-rerecord-pairing": "tsx scripts/check-kernel-rerecord-pairing.ts",
     "check:kernel-rerecord-pairing:self-test": "tsx scripts/check-kernel-rerecord-pairing.ts --self-test",
+    "check:unpinned-security-columns": "tsx scripts/check-unpinned-security-columns.ts",
+    "check:unpinned-security-columns:self-test": "tsx scripts/check-unpinned-security-columns.ts --self-test",
     "check:client-writes-are-granted": "tsx scripts/check-client-writes-are-granted.ts",
     "check:client-writes-are-granted:self-test": "tsx scripts/check-client-writes-are-granted.ts --self-test",
     "db:apply": "tsx scripts/apply-migration.ts",

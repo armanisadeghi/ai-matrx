@@ -109,6 +109,19 @@ if $STRICT; then
         "Sign-out scope (a bare signOut() logs the account out of every device)|pnpm check:signout-scope"
         "Service-role writes to provenance-governed tables (the DB refuses them with 23514)|pnpm check:admin-client-governed-writes"
         "Hidden failure announcements (an error only a screen reader can perceive is a dead button)|pnpm check:hidden-alerts"
+        # 🚨 CRITICAL-1 (VERIFIER-8, 2026-09-21). `iam.api_keys` granted INSERT to
+        # `authenticated` over PostgREST with an RLS policy that pinned `created_by`
+        # and `organization_id` and said NOTHING about `service_user_id` — the column
+        # that decides whose identity a presented key adopts — so any signed-in member
+        # could mint an active key that authenticated as the organization's owner.
+        # `check:rls-on`, `check:anon-write-surface` and `check:client-writes-are-granted`
+        # were all satisfied: RLS was on and the grant existed. Nothing asked whether
+        # the policy constrained the columns that decide WHO SOMEBODY IS. This does, and
+        # `:self-test` proves it on the verbatim pre-fix policy bytes. It carries a
+        # shrink-only baseline of the 233 findings inherited on the day it was written:
+        # any NEW one fails, and a baseline entry that stops existing fails too.
+        "Unpinned identity/credential columns on client-writable tables|pnpm check:unpinned-security-columns"
+        "…and that guard can still fail|pnpm check:unpinned-security-columns:self-test"
         # THE ROUTE MANIFEST THE SPINE ACTUALLY READS. `platform.route_manifest`
         # is what aidream/services/notifications/link_honesty.py asks before it
         # puts a deep link in an email, an in-app notice or a text — and it is
@@ -644,6 +657,19 @@ else
     # Non-strict variants still print the full loud report; they exit 0.
     declare -a GATES=(
         "Hidden failure announcements (an error only a screen reader can perceive is a dead button)|pnpm check:hidden-alerts"
+        # 🚨 CRITICAL-1 (VERIFIER-8, 2026-09-21). `iam.api_keys` granted INSERT to
+        # `authenticated` over PostgREST with an RLS policy that pinned `created_by`
+        # and `organization_id` and said NOTHING about `service_user_id` — the column
+        # that decides whose identity a presented key adopts — so any signed-in member
+        # could mint an active key that authenticated as the organization's owner.
+        # `check:rls-on`, `check:anon-write-surface` and `check:client-writes-are-granted`
+        # were all satisfied: RLS was on and the grant existed. Nothing asked whether
+        # the policy constrained the columns that decide WHO SOMEBODY IS. This does, and
+        # `:self-test` proves it on the verbatim pre-fix policy bytes. It carries a
+        # shrink-only baseline of the 233 findings inherited on the day it was written:
+        # any NEW one fails, and a baseline entry that stops existing fails too.
+        "Unpinned identity/credential columns on client-writable tables|pnpm check:unpinned-security-columns"
+        "…and that guard can still fail|pnpm check:unpinned-security-columns:self-test"
         # See the strict list above for why this exists. It is in BOTH lists on
         # purpose: the release's own after-phase runner takes its rows from
         # `--list`, which is this (non-strict) branch, so a gate that lived only
