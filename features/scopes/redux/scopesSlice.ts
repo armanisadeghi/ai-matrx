@@ -578,7 +578,10 @@ export default scopesSlice.reducer;
 export const scopesTreePolicy = definePolicy<ScopesState>({
   sliceName: "scopesTree",
   preset: "warm-cache",
-  version: 2, // v2 adds the required organization abbreviation field.
+  // v3 adds is_test_fixture / created_by / is_own and drops archived
+  // organizations from the tree (VERIFIER-8 MEDIUM-3). A v2 cache carries
+  // neither, so it is discarded rather than shown as "no fixtures, none mine".
+  version: 3,
   broadcast: {
     actions: ["scopesTree/treeFetchFulfilled", "scopesTree/scopesReset"],
   },

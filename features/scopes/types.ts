@@ -200,6 +200,21 @@ export interface OrgNode {
   slug: string;
   // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
   is_personal: boolean;
+  /**
+   * Classified as a lane's scratch organization in
+   * `iam.organizations.settings.test_fixture`. The org picker hides these
+   * behind the archived-items disclosure (VERIFIER-8 MEDIUM-3). Never inferred
+   * from the name.
+   *
+   * Optional because a tree restored from an older cache, or built by a test
+   * that predates this field, genuinely does not carry it — and "absent" must
+   * read as "not classified", never as a crash.
+   */
+  is_test_fixture?: boolean;
+  /** Who created it. */
+  created_by?: string | null;
+  /** The signed-in person created it — drawn first in the picker. */
+  is_own?: boolean;
   role: OrgRole;
   scope_types: ScopeTypeNode[];
   projects: ProjectNode[];

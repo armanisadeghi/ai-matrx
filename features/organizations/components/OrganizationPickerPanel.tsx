@@ -46,6 +46,13 @@ export function OrganizationPickerPanel({
         // Google with an account's email. The picker draws it ONLY on rows whose name
         // another row also carries, so a list of distinct names is unchanged.
         distinguisher: org.slug,
+        // 🚨 116 ORGANIZATIONS, 59 OF THEM LANE SCRATCH (VERIFIER-8 MEDIUM-3).
+        // The classification is the stored one (`settings.test_fixture`) — the
+        // picker hides these behind the archived-items disclosure and says how
+        // many it hid. Nothing here reads a NAME to decide what a row is.
+        isTestFixture: org.is_test_fixture,
+        // The person's own organizations come first, under the starred one.
+        isOwn: org.is_own,
       }))}
       activeOrganizationId={activeOrgId}
       defaultOrganizationId={defaultOrganizationId}

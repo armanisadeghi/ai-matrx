@@ -211,7 +211,16 @@ export const scopesService = {
               .schema("iam")
               .from("organizations")
               // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-              .select("id, name, abbreviation, slug, is_personal")
+              // `settings` carries the `test_fixture` classification and
+              // `created_by` says whose organization it is — the org picker
+              // hides fixtures behind the archived-items disclosure and draws
+              // the person's own first (VERIFIER-8 MEDIUM-3). `archived_at`
+              // is read so an ARCHIVED organization never appears in a
+              // "which one am I working in" list; the organizations page's
+              // own archive disclosure is where those live.
+              .select(
+                "id, name, abbreviation, slug, is_personal, settings, created_by, archived_at",
+              )
               .in("id", orgIds)
           : Promise.resolve({
               data: [] as Array<{
@@ -220,6 +229,9 @@ export const scopesService = {
                 abbreviation: string;
                 slug: string;
                 is_personal: boolean | null;
+                settings: unknown;
+                created_by: string | null;
+                archived_at: string | null;
               }>,
               error: null,
             });
@@ -317,16 +329,29 @@ export const scopesService = {
         projectsByOrg.set(p.organization_id, list);
       }
 
-      const organizations: OrgNode[] = (orgsRes.data ?? []).map((row) => ({
-        id: row.id,
-        name: row.name,
-        abbreviation: row.abbreviation,
-        slug: row.slug,
-        is_personal: !!row.is_personal,
-        role: (roleByOrgId.get(row.id) ?? "member") as OrgNode["role"],
-        scope_types: scopeTypesByOrg.get(row.id) ?? [],
-        projects: projectsByOrg.get(row.id) ?? [],
-      }));
+      const viewerId = requireUserId();
+      const organizations: OrgNode[] = (orgsRes.data ?? [])
+        // An archived organization is closed. It must not be offered as a
+        // place to work; it is reached through the organizations page's
+        // archive disclosure and restored there.
+        .filter((row) => !("archived_at" in row) || !row.archived_at)
+        .map((row) => ({
+          id: row.id,
+          name: row.name,
+          abbreviation: row.abbreviation,
+          slug: row.slug,
+          is_personal: !!row.is_personal,
+          // The stored classification, never a guess from the name.
+          is_test_fixture:
+            !!row.settings &&
+            typeof row.settings === "object" &&
+            "test_fixture" in (row.settings as Record<string, unknown>),
+          created_by: row.created_by ?? null,
+          is_own: !!row.created_by && row.created_by === viewerId,
+          role: (roleByOrgId.get(row.id) ?? "member") as OrgNode["role"],
+          scope_types: scopeTypesByOrg.get(row.id) ?? [],
+          projects: projectsByOrg.get(row.id) ?? [],
+        }));
 
       // Stable ordering: personal first, then alpha.
       organizations.sort((a, b) => {
