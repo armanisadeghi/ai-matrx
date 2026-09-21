@@ -58,6 +58,13 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     importFn: () => import("@/features/agents/components/chat/ChatSidebarMenu"),
   },
   {
+    pathPattern: /^\/staff(?:\/|$)/,
+    iconName: "Users",
+    label: "Your staff",
+    importFn: () =>
+      import("@/features/personal-staff/components/StaffSidebarMenu"),
+  },
+  {
     pathPattern: /^\/code(?:\/|$)/,
     iconName: "Code2",
     label: "Code Workspace",
