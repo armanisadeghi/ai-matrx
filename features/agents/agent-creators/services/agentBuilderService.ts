@@ -13,6 +13,7 @@ import { stripNullish } from "@/utils/supabase/payload";
 // this path must not be the quiet one. Law:
 // common-docs/policies/context-is-carried-never-rebuilt.md.
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 
 type AgentInsert = Database["agent"]["Tables"]["definition"]["Insert"];
 
@@ -23,7 +24,25 @@ export interface AgentBuilderConfig {
   userMessage?: string;
   variableDefaults?: VariableDefinition[];
   settings?: Record<string, unknown>;
+  /** A JSON schema for the agent's answer, when the draft carries one. */
+  outputSchema?: Record<string, unknown>;
+  /** The agent's declared input kind, when the draft carries one. */
+  inputKind?: string;
 }
+
+/**
+ * WHO OWNS THE AGENT BEING CREATED. The default — the person, in the
+ * organization they selected — is what every creation door has always done.
+ * The Mandate workspace's "+ Agent" door passes the rung it stands on instead:
+ * the system rung runs for every user on the platform, so its agent is a
+ * SYSTEM agent (builtin, homed in the Matrx System organization); an
+ * organization's rung gets an agent that organization owns; a person's rung
+ * gets their own. The same rule the holder picker enforces on the list.
+ */
+export type AgentOwner =
+  | { kind: "user" }
+  | { kind: "organization"; organizationId: string }
+  | { kind: "system" };
 
 export interface AgentBuilderResult {
   success: boolean;
@@ -88,6 +107,10 @@ function configToInsertPayload(
     ...(config.settings
       ? { settings: config.settings as AgentInsert["settings"] }
       : {}),
+    ...(config.outputSchema
+      ? { output_schema: config.outputSchema as AgentInsert["output_schema"] }
+      : {}),
+    ...(config.inputKind?.trim() ? { input_kind: config.inputKind.trim() } : {}),
   };
 
   return stripNullish(raw) as Omit<
@@ -102,6 +125,7 @@ function configToInsertPayload(
 
 export async function createAgentFromBuilder(
   config: AgentBuilderConfig,
+  owner: AgentOwner = { kind: "user" },
 ): Promise<AgentBuilderResult> {
   try {
     if (!config.name?.trim()) {
@@ -133,10 +157,21 @@ export async function createAgentFromBuilder(
     // request.") when nothing is selected; the catch below turns that into the
     // same honest toast + `{ success: false }` every other failure here uses,
     // and NOTHING is inserted.
-    const organizationId = await ensureOrgId(undefined);
+    // org-fallback-deliberate: the explicit owner rung, not an absent request context, decides whether this is the platform's built-in agent or a named organization's agent.
+    // The owner decides the home. A system agent is `builtin` in the Matrx
+    // System organization (RLS admits that row for a super admin only — the
+    // refusal below is the server's, verbatim). An organization-owned agent
+    // is homed in THAT organization, whatever the person has selected.
+    const organizationId =
+      owner.kind === "system"
+        ? SYSTEM_ORGANIZATION_ID
+        : owner.kind === "organization"
+          ? owner.organizationId
+          : await ensureOrgId(undefined);
 
     const payload = {
       ...configToInsertPayload(config),
+      ...(owner.kind === "system" ? { agent_type: "builtin" } : {}),
       created_by: authData.user.id,
       organization_id: organizationId,
     } satisfies AgentInsert;
@@ -168,7 +203,7 @@ export async function createAgentFromBuilder(
       return { success: false, error: message };
     }
 
-    toast.success("Agent created!", { description: "Opening the builder..." });
+    toast.success("Agent created!");
     return { success: true, agentId: data.id };
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";

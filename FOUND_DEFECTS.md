@@ -4844,3 +4844,12 @@ override" and returned ten rows, eight of which are not defects: passing an orga
 LOCKED knob is inert, and it is the safer spelling, since the call site is already right if the
 lock is lifted. A parameter or a self-contained subquery in a DECLARE initializer is likewise
 fine (`hr.wf_inbox` does exactly that and is correct). Owner: closed.
+
+## Mandate alchemy capture contract — 4 tests red on main (found 2026-09-21)
+
+`features/mandates/workspace/__tests__/mandate-alchemy-contract.independent.test.tsx` fails
+4 of 8 (provision-unavailable refusal, saved draft-input example, semantic part ids,
+saved-only disclosure). Verified pre-existing: red with the Create-Agent work stashed.
+Not mine — belongs to whoever owns `buildMandateDefinitionCore` / the tab capture.
+Same file's `MandateWorkspace.tsx:598` type error (`saved_definition` not assignable to
+`Json`) is the same lane's and also pre-existing.

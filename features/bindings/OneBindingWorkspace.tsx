@@ -140,6 +140,8 @@ import {
   type HolderDraft,
   type WorkspaceRung,
 } from "./ScopeHolderBar";
+import { HolderDraftPanel } from "./HolderDraftPanel";
+import { holderDraftOwnerOf } from "./holder-draft-brief";
 import {
   SYSTEM_RUNG_PERSONAL_HOLDER_REFUSAL,
   systemRungHolderIsPersonal,
@@ -191,10 +193,21 @@ const CHECK_COLUMNS = [
 ];
 
 export type BindingWorkspaceSection =
-  "holder" | "overrides" | "display" | "permissions";
+  | "holder"
+  | "overrides"
+  | "display"
+  | "permissions"
+  /** The "+ Agent" door — `HolderDraftPanel`, the generator in mandate mode. */
+  | "create-agent";
 
 export interface OneBindingWorkspaceProps {
   activeSection?: BindingWorkspaceSection;
+  /**
+   * The host owns which section is on screen; this asks it to move. Supplied
+   * ⇒ the holder controls offer "+ Agent" (which opens `create-agent`) and a
+   * created agent brings the person back to `holder`. Absent ⇒ no such door.
+   */
+  onRequestSection?: (section: BindingWorkspaceSection) => void;
   data: MandateWorkspaceData;
   /** Which rung the host's route pre-selects. Always visible, always movable. */
   initialRung?: BindingRung;
@@ -291,6 +304,7 @@ function OneMandateBindingWorkspace({
   perspective = "person",
   healthNote = null,
   activeSection,
+  onRequestSection,
   onChanged,
 }: OneBindingWorkspaceProps) {
   const userId = useAppSelector(selectUserId);
@@ -392,6 +406,7 @@ function OneMandateBindingWorkspace({
         perspective={perspective}
         healthNote={healthNote}
         activeSection={activeSection}
+        onRequestSection={onRequestSection}
         mode={mode}
         onModeChange={(next) => {
           setMode(next);
@@ -444,13 +459,19 @@ function OneMandateBindingWorkspace({
       />
       <div
         className={
-          activeSection === "holder" || activeSection === "overrides"
+          activeSection === "holder" ||
+          activeSection === "overrides" ||
+          activeSection === "create-agent"
             ? "hidden"
             : "mt-3"
         }
       >
         <BindingOptionsDrawer
-          section={activeSection === "holder" ? "display" : activeSection}
+          section={
+            activeSection === "holder" || activeSection === "create-agent"
+              ? "display"
+              : activeSection
+          }
           owner={{
             mandateId: data.mandate.id,
             organizationId: data.mandate.organization_id,
@@ -487,6 +508,7 @@ function BindingDraft({
   perspective,
   healthNote,
   activeSection,
+  onRequestSection,
   mode,
   onModeChange,
   onBatchWrote,
@@ -501,6 +523,7 @@ function BindingDraft({
   proposedWritePolicies: WritePolicyMap | null;
   onProposedPolicies: (policies: WritePolicyMap) => void;
   activeSection?: BindingWorkspaceSection;
+  onRequestSection?: (section: BindingWorkspaceSection) => void;
   data: MandateWorkspaceData;
   binding: MandateBindingRowDb | null;
   rung: WorkspaceRung;
@@ -1663,6 +1686,20 @@ function BindingDraft({
 
   const disabled = busy || rebindChecking;
 
+  // ── THE "+ AGENT" DOOR ──────────────────────────────────────────────────────
+  // Whose agent the door creates follows the rung in the controls — the same
+  // rule the picker's list enforces (`holderDraftOwnerOf`). A created agent
+  // lands in the holder controls as Latest, unsaved, and the person is brought
+  // back to them to review and press the one Save.
+  const draftOwner = holderDraftOwnerOf({
+    rung,
+    organizationId,
+    systemHomed: Boolean(defaultHolderOffer?.systemHomed),
+  });
+  const onCreateAgent = onRequestSection
+    ? () => onRequestSection("create-agent")
+    : null;
+
   // ── THE AI MAP (P11/P12) — the SAME tab the surface bind panel uses ───────
   //
   // The mapper is one platform agent (`surfaces_client.binding_mapper`) reading
@@ -1791,6 +1828,25 @@ function BindingDraft({
 
   return (
     <div className="space-y-3">
+      {activeSection === "create-agent" ? (
+        <HolderDraftPanel
+          data={data}
+          offeredValues={offeredValues}
+          holder={holder}
+          owner={draftOwner}
+          disabled={disabled}
+          onCreated={(agentId) => {
+            setHolder({
+              kind: "agent",
+              agentId,
+              agentVersionId: null,
+              useLatest: true,
+              workflowId: null,
+            });
+            onRequestSection?.("holder");
+          }}
+        />
+      ) : null}
       <div
         className={
           activeSection && activeSection !== "holder" ? "hidden" : "space-y-3"
@@ -1848,6 +1904,7 @@ function BindingDraft({
           organizationNames={organizationNames}
           holder={holder}
           onHolderChange={setHolder}
+          onCreateAgent={onCreateAgent}
           holderName={
             holderName ??
             (agentId ? data.agentsById[agentId]?.name : null) ??

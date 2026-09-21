@@ -52,7 +52,8 @@
 // test rather than a walk.
 
 import { useEffect, useRef, useState } from "react";
-import { BrainCircuit, Workflow } from "lucide-react";
+import { BrainCircuit, Plus, Workflow } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   CONFIGURATION_CHOICE_SIZE,
   PropertyRow,
@@ -122,6 +123,14 @@ export interface HolderAssignmentProps {
    * is never said twice.
    */
   coverageLine?: string | null;
+  /**
+   * "+ Agent" — create the agent that holds this job, right here (Arman,
+   * 2026-09-20: *"anywhere you allow assigning a holder, you're also going to
+   * add an option for + Agent"*). The host opens its Create Agent tab; the
+   * created agent lands back in these controls. Absent when the host has no
+   * such door — never a dead button.
+   */
+  onCreateAgent?: (() => void) | null;
   disabled?: boolean;
 }
 
@@ -162,6 +171,7 @@ export function HolderAssignment({
   holderTypeHelp = null,
   refusal = null,
   coverageLine = null,
+  onCreateAgent = null,
   disabled = false,
 }: HolderAssignmentProps) {
   const isWorkflow = holder.kind === "workflow";
@@ -264,6 +274,24 @@ export function HolderAssignment({
             }
           />
         )}
+
+        {/* "+ Agent" sits INSIDE the assignment row: it is a way of answering
+            the same question — who holds this — not a fourth control, so the
+            `data-holder-control` count stays three. */}
+        {!isWorkflow && onCreateAgent ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            data-testid="holder-create-agent"
+            disabled={disabled}
+            onClick={onCreateAgent}
+            className={cn(CONFIGURATION_CHOICE_SIZE, "gap-1 px-2.5")}
+          >
+            <Plus className="h-3.5 w-3.5" aria-hidden />
+            Agent
+          </Button>
+        ) : null}
 
         {/* Version shares the assignment row. Workflows remain latest-only. */}
         {!isWorkflow && holder.agentId ? (

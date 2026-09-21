@@ -63,7 +63,10 @@ import {
   agentHolderOfBinding,
   holderOfMandate,
 } from "@/lib/supabase/mandateStorage";
-import { OneBindingWorkspace } from "@/features/bindings/OneBindingWorkspace";
+import {
+  OneBindingWorkspace,
+  type BindingWorkspaceSection,
+} from "@/features/bindings/OneBindingWorkspace";
 import { hasLiveGlobalBinding } from "@/features/bindings/system-answer-record";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -134,6 +137,8 @@ export type WorkspacePerspective = "person" | "organization" | "system";
 export type MandateWorkspaceTab =
   | "definition"
   | "holder"
+  /** The "+ Agent" door: create the agent that holds this job, in place. */
+  | "create-agent"
   | "overrides"
   | "display"
   | "test"
@@ -142,6 +147,15 @@ export type MandateWorkspaceTab =
   | "diagnostics"
   | "notes";
 
+/** The tabs `BindingSection` renders — one mounted draft owner across them. */
+const BINDING_TABS: readonly string[] = [
+  "holder",
+  "create-agent",
+  "overrides",
+  "display",
+  "permissions",
+];
+
 const WORKSPACE_TABS: {
   id: MandateWorkspaceTab;
   label: string;
@@ -149,6 +163,7 @@ const WORKSPACE_TABS: {
 }[] = [
   { id: "definition", label: "Definition" },
   { id: "holder", label: "Holder" },
+  { id: "create-agent", label: "Create Agent" },
   { id: "overrides", label: "Overrides" },
   { id: "display", label: "Display Options" },
   { id: "test", label: "Test", admin: true },
@@ -580,7 +595,7 @@ function OneMandateWorkspace({
             perspective={perspective}
             organizationName={perspective === "organization" && principal.kind === "org" ? nameOfOrg(principal.orgId) : null}
             buildTab={(tab): MandateAlchemyCapture => tab === "definition"
-              ? { status: "ready", savedOnly: true, data: { saved_definition: buildMandateDefinitionCore(data, perspective, perspective === "organization" && principal.kind === "org" ? nameOfOrg(principal.orgId) : null), pins: normalizeTransferJson(data.pins), pinned_context: data.pinnedContext } }
+              ? { status: "ready", savedOnly: true, data: { saved_definition: buildMandateDefinitionCore(data, perspective, perspective === "organization" && principal.kind === "org" ? nameOfOrg(principal.orgId) : null), pins: data.pins, pinned_context: data.pinnedContext } }
               : { status: "error", message: "This tab has not finished publishing its saved data." }}
           />
           </div>
@@ -685,7 +700,7 @@ function OneMandateWorkspace({
           <div
             role="tabpanel"
             id={
-              ["holder", "overrides", "display", "permissions"].includes(
+              BINDING_TABS.includes(
                 activeTab,
               )
                 ? `mandate-panel-${activeTab}`
@@ -693,12 +708,12 @@ function OneMandateWorkspace({
             }
             aria-labelledby={`mandate-tab-${activeTab}`}
             hidden={
-              !["holder", "overrides", "display", "permissions"].includes(
+              !BINDING_TABS.includes(
                 activeTab,
               )
             }
             className={
-              ["holder", "overrides", "display", "permissions"].includes(
+              BINDING_TABS.includes(
                 activeTab,
               )
                 ? cn(styles.mobileTouchTargets, "space-y-4")
@@ -713,10 +728,12 @@ function OneMandateWorkspace({
               activeSection={
                 activeTab === "overrides" ||
                 activeTab === "display" ||
-                activeTab === "permissions"
+                activeTab === "permissions" ||
+                activeTab === "create-agent"
                   ? activeTab
                   : "holder"
               }
+              onRequestSection={(section) => setActiveTab(section)}
               healthNote={
                 perspective === "system"
                   ? systemRungHealthOf(data, ladder, nameOfOrg)
@@ -831,9 +848,12 @@ function BindingSection({
   authoring,
   healthNote,
   activeSection,
+  onRequestSection,
   onChanged,
 }: {
-  activeSection: "holder" | "overrides" | "display" | "permissions";
+  activeSection: BindingWorkspaceSection;
+  /** The host owns the tab; the workspace asks it to move ("+ Agent" → back). */
+  onRequestSection: (section: BindingWorkspaceSection) => void;
   data: MandateWorkspaceData;
   principal: WorkspacePrincipal;
   perspective: WorkspacePerspective;
@@ -865,6 +885,7 @@ function BindingSection({
         title={
           {
             holder: "Holder",
+            "create-agent": "Create the agent that holds this job",
             overrides: "Execution overrides",
             display: "Display Options",
             permissions: "Permissions",
@@ -874,6 +895,7 @@ function BindingSection({
         <OneBindingWorkspace
           data={data}
           activeSection={activeSection}
+          onRequestSection={onRequestSection}
           perspective={perspective}
           healthNote={healthNote}
           // Ignored under the system perspective — `fixedRung` names the

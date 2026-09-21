@@ -42,6 +42,13 @@ export function extractAgentConfig(raw: unknown): AgentBuilderConfig | null {
 
   const variableDefaults = extractVariables(obj);
   const settings = extractSettings(obj);
+  const outputSchema = extractObject(obj.output_schema ?? obj.outputSchema);
+  const inputKind =
+    typeof obj.input_kind === "string" && obj.input_kind.trim()
+      ? obj.input_kind.trim()
+      : typeof obj.inputKind === "string" && obj.inputKind.trim()
+        ? obj.inputKind.trim()
+        : undefined;
 
   if (!name && !systemMessage) return null;
 
@@ -52,6 +59,8 @@ export function extractAgentConfig(raw: unknown): AgentBuilderConfig | null {
     userMessage,
     variableDefaults,
     settings,
+    ...(outputSchema ? { outputSchema } : {}),
+    ...(inputKind ? { inputKind } : {}),
   };
 }
 
@@ -132,7 +141,11 @@ function extractVariables(obj: Record<string, unknown>): VariableDefinition[] {
 function extractSettings(
   obj: Record<string, unknown>,
 ): Record<string, unknown> | undefined {
-  const raw = obj.settings;
+  return extractObject(obj.settings);
+}
+
+/** A plain object from the draft, or nothing — never an array or a scalar. */
+function extractObject(raw: unknown): Record<string, unknown> | undefined {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
   return raw as Record<string, unknown>;
 }

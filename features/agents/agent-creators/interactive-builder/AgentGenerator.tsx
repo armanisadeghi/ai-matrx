@@ -28,7 +28,16 @@ import {
   extractAgentConfig,
   extractAgentName,
 } from "../utils/agent-config-extractor";
-import { useAgentBuilder } from "../services/agentBuilderService";
+import {
+  createAgentFromBuilder,
+  useAgentBuilder,
+  type AgentOwner,
+} from "../services/agentBuilderService";
+import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useMandate } from "@/features/mandates/useMandate";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
+import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
 import { resolvePreferredAuthoringModel } from "@/features/ai-models/preferredAuthoringModel";
 import { getSystemShortcut } from "@/features/agents/constants/system-shortcuts";
 import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
@@ -123,14 +132,53 @@ class GeneratorErrorBoundary extends Component<
 // Main Component
 // =============================================================================
 
-interface AgentGeneratorProps {
-  onComplete?: () => void;
+/**
+ * MANDATE MODE — the Mandate workspace's "+ Agent" door.
+ *
+ * The SAME generator, launched through the `mandates.holder_draft` Mandate
+ * instead of the free-form generator: the job's contract rides as the
+ * mandate's offered `variables`, the person's own guidance rides `userInput`
+ * (THE USER-INPUT LAW — nothing structured ever travels there), and the
+ * created agent is handed BACK through `onCreated` instead of navigating to
+ * the builder, so the caller can set it as the Holder and open the editor.
+ * `owner` decides whose agent it is — the rung's rule, never the page's.
+ */
+export interface AgentGeneratorMandateMode {
+  /** The offered values of `mandates.holder_draft_brief`, keyed by name. */
+  variables: Record<string, unknown>;
+  owner: AgentOwner;
+  /** What the person sees in place of the free-form description. */
+  summary: ReactNode;
+  onCreated: (agentId: string) => void;
 }
 
-export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
+interface AgentGeneratorProps {
+  onComplete?: () => void;
+  mandate?: AgentGeneratorMandateMode;
+}
+
+const HOLDER_DRAFT_MANDATE_KEY = MANDATE_KEYS.mandates__holder_draft;
+// Disclosure (the Agents menu): in mandate mode this component RUNS a fixed
+// job, so it registers it; the free-form generator runs a chosen builder and
+// registers nothing. Renders no UI either way.
+const HOLDER_DRAFT_DISCLOSURE = [
+  { mandateKey: HOLDER_DRAFT_MANDATE_KEY, does: "drafts an agent to hold this job" },
+] as const;
+const NO_DISCLOSURE: readonly never[] = [];
+const HOLDER_DRAFT_JSON_EXTRACTION = {
+  enabled: true,
+  fuzzyOnFinalize: true,
+  maxResults: 5,
+} as const;
+
+export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
   const dispatch = useAppDispatch();
   const trigger = useShortcutTrigger();
+  const { launchMandate } = useAgentLauncher();
+  const openMandateWindow = useOpenMandateWindow();
   const { createAgent } = useAgentBuilder(onComplete);
+  const mandateMode = mandate !== undefined;
+  useDeclaredSurfaceMandates(mandateMode ? HOLDER_DRAFT_DISCLOSURE : NO_DISCLOSURE);
   const {
     publish,
     publishKey,
@@ -163,10 +211,19 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
   const [shortcutLoadError, setShortcutLoadError] = useState<string | null>(
     null,
   );
-  const shortcutReady = generatorShortcut !== null;
+  // In mandate mode the door is the Mandate's own resolution: `error` set
+  // means the job has no Holder yet (or the caller may not run it), and the
+  // banner below says so with the remedy — never a dead Generate button.
+  const holderDraft = useMandate(mandateMode ? HOLDER_DRAFT_MANDATE_KEY : "");
+  const shortcutReady = mandateMode
+    ? holderDraft.mandate !== null
+    : generatorShortcut !== null;
+  const generatorLoadError = mandateMode
+    ? holderDraft.error
+    : shortcutLoadError;
 
   useEffect(() => {
-    if (shortcutReady) return undefined;
+    if (mandateMode || shortcutReady) return undefined;
     let cancelled = false;
     setShortcutLoadError(null);
     dispatch(ensureShortcutLoaded(GENERATOR_SHORTCUT.id))
@@ -180,7 +237,7 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
     return () => {
       cancelled = true;
     };
-  }, [shortcutReady, dispatch]);
+  }, [mandateMode, shortcutReady, dispatch]);
 
   // ── Redux selectors (all keyed by conversationId or requestId) ──────────
 
@@ -234,7 +291,9 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
   const extractionFailed =
     jsonExtractionComplete && !hasExtractedJson && !!streamingText;
   const canGenerate =
-    selection.trim().length > 0 && shortcutReady && !shortcutLoadError;
+    (mandateMode || selection.trim().length > 0) &&
+    shortcutReady &&
+    !generatorLoadError;
 
   // ── Auto-populate agent name from extraction ─────────────────────────────
 
@@ -264,7 +323,9 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
         userMessage:
           "Could not extract JSON — The raw response is still available below.",
         raw: {
-          shortcutId: GENERATOR_SHORTCUT.id,
+          ...(mandateMode
+            ? { mandateKey: HOLDER_DRAFT_MANDATE_KEY }
+            : { shortcutId: GENERATOR_SHORTCUT.id }),
           sourceFeature: "agent-generator",
           answerTextLength: streamingText.length,
           extractionRevision: jsonExtractionRevision,
@@ -328,7 +389,7 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
   // ── Handlers ─────────────────────────────────────────────────────────────
 
   const handleGenerate = useCallback(async () => {
-    if (!selection.trim()) {
+    if (!mandateMode && !selection.trim()) {
       toast.error("Please describe the purpose of your agent", {
         position: TOAST_POSITION,
       });
@@ -358,6 +419,25 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
       // (`agents.model_prefs.agent_authoring_default_model`, org → user →
       // device) rides as the run's explicit model; null = the builder's own.
       const authoringModel = await resolvePreferredAuthoringModel();
+      if (mandate) {
+        // THE MANDATE DOOR: the job's contract is the brief's offered values;
+        // the person's guidance — and only that — is user_input.
+        await launchMandate(HOLDER_DRAFT_MANDATE_KEY, {
+          surfaceKey: `mandate:${HOLDER_DRAFT_MANDATE_KEY}`,
+          runtime: {
+            variables: mandate.variables,
+            userInput: userInput.trim() || undefined,
+            surfaceName: null,
+          },
+          jsonExtraction: HOLDER_DRAFT_JSON_EXTRACTION,
+          sourceFeature: "agent-generator",
+          ...(authoringModel
+            ? { config: { llmOverrides: { model: authoringModel } } }
+            : {}),
+          onConversationCreated: (id) => setConversationId(id),
+        });
+        return;
+      }
       await trigger(GENERATOR_SHORTCUT.id, {
         scope: { selection },
         runtime: { userInput: userInput || undefined },
@@ -373,7 +453,16 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
         position: TOAST_POSITION,
       });
     }
-  }, [selection, userInput, conversationId, trigger, dispatch]);
+  }, [
+    mandateMode,
+    mandate,
+    selection,
+    userInput,
+    conversationId,
+    trigger,
+    launchMandate,
+    dispatch,
+  ]);
 
   const handleCreateAgent = useCallback(async () => {
     if (!extractedValue) {
@@ -397,13 +486,23 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
 
     setIsSaving(true);
     try {
+      if (mandate) {
+        // Whose agent it is follows the rung (`owner`); the id goes BACK to the
+        // caller, which sets it as the Holder and opens the editor.
+        const result = await createAgentFromBuilder(
+          { ...config, name: agentName.trim() },
+          mandate.owner,
+        );
+        if (result.success && result.agentId) mandate.onCreated(result.agentId);
+        return;
+      }
       await createAgent({ ...config, name: agentName.trim() });
     } catch (err) {
       console.error("Failed to create agent:", err);
     } finally {
       setIsSaving(false);
     }
-  }, [extractedValue, agentName, createAgent]);
+  }, [extractedValue, agentName, createAgent, mandate]);
 
   // THE DESTRUCTIVE/EXPENSIVE CLICK LAW: this throws away the entire agent the
   // AI just generated — system prompt, tools, config — and starts over. Name
@@ -462,25 +561,56 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
           {/* Generator readiness banner — shortcut is being fetched, or a
               load failure means Generate is not wired. Separate from the
               streaming state so users know why the button is disabled. */}
-          {!shortcutReady && !shortcutLoadError && (
+          {!shortcutReady && !generatorLoadError && (
             <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50 border border-border text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Loading generator configuration…
             </div>
           )}
-          {shortcutLoadError && (
-            <div className="flex items-start gap-2 p-2 rounded-md bg-destructive/10 border border-destructive/30 text-xs text-destructive">
+          {generatorLoadError && (
+            <div
+              data-testid="generator-unavailable"
+              className="flex items-start gap-2 p-2 rounded-md bg-destructive/10 border border-destructive/30 text-xs text-destructive"
+            >
               <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
-                <div className="font-medium">Generator unavailable</div>
-                <div className="text-[11px] opacity-80">
-                  {shortcutLoadError}
+                <div className="font-medium">
+                  {mandateMode
+                    ? "The job that drafts agents cannot run yet"
+                    : "Generator unavailable"}
                 </div>
+                <div className="text-[11px] opacity-80">
+                  {generatorLoadError}
+                </div>
+                {mandateMode ? (
+                  // NOTHING FAILS SILENTLY: the job that drafts agents is itself
+                  // a Mandate, and until a Holder is assigned this door says so
+                  // and opens that Mandate — never a dead Generate button.
+                  <button
+                    type="button"
+                    className="mt-1 inline-block underline"
+                    onClick={() =>
+                      openMandateWindow({
+                        initialMandateKey: HOLDER_DRAFT_MANDATE_KEY,
+                      })
+                    }
+                  >
+                    Open that job
+                  </button>
+                ) : null}
               </div>
             </div>
           )}
 
           <div className="space-y-3 sm:space-y-4">
+            {mandate ? (
+              <div className="space-y-2">
+                <Label className="text-xs sm:text-sm font-medium">
+                  What this agent must do
+                </Label>
+                {mandate.summary}
+              </div>
+            ) : (
             <div className="space-y-2">
               <Label className="text-xs sm:text-sm font-medium flex items-center gap-2">
                 What should this agent do?
@@ -493,7 +623,7 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
                 className="min-h-[120px] sm:min-h-[180px] text-sm border border-border rounded-xl"
                 disabled={
                   !shortcutReady ||
-                  !!shortcutLoadError ||
+                  !!generatorLoadError ||
                   isActive ||
                   isStreaming ||
                   showResult
@@ -514,20 +644,25 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
                 Be specific about the main purpose and goals
               </p>
             </div>
+            )}
 
             <div className="space-y-2">
               <Label className="text-xs sm:text-sm font-medium">
-                Additional Context
+                {mandateMode ? "Your guidance" : "Additional Context"}
                 <span className="text-xs text-gray-500 ml-1">(Optional)</span>
               </Label>
               <VoiceTextarea
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
-                placeholder="Add any specific requirements, tone, formats, or constraints..."
+                placeholder={
+                  mandateMode
+                    ? "Anything the draft should know: tone, must-haves, what the last holder got wrong..."
+                    : "Add any specific requirements, tone, formats, or constraints..."
+                }
                 className="min-h-[120px] sm:min-h-[180px] text-sm border border-border rounded-xl"
                 disabled={
                   !shortcutReady ||
-                  !!shortcutLoadError ||
+                  !!generatorLoadError ||
                   isActive ||
                   isStreaming ||
                   showResult
@@ -545,7 +680,9 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
                 }
               />
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Any additional context, requirements, or constraints
+                {mandateMode
+                  ? "Everything above is already sent — this is anything you want to add"
+                  : "Any additional context, requirements, or constraints"}
               </p>
             </div>
 
@@ -670,8 +807,9 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
                     Ready to generate
                   </p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 max-w-md">
-                    Describe what you want your agent to do and click
-                    &ldquo;Generate&rdquo; to let AI create the configuration
+                    {mandateMode
+                      ? "Everything this job needs is already on the left. Click \u201cGenerate\u201d and the agent is drafted against it."
+                      : "Describe what you want your agent to do and click \u201cGenerate\u201d to let AI create the configuration"}
                   </p>
                 </div>
               )}
@@ -737,7 +875,7 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Generating...
                 </>
-              ) : !shortcutReady && !shortcutLoadError ? (
+              ) : !shortcutReady && !generatorLoadError ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Loading...

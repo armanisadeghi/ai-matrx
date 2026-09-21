@@ -87,6 +87,7 @@ const JOB = {
 function renderSystemBar(opts: {
   agentId?: string | null;
   kind?: "agent" | "workflow";
+  onCreateAgent?: (() => void) | null;
   healthNote?: {
     sentence: string;
     remedy: string | null;
@@ -114,6 +115,7 @@ function renderSystemBar(opts: {
           workflowId: null,
         }}
         onHolderChange={() => undefined}
+        onCreateAgent={opts.onCreateAgent ?? null}
         holderName="Research → Slides Generator"
         job={JOB}
         ladderLine="ignored on this host"
@@ -137,6 +139,37 @@ describe("the admin holder section is three controls and nothing else", () => {
     expect(
       container.querySelectorAll('[data-testid="agent-picker"]').length,
     ).toBe(1);
+    act(() => root.unmount());
+  });
+
+  /**
+   * 🚨 "+ AGENT" IS A WAY OF ANSWERING THE SAME QUESTION, NOT A FOURTH CONTROL
+   * (Arman, 2026-09-20: *"anywhere you allow assigning a holder, you're also
+   * going to add an option for + Agent so the user can create an agent"*).
+   *
+   * It rides INSIDE the assignment row, so the `data-holder-control` count
+   * stays three and D19's "three labels, three inputs" survives. And a host
+   * that has no such door renders no button — never a dead control.
+   */
+  it("offers + Agent inside the assignment row without adding a control", () => {
+    const { container, root } = renderSystemBar({
+      agentId: "system-agent-1",
+      onCreateAgent: () => undefined,
+    });
+    expect(container.querySelectorAll("[data-holder-control]").length).toBe(3);
+    const button = container.querySelector(
+      '[data-holder-control="assignment"] [data-testid="holder-create-agent"]',
+    );
+    expect(button).not.toBeNull();
+    expect(button?.textContent).toContain("Agent");
+    act(() => root.unmount());
+  });
+
+  it("renders NO + Agent button when the host offers no such door", () => {
+    const { container, root } = renderSystemBar({ agentId: "system-agent-1" });
+    expect(
+      container.querySelector('[data-testid="holder-create-agent"]'),
+    ).toBeNull();
     act(() => root.unmount());
   });
 
