@@ -87,7 +87,7 @@ export function RollupTable({
           className="px-3 py-1.5"
         />
       ) : null}
-      <MatrxDataTable urlState={{ id: `agent-drift-${mode}` }} data={canonicalRows} columns={columns} getRowId={(row) => row.agentId} pageSize={50} onRowClick={(row) => onSelect(row.agentId)} rowClassName={(row) => row.agentId === selectedAgentId ? 'bg-accent' : undefined} toolbar={{ search: true, searchPlaceholder: 'Search agents…' }} detail={{ enabled: false }} />
+      <MatrxDataTable urlState={{ id: `agent-drift-${mode}` }} data={canonicalRows} columns={columns} getRowId={(row) => row.agentId} pageSize={50} onRowOpen={(row) => onSelect(row.agentId)} rowClassName={(row) => row.agentId === selectedAgentId ? 'bg-accent' : undefined} toolbar={{ search: true, searchPlaceholder: 'Search agents…' }} detail={{ enabled: false }} />
     </>
   );
 }

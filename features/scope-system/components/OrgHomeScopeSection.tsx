@@ -83,7 +83,7 @@ export function OrgHomeScopeSection({
   const overflowCount = Math.max(0, items.length - MAX_COLUMNS);
   const tableColumns: MatrxColumnDef<(typeof scopes)[number]>[] = [
     { id: "name", header: "Name", accessorKey: "name", width: 180, cell: (scope) => <Link href={`/organizations/${orgSlugOrId}/scopes/${scopeType.id}/${scope.id}`} className={`font-semibold hover:underline ${color.fg}`}>{scope.name}</Link> },
-    ...columns.map((item) => ({ id: item.id, header: item.display_name, accessorFn: () => item.display_name, width: 180, sortable: false, filter: false, cell: (scope: (typeof scopes)[number]) => <ScopeValueCell scopeId={scope.id} itemId={item.id} /> })),
+    ...columns.map((item) => ({ id: item.id, header: item.display_name, accessorFn: () => item.display_name, width: 180, sortable: false, cell: (scope: (typeof scopes)[number]) => <ScopeValueCell scopeId={scope.id} itemId={item.id} /> })),
   ];
 
   return (
@@ -191,7 +191,7 @@ export function OrgHomeScopeSection({
 
       {scopes.length > 0 && (
         <>
-          <MatrxDataTable urlState={{ id: `org-home-scopes-${scopeType.id}` }} data={scopes} columns={tableColumns} getRowId={(scope) => scope.id} pageSize={50} onRowClick={(scope) => router.push(`/organizations/${orgSlugOrId}/scopes/${scopeType.id}/${scope.id}`)} toolbar={{ search: true, searchPlaceholder: `Search ${scopeType.label_plural.toLowerCase()}…` }} detail={{ enabled: false }} />
+          <MatrxDataTable urlState={{ id: `org-home-scopes-${scopeType.id}` }} data={scopes} columns={tableColumns} getRowId={(scope) => scope.id} pageSize={50} onRowOpen={(scope) => router.push(`/organizations/${orgSlugOrId}/scopes/${scopeType.id}/${scope.id}`)} toolbar={{ search: true, searchPlaceholder: `Search ${scopeType.label_plural.toLowerCase()}…` }} detail={{ enabled: false }} />
           {!adding && (
             <div className="mt-3">
               <Button
