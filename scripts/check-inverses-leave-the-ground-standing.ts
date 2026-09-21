@@ -752,12 +752,17 @@ const BASELINE: Record<"a" | "b" | "c" | "d", number> = { a: 0, b: 0, c: 0, d: 0
 
 /**
  * The same ratchet for `--live`, which judges clauses (a) and (c) against the REAL catalogue —
- * 6,752 standing triggers and 4,157 live bodies on the main database, read-only. 37 on the first
+ * 6,752 standing triggers and 4,166 live bodies on the main database, read-only. 37 on the first
  * live run (2026-09-21), against 34 from the static arm on the same clauses: the catalogue sees
- * triggers no file in the tree creates any more, which is the whole reason this arm exists. It
- * may only go down.
+ * triggers no file in the tree creates any more, which is the whole reason this arm exists.
+ *
+ * ZERO the same day. The last five were one shape — an inverse naming the ROW-level body that a
+ * statement-level pair replaced — and each of the five already SAID SO in its own header, for a
+ * database still carrying the older shape; they were ruled one at a time against the catalogue
+ * and now carry the acknowledgement that says which body the live trigger runs. Lowered by
+ * fixing, never by raising. It may only go down.
  */
-const LIVE_BASELINE = 37;
+const LIVE_BASELINE = 0;
 
 /** The seven recorded instances and the commit that repaired each: the guard's own red proof. */
 const RECORDED: Array<{ file: string; fixedIn: string }> = [

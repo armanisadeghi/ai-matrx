@@ -11,6 +11,11 @@
 -- IT DROPS THE EVENT TRIGGER AND `platform.reopen_declared_doors` TOO. They are this lane's,
 -- even though they live in `platform` — the class fix went where the class lives.
 
+-- ground-standing-ok: c — `custom.io_record_changed()` is the ROW-level body no trigger runs
+-- since `writeperf2_the_after_triggers_fire_once_per_statement.sql` replaced it with the
+-- statement-level trio, which this file detaches. The row-level name stays so a database still
+-- carrying the older shape inverts the same way. Ruled by lane INVERSE-GUARD, 2026-09-21.
+
 set lock_timeout = '5s';
 set statement_timeout = '600s';
 

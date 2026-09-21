@@ -23,6 +23,11 @@
 --   node node_modules/tsx/dist/cli.mjs scripts/apply-migration.ts \
 --     migrations/inverse/w3_hist_down.sql --target branch
 
+-- ground-standing-ok: c — `history.record_capture()` is the ROW-level body no trigger runs
+-- since the statement-level capture replaced it. It stays in the drop list so a database still
+-- on the older shape inverts the same way; the statement-level bodies the live triggers use are
+-- handled beside it. Ruled by lane INVERSE-GUARD, 2026-09-21, against the live catalogue.
+
 drop trigger if exists zzz_history_grant_capture on iam.permissions;
 drop trigger if exists zzz_history_capture on custom.record;
 drop trigger if exists custom_record_dated_values_guard on custom.record;

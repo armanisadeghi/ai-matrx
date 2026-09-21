@@ -16,6 +16,11 @@
 -- reader call back into the DELETE path that is live — derived from that body's own bytes, and
 -- refusing by name if the sentence it replaces is not there.
 
+-- ground-standing-ok: c — the row-level `custom.io_record_changed()` restored below is run by
+-- nothing, and this file SAYS SO above: it is rewritten for a database still carrying the older
+-- shape, and what bites on today's is the block after it, which puts the reader call back into
+-- the live DELETE path. Ruled by lane INVERSE-GUARD, 2026-09-21, against the live catalogue.
+
 create or replace function custom.io_record_changed()
  RETURNS trigger
  LANGUAGE plpgsql
