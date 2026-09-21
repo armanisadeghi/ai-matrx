@@ -5,6 +5,14 @@
 -- asserts nothing while it is out.
 --
 -- Run: bin/p.sh -f scripts/campaign-tests/writeperf2_green.sql
+-- 🚨 p_by_id = FALSE (lane RED-SUITES-2, 2026-09-21). `custom.read_records`' THIRD argument is
+-- `p_by_id`, and with it TRUE the document comes back keyed by FIELD ID, so `document ->> '<a
+-- field key>'` is always NULL. Measured on the main database against the Birchwood companies
+-- table: by_id=true -> `{"_choices": {"1ce7851e-…": …}}` and 0 rows match
+-- `document ->> 'company_name' = 'Hearthstone Flooring'`; by_id=false -> 1 row matches.
+-- RED-SUITES fixed this exact shape once already, in `guardswitch_green` 3e: "the clause passed
+-- `true` and then looked the row up by `document ->> 'title'`. The door was right; the clause was
+-- asking for the wrong document." These are its siblings.
 \set ON_ERROR_STOP on
 begin;
 set local statement_timeout = 0;
@@ -217,7 +225,7 @@ begin
     v_txt := sqlerrm;
   end;
   if v_ok then raise exception '7a: a batch carrying a choice nothing offers was accepted'; end if;
-  select count(*) into n from custom.read_records(v_org, v_tbl, true, 1000, 0) x
+  select count(*) into n from custom.read_records(v_org, v_tbl, false, 1000, 0) x
    where (x.document ->> 'treatment') like 'Bad %';
   if n <> 0 then raise exception '7b: % rows of the refused batch landed anyway', n; end if;
   raise notice '7  one bad row refused all ten, by name ("%"), and none of them landed', left(v_txt, 70);

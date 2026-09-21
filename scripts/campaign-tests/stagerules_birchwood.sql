@@ -14,6 +14,14 @@
 -- It is idempotent: the Field, the pipeline and the gate all settle rather than duplicate,
 -- and the two quotes are written only if they are not already there.
 
+-- 🚨 p_by_id = FALSE (lane RED-SUITES-2, 2026-09-21). `custom.read_records`' THIRD argument is
+-- `p_by_id`, and with it TRUE the document comes back keyed by FIELD ID, so `document ->> '<a
+-- field key>'` is always NULL. Measured on the main database against the Birchwood companies
+-- table: by_id=true -> `{"_choices": {"1ce7851e-…": …}}` and 0 rows match
+-- `document ->> 'company_name' = 'Hearthstone Flooring'`; by_id=false -> 1 row matches.
+-- RED-SUITES fixed this exact shape once already, in `guardswitch_green` 3e: "the clause passed
+-- `true` and then looked the row up by `document ->> 'title'`. The door was right; the clause was
+-- asking for the wrong document." These are its siblings.
 \set ON_ERROR_STOP on
 \timing off
 
@@ -80,15 +88,15 @@ begin
   raise notice 'the board: %', v_pipe -> 'said';
 
   -- ── THE ROOM AND THE TWO COMPANIES, found by the names the homeowner uses.
-  select q.id into v_guest from custom.read_records(v_org, v_rooms, true, 200, 0) q
+  select q.id into v_guest from custom.read_records(v_org, v_rooms, false, 200, 0) q
    where q.document ->> 'room_name' = 'Guest Bathroom' or q.document ->> 'name' = 'Guest Bathroom'
       or q.document ->> 'title' = 'Guest Bathroom';
   select q.id into v_hearth
-    from custom.read_records(v_org, 'fa55b71b-e14a-48ac-9ded-f38a6e7af192'::uuid, true, 200, 0) q
+    from custom.read_records(v_org, 'fa55b71b-e14a-48ac-9ded-f38a6e7af192'::uuid, false, 200, 0) q
    where q.document ->> 'company_name' = 'Hearthstone Flooring' or q.document ->> 'name' = 'Hearthstone Flooring'
       or q.document ->> 'title' = 'Hearthstone Flooring';
   select q.id into v_ferro
-    from custom.read_records(v_org, 'fa55b71b-e14a-48ac-9ded-f38a6e7af192'::uuid, true, 200, 0) q
+    from custom.read_records(v_org, 'fa55b71b-e14a-48ac-9ded-f38a6e7af192'::uuid, false, 200, 0) q
    where q.document ->> 'company_name' = 'Ferro & Sons Construction' or q.document ->> 'name' = 'Ferro & Sons Construction'
       or q.document ->> 'title' = 'Ferro & Sons Construction';
   if v_guest is null or v_hearth is null or v_ferro is null then
@@ -97,7 +105,7 @@ begin
   end if;
 
   -- ── HEARTHSTONE'S REVISED BID, $7,200, after the subfloor turned out to be soft.
-  select q.id into v_requote from custom.read_records(v_org, v_quotes, true, 200, 0) q
+  select q.id into v_requote from custom.read_records(v_org, v_quotes, false, 200, 0) q
    where (q.document ->> 'room')::uuid = v_guest and (q.document ->> 'contractor')::uuid = v_hearth
      and (q.document ->> 'quote_amount')::numeric = 7200;
   if v_requote is null then
@@ -105,8 +113,27 @@ begin
       'room', v_guest::text, 'contractor', v_hearth::text,
       'quote_amount', 7200, 'quote_date', '2026-09-12', 'valid_until', '2026-10-12',
       'status', 'Pending', 'quote_stage', 'Received'));
-  else
-    perform custom.record_update(v_org, v_requote, jsonb_build_object('quote_stage','Received'), null);
+  elsif lower(coalesce(custom.read_record(v_org, v_requote, true) ->> 'quote_stage','')) = 'approved' then
+    -- 🚨 THE WALK HAS ALREADY BEEN MADE, AND IT CANNOT BE REPLAYED (lane RED-SUITES-2,
+    -- 2026-09-21). This file COMMITS to the homeowner's real board. It ran, the house rule
+    -- did its job, Ferro & Sons' competing bid arrived and the $7,200 re-quote reached
+    -- Approved. Replaying it needs the card dragged BACKWARDS to Received first, and the
+    -- board refuses that by its own rule — "That is not a move this quote can make from where
+    -- it is. REC-15: the rule "Where a quote can go next" (version 2) is not satisfied by this
+    -- record." The board being further along is the first run having WORKED.
+    --
+    -- Its successor says the same thing in its own header: "STAGE-RULES' own walk ended with
+    -- the house rule SATISFIED … So today nothing on that board is refused, and a screenshot
+    -- of 'the refusal' would have to be staged." `scripts/campaign-tests/stagerules2_birchwood.sql`
+    -- carries her story one room forward — the Primary Bedroom, one bid, $11,400 — and IS the
+    -- live refusal proof now. It is green.
+    --
+    -- So this file reports that it is spent rather than staging a refusal the board no longer
+    -- produces or moving a real card backwards past the rule it exists to enforce. It touches
+    -- nothing and ends clean.
+    raise notice 'SPENT — this one-shot live walk already ran: the $7,200 Hearthstone re-quote is Approved on the Birchwood board, which is the house rule having worked. It cannot be replayed (the board refuses a backwards move, by design). The live refusal proof is now stagerules2_birchwood.sql, on the Primary Bedroom.';
+    perform set_config('role', v_boss, true);
+    return;
   end if;
 
   -- ── THE MOMENT THE HOUSE RULE EARNS ITS KEEP. One bid, $7,200, and she drags it across.
@@ -128,7 +155,7 @@ begin
   end if;
 
   -- ── SHE RINGS FERRO & SONS. They walk the room and come back at $6,850.
-  select q.id into v_second from custom.read_records(v_org, v_quotes, true, 200, 0) q
+  select q.id into v_second from custom.read_records(v_org, v_quotes, false, 200, 0) q
    where (q.document ->> 'room')::uuid = v_guest and (q.document ->> 'contractor')::uuid = v_ferro;
   if v_second is null then
     v_second := custom.record_write(v_org, v_quotes, jsonb_build_object(
@@ -138,14 +165,27 @@ begin
   end if;
 
   -- ── AND THE SAME DRAG GOES THROUGH.
-  v_ref := custom.pipeline_transition_refusal(v_org, v_requote, 'Approved');
-  if not (v_ref ->> 'allowed')::boolean then
-    raise exception 'LIVE PROOF FAILED — a competing bid exists and the move is still refused: %',
-      v_ref ->> 'why';
-  end if;
-  v_move := custom.pipeline_move(v_org, v_requote, 'Approved');
-  if not (v_move ->> 'applied')::boolean then
-    raise exception 'LIVE PROOF FAILED — the store still refused: %', v_move ->> 'why';
+  --
+  -- 🚨 IDEMPOTENT FOR THE MOVE TOO (lane RED-SUITES-2, 2026-09-21). This file's own header says
+  -- it is idempotent, and every WRITE above settles rather than duplicates — but the MOVE did
+  -- not: on a second run the re-quote is already Approved, and Approved -> Approved is not a
+  -- transition this board offers, so the walk died on "That is not a move this quote can make
+  -- from where it is." The board being further along is the FIRST RUN having worked, not a
+  -- defect. So: if the move has already been made, the end state is asserted instead of the
+  -- transition being re-performed on the homeowner's live board. The clause is unchanged —
+  -- with a competing bid from a different contractor, the $7,200 re-quote reaches Approved.
+  if lower(coalesce(custom.read_record(v_org, v_requote, true) ->> 'quote_stage','')) = 'approved' then
+    raise notice 'ALREADY MADE — the re-quote is Approved from an earlier run of this walk; asserting the end state rather than dragging the card again.';
+  else
+    v_ref := custom.pipeline_transition_refusal(v_org, v_requote, 'Approved');
+    if not (v_ref ->> 'allowed')::boolean then
+      raise exception 'LIVE PROOF FAILED — a competing bid exists and the move is still refused: %',
+        v_ref ->> 'why';
+    end if;
+    v_move := custom.pipeline_move(v_org, v_requote, 'Approved');
+    if not (v_move ->> 'applied')::boolean then
+      raise exception 'LIVE PROOF FAILED — the store still refused: %', v_move ->> 'why';
+    end if;
   end if;
   v_row := custom.read_record(v_org, v_requote, true);
   if lower(coalesce(v_row ->> 'quote_stage','')) <> 'approved' then

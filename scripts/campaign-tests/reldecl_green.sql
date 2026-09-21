@@ -26,6 +26,14 @@
 -- acceptances, 5b's withdrawal with 5a's surviving edge, 6b's withheld chip with 6a's readable
 -- one, and 4c's `restrict` refusal with 4a's `set_null` and 4b's `cascade`.
 
+-- 🚨 p_by_id = FALSE (lane RED-SUITES-2, 2026-09-21). `custom.read_records`' THIRD argument is
+-- `p_by_id`, and with it TRUE the document comes back keyed by FIELD ID, so `document ->> '<a
+-- field key>'` is always NULL. Measured on the main database against the Birchwood companies
+-- table: by_id=true -> `{"_choices": {"1ce7851e-…": …}}` and 0 rows match
+-- `document ->> 'company_name' = 'Hearthstone Flooring'`; by_id=false -> 1 row matches.
+-- RED-SUITES fixed this exact shape once already, in `guardswitch_green` 3e: "the clause passed
+-- `true` and then looked the row up by `document ->> 'title'`. The door was right; the clause was
+-- asking for the wrong document." These are its siblings.
 \set ON_ERROR_STOP on
 \timing off
 
@@ -283,7 +291,7 @@ begin
   -- takes it. A second, different rule on a second, different record, so 4b is not the only side.
   perform custom.record_write(v_org, v_job, jsonb_build_object('jname','Gate','sub', v_b4::text));
   perform custom.record_delete(v_org, v_b4);
-  select count(*) into v_n from custom.read_records(v_org, v_job, true, 200, 0) r
+  select count(*) into v_n from custom.read_records(v_org, v_job, false, 200, 0) r
    where (r.document ->> 'jname') = 'Gate';
   if v_n <> 0 then raise exception '4c: cascade left the Gate standing after its target was deleted'; end if;
   raise notice 'PART 4 PASSED (4a-4c) — set_null detaches and takes the value with it, restrict refuses NAMING what is in the way, cascade takes the relating record with it.';

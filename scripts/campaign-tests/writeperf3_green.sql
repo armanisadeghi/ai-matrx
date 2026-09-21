@@ -22,6 +22,14 @@
 -- refusal clause uses the mistake that actually arrives: a status nobody put on the list.
 --
 -- Run: binlocal/p.sh -f scripts/campaign-tests/writeperf3_green.sql
+-- 🚨 p_by_id = FALSE (lane RED-SUITES-2, 2026-09-21). `custom.read_records`' THIRD argument is
+-- `p_by_id`, and with it TRUE the document comes back keyed by FIELD ID, so `document ->> '<a
+-- field key>'` is always NULL. Measured on the main database against the Birchwood companies
+-- table: by_id=true -> `{"_choices": {"1ce7851e-…": …}}` and 0 rows match
+-- `document ->> 'company_name' = 'Hearthstone Flooring'`; by_id=false -> 1 row matches.
+-- RED-SUITES fixed this exact shape once already, in `guardswitch_green` 3e: "the clause passed
+-- `true` and then looked the row up by `document ->> 'title'`. The door was right; the clause was
+-- asking for the wrong document." These are its siblings.
 \set ON_ERROR_STOP on
 begin;
 set local statement_timeout = 0;
@@ -204,7 +212,7 @@ begin
   if (v_state, v_msg, v_hint) is distinct from (v_state2, v_msg2, v_hint2) then
     raise exception '5: the batch refused with "% / %" and the single row with "% / %"', v_state, v_msg, v_state2, v_msg2;
   end if;
-  select count(*) into n from custom.read_records(v_org, v_tbl, true, 1000, 0) r
+  select count(*) into n from custom.read_records(v_org, v_tbl, false, 1000, 0) r
    where r.document -> 'data' ->> 'reference' in ('CC-2026-90001','CC-2026-90003');
   if n <> 0 then
     raise exception '5: % of the good rows in the refused batch landed anyway', n;
