@@ -16,6 +16,7 @@
 // There is no fourth state where the page says nothing.
 
 import { callApi } from "@/lib/api/call-api";
+import { serverRefusal } from "@/lib/progress/failureSentence";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import type { paths } from "@/types/python-generated/api-types";
 
@@ -277,6 +278,18 @@ export type BenchProofState =
       /** The panel's lead line — it differs by WHY, and that matters. */
       headline: string;
       reason: string;
+      /**
+       * The trace id the server recorded this refusal under, when it gave
+       * one. For a MUTED detail line under the reason, never inside it — the
+       * fifteenth cold walk read a 32-hex id in the middle of this panel's
+       * prose, at a non-technical Expert.
+       */
+      traceId?: string | null;
+      /**
+       * The server said retrying cannot work. The panel offers no reload
+       * prompt when this is true.
+       */
+      retryIsPointless?: boolean;
       canRunHere: false;
     } & Omit<BenchRunAbility, "canRunHere">);
 
@@ -362,14 +375,25 @@ export const ORGANIZATION_UNAVAILABLE: BenchProofState = {
  * whether it existed. A timeout, a 500 and a missing org header are all
  * "we couldn't check", and none of them is "you may not know".
  */
-export function checkFailed(message: string): BenchProofState {
-  const detail = (message || "").trim();
+export function checkFailed(raw: unknown): BenchProofState {
+  // 🚨 THE SERVER'S SENTENCE IS NOT RENDERED RAW (fifteenth cold walk,
+  // blocking C). This panel printed the aidream `build_defect` message word
+  // for word at a non-technical Expert — module path
+  // (`aidream.services.conversation_context.scope`) and 32-hex trace id
+  // included — and then appended "reload to try again" over the top of a
+  // server that had just said trying again will fail the same way. Both
+  // halves are the one reading in `lib/progress/failureSentence.ts` now.
+  const refusal = serverRefusal(raw, { remedy: "" });
+  const detail = refusal.text.trim();
   return {
     status: "unavailable",
     headline: CHECK_FAILED_HEADLINE,
-    reason:
-      (detail ? `${detail} ` : "") +
-      "This is not a permission problem — reload to try again.",
+    reason: refusal.retryIsPointless
+      ? detail
+      : (detail ? `${detail} ` : "") +
+        "This is not a permission problem — reload to try again.",
+    traceId: refusal.traceId ?? null,
+    retryIsPointless: refusal.retryIsPointless,
     canRunHere: false,
     form: null,
     howToRun: "",
@@ -404,7 +428,10 @@ export async function getBenchProof(
     // and says so.
     const status = error?.status;
     if (status === 401 || status === 403) return UNAVAILABLE;
-    return checkFailed(error?.message ?? "We couldn't reach the bench record.");
+    // The whole error, not just its message: the aidream envelope rides on
+    // `serverDetail`, and `error: "build_defect"` is the fact that decides
+    // whether a retry prompt may be shown at all.
+    return checkFailed(error ?? "We couldn't reach the bench record.");
   }
   // `form` is the server's promise that a start is actually possible. If it is
   // missing we do NOT offer the door, whatever `can_run_here` said — a button

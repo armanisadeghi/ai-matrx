@@ -144,25 +144,44 @@ export function UnderstudyCard({
   if (!understudy) {
     if (!canEdit) return null;
     if (healFailed) {
+      // 🚨 THE SERVER'S OWN REMEDY WINS (fifteenth cold walk, blocking C).
+      // This block used to say, unconditionally, "Try again, or reload the
+      // page; it costs nothing and takes a second." — under a live Try again
+      // button — while the server had just answered `build_defect`: "this part
+      // of the server was built wrong and cannot run… trying again will fail
+      // the same way until it is fixed." Two screens told the Expert to do
+      // what the server had refused. The ledger now carries the refusal as
+      // `serverRefusal` read it, and when retrying cannot work this says so
+      // and takes the button away rather than leaving a control that is a dead
+      // end wearing a label.
       return (
         <div className="rounded-lg border border-border bg-card p-3">
           <p className="text-sm text-foreground">
             We couldn&apos;t bring your understudy on just now.
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Your rules are safe — nothing was lost. Try again, or reload the
-            page; it costs nothing and takes a second.
+            {refreshState.retryIsPointless
+              ? (refreshState.message ??
+                "This one is on us, and trying again will fail the same way until it is fixed.")
+              : `Your rules are safe — nothing was lost. Try again, or reload the page; it costs nothing and takes a second.${refreshState.message ? ` ${refreshState.message}` : ""}`}
           </p>
-          <Button
-            size="sm"
-            variant="outline"
-            className="mt-2"
-            onClick={heal}
-            disabled={healing}
-          >
-            <RotateCw className="mr-1 h-3.5 w-3.5" />
-            Try again
-          </Button>
+          {refreshState.retryIsPointless ? null : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-2"
+              onClick={heal}
+              disabled={healing}
+            >
+              <RotateCw className="mr-1 h-3.5 w-3.5" />
+              Try again
+            </Button>
+          )}
+          {refreshState.traceId ? (
+            <p className="mt-2 text-[11px] text-muted-foreground/70">
+              Recorded as {refreshState.traceId}
+            </p>
+          ) : null}
         </div>
       );
     }
@@ -230,20 +249,31 @@ export function UnderstudyCard({
                 The last rebuild did not go through: {refreshState.message}
               </p>
             ) : null}
-            <Button
-              size="sm"
-              variant="outline"
-              className="mt-2"
-              onClick={retry}
-              disabled={retrying || refreshState.pending}
-            >
-              {retrying || refreshState.pending ? (
-                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RotateCw className="mr-1 h-3.5 w-3.5" />
-              )}
-              Bring it up to date
-            </Button>
+            {/* Same rule as the heal block: when the server said retrying is
+                futile, "Bring it up to date" is a button that cannot do what
+                it says, so it is absent rather than dead. The stand-in being
+                behind is still stated above — that fact does not go away. */}
+            {refreshState.retryIsPointless ? null : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2"
+                onClick={retry}
+                disabled={retrying || refreshState.pending}
+              >
+                {retrying || refreshState.pending ? (
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RotateCw className="mr-1 h-3.5 w-3.5" />
+                )}
+                Bring it up to date
+              </Button>
+            )}
+            {refreshState.traceId ? (
+              <p className="mt-2 text-[11px] text-muted-foreground/70">
+                Recorded as {refreshState.traceId}
+              </p>
+            ) : null}
           </div>
         </div>
       ) : null}

@@ -179,6 +179,15 @@ function BenchRecordLine({ bench }: { bench: BenchProofState }) {
       <p className="mt-0.5 text-xs text-muted-foreground">
         {withoutRepeatedLead(bench.reason, benchHeadline)}
       </p>
+      {/* THE TRACE ID BELONGS HERE AND NOWHERE ELSE (fifteenth cold walk).
+          It sat in the middle of the sentence above, 32 hex characters at a
+          non-technical Expert. It is genuinely useful when she reports this,
+          so it is kept — muted, secondary, out of the prose. */}
+      {bench.status === "unavailable" && bench.traceId ? (
+        <p className="mt-1 text-[11px] text-muted-foreground/70">
+          Recorded as {bench.traceId}
+        </p>
+      ) : null}
     </div>
   );
 }

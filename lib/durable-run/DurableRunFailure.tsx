@@ -28,6 +28,7 @@
 import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { serverRefusal } from "@/lib/progress/failureSentence";
 import { useScrollIntoViewOnAppear } from "./useScrollIntoViewOnAppear";
 
 export interface DurableRunFailureProps {
@@ -56,6 +57,15 @@ export function DurableRunFailure({
   // and a failure that lands below the fold reads as "nothing happened"
   // (census wall W17). See `useScrollIntoViewOnAppear`.
   const ref = useScrollIntoViewOnAppear<HTMLDivElement>(Boolean(error), error);
+  // 🚨 A RETRY THE SERVER ALREADY REFUSED IS NEVER OFFERED (fifteenth cold
+  // walk, blocking C). "Try it again" sat under aidream's `build_defect`
+  // sentence — "trying again will fail the same way until it is fixed" — on
+  // every durable run surface at once, because this is the one component all
+  // of them render. The reading is shared with every other refusal in the
+  // product (`lib/progress/failureSentence.ts`): the server's own remedy
+  // stands, the module path and the trace id leave the prose, and a control
+  // that cannot work is absent rather than dead.
+  const refusal = serverRefusal(error, { remedy: "" });
   if (!error) return null;
   return (
     <div
@@ -71,15 +81,20 @@ export function DurableRunFailure({
           <p className="text-sm font-medium text-foreground">
             This one did not finish.
           </p>
-          {/* The server's sentence, verbatim. Never a generic stand-in: the
-              whole point of D4's sibling defect (census row 6) was a real,
-              actionable reason replaced by "Sorry. An error occurred." */}
-          <p className="text-xs text-muted-foreground">{error}</p>
+          {/* The server's sentence. Never a generic stand-in: the whole point
+              of D4's sibling defect (census row 6) was a real, actionable
+              reason replaced by "Sorry. An error occurred." */}
+          <p className="text-xs text-muted-foreground">{refusal.text}</p>
+          {refusal.traceId ? (
+            <p className="text-[11px] text-muted-foreground/70">
+              Recorded as {refusal.traceId}
+            </p>
+          ) : null}
         </div>
       </div>
-      {retry || children ? (
+      {(retry && !refusal.retryIsPointless) || children ? (
         <div className="flex flex-wrap gap-2 pl-6">
-          {retry ? (
+          {retry && !refusal.retryIsPointless ? (
             <Button
               size="sm"
               variant="outline"

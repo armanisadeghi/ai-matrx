@@ -38,7 +38,7 @@
 // chunksTotal` is a count the server sent; nothing here computes a percentage
 // of a run, because nothing here knows one.
 
-import { humanFailureSentence } from "@/lib/progress/failureSentence";
+import { serverRefusal } from "@/lib/progress/failureSentence";
 import type { ProgressStep } from "@/lib/progress/honestSummary";
 
 /** One thing the run was handed, as it is rendered. */
@@ -247,11 +247,14 @@ export function reduceIngestProgress(
           (str(data.message) ?? (known ? undefined : step ?? undefined));
     // 🚨 A RAW EXCEPTION CLASS NAME NEVER REACHES THE ROW. The twelfth cold
     // walk read `failed (AppError). Nothing was added to your Rulebook.` five
-    // times; `humanFailureSentence` removes the class name, says out loud when
-    // the server named no cause, and always attaches the way out.
+    // times. `serverRefusal` is that same reading plus the fifteenth walk's:
+    // it removes the class name, the module path and the trace id, says out
+    // loud when the server named no cause, attaches the way out — and, when
+    // the server said retrying is futile, leaves the server's own remedy
+    // standing instead of telling this pile to try again.
     const detail =
       status === "failed" && rawDetail !== undefined
-        ? humanFailureSentence(rawDetail).text
+        ? serverRefusal(rawDetail).text
         : rawDetail;
     const nextSeq = state.seq + 1;
     const sourceId = sourceIdOf(data);

@@ -298,6 +298,130 @@ export async function linkInterviewConversation(args: {
  */
 const pendingAssociations = new Set<string>();
 
+// =============================================================================
+// 🚨 "EVERYTHING YOU HAVE SAID IS ALREADY SAVED" HAS TO BE TRUE
+// =============================================================================
+//
+// ## The defect this closes (fifteenth cold walk, 2026-09-20, blocking D)
+//
+// The interview pre-flight promises, verbatim: *"Stop whenever you like —
+// everything you have said is already saved, and you can pick this interview up
+// again later."* An Expert sent three substantial answers, reloaded
+// `/masterwork/<id>/interview`, and got the PRE-FLIGHT AGAIN — no offer to
+// carry on, no transcript, and the Rulebook read "No interviews yet."
+//
+// Her words were not lost. aidream commits the user row with real content in
+// the end-of-turn coordinator flush, and that flush runs on `"error"` and
+// `"cancelled"` as well as `"stream_end"`
+// (`matrx_ai/persistence/queue_helpers.py`), so the turn survives even the
+// AttributeError that was crashing every reply that day.
+//
+// What was lost is the only thing the RESUME READ looks at: the
+// `platform.associations` edge. It is written by the browser, and only after
+// `waitForConversationPersisted` — a poll of up to 180 seconds. The edge cannot
+// be written any earlier: `assoc_add` needs real access to both endpoints and
+// the conversation row does not exist until that flush (42501, verified live
+// 2026-08-17). So the sequence that broke the promise is ordinary and, on a
+// crashing server, near-certain:
+//
+//   turn sent → reply fails → Expert reloads → THE POLL DIES WITH THE TAB →
+//   no edge is ever written → `interviewConversationIds` returns [] →
+//   "Before we start".
+//
+// The existing `RECOVERY` below heals a missing edge from rule provenance, but
+// that needs the Scout to have successfully WRITTEN A RULE — exactly what does
+// not happen when the reply fails. It cannot cover this case.
+//
+// The fix is an INTENT RECORD that outlives the tab. The moment the Expert's
+// first turn starts — before any await, before anything can fail — the
+// rulebook/conversation pair is written to `localStorage`. The read then merges
+// those pending pairs into its candidate ids and heals the edge itself, so the
+// very first load after a reload offers the interview rather than needing a
+// second round trip to discover it. A pair whose conversation never committed
+// simply finds no `chat.conversation` row and drops out of the list; the record
+// expires on its own so it can never accumulate.
+//
+// This is deliberately NOT a cache of her words — it is one pair of ids. The
+// words are, and always were, in `chat.message`.
+
+const PENDING_INTERVIEW_LINKS_KEY = "matrx:masterwork:pending-interview-links";
+
+/** How long an unhealed intent record is worth keeping. */
+const PENDING_LINK_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+interface PendingInterviewLink {
+  rulebookId: string;
+  conversationId: string;
+  /** Epoch ms, for the expiry sweep. */
+  at: number;
+}
+
+function readPendingLinks(): PendingInterviewLink[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(PENDING_INTERVIEW_LINKS_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    const cutoff = Date.now() - PENDING_LINK_TTL_MS;
+    return parsed.filter(
+      (row): row is PendingInterviewLink =>
+        typeof row === "object" &&
+        row !== null &&
+        typeof (row as PendingInterviewLink).rulebookId === "string" &&
+        typeof (row as PendingInterviewLink).conversationId === "string" &&
+        typeof (row as PendingInterviewLink).at === "number" &&
+        (row as PendingInterviewLink).at > cutoff,
+    );
+  } catch {
+    // A quota error, a private window, a corrupted value — the resume read
+    // still works off the edge. This is a second net, never the only one.
+    return [];
+  }
+}
+
+function writePendingLinks(rows: PendingInterviewLink[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      PENDING_INTERVIEW_LINKS_KEY,
+      JSON.stringify(rows),
+    );
+  } catch {
+    /* see readPendingLinks */
+  }
+}
+
+/**
+ * Record the INTENT to link, synchronously, before anything can fail.
+ * Exported so a guard can assert it happens at turn start rather than at
+ * association time.
+ */
+export function rememberPendingInterviewLink(args: {
+  rulebookId: string;
+  conversationId: string;
+}): void {
+  const rows = readPendingLinks().filter(
+    (row) => row.conversationId !== args.conversationId,
+  );
+  rows.push({ ...args, at: Date.now() });
+  writePendingLinks(rows);
+}
+
+/** Drop an intent record once its edge exists. */
+export function forgetPendingInterviewLink(conversationId: string): void {
+  const rows = readPendingLinks();
+  const kept = rows.filter((row) => row.conversationId !== conversationId);
+  if (kept.length !== rows.length) writePendingLinks(kept);
+}
+
+/** Conversation ids this browser started an interview for on this Rulebook. */
+export function pendingInterviewConversationIds(rulebookId: string): string[] {
+  return readPendingLinks()
+    .filter((row) => row.rulebookId === rulebookId)
+    .map((row) => row.conversationId);
+}
+
 export function associateInterviewWhenPersisted(args: {
   rulebookId: string;
   conversationId: string;
@@ -306,6 +430,12 @@ export function associateInterviewWhenPersisted(args: {
   turnStarted: boolean;
 }): void {
   if (!args.turnStarted) return;
+  // BEFORE ANY AWAIT. The whole point is that this survives the tab dying
+  // between here and the end-of-turn flush.
+  rememberPendingInterviewLink({
+    rulebookId: args.rulebookId,
+    conversationId: args.conversationId,
+  });
   if (pendingAssociations.has(args.conversationId)) return;
   pendingAssociations.add(args.conversationId);
   void (async () => {
@@ -327,10 +457,11 @@ export function associateInterviewWhenPersisted(args: {
         );
         return;
       }
-      await linkInterviewConversation({
+      const linked = await linkInterviewConversation({
         rulebookId: args.rulebookId,
         conversationId: args.conversationId,
       });
+      if (linked) forgetPendingInterviewLink(args.conversationId);
       await ensureInterviewTitle({
         conversationId: args.conversationId,
         rulebookName: args.rulebookName,
@@ -507,17 +638,52 @@ export async function listRulebookInterviewsWithAccess(
       .map((r) => r.source_ref?.conversation_id)
       .filter((v): v is string => typeof v === "string" && v.length > 0),
   );
-  const missing = [...fromProvenance].filter((id) => !edgeIds.includes(id));
-  if (missing.length > 0) {
+  // THE INTENT RECORD (blocking D, above). A turn was started in this browser
+  // and the association poll never got to finish — the tab reloaded, or the
+  // reply crashed and the Expert reloaded. Her words are in `chat.message`;
+  // only the edge is missing. Merging the pending ids in here is what makes
+  // the FIRST read after a reload offer the interview, instead of the Expert
+  // landing back on "Before we start" under a screen that promised her
+  // everything she said was already saved.
+  const fromPending = pendingInterviewConversationIds(rulebookId).filter(
+    (id) => !edgeIds.includes(id),
+  );
+
+  const fromProvenanceMissing = [...fromProvenance].filter(
+    (id) => !edgeIds.includes(id),
+  );
+  if (fromProvenanceMissing.length > 0) {
     console.error(
       "[masterwork/record] RECOVERY: interview conversations were not associated " +
         "with their Rulebook — healing the missing edges now.",
-      { rulebookId, missing },
+      { rulebookId, missing: fromProvenanceMissing },
     );
+  }
+  if (fromPending.length > 0) {
+    // NOT an error. A pending pair is the ORDINARY outcome of a tab that was
+    // closed or reloaded before the end-of-turn flush — which is precisely the
+    // case this exists to cover.
+    console.info(
+      "[masterwork/record] an interview started in this browser has no edge yet " +
+        "— linking it now so the Expert can pick it up.",
+      { rulebookId, conversationIds: fromPending },
+    );
+  }
+
+  const missing = [...new Set([...fromProvenanceMissing, ...fromPending])];
+  if (missing.length > 0) {
     await Promise.all(
-      missing.map((conversationId) =>
-        linkInterviewConversation({ rulebookId, conversationId }),
-      ),
+      missing.map(async (conversationId) => {
+        // A pair whose conversation never committed cannot be linked (there is
+        // nothing to link to) — it simply finds no `chat.conversation` row
+        // below and drops out of the list. A link that LANDS retires its
+        // intent record, so this heals once and never again.
+        const linked = await linkInterviewConversation({
+          rulebookId,
+          conversationId,
+        });
+        if (linked) forgetPendingInterviewLink(conversationId);
+      }),
     );
   }
 
@@ -573,9 +739,16 @@ export async function listRulebookInterviewsWithAccess(
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   // Edges we can read but conversations we cannot = someone else's interviews.
+  // A PENDING pair is not one of those: its conversation may simply never have
+  // committed, and counting it as "hidden" would tell the Expert an interview
+  // exists that she cannot see, which is a claim nobody verified.
+  const readable = new Set(interviews.map((i) => i.conversationId));
+  const unaccounted = ids.filter(
+    (id) => !readable.has(id) && !fromPending.includes(id),
+  );
   return {
     interviews,
-    hiddenCount: Math.max(0, ids.length - interviews.length),
+    hiddenCount: unaccounted.length,
   };
 }
 
