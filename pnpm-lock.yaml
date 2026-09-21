@@ -77,7 +77,7 @@ importers:
         version: 0.8.6(react@19.3.0)
       '@ai-matrx/records':
         specifier: latest
-        version: 0.29.0(react@19.3.0)
+        version: 0.30.0(react@19.3.0)
       '@ai-matrx/records-ui':
         specifier: latest
         version: 0.44.0(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
@@ -1042,8 +1042,8 @@ packages:
       react-dom: '>=18.0.0'
       recharts: '>=3.0.0'
 
-  '@ai-matrx/records@0.29.0':
-    resolution: {integrity: sha512-MBSQUfJa6jMvnFZ1D95QgLHDrXQCh/sGbkjR5ZKK/kTBOxT+LyrMBGsSEPEJc1dvRNEkk3PYepM41IP2I4lUUQ==}
+  '@ai-matrx/records@0.30.0':
+    resolution: {integrity: sha512-0QRuyS0woOnxv5Me6e1VasNbL+qt/t332O3k9RMAoXMgbA0+ZHclCMpTUAcwyxnfnGW+nTsi9dqAnRh/yD961A==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -13071,7 +13071,7 @@ snapshots:
       '@ai-matrx/alchemy': 0.3.5(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/design-system': 0.27.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/print': 0.5.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@ai-matrx/records': 0.29.0(react@19.3.0)
+      '@ai-matrx/records': 0.30.0(react@19.3.0)
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
       recharts: 3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1)
@@ -13082,7 +13082,7 @@ snapshots:
       - react-native
       - react-native-svg
 
-  '@ai-matrx/records@0.29.0(react@19.3.0)':
+  '@ai-matrx/records@0.30.0(react@19.3.0)':
     dependencies:
       xlsx: 0.18.5
     optionalDependencies:
