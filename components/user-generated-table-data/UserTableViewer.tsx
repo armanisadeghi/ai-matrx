@@ -337,6 +337,16 @@ interface UserTableViewerProps {
   /** Trailing controls in the data-table toolbar row. */
   toolbarTrailing?: React.ReactNode;
   /**
+   * Fires when this id is not a dataset of the OLDER store for this person —
+   * `get_full_table` answered P0002. It is not "deleted" and it is not "no
+   * access": the record store (`/data-v2`) holds tables with exactly this shape
+   * of id, so a host that can look there takes the screen over. When it is
+   * supplied the viewer paints NO error of its own for that one case, because
+   * two answers on one screen is worse than the wrong one. Every other failure
+   * is shown here exactly as before.
+   */
+  onDatasetNotHere?: (tableId: string) => void;
+  /**
    * Fires whenever the loaded table's identity changes — lets an outer
    * route header (e.g. the `/data/[id]` shell header) show the table's
    * name without a second fetch of the same RPC.
@@ -379,6 +389,7 @@ const UserTableViewer = ({
   renderCellMarkdown = false,
   hideHeader = false,
   toolbarTrailing,
+  onDatasetNotHere,
   onTableInfoChange,
   onTablesChange,
   emitSurfaceScope = false,
@@ -793,7 +804,16 @@ const UserTableViewer = ({
         // this called get_user_table_complete, which has no LIMIT: opening any
         // dataset shipped every row to the browser to read three facts.)
         const meta = await getTableMetadata({ tableId });
-        if (isServiceFailure(meta)) throw new Error(meta.error);
+        if (isServiceFailure(meta)) {
+          // THE ID MAY BELONG TO THE OTHER STORE. Hand it to the host rather
+          // than printing "it may have been deleted" over a table that exists.
+          if (meta.code === "dataset_not_here" && onDatasetNotHere) {
+            onDatasetNotHere(tableId);
+            setLoading(false);
+            return;
+          }
+          throw new Error(meta.error);
+        }
 
         currentTableInfo = meta.data.table as unknown as TableInfo;
         currentFields = asTableFields(meta.data.columns);
