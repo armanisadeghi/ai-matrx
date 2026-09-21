@@ -15,7 +15,7 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D339 — The sync engine's persisted hydration hits its 8 s backstop on /notes (2026-09-21)
+### D345 — The sync engine's persisted hydration hits its 8 s backstop on /notes (2026-09-21)
 
 Seen on the dev server, signed in as the test admin, on a plain load of `/notes`: the console error from `lib/sync/useSyncHydrated.ts` — `[sync] persisted hydration did not settle within 8000ms — surfaces waiting on restored state will now show their empty state. This is a defect in the sync engine's boot path, not a normal path.` The sidebar showed "Loading notes…" for the whole eight seconds while the start screen already listed recent notes. The same console shows `idb.write` for `scopesTree` at 73,208 bytes and a `remote.write.scheduled` for it during boot, so the engine is busy writing while hydration waits; whether hydration is blocked behind those writes, or a slice never reports settled, was not determined. Seen while measuring the slow folder create (features/notes/FEATURE.md, 2026-09-21); not investigated further. Reproduce: load `/notes` as the test admin with the console open and wait eight seconds.
 

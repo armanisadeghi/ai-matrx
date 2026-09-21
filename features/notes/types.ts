@@ -162,6 +162,16 @@ export interface UpdateNoteOptions {
    */
   acknowledgedBase?: import("./utils/saveVerification").NoteEditBase;
   expectedOrganizationId?: string;
+  /**
+   * The note's project/task links as this client last acknowledged them. With
+   * `expectedOrganizationId` this lets the save skip its pre-write full-row
+   * read AND its association read: two sequential round trips (~150 ms each
+   * from a browser, 2026-09-21 measurement) on EVERY autosave, whose only
+   * purpose was to learn two things the caller already holds. The write itself
+   * stays organization-qualified and version-guarded, so a stale caller gets an
+   * honest not-found or conflict, never a misfiled row.
+   */
+  priorContextLinks?: NoteContextLinks;
   /** Optional explicit actor binding for a prepared direct-editor save. */
   expectedActorId?: string;
   /** Callback lifetime identity retained if acknowledgement needs recovery. */

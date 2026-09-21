@@ -21,6 +21,7 @@ import { resolveNewNoteOrganization } from "../hooks/useNewNoteOrganization";
 import { readAllRows } from "@ai-matrx/data/db";
 import { createAsyncThunk, unwrapResult, type ThunkAction, type ThunkDispatch, type UnknownAction } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import {
   isMissingSessionError,
   runWithSessionRetry,
@@ -167,8 +168,11 @@ export const captureReviewedNoteSave = (source: NoteEditableContentSource) => (
 };
 
 async function assertCurrentNotesUser(expectedUserId: string): Promise<void> {
-  const { data, error } = await supabase.auth.getSession();
-  if (error || data.session?.user.id !== expectedUserId) {
+  // The signed-in identity is the access token's VERIFIED claims — not
+  // `getSession().user`, which is whatever the cookie deserialized to, and not
+  // `auth.getUser()`, which is an auth-server round trip on every save.
+  const { data, error } = await getClaimsUser(supabase);
+  if (error || data.user?.id !== expectedUserId) {
     throw new SessionUnavailableError();
   }
 }
@@ -199,10 +203,10 @@ async function awaitCurrentNotesUser(
     // A hung `getSession` (the multi-tab navigator.locks class) must not turn
     // the bounded wait into an unbounded one: one poll gets one second.
     const poll = await Promise.race([
-      supabase.auth.getSession(),
+      getClaimsUser(supabase),
       new Promise<null>((resolve) => setTimeout(() => resolve(null), 1_000)),
     ]);
-    if (poll && !poll.error && poll.data.session?.user.id === expectedUserId) return;
+    if (poll && !poll.error && poll.data.user?.id === expectedUserId) return;
     if (Date.now() >= deadline) throw new SessionUnavailableError();
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
@@ -805,6 +809,19 @@ const saveNotePayload = createAsyncThunk<NoteSaveReceipt | undefined, { noteId: 
       }, {
         expectedVersion: record.version,
         expectedOrganizationId: record.organization_id,
+        // The ACKNOWLEDGED context links (never the dirty record: those are the
+        // values this save is attempting, and the receipt uses the prior ones
+        // to report a failed context field honestly). With the organization
+        // above, the service skips its pre-write row read and association
+        // read. A record with no acknowledged snapshot lets the service read.
+        ...(record._acknowledgedPhysicalSnapshot
+          ? {
+              priorContextLinks: {
+                project_id: record._acknowledgedPhysicalSnapshot.project_id ?? null,
+                task_id: record._acknowledgedPhysicalSnapshot.task_id ?? null,
+              },
+            }
+          : {}),
         // The edit base: a CAS miss on a row whose edited fields still equal
         // it is a phantom (the version moved for a column nobody edits) and
         // is retried inside the service, never shown as a conflict.
