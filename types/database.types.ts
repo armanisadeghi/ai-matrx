@@ -4829,7 +4829,7 @@ export type Database = {
           updated_by?: string | null
           usage_source?: string
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           capability?: string
@@ -4878,7 +4878,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           capability?: string
@@ -5136,7 +5136,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           active?: boolean
@@ -5196,7 +5196,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           capability?: string
@@ -5261,7 +5261,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           active?: boolean
@@ -5323,7 +5323,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           active?: boolean
@@ -21885,7 +21885,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           citation?: string | null
@@ -24774,7 +24774,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           certified_at?: string
@@ -25650,7 +25650,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           course_name?: string
@@ -28270,7 +28270,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
           yields_rows?: boolean
         }
         Update: {
@@ -28503,7 +28503,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
@@ -30655,7 +30655,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           completion_rules?: Json
@@ -53663,7 +53663,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
@@ -57188,7 +57188,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           attributes?: Json | null
@@ -59236,7 +59236,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           check_name?: string
@@ -59585,7 +59585,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
@@ -59631,7 +59631,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
@@ -62159,7 +62159,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
           working_message?: string | null
         }
         Update: {
@@ -62688,7 +62688,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           blurb?: string
@@ -62883,7 +62883,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           change_type_key?: string
@@ -65267,7 +65267,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
@@ -66719,7 +66719,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           metadata?: Json
-          organization_id?: string
+          organization_id: string
           original_content?: string | null
           prose?: string | null
           request_id?: string | null
@@ -67527,7 +67527,7 @@ export type Database = {
           user_id?: string | null
           user_predicate?: Json | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
           warn_days?: number | null
         }
         Update: {
@@ -68117,7 +68117,7 @@ export type Database = {
           updated_by?: string | null
           url_path_template: string
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           content_role?: string | null
@@ -68332,7 +68332,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           blurb?: string
@@ -68452,7 +68452,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           anchors?: Json
@@ -69253,6 +69253,10 @@ export type Database = {
         Returns: string
       }
       _mint_share_short_alias: { Args: { p_share_id: string }; Returns: string }
+      _output_feedback_subject_org: {
+        Args: { p_subject_id: string; p_subject_type: string }
+        Returns: string
+      }
       _outsider_parent_matches: {
         Args: { p_id: string; p_parent: string; p_resource: string }
         Returns: boolean
@@ -71983,7 +71987,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           app?: string
@@ -72302,7 +72306,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           app?: string
@@ -75523,6 +75527,7 @@ export type Database = {
           p_max_concurrent?: number
           p_max_runtime_seconds?: number
           p_next_due_at?: string
+          p_organization_id?: string
           p_persistent_conversation_id?: string
           p_prompt: string
           p_queue?: string
@@ -76495,7 +76500,10 @@ export type Database = {
         Args: { p_band: string; p_student_user_id: string }
         Returns: Json
       }
-      edu_import_deck: { Args: { p_deck: Json }; Returns: Json }
+      edu_import_deck: {
+        Args: { p_deck: Json; p_organization_id?: string }
+        Returns: Json
+      }
       edu_import_review_history: { Args: { p_items: Json }; Returns: Json }
       edu_learn_doc_admin_list: {
         Args: never
@@ -76647,7 +76655,10 @@ export type Database = {
         }
       }
       edu_restore_study_data: { Args: never; Returns: Json }
-      edu_set_age_band: { Args: { p_band: string }; Returns: Json }
+      edu_set_age_band: {
+        Args: { p_band: string; p_organization_id?: string }
+        Returns: Json
+      }
       edu_suggest_edit: {
         Args: {
           p_body: string
@@ -76709,19 +76720,14 @@ export type Database = {
           scanned: number
         }[]
       }
-      ensure_folder_chain:
-        | {
-            Args: { p_folder_path: string; p_owner_id: string }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_folder_path: string
-              p_organization_id: string
-              p_owner_id: string
-            }
-            Returns: string
-          }
+      ensure_folder_chain: {
+        Args: {
+          p_folder_path: string
+          p_organization_id: string
+          p_owner_id: string
+        }
+        Returns: string
+      }
       ensure_personal_organization: {
         Args: { p_user_id: string }
         Returns: string
@@ -84867,6 +84873,8 @@ export type Database = {
           extracted_images: Json | null
           extracted_links: Json | null
           failure_reason: string | null
+          fetch_verdict: Json | null
+          http_status: number | null
           id: string
           is_current: boolean | null
           is_good_scrape: boolean | null
@@ -84879,7 +84887,9 @@ export type Database = {
           published_at: string | null
           quality_override: string | null
           scraped_at: string | null
+          served_url: string | null
           source_id: string
+          title: string | null
           topic_id: string
           updated_at: string
           updated_by: string | null
@@ -84898,6 +84908,8 @@ export type Database = {
           extracted_images?: Json | null
           extracted_links?: Json | null
           failure_reason?: string | null
+          fetch_verdict?: Json | null
+          http_status?: number | null
           id?: string
           is_current?: boolean | null
           is_good_scrape?: boolean | null
@@ -84910,7 +84922,9 @@ export type Database = {
           published_at?: string | null
           quality_override?: string | null
           scraped_at?: string | null
+          served_url?: string | null
           source_id: string
+          title?: string | null
           topic_id: string
           updated_at?: string
           updated_by?: string | null
@@ -84929,6 +84943,8 @@ export type Database = {
           extracted_images?: Json | null
           extracted_links?: Json | null
           failure_reason?: string | null
+          fetch_verdict?: Json | null
+          http_status?: number | null
           id?: string
           is_current?: boolean | null
           is_good_scrape?: boolean | null
@@ -84941,7 +84957,9 @@ export type Database = {
           published_at?: string | null
           quality_override?: string | null
           scraped_at?: string | null
+          served_url?: string | null
           source_id?: string
+          title?: string | null
           topic_id?: string
           updated_at?: string
           updated_by?: string | null
@@ -87696,7 +87714,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
@@ -99150,7 +99168,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           config?: Json
@@ -99231,7 +99249,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           args?: string[]
@@ -99344,7 +99362,7 @@ export type Database = {
           updated_by?: string | null
           vendor: string
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
           website_url?: string | null
         }
         Update: {
@@ -99533,7 +99551,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           always_include_bundles?: string[]
@@ -100766,7 +100784,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
@@ -101014,7 +101032,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           allow_custom?: boolean
@@ -101087,7 +101105,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
@@ -101228,7 +101246,7 @@ export type Database = {
           updated_by?: string | null
           value_type?: string
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           always_available?: boolean
@@ -101310,7 +101328,7 @@ export type Database = {
           updates_value?: string | null
           value_type?: string
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           apply_policy?: string
@@ -102345,7 +102363,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility: Database["platform"]["Enums"]["visibility"]
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           announcement_type?: string
