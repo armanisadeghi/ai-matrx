@@ -84,6 +84,7 @@ declare
   v_party    uuid;
   v_txt      text;
   v_msg      text;
+  v_keys     text[];
   v_seen     text;
   v_n        integer;
   v_j        jsonb;
@@ -279,10 +280,31 @@ begin
     'applies_to_types', '["rectangle","square"]'::jsonb));
 
   -- FLD-10: which Fields apply is a QUERY, not a convention.
-  select count(*) into v_n from custom.applicable_fields(v_org, v_shape, 'circle');
-  if v_n <> 1 then raise exception 'FLD-10: a circle has % applicable fields, and it shows Radius', v_n; end if;
-  select count(*) into v_n from custom.applicable_fields(v_org, v_shape, 'rectangle');
-  if v_n <> 2 then raise exception 'FLD-10 second input: a rectangle has % applicable fields, and it shows Width and Height', v_n; end if;
+  --
+  -- 🚨 RE-PINNED (lane RED-SUITES-3, 2026-09-21). This clause used to count the answer and
+  -- demand 1 for a circle and 2 for a rectangle — the two type-restricted Fields and nothing
+  -- else — because `custom.table_declare` wrote a spec's inline `fields` into the table's own
+  -- document and created NO Field record. `limitsfix_a_table_s_declared_fields_exist.sql`
+  -- closed that hole (measured: 104 tables across 15 organizations declared 315 field names
+  -- that existed nowhere, and their grids had no columns to draw), so Name and Kind are real
+  -- Fields now and, carrying no `applies_to_types`, apply to every kind — which is what
+  -- `custom.applicable_fields`' own FLD-10 comment has promised since the day it landed: "A
+  -- Field with an empty applies_to_types applies to every record of its Table". A circle's
+  -- form showing Radius and NOT its own Name was never the promise.
+  --
+  -- So the clause now asserts the SET OF KEYS, not a number: it names what a circle shows and
+  -- what it must not show, in both directions, which a count could never do. It goes red both
+  -- if a restricted Field leaks across a type AND if a declared Field stops existing.
+  select array_agg(f.data ->> 'key' order by f.data ->> 'key') into v_keys
+    from custom.applicable_fields(v_org, v_shape, 'circle') f;
+  if v_keys is distinct from array['kind','name','radius']::text[] then
+    raise exception 'FLD-10: a circle shows %, and it must show Name, Kind and Radius — and never Width or Height', v_keys;
+  end if;
+  select array_agg(f.data ->> 'key' order by f.data ->> 'key') into v_keys
+    from custom.applicable_fields(v_org, v_shape, 'rectangle') f;
+  if v_keys is distinct from array['height','kind','name','width']::text[] then
+    raise exception 'FLD-10 second input: a rectangle shows %, and it must show Name, Kind, Width and Height — and never Radius', v_keys;
+  end if;
 
   v_circle := custom.record_write(v_org, v_shape, '{"name":"C1","kind":"circle","radius":12}'::jsonb);
 
@@ -408,7 +430,25 @@ begin
   end if;
   select string_agg(distinct a.data ->> 'type', ',' order by a.data ->> 'type') into v_txt
     from custom.applicable_fields(v_org, v_shape, null) a;
-  if v_txt <> 'range' then raise exception 'FLD-1 second input: Shape declares "%"', v_txt; end if;
+  -- 🚨 RE-PINNED (lane RED-SUITES-3, 2026-09-21), and it was a clause that could never fail.
+  -- Asked with NO record type, `custom.applicable_fields` answers only the Fields that carry
+  -- no `applies_to_types` — that is its FLD-10 contract, in its own words: "A Field with an
+  -- empty applies_to_types applies to every record of its Table; otherwise the record's own
+  -- type value, read out of the Table's type_field, selects it." Shape's three columns are
+  -- ALL type-restricted, so before `limitsfix_a_table_s_declared_fields_exist.sql` gave a
+  -- table spec's inline `fields` real Field rows this query answered NOTHING, `string_agg`
+  -- returned NULL, and `NULL <> 'range'` is NULL — so the `if` never fired and the clause
+  -- asserted nothing for as long as it has existed. It now asks BOTH ways and states both
+  -- answers: with no type, Shape shows only its own Name and Kind; asked for a circle, the
+  -- Radius joins them. That is what a person sees on a type-less list and on a circle's page.
+  if v_txt <> 'text' then
+    raise exception 'FLD-1 second input: asked with no type, Shape declares "%" and it has only Name and Kind that apply to every kind', v_txt;
+  end if;
+  select string_agg(distinct a.data ->> 'type', ',' order by a.data ->> 'type') into v_txt
+    from custom.applicable_fields(v_org, v_shape, 'circle') a;
+  if v_txt <> 'range,text' then
+    raise exception 'FLD-1 third input: asked for a circle, Shape declares "%" and Radius is a range beside the two text columns', v_txt;
+  end if;
 
   select (a.data ->> 'sensitivity') || '/' || (a.data ->> 'context_policy') || '/'
          || coalesce(a.data ->> 'review_interval_days','-') || '/' || coalesce(a.data ->> 'unit','-')
@@ -762,12 +802,35 @@ begin
     raise exception 'I: the projection custom.field is readable from a client seat, so it IS a second surface';
   exception when insufficient_privilege then null;
   end;
-  -- And the ONE way in that a person does have refuses a field for a name the table never
-  -- declared and cannot: `custom.field_declare` writes the name into the Table itself, so
-  -- the Table and its definitions can never disagree. The SAME key twice is refused by name.
+  -- And the ONE way in that a person does have keeps the Table and its definitions in step:
+  -- `custom.field_declare` writes the name into the Table itself, so the two can never
+  -- disagree.
+  --
+  -- 🚨 RE-PINNED (lane RED-SUITES-3, 2026-09-21). This clause used to demand that the SAME
+  -- key twice be refused, full stop. `limitsfix_a_table_s_declared_fields_exist.sql` ruled
+  -- otherwise, and the ruling is right: real-data crew A's "Create and import a file" on a
+  -- brand-new table answered 409 on the table's OWN default Title column, because the create
+  -- path declares Title and the import path declares Title — neither caller was asking for a
+  -- second column, both were saying the same true thing twice, and the store treated the
+  -- repetition as a contradiction. Declaring is idempotent, as a declaration should be
+  -- (`CREATE TABLE IF NOT EXISTS` is the same idea): the same key with the same TYPE is that
+  -- same column, returned unchanged and not written again.
+  --
+  -- The refusal did not go away — it moved to where the contradiction actually is, so the
+  -- clause now asserts BOTH halves, which is more than it ever asserted:
+  --   (a) the same key AND the same type gives back the SAME field id, and writes nothing;
+  --   (b) the same key with a DIFFERENT type is still refused by name with 23505, because
+  --       silently retyping a live column would take its values with it.
+  v_id := custom.field_declare(v_org, v_kitchen, jsonb_build_object('key','note','label','Note again','plain','text'));
+  if v_id is distinct from v_f_note then
+    raise exception 'I: declaring the same column twice made a second column (% then %)', v_f_note, v_id;
+  end if;
+  select count(*) into v_n from custom.applicable_fields(v_org, v_kitchen, null) a
+   where a.data ->> 'key' = 'note';
+  if v_n <> 1 then raise exception 'I: the table now has % columns called note', v_n; end if;
   begin
-    perform custom.field_declare(v_org, v_kitchen, jsonb_build_object('key','note','label','Note again','plain','text'));
-    raise exception 'I: the same key was declared twice on one table';
+    perform custom.field_declare(v_org, v_kitchen, jsonb_build_object('key','note','label','Note again','plain','number'));
+    raise exception 'I: the same key was declared twice on one table with two different types';
   exception when unique_violation then
     get stacked diagnostics v_msg = message_text;
     if v_msg not like 'This table already has a field called%' then
@@ -780,7 +843,7 @@ begin
                   where f ->> 'name' = 'note4') then
     raise exception 'I: the field landed and the Table does not declare it, so the two disagree';
   end if;
-  raise notice 'I GREEN — the projection custom.field is unreachable from a client seat, and the one door a person has keeps the Table and its definitions in step: a duplicate key is refused by name and a new one is written into both';
+  raise notice 'I GREEN — the projection custom.field is unreachable from a client seat, and the one door a person has keeps the Table and its definitions in step: the same column declared twice is the same column, the same name at a different type is refused by name, and a new one is written into both';
 
   -- ══════════════════════════════════════════════════════════════════════════
   -- J. THE RULING, AS A COUNT (operator, out of the seat: no door reads pg_class)
