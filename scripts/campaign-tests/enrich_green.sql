@@ -328,8 +328,21 @@ begin
   select count(*) into v_n from custom.enrich_due(v_org, v_ind, 50, false);
   if v_n < 40 then raise exception '10: only % stale rows came back as work', v_n; end if;
   select * into v_row from custom.enrich_due(v_org, v_ind, 50, false) limit 1;
-  if v_row.reason not like 'past its freshness date%' then
-    raise exception '10: a stale row says "%"', v_row.reason;
+  -- 🚨 RE-PINNED (lane RED-SUITES-2, 2026-09-21). The sentence changed on purpose:
+  -- `migrations/campaign/tidy_one_freshness_ceiling.sql` (commit `a13209570d`) made
+  -- `custom.freshness_verdict` the ONE implementation of the freshness ceiling — it had been
+  -- written out twice, eighteen lines each, and nothing checked that the two agreed — and its
+  -- own header states the product rule: "THE SENTENCE IS THE PRODUCT. A stale value is
+  -- DELIVERED, never dropped: dropping a real value because nobody re-verified it is worse
+  -- than saying how old it is."
+  --
+  -- The clause matched one four-word prefix. It now asserts the three things the sentence is
+  -- FOR, which the prefix never checked: how old the value is, the freshness the column itself
+  -- declares, and that the value was delivered rather than dropped.
+  if v_row.reason not ilike '%day(s) ago%'
+     or v_row.reason not ilike '%freshness this field declares%'
+     or v_row.reason not ilike '%rather than dropped%' then
+    raise exception '10: a stale row''s reason does not say how old it is, what freshness the column declares, and that the value was delivered anyway: "%"', v_row.reason;
   end if;
   -- AND THE VALUE IS STILL THERE. Stale marks it; it does not erase it.
   select c.value into v_out from custom.enrich_cells(v_org, v_tbl, array['industry'], null) c
