@@ -592,7 +592,10 @@
     "check:assist-emit-door:self-test": "tsx scripts/check-assist-emit-door.ts --self-test",
     "check:proxy-auth-hot-path": "tsx scripts/check-proxy-auth-hot-path.ts",
     "check:proxy-auth-hot-path:self-test": "tsx scripts/check-proxy-auth-hot-path.ts --self-test",
-    "check:one-reference-builder": "tsx scripts/check-one-reference-builder.ts"
+    "check:one-reference-builder": "tsx scripts/check-one-reference-builder.ts",
+    "check:inverses-leave-the-ground-standing": "tsx scripts/check-inverses-leave-the-ground-standing.ts",
+    "check:inverses-leave-the-ground-standing:self-test": "tsx scripts/check-inverses-leave-the-ground-standing.ts --self-test",
+    "check:inverses-leave-the-ground-standing:live": "tsx scripts/check-inverses-leave-the-ground-standing.ts --live"
   },
   "dependencies": {
     "@ai-matrx/agents": "latest",
