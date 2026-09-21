@@ -50,6 +50,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 - `sms_phone_numbers` — owned/assigned Twilio senders; `assistant_enabled` is the operator-wide program kill switch, never the user toggle.
 - `sms_conversations`, `sms_messages`, `sms_media` — durable messaging history.
 - `sms_webhook_logs` — webhook diagnostics.
+- `test_handset_verification` — one-time codes for the loopback test handsets: hashed with a per-row salt, single-use (`consumed_at`), expiring (10 minutes), attempt-capped (5) — Twilio Verify's own semantics. Service-role only.
 - `test_handset_inbox` — everything the two loopback test handsets receive. Service-role only (`restricted` variant: the sole policy is `svc_all`), never a client surface, and written only when the `To` number is registered with `program_key = 'ai_matrx_test_handset'`.
 
 ---
@@ -125,7 +126,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 - Message reads page newest-first, but conversation surfaces render each page oldest-to-newest.
 - **A test handset is a receiver, never a sender program.** The two loopback numbers (`+19498072145` for `admin@admin.com`, `+19496662578` for `test@test.com`, designated 2026-09-21) are registered `is_active = false` under `ai_matrx_test_handset`. Their webhooks store and stop; they never open a conversation, run an agent turn, or adjudicate consent — which is what makes it safe for the battery to read their contents.
 - **The test-handset door stores a message only when the destination is a registered test handset.** The filter is the safety property, not a convenience: it is what stops a real person's inbound message from ever being readable out of `test_handset_inbox`.
-- **The battery reads the Twilio Verify code from our own table, never from the Twilio API.** Twilio redacts an OTP body in the Messages resource (it reads back as `**verification code is:**`); the inbound webhook is delivered with the real body.
+- 🚨 **A designated test handset verifies over our OWN Messaging Service, not Twilio Verify — and the admission is STRUCTURAL, not a knob.** Twilio Verify cannot be used for a handset at all: it redacts the code in the Messages API (it reads back as `**verification code is:**`) *and* never fires the destination number's inbound webhook, so nothing we can build reads it (both measured 2026-09-21; the control was an ordinary message to the same handset, which did fire the webhook with the full real body). `sendVerification`/`checkVerification` therefore branch on `isDesignatedTestHandset`, which is true only for a number registered under `program_key = 'ai_matrx_test_handset'`, read from the database every call. There is no env var, flag or header that can put a real person's number on that path, and a failed lookup is never an admission. **The consent rows are still written by the ordinary flow** in `app/api/sms/verify/route.ts`, which the branch does not touch — this is test infrastructure, not a weakening of consent. Negative and positive controls are both asserted in `lib/sms/test-handset-otp.test.ts`, proven failing-then-passing by forcing the gate open.
 
 ## Production gaps verified 2026-08-15
 
@@ -140,6 +141,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 
 ## Change log
 
+- `2026-09-21` — Designated test handsets now verify over our own Messaging Service instead of Twilio Verify, because a Verify code is unreadable by any door we can build (redacted in the API, and it never fires the inbound webhook). Same six-digit code, same single-use/expiry/attempt semantics, hashed at rest; the admission is structural (the `ai_matrx_test_handset` registration) and the consent rows are still written by the ordinary flow.
 - `2026-09-21` — Added the loopback test-handset inbound door: `communication.test_handset_inbox` (service-role only), the signed `/api/webhooks/twilio/test-handset` and `-voice` routes, and the test-handset-only filter that keeps a real person's message out of it. Twilio-to-Twilio delivery was measured, not assumed — handset 1 → handset 2 arrived in four seconds.
 - `2026-09-09` — Distinguished an account with no verified enrollment from an inactive sender or globally paused assistant program on the Messaging health surface.
 - `2026-08-28` — Successful Twilio verification now records the verified mobile number in the shared CRM contact graph, and Resend delivery webhooks stamp the originating notification's first `delivered_at` evidence idempotently.
