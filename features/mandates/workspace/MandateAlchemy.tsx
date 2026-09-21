@@ -76,11 +76,19 @@ function escapeXml(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&apos;");
 }
 
-function xml(value: Json, tag: string): string {
-  if (value === null) return `<${tag} null="true"/>`;
-  if (Array.isArray(value)) return `<${tag}>${value.map((item) => xml(item, "item")).join("")}</${tag}>`;
-  if (typeof value === "object") return `<${tag}>${Object.entries(value).map(([key, item]) => xml(item, key)).join("")}</${tag}>`;
-  return `<${tag}>${escapeXml(String(value))}</${tag}>`;
+function xml(value: Json, tag: string, depth = 0): string {
+  const indent = "  ".repeat(depth);
+  if (value === null) return `${indent}<${tag} null="true"/>`;
+  if (Array.isArray(value)) {
+    if (value.length === 0) return `${indent}<${tag}/>`;
+    return `${indent}<${tag}>\n${value.map((item) => xml(item, "item", depth + 1)).join("\n")}\n${indent}</${tag}>`;
+  }
+  if (typeof value === "object") {
+    const entries = Object.entries(value);
+    if (entries.length === 0) return `${indent}<${tag}/>`;
+    return `${indent}<${tag}>\n${entries.map(([key, item]) => xml(item, key, depth + 1)).join("\n")}\n${indent}</${tag}>`;
+  }
+  return `${indent}<${tag}>${escapeXml(String(value))}</${tag}>`;
 }
 
 function source(id: string, label: string, getPayload: () => Json | string): Source {
@@ -120,8 +128,12 @@ export function MandateAlchemy({
     return { tabs: Object.fromEntries(entries.map(([tab, captured]) => [tab, (captured as Extract<MandateAlchemyCapture, { status: "ready" }>).data])) } as Json;
   };
   const key = data.mandate.mandate_key;
-  return <div className="ml-auto flex items-center gap-1">
-    <ContentTransferMenu label="Current tab" triggerVariant="transparent" triggerSize="compact" source={source(`mandate:${key}:tab:${activeTab}`, "Current mandate tab", current)} variants={[{ id: "all-tabs", label: "All tabs", source: source(`mandate:${key}:all-tabs`, "All mandate tabs", all) }]} />
-    <ContentTransferMenu label="Core" triggerVariant="transparent" triggerSize="compact" source={source(`mandate:${key}:core-json`, "Mandate definition core (JSON)", () => core)} variants={[{ id: "core-xml", label: "Core XML", source: source(`mandate:${key}:core-xml`, "Mandate definition core (XML)", () => xml(core, "mandate")) }]} />
-  </div>;
+  const variants = [
+    { id: "all-tabs", label: "All tabs", source: source(`mandate:${key}:all-tabs`, "All mandate tabs", all) },
+    ...(activeTab === "definition" ? [
+      { id: "core-json", label: "Core JSON", source: source(`mandate:${key}:core-json`, "Mandate definition core (JSON)", () => core) },
+      { id: "core-xml", label: "Core XML", source: source(`mandate:${key}:core-xml`, "Mandate definition core (XML)", () => xml(core, "mandate")) },
+    ] : []),
+  ];
+  return <div className="ml-auto"><ContentTransferMenu label="Current tab" triggerVariant="transparent" triggerSize="compact" source={source(`mandate:${key}:tab:${activeTab}`, "Current mandate tab", current)} variants={variants} /></div>;
 }
