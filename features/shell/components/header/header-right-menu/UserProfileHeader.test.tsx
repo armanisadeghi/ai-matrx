@@ -14,11 +14,11 @@
  * second line when it carries information the first line didn't already
  * show.
  *
- * This calls the component function directly (same pattern as
- * ShellUserAvatarImage.test.tsx next door) and walks the returned element
- * tree — no React DOM render, no router context needed.
+ * The component uses hooks, so this renders it for real with
+ * `renderToStaticMarkup` and reads what a person would read.
  */
 
+import { renderToStaticMarkup } from "react-dom/server";
 import { UserProfileHeader } from "./UserProfileHeader";
 import type { UserData } from "@/utils/userDataMapper";
 
@@ -49,50 +49,33 @@ function baseUserData(overrides: Partial<UserData["userMetadata"]> & { email?: s
   };
 }
 
-/** Walks the returned element tree to the `<span className="flex flex-col ...">`
- * wrapper that carries the name line and (optionally) the email line. */
-function nameBlockChildren(userData: UserData) {
-  const label = UserProfileHeader({ userData }) as any;
-  const appLink = label.props.children;
-  const linkChildren: any[] = Array.isArray(appLink.props.children)
-    ? appLink.props.children
-    : [appLink.props.children];
-  const nameBlock = linkChildren.find(
-    (child) => child && child.props?.className?.includes("flex-col"),
-  );
-  expect(nameBlock).toBeTruthy();
-  const children: any[] = Array.isArray(nameBlock.props.children)
-    ? nameBlock.props.children
-    : [nameBlock.props.children];
-  return children;
+/** Renders the real component (it uses hooks, so it must be rendered, never
+ * called as a plain function) and returns the text of the identity block:
+ * one entry per line the person would read. */
+function identityLines(userData: UserData): string[] {
+  const html = renderToStaticMarkup(<UserProfileHeader userData={userData} />);
+  const block = html.match(/<span class="[^"]*flex-col[^"]*">(.*?)<\/span>\s*<\/a>|<span class="[^"]*flex-col[^"]*">(.*)$/s);
+  const inner = (block?.[1] ?? block?.[2] ?? html);
+  return Array.from(inner.matchAll(/<span[^>]*>([^<]+)<\/span>/g)).map((m) => m[1]);
 }
 
 describe("UserProfileHeader — no duplicated identity", () => {
   it("shows the email only once when there is no separate display name", () => {
-    const children = nameBlockChildren(
-      baseUserData({ name: null, email: "admin@admin.com" }),
+    const html = renderToStaticMarkup(
+      <UserProfileHeader userData={baseUserData({ name: null, email: "admin@admin.com" })} />,
     );
-
-    // First line: the email, used as the fallback display name.
-    const nameLine = children[0];
-    expect(nameLine.props.children).toBe("admin@admin.com");
-
-    // Second line must not also render — showing it would print
-    // "admin@admin.com" a second time with nothing to distinguish it.
-    const secondLine = children[1];
-    expect(secondLine).toBeFalsy();
+    // The email is the fallback display name; printing it again beneath
+    // itself is the defect.
+    const visible = html.replace(/<[^>]+>/g, "\n");
+    expect(visible.split("admin@admin.com").length - 1).toBe(1);
   });
 
   it("shows the name once and the email beneath it when both exist", () => {
-    const children = nameBlockChildren(
-      baseUserData({ name: "Arman Sadeghi", email: "admin@admin.com" }),
+    const lines = identityLines(
+      baseUserData({ name: "Dana Whitfield", email: "admin@admin.com" }),
     );
-
-    const nameLine = children[0];
-    expect(nameLine.props.children).toBe("Arman Sadeghi");
-
-    const secondLine = children[1];
-    expect(secondLine).toBeTruthy();
-    expect(secondLine.props.children).toBe("admin@admin.com");
+    expect(lines.filter((l) => l === "Dana Whitfield")).toHaveLength(1);
+    expect(lines.filter((l) => l === "admin@admin.com")).toHaveLength(1);
+    expect(lines.indexOf("Dana Whitfield")).toBeLessThan(lines.indexOf("admin@admin.com"));
   });
 });

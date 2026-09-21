@@ -38,7 +38,9 @@ export function UserProfileHeader({ userData }: UserProfileHeaderProps) {
           <span className="text-base font-medium text-foreground truncate">
             {displayName}
           </span>
-          {userData.email && (
+          {/* The email is the fallback display name; print it beneath only when a
+              separate name holds the first line, never twice (cold walk 13). */}
+          {userData.email && userData.userMetadata.name && (
             <span className="text-xs text-foreground truncate">
               {userData.email}
             </span>
