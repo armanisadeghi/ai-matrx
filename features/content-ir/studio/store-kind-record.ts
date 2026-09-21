@@ -51,7 +51,6 @@
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { supabase } from "@/utils/supabase/client";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import type { Json } from "@/types/database.types";
 import { saveKindInstance, type SaveKindInstanceResult } from "./instance-service";
 import { notifyKindRecordsChanged } from "@/features/content-ir/records/record-change-bus";
 
@@ -216,19 +215,20 @@ async function writeProducedByEdge(args: {
   try {
     const { data: auth } = await getClaimsUser(supabase);
     const userId = auth.user?.id ?? null;
-    const { error } = await supabase
-      .schema("platform")
-      .from("associations")
-      .insert({
-        source_type: MESSAGE_SOURCE_TYPE,
-        source_id: args.messageId,
-        target_type: KIND_INSTANCE_TARGET_TYPE,
-        target_id: args.recordId,
-        label: PRODUCED_BY_LABEL,
-        organization_id: args.organizationId,
-        created_by: userId,
-        metadata: {} as Json,
-      });
+    // DOORS-ONLY: `platform` is not a client-writable schema. The edge goes
+    // through `assoc_add`, the canonical association door, which decides through
+    // the one ladder (`iam.has_access` on both ends, then the container's
+    // organization) and stamps `created_by` from `auth.uid()` itself — which is
+    // why `userId` is now only used for the diagnostics below.
+    void userId;
+    const { error } = await supabase.rpc("assoc_add", {
+      p_source_type: MESSAGE_SOURCE_TYPE,
+      p_source_id: args.messageId,
+      p_target_type: KIND_INSTANCE_TARGET_TYPE,
+      p_target_id: args.recordId,
+      p_label: PRODUCED_BY_LABEL,
+      p_org_id: args.organizationId,
+    } as never);
     if (!error) return null;
     const message = `The record was saved, but the link back to the message it came from was not written: ${error.message}`;
     captureError({
