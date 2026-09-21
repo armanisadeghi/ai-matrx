@@ -36,6 +36,16 @@ export function OrganizationPickerPanel({
         abbreviation: org.abbreviation,
         // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
         isPersonal: org.is_personal,
+        // 🚨 THE ADDRESS, FOR TWO THAT SHARE A NAME (crew D2, 2026-09-21).
+        //
+        // Two organizations called "Kessler Lab for Applied Microbial Ecology" and two
+        // called "Wraithmoor Regional Museum of Art & Craft" sat in this list, identical
+        // down to the abbreviation tile, and a person had no way of knowing which one
+        // they were about to work in. The slug is what differs, and it is what the URL
+        // already shows — the same thing Slack does with a workspace's address and
+        // Google with an account's email. The picker draws it ONLY on rows whose name
+        // another row also carries, so a list of distinct names is unchanged.
+        distinguisher: org.slug,
       }))}
       activeOrganizationId={activeOrgId}
       defaultOrganizationId={defaultOrganizationId}
