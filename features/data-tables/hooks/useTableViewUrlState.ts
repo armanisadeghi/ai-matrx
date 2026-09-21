@@ -78,6 +78,8 @@ export type TableViewUrlState = {
   setRowDensity: (value: TableRowDensity) => void;
   freezeFirstColumn: boolean;
   setFreezeFirstColumn: (value: boolean) => void;
+  wrapText: boolean;
+  setWrapText: (value: boolean) => void;
   /** The whole view as one object — what a saved view stores. */
   viewState: TableViewState;
   /** Apply a whole view at once (a saved view being opened). */
@@ -206,6 +208,11 @@ export function useTableViewUrlState(options: {
       (freezeFirst: boolean) => patchState({ freezeFirst }),
       [patchState],
     ),
+    wrapText: state.wrap,
+    setWrapText: useCallback(
+      (wrap: boolean) => patchState({ wrap }),
+      [patchState],
+    ),
     viewState: state,
     applyViewState: useCallback(
       (next: TableViewState) => patchWhole(next),
@@ -225,6 +232,7 @@ export function useTableViewUrlState(options: {
       Object.keys(state.widths).length > 0 ||
       state.density !== "normal" ||
       state.freezeFirst ||
+      state.wrap ||
       Object.keys(state.filters).length > 0,
   };
 }

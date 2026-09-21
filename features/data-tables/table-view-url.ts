@@ -61,6 +61,8 @@ export type TableViewState = {
   density: TableRowDensity;
   /** Keep the first column on screen while scrolling sideways. */
   freezeFirst: boolean;
+  /** Show whole cell text on as many lines as it needs, instead of one line ending in "…". */
+  wrap: boolean;
 };
 
 export type TableLayoutMode = "auto" | "fit" | "scroll";
@@ -77,7 +79,7 @@ export type TableViewDefaults = {
 
 /** Query-string keys this module owns. Nothing else may write them. */
 export const TABLE_VIEW_PARAM_KEYS = [
-  "q", "sort", "f", "p", "ps", "hide", "ord", "lay", "w", "den", "frz",
+  "q", "sort", "f", "p", "ps", "hide", "ord", "lay", "w", "den", "frz", "wrap",
 ] as const;
 
 /**
@@ -185,6 +187,7 @@ export function parseTableViewParams(
     widths: parseColumnWidths(params.get("w")),
     density: parseRowDensity(params.get("den")),
     freezeFirst: params.get("frz") === "1",
+    wrap: params.get("wrap") === "1",
   };
 }
 
@@ -238,6 +241,7 @@ export function tableViewParamPatch(
     w: serializeColumnWidths(state.widths),
     den: state.density === "normal" ? null : state.density,
     frz: state.freezeFirst ? "1" : null,
+    wrap: state.wrap ? "1" : null,
   };
 }
 
@@ -290,6 +294,7 @@ export function sameTableView(a: TableViewState, b: TableViewState): boolean {
     a.layout === b.layout &&
     a.density === b.density &&
     a.freezeFirst === b.freezeFirst &&
+    a.wrap === b.wrap &&
     serializeColumnWidths(a.widths) === serializeColumnWidths(b.widths) &&
     JSON.stringify(activeFiltersOnly(a.filters)) ===
       JSON.stringify(activeFiltersOnly(b.filters))

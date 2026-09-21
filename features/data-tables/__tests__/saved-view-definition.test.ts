@@ -25,6 +25,7 @@ const viewState = (over: Partial<TableViewState> = {}): TableViewState => ({
   widths: {},
   density: "normal",
   freezeFirst: false,
+  wrap: false,
   ...over,
 });
 
@@ -58,6 +59,7 @@ describe("definitionFromViewState", () => {
       widths: {},
       density: "normal",
       freezeFirst: false,
+      wrap: false,
     });
   });
 

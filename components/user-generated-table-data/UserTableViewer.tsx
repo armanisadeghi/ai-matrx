@@ -440,6 +440,8 @@ const UserTableViewer = ({
     setRowDensity,
     freezeFirstColumn,
     setFreezeFirstColumn,
+    wrapText,
+    setWrapText,
     viewState,
     applyViewState,
     resetView,
@@ -3568,6 +3570,8 @@ const UserTableViewer = ({
                 onRowDensityChange={setRowDensity}
                 freezeFirstColumn={freezeFirstColumn}
                 onFreezeFirstColumnChange={setFreezeFirstColumn}
+          wrapText={wrapText}
+          onWrapTextChange={setWrapText}
                 customWidthCount={Object.keys(columnWidths).length}
                 onResetColumnWidths={clearColumnWidths}
               />
@@ -3688,6 +3692,8 @@ const UserTableViewer = ({
           onRowDensityChange={setRowDensity}
           freezeFirstColumn={freezeFirstColumn}
           onFreezeFirstColumnChange={setFreezeFirstColumn}
+          wrapText={wrapText}
+          onWrapTextChange={setWrapText}
           customWidthCount={Object.keys(columnWidths).length}
           onResetColumnWidths={clearColumnWidths}
         />
@@ -4237,13 +4243,13 @@ const UserTableViewer = ({
                         format={fieldFormat}
                         dataType={field.data_type}
                         validationRules={validationByField.get(field.field_name) ?? null}
-                        className="truncate text-left"
+                        className={wrapText ? "whitespace-pre-wrap break-words text-left" : "truncate text-left"}
                       />
                     ) : cellData ? (
                       <div className="flex items-center justify-between group min-w-0">
                         <div className="flex-1 min-w-0">
                           <div
-                            className="truncate text-left"
+                            className={wrapText ? "whitespace-pre-wrap break-words text-left" : "truncate text-left"}
                             title={
                               cellData.isTruncated
                                 ? cellData.fullText
@@ -4253,13 +4259,13 @@ const UserTableViewer = ({
                             {renderCellMarkdown &&
                             typeof rawValue === "string" ? (
                               <InlineMarkdownWithLinks
-                                text={String(cellData.display)}
+                                text={String(wrapText ? cellData.fullText : cellData.display)}
                               />
                             ) : (
-                              String(cellData.display)
+                              String(wrapText ? cellData.fullText : cellData.display)
                             )}
                           </div>
-                          {cellData.multilineIndicator && (
+                          {cellData.multilineIndicator && !wrapText && (
                             <div className="text-xs text-muted-foreground mt-0.5">
                               {cellData.multilineIndicator}
                             </div>

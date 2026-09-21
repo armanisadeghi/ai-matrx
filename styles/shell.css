@@ -2539,9 +2539,16 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
     opacity var(--shell-duration-fast) var(--shell-ease-smooth),
     transform var(--shell-duration-fast) var(--shell-ease-smooth),
     visibility 0s linear var(--shell-duration-fast);
-  /* Never taller than the viewport — a long menu (admin items, etc.) must SCROLL,
-     not grow off-screen and lock the user out. */
-  max-height: calc(100dvh - 4rem);
+  /* Never taller than the viewport — a long menu (admin items, an open
+     organization list) must SCROLL, not grow off-screen and lock the user out.
+     The safe-area insets come out of the budget too: on a notched device the
+     top of a max-height panel lands under the notch, where nothing can be
+     clicked. Measured at 1280x720, 1440x900 and 390x844 by
+     `features/shell/layout-gate/user-menu-reachability.spec.ts`. */
+  max-height: calc(
+    100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) -
+      4rem
+  );
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -2659,7 +2666,12 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
     opacity var(--shell-duration-fast) var(--shell-ease-smooth),
     transform var(--shell-duration-fast) var(--shell-ease-smooth),
     visibility 0s linear var(--shell-duration-fast);
-  max-height: calc(100dvh - 4rem);
+  /* Same viewport bound as `.shell-user-menu-panel` — this panel renders the
+     SAME `UserMenuPanel`, so it inherits the same class of defect. */
+  max-height: calc(
+    100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) -
+      4rem
+  );
   overflow-y: auto;
   overscroll-behavior: contain;
 }

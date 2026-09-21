@@ -74,8 +74,26 @@ export function MenuGroup({
           Truncating text (`truncate` sets `white-space: nowrap`) contributes
           its FULL width to min-content, so every list this group will ever hold
           is exposed the same way. Measured gate:
-          `features/shell/layout-gate/user-menu-org-disclosure.spec.ts`. */}
-      <div className="grid grid-rows-[0fr] peer-checked:grid-rows-[1fr] transition-[grid-template-rows] duration-200 ease-in-out overflow-hidden">
+          `features/shell/layout-gate/user-menu-org-disclosure.spec.ts`.
+
+          🚨 `invisible peer-checked:visible` IS THE SECOND LOAD-BEARING PIECE,
+          and it is not styling. `overflow-hidden` only CLIPS the collapsed
+          content: every row keeps its box, keeps its place in the hit-test
+          tree and stays a tab stop, painted nowhere. A group sitting low in
+          the account menu therefore parks live buttons BELOW the panel and
+          below the window — cold walk 16 (2026-09-21, defect E, production,
+          1440x900) measured the theme row at `top 878, bottom 906` in a 900px
+          window with `elementFromPoint` answering
+          `LABEL.shell-user-menu-backdrop`, three real mouse clicks timing out,
+          and the panel unable to scroll to it because a clipped child adds
+          nothing to `scrollHeight`. Hiding the content makes a collapsed row
+          ABSENT instead of present-but-unreachable (and drops it out of the
+          tab order). `visibility` transitions discretely — visible the instant
+          the group opens, hidden only when the collapse finishes — so it is
+          listed in the same `transition-[…]` and the animation is unchanged.
+          Measured gate:
+          `features/shell/layout-gate/user-menu-reachability.spec.ts`. */}
+      <div className="grid grid-rows-[0fr] peer-checked:grid-rows-[1fr] invisible peer-checked:visible transition-[grid-template-rows,visibility] duration-200 ease-in-out overflow-hidden">
         <div className="min-h-0 min-w-0">
           <div className="pl-2 pt-0.5">{children}</div>
         </div>

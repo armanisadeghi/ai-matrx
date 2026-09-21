@@ -15,6 +15,21 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D343 — Two `features/shell` jest suites are red on `main`, and one of them says the shell docs lie (2026-09-21)
+
+Found red before any of 2026-09-21's shell work, unrelated to it, still red:
+
+- `features/shell/__tests__/header-right-set.test.ts` — "keeps one copy of the profile menu"
+  asserts `styles/shell.css` does not contain `elevated-shell-user-menu`. It contains it 9 times
+  (`styles/shell.css:2648+`), and `components/matrx/resizable/ElevatedShellUserMenu.tsx` is alive
+  and imported. `features/shell/FEATURE.md`'s 2026-09-19 change log claims that component, its
+  store and its CSS were DELETED. Either the deletion was reverted or it never landed — decide
+  which is true, then delete the twin or delete the claim and the test.
+- `features/shell/components/header/header-right-menu/UserProfileHeader.test.tsx` — 3 cases die
+  with `TypeError: Cannot read properties of null (reading 'useContext')` at
+  `menuCheckboxId.tsx:26`. The test calls the component as a plain function outside a renderer,
+  so React has no dispatcher; it needs to render (or the hook needs a default outside a provider).
+
 ### D341 — A window's LAYOUT comes back on refresh for 13 windows out of 195 (2026-09-19)
 
 Two systems restore a window panel and only one of them is general. `?panels=` (URL) now opens
