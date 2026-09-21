@@ -7,9 +7,9 @@
 -- migrations, and a number from one run at one time is not evidence of anything.
 --
 -- So this file runs IMPORT's proof TWICE, minutes apart, in ONE transaction that rolls back:
--- once with this lane's bodies live, then — after the REAL BYTES of all four of this lane's
--- inverses have executed inside the same transaction — once with the bodies the store had
--- before WRITE-PERF-3. Both halves see the same contention, the same caches and the same
+-- once with this lane's bodies live, then — after the store has been put back inside the same
+-- transaction, exactly as the block below describes — once with the bodies it had before
+-- WRITE-PERF-3. Both halves see the same contention, the same caches and the same
 -- connection. The difference between them is this lane and nothing else.
 --
 -- `custom.io_import_rows` still calls `custom.record_write` ONCE PER ROW — pointing it at
@@ -105,12 +105,35 @@ $$;
 select pg_temp.five_thousand('A — this lane''s bodies');
 
 \echo ''
-\echo '=== executing the real bytes of all four inverses inside this transaction ==='
+\echo '=== putting the store back the way it was, inside this transaction ==='
 reset role;
+
+-- THE REAL BYTES OF TWO OF THIS LANE'S INVERSES, then the third one's BODIES, then by hand the
+-- four memo-clearing triggers this workload can actually fire.
+--
+-- WHY NOT ALL FOUR WHOLE FILES, WHICH IS WHAT writeperf3_parity.sql DOES. The full inverse of
+-- writeperf3_the_write_path_asks_the_ladder_once.sql drops three triggers on each of fourteen
+-- tables. Asked from a transaction that has already written five thousand records, that is a
+-- lock upgrade to ACCESS EXCLUSIVE on fourteen tables, and against the other lanes landing
+-- migrations on this database tonight it DEADLOCKED on four consecutive attempts — every time
+-- with a peer holding `platform.entity_grants` or `platform.entity_relationships` and waiting
+-- on `platform.associations`, which this harness already held.
+--
+-- So this file drops only what its own workload can fire: the three triggers on `custom.record`
+-- and the one on `platform.associations`. The other twelve tables are not written by an import
+-- of five thousand records, so their triggers never fire and leaving them changes no number
+-- here. The inverse of writeperf3_an_edge_arriving_forgets_nothing.sql is skipped for the same
+-- reason and with the same effect: its only live act is to put blunt triggers BACK on
+-- `platform.associations`, and half B wants none there at all.
 \i migrations/inverse/writeperf3_a_small_answer_is_not_read_out_of_a_big_blob_down.sql
-\i migrations/inverse/writeperf3_an_edge_arriving_forgets_nothing_down.sql
 \i migrations/inverse/writeperf3_the_table_is_read_once_per_statement_down.sql
-\i migrations/inverse/writeperf3_the_write_path_asks_the_ladder_once_down.sql
+drop trigger if exists zz_memo_clear_i on custom.record;
+drop trigger if exists zz_memo_clear_u on custom.record;
+drop trigger if exists zz_memo_clear_d on custom.record;
+drop trigger if exists zz_memo_clear_i on platform.associations;
+drop trigger if exists zz_memo_clear_u on platform.associations;
+drop trigger if exists zz_memo_clear_d on platform.associations;
+\i migrations/inverse/writeperf3_the_write_path_asks_the_ladder_once_bodies_down.sql
 
 select pg_temp.five_thousand('B — the bodies before this lane');
 
