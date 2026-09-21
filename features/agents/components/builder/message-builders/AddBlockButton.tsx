@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
+  ListChecks,
   Plus,
   Image as ImageIcon,
   Music,
@@ -40,13 +41,36 @@ import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { MediaVariableInput } from "@/features/agents/components/inputs/input-components/MediaVariableInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
+import {
+  DECISION_QUESTIONS_KIND,
+  isDecisionQuestionsPart,
+  partKind,
+  readQuestions,
+  type DecisionQuestionSpec,
+} from "@/features/agents/decision-questions/types";
+import {
+  decisionQuestionsCompatibility,
+  statePartCompatibility,
+  type PartCompatibility,
+} from "@/features/agents/decision-questions/compatibility";
+import {
+  DecisionQuestionsEditor,
+  newDecisionQuestion,
+} from "@/features/agents/components/builder/message-builders/DecisionQuestionsEditor";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 export type BlockType =
-  "text" | "image" | "audio" | "video" | "youtube_video" | "document";
+  | "text"
+  | "image"
+  | "audio"
+  | "video"
+  | "youtube_video"
+  | "document"
+  | "decision_questions";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -130,6 +154,15 @@ const BLOCK_TYPES: BlockTypeConfig[] = [
     ],
   },
   {
+    type: "decision_questions",
+    label: "Questions",
+    icon: <ListChecks className="w-3.5 h-3.5" />,
+    // The questions part has no scalar field — its editor IS a table, so the
+    // generic field form is skipped and `DecisionQuestionsEditor` renders in
+    // the list instead of a `BlockRow`.
+    fields: [],
+  },
+  {
     type: "document",
     label: "Document",
     icon: <FileText className="w-3.5 h-3.5" />,
@@ -145,6 +178,16 @@ const BLOCK_TYPES: BlockTypeConfig[] = [
 
 function getConfig(type: string): BlockTypeConfig | undefined {
   return BLOCK_TYPES.find((c) => c.type === type);
+}
+
+/**
+ * What the decision editor needs to tell the truth: the model the message
+ * runs on and the text of the OTHER parts (the decision state). Absent when
+ * the surface has no model in hand — the meter then labels its own defaults.
+ */
+export interface DecisionPartContext {
+  model: AIModelRecord | null | undefined;
+  stateText: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -267,6 +310,9 @@ export function BlockEditor({
   isEdit = false,
 }: BlockEditorProps) {
   const config = blockType ? getConfig(blockType) : null;
+  // The questions part is edited as a table by `DecisionQuestionsEditor`; it
+  // never reaches this field form. `BlockList` adds it directly.
+  const isQuestionsPart = config?.type === DECISION_QUESTIONS_KIND;
   const [values, setValues] = useState<Record<string, string>>(
     config
       ? Object.fromEntries(
@@ -291,7 +337,7 @@ export function BlockEditor({
   const openImageUploader = useOpenImageUploaderWindow();
 
   const handleConfirm = () => {
-    if (!config) return;
+    if (!config || isQuestionsPart) return;
     const primaryValue = values[config.fields[0].key]?.trim();
     if (!primaryValue) return;
     const block: Record<string, unknown> = { type: config.type };
@@ -353,6 +399,8 @@ export function BlockEditor({
       </div>
     );
   }
+
+  if (isQuestionsPart) return null;
 
   const primaryValue = values[config.fields[0].key]?.trim();
 
@@ -489,6 +537,11 @@ interface BlockRowProps {
   onEdit: () => void;
   onRemove: () => void;
   validVariables?: string[];
+  /**
+   * Honest compatibility. A part the model cannot consume STAYS here, greyed,
+   * carrying the reason — it is never dropped and never looks fine.
+   */
+  compatibility?: PartCompatibility;
 }
 
 export function BlockRow({
@@ -496,9 +549,10 @@ export function BlockRow({
   onEdit,
   onRemove,
   validVariables = [],
+  compatibility,
 }: BlockRowProps) {
   const [open, setOpen] = useState(false);
-  const type = (block.type as string) || "unknown";
+  const type = partKind(block) || "unknown";
   const config = getConfig(type as BlockType);
   const icon = config?.icon ?? <AlertTriangle className="w-3.5 h-3.5" />;
   const label = config?.label ?? `Unsupported: ${type}`;
@@ -590,8 +644,15 @@ export function BlockRow({
     typeof metadata?.role === "string" ? (metadata.role as string) : null;
   const otherMetaCount = metadataCount - (role ? 1 : 0);
 
+  const refused = compatibility?.verdict === "refused";
+
   return (
-    <div className="flex flex-col gap-0.5 w-full px-2 py-1.5 rounded-md border border-border bg-card text-xs group/row">
+    <div
+      className={cn(
+        "flex flex-col gap-0.5 w-full px-2 py-1.5 rounded-md border border-border bg-card text-xs group/row",
+        refused && "opacity-50 grayscale",
+      )}
+    >
       <div className="flex items-center gap-2">
         <span className="text-muted-foreground shrink-0">{icon}</span>
         <span className="font-medium shrink-0">{label}</span>
@@ -641,6 +702,13 @@ export function BlockRow({
             className="h-16 w-auto max-w-[150px] rounded border border-border"
           />
         </div>
+      )}
+
+      {compatibility && compatibility.verdict === "refused" && (
+        <p className="pl-5 pt-0.5 flex items-start gap-1 text-[10px] leading-snug text-destructive">
+          <AlertTriangle className="w-3 h-3 shrink-0 mt-px" />
+          <span>{compatibility.reason}</span>
+        </p>
       )}
 
       {fieldRows.map(
@@ -717,6 +785,8 @@ interface BlockListProps {
   pendingAddType?: BlockType | null;
   onPendingAddTypeClear?: () => void;
   validVariables?: string[];
+  /** Model + state text, so the questions editor can tell the truth. */
+  decisionContext?: DecisionPartContext;
 }
 
 export function BlockList({
@@ -727,8 +797,25 @@ export function BlockList({
   pendingAddType,
   onPendingAddTypeClear,
   validVariables = [],
+  decisionContext,
 }: BlockListProps) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+
+  const model = decisionContext?.model ?? null;
+  const hasQuestionsPart = blocks.some(isDecisionQuestionsPart);
+  const questionsVerdict = decisionQuestionsCompatibility(model);
+
+  // "Questions" has no field form — picking it adds the part with one empty
+  // question and the table opens on it. Nothing to confirm, nothing to type
+  // into a box that is not the editor.
+  useEffect(() => {
+    if (pendingAddType !== DECISION_QUESTIONS_KIND) return;
+    onAddBlock({
+      __kind: DECISION_QUESTIONS_KIND,
+      questions: [newDecisionQuestion([])],
+    });
+    onPendingAddTypeClear?.();
+  }, [pendingAddType, onAddBlock, onPendingAddTypeClear]);
 
   const cancelAdd = () => {
     onPendingAddTypeClear?.();
@@ -750,7 +837,24 @@ export function BlockList({
   return (
     <div className="flex flex-col gap-1 w-full">
       {blocks.map((block, i) =>
-        editingIndex === i ? (
+        isDecisionQuestionsPart(block) ? (
+          <DecisionQuestionsEditor
+            key={i}
+            questions={readQuestions(block)}
+            validVariables={validVariables}
+            model={model}
+            stateText={decisionContext?.stateText ?? ""}
+            compatibility={questionsVerdict}
+            onRemovePart={() => onRemoveBlock(i)}
+            onChange={(questions: DecisionQuestionSpec[]) =>
+              onUpdateBlock(i, {
+                ...block,
+                __kind: DECISION_QUESTIONS_KIND,
+                questions,
+              })
+            }
+          />
+        ) : editingIndex === i ? (
           <BlockEditor
             key={i}
             blockType={block.type as BlockType}
@@ -766,6 +870,7 @@ export function BlockList({
             onEdit={() => setEditingIndex(i)}
             onRemove={() => onRemoveBlock(i)}
             validVariables={validVariables}
+            compatibility={statePartCompatibility(block, model, hasQuestionsPart)}
           />
         ),
       )}

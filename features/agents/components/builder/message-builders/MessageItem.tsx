@@ -21,8 +21,11 @@ import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectAgentMessageAtIndex,
   selectAgentMessages,
+  selectAgentModelId,
   selectAgentVariableDefinitions,
 } from "@/features/agents/redux/agent-definition/selectors";
+import { selectModelById } from "@/features/ai-models/redux/modelRegistrySlice";
+import { isDecisionQuestionsPart } from "@/features/agents/decision-questions/types";
 import { setAgentMessages } from "@/features/agents/redux/agent-definition/slice";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
@@ -138,6 +141,13 @@ export function MessageItem({
     selectAgentVariableDefinitions(state, agentId),
   );
 
+  // The decision budget meter reads the model the agent will actually run on
+  // and the state it will read — every OTHER part of this same message.
+  const modelId = useAppSelector((state) => selectAgentModelId(state, agentId));
+  const selectedModel = useAppSelector((state) =>
+    modelId ? selectModelById(state, modelId) : undefined,
+  );
+
   const { canUndo, canRedo, undo, redo, undoHint, redoHint } = useAgentUndoRedo(
     { agentId },
   );
@@ -175,6 +185,19 @@ export function MessageItem({
   // out). Listed in their `content` order so the indices passed to
   // remove/update map back deterministically.
   const extraBlocks = rawBlocks.filter((_, i) => i !== primaryIndex);
+
+  // The decision state: the primary text plus every non-questions part that
+  // carries text. Media parts contribute nothing here — a decision reads text
+  // state only, which is exactly why they are refused beside a questions part.
+  const decisionStateText = useMemo(() => {
+    const pieces: string[] = [currentText];
+    for (const block of extraBlocks) {
+      if (isDecisionQuestionsPart(block)) continue;
+      const text = block.text;
+      if (typeof text === "string") pieces.push(text);
+    }
+    return pieces.filter(Boolean).join("\n\n");
+  }, [currentText, extraBlocks]);
 
   // Redux write-backs
   const handleTextChange = useCallback(
@@ -787,6 +810,10 @@ export function MessageItem({
               pendingAddType={pendingAddType}
               onPendingAddTypeClear={() => setPendingAddType(undefined)}
               validVariables={variableNames}
+              decisionContext={{
+                model: selectedModel ?? null,
+                stateText: decisionStateText,
+              }}
             />
           </div>
         )}
