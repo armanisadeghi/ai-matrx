@@ -28,12 +28,16 @@ import {
 import { sourceTypeFromDb, type ResearchSource } from "../../types";
 import type { CurationAnalysisState } from "../../service";
 import { useYouTubeVideoIndex } from "../../hooks/useResearchState";
-import { VideoSourceMeta } from "../shared/VideoSourceMeta";
 import {
   SCRAPE_STATUS_CONFIG,
   SOURCE_TYPE_CONFIG,
   authorityTier,
 } from "../../constants";
+import {
+  formatYouTubeCount,
+  formatYouTubeDuration,
+} from "@/features/marketing/discovery/youtube/formatters";
+import type { YouTubeVideoIdentity } from "../../service";
 
 function tierFromSource(source: ResearchSource): string | null {
   return authorityTier(source.authority_tier, source.authority_score);
@@ -57,6 +61,29 @@ const ANALYSIS_ORDER: Record<CurationAnalysisState, number> = {
   failed: 1,
   none: 0,
 };
+
+function videoSummary(video: YouTubeVideoIdentity): string {
+  return [
+    video.channel_title,
+    video.published_at
+      ? new Intl.DateTimeFormat(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }).format(new Date(video.published_at))
+      : null,
+    video.duration ? formatYouTubeDuration(video.duration) : null,
+    video.view_count != null
+      ? `${formatYouTubeCount(video.view_count)} views`
+      : null,
+    video.channel_subscriber_count != null
+      ? `${formatYouTubeCount(video.channel_subscriber_count)} subscribers`
+      : null,
+    video.processing_status,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
 
 /**
  * Shared source-result table for the keyword preview and the Content view.
@@ -178,10 +205,12 @@ export function SourceResultsTable({
                 </div>
               )}
               {video && (
-                <VideoSourceMeta
-                  identity={video}
-                  className="mt-0.5 max-w-full flex-nowrap overflow-hidden"
-                />
+                <span
+                  className="mt-0.5 block truncate whitespace-nowrap text-[11px] text-muted-foreground"
+                  title={videoSummary(video)}
+                >
+                  {videoSummary(video)}
+                </span>
               )}
             </div>
           </div>
@@ -274,6 +303,42 @@ export function SourceResultsTable({
           {SOURCE_TYPE_CONFIG[sourceTypeFromDb(source.source_type)].label}
         </span>
       ),
+    });
+    columns.push({
+      id: "video-channel",
+      header: "Video channel",
+      accessorFn: (source) => identityFor(source)?.channel_title ?? "",
+      filter: "text",
+      hidden: true,
+    });
+    columns.push({
+      id: "video-duration",
+      header: "Video duration",
+      accessorFn: (source) => identityFor(source)?.duration ?? "",
+      filter: "text",
+      hidden: true,
+    });
+    columns.push({
+      id: "video-views",
+      header: "Video views",
+      accessorFn: (source) => identityFor(source)?.view_count ?? null,
+      filter: "number",
+      hidden: true,
+    });
+    columns.push({
+      id: "video-subscribers",
+      header: "Video subscribers",
+      accessorFn: (source) =>
+        identityFor(source)?.channel_subscriber_count ?? null,
+      filter: "number",
+      hidden: true,
+    });
+    columns.push({
+      id: "video-processing",
+      header: "Video processing",
+      accessorFn: (source) => identityFor(source)?.processing_status ?? "",
+      filter: "text",
+      hidden: true,
     });
   }
   if (analysisFor) {

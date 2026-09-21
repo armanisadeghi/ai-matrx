@@ -1,19 +1,19 @@
 "use client";
 
-/**
- * RichMemberTable — clear, file-list view of what's in a data store.
- *
- * Replaces the opaque "kind / source_id" row with: file name, mime,
- * size, page count, chunk count, status badge, and direct actions
- * (Search / Open / Remove).
- */
-
 import { useState } from "react";
-import { ExternalLink, Loader2, RefreshCw, Search, Trash2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
+import {
+  ExternalLinkTapButton,
+  SearchTapButton,
+  TrashTapButton,
+} from "@ai-matrx/tap-target/buttons";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@ai-matrx/design-system";
 import {
   Dialog,
   DialogContent,
@@ -30,11 +30,10 @@ import type { RichMember } from "@/features/rag/hooks/useDataStores";
 import { cn } from "@/lib/utils";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import {
-  MOBILE_TABLE,
-  MOBILE_TABLE_CELL,
-  MOBILE_TABLE_FROZEN_CELL,
-  MOBILE_TABLE_FROZEN_HEAD,
-} from "@/components/official/mobile-table/mobileTable";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 function statusToDocStatus(s: RichMember["status"]): DocStatus {
   if (s === "no_processing") return "pending";
@@ -43,6 +42,188 @@ function statusToDocStatus(s: RichMember["status"]): DocStatus {
   if (s === "extracted") return "extracted";
   if (s === "pending") return "pending";
   return "unknown";
+}
+
+function memberId(member: RichMember): string {
+  return `${member.sourceKind}/${member.sourceId}`;
+}
+
+function TruncatedMemberText({
+  value,
+  className,
+}: {
+  value: string;
+  className: string;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className={className}>{value}</span>
+      </TooltipTrigger>
+      <TooltipContent>{value}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function memberColumns(): MatrxColumnDef<RichMember>[] {
+  return [
+    {
+      id: "name",
+      accessorKey: "name",
+      header: "File",
+      label: "File",
+      sortValue: (member) => member.name,
+      filterValue: (member) => member.name,
+      width: 300,
+      frozen: true,
+      cell: (member) => (
+        <TruncatedMemberText
+          value={member.name}
+          className="block max-w-md truncate font-medium"
+        />
+      ),
+    },
+    {
+      id: "sourceKind",
+      accessorKey: "sourceKind",
+      header: "Source",
+      label: "Source",
+      width: 120,
+      cell: (member) => (
+        <Badge variant="outline" className="px-1 py-0 text-[9px]">
+          {member.sourceKind}
+        </Badge>
+      ),
+    },
+    {
+      id: "mimeType",
+      accessorKey: "mimeType",
+      header: "Type",
+      label: "File type",
+      width: 170,
+      cell: (member) =>
+        member.mimeType ? (
+          <TruncatedMemberText
+            value={member.mimeType}
+            className="block max-w-40 truncate text-xs text-muted-foreground"
+          />
+        ) : (
+          "—"
+        ),
+    },
+    {
+      id: "sourceId",
+      accessorKey: "sourceId",
+      header: "Source ID",
+      label: "Source ID",
+      width: 150,
+      cellKind: "fk",
+      fk: {
+        token: (member) =>
+          member.sourceKind === "cld_file"
+            ? "file"
+            : member.sourceKind === "processed_document"
+              ? "processed_document"
+              : null,
+      },
+    },
+    {
+      id: "status",
+      accessorFn: (member) => statusToDocStatus(member.status),
+      header: "Status",
+      label: "Status",
+      width: 120,
+      filter: "select",
+      filterOptions: [
+        { value: "ready", label: "Ready" },
+        { value: "embedding", label: "Embedding" },
+        { value: "extracted", label: "Extracted" },
+        { value: "pending", label: "Pending" },
+        { value: "unknown", label: "Unknown" },
+      ],
+      cell: (member) => (
+        <StatusBadge status={statusToDocStatus(member.status)} />
+      ),
+    },
+    {
+      id: "pages",
+      accessorKey: "pages",
+      header: "Pages",
+      label: "Pages",
+      width: 90,
+      align: "right",
+      filter: "number",
+      cell: (member) =>
+        member.pages > 0 ? member.pages.toLocaleString() : "—",
+    },
+    {
+      id: "chunks",
+      accessorKey: "chunks",
+      header: RAG_VOCAB.segmentsShort,
+      label: RAG_VOCAB.segmentsShort,
+      width: 110,
+      align: "right",
+      filter: "number",
+      cell: (member) =>
+        member.chunks > 0 ? (
+          <span
+            className={cn(
+              "tabular-nums",
+              member.embeddingsOai < member.chunks &&
+                "text-yellow-600 dark:text-yellow-400",
+            )}
+          >
+            {member.chunks.toLocaleString()}
+            {member.embeddingsOai !== member.chunks && (
+              <span className="text-muted-foreground">
+                {" / "}
+                {member.embeddingsOai.toLocaleString()}
+              </span>
+            )}
+          </span>
+        ) : (
+          "—"
+        ),
+    },
+    {
+      id: "embeddingsOai",
+      accessorKey: "embeddingsOai",
+      header: "Embeddings",
+      label: "Embeddings",
+      width: 110,
+      align: "right",
+      filter: "number",
+      hidden: true,
+      cell: (member) => member.embeddingsOai.toLocaleString(),
+    },
+    {
+      id: "fileSize",
+      accessorKey: "fileSize",
+      header: "Size",
+      label: "Size",
+      width: 100,
+      align: "right",
+      filter: "number",
+      cell: (member) => (
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {formatFileSize(member.fileSize)}
+        </span>
+      ),
+    },
+    {
+      id: "addedAt",
+      accessorKey: "addedAt",
+      header: "Added",
+      label: "Added",
+      width: 175,
+      filter: "date",
+      cell: (member) => (
+        <span className="text-[10px] tabular-nums text-muted-foreground">
+          {new Date(member.addedAt).toLocaleString()}
+        </span>
+      ),
+    },
+  ];
 }
 
 export interface RichMemberTableProps {
@@ -54,7 +235,6 @@ export interface RichMemberTableProps {
     sourceId: string,
   ) => Promise<unknown> | unknown;
   onRefresh?: () => void;
-  /** Read-only (shared library) store — hide the remove control. */
   readOnly?: boolean;
 }
 
@@ -85,191 +265,92 @@ export function RichMemberTable({
     }
   };
 
-  if (loading && members.length === 0) {
-    return (
-      <div className="space-y-2 p-3">
-        {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-10 w-full" />
-        ))}
-      </div>
-    );
-  }
+  const actionsFor = (member: RichMember) => (
+    <>
+      <SearchTapButton
+        variant="transparent"
+        ariaLabel={`Search inside ${member.name}`}
+        tooltip="Search inside this document"
+        disabled={!member.processedDocumentId || member.chunks === 0}
+        onClick={() => setSearchTarget(member)}
+      />
+      <ExternalLinkTapButton
+        variant="transparent"
+        ariaLabel={`Open preview for ${member.name}`}
+        tooltip="Open preview"
+        disabled={!member.processedDocumentId}
+        onClick={() => {
+          if (member.processedDocumentId)
+            window.open(
+              `/knowledge/library/${member.processedDocumentId}/preview`,
+              "_blank",
+              "noopener,noreferrer",
+            );
+        }}
+      />
+      {!readOnly && (
+        <TrashTapButton
+          variant="transparent"
+          ariaLabel={`Remove ${member.name} from this store`}
+          tooltip="Remove from this store"
+          iconColor="text-destructive"
+          onClick={() => setConfirmRemove(member)}
+        />
+      )}
+    </>
+  );
 
-  if (error) {
-    return (
-      <div className="border border-destructive/50 bg-destructive/5 rounded-md p-3 text-sm text-destructive">
-        <strong>Could not load members:</strong> {error}
-        {onRefresh && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="ml-2"
-            onClick={onRefresh}
-          >
-            <RefreshCw className="h-3 w-3 mr-1" />
-            Retry
-          </Button>
-        )}
-      </div>
-    );
-  }
-
-  if (members.length === 0) {
-    return (
-      <div className="border rounded-md p-6 text-center text-sm text-muted-foreground">
-        No members yet. Drag a file onto this store, or use Add Member.
-      </div>
-    );
-  }
+  const tableData = error ? [] : members;
 
   return (
     <>
-      <div className="overflow-hidden rounded-md border">
-        {/* Mobile-first: below `sm` the table sizes to its CONTENT (w-max)
-            so the table's own horizontal scroll (global mobile CSS gives
-            `table` its own `overflow-x: auto`) can scroll it, and the File
-            column freezes so a row stays identifiable while scrolling.
-            `sm:` restores the exact desktop rendering. `min-w` (not `max-w`)
-            on the frozen cell: the unlayered `* { max-width: 100% }` mobile
-            rule in globals.css always beats a layered `max-w-*` utility. */}
-        <table className={cn("text-sm", MOBILE_TABLE)}>
-          <thead>
-            <tr className="border-b bg-muted/40">
-              <th className={cn("px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_FROZEN_HEAD)}>
-                File
-              </th>
-              <th className={cn("px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
-                Status
-              </th>
-              <th className={cn("px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
-                Pages
-              </th>
-              <th className={cn("px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
-                {RAG_VOCAB.segmentsShort}
-              </th>
-              <th className={cn("px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
-                Size
-              </th>
-              <th className={cn("px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
-                Added
-              </th>
-              <th className={cn("px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {members.map((m) => (
-              <tr
-                key={`${m.sourceKind}/${m.sourceId}`}
-                className="transition-colors max-sm:whitespace-nowrap hover:bg-muted/20"
-              >
-                <td className={cn("px-3 py-2 max-w-md", MOBILE_TABLE_FROZEN_CELL)}>
-                  <div className="font-medium truncate">{m.name}</div>
-                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                    <Badge variant="outline" className="px-1 py-0 text-[9px]">
-                      {m.sourceKind}
-                    </Badge>
-                    {m.mimeType && (
-                      <span className="truncate">{m.mimeType}</span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-3 py-2">
-                  <StatusBadge status={statusToDocStatus(m.status)} />
-                </td>
-                <td className="px-3 py-2 text-right tabular-nums">
-                  {m.pages > 0 ? m.pages.toLocaleString() : "—"}
-                </td>
-                <td className="px-3 py-2 text-right tabular-nums">
-                  {m.chunks > 0 ? (
-                    <span
-                      className={
-                        m.chunks > 0 && m.embeddingsOai < m.chunks
-                          ? "text-yellow-600 dark:text-yellow-400"
-                          : ""
-                      }
-                    >
-                      {m.chunks.toLocaleString()}
-                      {m.embeddingsOai !== m.chunks && (
-                        <span className="text-muted-foreground">
-                          {" / "}
-                          {m.embeddingsOai}
-                        </span>
-                      )}
-                    </span>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td className="px-3 py-2 text-right tabular-nums text-xs text-muted-foreground">
-                  {formatFileSize(m.fileSize)}
-                </td>
-                <td className="px-3 py-2 text-[10px] text-muted-foreground tabular-nums">
-                  {new Date(m.addedAt).toLocaleString()}
-                </td>
-                <td className="px-3 py-2 text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0"
-                      title="Search inside this document"
-                      disabled={!m.processedDocumentId || m.chunks === 0}
-                      onClick={() => setSearchTarget(m)}
-                    >
-                      <Search className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0"
-                      title="Open preview"
-                      disabled={!m.processedDocumentId}
-                      onClick={() => {
-                        if (m.processedDocumentId) {
-                          window.open(
-                            `/knowledge/library/${m.processedDocumentId}/preview`,
-                            "_blank",
-                            "noopener,noreferrer",
-                          );
-                        }
-                      }}
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </Button>
-                    {!readOnly && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 w-7 p-0 text-destructive"
-                        title="Remove from this store"
-                        onClick={() => setConfirmRemove(m)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
+      <MatrxDataTable<RichMember>
+        tableId="rag-data-store-members"
+        data={tableData}
+        columns={memberColumns()}
+        getRowId={memberId}
+        density="condensed"
+        isLoading={loading && members.length === 0}
+        isFetching={loading && members.length > 0}
+        // Search and Preview are the existing member-detail doors; opening the
+        // package detail panel as well would create a second, empty detail path.
+        detail={{ enabled: false }}
+        toolbar={{
+          title: "Members",
+          search: true,
+          searchPlaceholder: "Search store members…",
+          refresh: onRefresh ? { onRefresh } : undefined,
+        }}
+        emptyState={
+          error
+            ? {
+                title: "Could not load members",
+                description: error,
+                action: onRefresh ? (
+                  <Button size="sm" variant="outline" onClick={onRefresh}>
+                    Retry
+                  </Button>
+                ) : undefined,
+              }
+            : {
+                title: "No members yet",
+                description: "Drag a file onto this store, or use Add Member.",
+              }
+        }
+        rowActions={(member) => actionsFor(member)}
+      />
       <QuickSearchDialog
         open={searchTarget !== null}
-        onOpenChange={(o) => {
-          if (!o) setSearchTarget(null);
+        onOpenChange={(open) => {
+          if (!open) setSearchTarget(null);
         }}
         processedDocumentId={searchTarget?.processedDocumentId ?? null}
         documentName={searchTarget?.name ?? null}
       />
-
       <Dialog
         open={confirmRemove !== null}
-        onOpenChange={(o) => {
-          if (!o) setConfirmRemove(null);
+        onOpenChange={(open) => {
+          if (!open) setConfirmRemove(null);
         }}
       >
         <DialogContent>
@@ -293,7 +374,7 @@ export function RichMemberTable({
             >
               {removing ? (
                 <>
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                   Removing…
                 </>
               ) : (

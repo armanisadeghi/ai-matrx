@@ -120,6 +120,11 @@ describe("SourceResultsTable", () => {
       "characters",
       "hostname",
       "source-id",
+      "video-channel",
+      "video-duration",
+      "video-views",
+      "video-subscribers",
+      "video-processing",
     ]);
     const sourceColumn = tableProps.columns.find(
       (column) => column.id === "source",

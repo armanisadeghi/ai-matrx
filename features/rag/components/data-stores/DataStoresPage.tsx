@@ -892,10 +892,7 @@ function StoreDetailPanel({
       </header>
 
       <div className="flex-1 overflow-auto p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Members ({detail.members.length})
-          </h2>
+        <div className="flex justify-end">
           <div className="flex items-center gap-1.5">
             {!readOnly && (
               <>
