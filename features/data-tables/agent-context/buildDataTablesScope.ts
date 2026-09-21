@@ -23,6 +23,8 @@ import {
   describeValidationRules,
   parseValidationRules,
 } from "../validation";
+import { describeRowAction, type RowAction } from "../row-actions";
+import { rowLabelText, type RowLabelConfig } from "../row-label";
 
 /** One column definition as the viewer holds it (a `TableField`). */
 export interface DataTableScopeField {
@@ -59,6 +61,10 @@ export interface DataTableScopeInput {
   tableId: string;
   tableName?: string;
   tableDescription?: string;
+  /** The table's effective row label (row-label.ts), null when the table has no columns. */
+  rowLabel?: RowLabelConfig | null;
+  /** The table's row actions (row-actions.ts). */
+  rowActions?: readonly RowAction[];
   /** Null until the table row has loaded — permission is unknown before that. */
   isReadOnly: boolean | null;
   fields: DataTableScopeField[];
@@ -175,18 +181,48 @@ export function buildDataTablesScope(
       ? input.visibleRows.find((r) => r.id === input.openCell!.rowId)?.data
       : (input.openRow?.data ?? undefined);
 
+  const rowLabelFields = input.fields.map((f) => ({
+    field_name: f.field_name,
+    display_name: f.display_name,
+    data_type: f.data_type,
+    field_order: f.field_order,
+    metadata: f.format ? { format: { id: f.format } } : undefined,
+  }));
+  const rowLabel = input.rowLabel ?? null;
+  const rowLabelRule =
+    rowLabel === null
+      ? undefined
+      : rowLabel.kind === "field"
+        ? `Column "${input.fields.find((f) => f.field_name === rowLabel.field)?.display_name ?? rowLabel.field}"`
+        : rowLabel.expression;
+  const currentRowLabel =
+    currentRowId && currentRowData && rowLabel
+      ? rowLabelText({ data: currentRowData }, rowLabelFields, rowLabel).text
+      : "";
+
   return createDataTablesScope({
     table_id: input.tableId,
     ...(input.tableName ? { table_name: input.tableName } : {}),
     ...(input.tableDescription
       ? { table_description: input.tableDescription }
       : {}),
+    ...(rowLabelRule ? { row_label_rule: rowLabelRule } : {}),
     ...(input.isReadOnly !== null ? { is_read_only: input.isReadOnly } : {}),
 
     ...(orderedFields.length > 0
       ? { table_schema: tableSchema, column_list: columnList }
       : {}),
     row_count: input.totalCount,
+    ...(input.rowActions && input.rowActions.length > 0
+      ? {
+          row_actions: input.rowActions.map((a) => ({
+            id: a.id,
+            name: a.name,
+            kind: a.kind,
+            description: describeRowAction(a, rowLabelFields),
+          })),
+        }
+      : {}),
 
     ...(input.openCell
       ? {
@@ -196,6 +232,7 @@ export function buildDataTablesScope(
       : {}),
     ...(currentRowId ? { current_row_id: currentRowId } : {}),
     ...(currentRowData ? { current_row_json: currentRowData } : {}),
+    ...(currentRowLabel ? { current_row_label: currentRowLabel } : {}),
     ...(input.selectedRangeTsv
       ? {
           selected_range_tsv: input.selectedRangeTsv,

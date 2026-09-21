@@ -108,6 +108,17 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 315,
   },
   {
+    name: "row_label_rule",
+    label: "Row label rule",
+    description:
+      "How this table NAMES a row wherever a row is referred to — the user's 'primary field'. Either `Column \"Capital\"` or a merge formula such as `{First name} & \" \" & {Last name}`. When you speak about a row, name it by this, never by its id. Empty when no table is open.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 60,
+    group: "table_identity",
+    sortOrder: 316,
+  },
+  {
     name: "row_count",
     label: "Row count",
     description:
@@ -144,6 +155,17 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 
   // ── Active selection (340-369) ────────────────────────────────────────
+  {
+    name: "row_actions",
+    label: "Row actions",
+    description:
+      "The one-click buttons this table's owner defined on every row, as `{ id, name, kind, description }`: kind `update` applies fixed changes (the description says which — `Sets Status to \"AVAILABLE\"; clears Total; calculates Reset date.`), kind `agent` sends the row to an agent with a prompt. The user runs them from the row; you cannot trigger one, but when the user asks for exactly what an action does, say that the button exists. Present only when the table has actions.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 400,
+    group: "table_structure",
+    sortOrder: 338,
+  },
   {
     name: "current_cell_value",
     label: "Current cell value",
@@ -210,6 +232,17 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 4,
     group: "active_selection",
     sortOrder: 362,
+  },
+  {
+    name: "current_row_label",
+    label: "Current row label",
+    description:
+      "What the current row is CALLED, by the table's row label rule — the name to use for it in a sentence. Present only alongside current_row_id.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 40,
+    group: "active_selection",
+    sortOrder: 353,
   },
   {
     name: "selected_rows_json",
@@ -367,7 +400,7 @@ export const dataTablesManifest: SurfaceManifest = {
   urlPattern: "/data/[id]",
   intro: `<surface_intro>
 You are on the Data Tables surface: the user is looking at one table they created, at /data/[id] — a paginated grid with search, per-column filters, sorting, inline per-cell editing and per-row history.
-table_id / table_name / table_description identify the table. table_schema and column_list are its columns; column_list's \`name\` is the MACHINE field name every write uses, and \`display_name\` is the header the user reads — never send a display name where a field name is wanted.
+table_id / table_name / table_description identify the table; row_label_rule says how the user names a row (a column, or a merge formula) — refer to rows by that name, never by id, and current_row_label carries it for the current row. row_actions lists the owner's one-click buttons on a row; you cannot press one. table_schema and column_list are its columns; column_list's \`name\` is the MACHINE field name every write uses, and \`display_name\` is the header the user reads — never send a display name where a field name is wanted.
 The row bodies are visible_data_csv (the page on screen, whose first CSV column is row_id) and, when the viewer has already loaded it, full_table_json. row_count is the total after the user's search. search_term is the user's own filter — read it to know why rows are missing.
 current_cell_value / current_column_name / current_row_id / current_row_json describe the cell the user has SELECTED on the grid (one click, or the arrow keys) or the cell / row whose editor is open, and are empty when nothing is selected or open. "This cell" or "the cell I'm on" means that selection. When the user selected a BLOCK of cells (shift-click, drag, a row, a column), selected_range_tsv carries it with a header line of machine field names and selected_range_cell_count says how big it is — "these cells" means that block. selected_rows_json carries the rows ticked with the row checkboxes — "these rows" / "the selected rows" means those.
 This is the user's real data. You may write ONE cell at a time with cell_value, naming the row and column explicitly from what you have READ, and only for a row on the page currently on screen — that is what lets the user see the change land. You may write table_description. Everything else is theirs: columns and types are a migration that can destroy values, whole-table and whole-row replacement is unreviewable, deletes are human, and search_term is their filter.
@@ -436,14 +469,17 @@ export function createDataTablesScope(values: {
   table_id?: string;
   table_name?: string;
   table_description?: string;
+  row_label_rule?: string;
   is_read_only?: boolean;
   table_schema?: Record<string, unknown>;
   column_list?: DataTableColumnEntry[];
+  row_actions?: { id: string; name: string; kind: "update" | "agent"; description: string }[];
   row_count?: number;
   current_cell_value?: string;
   current_column_name?: string;
   current_row_id?: string;
   current_row_json?: Record<string, unknown>;
+  current_row_label?: string;
   visible_data_csv?: string;
   full_table_json?: unknown[];
   search_term?: string;
