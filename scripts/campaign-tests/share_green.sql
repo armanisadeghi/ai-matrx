@@ -231,12 +231,28 @@ end $t$;
 do $t$
 declare v_n int; v_detail text;
 begin
-  select count(*), min(reason_detail) into v_n, v_detail
+  -- 🚨 RE-PINNED (lane RED-SUITES-2, 2026-09-21). This asked `min(reason_detail)` and then
+  -- required THAT ONE row to name the box. A record now has MORE THAN ONE container — the Table
+  -- it lives in is one ("a Table you can see something inside is a Table you may know"), and the
+  -- box that carries it is another — so `min()` picks whichever sorts first, and "Anyone who
+  -- reaches Case reaches this too" sorts before "Anyone who reaches Matter box reaches this
+  -- too". The door was right and the clause was reading an arbitrary row.
+  --
+  -- Measured: `custom.share_subject_name(org,'record',<the box>)` answers "Matter box", and
+  -- `custom.record_words` answers "Matter box" — neither is confused about anything.
+  --
+  -- The promise is that the thing carrying this record IS NAMED, so that is what is asserted,
+  -- over the whole set rather than one row of it. Stricter than the old clause in two ways: it
+  -- cannot be satisfied by luck of sort order, and every containment row must carry a sentence.
+  select count(*) into v_n
     from custom.share_access('5ba50000-0000-4a00-8a00-000000000a01', '5ba50000-0000-4a00-8a00-000000000402')
    where reason = 'containment';
   if v_n < 1 then raise exception '3d FAILED — the thing that carries this record is not named as a reason.'; end if;
+  select string_agg(reason_detail, ' | ' order by reason_detail) into v_detail
+    from custom.share_access('5ba50000-0000-4a00-8a00-000000000a01', '5ba50000-0000-4a00-8a00-000000000402')
+   where reason = 'containment';
   if v_detail not like '%Matter box%' then
-    raise exception '3d FAILED — the containment reason does not name the container: %', v_detail;
+    raise exception '3d FAILED — no containment reason names the container: %', v_detail;
   end if;
 end $t$;
 

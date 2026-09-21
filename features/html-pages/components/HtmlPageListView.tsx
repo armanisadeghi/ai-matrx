@@ -115,14 +115,13 @@ export default function HtmlPageListView({
     columnFilters: {},
     sort: { id: sortField, direction: sortDir },
   });
+  const listStateRef = useRef(listState);
+  listStateRef.current = listState;
   const restoredScroll = useRef(false);
 
   const replaceListState = (patch: Partial<HtmlPagesListState>) => {
-    // Read latest URL so rapid patches (search debounce + infinite scroll) don't clobber each other.
-    const current =
-      typeof window !== "undefined"
-        ? parseHtmlPagesListState(new URLSearchParams(window.location.search))
-        : listState;
+    // Keep sequential toolbar events together before Next has committed its URL replace.
+    const current = listStateRef.current;
     const next: HtmlPagesListState = { ...current, ...patch };
     if (patch.view === "table") {
       next.n = HTML_PAGES_GRID_INITIAL;
@@ -137,6 +136,7 @@ export default function HtmlPageListView({
     ) {
       next.n = HTML_PAGES_GRID_INITIAL;
     }
+    listStateRef.current = next;
     const qs = htmlPagesListStateToSearchParams(next).toString();
     const href = qs ? `${pathname}?${qs}` : pathname;
     router.replace(href, { scroll: false });

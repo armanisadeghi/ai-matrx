@@ -132,6 +132,16 @@ describe("HtmlPageListView", () => {
       "/cms/html-pages?q=description&ix=1&sort=meta_description",
       { scroll: false },
     );
+
+    const facet = tableProps.toolbar?.facets?.[0];
+    if (!facet || facet.type !== "button-group") {
+      throw new Error("Indexable facet is missing");
+    }
+    act(() => facet.onChange("indexable"));
+    expect(replace).toHaveBeenLastCalledWith(
+      "/cms/html-pages?q=description&ix=1&sort=meta_description",
+      { scroll: false },
+    );
   });
 
   it("keeps the canonical Add control mounted for an empty table view", () => {
