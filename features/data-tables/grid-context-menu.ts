@@ -414,7 +414,6 @@ export function buildGridRowMenuSection(opts: {
               kind: "item" as const,
               id: `grid-row-run-action-${a.id}`,
               label: a.name,
-              hint: a.description.length > 48 ? `${a.description.slice(0, 45)}…` : a.description,
               icon: Zap,
               onSelect: () => id && on.runAction?.(id, a.id),
             })),

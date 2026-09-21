@@ -125,6 +125,11 @@ describe("row actions", () => {
     expect(msgs.some((m) => m.includes('Two actions are called "dup"'))).toBe(true);
     expect(msgs.some((m) => m.includes("{Nope}"))).toBe(true);
     expect(msgs.some((m) => m.includes("agent should do"))).toBe(true);
+    const empty = validateRowActions(
+      [{ id: "e", name: "Empty set", kind: "update", steps: [{ field: "status", set: "value", value: null }] }],
+      fields,
+    ).map((p) => p.message);
+    expect(empty).toEqual(['Type the value for "Status", or choose Clear.']);
   });
 
   it("captures a template row as value/clear steps, never a computed column", () => {

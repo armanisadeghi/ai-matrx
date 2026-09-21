@@ -172,6 +172,10 @@ export function validateRowActions(
         problems.push({ actionId: a.id, message: `"${f.display_name}" is changed twice in the same action.` });
       }
       touched.add(s.field);
+      if (s.set === "value" && (s.value === null || s.value === undefined || s.value === "")) {
+        // A "set to" with nothing typed would silently behave as Clear.
+        problems.push({ actionId: a.id, message: `Type the value for "${f.display_name}", or choose Clear.` });
+      }
       if (s.set === "formula") {
         const parsed = parseFormula(s.expression);
         if (!parsed.ok) problems.push({ actionId: a.id, message: `"${f.display_name}": ${parsed.error}` });

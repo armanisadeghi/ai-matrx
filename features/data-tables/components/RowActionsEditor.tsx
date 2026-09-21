@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 
 import { isComputedColumn } from "../formulas";
 import {
+  coerceForColumn,
   compileRowAction,
   describeRowAction,
   newRowActionId,
@@ -49,7 +50,7 @@ import { effectiveRowLabel, rowLabelText, type RowLabelField } from "../row-labe
 import { setTableRowActions } from "../service";
 import { STYLE_COLORS, STYLE_COLOR_LABELS, type StyleColor } from "../table-style";
 import { isServiceFailure } from "../types";
-import { FormatAwareInput } from "./FormatAwareInput";
+import { FormatAwareInput, formatHasOwnInput } from "./FormatAwareInput";
 import { FormulaExpressionEditor } from "./FormulaExpressionEditor";
 
 type Field = RowActionField & RowLabelField & { metadata?: unknown };
@@ -446,14 +447,47 @@ function StepRow(props: {
       </Select>
       <div className="min-w-0">
         {step.set === "value" && field && (
-          <FormatAwareInput
-            id={`row-action-value-${step.field}`}
-            format={format}
-            dataType={field.data_type}
-            value={step.value}
-            row={row?.data ?? null}
-            onChange={(next) => onChange({ field: step.field, set: "value", value: next })}
-          />
+          formatHasOwnInput(format) ? (
+            <FormatAwareInput
+              id={`row-action-value-${step.field}`}
+              format={format}
+              dataType={field.data_type}
+              value={step.value}
+              row={row?.data ?? null}
+              onChange={(next) => onChange({ field: step.field, set: "value", value: next })}
+            />
+          ) : (
+            // Plain formats (text, number, date, …) have no owned editor —
+            // the same fallback the row form makes, typed by the storage type.
+            <Input
+              id={`row-action-value-${step.field}`}
+              type={
+                field.data_type === "number" || field.data_type === "integer"
+                  ? "number"
+                  : field.data_type === "date"
+                    ? "date"
+                    : field.data_type === "datetime"
+                      ? "datetime-local"
+                      : "text"
+              }
+              step={field.data_type === "integer" ? 1 : field.data_type === "number" ? "any" : undefined}
+              value={
+                step.value === null || step.value === undefined
+                  ? ""
+                  : typeof step.value === "object"
+                    ? JSON.stringify(step.value)
+                    : String(step.value)
+              }
+              placeholder={field.data_type === "boolean" ? "true or false" : `New ${field.display_name.toLowerCase()}`}
+              onChange={(e) =>
+                onChange({
+                  field: step.field,
+                  set: "value",
+                  value: coerceForColumn(e.target.value, field.data_type),
+                })
+              }
+            />
+          )
         )}
         {step.set === "clear" && <div className="flex h-9 items-center text-xs text-muted-foreground">Leaves the cell empty.</div>}
         {step.set === "formula" && (
