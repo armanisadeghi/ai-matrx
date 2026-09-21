@@ -311,6 +311,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
         getRowId={(member) => member.userId}
         density="condensed"
         copy={false}
+        toolbar={{ search: false }}
         detail={{ enabled: false }}
         window={{ enabled: false }}
         hidePagination

@@ -36,6 +36,7 @@ import { podcastService } from "../../service";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
+import { PODCAST_TABLE_ROW_ACTION_REVEAL_CLASS } from "./shows-table-contract";
 import {
   episodeAgentData,
   episodeProjection,
@@ -78,7 +79,7 @@ function CopyLinkButton({ slug }: { slug: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
+      className={`p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground ${PODCAST_TABLE_ROW_ACTION_REVEAL_CLASS}`}
       title={copied ? "Copied!" : "Copy share link"}
     >
       <Link className="h-3.5 w-3.5" />
@@ -399,6 +400,7 @@ export function PodcastsTable({
           isLoading={isLoading}
           density="condensed"
           copy={false}
+          toolbar={{ search: false }}
           detail={{ enabled: false }}
           window={{ enabled: false }}
           selectedId={selectedId}
@@ -460,6 +462,7 @@ export function PodcastsTable({
           isLoading={isLoading}
           density="condensed"
           copy={false}
+          toolbar={{ search: false }}
           detail={{ enabled: false }}
           window={{ enabled: false }}
           selectedId={selectedId}
