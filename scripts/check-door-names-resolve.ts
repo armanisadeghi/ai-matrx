@@ -235,7 +235,7 @@ async function main(): Promise<number> {
     );
     return 1;
   }
-  const client = await connectDirect(env);
+  const client = await connectDirect(env, "check:door-names-resolve");
   try {
     const { rows } = await client.query<DoorRow>(`
       select d.schema_name, d.function_name, d.identity_args, p.oid::int as oid,
@@ -319,7 +319,7 @@ async function selfTest(): Promise<number> {
     console.error(`${TAG.fail}UNMEASURED — no database credentials for the self-test.`);
     return 1;
   }
-  const client = await connectDirect(env);
+  const client = await connectDirect(env, "check:door-names-resolve");
   try {
     await client.query("begin");
     await client.query(`

@@ -139,7 +139,7 @@ export async function createSavedView<TDef>(input: {
     p_surface_key: surfaceKeyFor(input.codec.listKey),
     p_organization_id: input.orgId,
     p_name: name,
-    p_description: input.description?.trim() || null,
+    p_description: input.description?.trim() || undefined,
     p_set_description: true,
     // Serialized as-is: every codec's TDef is a plain JSON object.
     p_definition: input.definition as never,
@@ -178,12 +178,16 @@ export async function updateSavedView<TDef>(
   const { data, error } = await supabase.rpc("saved_view_save", {
     p_surface_key: surfaceKeyFor(listKey),
     p_id: id,
-    p_name: patch.name === undefined ? null : patch.name.trim(),
+    // `undefined` and not `null` for an omitted optional: the generated Args type
+    // for a door is `string | undefined`, because a defaulted plpgsql parameter is
+    // absent from the call rather than explicitly NULL — and inside the door
+    // `coalesce(p_x, s.x)` treats both the same way anyway.
+    p_name: patch.name === undefined ? undefined : patch.name.trim(),
     p_description:
-      patch.description === undefined ? null : patch.description?.trim() || null,
+      patch.description === undefined ? undefined : patch.description?.trim() || undefined,
     p_set_description: patch.description !== undefined,
-    p_definition: patch.definition === undefined ? null : (patch.definition as never),
-    p_visibility: patch.visibility ?? null,
+    p_definition: patch.definition === undefined ? undefined : (patch.definition as never),
+    p_visibility: patch.visibility ?? undefined,
   });
   if (error) {
     if (error.code === "23505") {

@@ -18802,6 +18802,18 @@ export type Database = {
         }
         Returns: Json
       }
+      person_notification_window: {
+        Args: {
+          p_channel?: string
+          p_organization_id: string
+          p_user_id: string
+        }
+        Returns: {
+          quiet_windows: Json
+          timezone: string
+          timezone_source: string
+        }[]
+      }
       reconcile_sms_outbound_attempt: {
         Args: {
           p_error_code?: string
@@ -18826,6 +18838,20 @@ export type Database = {
           p_outcome: string
         }
         Returns: boolean
+      }
+      record_person_timezone: {
+        Args: {
+          p_channel?: string
+          p_organization_id: string
+          p_source?: string
+          p_timezone: string
+          p_user_id: string
+        }
+        Returns: {
+          outcome: string
+          timezone: string
+          timezone_source: string
+        }[]
       }
       record_provider_delivery: {
         Args: {
@@ -55576,6 +55602,10 @@ export type Database = {
       }
       has_org_admin: { Args: { p_org: string }; Returns: boolean }
       has_org_owner: { Args: { p_org: string }; Returns: boolean }
+      invitation_has_its_own_door: {
+        Args: { p_target_type: string }
+        Returns: string
+      }
       is_client_lane: { Args: never; Returns: boolean }
       is_discoverable: {
         Args: {
@@ -64315,6 +64345,30 @@ export type Database = {
           },
         ]
       }
+      doors_only_pending_cutover: {
+        Row: {
+          declared_at: string
+          owner_lane: string
+          reason: string
+          schema_name: string
+          table_name: string
+        }
+        Insert: {
+          declared_at?: string
+          owner_lane: string
+          reason: string
+          schema_name: string
+          table_name: string
+        }
+        Update: {
+          declared_at?: string
+          owner_lane?: string
+          reason?: string
+          schema_name?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       edge_payload_kind: {
         Row: {
           created_at: string
@@ -68384,6 +68438,7 @@ export type Database = {
       schema_client_exposure: {
         Row: {
           client_exposed: boolean
+          client_writes_doors_only: boolean
           declared_at: string
           declared_by: string
           reason: string
@@ -68391,6 +68446,7 @@ export type Database = {
         }
         Insert: {
           client_exposed: boolean
+          client_writes_doors_only?: boolean
           declared_at?: string
           declared_by: string
           reason: string
@@ -68398,6 +68454,7 @@ export type Database = {
         }
         Update: {
           client_exposed?: boolean
+          client_writes_doors_only?: boolean
           declared_at?: string
           declared_by?: string
           reason?: string
@@ -70318,6 +70375,10 @@ export type Database = {
         Returns: Json
       }
       door_split_args: { Args: { p_args: string }; Returns: string[] }
+      doors_only_cutover_pending: {
+        Args: { p_schema: string; p_table: string }
+        Returns: boolean
+      }
       emit_pending_assist: {
         Args: {
           p_action: Json
@@ -71327,6 +71388,7 @@ export type Database = {
         }[]
       }
       schema_is_client_exposed: { Args: { p_schema: string }; Returns: boolean }
+      schema_is_doors_only: { Args: { p_schema: string }; Returns: boolean }
       set_org_change_policy: {
         Args: {
           p_change_type_key: string
@@ -73664,6 +73726,15 @@ export type Database = {
       _library_publish_gate: {
         Args: { p_audience: string; p_entity_id: string; p_entity_type: string }
         Returns: undefined
+      }
+      _rulebook_client_metadata_keys: { Args: never; Returns: string[] }
+      _rulebook_json: {
+        Args: { p_row: Database["platform"]["Tables"]["rulebook"]["Row"] }
+        Returns: Json
+      }
+      _saved_view_json: {
+        Args: { p_row: Database["crm"]["Tables"]["saved_view"]["Row"] }
+        Returns: Json
       }
       _schema_template_write_denied_message: { Args: never; Returns: string }
       _scope_system_resolve_type_id: {
@@ -81015,6 +81086,7 @@ export type Database = {
               type: string
             }[]
           }
+      portal_share_peek: { Args: { p_token: string }; Returns: Json }
       preview_site_organization_move: {
         Args: { p_site_id: string }
         Returns: Json
@@ -81370,8 +81442,55 @@ export type Database = {
         Args: { p_asset: Json; p_kind: string; p_topic_id: string }
         Returns: Json
       }
+      rulebook_archive: { Args: { p_rulebook_id: string }; Returns: Json }
+      rulebook_create: {
+        Args: {
+          p_description?: string
+          p_metadata?: Json
+          p_name: string
+          p_organization_id: string
+          p_sections?: Json
+          p_slug: string
+          p_source?: Json
+          p_visibility?: string
+        }
+        Returns: Json
+      }
+      rulebook_meta_set: {
+        Args: {
+          p_description?: string
+          p_name?: string
+          p_rulebook_id: string
+          p_set_description?: boolean
+          p_source?: Json
+          p_status?: string
+          p_visibility?: string
+        }
+        Returns: Json
+      }
+      rulebook_save: {
+        Args: {
+          p_expected_version: number
+          p_metadata_patch?: Json
+          p_rulebook_id: string
+          p_rules?: Json
+          p_sections?: Json
+        }
+        Returns: Json
+      }
       rulebook_snapshot: {
         Args: { p_rulebook_id: string; p_version: number }
+        Returns: Json
+      }
+      rulebook_tension_settle: {
+        Args: {
+          p_answer?: string
+          p_expected_version: number
+          p_outcome: string
+          p_rulebook_id: string
+          p_rules?: Json
+          p_tension_id: string
+        }
         Returns: Json
       }
       rulebook_versions: {
@@ -81384,6 +81503,37 @@ export type Database = {
           rule_count: number
           version: number
         }[]
+      }
+      saved_view_archive: {
+        Args: {
+          p_expected_version?: number
+          p_id: string
+          p_surface_key: string
+        }
+        Returns: Json
+      }
+      saved_view_save: {
+        Args: {
+          p_definition?: Json
+          p_definition_version?: number
+          p_description?: string
+          p_expected_version?: number
+          p_id?: string
+          p_is_default?: boolean
+          p_name?: string
+          p_organization_id?: string
+          p_set_description?: boolean
+          p_sort_order?: number
+          p_subject_id?: string
+          p_surface_key: string
+          p_touch?: boolean
+          p_visibility?: string
+        }
+        Returns: Json
+      }
+      saved_view_set_default: {
+        Args: { p_id?: string; p_subject_id?: string; p_surface_key: string }
+        Returns: Json
       }
       sch_enqueue_manual_run: { Args: { p_task_id: string }; Returns: string }
       sch_recompute_task_next_due_at: {
