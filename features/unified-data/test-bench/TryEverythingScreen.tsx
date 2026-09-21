@@ -148,17 +148,57 @@ const CONTENTS: ReadonlyArray<string> = [
  *
  * `there: null` is a real third answer — asked, could not tell — and it never
  * gets reported as absence.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * 🚨 THE SECOND VERSION OF THE SAME LIE, AND THE TWO RULES THAT END IT
+ * (lane FRONT-DOOR, 2026-09-21; the defect is VERIFIER-8 HIGH-1).
+ *
+ * Section 16 printed, in the owner's own organization:
+ *
+ *     Not built yet
+ *     … The door is here but it refused just now — You do not have access to
+ *     this table. Ask whoever owns it to share the table … with you.
+ *     Waiting on: the screens package this deployment installs carrying the
+ *     pipeline doors.
+ *
+ * Every one of those three sentences was false. All seven pipeline doors are
+ * installed and granted; asked about a REAL table of that organization,
+ * `custom.pipeline_read` answers correctly. The page had asked it about the
+ * ZERO UUID, the store refused a table that does not exist — which is the store
+ * being RIGHT — and the page printed that refusal as a fact about the owner's
+ * own store, under the word "Not built yet".
+ *
+ *   RULE 1 — A PROBE ASKS ABOUT A REAL OBJECT OR IT DOES NOT ASK.
+ *   There is no such thing as a placeholder identifier here. A section with
+ *   nothing real to ask about passes `cannotRun` and the page says "could not
+ *   check — <why>", which is the truth and is also actionable.
+ *
+ *   RULE 2 — A REFUSAL IS AN ANSWER ABOUT THE QUESTION, NEVER ABOUT THE
+ *   FEATURE. A door that refuses is a door that is INSTALLED AND ANSWERING, so
+ *   a refusal can never be evidence of absence. It becomes "could not check",
+ *   with the store's own sentence quoted as the thing that got in the way.
+ *
+ * The ONLY `there: false` left on this page is the one fact this screen can
+ * actually establish: the package this deployment resolved does not carry the
+ * call at all. Guard: `pnpm check:failed-check-is-not-a-fact` (+ `:self-test`,
+ * which plants these exact shipped bytes and requires a RED).
  */
 function useDoor({
     needs,
     ask,
+    cannotRun,
     whenItAnswers,
     whatWouldMakeItAppear,
 }: {
     /** The client calls the panel makes. A name missing here means this deployment predates it. */
     needs: readonly string[];
-    /** One cheap READ through those doors. Its refusal, if any, is what the person reads. */
+    /** One cheap READ through those doors, about a REAL object. Never a placeholder id. */
     ask: (client: ReturnType<typeof useRecordsClient>) => Promise<{ ok: boolean; error?: unknown }>;
+    /**
+     * WHY THIS PROBE CANNOT BE ASKED AT ALL — one sentence, or null when it can.
+     * Non-null and nothing is asked and nothing is claimed: RULE 1 above.
+     */
+    cannotRun?: string | null;
     /** The sentence when it is here and answering. */
     whenItAnswers: string;
     /** The one thing that would make it appear, when it genuinely is not here. */
@@ -175,6 +215,9 @@ function useDoor({
         const holder = client as unknown as Record<string, unknown>;
         const absent = needs.filter((name) => typeof holder[name] !== "function");
         if (absent.length > 0) {
+            // THE ONE HONEST ABSENCE. Not "this is not built" about the platform —
+            // "the package these bytes resolved does not carry the call", which is a
+            // fact about this deployment and is the only one this screen can prove.
             setCapability({
                 there: false,
                 because:
@@ -184,6 +227,11 @@ function useDoor({
             });
             return;
         }
+        if (cannotRun) {
+            // RULE 1. Nothing real to ask about, so nothing is asked and nothing is claimed.
+            setCapability({ there: null, settled: true, because: `We could not check this one — ${cannotRun}` });
+            return;
+        }
         void Promise.resolve(ask(client))
             .then((answered) => {
                 if (cancelled) return;
@@ -191,12 +239,17 @@ function useDoor({
                     setCapability({ there: true, because: whenItAnswers });
                     return;
                 }
+                // RULE 2. A door that refused is a door that ANSWERED. This is what got in
+                // the way of the check — never a verdict on the feature, and never printed
+                // as though the store had said it about this person's own organization.
                 setCapability({
-                    there: false,
-                    because: `The door is here but it refused just now — ${refusalLineForAPerson(
-                        answered.error as Parameters<typeof refusalLineForAPerson>[0],
-                    )}`,
-                    whatWouldMakeItAppear,
+                    there: null,
+                    settled: true,
+                    because:
+                        `We could not check this one — the door is installed and answering, and the question we ` +
+                        `asked it came back refused: ${refusalLineForAPerson(
+                            answered.error as Parameters<typeof refusalLineForAPerson>[0],
+                        )} That is an answer about the question, not about whether this part is built.`,
                 });
             })
             .catch((thrown: unknown) => {
@@ -204,6 +257,7 @@ function useDoor({
                 // ASKED AND COULD NOT TELL. Never an absence.
                 setCapability({
                     there: null,
+                    settled: true,
                     because: `We could not check this one — ${thrown instanceof Error ? thrown.message : String(thrown)}`,
                 });
             });
@@ -211,7 +265,7 @@ function useDoor({
             cancelled = true;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [client, needs.join(","), whenItAnswers, whatWouldMakeItAppear]);
+    }, [client, needs.join(","), cannotRun, whenItAnswers, whatWouldMakeItAppear]);
 
     return capability;
 }
@@ -226,6 +280,7 @@ function routeCapability(fact: RouteFact, whenItIsThere: string, whatWouldMakeIt
     if (fact.there === null) {
         return {
             there: null,
+            settled: true,
             because: `We could not read this build's pages, so we cannot say whether ${fact.path} is served here.`,
         };
     }
@@ -350,7 +405,7 @@ function Bench({
         whenItAnswers:
             "The form builder works on this deployment: it writes the form, publishes it, and hands you the " +
             "link a stranger answers — all through the same doors the panel below calls.",
-        whatWouldMakeItAppear: "the screens package this deployment installs carrying the forms doors.",
+        whatWouldMakeItAppear: "a newer @ai-matrx/records in this deployment, carrying the forms calls.",
     });
     const dashboardsDoor = useDoor({
         needs: ["dashboards", "dashboardDeclare", "dashboardRun"],
@@ -358,7 +413,7 @@ function Bench({
         whenItAnswers:
             "The dashboard canvas works on this deployment: it keeps your charts, and every number in them " +
             "is the store's own answer over your real records.",
-        whatWouldMakeItAppear: "the screens package this deployment installs carrying the dashboard doors.",
+        whatWouldMakeItAppear: "a newer @ai-matrx/records in this deployment, carrying the dashboard calls.",
     });
     const portalDoors = useDoor({
         needs: ["portals", "portalCard", "portalInvite", "portalRevoke"],
@@ -366,7 +421,7 @@ function Bench({
         whenItAnswers:
             "The portal doors answer this browser: you can open a portal, invite a client to it, see what " +
             "she will see, and take her way in away again.",
-        whatWouldMakeItAppear: "the store opening the portal doors to a signed-in browser.",
+        whatWouldMakeItAppear: "a newer @ai-matrx/records in this deployment, carrying the portal calls.",
     });
     const checklistDoors = useDoor({
         needs: ["checklistTemplates", "checklistRuns", "checklistRun", "checklistStepComplete"],
@@ -374,7 +429,7 @@ function Bench({
         whenItAnswers:
             "The checklist doors answer this browser: a checklist can be written whole, run on a record, and " +
             "each step ticked off with whatever it asks for — refused by name while the step before it is open.",
-        whatWouldMakeItAppear: "the screens package this deployment installs carrying the checklist doors.",
+        whatWouldMakeItAppear: "a newer @ai-matrx/records in this deployment, carrying the checklist calls.",
     });
     const bookingDoors = useDoor({
         needs: ["bookings", "anonPublish"],
@@ -382,7 +437,7 @@ function Bench({
         whenItAnswers:
             "The booking doors answer this browser: your booking pages, what is coming up, what somebody is " +
             "holding right now, and the link you send.",
-        whatWouldMakeItAppear: "the screens package this deployment installs carrying the bookings door.",
+        whatWouldMakeItAppear: "a newer @ai-matrx/records in this deployment, carrying the bookings call.",
     });
     const enrichDoors = useDoor({
         needs: ["enrichments", "enrichDeclare", "enrichCells", "enrichPin"],
@@ -390,15 +445,30 @@ function Bench({
         whenItAnswers:
             "The enrichment doors answer this browser: a column a model keeps filled in, with who filled each " +
             "cell, when, what it read and how sure it was — and your own answer able to take it back.",
-        whatWouldMakeItAppear: "the screens package this deployment installs carrying the enrichment doors.",
+        whatWouldMakeItAppear: "a newer @ai-matrx/records in this deployment, carrying the enrichment calls.",
     });
+    // THE ONE PROBE ON THIS PAGE THAT NEEDS A TABLE, AND THE ONLY ONE THAT EVER
+    // FABRICATED ONE. Every other probe above is a whole-organization list
+    // (`forms({})`, `dashboards({})`, `portals()`, `checklistTemplates({})`,
+    // `bookings({})`, `enrichments({})`) and asks about nothing that has to
+    // exist. This one asks about a TABLE, and it used to pass the zero UUID
+    // when there wasn't one — see `useDoor`'s header for what that printed.
+    // It now asks about the working table, which is a real table of this
+    // organization read through the store's own list door, and says so plainly
+    // when the organization has no table for it to ask about yet.
     const pipelineDoors = useDoor({
         needs: ["pipelineRead", "pipelineBoard", "pipelineTransitionRefusal", "pipelineMove"],
-        ask: (client) => client.pipelineRead({ table_id: workingTable?.id ?? ("00000000-0000-0000-0000-000000000000" as never) }),
+        cannotRun: workingTable
+            ? null
+            : tables.loading
+              ? "we are still reading this organization's tables, so there is no table to ask the board about yet."
+              : "this organization has no table of its own yet, so there is nothing for the board to be about. " +
+                "Make one in section 1 and this checks itself.",
+        ask: (client) => client.pipelineRead({ table_id: workingTable!.id }),
         whenItAnswers:
             "The pipeline doors answer this browser: the board asks the store before every drag, and a move the " +
             "rules refuse snaps back carrying the store's own sentence.",
-        whatWouldMakeItAppear: "the screens package this deployment installs carrying the pipeline doors.",
+        whatWouldMakeItAppear: "a newer @ai-matrx/records in this deployment, carrying the pipeline calls.",
     });
     const portalRoute = routeCapability(
         routes.portal,

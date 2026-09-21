@@ -25,13 +25,17 @@ import { ChevronDown } from "lucide-react";
  * section whose live check has not come back yet, and it exists because the
  * alternative is a badge that guesses for a second and then changes its mind.
  */
-export type SectionState = "real" | "partly" | "placeholder" | "asking";
+export type SectionState = "real" | "partly" | "placeholder" | "asking" | "unchecked";
 
 const STATE_WORD: Record<SectionState, string> = {
     real: "Working",
     partly: "Working, with a gap",
     placeholder: "Not built yet",
     asking: "Checking…",
+    // SETTLED, AND THE ANSWER IS "WE DO NOT KNOW". Distinct from `asking`, which
+    // is still in flight, and from `placeholder`, which is a claim. See
+    // `TryEverythingScreen`'s `useDoor` header for the defect this word closes.
+    unchecked: "Could not check",
 };
 
 const STATE_CLASS: Record<SectionState, string> = {
@@ -39,6 +43,7 @@ const STATE_CLASS: Record<SectionState, string> = {
     partly: "border-amber-600/40 text-amber-700 dark:border-amber-400/40 dark:text-amber-300",
     placeholder: "border-border text-muted-foreground",
     asking: "border-border text-muted-foreground",
+    unchecked: "border-amber-600/40 text-amber-700 dark:border-amber-400/40 dark:text-amber-300",
 };
 
 /**
@@ -61,6 +66,14 @@ export interface Capability {
     because: string;
     /** Only when it is absent: the one thing that would make it appear. */
     whatWouldMakeItAppear?: string;
+    /**
+     * SETTLED AS UNKNOWN, rather than still in flight. Both are `there: null`,
+     * and a person reading the badge needs to know which: "Checking…" says wait,
+     * "Could not check" says this is the final answer and here is what got in
+     * the way. Without it a probe that will never resolve wears a spinner word
+     * for ever, which is the forever-loading defect in a badge.
+     */
+    settled?: boolean;
 }
 
 /**
@@ -69,14 +82,22 @@ export interface Capability {
  */
 export function bothOf(a: Capability, b: Capability): Capability {
     if (a.there === true && b.there === true) return { there: true, because: a.because };
-    if (a.there === null || b.there === null) return { there: null, because: a.because };
+    if (a.there === null || b.there === null) {
+        // THE UNKNOWN HALF IS THE ONE THAT SPEAKS, and it carries its own
+        // settled/in-flight state — a pair must not turn "could not check" back
+        // into "checking…" on its way through.
+        const unknown = a.there === null ? a : b;
+        return unknown.settled
+            ? { there: null, because: unknown.because, settled: true }
+            : { there: null, because: unknown.because };
+    }
     return a.there === false ? a : b;
 }
 
 /** The section badge a capability earns. Never a word typed beside it. */
 export function stateFor(capability: Capability | undefined): SectionState {
     if (!capability) return "asking";
-    if (capability.there === null) return "asking";
+    if (capability.there === null) return capability.settled ? "unchecked" : "asking";
     return capability.there ? "real" : "placeholder";
 }
 

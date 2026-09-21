@@ -60,6 +60,45 @@ const NEGATIVE_FACT = /does not keep its data in the unified record store/;
 /** The honest counterpart. One of these must be in reach of the claim. */
 const HONEST = /UNIFIED_DATA_CAMPAIGN_UNAVAILABLE_SENTENCE|UnifiedDataSwitchNotice|could not (read|check|look)/i;
 
+/**
+ * 🚨 THE SECOND HALF, ADDED 2026-09-21 (lane FRONT-DOOR; the defect is
+ * VERIFIER-8 HIGH-1).
+ *
+ * The same class came back on the owner's own "everything the record store can
+ * do" page. `/data-v2/try-everything` section 16 printed "Not built yet" for
+ * the pipeline, quoted an access refusal as though the store had said it about
+ * the owner's organization, and named a blocker that was not the blocker —
+ * because the page probed `custom.pipeline_read` with the ZERO UUID. Asked
+ * about a real table, all seven pipeline doors answer correctly.
+ *
+ * Two rules, and they are the whole of it:
+ *
+ *   probe-asks-about-a-fabricated-id — a probe on this page may not pass an
+ *     all-zero (or otherwise invented) identifier to a door. A section with
+ *     nothing real to ask about says so; it does not make something up and then
+ *     report the store's correct refusal as a verdict.
+ *
+ *   refusal-rendered-as-absence — a refusal handler may not set a capability to
+ *     `there: false`. A door that refuses is a door that is INSTALLED AND
+ *     ANSWERING, so its refusal can never be evidence that the feature is
+ *     missing. It is "could not check", with the refusal quoted as what got in
+ *     the way.
+ */
+const PROBE_FILES = [
+  "features/unified-data/test-bench/TryEverythingScreen.tsx",
+];
+
+/** An identifier nobody could have read from the live system. */
+const FABRICATED_ID = /["'`]0{8}-0{4}-0{4}-0{4}-0{12}["'`]/;
+
+/**
+ * A handler that reads a door's refusal and then declares the thing absent. It
+ * is matched as a unit — `refused`/`error`/`refusalLineForAPerson` within a few
+ * lines of a `there: false` — because either half alone is legitimate.
+ */
+const REFUSAL_AS_ABSENCE =
+  /there:\s*false[\s\S]{0,400}?refusalLineForAPerson|refusalLineForAPerson[\s\S]{0,400}?there:\s*false/;
+
 interface Finding {
   file: string;
   rule: string;
@@ -131,6 +170,43 @@ function scan(root: string): Finding[] {
     }
   }
 
+  for (const rel of PROBE_FILES) {
+    let source: string;
+    try {
+      source = readFileSync(join(root, rel), "utf8");
+    } catch {
+      findings.push({
+        file: rel,
+        rule: "probe-file-missing",
+        detail: "this guard's subject no longer exists — update the guard or restore the file",
+      });
+      continue;
+    }
+    if (FABRICATED_ID.test(source)) {
+      findings.push({
+        file: rel,
+        rule: "probe-asks-about-a-fabricated-id",
+        detail:
+          "a door on this page is probed with an all-zero identifier. The store then correctly refuses a " +
+          "thing that does not exist, and the page prints that refusal as if it described the reader's own " +
+          "organization — which is how section 16 came to say \"Not built yet\" about seven doors that are " +
+          "installed and answering. Probe a REAL object of the current organization, or pass `cannotRun` " +
+          "with the one sentence saying why this cannot be checked.",
+      });
+    }
+    if (REFUSAL_AS_ABSENCE.test(source)) {
+      findings.push({
+        file: rel,
+        rule: "refusal-rendered-as-absence",
+        detail:
+          "a door's refusal is turned into `there: false`. A door that refuses is INSTALLED AND ANSWERING, " +
+          "so its refusal is an answer about the question asked, never evidence that the feature is missing. " +
+          "Set `there: null` (\"could not check — …\") and quote the refusal as what got in the way. The only " +
+          "honest `there: false` on that page is the package not carrying the call at all.",
+      });
+    }
+  }
+
   return findings;
 }
 
@@ -162,12 +238,38 @@ if (process.argv.includes("--self-test")) {
     "utf8",
   );
   writeFileSync(join(dir, "lib/knobs/unifiedDataCampaignRamp.ts"), "export const x = 1;\n", "utf8");
+  // THE SECOND SET OF SHIPPED BYTES — `/data-v2/try-everything` as VERIFIER-8
+  // read it on 2026-09-21: the zero-UUID probe, and the refusal handler that
+  // declared the pipeline absent.
+  mkdirp(join(dir, "features/unified-data/test-bench"));
+  writeFileSync(
+    join(dir, "features/unified-data/test-bench/TryEverythingScreen.tsx"),
+    [
+      "const pipelineDoors = useDoor({",
+      '    needs: ["pipelineRead", "pipelineBoard"],',
+      '    ask: (client) => client.pipelineRead({ table_id: workingTable?.id ?? ("00000000-0000-0000-0000-000000000000" as never) }),',
+      '    whenItAnswers: "The pipeline doors answer this browser.",',
+      '    whatWouldMakeItAppear: "the screens package carrying the pipeline doors.",',
+      "});",
+      "setCapability({",
+      "    there: false,",
+      "    because: `The door is here but it refused just now — ${refusalLineForAPerson(answered.error)}`,",
+      "    whatWouldMakeItAppear,",
+      "});",
+    ].join("\n"),
+    "utf8",
+  );
   const findings = scan(dir);
-  const caught = findings.some((f) => f.rule === "catch-returns-a-bare-default");
-  if (!caught) {
+  const mustCatch = [
+    "catch-returns-a-bare-default",
+    "probe-asks-about-a-fabricated-id",
+    "refusal-rendered-as-absence",
+  ];
+  const missed = mustCatch.filter((rule) => !findings.some((f) => f.rule === rule));
+  if (missed.length > 0) {
     console.error(
-      "[FAIL] SELF-TEST: the guard did NOT go red on the exact bytes that shipped the defect. " +
-        "A guard that cannot be shown failing proves nothing.",
+      `[FAIL] SELF-TEST: the guard did NOT go red on the exact bytes that shipped the defect ` +
+        `(${missed.join(", ")} never fired). A guard that cannot be shown failing proves nothing.`,
     );
     exitAfterDrain(1);
   }
@@ -195,6 +297,7 @@ if (findings.length > 0) {
 console.log(
   `A failed check is never rendered as a fact. ` +
     `${READERS.length} reader(s) answer three states; ` +
-    `${SENTENCE_FILES.length} sentence file(s) carry their could-not-check counterpart. ` +
+    `${SENTENCE_FILES.length} sentence file(s) carry their could-not-check counterpart; ` +
+    `${PROBE_FILES.length} probe page(s) ask about real objects and never render a refusal as an absence. ` +
     `(${relative(process.cwd(), ROOT) || "."})`,
 );
