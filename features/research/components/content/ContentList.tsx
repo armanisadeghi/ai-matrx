@@ -1,8 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { FileText } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@ai-matrx/design-system";
+import { FilterTapButton } from "@ai-matrx/tap-target/buttons";
 import { useTopicContext } from "../../context/ResearchContext";
 import {
   useResearchSources,
@@ -10,12 +15,47 @@ import {
   useCurationData,
 } from "../../hooks/useResearchState";
 import { SCRAPE_STATUS_CONFIG, SOURCE_TYPE_CONFIG } from "../../constants";
-import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
+import type { FilterDef } from "../shared/ResearchFilterBar";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
+import { HierarchyFilterPill } from "@/components/hierarchy-filter/HierarchyFilterPill";
 import type { ResearchSource } from "../../types";
 import type { CurationAnalysisState } from "../../service";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { SourceResultsTable } from "../sources/SourceResultsTable";
+import type { MatrxDataTableToolbar } from "@ai-matrx/design-system/data-table/types";
+
+function SourceScopeFilterPopover({ filters }: { filters: FilterDef[] }) {
+  const activeCount = filters.filter(
+    (filter) => filter.selectedId !== null,
+  ).length;
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <FilterTapButton
+          variant="transparent"
+          ariaLabel={`Filter content sources${activeCount ? ` (${activeCount} active)` : ""}`}
+        />
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-auto max-w-[min(24rem,calc(100vw-2rem))] p-2"
+      >
+        <div className="flex flex-wrap gap-1">
+          {filters.map((filter) => (
+            <HierarchyFilterPill
+              key={filter.key}
+              label={filter.label}
+              allLabel={filter.allLabel}
+              options={filter.options}
+              selectedId={filter.selectedId}
+              onSelect={filter.onSelect}
+            />
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export default function ContentList() {
   const { topicId } = useTopicContext();
@@ -172,19 +212,33 @@ export default function ContentList() {
     hostnames.length,
   ]);
 
+  // These predicates remain source-owned because Quality and Host are derived
+  // from the loaded research set, not independent source-table columns. The
+  // canonical table owns the container and Clear filters invokes this reset.
+  const resetSourceFilters = () => {
+    setSearch("");
+    setStatusFilter(null);
+    setTypeFilter(null);
+    setQualityFilter(null);
+    setHostFilter(null);
+  };
+
+  const toolbarFacets: MatrxDataTableToolbar["facets"] = [
+    {
+      type: "custom",
+      id: "source-scope",
+      render: () => <SourceScopeFilterPopover filters={filterDefs} />,
+      filter: {
+        active: Boolean(
+          search || statusFilter || typeFilter || qualityFilter || hostFilter,
+        ),
+        onReset: resetSourceFilters,
+      },
+    },
+  ];
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex-shrink-0 px-3 sm:px-4 pt-3 pb-2">
-        <ResearchFilterBar
-          title="Content"
-          count={isLoading ? "—" : `${filtered.length}/${scraped.length}`}
-          filters={filterDefs}
-          search={search}
-          onSearchChange={setSearch}
-          searchPlaceholder="Search title, url, description, host..."
-        />
-      </div>
-
       <div className="flex-1 overflow-y-auto p-3 sm:p-4">
         {isLoading ? (
           <div className="space-y-1.5">
@@ -192,31 +246,32 @@ export default function ContentList() {
               <Skeleton key={i} className="h-14 rounded-xl" />
             ))}
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center min-h-[280px] gap-3 text-center px-4">
-            <div className="h-12 w-12 rounded-2xl bg-primary/8 flex items-center justify-center">
-              <FileText className="h-6 w-6 text-primary/40" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-foreground/70">
-                {scraped.length === 0 ? "No content yet" : "No matches"}
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-1 max-w-[240px]">
-                {scraped.length === 0
-                  ? "Read your sources to collect page content for analysis and synthesis."
-                  : "Try adjusting your search or filters to find what you're looking for."}
-              </p>
-            </div>
-          </div>
         ) : (
-          <SourceResultsTable
-            interactive
-            sources={filtered}
-            topicId={topicId}
-            rankFor={(s) => importanceMap?.get(s.id)?.bestRank ?? null}
-            dataSizeFor={(s) => charCountMap.get(s.id) ?? null}
-            analysisFor={(s) => analysisMap.get(s.id) ?? null}
-          />
+          <div className="flex h-full min-h-0 flex-col">
+            {sources?.length === 200 && (
+              <p className="mb-2 text-[11px] text-muted-foreground">
+                This view loaded its first 200 sources; more sources may exist.
+              </p>
+            )}
+            <SourceResultsTable
+              interactive
+              sources={filtered}
+              topicId={topicId}
+              rankFor={(s) => importanceMap?.get(s.id)?.bestRank ?? null}
+              dataSizeFor={(s) => charCountMap.get(s.id) ?? null}
+              analysisFor={(s) => analysisMap.get(s.id) ?? null}
+              toolbarFacets={toolbarFacets}
+              sourceSearch={search}
+              onSourceSearchChange={setSearch}
+              emptyState={{
+                title: scraped.length === 0 ? "No content yet" : "No matches",
+                description:
+                  scraped.length === 0
+                    ? "Read your sources to collect page content for analysis and synthesis."
+                    : "Try adjusting search or filters to find what you need.",
+              }}
+            />
+          </div>
         )}
       </div>
     </div>
