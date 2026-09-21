@@ -281,6 +281,7 @@ function renderRich(
       );
     }
     case "choice":
+    case "person":
     case "multi_choice": {
       const declared = config?.options?.choices;
       const values =

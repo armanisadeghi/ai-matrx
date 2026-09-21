@@ -58,6 +58,10 @@ import { parseFieldInput, resolveFieldFormat } from "@/lib/field-formats/format"
 import { formatDateCellDisplay } from "@/features/data-tables/format-date-cell";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import {
+  PersonChoicesProvider,
+  usePersonChoicesFor,
+} from "@/features/data-tables/person-choices";
+import {
   choicesForRow,
   useFieldChoiceMap,
   withResolvedChoices,
@@ -984,11 +988,14 @@ const UserTableViewer = ({
   // cell: a bound pick list is fetched here (shared session cache) and handed to
   // each cell, so a 500-row page of a choice column is one resolution, not 500.
   // A hook per column is impossible anyway — the column count is data.
+  // Members of the table's organization — the options of every `person` column.
+  const personChoices = usePersonChoicesFor(tableInfo?.organization_id ?? null);
   const choiceMap = useFieldChoiceMap(
     fields.map((field) => ({
       field_name: field.field_name,
       format: resolveFieldFormat(field.data_type, field.metadata),
     })),
+    personChoices,
   );
 
   // ─── Colors (table-style.ts) ─────────────────────────────────────────────
@@ -5081,7 +5088,9 @@ const UserTableViewer = ({
       isEditable={!isReadOnly}
       getWriteHandlers={() => surfaceWriteHandlers}
     >
-      {body}
+      <PersonChoicesProvider organizationId={tableInfo?.organization_id ?? null}>
+        {body}
+      </PersonChoicesProvider>
     </SurfaceRuntimeProvider>
   );
 };

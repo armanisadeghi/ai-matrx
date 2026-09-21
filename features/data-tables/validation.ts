@@ -224,7 +224,7 @@ export function describeValidationRules(rules: ValidationRules): string[] {
   return out;
 }
 
-const CHOICE_FORMATS = new Set(["choice", "multi_choice"]);
+const CHOICE_FORMATS = new Set(["choice", "multi_choice", "person"]);
 
 function isEmptyValue(value: unknown): boolean {
   if (value === null || value === undefined) return true;

@@ -1022,6 +1022,9 @@ validations build).
 
 ## Change log
 
+- `2026-09-21` — **Person columns.** See `lib/field-formats/FEATURE.md` (2026-09-21, `person`). The grid provides the table-owning organization's members once (`PersonChoicesProvider` around the viewer body; `usePersonChoicesFor(tableInfo.organization_id)` into `useFieldChoiceMap`), and the row forms' `ChoiceInput` reads the same provider. Known limits: the header filter's value list and the agent scope's `choices` show user ids, not names (both take plain values today); no avatar in the chip yet. NOT yet seen in a browser.
+
+
 - `2026-09-21` — **Drag a header to reorder; a summary bar under the grid.** (1) Header drag (desktop): `draggable` on every header, drop indicator on the left/right half of the target, writes the same per-view `order` the Columns picker writes (`resolveViewColumns` keeps the ordering logic in one place); the resize handle cancels its own mousedown so a drag can only start from the header body. (2) Summary bar: `features/data-tables/column-summaries.ts` (pure: sum / avg / min / max / median for number columns, count / filled / empty / unique for all; formatted through the column's own format so a currency sum reads as currency; a column with no numbers says so instead of showing 0) + `components/ColumnSummaryCell.tsx` (the footer cell: quiet "Summarize" affordance → list). Per-view `summaries` (URL `agg=budget:sum,status:filled`, saved-view `summaries`, `isViewCustomized`, described as "summary bar"). THE HONESTY RULE: computed over the rows the browser holds (full cache when filtering, else the page) and labelled "· page" with an explanation when that is not the whole table. Desktop only. Tests: `__tests__/column-summaries.test.ts` + the view-state suites. NOT yet seen in a browser.
 
 

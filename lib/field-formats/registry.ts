@@ -750,6 +750,23 @@ const DEFS: FieldFormatDef[] = [
     },
   },
   {
+    // A PERSON: one member of the organization the table belongs to, stored as
+    // the user id. It is a choice column whose options are the members —
+    // supplied at runtime by whoever renders it (features/data-tables/
+    // person-choices.tsx), the same door a structured-list-bound column uses —
+    // so the cell picker, the chip, filters, color-by and the agent scope are
+    // all the choice system's, with no second implementation.
+    id: "person",
+    label: "Person",
+    description: "Someone in your organization — pick from its members",
+    group: "Choice",
+    base: "string",
+    editor: "select",
+    rich: true,
+    format: (v, o) => FIELD_FORMATS.choice.format(v, o),
+    parse: (raw) => FIELD_FORMATS.choice.parse(raw, {}),
+  },
+  {
     id: "multi_choice",
     label: "Multi-choice",
     description: "Any number of values from a list of options",

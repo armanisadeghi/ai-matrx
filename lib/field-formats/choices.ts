@@ -45,10 +45,15 @@ import type {
 } from "./types";
 
 /** Format ids whose options come from this module. */
-export const CHOICE_FORMAT_IDS = ["choice", "multi_choice"] as const;
+export const CHOICE_FORMAT_IDS = ["choice", "multi_choice", "person"] as const;
+
+/** A choice column whose options come from OUTSIDE the field: the organization's members. */
+export function isPersonFormat(id: string | undefined | null): boolean {
+  return id === "person";
+}
 
 export function isChoiceFormat(id: string | undefined | null): boolean {
-  return id === "choice" || id === "multi_choice";
+  return id === "choice" || id === "multi_choice" || id === "person";
 }
 
 /**
@@ -174,8 +179,15 @@ function itemToChoice(item: PicklistSelectionItem): FieldChoice {
  */
 export function useFieldChoices(
   format: FieldFormatConfig | null | undefined,
+  /**
+   * Options supplied by the caller for a format whose options live outside the
+   * field — a `person` column's organization members. `undefined` = still
+   * loading; `[]` = loaded, nobody. Ignored for every other format.
+   */
+  external?: FieldChoice[],
 ): ResolvedChoices {
   const isChoice = isChoiceFormat(format?.id);
+  const isPerson = isPersonFormat(format?.id);
   const binding = isChoice ? format?.options?.structuredList : undefined;
   const listId = binding?.listId ?? null;
 
@@ -196,6 +208,20 @@ export function useFieldChoices(
   const choices = listId ? listChoices : inline;
 
   const groups = useMemo(() => groupChoices(choices), [choices]);
+  const personChoices = useMemo(() => external ?? EMPTY, [external]);
+  const personGroups = useMemo(() => groupChoices(personChoices), [personChoices]);
+
+  if (isPerson) {
+    return {
+      choices: personChoices,
+      groups: personGroups,
+      loading: external === undefined,
+      unavailable: false,
+      // A person is one of the members, never a free-typed name.
+      allowOther: false,
+      groupFromField: null,
+    };
+  }
 
   return {
     choices,
@@ -286,6 +312,8 @@ export function useFieldChoiceMap(
     field_name: string;
     format: FieldFormatConfig | null | undefined;
   }[],
+  /** Options for every `person` column: the organization's members (`undefined` while loading). */
+  personChoices?: FieldChoice[],
 ): Map<string, ResolvedChoices> {
   const listIds = fields.map((f) =>
     isChoiceFormat(f.format?.id)
@@ -300,6 +328,19 @@ export function useFieldChoiceMap(
     for (const field of fields) {
       const format = field.format;
       if (!isChoiceFormat(format?.id)) continue;
+
+      if (isPersonFormat(format?.id)) {
+        const choices = personChoices ?? EMPTY;
+        out.set(field.field_name, {
+          choices,
+          groups: groupChoices(choices),
+          loading: personChoices === undefined,
+          unavailable: false,
+          allowOther: false,
+          groupFromField: null,
+        });
+        continue;
+      }
 
       const binding = format?.options?.structuredList;
       const listId = binding?.listId;
@@ -339,5 +380,5 @@ export function useFieldChoiceMap(
       });
     }
     return out;
-  }, [fields, byListId, unavailable]);
+  }, [fields, byListId, unavailable, personChoices]);
 }

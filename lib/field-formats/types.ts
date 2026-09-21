@@ -60,6 +60,8 @@ export type FieldFormatId =
   // choice-backed — options are a UI layer, never a database constraint
   | "choice"
   | "multi_choice"
+  // a member of the table's organization — stored as the user id
+  | "person"
   // temporal
   | "date"
   | "datetime"

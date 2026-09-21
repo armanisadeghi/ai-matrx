@@ -22,6 +22,7 @@
  *      headings for free, so a tiered pick list reads as tiered.
  */
 
+import { usePersonChoices } from "../person-choices";
 import { useMemo, useState } from "react";
 import { Check, ChevronsUpDown, Plus, X } from "lucide-react";
 
@@ -100,7 +101,10 @@ export function ChoiceInput({
 }: ChoiceInputProps) {
   const [open, setOpen] = useState(autoOpen);
   const [query, setQuery] = useState("");
-  const resolved = useFieldChoices(format);
+  // A person column's options are the organization's members, provided at
+  // the grid's root; every other format ignores the second argument.
+  const personChoices = usePersonChoices();
+  const resolved = useFieldChoices(format, personChoices);
   // Narrowed to the tier this row's controlling cell names, when the column is
   // dependent. A pure filter over already-loaded options — no extra fetch.
   const { groups, choices, loading, unavailable, allowOther } = choicesForRow(

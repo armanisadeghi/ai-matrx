@@ -49,7 +49,7 @@ module — do not make it seven.
 
 Text: `text` `long_text` `markdown` `email` `url` `address` `phone` `color`
 Numbers: `number` `decimal` `currency` `percent` `progress` `duration` `integer` `autonumber` `rating` `file_size`
-Choice: `boolean` `choice` `multi_choice`
+Choice: `boolean` `choice` `multi_choice` `person`
 Dates: `date` `datetime` `time` `created_time` `modified_time` `relative_time`
 Structured: `json` `array` `tags` `formula`
 
@@ -223,6 +223,8 @@ No migration is ever required — a format is data in a JSONB column, and an
 unknown format id degrades to the plain storage type by design.
 
 ## Change log
+
+- `2026-09-21` — **`person`**: one member of the table's organization, stored as the user id. A CHOICE format (`isChoiceFormat`, `isPersonFormat`) whose options come from OUTSIDE the field: `useFieldChoices(format, external)` / `useFieldChoiceMap(fields, personChoices)` accept the member options from the caller, exactly the door a structured-list-bound column uses, so the cell picker, the chip (the name, never the id), filters, color-by and the agent scope are the choice system's. `allowOther` is always false. The members are supplied by `features/data-tables/person-choices.tsx` (`PersonChoicesProvider` at the grid root, `usePersonChoices` in `ChoiceInput`), from the existing org-members RPC via `useOrgMembers`. Before the members resolve a cell shows the raw id; an id that is not a member renders as a mismatch. Tests: `__tests__/person-format.test.ts`.
 
 - `2026-09-21` — **`autonumber`**: the DATABASE assigns the number at insert (trigger `_udt_autonumber`, `migrations/udt_autonumber_column.sql`), so it is identical whichever door made the row; stored as an integer, `editor: "computed"`, `prefix` option ("INV-42"). Existing rows are numbered once by `udt_backfill_autonumber`, called from the `setFieldFormat` service wrapper on every path that sets the format.
 
