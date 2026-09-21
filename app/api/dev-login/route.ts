@@ -6,6 +6,7 @@ import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import {
   describeFailure,
   formatAttempts,
+  isRateLimited,
   isTransportFailure,
   retryTransport,
   tracingFetch,
@@ -301,6 +302,34 @@ export async function GET(request: NextRequest) {
   // session cookie, same eviction rules — only the proof-of-identity differs,
   // and it is still gated by the single-use nonce handshake plus the dev-only
   // guard above.
+  // 🚨 A VOLUME LIMIT IS NOT A BAD PASSWORD EITHER (2026-09-21, measured).
+  // Three lanes' worth of parallel headless sign-ins push Supabase auth into
+  // `over_request_rate_limit`. The auth host answered, so this is not
+  // transport; it never judged the password, so it is not a drift. Running the
+  // OTP fallback here spends a SECOND request from the same exhausted bucket,
+  // makes the limit worse for every other lane, and can only fail — which is
+  // exactly how the fallback's message ended up standing in for the cause.
+  if (isRateLimited(error)) {
+    console.warn(
+      `[dev-login] the auth host is rate-limiting this machine — ${formatAttempts(attempts)}`,
+    );
+    return NextResponse.json(
+      {
+        error:
+          "The auth host is RATE-LIMITING this machine — too many sign-ins from " +
+          "here in too short a window, which is what happens when several lanes " +
+          "drive headless walks at once. Nothing is wrong with the admin account, " +
+          "the password, or your walk. Wait a few seconds and run the handshake " +
+          "again. The OTP fallback was deliberately NOT tried: it would spend " +
+          "another request from the same exhausted budget and make this worse for " +
+          "every other lane.",
+        attempts: attempts.map((a) => `${a.label} #${a.attempt} (${a.ms}ms): ${a.reason}`),
+        retryable: true,
+      },
+      { status: 429, headers: { "Retry-After": "10" } },
+    );
+  }
+
   // Past this line the auth host DID answer and the answer was no — a real
   // credential drift, which is the only case the OTP fallback was built for.
   const credentialReason = describeFailure(error);
@@ -338,20 +367,27 @@ export async function GET(request: NextRequest) {
     ?.properties?.email_otp;
   if (link.error || !otp) {
     const transport = isTransportFailure(link.error);
+    const limited = !transport && isRateLimited(link.error);
     return NextResponse.json(
       {
         error:
           (transport
             ? "dev-login could not REACH the auth host on the OTP fallback either — " +
               "this is a transport failure, not a product defect. "
-            : "The OTP fallback was refused by the auth host. ") +
+            : limited
+              ? "The auth host is RATE-LIMITING this machine on the OTP fallback — " +
+                "too many sign-ins from here in too short a window. Wait and run " +
+                "the handshake again; nothing is wrong with your walk. "
+              : "The OTP fallback was refused by the auth host. ") +
           `The password sign-in before it said: ${credentialReason}.`,
         attempts: attempts.map((a) => `${a.label} #${a.attempt} (${a.ms}ms): ${a.reason}`),
-        retryable: transport,
+        retryable: transport || limited,
       },
       transport
         ? { status: 503, headers: { "Retry-After": "2" } }
-        : { status: 401 },
+        : limited
+          ? { status: 429, headers: { "Retry-After": "10" } }
+          : { status: 401 },
     );
   }
   const verified = await retryTransport(

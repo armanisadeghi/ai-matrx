@@ -157,6 +157,35 @@ export function isTransportFailure(error: unknown): boolean {
 }
 
 /**
+ * Is the auth host REFUSING US FOR VOLUME rather than refusing this account?
+ *
+ * Measured live on 2026-09-21: three lanes' worth of parallel headless
+ * sign-ins (180 in 90 s against the shared dev server) drive Supabase auth
+ * into `over_request_rate_limit` — HTTP 429, `AuthApiError`. The old route
+ * logged every one of those as "AI_ADMIN_PASSWORD is stale for
+ * admin@admin.com" and then spent a SECOND request from the same exhausted
+ * bucket on the OTP fallback, which could only fail the same way and got the
+ * last word. That is how a lane ends up reading a volume limit as a product
+ * defect or a broken credential.
+ *
+ * It is not transport (the host answered) and it is not a refusal of the
+ * account (the password was never judged), so it is its own class: wait, then
+ * try again — and never burn another request proving it.
+ */
+export function isRateLimited(error: unknown): boolean {
+    const record = asRecord(error);
+    if (!record) return false;
+    if (record.status === 429) return true;
+    const code = typeof record.code === "string" ? record.code : "";
+    if (code === "over_request_rate_limit" || code === "over_email_send_rate_limit") {
+        return true;
+    }
+    const message =
+        typeof record.message === "string" ? record.message.toLowerCase() : "";
+    return message.includes("rate limit");
+}
+
+/**
  * A `fetch` that records why a request died before anything downstream can
  * flatten it, then rethrows unchanged.
  *

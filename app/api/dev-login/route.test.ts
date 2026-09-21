@@ -34,7 +34,11 @@ const nonceFile = (hostname: string) =>
   join(FAKE_CWD, `.dev-login-nonce.${hostname}`);
 const NONCE_FILE = nonceFile("localhost");
 
-const signInWithPassword = jest.fn(async () => ({ error: null }));
+// `error: unknown`, not `null` — the transport suite below hands it a real
+// AuthRetryableFetchError, which is the whole point of that guard.
+const signInWithPassword = jest.fn(
+  async (): Promise<{ error: unknown }> => ({ error: null }),
+);
 jest.mock("@/utils/supabase/server", () => ({
   createClient: jest.fn(async () => ({
     auth: mockWithClaims({
@@ -253,6 +257,39 @@ describe("a transport failure is retried, and never called a bad credential", ()
     expect(signInWithPassword).toHaveBeenCalledTimes(2);
     expect(response.status).toBeGreaterThanOrEqual(300);
     expect(response.status).toBeLessThan(400);
+  });
+
+  /** What the auth host returns when several lanes sign in at once. */
+  function rateLimitError() {
+    const error = new Error("Request rate limit reached");
+    error.name = "AuthApiError";
+    (error as unknown as { status: number; code: string }).status = 429;
+    (error as unknown as { code: string }).code = "over_request_rate_limit";
+    return error;
+  }
+
+  it("answers 429 for a volume limit, and does not spend the OTP fallback on it", async () => {
+    // MEASURED 2026-09-21: three lanes' parallel headless sign-ins (180 in
+    // 90s) drove Supabase auth into `over_request_rate_limit`. The old route
+    // logged every one as "AI_ADMIN_PASSWORD is stale" and then burned a
+    // SECOND request from the same exhausted bucket on the fallback.
+    signInWithPassword.mockImplementation(async () => ({ error: rateLimitError() }));
+    writeFileSync(nonceFile(HOST), "33333333333333333333333333333333\n");
+
+    const response = await GET(
+      get("?nonce=33333333333333333333333333333333&next=/tasks", HOST + PORT),
+    );
+    const body = (await response.json()) as { error?: string; retryable?: boolean };
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("retry-after")).toBe("10");
+    expect(body.retryable).toBe(true);
+    // The password was never judged, so nothing may imply it was.
+    expect(body.error ?? "").not.toMatch(/stale/i);
+    expect(body.error ?? "").toMatch(/rate-limiting/i);
+    expect(body.error ?? "").toMatch(/nothing is wrong with the admin account/i);
+    // Retrying a refusal-for-volume immediately is how it gets worse.
+    expect(signInWithPassword).toHaveBeenCalledTimes(1);
   });
 
   it("answers 503 naming the transport, not 401 naming the account", async () => {
