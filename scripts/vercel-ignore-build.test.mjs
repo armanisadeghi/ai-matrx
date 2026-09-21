@@ -1,19 +1,16 @@
-// vercel-ignore-build.test.mjs — THE STRANDED-RELEASE LAW.
+// vercel-ignore-build.test.mjs — THE ONE-PUSH/ONE-BUILD LAW.
 //
 // The Ignored Build Step decides whether aimatrx.com (and its two satellites)
-// build. Until 2026-09-14 it read the HEAD commit message and nothing else, so
-// the shared checkout's mandatory routine — commit → `git pull --no-rebase
-// origin main` → push — stranded every release it pushed under a merge commit:
-// `release: a chat that was on a sandbox opens back on that sandbox`
-// (f2386f68f0) rode in under merge head 12ef018999 and Vercel CANCELED
-// dpl_5yi53GmMDeawdPrxVYxV2DmdQmUP2. Three releases were lost that way in a day.
+// build. A range-based implementation fixed an old merge-head release
+// workflow, but created a worse production failure: while a release was still
+// building and the live SHA lagged main, every subsequent ordinary push
+// rediscovered the same release commit and started another full build.
 //
 // These cases run the REAL script against REAL throwaway git repositories with
 // the REAL Vercel env vars (VERCEL_GIT_PREVIOUS_SHA, VERCEL_GIT_COMMIT_SHA,
 // VERCEL_GIT_COMMIT_MESSAGE) — no stubbing of git, no stubbing of the script.
-// Case (b) is red against the old HEAD-only script and green against the fix;
-// (c) and (d) hold the other half of the law: a push with no NEW release
-// commit for this project must never start a ~20-minute production build.
+// scripts/release.sh now pushes its generated release commit as HEAD. The rule
+// is exact: only the pushed HEAD subject can authorize a build.
 //
 // Exit 1 = build. Exit 0 = skip.
 
@@ -108,7 +105,7 @@ test("(a) a release commit AS HEAD builds", () => {
     assert.equal(build, true, `expected a build, got skip:\n${output}`);
 });
 
-test("(b) THE CLASS: a merge head with a release commit one behind builds", () => {
+test("(b) THE DUPLICATE CLASS: a merge head with a release one behind SKIPS", () => {
     const { dir, base, local, head } = mergeHeadRepo(
         "release: a chat that was on a sandbox opens back on that sandbox",
     );
@@ -119,10 +116,10 @@ test("(b) THE CLASS: a merge head with a release commit one behind builds", () =
         VERCEL_GIT_COMMIT_SHA: head,
         VERCEL_GIT_COMMIT_MESSAGE: "Merge branch 'main' of github.com:armanisadeghi/ai-matrx",
     });
-    assert.equal(build, true, `the stranded-release class is back — release ${local} under merge head ${head} did not build:\n${output}`);
+    assert.equal(build, false, `ordinary HEAD rebuilt release ${local} from earlier in its range:\n${output}`);
 });
 
-test("(b2) the class is caught even with NO previous SHA (first deploy / force-push)", () => {
+test("(b2) a merge head with a release behind SKIPS even with no previous SHA", () => {
     const { dir, head } = mergeHeadRepo("release: the release rides in under a merge");
     track(dir);
     const { build, output } = runIgnore(dir, {
@@ -130,7 +127,7 @@ test("(b2) the class is caught even with NO previous SHA (first deploy / force-p
         VERCEL_GIT_COMMIT_SHA: head,
         VERCEL_GIT_COMMIT_MESSAGE: "Merge branch 'main' of github.com:armanisadeghi/ai-matrx",
     });
-    assert.equal(build, true, `fallback path lost the release commit:\n${output}`);
+    assert.equal(build, false, `fallback range scanning rebuilt an earlier release:\n${output}`);
 });
 
 test("(c) a merge head with only chores behind it SKIPS", () => {
@@ -173,47 +170,34 @@ test("(e) the per-project prefixes still route: release-demos: builds demos only
     assert.equal(runIgnore(dir, { ...env, MATRX_BUILD_TARGET: "admin" }).build, false);
 });
 
-test("(f) release-all: behind a merge head builds every project", () => {
-    const { dir, base, head } = mergeHeadRepo("release-all: everything ships");
-    track(dir);
+test("(f) release-all: as HEAD builds every project", () => {
+    const dir = track(newRepo());
+    const base = commit(dir, "chore: baseline");
+    const head = commit(dir, "release-all: everything ships");
     for (const t of ["main", "admin", "demos"]) {
         const { build, output } = runIgnore(dir, {
             MATRX_BUILD_TARGET: t,
             VERCEL_GIT_PREVIOUS_SHA: base,
             VERCEL_GIT_COMMIT_SHA: head,
-            VERCEL_GIT_COMMIT_MESSAGE: "Merge branch 'main' of github.com:armanisadeghi/ai-matrx",
+            VERCEL_GIT_COMMIT_MESSAGE: "release-all: everything ships",
         });
-        assert.equal(build, true, `target=${t} missed release-all behind a merge:\n${output}`);
+        assert.equal(build, true, `target=${t} missed release-all as HEAD:\n${output}`);
     }
 });
 
-// --- the live-site source of "what did this project last deploy" ------------
-// VERCEL_GIT_PREVIOUS_SHA arrives EMPTY in these projects (measured live in
-// dpl_5QW9DC83bEsmx9nwTBvk1EkJYBnX, which reported "HEAD only"), so the step
-// asks the project's own production domain what commit it is serving. The seam
-// is the URL: these cases point it at a real file:// document that answers the
-// same JSON shape app/api/version/route.ts returns.
-
-function versionDoc(dir, commit) {
-    const path = join(dir, "version.json");
-    writeFileSync(path, JSON.stringify({ deploymentId: "dpl_test", commit }));
-    return `file://${path}`;
-}
-
-test("(g) with no previous SHA, a release after the LIVE commit builds", () => {
+test("(g) live SHA lag cannot make an ordinary HEAD rebuild a release", () => {
     const { dir, base, local, head } = mergeHeadRepo("release: the stranded one");
     track(dir);
     const { build, output } = runIgnore(dir, {
         MATRX_BUILD_TARGET: "main",
         VERCEL_GIT_COMMIT_SHA: head,
         VERCEL_GIT_COMMIT_MESSAGE: "Merge branch 'main' of github.com:armanisadeghi/ai-matrx",
-        MATRX_DEPLOYED_SHA_URL: versionDoc(dir, base),
+        MATRX_DEPLOYED_SHA_URL: "https://unused.invalid/api/version",
     });
-    assert.equal(build, true, `the live-site range missed release ${local}:\n${output}`);
-    assert.match(output, /production domain reports serving/, `it did not use the live answer:\n${output}`);
+    assert.equal(build, false, `live lag rebuilt release ${local} behind ordinary HEAD:\n${output}`);
 });
 
-test("(h) with no previous SHA, a release the LIVE site already carries does not rebuild", () => {
+test("(h) a release already behind an ordinary HEAD does not rebuild", () => {
     const dir = track(newRepo());
     commit(dir, "chore: baseline");
     const released = commit(dir, "release: already live");
@@ -222,37 +206,32 @@ test("(h) with no previous SHA, a release the LIVE site already carries does not
         MATRX_BUILD_TARGET: "main",
         VERCEL_GIT_COMMIT_SHA: head,
         VERCEL_GIT_COMMIT_MESSAGE: "chore(docs): a note after the release",
-        MATRX_DEPLOYED_SHA_URL: versionDoc(dir, released),
     });
     assert.equal(build, false, `a release already serving on the live site rebuilt:\n${output}`);
 });
 
-test("(i) a live answer the clone cannot place says so and falls back", () => {
+test("(i) missing Vercel message falls back to the checked-out HEAD subject", () => {
     const dir = track(newRepo());
     commit(dir, "chore: baseline");
     const head = commit(dir, "chore: nothing to ship");
     const { build, output } = runIgnore(dir, {
         MATRX_BUILD_TARGET: "main",
         VERCEL_GIT_COMMIT_SHA: head,
-        VERCEL_GIT_COMMIT_MESSAGE: "chore: nothing to ship",
-        MATRX_DEPLOYED_SHA_URL: versionDoc(dir, "0123456789abcdef0123456789abcdef01234567"),
     });
     assert.equal(build, false);
-    assert.match(output, /which this clone cannot place/, `the fallback was silent:\n${output}`);
+    assert.match(output, /HEAD: chore: nothing to ship/, `the HEAD fallback was not reported:\n${output}`);
 });
 
-test("(j) an older deployment of the version route (no commit field) is not fatal", () => {
+test("(j) unrelated live-version metadata cannot block a release HEAD", () => {
     const dir = track(newRepo());
     commit(dir, "chore: baseline");
     const head = commit(dir, "release: ships even when the live answer is old");
-    const path = join(dir, "old-version.json");
-    writeFileSync(path, JSON.stringify({ deploymentId: "dpl_old" }));
     const { build, output } = runIgnore(dir, {
         MATRX_BUILD_TARGET: "main",
         VERCEL_GIT_COMMIT_SHA: head,
         VERCEL_GIT_COMMIT_MESSAGE: "release: ships even when the live answer is old",
-        MATRX_DEPLOYED_SHA_URL: `file://${path}`,
+        MATRX_DEPLOYED_SHA_URL: "https://unused.invalid/api/version",
     });
     assert.equal(build, true, `a release as HEAD must still build:\n${output}`);
-    assert.match(output, /did not answer one/, `the missing commit field was silent:\n${output}`);
+    assert.match(output, /pushed HEAD is a release commit/, `the HEAD decision was not reported:\n${output}`);
 });
