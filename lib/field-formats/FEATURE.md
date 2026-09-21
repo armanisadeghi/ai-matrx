@@ -47,8 +47,8 @@ module — do not make it seven.
 
 ## The formats
 
-Text: `text` `long_text` `markdown` `email` `url` `phone` `color`
-Numbers: `number` `decimal` `currency` `percent` `duration` `integer` `rating` `file_size`
+Text: `text` `long_text` `markdown` `email` `url` `address` `phone` `color`
+Numbers: `number` `decimal` `currency` `percent` `progress` `duration` `integer` `rating` `file_size`
 Choice: `boolean` `choice` `multi_choice`
 Dates: `date` `datetime` `time` `created_time` `modified_time` `relative_time`
 Structured: `json` `array` `tags` `formula`
@@ -223,6 +223,8 @@ No migration is ever required — a format is data in a JSONB column, and an
 unknown format id degrades to the plain storage type by design.
 
 ## Change log
+
+- `2026-09-21` — **`address`** (free text; the cell opens it in maps — `MapPin` link, `rich`) and **`progress`** (a percentage drawn as a bar with the number beside it; same storage + `percentScale` rule as `percent`, green at 100%). Tests: `__tests__/address-progress-format.test.ts`.
 
 - `2026-09-21` — **`created_time` / `modified_time`: system columns.** Filled from the row's own record on read (`withComputedColumns`, `features/data-tables/formulas.ts`), never typed and never stored in the cell; `editor: "computed"`, rendered through `datetime`'s formatter (`dateStyle` option). No migration: both row readers already returned `created_at` / `updated_at`.
 

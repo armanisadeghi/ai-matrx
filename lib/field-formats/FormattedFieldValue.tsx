@@ -13,7 +13,7 @@
  * column sees `n/a` in amber, not nothing.
  */
 import type { ReactNode } from "react";
-import { ExternalLink, Mail, Phone, Star } from "lucide-react";
+import { ExternalLink, Mail, MapPin, Phone, Star } from "lucide-react";
 
 import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
 import { cn } from "@/utils/cn";
@@ -182,6 +182,51 @@ function renderRich(
           <span className="truncate">{text}</span>
         </a>
       );
+    case "address":
+      return (
+        <a
+          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(text)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={linkClass}
+          title="Open in maps"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MapPin className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{text}</span>
+        </a>
+      );
+    case "progress": {
+      const n = Number(raw);
+      if (!Number.isFinite(n)) return undefined;
+      const pct = config?.options?.percentScale === "fraction" ? n * 100 : n;
+      const clamped = Math.max(0, Math.min(100, pct));
+      return (
+        <span
+          className={cn("inline-flex w-full min-w-0 items-center gap-2", className)}
+          title={text}
+        >
+          <span
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(clamped)}
+            className="h-1.5 min-w-8 flex-1 overflow-hidden rounded-full bg-muted"
+          >
+            <span
+              className={cn(
+                "block h-full rounded-full",
+                pct >= 100 ? "bg-emerald-500" : "bg-primary",
+              )}
+              style={{ width: `${clamped}%` }}
+            />
+          </span>
+          <span className="shrink-0 tabular-nums text-xs text-muted-foreground">
+            {text}
+          </span>
+        </span>
+      );
+    }
     case "phone":
       return (
         <a

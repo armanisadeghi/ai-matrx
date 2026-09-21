@@ -222,6 +222,23 @@ const DEFS: FieldFormatDef[] = [
     parse: (raw) => (raw === "" || raw == null ? null : String(raw).trim()),
   },
   {
+    // A postal address. Free text by design (addresses have no one shape
+    // worldwide); the cell opens it in maps, which is the thing people do
+    // with an address in a table.
+    id: "address",
+    label: "Address",
+    description: "Street address — click to open in maps",
+    group: "Text",
+    base: "string",
+    editor: "text",
+    rich: true,
+    format: (v) => {
+      const t = toText(v)?.trim();
+      return t ? t : null;
+    },
+    parse: (raw) => (raw === "" || raw == null ? null : String(raw)),
+  },
+  {
     id: "url",
     label: "Link",
     description: "Web address — click to open",
@@ -361,6 +378,26 @@ const DEFS: FieldFormatDef[] = [
       if (n === null) return null;
       const shown = o.percentScale === "fraction" ? n * 100 : n;
       return `${groupedNumber(shown, { precision: o.precision })}%`;
+    },
+    parse: (raw) => toNumber(raw),
+  },
+  {
+    // A percentage DRAWN as a bar — task completion, quota used, a score out of
+    // 100. Same storage and scale rule as `percent`; only the rendering differs.
+    id: "progress",
+    label: "Progress bar",
+    description: "A percentage shown as a bar",
+    group: "Numbers",
+    base: "number",
+    alsoAccepts: ["integer"],
+    editor: "number",
+    rich: true,
+    optionKeys: ["percentScale"],
+    format: (v, o) => {
+      const n = toNumber(v);
+      if (n === null) return null;
+      const shown = o.percentScale === "fraction" ? n * 100 : n;
+      return `${groupedNumber(shown, { precision: 0 })}%`;
     },
     parse: (raw) => toNumber(raw),
   },

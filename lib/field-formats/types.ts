@@ -39,6 +39,8 @@ export type FieldFormatId =
   | "markdown"
   | "email"
   | "url"
+  // a postal address — opens in maps
+  | "address"
   | "phone"
   | "color"
   // number-backed
@@ -46,6 +48,8 @@ export type FieldFormatId =
   | "decimal"
   | "currency"
   | "percent"
+  // a percentage drawn as a bar
+  | "progress"
   | "duration"
   // integer-backed
   | "integer"
