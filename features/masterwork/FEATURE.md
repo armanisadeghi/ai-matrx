@@ -476,6 +476,28 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- 2026-09-21 — Claude (Opus): **A document a Rulebook learns from says so, and
+  offers the way back** (jobs-bar cold-walk-18). "Add more → New document"
+  opens a full word processor in a NEW TAB, and the Expert landed on
+  Bold/Italic/Arial/11pt and a page ruler with "not one sentence saying what
+  this is or how what she types gets back into her rules", and no Back. The
+  attachment itself was never broken — `AssociationCaptureToolbar` calls the
+  host's `attach` with the new document's id (role `DUMP_ROLE` =
+  `distillation_source`) BEFORE it opens the tab, and only opens it after — so
+  the truth was available and simply unsaid. `components/DocumentRulebookNotice.tsx`
+  (rendered by `app/(core)/documents/[id]/page.tsx`) is one compact
+  `CalloutBanner` row naming the Rulebook, saying the writing becomes material
+  it learns from and saves as you type, with a link back to `/masterwork/<id>`.
+  **It reads the association, not a query param** — deliberately: `?from=…`
+  tells the truth only for the one tab the toolbar opened, and disappears on a
+  reopen, a bookmark or a share while the Rulebook is still learning from every
+  word. Same reverse-edge read as `ResearchUsedBy`. Renders nothing when the
+  document belongs to no Rulebook. Tests:
+  `__tests__/document-says-what-the-rulebook-does-with-it.test.tsx`.
+  The dark-mode half of the same defect (the page itself rendering black in a
+  white frame) is fixed at the editor — see `features/data-tables/FEATURE.md`,
+  same date.
+
 - 2026-09-20 — Claude (Opus): **"All the ways to add" is a door, not a handler**
   (jobs-bar cold-walk-13, N5). The control in the Rulebook's Sources header did
   nothing on the live build — no dialog, no navigation, zero network requests,
