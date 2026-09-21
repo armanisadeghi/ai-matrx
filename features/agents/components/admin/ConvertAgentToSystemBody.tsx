@@ -163,8 +163,18 @@ export function ConvertAgentToSystemBody({
       });
 
       if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        throw new Error(payload.error ?? `Operation failed (${res.status})`);
+        const payload = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          details?: string;
+          code?: string;
+        };
+        // The route names the real cause in `details` (the Postgres message)
+        // — a bare "Failed to create system agent" with the reason dropped on
+        // the floor is what hid the provenance refusal on 2026-09-20.
+        const headline = payload.error ?? `Operation failed (${res.status})`;
+        throw new Error(
+          payload.details ? `${headline}: ${payload.details}` : headline,
+        );
       }
 
       const body = (await res.json()) as {
