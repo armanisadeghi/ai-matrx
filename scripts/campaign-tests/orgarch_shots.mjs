@@ -51,8 +51,6 @@ const clickByText = async (page, text) => {
   console.log(`[click] ${text}`);
 };
 
-<<<<<<< 6f4bf69ad8f507726b4aad7bf27ed9cfb090e242
-=======
 /** Same reason as clickByText: the page's dev-only render storm makes
  *  Playwright's "visible, enabled and editable" wait never settle. This sets
  *  the value the way a person's keystroke would and lets React see it. */
@@ -75,7 +73,6 @@ const typeInto = async (page, placeholder, value) => {
   console.log(`[type] ${placeholder} := ${value}`);
 };
 
->>>>>>> c6878fa61708225edcb5ca2d86feec5edb4805e1
 const shot = async (page, name) => {
   const path = resolve(OUT, `${name}.png`);
   await page.screenshot({ path, fullPage: false });
@@ -145,11 +142,7 @@ async function main() {
   await clickByText(page, "Restore organization");
   await page.waitForTimeout(1500);
   await shot(page, "4-restore-dialog");
-<<<<<<< 6f4bf69ad8f507726b4aad7bf27ed9cfb090e242
-  await page.locator('input[placeholder="' + ORG_NAME + '"]').first().fill(ORG_NAME);
-=======
   await typeInto(page, ORG_NAME, ORG_NAME);
->>>>>>> c6878fa61708225edcb5ca2d86feec5edb4805e1
   await page.waitForTimeout(500);
   await clickByText(page, "Restore organization");
   await page.waitForTimeout(6000);
@@ -175,11 +168,7 @@ async function main() {
   ]) {
     console.log(`[6] dialog says "${phrase}": ${dialogText.includes(phrase)}`);
   }
-<<<<<<< 6f4bf69ad8f507726b4aad7bf27ed9cfb090e242
-  await page.locator('input[placeholder="' + ORG_NAME + '"]').first().fill(ORG_NAME);
-=======
   await typeInto(page, ORG_NAME, ORG_NAME);
->>>>>>> c6878fa61708225edcb5ca2d86feec5edb4805e1
   await page.waitForTimeout(500);
   await clickByText(page, "Archive organization");
   await page.waitForTimeout(8000);
