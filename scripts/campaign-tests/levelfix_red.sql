@@ -484,7 +484,14 @@ $function$;
 -- `custom.addressed_cap` to the bodies where the default overruled the grant. It is the same
 -- file `laddercap_red.sql` executes to prove its own clauses, and it rolls back with this
 -- transaction like everything else here.
-\i migrations/inverse/laddercap_the_organization_default_steps_aside_for_every_specific_rung_down.sql
+-- ONE LADDER-CAP INVERSE, NOT TWO, AND THE ORDER MATTERS (lane RED-SUITES-3, 2026-09-21).
+-- `laddercap_the_organization_default_steps_aside_for_every_specific_rung_down.sql` DROPS
+-- `custom.addressed_cap_specific`, and the body this file restores below CALLS it — running
+-- both left the kernel calling a function that no longer existed, and the census block at the
+-- end of this file died on it. The cap-governs-the-whole-ladder inverse is the one that puts
+-- arm 2 back under nothing, which is what blocks 2 to 5 are about; the other is not needed
+-- here and is not run.
+\i migrations/inverse/laddercap_the_cap_is_resolved_once_and_governs_the_whole_ladder_down.sql
 -- LEVEL-FIX (2 of 4) — THE INVERSE. The knob row exactly as it stood: a platform constant no
 -- organization could set, with the label and sentence it shipped with.
 
@@ -522,6 +529,7 @@ declare
   v_level public.permission_level;
   v_red  int := 0;
   v_note text := '';
+  v_note2 text;
 begin
   -- OUT OF THE SEAT, for one value and no clause: what THIS organization says membership alone
   -- confers. There is no client door that answers a knob, and RED 1 is the comparison between
@@ -555,16 +563,6 @@ begin
   end;
 
   perform set_config('request.jwt.claims', v_dana_j, true);
-
-  -- RED 1 (green part 1a) — the two doors disagree in the same breath. `custom.my_level` is
-  -- what a person's screen asks; `custom.effective_level` is the internal it calls and holds
-  -- no client grant at all.
-  v_level := custom.my_level(v_org, v_rec, 'record');
-  if v_level is distinct from v_knob then
-    v_red := v_red + 1;
-    v_note := v_note || format('1a: the read door says %s and the organization knob says %s. ',
-      coalesce(v_level::text, 'nothing'), coalesce(v_knob::text, 'nothing'));
-  end if;
 
   -- RED 2 (green part 1b) — membership alone confers editor.
   if custom.query_can_see(v_org, v_rec, 'editor') then
@@ -604,12 +602,54 @@ begin
     v_note := v_note || '5b: a viewer share was raised back to editor by the role default. ';
   end if;
 
-  if v_red <> 5 then
-    raise exception 'RED TWIN FAILED — only % of 5 blocks went red. %  The green suite is '
+  -- ════════════════════════════════════════════════════════════════════════════
+  -- 🚨 GREEN PART 1a HAS NO RED TWIN, AND THAT IS SAID OUT LOUD RATHER THAN COUNTED AS ONE
+  -- (lane RED-SUITES-3, 2026-09-21).
+  --
+  -- `levelfix_green` 1a asserts that the read door and the organization's own
+  -- `custom/member_default_level` say the same thing. This file used to claim it demonstrated
+  -- that clause failing, as "RED 1". It does not, and it cannot from the inverses that exist.
+  -- MEASURED here, with every pre-fix body in place and the knob taken back to a platform
+  -- constant (`overridable_by = array[]`), which is the whole of what LEVEL-FIX's own inverse
+  -- undoes:
+  --
+  --     the organization set                      editor
+  --     iam.member_default_level (the resolver)   viewer   <- the revert took
+  --     custom.my_level (the read door)           editor   <- and the door still honours it
+  --
+  -- The pre-fix ladder reaches the organization's raised default by its OWN route, so the door
+  -- agrees with the organization whether the knob is settable or not, and there is no state
+  -- these inverses can produce in which the two disagree. Reverting the settability at the TOP
+  -- of the file — which is what it used to do — does not create that state either; it only
+  -- takes the raised default away from blocks 2 to 5, which is why this twin reported 0 of 5
+  -- while every plant was in place and biting.
+  --
+  -- So the count below is FOUR, not five, and this comment is the reason. Four defects are
+  -- demonstrated; `levelfix_green` 1a is a clause with no red twin, which by this campaign's
+  -- own rule is doctrine rather than a proven guard. Closing it needs a body that makes the
+  -- door answer the PLATFORM default while an organization has set something else — which is
+  -- LEVEL-FIX's own knowledge of what it replaced, not a test lane's guess.
+  -- ════════════════════════════════════════════════════════════════════════════
+  perform set_config('role', v_boss, true);
+  update platform.feature_knob
+     set overridable_by = array[]::text[]
+   where feature = 'custom' and key = 'member_default_level';
+  select (o.value #>> '{}')::public.permission_level into v_knob
+    from platform.knob_override o
+   where o.feature = 'custom' and o.key = 'member_default_level'
+     and o.scope_kind = 'organization' and o.scope_id = v_org;
+  v_note2 := coalesce(iam.member_default_level(v_org, v_tbl)::text, 'nothing');
+  perform set_config('role', 'authenticated', true);
+  v_level := custom.my_level(v_org, v_rec, 'record');
+  raise notice '1a NOT REPRODUCIBLE (and not counted): the organization set %, the resolver now says %, and the read door still says % — the pre-fix ladder reaches the raised default by its own route. levelfix_green 1a has no red twin.',
+    coalesce(v_knob::text,'nothing'), v_note2, coalesce(v_level::text,'nothing');
+
+  if v_red <> 4 then
+    raise exception 'RED TWIN FAILED — only % of 4 blocks went red. %  The green suite is '
       'therefore not measuring what it claims to.', v_red, v_note;
   end if;
-  raise notice '5 of 5 blocks are RED, every one of them asked as test@test.com from the seat '
-    '`authenticated` — %', v_note;
+  raise notice '4 of 4 blocks are RED, every one of them asked as test@test.com from the seat '
+    '`authenticated` — %  (green part 1a has no red twin; the notice above says why.)', v_note;
   perform set_config('role', v_boss, true);
   perform set_config('request.jwt.claims', '', true);
 end $t$;
