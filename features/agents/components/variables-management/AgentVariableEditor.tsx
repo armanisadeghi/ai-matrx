@@ -51,6 +51,7 @@ import {
 } from "@/features/agents/agent-context/buildAgentBuilderContextData";
 import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
 import { createList } from "@/features/user-lists/service";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { CustomComponentConfigurator } from "./CustomComponentConfigurator";
 import { ContextItemBindingEditor } from "./ContextItemBindingEditor";
 import {
@@ -88,6 +89,7 @@ export function AgentVariableEditor({
 }: AgentVariableEditorProps) {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
+  const { organizationId, organizationState } = useOrganizationRequired();
   const rawVariables = useAppSelector((state) =>
     selectAgentVariableDefinitions(state, agentId),
   );
@@ -245,6 +247,10 @@ export function AgentVariableEditor({
       toast.error("Sign in before creating a picklist.");
       return;
     }
+    if (!organizationId || organizationState !== "ready") {
+      toast.error("Choose an organization before creating a picklist. A list has to live in one.");
+      return;
+    }
     if (staticOptions.length === 0) return;
 
     setIsConvertingPicklist(true);
@@ -256,6 +262,7 @@ export function AgentVariableEditor({
         p_user_id: userId,
         p_is_public: false,
         p_public_read: true,
+        p_organization_id: organizationId,
         p_items: staticOptions.map((option) => ({
           Label: option,
           Description: option,

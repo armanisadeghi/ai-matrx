@@ -13,12 +13,18 @@ export async function createListAction(formData: {
   is_public?: boolean;
   public_read?: boolean;
   items?: CreateListItemInput[];
+  organization_id: string;
 }) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
+  if (!formData.organization_id) {
+    throw new Error(
+      "Choose an organization before creating a list. A list has to live in one.",
+    );
+  }
 
   const { data, error } = await supabase.rpc("create_user_list", {
     p_list_name: formData.list_name,
@@ -28,6 +34,7 @@ export async function createListAction(formData: {
     p_authenticated_read: false,
     p_public_read: formData.public_read ?? true,
     p_items: formData.items ?? [],
+    p_organization_id: formData.organization_id,
   });
 
   if (error) throw new Error(`Failed to create list: ${error.message}`);

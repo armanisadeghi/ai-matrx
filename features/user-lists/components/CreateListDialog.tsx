@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { createListAction } from "../actions/list-actions";
 import { useToastManager } from "@/hooks/useToastManager";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 
 interface CreateListDialogProps {
   open: boolean;
@@ -39,10 +40,16 @@ function CreateListForm({
   const [isPublic, setIsPublic] = useState(false);
   const [isPending, startTransition] = useTransition();
   const toast = useToastManager("user-lists");
+  const { organizationId, organizationState } = useOrganizationRequired();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    if (!organizationId || organizationState !== "ready") {
+      toast.error("Choose an organization before creating a list. A list has to live in one.");
+      return;
+    }
+    const organization_id = organizationId;
     startTransition(async () => {
       try {
         const result = await createListAction({
@@ -50,6 +57,7 @@ function CreateListForm({
           description: description.trim() || undefined,
           is_public: isPublic,
           public_read: true,
+          organization_id,
         });
         toast.success(`"${name}" created`);
         onSuccess(result.list_id);

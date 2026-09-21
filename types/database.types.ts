@@ -75666,6 +75666,7 @@ export type Database = {
           p_is_public: boolean
           p_items?: Json
           p_list_name: string
+          p_organization_id: string
           p_public_read?: boolean
           p_user_id: string
         }

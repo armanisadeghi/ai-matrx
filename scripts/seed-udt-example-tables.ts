@@ -1168,6 +1168,7 @@ async function ensureTeamList(client: Client, userId: string): Promise<string> {
     p_authenticated_read: true,
     p_public_read: true,
     p_items: TEAM_ITEMS,
+    p_organization_id: SYSTEM_ORG_ID,
   });
   const listId = stringField(created, "list_id");
   if (!listId) die("create_user_list returned no list_id.");

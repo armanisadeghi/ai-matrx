@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import {
   addItemToList,
   createList,
@@ -37,6 +38,7 @@ type ItemPatch = Partial<
  */
 export function useStructuredLists() {
   const userId = useAppSelector(selectUserId);
+  const { organizationId, organizationState } = useOrganizationRequired();
   const [lists, setLists] = useState<PicklistSummary[]>([]);
   const [itemsByList, setItemsByList] = useState<
     Record<string, UserListItem[]>
@@ -133,6 +135,10 @@ export function useStructuredLists() {
         setError("You must be signed in to create lists");
         return null;
       }
+      if (!organizationId || organizationState !== "ready") {
+        setError("Choose an organization before creating a list. A list has to live in one.");
+        return null;
+      }
       try {
         const id = (await createList({
           p_list_name: name,
@@ -140,6 +146,7 @@ export function useStructuredLists() {
           p_user_id: userId,
           p_is_public: false,
           p_public_read: true,
+          p_organization_id: organizationId,
         })) as unknown as string;
         const fresh: PicklistSummary = {
           id,
@@ -162,7 +169,7 @@ export function useStructuredLists() {
         return null;
       }
     },
-    [userId],
+    [userId, organizationId, organizationState],
   );
 
   const patchList = useCallback(

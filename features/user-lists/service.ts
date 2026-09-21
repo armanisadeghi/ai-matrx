@@ -89,6 +89,7 @@ export async function createList(input: CreateListInput) {
     p_authenticated_read: false,
     p_public_read: input.p_public_read ?? true,
     p_items: input.p_items ?? [],
+    p_organization_id: input.p_organization_id,
   });
   if (error) throw new Error(`Failed to create list: ${error.message}`);
   return data;

@@ -179,6 +179,8 @@ export interface CreateListInput {
   p_is_public?: boolean;
   p_public_read?: boolean;
   p_items?: CreateListItemInput[];
+  /** The organization the person is working in. The list lives there. */
+  p_organization_id: string;
 }
 
 export interface UpdateListInput {
