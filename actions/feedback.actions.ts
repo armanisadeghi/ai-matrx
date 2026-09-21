@@ -127,7 +127,10 @@ export async function submitFeedback(
 
     if (error) {
       console.error("Error submitting feedback:", error);
-      if (error.code === "42501") {
+      // PostgREST also uses 42501 for ordinary table/column privilege errors.
+      // Only translate the specific RLS rejection into organization guidance;
+      // otherwise preserve the real failure for diagnosis.
+      if (error.code === "42501" && /row-level security/i.test(error.message)) {
         return {
           success: false,
           error:

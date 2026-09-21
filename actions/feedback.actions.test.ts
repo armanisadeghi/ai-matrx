@@ -105,4 +105,27 @@ describe("submitFeedback authorization boundary", () => {
     });
     expect(createAdminClient).not.toHaveBeenCalled();
   });
+
+  it("does not mislabel a non-RLS permission failure as organization membership", async () => {
+    const single = jest.fn().mockResolvedValue({
+      data: null,
+      error: { code: "42501", message: "permission denied for column metadata" },
+    });
+    createClient.mockResolvedValue({
+      schema: jest.fn(() => ({
+        from: jest.fn(() => ({
+          insert: jest.fn(() => ({ select: jest.fn(() => ({ single })) })),
+        })),
+      })),
+    });
+
+    await expect(
+      submitFeedback({
+        feedback_type: "bug",
+        route: "/data/harbor-dental-patient-intake",
+        organization_id: ORG_ID,
+        description: "The appointment reminder rule does not save its weekday selection.",
+      }),
+    ).resolves.toEqual({ success: false, error: "permission denied for column metadata" });
+  });
 });
