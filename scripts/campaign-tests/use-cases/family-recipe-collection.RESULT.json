@@ -1,0 +1,115 @@
+{
+  "use_case": "family-recipe-collection",
+  "organization": {
+    "id": "e99d50c6-518c-4a56-871e-aee1702d28bb",
+    "slug": "family-recipe-collection",
+    "name": "The Alvarado-Chen Kitchen (test fixture)",
+    "settings": {
+      "test_fixture": true
+    }
+  },
+  "tables": {
+    "recipes": "5f6b8364-8c3a-48ca-a833-2905a88e6ee4",
+    "ingredients": "c1bb3352-c6d9-4f19-8737-80c92c97805c",
+    "shopping_lists": "9d1239e0-832a-4c3d-a2b0-722c57914907",
+    "shopping_list_items": "36502899-624c-47c8-b5af-f6f6cea8ae5e"
+  },
+  "rows_written": {
+    "recipes": 12,
+    "ingredients": 30,
+    "shopping_lists": 5,
+    "shopping_list_items": 14
+  },
+  "limitations": [
+    {
+      "when": "2026-09-21T00:52:36.602Z",
+      "doing": "declare boolean field \"checked\" on \"shopping_list_items\"",
+      "said": "no boolean/checkbox parity_type exists (only the 13 parity types + text/long_text/number)",
+      "expected": "a native boolean/checkbox field type, or the door to accept plain:\"boolean\""
+    },
+    {
+      "when": "2026-09-21T00:52:43.863Z",
+      "doing": "record_write row on \"shopping_list_items\" ({\"shopping_list\":\"Week of Jun 1 — Mexican night + weekday soup\",\"ingredient_name...)",
+      "said": "record_write refused: 23514 checked takes one of its choices, and it was given a boolean",
+      "expected": "a record id back"
+    },
+    {
+      "when": "2026-09-21T00:52:43.983Z",
+      "doing": "record_write row on \"shopping_list_items\" ({\"shopping_list\":\"Week of Jun 1 — Mexican night + weekday soup\",\"ingredient_name...)",
+      "said": "record_write refused: 23514 checked takes one of its choices, and it was given a boolean",
+      "expected": "a record id back"
+    },
+    {
+      "when": "2026-09-21T00:52:44.109Z",
+      "doing": "record_write row on \"shopping_list_items\" ({\"shopping_list\":\"Week of Jun 1 — Mexican night + weekday soup\",\"ingredient_name...)",
+      "said": "record_write refused: 23514 checked takes one of its choices, and it was given a boolean",
+      "expected": "a record id back"
+    },
+    {
+      "when": "2026-09-21T00:52:44.225Z",
+      "doing": "record_write row on \"shopping_list_items\" ({\"shopping_list\":\"Week of Jun 8 — Chinese takeout-at-home\",\"ingredient_name\":\"ch...)",
+      "said": "record_write refused: 23514 checked takes one of its choices, and it was given a boolean",
+      "expected": "a record id back"
+    },
+    {
+      "when": "2026-09-21T00:52:44.341Z",
+      "doing": "record_write row on \"shopping_list_items\" ({\"shopping_list\":\"Week of Jun 8 — Chinese takeout-at-home\",\"ingredient_name\":\"dr...)",
+      "said": "record_write refused: 23514 checked takes one of its choices, and it was given a boolean",
+      "expected": "a record id back"
+    },
+    {
+      "when": "2026-09-21T00:52:44.477Z",
+      "doing": "record_write row on \"shopping_list_items\" ({\"shopping_list\":\"Week of Jun 8 — Chinese takeout-at-home\",\"ingredient_name\":\"Si...)",
+      "said": "record_write refused: 23514 checked takes one of its choices, and it was given a boolean",
+      "expected": "a record id back"
+    },
+    {
+      "when": "2026-09-21T00:52:44.599Z",
+      "doing": "record_write row on \"shopping_list_items\" ({\"shopping_list\":\"Week of Jun 15 — Sunday ragu + easy weeknights\",\"ingredient_na...)",
+      "said": "record_write refused: 23514 checked takes one of its choices, and it was given a boolean",
+      "expected": "a record id back"
+    },
+    {
+      "when": "2026-09-21T00:52:44.716Z",
+      "doing": "record_write row on \"shopping_list_items\" ({\"shopping_list\":\"Week of Jun 15 — Sunday ragu + easy weeknights\",\"ingredient_na...)",
+      "said": "record_write refused: 23514 checked takes one of its choices, and it was given a boolean",
+      "expected": "a record id back"
+    },
+    {
+      "when": "2026-09-21T00:52:44.847Z",
+      "doing": "record_write row on \"shopping_list_items\" ({\"shopping_list\":\"Week of Jun 15 — Sunday ragu + easy weeknights\",\"ingredient_na...)",
+      "said": "record_write refused: 23514 checked takes one of its choices, and it was given a boolean",
+      "expected": "a record id back"
+    },
+    {
+      "when": "2026-09-21T00:52:44.961Z",
+      "doing": "record_write row on \"shopping_list_items\" ({\"shopping_list\":\"Week of Jun 22 — Birthday cake week\",\"ingredient_name\":\"evapor...)",
+      "said": "record_write refused: 23514 checked takes one of its choices, and it was given a boolean",
+      "expected": "a record id back"
+    },
+    {
+      "when": "2026-09-21T00:52:45.082Z",
+      "doing": "record_write row on \"shopping_list_items\" ({\"shopping_list\":\"Week of Jun 22 — Birthday cake week\",\"ingredient_name\":\"sweete...)",
+      "said": "record_write refused: 23514 checked takes one of its choices, and it was given a boolean",
+      "expected": "a record id back"
+    },
+    {
+      "when": "2026-09-21T00:52:45.211Z",
+      "doing": "record_write row on \"shopping_list_items\" ({\"shopping_list\":\"Week of Jun 29 — Pozole for the in-laws\",\"ingredient_name\":\"po...)",
+      "said": "record_write refused: 23514 checked takes one of its choices, and it was given a boolean",
+      "expected": "a record id back"
+    },
+    {
+      "when": "2026-09-21T00:52:45.320Z",
+      "doing": "record_write row on \"shopping_list_items\" ({\"shopping_list\":\"Week of Jun 29 — Pozole for the in-laws\",\"ingredient_name\":\"ho...)",
+      "said": "record_write refused: 23514 checked takes one of its choices, and it was given a boolean",
+      "expected": "a record id back"
+    },
+    {
+      "when": "2026-09-21T00:52:45.434Z",
+      "doing": "record_write row on \"shopping_list_items\" ({\"shopping_list\":\"Week of Jun 29 — Pozole for the in-laws\",\"ingredient_name\":\"gu...)",
+      "said": "record_write refused: 23514 checked takes one of its choices, and it was given a boolean",
+      "expected": "a record id back"
+    }
+  ]
+}

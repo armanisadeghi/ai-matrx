@@ -1,0 +1,31 @@
+{
+  "use_case": "home-renovation",
+  "organization": {
+    "id": "1a7fefc6-77e1-4c48-826f-003b1a2e17fd",
+    "slug": "home-renovation",
+    "name": "Birchwood Ave Renovation (test fixture)",
+    "settings": {
+      "test_fixture": true
+    }
+  },
+  "tables": {
+    "rooms": "caf6cf44-c379-47b4-ac2b-47412a7bda67",
+    "contractors": "fa55b71b-e14a-48ac-9ded-f38a6e7af192",
+    "quotes": "0e108f31-5078-48ec-9a15-b492baa414ba",
+    "purchases": "ac738699-b61e-4078-a1f0-eaeb8c4eb730"
+  },
+  "rows_written": {
+    "rooms": 6,
+    "contractors": 7,
+    "quotes": 12,
+    "purchases": 12
+  },
+  "limitations": [
+    {
+      "when": "2026-09-21T00:53:58.934Z",
+      "doing": "declare boolean field \"insured\" on \"contractors\"",
+      "said": "no boolean/checkbox parity_type exists (only the 13 parity types + text/long_text/number)",
+      "expected": "a native boolean/checkbox field type, or the door to accept plain:\"boolean\""
+    }
+  ]
+}

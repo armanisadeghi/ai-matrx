@@ -1,0 +1,97 @@
+{
+  "use_case": "family-recipe-collection",
+  "one_sentence": "A household keeps its recipe collection, each recipe's ingredients, and the running weekly shopping list generated from the recipes it plans to cook, in one place instead of scattered notes and screenshots.",
+  "organization_name": "The Alvarado-Chen Kitchen (test fixture)",
+  "settings_tag": { "test_fixture": true },
+  "tables": {
+    "recipes": {
+      "fields": ["title", "category", "cuisine", "prep_minutes", "cook_minutes", "servings", "source", "contributed_by", "date_added"],
+      "field_types": { "title": "text", "category": "choice", "cuisine": "choice", "prep_minutes": "number", "cook_minutes": "number", "servings": "number", "source": "text", "contributed_by": "text", "date_added": "date" },
+      "choices": { "category": ["Breakfast", "Main Course", "Side Dish", "Soup", "Dessert", "Sauce/Condiment"], "cuisine": ["Mexican", "Chinese", "Italian", "American", "Middle Eastern", "Indian"] },
+      "rows": [
+        {"title": "Chilaquiles Verdes", "category": "Breakfast", "cuisine": "Mexican", "prep_minutes": 15, "cook_minutes": 20, "servings": 4, "source": "Grandma Alvarado's recipe box, card #12", "contributed_by": "Rosa Alvarado", "date_added": "2026-01-08"},
+        {"title": "Kung Pao Chicken", "category": "Main Course", "cuisine": "Chinese", "prep_minutes": 20, "cook_minutes": 15, "servings": 4, "source": "Adapted from Fuchsia Dunlop's Land of Fish and Rice", "contributed_by": "Wei Chen", "date_added": "2026-01-15"},
+        {"title": "Slow-Braised Short Rib Ragu", "category": "Main Course", "cuisine": "Italian", "prep_minutes": 25, "cook_minutes": 210, "servings": 6, "source": "Sunday dinner tradition, no written source", "contributed_by": "Marco Alvarado", "date_added": "2026-02-02"},
+        {"title": "Mapo Tofu", "category": "Main Course", "cuisine": "Chinese", "prep_minutes": 10, "cook_minutes": 15, "servings": 3, "source": "Wei's mother, dictated over the phone", "contributed_by": "Wei Chen", "date_added": "2026-02-10"},
+        {"title": "Elote Street Corn Salad", "category": "Side Dish", "cuisine": "Mexican", "prep_minutes": 15, "cook_minutes": 10, "servings": 6, "source": "Farmers market recipe card", "contributed_by": "Rosa Alvarado", "date_added": "2026-03-01"},
+        {"title": "Pozole Rojo", "category": "Soup", "cuisine": "Mexican", "prep_minutes": 30, "cook_minutes": 180, "servings": 8, "source": "Family recipe, three generations", "contributed_by": "Rosa Alvarado", "date_added": "2026-03-14"},
+        {"title": "Hot and Sour Soup", "category": "Soup", "cuisine": "Chinese", "prep_minutes": 15, "cook_minutes": 20, "servings": 4, "source": "Wei Chen's own recipe", "contributed_by": "Wei Chen", "date_added": "2026-03-22"},
+        {"title": "Tres Leches Cake", "category": "Dessert", "cuisine": "Mexican", "prep_minutes": 30, "cook_minutes": 35, "servings": 12, "source": "Grandma Alvarado's recipe box, card #4", "contributed_by": "Rosa Alvarado", "date_added": "2026-04-05"},
+        {"title": "Cacio e Pepe", "category": "Main Course", "cuisine": "Italian", "prep_minutes": 5, "cook_minutes": 15, "servings": 2, "source": "Weeknight standby, no written source", "contributed_by": "Marco Alvarado", "date_added": "2026-04-12"},
+        {"title": "Chana Masala", "category": "Main Course", "cuisine": "Indian", "prep_minutes": 15, "cook_minutes": 30, "servings": 4, "source": "Learned from neighbor Priya", "contributed_by": "Wei Chen", "date_added": "2026-05-01"},
+        {"title": "Salsa Verde Cruda", "category": "Sauce/Condiment", "cuisine": "Mexican", "prep_minutes": 10, "cook_minutes": 0, "servings": 8, "source": "Grandma Alvarado's recipe box, card #1", "contributed_by": "Rosa Alvarado", "date_added": "2026-05-10"},
+        {"title": "Shakshuka", "category": "Breakfast", "cuisine": "Middle Eastern", "prep_minutes": 10, "cook_minutes": 25, "servings": 4, "source": "Ottolenghi's Jerusalem, adapted", "contributed_by": "Marco Alvarado", "date_added": "2026-05-18"}
+      ]
+    },
+    "ingredients": {
+      "fields": ["recipe", "ingredient_name", "quantity", "unit", "notes"],
+      "field_types": { "recipe": "relation:recipes", "ingredient_name": "text", "quantity": "number", "unit": "choice", "notes": "text" },
+      "choices": { "unit": ["cup", "tbsp", "tsp", "oz", "lb", "clove", "whole", "can", "pinch"] },
+      "rows": [
+        {"recipe": "Chilaquiles Verdes", "ingredient_name": "corn tortillas, cut into wedges and fried", "quantity": 12, "unit": "whole", "notes": "day-old tortillas fry crisper"},
+        {"recipe": "Chilaquiles Verdes", "ingredient_name": "tomatillos", "quantity": 1, "unit": "lb", "notes": "husked and rinsed"},
+        {"recipe": "Chilaquiles Verdes", "ingredient_name": "serrano peppers", "quantity": 2, "unit": "whole", "notes": "seeds removed for less heat"},
+        {"recipe": "Chilaquiles Verdes", "ingredient_name": "queso fresco", "quantity": 4, "unit": "oz", "notes": "crumbled for topping"},
+        {"recipe": "Kung Pao Chicken", "ingredient_name": "chicken thighs, diced", "quantity": 1.5, "unit": "lb", "notes": "boneless, skinless"},
+        {"recipe": "Kung Pao Chicken", "ingredient_name": "dried red chilies", "quantity": 8, "unit": "whole", "notes": "adjust to taste"},
+        {"recipe": "Kung Pao Chicken", "ingredient_name": "roasted peanuts", "quantity": 0.5, "unit": "cup", "notes": ""},
+        {"recipe": "Kung Pao Chicken", "ingredient_name": "Sichuan peppercorns", "quantity": 1, "unit": "tsp", "notes": "toasted and cracked"},
+        {"recipe": "Slow-Braised Short Rib Ragu", "ingredient_name": "bone-in short ribs", "quantity": 3, "unit": "lb", "notes": "trimmed of excess fat"},
+        {"recipe": "Slow-Braised Short Rib Ragu", "ingredient_name": "San Marzano tomatoes", "quantity": 1, "unit": "can", "notes": "28 oz can, crushed by hand"},
+        {"recipe": "Slow-Braised Short Rib Ragu", "ingredient_name": "red wine", "quantity": 1, "unit": "cup", "notes": "something drinkable"},
+        {"recipe": "Mapo Tofu", "ingredient_name": "soft tofu, cubed", "quantity": 14, "unit": "oz", "notes": "one package"},
+        {"recipe": "Mapo Tofu", "ingredient_name": "doubanjiang (fermented chili bean paste)", "quantity": 2, "unit": "tbsp", "notes": "Pixian brand preferred"},
+        {"recipe": "Mapo Tofu", "ingredient_name": "ground pork", "quantity": 0.5, "unit": "lb", "notes": ""},
+        {"recipe": "Elote Street Corn Salad", "ingredient_name": "corn kernels, charred", "quantity": 4, "unit": "cup", "notes": "grilled or pan-charred"},
+        {"recipe": "Elote Street Corn Salad", "ingredient_name": "cotija cheese", "quantity": 0.5, "unit": "cup", "notes": "crumbled"},
+        {"recipe": "Elote Street Corn Salad", "ingredient_name": "lime", "quantity": 2, "unit": "whole", "notes": "juiced"},
+        {"recipe": "Pozole Rojo", "ingredient_name": "pork shoulder", "quantity": 3, "unit": "lb", "notes": "cut into large chunks"},
+        {"recipe": "Pozole Rojo", "ingredient_name": "hominy", "quantity": 2, "unit": "can", "notes": "29 oz cans, drained"},
+        {"recipe": "Pozole Rojo", "ingredient_name": "guajillo chilies", "quantity": 6, "unit": "whole", "notes": "stemmed and seeded"},
+        {"recipe": "Hot and Sour Soup", "ingredient_name": "wood ear mushrooms, dried", "quantity": 0.25, "unit": "cup", "notes": "rehydrated and sliced"},
+        {"recipe": "Hot and Sour Soup", "ingredient_name": "white pepper", "quantity": 1, "unit": "tsp", "notes": "the 'hot' in hot and sour"},
+        {"recipe": "Tres Leches Cake", "ingredient_name": "evaporated milk", "quantity": 1, "unit": "can", "notes": "12 oz can"},
+        {"recipe": "Tres Leches Cake", "ingredient_name": "sweetened condensed milk", "quantity": 1, "unit": "can", "notes": "14 oz can"},
+        {"recipe": "Cacio e Pepe", "ingredient_name": "pecorino romano, grated", "quantity": 1.5, "unit": "cup", "notes": "finely grated, not shredded"},
+        {"recipe": "Chana Masala", "ingredient_name": "chickpeas", "quantity": 2, "unit": "can", "notes": "15 oz cans, drained"},
+        {"recipe": "Chana Masala", "ingredient_name": "garam masala", "quantity": 1, "unit": "tbsp", "notes": ""},
+        {"recipe": "Salsa Verde Cruda", "ingredient_name": "tomatillos, raw", "quantity": 1, "unit": "lb", "notes": "quartered"},
+        {"recipe": "Shakshuka", "ingredient_name": "eggs", "quantity": 6, "unit": "whole", "notes": "cracked directly into sauce"},
+        {"recipe": "Shakshuka", "ingredient_name": "crushed tomatoes", "quantity": 1, "unit": "can", "notes": "28 oz can"}
+      ]
+    },
+    "shopping_lists": {
+      "fields": ["list_name", "week_of", "store", "status"],
+      "field_types": { "list_name": "text", "week_of": "date", "store": "choice", "status": "choice" },
+      "choices": { "store": ["Fresh Market Co-op", "Lucky Star Asian Grocery", "Mercado Alvarado", "Costco"], "status": ["Planning", "Ready to Shop", "Shopping", "Done"] },
+      "rows": [
+        {"list_name": "Week of Jun 1 — Mexican night + weekday soup", "week_of": "2026-06-01", "store": "Mercado Alvarado", "status": "Done"},
+        {"list_name": "Week of Jun 8 — Chinese takeout-at-home", "week_of": "2026-06-08", "store": "Lucky Star Asian Grocery", "status": "Done"},
+        {"list_name": "Week of Jun 15 — Sunday ragu + easy weeknights", "week_of": "2026-06-15", "store": "Fresh Market Co-op", "status": "Done"},
+        {"list_name": "Week of Jun 22 — Birthday cake week", "week_of": "2026-06-22", "store": "Costco", "status": "Ready to Shop"},
+        {"list_name": "Week of Jun 29 — Pozole for the in-laws", "week_of": "2026-06-29", "store": "Mercado Alvarado", "status": "Planning"}
+      ]
+    },
+    "shopping_list_items": {
+      "fields": ["shopping_list", "ingredient_name", "quantity", "unit", "aisle", "checked"],
+      "field_types": { "shopping_list": "relation:shopping_lists", "ingredient_name": "text", "quantity": "number", "unit": "choice", "aisle": "text", "checked": "boolean" },
+      "choices": { "unit": ["cup", "tbsp", "tsp", "oz", "lb", "clove", "whole", "can", "pinch"] },
+      "rows": [
+        {"shopping_list": "Week of Jun 1 — Mexican night + weekday soup", "ingredient_name": "tomatillos", "quantity": 2, "unit": "lb", "aisle": "Produce", "checked": true},
+        {"shopping_list": "Week of Jun 1 — Mexican night + weekday soup", "ingredient_name": "corn tortillas", "quantity": 2, "unit": "whole", "aisle": "Bakery", "checked": true},
+        {"shopping_list": "Week of Jun 1 — Mexican night + weekday soup", "ingredient_name": "queso fresco", "quantity": 8, "unit": "oz", "aisle": "Dairy", "checked": true},
+        {"shopping_list": "Week of Jun 8 — Chinese takeout-at-home", "ingredient_name": "chicken thighs", "quantity": 1.5, "unit": "lb", "aisle": "Meat", "checked": true},
+        {"shopping_list": "Week of Jun 8 — Chinese takeout-at-home", "ingredient_name": "dried red chilies", "quantity": 1, "unit": "oz", "aisle": "International", "checked": true},
+        {"shopping_list": "Week of Jun 8 — Chinese takeout-at-home", "ingredient_name": "Sichuan peppercorns", "quantity": 1, "unit": "oz", "aisle": "International", "checked": false},
+        {"shopping_list": "Week of Jun 15 — Sunday ragu + easy weeknights", "ingredient_name": "bone-in short ribs", "quantity": 3, "unit": "lb", "aisle": "Meat", "checked": true},
+        {"shopping_list": "Week of Jun 15 — Sunday ragu + easy weeknights", "ingredient_name": "San Marzano tomatoes", "quantity": 2, "unit": "can", "aisle": "Canned Goods", "checked": true},
+        {"shopping_list": "Week of Jun 15 — Sunday ragu + easy weeknights", "ingredient_name": "pecorino romano", "quantity": 1, "unit": "lb", "aisle": "Dairy", "checked": false},
+        {"shopping_list": "Week of Jun 22 — Birthday cake week", "ingredient_name": "evaporated milk", "quantity": 2, "unit": "can", "aisle": "Baking", "checked": false},
+        {"shopping_list": "Week of Jun 22 — Birthday cake week", "ingredient_name": "sweetened condensed milk", "quantity": 2, "unit": "can", "aisle": "Baking", "checked": false},
+        {"shopping_list": "Week of Jun 29 — Pozole for the in-laws", "ingredient_name": "pork shoulder", "quantity": 3, "unit": "lb", "aisle": "Meat", "checked": false},
+        {"shopping_list": "Week of Jun 29 — Pozole for the in-laws", "ingredient_name": "hominy", "quantity": 4, "unit": "can", "aisle": "Canned Goods", "checked": false},
+        {"shopping_list": "Week of Jun 29 — Pozole for the in-laws", "ingredient_name": "guajillo chilies", "quantity": 6, "unit": "oz", "aisle": "International", "checked": false}
+      ]
+    }
+  }
+}
