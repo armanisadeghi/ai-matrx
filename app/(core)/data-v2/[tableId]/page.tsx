@@ -10,9 +10,9 @@
 
 import { use, useCallback } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { RecordsMount, TablePage, personActor, recordsDataSource } from "@ai-matrx/records-ui";
-import type { AgentBuildAsk } from "@ai-matrx/records-ui";
+import type { AgentBuildAsk, PageView } from "@ai-matrx/records-ui";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 
@@ -51,6 +51,35 @@ export default function UnifiedDataTableRoute({
   // here with the record still shut. Same shape as `?dashboard=`: a link a queue produced has
   // to finish the sentence it started.
   const activeRecordId = searchParams.get("record");
+  /**
+   * WHICH VIEW THE ADDRESS NAMES — grid, kanban, calendar, gallery, dashboards.
+   *
+   * 🚨 THE THIRD DEAD LINK OF THE SAME SHAPE (VERIFIER-8 HIGH-2, 2026-09-21).
+   * `?view=kanban` returned 200 and rendered the grid, because — exactly like
+   * `?dashboard=` and `?record=` before it — the parameter was in the address
+   * and nothing read it. A person who bookmarks a board or sends one to a
+   * colleague got a grid, silently.
+   *
+   * It is passed RAW: a word this build has no view for is something the person
+   * must be told about, and `TablePage` says it. The route does not parse and
+   * it does not substitute.
+   */
+  const activeView = searchParams.get("view");
+  const pathname = usePathname();
+  /**
+   * AND THE ADDRESS FOLLOWS THEM. Half a deep link is a link that works when
+   * you arrive and lies when you copy it out of the bar afterwards. `replace`
+   * rather than `push`, because which view you are looking at is not a place
+   * you want the Back button to walk you through one layout at a time.
+   */
+  const onViewChanged = useCallback(
+    (view: PageView) => {
+      const next = new URLSearchParams(searchParams.toString());
+      next.set("view", view);
+      router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+    },
+    [router, pathname, searchParams],
+  );
   const userId = useAppSelector(selectUserId);
   const { organizationId, organizationState } = useOrganizationRequired();
   // ONE SWITCH: does THIS organization keep its data in the record store? Set
@@ -174,6 +203,8 @@ export default function UnifiedDataTableRoute({
               onLeave={() => router.push("/data-v2")}
               activeDashboardId={activeDashboardId}
               activeRecordId={activeRecordId}
+              activeView={activeView}
+              onViewChanged={onViewChanged}
             />
           </RecordsMount>
         )}
