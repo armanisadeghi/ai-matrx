@@ -21,7 +21,21 @@ set statement_timeout = '300s';
 drop index if exists platform.idx_assoc_relation_field_live;
 drop index if exists platform.idx_assoc_origin_campaign;
 
-alter table platform.associations drop column if exists relation_field_id;
+-- 🚨 `platform.associations.relation_field_id` STAYS, AND IS EMPTIED (lane INVERSE-GUARD,
+-- 2026-09-21). WRITE-PERF-2 adopted the column: `custom._relation_associations_stmt_insert`
+-- and `_stmt_update` (`writeperf2_the_after_triggers_fire_once_per_statement.sql`) NAME
+-- `relation_field_id` in their own INSERT, and those two bodies are what the live
+-- statement-level triggers `zz_w2a_relation_association_s_i` / `_s_u` run on every write to
+-- `custom.record`. Dropping the column would not put W1-REL's defect back, it would make the
+-- next insert into the record store raise `column "relation_field_id" does not exist`.
+-- So the column stays and is EMPTIED — the same remedy `mergehist_..._down.sql` uses for
+-- `history.row_versions.migration_id`. After this, every association is once again an edge
+-- that does not know which Field declared it, which IS the defect, and the ground the write
+-- path stands on is untouched.
+update platform.associations
+   set relation_field_id = null
+ where relation_field_id is not null;
+--   alter table platform.associations drop column if exists relation_field_id;  -- NOT dropped
 alter table platform.associations drop column if exists updated_at;
 alter table platform.associations drop column if exists version;
 alter table platform.associations drop column if exists origin;

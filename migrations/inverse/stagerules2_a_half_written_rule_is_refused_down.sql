@@ -1,5 +1,20 @@
 -- INVERSE of migrations/campaign/stagerules2_a_half_written_rule_is_refused.sql
 -- Puts back the two bodies that let a gate with no demands through.
+--
+-- 🚨 WHICH ONE RUNS, AND IN WHAT ORDER (lane INVERSE-GUARD, 2026-09-21).
+-- The body this file restores calls custom._card_words, and the sibling
+-- inverse `stagerules2_the_cards_it_names_have_names_down.sql` REMOVES
+-- that function. They are not two independent undos: they are two halves of one lane's
+-- teardown, and the pair has exactly one safe order.
+--   · THIS FILE ALONE is what puts THIS file's defect back, and it is what the red twin beside
+--     it runs. custom._card_words is still there, so the body it restores still resolves.
+--   · `stagerules2_the_cards_it_names_have_names_down.sql` is the DEEPER teardown — it takes
+--     custom._card_words itself away — so it may never run with this file's restore standing in
+--     front of it. Run it on its own, against the lane's shipped bodies, never after this one.
+-- Running the sibling FIRST and this one SECOND is the one order that leaves the access kernel
+-- calling a function that is gone, and it is the order this note exists to forbid.
+-- ground-standing-ok: b — the order above is stated, and neither half is run on top of the other.
+--
 
 CREATE OR REPLACE FUNCTION custom.pipeline_declare(p_organization_id uuid, p_table_id uuid, p_spec jsonb)
  RETURNS jsonb

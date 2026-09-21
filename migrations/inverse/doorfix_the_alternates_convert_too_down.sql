@@ -1,4 +1,19 @@
 -- chair-step: DOOR-FIX 3b's inverse — custom._field_type_converts_values as it stood before 3b (values converted, alternates not).
+--
+-- 🚨 WHICH ONE RUNS, AND IN WHAT ORDER (lane INVERSE-GUARD, 2026-09-21).
+-- The body this file restores calls custom.field_behaviour, custom.field_value_convert, and the sibling
+-- inverse `doorfix_a_field_type_change_converts_or_retires_down.sql` REMOVES
+-- those functions. They are not two independent undos: they are two halves of one lane's
+-- teardown, and the pair has exactly one safe order.
+--   · THIS FILE ALONE is what puts THIS file's defect back, and it is what the red twin beside
+--     it runs. custom.field_behaviour is still there, so the body it restores still resolves.
+--   · `doorfix_a_field_type_change_converts_or_retires_down.sql` is the DEEPER teardown — it takes
+--     custom.field_behaviour itself away — so it may never run with this file's restore standing in
+--     front of it. Run it on its own, against the lane's shipped bodies, never after this one.
+-- Running the sibling FIRST and this one SECOND is the one order that leaves the access kernel
+-- calling a function that is gone, and it is the order this note exists to forbid.
+-- ground-standing-ok: b — the order above is stated, and neither half is run on top of the other.
+--
 
 CREATE OR REPLACE FUNCTION custom._field_type_converts_values()
  RETURNS trigger

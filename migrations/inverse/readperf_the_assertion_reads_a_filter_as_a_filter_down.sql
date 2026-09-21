@@ -1,5 +1,20 @@
 -- READ-PERF, the inverse of the assertion fix: custom.read_door_parity projects the raw
 -- three-valued expression again, so a record with no creator reads as a disagreement.
+--
+-- 🚨 WHICH ONE RUNS, AND IN WHAT ORDER (lane INVERSE-GUARD, 2026-09-21).
+-- The body this file restores calls custom.visible_set, and the sibling
+-- inverse `readperf_the_read_door_asks_visibility_once_down.sql` REMOVES
+-- that function. They are not two independent undos: they are two halves of one lane's
+-- teardown, and the pair has exactly one safe order.
+--   · THIS FILE ALONE is what puts THIS file's defect back, and it is what the red twin beside
+--     it runs. custom.visible_set is still there, so the body it restores still resolves.
+--   · `readperf_the_read_door_asks_visibility_once_down.sql` is the DEEPER teardown — it takes
+--     custom.visible_set itself away — so it may never run with this file's restore standing in
+--     front of it. Run it on its own, against the lane's shipped bodies, never after this one.
+-- Running the sibling FIRST and this one SECOND is the one order that leaves the access kernel
+-- calling a function that is gone, and it is the order this note exists to forbid.
+-- ground-standing-ok: b — the order above is stated, and neither half is run on top of the other.
+--
 create or replace function custom.read_door_parity(
   p_organization_id uuid,
   p_table_id        uuid,

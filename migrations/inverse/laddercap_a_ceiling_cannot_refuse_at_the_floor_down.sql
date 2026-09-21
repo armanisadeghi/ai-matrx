@@ -3,6 +3,21 @@
 -- Puts the cap back in front of every question including the ones asked at the lowest content
 -- level, where it can never refuse. Every answer is the same; what comes back is the cost,
 -- measured at +68.5% on a Table row whose answer comes from arm 4's per-candidate walk.
+--
+-- 🚨 WHICH ONE RUNS, AND IN WHAT ORDER (lane INVERSE-GUARD, 2026-09-21).
+-- The body this file restores calls custom.addressed_cap, and the sibling
+-- inverse `laddercap_the_most_specific_grant_decides_the_level_down.sql` REMOVES
+-- that function. They are not two independent undos: they are two halves of one lane's
+-- teardown, and the pair has exactly one safe order.
+--   · THIS FILE ALONE is what puts THIS file's defect back, and it is what the red twin beside
+--     it runs. custom.addressed_cap is still there, so the body it restores still resolves.
+--   · `laddercap_the_most_specific_grant_decides_the_level_down.sql` is the DEEPER teardown — it takes
+--     custom.addressed_cap itself away — so it may never run with this file's restore standing in
+--     front of it. Run it on its own, against the lane's shipped bodies, never after this one.
+-- Running the sibling FIRST and this one SECOND is the one order that leaves the access kernel
+-- calling a function that is gone, and it is the order this note exists to forbid.
+-- ground-standing-ok: b — the order above is stated, and neither half is run on top of the other.
+--
 
 create or replace function custom.reaches_directly(p_user_id uuid, p_type text, p_id uuid, p_required permission_level default 'viewer'::permission_level)
  returns boolean

@@ -26,7 +26,17 @@ set statement_timeout = '600s';
 
 drop function if exists platform.schema_exposure_violations(text);
 drop function if exists platform.schema_is_client_exposed(text);
-drop table if exists platform.schema_client_exposure;
+-- 🚨 `platform.schema_client_exposure` STAYS STANDING, WITH ITS ROWS (lane INVERSE-GUARD,
+-- 2026-09-21). The BOOT lane adopted it: `platform._reopen_declared_doors_after_revoke_impl`
+-- (`boot_lane_component_rls_and_event_trigger_execution.sql`) reads this table on the live path
+-- to decide which declared doors to reopen after a revoke, and it has no other source for that
+-- answer. Dropping the table would not restore this lane's defect, it would take the boot
+-- lane's door-reopening with it. So the declaration table is LEFT WHERE IT IS and the defect is
+-- restored by the three function bodies below alone: with `platform.schema_is_client_exposed`
+-- and `platform.schema_exposure_violations` gone and the provisioner back to its pre-fix body,
+-- the provisioner once again ignores the declaration, which is exactly the state the RED probe
+-- measured.
+--   drop table if exists platform.schema_client_exposure;   -- deliberately NOT dropped
 
 CREATE OR REPLACE FUNCTION iam.apply_table_grants(p_schema text, p_table text, p_variant text DEFAULT 'entity'::text)
  RETURNS void
