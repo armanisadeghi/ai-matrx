@@ -12,6 +12,9 @@ import { use, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { RecordsMount, TablePage, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import type { AgentBuildAsk } from "@ai-matrx/records-ui";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
@@ -79,6 +82,47 @@ export default function UnifiedDataTableRoute({
     }));
   }, [organizationId]);
 
+  /**
+   * ASK AN AGENT FOR A WHOLE FORM, BOOKING PAGE, PORTAL OR DIGEST —
+   * `@ai-matrx/records-ui`'s `onAskForOne` port (0.52.0).
+   *
+   * Every builder's empty state offers two ways in: build it here, or say what
+   * you want. The second is a PORT because only the server can honestly speak
+   * as an agent, and until this line existed the package drew no button at all
+   * and said so — which was right, and was also half a product.
+   *
+   * 🚨 IT LAUNCHES A MANDATE, NEVER AN AGENT ID. `data.page_guidance` is the
+   * job this surface already declares ("Data Page Guide"); which agent answers
+   * it is a binding in the database, so Arman rebinding it to something that
+   * can actually call the `records` tool improves this button with no deploy
+   * here. A hardcoded agent UUID in this file is the thing the mandate system
+   * exists to prevent.
+   *
+   * 🚨 THE SENTENCE IS CONTEXT, NOT `user_input`. Nothing structured rides
+   * `user_input` — it carries only what a human typed, and this sentence is one
+   * the package composed. The table, the thing being asked for and the
+   * suggested wording go in as named context entries, which is also what lets
+   * the agent see WHICH table without the person retyping its name.
+   */
+  const { launchMandate } = useAgentLauncher();
+  const onAskForOne = useCallback(
+    (ask: AgentBuildAsk) => {
+      void launchMandate(MANDATE_KEYS.data__page_guidance, {
+        surfaceKey: `data-v2:${ask.tableId}`,
+        // The declared source feature for the unified data tables surface.
+        sourceFeature: "udt",
+        runtime: {
+          context: {
+            records_table_id: ask.tableId,
+            records_wanted: ask.kind,
+            records_suggested_wording: ask.suggestion,
+          },
+        },
+      });
+    },
+    [launchMandate],
+  );
+
   return (
     <>
       <PageHeader>
@@ -108,6 +152,7 @@ export default function UnifiedDataTableRoute({
               Link,
               density: "condensed",
               members,
+              onAskForOne,
               share: recordStoreShare,
               // AGT-N-9 / PRODUCTS row 11. The package builds the record SCOPE and
               // hands it here; this returns the platform's ONE chat column bound to
