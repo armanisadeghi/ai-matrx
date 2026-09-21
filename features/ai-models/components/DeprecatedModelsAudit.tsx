@@ -72,63 +72,6 @@ interface SettingsReviewTarget {
   settings: LLMParams;
 }
 
-type SortField =
-  | "model"
-  | "provider"
-  | "prompts"
-  | "builtins"
-  | "agents"
-  | "templates"
-  | "total";
-type SortDir = "asc" | "desc";
-
-function SortIcon({
-  field,
-  sortBy,
-  dir,
-}: {
-  field: SortField;
-  sortBy: SortField;
-  dir: SortDir;
-}) {
-  if (field !== sortBy)
-    return <ArrowUpDown className="h-3 w-3 ml-1 opacity-30" />;
-  return dir === "asc" ? (
-    <ArrowUp className="h-3 w-3 ml-1 text-primary" />
-  ) : (
-    <ArrowDown className="h-3 w-3 ml-1 text-primary" />
-  );
-}
-
-// ── Column header helper ────────────────────────────────────────────────────
-function Th({
-  field,
-  label,
-  className = "",
-  sortBy,
-  sortDir,
-  onToggleSort,
-}: {
-  field: SortField;
-  label: string;
-  className?: string;
-  sortBy: SortField;
-  sortDir: SortDir;
-  onToggleSort: (field: SortField) => void;
-}) {
-  return (
-    <th
-      className={`px-3 py-2 text-left font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground whitespace-nowrap ${className}`}
-      onClick={() => onToggleSort(field)}
-    >
-      <span className="inline-flex items-center">
-        {label}
-        <SortIcon field={field} sortBy={sortBy} dir={sortDir} />
-      </span>
-    </th>
-  );
-}
-
 /** The agent.definition ids a model's usage names — the dry-run scope (I5). */
 function agentIdsOf(entry: DeprecatedEntry): string[] {
   const usage = entry.usage;
@@ -195,8 +138,6 @@ export default function DeprecatedModelsAudit({
   const [filterHasUsage, setFilterHasUsage] = useState<
     "all" | "with" | "without"
   >("all");
-  const [sortBy, setSortBy] = useState<SortField>("total");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const activeModels = allModels.filter((m) => !m.is_deprecated);
 
@@ -306,51 +247,8 @@ export default function DeprecatedModelsAudit({
       );
     }
 
-    result = [...result].sort((a, b) => {
-      let cmp = 0;
-      switch (sortBy) {
-        case "model":
-          cmp = (a.model.common_name || a.model.name).localeCompare(
-            b.model.common_name || b.model.name,
-          );
-          break;
-        case "provider":
-          cmp = (a.model.maker ?? "").localeCompare(b.model.maker ?? "");
-          break;
-        case "prompts":
-          cmp = (a.usage?.prompts.length ?? 0) - (b.usage?.prompts.length ?? 0);
-          break;
-        case "builtins":
-          cmp =
-            (a.usage?.promptBuiltins.length ?? 0) -
-            (b.usage?.promptBuiltins.length ?? 0);
-          break;
-        case "agents":
-          cmp = (a.usage?.agents.length ?? 0) - (b.usage?.agents.length ?? 0);
-          break;
-        case "templates":
-          cmp =
-            (a.usage?.agentTemplates.length ?? 0) -
-            (b.usage?.agentTemplates.length ?? 0);
-          break;
-        case "total":
-          cmp = totalUsage(a) - totalUsage(b);
-          break;
-      }
-      return sortDir === "asc" ? cmp : -cmp;
-    });
-
     return result;
-  }, [
-    entries,
-    q,
-    filterProvider,
-    filterHasUsage,
-    filterMinTotal,
-    filterMaxTotal,
-    sortBy,
-    sortDir,
-  ]);
+  }, [entries, q, filterProvider, filterHasUsage, filterMinTotal, filterMaxTotal]);
 
   const replacedEntries = useMemo(
     () => entries.filter((e) => e.replaced),
@@ -370,22 +268,6 @@ export default function DeprecatedModelsAudit({
     filterMaxTotal !== undefined
   );
 
-  const handleToggleSort = (field: SortField) => {
-    if (field === sortBy) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortBy(field);
-      setSortDir(
-        field === "total" ||
-          field === "prompts" ||
-          field === "builtins" ||
-          field === "agents" ||
-          field === "templates"
-          ? "desc"
-          : "asc",
-      );
-    }
-  };
 
   const clearFilters = () => {
     setQ("");
@@ -514,11 +396,11 @@ export default function DeprecatedModelsAudit({
     () => [
       { id: "model", header: "Deprecated model", accessorFn: (entry) => entry.model.common_name || entry.model.name, cell: (entry) => <div><span className="block font-medium">{entry.model.common_name || entry.model.name}</span><span className="font-mono text-[10px] text-muted-foreground">{entry.model.name}</span></div> },
       { id: "provider", header: "Provider", accessorFn: (entry) => entry.model.maker ?? "", cell: (entry) => entry.model.maker ?? "—" },
-      { id: "prompts", header: "Prompts", accessorFn: (entry) => entry.usage?.prompts.length ?? 0, align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant="outline">{entry.usage?.prompts.length ?? 0}</Badge> },
-      { id: "builtins", header: "Builtins", accessorFn: (entry) => entry.usage?.promptBuiltins.length ?? 0, align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant="outline">{entry.usage?.promptBuiltins.length ?? 0}</Badge> },
-      { id: "agents", header: "Agents", accessorFn: (entry) => entry.usage?.agents.length ?? 0, align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant="outline">{entry.usage?.agents.length ?? 0}</Badge> },
-      { id: "templates", header: "Templates", accessorFn: (entry) => entry.usage?.agentTemplates.length ?? 0, align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant="outline">{entry.usage?.agentTemplates.length ?? 0}</Badge> },
-      { id: "total", header: "Total", accessorFn: totalUsage, align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant={totalUsage(entry) > 0 ? "default" : "outline"}>{totalUsage(entry)}</Badge> },
+      { id: "prompts", header: "Prompts", accessorFn: (entry) => entry.usage?.prompts.length ?? 0, defaultSortDirection: "desc", align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant="outline">{entry.usage?.prompts.length ?? 0}</Badge> },
+      { id: "builtins", header: "Builtins", accessorFn: (entry) => entry.usage?.promptBuiltins.length ?? 0, defaultSortDirection: "desc", align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant="outline">{entry.usage?.promptBuiltins.length ?? 0}</Badge> },
+      { id: "agents", header: "Agents", accessorFn: (entry) => entry.usage?.agents.length ?? 0, defaultSortDirection: "desc", align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant="outline">{entry.usage?.agents.length ?? 0}</Badge> },
+      { id: "templates", header: "Templates", accessorFn: (entry) => entry.usage?.agentTemplates.length ?? 0, defaultSortDirection: "desc", align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant="outline">{entry.usage?.agentTemplates.length ?? 0}</Badge> },
+      { id: "total", header: "Total", accessorFn: totalUsage, defaultSortDirection: "desc", align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant={totalUsage(entry) > 0 ? "default" : "outline"}>{totalUsage(entry)}</Badge> },
       { id: "replacement", header: "Replace with", accessorFn: (entry) => entry.replacementId, sortable: false, filter: false, cell: (entry) => totalUsage(entry) === 0 && !entry.loading ? <span className="text-xs italic text-muted-foreground">No active usage</span> : <ModelListDropdown value={entry.replacementId || undefined} onValueChange={(replacementId) => updateEntry(entry.model.id, { replacementId })} inputModalities={[]} allowedModelIds={activeModels.filter((candidate) => hasCompatibleDecisionInteraction(entry.model.capabilities, candidate.capabilities)).map((candidate) => candidate.id)} catalogVariant="admin" selectionPurpose="admin" placeholder="Select replacement..." className="h-7 w-full max-w-[240px] justify-between text-xs" disabled={entry.replacing} /> },
     ],
     [activeModels, entries],
@@ -712,6 +594,7 @@ export default function DeprecatedModelsAudit({
             columns={auditColumns}
             getRowId={(entry) => entry.model.id}
             density="condensed"
+            defaultSort={{ id: "total", direction: "desc" }}
             pageSize={0}
             hidePagination
             coverage={{ noun: "deprecated model", answeredBy: "client" }}

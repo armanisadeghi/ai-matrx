@@ -886,62 +886,6 @@ function ExcludeButton({
 
 // ─── Provider comparison grid ─────────────────────────────────────────────
 
-function SortableTH({
-  sortKey,
-  activeSortKey,
-  activeSortDir,
-  onSort,
-  children,
-  className = "",
-}: {
-  sortKey: ComparisonSortKey;
-  activeSortKey: ComparisonSortKey;
-  activeSortDir: ComparisonSortDir;
-  onSort: (key: ComparisonSortKey) => void;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  const isActive = activeSortKey === sortKey;
-  return (
-    <th
-      className={`px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap bg-muted/50 ${className}`}
-    >
-      <button
-        type="button"
-        onClick={() => onSort(sortKey)}
-        className={`inline-flex items-center gap-1 hover:text-foreground transition-colors ${
-          isActive ? "text-foreground" : "text-muted-foreground"
-        }`}
-      >
-        {children}
-        {isActive ? (
-          activeSortDir === "asc" ? (
-            <ChevronUp className="h-3 w-3 shrink-0" />
-          ) : (
-            <ChevronDown className="h-3 w-3 shrink-0" />
-          )
-        ) : (
-          <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-40" />
-        )}
-      </button>
-    </th>
-  );
-}
-
-const STATIC_TH = ({
-  children,
-  className = "",
-}: {
-  children?: React.ReactNode;
-  className?: string;
-}) => (
-  <th
-    className={`px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap bg-muted/50 ${className}`}
-  >
-    {children}
-  </th>
-);
-
 function ComparisonTable({
   comparisons,
   providerName,
@@ -963,36 +907,19 @@ function ComparisonTable({
   onToggleExclusion: (c: ModelComparison) => void;
   policyBusy: boolean;
 }) {
-  const [sortKey, setSortKey] = useState<ComparisonSortKey>("released");
-  const [sortDir, setSortDir] = useState<ComparisonSortDir>("desc");
-
-  const toggleSort = (key: ComparisonSortKey) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-      return;
-    }
-    setSortKey(key);
-    setSortDir(defaultSortDirForColumn(key));
-  };
-
-  const sortedComparisons = useMemo(() => {
-    const arr = [...comparisons];
-    arr.sort((a, b) => compareComparisons(a, b, sortKey, sortDir));
-    return arr;
-  }, [comparisons, sortKey, sortDir]);
   const columns = useMemo<MatrxColumnDef<ModelComparison>[]>(
     () => [
-      { id: "display_name", header: "Display name", accessorFn: (comparison) => comparison.display_name, cell: (comparison) => <span className="block max-w-[160px] truncate font-medium" title={comparison.display_name}>{comparison.display_name}</span> },
+      { id: "display_name", header: "Display name", accessorFn: (comparison) => comparison.display_name, defaultSortDirection: "asc", cell: (comparison) => <span className="block max-w-[160px] truncate font-medium" title={comparison.display_name}>{comparison.display_name}</span> },
       { id: "id", header: "Model ID", accessorFn: (comparison) => comparison.id, cell: (comparison) => <span className="block max-w-[200px] truncate font-mono text-[10px] text-muted-foreground" title={comparison.id}>{comparison.id}</span> },
-      { id: "context", header: "Context", accessorFn: (comparison) => comparison.providerEntry?.max_input_tokens ?? comparison.localEntry?.context_window ?? null, align: "right", cell: (comparison) => formatNum(comparison.providerEntry?.max_input_tokens ?? comparison.localEntry?.context_window) },
-      { id: "max_out", header: "Max out", accessorFn: (comparison) => comparison.providerEntry?.max_tokens ?? comparison.localEntry?.max_tokens ?? null, align: "right", cell: (comparison) => formatNum(comparison.providerEntry?.max_tokens ?? comparison.localEntry?.max_tokens) },
-      { id: "released", header: "Released", accessorFn: (comparison) => comparison.providerEntry?.created_at ?? "", cell: (comparison) => formatDate(comparison.providerEntry?.created_at) },
+      { id: "context", header: "Context", accessorFn: (comparison) => comparison.providerEntry?.max_input_tokens ?? comparison.localEntry?.context_window ?? null, defaultSortDirection: "desc", align: "right", cell: (comparison) => formatNum(comparison.providerEntry?.max_input_tokens ?? comparison.localEntry?.context_window) },
+      { id: "max_out", header: "Max out", accessorFn: (comparison) => comparison.providerEntry?.max_tokens ?? comparison.localEntry?.max_tokens ?? null, defaultSortDirection: "desc", align: "right", cell: (comparison) => formatNum(comparison.providerEntry?.max_tokens ?? comparison.localEntry?.max_tokens) },
+      { id: "released", header: "Released", accessorFn: (comparison) => comparison.providerEntry?.created_at ?? "", sortValue: (comparison) => parseTimestamp(comparison.providerEntry?.created_at) ?? -Infinity, defaultSortDirection: "desc", cell: (comparison) => formatDate(comparison.providerEntry?.created_at) },
       { id: "our_name", header: "Our name", accessorFn: (comparison) => comparison.localEntry?.common_name ?? "", cell: (comparison) => comparison.localEntry?.common_name ?? "—" },
       { id: "price", header: "Price", accessorFn: (comparison) => comparison.pricing.ours?.input ?? null, cell: (comparison) => <PriceCell pricing={comparison.pricing} /> },
       { id: "verified", header: "Price checked", accessorFn: (comparison) => comparison.pricing.verified_at ?? "", cell: (comparison) => <PriceVerifiedCell pricing={comparison.pricing} /> },
-      { id: "primary", header: "Primary", accessorFn: (comparison) => Boolean(comparison.localEntry?.is_primary), cell: (comparison) => comparison.localEntry?.is_primary ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : "—" },
-      { id: "deprecated", header: "Deprecated", accessorFn: (comparison) => Boolean(comparison.localEntry?.is_deprecated), cell: (comparison) => comparison.localEntry?.is_deprecated ? <span className="font-medium text-amber-500">yes</span> : "—" },
-      { id: "status", header: "Status", accessorFn: (comparison) => comparison.status, filter: "select", cell: (comparison) => <StatusBadge status={comparison.status} cutoff={cutoff} /> },
+      { id: "primary", header: "Primary", accessorFn: (comparison) => Boolean(comparison.localEntry?.is_primary), defaultSortDirection: "desc", cell: (comparison) => comparison.localEntry?.is_primary ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : "—" },
+      { id: "deprecated", header: "Deprecated", accessorFn: (comparison) => Boolean(comparison.localEntry?.is_deprecated), defaultSortDirection: "desc", cell: (comparison) => comparison.localEntry?.is_deprecated ? <span className="font-medium text-amber-500">yes</span> : "—" },
+      { id: "status", header: "Status", accessorFn: (comparison) => comparison.status, sortValue: (comparison) => STATUS_SORT_ORDER[comparison.status], filter: "select", cell: (comparison) => <StatusBadge status={comparison.status} cutoff={cutoff} /> },
     ],
     [cutoff],
   );
@@ -1009,10 +936,11 @@ function ComparisonTable({
     <div className="border-t overflow-x-auto">
       <MatrxDataTable<ModelComparison>
         tableId={`ai-models/provider-sync/${providerName ?? "provider"}`}
-        data={sortedComparisons}
+        data={comparisons}
         columns={columns}
         getRowId={(comparison) => comparison.id}
         density="condensed"
+        defaultSort={{ id: "released", direction: "desc" }}
         pageSize={0}
         hidePagination
         coverage={{ noun: "provider model", answeredBy: "client" }}

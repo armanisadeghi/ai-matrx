@@ -23,11 +23,14 @@ for (const [label, path] of [
 
 test("Artifacts keeps canvas-first open and a modifier-clickable detail URL", () => {
   const page = source("features/artifacts/components/CmsArtifactList.tsx");
-  assert.match(page, /onRowOpen=\{handleOpen\}/);
+  assert.match(page, /const navigationPending = navigatingId !== null/);
+  assert.match(page, /onRowOpen=\{\(artifact\) => \{ if \(!navigationPending\) handleOpen\(artifact\); \}\}/);
   assert.match(page, /getRowHref=\{\(artifact\) => `\/artifacts\/\$\{artifact\.id\}`\}/);
   assert.match(page, /answeredBy: "client"/);
   assert.match(page, /title="Edit content"/);
-  assert.match(page, /disabled=\{navigatingId !== null\}/);
+  assert.match(page, /pointer-events-none opacity-60/);
+  assert.match(page, /navigatingId === artifact\.id.*Loader2/);
+  assert.match(page, /disabled=\{navigationPending\}/);
   assert.doesNotMatch(page, /ArtifactRow/);
 });
 
@@ -42,6 +45,11 @@ test("AI model tables retain settled usage and provider row actions", () => {
   assert.match(provider, /ProviderSyncRowCopyForAiButton/);
   assert.match(provider, /Sync Now/);
   assert.match(provider, /selectedComparison/);
-  assert.match(provider, /data=\{sortedComparisons\}/);
-  assert.match(provider, /defaultSortDirForColumn\(key\)/);
+  assert.match(deprecated, /defaultSort=\{\{ id: "total", direction: "desc" \}\}/);
+  assert.match(deprecated, /defaultSortDirection: "desc"/);
+  assert.doesNotMatch(deprecated, /sortBy|sortDir|handleToggleSort/);
+  assert.match(provider, /data=\{comparisons\}/);
+  assert.match(provider, /defaultSort=\{\{ id: "released", direction: "desc" \}\}/);
+  assert.match(provider, /sortValue: \(comparison\) => STATUS_SORT_ORDER\[comparison\.status\]/);
+  assert.doesNotMatch(provider, /sortKey|sortDir|toggleSort|sortedComparisons/);
 });

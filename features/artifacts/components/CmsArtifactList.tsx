@@ -267,6 +267,7 @@ export function CmsArtifactList() {
   };
 
   const isLoading = fetchStatus === "loading";
+  const navigationPending = navigatingId !== null;
   const columns = useMemo<MatrxColumnDef<CxArtifactRecord>[]>(
     () => [
       {
@@ -435,8 +436,9 @@ export function CmsArtifactList() {
           detail={{ enabled: false }}
           window={{ enabled: false }}
           getRowHref={(artifact) => `/artifacts/${artifact.id}`}
-          onRowOpen={handleOpen}
-          rowActions={(artifact) => <div className="flex items-center gap-0.5"><Button variant="ghost" size="icon" className="size-7" disabled={navigatingId !== null} onClick={() => handleNavigate(artifact.id)} title="Open full page"><FileText className="size-3.5" /></Button><Button variant="ghost" size="icon" className="size-7" disabled={navigatingId !== null || !(artifact.artifactType === "html_page" && artifact.externalId)} onClick={() => handleOpenEditor(artifact)} title="Edit content"><Pencil className="size-3.5" /></Button>{artifact.externalUrl && <a href={artifact.externalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex size-7 items-center justify-center text-muted-foreground" title="View live"><ExternalLink className="size-3.5" /></a>}<Button variant="ghost" size="icon" className="size-7" onClick={() => handleArchive(artifact)} title="Archive"><ArchiveIcon className="size-3.5" /></Button><Button variant="ghost" size="icon" className="size-7 text-destructive" onClick={() => handleDelete(artifact)} title="Delete"><Trash2 className="size-3.5" /></Button></div>}
+          onRowOpen={(artifact) => { if (!navigationPending) handleOpen(artifact); }}
+          rowClassName={() => navigationPending ? "pointer-events-none opacity-60" : undefined}
+          rowActions={(artifact) => <div className="flex items-center gap-0.5">{navigatingId === artifact.id && <Loader2 className="size-4 animate-spin text-primary" />}<Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleNavigate(artifact.id)} title="Open full page"><FileText className="size-3.5" /></Button><Button variant="ghost" size="icon" className="size-7" disabled={navigationPending || !(artifact.artifactType === "html_page" && artifact.externalId)} onClick={() => handleOpenEditor(artifact)} title="Edit content"><Pencil className="size-3.5" /></Button>{artifact.externalUrl && <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} asChild><a href={artifact.externalUrl} target="_blank" rel="noopener noreferrer" title="View live"><ExternalLink className="size-3.5" /></a></Button>}<Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleArchive(artifact)} title="Archive"><ArchiveIcon className="size-3.5" /></Button><Button variant="ghost" size="icon" className="size-7 text-destructive" disabled={navigationPending} onClick={() => handleDelete(artifact)} title="Delete"><Trash2 className="size-3.5" /></Button></div>}
         />
       )}
 
