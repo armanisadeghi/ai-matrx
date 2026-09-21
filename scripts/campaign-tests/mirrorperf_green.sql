@@ -24,6 +24,19 @@
 --            ladder walk per row that exists (2b, measured in the red twin).
 
 \set ON_ERROR_STOP on
+
+-- 🚨 RED-SUITES 2026-09-21 — A SUITE THAT NEEDS AN ARGUMENT SAYS SO AND THEN SUPPLIES ONE.
+-- This file reads `:'seat'`, which psql substitutes BEFORE the server sees the line, so a run
+-- without `-v seat=…` dies on `syntax error at or near ":"` — an error about psql's own
+-- substitution that reads like a bug in the SQL. VERIFIER-8 Part C filed this file (and two
+-- siblings) as a BROKEN SUITE on exactly that sentence; the file was never broken, the run was
+-- missing an argument and nothing said so. It now defaults to the `admin` seat — the seat the
+-- header's first example names — and a run that means the other one still passes `-v seat=dana`.
+\if :{?seat}
+\else
+  \set seat admin
+  \echo '[RED-SUITES] no -v seat=… given; running the admin seat. The other seat is -v seat=dana.'
+\endif
 \timing off
 
 begin;
