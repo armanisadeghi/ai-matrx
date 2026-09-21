@@ -1,4 +1,10 @@
 -- lane: RLS-REFERENCE
+-- chair-step: an inverse is non-additive by construction. This one un-teaches the `reference`
+-- variant: it reverse-patches nine live function bodies (removing, among other things, the REVOKE
+-- and the `create policy ... using (true)` the reference lane emits), DROPs and re-ADDs five
+-- platform.entity_types CHECK constraints one word narrower, and DROPs the constraint that
+-- refuses a private reference catalogue. It restores the definitions this database held at
+-- 2026-09-21 22:08 UTC and refuses to run while any token still carries rls_variant='reference'.
 -- INVERSE of migrations/campaign/rls_reference_variant.sql — it removes the `reference` RLS
 -- variant from the four generators, the three derivations and the verifier, and restores the five
 -- platform.entity_types CHECKs to the definitions this campaign found live on 2026-09-21.
