@@ -97,10 +97,21 @@ begin
   else
     raise exception 'RED 1 DID NOT GO RED: % AFTER-ROW triggers, expected the 9 the store had', n;
   end if;
+  -- BY NAME, NOT BY TOTAL (amended by lane WRITE-PERF-3, 2026-09-21, for the same reason as
+  -- clauses 1c and 1d of writeperf2_green.sql). This lane's inverse takes away THIS lane's
+  -- fourteen statement triggers; it says nothing about anybody else's, and WRITE-PERF-3's
+  -- three `zz_memo_clear_*` triggers are correct and deliberately left standing. Counting the
+  -- total made this clause claim the inverse had failed when it had done exactly its job.
   select count(*) into n from pg_trigger t
    where t.tgrelid='custom.record'::regclass and not t.tgisinternal
-     and (t.tgtype & 2) = 0 and (t.tgtype & 1) = 0;
-  if n <> 0 then raise exception 'RED 1 DID NOT GO RED: % statement-level AFTER triggers survived the inverse', n; end if;
+     and (t.tgtype & 2) = 0 and (t.tgtype & 1) = 0
+     and t.tgname in ('io_record_changed_s_i','io_record_changed_s_u','io_record_changed_s_d',
+                      'zz_ckl_watch_s_i','zz_ckl_watch_s_u',
+                      'zz_w2_containment_association_s_i','zz_w2_containment_association_s_u',
+                      'zz_w2a_relation_association_s_i','zz_w2a_relation_association_s_u',
+                      'zzz_history_capture_s_i','zzz_history_capture_s_u','zzz_history_capture_s_d',
+                      '_gc_assoc_softdelete_s','_gc_assoc_harddelete_s');
+  if n <> 0 then raise exception 'RED 1 DID NOT GO RED: % of this lane''s 14 statement-level AFTER triggers survived the inverse', n; end if;
 
   -- 2  THE BATCHED DOOR IS GONE
   if to_regprocedure('custom.record_write_many(uuid,uuid,jsonb[],uuid[])') is null then
@@ -147,9 +158,18 @@ begin
   end if;
 
   -- 5  NO TRANSITION TABLE IS READ ANYWHERE ON custom.record
+  -- BY NAME (amended by lane WRITE-PERF-3, 2026-09-21): WRITE-PERF-3's `zz_memo_clear_i` reads a
+  -- transition table too, and it is correct and deliberately left standing by this lane's
+  -- inverse. What this clause means is that none of THIS lane's fourteen is left.
   select count(*) into n from pg_trigger t
    where t.tgrelid='custom.record'::regclass and not t.tgisinternal
-     and (t.tgoldtable is not null or t.tgnewtable is not null);
+     and (t.tgoldtable is not null or t.tgnewtable is not null)
+     and t.tgname in ('io_record_changed_s_i','io_record_changed_s_u','io_record_changed_s_d',
+                      'zz_ckl_watch_s_i','zz_ckl_watch_s_u',
+                      'zz_w2_containment_association_s_i','zz_w2_containment_association_s_u',
+                      'zz_w2a_relation_association_s_i','zz_w2a_relation_association_s_u',
+                      'zzz_history_capture_s_i','zzz_history_capture_s_u','zzz_history_capture_s_d',
+                      '_gc_assoc_softdelete_s','_gc_assoc_harddelete_s');
   if n = 0 then
     v_red := v_red + 1;
     raise notice 'RED 5  not one trigger on custom.record names a transition table — the statement cannot be seen as a statement';

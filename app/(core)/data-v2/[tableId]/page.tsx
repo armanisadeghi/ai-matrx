@@ -38,7 +38,14 @@ export default function UnifiedDataTableRoute({
   // line the person arrives at the records, has to find the Dashboards button, and then
   // has to guess which of several dashboards the agent meant — which is the link not
   // finishing the sentence the agent started. Absent, the page opens exactly as before.
-  const activeDashboardId = useSearchParams().get("dashboard");
+  const searchParams = useSearchParams();
+  const activeDashboardId = searchParams.get("dashboard");
+  // THE INBOX'S OWN LINK. `ActionInbox` routes every Open to
+  // `/data-v2/<table>?record=<record>` — an approval, an assignment, an agent's proposal, a
+  // checklist step — and until records-ui 0.44.0 nothing read it, so pressing Open landed
+  // here with the record still shut. Same shape as `?dashboard=`: a link a queue produced has
+  // to finish the sentence it started.
+  const activeRecordId = searchParams.get("record");
   const userId = useAppSelector(selectUserId);
   const { organizationId, organizationState } = useOrganizationRequired();
   // ONE SWITCH: does THIS organization keep its data in the record store? Set
@@ -114,6 +121,7 @@ export default function UnifiedDataTableRoute({
               tableId={tableId}
               onLeave={() => router.push("/data-v2")}
               activeDashboardId={activeDashboardId}
+              activeRecordId={activeRecordId}
             />
           </RecordsMount>
         )}

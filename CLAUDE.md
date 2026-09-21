@@ -205,3 +205,5 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+- 🚨 **NO LOCAL WORKTREES, NO LOCAL BRANCHES — EVER** (Arman, 2026-09-20: *"there is no reason for ever having a worktree… Branches are ok for remote but not for local. They're forbidden."*). The shared checkout on `main` is the one source of truth; to protect a live feature, build the replacement beside it in the same tree and swap when ready. Never `git worktree add`, never `git checkout -b`; both release scripts build the version commit with git plumbing for this reason.

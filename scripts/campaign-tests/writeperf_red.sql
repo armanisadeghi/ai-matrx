@@ -43,6 +43,25 @@ begin
 end $$;
 
 \echo '=== executing the real inverses ==='
+-- WRITE-PERF-3'S INVERSES FIRST (added by that lane, 2026-09-21). Since WRITE-PERF-3 the three
+-- store door predicates READ the memo this file is about to remove, so taking the memo away
+-- underneath them left `custom.assert_store_door` calling a `platform.memo_get` that no longer
+-- existed and this file died in its own fixture. The inverses below put those bodies back to the
+-- ones that never asked, which is the state this file was written against.
+-- The fourteen locks in ONE statement, before anything else: taken one table at a time these
+-- trigger drops deadlock against ordinary concurrent visibility reads, which read
+-- `platform.entity_grants` and then `platform.associations`.
+lock table platform.entity_grants, platform.entity_relationships, platform.entity_types,
+           platform.reachability, platform.rulebook, iam.memberships, iam.membership_grant,
+           iam.org_industries, iam.organizations, iam.system_orgs, custom.portal,
+           custom.portal_principal, platform.associations, custom.record
+  in access exclusive mode;
+\i migrations/inverse/writeperf3_a_structure_row_empties_the_memo_before_it_lands_down.sql
+\i migrations/inverse/writeperf3_a_small_answer_is_not_read_out_of_a_big_blob_down.sql
+\i migrations/inverse/writeperf3_an_edge_arriving_forgets_nothing_down.sql
+\i migrations/inverse/writeperf3_the_table_is_read_once_per_statement_down.sql
+\i migrations/inverse/writeperf3_the_write_path_asks_the_ladder_once_down.sql
+
 \i migrations/inverse/writeperf_the_memo_reader_plans_once_too_down.sql
 \i migrations/inverse/writeperf_the_same_question_is_asked_once_down.sql
 \i migrations/inverse/writeperf_the_write_path_plans_once_down.sql
