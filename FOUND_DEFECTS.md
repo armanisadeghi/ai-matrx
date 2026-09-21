@@ -4851,5 +4851,11 @@ fine (`hr.wf_inbox` does exactly that and is correct). Owner: closed.
 4 of 8 (provision-unavailable refusal, saved draft-input example, semantic part ids,
 saved-only disclosure). Verified pre-existing: red with the Create-Agent work stashed.
 Not mine — belongs to whoever owns `buildMandateDefinitionCore` / the tab capture.
-Same file's `MandateWorkspace.tsx:598` type error (`saved_definition` not assignable to
-`Json`) is the same lane's and also pre-existing.
+
+**CORRECTION (same day):** this entry originally also claimed the `MandateWorkspace.tsx:598`
+type error was pre-existing. It was NOT. A python rewrite in the Create-Agent commit
+(134de7ac32) wrote the whole file from a copy read BEFORE peer commit 623d5517ca landed,
+silently reverting `pins: normalizeTransferJson(data.pins)` back to `pins: data.pins` —
+that revert WAS the type error. Restored. THE CLASS: a whole-file rewrite from an
+in-memory copy is a blind `CREATE OR REPLACE` on a shared checkout; on this tree,
+targeted edits only, and re-read immediately before writing.
