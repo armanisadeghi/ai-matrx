@@ -199,11 +199,20 @@ begin
   end if;
 
   -- ── two years later: Colour gains Fields and becomes a page, THROUGH THE DOOR ───
-  perform custom.record_update(v_org, v_color, jsonb_build_object(
-    'display', 'page',
-    'fields', jsonb_build_array(jsonb_build_object('name', 'cname'),
-                                jsonb_build_object('name', 'hex'),
-                                jsonb_build_object('name', 'shade'))));
+  -- 🚨 RE-PINNED (lane RED-SUITES-3, 2026-09-21). This used to write the two NAMES into the
+  -- Table's own `fields` list first and define the columns afterwards, and FIELD-TRUTH closed
+  -- that door: between those two statements the Table claimed a column no Field record backed
+  -- — no type, no rules, no validation, never answered by `custom.applicable_fields`, never
+  -- drawn by a grid — and `custom.assert_columns_are_defined` now refuses it out loud with
+  -- "Colour says it has a column called "hex", "shade", and there is no such field."
+  -- (`fieldtruth_the_name_and_the_definition_go_on_together.sql`, which found the same defect
+  -- behind `custom.work_approval_decide` when an agent's proposed column was approved).
+  -- The pre-add was REDUNDANT as well as wrong: `custom.field_declare` appends the name to the
+  -- Table's own list in the same call that writes the definition, which is the whole point of
+  -- there being ONE door for a column. The assertions below are unchanged — the Table still
+  -- has to end up a page carrying three fields — so what this proves is stronger, not weaker:
+  -- the names arrive because the columns were DEFINED, not because the suite typed them in.
+  perform custom.record_update(v_org, v_color, jsonb_build_object('display', 'page'));
   perform custom.field_declare(v_org, v_color, jsonb_build_object('key','hex','label','Hex','plain','text'));
   perform custom.field_declare(v_org, v_color, jsonb_build_object('key','shade','label','Shade','plain','text'));
 

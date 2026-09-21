@@ -114,6 +114,8 @@ declare
   v_n       integer;
   v_def     text;
   v_trg     text;
+  v_trgs    text[];
+  v_drops   text[];
   v_boss    text := current_user;   -- the connected role, for the operator statements
 begin
   if (select system_identifier from pg_control_system()) <> 7642734024280108049 then
@@ -169,13 +171,29 @@ begin
   -- RED 1 — THE CAPTURE TRIGGER. Take it away and a person's own past is blank.
   -- ══════════════════════════════════════════════════════════════════════════
   perform set_config('role', v_boss, true);
-  select pg_get_triggerdef(tg.oid) into v_trg
-    from pg_trigger tg where tg.tgrelid = 'custom.record'::regclass
-     and tg.tgname = 'zzz_history_capture' and not tg.tgisinternal;  -- matrx-real-data:allow zzz_history_capture is the real live trigger name from migrations/campaign/w3_hist_the_one_store.sql, not fixture data
-  if v_trg is null then
-    raise exception 'RED 1 precondition: there is no zzz_history_capture trigger on custom.record to take away';  -- matrx-real-data:allow zzz_history_capture is the real live trigger name from migrations/campaign/w3_hist_the_one_store.sql, not fixture data
+  -- 🚨 DERIVED FROM THE LIVE CATALOGUE (lane RED-SUITES-3, 2026-09-21). This block used to
+  -- name ONE trigger, `zzz_history_capture`, and
+  -- `writeperf2_the_after_triggers_fire_once_per_statement.sql` replaced it with a
+  -- STATEMENT-level trio — `zzz_history_capture_s_i` / `_s_u` / `_s_d` over
+  -- `history.record_capture_stmt_insert` / `_stmt_update` / `_stmt_delete`. So the
+  -- precondition stopped finding anything and this arm proved nothing for as long as that
+  -- was true. It now asks the catalogue WHICH triggers on `custom.record` write history,
+  -- takes every one of them away and puts every one back — so a future rewrite that renames
+  -- or re-splits them keeps working, and a rewrite that removes the last of them fails HERE,
+  -- by name, instead of quietly passing.
+  select array_agg(pg_get_triggerdef(tg.oid) order by tg.tgname),
+         array_agg(format('drop trigger %I on custom.record', tg.tgname) order by tg.tgname)
+    into v_trgs, v_drops
+    from pg_trigger tg
+    join pg_proc p on p.oid = tg.tgfoid
+    join pg_namespace n on n.oid = p.pronamespace
+   where tg.tgrelid = 'custom.record'::regclass
+     and not tg.tgisinternal
+     and n.nspname = 'history' and p.proname like 'record_capture%';
+  if v_trgs is null or array_length(v_trgs, 1) = 0 then
+    raise exception 'RED 1 precondition: no trigger on custom.record calls a history.record_capture* body, so there is no capture to take away';
   end if;
-  drop trigger zzz_history_capture on custom.record;  -- matrx-real-data:allow zzz_history_capture is the real live trigger name from migrations/campaign/w3_hist_the_one_store.sql, not fixture data
+  foreach v_txt in array v_drops loop execute v_txt; end loop;
   select coalesce(max(id), 0) into v_mark from history.row_versions;
   perform set_config('role', 'authenticated', true);
 
@@ -257,9 +275,9 @@ begin
   end if;
   raise notice 'RED 1 — the capture trigger dropped: six writes across six data_class values recorded 0 rows, and custom.io_revisions shows the person 0 versions of the record they have just written. C-17 PART 1 requires all six, and its (d) requires the person to be able to see one.';
 
-  -- Put it back, exactly as it was. Every arm below needs a store that records.
+  -- Put them back, exactly as they were. Every arm below needs a store that records.
   perform set_config('role', v_boss, true);
-  execute v_trg;
+  foreach v_txt in array v_trgs loop execute v_txt; end loop;
   perform set_config('role', 'authenticated', true);
 
   -- A second, recorded write so the arms below have History to read.
