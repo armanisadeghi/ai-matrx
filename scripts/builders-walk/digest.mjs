@@ -14,7 +14,7 @@
  * a week of news.
  */
 import { chromium } from "playwright";
-import { CASES, ORIGIN, signIn, useOrganization, shot } from "./walk.mjs";
+import { CASES, ORIGIN, signIn, useOrganization, settleOnTable, shot } from "./walk.mjs";
 
 const T = CASES.digest;
 const DIGEST_NAME = "Monday donor summary";
@@ -27,8 +27,7 @@ const who = await signIn(page, `/data-v2`);
 notes.push(`signed in as ${who.email}`);
 await useOrganization(page, T);
 
-await page.goto(`${ORIGIN}/data-v2/${T.table}`, { waitUntil: "domcontentloaded", timeout: 180000 });
-await page.waitForTimeout(9000);
+await settleOnTable(page, T.table);
 await shot(page, "builders-30-hha-pledges-grid");
 
 // ── the dashboard the summary is about ──────────────────────────────────────

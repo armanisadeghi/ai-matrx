@@ -13,7 +13,7 @@
  * user id: the same call her own page makes, so it cannot flatter us.
  */
 import { chromium } from "playwright";
-import { CASES, ORIGIN, signIn, useOrganization, shot } from "./walk.mjs";
+import { CASES, ORIGIN, signIn, useOrganization, settleOnTable, shot } from "./walk.mjs";
 
 const T = CASES.portal;
 const PORTAL_TITLE = "Your jobs and invoices";
@@ -26,8 +26,7 @@ const who = await signIn(page, `/data-v2`);
 notes.push(`signed in as ${who.email}`);
 await useOrganization(page, T);
 
-await page.goto(`${ORIGIN}/data-v2/${T.table}`, { waitUntil: "domcontentloaded", timeout: 180000 });
-await page.waitForTimeout(9000);
+await settleOnTable(page, T.table);
 await shot(page, "builders-20-rincon-jobs-grid");
 
 await page.getByRole("button", { name: /^Portals$/ }).first().click();

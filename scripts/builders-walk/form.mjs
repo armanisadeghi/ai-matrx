@@ -17,7 +17,7 @@
  * reads, not the door the builder called.
  */
 import { chromium } from "playwright";
-import { CASES, ORIGIN, signIn, useOrganization, shot, shotPath } from "./walk.mjs";
+import { CASES, ORIGIN, signIn, useOrganization, settleOnTable, shot, shotPath } from "./walk.mjs";
 
 const T = CASES.form;
 const FORM_NAME = "Saturday 9am Strength — class signup";
@@ -36,8 +36,7 @@ const who = await signIn(page, `/data-v2`);
 notes.push(`signed in as ${who.email}`);
 await useOrganization(page, T);
 
-await page.goto(`${ORIGIN}/data-v2/${T.table}`, { waitUntil: "domcontentloaded", timeout: 180000 });
-await page.waitForTimeout(8000);
+await settleOnTable(page, T.table);
 const before = await page.evaluate(() => document.body.innerText);
 notes.push(`members before: ${before.match(/members\s+(\d+)/)?.[1] ?? "?"}`);
 await shot(page, "builders-01-ironline-members-grid");
@@ -134,8 +133,7 @@ notes.push(`after sending: ${(await sp.evaluate(() => document.body.innerText)).
 await strangerCtx.close();
 
 // ── the manager's grid ──────────────────────────────────────────────────────
-await page.goto(`${ORIGIN}/data-v2/${T.table}`, { waitUntil: "domcontentloaded", timeout: 180000 });
-await page.waitForTimeout(9000);
+await settleOnTable(page, T.table);
 const grid = await page.evaluate(() => document.body.innerText);
 notes.push(`members after: ${grid.match(/members\s+(\d+)/)?.[1] ?? "?"}`);
 notes.push(`"${VISITOR.name}" in the grid: ${grid.includes(VISITOR.name)}`);

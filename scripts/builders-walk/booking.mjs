@@ -15,7 +15,7 @@
  * step is a click, and the last assertions read his grid and her page.
  */
 import { chromium } from "playwright";
-import { CASES, ORIGIN, signIn, useOrganization, shot, shotPath } from "./walk.mjs";
+import { CASES, ORIGIN, signIn, useOrganization, settleOnTable, shot, shotPath } from "./walk.mjs";
 
 const T = CASES.booking;
 const PAGE_TITLE = "On-site diagnostic — 30 minutes";
@@ -29,8 +29,7 @@ const who = await signIn(page, `/data-v2`);
 notes.push(`signed in as ${who.email}`);
 await useOrganization(page, T);
 
-await page.goto(`${ORIGIN}/data-v2/${T.table}`, { waitUntil: "domcontentloaded", timeout: 180000 });
-await page.waitForTimeout(9000);
+await settleOnTable(page, T.table);
 const before = await page.evaluate(() => document.body.innerText);
 notes.push(`service calls before: ${before.match(/Service Calls\s+(\d+)/)?.[1] ?? "?"}`);
 
@@ -167,23 +166,32 @@ const confirmed = await cp.evaluate(() => document.body.innerText);
 notes.push(`after booking: ${confirmed.replace(/\n+/g, " | ").slice(0, 260)}`);
 
 // ── she cancels, from her own link ──────────────────────────────────────────
-const cancel = cp.getByRole("button", { name: /Cancel/i }).first();
-if (await cancel.count()) {
-  await cancel.click().catch(() => {});
-  await cp.waitForTimeout(2000);
-  const sure = cp.getByRole("button", { name: /Cancel the appointment|Yes|Confirm/i }).first();
-  if (await sure.count()) await sure.click().catch(() => {});
-  await cp.waitForTimeout(4000);
+// The page offers it as "Move or cancel this appointment" — a LINK, not a
+// button named Cancel, which is what the first version of this walk looked for
+// and reported missing.
+const manage = cp.getByRole("link", { name: /Move or cancel/i }).first();
+const cancelBtn = cp.getByRole("button", { name: /Move or cancel|Cancel/i }).first();
+if ((await manage.count()) || (await cancelBtn.count())) {
+  if (await manage.count()) await manage.click().catch(() => {});
+  else await cancelBtn.click().catch(() => {});
+  await cp.waitForTimeout(5000);
+  await cp.screenshot({ path: shotPath("builders-16b-ironclad-manage-appointment") });
+  const sure = cp.getByRole("button", { name: /^Cancel the appointment$|^Cancel$|Yes/i }).first();
+  if (await sure.count()) {
+    await sure.click().catch(() => {});
+    await cp.waitForTimeout(5000);
+  }
   await cp.screenshot({ path: shotPath("builders-17-ironclad-cancelled") });
-  notes.push(`after cancelling: ${(await cp.evaluate(() => document.body.innerText)).replace(/\n+/g, " | ").slice(0, 220)}`);
+  notes.push(
+    `after cancelling: ${(await cp.evaluate(() => document.body.innerText)).replace(/\n+/g, " | ").slice(0, 240)}`,
+  );
 } else {
-  notes.push("after booking there was NO cancel control on the visitor's page");
+  notes.push("after booking there was NO way to move or cancel on the visitor's page");
 }
 await ctx.close();
 
 // ── his grid, and his bookings list ─────────────────────────────────────────
-await page.goto(`${ORIGIN}/data-v2/${T.table}`, { waitUntil: "domcontentloaded", timeout: 180000 });
-await page.waitForTimeout(9000);
+await settleOnTable(page, T.table);
 const grid = await page.evaluate(() => document.body.innerText);
 notes.push(`service calls after: ${grid.match(/Service Calls\s+(\d+)/)?.[1] ?? "?"}`);
 notes.push(`"${CUSTOMER.name}" in the grid: ${grid.includes(CUSTOMER.name)}`);
@@ -194,6 +202,20 @@ await page.waitForTimeout(4000);
 const list = await page.evaluate(() => document.body.innerText);
 notes.push(`bookings list: ${list.match(/\d+ coming up[^\n]*/)?.[0] ?? "?"}`);
 await shot(page, "builders-19-ironclad-bookings-list");
+
+// ── BOTH WAYS IN, on a rail with nothing in it yet ─────────────────────────
+// The empty state is the only place `BuildOrAsk` draws, so the agent button can
+// only be proven on a rail that has no items — this table has no forms.
+await page.getByRole("button", { name: /^Forms$/ }).first().click();
+await page.waitForTimeout(4000);
+const empty = await page.evaluate(() => document.body.innerText);
+notes.push(
+  `EMPTY RAIL — offers "Build the form": ${/Build the form/.test(empty)}`,
+  `EMPTY RAIL — offers "Ask an agent": ${/Ask an agent/.test(empty)}`,
+  `EMPTY RAIL — suggests wording: ${/You would say something like/.test(empty)}`,
+  `EMPTY RAIL — still names an unbound port: ${/onAskForOne/.test(empty)}`,
+);
+await shot(page, "builders-09-both-ways-in-on-an-empty-rail");
 
 console.log("\n--- WALK 2 ---");
 notes.forEach((n) => console.log(" ·", n));

@@ -79,9 +79,40 @@ async function signIn(page, next) {
   writeFileSync(resolve(ROOT, `.dev-login-nonce.${HOST}`), `${nonce}\n`);
   await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent(next)}`, {
     waitUntil: "domcontentloaded",
-    timeout: 180000,
+    timeout: 240000,
   });
-  const who = await page.evaluate(async () => (await fetch("/api/whoami")).json());
+  let who = await page.evaluate(async () => (await fetch("/api/whoami")).json()).catch(() => null);
+
+  // THE SECOND SANCTIONED WAY IN (CLAUDE.md § dev server): the real sign-in
+  // form with the test admin's own credentials. `dev-login` answered
+  // `{"error":"OTP fallback failed: fetch failed"}` — it reaches the auth
+  // server over the network and that fetch was failing — and a walk that gave
+  // up there would be reporting a network blip as a product failure.
+  // The password is read from the environment and never printed.
+  if (who?.email !== "admin@admin.com") {
+    const email = process.env.AI_ADMIN_USERNAME;
+    const password = process.env.AI_ADMIN_PASSWORD;
+    if (!email || !password) {
+      throw new Error(
+        "dev-login did not produce a session and AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD are not in this shell's environment",
+      );
+    }
+    await page.goto(`${ORIGIN}/login?next=${encodeURIComponent(next)}`, {
+      waitUntil: "domcontentloaded",
+      timeout: 240000,
+    });
+    await page.waitForTimeout(4000);
+    await page.locator('input[type="email"], input[name="email"]').first().fill(email);
+    await page.locator('input[type="password"], input[name="password"]').first().fill(password);
+    await page
+      .getByRole("button", { name: /sign in|log in|continue/i })
+      .first()
+      .click()
+      .catch(() => {});
+    await page.waitForTimeout(12000);
+    who = await page.evaluate(async () => (await fetch("/api/whoami")).json()).catch(() => null);
+  }
+
   // TESTING USES admin@admin.com AND NOTHING ELSE. An existing session is not
   // proof of who it belongs to, so the identity is read back every run.
   if (who?.email !== "admin@admin.com") {
@@ -191,6 +222,25 @@ async function useOrganization(page, target) {
   }
 }
 
+/**
+ * WAIT FOR THE SCREEN, NOT THE CLOCK. A fixed sleep is a guess, and after a
+ * cold Turbopack compile the table page sits on "Checking whether Data records
+ * are available here…" for far longer than any number worth hard-coding. This
+ * waits for the table's own rail to exist, which is the first moment anything
+ * on this page can be clicked.
+ */
+async function settleOnTable(page, tableId, ms = 240000) {
+  await page.goto(`${ORIGIN}/data-v2/${tableId}`, {
+    waitUntil: "domcontentloaded",
+    timeout: ms,
+  });
+  await page
+    .getByRole("button", { name: /^Forms$/ })
+    .first()
+    .waitFor({ state: "visible", timeout: ms });
+  await page.waitForTimeout(2500);
+}
+
 async function shot(page, name) {
   const file = resolve(OUT, `${name}.png`);
   await page.screenshot({ path: file, fullPage: false });
@@ -211,7 +261,7 @@ function shotPath(name) {
   return resolve(OUT, `${name}.png`);
 }
 
-export { ORIGIN, OUT, signIn, useOrganization, shot, shotPath, openRail, only };
+export { ORIGIN, OUT, signIn, useOrganization, settleOnTable, shot, shotPath, openRail, only };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const browser = await chromium.launch({ headless: true });
