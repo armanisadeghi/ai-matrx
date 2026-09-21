@@ -1,11 +1,26 @@
 // features/organizations/hooks/useDefaultOrganization.ts
 //
-// Canonical accessor for the user's DEFAULT active organization preference.
-// This is the single durable, cross-device source of truth for "which org am
-// I in by default" — read at startup by the active-org bootstrap to auto-select
-// an org (so the user is never left without one and never re-prompted), and
-// read/written by the org pickers (HeaderChooseOrgButton popover + UserMenuOrgSection)
-// behind a "Set as my default organization" switch.
+// Canonical accessor for the STAR a person puts on one of their organizations.
+//
+// 🚨 IT DOES NOT SELECT AN ORGANIZATION, AND THIS COMMENT USED TO SAY IT DID.
+// Until 2026-09-21 the lines here read "the single durable, cross-device source
+// of truth for which org am I in by default — read at startup by the active-org
+// bootstrap to auto-select an org (so the user is never left without one and
+// never re-prompted)". That stopped being true on 2026-09-19, when Arman
+// deleted the default-org rung from `lib/organizations/resolveActiveOrgContext`
+// — "a default organization is at most a per-client DISPLAY preference; the org
+// picker may show it and nothing else may read it" — and nothing here changed.
+// Crew D2 then spent 2026-09-21 chasing a persistence bug that was a sentence:
+// the selection gone on a fresh browser profile "despite a 'Set as my default'
+// toggle implying it should stick".
+//
+// What it IS: a durable, cross-device preference that the ORG PICKER reads and
+// nothing else may — it draws that organization first in the list and stars it.
+// Which organization you are working in is restored from this device's own
+// remembered choice (the apex `matrx-active-org` cookie, written only when the
+// person themselves selected one), and on a machine that has never had one, the
+// person picks. Written by the pickers (HeaderChooseOrgButton popover +
+// UserMenuOrgSection) behind the "Keep it at the top" switch.
 //
 // Persistence is handled by the userPreferences sync engine: dispatching
 // `setPreference` broadcasts + debounce-upserts the whole preferences blob to
