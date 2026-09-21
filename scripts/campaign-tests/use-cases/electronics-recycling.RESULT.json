@@ -1,0 +1,29 @@
+{
+  "use_case": "electronics-recycling",
+  "organization": {
+    "id": "b3c98221-861e-405c-b986-5f5abd45e362",
+    "slug": "fixture-recyclers-6x89fi",
+    "name": "Fixture Recyclers Co",
+    "settings": {
+      "test_fixture": true
+    }
+  },
+  "tables": {
+    "client_sites": "5503f505-595e-4669-80bb-c34dbc5dfd3b",
+    "pickups": "0b113241-7e8b-4837-9bbe-1d2c355cdae9",
+    "weights_by_material": "a7511f92-ace2-41a1-af39-da8efe2585ec",
+    "certificates_of_destruction": "4f581d20-2b60-4cd4-9fb4-2ef9ca5ef874"
+  },
+  "rows_written": {
+    "client_sites": 8,
+    "pickups": 30,
+    "weights_by_material": 54,
+    "certificates_of_destruction": 17
+  },
+  "entry_door": "signed-in supabase-js (admin@admin.com), custom.table_declare / custom.field_declare / custom.record_write / custom.record_update",
+  "limitations": [
+    "No client-callable door can declare a generic table-to-table relation field. custom.field_declare exposes 13 parity types but only two relation shortcuts (member -> Person kernel, attachment -> File kernel); there is no parity type for a relation that points at a table the caller names. A direct custom.record_write into the field kernel with type=relation and an arbitrary relation_target is refused: 23514 FLD-13, \"write a column through custom.field_declare ... custom.record_write stores a plain record and its class defaults to record\". Worked around by adding denormalized text fields (client_site_name, pickup_ref_link) instead of real relations.",
+    "As a direct consequence, a ROLLUP field (parity_type=rollup, config.via/agg/of) cannot be declared either, because it requires an existing relation field on the same table to read through (store's own words: \"config.via names a field of the SAME table, by key\") and none could be created. Worked around with a manually-computed total_weight_lbs_manual number field written by the client on every weight-entry write, instead of a live rollup.",
+    "A table's declared fields array can be updated via custom.record_update to add a field key that has no matching Field record in the field kernel, and the store accepts this with no cross-check - the guard only fires the other direction (field_declare/record_write refuses a field whose key is not already in the table's fields array). This left an abandoned phantom field name in the fields array of pickups, weights_by_material and certificates_of_destruction in this fixture organization."
+  ]
+}

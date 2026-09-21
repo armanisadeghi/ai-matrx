@@ -1,0 +1,28 @@
+{
+  "use_case": "An electronics-recycling operator schedules pickups at client sites, weighs the recovered material by category, bills a per-pickup service fee, and issues a certificate of destruction per completed pickup.",
+  "organization_name": "Fixture Recyclers Co",
+  "organization_id": "b3c98221-861e-405c-b986-5f5abd45e362",
+  "organization_slug": "fixture-recyclers-6x89fi",
+  "settings": {
+    "test_fixture": true
+  },
+  "entered_live": true,
+  "entry_door": "signed-in supabase-js: custom.table_declare / custom.field_declare / custom.record_write, admin@admin.com",
+  "counts": {
+    "sites": 8,
+    "pickups": 30,
+    "weights": 54,
+    "certs": 17
+  },
+  "billing_by_site_usd": {
+    "Cascade School District Admin": 1572.4099999999999,
+    "Overlook Senior Living": 2321.95,
+    "Aster County Sheriff's Office": 1053.42,
+    "Redwood Data Center 3": 1196.42,
+    "Meridian Logistics Park": 1859.78,
+    "Brightline Medical Center": 751.75,
+    "Union Textile Manufacturing": 121.58,
+    "Hawthorne Credit Union HQ": 607.23
+  },
+  "note": "A generic table-to-table relation field (pickup -> client_site, weight -> pickup, certificate -> pickup) could not be declared through any client-callable door (field_declare has no parity type for it; a direct record_write into the field kernel is refused with FLD-13). Worked around with denormalized text link fields (client_site_name, pickup_ref_link) and a manually-computed total_weight_lbs_manual field in place of a ROLLUP field, which also could not be declared as a result. See common-docs REAL-DATA-LIMITS.md."
+}
