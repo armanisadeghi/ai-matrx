@@ -24,7 +24,38 @@ set local statement_timeout = '60s';
 -- The inverses, applied for real inside this transaction. Nothing here is committed.
 \i migrations/inverse/storet_the_doors_a_person_can_reach_down.sql
 \i migrations/inverse/storet_a_table_you_can_see_a_record_in_is_a_table_you_know_down.sql
-\i migrations/inverse/storet_the_field_door_carries_out_the_change_down.sql
+-- 🚨 NOT `\i storet_the_field_door_carries_out_the_change_down.sql` EITHER (lane RED-SUITES-2,
+-- 2026-09-21), and the reason is a finding in its own right.
+--
+-- That inverse is a SNAPSHOT of `custom._field_document_for` and `custom.field_update` taken on
+-- 2026-09-20. Five lanes have changed those two bodies since — LIMITS-FIX gave
+-- `_field_document_for` its one-word rule (a table spec's inline field says `name`, and the
+-- door used to demand `label`), and `field_update` has gained arms from ENRICH, TAILS-2,
+-- FIX-7B-FIELD and this lane. Running the snapshot reverts every one of them, which is why
+-- this suite died on its OWN FIXTURE — `A field needs a name` — before reaching a single
+-- assertion. An inverse file carries no `-- based-on:` line and is judged by no sweep, so
+-- nothing caught it. The census: 213 inverse files replace 337 distinct function bodies, and
+-- `custom.field_update` alone is replaced by NINE different snapshots, at most one of which
+-- can match the live body. That class is written up in this lane's PROGRESS doc.
+--
+-- WHAT IS PLANTED INSTEAD is T12's defect exactly, derived from the LIVE body every run so it
+-- can never go stale: STORE-T's whole change was that `custom.field_update` reads `parity_type`
+-- / `plain` / `type` and carries out the conversion. Before it, the door "read neither `plain`
+-- nor `type` at all, so it returned success for a change it had not made." Setting the live
+-- body's own `v_behaviour` to false is that door, and it leaves every other lane's arm standing.
+do $storet_red_plant$
+declare v_src text; v_new text;
+begin
+  v_src := pg_get_functiondef('custom.field_update(uuid, uuid, jsonb)'::regprocedure);
+  v_new := regexp_replace(v_src,
+             'v_behaviour := coalesce\(',
+             'v_behaviour := false; perform coalesce(');
+  if v_new = v_src then
+    raise exception 'storet_red: custom.field_update no longer assigns v_behaviour the way this plant expects, so T12''s defect cannot be planted from the live body. Re-read the door and re-write this block.';
+  end if;
+  execute v_new;
+end
+$storet_red_plant$;
 -- NOT `\i storet_a_choice_is_a_word_and_unique_means_unique_down.sql`: that inverse DROPS two
 -- triggers on `custom.record`, which needs ACCESS EXCLUSIVE on a live sixteen-partition table
 -- and dies on `lock_timeout` under ordinary traffic (lane TABLE-DELETE measured the same thing).
@@ -52,7 +83,7 @@ declare
   v_sh_t uuid; v_f_kind uuid; v_s1 uuid;
   v_per_t uuid; v_f_own uuid;
   v_co_t uuid; v_ca uuid; v_cb uuid;
-  v_doc jsonb; v_n integer; v_red integer := 0; v_caught text; v_t2_red boolean := false;
+  v_doc jsonb; v_n integer; v_red integer := 0; v_caught text; v_t2_red boolean := false; v_t8_red boolean := true;
 begin
   if (select system_identifier from pg_control_system()) <> 7642734024280108049 then
     raise exception 'storet_red.sql runs on the MAIN database only';
@@ -169,9 +200,22 @@ begin
   end;
 
   -- ══════ BLOCK 3 — T8: a choice given by its word ══════════════════════════════════════
+  v_t8_red := true;
   begin
     perform custom.record_write(v_open, v_sh_t, jsonb_build_object('shname','S1','kind','Circle','parent_id',v_h2::text));
-    raise notice 'BLOCK 3 is GREEN — "Circle" was accepted as a choice';
+    -- 🚨 NOT REPRODUCIBLE (lane RED-SUITES-2, 2026-09-21), and it is the same shape BLOCK 1
+    -- above already records for T2: the defect T8 closed has been closed a SECOND time, in a
+    -- different body, by a later lane. T8's defect was that a choice given by its WORD was
+    -- refused because the store only accepted the option record's uuid, and this block plants
+    -- it by emptying `custom._resolve_choice_words` — the body that turns the word into the
+    -- option. Lane CHOICE-VALUE (`choiceval_the_values_become_words.sql`) then changed what a
+    -- choice value IS: "a list field stores the option's own KEY - a short stable word",
+    -- and `custom.validate_values` checks option membership against that KEY. So the word is
+    -- accepted by the VALIDATOR whether or not the resolver ever ran, and emptying the
+    -- resolver no longer plants anything. Reverting CHOICE-VALUE to prove STORE-T is not this
+    -- suite's to do — the same ruling BLOCK 1 makes.
+    v_t8_red := false;
+    raise notice 'BLOCK 3 NOT REPRODUCIBLE — T8: with custom._resolve_choice_words emptied "Circle" is STILL accepted, because lane CHOICE-VALUE made the stored choice value the option''s own KEY and custom.validate_values checks membership against that word. Two independent fixes for one defect; this lane''s is now the second of the two.';
   exception when check_violation then
     v_red := v_red + 1;
     get stacked diagnostics v_caught = message_text;
@@ -179,6 +223,35 @@ begin
   end;
 
   -- ══════ BLOCK 4 — T7: the declaring door throws the caller's words away ═══════════════
+  -- 🚨 T7's DEFECT IS DERIVED FROM THE LIVE DOOR (lane RED-SUITES-2, 2026-09-21), for the
+  -- same reason BLOCK 2's is: it used to arrive with the frozen `_field_document_for` snapshot
+  -- inside `storet_the_field_door_carries_out_the_change_down.sql`, and that snapshot now
+  -- reverts LIMITS-FIX's one-word rule and four other lanes' arms (see the note at the top of
+  -- this file). A copy of the LIVE door is made under a throwaway name, and the door itself is
+  -- replaced by three lines that call the copy and throw the caller's two words away — which
+  -- is precisely what T7 found it doing. Derived every run, so it can never go stale, and
+  -- everything else about the door stays exactly as it is today.
+  perform set_config('role', v_boss, true);
+  declare v_src text; v_copy text;
+  begin
+    v_src  := pg_get_functiondef('custom._field_document_for(uuid,uuid,jsonb)'::regprocedure);
+    v_copy := replace(v_src, 'FUNCTION custom._field_document_for(', 'FUNCTION custom.zz_redsuites2_fdf(');
+    if v_copy = v_src then
+      raise exception 'storet_red: custom._field_document_for could not be copied under a throwaway name, so T7''s defect cannot be derived from the live door. Re-read it and re-write this block.';
+    end if;
+    execute v_copy;
+    execute $fdf$
+      create or replace function custom._field_document_for(p_organization_id uuid, p_table_id uuid, p_spec jsonb)
+      returns jsonb language plpgsql stable set search_path to 'pg_catalog' as $b$
+      begin
+        return (custom.zz_redsuites2_fdf(p_organization_id, p_table_id, p_spec) - 'on_target_delete')
+               || jsonb_build_object('depends_on', '[]'::jsonb);
+      end
+      $b$;
+    $fdf$;
+  end;
+  perform set_config('role', 'authenticated', true);
+
   v_per_t := custom.table_declare(v_open, jsonb_build_object(
     'name','Conservation equipment','slug','conservation_equipment','type','entity','label_singular','Equipment item',
     'label_plural','Equipment items','title_field','aname','display','page','weight','light','ordered',false,
@@ -231,11 +304,13 @@ begin
   end;
 
   -- SEVEN assertions, of which T2's is stated as not reproducible rather than counted.
-  if v_red < (case when v_t2_red then 7 else 6 end) then
+  if v_red < (6 - (case when v_t2_red then 0 else 1 end) - (case when v_t8_red then 0 else 1 end) + 1) then
     raise exception 'ONLY % assertions went red — a suite whose defects it cannot reproduce proves nothing', v_red;
   end if;
   raise notice '% assertions are RED (the defect each one asserts is really gone): T9 by the SEAT ALONE, T12, T8, T7 twice, T11, B1%.',
-    v_red, case when v_t2_red then ', T2' else ' — and T2 is recorded above as no longer reproducible, for the reason given there' end;
+    v_red,
+    (case when v_t2_red then ', T2' else ' — and T2 is recorded above as no longer reproducible, for the reason given there' end)
+    || (case when v_t8_red then '' else '; T8 likewise, for the reason given at BLOCK 3' end);
 end
 $t$;
 

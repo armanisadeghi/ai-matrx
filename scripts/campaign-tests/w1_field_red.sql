@@ -190,9 +190,30 @@ begin
     'key','pick','label','Pick','parity_type','select','options_table_id', v_src_tbl::text,
     'required', true, 'sort', 10));
 
-  -- OUT OF THE SEAT: the validator itself. Nothing is asserted here.
+  -- OUT OF THE SEAT: the validators themselves. Nothing is asserted here.
+  --
+  -- 🚨 TWO BODIES, NOT ONE (lane RED-SUITES-2, 2026-09-21). This block used to neuter only
+  -- `custom._record_field_validation`, and the third write below went in as an ID rather than
+  -- a word with a comment explaining why: "a WORD that is not one of the choices is caught
+  -- earlier and by a DIFFERENT guard (`custom._resolve_choice_words`) … so a word here would
+  -- prove that guard rather than this one."
+  --
+  -- CHOICE-VALUE's ruling moved the whole question. `custom._record_field_validation` no
+  -- longer carries an options or choice arm AT ALL — measured on the main database: not one
+  -- line of it names either — and `custom._resolve_choice_words` (trigger
+  -- `custom_record_choice_words`, which fires first) now refuses an ID that is not one of the
+  -- choices exactly as it refuses a word. So the ID route stopped being a way past the word
+  -- resolver, and the red twin was asserting an arm of a body that no longer has one: it
+  -- failed for the RIGHT product reason and the WRONG guard, which proves nothing about the
+  -- guard it names.
+  --
+  -- The promise is unchanged — a value that is not one of this column's choices is refused —
+  -- and it is now demonstrated against the body that actually holds it, with the natural
+  -- input a person sends: a word.
   perform set_config('role', v_boss, true);
   create or replace function custom._record_field_validation() returns trigger
+    language plpgsql as $g$ begin return new; end $g$;
+  create or replace function custom._resolve_choice_words() returns trigger
     language plpgsql as $g$ begin return new; end $g$;
   perform set_config('role', 'authenticated', true);
 
@@ -203,16 +224,14 @@ begin
   if custom.record_write(v_org, v_tbl, '{"name":"wrong type","pick":7}'::jsonb) is null then
     raise exception 'RED 2 type: the write did not land';
   end if;
-  -- The non-option is given as an ID, not as a word: a WORD that is not one of the choices
-  -- is caught earlier and by a DIFFERENT guard (`custom._resolve_choice_words`, which turns
-  -- what a person typed into the option it means and says "Pick does not have a choice
-  -- called …"), so a word here would prove that guard rather than this one.
-  if custom.record_write(v_org, v_tbl, jsonb_build_object('name','not an option','pick', v_mf_kern::text)) is null then
+  -- The non-option goes in as a WORD, which is what a person types and what the store now
+  -- stores (CHOICE-VALUE). With both bodies above neutered nothing is left to refuse it.
+  if custom.record_write(v_org, v_tbl, jsonb_build_object('name','not an option','pick','Aubergine')) is null then
     raise exception 'RED 2 options: the write did not land';
   end if;
   select count(*) into v_n from custom.read_records(v_org, v_tbl, true, 200, 0);
   if v_n <> 3 then raise exception 'RED 2: % of the three invalid records landed', v_n; end if;
-  raise notice 'RED 2 CONFIRMED — with custom._record_field_validation gone, a record MISSING its required field, one whose value is a number where words were declared, and one whose value is not one of its choices ALL land through custom.record_write and read back through custom.read_records: 3 of 3';
+  raise notice 'RED 2 CONFIRMED — with custom._record_field_validation AND custom._resolve_choice_words gone, a record MISSING its required field, one whose value is a number where words were declared, and one whose value is not one of its choices ALL land through custom.record_write and read back through custom.read_records: 3 of 3';
 end;
 $r2$;
 
