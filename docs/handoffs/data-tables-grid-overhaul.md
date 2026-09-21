@@ -38,7 +38,7 @@ vision: []
 
 ## Remaining work
 
-**Review rows filed by this lane (2026-09-20/21), all independently reviewed unless noted:** `97371913…` (row actions — filed 2026-09-21, live pass pending), `9b35d000…` (add row/column everywhere + width), `98caf7ab…` (Layout menu + Time), `c65fc974…` (six column types + Wrap + one bar), `d291faca…` (header reorder + summary bar + org defaults + Person — `ready_for_human`), `b4ecd2cc…` (row label — `ready_for_human` after three independent passes; the passes found and closed two misses: the row-ordering dialog and the delete confirmation were not using the label). Check status with `select id,status from agent.review_queue where metadata->'origin'->>'agent_label'='data-tables-grid-overhaul'`.
+**Review rows filed by this lane (2026-09-20/21), all independently reviewed unless noted:** `97371913…` (row actions — `ready_for_human` after an independent live pass 2026-09-21), `9b35d000…` (add row/column everywhere + width), `98caf7ab…` (Layout menu + Time), `c65fc974…` (six column types + Wrap + one bar), `d291faca…` (header reorder + summary bar + org defaults + Person — `ready_for_human`), `b4ecd2cc…` (row label — `ready_for_human` after three independent passes; the passes found and closed two misses: the row-ordering dialog and the delete confirmation were not using the label). Check status with `select id,status from agent.review_queue where metadata->'origin'->>'agent_label'='data-tables-grid-overhaul'`.
 
 **2026-09-20 additions (Arman: "add more data types … make the column widths adjustable … full width or scroll … look for other things just like that"):**
 
