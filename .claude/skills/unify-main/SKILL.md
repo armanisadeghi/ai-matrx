@@ -44,15 +44,18 @@ The shared checkout is dirty by nature (many agents write to it). Never let that
 
 ```bash
 git fetch origin main
-# merge <ref> into origin/main without a working folder:
-T=$(git merge-tree --write-tree origin/main <ref>)        # exit 1 = real conflict
-C=$(git commit-tree "$T" -p origin/main -p <ref> -m "Merge <name> into main")
-git push origin "${C}:refs/heads/main"                     # rejected? fetch and redo, up to 5×
+BASE=$(git rev-parse origin/main)   # PIN IT. Other sessions fetch constantly and move
+                                    # origin/main under you; every step below uses $BASE,
+                                    # never the moving name, or the commit silently carries
+                                    # an older tree forward (13 files reverted, 2026-09-20).
+T=$(git merge-tree --write-tree "$BASE" <ref>)             # exit 1 = real conflict
+C=$(git commit-tree "$T" -p "$BASE" -p <ref> -m "Merge <name> into main")
+git push origin "${C}:refs/heads/main"                     # rejected = main moved: fetch, re-pin, redo (up to 5×)
 ```
 
 A real conflict (`merge-tree` exits 1) is resolved by hand: `git merge-tree --write-tree` prints the conflicted paths; resolve each blob (`git show <side>:<path>`), write the resolution with `git hash-object -w`, put it in a temporary index (`GIT_INDEX_FILE=$(mktemp)`; `git read-tree $T`; `git update-index --cacheinfo`), `git write-tree`, `commit-tree`, push. Keep both sides' intent; when two agents changed the same line, the newer commit wins unless it is obviously wrong.
 
-A single commit onto main (e.g. a dirty file set): `git hash-object -w <file>` → temp index from `origin/main` → `update-index --add --cacheinfo` → `write-tree` → `commit-tree -p origin/main` → push.
+A single commit onto main (e.g. a dirty file set): pin `BASE` the same way → `git hash-object -w <file>` → temp index from `$BASE` (`GIT_INDEX_FILE=$(mktemp -u) git read-tree "$BASE"`) → `update-index --add --cacheinfo` → `write-tree` → `commit-tree -p "$BASE"` → push. After every push, `git diff --stat "$BASE" "$C" --diff-filter=D` must list only deletions you intended: an unexpected deletion means you carried a stale tree.
 
 ## Dirty files in the shared checkout
 

@@ -38,17 +38,21 @@ const ORIGIN = `http://${HOST}:${PORT}`;
  * visible, enabled and stable — the log says so — so this dispatches the click
  * the way the browser would and says out loud that it did.
  */
-const clickByText = async (page, text) => {
-  const clicked = await page.evaluate((needle) => {
-    const btn = [...document.querySelectorAll("button")].find(
+const clickByText = async (page, text, which = "first") => {
+  const clicked = await page.evaluate(({ needle, which }) => {
+    const all = [...document.querySelectorAll("button")].filter(
       (b) => (b.textContent || "").trim() === needle && !b.disabled,
     );
+    // THE BANNER'S BUTTON AND THE DIALOG'S SUBMIT READ THE SAME WORDS, and the
+    // banner's comes first in the DOM — taking "first" for the submit simply
+    // re-opened the dialog and the restore never ran. Say which one you mean.
+    const btn = which === "last" ? all[all.length - 1] : all[0];
     if (!btn) return false;
     btn.click();
     return true;
-  }, text);
+  }, { needle: text, which });
   if (!clicked) throw new Error(`no enabled button reading "${text}"`);
-  console.log(`[click] ${text}`);
+  console.log(`[click:${which}] ${text}`);
 };
 
 /** Same reason as clickByText: the page's dev-only render storm makes
@@ -144,8 +148,8 @@ async function main() {
   await shot(page, "4-restore-dialog");
   await typeInto(page, ORG_NAME, ORG_NAME);
   await page.waitForTimeout(500);
-  await clickByText(page, "Restore organization");
-  await page.waitForTimeout(6000);
+  await clickByText(page, "Restore organization", "last");
+  await page.waitForTimeout(8000);
   const afterRestore = await page.evaluate(() => document.body.innerText);
   console.log(`[4] banner still on the page after restore: ${afterRestore.includes("This organization is archived")}`);
   await shot(page, "5-after-restore");
@@ -170,7 +174,7 @@ async function main() {
   }
   await typeInto(page, ORG_NAME, ORG_NAME);
   await page.waitForTimeout(500);
-  await clickByText(page, "Archive organization");
+  await clickByText(page, "Archive organization", "last");
   await page.waitForTimeout(8000);
   await shot(page, "7-after-archive");
   console.log(`[6] landed on: ${page.url()}`);

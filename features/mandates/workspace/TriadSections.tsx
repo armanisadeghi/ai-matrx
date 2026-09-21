@@ -807,7 +807,7 @@ export function TriadOutputSection({
   );
 }
 
-function outputConstraintsOf(
+export function outputConstraintsOf(
   mandate: MandateWorkspaceData["mandate"],
 ): string | null {
   const metadata = (mandate as { metadata?: unknown }).metadata;
