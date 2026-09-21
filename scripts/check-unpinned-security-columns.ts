@@ -142,13 +142,19 @@ const SECRET_COLUMN = [
  *   1. a FOREIGN KEY to `platform.entity_types(token)`; or
  *   2. the table is non-empty and every non-null value resolves to a live
  *      `platform.entity_types.token`; or
- *   3. **a value REPEATS across rows.** A bearer credential is never shared between two rows
+ *   3. **a value REPEATS across rows** (and rule 2 needs at least one non-null value: an
+ *      all-NULL column resolves to any registry vacuously, which is how a first pass of this
+ *      rule cleared `research.rs_topic.refresh_claim_token`, a lease token that is merely
+ *      unset today). A bearer credential is never shared between two rows
  *      — that is what makes it a credential. A vocabulary token is shared by definition:
  *      `content_ir.kind_surface.token` holds "flashcards" twice and "mermaid" beside it,
  *      while `platform.share_links.token` is 366 distinct 64-character strings and
  *      `iam.invitations.token` 33 distinct uuids. This is the discriminator that does not
  *      depend on which registry a token points into, and it is asked of the data.
  * A table with no rows proves nothing and stays a finding. UNPROVEN IS NOT EXEMPT.
+ *
+ * The same three questions are asked of EVERY token-shaped column the name list does not
+ * already clear, not just a bare `token` — the list is a fast path, the evidence is the rule.
  *
  * `credential_reference_kind` stays by name: it is a KIND ("oauth", "api_key"), it references
  * no registry, and no evidence rule would ever clear it.
@@ -532,6 +538,37 @@ function selfTest(): number {
     "…and withholding one column does not clear the others: service_user_id is still CRITICAL",
   );
 
+  // THE VOCABULARY EVIDENCE RULE, on the shape that hid the share link's credential. A column
+  // named `token` is a finding UNLESS the catalog or the data proves it is a registry key; the
+  // two fixtures differ only in that proof.
+  const shareLinkShape = {
+    schema: "platform",
+    table: "share_links",
+    policy: "std_insert",
+    cmd: "a",
+    withCheck: "((created_by = ( SELECT auth.uid() AS uid)) AND iam.has_org_access(organization_id))",
+    usingExpr: null,
+    columns: ["id", "token", "short_token", "permission_level", "created_by", "organization_id"],
+  } as const;
+  say(
+    findingsFor({ ...shareLinkShape })
+      .some((f) => f.column === "token" && f.severity === "critical"),
+    "an UNPROVEN `token` column is CRITICAL — this is platform.share_links.token, the string " +
+      "in /s/<token>, which a bare name-based exemption hid until 2026-09-21",
+  );
+  say(
+    !findingsFor({ ...shareLinkShape, vocabularyColumns: ["token"] })
+      .some((f) => f.column === "token"),
+    "the same column PROVEN to be a registry key (FK to platform.entity_types(token), or its " +
+      "values resolve, or a value repeats across rows) is not a finding",
+  );
+  say(
+    findingsFor({ ...shareLinkShape, vocabularyColumns: ["token"] })
+      .some((f) => f.column === "permission_level" && f.severity === "critical"),
+    "…and proving one column says nothing about the next: permission_level, what the link " +
+      "GRANTS, is still CRITICAL",
+  );
+
   // GREEN — the shape it has today: a restrictive refusal means the census never yields the
   // table at all, so the classifier is handed nothing to judge.
   say(
@@ -634,7 +671,12 @@ async function main(): Promise<number> {
     // is answered by the data, once per (table, column), and only for the columns that would
     // otherwise be judged as credentials. A table with no rows proves nothing and stays a
     // finding — UNPROVEN IS NOT EXEMPT.
-    const BARE_TOKEN = /^token$/i;
+    // Every token-shaped column that the name list does not already clear must prove itself.
+    // The name list is only a fast path for the five qualified names; the evidence is what
+    // actually decides, and it is what clears `platform.lifecycle_reference_map`'s
+    // `parent_token` / `child_token` (1,362 rows, every value a live entity token, and tokens
+    // that repeat) without anyone adding two more names to a list.
+    const TOKEN_SHAPED = /(^|_)token$/i;
     const proven = new Map<string, Set<string>>();
     const asked = new Set<string>();
     for (const r of rows) {
@@ -645,7 +687,8 @@ async function main(): Promise<number> {
       for (const c of fkVocab) set.add(c);
       proven.set(rel, set);
       for (const column of (r.columns ?? []) as string[]) {
-        if (!BARE_TOKEN.test(column)) continue;
+        if (!TOKEN_SHAPED.test(column)) continue;
+        if (VOCABULARY_NOT_A_SECRET.some((re) => re.test(column))) continue;
         if (!writable.has(column) || set.has(column)) continue;
         const key = `${rel}.${column}`;
         if (asked.has(key)) continue;
@@ -653,7 +696,11 @@ async function main(): Promise<number> {
         const col = quoteIdent(column);
         const qualified = `${quoteIdent(r.schema_name)}.${quoteIdent(r.table_name)}`;
         const { rows: answer } = await client.query(
-          "select (count(*) > 0 and count(*) filter (where t." + col + " is not null " +
+          // An ALL-NULL column resolves to the registry VACUOUSLY, and an earlier pass of
+          // this rule cleared `research.rs_topic.refresh_claim_token` — a lease token that is
+          // simply unset today — on exactly that. At least one non-null value must be there
+          // and must resolve. UNPROVEN IS NOT EXEMPT includes "unpopulated".
+          "select (count(t." + col + ") > 0 and count(*) filter (where t." + col + " is not null " +
             "and not exists (select 1 from platform.entity_types et where et.token = t." + col +
             "::text)) = 0) as resolves_to_registry, " +
             "(count(t." + col + ") > count(distinct t." + col + ")) as value_repeats " +
