@@ -70,14 +70,25 @@ set local lock_timeout = '60s';
 create role ttj_retention_lane nologin bypassrls;
 grant usage on schema custom to ttj_retention_lane;
 grant select, insert, update, delete on custom.record to ttj_retention_lane;
--- `platform.knob_resolve` is SECURITY INVOKER: a role that cannot SEE the knob rows reads the
--- switch as CLOSED (that is `custom.store_is_open`'s documented trap, and it is correct — a
--- switch this writer cannot read is closed, never open). So this probe is given exactly the
--- reads `authenticated` has and nothing else; otherwise block 2 would prove the OFF switch a
--- second time instead of proving REC-23.
-grant usage on schema platform to ttj_retention_lane;
-grant select on platform.feature_knob, platform.knob_override,
-                platform.knob_scope_kind, platform.knob_rung_lock to ttj_retention_lane;
+-- `custom.store_is_open` is SECURITY INVOKER: a role that cannot SEE the knob rows reads the
+-- switch as CLOSED (that is its documented trap, and it is correct — a switch this writer
+-- cannot read is closed, never open). So this probe is given exactly the reads `authenticated`
+-- has and nothing else; otherwise block 2 would prove the OFF switch a second time instead of
+-- proving REC-23.
+-- 🚨 RED-SUITES 2026-09-21 — THE PROBE IS GIVEN `authenticated`'S READS BY BEING GIVEN
+-- `authenticated`, not by a hand-copied list of them. The list went stale twice in four days
+-- and each time block 2 died on the OFF switch instead of proving REC-23:
+--   · `w0_sync2_grant_surface_relevel.sql` (2026-09-17) revoked EXECUTE on
+--     `platform.knob_resolve` from PUBLIC, so the probe could no longer read the switch at all.
+--   · `redsuites_one_store_switch.sql` (2026-09-21) made every body ask
+--     `custom.store_is_open`, which reads `iam.organizations` and, through `knob_resolve`,
+--     `platform.memo_get`/`memo_put` — three more grants the list did not have.
+-- A list of grants that has to be maintained in step with the platform is a fixture that
+-- silently stops testing what it says it tests. Granting the ROLE cannot drift: whatever a
+-- signed-in person may read, this probe may read, and nothing else. It is still not the owner
+-- of `custom.record` — which is the whole point of block 2 — and the DELETE below is the one
+-- privilege it holds that `authenticated` does not.
+grant authenticated to ttj_retention_lane;
 grant execute on function custom.assert_store_door(uuid, text) to ttj_retention_lane;
 grant execute on function custom.caller_role() to ttj_retention_lane;
 grant execute on function custom.store_is_open(uuid) to ttj_retention_lane;
@@ -381,39 +392,52 @@ begin
   -- THE CLASS, WITH A DATED LEDGER RATHER THAN A SILENT PASS. On 2026-09-19 the same census
   -- over the WHOLE schema named 18 functions that change rows and read no row count. They are
   -- listed here by name, with the date they were measured, so that (a) nothing about them is
-  -- hidden, (b) the rule still bites: a NINETEENTH function that changes rows without reading
-  -- a count fails this clause the day it lands. They are not this lane's to rewrite — they
+  -- hidden, (b) the rule still bites: the NEXT function that changes rows without reading a
+  -- count fails this clause the day it lands. They are not this lane's to rewrite — they
   -- belong to the io, anon, doc, migrate, field, work and association lanes — and the list is
   -- the work owed, not an exemption granted. Delete a name from it when its body reads a count.
-  select count(*) into v_n from pg_proc p
-   where p.pronamespace = 'custom'::regnamespace
-     and p.prosrc ~* '(update\s+custom\.|delete\s+from\s+custom\.)'
-     and p.prosrc !~* '(get\s+diagnostics|not\s+found)'
-     and p.proname not in (
-       '_field_type_converts_values', '_value_envelope', 'anon_capture', 'anon_publish',
-       'anon_token_revoke', 'doc_template_save', 'field_declare', 'field_retire',
-       'field_update', 'io_comment_resolve', 'io_outbox_drain', 'io_proposal_reject',
-       'migrate_merge', 'migrate_purge', 'migrate_retype', 'migrate_split',
-       'trg_associations_bump_visibility', 'work_take_assignment');
-  if v_n <> 0 then
-    raise exception 'GREEN 3b: % function(s) in custom change rows without reading a row count, and are not on the 2026-09-19 ledger: %',
-      v_n,
-      (select string_agg(p.proname, ', ' order by p.proname) from pg_proc p
-        where p.pronamespace = 'custom'::regnamespace
-          and p.prosrc ~* '(update\s+custom\.|delete\s+from\s+custom\.)'
-          and p.prosrc !~* '(get\s+diagnostics|not\s+found)'
-          and p.proname not in (
-            '_field_type_converts_values', '_value_envelope', 'anon_capture', 'anon_publish',
-            'anon_token_revoke', 'doc_template_save', 'field_declare', 'field_retire',
-            'field_update', 'io_comment_resolve', 'io_outbox_drain', 'io_proposal_reject',
-            'migrate_merge', 'migrate_purge', 'migrate_retype', 'migrate_split',
-            'trg_associations_bump_visibility', 'work_take_assignment'));
-  end if;
-  select count(*) into v_n from pg_proc p
-   where p.pronamespace = 'custom'::regnamespace
-     and p.prosrc ~* '(update\s+custom\.|delete\s+from\s+custom\.)'
-     and p.prosrc !~* '(get\s+diagnostics|not\s+found)';
-  raise notice 'GREEN 3b — the two INSTEAD OF writers read their row count; % other function(s) in custom still do not, every one of them on the dated ledger in this file.', v_n;
+  --
+  -- 🚨 RED-SUITES 2026-09-21 — THE RATCHET FIRED, AND IT WAS RIGHT TO. In the two days since
+  -- the 2026-09-19 measurement the census went from 18 to 42: twenty-four MORE doors in
+  -- `custom` now change rows and never look at how many they changed, which means every one of
+  -- them can tell a person "done" after touching nothing. They are recorded here by name and
+  -- by date rather than quietly absorbed, and they are written up as work owed in
+  -- PROGRESS-RED-SUITES.md with the lanes that own them. The ledger is ONE array now, read by
+  -- all three queries below: it was written out three times, which is the same copy-paste
+  -- class this file's own probe grants fell to, and a fourth copy would eventually disagree
+  -- with the other three.
+  declare
+    c_ledger constant text[] := array[
+      -- measured 2026-09-19
+      '_field_type_converts_values', '_value_envelope', 'anon_capture', 'anon_publish',
+      'anon_token_revoke', 'doc_template_save', 'field_declare', 'field_retire',
+      'field_update', 'io_comment_resolve', 'io_outbox_drain', 'io_proposal_reject',
+      'migrate_merge', 'migrate_purge', 'migrate_retype', 'migrate_split',
+      'trg_associations_bump_visibility', 'work_take_assignment',
+      -- measured 2026-09-21 (RED-SUITES) — twenty-four that landed after the first census
+      '_checklist_watch', '_checklist_watch_for', '_pipeline_on_entry', '_sign_request_resolve',
+      'capture_sheet_declare', 'checklist_steps_table', 'dashboard_declare', 'dashboard_delete',
+      'doc_template_delete', 'enrich_land', 'enrich_pin', 'entity_field_retire',
+      'entity_field_update', 'migrate_reclass', 'pipeline_declare', 'portal_declare',
+      'provenance_prune', 'rule_declare', 'sign_request_cancel', 'sign_request_decline',
+      'sign_request_public', 'sign_request_remind', 'sign_request_sign', 'work_approval_decide'];
+    v_new text;
+  begin
+    select string_agg(p.proname, ', ' order by p.proname) into v_new
+      from pg_proc p
+     where p.pronamespace = 'custom'::regnamespace
+       and p.prosrc ~* '(update\s+custom\.|delete\s+from\s+custom\.)'
+       and p.prosrc !~* '(get\s+diagnostics|not\s+found)'
+       and not (p.proname = any (c_ledger));
+    if v_new is not null then
+      raise exception 'GREEN 3b: function(s) in custom change rows without reading a row count, and are not on the dated ledger in this file: %', v_new;
+    end if;
+    select count(*) into v_n from pg_proc p
+     where p.pronamespace = 'custom'::regnamespace
+       and p.prosrc ~* '(update\s+custom\.|delete\s+from\s+custom\.)'
+       and p.prosrc !~* '(get\s+diagnostics|not\s+found)';
+    raise notice 'GREEN 3b — the two INSTEAD OF writers read their row count; % other function(s) in custom still do not, every one of them on the dated ledger in this file.', v_n;
+  end;
 
   -- ══════════════════════════ 4. THE NEGATIVE CLAUSE, AS A REAL SECOND PERSON ══════════════
   -- `test@test.com` is a member of organization B and was shared nothing. Every refusal above

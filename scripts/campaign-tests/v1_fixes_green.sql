@@ -69,6 +69,7 @@ declare
   v_bytes   integer;
   v_msg     text;
   v_caught  text;
+  v_hint    text;
   v_res     jsonb;
   v_boss    text := current_user;   -- the connected role, for the fixture steps no door covers
 begin
@@ -163,7 +164,7 @@ begin
   begin
     v_rec := custom.record_write(v_org, v_table, jsonb_build_object('nm', 'through the door'));
   exception when others then
-    get stacked diagnostics v_caught = message_text;
+    get stacked diagnostics v_caught = message_text, v_hint = pg_exception_hint;
   end;
   if v_caught is null then
     raise exception 'GREEN 1b FAILED: "authenticated" wrote record % THROUGH custom.record_write while this organization''s store is switched off. The door still launders the caller.', v_rec;
@@ -171,10 +172,21 @@ begin
   if v_caught not like '%custom.record_write%' then
     raise exception 'GREEN 1b FAILED: refused, but the refusal does not name the door it was refused at: "%"', v_caught;
   end if;
-  if v_caught not ilike '%switched off%' then
-    raise exception 'GREEN 1b FAILED: refused, but the refusal does not say the store is switched off: "%"', v_caught;
+  -- 🚨 RED-SUITES 2026-09-21 — RE-PINNED TO THE SENTENCE THE DOOR GIVES NOW, WHICH IS BETTER.
+  -- This clause used to demand the words "switched off". The ruling that changed them is
+  -- `limitsfix_a_new_organization_has_the_store_on.sql`: real-data crew D built a table and its
+  -- columns before any door mentioned the switch, and the refusal they finally met named a knob,
+  -- a campaign checklist and a database role — nothing a person could act on. The door is
+  -- exactly as closed; the sentence now says WHOSE organization it is about and the HINT says
+  -- WHERE the switch is. So the clause asserts the promise rather than the old phrasing, and it
+  -- asserts the remedy too — which the old one never did.
+  if v_caught not ilike '%has not turned the record store on%' then
+    raise exception 'GREEN 1b FAILED: refused, but the refusal does not say this organization has not turned the store on: "%"', v_caught;
   end if;
-  raise notice '1b. the SAME person THROUGH THE DOOR is refused, and the refusal NAMES the door and the switch: "%"', v_caught;
+  if coalesce(v_hint, '') not ilike '%turn the record store on%' then
+    raise exception 'GREEN 1b FAILED: refused and said the store is off, but told the person nothing about where to turn it on: hint "%"', coalesce(v_hint, '<none>');
+  end if;
+  raise notice '1b. the SAME person THROUGH THE DOOR is refused, the refusal NAMES the door and the switch ("%"), and the hint says where to throw it.', v_caught;
 
   -- 1c. THE POSITIVE CONTROL, same person, same door, same table, switch back on — and it
   --     LANDS. A door that refused everything would pass 1b and fail here.

@@ -93,6 +93,20 @@ insert into iam.memberships (organization_id, container_type, container_id, user
 values (:ORG_A, 'organization', :ORG_A, :ADMIN, 'owner',  'active'),
        (:ORG_A, 'organization', :ORG_A, :DANA,  'member', 'active'),
        (:ORG_B, 'organization', :ORG_B, :ADMIN, 'owner',  'active');
+
+-- 🚨 RED-SUITES 2026-09-21 — "FRESH" NO LONGER MEANS "OFF", SO THE FIXTURE SAYS OFF OUT LOUD.
+-- The ruling that changed the promise: `limitsfix_a_new_organization_has_the_store_on.sql`,
+-- corrected the same day by `limitsfix_the_store_default_is_a_read_not_a_row.sql` — an
+-- organization born after 2026-09-21 01:30:44+00 with no override of its own now reads the
+-- store as ON, deliberately, because 515 of 588 organizations resolved to the platform default
+-- of false and every organization the real-data crews made was dead on arrival. A suite that
+-- makes two throwaway organizations therefore makes two organizations whose store is ON, and
+-- PART 1's claim — "with the store OFF, nothing moved" — became untestable by accident rather
+-- than false. So the OFF state is now a written row and not an absence: the clauses below are
+-- unchanged and still assert exactly what they always asserted.
+insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+values ('custom','system_enabled','organization', :ORG_A, :ORG_A, 'false'::jsonb, 'guardswitch_green step 0 — the OFF state PART 1 is about'),
+       ('custom','system_enabled','organization', :ORG_B, :ORG_B, 'false'::jsonb, 'guardswitch_green step 0 — the OFF state PART 1 is about');
 commit;
 
 
@@ -138,8 +152,10 @@ begin
   -- 1a — WITH THE STORE OFF, NOTHING MOVED. This is the whole safety claim of the change, and
   -- it is asked of the two doors a client has for it: `custom.store_is_open` (declared
   -- client-callable by lane W6-EXT) and `platform.relations_are_on`.
+  -- (RED-SUITES 2026-09-21: step 0 now WRITES the off state — see the note there. Before the
+  --  LIMITS-FIX birth default this organization was off by saying nothing.)
   if custom.store_is_open(v_a) then
-    raise exception '1a FAILED — a fresh organization already reads as on the store.'; end if;
+    raise exception '1a FAILED — an organization whose switch says off reads as on the store.'; end if;
   if platform.relations_are_on(v_a) then
     raise exception '1a FAILED — relations read ON for an organization whose store is off.'; end if;
 
