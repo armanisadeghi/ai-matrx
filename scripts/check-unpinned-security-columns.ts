@@ -215,10 +215,17 @@ export type Severity = "critical" | "warning";
  * the guard — an entry can never quietly outlive the thing it explains.
  *
  * `descriptive` says: the VALUE is a name, a number printed on a document, a duration, a
- * boolean, or a foreign key into our own catalog. It is not a bearer credential, so the
- * "unpinned secret" rule does not apply. It says NOTHING about the column's other rules: an
- * identity or state column keeps its own classification, and a `descriptive` verdict never
- * clears a sibling column.
+ * boolean, an enum slot, or a foreign key into our own catalog — it names no principal and
+ * grants nothing, so NONE of the name rules apply to it. It is the whole answer for that ONE
+ * column and never touches a sibling.
+ *
+ * 🚨 IT HAS TO BE THE WHOLE ANSWER, and the column that proved it is `agent.message_template
+ * .role`. A first version of this let `descriptive` suppress only the SECRET rule, leaving the
+ * IDENTITY rule to fire — so a column whose four legal values are `user, system, assistant,
+ * tool` stayed CRITICAL because it is spelt "role". The point of reading a column is to settle
+ * what the value IS; a verdict that the name then overrules is not a classification, it is a
+ * comment. What keeps this honest is not narrowness, it is the staleness check below: an entry
+ * naming a column that was dropped, renamed, or withdrawn from the client grant FAILS the run.
  *
  * SENSITIVE PERSONAL DATA IS A DIFFERENT QUESTION AND A DIFFERENT GUARD. An SSN or a national
  * identifier is not a credential — it is special-category data, and it belongs to
@@ -238,6 +245,13 @@ export interface ColumnClassification {
 }
 
 export const COLUMN_CLASSIFICATION: Readonly<Record<string, ColumnClassification>> = {
+  // ── agent: "role" means the LLM CHAT MESSAGE ROLE, not an authorization role ─────────────
+  "agent.message_template.role": {
+    verdict: "descriptive",
+    reason:
+      "the CHAT MESSAGE ROLE of a prompt template line -- the `message_role` enum, whose four values are user, system, assistant, tool. It decides WHICH SLOT a message occupies in a prompt, not what anybody may DO. The live column holds only 'system' and 'user'. An earlier census ruled this one \"A DOOR MUST OWN IT -- this column decides what somebody may DO\"; that was the column's NAME talking, and it is wrong. `message_role` is used on exactly this one column in the whole database.",
+    evidence: "pg_type message_role = {user, system, assistant, tool}; agent.message_template.role is its only user; live values system x10, user x2",
+  },
   // ── hr: "credential" means an OCCUPATIONAL QUALIFICATION ────────────────────────────────
   "hr.course.grants_credential": {
     verdict: "descriptive",
@@ -528,8 +542,11 @@ export function classify(
    */
   descriptive = false,
 ): Severity | null {
+  // A column that has been READ and found to hold no principal and no grant is settled. See
+  // `COLUMN_CLASSIFICATION`: this is the whole answer for this one column, and nothing else.
+  if (descriptive) return null;
   const vocabulary = provenVocabulary || VOCABULARY_NOT_A_SECRET.some((re) => re.test(column));
-  if (!descriptive && !vocabulary && SECRET_COLUMN.some((re) => re.test(column))) return "critical";
+  if (!vocabulary && SECRET_COLUMN.some((re) => re.test(column))) return "critical";
   if (IDENTITY_COLUMN.some((re) => re.test(column))) {
     if (ctx.withCheckIsNull) return "critical";
     // 3. THE api_keys SHAPE. This policy IS in the business of pinning identity — it names
@@ -1042,6 +1059,35 @@ function selfTest(): number {
     Object.values(COLUMN_CLASSIFICATION).every((c) => c.reason.length > 40 && c.evidence.length > 0),
     "every read classification carries what the value IS and where that was read — an entry " +
       "without a reason is an exemption, not a judgement",
+  );
+
+  // THE IDENTITY HALF OF THE SAME RULE, on the column that proved `descriptive` has to be the
+  // whole answer: agent.message_template.role is the LLM CHAT MESSAGE ROLE (user / system /
+  // assistant / tool), not an authorization role. An earlier census ruled it "A DOOR MUST OWN
+  // IT -- this column decides what somebody may DO". That was the NAME talking.
+  const messageTemplate = {
+    schema: "agent",
+    table: "message_template",
+    policy: "std_insert",
+    cmd: "a",
+    withCheck: "((created_by = ( SELECT auth.uid() AS uid)) AND iam.has_org_access(organization_id))",
+    usingExpr: null,
+    columns: ["id", "role", "content", "user_id", "created_by", "organization_id"],
+  } as const;
+  say(
+    findingsFor({ ...messageTemplate, table: "unread_table" })
+      .some((f) => f.column === "role" && f.severity === "critical"),
+    "an UNREAD `role` is CRITICAL — the identity rule fires until somebody reads the column",
+  );
+  say(
+    !findingsFor({ ...messageTemplate }).some((f) => f.column === "role"),
+    "agent.message_template.role, READ and classified `descriptive` (the message_role enum: " +
+      "user/system/assistant/tool), is NOT a finding — a read verdict the NAME can overrule is " +
+      "a comment, not a classification",
+  );
+  say(
+    findingsFor({ ...messageTemplate }).some((f) => f.column === "user_id" && f.severity === "critical"),
+    "…and it settles ONLY that column: `user_id` on the same table is still CRITICAL",
   );
 
   // GREEN — the shape it has today: a restrictive refusal means the census never yields the

@@ -1,6 +1,1 @@
-[
-  "agent.message_template|std_insert|a|role",
-  "agent.message_template|std_update|w|role",
-  "hr.access_audit|std_insert|a|actor_user_id",
-  "hr.access_audit|std_update|w|actor_user_id"
-]
+[]
