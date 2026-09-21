@@ -157,11 +157,29 @@ drop trigger if exists zz_memo_bump_d on platform.knob_override;
 drop trigger if exists zz_memo_bump_i on platform.knob_rung_lock;
 drop trigger if exists zz_memo_bump_u on platform.knob_rung_lock;
 drop trigger if exists zz_memo_bump_d on platform.knob_rung_lock;
+-- 🚨 THE MEMO IS PLATFORM INFRASTRUCTURE NOW, AND THIS INVERSE STOPS DEMOLISHING IT
+-- (lane RED-SUITES-3, 2026-09-21).
+--
+-- This file used to drop the whole memo — `memo_get`, `memo_put`, `memo_all`, `memo_seat`,
+-- `memo_ceiling`, `memo_clear`, `memo_bump` — because WRITEPERF's up-file created them. Five
+-- later systems build on them, and the catalogue says so out loud: `custom.assert_store_door`,
+-- the ONE body every write door in the record store reaches, reads `platform.memo_get`, and a
+-- STATEMENT-level clearing family (`memo_clear_stmt`, `memo_clear_on_structure`,
+-- `memo_clear_on_structure_row`, `memo_clear_on_reach_loss`) is attached 42 times across
+-- `custom.record`, `custom.portal`, `custom.portal_principal` and `iam.organizations`, every
+-- one of those bodies calling `platform.memo_clear()`. So the inverse left the store unable
+-- to take a single write, and `writeperf_parity.sql` died on its first one:
+--     ERROR:  function platform.memo_clear() does not exist
+--     CONTEXT:  PL/pgSQL function platform.memo_clear_stmt() line 5 at PERFORM
+-- and, once that was cleared, on
+--     ERROR:  function platform.memo_get(text) does not exist
+--     CONTEXT:  PL/pgSQL function custom.assert_store_door(uuid,text) line 8 at IF
+-- before it had compared a single thing. A broken store is not the defect this file exists to
+-- restore.
+--
+-- WHAT THE DEFECT ACTUALLY IS: knob resolution asking the same question over and over. That
+-- is restored in full by the `platform.knob_resolve` body at the top of this file — the
+-- catalogue's own bytes from before the memo, which read no cache — plus the nine bump
+-- triggers above, which is what stops a knob write from invalidating anything. The memo STORE
+-- stays; nothing reads it for a knob any more, which is precisely the slow path.
 drop function if exists platform.knob_resolve_uncached(text, text, uuid, uuid, jsonb);
-drop function if exists platform.memo_bump();
-drop function if exists platform.memo_clear();
-drop function if exists platform.memo_put(text, text);
-drop function if exists platform.memo_get(text);
-drop function if exists platform.memo_all();
-drop function if exists platform.memo_seat();
-drop function if exists platform.memo_ceiling();
