@@ -107,6 +107,7 @@ if $STRICT; then
         "Cross-deployment links (a CORS preflight on every www hover)|pnpm check:cross-deployment-links:strict"
         "Agent addresses (a system agent linked into the user shell)|pnpm check:agent-links"
         "Sign-out scope (a bare signOut() logs the account out of every device)|pnpm check:signout-scope"
+        "Service-role writes to provenance-governed tables (the DB refuses them with 23514)|pnpm check:admin-client-governed-writes"
         "Hidden failure announcements (an error only a screen reader can perceive is a dead button)|pnpm check:hidden-alerts"
         # THE UNIFIED-DATA CAMPAIGN SWITCH MUST COVER SOMETHING. The campaign's
         # code ships continuously — any lane's `release*:` commit builds the
