@@ -38,7 +38,7 @@ function createUser(name: string, email: string): User {
 }
 
 // Try typing and see type hints!
-const user = createUser('John Doe', 'john@example.com');
+const user = createUser('Renata Oduya', 'renata.oduya@blueridgerecycling.com');
 console.log(user);`;
 
 const SAMPLE_TSX = `// React TypeScript (TSX)

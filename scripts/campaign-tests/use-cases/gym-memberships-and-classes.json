@@ -1,6 +1,6 @@
 {
   "use_case": "A gym tracks membership plans, member status/billing, and its recurring class schedule with instructors and capacity.",
-  "organization_name": "Fixture Ironline Fitness",
+  "organization_name": "Ironline Fitness",
   "settings": {
     "test_fixture": true
   },
@@ -30,315 +30,315 @@
     "members": [
       {
         "member_name": "Wei Singh",
-        "email": "wei.singh.m0@example.org",
+        "email": "wei.singh@ironlinefitness.com",
         "plan_name": "Annual Unlimited",
         "join_date": "2024-08-02",
         "status": "Active"
       },
       {
         "member_name": "Noah Chen",
-        "email": "noah.chen.m1@example.org",
+        "email": "noah.chen@ironlinefitness.com",
         "plan_name": "Annual Unlimited",
         "join_date": "2025-09-08",
         "status": "Active"
       },
       {
         "member_name": "James Okoye",
-        "email": "james.okoye.m2@example.org",
+        "email": "james.okoye@ironlinefitness.com",
         "plan_name": "Student Basic",
         "join_date": "2025-09-07",
         "status": "Active"
       },
       {
         "member_name": "Elena Novak",
-        "email": "elena.novak.m3@example.org",
+        "email": "elena.novak@ironlinefitness.com",
         "plan_name": "Basic Monthly",
         "join_date": "2024-05-05",
         "status": "Paused"
       },
       {
         "member_name": "Linda Nakamura",
-        "email": "linda.nakamura.m4@example.org",
+        "email": "linda.nakamura@ironlinefitness.com",
         "plan_name": "Annual Unlimited",
         "join_date": "2024-08-02",
         "status": "Cancelled"
       },
       {
         "member_name": "Daniel Chen",
-        "email": "daniel.chen.m5@example.org",
+        "email": "daniel.chen@ironlinefitness.com",
         "plan_name": "Student Basic",
         "join_date": "2025-08-09",
         "status": "Cancelled"
       },
       {
         "member_name": "Maria Alvarez",
-        "email": "maria.alvarez.m6@example.org",
+        "email": "maria.alvarez@ironlinefitness.com",
         "plan_name": "Student Basic",
         "join_date": "2025-06-07",
         "status": "Active"
       },
       {
         "member_name": "Samuel Singh",
-        "email": "samuel.singh.m7@example.org",
+        "email": "samuel.singh@ironlinefitness.com",
         "plan_name": "Unlimited Monthly",
         "join_date": "2024-10-02",
         "status": "Paused"
       },
       {
         "member_name": "Wei Okoye",
-        "email": "wei.okoye.m8@example.org",
+        "email": "wei.okoye@ironlinefitness.com",
         "plan_name": "Annual Unlimited",
         "join_date": "2025-10-05",
         "status": "Paused"
       },
       {
         "member_name": "Wei Larsen",
-        "email": "wei.larsen.m9@example.org",
+        "email": "wei.larsen@ironlinefitness.com",
         "plan_name": "Student Basic",
         "join_date": "2024-03-05",
         "status": "Active"
       },
       {
         "member_name": "Marcus Alvarez",
-        "email": "marcus.alvarez.m10@example.org",
+        "email": "marcus.alvarez@ironlinefitness.com",
         "plan_name": "Annual Unlimited",
         "join_date": "2025-05-05",
         "status": "Active"
       },
       {
         "member_name": "Tomas Singh",
-        "email": "tomas.singh.m11@example.org",
+        "email": "tomas.singh@ironlinefitness.com",
         "plan_name": "Unlimited Monthly",
         "join_date": "2024-12-07",
         "status": "Paused"
       },
       {
         "member_name": "Wei Chen",
-        "email": "wei.chen.m12@example.org",
+        "email": "wei.chen@ironlinefitness.com",
         "plan_name": "Student Basic",
         "join_date": "2024-02-08",
         "status": "Paused"
       },
       {
         "member_name": "Samuel Chen",
-        "email": "samuel.chen.m13@example.org",
+        "email": "samuel.chen@ironlinefitness.com",
         "plan_name": "Annual Unlimited",
         "join_date": "2024-11-08",
         "status": "Active"
       },
       {
         "member_name": "Grace Kowalski",
-        "email": "grace.kowalski.m14@example.org",
+        "email": "grace.kowalski@ironlinefitness.com",
         "plan_name": "Annual Unlimited",
         "join_date": "2025-05-06",
         "status": "Cancelled"
       },
       {
         "member_name": "Sofia Ferreira",
-        "email": "sofia.ferreira.m15@example.org",
+        "email": "sofia.ferreira@ironlinefitness.com",
         "plan_name": "Student Basic",
         "join_date": "2025-06-08",
         "status": "Active"
       },
       {
         "member_name": "Aisha Novak",
-        "email": "aisha.novak.m16@example.org",
+        "email": "aisha.novak@ironlinefitness.com",
         "plan_name": "Annual Unlimited",
         "join_date": "2025-10-06",
         "status": "Cancelled"
       },
       {
         "member_name": "Tomas Okoye",
-        "email": "tomas.okoye.m17@example.org",
+        "email": "tomas.okoye@ironlinefitness.com",
         "plan_name": "Basic Monthly",
         "join_date": "2025-06-01",
         "status": "Active"
       },
       {
-        "member_name": "James Okoye",
-        "email": "james.okoye.m18@example.org",
+        "member_name": "Devin Okonkwo",
+        "email": "devin.okonkwo@ironlinefitness.com",
         "plan_name": "Unlimited Monthly",
         "join_date": "2024-05-05",
         "status": "Active"
       },
       {
         "member_name": "Elena Singh",
-        "email": "elena.singh.m19@example.org",
+        "email": "elena.singh@ironlinefitness.com",
         "plan_name": "Basic Monthly",
         "join_date": "2024-09-09",
         "status": "Active"
       },
       {
         "member_name": "Carlos Chen",
-        "email": "carlos.chen.m20@example.org",
+        "email": "carlos.chen@ironlinefitness.com",
         "plan_name": "Unlimited Monthly",
         "join_date": "2025-03-08",
         "status": "Paused"
       },
       {
         "member_name": "Grace Alvarez",
-        "email": "grace.alvarez.m21@example.org",
+        "email": "grace.alvarez@ironlinefitness.com",
         "plan_name": "Basic Monthly",
         "join_date": "2025-11-02",
         "status": "Cancelled"
       },
       {
         "member_name": "Elena Ferreira",
-        "email": "elena.ferreira.m22@example.org",
+        "email": "elena.ferreira@ironlinefitness.com",
         "plan_name": "Basic Monthly",
         "join_date": "2024-10-06",
         "status": "Active"
       },
       {
         "member_name": "Carlos Singh",
-        "email": "carlos.singh.m23@example.org",
+        "email": "carlos.singh@ironlinefitness.com",
         "plan_name": "Basic Monthly",
         "join_date": "2025-11-08",
         "status": "Active"
       },
       {
         "member_name": "Yuki Singh",
-        "email": "yuki.singh.m24@example.org",
+        "email": "yuki.singh@ironlinefitness.com",
         "plan_name": "Annual Unlimited",
         "join_date": "2024-03-09",
         "status": "Active"
       },
       {
         "member_name": "Carlos Ferreira",
-        "email": "carlos.ferreira.m25@example.org",
+        "email": "carlos.ferreira@ironlinefitness.com",
         "plan_name": "Student Basic",
         "join_date": "2024-07-05",
         "status": "Active"
       },
       {
         "member_name": "James Singh",
-        "email": "james.singh.m26@example.org",
+        "email": "james.singh@ironlinefitness.com",
         "plan_name": "Annual Unlimited",
         "join_date": "2025-05-09",
         "status": "Active"
       },
       {
         "member_name": "Maria Ferreira",
-        "email": "maria.ferreira.m27@example.org",
+        "email": "maria.ferreira@ironlinefitness.com",
         "plan_name": "Basic Monthly",
         "join_date": "2025-07-01",
         "status": "Active"
       },
       {
         "member_name": "Sofia Nakamura",
-        "email": "sofia.nakamura.m28@example.org",
+        "email": "sofia.nakamura@ironlinefitness.com",
         "plan_name": "Basic Monthly",
         "join_date": "2025-09-05",
         "status": "Active"
       },
       {
-        "member_name": "Wei Okoye",
-        "email": "wei.okoye.m29@example.org",
+        "member_name": "Bianca Torres",
+        "email": "bianca.torres@ironlinefitness.com",
         "plan_name": "Annual Unlimited",
         "join_date": "2024-08-06",
         "status": "Paused"
       },
       {
         "member_name": "Grace Singh",
-        "email": "grace.singh.m30@example.org",
+        "email": "grace.singh@ironlinefitness.com",
         "plan_name": "Student Basic",
         "join_date": "2025-09-02",
         "status": "Active"
       },
       {
-        "member_name": "Grace Alvarez",
-        "email": "grace.alvarez.m31@example.org",
+        "member_name": "Milo Vasquez",
+        "email": "milo.vasquez@ironlinefitness.com",
         "plan_name": "Annual Unlimited",
         "join_date": "2024-04-05",
         "status": "Active"
       },
       {
         "member_name": "Aisha Larsen",
-        "email": "aisha.larsen.m32@example.org",
+        "email": "aisha.larsen@ironlinefitness.com",
         "plan_name": "Unlimited Monthly",
         "join_date": "2025-12-01",
         "status": "Paused"
       },
       {
         "member_name": "Marcus Kowalski",
-        "email": "marcus.kowalski.m33@example.org",
+        "email": "marcus.kowalski@ironlinefitness.com",
         "plan_name": "Unlimited Monthly",
         "join_date": "2024-02-03",
         "status": "Paused"
       },
       {
-        "member_name": "Wei Singh",
-        "email": "wei.singh.m34@example.org",
+        "member_name": "Renata Solis",
+        "email": "renata.solis@ironlinefitness.com",
         "plan_name": "Student Basic",
         "join_date": "2024-02-01",
         "status": "Cancelled"
       },
       {
         "member_name": "Elena Larsen",
-        "email": "elena.larsen.m35@example.org",
+        "email": "elena.larsen@ironlinefitness.com",
         "plan_name": "Unlimited Monthly",
         "join_date": "2024-01-07",
         "status": "Active"
       },
       {
-        "member_name": "Tomas Okoye",
-        "email": "tomas.okoye.m36@example.org",
+        "member_name": "Dashiell Marsh",
+        "email": "dashiell.marsh@ironlinefitness.com",
         "plan_name": "Basic Monthly",
         "join_date": "2024-04-08",
         "status": "Paused"
       },
       {
         "member_name": "Wei Reyes",
-        "email": "wei.reyes.m37@example.org",
+        "email": "wei.reyes@ironlinefitness.com",
         "plan_name": "Student Basic",
         "join_date": "2025-08-07",
         "status": "Active"
       },
       {
         "member_name": "Priya Kowalski",
-        "email": "priya.kowalski.m38@example.org",
+        "email": "priya.kowalski@ironlinefitness.com",
         "plan_name": "Unlimited Monthly",
         "join_date": "2024-06-01",
         "status": "Active"
       },
       {
         "member_name": "Grace Reyes",
-        "email": "grace.reyes.m39@example.org",
+        "email": "grace.reyes@ironlinefitness.com",
         "plan_name": "Unlimited Monthly",
         "join_date": "2025-06-09",
         "status": "Active"
       },
       {
         "member_name": "Samuel Nakamura",
-        "email": "samuel.nakamura.m40@example.org",
+        "email": "samuel.nakamura@ironlinefitness.com",
         "plan_name": "Annual Unlimited",
         "join_date": "2025-05-04",
         "status": "Cancelled"
       },
       {
         "member_name": "Aisha Singh",
-        "email": "aisha.singh.m41@example.org",
+        "email": "aisha.singh@ironlinefitness.com",
         "plan_name": "Unlimited Monthly",
         "join_date": "2025-10-01",
         "status": "Paused"
       },
       {
         "member_name": "Marcus Novak",
-        "email": "marcus.novak.m42@example.org",
+        "email": "marcus.novak@ironlinefitness.com",
         "plan_name": "Student Basic",
         "join_date": "2025-01-06",
         "status": "Paused"
       },
       {
         "member_name": "Noah Okoye",
-        "email": "noah.okoye.m43@example.org",
+        "email": "noah.okoye@ironlinefitness.com",
         "plan_name": "Basic Monthly",
         "join_date": "2025-09-04",
         "status": "Active"
       },
       {
         "member_name": "Marcus Ferreira",
-        "email": "marcus.ferreira.m44@example.org",
+        "email": "marcus.ferreira@ironlinefitness.com",
         "plan_name": "Annual Unlimited",
         "join_date": "2025-03-08",
         "status": "Cancelled"

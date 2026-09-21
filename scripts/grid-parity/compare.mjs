@@ -195,7 +195,25 @@ async function clickCell(page, job, column, opts = {}) {
     [job, column],
   );
   if (!box) throw new Error(`cell ${job}/${column} not found`);
-  await page.mouse.click(box.x, box.y, opts);
+  // `page.mouse.click(x, y, options)` has NO `modifiers` option — that only
+  // exists on `locator.click()` / `elementHandle.click()`. Passing
+  // `{ modifiers: [...] }` here is silently ignored by Playwright, so a
+  // "shift-click" probe written this way never actually holds Shift down.
+  // Found live 2026-09-20: `select.range`'s `byShiftClick` recorded a single
+  // cell ("Cleo") — not because the grid mishandles shift-click, but because
+  // the probe itself never pressed it. Holding the modifier keys explicitly
+  // around the click is what a real shift-click is.
+  const mods = opts.modifiers || [];
+  for (const m of mods) await page.keyboard.down(m);
+  try {
+    await page.mouse.click(box.x, box.y, {
+      button: opts.button,
+      clickCount: opts.clickCount,
+      delay: opts.delay,
+    });
+  } finally {
+    for (const m of mods) await page.keyboard.up(m);
+  }
   return box;
 }
 

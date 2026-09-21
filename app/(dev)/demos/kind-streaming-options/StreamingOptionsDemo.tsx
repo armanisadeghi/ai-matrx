@@ -216,7 +216,7 @@ function KindStreamCard({ demo }: { demo: DemoKind }) {
       setBlock(null);
       setRunning(!instant);
       // Bare structured-output wire: ONE region, the provider shape.
-      const wire = buildWireText(demo.example, demo.kind, "bare");
+      const wire = buildWireText(demo.example, demo.kind, "bare"); // matrx-real-data:allow `demo.example` is the typed `example` field on the DemoSpec, not a domain
       const accumulator = new StreamBlockAccumulator(
         `stream-options-${demo.kind}`,
         (payload) => {

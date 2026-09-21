@@ -29,11 +29,11 @@
 #   1. --ship: commit the named paths in this checkout (pathspec-scoped)
 #   2. start applying pending migrations (background, aidream's applier)
 #   3. fetch origin/main            ← the ONE thing that can stop a release
-#   4. move the private worktree `.wt/release` to origin/main
+#   4. assemble the release tree on origin/main with git plumbing (no worktree)
 #   5. merge this checkout's unpushed commits into it (a conflict = ship main
 #      anyway + an ERROR finding; nothing is ever stashed or rebased)
 #   6. wait for the migrations (a failure = ERROR finding, never a stop)
-#   7. bump package.json in the worktree, commit, push
+#   7. bump package.json in that tree, commit-tree, push
 #      (a lost push race = fetch, reset to the new main, re-merge, re-bump, retry,
 #       up to five times ← the OTHER thing that can stop a release)
 #   8. push the tag, fast-forward this checkout if it can, print ONE line:
@@ -65,7 +65,7 @@
 # release commit carries package.json only, and --ship commits EXACTLY the
 # paths the invoker named — never `git add -A`, never "whatever is staged".
 # Release v0.4.1575 (2026-08-31) shipped another lane's mid-edit import that
-# way. The private worktree makes the law structural: the release commit is
+# way. Building the commit with plumbing makes the law structural: it is
 # built on origin/main, where nobody's half-written file exists.
 set -euo pipefail
 
@@ -236,7 +236,6 @@ source "$SCRIPT_DIR/release-stage.sh"
 # ── Findings: printed as a table AND written as one JSON line each ───────────
 SHIP_PUSH_ATTEMPTS=5
 SHIP_FINDINGS=()
-SHIP_WT=""
 SHIP_START=$SECONDS
 SHIP_FINDINGS_JSON="${SHIP_FINDINGS_JSON:-${RELEASE_LOG_DIR:-$REPO_ROOT/tmp/release-logs}/findings-ship-${RELEASE_LOG_STAMP:-$$}.jsonl}"
 # ship_finding LEVEL CATEGORY "title" ["remedy"]
@@ -271,19 +270,42 @@ ship_print_findings() {
         printf '%-8s %-12s %s%s\n' "$f_level" "$f_cat" "$f_text" "${f_remedy:+  → $f_remedy}"
     done
 }
-# ONE persistent private worktree, moved to origin/main each release. Creating a
-# fresh one checks out every file (minutes on this repo); moving this one
-# rewrites only what changed. Gitignored (.wt/); nobody else writes there.
-ship_prepare_worktree() {
-    SHIP_WT="$REPO_ROOT/.wt/release"
-    if [[ -e "$SHIP_WT/.git" ]] \
-        && ship_quiet git -C "$SHIP_WT" checkout --detach --force --quiet "$REMOTE/$BRANCH" \
-        && ship_quiet git -C "$SHIP_WT" reset --hard --quiet "$REMOTE/$BRANCH"; then
+# THE RELEASE COMMIT IS BUILT IN THE REPOSITORY DATABASE, NOT IN A WORKING FOLDER.
+# Arman 2026-09-20: local worktrees and branches are forbidden — the shared
+# checkout is the one source of truth. The release commit is assembled with git
+# plumbing (merge-tree, a temporary index, commit-tree) on top of origin/main:
+# no worktree, no branch, no stash; the shared checkout's files are never touched.
+ship_base_tree() {   # sets SHIP_BASE, SHIP_BASE_TREE, SHIP_PARENTS
+    SHIP_BASE=$(git rev-parse "$REMOTE/$BRANCH")
+    SHIP_PARENTS=(-p "$SHIP_BASE")
+    if git merge-base --is-ancestor "$SHIP_LOCAL_HEAD" "$SHIP_BASE"; then
+        SHIP_BASE_TREE=$(git rev-parse "$SHIP_BASE^{tree}")
         return 0
     fi
-    ship_quiet git worktree remove --force "$SHIP_WT" || rm -rf -- "$SHIP_WT"
-    ship_quiet git worktree prune || true
-    ship_quiet git worktree add --detach "$SHIP_WT" "$REMOTE/$BRANCH"
+    local merged
+    if merged=$(git merge-tree --write-tree "$SHIP_BASE" "$SHIP_LOCAL_HEAD" 2>/dev/null); then
+        SHIP_BASE_TREE=$merged
+        SHIP_PARENTS=(-p "$SHIP_BASE" -p "$SHIP_LOCAL_HEAD")
+    else
+        SHIP_BASE_TREE=$(git rev-parse "$SHIP_BASE^{tree}")
+        ship_finding "ERROR" "Git" "Local commits conflict with $REMOTE/$BRANCH — shipped $BRANCH without ${SHIP_LOCAL_HEAD:0:9}" "git pull --no-rebase origin main"
+    fi
+}
+ship_build_commit() {  # uses CURRENT_VERSION NEW_VERSION RELEASE_COMMIT_MSG; sets RELEASE_SHA
+    local idx blob tree
+    idx=$(mktemp) && rm -f "$idx"
+    GIT_INDEX_FILE="$idx" git read-tree "$SHIP_BASE_TREE" || return 1
+    blob=$(git cat-file -p "$SHIP_BASE_TREE:$VERSION_FILE" \
+        | sed "s/^  \"version\": \"${CURRENT_VERSION}\"/  \"version\": \"${NEW_VERSION}\"/" \
+        | git hash-object -w --stdin) || return 1
+    # Do not use grep -q here: with pipefail, grep can close the pipe before
+    # git cat-file finishes writing package.json and turn a valid blob into a
+    # SIGPIPE failure.
+    git cat-file -p "$blob" | grep "^  \"version\": \"${NEW_VERSION}\"" >/dev/null || return 1
+    GIT_INDEX_FILE="$idx" git update-index --cacheinfo "100644,$blob,$VERSION_FILE" || return 1
+    tree=$(GIT_INDEX_FILE="$idx" git write-tree) || return 1
+    rm -f "$idx"
+    RELEASE_SHA=$(git commit-tree "$tree" "${SHIP_PARENTS[@]}" -m "$RELEASE_COMMIT_MSG") || return 1
 }
 # Pending migrations sweep: this repo has no DDL path of its own; the co-located
 # aidream checkout owns the Postgres write path and the shared ledger.
@@ -316,7 +338,7 @@ ship_commit_message() {  # tag → "prefix vX.Y.Z[ - note]"
 }
 
 # ── --ship: commit EXACTLY the named paths in this checkout, before anything ─
-# The commit rides into the release through the worktree merge below. With no
+# The commit rides into the release through the plumbing merge below. With no
 # named paths there is nothing of yours to commit: it is a bump-only release
 # and every dirty path stays exactly as its owner left it.
 if [[ "${RELEASE_PHASE:-ship}" == "ship" ]] && $SHIP_MODE && [[ ${#SHIP_PATHS[@]} -gt 0 ]]; then
@@ -395,9 +417,6 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
     ship_mark "fetched $REMOTE/$BRANCH"
 
     SHIP_LOCAL_HEAD=$(git rev-parse HEAD)
-    ship_prepare_worktree \
-        || fail "Could not prepare the private release worktree (.wt/release) — nothing was changed."
-    ship_mark "private worktree ready"
 
     # This checkout's commits that are not on origin yet (the --ship commit,
     # other sessions' unpushed work) ride along. If they conflict, main ships.
@@ -408,15 +427,8 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
         ship_finding "WARNING" "Git" "This checkout is on '$SHIP_LOCAL_BRANCH', not $BRANCH — its commits were not merged into the release" "git checkout main"
         SHIP_LOCAL_HEAD="$(git rev-parse "$REMOTE/$BRANCH")"
     fi
-    ship_merge_local() {
-        git merge-base --is-ancestor "$SHIP_LOCAL_HEAD" "$(git -C "$SHIP_WT" rev-parse HEAD)" && return 0
-        if ! ship_quiet git -C "$SHIP_WT" -c core.hooksPath=/dev/null merge --no-edit "$SHIP_LOCAL_HEAD"; then
-            ship_quiet git -C "$SHIP_WT" merge --abort || true
-            ship_quiet git -C "$SHIP_WT" reset --hard "$REMOTE/$BRANCH"
-            ship_finding "ERROR" "Git" "Local commits conflict with $REMOTE/$BRANCH — shipped $BRANCH without ${SHIP_LOCAL_HEAD:0:9}" "git pull --no-rebase origin main"
-        fi
-    }
-    ship_merge_local
+    ship_base_tree
+    ship_mark "release tree assembled on ${SHIP_BASE:0:9}"
 
     SHIP_REMOTE_TAGS=$(git ls-remote --tags "$REMOTE" 'refs/tags/v*' 2>/dev/null || true)
     ship_tag_taken() {
@@ -435,7 +447,7 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
     SHIP_RACES=0
     SHIP_BLIPS=0
     while (( SHIP_RACES < SHIP_PUSH_ATTEMPTS && SHIP_BLIPS < 10 )); do
-        CURRENT_VERSION="$(ship_read_version "$SHIP_WT/$VERSION_FILE")"
+        CURRENT_VERSION="$(git cat-file -p "$SHIP_BASE_TREE:$VERSION_FILE" | sed -n 's/^  "version": "\([^"]*\)".*/\1/p' | head -1)"
         [[ -n "$CURRENT_VERSION" ]] || fail "Could not read the version from $VERSION_FILE on $REMOTE/$BRANCH."
         IFS='.' read -r V_MAJOR V_MINOR V_PATCH <<< "$CURRENT_VERSION"
         case "$BUMP_TYPE" in
@@ -448,13 +460,12 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
         NEW_TAG="v${NEW_VERSION}"
         RELEASE_COMMIT_MSG="$(ship_commit_message "$NEW_TAG")"
 
-        ship_write_version "$SHIP_WT/$VERSION_FILE" "$CURRENT_VERSION" "$NEW_VERSION" \
-            || fail "Could not write version ${NEW_VERSION} into $VERSION_FILE — nothing was pushed."
-        ship_quiet git -C "$SHIP_WT" -c core.hooksPath=/dev/null commit -q -m "$RELEASE_COMMIT_MSG" -- "$VERSION_FILE" \
-            || fail "Could not create the release commit in the private worktree — nothing was pushed."
-        RELEASE_SHA=$(git -C "$SHIP_WT" rev-parse HEAD)
+        ship_build_commit \
+            || fail "Could not assemble the release commit for ${NEW_VERSION} — nothing was pushed."
+        # Test hook: the ship-path guard lands a foreign push here to prove the race retry.
+        [[ -n "${RELEASE_TEST_BEFORE_PUSH:-}" ]] && bash -c "$RELEASE_TEST_BEFORE_PUSH" >/dev/null 2>&1 || true
 
-        if ship_quiet git -C "$SHIP_WT" push "$REMOTE" "HEAD:refs/heads/$BRANCH"; then
+        if ship_quiet git push "$REMOTE" "${RELEASE_SHA}:refs/heads/$BRANCH"; then
             SHIP_PUSHED=true
             break
         fi
@@ -469,8 +480,7 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
             sleep $((SHIP_BLIPS * 3))
         fi
         SHIP_REMOTE_TAGS=$(git ls-remote --tags "$REMOTE" 'refs/tags/v*' 2>/dev/null || echo "$SHIP_REMOTE_TAGS")
-        ship_quiet git -C "$SHIP_WT" reset --hard "$REMOTE/$BRANCH"
-        ship_merge_local
+        ship_base_tree
     done
     if ! $SHIP_PUSHED; then
         (( SHIP_RACES >= SHIP_PUSH_ATTEMPTS )) \

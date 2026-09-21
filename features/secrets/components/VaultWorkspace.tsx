@@ -85,7 +85,6 @@ import { VaultCreateDialog } from "./VaultCreateDialog";
 import { VaultEnvImportDialog } from "./VaultEnvImportDialog";
 import { VaultCsvImportDialog } from "./VaultCsvImportDialog";
 import { VaultLoginExportDialog } from "./VaultLoginExportDialog";
-import { VaultBackupDialog } from "./VaultBackupDialog";
 import { VaultItemDetail } from "./VaultItemDetail";
 
 export interface VaultWorkspaceProps {
@@ -195,7 +194,6 @@ export function VaultWorkspace({
   const [importOpen, setImportOpen] = useState(false);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
-  const [backupOpen, setBackupOpen] = useState(false);
   const [uncontrolledSelectedId, setUncontrolledSelectedId] = useState<
     string | null
   >(null);
@@ -618,18 +616,6 @@ export function VaultWorkspace({
                         variant="ghost"
                         size="sm"
                         className="h-7 px-2 text-xs"
-                        onClick={() => setBackupOpen(true)}
-                        disabled={vault.busy || vault.loading}
-                      >
-                        <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />
-                        Backup & restore
-                      </Button>
-                    )}
-                    {canExport && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2 text-xs"
                         onClick={() => setExportOpen(true)}
                         disabled={vault.busy || vault.loading}
                       >
@@ -815,14 +801,6 @@ export function VaultWorkspace({
           />
         )}
         {canExport && (
-          <VaultBackupDialog
-            open={backupOpen}
-            onOpenChange={setBackupOpen}
-            items={vault.items}
-            onRestored={vault.refresh}
-          />
-        )}
-        {canExport && (
           <VaultLoginExportDialog
             open={exportOpen}
             onOpenChange={setExportOpen}
@@ -982,18 +960,6 @@ export function VaultWorkspace({
 
         {canCreate && (
           <>
-            {canExport && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 shrink-0"
-                onClick={() => setBackupOpen(true)}
-                disabled={vault.busy || vault.loading}
-              >
-                <ShieldCheck className="mr-1.5 h-4 w-4" />
-                Backup & restore
-              </Button>
-            )}
             {canExport && (
               <Button
                 variant="outline"
@@ -1167,14 +1133,6 @@ export function VaultWorkspace({
             loginUrls: item.login_urls,
           }))}
           onCommitted={vault.refresh}
-        />
-      )}
-      {canExport && (
-        <VaultBackupDialog
-          open={backupOpen}
-          onOpenChange={setBackupOpen}
-          items={vault.items}
-          onRestored={vault.refresh}
         />
       )}
       {canExport && (

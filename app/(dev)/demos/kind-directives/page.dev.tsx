@@ -76,7 +76,7 @@ const ROWS: Row[] = [
       items: [
         {
           site_id: null,
-          site: "example.com",
+          site: "blueridgerecycling.com",
           nodes: [
             {
               label: "Pricing",

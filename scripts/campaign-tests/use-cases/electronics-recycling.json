@@ -1,6 +1,6 @@
 {
   "use_case": "An electronics-recycling operator schedules pickups at client sites, weighs the recovered material by category, bills a per-pickup service fee, and issues a certificate of destruction per completed pickup.",
-  "organization_name": "Fixture Recyclers Co",
+  "organization_name": "Cascade Electronics Recovery",
   "organization_id": "b3c98221-861e-405c-b986-5f5abd45e362",
   "organization_slug": "fixture-recyclers-6x89fi",
   "settings": {

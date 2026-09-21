@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { sanitizeFieldName, validateFieldName } from "./field-name-sanitizer";
 import { parseTableMetadata } from "@/features/data-tables/types";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { OrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 // Valid data types according to the backend schema
 export const VALID_DATA_TYPES = [
@@ -92,6 +94,14 @@ export interface CreateTableParams {
   isPublic?: boolean;
   authenticatedRead?: boolean;
   fields?: FieldDefinition[] | null;
+  /**
+   * The organization the new table belongs to. Optional ONLY in the sense that a
+   * caller which already holds one passes it and a caller which does not lets
+   * `ensureOrgId` hold the request, show the person their memberships and resume —
+   * it is never absent from the RPC payload. `create_new_user_table_dynamic`
+   * refuses a NULL with `ORGANIZATION_REQUIRED`; nothing derives one.
+   */
+  organizationId?: string | null;
 }
 
 export interface CreateTableResult {
@@ -178,6 +188,7 @@ export async function createTable(
       isPublic = false,
       authenticatedRead = false,
       fields = null,
+      organizationId = null,
     } = params;
 
     if (!tableName.trim()) {
@@ -202,11 +213,22 @@ export async function createTable(
       };
     });
 
-    // Log the parameters being sent
+    // 🚨 THE ORGANIZATION IS CARRIED, NEVER DERIVED. `workbench.udt_datasets`
+    // .organization_id is NOT NULL with no default and no stamping trigger —
+    // aidream's 0929 dropped `_stamp_org_default` platform-wide on 2026-09-19 —
+    // so a create with no organization is a not-null violation, which is what
+    // every user got for a day. `ensureOrgId` is the one funnel: it returns what
+    // the caller already holds, waits on the bootstrap gate rather than calling
+    // "still resolving" a refusal, and otherwise HOLDS the request while the
+    // person sets an organization, then resumes. It never picks one.
+    // Law: common-docs/projects/no-db-assigned-org/PLAN.md.
+    const resolvedOrgId = await ensureOrgId(organizationId);
+
     const rpcParams = {
       p_table_name: tableName,
       p_description: description,
       p_is_public: isPublic,
+      p_organization_id: resolvedOrgId,
       p_initial_fields: normalizedFields,
     };
 
@@ -234,6 +256,12 @@ export async function createTable(
 
     return { success: true, tableId: data.table_id };
   } catch (err) {
+    // Closing the organization picker is a DECISION, not a failure: it must not
+    // come back as "An unexpected error occurred" on a modal the person just
+    // dismissed on purpose.
+    if (err instanceof OrganizationSelectionCancelled) {
+      return { success: false, error: "No organization was selected, so no table was created." };
+    }
     console.error("Error creating table:", err);
     const errorMessage =
       err instanceof Error ? err.message : "An unexpected error occurred";

@@ -151,7 +151,7 @@ export default function SmartExecutorDemo() {
           
           <SmartFunctionExecutor
             functionName="validateEmail"
-            data={{ email: 'user@example.com' }}
+            data={{ email: 'devon.marsh@ironlinefitness.com' }}
             dependencies={dependencies}
             resultComponentName="validationDisplay"
             buttonText="Validate Email Address"

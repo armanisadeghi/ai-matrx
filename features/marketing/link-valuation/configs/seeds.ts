@@ -22,7 +22,7 @@ const at = (
 
 /** The source PRD's Appendix B, verbatim. Expect 35.52 and a $26 ceiling. */
 const SHEET_2018_SEED: EvaluationInput = {
-  domain: "example.com",
+  domain: "constructiontradedaily.com",
   target: { keyword: "", page: "", campaign: "" },
   values: {
     domain_authority: at(36),
@@ -52,7 +52,7 @@ const SHEET_2018_SEED: EvaluationInput = {
  * placement. Every signal is filled so the confidence reading starts honest.
  */
 const MATRX_V1_SEED: EvaluationInput = {
-  domain: "example.com",
+  domain: "buildingindustryreview.com",
   target: {
     keyword: "commercial roof inspection",
     page: "/services/roof-inspection",

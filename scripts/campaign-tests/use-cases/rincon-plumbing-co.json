@@ -57,7 +57,7 @@
         {
           "customer_name": "Maria Chen",
           "phone": "555-0110",
-          "email": "maria.chen@example-mail.test",
+          "email": "maria.chen@rinconplumbing.com",
           "address": "100 Elm St",
           "city": "Rincon",
           "customer_since": "2023-01-01"
@@ -65,7 +65,7 @@
         {
           "customer_name": "James Grant",
           "phone": "555-0111",
-          "email": "james.grant@example-mail.test",
+          "email": "james.grant@rinconplumbing.com",
           "address": "107 Maple Ave",
           "city": "Millbrook",
           "customer_since": "2024-02-02"
@@ -73,7 +73,7 @@
         {
           "customer_name": "Linda Jensen",
           "phone": "555-0112",
-          "email": "linda.jensen@example-mail.test",
+          "email": "linda.jensen@rinconplumbing.com",
           "address": "114 5th St",
           "city": "Fairhaven",
           "customer_since": "2025-03-03"
@@ -434,7 +434,7 @@
       {
         "customer_name": "Maria Chen",
         "phone": "555-0110",
-        "email": "maria.chen@example-mail.test",
+        "email": "maria.chen@rinconplumbing.com",
         "address": "100 Elm St",
         "city": "Rincon",
         "customer_since": "2023-01-01"
@@ -442,7 +442,7 @@
       {
         "customer_name": "James Grant",
         "phone": "555-0111",
-        "email": "james.grant@example-mail.test",
+        "email": "james.grant@rinconplumbing.com",
         "address": "107 Maple Ave",
         "city": "Millbrook",
         "customer_since": "2024-02-02"
@@ -450,7 +450,7 @@
       {
         "customer_name": "Linda Jensen",
         "phone": "555-0112",
-        "email": "linda.jensen@example-mail.test",
+        "email": "linda.jensen@rinconplumbing.com",
         "address": "114 5th St",
         "city": "Fairhaven",
         "customer_since": "2025-03-03"
@@ -458,7 +458,7 @@
       {
         "customer_name": "Robert Marsh",
         "phone": "555-0113",
-        "email": "robert.marsh@example-mail.test",
+        "email": "robert.marsh@rinconplumbing.com",
         "address": "121 Sunset Blvd",
         "city": "Dellwood",
         "customer_since": "2023-04-04"
@@ -466,7 +466,7 @@
       {
         "customer_name": "Susan Pruitt",
         "phone": "555-0114",
-        "email": "susan.pruitt@example-mail.test",
+        "email": "susan.pruitt@rinconplumbing.com",
         "address": "128 Birch Ln",
         "city": "Ashport",
         "customer_since": "2024-05-05"
@@ -474,7 +474,7 @@
       {
         "customer_name": "David Chen",
         "phone": "555-0115",
-        "email": "david.chen@example-mail.test",
+        "email": "david.chen@rinconplumbing.com",
         "address": "135 Ridge Rd",
         "city": "Rincon",
         "customer_since": "2025-06-06"
@@ -482,7 +482,7 @@
       {
         "customer_name": "Karen Grant",
         "phone": "555-0116",
-        "email": "karen.grant@example-mail.test",
+        "email": "karen.grant@rinconplumbing.com",
         "address": "142 Harbor Dr",
         "city": "Millbrook",
         "customer_since": "2023-07-07"
@@ -490,7 +490,7 @@
       {
         "customer_name": "Michael Jensen",
         "phone": "555-0117",
-        "email": "michael.jensen@example-mail.test",
+        "email": "michael.jensen@rinconplumbing.com",
         "address": "149 Cedar Ct",
         "city": "Fairhaven",
         "customer_since": "2024-08-08"
@@ -498,7 +498,7 @@
       {
         "customer_name": "Patricia Marsh",
         "phone": "555-0118",
-        "email": "patricia.marsh@example-mail.test",
+        "email": "patricia.marsh@rinconplumbing.com",
         "address": "156 Willow Way",
         "city": "Dellwood",
         "customer_since": "2025-09-09"
@@ -506,7 +506,7 @@
       {
         "customer_name": "Kevin Pruitt",
         "phone": "555-0119",
-        "email": "kevin.pruitt@example-mail.test",
+        "email": "kevin.pruitt@rinconplumbing.com",
         "address": "163 Grove St",
         "city": "Ashport",
         "customer_since": "2023-10-10"
@@ -514,7 +514,7 @@
       {
         "customer_name": "Nancy Chen",
         "phone": "555-0120",
-        "email": "nancy.chen@example-mail.test",
+        "email": "nancy.chen@rinconplumbing.com",
         "address": "170 Elm St",
         "city": "Rincon",
         "customer_since": "2024-11-11"
@@ -522,7 +522,7 @@
       {
         "customer_name": "Brian Grant",
         "phone": "555-0121",
-        "email": "brian.grant@example-mail.test",
+        "email": "brian.grant@rinconplumbing.com",
         "address": "177 Maple Ave",
         "city": "Millbrook",
         "customer_since": "2025-12-12"
@@ -530,7 +530,7 @@
       {
         "customer_name": "Carol Jensen",
         "phone": "555-0122",
-        "email": "carol.jensen@example-mail.test",
+        "email": "carol.jensen@rinconplumbing.com",
         "address": "184 5th St",
         "city": "Fairhaven",
         "customer_since": "2023-01-13"
@@ -538,7 +538,7 @@
       {
         "customer_name": "Steven Marsh",
         "phone": "555-0123",
-        "email": "steven.marsh@example-mail.test",
+        "email": "steven.marsh@rinconplumbing.com",
         "address": "191 Sunset Blvd",
         "city": "Dellwood",
         "customer_since": "2024-02-14"
@@ -546,7 +546,7 @@
       {
         "customer_name": "Diane Pruitt",
         "phone": "555-0124",
-        "email": "diane.pruitt@example-mail.test",
+        "email": "diane.pruitt@rinconplumbing.com",
         "address": "198 Birch Ln",
         "city": "Ashport",
         "customer_since": "2025-03-15"
@@ -554,7 +554,7 @@
       {
         "customer_name": "Maria Chen",
         "phone": "555-0125",
-        "email": "maria.chen@example-mail.test",
+        "email": "maria.chen@rinconplumbing.com",
         "address": "205 Ridge Rd",
         "city": "Rincon",
         "customer_since": "2023-04-16"
@@ -562,7 +562,7 @@
       {
         "customer_name": "James Grant",
         "phone": "555-0126",
-        "email": "james.grant@example-mail.test",
+        "email": "james.grant@rinconplumbing.com",
         "address": "212 Harbor Dr",
         "city": "Millbrook",
         "customer_since": "2024-05-17"
@@ -570,7 +570,7 @@
       {
         "customer_name": "Linda Jensen",
         "phone": "555-0127",
-        "email": "linda.jensen@example-mail.test",
+        "email": "linda.jensen@rinconplumbing.com",
         "address": "219 Cedar Ct",
         "city": "Fairhaven",
         "customer_since": "2025-06-18"
@@ -578,7 +578,7 @@
       {
         "customer_name": "Robert Marsh",
         "phone": "555-0128",
-        "email": "robert.marsh@example-mail.test",
+        "email": "robert.marsh@rinconplumbing.com",
         "address": "226 Willow Way",
         "city": "Dellwood",
         "customer_since": "2023-07-19"
@@ -586,7 +586,7 @@
       {
         "customer_name": "Susan Pruitt",
         "phone": "555-0129",
-        "email": "susan.pruitt@example-mail.test",
+        "email": "susan.pruitt@rinconplumbing.com",
         "address": "233 Grove St",
         "city": "Ashport",
         "customer_since": "2024-08-20"
@@ -594,7 +594,7 @@
       {
         "customer_name": "David Chen",
         "phone": "555-0130",
-        "email": "david.chen@example-mail.test",
+        "email": "david.chen@rinconplumbing.com",
         "address": "240 Elm St",
         "city": "Rincon",
         "customer_since": "2025-09-21"
@@ -602,7 +602,7 @@
       {
         "customer_name": "Karen Grant",
         "phone": "555-0131",
-        "email": "karen.grant@example-mail.test",
+        "email": "karen.grant@rinconplumbing.com",
         "address": "247 Maple Ave",
         "city": "Millbrook",
         "customer_since": "2023-10-22"
@@ -610,7 +610,7 @@
       {
         "customer_name": "Michael Jensen",
         "phone": "555-0132",
-        "email": "michael.jensen@example-mail.test",
+        "email": "michael.jensen@rinconplumbing.com",
         "address": "254 5th St",
         "city": "Fairhaven",
         "customer_since": "2024-11-23"
@@ -618,7 +618,7 @@
       {
         "customer_name": "Patricia Marsh",
         "phone": "555-0133",
-        "email": "patricia.marsh@example-mail.test",
+        "email": "patricia.marsh@rinconplumbing.com",
         "address": "261 Sunset Blvd",
         "city": "Dellwood",
         "customer_since": "2025-12-24"
@@ -626,7 +626,7 @@
       {
         "customer_name": "Kevin Pruitt",
         "phone": "555-0134",
-        "email": "kevin.pruitt@example-mail.test",
+        "email": "kevin.pruitt@rinconplumbing.com",
         "address": "268 Birch Ln",
         "city": "Ashport",
         "customer_since": "2023-01-25"

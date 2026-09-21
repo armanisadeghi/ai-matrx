@@ -87,7 +87,7 @@ export default function FunctionButtonDemo() {
         }, null, 2);
       case 'validateEmail':
         return JSON.stringify({
-          email: 'user@example.com'
+          email: 'devon.marsh@ironlinefitness.com'
         }, null, 2);
       case 'calculateStats':
         return JSON.stringify({

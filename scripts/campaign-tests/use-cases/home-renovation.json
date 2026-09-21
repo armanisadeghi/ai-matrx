@@ -1,7 +1,7 @@
 {
   "use_case": "home-renovation",
   "one_sentence": "A homeowner tracks a whole-house renovation room by room, the contractor quotes they collected for each room, and every purchase made against the project budget.",
-  "organization_name": "Birchwood Ave Renovation (test fixture)",
+  "organization_name": "Birchwood Avenue Renovation",
   "settings_tag": { "test_fixture": true },
   "tables": {
     "rooms": {
@@ -22,13 +22,13 @@
       "field_types": { "company_name": "text", "trade": "choice", "contact_name": "text", "phone": "text", "email": "text", "license_number": "text", "insured": "boolean" },
       "choices": { "trade": ["General Contractor", "Plumbing", "Electrical", "Flooring", "Painting", "HVAC", "Carpentry"] },
       "rows": [
-        {"company_name": "Ferro & Sons Construction", "trade": "General Contractor", "contact_name": "Dominic Ferro", "phone": "555-330-1001", "email": "dominic@ferroandsons.example.test", "license_number": "GC-88213-OH", "insured": true},
-        {"company_name": "Redline Plumbing Co.", "trade": "Plumbing", "contact_name": "Tanya Iversen", "phone": "555-330-1002", "email": "tanya@redlineplumbing.example.test", "license_number": "PL-44029-OH", "insured": true},
-        {"company_name": "Voltway Electric", "trade": "Electrical", "contact_name": "Emeka Osayande", "phone": "555-330-1003", "email": "emeka@voltway.example.test", "license_number": "EL-90117-OH", "insured": true},
-        {"company_name": "Hearthstone Flooring", "trade": "Flooring", "contact_name": "Bianca Moretti", "phone": "555-330-1004", "email": "bianca@hearthstoneflooring.example.test", "license_number": "FL-22850-OH", "insured": true},
-        {"company_name": "Clearcoat Painting", "trade": "Painting", "contact_name": "Sam Delacroix", "phone": "555-330-1005", "email": "sam@clearcoatpaint.example.test", "license_number": "PT-10442-OH", "insured": false},
-        {"company_name": "Northgate HVAC", "trade": "HVAC", "contact_name": "Renata Kowalczyk", "phone": "555-330-1006", "email": "renata@northgatehvac.example.test", "license_number": "HV-77302-OH", "insured": true},
-        {"company_name": "Millbrook Carpentry", "trade": "Carpentry", "contact_name": "Julius Wexford", "phone": "555-330-1007", "email": "julius@millbrookcarpentry.example.test", "license_number": "CP-55671-OH", "insured": true}
+        {"company_name": "Ferro & Sons Construction", "trade": "General Contractor", "contact_name": "Dominic Ferro", "phone": "555-330-1001", "email": "dominic@ferroandsons.com", "license_number": "GC-88213-OH", "insured": true},
+        {"company_name": "Redline Plumbing Co.", "trade": "Plumbing", "contact_name": "Tanya Iversen", "phone": "555-330-1002", "email": "tanya@redlineplumbing.com", "license_number": "PL-44029-OH", "insured": true},
+        {"company_name": "Voltway Electric", "trade": "Electrical", "contact_name": "Emeka Osayande", "phone": "555-330-1003", "email": "emeka@voltway.com", "license_number": "EL-90117-OH", "insured": true},
+        {"company_name": "Hearthstone Flooring", "trade": "Flooring", "contact_name": "Bianca Moretti", "phone": "555-330-1004", "email": "bianca@hearthstoneflooring.com", "license_number": "FL-22850-OH", "insured": true},
+        {"company_name": "Clearcoat Painting", "trade": "Painting", "contact_name": "Sam Delacroix", "phone": "555-330-1005", "email": "sam@clearcoatpaint.com", "license_number": "PT-10442-OH", "insured": false},
+        {"company_name": "Northgate HVAC", "trade": "HVAC", "contact_name": "Renata Kowalczyk", "phone": "555-330-1006", "email": "renata@northgatehvac.com", "license_number": "HV-77302-OH", "insured": true},
+        {"company_name": "Millbrook Carpentry", "trade": "Carpentry", "contact_name": "Julius Wexford", "phone": "555-330-1007", "email": "julius@millbrookcarpentry.com", "license_number": "CP-55671-OH", "insured": true}
       ]
     },
     "quotes": {

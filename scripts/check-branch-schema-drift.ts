@@ -126,6 +126,42 @@
  *     close: `svc_seo` (LOGIN, BYPASSRLS) and `cli_login_postgres` are production-only and
  *     `v5/BRANCH-GRANT-DRIFT.md` records them as NEVER MINTED on the branch. Counted as
  *     `roleAbsent` and printed.
+ * THE FOURTH CLAUSE — A TRIGGER THE BRANCH HAS THAT FILLS WHAT NOTHING FILLS (DATA-CREATE-FIX,
+ * 2026-09-20)
+ * ----------------------------------------------------------------------------------------
+ * The schema clause asks whether the branch is BEHIND, and says in so many words that
+ * branch-only is "the campaign building on the branch, which is the entire point of having
+ * one". That is true of a TABLE the campaign created. It is catastrophically false of a
+ * BEFORE-INSERT TRIGGER on a table that already exists on both, because such a trigger
+ * silently WRITES A VALUE on the branch that nothing writes on the main database — so the
+ * rehearsal succeeds and the real thing raises a not-null violation, and the check says
+ * level.
+ *
+ * That is not hypothetical. On 2026-09-20 creating a Data Table failed for EVERY user with
+ * `null value in column "organization_id" of relation "udt_datasets"`, for a whole day,
+ * while this gate exited 0 on its first three clauses: aidream's
+ * `0929_no_trigger_stamps_a_personal_organization.sql` had dropped `public._stamp_org_default`
+ * and its 328 attachments from the main database (Arman's ruling — the database may never
+ * choose a tenant), the branch kept them, and `public.create_new_user_table_dynamic` had no
+ * organization parameter to fall back on. A lane rehearsing that create path here would have
+ * watched it work.
+ *
+ * SO: a BEFORE-INSERT trigger the BRANCH carries and production does not, on a table BOTH
+ * databases hold, in a schema a LIVE ROUTE is made of, FAILS this check. Bounded exactly
+ * like the other three, every bound a rule in code:
+ *   · the table must exist on BOTH — a trigger on a table the campaign created here is the
+ *     campaign building, which is what the branch is for, and is counted as `notShared`.
+ *   · campaign-owned namespaces and `zz_*` are the campaign's; Supabase-managed schemas are
+ *     the platform image's.
+ *   · the FAILING set is `LIVE_ROUTE_SCHEMAS` below — the schemas whose tables a shipped
+ *     route reads and writes on every page load. Every other schema's branch-only trigger is
+ *     measured and PRINTED, never gated, for the same reason the schema clause does it:
+ *     a guard that fails on work you are not doing gets switched off. `--strict` fails on all
+ *     of them.
+ * Only BEFORE INSERT is in scope. An AFTER trigger cannot change the row being written, and
+ * a BEFORE UPDATE cannot make an INSERT that would fail succeed, so neither can manufacture
+ * the green this clause exists to catch.
+ *
  * The production-only direction (the branch being TIGHTER) is counted and printed, never
  * failed — it denies reads production allows, which wastes a lane's time but never
  * manufactures a green.
@@ -140,6 +176,7 @@ import { renderSyncPlan } from "./lib/branch-sync-plan";
 import { connectDirect, DB_VARS, loadDbEnv } from "./lib/direct-db";
 import {
   assertServerMatchesTarget,
+  branchRefOverride,
   loadBranchDbEnv,
   loadBranchRef,
   TargetRefusal,
@@ -422,6 +459,8 @@ async function measure(): Promise<{
   branchDefaults: DefaultAclRow[];
   prodRoles: Set<string>;
   branchRoles: Set<string>;
+  prodTriggers: TriggerRow[];
+  branchTriggers: TriggerRow[];
 }> {
   const prodEnv = loadDbEnv();
   if ("missing" in prodEnv) {
@@ -430,7 +469,11 @@ async function measure(): Promise<{
         `  They are the same ${DB_VARS.length} this repo's other database tools read.`,
     );
   }
-  const ref = loadBranchRef(ROOT);
+  // `--branch-ref=` / `MATRX_BRANCH_REF` is the override `loadBranchRef`'s own refusal
+  // PROMISES, and this file never passed it — so from a throwaway worktree, which is the
+  // working mode the campaign's rules require, this guard refused before it measured
+  // anything and named a flag it did not implement. Both runners take it; so does this.
+  const ref = loadBranchRef(ROOT, branchRefOverride(process.argv));
   const branchEnv = loadBranchDbEnv(ROOT, ref);
 
   const prodClient = await connectDirect(prodEnv, APPLICATION_NAME);
@@ -464,6 +507,8 @@ async function measure(): Promise<{
     const branchDefaults = await defaultAcls(branchClient);
     const prodRoles = await roleNames(prodClient);
     const branchRoles = await roleNames(branchClient);
+    const prodTriggers = await beforeInsertTriggers(prodClient);
+    const branchTriggers = await beforeInsertTriggers(branchClient);
     console.log(
       `\ninventory: production ${prod.size} object(s) / branch ${branch.size} object(s)` +
         ` across ${KINDS.join(", ")}`,
@@ -476,9 +521,14 @@ async function measure(): Promise<{
       `defaults:  production ${prodDefaults.length} / branch ${branchDefaults.length} pg_default_acl grant row(s)` +
         ` — what the NEXT object created in each schema is born holding`,
     );
+    console.log(
+      `triggers:  production ${prodTriggers.length} / branch ${branchTriggers.length} BEFORE-INSERT trigger(s)` +
+        ` — the ones that can fill a column the other database leaves empty`,
+    );
     return {
       prod, branch, prodGrants, branchGrants,
       prodDefaults, branchDefaults, prodRoles, branchRoles,
+      prodTriggers, branchTriggers,
     };
   } finally {
     await prodClient.end().catch(() => {});
@@ -840,7 +890,7 @@ async function emitSyncPlan(
 
   const prodEnv = loadDbEnv();
   if ("missing" in prodEnv) throw new TargetRefusal(`--sync-plan needs production's connection variables.`);
-  const ref = loadBranchRef(ROOT);
+  const ref = loadBranchRef(ROOT, branchRefOverride(process.argv));
   const client = await connectDirect(prodEnv, APPLICATION_NAME);
   let text: string;
   try {
@@ -880,6 +930,200 @@ async function emitSyncPlan(
   }
 }
 
+// ---------------------------------------------------------------------------
+// THE BEFORE-INSERT TRIGGER CLAUSE — a value the branch writes and production does not.
+// ---------------------------------------------------------------------------
+
+/**
+ * The schemas a SHIPPED ROUTE is made of. A branch-only BEFORE-INSERT trigger here is a
+ * false green on a path real users are on today, which is what makes it worth an exit code
+ * rather than a line of output.
+ *
+ * `workbench` is `/data` (`udt_datasets` and its fields, rows, templates and workbooks),
+ * Notes and Working Documents — the surface the 2026-09-20 create-table outage was on.
+ * A lane that finds another live route resting on a branch-only insert trigger adds its
+ * schema here, with the route named; it is a LIST OF ROUTES, not a list of schemas.
+ */
+const LIVE_ROUTE_SCHEMAS = new Set(["workbench"]);
+
+/**
+ * `tgtype` bit 1 (value 2) is BEFORE; bit 2 (value 4) is INSERT. Asking the catalog rather
+ * than parsing `pg_get_triggerdef` keeps a trigger that is BEFORE INSERT OR UPDATE in scope
+ * without a regex deciding it.
+ */
+const BEFORE_INSERT_TRIGGERS_SQL = `
+select n.nspname as schema, c.relname as table_name, t.tgname as trigger_name
+  from pg_trigger t
+  join pg_class c on c.oid = t.tgrelid
+  join pg_namespace n on n.oid = c.relnamespace
+ where not t.tgisinternal
+   and (t.tgtype & 2) <> 0
+   and (t.tgtype & 4) <> 0
+   and n.nspname not in ('pg_catalog','information_schema','pg_toast')
+   and n.nspname not like 'pg_%'
+`;
+
+interface TriggerRow {
+  readonly schema: string;
+  readonly table_name: string;
+  readonly trigger_name: string;
+}
+
+async function beforeInsertTriggers(client: pg.Client): Promise<TriggerRow[]> {
+  await client.query("begin transaction read only");
+  try {
+    const { rows } = await client.query<TriggerRow>(BEFORE_INSERT_TRIGGERS_SQL);
+    return rows;
+  } finally {
+    await client.query("rollback");
+  }
+}
+
+interface TriggerVerdict {
+  /** Branch-only, on a shared table, in a live-route schema — fails the exit code. */
+  readonly writing: readonly string[];
+  /** Branch-only, on a shared table, elsewhere — printed, never gated. */
+  readonly elsewhere: readonly string[];
+  /** Skipped: the table is not on both databases (the campaign building, or vice versa). */
+  readonly notShared: number;
+  /** Skipped: campaign-owned or Supabase-managed namespace. */
+  readonly notOurs: number;
+}
+
+function judgeTriggers(
+  prod: readonly TriggerRow[],
+  branch: readonly TriggerRow[],
+  prodTables: ReadonlySet<string>,
+  branchTables: ReadonlySet<string>,
+  strict: boolean,
+): TriggerVerdict {
+  const key = (t: TriggerRow) => `${t.schema}.${t.table_name}.${t.trigger_name}`;
+  const tableOf = (t: TriggerRow) => `${t.schema}.${t.table_name}`;
+  const prodSet = new Set(prod.map(key));
+  const writing: string[] = [];
+  const elsewhere: string[] = [];
+  let notShared = 0;
+  let notOurs = 0;
+  for (const t of branch) {
+    if (prodSet.has(key(t))) continue;
+    if (CAMPAIGN_SCHEMAS.has(t.schema) || t.schema.startsWith("zz_") || SUPABASE_SCHEMAS.has(t.schema)) {
+      notOurs += 1;
+      continue;
+    }
+    // A table only the branch has is the campaign building, which is what the branch is
+    // for; a table only production has is the schema clause's subject, not this one.
+    if (!prodTables.has(tableOf(t)) || !branchTables.has(tableOf(t))) {
+      notShared += 1;
+      continue;
+    }
+    if (strict || LIVE_ROUTE_SCHEMAS.has(t.schema)) writing.push(key(t));
+    else elsewhere.push(key(t));
+  }
+  writing.sort();
+  elsewhere.sort();
+  return { writing, elsewhere, notShared, notOurs };
+}
+
+function printTriggerVerdict(v: TriggerVerdict): void {
+  if (v.elsewhere.length > 0) {
+    const bySchema = new Map<string, number>();
+    for (const t of v.elsewhere) bySchema.set(t.split(".")[0]!, (bySchema.get(t.split(".")[0]!) ?? 0) + 1);
+    console.log(
+      `\n${C.cyan}INFORMATIONAL — ${v.elsewhere.length} branch-only BEFORE-INSERT trigger(s) outside the live-route schemas${C.reset}`,
+    );
+    console.log(
+      `  ${C.dim}Each one still writes a value the main database does not, so a rehearsal over it is\n` +
+        `  a false green — but no shipped route this campaign rehearses reads those tables, and a\n` +
+        `  guard that fails on somebody else's levelling gets switched off. Pass --strict to fail\n` +
+        `  on them too.${C.reset}`,
+    );
+    console.log(
+      `  by schema: ${[...bySchema.entries()].sort((a, b) => b[1] - a[1]).map(([s2, n]) => `${s2} ${n}`).join(" · ")}`,
+    );
+    for (const t of v.elsewhere.slice(0, 10)) console.log(`    ${C.dim}${t}${C.reset}`);
+  }
+  // Printed HERE and not only in the final summary: the first three clauses can return
+  // before that summary is reached, and a clause whose verdict is invisible whenever an
+  // older clause is red is a clause nobody can cite.
+  if (v.writing.length === 0) {
+    console.log(
+      `\n${C.green}NO BRANCH INSERT-TRIGGER DRIFT ON A LIVE ROUTE${C.reset} — no BEFORE-INSERT trigger the\n` +
+        `  branch carries on a shared ${[...LIVE_ROUTE_SCHEMAS].join(", ")} table that the main database does not.\n` +
+        `  ${v.elsewhere.length} branch-only insert trigger(s) in other schemas counted above and NOT gated;\n` +
+        `  ${v.notShared} skipped because the table is not on both databases; ${v.notOurs} skipped as\n` +
+        `  Supabase-managed or campaign-owned.`,
+    );
+    return;
+  }
+  console.log(
+    `\n${C.red}THE BRANCH CARRIES ${v.writing.length} BEFORE-INSERT TRIGGER(S) PRODUCTION DOES NOT, ON A LIVE ROUTE${C.reset}`,
+  );
+  console.log(
+    `  ${C.dim}Each one FILLS A COLUMN on insert that nothing fills on the main database, so the\n` +
+      `  rehearsal succeeds and the real write raises. This is the shape that hid the 2026-09-20\n` +
+      `  create-table outage for a day: _stamp_org_default on workbench.udt_datasets.${C.reset}`,
+  );
+  for (const t of v.writing.slice(0, 40)) console.log(`  ${C.red}WRITES ${C.reset}${t}`);
+  if (v.writing.length > 40) console.log(`  ${C.dim}… and ${v.writing.length - 40} more${C.reset}`);
+}
+
+/**
+ * The fourth clause's own RED/GREEN, planted in memory exactly as `selfTest` does it:
+ * a synthetic branch-only BEFORE-INSERT trigger on a SHARED table in `workbench` must
+ * fail, and the same trigger in `seo` must not.
+ */
+function selfTestTriggers(
+  prodTriggers: readonly TriggerRow[],
+  branchTriggers: readonly TriggerRow[],
+  prodTables: ReadonlySet<string>,
+  branchTables: ReadonlySet<string>,
+): boolean {
+  const sharedIn = (schema: string): string | null => {
+    for (const t of prodTables) {
+      if (t.startsWith(`${schema}.`) && branchTables.has(t)) return t.slice(schema.length + 1);
+    }
+    return null;
+  };
+  const redTable = sharedIn("workbench");
+  const greenTable = sharedIn("seo");
+  if (!redTable || !greenTable) {
+    console.log(
+      `  ${C.red}TRIGGER SELF-TEST FAILED${C.reset} — no shared table found in workbench/seo to plant on.`,
+    );
+    return false;
+  }
+  const plant = (schema: string, table: string): TriggerRow => ({
+    schema,
+    table_name: table,
+    trigger_name: "__self_test_planted_before_insert__",
+  });
+  const red = judgeTriggers(
+    prodTriggers,
+    [...branchTriggers, plant("workbench", redTable)],
+    prodTables,
+    branchTables,
+    false,
+  );
+  const redOk = red.writing.some((t) => t.endsWith("__self_test_planted_before_insert__"));
+  console.log(
+    `  RED   planted BEFORE INSERT on workbench.${redTable}: ${red.writing.length} live-route finding(s) (exit ${red.writing.length > 0 ? 1 : 0}) ${redOk ? "OK" : "FAILED"}`,
+  );
+  const green = judgeTriggers(
+    prodTriggers,
+    [...branchTriggers, plant("seo", greenTable)],
+    prodTables,
+    branchTables,
+    false,
+  );
+  const greenOk =
+    !green.writing.some((t) => t.endsWith("__self_test_planted_before_insert__")) &&
+    green.elsewhere.some((t) => t.endsWith("__self_test_planted_before_insert__"));
+  console.log(
+    `  GREEN planted BEFORE INSERT on seo.${greenTable}:      ${green.writing.length} live-route / ${green.elsewhere.length} informational (exit ${green.writing.length > 0 ? 1 : 0}) ${greenOk ? "OK" : "FAILED"}`,
+  );
+  return redOk && greenOk;
+}
+
 async function main(): Promise<number> {
   const runSelfTest = process.argv.includes("--self-test");
   const strict = process.argv.includes("--strict");
@@ -887,6 +1131,7 @@ async function main(): Promise<number> {
   const {
     prod, branch, prodGrants, branchGrants,
     prodDefaults, branchDefaults, prodRoles, branchRoles,
+    prodTriggers, branchTriggers,
   } = await measure();
 
   const real = judge(prod, branch, exceptions, new Set(), strict);
@@ -904,9 +1149,39 @@ async function main(): Promise<number> {
     prodRoles,
     branchRoles,
   );
+  // Ordinary tables and partitioned tables only: a trigger lives on a relation, and a view
+  // with an INSTEAD OF trigger is not the shape this clause is about.
+  const tableIdentities = (m: Map<string, Obj>) =>
+    new Set(
+      [...m.values()]
+        .filter((o) => o.kind === "relation" && (o.identity.endsWith("[r]") || o.identity.endsWith("[p]")))
+        .map((o) => o.identity.replace(/\[[rp]\]$/, "")),
+    );
+  const prodTables = tableIdentities(prod);
+  const branchTables = tableIdentities(branch);
+  const triggerVerdict = judgeTriggers(
+    prodTriggers,
+    branchTriggers,
+    prodTables,
+    branchTables,
+    strict,
+  );
 
-  if (runSelfTest && !selfTest(prod, branch, exceptions)) {
-    return 1;
+  if (runSelfTest) {
+    const schemaOk = selfTest(prod, branch, exceptions);
+    const triggerOk = selfTestTriggers(prodTriggers, branchTriggers, prodTables, branchTables);
+    if (!triggerOk) {
+      console.log(
+        `${C.red}TRIGGER SELF-TEST FAILED — the fourth clause cannot be shown going red on a\n` +
+          `  live-route schema, so it is not a guard.${C.reset}`,
+      );
+    } else {
+      console.log(
+        `${C.green}  TRIGGER SELF-TEST PASSED — a branch-only BEFORE-INSERT trigger fails in workbench\n` +
+          `  and is informational in seo.${C.reset}`,
+      );
+    }
+    if (!schemaOk || !triggerOk) return 1;
   }
 
   if (process.argv.includes("--sync-plan")) {
@@ -922,6 +1197,21 @@ async function main(): Promise<number> {
   if (!strict) printInformational(real.informational);
   printGrantVerdict(grantVerdict);
   printDefaultAclVerdict(defaultVerdict);
+  printTriggerVerdict(triggerVerdict);
+
+  if (triggerVerdict.writing.length > 0) {
+    console.log(
+      `\n${C.red}BRANCH INSERT-TRIGGER DRIFT — ${triggerVerdict.writing.length} BEFORE-INSERT trigger(s) the branch has and production does not, on a live route.${C.reset}`,
+    );
+    console.log(
+      `  Each one fills a column on insert that the main database leaves empty, so a rehearsal\n` +
+        `  over that write is a false green. Take them OFF the branch with a catalog-derived file\n` +
+        `  in migrations/campaign/ headed \`-- target: branch\` — never by adding the trigger back to\n` +
+        `  the main database, which for an organization stamper the database ruling forbids\n` +
+        `  outright — then fix the CALLER so it supplies the value explicitly. Exit 1.`,
+    );
+    return 1;
+  }
 
   if (defaultVerdict.looser.length > 0) {
     console.log(

@@ -1,6 +1,6 @@
 {
   "use_case": "A nonprofit tracks its donors, fundraising campaigns and pledges so staff know who gave, to what, and what is still outstanding.",
-  "organization_name": "Fixture Hands & Hope Alliance",
+  "organization_name": "Hands & Hope Alliance",
   "settings": {
     "test_fixture": true
   },
@@ -34,241 +34,241 @@
     "donors": [
       {
         "donor_name": "Linda Reyes",
-        "email": "linda.reyes0@example.org",
+        "email": "linda.reyes@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2024-02-15"
       },
       {
-        "donor_name": "Linda Reyes",
-        "email": "linda.reyes1@example.org",
+        "donor_name": "Rosalind Marchetti",
+        "email": "rosalind.marchetti@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2022-04-17"
       },
       {
         "donor_name": "Yuki Ferreira",
-        "email": "yuki.ferreira2@example.org",
+        "email": "yuki.ferreira@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2023-03-11"
       },
       {
         "donor_name": "Sofia Okoye",
-        "email": "sofia.okoye3@example.org",
+        "email": "sofia.okoye@handsandhopealliance.org",
         "donor_type": "Foundation",
         "since_date": "2023-02-17"
       },
       {
         "donor_name": "Wei Ferreira",
-        "email": "wei.ferreira4@example.org",
+        "email": "wei.ferreira@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2023-06-15"
       },
       {
         "donor_name": "Sofia Larsen",
-        "email": "sofia.larsen5@example.org",
+        "email": "sofia.larsen@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2020-01-16"
       },
       {
         "donor_name": "Grace Novak",
-        "email": "grace.novak6@example.org",
+        "email": "grace.novak@handsandhopealliance.org",
         "donor_type": "Corporate",
         "since_date": "2025-05-12"
       },
       {
         "donor_name": "Yuki Singh",
-        "email": "yuki.singh7@example.org",
+        "email": "yuki.singh@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2020-07-16"
       },
       {
         "donor_name": "Priya Singh",
-        "email": "priya.singh8@example.org",
+        "email": "priya.singh@handsandhopealliance.org",
         "donor_type": "Foundation",
         "since_date": "2021-08-13"
       },
       {
         "donor_name": "Daniel Chen",
-        "email": "daniel.chen9@example.org",
+        "email": "daniel.chen@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2024-09-11"
       },
       {
         "donor_name": "Elena Singh",
-        "email": "elena.singh10@example.org",
+        "email": "elena.singh@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2024-05-10"
       },
       {
         "donor_name": "Linda Kowalski",
-        "email": "linda.kowalski11@example.org",
+        "email": "linda.kowalski@handsandhopealliance.org",
         "donor_type": "Corporate",
         "since_date": "2025-05-15"
       },
       {
         "donor_name": "Priya Larsen",
-        "email": "priya.larsen12@example.org",
+        "email": "priya.larsen@handsandhopealliance.org",
         "donor_type": "Foundation",
         "since_date": "2021-08-14"
       },
       {
         "donor_name": "Daniel Reyes",
-        "email": "daniel.reyes13@example.org",
+        "email": "daniel.reyes@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2023-09-13"
       },
       {
         "donor_name": "Aisha Ferreira",
-        "email": "aisha.ferreira14@example.org",
+        "email": "aisha.ferreira@handsandhopealliance.org",
         "donor_type": "Foundation",
         "since_date": "2022-01-16"
       },
       {
         "donor_name": "Daniel Novak",
-        "email": "daniel.novak15@example.org",
+        "email": "daniel.novak@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2024-04-12"
       },
       {
         "donor_name": "Maria Alvarez",
-        "email": "maria.alvarez16@example.org",
+        "email": "maria.alvarez@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2024-06-15"
       },
       {
         "donor_name": "Yuki Okoye",
-        "email": "yuki.okoye17@example.org",
+        "email": "yuki.okoye@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2025-08-11"
       },
       {
         "donor_name": "Maria Novak",
-        "email": "maria.novak18@example.org",
+        "email": "maria.novak@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2020-03-11"
       },
       {
         "donor_name": "James Larsen",
-        "email": "james.larsen19@example.org",
+        "email": "james.larsen@handsandhopealliance.org",
         "donor_type": "Foundation",
         "since_date": "2023-07-12"
       },
       {
         "donor_name": "Elena Nakamura",
-        "email": "elena.nakamura20@example.org",
+        "email": "elena.nakamura@handsandhopealliance.org",
         "donor_type": "Foundation",
         "since_date": "2021-09-13"
       },
       {
         "donor_name": "Aisha Okoye",
-        "email": "aisha.okoye21@example.org",
+        "email": "aisha.okoye@handsandhopealliance.org",
         "donor_type": "Foundation",
         "since_date": "2020-01-15"
       },
       {
         "donor_name": "Wei Alvarez",
-        "email": "wei.alvarez22@example.org",
+        "email": "wei.alvarez@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2021-01-13"
       },
       {
         "donor_name": "Tomas Nakamura",
-        "email": "tomas.nakamura23@example.org",
+        "email": "tomas.nakamura@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2024-02-14"
       },
       {
         "donor_name": "Daniel Okoye",
-        "email": "daniel.okoye24@example.org",
+        "email": "daniel.okoye@handsandhopealliance.org",
         "donor_type": "Foundation",
         "since_date": "2023-05-13"
       },
       {
         "donor_name": "Daniel Nakamura",
-        "email": "daniel.nakamura25@example.org",
+        "email": "daniel.nakamura@handsandhopealliance.org",
         "donor_type": "Corporate",
         "since_date": "2022-02-18"
       },
       {
         "donor_name": "Wei Kowalski",
-        "email": "wei.kowalski26@example.org",
+        "email": "wei.kowalski@handsandhopealliance.org",
         "donor_type": "Foundation",
         "since_date": "2024-06-13"
       },
       {
-        "donor_name": "Linda Kowalski",
-        "email": "linda.kowalski27@example.org",
+        "donor_name": "Theo Bennington",
+        "email": "theo.bennington@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2023-05-17"
       },
       {
-        "donor_name": "Maria Alvarez",
-        "email": "maria.alvarez28@example.org",
+        "donor_name": "Nadia Kessler",
+        "email": "nadia.kessler@handsandhopealliance.org",
         "donor_type": "Foundation",
         "since_date": "2025-04-11"
       },
       {
         "donor_name": "Linda Singh",
-        "email": "linda.singh29@example.org",
+        "email": "linda.singh@handsandhopealliance.org",
         "donor_type": "Corporate",
         "since_date": "2021-09-10"
       },
       {
         "donor_name": "Aisha Larsen",
-        "email": "aisha.larsen30@example.org",
+        "email": "aisha.larsen@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2023-05-15"
       },
       {
         "donor_name": "Wei Larsen",
-        "email": "wei.larsen31@example.org",
+        "email": "wei.larsen@handsandhopealliance.org",
         "donor_type": "Foundation",
         "since_date": "2022-06-14"
       },
       {
         "donor_name": "Samuel Reyes",
-        "email": "samuel.reyes32@example.org",
+        "email": "samuel.reyes@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2025-01-14"
       },
       {
         "donor_name": "Grace Singh",
-        "email": "grace.singh33@example.org",
+        "email": "grace.singh@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2020-04-15"
       },
       {
         "donor_name": "Tomas Larsen",
-        "email": "tomas.larsen34@example.org",
+        "email": "tomas.larsen@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2024-08-11"
       },
       {
         "donor_name": "Carlos Novak",
-        "email": "carlos.novak35@example.org",
+        "email": "carlos.novak@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2025-05-15"
       },
       {
         "donor_name": "Samuel Alvarez",
-        "email": "samuel.alvarez36@example.org",
+        "email": "samuel.alvarez@handsandhopealliance.org",
         "donor_type": "Individual",
         "since_date": "2021-06-13"
       },
       {
         "donor_name": "Wei Chen",
-        "email": "wei.chen37@example.org",
+        "email": "wei.chen@handsandhopealliance.org",
         "donor_type": "Foundation",
         "since_date": "2022-01-12"
       },
       {
         "donor_name": "Samuel Okoye",
-        "email": "samuel.okoye38@example.org",
+        "email": "samuel.okoye@handsandhopealliance.org",
         "donor_type": "Corporate",
         "since_date": "2023-02-15"
       },
       {
-        "donor_name": "Sofia Larsen",
-        "email": "sofia.larsen39@example.org",
+        "donor_name": "Marcus Delgado",
+        "email": "marcus.delgado@handsandhopealliance.org",
         "donor_type": "Foundation",
         "since_date": "2021-03-14"
       }
@@ -276,7 +276,7 @@
     "pledges": [
       {
         "pledge_ref": "PLG-3000",
-        "donor_email": "daniel.novak15@example.org",
+        "donor_email": "daniel.novak@handsandhopealliance.org",
         "campaign_name": "Winter Coat Drive 2026",
         "amount_usd": 969.88,
         "status": "Fulfilled",
@@ -284,7 +284,7 @@
       },
       {
         "pledge_ref": "PLG-3001",
-        "donor_email": "grace.singh33@example.org",
+        "donor_email": "grace.singh@handsandhopealliance.org",
         "campaign_name": "Literacy For All",
         "amount_usd": 884.05,
         "status": "Pledged",
@@ -292,7 +292,7 @@
       },
       {
         "pledge_ref": "PLG-3002",
-        "donor_email": "tomas.nakamura23@example.org",
+        "donor_email": "tomas.nakamura@handsandhopealliance.org",
         "campaign_name": "Annual Gala 2026",
         "amount_usd": 481.18,
         "status": "Fulfilled",
@@ -300,7 +300,7 @@
       },
       {
         "pledge_ref": "PLG-3003",
-        "donor_email": "james.larsen19@example.org",
+        "donor_email": "james.larsen@handsandhopealliance.org",
         "campaign_name": "Emergency Flood Relief",
         "amount_usd": 31287.66,
         "status": "Pledged",
@@ -308,7 +308,7 @@
       },
       {
         "pledge_ref": "PLG-3004",
-        "donor_email": "linda.kowalski27@example.org",
+        "donor_email": "theo.bennington@handsandhopealliance.org",
         "campaign_name": "Literacy For All",
         "amount_usd": 126.5,
         "status": "Overdue",
@@ -316,7 +316,7 @@
       },
       {
         "pledge_ref": "PLG-3005",
-        "donor_email": "elena.nakamura20@example.org",
+        "donor_email": "elena.nakamura@handsandhopealliance.org",
         "campaign_name": "Emergency Flood Relief",
         "amount_usd": 43592.75,
         "status": "Fulfilled",
@@ -324,7 +324,7 @@
       },
       {
         "pledge_ref": "PLG-3006",
-        "donor_email": "sofia.okoye3@example.org",
+        "donor_email": "sofia.okoye@handsandhopealliance.org",
         "campaign_name": "Literacy For All",
         "amount_usd": 26216.33,
         "status": "Fulfilled",
@@ -332,7 +332,7 @@
       },
       {
         "pledge_ref": "PLG-3007",
-        "donor_email": "carlos.novak35@example.org",
+        "donor_email": "carlos.novak@handsandhopealliance.org",
         "campaign_name": "Emergency Flood Relief",
         "amount_usd": 895.36,
         "status": "Overdue",
@@ -340,7 +340,7 @@
       },
       {
         "pledge_ref": "PLG-3008",
-        "donor_email": "wei.kowalski26@example.org",
+        "donor_email": "wei.kowalski@handsandhopealliance.org",
         "campaign_name": "Winter Coat Drive 2026",
         "amount_usd": 9446.99,
         "status": "Fulfilled",
@@ -348,7 +348,7 @@
       },
       {
         "pledge_ref": "PLG-3009",
-        "donor_email": "wei.ferreira4@example.org",
+        "donor_email": "wei.ferreira@handsandhopealliance.org",
         "campaign_name": "Winter Coat Drive 2026",
         "amount_usd": 528.02,
         "status": "Fulfilled",
@@ -356,7 +356,7 @@
       },
       {
         "pledge_ref": "PLG-3010",
-        "donor_email": "daniel.nakamura25@example.org",
+        "donor_email": "daniel.nakamura@handsandhopealliance.org",
         "campaign_name": "Emergency Flood Relief",
         "amount_usd": 1190.5,
         "status": "Pledged",
@@ -364,7 +364,7 @@
       },
       {
         "pledge_ref": "PLG-3011",
-        "donor_email": "aisha.larsen30@example.org",
+        "donor_email": "aisha.larsen@handsandhopealliance.org",
         "campaign_name": "Annual Gala 2026",
         "amount_usd": 302.84,
         "status": "Overdue",
@@ -372,7 +372,7 @@
       },
       {
         "pledge_ref": "PLG-3012",
-        "donor_email": "wei.ferreira4@example.org",
+        "donor_email": "wei.ferreira@handsandhopealliance.org",
         "campaign_name": "Winter Coat Drive 2026",
         "amount_usd": 34.48,
         "status": "Overdue",
@@ -380,7 +380,7 @@
       },
       {
         "pledge_ref": "PLG-3013",
-        "donor_email": "sofia.larsen5@example.org",
+        "donor_email": "sofia.larsen@handsandhopealliance.org",
         "campaign_name": "Emergency Flood Relief",
         "amount_usd": 908.58,
         "status": "Overdue",
@@ -388,7 +388,7 @@
       },
       {
         "pledge_ref": "PLG-3014",
-        "donor_email": "linda.reyes1@example.org",
+        "donor_email": "rosalind.marchetti@handsandhopealliance.org",
         "campaign_name": "Annual Gala 2026",
         "amount_usd": 634.47,
         "status": "Pledged",
@@ -396,7 +396,7 @@
       },
       {
         "pledge_ref": "PLG-3015",
-        "donor_email": "priya.larsen12@example.org",
+        "donor_email": "priya.larsen@handsandhopealliance.org",
         "campaign_name": "Annual Gala 2026",
         "amount_usd": 25633.04,
         "status": "Overdue",
@@ -404,7 +404,7 @@
       },
       {
         "pledge_ref": "PLG-3016",
-        "donor_email": "wei.kowalski26@example.org",
+        "donor_email": "wei.kowalski@handsandhopealliance.org",
         "campaign_name": "Annual Gala 2026",
         "amount_usd": 20923.58,
         "status": "Fulfilled",
@@ -412,7 +412,7 @@
       },
       {
         "pledge_ref": "PLG-3017",
-        "donor_email": "elena.singh10@example.org",
+        "donor_email": "elena.singh@handsandhopealliance.org",
         "campaign_name": "Winter Coat Drive 2026",
         "amount_usd": 313.94,
         "status": "Fulfilled",
@@ -420,7 +420,7 @@
       },
       {
         "pledge_ref": "PLG-3018",
-        "donor_email": "priya.singh8@example.org",
+        "donor_email": "priya.singh@handsandhopealliance.org",
         "campaign_name": "Annual Gala 2026",
         "amount_usd": 17438.26,
         "status": "Overdue",
@@ -428,7 +428,7 @@
       },
       {
         "pledge_ref": "PLG-3019",
-        "donor_email": "maria.alvarez28@example.org",
+        "donor_email": "nadia.kessler@handsandhopealliance.org",
         "campaign_name": "Winter Coat Drive 2026",
         "amount_usd": 41204.32,
         "status": "Pledged",
@@ -436,7 +436,7 @@
       },
       {
         "pledge_ref": "PLG-3020",
-        "donor_email": "wei.chen37@example.org",
+        "donor_email": "wei.chen@handsandhopealliance.org",
         "campaign_name": "Annual Gala 2026",
         "amount_usd": 24384.27,
         "status": "Fulfilled",
@@ -444,7 +444,7 @@
       },
       {
         "pledge_ref": "PLG-3021",
-        "donor_email": "aisha.ferreira14@example.org",
+        "donor_email": "aisha.ferreira@handsandhopealliance.org",
         "campaign_name": "Literacy For All",
         "amount_usd": 45004.22,
         "status": "Fulfilled",
@@ -452,7 +452,7 @@
       },
       {
         "pledge_ref": "PLG-3022",
-        "donor_email": "sofia.okoye3@example.org",
+        "donor_email": "sofia.okoye@handsandhopealliance.org",
         "campaign_name": "Literacy For All",
         "amount_usd": 13493.85,
         "status": "Pledged",
@@ -460,7 +460,7 @@
       },
       {
         "pledge_ref": "PLG-3023",
-        "donor_email": "samuel.reyes32@example.org",
+        "donor_email": "samuel.reyes@handsandhopealliance.org",
         "campaign_name": "Emergency Flood Relief",
         "amount_usd": 950.17,
         "status": "Fulfilled",
@@ -468,7 +468,7 @@
       },
       {
         "pledge_ref": "PLG-3024",
-        "donor_email": "daniel.nakamura25@example.org",
+        "donor_email": "daniel.nakamura@handsandhopealliance.org",
         "campaign_name": "Literacy For All",
         "amount_usd": 5425.95,
         "status": "Overdue",
@@ -476,7 +476,7 @@
       },
       {
         "pledge_ref": "PLG-3025",
-        "donor_email": "maria.alvarez28@example.org",
+        "donor_email": "nadia.kessler@handsandhopealliance.org",
         "campaign_name": "Annual Gala 2026",
         "amount_usd": 38211.91,
         "status": "Fulfilled",
@@ -484,7 +484,7 @@
       },
       {
         "pledge_ref": "PLG-3026",
-        "donor_email": "wei.larsen31@example.org",
+        "donor_email": "wei.larsen@handsandhopealliance.org",
         "campaign_name": "Annual Gala 2026",
         "amount_usd": 40948.73,
         "status": "Fulfilled",
@@ -492,7 +492,7 @@
       },
       {
         "pledge_ref": "PLG-3027",
-        "donor_email": "tomas.larsen34@example.org",
+        "donor_email": "tomas.larsen@handsandhopealliance.org",
         "campaign_name": "Annual Gala 2026",
         "amount_usd": 829.63,
         "status": "Pledged",
@@ -500,7 +500,7 @@
       },
       {
         "pledge_ref": "PLG-3028",
-        "donor_email": "wei.chen37@example.org",
+        "donor_email": "wei.chen@handsandhopealliance.org",
         "campaign_name": "Winter Coat Drive 2026",
         "amount_usd": 47982.81,
         "status": "Fulfilled",
@@ -508,7 +508,7 @@
       },
       {
         "pledge_ref": "PLG-3029",
-        "donor_email": "daniel.chen9@example.org",
+        "donor_email": "daniel.chen@handsandhopealliance.org",
         "campaign_name": "Annual Gala 2026",
         "amount_usd": 931.13,
         "status": "Fulfilled",
@@ -516,7 +516,7 @@
       },
       {
         "pledge_ref": "PLG-3030",
-        "donor_email": "elena.singh10@example.org",
+        "donor_email": "elena.singh@handsandhopealliance.org",
         "campaign_name": "Literacy For All",
         "amount_usd": 512.48,
         "status": "Fulfilled",
@@ -524,7 +524,7 @@
       },
       {
         "pledge_ref": "PLG-3031",
-        "donor_email": "wei.ferreira4@example.org",
+        "donor_email": "wei.ferreira@handsandhopealliance.org",
         "campaign_name": "Emergency Flood Relief",
         "amount_usd": 804.41,
         "status": "Overdue",
@@ -532,7 +532,7 @@
       },
       {
         "pledge_ref": "PLG-3032",
-        "donor_email": "wei.kowalski26@example.org",
+        "donor_email": "wei.kowalski@handsandhopealliance.org",
         "campaign_name": "Winter Coat Drive 2026",
         "amount_usd": 10354.85,
         "status": "Fulfilled",
@@ -540,7 +540,7 @@
       },
       {
         "pledge_ref": "PLG-3033",
-        "donor_email": "priya.singh8@example.org",
+        "donor_email": "priya.singh@handsandhopealliance.org",
         "campaign_name": "Winter Coat Drive 2026",
         "amount_usd": 47149.76,
         "status": "Pledged",
@@ -548,7 +548,7 @@
       },
       {
         "pledge_ref": "PLG-3034",
-        "donor_email": "wei.kowalski26@example.org",
+        "donor_email": "wei.kowalski@handsandhopealliance.org",
         "campaign_name": "Winter Coat Drive 2026",
         "amount_usd": 38811.79,
         "status": "Overdue",
@@ -556,7 +556,7 @@
       },
       {
         "pledge_ref": "PLG-3035",
-        "donor_email": "wei.alvarez22@example.org",
+        "donor_email": "wei.alvarez@handsandhopealliance.org",
         "campaign_name": "Annual Gala 2026",
         "amount_usd": 208.24,
         "status": "Fulfilled",
@@ -564,7 +564,7 @@
       },
       {
         "pledge_ref": "PLG-3036",
-        "donor_email": "priya.larsen12@example.org",
+        "donor_email": "priya.larsen@handsandhopealliance.org",
         "campaign_name": "Annual Gala 2026",
         "amount_usd": 34205.63,
         "status": "Fulfilled",
@@ -572,7 +572,7 @@
       },
       {
         "pledge_ref": "PLG-3037",
-        "donor_email": "sofia.larsen39@example.org",
+        "donor_email": "marcus.delgado@handsandhopealliance.org",
         "campaign_name": "Annual Gala 2026",
         "amount_usd": 21862.23,
         "status": "Fulfilled",
@@ -580,7 +580,7 @@
       },
       {
         "pledge_ref": "PLG-3038",
-        "donor_email": "samuel.alvarez36@example.org",
+        "donor_email": "samuel.alvarez@handsandhopealliance.org",
         "campaign_name": "Emergency Flood Relief",
         "amount_usd": 56.49,
         "status": "Fulfilled",
@@ -588,7 +588,7 @@
       },
       {
         "pledge_ref": "PLG-3039",
-        "donor_email": "wei.ferreira4@example.org",
+        "donor_email": "wei.ferreira@handsandhopealliance.org",
         "campaign_name": "Emergency Flood Relief",
         "amount_usd": 442.18,
         "status": "Fulfilled",
@@ -596,7 +596,7 @@
       },
       {
         "pledge_ref": "PLG-3040",
-        "donor_email": "linda.reyes1@example.org",
+        "donor_email": "rosalind.marchetti@handsandhopealliance.org",
         "campaign_name": "Winter Coat Drive 2026",
         "amount_usd": 172.38,
         "status": "Overdue",
@@ -604,7 +604,7 @@
       },
       {
         "pledge_ref": "PLG-3041",
-        "donor_email": "yuki.singh7@example.org",
+        "donor_email": "yuki.singh@handsandhopealliance.org",
         "campaign_name": "Annual Gala 2026",
         "amount_usd": 846.35,
         "status": "Fulfilled",
@@ -612,7 +612,7 @@
       },
       {
         "pledge_ref": "PLG-3042",
-        "donor_email": "linda.reyes0@example.org",
+        "donor_email": "linda.reyes@handsandhopealliance.org",
         "campaign_name": "Winter Coat Drive 2026",
         "amount_usd": 615.64,
         "status": "Fulfilled",
@@ -620,7 +620,7 @@
       },
       {
         "pledge_ref": "PLG-3043",
-        "donor_email": "linda.reyes1@example.org",
+        "donor_email": "rosalind.marchetti@handsandhopealliance.org",
         "campaign_name": "Annual Gala 2026",
         "amount_usd": 264.09,
         "status": "Fulfilled",
@@ -628,7 +628,7 @@
       },
       {
         "pledge_ref": "PLG-3044",
-        "donor_email": "linda.reyes0@example.org",
+        "donor_email": "linda.reyes@handsandhopealliance.org",
         "campaign_name": "Winter Coat Drive 2026",
         "amount_usd": 443.5,
         "status": "Fulfilled",
@@ -636,7 +636,7 @@
       },
       {
         "pledge_ref": "PLG-3045",
-        "donor_email": "elena.nakamura20@example.org",
+        "donor_email": "elena.nakamura@handsandhopealliance.org",
         "campaign_name": "Literacy For All",
         "amount_usd": 43765,
         "status": "Fulfilled",
@@ -644,7 +644,7 @@
       },
       {
         "pledge_ref": "PLG-3046",
-        "donor_email": "samuel.alvarez36@example.org",
+        "donor_email": "samuel.alvarez@handsandhopealliance.org",
         "campaign_name": "Emergency Flood Relief",
         "amount_usd": 861.1,
         "status": "Fulfilled",
@@ -652,7 +652,7 @@
       },
       {
         "pledge_ref": "PLG-3047",
-        "donor_email": "grace.singh33@example.org",
+        "donor_email": "grace.singh@handsandhopealliance.org",
         "campaign_name": "Emergency Flood Relief",
         "amount_usd": 359.04,
         "status": "Fulfilled",
@@ -660,7 +660,7 @@
       },
       {
         "pledge_ref": "PLG-3048",
-        "donor_email": "maria.alvarez28@example.org",
+        "donor_email": "nadia.kessler@handsandhopealliance.org",
         "campaign_name": "Emergency Flood Relief",
         "amount_usd": 29271.26,
         "status": "Fulfilled",
@@ -668,7 +668,7 @@
       },
       {
         "pledge_ref": "PLG-3049",
-        "donor_email": "daniel.nakamura25@example.org",
+        "donor_email": "daniel.nakamura@handsandhopealliance.org",
         "campaign_name": "Annual Gala 2026",
         "amount_usd": 1750.72,
         "status": "Fulfilled",
