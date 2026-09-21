@@ -254,7 +254,12 @@ begin
   select count(*) into v_n from custom.read_records(v_org, v_jobs, false, 200, 0);
   select count(*) into v_m from custom.read_records(v_org, v_invoices, true, 200, 0);
   if v_n <> 10 or v_m <> 3 then raise exception '5a: Bruno got % jobs and % invoices, expected 10 and 3', v_n, v_m; end if;
-  if exists (select 1 from custom.read_records(v_org, v_jobs, true, 200, 0) r where (r.document ->> 'title') like 'Ada%') then
+  -- 🚨 p_by_id = FALSE (lane RED-SUITES-2, 2026-09-21). `custom.read_records`' THIRD argument
+  -- is `p_by_id`, and with it TRUE the document is keyed by FIELD ID, so
+  -- `document ->> 'title'` is always NULL and this clause could never fire whatever Bruno
+  -- could see. Measured: by_id=true -> 0 rows match a named field key; by_id=false -> the row
+  -- matches. Same shape RED-SUITES fixed in `guardswitch_green` 3e.
+  if exists (select 1 from custom.read_records(v_org, v_jobs, false, 200, 0) r where (r.document ->> 'title') like 'Ada%') then
     raise exception '5b: Bruno can see one of Ada''s jobs';
   end if;
   begin
