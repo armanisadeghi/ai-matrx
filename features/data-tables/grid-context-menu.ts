@@ -53,6 +53,7 @@ import {
   Plus,
   Scissors,
   Settings2,
+  Sigma,
   Trash2,
   Zap,
 } from "lucide-react";
@@ -466,6 +467,9 @@ export function buildGridColumnMenuSection(opts: {
     canColorBy: boolean;
     /** True when the table is currently colored BY this column. */
     isColorBy: boolean;
+    /** The view's summary for this column and the kinds its type allows (column-summaries.ts). */
+    summary?: string | null;
+    summaryKinds?: readonly { kind: string; label: string }[];
   } | null;
   readOnly: boolean;
   /** Overrides the default view-only sentence when it would be untrue. */
@@ -490,6 +494,8 @@ export function buildGridColumnMenuSection(opts: {
     colorBy: (fieldName: string, on: boolean) => void;
     /** Open the table-wide Colors dialog (color-by + rules). */
     colors: () => void;
+    /** Set or clear the summary shown under this column (view state). */
+    summarize?: (fieldName: string, kind: string | null) => void;
   };
   unavailable?: AvailabilityMap;
 }): ContextMenuExtraSection {
@@ -559,6 +565,35 @@ export function buildGridColumnMenuSection(opts: {
       icon: PanelRight,
       onSelect: () => name && on.insert(name, "right"),
     },
+    ...(column?.summaryKinds && column.summaryKinds.length > 0 && on.summarize
+      ? [
+          {
+            kind: "submenu" as const,
+            id: "grid-col-summarize",
+            label: "Summarize column",
+            icon: Sigma,
+            children: [
+              ...column.summaryKinds.map((k) => ({
+                kind: "item" as const,
+                id: `grid-col-summarize-${k.kind}`,
+                label: k.label,
+                icon: Sigma,
+                hint: column.summary === k.kind ? "✓" : undefined,
+                onSelect: () => name && on.summarize?.(name, k.kind),
+              })),
+              { kind: "separator" as const, id: "grid-col-summarize-sep" },
+              {
+                kind: "item" as const,
+                id: "grid-col-summarize-none",
+                label: "No summary",
+                icon: Eraser,
+                disabled: !column.summary,
+                onSelect: () => name && on.summarize?.(name, null),
+              },
+            ],
+          },
+        ]
+      : []),
     { kind: "separator", id: "grid-col-sep-color" },
     buildHighlightSubmenu({
       id: "grid-col-highlight",

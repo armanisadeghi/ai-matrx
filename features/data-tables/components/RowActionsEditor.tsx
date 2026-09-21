@@ -32,6 +32,8 @@ import { CHOICE_COLORS } from "@/lib/field-formats/choices";
 import { resolveFieldFormat, formatFieldValue } from "@/lib/field-formats/format";
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
 import { cn } from "@/lib/utils";
+import { IconResolver } from "@ai-matrx/icons";
+import { IconInputCompact } from "@/components/official/icons/IconInputWithValidation.dynamic";
 
 import { isComputedColumn } from "../formulas";
 import {
@@ -171,7 +173,7 @@ export function RowActionsEditor({ tableId, metadata, fields, rows, disabled, on
                   rowActionButtonClass(action.color),
                 )}
               >
-                {action.kind === "agent" ? <MessageSquareText className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
+                <RowActionIcon action={action} className="h-3 w-3" />
                 {action.name}
               </span>
               <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground" title={describeRowAction(action, fields)}>
@@ -217,6 +219,12 @@ export function RowActionsEditor({ tableId, metadata, fields, rows, disabled, on
   );
 }
 
+/** The action's icon: its picked icon, else a speech bubble for agent actions and a bolt for updates. */
+export function RowActionIcon({ action, className }: { action: RowAction; className?: string }) {
+  if (action.icon) return <IconResolver iconName={action.icon} className={className} />;
+  return action.kind === "agent" ? <MessageSquareText className={className} /> : <Zap className={className} />;
+}
+
 // ─── one action ──────────────────────────────────────────────────────────────
 
 function ActionForm(props: {
@@ -251,7 +259,7 @@ function ActionForm(props: {
 
   return (
     <div className="space-y-3 rounded-md border bg-muted/30 p-3">
-      <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+      <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
         <div className="space-y-1">
           <Label htmlFor="row-action-name" className="text-xs">Button label</Label>
           <Input
@@ -282,6 +290,17 @@ function ActionForm(props: {
               ))}
             </SelectContent>
           </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Icon</Label>
+          <div className="w-[160px]">
+            <IconInputCompact
+              id="row-action-icon"
+              value={action.icon ?? ""}
+              placeholder="zap"
+              onChange={(iconName) => onChange({ ...action, icon: iconName || undefined })}
+            />
+          </div>
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Ask first</Label>

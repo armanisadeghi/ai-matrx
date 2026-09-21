@@ -118,6 +118,8 @@ interface TableConfigModalProps {
   onSuccess: () => void;
   /** One loaded row, so the row-label picker can show an example. */
   sampleRow?: { data: Record<string, unknown> } | null;
+  /** Which tab opens first; "fields" by default. */
+  defaultTab?: "fields" | "table" | "actions";
   /** The rows on screen — the Actions tab previews an action against a real row. */
   rows?: readonly { id: string; data: Record<string, unknown> }[];
   /**
@@ -147,6 +149,7 @@ export default function TableConfigModal({
   onAddColumn,
   sampleRow,
   rows,
+  defaultTab,
   onSuccess,
 }: TableConfigModalProps) {
   const [loading, setLoading] = useState(false);
@@ -767,7 +770,7 @@ export default function TableConfigModal({
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="fields" className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <Tabs key={defaultTab ?? "fields"} defaultValue={defaultTab ?? "fields"} className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <TabsList className="mx-3 mt-2 grid shrink-0 w-auto grid-cols-3 sm:mx-4">
             <TabsTrigger value="fields">Fields & Order</TabsTrigger>
             <TabsTrigger value="table">Table Settings</TabsTrigger>
@@ -891,6 +894,17 @@ export default function TableConfigModal({
                           resolveFieldFormat(field.data_type, field.metadata)
                         }
                         onChange={(next) => {
+                          setFormatChanges((prev) => ({
+                            ...prev,
+                            [field.id]: next,
+                          }));
+                          setHasChanges(true);
+                        }}
+                        onDataTypeChange={(base, next) => {
+                          // A kind that lives on another storage type: retype
+                          // the column (the type change resets the draft
+                          // format) and then set the picked format on top.
+                          handleFieldChange(field.id, "data_type", base);
                           setFormatChanges((prev) => ({
                             ...prev,
                             [field.id]: next,

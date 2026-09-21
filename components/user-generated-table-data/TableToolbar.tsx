@@ -88,6 +88,8 @@ interface TableToolbarProps {
   showAddColumnModal: boolean;
   showAddRowModal: boolean;
   showTableConfigModal: boolean;
+  /** Which tab Table settings opens on. */
+  configTab?: "fields" | "table" | "actions";
   showReferenceOverlay: boolean;
   showRowOrderingModal: boolean;
   showPasteRowsDialog: boolean;
@@ -162,6 +164,7 @@ export default function TableToolbar({
   showAddColumnModal,
   showAddRowModal,
   showTableConfigModal,
+  configTab,
   showReferenceOverlay,
   showRowOrderingModal,
   showPasteRowsDialog,
@@ -545,6 +548,7 @@ export default function TableToolbar({
             onAddColumn={() => setShowAddColumnModal(true)}
             sampleRow={sampleRow ?? null}
             rows={rows}
+            defaultTab={configTab}
           />
           <RowOrderingModal
             isOpen={showRowOrderingModal}

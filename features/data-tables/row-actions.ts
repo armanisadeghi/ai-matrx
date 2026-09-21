@@ -64,6 +64,8 @@ export type RowAction = {
   name: string;
   /** Button tint; `null` is the neutral button. */
   color?: StyleColor | null;
+  /** A registered / Lucide icon name (the platform's icon picker); omitted = the lightning bolt. */
+  icon?: string;
   /** Ask before running. Off by default: an update is one bulk write, and cell history keeps the old values. */
   confirm?: boolean;
   kind: RowActionKind;
@@ -118,6 +120,7 @@ export function readRowActions(metadata: unknown): RowAction[] {
       color: isStyleColor(r.color) ? r.color : null,
       confirm: r.confirm === true,
       kind,
+      ...(typeof r.icon === "string" && r.icon.trim() && r.icon.length <= 64 ? { icon: r.icon.trim() } : {}),
     };
     if (kind === "update") {
       action.steps = Array.isArray(r.steps)

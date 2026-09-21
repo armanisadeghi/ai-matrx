@@ -104,8 +104,14 @@ import {
   describeRowAction,
   readRowActions,
 } from "@/features/data-tables/row-actions";
-import { rowActionButtonClass } from "@/features/data-tables/components/RowActionsEditor";
+import { RowActionIcon, rowActionButtonClass } from "@/features/data-tables/components/RowActionsEditor";
 import { ColumnViewMenu } from "@/features/data-tables/components/ColumnViewMenu";
+import { ColumnSettingsDialog } from "@/components/user-generated-table-data/ColumnSettingsDialog";
+import {
+  COLUMN_SUMMARY_LABELS,
+  isColumnSummaryKind,
+  summaryKindsFor,
+} from "@/features/data-tables/column-summaries";
 import {
   useTableRealtime,
   type TableRealtimeEvent,
@@ -617,6 +623,10 @@ const UserTableViewer = ({
     unknown
   > | null>(null);
   const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
+  // Column settings — ONE column's dialog (ColumnSettingsDialog); null = closed.
+  const [settingsFieldName, setSettingsFieldName] = useState<string | null>(null);
+  // Which tab Table settings opens on; the Actions header's menu opens "actions".
+  const [tableConfigTab, setTableConfigTab] = useState<"fields" | "table" | "actions">("fields");
   const lastSelectedRowIndex = React.useRef<number | null>(null);
   const shiftSelectionRequested = React.useRef(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -2427,6 +2437,7 @@ const UserTableViewer = ({
     [rowActions, fields],
   );
   const { launchMandate } = useAgentLauncher();
+  const hasColumnSummaries = Object.values(columnSummaries).some(Boolean);
 
   // An undo stack must never outlive its table: restoring a value into a table
   // the user has navigated away from would be a write they never asked for.
@@ -3438,6 +3449,11 @@ const UserTableViewer = ({
             highlight: tableStyle.columns?.[menuField.field_name] ?? null,
             canColorBy: fieldCanColorBy(menuField),
             isColorBy: tableStyle.colorBy?.field === menuField.field_name,
+            summary: columnSummaries[menuField.field_name] ?? null,
+            summaryKinds: summaryKindsFor(menuField.data_type).map((kind) => ({
+              kind,
+              label: COLUMN_SUMMARY_LABELS[kind],
+            })),
           }
         : null,
       readOnly: isReadOnly,
@@ -3470,7 +3486,9 @@ const UserTableViewer = ({
               ? hiddenColumns
               : [...hiddenColumns, fieldName],
           ),
-        configure: () => setShowTableConfigModal(true),
+        configure: (fieldName) => setSettingsFieldName(fieldName),
+        summarize: (fieldName, kind) =>
+          setColumnSummary(fieldName, isColumnSummaryKind(kind) ? kind : null),
         remove: (fieldName) => {
           const field = fields.find((f) => f.field_name === fieldName);
           if (field) void handleDeleteColumn(field);
@@ -3659,7 +3677,11 @@ const UserTableViewer = ({
             </Button>
           ) : undefined
         }
-        setShowTableConfigModal={setShowTableConfigModal}
+        setShowTableConfigModal={(show) => {
+          if (!show) setTableConfigTab("fields");
+          setShowTableConfigModal(show);
+        }}
+        configTab={tableConfigTab}
         setShowReferenceOverlay={setShowReferenceOverlay}
         setShowRowOrderingModal={setShowRowOrderingModal}
         setShowPasteRowsDialog={setShowPasteRowsDialog}
@@ -4062,6 +4084,29 @@ const UserTableViewer = ({
         onRunAction={(actionId) => runRowAction(actionId, selectedRowIds)}
       />
 
+      {/* One column's settings (ColumnSettingsDialog) — from the header menu
+          and the right-click "Column settings…". */}
+      <ColumnSettingsDialog
+        open={settingsFieldName !== null}
+        onOpenChange={(open) => {
+          if (!open) setSettingsFieldName(null);
+        }}
+        tableId={tableId}
+        field={fields.find((f) => f.field_name === settingsFieldName) ?? null}
+        fields={fields}
+        tableMetadata={tableInfo?.metadata}
+        readOnly={isReadOnly}
+        summary={settingsFieldName ? (columnSummaries[settingsFieldName] ?? null) : null}
+        onSummaryChange={(kind) => settingsFieldName && setColumnSummary(settingsFieldName, kind)}
+        onSaved={() =>
+          void loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true)
+        }
+        onHide={(fieldName) =>
+          setHiddenColumns(hiddenColumns.includes(fieldName) ? hiddenColumns : [...hiddenColumns, fieldName])
+        }
+        onDelete={fields.length > 1 ? (field) => void handleDeleteColumn(field) : undefined}
+      />
+
       {/* Table colors — color-by a column + rules (table-style.ts). */}
       <ColorRulesDialog
         open={showColorsDialog}
@@ -4417,7 +4462,7 @@ const UserTableViewer = ({
                         onConfigure={
                           isReadOnly
                             ? undefined
-                            : () => setShowTableConfigModal(true)
+                            : () => setSettingsFieldName(field.field_name)
                         }
                         onDelete={
                           isReadOnly || fields.length <= 1
@@ -4429,27 +4474,77 @@ const UserTableViewer = ({
                   </TableHead>
                 );
               })}
-              <TableHead className="sticky top-0 z-20 bg-gray-100 dark:bg-gray-800 w-[140px] text-gray-700 dark:text-gray-300 text-center py-3 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-center gap-1.5">
-                  {/* Where every spreadsheet puts it: a "+" at the end of the
-                      header row adds a column at the end. */}
-                  {!isReadOnly && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      title="Add a column at the end"
-                      aria-label="Add a column at the end"
-                      onClick={() => {
-                        setPendingColumnInsert(null);
-                        setShowAddColumnModal(true);
-                      }}
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
+              {/* Where every spreadsheet puts it: a slim "+" column after the
+                  last column adds a column at the end. Its own cell, so it can
+                  never read as "add an action" (Arman, 2026-09-21). */}
+              {!isReadOnly && (
+                <TableHead className="sticky top-0 z-20 w-8 bg-gray-100 p-0 text-center dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    title="Add a column at the end"
+                    aria-label="Add a column at the end"
+                    onClick={() => {
+                      setPendingColumnInsert(null);
+                      setShowAddColumnModal(true);
+                    }}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </TableHead>
+              )}
+              <TableHead className="sticky top-0 z-20 bg-gray-100 dark:bg-gray-800 w-[112px] text-gray-700 dark:text-gray-300 text-center py-3 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-center gap-1">
                   <span>Actions</span>
+                  {/* The table's own actions live behind ONE menu here too:
+                      see them and open where they are managed. */}
+                  {!isReadOnly && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          title="Row actions for this table"
+                          aria-label="Row actions for this table"
+                        >
+                          <Zap className="h-3.5 w-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-64">
+                        {rowActions.length > 0 ? (
+                          <>
+                            <DropdownMenuLabel className="text-xs text-muted-foreground">
+                              Actions on every row
+                            </DropdownMenuLabel>
+                            {rowActions.map((a) => (
+                              <DropdownMenuItem key={a.id} className="gap-2" disabled>
+                                <RowActionIcon action={a} className="h-3.5 w-3.5" />
+                                <span className="truncate">{a.name}</span>
+                              </DropdownMenuItem>
+                            ))}
+                            <DropdownMenuSeparator />
+                          </>
+                        ) : (
+                          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                            No row actions yet — a button that sets, clears or recalculates cells in one click.
+                          </DropdownMenuLabel>
+                        )}
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            setTableConfigTab("actions");
+                            setShowTableConfigModal(true);
+                          }}
+                        >
+                          <Plus className="mr-2 h-3.5 w-3.5" />
+                          {rowActions.length > 0 ? "Manage actions…" : "Add an action…"}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
               </TableHead>
             </TableRow>
@@ -4490,7 +4585,7 @@ const UserTableViewer = ({
             ) : displayRows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={viewFields.length + 2}
+                  colSpan={viewFields.length + (isReadOnly ? 2 : 3)}
                   className="text-center py-8"
                 >
                   <div className="flex flex-col items-center gap-2">
@@ -4909,29 +5004,14 @@ const UserTableViewer = ({
                       </TableCell>
                     );
                   })}
-                  <TableCell className="text-center">
-                    <div className="flex justify-center space-x-1">
-                      {/* The table's own one-click buttons (row-actions.ts).
-                          One action renders as its tinted chip so it is ONE
-                          click; more collapse into a menu. Absent when the
-                          table has none. */}
-                      {rowActions.length === 1 ? (
-                        <button
-                          type="button"
-                          className={cn(
-                            "inline-flex h-7 max-w-[96px] items-center gap-1 truncate rounded-md border px-2 text-xs font-medium transition-opacity hover:opacity-80",
-                            rowActionButtonClass(rowActions[0].color),
-                          )}
-                          title={describeRowAction(rowActions[0], fields)}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void runRowAction(rowActions[0].id, [row.id]);
-                          }}
-                        >
-                          <Zap className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{rowActions[0].name}</span>
-                        </button>
-                      ) : rowActions.length > 1 ? (
+                  {!isReadOnly && <TableCell className="w-8 p-0" />}
+                  <TableCell className="px-1 py-0 text-center">
+                    <div className="flex items-center justify-center gap-0 [&>button]:h-7 [&>button]:w-7">
+                      {/* The table's own one-click buttons (row-actions.ts),
+                          always behind ONE icon that opens the list — never
+                          inline chips (Arman, 2026-09-21: they were giant and
+                          unreadable). Absent when the table has none. */}
+                      {rowActions.length > 0 ? (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -4940,7 +5020,11 @@ const UserTableViewer = ({
                               onClick={(e) => e.stopPropagation()}
                               title="Run an action on this row"
                             >
-                              <Zap className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                              {rowActions.length === 1 ? (
+                                <RowActionIcon action={rowActions[0]} className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                              ) : (
+                                <Zap className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                              )}
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-64" onClick={(e) => e.stopPropagation()}>
@@ -4953,7 +5037,9 @@ const UserTableViewer = ({
                                 onSelect={() => void runRowAction(a.id, [row.id])}
                               >
                                 <span className="flex items-center gap-1.5 text-sm font-medium">
-                                  <span className={cn("h-2.5 w-2.5 rounded-full border", rowActionButtonClass(a.color))} />
+                                  <span className={cn("inline-flex h-5 w-5 items-center justify-center rounded border", rowActionButtonClass(a.color))}>
+                                    <RowActionIcon action={a} className="h-3 w-3" />
+                                  </span>
                                   {a.name}
                                 </span>
                                 <span className="text-xs text-muted-foreground">{describeRowAction(a, fields)}</span>
@@ -5035,11 +5121,11 @@ const UserTableViewer = ({
                 adds a row. Absent on read-only tables and while loading. */}
             {!isReadOnly && !loading && displayRows.length > 0 && (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={viewFields.length + 2} className="p-0">
+                <TableCell colSpan={viewFields.length + 3} className="p-0">
                   <button
                     type="button"
                     onClick={() => setShowAddRowModal(true)}
-                    className="flex h-9 w-full items-center gap-1.5 px-3 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                    className="flex h-7 w-full items-center gap-1.5 px-3 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
                   >
                     <Plus className="h-3.5 w-3.5" />
                     Add row
@@ -5052,7 +5138,10 @@ const UserTableViewer = ({
               choice per column, computed over the rows the browser holds; when
               that is only a page of the table the cell says so. Hidden on
               mobile — the row of "Summarize" affordances is desktop furniture. */}
-          {!isMobile && displayRows.length > 0 && (
+          {/* Shown only once a column HAS a summary (right-click a header →
+              Summarize column, or Column settings); an empty summary bar read
+              as a blank mystery row (Arman, 2026-09-21). */}
+          {!isMobile && displayRows.length > 0 && hasColumnSummaries && (
             <TableFooter className="sticky bottom-0 z-10 bg-gray-50 dark:bg-gray-900">
               <TableRow className="hover:bg-transparent">
                 <TableCell className="sticky left-0 z-10 w-10 bg-inherit px-2 md:px-3" />
@@ -5092,7 +5181,8 @@ const UserTableViewer = ({
                     </TableCell>
                   );
                 })}
-                <TableCell className="w-[140px]" />
+                {!isReadOnly && <TableCell className="w-8 p-0" />}
+                <TableCell className="w-[112px]" />
               </TableRow>
             </TableFooter>
           )}

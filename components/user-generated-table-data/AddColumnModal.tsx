@@ -207,6 +207,10 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess, in
               dataType={dataType}
               value={format}
               onChange={setFormat}
+              onDataTypeChange={(base, next) => {
+                setDataType(base);
+                setFormat(next);
+              }}
               triggerClassName="h-9 w-full text-sm"
             />
             {format.id === "formula" && (

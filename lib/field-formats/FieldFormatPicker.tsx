@@ -30,11 +30,12 @@ import { cn } from "@/utils/cn";
 import { Settings2 } from "lucide-react";
 
 import {
+  FIELD_FORMATS,
   defaultFormatForBase,
   getFieldFormat,
   groupedFormatsForBase,
 } from "./registry";
-import type { FieldFormatConfig, FieldFormatOptions } from "./types";
+import type { FieldBaseType, FieldFormatConfig, FieldFormatOptions } from "./types";
 import {
   ChoiceOptionsEditor,
   type ChoiceSuggestion,
@@ -73,6 +74,26 @@ export type FieldFormatPickerProps = {
   className?: string;
   optionsClassName?: string;
   triggerClassName?: string;
+  /**
+   * When given, the picker ALSO lists the formats that live on a different
+   * storage type (Time on Text, Currency on Number, …) under "Other kinds",
+   * and picking one calls this instead of `onChange` so the caller can retype
+   * the column and set the format together. Arman (2026-09-21): "Under
+   * datetime, I see show as but time is not an option" — the user thinks in
+   * kinds of data, not storage types, so a kind must be one pick away.
+   */
+  onDataTypeChange?: (base: FieldBaseType, format: FieldFormatConfig) => void;
+};
+
+const BASE_LABELS: Record<string, string> = {
+  string: "Text",
+  number: "Number",
+  integer: "Whole number",
+  boolean: "Yes/No",
+  date: "Date",
+  datetime: "Date & time",
+  json: "Structured data",
+  array: "List",
 };
 
 const CURRENCIES = [
@@ -102,8 +123,19 @@ export function FieldFormatPicker({
   className,
   optionsClassName,
   triggerClassName,
+  onDataTypeChange,
 }: FieldFormatPickerProps) {
   const groups = groupedFormatsForBase(dataType);
+  const otherKinds = onDataTypeChange
+    ? Object.values(FIELD_FORMATS).filter(
+        (d) =>
+          !groups.some((g) => g.formats.some((f) => f.id === d.id)) &&
+          // Computed and structural formats are not "kinds of data" one retypes into.
+          d.editor !== "computed" &&
+          d.base !== "json" &&
+          d.base !== "array",
+      )
+    : [];
   // `||`, not `??` — an empty-string id is as absent as undefined, and one can
   // arrive from a cleared Radix value or a hand-edited metadata row.
   const activeId = value?.id || defaultFormatForBase(dataType);
@@ -316,8 +348,14 @@ export function FieldFormatPicker({
               // clobbered the format the caller had just set (pick Number as the
               // type and the format silently became "", rendering as "Text").
               // Only accept a real, known format id.
-              if (!getFieldFormat(id)) return;
-              onChange({ id: id as FieldFormatConfig["id"], options: {} });
+              const picked = getFieldFormat(id);
+              if (!picked) return;
+              const next = { id: id as FieldFormatConfig["id"], options: {} };
+              if (onDataTypeChange && otherKinds.some((d) => d.id === picked.id)) {
+                onDataTypeChange(picked.base, next);
+                return;
+              }
+              onChange(next);
             }}
           >
             <SelectTrigger
@@ -349,6 +387,23 @@ export function FieldFormatPicker({
                   ))}
                 </SelectGroup>
               ))}
+              {otherKinds.length > 0 && (
+                <SelectGroup>
+                  <SelectLabel className="text-[11px] uppercase tracking-wide">
+                    Other kinds · changes what the column stores
+                  </SelectLabel>
+                  {otherKinds.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      <div>
+                        <div className="font-medium">{f.label}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {f.description} · stores {BASE_LABELS[f.base] ?? f.base}
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              )}
             </SelectContent>
           </Select>
 
