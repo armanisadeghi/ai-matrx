@@ -6,7 +6,7 @@ export const metadata: Metadata = toolMetadata("mind-maps");
 
 export default function MindMapsToolPage() {
   return (
-    <div className="h-full overflow-y-auto bg-textured">
+    <div className="scroll-page-end-space h-full overflow-y-auto bg-textured">
       <MindMapHome />
     </div>
   );

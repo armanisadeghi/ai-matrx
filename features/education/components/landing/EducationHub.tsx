@@ -121,7 +121,7 @@ export function EducationHub() {
   ];
 
   return (
-    <MarketingPageShell>
+    <MarketingPageShell className="scroll-page-end-space">
       {/* Render-free: registers this route's live surface scope for the
           AppShell Agents chrome (matrx-user/education). */}
       <EducationHubSurface />

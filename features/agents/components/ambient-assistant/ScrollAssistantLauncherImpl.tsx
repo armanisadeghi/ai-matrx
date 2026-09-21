@@ -38,7 +38,7 @@ function GuestAmbientAssistant({
   });
 
   return (
-    <div className="ambient-assistant-dock pointer-events-none fixed left-1/2 z-[35] w-[min(380px,calc(100vw-2rem))] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+    <div className="ambient-assistant-dock fixed left-1/2 z-[35] w-[min(380px,calc(100vw-2rem))] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200">
       <Button
         type="button"
         variant="ghost"
@@ -120,7 +120,7 @@ function AuthenticatedAmbientAssistant({
   return (
     <div
       className={cn(
-        "ambient-assistant-dock pointer-events-none fixed left-1/2 z-[35] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200",
+        "ambient-assistant-dock fixed left-1/2 z-[35] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200",
         inputVariant === "multiline"
           ? "w-[min(420px,calc(100vw-2rem))]"
           : "w-[min(380px,calc(100vw-2rem))]",

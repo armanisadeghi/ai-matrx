@@ -23,7 +23,7 @@ export default async function PracticeOralToolPage({
   return (
     <>
       <EducationToolHeader title="Spoken Practice" />
-      <div className="h-full overflow-y-auto bg-textured">
+      <div className="scroll-page-end-space h-full overflow-y-auto bg-textured">
         <SpokenPracticeClient initialMode={mode ?? null} initialDeckId={deck ?? null} />
       </div>
     </>

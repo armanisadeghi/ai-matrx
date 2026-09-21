@@ -144,7 +144,7 @@ export function FamilyDashboard() {
     });
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-3xl flex-col gap-5 overflow-y-auto p-4">
+    <div className="scroll-page-end-space mx-auto flex h-full w-full max-w-3xl flex-col gap-5 overflow-y-auto p-4">
       <header>
         <h1 className="flex items-center gap-2 text-xl font-bold text-foreground">
           <Users className="h-5 w-5 text-primary" /> Family

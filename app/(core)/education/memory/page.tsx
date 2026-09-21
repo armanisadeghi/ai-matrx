@@ -6,7 +6,7 @@ export const metadata: Metadata = toolMetadata("memory");
 
 export default function MemoryToolPage() {
   return (
-    <div className="h-full overflow-y-auto bg-textured">
+    <div className="scroll-page-end-space h-full overflow-y-auto bg-textured">
       <MemoryHome />
     </div>
   );

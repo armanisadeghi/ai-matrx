@@ -6,7 +6,7 @@ export const metadata: Metadata = toolMetadata("audio-study");
 
 export default function AudioStudyToolPage() {
   return (
-    <div className="h-full overflow-y-auto bg-textured">
+    <div className="scroll-page-end-space h-full overflow-y-auto bg-textured">
       <AudioStudyHome />
     </div>
   );

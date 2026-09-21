@@ -66,7 +66,7 @@ export default async function QuickMathProblemPage({ params }: PageProps) {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-textured">
+    <div className="scroll-page-end-space h-full overflow-y-auto bg-textured">
       <div className="container mx-auto px-4 py-8 max-w-5xl h-full">
         <div className="min-h-full flex flex-col">
           <MathProblem {...problemProps} />

@@ -12,7 +12,7 @@ export const metadata: Metadata = toolMetadata("grade-work");
 
 export default function GradeWorkToolPage() {
   return (
-    <div className="h-full overflow-y-auto bg-textured">
+    <div className="scroll-page-end-space h-full overflow-y-auto bg-textured">
       <GradeWorkClient />
     </div>
   );

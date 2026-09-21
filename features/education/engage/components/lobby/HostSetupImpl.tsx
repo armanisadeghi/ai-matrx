@@ -114,7 +114,7 @@ export function HostSetupImpl() {
 
   return (
     <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
-    <div className="mx-auto flex h-full w-full max-w-2xl flex-col gap-4 overflow-y-auto p-4">
+    <div className="scroll-page-end-space mx-auto flex h-full w-full max-w-2xl flex-col gap-4 overflow-y-auto p-4">
       <div className="flex items-center gap-2">
         <Button
           variant="ghost"

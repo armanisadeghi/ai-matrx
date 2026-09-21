@@ -10,8 +10,13 @@ const shellCss = readFileSync(
 test("Education keeps direct scroll owners full-height while reserving end runway", () => {
   assert.match(
     shellCss,
-    /\.education-scroll-boundary:has\(> \.overflow-y-auto\),\s*\.education-scroll-boundary:has\(> \.overflow-auto\),\s*\.education-scroll-boundary:has\(\.scroll-page-end-space\)\s*\{[^}]*padding-block-end:\s*0;/s,
+    /\.education-scroll-boundary:has\(> \.overflow-y-auto\),\s*\.education-scroll-boundary:has\(> \.overflow-auto\),\s*\.education-scroll-boundary:has\(> \.h-full\.overflow-hidden\),\s*\.education-scroll-boundary:has\(\.scroll-page-end-space\)\s*\{[^}]*padding-block-end:\s*0;/s,
     "a padded route boundary must be neutralized whenever its direct child owns scrolling",
+  );
+  assert.match(
+    shellCss,
+    /\.education-scroll-boundary:has\(> \.h-full\.overflow-hidden\)[^\{]*\{[^}]*padding-block-end:\s*0;/s,
+    "a full-height clipped host must not consume viewport height with assistant runway",
   );
   assert.match(
     shellCss,

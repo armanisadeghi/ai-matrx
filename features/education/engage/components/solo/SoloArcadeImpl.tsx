@@ -122,7 +122,7 @@ function SoloRound({
 
   if (game.status === "finished" && finalOutcome) {
     return (
-      <div className="h-full overflow-y-auto px-4">
+      <div className="scroll-page-end-space h-full overflow-y-auto px-4">
         <ResultsSummary
           outcome={finalOutcome}
           newBadges={newBadges}

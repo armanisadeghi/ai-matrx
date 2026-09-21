@@ -33,7 +33,7 @@ export function EngageHome() {
   return (
     <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
     <EducationToolHeader title="Study Games" />
-    <div className="mx-auto flex h-full w-full max-w-4xl flex-col gap-5 overflow-y-auto px-4 pb-4">
+    <div className="scroll-page-end-space mx-auto flex h-full w-full max-w-4xl flex-col gap-5 overflow-y-auto px-4 pb-4">
       {/* Primary actions */}
       <div className="grid gap-3 sm:grid-cols-3">
         <ActionCard

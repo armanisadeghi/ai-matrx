@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function JoinClassPage() {
   return (
-    <div className="h-full overflow-y-auto bg-textured">
+    <div className="scroll-page-end-space h-full overflow-y-auto bg-textured">
       <Suspense>
         <JoinClassView />
       </Suspense>

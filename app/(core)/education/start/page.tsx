@@ -11,7 +11,7 @@ export const metadata = createRouteMetadata("/education/start", {
 
 export default function EducationStartPage() {
   return (
-    <div className="h-full overflow-y-auto pb-safe">
+    <div className="scroll-page-end-space h-full overflow-y-auto pb-safe">
       <StartHero />
     </div>
   );

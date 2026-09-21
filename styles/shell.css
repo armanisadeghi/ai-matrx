@@ -1661,6 +1661,7 @@ button.shell-nav-flyout-item {
    tools covered by the shared layout without a per-page padding sweep. */
 .education-scroll-boundary:has(> .overflow-y-auto),
 .education-scroll-boundary:has(> .overflow-auto),
+.education-scroll-boundary:has(> .h-full.overflow-hidden),
 .education-scroll-boundary:has(.scroll-page-end-space) {
   padding-block-end: 0;
   scroll-padding-bottom: 0;
@@ -1669,6 +1670,8 @@ button.shell-nav-flyout-item {
 /* Fixed ambient composers sit above keyboards that overlay rather than resize
    the layout viewport (large tablets, vehicle browsers, embedded webviews). */
 .ambient-assistant-dock {
+  background: transparent;
+  pointer-events: none;
   bottom: calc(
     1.25rem + var(--keyboard-inset-height, 0px) +
       env(safe-area-inset-bottom, 0px)
