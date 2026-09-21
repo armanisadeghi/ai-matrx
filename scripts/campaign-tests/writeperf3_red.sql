@@ -32,8 +32,8 @@ declare
   v_org uuid; v_home uuid; v_tbl uuid; v_field uuid; v_msg text; i int;
 begin
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ Cascade Cold Chain — WRITE-PERF-3 red 0',
-          'zzz-wp3-red0-' || substr(md5(random()::text),1,8), 'ZWC', c_admin) returning id into v_org;
+  values ('Cascade Cold Chain — WRITE-PERF-3 red 0',
+          'ccc-wp3-red0-' || substr(md5(random()::text),1,8), 'CCC', c_admin) returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
   values (v_org, c_admin, 'owner', 'active', 'organization', v_org);
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value)
@@ -171,7 +171,7 @@ begin
 
   -- 6. AND THE STORE STILL WORKS — the control, so RED 1 to 5 are not "everything is broken".
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ WRITEPERF3 RED', 'zzz-wp3-red-' || substr(md5(random()::text),1,8), 'ZWC', c_admin)
+  values ('Cascade Cold Chain — WRITE-PERF-3 red', 'ccc-wp3-red-' || substr(md5(random()::text),1,8), 'CCC', c_admin)
   returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
   values (v_org, c_admin, 'owner', 'active', 'organization', v_org);

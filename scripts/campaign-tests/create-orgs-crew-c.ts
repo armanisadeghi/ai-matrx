@@ -16,17 +16,17 @@ const ORGS = [
   {
     file: "us-national-parks-park-itineraries.json",
     name: "Trailhead & Torch Journeys",
-    description: "Travel agency test fixture (REAL-DATA campaign, crew C): US National Parks itineraries, entered via the CSV import wizard.",
+    description: "Travel agency (REAL-DATA campaign, crew C): US National Parks itineraries, entered via the CSV import wizard.",
   },
   {
     file: "fifa-world-cup-finals-trivia-night.json",
     name: "The Offside Rule",
-    description: "Sports bar test fixture (REAL-DATA campaign, crew C): FIFA World Cup finals trivia night, entered via signed-in supabase-js store doors.",
+    description: "Sports bar (REAL-DATA campaign, crew C): FIFA World Cup finals trivia night, entered via signed-in supabase-js store doors.",
   },
   {
     file: "us-large-airports-relocation-route-planning.json",
     name: "Compass Route Relocation Advisors",
-    description: "Relocation/travel-planning test fixture (REAL-DATA campaign, crew C): large US airports, entered through the app's own headless screens.",
+    description: "Relocation and travel planning (REAL-DATA campaign, crew C): large US airports, entered through the app's own headless screens.",
   },
 ];
 

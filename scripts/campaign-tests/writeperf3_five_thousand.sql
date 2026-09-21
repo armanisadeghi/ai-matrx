@@ -41,8 +41,8 @@ declare
   v_seen int := 0; v_landed int := 0; v_dupe int := 0; v_bad int := 0; n int;
 begin
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ Cascade Cold Chain — WRITE-PERF-3 import ' || p_half,
-          'zzz-wp3-5k-' || lower(left(p_half, 1)) || '-' || substr(md5(random()::text),1,8), 'ZWC', c_admin)
+  values ('Cascade Cold Chain — WRITE-PERF-3 import ' || p_half,
+          'ccc-wp3-5k-' || lower(left(p_half, 1)) || '-' || substr(md5(random()::text),1,8), 'CCC', c_admin)
   returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
   values (v_org, c_admin, 'owner', 'active', 'organization', v_org);

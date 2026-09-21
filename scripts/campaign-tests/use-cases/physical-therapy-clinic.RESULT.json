@@ -3,7 +3,7 @@
   "organization": {
     "id": "0fec03d8-afe5-4ea0-bf14-d0ab18e4a536",
     "slug": "physical-therapy-clinic",
-    "name": "Ridgeline Physical Therapy (test fixture)",
+    "name": "Ridgeline Physical Therapy",
     "settings": {
       "test_fixture": true
     }

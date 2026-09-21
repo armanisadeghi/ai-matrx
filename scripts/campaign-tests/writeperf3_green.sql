@@ -42,7 +42,7 @@ begin
   c_dana_j  := jsonb_build_object('sub', c_dana,  'role', 'authenticated')::text;
 
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ Cascade Cold Chain — WRITE-PERF-3 green', 'zzz-wp3-green-' || substr(md5(random()::text),1,8), 'ZWC', c_admin)
+  values ('Cascade Cold Chain — WRITE-PERF-3 green', 'ccc-wp3-green-' || substr(md5(random()::text),1,8), 'CCC', c_admin)
   returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
   values (v_org, c_admin, 'owner', 'active', 'organization', v_org),

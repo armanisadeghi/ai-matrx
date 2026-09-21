@@ -3,7 +3,7 @@
   "organization": {
     "id": "e99d50c6-518c-4a56-871e-aee1702d28bb",
     "slug": "family-recipe-collection",
-    "name": "The Alvarado-Chen Kitchen (test fixture)",
+    "name": "The Alvarado-Chen Kitchen",
     "settings": {
       "test_fixture": true
     }
