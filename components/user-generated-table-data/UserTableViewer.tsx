@@ -3651,7 +3651,12 @@ const UserTableViewer = ({
         </div>
       )}
 
-      <div className="hidden md:block">
+      {/* ONE bar above the grid: saved views (left), Undo/Redo, then this
+          view's Columns + Layout (right). These were three stacked rows, which
+          on a wide screen was three mostly-empty bands of vertical space
+          between the toolbar and the data (Arman's screenshot, 2026-09-20). */}
+      <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1">
+      <div className="hidden min-w-0 flex-1 md:block">
         <SavedViewBar
           views={savedViews.views}
           loading={savedViews.loading}
@@ -3675,7 +3680,7 @@ const UserTableViewer = ({
       {/* Column visibility + order for THIS VIEW. Deliberately next to the
           grid rather than inside Table Settings: Table Settings edits the
           table for everyone, this edits only what you are looking at. */}
-      <div className="hidden shrink-0 items-center justify-end gap-1 md:flex">
+      <div className="hidden shrink-0 items-center justify-end gap-1 md:order-last md:ml-auto md:flex">
         <ColumnViewMenu
           fields={fields.map((f) => ({
             field_name: f.field_name,
@@ -3762,6 +3767,7 @@ const UserTableViewer = ({
           </Button>
         </div>
       )}
+      </div>
 
       <BulkRowActions
         selectedRowIds={selectedRowIds}

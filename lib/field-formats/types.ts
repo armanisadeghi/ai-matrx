@@ -68,6 +68,8 @@ export type FieldFormatId =
   // system columns — filled from the row's own record, never typed
   | "created_time"
   | "modified_time"
+  // assigned by the database at insert (trigger _udt_autonumber) — never typed
+  | "autonumber"
   | "relative_time"
   // structured
   | "json"

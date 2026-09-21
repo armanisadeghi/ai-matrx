@@ -8038,6 +8038,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _organization_for_item: {
+        Args: {
+          p_conversation_id: string
+          p_message_id: string
+          p_source_id: string
+          p_source_system: string
+        }
+        Returns: string
+      }
       _require_actor: { Args: { p_user_id: string }; Returns: string }
     }
     Enums: {
@@ -57952,6 +57961,8 @@ export type Database = {
       }
       scan: {
         Row: {
+          absent_against_revision: string | null
+          content_digest: string | null
           coverage: Json
           created_at: string
           created_by: string | null
@@ -57972,6 +57983,7 @@ export type Database = {
           revision_kind: string
           scanner_version: string
           started_at: string | null
+          unchanged_from_revision: string | null
           updated_at: string
           updated_by: string | null
           verification_status: string
@@ -57979,6 +57991,8 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          absent_against_revision?: string | null
+          content_digest?: string | null
           coverage?: Json
           created_at?: string
           created_by?: string | null
@@ -57999,6 +58013,7 @@ export type Database = {
           revision_kind: string
           scanner_version: string
           started_at?: string | null
+          unchanged_from_revision?: string | null
           updated_at?: string
           updated_by?: string | null
           verification_status: string
@@ -58006,6 +58021,8 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          absent_against_revision?: string | null
+          content_digest?: string | null
           coverage?: Json
           created_at?: string
           created_by?: string | null
@@ -58026,6 +58043,7 @@ export type Database = {
           revision_kind?: string
           scanner_version?: string
           started_at?: string | null
+          unchanged_from_revision?: string | null
           updated_at?: string
           updated_by?: string | null
           verification_status?: string
@@ -76010,6 +76028,7 @@ export type Database = {
         Args: {
           p_content: Json
           p_conversation_id?: string
+          p_organization_id?: string
           p_source_message_id?: string
           p_source_type?: string
           p_title: string
@@ -81388,6 +81407,10 @@ export type Database = {
       trx_words_matches: {
         Args: { p_bucket: string; p_words: number }
         Returns: boolean
+      }
+      udt_backfill_autonumber: {
+        Args: { p_field_id: string; p_table_id: string }
+        Returns: Json
       }
       udt_bulk_write: {
         Args: { p_operations: Json; p_table_id: string }

@@ -48,6 +48,7 @@ import {
   serverRefusal,
   type ServerRefusal,
 } from "@/lib/progress/failureSentence";
+import { wordCount } from "./format";
 import { getRulebook } from "../service";
 import type { Rulebook } from "../types";
 import { getExpertCorpus, type ExpertContribution, type ExpertCorpus } from "./service";
@@ -138,7 +139,35 @@ function ContributionCard({
         </div>
       </div>
 
-      {c.text ? (
+      {/* 🚨 A CONVERSATION IS RENDERED AS TURNS, NEVER AS A BLOB (sixteenth
+          cold walk, 2026-09-21, defect B). This printed the server's flattened
+          text, which for a kept interview carried the raw role token in front
+          of every turn: `user:` five times and `assistant:` eight times on the
+          one screen whose whole purpose is showing an Expert her own words.
+          Her turns are her words, full size. Ours are folded down to what they
+          actually were — the question we asked to get them. */}
+      {c.turns?.length ? (
+        <ul className="mt-2 space-y-2">
+          {c.turns.map((turn, index) => (
+            <li key={`${c.id}-turn-${index}`}>
+              {turn.voice === "machine" ? (
+                <p className="border-l-2 border-border pl-2.5 text-xs italic text-muted-foreground">
+                  We asked: {turn.text}
+                </p>
+              ) : (
+                <div className="text-sm text-foreground">
+                  {turn.speaker ? (
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {turn.speaker}
+                    </p>
+                  ) : null}
+                  <MarkdownStream content={turn.text} hideCopyButton />
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : c.text ? (
         <div className="mt-2 text-sm text-foreground">
           <MarkdownStream content={c.text} hideCopyButton />
         </div>
@@ -283,8 +312,16 @@ export function ExpertRecordPage({
 
   const name = rulebook?.name ?? "this Rulebook";
 
+  // 🚨 HER WORDS, THROUGH THE ONE COUNTER (sixteenth cold walk, 2026-09-21,
+  // defect B). This was `Math.round(corpus.totalChars / 5.5)` — a second,
+  // drifting copy of `wordCount`, fed the SIZE OF THE CORPUS. On a Rulebook
+  // with one interview it read "1,550 words" while the Expert had typed 595
+  // and the interview summary three lines away said "570 words", because the
+  // interviewer's own eight turns were in the number. `expertChars` excludes
+  // them and `wordCount` is the same helper `N things you said · M words`
+  // uses, so the two lines can no longer disagree.
   const words = useMemo(
-    () => (corpus ? Math.round(corpus.totalChars / 5.5) : 0),
+    () => (corpus ? wordCount(corpus.expertChars) : "0 words"),
     [corpus],
   );
 
@@ -352,8 +389,7 @@ export function ExpertRecordPage({
               {corpus.contributions.length} thing
               {corpus.contributions.length === 1 ? "" : "s"} you contributed ·{" "}
               {corpus.interviews.length} interview
-              {corpus.interviews.length === 1 ? "" : "s"} ·{" "}
-              {words.toLocaleString()} words
+              {corpus.interviews.length === 1 ? "" : "s"} · {words}
             </p>
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">

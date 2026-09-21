@@ -48,7 +48,7 @@ module — do not make it seven.
 ## The formats
 
 Text: `text` `long_text` `markdown` `email` `url` `address` `phone` `color`
-Numbers: `number` `decimal` `currency` `percent` `progress` `duration` `integer` `rating` `file_size`
+Numbers: `number` `decimal` `currency` `percent` `progress` `duration` `integer` `autonumber` `rating` `file_size`
 Choice: `boolean` `choice` `multi_choice`
 Dates: `date` `datetime` `time` `created_time` `modified_time` `relative_time`
 Structured: `json` `array` `tags` `formula`
@@ -223,6 +223,8 @@ No migration is ever required — a format is data in a JSONB column, and an
 unknown format id degrades to the plain storage type by design.
 
 ## Change log
+
+- `2026-09-21` — **`autonumber`**: the DATABASE assigns the number at insert (trigger `_udt_autonumber`, `migrations/udt_autonumber_column.sql`), so it is identical whichever door made the row; stored as an integer, `editor: "computed"`, `prefix` option ("INV-42"). Existing rows are numbered once by `udt_backfill_autonumber`, called from the `setFieldFormat` service wrapper on every path that sets the format.
 
 - `2026-09-21` — **`address`** (free text; the cell opens it in maps — `MapPin` link, `rich`) and **`progress`** (a percentage drawn as a bar with the number beside it; same storage + `percentScale` rule as `percent`, green at 100%). Tests: `__tests__/address-progress-format.test.ts`.
 

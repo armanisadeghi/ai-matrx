@@ -546,6 +546,16 @@ export const canvasArtifactService = {
   }): Promise<CanvasArtifactRow | null> {
     try {
       const userId = requireUserId();
+      // canvas_items.organization_id is NOT NULL, and a manual save may have NO
+      // parent (a fresh diagram in the mermaid workbench). With a conversation
+      // the RPC inherits that conversation's organization and this value must
+      // agree with it; without one, this is the ONLY answer — the organization
+      // the person is acting in, from the one org gate (it asks when nothing is
+      // selected). Never a default. Until 2026-09-20 the table's trigger chose
+      // one; when it was retired every manual save failed with a raw 23502.
+      const organizationId = input.conversationId
+        ? undefined
+        : await ensureOrgId(undefined);
       // Safe to retry: the RPC resolves the actor before it inserts, so a
       // `not authenticated` refusal wrote nothing.
       const { data, error } = await runWithSessionRetry(() =>
@@ -559,6 +569,7 @@ export const canvasArtifactService = {
             metadata: input.metadata ?? {},
           },
           p_conversation_id: input.conversationId ?? undefined,
+          p_organization_id: organizationId,
         }),
       );
 
@@ -568,6 +579,9 @@ export const canvasArtifactService = {
       }
       return data as CanvasArtifactRow;
     } catch (err) {
+      // The person declined to pick an organization: an answer, not a failure.
+      // Propagate it so the caller's org-refusal handling shows it honestly.
+      if (isOrganizationRequiredError(err)) throw err;
       console.error("[canvasArtifactService.createManual] Error:", err);
       return null;
     }
