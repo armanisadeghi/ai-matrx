@@ -94,7 +94,7 @@ describe("POST /api/webhooks/twilio/voice", () => {
       ready: true,
       programKey: "ai_matrx_owner_beta",
       destinationBinding: "exact",
-      verifiedCallerBinding: "exact",
+      verifiedCallerBinding: "enrolled",
     });
     jest.mocked(getVoiceRecordingPersistenceReadiness).mockResolvedValue({
       ambiguous_call_count: 0,

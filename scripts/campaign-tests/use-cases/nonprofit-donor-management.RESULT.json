@@ -1,0 +1,23 @@
+{
+  "use_case": "Fixture Hands & Hope Alliance",
+  "organization": {
+    "id": "488fcc2f-22ee-49eb-9ec4-1b870591164a",
+    "slug": "fixture-hands-hope-alliance-j4qlrm",
+    "name": "Fixture Hands & Hope Alliance",
+    "settings": {
+      "test_fixture": true
+    }
+  },
+  "tables": {
+    "campaigns": "abf4f43d-9877-41c1-8e47-29c26234557b",
+    "donors": "335be3d6-39ed-4fe6-9725-c28952bc18c3",
+    "pledges": "0f9c8a0b-c8ab-481d-8070-fc1c689eb968"
+  },
+  "rows_written": {
+    "campaigns": 4,
+    "donors": 40,
+    "pledges": 50
+  },
+  "entry_door": "signed-in supabase-js (admin@admin.com), custom.table_declare / custom.field_declare / custom.record_write",
+  "limitations": []
+}

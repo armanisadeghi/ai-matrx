@@ -1,0 +1,35 @@
+{
+  "a2b50e76-7120-4bc2-b7a0-8a531ffa2cc8": {
+    "status": 200,
+    "body": {
+      "storeSwitch": {
+        "why": "This organization is on the unified record store. Its doors take writes from its own people; a field can be promoted here; relations between records are enforced, including the wall that refuses a link into another organization unless both organizations have turned cross-organization links on; custom fields on its standard tables are checked; and its changes are recorded so \"who could see this on that day\" can be answered. Every consumer knob is still separate: turning this on moved nobody onto the new store.",
+        "knob_key": "system_enabled",
+        "switched_on": true,
+        "has_organization_override": true
+      }
+    }
+  },
+  "5cd5a70d-a474-4275-852f-e4dbd7e9b80f": {
+    "status": 200,
+    "body": {
+      "storeSwitch": {
+        "why": "This organization is on the unified record store. Its doors take writes from its own people; a field can be promoted here; relations between records are enforced, including the wall that refuses a link into another organization unless both organizations have turned cross-organization links on; custom fields on its standard tables are checked; and its changes are recorded so \"who could see this on that day\" can be answered. Every consumer knob is still separate: turning this on moved nobody onto the new store.",
+        "knob_key": "system_enabled",
+        "switched_on": true,
+        "has_organization_override": true
+      }
+    }
+  },
+  "2c1d4319-bf0d-40bc-8ca1-657f4063d080": {
+    "status": 200,
+    "body": {
+      "storeSwitch": {
+        "why": "This organization is on the unified record store. Its doors take writes from its own people; a field can be promoted here; relations between records are enforced, including the wall that refuses a link into another organization unless both organizations have turned cross-organization links on; custom fields on its standard tables are checked; and its changes are recorded so \"who could see this on that day\" can be answered. Every consumer knob is still separate: turning this on moved nobody onto the new store.",
+        "knob_key": "system_enabled",
+        "switched_on": true,
+        "has_organization_override": true
+      }
+    }
+  }
+}

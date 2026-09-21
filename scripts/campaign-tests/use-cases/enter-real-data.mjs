@@ -52,7 +52,16 @@ if (reuseOrgId) {
   org = data;
   console.log(`Reusing organization: ${org.id} slug=${org.slug}`);
 } else {
-  const baseSlug = usecase.use_case;
+  const baseSlug =
+    "fixture-" +
+    usecase.organization_name
+      .toLowerCase()
+      .replace(/^fixture\s+/, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")
+      .slice(0, 30) +
+    "-" +
+    Math.random().toString(36).slice(2, 8);
   let slug = baseSlug;
   for (let attempt = 0; attempt < 5; attempt++) {
     const { data, error } = await client.rpc("org_create", {

@@ -1,0 +1,23 @@
+{
+  "use_case": "Fixture Ironline Fitness",
+  "organization": {
+    "id": "11d47e36-4b1e-46b8-bdf6-8ef928b730fb",
+    "slug": "fixture-ironline-fitness-f1wa0s",
+    "name": "Fixture Ironline Fitness",
+    "settings": {
+      "test_fixture": true
+    }
+  },
+  "tables": {
+    "plans": "a2eacc8b-8d7c-4172-985d-b33888d95470",
+    "members": "60df8b1e-d63a-482d-9600-22469c93263c",
+    "classes": "e4a35317-9922-4ef4-be1e-f4b748dbe97c"
+  },
+  "rows_written": {
+    "plans": 4,
+    "members": 45,
+    "classes": 25
+  },
+  "entry_door": "signed-in supabase-js (admin@admin.com), custom.table_declare / custom.field_declare / custom.record_write",
+  "limitations": []
+}
