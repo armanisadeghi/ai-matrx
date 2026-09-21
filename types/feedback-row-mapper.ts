@@ -150,6 +150,7 @@ function isUserFeedbackRowLike(val: Json): val is UserFeedbackRowLike {
   return (
     r("id") &&
     r("user_id") &&
+    r("organization_id") &&
     r("feedback_type") &&
     r("route") &&
     r("description") &&
@@ -332,6 +333,7 @@ export function mapUserFeedbackRow(row: UserFeedbackRowLike): UserFeedback {
   return {
     id: row.id,
     user_id: row.user_id,
+    organization_id: row.organization_id,
     username: row.username,
     feedback_type: narrowFeedbackType(row.feedback_type),
     route: row.route,

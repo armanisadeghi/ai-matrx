@@ -172,7 +172,7 @@ select json_build_object(
 async function selfTest(db: Client): Promise<number> {
   console.log(`${C.b}SELF-TEST${C.x} ${C.d}(the rule, and the view that feeds it)${C.x}`);
   let bad = 0;
-  type W = Pick<Row, "writes_identity" | "asks_the_gate" | "is_trigger" | "exempt_reason">;
+  type W = Pick<Row, "writes_identity" | "asks_the_gate" | "is_trigger" | "exempt_reason" | "asks_the_ladder">;
   const base: W = { writes_identity: true, asks_the_gate: false, is_trigger: false,
                     exempt_reason: null, asks_the_ladder: false };
   const cases: Array<[string, W, boolean]> = [
@@ -189,7 +189,8 @@ async function selfTest(db: Client): Promise<number> {
     else { console.log(`  ${C.r}✗${C.x} ${label}`); bad++; }
   }
   type R = Pick<Row, "reads_classed" | "asks_the_gate" | "is_trigger" | "narrows_to_caller"
-                    | "asks_an_admin" | "org_scoped" | "exempt_reason">;
+                    | "asks_an_admin" | "org_scoped" | "exempt_reason"
+                    | "anon_rule_declared" | "asks_the_ladder">;
   const rbase: R = { reads_classed: true, asks_the_gate: false, is_trigger: false,
                      narrows_to_caller: false, asks_an_admin: false, org_scoped: false,
                      exempt_reason: null, anon_rule_declared: false, asks_the_ladder: false };
