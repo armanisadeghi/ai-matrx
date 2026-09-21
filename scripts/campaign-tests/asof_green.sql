@@ -122,13 +122,32 @@ begin
   end if;
 
   -- THE DATED FIELD. HIS-5 is opt-in per Field: without this, a period on `terms` is refused.
-  insert into custom.field (id, organization_id, entity_definition_id, key, name, label, type,
-                            relation_target, relation_max, on_target_delete, config,
-                            source, source_config, sensitivity, context_policy,
-                            rules, depends_on, applies_to_types, multi, dated, required, sort)
-  values (v_fld, v_org, v_tbl, 'terms', 'Terms', 'Terms', 'text', null, null, null, '{}'::jsonb,
-          'manual', '{}'::jsonb, 'internal', 'include', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb,
-          false, true, false, 10);
+  -- 🚨 DECLARED THROUGH THE DOOR, then re-pointed to its fixed id (lane RED-SUITES-2,
+  -- 2026-09-21). This used to INSERT the Field row straight into the `custom.field` view, and
+  -- the document that produced no longer carries `dated`, so `custom._dated_values_guard`
+  -- refused the very record this suite exists to write: "terms keeps a single value, so it
+  -- cannot be given dates it was true between." The column was never dated at all. Declaring
+  -- it through `custom.field_declare` — which builds the document with
+  -- `custom._field_document_for`, the one builder — is what makes `dated` real, and it is the
+  -- same repair the doorfix twins needed. The id is then moved to this suite's fixed one the
+  -- same way the Table above moves to its own, because the pooler gives this suite no session
+  -- state to carry a lookup in.
+  declare v_made uuid;
+  begin
+    v_made := custom.field_declare(v_org, v_tbl, jsonb_build_object(
+      'key','terms','label','Terms','plain','text','dated',true,'sort',10));
+    if v_made is distinct from v_fld then
+      update custom.record set id = v_fld
+       where organization_id = v_org and id = v_made and table_id = custom.field_kernel_id();
+    end if;
+  end;
+  -- Read straight off the row: this is fixture work as the connected role, before the seat is
+  -- taken, and the point is what the STORE holds rather than what a door shows.
+  if not coalesce((select (r.data ->> 'dated')::boolean from custom.record r
+                    where r.organization_id = v_org and r.id = v_fld), false) then
+    raise exception 'fixture: the Terms column was declared dated and the store does not say so — %',
+      (select r.data from custom.record r where r.organization_id = v_org and r.id = v_fld);
+  end if;
 
   -- T6's CONTRACT: storable today, in force 2027-01-01 .. 2029-01-01, and nothing else. Its
   -- title is an UNDATED key, which is the half that used to vanish from its own history.
@@ -436,10 +455,20 @@ begin
   for i in 1..20 loop ok := custom.query_can_see(v_org, v_rec, 'viewer'); end loop;
   v_small := extract(epoch from (clock_timestamp() - t0)) * 1000 / 20;
 
-  -- four hundred more records in the same organization, nothing else changed
+  -- four hundred more records in the same organization, nothing else changed.
+  --
+  -- WITHOUT THE CLAIMS (lane RED-SUITES-2, 2026-09-21). This bulk INSERT is fixture volume for
+  -- the measurement below, and it asserts nothing about what a person may do. With the claims
+  -- set it now meets `custom._field_write_door` — "You can see this record, but "title" is not
+  -- yours to change" — because the field write door applies to a direct INSERT too, and the
+  -- person these claims name was never given that field. The door is right; the fixture had no
+  -- business wearing a seat. The claims go back on immediately, so PART 5's actual clause —
+  -- the cost of `custom.query_can_see` — is still asked as that person.
+  perform set_config('request.jwt.claims', '', true);
   insert into custom.record (organization_id, table_id, data_class, data, created_by)
   select v_org, v_tbl, 'record', jsonb_build_object('title', 'bulk ' || g), v_admin
     from generate_series(1, 400) g;
+  perform set_config('request.jwt.claims', '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14"}', true);
 
   select count(*) into n_large from custom.record where organization_id = v_org and deleted_at is null;
   t0 := clock_timestamp();
