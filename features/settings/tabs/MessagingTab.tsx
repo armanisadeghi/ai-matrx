@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, BellOff, Monitor, Volume2 } from "lucide-react";
+import { Bell, BellOff, Monitor, Users, Volume2 } from "lucide-react";
 import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
 import { SettingsSlider } from "@/components/official/settings/primitives/SettingsSlider";
 import { SettingsButton } from "@/components/official/settings/primitives/SettingsButton";
+import { SettingsLink } from "@/components/official/settings/primitives/SettingsLink";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
@@ -151,6 +152,20 @@ export default function MessagingTab() {
           address bar and allow notifications for this site to change this.
         </SettingsCallout>
       )}
+
+      {/* The in-app door onto the SAME thread the text and voice sections
+          below configure. This is a way IN, not a preference — so it is a
+          `SettingsLink`, which dismisses the settings shell before pushing
+          rather than leaving the person on a page behind an overlay. */}
+      <SettingsSection title="Your staff" icon={Users}>
+        <SettingsLink
+          label="Open your staff"
+          description="The same conversation your texts and calls already use."
+          href="/staff"
+          actionLabel="Open"
+          last
+        />
+      </SettingsSection>
 
       <SmsEnrollmentSettingsSection />
       <SmsNotificationPreferencesSettingsSection />

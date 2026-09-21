@@ -526,6 +526,8 @@ export const settingsRegistry: SettingsTabDef[] = [
       "sms",
       "text",
       "task reminders",
+      "your staff",
+      "chief of staff",
     ],
     component: MessagingTab,
     persistence: "synced",
