@@ -80,7 +80,8 @@
     "BUILDERS": 3041,
     "REALTIME": 3042,
     "FRONT-DOOR": 3043,
-    "REALTIME-2": 3044
+    "REALTIME-2": 3044,
+    "TAILS-4": 3046
   },
   "noDevServer": {
     "W6-DOCS": "Proves its contract through the document pipeline, not a browser.",
