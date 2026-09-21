@@ -572,6 +572,8 @@
     "check:fields-stay-masked:self-test": "tsx scripts/check-fields-stay-masked.ts --self-test",
     "check:failed-check-is-not-a-fact": "tsx scripts/check-failed-check-is-not-a-fact.ts",
     "check:failed-check-is-not-a-fact:self-test": "tsx scripts/check-failed-check-is-not-a-fact.ts --self-test",
+    "check:enum-words-live-in-the-registry": "tsx scripts/check-enum-words-live-in-the-registry.ts",
+    "check:enum-words-live-in-the-registry:self-test": "tsx scripts/check-enum-words-live-in-the-registry.ts --self-test",
     "check:store-doors-decide": "tsx scripts/check-store-doors-decide.ts",
     "check:one-freshness-ceiling": "tsx scripts/check-one-freshness-ceiling.ts",
     "check:store-doors-decide:self-test": "tsx scripts/check-store-doors-decide.ts --self-test",

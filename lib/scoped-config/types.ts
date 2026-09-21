@@ -74,6 +74,15 @@ export type KnobUiHints = {
     | "voice";
   /** One sentence under the control, in the person's language. */
   help?: string;
+  /**
+   * THE WORDS FOR EACH VALUE — the one place a choice's label lives. Present
+   * on six live keys today; `allowed_values` still decides WHICH values are
+   * admissible, this only says what each one is CALLED. Read it through
+   * `knobChoices()` (`./choices`) and never in a component: a screen that
+   * keeps its own copy of these words is the defect that printed
+   * `all_records` at a person (VERIFIER-8 MEDIUM-2).
+   */
+  options?: ReadonlyArray<{ value: string; label: string; help?: string }>;
   placeholder?: string;
   /** Display format for numbers, e.g. "percent", "bytes", "duration". */
   format?: string;

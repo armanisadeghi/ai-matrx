@@ -59,6 +59,36 @@ export async function fetchKnobIndex(options: {
 }
 
 /**
+ * ONE key's registry row — its label, its description, and the words for each
+ * of its values (`ui.options`, read through `knobChoices`).
+ *
+ * This is `knob_index` narrowed to one key, not a second metadata read: the
+ * header of this file forbids reading `platform.feature_knob` beside the index,
+ * and the index row already carries everything a control needs. It exists so a
+ * screen that renders ONE setting does not have to know that "ask for the
+ * feature prefix and find your key" is how the door is shaped — the alternative
+ * is what produced a hand-typed choice list on `/data-v2/try-everything`
+ * (VERIFIER-8 MEDIUM-2).
+ *
+ * `null` means the key has no registry row in this organization's answer, which
+ * is a real answer a screen states; it is never rendered as an empty control.
+ */
+export async function fetchKnobDefinition(options: {
+  organizationId: string;
+  feature: string;
+  key: string;
+  userId?: string;
+}): Promise<ScopedKnob | null> {
+  const keys = await fetchKnobIndex({
+    organizationId: options.organizationId,
+    featurePrefix: options.feature,
+    userId: options.userId,
+  });
+  const fullKey = `${options.feature}.${options.key}`;
+  return keys.find((knob) => knob.full_key === fullKey) ?? null;
+}
+
+/**
  * Write (or clear) one override at one rung. `value: null` CLEARS — the key is
  * removed so "inherits" and "set to nothing" can never be confused. A refusal
  * comes back as `{ ok: false, reason, detail }`, never a thrown exception:

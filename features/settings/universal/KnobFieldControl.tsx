@@ -58,6 +58,7 @@ import {
   type KnobControl,
   type KnobLadder,
 } from "@/lib/scoped-config/ladder";
+import { knobChoices } from "@/lib/scoped-config/choices";
 import type { ScopedKnob } from "@/lib/scoped-config/types";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
@@ -172,13 +173,6 @@ export type KnobFieldControlProps = {
   /** Row label id for composite or read-only controls. */
   labelId?: string;
 };
-
-/** "not_set" → "Not set", "auto_apply" → "Auto apply". Never a raw slug. */
-function humanize(raw: string): string {
-  const words = raw.replace(/[_-]+/g, " ").trim();
-  if (words === "") return raw;
-  return words.charAt(0).toUpperCase() + words.slice(1);
-}
 
 export function KnobFieldControl(props: KnobFieldControlProps) {
   const { knob, ladder } = props;
@@ -315,17 +309,11 @@ function SegmentedField({
   onCommit,
   labelId,
 }: KnobFieldControlProps) {
-  const choices: { raw: unknown; value: string; label: string }[] =
-    knob.value_type === "boolean"
-      ? [
-          { raw: true, value: "true", label: "On" },
-          { raw: false, value: "false", label: "Off" },
-        ]
-      : (knob.allowed_values ?? []).map((raw) => ({
-          raw,
-          value: String(raw),
-          label: humanize(String(raw)),
-        }));
+  // The words come from the registry (`platform.feature_knob.ui.options`),
+  // through the ONE function that owns them. This file used to prettify the
+  // stored token itself, which is why "Fast (recommended)" — written into the
+  // registry by the person who owns that setting — was never what anyone read.
+  const choices = knobChoices(knob);
 
   if (choices.length === 0) return null;
   const current = String(ladder.value ?? "");

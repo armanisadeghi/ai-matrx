@@ -20,6 +20,10 @@ import type {
   KnobUiHints,
   ScopedKnob,
 } from "./types";
+// The choices are counted the same way they are rendered — one place decides
+// what a knob's choices ARE, so a control can never be picked for a set of
+// choices different from the set the person is shown (`./choices`).
+import { knobChoices } from "./choices";
 
 /** The control a field renders as, once hints and value type are combined. */
 export type KnobControl =
@@ -139,7 +143,7 @@ function deriveControl(knob: ScopedKnob, ui: KnobUiHints): KnobControl {
       return "switch";
     case "enum":
       // Two or three choices read better as one row of buttons than a menu.
-      return (knob.allowed_values?.length ?? 0) <= 3 ? "segmented" : "select";
+      return knobChoices(knob).length <= 3 ? "segmented" : "select";
     case "number":
     case "integer":
       return knob.min_value !== null && knob.max_value !== null

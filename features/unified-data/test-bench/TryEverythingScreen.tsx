@@ -78,6 +78,8 @@ import {
     type KnobWriteDoor,
 } from "@/lib/scoped-config/service";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { knobChoiceLabel } from "@/lib/scoped-config/choices";
+import { useKnobChoices } from "@/lib/scoped-config/useKnobChoices";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
@@ -102,11 +104,14 @@ import { organizationSavedViews } from "./savedViewsPort";
 const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" } as const;
 const MEMBER_VISIBILITY_FULL_KEY = `${MEMBER_VISIBILITY.feature}.${MEMBER_VISIBILITY.key}`;
 
-/** The two values the knob admits, in the words the store itself uses. */
-const VISIBILITY_CHOICES: ReadonlyArray<{ value: string; label: string }> = [
-    { value: "organization", label: "Everyone in this organization can see the records" },
-    { value: "shared_only", label: "People only see what is shared with them" },
-];
+// THE WORDS FOR THIS SETTING'S CHOICES ARE NOT IN THIS FILE, and no screen's
+// words for any setting ever are (lane FRONT-DOOR, 2026-09-21; VERIFIER-8
+// MEDIUM-2). This file used to carry a two-row list of them, which had invented
+// a value the registry does not admit (`organization`) and missed the one it
+// does (`all_records`) — so the header's lookup missed and printed
+// `Set to "all_records", which this screen has no words for` at a person.
+// `useKnobChoices` reads them from `platform.feature_knob` through the same
+// knob door the write below uses.
 
 /** The names the rail shows. The section number is the anchor. */
 const CONTENTS: ReadonlyArray<string> = [
@@ -876,6 +881,7 @@ function StatusStrip({
     const [nonce, setNonce] = useState(0);
 
     const visibility = useEffectiveKnob(organizationId, userId, MEMBER_VISIBILITY);
+    const visibilityChoices = useKnobChoices(organizationId, MEMBER_VISIBILITY, userId);
 
     // HOW MANY THINGS ARE WAITING ON THIS PERSON — the store's own queue, asked
     // through the package's data source so this page reaches no door the
@@ -941,11 +947,20 @@ function StatusStrip({
         };
     }, [nonce]);
 
-    const visibilityWord =
-        visibility === undefined
-            ? undefined
-            : (VISIBILITY_CHOICES.find((choice) => choice.value === visibility)?.label ??
-              `Set to "${String(visibility)}", which this screen has no words for`);
+    // WHAT THIS ORGANIZATION IS SET TO, IN THE REGISTRY'S OWN WORDS. Three
+    // answers, never blurred: the sentence, "still reading" (`undefined`), and
+    // a problem. A stored token is never pasted into any of them — a value the
+    // registry does not list is a fact about the SETTING, said as one.
+    const visibilitySettled = visibility !== undefined && !visibilityChoices.loading;
+    const visibilityLabel = visibilityChoices.knob
+        ? knobChoiceLabel(visibilityChoices.knob, visibility)
+        : null;
+    const visibilityWord = visibilitySettled ? (visibilityLabel ?? undefined) : undefined;
+    const visibilityProblem =
+        visibilityChoices.problem ??
+        (visibilitySettled && visibilityLabel === null
+            ? "This organization is set to a value the settings registry does not list, so there are no words for it yet. An administrator can re-set it below."
+            : null);
 
     return (
         <div className="rounded-lg border border-border bg-card p-3">
@@ -980,6 +995,7 @@ function StatusStrip({
                 <StatusFact
                     label="Membership alone shows"
                     value={visibilityWord}
+                    problem={visibilityProblem}
                 />
                 <StatusFact
                     label="Screens this deployment serves"
@@ -1202,6 +1218,13 @@ function MemberVisibilityControl({
     userId: string | null;
 }) {
     const current = useEffectiveKnob(organizationId, userId, MEMBER_VISIBILITY);
+    // The choices and their words come from the registry, through the same
+    // knob door this control writes back through.
+    const { choices, loading: choicesLoading, problem: choicesProblem } = useKnobChoices(
+        organizationId,
+        MEMBER_VISIBILITY,
+        userId,
+    );
     const [door, setDoor] = useState<KnobWriteDoor | null>(null);
     const [doorProblem, setDoorProblem] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
@@ -1273,11 +1296,17 @@ function MemberVisibilityControl({
         // ABSENT, NOT DEAD. No switch at all, and the door's own sentence.
         return <Aside>{door.authorityDetail}</Aside>;
     }
+    if (choicesProblem) {
+        return <Refusal>{choicesProblem}</Refusal>;
+    }
+    if (choicesLoading) {
+        return <p className="text-sm text-muted-foreground">Reading what this setting can be set to…</p>;
+    }
 
     return (
         <TryIt hint="this changes it for everybody in this organization">
             <div className="space-y-1.5">
-                {VISIBILITY_CHOICES.map((choice) => (
+                {choices.map((choice) => (
                     <label key={choice.value} className="flex cursor-pointer items-start gap-2 text-sm">
                         <input
                             type="radio"
@@ -1287,7 +1316,12 @@ function MemberVisibilityControl({
                             disabled={busy || current === undefined}
                             onChange={() => void set(choice.value)}
                         />
-                        <span className="text-foreground">{choice.label}</span>
+                        <span className="min-w-0">
+                            <span className="text-foreground">{choice.label}</span>
+                            {choice.help ? (
+                                <span className="block text-xs text-muted-foreground">{choice.help}</span>
+                            ) : null}
+                        </span>
                     </label>
                 ))}
                 {current === undefined ? (

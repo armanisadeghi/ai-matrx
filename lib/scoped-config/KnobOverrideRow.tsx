@@ -34,6 +34,7 @@ import {
   KnobFieldControl,
   hasFieldControl,
 } from "@/features/settings/universal/KnobFieldControl";
+import { knobChoices } from "./choices";
 import { formatKnobValue, type KnobLadder } from "./ladder";
 import { availableVoices } from "@/lib/cartesia/voices";
 import {
@@ -425,11 +426,13 @@ export function KnobOverrideRow(props: {
     knob.review_due !== null &&
     new Date(knob.review_due) < new Date();
 
+  // A CHOICE IS SHOWN IN WORDS, NEVER AS ITS STORED TOKEN. This select used to
+  // render `allowed_values` verbatim, so the six keys whose registry rows carry
+  // real sentences (`ui.options`) offered `hash_only` and `manual_wins` to a
+  // person. `knobChoices` is the one place those words live (`./choices`).
   const enumOptions =
     knob.value_type === "enum" || knob.value_type === "boolean"
-      ? knob.value_type === "boolean"
-        ? ["true", "false"]
-        : (knob.allowed_values ?? []).map(String)
+      ? knobChoices(knob)
       : null;
   // A picked scope row qualifies every DOM identity on the row; the section's
   // own rung keeps the bare key so existing anchors and deep links still land.
@@ -524,8 +527,8 @@ export function KnobOverrideRow(props: {
                   </SelectTrigger>
                   <SelectContent>
                     {enumOptions.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
