@@ -232,6 +232,42 @@ begin
   end if;
   raise notice '5b — a gate with no demand cannot reach the board, and the working rule beside it is untouched. PASS';
 
+  -- ══ 5c — AND ONE LAYER DOWN, IN THE NODE THE GATES ARE BUILT ON ════════════════════
+  -- The census of `jsonb_typeof(x) <> 'y'` across schema `custom` found exactly one other
+  -- site where a MISSING key walked past a check that raises: `previous`, the node lane
+  -- STAGE-RULES added. A `previous` with a BAD field was refused; a `previous` with NO
+  -- field was not — it evaluated to NULL, and `custom.rule_truth(NULL)` is NULL rather
+  -- than false, so a gate whose demand read a field it never named PASSED EVERY CARD and
+  -- said nothing. The refusal's own words — "points at it with nothing" — are the proof
+  -- that the absent case was meant to reach it.
+  --
+  -- ASKED THROUGH THE PREVIEW DOOR, because that is where a person meets it:
+  -- `custom.rule_eval` is internal and holds no client grant, and a clause that stepped
+  -- out of the seat to call it would be proving something about the superuser.
+  begin
+    perform custom.pipeline_gate_preview(v_org, v_quotes, 'Approved', jsonb_build_object(
+      'message', 'x',
+      'demands', jsonb_build_object('op','eq','args', jsonb_build_array(
+        jsonb_build_object('op','previous'), jsonb_build_object('const','received')))));
+    raise exception '5c: a gate reading a field it never named was judged instead of refused';
+  exception when others then
+    get stacked diagnostics v_msg = message_text;
+    if v_msg like '%5c: a gate reading%' then raise; end if;
+    if v_msg not like '%points at it with nothing%' then
+      raise exception '5c: refused, but not in the words that name what is missing: %', v_msg;
+    end if;
+  end;
+  -- ...and a gate whose `previous` DOES name its field is still judged, which is the half
+  -- a careless coalesce would have broken.
+  v_read := custom.pipeline_gate_preview(v_org, v_quotes, 'Approved', jsonb_build_object(
+    'message', 'x',
+    'demands', jsonb_build_object('op','eq','args', jsonb_build_array(
+      jsonb_build_object('op','previous','field', v_f_stage), jsonb_build_object('const','received')))));
+  if (v_read ->> 'considered')::int <= 0 then
+    raise exception '5c: the fix broke the node it was fixing — a gate with a good previous judges nothing';
+  end if;
+  raise notice '5c — a gate reading a field it never named is refused in words, and a good one still judges. PASS';
+
   -- ══ 6 — AND A MEMBER WHO WAS SHARED NOTHING CANNOT LOOK ═════════════════════════════
   perform set_config('request.jwt.claims', c_dana_j, true);
   begin

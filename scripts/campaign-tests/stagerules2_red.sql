@@ -16,6 +16,7 @@ begin;
 \i migrations/inverse/stagerules2_a_half_written_rule_is_refused_down.sql
 \i migrations/inverse/stagerules2_the_cards_it_names_have_names_down.sql
 \i migrations/inverse/stagerules2_a_gate_remembers_what_it_was_asked_down.sql
+\i migrations/inverse/stagerules2_a_test_that_is_null_is_not_a_test_down.sql
 
 do $t$
 declare
@@ -29,6 +30,7 @@ declare
   v_read    jsonb;
   v_rule    jsonb;
   v_red     integer := 0;
+  v_boss    text := current_user;
 begin
   if (select system_identifier from pg_control_system()) <> 7642734024280108049 then
     raise exception 'this file runs on the MAIN database only';
@@ -93,8 +95,24 @@ begin
   v_red := v_red + 1;
   raise notice 'RED 4 — a gate with no demand replaced the house rule and the call said it had succeeded. RED';
 
-  if v_red <> 4 then
-    raise exception 'expected 4 red blocks and got %', v_red;
+  -- RED 5 — and the node the gates are built on evaluates a `previous` that points at
+  -- nothing instead of refusing it, so a gate whose demand reads a field it never named
+  -- stops nobody. The inverse took the preview door with it, so this one asks the node
+  -- directly — outside the seat, and asserting nothing about a person's reach.
+  perform set_config('role', v_boss, true);
+  begin
+    -- It ANSWERS. The answer is the jsonb word `null`, which `custom.rule_truth` reads as
+    -- neither true nor false, so the gate built on it stops nobody and says nothing.
+    perform custom.rule_eval(v_org, '{"op":"previous"}'::jsonb, '{}'::jsonb, '{}'::jsonb);
+  exception when others then
+    raise exception 'RED 5 DID NOT GO RED: the old body refused a bare previous node';
+  end;
+  perform set_config('role', 'authenticated', true);
+  v_red := v_red + 1;
+  raise notice 'RED 5 — a previous node pointing at nothing evaluates to null, and a gate built on it stops nobody. RED';
+
+  if v_red <> 5 then
+    raise exception 'expected 5 red blocks and got %', v_red;
   end if;
   raise notice '% BLOCKS RED', v_red;
 end;
