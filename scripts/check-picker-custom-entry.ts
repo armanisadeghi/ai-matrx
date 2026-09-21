@@ -94,6 +94,16 @@ const ALLOW: Array<{ match: RegExp; reason: string }> = [
     reason: "ascending/descending is not extensible",
   },
   {
+    // Read by a person 2026-09-21 (chair, every-picker-takes-new-input): its
+    // eight lists are a colour swatch enum, the table's OWN fields, the first
+    // 50 existing rows as a preview subject, and a set/clear/calculate op enum
+    // — engine sets and structural picks, no user vocabulary. Re-read if the
+    // file gains a picker over tags, categories or any authored record.
+    match: /data-tables\/components\/RowActionsEditor\.tsx$/,
+    reason:
+      "row-action editor: colour enum, the table's own fields, existing rows as preview subject, op enum — all closed or structural",
+  },
+  {
     match: /SurfaceSimulatorSelect/,
     reason:
       "selects registered platform UI surfaces; an ad-hoc surface would bypass the canonical surface registry",
