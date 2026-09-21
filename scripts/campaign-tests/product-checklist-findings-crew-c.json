@@ -1,0 +1,26 @@
+[
+  {
+    "when": "2026-09-21T01:07:00.679Z",
+    "crew": "C",
+    "use_case": "FIFA World Cup finals trivia night",
+    "doing": "find a 'save view' control after grouping",
+    "said": "no explicit Save-view control found on the toolbar",
+    "expected": "an explicit way to save the current grouping/color as a named view, distinct from Default view"
+  },
+  {
+    "when": "2026-09-21T01:07:02.751Z",
+    "crew": "C",
+    "use_case": "FIFA World Cup finals trivia night",
+    "doing": "open Dashboards and look for a way to ask 'finals won, most first, grouped by winner'",
+    "said": "Favorites\nAI Matrx\nLaunchpad\nAI Work\nChat\nAgents\nMasterwork\nDocs\nData\nMy Orgs\nKnowledge\nAgent Apps\nWorkflows\nShapes\nReports\nPublish\nWorkspaces\nFiles\nHR\nCRM\nUtilities\nMedia\nLibraries\nTranscripts\nCode\nAutomations\nLegal Hub\nMedical Hub (Soon)\nEducation Hub\nPrint\nMarketing\nGames\nCommunication\nWorkflow Studio\nAdmin Launchpad\nAdministration\nError Inspector\nShow Indicator\nProduction\nAI v2\nWindows\nSettings\nData\n99+\nadmin@admin.com\nAll records\ndefault\nNew view\nAdd field\nSettings\nImport\nDashboards\nForms\nNotifications\nPortals\nInbox\nShare\nCSV\nXLSX\nNew dashboard\n\nNo dashboard looks at this table yet. “New dashboard” makes one, or ask an agent for the one you want and it writes the whole thing.",
+    "expected": "a chart or count block answerable from the winner field"
+  },
+  {
+    "when": "2026-09-21T01:07:04.303Z",
+    "crew": "C",
+    "use_case": "FIFA World Cup finals trivia night",
+    "doing": "find a 'new form' control",
+    "said": "no button matching 'New form'/'Create form' found on the Forms tab",
+    "expected": "a way to create a public form over this table"
+  }
+]
