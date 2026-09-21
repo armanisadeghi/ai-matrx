@@ -439,6 +439,13 @@ const NON_ATTACHMENT_PART_TYPES = new Set([
   "code_exec",
   "code_result",
   "web_search",
+  // The decision modality. The ANSWERS are the turn's whole content — a
+  // decision holder writes no text — and the QUESTIONS are what was asked, not
+  // a file. Both render through the content-IR kind pipeline
+  // (normalize-content-blocks.ts). Leaving them here gave the person a chip
+  // reading "Attachment" over a real verdict with probabilities.
+  "decision_answers",
+  "decision_questions",
 ]);
 
 export function isAttachmentMessagePart(part: MessagePart): boolean {

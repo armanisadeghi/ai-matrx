@@ -292,6 +292,7 @@ export const ORIGIN_CLASSES = [
   "workflow",
   "scheduled",
   "system",
+  "delegated_member",
 ] as const;
 
 // DB backfill value for pre-provenance history; never written live.

@@ -981,7 +981,13 @@ export interface FeedbackItemTriageOffer {
   created_at: string;
   comments?: unknown;
   comments_text?: string;
-  screenshots?: unknown;
+  screenshots?: (string | {
+  [key: string]: unknown;
+  file_id?: string;
+  url?: string;
+  file_uri?: string;
+  mime_type?: string;
+})[];
   prior_ai_assessment?: string;
   similar_open_items?: unknown;
 }
@@ -1344,7 +1350,6 @@ export interface MandatesHolderDraftBriefOffer {
   goal: string;
   description?: string;
   offered_values: unknown;
-  input_kind?: string;
   output_kind?: string;
   required_output_keys?: string[];
   accepts_user_input: string;

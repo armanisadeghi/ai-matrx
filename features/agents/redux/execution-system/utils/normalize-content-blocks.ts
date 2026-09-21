@@ -13,6 +13,7 @@ import {
   fromCxAudioPart,
   fromCxVideoPart,
 } from "@/features/files/blocks/adapters/from-cx-av-part";
+import { DECISION_ANSWERS_BLOCK_TYPE } from "@/features/content-ir/kinds/decision-answers";
 import { seedPersistedEnvelopeCache } from "@/features/content-ir/registry/region-envelope-memo";
 
 /**
@@ -334,6 +335,38 @@ function normalizeSingle(raw: MessagePart, index: number): RenderBlockPayload {
           keep_fresh: raw.keep_fresh ?? null,
           editable: raw.editable ?? null,
         },
+        metadata: raw.metadata,
+      };
+
+    case "decision_answers":
+      // THE ANSWER of a decision turn, and the turn's whole content — a
+      // decision holder writes no text at all. It renders through the ONE
+      // pipeline like every other kind: `decision_answers` is a registered
+      // content-IR kind (features/content-ir/kinds/decision-answers.ts) whose
+      // block takes the payload untouched. Never an attachment chip: routing
+      // it there gave the person a pill reading "Attachment" over a real,
+      // paid verdict with probabilities (seen 2026-09-20).
+      return {
+        blockId: newId("db_decision_answers"),
+        blockIndex: index,
+        type: DECISION_ANSWERS_BLOCK_TYPE,
+        status: "complete",
+        content: null,
+        data: { payload: raw as unknown as Record<string, unknown> },
+        metadata: raw.metadata,
+      };
+
+    case "decision_questions":
+      // The ASK, on a user turn. The agent builder owns its editor; in a
+      // transcript it is the questions that were put, so it renders as the
+      // same kind payload rather than as an unrecognised data event.
+      return {
+        blockId: newId("db_decision_questions"),
+        blockIndex: index,
+        type: "decision_questions",
+        status: "complete",
+        content: null,
+        data: { payload: raw as unknown as Record<string, unknown> },
         metadata: raw.metadata,
       };
 

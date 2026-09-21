@@ -1120,6 +1120,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/personal-staff/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Open My Staff
+         * @description Open the caller's ONE staff conversation and return everything to run it.
+         */
+        post: operations["open_my_staff_personal_staff_open_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/legal/webhooks/courtlistener": {
         parameters: {
             query?: never;
@@ -3544,6 +3564,30 @@ export interface paths {
         put?: never;
         /** Coding Session Bridge */
         post: operations["coding_session_bridge_coding_sessions_bridge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coding-sessions/connection/organization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Coding Session Connection Organization
+         * @description The organization this account's coding sessions are filed in, plus the choices.
+         */
+        get: operations["read_coding_session_connection_organization_coding_sessions_connection_organization_get"];
+        /**
+         * Write Coding Session Connection Organization
+         * @description Record the person's answer to the hold: file coding sessions in THIS organization.
+         */
+        put: operations["write_coding_session_connection_organization_coding_sessions_connection_organization_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -40175,6 +40219,101 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/judges/mandate-outcome/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Mandate Outcome Pending
+         * @description Judged mandate runs waiting for a human to answer the same questions.
+         *
+         *     This is the bench. Until somebody works it, the mandate-outcome judge has no
+         *     accuracy record at all — 0 of the platform's 44 judge verdicts had ever
+         *     received a human answer when this was built.
+         */
+        get: operations["get_mandate_outcome_pending_admin_judges_mandate_outcome_pending_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/judges/mandate-outcome/{verdict_id}/authority": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Mandate Outcome Authority
+         * @description Record ONE human answer on one judged run, per question.
+         */
+        post: operations["post_mandate_outcome_authority_admin_judges_mandate_outcome__verdict_id__authority_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/judges/mandate-outcome/calibration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Mandate Outcome Calibration
+         * @description Cohen's kappa PER QUESTION against the human labels collected so far.
+         *
+         *     Per question because "overall fitness 1-5" and "contains ungrounded claims"
+         *     will not calibrate alike, and one blended number would hide which of them is
+         *     the rubber stamp. Below 50 labeled cases each question reports
+         *     `insufficient_data` and says so — a kappa off eight rows is noise with a
+         *     decimal point.
+         */
+        get: operations["get_mandate_outcome_calibration_admin_judges_mandate_outcome_calibration_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/judges/mandate-outcome/goal-clauses/{row_id}/ratify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Ratify Goal Clauses
+         * @description Open the D-15 door for ONE agent-authored goal.
+         *
+         *     738 of the platform's 741 live mandates have an agent-written goal, and the
+         *     Judge primitive refuses to grade a subject against a rubric that subject
+         *     authored. That refusal is not relaxed: instead a human reads the extracted
+         *     rubric here and takes authorship of it, and only then is that mandate judged.
+         */
+        post: operations["post_ratify_goal_clauses_admin_judges_mandate_outcome_goal_clauses__row_id__ratify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/judges/{judge_key}/calibration": {
         parameters: {
             query?: never;
@@ -40644,7 +40783,7 @@ export interface paths {
         post?: never;
         /**
          * Delete Trigger
-         * @description Hard-delete a trigger.
+         * @description Soft-delete a trigger (``deleted_at`` set, ``enabled`` cleared together).
          */
         delete: operations["delete_trigger_scheduler_triggers__trigger_id__delete"];
         options?: never;
@@ -42894,7 +43033,7 @@ export interface components {
             /** Is New */
             is_new: boolean;
             /** User Input */
-            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"])[] | null;
+            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"] | components["schemas"]["DecisionQuestionsPart"] | components["schemas"]["DecisionAnswersPart"])[] | null;
             /** Variables */
             variables?: {
                 [key: string]: unknown;
@@ -43143,7 +43282,7 @@ export interface components {
             /** Is New */
             is_new: boolean;
             /** User Input */
-            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"])[] | null;
+            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"] | components["schemas"]["DecisionQuestionsPart"] | components["schemas"]["DecisionAnswersPart"])[] | null;
             /** Variables */
             variables?: {
                 [key: string]: unknown;
@@ -47212,6 +47351,32 @@ export interface components {
             /** Change Mode */
             change_mode?: ("apply" | "ask" | "propose") | null;
         };
+        /**
+         * AuthorityAnswer
+         * @description One human answer to ONE of the questions the judge answered.
+         */
+        AuthorityAnswer: {
+            /**
+             * Question
+             * @description The question name, exactly as the judge answered it.
+             */
+            question: string;
+            /**
+             * Answer
+             * @description The human's answer, in the judge's own vocabulary.
+             */
+            answer: string;
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+            /**
+             * Actor Id
+             * @description Who is answering. Recorded on the label so a calibration can name its raters.
+             */
+            actor_id?: string | null;
+        };
         /** AuthorityCandidate */
         AuthorityCandidate: {
             /** Candidate Key */
@@ -48342,6 +48507,33 @@ export interface components {
              */
             status_page?: "https://www.beehiivstatus.com";
         };
+        /** BenchCalibration */
+        BenchCalibration: {
+            /**
+             * Judge Key
+             * @default mandate_outcome.goal_fitness
+             */
+            judge_key?: string;
+            /**
+             * Judge Version
+             * @default 1
+             */
+            judge_version?: number;
+            /** Mandate Key */
+            mandate_key?: string | null;
+            /**
+             * Labeled Rows
+             * @default 0
+             */
+            labeled_rows?: number;
+            /** Questions */
+            questions?: components["schemas"]["QuestionCalibration"][];
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+        };
         /**
          * BenchProof
          * @description One finished Bench trial, as a screen shows it. Every field is copied
@@ -48491,6 +48683,18 @@ export interface components {
             frontier_model: string;
             /** Cheap Model */
             cheap_model: string;
+            /** Judge Model Name */
+            judge_model_name: string | null;
+            /** Frontier Model Name */
+            frontier_model_name: string | null;
+            /** Cheap Model Name */
+            cheap_model_name: string | null;
+            /** Typical Run Cost Usd */
+            typical_run_cost_usd: number | null;
+            /** Estimated Cost Usd */
+            estimated_cost_usd: number | null;
+            /** Estimated Cost Note */
+            estimated_cost_note: string;
             /** Masterwork Id */
             masterwork_id: string;
             /** Masterwork Name */
@@ -58133,6 +58337,33 @@ export interface components {
             /** Client Request Id */
             client_request_id?: string | components["schemas"]["JsonValue"] | null;
         };
+        /**
+         * CodingSessionConnectionOrganization
+         * @description What this coding-session connection is configured to file its work in.
+         *
+         *     ``organizations`` is the SAME list, in the SAME shape, that the hold
+         *     envelope carries (``details.organizations`` of the 409) — one picker
+         *     shape on every surface, never a second membership list. ``None`` means
+         *     the list could not be read right now (not "you belong to nothing").
+         */
+        CodingSessionConnectionOrganization: {
+            /**
+             * Set On
+             * @default coding_session
+             */
+            set_on?: string;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Organizations */
+            organizations?: {
+                [key: string]: unknown;
+            }[] | null;
+            /**
+             * Memberships Url
+             * @default /auth/organizations
+             */
+            memberships_url?: string;
+        };
         /** CodingSessionIdentity */
         CodingSessionIdentity: {
             /** Provider Session Id */
@@ -60805,7 +61036,7 @@ export interface components {
              */
             target_instance_id?: string | null;
             /** User Input */
-            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"])[] | null;
+            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"] | components["schemas"]["DecisionQuestionsPart"] | components["schemas"]["DecisionAnswersPart"])[] | null;
             /**
              * Retry
              * @default false
@@ -61129,6 +61360,13 @@ export interface components {
             text: string;
             /** Chars */
             chars: number;
+            /**
+             * Expert Chars
+             * @default 0
+             */
+            expert_chars?: number;
+            /** Turns */
+            turns?: components["schemas"]["CorpusTurnOut"][];
             /** Title */
             title?: string | null;
             /** When */
@@ -61157,6 +61395,21 @@ export interface components {
             entity_id?: string | null;
             /** Corpus Item Id */
             corpus_item_id?: string | null;
+        };
+        /**
+         * CorpusTurnOut
+         * @description One turn of a contributed conversation, already classified for a reader.
+         *
+         *     🚨 NO ROLE TOKEN SURVIVES TO THIS SHAPE (cold walk 16, defect B). ``voice``
+         *     says whose turn it is; ``speaker`` is a real human name or nothing.
+         */
+        CorpusTurnOut: {
+            /** Voice */
+            voice: string;
+            /** Text */
+            text: string;
+            /** Speaker */
+            speaker?: string | null;
         };
         /** CostBreakdownItem */
         CostBreakdownItem: {
@@ -63591,6 +63844,123 @@ export interface components {
             /** Record Page */
             record_page: string;
         };
+        /**
+         * DecisionAnswer
+         * @description One answer, with the holder's own uncertainty attached.
+         */
+        DecisionAnswer: {
+            /**
+             * Kind
+             * @description The registered kind this payload is an instance of.
+             * @default decision_answer
+             * @constant
+             */
+            __kind?: "decision_answer";
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "choice" | "noul" | "score";
+            /** Answer */
+            answer: boolean | number | string;
+            /** Probability */
+            probability?: number | null;
+            /** Probabilities */
+            probabilities?: {
+                [key: string]: number;
+            } | null;
+            /** Confidence */
+            confidence: number;
+            /** Legend */
+            legend?: {
+                [key: string]: string;
+            } | null;
+        };
+        /** DecisionAnswersPart */
+        DecisionAnswersPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @default decision_answers
+             * @constant
+             */
+            type: "decision_answers";
+            /**
+             * Kind
+             * @default decision_answers
+             * @constant
+             */
+            __kind?: "decision_answers";
+            /** Model */
+            model: string;
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "native" | "verbalized" | "verbalized_calibrated";
+            /** Answers */
+            answers?: {
+                [key: string]: components["schemas"]["DecisionAnswer"];
+            };
+            /** Unanswerable */
+            unanswerable?: {
+                [key: string]: string;
+            };
+            usage: components["schemas"]["DecisionUsage-Input"];
+            /** Cost Usd */
+            cost_usd: number;
+        };
+        /**
+         * DecisionQuestion
+         * @description One question. Not a kind: it has no meaning outside its batch.
+         */
+        DecisionQuestion: {
+            /**
+             * Kind
+             * @description The registered kind this payload is an instance of, when it is one.
+             * @default
+             */
+            __kind?: string;
+            /** Name */
+            name: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "choice" | "noul" | "score";
+            /** Instructions */
+            instructions: string;
+            /** Criteria */
+            criteria?: {
+                [key: string]: string;
+            } | string[] | null;
+            /** Suggested Threshold */
+            suggested_threshold?: number | null;
+        };
+        /** DecisionQuestionsPart */
+        DecisionQuestionsPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @default decision_questions
+             * @constant
+             */
+            type: "decision_questions";
+            /**
+             * Kind
+             * @default decision_questions
+             * @constant
+             */
+            __kind?: "decision_questions";
+            /** Questions */
+            questions: components["schemas"]["DecisionQuestion"][];
+        };
         /** DecisionResultPayload */
         DecisionResultPayload: {
             /**
@@ -63611,7 +63981,7 @@ export interface components {
             answers: {
                 [key: string]: components["schemas"]["Answer"];
             };
-            usage: components["schemas"]["DecisionUsage"];
+            usage: components["schemas"]["DecisionUsage-Output"];
             /** Cost Usd */
             cost_usd: number;
             /** Offering Id */
@@ -63664,8 +64034,24 @@ export interface components {
                 [key: string]: components["schemas"]["Question"];
             };
         };
+        /**
+         * DecisionUsage
+         * @description What the decision call consumed. Zero is a real value, never a stand-in.
+         */
+        "DecisionUsage-Input": {
+            /**
+             * Kind
+             * @description The registered kind this payload is an instance of, when it is one.
+             * @default
+             */
+            __kind?: string;
+            /** Input Tokens */
+            input_tokens: number;
+            /** Output Tokens */
+            output_tokens: number;
+        };
         /** DecisionUsage */
-        DecisionUsage: {
+        "DecisionUsage-Output": {
             /** Input Tokens */
             input_tokens: number;
             /** Output Tokens */
@@ -69827,6 +70213,11 @@ export interface components {
              */
             total_chars?: number;
             /**
+             * Expert Chars
+             * @default 0
+             */
+            expert_chars?: number;
+            /**
              * Hidden Conversation Count
              * @default 0
              */
@@ -73073,7 +73464,7 @@ export interface components {
              */
             target_instance_id?: string | null;
             /** User Input */
-            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"])[] | null;
+            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"] | components["schemas"]["DecisionQuestionsPart"] | components["schemas"]["DecisionAnswersPart"])[] | null;
             /**
              * Retry
              * @default false
@@ -92447,6 +92838,16 @@ export interface components {
             /** Viewer Page */
             viewer_page: string;
         };
+        /** OpenStaffThreadRequest */
+        OpenStaffThreadRequest: {
+            /**
+             * Channel
+             * @description Which door this is. `web` is a signed-in browser session; `native` is the phone or desktop client, which IS an approval-guarded channel because it is not a browser session with recent interactive auth.
+             * @default web
+             * @enum {string}
+             */
+            channel?: "native" | "web";
+        };
         /** OpenTextServiceStatus */
         OpenTextServiceStatus: {
             /**
@@ -96039,6 +96440,63 @@ export interface components {
              * @default 0
              */
             unsettled_count?: number;
+        };
+        /** PendingLabels */
+        PendingLabels: {
+            /** Rows */
+            rows?: components["schemas"]["PendingVerdict"][];
+            /**
+             * Total Awaiting
+             * @default 0
+             */
+            total_awaiting?: number;
+            /**
+             * Limit
+             * @default 50
+             */
+            limit?: number;
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+        };
+        /**
+         * PendingVerdict
+         * @description One judged run waiting for a human to answer the same questions.
+         */
+        PendingVerdict: {
+            /** Verdict Id */
+            verdict_id: string;
+            /** Mandate Key */
+            mandate_key: string;
+            /** Judged At */
+            judged_at?: string | null;
+            /** Verdict */
+            verdict: string;
+            /** Confidence */
+            confidence?: number | null;
+            /** Reasoning */
+            reasoning?: string | null;
+            /** Answers */
+            answers?: {
+                [key: string]: unknown;
+            };
+            /** Unanswerable */
+            unanswerable?: {
+                [key: string]: unknown;
+            };
+            /** Authority Answers */
+            authority_answers?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Input Cut Ratio
+             * @default 0
+             */
+            input_cut_ratio?: number;
+            /** Questions Awaiting */
+            questions_awaiting?: string[];
         };
         /** PenpotPublicRelease */
         PenpotPublicRelease: {
@@ -100484,7 +100942,7 @@ export interface components {
             /** Is New */
             is_new: boolean;
             /** User Input */
-            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"])[] | null;
+            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"] | components["schemas"]["DecisionQuestionsPart"] | components["schemas"]["DecisionAnswersPart"])[] | null;
             /** Variables */
             variables?: {
                 [key: string]: unknown;
@@ -102149,6 +102607,15 @@ export interface components {
          */
         QueryVariant: "advanced_operator" | "hot_off_press" | "keyword" | "listicle" | "resource_page";
         Question: components["schemas"]["NoulQuestion"] | components["schemas"]["ChoiceQuestion"] | components["schemas"]["ScoreQuestion"];
+        /**
+         * QuestionCalibration
+         * @description One question's agreement with the human labels collected for it.
+         */
+        QuestionCalibration: {
+            /** Question */
+            question: string;
+            calibration: components["schemas"]["Calibration"];
+        };
         /** QueueRefreshResult */
         QueueRefreshResult: {
             /**
@@ -102875,6 +103342,27 @@ export interface components {
             hours: string;
             /** Product */
             product: string;
+        };
+        /**
+         * Ratification
+         * @description A human taking authorship of one mandate goal's extracted rubric.
+         */
+        Ratification: {
+            /**
+             * Ratified By
+             * @description The admin's user id. This is WHO now owns this rubric.
+             */
+            ratified_by: string;
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+            /**
+             * Judgeable
+             * @description Does this goal say enough to judge a run against? Omit to keep whatever the extraction recorded.
+             */
+            judgeable?: boolean | null;
         };
         /** RawPayloadEvidenceOut */
         RawPayloadEvidenceOut: {
@@ -110847,6 +111335,11 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** SetCodingSessionConnectionOrganization */
+        SetCodingSessionConnectionOrganization: {
+            /** Organization Id */
+            organization_id?: string | null;
+        };
         /** SetEnabledRequest */
         SetEnabledRequest: {
             /**
@@ -115173,6 +115666,58 @@ export interface components {
             quota_max: number;
             /** Backoff Seconds */
             backoff_seconds?: number | null;
+        };
+        /**
+         * StaffThread
+         * @description Everything a client needs to render and run the person's staff thread.
+         */
+        StaffThread: {
+            /**
+             * Conversation Id
+             * Format: uuid
+             * @description The person's ONE staff conversation in this organization. The same id their texts and calls use. Deterministic: the client may hold it, and asking again always returns it.
+             */
+            conversation_id: string;
+            /**
+             * Mandate Key
+             * @description The role the thread runs. Always `personal_staff.front_line`.
+             */
+            mandate_key: string;
+            /**
+             * Agent Id
+             * @description The resolved Holder's `agent.definition` id — what every attribution column is a foreign key to. NOT the version id.
+             */
+            agent_id: string;
+            /**
+             * Agent Version Id
+             * @description Set only when the Holder is pinned to a specific version.
+             */
+            agent_version_id?: string | null;
+            /**
+             * Agent Name
+             * @description For the header. Absent is honest, never a placeholder.
+             */
+            agent_name?: string | null;
+            /**
+             * Holder Provenance
+             * @description Which rung of the mandate ladder chose this Holder: system, global, org, user or run. An admin debugging 'why is this agent answering' reads this rather than guessing.
+             */
+            holder_provenance: string;
+            /**
+             * Is New
+             * @description True only on the very first open, when this door created the row.
+             */
+            is_new: boolean;
+            /**
+             * Sandbox Instance Id
+             * @description The person's own box, now bound to this thread, so file and shell tools run in THEIR machine rather than on the server. Null means there is no box — and `sandbox_note` says why in words.
+             */
+            sandbox_instance_id?: string | null;
+            /**
+             * Sandbox Note
+             * @description Present exactly when `sandbox_instance_id` is null: one plain sentence a person can read, never a silent absence.
+             */
+            sandbox_note?: string | null;
         };
         /** StaffbaseServiceStatus */
         StaffbaseServiceStatus: {
@@ -124947,6 +125492,8 @@ export interface components {
              * @enum {string}
              */
             status: "created" | "refused" | "replayed" | "retryable_failure";
+            /** Reason */
+            reason?: "alias_conflict" | null;
         };
         /** VaultBackupRestoreResult */
         VaultBackupRestoreResult: {
@@ -134121,6 +134668,41 @@ export interface operations {
             };
         };
     };
+    open_my_staff_personal_staff_open_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["OpenStaffThreadRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffThread"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     courtlistener_webhook_legal_webhooks_courtlistener_post: {
         parameters: {
             query?: never;
@@ -138277,6 +138859,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BridgeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_coding_session_connection_organization_coding_sessions_connection_organization_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodingSessionConnectionOrganization"];
+                };
+            };
+        };
+    };
+    write_coding_session_connection_organization_coding_sessions_connection_organization_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetCodingSessionConnectionOrganization"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodingSessionConnectionOrganization"];
                 };
             };
             /** @description Validation Error */
@@ -195621,6 +196256,143 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgreementRollup"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_mandate_outcome_pending_admin_judges_mandate_outcome_pending_get: {
+        parameters: {
+            query?: {
+                /** @description Restrict to one mandate. */
+                mandate_key?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingLabels"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_mandate_outcome_authority_admin_judges_mandate_outcome__verdict_id__authority_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                verdict_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthorityAnswer"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingVerdict"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_mandate_outcome_calibration_admin_judges_mandate_outcome_calibration_get: {
+        parameters: {
+            query?: {
+                /** @description Restrict to one mandate. */
+                mandate_key?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BenchCalibration"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_ratify_goal_clauses_admin_judges_mandate_outcome_goal_clauses__row_id__ratify_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                row_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Ratification"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */

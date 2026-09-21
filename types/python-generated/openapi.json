@@ -2123,6 +2123,66 @@
         }
       }
     },
+    "/personal-staff/open": {
+      "post": {
+        "tags": [
+          "Personal Staff"
+        ],
+        "summary": "Open My Staff",
+        "description": "Open the caller's ONE staff conversation and return everything to run it.",
+        "operationId": "open_my_staff_personal_staff_open_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/OpenStaffThreadRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffThread"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/legal/webhooks/courtlistener": {
       "post": {
         "tags": [
@@ -8150,6 +8210,68 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BridgeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coding-sessions/connection/organization": {
+      "get": {
+        "tags": [
+          "Coding Sessions"
+        ],
+        "summary": "Read Coding Session Connection Organization",
+        "description": "The organization this account's coding sessions are filed in, plus the choices.",
+        "operationId": "read_coding_session_connection_organization_coding_sessions_connection_organization_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodingSessionConnectionOrganization"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Coding Sessions"
+        ],
+        "summary": "Write Coding Session Connection Organization",
+        "description": "Record the person's answer to the hold: file coding sessions in THIS organization.",
+        "operationId": "write_coding_session_connection_organization_coding_sessions_connection_organization_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCodingSessionConnectionOrganization"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodingSessionConnectionOrganization"
                 }
               }
             }
@@ -90777,6 +90899,234 @@
         }
       }
     },
+    "/admin/judges/mandate-outcome/pending": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin / Judges"
+        ],
+        "summary": "Get Mandate Outcome Pending",
+        "description": "Judged mandate runs waiting for a human to answer the same questions.\n\nThis is the bench. Until somebody works it, the mandate-outcome judge has no\naccuracy record at all — 0 of the platform's 44 judge verdicts had ever\nreceived a human answer when this was built.",
+        "operationId": "get_mandate_outcome_pending_admin_judges_mandate_outcome_pending_get",
+        "parameters": [
+          {
+            "name": "mandate_key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Restrict to one mandate.",
+              "title": "Mandate Key"
+            },
+            "description": "Restrict to one mandate."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingLabels"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/judges/mandate-outcome/{verdict_id}/authority": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin / Judges"
+        ],
+        "summary": "Post Mandate Outcome Authority",
+        "description": "Record ONE human answer on one judged run, per question.",
+        "operationId": "post_mandate_outcome_authority_admin_judges_mandate_outcome__verdict_id__authority_post",
+        "parameters": [
+          {
+            "name": "verdict_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Verdict Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthorityAnswer"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingVerdict"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/judges/mandate-outcome/calibration": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin / Judges"
+        ],
+        "summary": "Get Mandate Outcome Calibration",
+        "description": "Cohen's kappa PER QUESTION against the human labels collected so far.\n\nPer question because \"overall fitness 1-5\" and \"contains ungrounded claims\"\nwill not calibrate alike, and one blended number would hide which of them is\nthe rubber stamp. Below 50 labeled cases each question reports\n`insufficient_data` and says so — a kappa off eight rows is noise with a\ndecimal point.",
+        "operationId": "get_mandate_outcome_calibration_admin_judges_mandate_outcome_calibration_get",
+        "parameters": [
+          {
+            "name": "mandate_key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Restrict to one mandate.",
+              "title": "Mandate Key"
+            },
+            "description": "Restrict to one mandate."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BenchCalibration"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/judges/mandate-outcome/goal-clauses/{row_id}/ratify": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin / Judges"
+        ],
+        "summary": "Post Ratify Goal Clauses",
+        "description": "Open the D-15 door for ONE agent-authored goal.\n\n738 of the platform's 741 live mandates have an agent-written goal, and the\nJudge primitive refuses to grade a subject against a rubric that subject\nauthored. That refusal is not relaxed: instead a human reads the extracted\nrubric here and takes authorship of it, and only then is that mandate judged.",
+        "operationId": "post_ratify_goal_clauses_admin_judges_mandate_outcome_goal_clauses__row_id__ratify_post",
+        "parameters": [
+          {
+            "name": "row_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Row Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Ratification"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Post Ratify Goal Clauses Admin Judges Mandate Outcome Goal Clauses  Row Id  Ratify Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/judges/{judge_key}/calibration": {
       "get": {
         "tags": [
@@ -91882,7 +92232,7 @@
           "scheduler"
         ],
         "summary": "Delete Trigger",
-        "description": "Hard-delete a trigger.",
+        "description": "Soft-delete a trigger (``deleted_at`` set, ``enabled`` cleared together).",
         "operationId": "delete_trigger_scheduler_triggers__trigger_id__delete",
         "parameters": [
           {
@@ -97536,6 +97886,12 @@
                     },
                     {
                       "$ref": "#/components/schemas/ContextInputPart"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DecisionQuestionsPart"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DecisionAnswersPart"
                     }
                   ]
                 },
@@ -98188,6 +98544,12 @@
                     },
                     {
                       "$ref": "#/components/schemas/ContextInputPart"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DecisionQuestionsPart"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DecisionAnswersPart"
                     }
                   ]
                 },
@@ -107006,6 +107368,45 @@
         "title": "AuthorMapRequest",
         "description": "The one body `POST /seo/brands/{brand_id}/map/author` takes.\n\nExactly one source kind per call. Every field that belongs to another source\nkind is refused rather than ignored — a body that silently drops the thing the\nperson chose is the \"screen that lies\" defect."
       },
+      "AuthorityAnswer": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "title": "Question",
+            "description": "The question name, exactly as the judge answered it."
+          },
+          "answer": {
+            "type": "string",
+            "title": "Answer",
+            "description": "The human's answer, in the judge's own vocabulary."
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": ""
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id",
+            "description": "Who is answering. Recorded on the label so a calibration can name its raters."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question",
+          "answer"
+        ],
+        "title": "AuthorityAnswer",
+        "description": "One human answer to ONE of the questions the judge answered."
+      },
       "AuthorityCandidate": {
         "properties": {
           "candidate_key": {
@@ -109270,6 +109671,51 @@
         ],
         "title": "BeehiivServiceStatus"
       },
+      "BenchCalibration": {
+        "properties": {
+          "judge_key": {
+            "type": "string",
+            "title": "Judge Key",
+            "default": "mandate_outcome.goal_fitness"
+          },
+          "judge_version": {
+            "type": "integer",
+            "title": "Judge Version",
+            "default": 1
+          },
+          "mandate_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mandate Key"
+          },
+          "labeled_rows": {
+            "type": "integer",
+            "title": "Labeled Rows",
+            "default": 0
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/QuestionCalibration"
+            },
+            "type": "array",
+            "title": "Questions"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "BenchCalibration"
+      },
       "BenchProof": {
         "properties": {
           "record_id": {
@@ -109549,6 +109995,65 @@
             "type": "string",
             "title": "Cheap Model"
           },
+          "judge_model_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Judge Model Name"
+          },
+          "frontier_model_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frontier Model Name"
+          },
+          "cheap_model_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cheap Model Name"
+          },
+          "typical_run_cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Typical Run Cost Usd"
+          },
+          "estimated_cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Cost Usd"
+          },
+          "estimated_cost_note": {
+            "type": "string",
+            "title": "Estimated Cost Note"
+          },
           "masterwork_id": {
             "type": "string",
             "title": "Masterwork Id"
@@ -109589,6 +110094,12 @@
           "judge_model",
           "frontier_model",
           "cheap_model",
+          "judge_model_name",
+          "frontier_model_name",
+          "cheap_model_name",
+          "typical_run_cost_usd",
+          "estimated_cost_usd",
+          "estimated_cost_note",
           "masterwork_id",
           "masterwork_name",
           "corpus_sources",
@@ -132372,6 +132883,49 @@
         "title": "CodingSessionBridgeRestRequest",
         "description": "Bridge request as posted over HTTP. Every field carries its real shape in the schema and is checked by the server's one validation boundary, which answers a bad value with a reason, a remedy and what is supported."
       },
+      "CodingSessionConnectionOrganization": {
+        "properties": {
+          "set_on": {
+            "type": "string",
+            "title": "Set On",
+            "default": "coding_session"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "organizations": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organizations"
+          },
+          "memberships_url": {
+            "type": "string",
+            "title": "Memberships Url",
+            "default": "/auth/organizations"
+          }
+        },
+        "type": "object",
+        "title": "CodingSessionConnectionOrganization",
+        "description": "What this coding-session connection is configured to file its work in.\n\n``organizations`` is the SAME list, in the SAME shape, that the hold\nenvelope carries (``details.organizations`` of the 409) — one picker\nshape on every surface, never a second membership list. ``None`` means\nthe list could not be read right now (not \"you belong to nothing\")."
+      },
       "CodingSessionIdentity": {
         "properties": {
           "provider_session_id": {
@@ -139079,6 +139633,12 @@
                     },
                     {
                       "$ref": "#/components/schemas/ContextInputPart"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DecisionQuestionsPart"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DecisionAnswersPart"
                     }
                   ]
                 },
@@ -139820,6 +140380,18 @@
             "type": "integer",
             "title": "Chars"
           },
+          "expert_chars": {
+            "type": "integer",
+            "title": "Expert Chars",
+            "default": 0
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/CorpusTurnOut"
+            },
+            "type": "array",
+            "title": "Turns"
+          },
           "title": {
             "anyOf": [
               {
@@ -139942,6 +140514,36 @@
         ],
         "title": "CorpusSegmentOut",
         "description": "One thing the Expert contributed, with every door that exists for it."
+      },
+      "CorpusTurnOut": {
+        "properties": {
+          "voice": {
+            "type": "string",
+            "title": "Voice"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "speaker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speaker"
+          }
+        },
+        "type": "object",
+        "required": [
+          "voice",
+          "text"
+        ],
+        "title": "CorpusTurnOut",
+        "description": "One turn of a contributed conversation, already classified for a reader.\n\n🚨 NO ROLE TOKEN SURVIVES TO THIS SHAPE (cold walk 16, defect B). ``voice``\nsays whose turn it is; ``speaker`` is a real human name or nothing."
       },
       "CostBreakdownItem": {
         "properties": {
@@ -145806,6 +146408,271 @@
         "title": "DblpPublicPublication",
         "description": "Safe bounded projection of one public DBLP publication."
       },
+      "DecisionAnswer": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "decision_answer",
+            "title": "Kind",
+            "description": "The registered kind this payload is an instance of.",
+            "default": "decision_answer"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "choice",
+              "noul",
+              "score"
+            ],
+            "title": "Type"
+          },
+          "answer": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Answer"
+          },
+          "probability": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1,
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Probability"
+          },
+          "probabilities": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Probabilities"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Confidence"
+          },
+          "legend": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legend"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "answer",
+          "confidence"
+        ],
+        "title": "DecisionAnswer",
+        "description": "One answer, with the holder's own uncertainty attached."
+      },
+      "DecisionAnswersPart": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
+          "type": {
+            "type": "string",
+            "const": "decision_answers",
+            "title": "Type",
+            "default": "decision_answers"
+          },
+          "__kind": {
+            "type": "string",
+            "const": "decision_answers",
+            "title": "Kind",
+            "default": "decision_answers"
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Model"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "native",
+              "verbalized",
+              "verbalized_calibrated"
+            ],
+            "title": "Method"
+          },
+          "answers": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DecisionAnswer"
+            },
+            "type": "object",
+            "title": "Answers"
+          },
+          "unanswerable": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Unanswerable"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/DecisionUsage-Input"
+          },
+          "cost_usd": {
+            "type": "number",
+            "minimum": 0,
+            "title": "Cost Usd"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "model",
+          "method",
+          "usage",
+          "cost_usd",
+          "type"
+        ],
+        "title": "DecisionAnswersPart"
+      },
+      "DecisionQuestion": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "title": "Kind",
+            "description": "The registered kind this payload is an instance of, when it is one.",
+            "default": ""
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "choice",
+              "noul",
+              "score"
+            ],
+            "title": "Type"
+          },
+          "instructions": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Instructions"
+          },
+          "criteria": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criteria"
+          },
+          "suggested_threshold": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1,
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Threshold"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "instructions"
+        ],
+        "title": "DecisionQuestion",
+        "description": "One question. Not a kind: it has no meaning outside its batch."
+      },
+      "DecisionQuestionsPart": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
+          "type": {
+            "type": "string",
+            "const": "decision_questions",
+            "title": "Type",
+            "default": "decision_questions"
+          },
+          "__kind": {
+            "type": "string",
+            "const": "decision_questions",
+            "title": "Kind",
+            "default": "decision_questions"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/DecisionQuestion"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Questions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "questions",
+          "type"
+        ],
+        "title": "DecisionQuestionsPart"
+      },
       "DecisionResultPayload": {
         "properties": {
           "type": {
@@ -145845,7 +146712,7 @@
             "title": "Answers"
           },
           "usage": {
-            "$ref": "#/components/schemas/DecisionUsage"
+            "$ref": "#/components/schemas/DecisionUsage-Output"
           },
           "cost_usd": {
             "type": "number",
@@ -145990,7 +146857,35 @@
         "title": "DecisionRunRequest",
         "description": "HTTP/service input; native runner validates the provider discriminated body."
       },
-      "DecisionUsage": {
+      "DecisionUsage-Input": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "title": "Kind",
+            "description": "The registered kind this payload is an instance of, when it is one.",
+            "default": ""
+          },
+          "input_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Output Tokens"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "input_tokens",
+          "output_tokens"
+        ],
+        "title": "DecisionUsage",
+        "description": "What the decision call consumed. Zero is a real value, never a stand-in."
+      },
+      "DecisionUsage-Output": {
         "properties": {
           "input_tokens": {
             "type": "integer",
@@ -160020,6 +160915,11 @@
             "title": "Total Chars",
             "default": 0
           },
+          "expert_chars": {
+            "type": "integer",
+            "title": "Expert Chars",
+            "default": 0
+          },
           "hidden_conversation_count": {
             "type": "integer",
             "title": "Hidden Conversation Count",
@@ -167872,6 +168772,12 @@
                     },
                     {
                       "$ref": "#/components/schemas/ContextInputPart"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DecisionQuestionsPart"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DecisionAnswersPart"
                     }
                   ]
                 },
@@ -209615,6 +210521,23 @@
         "title": "OpenSSFRepositoryScorecard",
         "description": "Safe factual projection of one published OpenSSF Scorecard result."
       },
+      "OpenStaffThreadRequest": {
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "native",
+              "web"
+            ],
+            "title": "Channel",
+            "description": "Which door this is. `web` is a signed-in browser session; `native` is the phone or desktop client, which IS an approval-guarded channel because it is not a browser session with recent interactive auth.",
+            "default": "web"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "OpenStaffThreadRequest"
+      },
       "OpenTextServiceStatus": {
         "properties": {
           "__kind": {
@@ -218271,6 +219194,121 @@
         ],
         "title": "PendingExamplesOut",
         "description": "What the next review would read — the honesty surface for \"Review now\".\n\n``unsettled_count`` > 0 is the warning: the subject's newest activity is\nexcluded by the settle window; the \"review THIS conversation\" door\n(``example_ids`` on the review trigger) is the way to read it anyway."
+      },
+      "PendingLabels": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/PendingVerdict"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "total_awaiting": {
+            "type": "integer",
+            "title": "Total Awaiting",
+            "default": 0
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "default": 50
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PendingLabels"
+      },
+      "PendingVerdict": {
+        "properties": {
+          "verdict_id": {
+            "type": "string",
+            "title": "Verdict Id"
+          },
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "judged_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Judged At"
+          },
+          "verdict": {
+            "type": "string",
+            "title": "Verdict"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "reasoning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning"
+          },
+          "answers": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Answers"
+          },
+          "unanswerable": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Unanswerable"
+          },
+          "authority_answers": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Authority Answers"
+          },
+          "input_cut_ratio": {
+            "type": "number",
+            "title": "Input Cut Ratio",
+            "default": 0
+          },
+          "questions_awaiting": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Questions Awaiting"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "verdict_id",
+          "mandate_key",
+          "verdict"
+        ],
+        "title": "PendingVerdict",
+        "description": "One judged run waiting for a human to answer the same questions."
       },
       "PenpotPublicRelease": {
         "properties": {
@@ -227573,6 +228611,12 @@
                     },
                     {
                       "$ref": "#/components/schemas/ContextInputPart"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DecisionQuestionsPart"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DecisionAnswersPart"
                     }
                   ]
                 },
@@ -231427,6 +232471,25 @@
           }
         }
       },
+      "QuestionCalibration": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "calibration": {
+            "$ref": "#/components/schemas/Calibration"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question",
+          "calibration"
+        ],
+        "title": "QuestionCalibration",
+        "description": "One question's agreement with the human labels collected for it."
+      },
       "QueueRefreshResult": {
         "properties": {
           "scanned": {
@@ -232970,6 +234033,39 @@
         ],
         "title": "RateComponent",
         "description": "One (rate, hours) pair behind a weighted-average regular rate."
+      },
+      "Ratification": {
+        "properties": {
+          "ratified_by": {
+            "type": "string",
+            "title": "Ratified By",
+            "description": "The admin's user id. This is WHO now owns this rubric."
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": ""
+          },
+          "judgeable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Judgeable",
+            "description": "Does this goal say enough to judge a run against? Omit to keep whatever the extraction recorded."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ratified_by"
+        ],
+        "title": "Ratification",
+        "description": "A human taking authorship of one mandate goal's extracted rubric."
       },
       "RawPayloadEvidenceOut": {
         "properties": {
@@ -251904,6 +253000,24 @@
         ],
         "title": "SetCanonicalResponse"
       },
+      "SetCodingSessionConnectionOrganization": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SetCodingSessionConnectionOrganization"
+      },
       "SetEnabledRequest": {
         "properties": {
           "enabled": {
@@ -261299,6 +262413,95 @@
         ],
         "title": "StackExchangePublicQuestion",
         "description": "Safe bounded projection of one public Stack Overflow question."
+      },
+      "StaffThread": {
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Conversation Id",
+            "description": "The person's ONE staff conversation in this organization. The same id their texts and calls use. Deterministic: the client may hold it, and asking again always returns it."
+          },
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key",
+            "description": "The role the thread runs. Always `personal_staff.front_line`."
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id",
+            "description": "The resolved Holder's `agent.definition` id — what every attribution column is a foreign key to. NOT the version id."
+          },
+          "agent_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Version Id",
+            "description": "Set only when the Holder is pinned to a specific version."
+          },
+          "agent_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Name",
+            "description": "For the header. Absent is honest, never a placeholder."
+          },
+          "holder_provenance": {
+            "type": "string",
+            "title": "Holder Provenance",
+            "description": "Which rung of the mandate ladder chose this Holder: system, global, org, user or run. An admin debugging 'why is this agent answering' reads this rather than guessing."
+          },
+          "is_new": {
+            "type": "boolean",
+            "title": "Is New",
+            "description": "True only on the very first open, when this door created the row."
+          },
+          "sandbox_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sandbox Instance Id",
+            "description": "The person's own box, now bound to this thread, so file and shell tools run in THEIR machine rather than on the server. Null means there is no box — and `sandbox_note` says why in words."
+          },
+          "sandbox_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sandbox Note",
+            "description": "Present exactly when `sandbox_instance_id` is null: one plain sentence a person can read, never a silent absence."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "mandate_key",
+          "agent_id",
+          "holder_provenance",
+          "is_new"
+        ],
+        "title": "StaffThread",
+        "description": "Everything a client needs to render and run the person's staff thread."
       },
       "StaffbaseServiceStatus": {
         "properties": {
@@ -283244,6 +284447,18 @@
               "retryable_failure"
             ],
             "title": "Status"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "alias_conflict"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
           }
         },
         "type": "object",

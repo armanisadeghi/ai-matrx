@@ -4514,6 +4514,50 @@ export interface ContextInputPart {
   editable?: boolean | null;
 }
 
+export interface DecisionQuestion {
+  __kind?: string;
+  name: string;
+  type: "noul" | "choice" | "score";
+  instructions: string;
+  criteria?: Record<string, string> | string[] | null;
+  suggested_threshold?: number | null;
+}
+
+export interface DecisionQuestionsPart {
+  metadata?: Record<string, unknown>;
+  type: "decision_questions";
+  __kind: "decision_questions";
+  questions: DecisionQuestion[];
+}
+
+export interface DecisionAnswer {
+  __kind?: "decision_answer";
+  type: "noul" | "choice" | "score";
+  answer: boolean | number | string;
+  probability?: number | null;
+  probabilities?: Record<string, number> | null;
+  confidence: number;
+  legend?: Record<string, string> | null;
+}
+
+export interface DecisionUsage {
+  __kind?: string;
+  input_tokens: number;
+  output_tokens: number;
+}
+
+export interface DecisionAnswersPart {
+  metadata?: Record<string, unknown>;
+  type: "decision_answers";
+  __kind: "decision_answers";
+  model: string;
+  method: "native" | "verbalized" | "verbalized_calibrated";
+  answers?: Record<string, DecisionAnswer>;
+  unanswerable?: Record<string, string>;
+  usage: DecisionUsage;
+  cost_usd: number;
+}
+
 export type MessagePart =
   | TextPart
   | ThinkingPart
@@ -4540,7 +4584,9 @@ export type MessagePart =
   | TableInputPart
   | ListInputPart
   | DataInputPart
-  | ContextInputPart;
+  | ContextInputPart
+  | DecisionQuestionsPart
+  | DecisionAnswersPart;
 
 interface MessagePartJsonSchema {
   [key: string]: unknown;
@@ -5264,6 +5310,304 @@ const MESSAGE_PART_SCHEMA: MessagePartJsonSchema = {
         "id"
       ],
       "title": "DbRecordRef",
+      "type": "object"
+    },
+    "DecisionAnswer": {
+      "additionalProperties": false,
+      "description": "One answer, with the holder's own uncertainty attached.",
+      "properties": {
+        "__kind": {
+          "const": "decision_answer",
+          "default": "decision_answer",
+          "description": "The registered kind this payload is an instance of.",
+          "title": "Kind",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "noul",
+            "choice",
+            "score"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "answer": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Answer"
+        },
+        "probability": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Probability"
+        },
+        "probabilities": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Probabilities"
+        },
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "legend": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Legend"
+        }
+      },
+      "required": [
+        "type",
+        "answer",
+        "confidence"
+      ],
+      "title": "DecisionAnswer",
+      "type": "object"
+    },
+    "DecisionAnswersPart": {
+      "additionalProperties": false,
+      "properties": {
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        },
+        "type": {
+          "const": "decision_answers",
+          "default": "decision_answers",
+          "title": "Type",
+          "type": "string"
+        },
+        "__kind": {
+          "const": "decision_answers",
+          "default": "decision_answers",
+          "title": "Kind",
+          "type": "string"
+        },
+        "model": {
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
+        "method": {
+          "enum": [
+            "native",
+            "verbalized",
+            "verbalized_calibrated"
+          ],
+          "title": "Method",
+          "type": "string"
+        },
+        "answers": {
+          "additionalProperties": {
+            "$ref": "#/$defs/DecisionAnswer"
+          },
+          "title": "Answers",
+          "type": "object"
+        },
+        "unanswerable": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Unanswerable",
+          "type": "object"
+        },
+        "usage": {
+          "$ref": "#/$defs/DecisionUsage"
+        },
+        "cost_usd": {
+          "minimum": 0.0,
+          "title": "Cost Usd",
+          "type": "number"
+        }
+      },
+      "required": [
+        "model",
+        "method",
+        "usage",
+        "cost_usd",
+        "type"
+      ],
+      "title": "DecisionAnswersPart",
+      "type": "object"
+    },
+    "DecisionQuestion": {
+      "additionalProperties": false,
+      "description": "One question. Not a kind: it has no meaning outside its batch.",
+      "properties": {
+        "__kind": {
+          "default": "",
+          "description": "The registered kind this payload is an instance of, when it is one.",
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "noul",
+            "choice",
+            "score"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "instructions": {
+          "minLength": 1,
+          "title": "Instructions",
+          "type": "string"
+        },
+        "criteria": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Criteria"
+        },
+        "suggested_threshold": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Suggested Threshold"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "instructions"
+      ],
+      "title": "DecisionQuestion",
+      "type": "object"
+    },
+    "DecisionQuestionsPart": {
+      "additionalProperties": false,
+      "properties": {
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        },
+        "type": {
+          "const": "decision_questions",
+          "default": "decision_questions",
+          "title": "Type",
+          "type": "string"
+        },
+        "__kind": {
+          "const": "decision_questions",
+          "default": "decision_questions",
+          "title": "Kind",
+          "type": "string"
+        },
+        "questions": {
+          "items": {
+            "$ref": "#/$defs/DecisionQuestion"
+          },
+          "minItems": 1,
+          "title": "Questions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "questions",
+        "type"
+      ],
+      "title": "DecisionQuestionsPart",
+      "type": "object"
+    },
+    "DecisionUsage": {
+      "additionalProperties": false,
+      "description": "What the decision call consumed. Zero is a real value, never a stand-in.",
+      "properties": {
+        "__kind": {
+          "default": "",
+          "description": "The registered kind this payload is an instance of, when it is one.",
+          "title": "Kind",
+          "type": "string"
+        },
+        "input_tokens": {
+          "minimum": 0,
+          "title": "Input Tokens",
+          "type": "integer"
+        },
+        "output_tokens": {
+          "minimum": 0,
+          "title": "Output Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "input_tokens",
+        "output_tokens"
+      ],
+      "title": "DecisionUsage",
       "type": "object"
     },
     "DocumentInputPart": {
@@ -7574,6 +7918,12 @@ const MESSAGE_PART_SCHEMA: MessagePartJsonSchema = {
     },
     {
       "$ref": "#/$defs/ContextInputPart"
+    },
+    {
+      "$ref": "#/$defs/DecisionQuestionsPart"
+    },
+    {
+      "$ref": "#/$defs/DecisionAnswersPart"
     }
   ]
 };
