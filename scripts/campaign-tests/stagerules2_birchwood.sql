@@ -37,6 +37,7 @@ declare
   v_f_amt   constant uuid := 'dba92ed7-a224-4897-899a-bd9274ae66fa';
   v_bedroom uuid;
   v_bid     uuid;
+  v_basement constant uuid := '4949da10-3372-482a-998c-39e65f4f52cf';  -- Ferro & Sons, $58,000, the basement
   v_ref     jsonb;
   v_prev    jsonb;
 begin
@@ -52,7 +53,9 @@ begin
 
   -- ── THE ROOM SHE OPENED UP IN LATE SEPTEMBER ────────────────────────────────────────
   select r.id into v_bedroom
-    from custom.read_records(v_org, v_rooms, true, 200, 0) r
+    -- p_by_id => FALSE: `true` keys the document by FIELD ID, so a lookup by key name
+    -- never matches and this file makes a second room every time it runs. It did, once.
+    from custom.read_records(v_org, v_rooms, false, 200, 0) r
    where r.document ->> 'room_name' = 'Primary Bedroom' limit 1;
   if v_bedroom is null then
     v_bedroom := custom.record_write(v_org, v_rooms, jsonb_build_object(
@@ -67,7 +70,7 @@ begin
 
   -- ── THE ONE BID ON IT ───────────────────────────────────────────────────────────────
   select r.id into v_bid
-    from custom.read_records(v_org, v_quotes, true, 500, 0) r
+    from custom.read_records(v_org, v_quotes, false, 500, 0) r
    where (r.document ->> 'room') = v_bedroom::text
      and (r.document ->> 'contractor') = v_ferro::text limit 1;
   if v_bid is null then
@@ -98,16 +101,28 @@ begin
       'Paid', jsonb_build_array(jsonb_build_object(
         'name',    'Sign-off before anything big is marked paid',
         'message', 'Anything over $10,000 needs sign-off before it is marked Paid.',
-        'when',    jsonb_build_object('op','gt','args', jsonb_build_array(
+        -- WHAT IT DEMANDS IS THE SMALL AMOUNT, and that is the point. There is no
+        -- "signed off" column on a quote and inventing one would be inventing a fact
+        -- nobody enters; what she actually wants is that anything BIG cannot go to Paid on
+        -- its own. So the rule a card has to satisfy by itself is "this is $10,000 or
+        -- less", and when it does not — which is every big one — `require_approval` asks
+        -- the people who can answer and leaves the card exactly where it was. Her first
+        -- rule turns a card away; this one never does.
+        'demands', jsonb_build_object('op','lte','args', jsonb_build_array(
                      jsonb_build_object('field', v_f_amt), jsonb_build_object('const', 10000))),
-        -- "it has a second quote" is the thing she wants somebody to have checked, and it is
-        -- the same question the Approved gate asks — she is not adding a new fact, she is
-        -- adding a second pair of eyes at the money step.
-        'demands', jsonb_build_object('op','gte','args', jsonb_build_array(
-                     jsonb_build_object('op','sibling_count',
-                       'same', jsonb_build_array(v_f_room), 'differs', jsonb_build_array(v_f_co)),
-                     jsonb_build_object('const', 1))),
         'on_fail', 'require_approval')))));
+
+  -- ── THE BASEMENT, WHICH IS THE ONE SHE IS ABOUT TO PAY ─────────────────────────────
+  -- Ferro & Sons' $58,000 basement finish already HAS other bids beside it on the same
+  -- room, so it clears the Approved gate honestly. It is on the board as Approved, which
+  -- is where it really is: the work is done and the invoice is on her table. Marking it
+  -- Paid is what asks for sign-off — her second rule — and that is the card that sits
+  -- still saying it is waiting.
+  if (custom.read_record(v_org, v_basement, true) -> 'document' ->> 'quote_stage') is distinct from 'approved' then
+    perform custom.record_update(v_org, v_basement, jsonb_build_object('quote_stage', 'Approved'), null);
+    raise notice 'the $58,000 basement bid is on the board in Approved: %',
+                 custom.read_record(v_org, v_basement, true) -> 'document' ->> 'quote_stage';
+  end if;
 
   -- ── AND THE BOARD SAYS SO, THROUGH THE DOORS ────────────────────────────────────────
   v_ref := custom.pipeline_transition_refusal(v_org, v_bid, 'Approved');
@@ -125,6 +140,12 @@ begin
                  jsonb_build_object('op','sibling_count',
                    'same', jsonb_build_array(v_f_room), 'differs', jsonb_build_array(v_f_co)),
                  jsonb_build_object('const', 1)))));
+  v_ref := custom.pipeline_transition_refusal(v_org, v_basement, 'Paid');
+  raise notice 'marking the $58,000 basement bid Paid -> outcome=% why=%', v_ref ->> 'outcome', v_ref ->> 'why';
+  if (v_ref ->> 'outcome') <> 'needs_approval' then
+    raise exception 'the Paid gate did not ask for approval on the $58,000 basement bid — it said %', v_ref ->> 'outcome';
+  end if;
+
   raise notice 'the settings screen will say: % of % quotes would be refused today (%)',
                v_prev ->> 'refused', v_prev ->> 'considered',
                (select string_agg(e ->> 'title', ', ') from jsonb_array_elements(v_prev -> 'examples') e);

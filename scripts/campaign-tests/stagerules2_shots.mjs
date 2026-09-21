@@ -49,6 +49,12 @@ const TABLE_URL = `/data-v2/${QUOTES}`;
  * and it is the only one.
  */
 const THE_BID = "Primary Bedroom";
+/**
+ * And the card her SECOND rule is about: Ferro & Sons' $58,000 basement finish, already in
+ * Approved because it has other bids beside it on the same room. Marking it Paid is over
+ * $10,000, so it asks for sign-off instead of being turned away.
+ */
+const THE_BIG_ONE = "Basement";
 
 mkdirSync(OUT, { recursive: true });
 const notes = [];
@@ -62,12 +68,17 @@ const stop = (why) => {
 
 /** The organization's own switch, set the way an operator sets it. SELECT-only otherwise. */
 function knob(value) {
+  // `scope_kind`, not `scope`, and the primary key carries the organization too — the
+  // first version of this line named a column that is not there, which is why shot 4 was
+  // missing from the first complete run of this walk.
   const sql =
     value === null
-      ? `delete from platform.knob_override where feature='custom' and key='stage_rule_enforcement' and scope_id='${ORG}';`
-      : `insert into platform.knob_override (feature, key, scope, scope_id, organization_id, value)
-         values ('custom','stage_rule_enforcement','organization','${ORG}','${ORG}', to_jsonb('${value}'::text))
-         on conflict (feature, key, scope, scope_id) do update set value = excluded.value;`;
+      ? `delete from platform.knob_override where feature='custom' and key='stage_rule_enforcement' and organization_id='${ORG}';`
+      : `insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+         values ('custom','stage_rule_enforcement','organization','${ORG}','${ORG}', to_jsonb('${value}'::text),
+                 'lane STAGE-RULES-2, for one screenshot; set back to refuse in the same run')
+         on conflict (feature, key, scope_kind, scope_id, organization_id)
+           do update set value = excluded.value, set_note = excluded.set_note, updated_at = now();`;
   execFileSync(resolve(ROOT, "binlocal/p.sh"), ["-q", "-c", sql], { stdio: "pipe" });
   return value;
 }
@@ -123,7 +134,8 @@ async function openTheBoard(page) {
   // The cards arrive after the columns do; a shot taken now is a shot of "Loading…".
   await page.waitForFunction(() => !document.body.innerText.includes("Loading…"), null, { timeout: 60000 }).catch(() => {});
   await page.waitForTimeout(2500);
-  const body = await page.evaluate(() => document.body.innerText);
+  await page.waitForLoadState("domcontentloaded").catch(() => {});
+  const body = await page.evaluate(() => document.body.innerText).catch(() => "");
   if (!/Requested/.test(body) || !/Approved/.test(body)) {
     await shot(page, "x-board-did-not-draw");
     stop(`the board did not draw the pipeline's stages — it says: ${body.replace(/\s+/g, " ").slice(0, 300)}`);
@@ -214,6 +226,19 @@ async function main() {
     .textContent()
     .catch(() => null);
   note("the live preview says", preview ?? "(nothing on screen)");
+  // The demand is a `sibling_count`, which the one-clause builder cannot draw. It has to be
+  // SAID rather than shown as an empty picker — the first complete run of this walk caught
+  // it drawing "— pick a column —" beside a live Save button.
+  const inWords = await page
+    .locator('[data-testid="stage-rule-clause-in-words"]')
+    .first()
+    .textContent()
+    .catch(() => null);
+  note("the demand it cannot draw is said as", inWords ?? "(NOT SAID — it is drawn as an empty picker)");
+  if (!inWords) {
+    await shot(page, "x-demand-drawn-as-an-empty-picker");
+    stop("the demand this builder cannot draw is still rendered as an empty picker — this app predates records-ui 0.56.0");
+  }
   await shot(page, "1b-the-5000-rule-open-with-its-live-count");
 
   // ══ 2 — THE REFUSED DRAG, and its sentence ═════════════════════════════════════════
@@ -235,8 +260,12 @@ async function main() {
   // ══ 3 — THE CARD THAT IS WAITING FOR SOMEBODY ══════════════════════════════════════
   // Her second rule: anything over $10,000 needs sign-off before it is marked Paid. It does
   // not turn the card away — it asks — and FILING IS HER DECISION, so the button is pressed.
+  // The card is the basement, which is in Approved and is the one she is about to pay; the
+  // Primary Bedroom bid cannot be used here because it is still in Received and the board's
+  // own "where a quote can go next" rule stops that move first, which is correct and is a
+  // different picture.
   await openTheBoard(page);
-  const toPaid = await dragCardTo(page, THE_BID, "Paid");
+  const toPaid = await dragCardTo(page, THE_BIG_ONE, "Paid");
   note("drag to Paid", toPaid.why);
   if (!toPaid.ok) stop(toPaid.why);
   await page.waitForTimeout(6000);
@@ -273,7 +302,7 @@ async function main() {
     note("drag to Approved under warn", warned.why);
     await page.waitForTimeout(7000);
     await shot(page, "4a-warned-it-went-through-and-said-so");
-    const onScreen = await page.evaluate(() => document.body.innerText.replace(/\s+/g, " "));
+    const onScreen = await page.evaluate(() => document.body.innerText.replace(/\s+/g, " ")).catch(() => "");
     note("under warn the board says", /Nothing over \$5,000/.test(onScreen) ? "the sentence is on screen" : "the sentence is NOT on screen");
     note("and the card moved", /Approved 1|Approved 2|Approved 3/.test(onScreen) ? "Approved holds more than it did" : "(count unchanged — check the shot)");
     // Put her board back: the card returns to Received.
@@ -282,7 +311,11 @@ async function main() {
     note("moved back to Received", back.why);
     await page.waitForTimeout(6000);
   } finally {
-    note("organization switch restored", `custom/stage_rule_enforcement = ${knob("refuse")}`);
+    // Put it back the way it was: this organization held NO override at all, and the
+    // store's own default is refuse. Writing "refuse" would leave a row behind that says
+    // somebody decided this, which is not true.
+    knob(null);
+    note("organization switch restored", `custom/stage_rule_enforcement = ${execFileSync(resolve(ROOT, "binlocal/p.sh"), ["-At", "-c", `select custom.stage_rule_enforcement('${ORG}'::uuid);`]).toString().trim()} (override removed)`);
   }
 
   await openTheBoard(page);
