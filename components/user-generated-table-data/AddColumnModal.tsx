@@ -49,6 +49,9 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess, in
   const [dataType, setDataType] = useState('string');
   const [format, setFormat] = useState<FieldFormatConfig>({ id: 'text' });
   const [isRequired, setIsRequired] = useState(false);
+  // Formula + system columns store nothing: no default, never required.
+  const isComputedFormat =
+    format.id === 'formula' || format.id === 'created_time' || format.id === 'modified_time';
   const [defaultValue, setDefaultValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,8 +95,8 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess, in
         fieldName,
         displayName,
         dataType,
-        isRequired: format.id === 'formula' ? false : isRequired,
-        defaultValue: format.id === 'formula' ? null : defaultValue || null,
+        isRequired: isComputedFormat ? false : isRequired,
+        defaultValue: isComputedFormat ? null : defaultValue || null,
         ...(typeof insertAtOrder === "number" ? { fieldOrder: insertAtOrder } : {}),
       });
       
@@ -218,9 +221,9 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess, in
 
           {/* A formula column stores nothing, so "required" and "default" have
               no meaning for it; the two controls are absent rather than dead. */}
-          {format.id === 'formula' ? (
+          {isComputedFormat ? (
             <p className="text-xs text-muted-foreground">
-              A formula column is calculated for every row, so it has no default and is never required.
+              This column is filled in by the table itself for every row, so it has no default and is never required.
             </p>
           ) : (
           <>

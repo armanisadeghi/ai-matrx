@@ -40,7 +40,7 @@ import {
   formatHasOwnInput,
 } from "@/features/data-tables/components/FormatAwareInput";
 import { resolveFieldFormat } from "@/lib/field-formats/format";
-import { isFormulaColumn } from "@/features/data-tables/formulas";
+import { isComputedColumn } from "@/features/data-tables/formulas";
 import {
   describeValidationRules,
   parseValidationRules,
@@ -145,7 +145,7 @@ export default function EditRowModal({
       .filter(
         (field) =>
           field.is_required &&
-          !isFormulaColumn(field) &&
+          !isComputedColumn(field) &&
           (rowData[field.field_name] === null ||
             rowData[field.field_name] === undefined),
       )
@@ -161,7 +161,7 @@ export default function EditRowModal({
     // uniqueness claim made without the other rows would be a guess.
     const nextErrors: Record<string, string> = {};
     for (const field of fields) {
-      if (isFormulaColumn(field)) continue;
+      if (isComputedColumn(field)) continue;
       const verdict = validateCellValue({
         rules: parseValidationRules(field.validation_rules),
         dataType: field.data_type,
@@ -226,14 +226,14 @@ export default function EditRowModal({
     // A formula column stores nothing and is computed from the row's other
     // cells; this form offers no input for it, and says why, so nobody types a
     // value that could never be kept.
-    if (isFormulaColumn(field)) {
+    if (isComputedColumn(field)) {
       return (
         <p
           id={field.field_name}
           className="rounded-md border border-dashed border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
         >
-          Calculated from the other columns in this row — it updates on its own
-          once the row is saved.
+          Filled in by the table itself — calculated from this row, or stamped
+          automatically — so there is nothing to type here.
         </p>
       );
     }

@@ -111,8 +111,7 @@ import {
 import { ColorRulesDialog } from "@/features/data-tables/components/ColorRulesDialog";
 import { isChoiceFormat } from "@/lib/field-formats/choices";
 import {
-  formulaColumnsOf,
-  isFormulaColumn,
+  isComputedColumn,
   withComputedColumns,
 } from "@/features/data-tables/formulas";
 import {
@@ -209,6 +208,8 @@ interface TableDataRow {
    * would make a genuine remote change look older than ours and vanish.
    */
   updated_at?: string;
+  /** Server insert time — what a "Created time" system column shows. */
+  created_at?: string;
 }
 
 interface RowOrderingConfig {
@@ -286,6 +287,9 @@ function asTableDataRows(raw: unknown): TableDataRow[] {
           id: (row as { id: string }).id,
           data: (row as { data: Record<string, unknown> }).data,
           ...(typeof updatedAt === "string" ? { updated_at: updatedAt } : {}),
+          ...(typeof (row as { created_at?: unknown }).created_at === "string"
+            ? { created_at: (row as { created_at: string }).created_at }
+            : {}),
         },
       ];
     }
@@ -1354,7 +1358,7 @@ const UserTableViewer = ({
     const sortTarget = fields.find((f) => f.field_name === field);
     if (
       sortTarget &&
-      isFormulaColumn(sortTarget) &&
+      isComputedColumn(sortTarget) &&
       !hasColumnFilters &&
       (totalCount > CLIENT_SORT_THRESHOLD || Boolean(searchTerm))
     ) {
@@ -1475,7 +1479,13 @@ const UserTableViewer = ({
     // Formula columns are EMPTY in what the database returns — compute them
     // before the search, the filters and the sort look at the rows.
     let rows: TableDataRow[] = withComputedColumns(
-      complete.data.rows.map((row) => ({ id: row.id, data: row.data })),
+      complete.data.rows.map((row) => ({
+        id: row.id,
+        data: row.data,
+        // System columns (Created / Last modified time) read these.
+        created_at: typeof row.created_at === "string" ? row.created_at : undefined,
+        updated_at: typeof row.updated_at === "string" ? row.updated_at : undefined,
+      })),
       fields,
     ).rows;
     const query = searchTerm.trim().toLowerCase();
@@ -2186,12 +2196,13 @@ const UserTableViewer = ({
   // number and a write can never land in it (the cell is read-only below, and
   // paste / clear / fill skip it). Errors are per cell: a bad reference or a
   // division by zero renders #ERROR with the reason.
-  const formulaColumns = formulaColumnsOf(fields);
   const computedPage = withComputedColumns(displayRows, fields);
   displayRows = computedPage.rows;
   const formulaErrors = computedPage.errors;
+  // Formula AND system columns (Created / Last modified time): everything the
+  // table fills in itself, which every write path below must skip.
   const isFormulaField = (fieldName: string): boolean =>
-    formulaColumns.some((c) => c.field.field_name === fieldName);
+    computedPage.formulaFieldNames.has(fieldName);
 
   // ─── Validation rules (features/data-tables/validation.ts) ───────────────
   // Parsed once per render per column; the cell editors, the amber mismatch

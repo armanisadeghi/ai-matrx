@@ -1228,6 +1228,31 @@ export function isFormulaColumn(field: ComputedColumnField): boolean {
   return formulaExpressionOf(field) !== null;
 }
 
+/**
+ * SYSTEM columns: filled from the row's own record, never typed and never
+ * stored in `data` — "Created time" and "Last modified time" (Airtable's
+ * names). Both row readers already return `created_at` / `updated_at`.
+ */
+export type SystemColumnKind = "created_time" | "modified_time";
+
+export function systemColumnKindOf(field: ComputedColumnField): SystemColumnKind | null {
+  const metadata = field.metadata;
+  if (!metadata || typeof metadata !== "object") return null;
+  const format = (metadata as { format?: unknown }).format;
+  if (!format || typeof format !== "object") return null;
+  const id = (format as { id?: unknown }).id;
+  return id === "created_time" || id === "modified_time" ? id : null;
+}
+
+/**
+ * Any column whose value the platform supplies on read — a formula or a
+ * system column. THE check every write path uses to refuse: the grid cell,
+ * paste / clear / fill, the row forms, and the agent `cell_value` target.
+ */
+export function isComputedColumn(field: ComputedColumnField): boolean {
+  return isFormulaColumn(field) || systemColumnKindOf(field) !== null;
+}
+
 /** Every formula column among `fields`, each with its expression parsed once. */
 export function formulaColumnsOf<F extends ComputedColumnField>(
   fields: readonly F[],
@@ -1258,13 +1283,27 @@ export interface ComputedRowsResult<R> {
  * display name (case-insensitive), matching the grid.
  */
 export function withComputedColumns<
-  R extends { id: string; data: Record<string, unknown> },
+  R extends {
+    id: string;
+    data: Record<string, unknown>;
+    created_at?: string;
+    updated_at?: string;
+  },
   F extends ComputedColumnField,
 >(rows: readonly R[], fields: readonly F[]): ComputedRowsResult<R> {
   const columns = formulaColumnsOf(fields);
-  const formulaFieldNames = new Set(columns.map((c) => c.field.field_name));
+  const systemColumns = fields.flatMap((field) => {
+    const kind = systemColumnKindOf(field);
+    return kind ? [{ field, kind }] : [];
+  });
+  // Named for its first tenant; it holds EVERY computed column (formula and
+  // system) — the set write paths must skip.
+  const formulaFieldNames = new Set([
+    ...columns.map((c) => c.field.field_name),
+    ...systemColumns.map((c) => c.field.field_name),
+  ]);
   const errors = new Map<string, string>();
-  if (columns.length === 0) {
+  if (columns.length === 0 && systemColumns.length === 0) {
     return { rows: rows as R[], errors, formulaFieldNames };
   }
   // A reference resolves against the table's COLUMNS, never against the keys a
@@ -1288,6 +1327,13 @@ export function withComputedColumns<
       if (fieldName === undefined) return undefined; // truly no such column
       return data[fieldName] ?? null;
     };
+    // System columns first, so a formula may reference them
+    // (`DATEDIF({Created}, TODAY(), "D")`). A reader that did not return the
+    // timestamp leaves the cell blank rather than inventing one.
+    for (const { field, kind } of systemColumns) {
+      data[field.field_name] =
+        (kind === "created_time" ? row.created_at : row.updated_at) ?? null;
+    }
     for (const { field, parsed } of columns) {
       if (!parsed.ok) {
         data[field.field_name] = null;

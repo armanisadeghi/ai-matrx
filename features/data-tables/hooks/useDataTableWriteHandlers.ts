@@ -26,7 +26,7 @@ import { useMemo, type RefObject } from "react";
 import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 import { normalizeCellValue } from "../components/EditableCell";
-import { isFormulaColumn } from "../formulas";
+import { isComputedColumn } from "../formulas";
 import { updateTableMetadata, upsertCell } from "../service";
 import { isServiceFailure } from "../types";
 import {
@@ -204,9 +204,9 @@ export function useDataTableWriteHandlers(
           );
         }
 
-        if (isFormulaColumn(field)) {
+        if (isComputedColumn(field)) {
           throw new Error(
-            `cell_value cannot write column "${fieldName}" ("${field.display_name}"): it is a FORMULA column, calculated from the row's other cells, and stores nothing. Change the cells the formula reads instead — its value updates on its own.`,
+            `cell_value cannot write column "${fieldName}" ("${field.display_name}"): it is a COMPUTED column (a formula, or a system column such as Created time) and stores nothing. For a formula, change the cells it reads instead — its value updates on its own.`,
           );
         }
 

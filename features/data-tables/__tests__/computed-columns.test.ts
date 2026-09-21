@@ -1,6 +1,8 @@
 import {
   formulaColumnsOf,
+  isComputedColumn,
   isFormulaColumn,
+  systemColumnKindOf,
   withComputedColumns,
 } from "../formulas";
 
@@ -132,5 +134,63 @@ describe("rewriteFormulaReferences — a renamed column keeps its formulas worki
     ]);
     expect(after.rows.map((r) => r.data.total)).toEqual(before.rows.map((r) => r.data.total));
     expect(after.errors.size).toBe(0);
+  });
+});
+
+describe("system columns — Created time / Last modified time", () => {
+  const created = {
+    field_name: "added",
+    display_name: "Added",
+    data_type: "string",
+    metadata: { format: { id: "created_time" } },
+  };
+  const modified = {
+    field_name: "changed",
+    display_name: "Changed",
+    data_type: "string",
+    metadata: { format: { id: "modified_time" } },
+  };
+  const stamped = [
+    {
+      id: "r1",
+      data: { price: 10 } as Record<string, unknown>,
+      created_at: "2026-09-01T08:00:00.000Z",
+      updated_at: "2026-09-20T17:45:00.000Z",
+    },
+  ];
+
+  it("are recognised, and count as computed so every write path refuses them", () => {
+    expect(systemColumnKindOf(created)).toBe("created_time");
+    expect(systemColumnKindOf(modified)).toBe("modified_time");
+    expect(systemColumnKindOf(price)).toBeNull();
+    expect(isComputedColumn(created)).toBe(true);
+    expect(isComputedColumn(formula("{Price} * 2"))).toBe(true);
+    expect(isComputedColumn(price)).toBe(false);
+    expect(isFormulaColumn(created)).toBe(false);
+  });
+
+  it("are filled from the row's own record, never from the stored cell", () => {
+    const result = withComputedColumns(
+      [{ ...stamped[0], data: { price: 10, added: "someone typed this" } as Record<string, unknown> }],
+      [price, created, modified],
+    );
+    expect(result.rows[0].data.added).toBe("2026-09-01T08:00:00.000Z");
+    expect(result.rows[0].data.changed).toBe("2026-09-20T17:45:00.000Z");
+    expect(result.formulaFieldNames).toEqual(new Set(["added", "changed"]));
+  });
+
+  it("stay blank when the reader returned no timestamp, rather than inventing one", () => {
+    const result = withComputedColumns([{ id: "r9", data: {} as Record<string, unknown> }], [created]);
+    expect(result.rows[0].data.added).toBeNull();
+  });
+
+  it("can be referenced by a formula", () => {
+    const result = withComputedColumns(stamped, [
+      price,
+      created,
+      formula("YEAR({Added})", "yr", "Year added"),
+    ]);
+    expect(result.errors.size).toBe(0);
+    expect(result.rows[0].data.yr).toBe(2026);
   });
 });

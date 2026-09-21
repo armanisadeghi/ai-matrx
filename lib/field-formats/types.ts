@@ -61,6 +61,9 @@ export type FieldFormatId =
   | "datetime"
   // time of day, no date — a string like "14:30" or "14:30:00"
   | "time"
+  // system columns — filled from the row's own record, never typed
+  | "created_time"
+  | "modified_time"
   | "relative_time"
   // structured
   | "json"

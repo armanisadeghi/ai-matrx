@@ -536,6 +536,32 @@ const DEFS: FieldFormatDef[] = [
         : `${two(parts.h)}:${two(parts.m)}`;
     },
   },
+  // ── System columns ────────────────────────────────────────────────────────
+  // Filled from the ROW'S OWN RECORD on read (`withComputedColumns` in
+  // features/data-tables/formulas.ts), never typed and never stored in the
+  // cell. `editor: "computed"` makes every editor refuse them.
+  {
+    id: "created_time",
+    label: "Created time",
+    description: "When the row was added — filled in automatically",
+    group: "Dates",
+    base: "string",
+    editor: "computed",
+    optionKeys: ["dateStyle"],
+    format: (v, o) => FIELD_FORMATS.datetime.format(v, o),
+    parse: () => null,
+  },
+  {
+    id: "modified_time",
+    label: "Last modified time",
+    description: "When the row last changed — filled in automatically",
+    group: "Dates",
+    base: "string",
+    editor: "computed",
+    optionKeys: ["dateStyle"],
+    format: (v, o) => FIELD_FORMATS.datetime.format(v, o),
+    parse: () => null,
+  },
   {
     id: "relative_time",
     label: "Relative time",
