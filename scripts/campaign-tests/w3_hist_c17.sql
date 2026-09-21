@@ -117,6 +117,7 @@ declare
   v_res     jsonb;
   v_doc     jsonb;
   v_txt     text;
+  v_wpath   record;
   v_msg     text;
   v_n       integer;
   v_days    integer;
@@ -293,15 +294,58 @@ begin
   -- (b) ONE mechanism: exactly one trigger on custom.record runs a function whose body writes
   --     into history.row_versions. HIS-7's "no second mechanism" as a measurement, not a claim.
   --     The catalogue IS readable from the seat, so this stays in it.
-  select count(*) into v_n
-    from pg_trigger tg
-    join pg_class c on c.oid = tg.tgrelid
-    join pg_namespace n on n.oid = c.relnamespace
-    join pg_proc p on p.oid = tg.tgfoid
-   where n.nspname = 'custom' and c.relname = 'record' and not tg.tgisinternal
-     and pg_get_functiondef(p.oid) ~* 'insert into history\.row_versions';
-  if v_n <> 1 then
-    raise exception 'C-17 (b): HIS-7 — % triggers on custom.record write into history.row_versions, and one store means one writer', v_n;
+  -- 🚨 RE-PINNED (lane RED-SUITES-2, 2026-09-21). This counted TRIGGERS where HIS-7 means
+  -- MECHANISMS, and it read 1 only while the capture was a single row-level trigger. The perf
+  -- rewrite moved it to statement level, and Postgres needs one trigger PER OPERATION there —
+  -- `zzz_history_capture_s_i`, `_s_u`, `_s_d` over `custom.record_capture_stmt_insert`,
+  -- `_update` and `_delete`. That is still ONE mechanism; the old clause could only ever read
+  -- 3 and call it a second writer.
+  --
+  -- "One store means one writer" is asserted as what it actually says, and this is STRICTER
+  -- than the count: NO OPERATION MAY HAVE TWO WRITERS. A count of 1 would have passed a single
+  -- trigger that fired on INSERT while a second mechanism quietly handled UPDATE; this cannot.
+  -- Every write path is also required to have a writer at all, so a capture silently dropped
+  -- for one operation is caught too — something the old clause never looked at.
+  for v_wpath in
+    select op,
+           count(*) filter (where writes) as writers
+      from (
+        select unnest(array['INSERT','UPDATE','DELETE']) as op, tg.tgname,
+               (pg_get_functiondef(p.oid) ~* 'insert into history\.row_versions') as writes,
+               tg.tgtype::int as ty
+          from pg_trigger tg
+          join pg_class c on c.oid = tg.tgrelid
+          join pg_namespace n on n.oid = c.relnamespace
+          join pg_proc p on p.oid = tg.tgfoid
+         where n.nspname = 'custom' and c.relname = 'record' and not tg.tgisinternal
+      ) x
+     where writes
+       and ((op = 'INSERT' and (ty & 4) > 0)
+         or (op = 'UPDATE' and (ty & 16) > 0)
+         or (op = 'DELETE' and (ty & 8) > 0))
+     group by op
+  loop
+    if v_wpath.writers <> 1 then
+      raise exception 'C-17 (b): HIS-7 — % trigger(s) on custom.record write into history.row_versions on %, and one store means one writer per write path', v_wpath.writers, v_wpath.op;
+    end if;
+  end loop;
+  select count(distinct op) into v_n
+    from (
+      select unnest(array['INSERT','UPDATE','DELETE']) as op,
+             (pg_get_functiondef(p.oid) ~* 'insert into history\.row_versions') as writes,
+             tg.tgtype::int as ty
+        from pg_trigger tg
+        join pg_class c on c.oid = tg.tgrelid
+        join pg_namespace n on n.oid = c.relnamespace
+        join pg_proc p on p.oid = tg.tgfoid
+       where n.nspname = 'custom' and c.relname = 'record' and not tg.tgisinternal
+    ) x
+   where writes
+     and ((op = 'INSERT' and (ty & 4) > 0)
+       or (op = 'UPDATE' and (ty & 16) > 0)
+       or (op = 'DELETE' and (ty & 8) > 0));
+  if v_n <> 3 then
+    raise exception 'C-17 (b): HIS-7 — only % of the three write paths (insert, update, delete) on custom.record has a writer into history.row_versions, so something is not being recorded at all', v_n;
   end if;
 
   -- (c) The window opened on the first row actually recorded, not on the apply. The capture
