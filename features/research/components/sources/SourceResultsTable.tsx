@@ -414,7 +414,9 @@ export function SourceResultsTable({
       accessorKey: "id",
       filter: "text",
       hidden: true,
-      cellKind: "text",
+      entityToken: "research_source",
+      entityId: (source) => source.id,
+      href: (source) => `/research/topics/${topicId}/sources/${source.id}`,
     });
   }
   // The preview's input is deliberately pre-ranked and partial. Its cells stay
