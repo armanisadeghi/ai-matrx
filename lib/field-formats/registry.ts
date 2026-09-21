@@ -573,6 +573,27 @@ const DEFS: FieldFormatDef[] = [
         : `${two(parts.h)}:${two(parts.m)}`;
     },
   },
+  {
+    // Assigned BY THE DATABASE when the row is inserted (trigger
+    // `_udt_autonumber`), so it is the same number whichever door made the row
+    // and never shifts when another row is deleted. Stored in the cell as an
+    // integer; every editor refuses it. `prefix` turns 42 into "INV-42".
+    id: "autonumber",
+    label: "Autonumber",
+    description: "A number the table assigns to each new row — never typed",
+    group: "Numbers",
+    base: "integer",
+    alsoAccepts: ["number"],
+    editor: "computed",
+    numericAlign: true,
+    optionKeys: ["prefix"],
+    format: (v, o) => {
+      const n = toNumber(v);
+      if (n === null) return null;
+      return `${o.prefix ?? ""}${Math.trunc(n)}`;
+    },
+    parse: () => null,
+  },
   // ── System columns ────────────────────────────────────────────────────────
   // Filled from the ROW'S OWN RECORD on read (`withComputedColumns` in
   // features/data-tables/formulas.ts), never typed and never stored in the

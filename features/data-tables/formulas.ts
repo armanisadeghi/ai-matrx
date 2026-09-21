@@ -1250,7 +1250,27 @@ export function systemColumnKindOf(field: ComputedColumnField): SystemColumnKind
  * paste / clear / fill, the row forms, and the agent `cell_value` target.
  */
 export function isComputedColumn(field: ComputedColumnField): boolean {
-  return isFormulaColumn(field) || systemColumnKindOf(field) !== null;
+  return (
+    isFormulaColumn(field) ||
+    systemColumnKindOf(field) !== null ||
+    isAutonumberColumn(field)
+  );
+}
+
+/**
+ * An Autonumber column: the DATABASE assigns the value at insert (trigger
+ * `_udt_autonumber`), so unlike a formula it IS stored — nothing is injected
+ * on read — but like one it must never be typed, pasted over, or cleared.
+ */
+export function isAutonumberColumn(field: ComputedColumnField): boolean {
+  const metadata = field.metadata;
+  if (!metadata || typeof metadata !== "object") return false;
+  const format = (metadata as { format?: unknown }).format;
+  return (
+    !!format &&
+    typeof format === "object" &&
+    (format as { id?: unknown }).id === "autonumber"
+  );
 }
 
 /** Every formula column among `fields`, each with its expression parsed once. */
@@ -1301,6 +1321,8 @@ export function withComputedColumns<
   const formulaFieldNames = new Set([
     ...columns.map((c) => c.field.field_name),
     ...systemColumns.map((c) => c.field.field_name),
+    // Stored, not injected — but every write path must skip it all the same.
+    ...fields.filter(isAutonumberColumn).map((f) => f.field_name),
   ]);
   const errors = new Map<string, string>();
   if (columns.length === 0 && systemColumns.length === 0) {

@@ -51,7 +51,10 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess, in
   const [isRequired, setIsRequired] = useState(false);
   // Formula + system columns store nothing: no default, never required.
   const isComputedFormat =
-    format.id === 'formula' || format.id === 'created_time' || format.id === 'modified_time';
+    format.id === 'formula' ||
+    format.id === 'created_time' ||
+    format.id === 'modified_time' ||
+    format.id === 'autonumber';
   const [defaultValue, setDefaultValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

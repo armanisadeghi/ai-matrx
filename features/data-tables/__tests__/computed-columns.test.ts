@@ -1,5 +1,6 @@
 import {
   formulaColumnsOf,
+  isAutonumberColumn,
   isComputedColumn,
   isFormulaColumn,
   systemColumnKindOf,
@@ -192,5 +193,23 @@ describe("system columns — Created time / Last modified time", () => {
     ]);
     expect(result.errors.size).toBe(0);
     expect(result.rows[0].data.yr).toBe(2026);
+  });
+});
+
+describe("autonumber columns", () => {
+  const auto = {
+    field_name: "ticket",
+    display_name: "Ticket",
+    data_type: "integer",
+    metadata: { format: { id: "autonumber", options: { prefix: "T-" } } },
+  };
+
+  it("are computed for every write path, but their stored value is left alone on read", () => {
+    expect(isAutonumberColumn(auto)).toBe(true);
+    expect(isComputedColumn(auto)).toBe(true);
+    const input = [{ id: "r1", data: { ticket: 42 } as Record<string, unknown> }];
+    const result = withComputedColumns(input, [auto]);
+    expect(result.rows[0].data.ticket).toBe(42);
+    expect(result.formulaFieldNames.has("ticket")).toBe(true);
   });
 });

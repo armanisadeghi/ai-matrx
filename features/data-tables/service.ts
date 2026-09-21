@@ -490,7 +490,51 @@ export async function setFieldFormat(
   if (!envelope || envelope.success !== true) {
     return { success: false, error: envelope?.error ?? "Failed to save format" };
   }
+
+  // An Autonumber column numbers NEW rows by itself (trigger `_udt_autonumber`,
+  // migrations/udt_autonumber_column.sql). The rows that existed before the
+  // column became one are numbered here, once, oldest first — on EVERY path
+  // that sets the format (new-column form, Table Settings), because it lives
+  // in the one wrapper they share. Idempotent; a failure is reported, never
+  // swallowed, since the column would otherwise sit half-numbered in silence.
+  if (args.format?.id === "autonumber") {
+    const backfill = await backfillAutonumber({
+      tableId: args.tableId,
+      fieldId: args.fieldId,
+    });
+    if (!backfill.success) {
+      return {
+        success: false,
+        error: `The column was set to Autonumber, but the existing rows could not be numbered: ${backfill.error}`,
+      };
+    }
+  }
   return { success: true, data: { field_id: envelope.field_id ?? args.fieldId } };
+}
+
+/** Number the existing rows of an Autonumber column. Idempotent. */
+export async function backfillAutonumber(args: {
+  tableId: string;
+  fieldId: string;
+}): Promise<ServiceResult<{ numbered: number; highest: number }>> {
+  const { data, error } = await supabase.rpc("udt_backfill_autonumber", {
+    p_table_id: args.tableId,
+    p_field_id: args.fieldId,
+  });
+  if (error) return { success: false, error: error.message };
+  const envelope = data as unknown as {
+    success?: boolean;
+    error?: string;
+    numbered?: number;
+    highest?: number;
+  } | null;
+  if (!envelope || envelope.success !== true) {
+    return { success: false, error: envelope?.error ?? "Failed to number the existing rows" };
+  }
+  return {
+    success: true,
+    data: { numbered: envelope.numbered ?? 0, highest: envelope.highest ?? 0 },
+  };
 }
 
 // ─── rename a column (display name) ──────────────────────────────────────────
