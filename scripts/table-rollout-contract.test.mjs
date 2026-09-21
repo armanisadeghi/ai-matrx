@@ -41,7 +41,7 @@ test("System apps use the canonical table without inventing a source total or ge
   assert.match(page, /<MatrxDataTable/);
   assert.match(
     page,
-    /coverage=\{\{ matched: apps\.length, cap: 500, answeredBy: "client"/,
+    /coverage=\{\{\s*matched: apps\.length,\s*cap: 500,\s*answeredBy: "client"/,
   );
   assert.match(page, /searchPlaceholder: "Search system apps…"/);
   assert.match(page, /copy=\{false\}/);

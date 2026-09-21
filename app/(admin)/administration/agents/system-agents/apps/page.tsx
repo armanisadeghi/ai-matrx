@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { isPubliclyVisible, visibilityLabelShort } from "@/lib/visibility/labels";
+import {
+  isPubliclyVisible,
+  visibilityLabelShort,
+} from "@/lib/visibility/labels";
 import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import {
@@ -300,9 +303,7 @@ export default function AdminSystemAppsListPage() {
       width: 120,
       cell: (app) => (
         <span className="block text-right text-xs text-muted-foreground">
-          {app.updated_at
-            ? new Date(app.updated_at).toLocaleDateString()
-            : "—"}
+          {app.updated_at ? new Date(app.updated_at).toLocaleDateString() : "—"}
         </span>
       ),
     },
@@ -358,43 +359,49 @@ export default function AdminSystemAppsListPage() {
                   isLoading={loading}
                   isFetching={refreshing}
                   pageSize={50}
-                  coverage={{ matched: apps.length, cap: 500, answeredBy: "client", noun: "loaded system app" }}
+                  coverage={{
+                    matched: apps.length,
+                    cap: 500,
+                    answeredBy: "client",
+                    noun: "loaded system app",
+                  }}
                   emptyState={{
                     title: "No system apps match",
-                    description: "Create a system app to ship a global agent-backed mini-app.",
+                    description:
+                      "Create a system app to ship a global agent-backed mini-app.",
                   }}
                   toolbar={{
                     title: "System apps",
                     search: true,
                     searchPlaceholder: "Search system apps…",
                     actions: (
-                      <div className="flex items-center gap-2">
-                        <CopyButtons
-                          size="icon"
-                          label="Loaded system apps"
-                          human={() => apps.map(agentAppAdminSummary).join("\n")}
-                          json={() => apps}
-                          agent={() => ({
-                            kind: "agent-apps",
-                            location: "AI Matrx Admin — System Agents · Apps (/administration/agents/system-agents/apps)",
-                            description: "The bounded global-scope system-app snapshot loaded by this page.",
-                            data: apps,
-                            attributes: { count: apps.length, cap: 500 },
-                          })}
-                          export={{
-                            items: [
-                              jsonExportItem(() => apps, "JSON (loaded window)"),
-                              csvExportItem(
-                                () => apps as unknown as Array<Record<string, unknown>>,
-                                "CSV (loaded window)",
-                              ),
-                            ],
-                          }}
-                        />
-                      <Button variant="outline" size="sm" onClick={() => void load(true)} disabled={refreshing}>
-                        <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-                      </Button>
-                      </div>
+                      <CopyButtons
+                        size="icon"
+                        label="Loaded system apps"
+                        human={() => apps.map(agentAppAdminSummary).join("\n")}
+                        json={() => apps}
+                        agent={() => ({
+                          kind: "agent-apps",
+                          location:
+                            "AI Matrx Admin — System Agents · Apps (/administration/agents/system-agents/apps)",
+                          description:
+                            "The bounded global-scope system-app snapshot loaded by this page.",
+                          data: apps,
+                          attributes: { count: apps.length, cap: 500 },
+                        })}
+                        export={{
+                          items: [
+                            jsonExportItem(() => apps, "JSON (loaded window)"),
+                            csvExportItem(
+                              () =>
+                                apps as unknown as Array<
+                                  Record<string, unknown>
+                                >,
+                              "CSV (loaded window)",
+                            ),
+                          ],
+                        }}
+                      />
                     ),
                   }}
                   copy={false}
@@ -409,7 +416,8 @@ export default function AdminSystemAppsListPage() {
                         json={() => app}
                         agent={() => ({
                           kind: "agent-app",
-                          location: "AI Matrx Admin — System Agents · Apps (/administration/agents/system-agents/apps)",
+                          location:
+                            "AI Matrx Admin — System Agents · Apps (/administration/agents/system-agents/apps)",
                           description: "A single system agent app.",
                           data: app,
                           summary: agentAppAdminSummary(app),
@@ -417,16 +425,40 @@ export default function AdminSystemAppsListPage() {
                         })}
                       />
                       {app.status === "published" && (
-                        <Button asChild variant="ghost" size="sm" className="h-7 w-7 p-0" title="Open public URL">
-                          <AppLink href={`/p/${app.slug}`} target="_blank" rel="noopener noreferrer">
+                        <Button
+                          asChild
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          title="Open public URL"
+                        >
+                          <AppLink
+                            href={`/p/${app.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
                             <ExternalLink className="h-3.5 w-3.5" />
                           </AppLink>
                         </Button>
                       )}
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled={isPending} onClick={() => handleOpenEditor(app.id)} title="Open editor">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0"
+                        disabled={isPending}
+                        onClick={() => handleOpenEditor(app.id)}
+                        title="Open editor"
+                      >
                         <ArrowUpRight className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" disabled={busyIds.has(app.id) || deleting} onClick={() => setDeleteTarget(app)} title="Delete system app">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        disabled={busyIds.has(app.id) || deleting}
+                        onClick={() => setDeleteTarget(app)}
+                        title="Delete system app"
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
