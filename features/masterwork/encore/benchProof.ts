@@ -79,6 +79,28 @@ export interface BenchRunFormWire {
   judge_model: string;
   frontier_model: string;
   cheap_model: string;
+  /**
+   * 🚨 THE NAMES A PERSON READS — "Claude Opus 5", not `claude-opus-5`
+   * (sixteenth cold walk, 2026-09-21, defect D: three raw model ids on the
+   * screen of a residential HVAC contractor). They come from the AI catalog's
+   * `common_name`, and they are NULL when the catalog does not know the ref —
+   * the screen then shows the raw one rather than a prettier name nobody can
+   * check against anything.
+   */
+  judge_model_name: string | null;
+  frontier_model_name: string | null;
+  cheap_model_name: string | null;
+  /**
+   * 🚨 THE PRICE, BEFORE THE CLICK (the destructive-and-expensive-actions law).
+   * `typical_run_cost_usd` is what one run of THIS Masterwork actually cost
+   * last time; `estimated_cost_usd` is the ceiling that makes; and
+   * `estimated_cost_note` says both in one plain sentence — including, when
+   * the Masterwork has never been priced, that we cannot say yet and why.
+   * The note is ALWAYS present. The numbers are null together.
+   */
+  typical_run_cost_usd: number | null;
+  estimated_cost_usd: number | null;
+  estimated_cost_note: string;
   /** The built Masterwork arm C will run — the product's real run path. */
   masterwork_id: string;
   masterwork_name: string;

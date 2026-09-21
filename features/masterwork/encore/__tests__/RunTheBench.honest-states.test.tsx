@@ -136,13 +136,30 @@ const NOT_DURABLE_NOTE =
   "or close this tab you lose the live view, and it keeps spending until it " +
   "finishes.";
 
+/** The walk's own Masterwork run: "finished in 1m 45s and cost $0.61". */
+const WALK16_RUN_COST = 0.61;
+/** 100× that is the $61 the sixteenth cold walk was never told about. */
+const ESTIMATED = "$61.00";
+
 const FORM: BenchRunFormWire = {
   budget_multiple: 100,
   budget_multiple_source:
-    "The Bench's own default — a hundred times what your Masterwork costs.",
+    "The most expensive arm is allowed to spend 100 times what your own " +
+    "Masterwork's run costs. That is the Bench's own setting, and it is what " +
+    "will run unless you change the number above.",
   judge_model: "claude-opus-5",
   frontier_model: "claude-opus-5",
   cheap_model: "claude-haiku-4-5",
+  judge_model_name: "Claude Opus 5",
+  frontier_model_name: "Claude Opus 5",
+  cheap_model_name: "Claude Haiku 4.5",
+  typical_run_cost_usd: WALK16_RUN_COST,
+  estimated_cost_usd: WALK16_RUN_COST * 100,
+  estimated_cost_note:
+    `Expect this to cost up to about ${ESTIMATED}. One run of your Masterwork ` +
+    "last cost 61.0¢, and the most expensive arm may spend up to 100 times " +
+    "that; the other five arms and the judging are on top of it. The trial " +
+    "stops at that ceiling — it does not ask again.",
   masterwork_id: "mw-1",
   masterwork_name: "Watson on shoes",
   // null is what the READ half actually sends — counting the corpus costs
@@ -226,6 +243,105 @@ describe("the Bench door never lies about what it can do", () => {
     act(() => {
       root.render(<RunTheBench rulebookId="rb-1" bench={bench} />);
     });
+
+
+  // ───────────────────────────────────────────────────────────────────────
+  // THE SIXTEENTH COLD WALK, DEFECT D (2026-09-21). "Run the Bench" printed
+  // `masterwork.bench.a2_budget_multiple`, "seeding it is a migration" and
+  // three raw model ids to a residential HVAC contractor, and never named the
+  // ~$61 the trial would spend against her $0.61 run.
+  // ───────────────────────────────────────────────────────────────────────
+
+  it("names the price, above the button that spends it", () => {
+    render(CAN_RUN);
+    act(() => {
+      (host.querySelector("button") as HTMLButtonElement).click();
+    });
+    const text = host.textContent ?? "";
+
+    expect(text).toContain(ESTIMATED);
+    // "Above" is positional, not a figure of speech.
+    const priceIndex = text.indexOf(ESTIMATED);
+    const startIndex = text.indexOf("Run the trial");
+    expect(priceIndex).toBeGreaterThan(-1);
+    expect(startIndex).toBeGreaterThan(-1);
+    expect(priceIndex).toBeLessThan(startIndex);
+  });
+
+  it("names the models the way they are sold, not the way they are routed", () => {
+    render(CAN_RUN);
+    act(() => {
+      (host.querySelector("button") as HTMLButtonElement).click();
+    });
+    const text = host.textContent ?? "";
+
+    expect(text).toContain("Claude Opus 5");
+    expect(text).toContain("Claude Haiku 4.5");
+    // The routing refs are the server's business and nobody else's.
+    expect(text).not.toContain("claude-opus-5");
+    expect(text).not.toContain("claude-haiku-4-5");
+  });
+
+  it("prints no knob key, no migration instruction and no admin talk", () => {
+    render(CAN_RUN);
+    act(() => {
+      (host.querySelector("button") as HTMLButtonElement).click();
+    });
+    const text = (host.textContent ?? "").toLowerCase();
+
+    for (const token of [
+      "masterwork.bench",
+      "a2_budget_multiple",
+      "knob",
+      "migration",
+      "seeding",
+    ]) {
+      expect(text).not.toContain(token);
+    }
+  });
+
+  it("strips a setting key even when the server sends one anyway", () => {
+    // A server the copy fix has not reached (or a future bad edit) is exactly
+    // what the render-path rule exists for: the identifier still never lands
+    // on the screen, and what remains is a sentence.
+    render({
+      ...CAN_RUN,
+      form: {
+        ...FORM,
+        budget_multiple_source:
+          "There is no masterwork.bench.a2_budget_multiple row yet, so the " +
+          "Bench uses its own number.",
+      },
+    });
+    act(() => {
+      (host.querySelector("button") as HTMLButtonElement).click();
+    });
+    const text = host.textContent ?? "";
+
+    expect(text).not.toContain("masterwork.bench.a2_budget_multiple");
+    expect(text).not.toContain("a2_budget_multiple");
+    expect(text).toContain("the Bench uses its own number");
+  });
+
+  it("an unpriced Masterwork says so — never a screen with no number and no reason", () => {
+    const NO_PRICE =
+      "We cannot put a price on this yet: this Masterwork has not finished a " +
+      "run we could price. Run your Masterwork once and this screen will tell " +
+      "you the number before you start.";
+    render({
+      ...CAN_RUN,
+      form: {
+        ...FORM,
+        typical_run_cost_usd: null,
+        estimated_cost_usd: null,
+        estimated_cost_note: NO_PRICE,
+      },
+    });
+    act(() => {
+      (host.querySelector("button") as HTMLButtonElement).click();
+    });
+    expect(host.textContent ?? "").toContain(NO_PRICE);
+  });
 
   it("cannot run here: says why in the server's own words, and offers no control that claims otherwise", () => {
     render(CANNOT_RUN);

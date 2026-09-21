@@ -48,6 +48,7 @@ import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
+import { personSentence } from "@/lib/progress/failureSentence";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
 import { durableRunDialogOnOpenChange } from "@/lib/durable-run/durableRunDialogClose";
@@ -101,14 +102,25 @@ const benchSittings = createSittingStore<BenchSitting>({
     (sitting.groundTruth ?? "").trim().length > 0,
 });
 
-/** The consequence, named. Never a generic "Are you sure?". */
-const CONSEQUENCE =
+/**
+ * What starting a trial DOES. Never a generic "Are you sure?".
+ *
+ * 🚨 IT DOES NOT NAME THE PRICE, AND THAT IS WHY IT IS NOT THE WHOLE
+ * CONSEQUENCE (sixteenth cold walk, 2026-09-21, defect D). This paragraph said
+ * "It costs real money and takes many minutes" and the panel said "100x arm
+ * C's measured cost", and a first-time Expert had no way to know that meant
+ * roughly $61 against her 61-cent run — on the one screen in the product where
+ * the number matters most, in a product that had priced that run to the cent
+ * one panel earlier. The price is the server's `estimated_cost_note` and it
+ * rides WITH this everywhere this appears, including in the confirmation.
+ */
+const WHAT_IT_DOES =
   "Starting a trial makes real, paid model calls across all six arms — the " +
-  "frontier model three times (once with your whole corpus, once with " +
+  "best frontier model three times (once with your whole corpus, once with " +
   "retrieval and the open web up to the budget ceiling), a cheap model, a " +
   "full run of your Masterwork, and then a judge on every arm plus a blind " +
-  "panel. It costs real money and takes many minutes, and nothing about it " +
-  "is undone by closing this.";
+  "panel. It takes many minutes, and nothing about it is undone by closing " +
+  "this.";
 
 function ArmRow({ arm }: { arm: BenchArmWire }) {
   const words = ARM_WORDS[arm.arm.toLowerCase()] ?? arm.label;
@@ -348,6 +360,17 @@ export function RunTheBench({
     );
   }
 
+  // 🚨 EVERY SERVER SENTENCE ON THIS SCREEN GOES THROUGH THE ONE READING
+  // (sixteenth cold walk, 2026-09-21, defect D). The server now writes plain
+  // English here, and this is the structural backstop that keeps it that way:
+  // `personSentence` removes SQL, stack traces, exception class names and
+  // setting/knob identifiers from anything a person is about to read. It is
+  // the same argument the failure path makes for itself — a screen that
+  // renders whatever arrives is one copy edit away from printing
+  // `masterwork.bench.a2_budget_multiple` again.
+  const budgetSource = personSentence(form.budget_multiple_source).text;
+  const costNote = personSentence(form.estimated_cost_note).text;
+
   const budgetNumber = budget.trim() === "" ? null : Number(budget);
   const budgetValid =
     budgetNumber === null ||
@@ -378,7 +401,10 @@ export function RunTheBench({
     if (blockedReason) return;
     const ok = await confirm({
       title: "Run a bench trial?",
-      description: CONSEQUENCE,
+      // THE PRICE IS IN THE CONFIRMATION, not only beside the button. An
+      // expensive start names what it will spend and asks (the
+      // destructive-and-expensive-actions law).
+      description: `${costNote}\n\n${WHAT_IT_DOES}`,
       confirmLabel: "Run the trial",
       cancelLabel: "Not now",
       variant: "destructive",
@@ -516,17 +542,30 @@ export function RunTheBench({
                   onChange={(e) => setBudget(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  {form.budget_multiple_source}
+                  {budgetSource}
                 </p>
               </div>
 
               <div className="rounded-md border border-border bg-muted/30 p-2 text-xs text-muted-foreground">
+                {/* 🚨 MODELS BY THE NAMES THEY ARE SOLD UNDER (cold walk 16,
+                    defect D: `claude-opus-5 · claude-opus-5 ·
+                    claude-sonnet-4-5` at a non-technical Expert). The names
+                    come from the AI catalog, through the server; when it does
+                    not know a ref the raw one is shown rather than a prettier
+                    name nobody can check. */}
                 <p>
-                  Judge: <span className="text-foreground">{form.judge_model}</span>
-                  {" · "}Frontier arms:{" "}
-                  <span className="text-foreground">{form.frontier_model}</span>
-                  {" · "}Cheap arm:{" "}
-                  <span className="text-foreground">{form.cheap_model}</span>
+                  The judge:{" "}
+                  <span className="text-foreground">
+                    {form.judge_model_name ?? form.judge_model}
+                  </span>
+                  {" · "}The best model money can buy, three ways:{" "}
+                  <span className="text-foreground">
+                    {form.frontier_model_name ?? form.frontier_model}
+                  </span>
+                  {" · "}The cheap one:{" "}
+                  <span className="text-foreground">
+                    {form.cheap_model_name ?? form.cheap_model}
+                  </span>
                 </p>
                 <p className="mt-0.5">
                   Arm C runs{" "}
@@ -556,7 +595,11 @@ export function RunTheBench({
                 </p>
               ) : null}
 
-              <p className="text-xs text-muted-foreground">{CONSEQUENCE}</p>
+              {/* 🚨 THE PRICE, IMMEDIATELY ABOVE THE BUTTON THAT SPENDS IT. */}
+              <p className="rounded-md border border-border bg-muted/40 p-2 text-xs font-medium text-foreground">
+                {costNote}
+              </p>
+              <p className="text-xs text-muted-foreground">{WHAT_IT_DOES}</p>
               <GatedActionButton
                 reason={blockedReason}
                 disabled={run.running || starting}

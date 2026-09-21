@@ -628,3 +628,124 @@ export function serverRefusal(
     ...(changed ? { detail: sentence } : {}),
   };
 }
+
+// =============================================================================
+// 🚨 A SETTING'S IDENTIFIER IS NEVER PROSE
+// =============================================================================
+//
+// ## The defect this closes (sixteenth cold walk, 2026-09-21, defect D)
+//
+// `Run the Bench` — the one screen in the product where a person decides to
+// spend real money — printed this to a residential HVAC contractor:
+//
+//   Budget multiple
+//   100x arm C's measured cost — the Bench's own declared default. There is no
+//   `masterwork.bench.a2_budget_multiple` knob row yet, so no admin can turn
+//   this number; seeding it is a migration.
+//
+// A knob key, an admin capability statement and a database instruction, in one
+// sentence, on a non-technical Expert's screen.
+//
+// The SERVER half is fixed at the sentence's source (aidream's bench service
+// now writes plain English). This is the CLIENT half, and it is not redundant
+// with that for exactly the reason the top of this file gives for exception
+// class names and SQL: a screen that renders whatever sentence arrives is one
+// bad copy edit away from printing a knob key again — in this lane or in any
+// of the dozens that show a server-written sentence, across every version of
+// the server that has ever run. So the rule lives on the render path too,
+// where it is structural rather than remembered.
+//
+// Deliberately narrow and structural, same as `MACHINE_SHAPES`: the shapes
+// only a settings registry writes. Prose that happens to contain a period, a
+// hostname (`server.app.matrxserver.com`), or an abbreviation (`e.g.`) is left
+// exactly as the server wrote it, because over-cleaning a careful sentence is
+// the same lie in the other direction.
+
+/**
+ * A dotted setting/knob key: two or more all-lowercase segments with at least
+ * one underscore somewhere in the token (`masterwork.bench.a2_budget_multiple`,
+ * `education.spoken_practice`). The underscore is what separates a key from a
+ * hostname or a sentence's punctuation.
+ */
+const DOTTED_SETTING_KEY =
+  /`?\b[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+\b`?(?=[\s.,;:)\]]|$)/g;
+
+/**
+ * A bare key: three or more underscore-joined lowercase segments
+ * (`a2_budget_multiple`). Two segments are not enough — that shape occurs in
+ * ordinary technical English and the cost of a false positive is a mangled
+ * sentence.
+ */
+const BARE_SETTING_KEY = /`?\b[a-z][a-z0-9]*(?:_[a-z0-9]+){2,}\b`?/g;
+
+function hasUnderscore(token: string): boolean {
+  return token.includes("_");
+}
+
+/**
+ * Does this sentence carry a setting/knob identifier? Exported so a guard can
+ * assert it over the sentences this product actually renders.
+ */
+export function namesASettingKey(text: string | null | undefined): boolean {
+  const value = (text ?? "").trim();
+  if (!value) return false;
+  DOTTED_SETTING_KEY.lastIndex = 0;
+  const dotted = (value.match(DOTTED_SETTING_KEY) ?? []).some(hasUnderscore);
+  DOTTED_SETTING_KEY.lastIndex = 0;
+  BARE_SETTING_KEY.lastIndex = 0;
+  const bare = BARE_SETTING_KEY.test(value);
+  BARE_SETTING_KEY.lastIndex = 0;
+  return dotted || bare;
+}
+
+/** What `personSentence` returns. */
+export interface PersonSentence {
+  /** Safe to render: no SQL, no stack, no exception class, no setting key. */
+  text: string;
+  /**
+   * True when something had to be removed. The surface may show `detail` as a
+   * muted, admin-only line — it is never folded back into the sentence.
+   */
+  cleaned: boolean;
+  /** The raw sentence, present only when it was cleaned. */
+  detail?: string;
+}
+
+/**
+ * THE ONE READING for a server-written sentence a person will read that is NOT
+ * a failure — a form's explanation, a note beside a control, a description of
+ * what a run will do. (`humanFailureSentence` owns the failure half; it adds a
+ * remedy, which is wrong on a sentence that is not reporting a failure.)
+ *
+ * Applies the same two rules the failure path applies, in the same order:
+ * machine text is never the sentence, and an identifier is never prose.
+ */
+export function personSentence(
+  raw: string | null | undefined,
+): PersonSentence {
+  const original = (raw ?? "").trim();
+  if (!original) return { text: "", cleaned: false };
+
+  // A sentence that IS machine text is replaced whole — the same answer
+  // `providerErrorSentence` gives, for the same reason.
+  if (namesMachineText(original)) {
+    return { text: SYSTEM_ERROR_SENTENCE, cleaned: true, detail: original };
+  }
+
+  PARENTHESISED_CLASS.lastIndex = 0;
+  let text = original.replace(PARENTHESISED_CLASS, "");
+  DOTTED_SETTING_KEY.lastIndex = 0;
+  text = text.replace(DOTTED_SETTING_KEY, (token) =>
+    hasUnderscore(token) ? "this setting" : token,
+  );
+  BARE_SETTING_KEY.lastIndex = 0;
+  text = text.replace(BARE_SETTING_KEY, "this setting");
+
+  text = text
+    .replace(/\s+([.,;:])/g, "$1")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  const cleaned = text !== original;
+  return cleaned ? { text, cleaned, detail: original } : { text, cleaned };
+}
