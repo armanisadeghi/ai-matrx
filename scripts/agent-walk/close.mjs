@@ -24,6 +24,7 @@
  *   node scripts/agent-walk/close.mjs [--only form|booking|refusal]
  */
 import { chromium } from "playwright";
+import { fillByLabel } from "./fill-by-label.mjs";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { signIn } from "../lib/seat-browser.mjs";
@@ -289,30 +290,13 @@ async function proofBooking(browser) {
   await page.waitForTimeout(3000);
   record.heldText = await text(page);
 
-  // 🚨 THE LAST INPUT HAS NO LABEL — it is the booking page's honeypot. Fields are matched to
-  // their label by document order and anything unlabelled is left alone.
-  const filled = await page.evaluate((values) => {
-    const nodes = Array.from(document.querySelectorAll("label, input, textarea")).filter(
-      (e) => e.getClientRects().length,
-    );
-    const setValue = (el, v) => {
-      const proto = el.tagName === "TEXTAREA" ? window.HTMLTextAreaElement : window.HTMLInputElement;
-      Object.getOwnPropertyDescriptor(proto.prototype, "value").set.call(el, v);
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-      el.dispatchEvent(new Event("change", { bubbles: true }));
-    };
-    const done = [];
-    for (let i = 0; i < nodes.length; i += 1) {
-      if (nodes[i].tagName !== "LABEL") continue;
-      const label = (nodes[i].textContent || "").trim();
-      const field = nodes[i + 1];
-      if (!field || field.tagName === "LABEL") continue;
-      if (!(label in values)) continue;
-      setValue(field, values[label]);
-      done.push(label);
-    }
-    return done;
-  }, DRIVER);
+  // 🚨 THE LAST INPUT HAS NO LABEL — it is the booking page's honeypot, and a
+  // filler that swept `input,textarea` would fill it and get the submission
+  // quarantined. The shared filler only ever writes into the control a LABEL
+  // actually labels, so the decoy is untouched by construction rather than by
+  // an off-by-one.
+  const { filled, readBack } = await fillByLabel(page, DRIVER);
+  record.fieldsReadBack = readBack;
   record.fieldsFilled = filled;
   const missing = Object.keys(DRIVER).filter((k) => !filled.includes(k));
   if (missing.length) record.fieldsNotFound = missing;

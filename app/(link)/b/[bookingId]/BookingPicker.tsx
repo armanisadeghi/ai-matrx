@@ -22,6 +22,8 @@
 
 import { useMemo, useState } from "react";
 
+import { coerceTypedAnswer, fieldKindFor, type Field, type FieldKind } from "@ai-matrx/records";
+
 import type { BookingSlot, PublicBooking } from "@/features/booking/service";
 
 /** What the two route handlers answer. Declared so a fallback cannot narrow the union. */
@@ -54,11 +56,27 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [decoy, setDecoy] = useState("");
   const [missing, setMissing] = useState<string[]>([]);
+  // A REFUSAL BELONGS BESIDE ITS QUESTION. Until 2026-09-21 an answer of the
+  // wrong shape travelled all the way to the store, which said "Vehicle Year
+  // takes a number, and it was given a string" — true, and printed above a
+  // fresh list of times with the person's typing gone.
+  const [wrongShape, setWrongShape] = useState<Record<string, string>>({});
 
   const questions = useMemo(
     () => (page.presentation?.questions ?? []).filter((q) => !q.hidden),
     [page.presentation],
   );
+  // THE FIELD BEHIND EACH QUESTION, so this page can say what a column takes
+  // instead of guessing from the name of the key.
+  const fieldFor = useMemo(() => {
+    const byKey = new Map<string, Field>();
+    for (const f of page.fields) {
+      const key = (f as { key?: string }).key;
+      if (key) byKey.set(key, f as unknown as Field);
+    }
+    return byKey;
+  }, [page.fields]);
+
   const labelFor = useMemo(() => {
     const byKey = new Map<string, string>();
     for (const f of page.fields) {
@@ -115,8 +133,35 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
       return;
     }
     setMissing([]);
+
+    // A BROWSER INPUT HANDS OVER A STRING AND A FIELD TAKES A VALUE. The
+    // coercion is `@ai-matrx/records`' — the one body the grid's paste, the
+    // CSV import and the confirm route on the other side of this fetch all
+    // use — so what this page accepts and what the store accepts cannot
+    // disagree. The route coerces too: this is the courtesy, that is the
+    // contract.
+    const coerced: Record<string, unknown> = {};
+    const refusedShape: Record<string, string> = {};
+    for (const [key, typedIn] of Object.entries(answers)) {
+      const field = fieldFor.get(key);
+      if (!field) {
+        coerced[key] = typedIn;
+        continue;
+      }
+      const answered = coerceTypedAnswer(field, typedIn, {
+        label: q_label(key, questions, labelFor),
+      });
+      if ("refusal" in answered) refusedShape[key] = answered.refusal;
+      else coerced[key] = answered.value;
+    }
+    if (Object.keys(refusedShape).length > 0) {
+      setWrongShape(refusedShape);
+      return;
+    }
+    setWrongShape({});
+
     setStage({ kind: "sending", slot: stage.slot, holdId: stage.holdId, expiresAt: stage.expiresAt });
-    const values: Record<string, unknown> = { ...answers };
+    const values: Record<string, unknown> = { ...coerced };
     if (page.honeypot_key) values[page.honeypot_key] = decoy;
     const answer = await fetch(`/api/bookings/${page.form_id}/confirm`, {
       method: "POST",
@@ -200,7 +245,11 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
 
         {questions.map((q) => {
           const label = q.ask || labelFor.get(q.field) || q.field;
-          const wrong = missing.includes(q.field);
+          const shapeRefusal = wrongShape[q.field];
+          const wrong = missing.includes(q.field) || Boolean(shapeRefusal);
+          const kind = fieldFor.has(q.field)
+            ? fieldKindFor(fieldFor.get(q.field) as Field)
+            : null;
           return (
             <label key={q.field} className="flex flex-col gap-1">
               <span className="text-sm">
@@ -212,10 +261,25 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
                 value={answers[q.field] ?? ""}
                 required={Boolean(q.required)}
                 aria-invalid={wrong || undefined}
-                autoComplete={autoCompleteFor(q.field)}
-                onChange={(e) => setAnswers((a) => ({ ...a, [q.field]: e.target.value }))}
+                {...keyboardFor(kind)}
+                autoComplete={autoCompleteFor(kind, q.field)}
+                onChange={(e) => {
+                  setAnswers((a) => ({ ...a, [q.field]: e.target.value }));
+                  // The sentence goes the moment the person changes the thing
+                  // it is about; it is never left standing over new typing.
+                  setWrongShape((w) => {
+                    if (!(q.field in w)) return w;
+                    const next = { ...w };
+                    delete next[q.field];
+                    return next;
+                  });
+                }}
               />
-              {q.help ? <span className="text-xs text-muted-foreground">{q.help}</span> : null}
+              {shapeRefusal ? (
+                <span className="text-xs text-destructive">{shapeRefusal}</span>
+              ) : q.help ? (
+                <span className="text-xs text-muted-foreground">{q.help}</span>
+              ) : null}
             </label>
           );
         })}
@@ -345,13 +409,46 @@ function whenText(at: string): string {
   });
 }
 
+/** The label this page printed above a question, for a refusal to name it. */
+function q_label(
+  key: string,
+  questions: Array<{ field: string; ask?: string | null }>,
+  labelFor: Map<string, string>,
+): string {
+  const asked = questions.find((q) => q.field === key)?.ask;
+  return (asked && asked.trim()) || labelFor.get(key) || key;
+}
+
 /**
  * A booking page asks a stranger for their name and how to reach them, on a
  * phone, once. Autofill is the difference between four taps and forty.
+ *
+ * 🚨 IT READS THE FIELD, NOT THE NAME OF THE KEY (TAILS-3, 2026-09-21). This
+ * used to be three regexes over the key — `/mail/`, `/phone|mobile|tel/`,
+ * `/name/` — which is the screen inventing its own opinion of a column beside
+ * the store's. A Field already DECLARES that it is an email or a phone, and
+ * `fieldKindFor` is the one body that reads that declaration. The key is kept
+ * only as the fallback for a question whose Field this page could not resolve.
  */
-function autoCompleteFor(field: string): string | undefined {
-  if (/mail/.test(field)) return "email";
-  if (/phone|mobile|tel/.test(field)) return "tel";
+function autoCompleteFor(kind: FieldKind | null, field: string): string | undefined {
+  if (kind === "email") return "email";
+  if (kind === "phone") return "tel";
+  if (kind === null) {
+    if (/mail/.test(field)) return "email";
+    if (/phone|mobile|tel/.test(field)) return "tel";
+  }
   if (/name/.test(field)) return "name";
   return undefined;
+}
+
+/**
+ * The keyboard a phone raises. A number column that raises a full QWERTY is
+ * how "2019" becomes "2O19" one-handed in a driveway.
+ */
+function keyboardFor(kind: FieldKind | null): { inputMode?: "numeric" | "decimal" | "tel" | "email" } {
+  if (kind === "number") return { inputMode: "numeric" };
+  if (kind === "currency" || kind === "percent") return { inputMode: "decimal" };
+  if (kind === "phone") return { inputMode: "tel" };
+  if (kind === "email") return { inputMode: "email" };
+  return {};
 }
