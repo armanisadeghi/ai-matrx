@@ -108,6 +108,7 @@ describe("HtmlPageListView", () => {
     expect(tableProps.coverage).toEqual({
       noun: "published page",
       answeredBy: "client",
+      total: 1,
     });
     expect(tableProps.copy).toBe(false);
 

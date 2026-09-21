@@ -413,7 +413,13 @@ export default function HtmlPageListView({
           copy={false}
           isLoading={isLoading && pages.length === 0}
           isFetching={isLoading && pages.length > 0}
-          coverage={{ noun: "published page", answeredBy: "client" }}
+          coverage={{
+            noun: "published page",
+            answeredBy: "client",
+            // The API returns this list only after readAllRows has collected
+            // and count-verified every owner-scoped row.
+            total: pages.length,
+          }}
           query={{
             mode: "controlled-local",
             state:

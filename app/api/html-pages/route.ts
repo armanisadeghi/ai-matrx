@@ -24,6 +24,9 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { readAllRows } from "@ai-matrx/data/db";
+import type { HtmlPageSummary } from "@/features/html-pages/types";
+import { isJsonObject } from "@/types/json";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
@@ -33,6 +36,50 @@ const HTML_SUPABASE_SECRET_KEY = process.env.SUPABASE_HTML_SECRET_KEY ?? "";
 
 const HTML_SITE_URL =
   process.env.NEXT_PUBLIC_HTML_SITE_URL || "https://mymatrx.com";
+
+type HtmlPageListRow = Omit<HtmlPageSummary, "url">;
+type LegacyHtmlPageListRow = Pick<
+  HtmlPageListRow,
+  | "id"
+  | "meta_title"
+  | "meta_description"
+  | "is_indexable"
+  | "created_at"
+  | "updated_at"
+> &
+  Record<string, unknown>;
+
+function isNullableString(value: unknown): value is string | null {
+  return value === null || typeof value === "string";
+}
+
+function isLegacyHtmlPageListRow(
+  value: unknown,
+): value is LegacyHtmlPageListRow {
+  if (!isJsonObject(value)) return false;
+  const row = value;
+  return (
+    typeof row.id === "string" &&
+    typeof row.meta_title === "string" &&
+    isNullableString(row.meta_description) &&
+    typeof row.is_indexable === "boolean" &&
+    typeof row.created_at === "string" &&
+    typeof row.updated_at === "string"
+  );
+}
+
+function isHtmlPageListRow(value: unknown): value is HtmlPageListRow {
+  if (!isLegacyHtmlPageListRow(value)) return false;
+  const row = value;
+  return (
+    isNullableString(row.meta_keywords) &&
+    isNullableString(row.og_image) &&
+    isNullableString(row.canonical_url) &&
+    isNullableString(row.artifact_id) &&
+    isNullableString(row.source_message_id) &&
+    isNullableString(row.source_conv_id)
+  );
+}
 
 function getHtmlAdminClient() {
   if (!HTML_SUPABASE_URL || !HTML_SUPABASE_SECRET_KEY) {
@@ -378,60 +425,80 @@ export async function POST(request: NextRequest) {
       }
 
       case "list": {
-        const { data, error } = await htmlDb
-          .from("html_pages")
-          .select(
-            "id, meta_title, meta_description, meta_keywords, og_image, canonical_url, is_indexable, created_at, updated_at, artifact_id, source_message_id, source_conv_id",
-          )
-          .eq("user_id", user.id)
-          .order("updated_at", { ascending: false });
+        const currentColumns =
+          "id, meta_title, meta_description, meta_keywords, og_image, canonical_url, is_indexable, created_at, updated_at, artifact_id, source_message_id, source_conv_id";
+        const legacyColumns =
+          "id, meta_title, meta_description, is_indexable, created_at, updated_at";
 
-        if (error) {
-          // Fallback: select without newer columns if migration hasn't run
-          if (error.code === "42703") {
-            const { data: fallback, error: fallbackError } = await htmlDb
-              .from("html_pages")
-              .select(
-                "id, meta_title, meta_description, is_indexable, created_at, updated_at",
-              )
-              .eq("user_id", user.id)
-              .order("updated_at", { ascending: false });
+        // The table is rendered and searched as the user's complete library.
+        // PostgREST caps a bare select at 1,000 rows, so this must read every
+        // counted page or fail the request rather than report an incomplete list.
+        const readUserPages = async (columns: string): Promise<unknown[] | null> => {
+          let missingColumn = false;
+          try {
+            return await readAllRows<unknown>(
+              async ({ from, to }) => {
+                const result = await htmlDb
+                  .from("html_pages")
+                  .select(columns, { count: "exact" })
+                  .eq("user_id", user.id)
+                  .order("updated_at", { ascending: false })
+                  .order("id", { ascending: false })
+                  .range(from, to);
+                // `readAllRows` deliberately reduces query errors to their
+                // message. Preserve the pre-existing legacy-schema fallback
+                // using the actual PostgREST error code, never its wording.
+                missingColumn ||= result.error?.code === "42703";
+                return result;
+              },
+              { label: "html_pages owner-scoped list" },
+            );
+          } catch (error) {
+            if (missingColumn) return null;
+            throw error;
+          }
+        };
 
-            if (fallbackError) {
-              console.error(
-                "[html-pages API] list fallback error:",
-                fallbackError,
-              );
-              return NextResponse.json(
-                { error: fallbackError.message },
-                { status: 500 },
-              );
+        try {
+          const pages = await readUserPages(currentColumns);
+          if (pages) {
+            if (!pages.every(isHtmlPageListRow)) {
+              throw new Error("html_pages list returned an invalid summary row");
             }
-
             return NextResponse.json({
-              pages: (fallback || []).map((page) => ({
+              pages: pages.map((page) => ({
                 ...page,
-                meta_keywords: null,
-                og_image: null,
-                canonical_url: null,
-                artifact_id: null,
-                source_message_id: null,
-                source_conv_id: null,
                 url: `${HTML_SITE_URL}/p/${page.id}`,
               })),
             });
           }
 
-          console.error("[html-pages API] list error:", error);
-          return NextResponse.json({ error: error.message }, { status: 500 });
-        }
+          // Fallback: select without newer columns if migration hasn't run.
+          const legacyPages = await readUserPages(legacyColumns);
+          if (!legacyPages) {
+            throw new Error("html_pages legacy list query references a missing column");
+          }
+          if (!legacyPages.every(isLegacyHtmlPageListRow)) {
+            throw new Error("html_pages legacy list returned an invalid summary row");
+          }
 
-        return NextResponse.json({
-          pages: (data || []).map((page) => ({
-            ...page,
-            url: `${HTML_SITE_URL}/p/${page.id}`,
-          })),
-        });
+          return NextResponse.json({
+            pages: legacyPages.map((page) => ({
+              ...page,
+              meta_keywords: null,
+              og_image: null,
+              canonical_url: null,
+              artifact_id: null,
+              source_message_id: null,
+              source_conv_id: null,
+              url: `${HTML_SITE_URL}/p/${page.id}`,
+            })),
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Failed to list pages";
+          console.error("[html-pages API] list error:", error);
+          return NextResponse.json({ error: message }, { status: 500 });
+        }
       }
 
       case "get": {
