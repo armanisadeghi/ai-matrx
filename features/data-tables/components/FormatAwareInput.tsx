@@ -23,6 +23,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 
 const OWNED_EDITORS = new Set([
   "email",
+  "time",
   "url",
   "tel",
   "color",
@@ -79,6 +80,19 @@ export function FormatAwareInput({
     onChange(raw === "" ? null : parseFieldInput(raw, format, dataType));
 
   switch (def.editor) {
+    case "time":
+      // The stored form is 24-hour "HH:MM[:SS]" — exactly what this input
+      // reads and writes, so no conversion sits between the two.
+      return (
+        <Input
+          id={id}
+          type="time"
+          step={format?.options?.timeSeconds ? 1 : 60}
+          value={typeof value === "string" ? value : ""}
+          onChange={(e) => commit(e.target.value)}
+        />
+      );
+
     case "email":
     case "url":
     case "tel":

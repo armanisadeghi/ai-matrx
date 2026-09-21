@@ -39,7 +39,10 @@ import {
   sameTableView,
   tableViewParamPatch,
   TABLE_VIEW_TEXT_KEYS,
+  clampColumnWidth,
   type SortDirection,
+  type TableLayoutMode,
+  type TableRowDensity,
   type TableViewState,
 } from "../table-view-url";
 
@@ -64,6 +67,17 @@ export type TableViewUrlState = {
   setColumnOrder: (value: string[]) => void;
   /** Convenience: flip one column's visibility. */
   toggleColumn: (fieldName: string) => void;
+  /** Layout: how the grid uses horizontal space (`auto` = platform default). */
+  layoutMode: TableLayoutMode;
+  setLayoutMode: (value: TableLayoutMode) => void;
+  /** Dragged column widths (px) by field name. */
+  columnWidths: Record<string, number>;
+  setColumnWidth: (fieldName: string, px: number | null) => void;
+  clearColumnWidths: () => void;
+  rowDensity: TableRowDensity;
+  setRowDensity: (value: TableRowDensity) => void;
+  freezeFirstColumn: boolean;
+  setFreezeFirstColumn: (value: boolean) => void;
   /** The whole view as one object — what a saved view stores. */
   viewState: TableViewState;
   /** Apply a whole view at once (a saved view being opened). */
@@ -162,6 +176,36 @@ export function useTableViewUrlState(options: {
         })),
       [patchWhole],
     ),
+    layoutMode: state.layout,
+    setLayoutMode: useCallback(
+      (layout: TableLayoutMode) => patchState({ layout }),
+      [patchState],
+    ),
+    columnWidths: state.widths,
+    setColumnWidth: useCallback(
+      (fieldName: string, px: number | null) =>
+        patchWhole((prev) => {
+          const widths = { ...prev.widths };
+          if (px === null) delete widths[fieldName];
+          else widths[fieldName] = clampColumnWidth(px);
+          return { ...prev, widths };
+        }),
+      [patchWhole],
+    ),
+    clearColumnWidths: useCallback(
+      () => patchState({ widths: {} }),
+      [patchState],
+    ),
+    rowDensity: state.density,
+    setRowDensity: useCallback(
+      (density: TableRowDensity) => patchState({ density }),
+      [patchState],
+    ),
+    freezeFirstColumn: state.freezeFirst,
+    setFreezeFirstColumn: useCallback(
+      (freezeFirst: boolean) => patchState({ freezeFirst }),
+      [patchState],
+    ),
     viewState: state,
     applyViewState: useCallback(
       (next: TableViewState) => patchWhole(next),
@@ -177,6 +221,10 @@ export function useTableViewUrlState(options: {
       state.pageSize !== defaults.pageSize ||
       state.hidden.length > 0 ||
       state.order.length > 0 ||
+      state.layout !== "auto" ||
+      Object.keys(state.widths).length > 0 ||
+      state.density !== "normal" ||
+      state.freezeFirst ||
       Object.keys(state.filters).length > 0,
   };
 }

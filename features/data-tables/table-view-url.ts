@@ -49,7 +49,27 @@ export type TableViewState = {
    * Empty means "use the table's own field_order".
    */
   order: string[];
+  /**
+   * How the grid uses horizontal space in THIS view. `auto` is the platform
+   * default (share the width up to eight columns, natural widths + sideways
+   * scroll past that); `fit` and `scroll` are the user's override of it.
+   */
+  layout: TableLayoutMode;
+  /** Per-column widths in px the user dragged, keyed by field name. */
+  widths: Record<string, number>;
+  /** Row height. */
+  density: TableRowDensity;
+  /** Keep the first column on screen while scrolling sideways. */
+  freezeFirst: boolean;
 };
+
+export type TableLayoutMode = "auto" | "fit" | "scroll";
+export type TableRowDensity = "compact" | "normal" | "tall";
+export const TABLE_LAYOUT_MODES: readonly TableLayoutMode[] = ["auto", "fit", "scroll"];
+export const TABLE_ROW_DENSITIES: readonly TableRowDensity[] = ["compact", "normal", "tall"];
+/** Dragged widths are clamped here: narrower hides the header menu, wider is a mistake. */
+export const MIN_COLUMN_WIDTH_PX = 60;
+export const MAX_COLUMN_WIDTH_PX = 1200;
 
 export type TableViewDefaults = {
   pageSize: number;
@@ -57,7 +77,7 @@ export type TableViewDefaults = {
 
 /** Query-string keys this module owns. Nothing else may write them. */
 export const TABLE_VIEW_PARAM_KEYS = [
-  "q", "sort", "f", "p", "ps", "hide", "ord",
+  "q", "sort", "f", "p", "ps", "hide", "ord", "lay", "w", "den", "frz",
 ] as const;
 
 /**
@@ -161,6 +181,10 @@ export function parseTableViewParams(
     pageSize: readPositiveInt("ps", defaults.pageSize),
     hidden: parseFieldNameList(params.get("hide")),
     order: parseFieldNameList(params.get("ord")),
+    layout: parseLayoutMode(params.get("lay")),
+    widths: parseColumnWidths(params.get("w")),
+    density: parseRowDensity(params.get("den")),
+    freezeFirst: params.get("frz") === "1",
   };
 }
 
@@ -210,6 +234,10 @@ export function tableViewParamPatch(
     ps: state.pageSize === defaults.pageSize ? null : String(state.pageSize),
     hide: state.hidden.length > 0 ? state.hidden.join(",") : null,
     ord: state.order.length > 0 ? state.order.join(",") : null,
+    lay: state.layout === "auto" ? null : state.layout,
+    w: serializeColumnWidths(state.widths),
+    den: state.density === "normal" ? null : state.density,
+    frz: state.freezeFirst ? "1" : null,
   };
 }
 
@@ -259,7 +287,80 @@ export function sameTableView(a: TableViewState, b: TableViewState): boolean {
     a.pageSize === b.pageSize &&
     a.hidden.join(",") === b.hidden.join(",") &&
     a.order.join(",") === b.order.join(",") &&
+    a.layout === b.layout &&
+    a.density === b.density &&
+    a.freezeFirst === b.freezeFirst &&
+    serializeColumnWidths(a.widths) === serializeColumnWidths(b.widths) &&
     JSON.stringify(activeFiltersOnly(a.filters)) ===
       JSON.stringify(activeFiltersOnly(b.filters))
   );
+}
+
+// ─── layout: mode, widths, density, freeze ──────────────────────────────────
+
+export function parseLayoutMode(raw: string | null): TableLayoutMode {
+  return raw === "fit" || raw === "scroll" ? raw : "auto";
+}
+
+export function parseRowDensity(raw: string | null): TableRowDensity {
+  return raw === "compact" || raw === "tall" ? raw : "normal";
+}
+
+export function clampColumnWidth(px: number): number {
+  return Math.min(MAX_COLUMN_WIDTH_PX, Math.max(MIN_COLUMN_WIDTH_PX, Math.round(px)));
+}
+
+/**
+ * `w=field:220,other:96` — one entry per dragged column. A malformed or
+ * out-of-range entry is dropped rather than letting a hand-edited URL make a
+ * 4px or a 40 000px column.
+ */
+export function parseColumnWidths(raw: string | null): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (!raw) return out;
+  for (const part of raw.split(",")) {
+    const at = part.lastIndexOf(":");
+    if (at <= 0) continue;
+    const name = part.slice(0, at).trim();
+    const px = Number(part.slice(at + 1));
+    if (!name || !Number.isFinite(px)) continue;
+    if (px < MIN_COLUMN_WIDTH_PX || px > MAX_COLUMN_WIDTH_PX) continue;
+    out[name] = Math.round(px);
+  }
+  return out;
+}
+
+/** Stable (sorted by field name) so two equal maps serialize identically. */
+export function serializeColumnWidths(widths: Record<string, number>): string | null {
+  const entries = Object.entries(widths)
+    .filter(([, px]) => Number.isFinite(px))
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  return entries.length > 0
+    ? entries.map(([name, px]) => `${name}:${Math.round(px)}`).join(",")
+    : null;
+}
+
+export function isColumnWidthMap(value: unknown): value is Record<string, number> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.values(value as Record<string, unknown>).every(
+      (v) => typeof v === "number" && Number.isFinite(v),
+    )
+  );
+}
+
+/**
+ * Resolve the effective layout for a view: the user's override when set, else
+ * the platform default — share the width up to `fitMaxColumns` visible
+ * columns, natural widths and a sideways scroll past that.
+ */
+export function resolveTableLayout(
+  mode: TableLayoutMode,
+  visibleColumnCount: number,
+  fitMaxColumns: number,
+): "fit" | "scroll" {
+  if (mode !== "auto") return mode;
+  return visibleColumnCount <= fitMaxColumns ? "fit" : "scroll";
 }

@@ -64,7 +64,11 @@ import { defaultFormatForBase } from "@/lib/field-formats/registry";
 import { useTableViewUrlState } from "@/features/data-tables/hooks/useTableViewUrlState";
 import { useSavedViews } from "@/features/data-tables/saved-views/useSavedViews";
 import { SavedViewBar } from "@/features/data-tables/saved-views/SavedViewBar";
-import { resolveViewColumns } from "@/features/data-tables/table-view-url";
+import {
+  clampColumnWidth,
+  resolveTableLayout,
+  resolveViewColumns,
+} from "@/features/data-tables/table-view-url";
 import { ColumnViewMenu } from "@/features/data-tables/components/ColumnViewMenu";
 import {
   useTableRealtime,
@@ -179,6 +183,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import TableReferenceModal from "./TableReferenceModal";
 import ColumnHeaderMenu from "./ColumnHeaderMenu";
+import { TableLayoutMenu } from "@/features/data-tables/components/TableLayoutMenu";
 import type { TableField } from "@/utils/user-table-utls/table-utils";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -425,11 +430,73 @@ const UserTableViewer = ({
     setHiddenColumns,
     columnOrder,
     setColumnOrder,
+    layoutMode,
+    setLayoutMode,
+    columnWidths,
+    setColumnWidth,
+    clearColumnWidths,
+    rowDensity,
+    setRowDensity,
+    freezeFirstColumn,
+    setFreezeFirstColumn,
     viewState,
     applyViewState,
     resetView,
     isViewCustomized,
   } = useTableViewUrlState({ defaultPageSize: 20, resetKey: tableId });
+
+  // ─── Column resizing (features/data-tables/table-view-url.ts `widths`) ────
+  // Drag a header's right edge. The width is painted straight onto the header
+  // during the drag (no re-render per pixel) and committed to the view state
+  // on mouse-up, so the URL and a saved view carry it.
+  const resizeDrag = useRef<{
+    fieldName: string;
+    startX: number;
+    startWidth: number;
+    th: HTMLElement;
+  } | null>(null);
+  const beginColumnResize = (
+    event: React.MouseEvent<HTMLElement>,
+    fieldName: string,
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const th = (event.currentTarget as HTMLElement).closest("th");
+    if (!th) return;
+    resizeDrag.current = {
+      fieldName,
+      startX: event.clientX,
+      startWidth: th.getBoundingClientRect().width,
+      th,
+    };
+    const onMove = (e: MouseEvent) => {
+      const d = resizeDrag.current;
+      if (!d) return;
+      const next = clampColumnWidth(d.startWidth + (e.clientX - d.startX));
+      d.th.style.width = `${next}px`;
+      d.th.style.minWidth = `${next}px`;
+      d.th.style.maxWidth = `${next}px`;
+    };
+    const onUp = (e: MouseEvent) => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      const d = resizeDrag.current;
+      resizeDrag.current = null;
+      if (!d) return;
+      const next = clampColumnWidth(d.startWidth + (e.clientX - d.startX));
+      if (Math.abs(next - d.startWidth) >= 2) setColumnWidth(d.fieldName, next);
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  };
+  const columnWidthStyle = (fieldName: string): React.CSSProperties | undefined => {
+    const px = columnWidths[fieldName];
+    return px ? { width: px, minWidth: px, maxWidth: px } : undefined;
+  };
 
   // Saved views — named, re-runnable arrangements of THIS table. Applying one
   // writes the URL through the same setters a click uses, so a view stays a
@@ -2251,6 +2318,12 @@ const UserTableViewer = ({
     hidden: hiddenColumns,
     order: columnOrder,
   });
+  const effectiveLayout = resolveTableLayout(
+    layoutMode,
+    viewFields.length,
+    FIXED_LAYOUT_MAX_COLUMNS,
+  );
+  const firstViewFieldName = viewFields[0]?.field_name ?? null;
 
   const fieldNamesInOrder = viewFields.map((f) => f.field_name);
 
@@ -3477,6 +3550,17 @@ const UserTableViewer = ({
                 }
                 onOrderChange={setColumnOrder}
               />
+              <TableLayoutMenu
+                layoutMode={layoutMode}
+                autoResolvesTo={resolveTableLayout("auto", viewFields.length, FIXED_LAYOUT_MAX_COLUMNS)}
+                onLayoutModeChange={setLayoutMode}
+                rowDensity={rowDensity}
+                onRowDensityChange={setRowDensity}
+                freezeFirstColumn={freezeFirstColumn}
+                onFreezeFirstColumnChange={setFreezeFirstColumn}
+                customWidthCount={Object.keys(columnWidths).length}
+                onResetColumnWidths={clearColumnWidths}
+              />
             </div>
 
             {isViewCustomized ? (
@@ -3585,6 +3669,17 @@ const UserTableViewer = ({
                       }
                 }
           onOrderChange={setColumnOrder}
+        />
+        <TableLayoutMenu
+          layoutMode={layoutMode}
+          autoResolvesTo={resolveTableLayout("auto", viewFields.length, FIXED_LAYOUT_MAX_COLUMNS)}
+          onLayoutModeChange={setLayoutMode}
+          rowDensity={rowDensity}
+          onRowDensityChange={setRowDensity}
+          freezeFirstColumn={freezeFirstColumn}
+          onFreezeFirstColumnChange={setFreezeFirstColumn}
+          customWidthCount={Object.keys(columnWidths).length}
+          onResetColumnWidths={clearColumnWidths}
         />
         {isViewCustomized && (
           <Button
@@ -3730,6 +3825,9 @@ const UserTableViewer = ({
           // content-driven widths (150px minimum per header) and scrolls
           // horizontally, exactly as it already does on a phone.
           className={cn(
+            // Row height is a per-view choice (Layout menu).
+            rowDensity === "compact" && "[&_td]:!py-1 [&_th]:!py-1",
+            rowDensity === "tall" && "[&_td]:!py-5",
             // `w-max min-w-full`: natural column widths, but NEVER narrower
             // than the panel. Until 2026-09-20 this was `w-auto min-w-max`,
             // so a table that crossed FIXED_LAYOUT_MAX_COLUMNS (showing a
@@ -3737,8 +3835,9 @@ const UserTableViewer = ({
             // left the right third of the screen blank — it read as "the page
             // only half loaded" (Arman, Coding Accounts, nine columns).
             "w-max min-w-full table-auto",
-            viewFields.length <= FIXED_LAYOUT_MAX_COLUMNS &&
-              "md:w-full md:min-w-full md:table-fixed",
+            // `effectiveLayout` = the user's Layout choice, else the platform
+            // default over FIXED_LAYOUT_MAX_COLUMNS (table-view-url.ts).
+            effectiveLayout === "fit" && "md:w-full md:min-w-full md:table-fixed",
           )}
         >
           <TableHeader>
@@ -3779,8 +3878,36 @@ const UserTableViewer = ({
                       grid.refocusGrid();
                     }}
                     title={`Click to select the ${field.display_name} column`}
-                    className="sticky top-0 z-20 max-w-[70vw] border-b border-gray-200 bg-gray-100 py-1.5 font-semibold text-gray-700 transition-colors hover:bg-gray-200/70 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/70 md:max-w-none md:min-w-[150px]"
+                    style={columnWidthStyle(field.field_name)}
+                    className={cn(
+                      "sticky top-0 z-20 max-w-[70vw] border-b border-gray-200 bg-gray-100 py-1.5 font-semibold text-gray-700 transition-colors hover:bg-gray-200/70 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/70 md:max-w-none",
+                      // The 150px floor is the platform's; a dragged width
+                      // replaces it (that is what dragging narrower means).
+                      !columnWidths[field.field_name] && "md:min-w-[150px]",
+                      // Frozen first column: sits right of the 2.5rem
+                      // checkbox column and above scrolling neighbours.
+                      freezeFirstColumn &&
+                        field.field_name === firstViewFieldName &&
+                        "left-10 z-30 shadow-[inset_-1px_0_0_theme(colors.gray.200)] dark:shadow-[inset_-1px_0_0_theme(colors.gray.700)]",
+                    )}
                   >
+                    {/* Drag handle on the right edge; double-click resets. */}
+                    {!isMobile && (
+                      <span
+                        role="separator"
+                        aria-orientation="vertical"
+                        aria-label={`Resize the ${field.display_name} column`}
+                        title="Drag to resize · double-click to reset"
+                        onMouseDown={(e) => beginColumnResize(e, field.field_name)}
+                        onDoubleClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setColumnWidth(field.field_name, null);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute inset-y-0 right-0 z-10 w-2 cursor-col-resize select-none hover:bg-primary/40 active:bg-primary/60"
+                      />
+                    )}
                     <div
                       data-surface-value="column_list"
                       className="flex items-center justify-between gap-1"
@@ -4134,6 +4261,7 @@ const UserTableViewer = ({
                     );
                     return (
                       <TableCell
+                        style={columnWidthStyle(field.field_name)}
                         key={`${row.id}-${field.id}`}
                         data-cell={cellDomKey({
                           rowId: row.id,
@@ -4196,6 +4324,9 @@ const UserTableViewer = ({
                           // selection ring is inset and the wash is `inset-0`,
                           // so neither is cut.
                           "group relative max-w-[70vw] overflow-hidden py-2 md:max-w-0 md:py-3",
+                          freezeFirstColumn &&
+                            field.field_name === firstViewFieldName &&
+                            "sticky left-10 z-10 bg-inherit shadow-[inset_-1px_0_0_theme(colors.gray.200)] dark:shadow-[inset_-1px_0_0_theme(colors.gray.700)]",
                           "after:pointer-events-none after:absolute after:inset-0 after:content-['']",
                           // A computed cell keeps the default cursor: the
                           // text-cursor is a promise that you can type here,
