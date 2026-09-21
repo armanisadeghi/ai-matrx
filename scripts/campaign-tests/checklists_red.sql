@@ -32,7 +32,8 @@ create temporary table ridgeline_guards on commit drop as
   select p.proname, pg_get_functiondef(p.oid) as def
     from pg_proc p
    where p.pronamespace = 'custom'::regnamespace
-     and p.proname in ('_checklist_step_guard', '_checklist_watch');
+     and p.proname in ('_checklist_step_guard', '_checklist_watch',
+                       '_checklist_watch_stmt_insert', '_checklist_watch_stmt_update');
 
 -- The six bodies as they stand RIGHT NOW, so PART 5 can prove nothing leaked out.
 create temporary table ridgeline_before on commit drop as
@@ -40,7 +41,8 @@ create temporary table ridgeline_before on commit drop as
     from pg_proc p
    where p.pronamespace = 'custom'::regnamespace
      and p.proname in ('work_assign', 'checklist_declare', 'checklist_start',
-                       'checklist_step_complete', '_checklist_step_guard', '_checklist_watch');
+                       'checklist_step_complete', '_checklist_step_guard', '_checklist_watch',
+                       '_checklist_watch_stmt_insert', '_checklist_watch_stmt_update');
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- THE FIXTURE, once, for every block below. Written as the connected role; it asserts nothing.
@@ -249,8 +251,19 @@ begin
   exception when insufficient_privilege then
     get stacked diagnostics v_caught = message_text;
   end;
-  if v_caught not like '%switched off%' then
+  -- 🚨 RE-PINNED (lane RED-SUITES-2, 2026-09-21). This clause used to demand the literal words
+  -- "switched off". `limitsfix_a_new_organization_has_the_store_on.sql` rewrote the ONE body
+  -- every write door reaches (`custom.assert_store_door`) to say "This organization has not
+  -- turned the record store on yet …" instead. The DEFECT the red twin plants is unchanged and
+  -- is asserted by its shape rather than by one phrasing: a stranger is answered with the state
+  -- of an organization's own store switch, and is never told the real answer — that they are
+  -- not in it. Both halves are asserted, so a future re-wording cannot make this pass quietly.
+  if v_caught not ilike '%switched off%'
+     and v_caught not ilike '%has not turned the record store on%' then
     raise exception 'RED 3 failed for another reason: %', v_caught;
+  end if;
+  if v_caught ilike '%not a member%' or v_caught ilike '%do not belong%' then
+    raise exception 'RED 3 CAME OUT GREEN — the pre-fix bytes told the stranger the real answer: %', v_caught;
   end if;
   raise notice 'RED 3 — a stranger was answered: %', v_caught;
 end
@@ -267,10 +280,38 @@ begin
 end
 $t$;
 
+-- 🚨 RED 4 REPAIRED AT ITS ROOT (lane RED-SUITES-2, 2026-09-21). THIS BLOCK HAD STOPPED
+-- DEMONSTRATING ANYTHING. It neutered `custom._checklist_watch` — and `custom._checklist_watch`
+-- is attached to NO trigger on `custom.record` any more. The perf rewrite moved the watcher to
+-- a statement-level pair, `zz_ckl_watch_s_i` / `zz_ckl_watch_s_u` over
+-- `custom._checklist_watch_stmt_insert` / `_stmt_update` (the lane that carried the watcher
+-- through that rewrite left `migrations/inverse/screens2_the_checklist_watch_survived_the_perf_rewrite_down.sql`
+-- behind it). So the plant removed a body nothing calls, the watcher kept running, and the only
+-- reason this block did not come out GREEN is that RED 2's pre-fix `custom.work_assign` was
+-- still live and raised inside the write. A red twin that fails for the previous block's reason
+-- proves nothing about its own. Two changes: the fixed `custom.work_assign` is put back first,
+-- so ONLY the watcher is missing; and the bodies the live triggers actually call are the ones
+-- neutered.
+\i migrations/campaign/checklists_assigning_somebody_their_own_row.sql
+
+do $t$
+begin
+  perform set_config('role', (select who from ridgeline_boss), true);
+end
+$t$;
+
 do $t$
 begin
   execute $body$
-    create or replace function custom._checklist_watch() returns trigger
+    create or replace function custom._checklist_watch_stmt_insert() returns trigger
+    language plpgsql security definer set search_path to 'pg_catalog' as $w$
+    begin
+      return null;   -- the watcher, watching nothing
+    end
+    $w$;
+  $body$;
+  execute $body$
+    create or replace function custom._checklist_watch_stmt_update() returns trigger
     language plpgsql security definer set search_path to 'pg_catalog' as $w$
     begin
       return null;   -- the watcher, watching nothing
@@ -290,8 +331,8 @@ begin
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims',
                      '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
-  -- custom.work_assign is still the pre-fix body from RED 2, so this hire is written without a
-  -- run at all — which is exactly what is being shown.
+  -- The hire is written with the watchers gone, so no run starts at all — which is what is
+  -- being shown. Every other door below this write is the shipped body.
   v_hire := custom.record_write(f.org, f.people, jsonb_build_object('name', 'Red Four'));
   select count(*) into v_n from custom.checklist_runs(f.org, f.people, v_hire, true, 10);
   if v_n <> 0 then
@@ -310,7 +351,8 @@ $t$;
 
 do $t$
 begin
-  execute (select b.def from ridgeline_guards b where b.proname = '_checklist_watch');
+  execute (select b.def from ridgeline_guards b where b.proname = '_checklist_watch_stmt_insert');
+  execute (select b.def from ridgeline_guards b where b.proname = '_checklist_watch_stmt_update');
 end
 $t$;
 
@@ -346,11 +388,13 @@ begin
   end if;
   if not exists (select 1 from pg_trigger where tgname = 'zz_ckl_step_guard'
                    and tgrelid = 'custom.record'::regclass)
-     or not exists (select 1 from pg_trigger where tgname = 'zz_ckl_watch'
+     or not exists (select 1 from pg_trigger where tgname = 'zz_ckl_watch_s_i'
+                   and tgrelid = 'custom.record'::regclass)
+     or not exists (select 1 from pg_trigger where tgname = 'zz_ckl_watch_s_u'
                    and tgrelid = 'custom.record'::regclass) then
     raise exception 'PART 5: a trigger this file relies on is not attached';
   end if;
-  raise notice 'PART 5 — six bodies byte-identical, both triggers attached. ALL FOUR BLOCKS WERE RED.';
+  raise notice 'PART 5 — eight bodies byte-identical, the step guard and BOTH statement watchers attached. ALL FOUR BLOCKS WERE RED.';
 end
 $t$;
 

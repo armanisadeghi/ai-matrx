@@ -195,16 +195,31 @@ begin
   -- The clause the whole design rests on. Per-record visibility is decided at READ time, so a
   -- payload carrying a value would travel past it: one topic serves the whole board, and two
   -- people on that board do not necessarily see the same jobs on it.
+  --
+  -- RE-PINNED (lane RED-SUITES-2, 2026-09-21): the allowlist is SEVEN keys, not six. Lane
+  -- REALTIME2-OPID added `op_id` in `migrations/campaign/realtime2_the_write_doors_take_an_op_id.sql`,
+  -- whose emitter's own comment reads "The payload is seven keys and not one value: the
+  -- seventh, op_id, is the client operation the writer declared as `_op_id` … so a browser can
+  -- drop the echo of its own write", and `realtime2_opid_seat.sql` clause 3 asserts it must be
+  -- there. Two suites disagreeing about one payload is the defect; one list is the fix.
+  -- The clause is NOT weakened by the seventh key: `op_id` is WHICH CLICK, never WHAT CHANGED,
+  -- so it is additionally asserted below to be an opaque uuid — a promise the six-key list
+  -- never made, and the only thing that keeps a value from arriving under that name.
   if (select count(*) from jsonb_object_keys(v_one) k
-       where k not in ('id', 'table_id', 'kind', 'op', 'record_ids', 'fields_changed', 'at')) > 0 then
-    raise exception '5: the notice carries a key outside the six it is allowed: %',
+       where k not in ('id', 'table_id', 'kind', 'op', 'record_ids', 'fields_changed', 'at',
+                       'op_id')) > 0 then
+    raise exception '5: the notice carries a key outside the seven it is allowed: %',
       (select string_agg(k, ', ') from jsonb_object_keys(v_one) k);
+  end if;
+  if v_one ? 'op_id' and (v_one ->> 'op_id') !~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' then
+    raise exception '5: op_id is meant to be the writer''s opaque operation id and it carries "%" instead — a value has arrived under that name',
+      v_one ->> 'op_id';
   end if;
   if v_one::text ilike '%Loma Vista%' or v_one::text ilike '%water heater%'
      or v_one::text ilike '%RPC-4417%' then
     raise exception '5: the notice carries the job''s own words — %', v_one;
   end if;
-  raise notice '5 OK  the notice is six keys and not one value of the record it names';
+  raise notice '5 OK  the notice is seven keys and not one value of the record it names (op_id is an opaque uuid)';
 
   -- ── PART 6: A COLUMN IS ADDED, AND IT LANDS ON THE TABLE''S TOPIC, NOT THE KERNEL''S. ──
   -- THROUGH THE DOOR, not by hand: adding a column is `custom.field_declare`, which is what
