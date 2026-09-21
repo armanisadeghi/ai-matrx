@@ -32,6 +32,7 @@ function noteRow(overrides: Partial<NoteRow> = {}): NoteRow {
     content_hash: null,
     created_at: "2026-09-12T00:00:00.000Z",
     created_by: "user-1",
+    custom_fields: {},
     deleted_at: null,
     file_path: null,
     folder_id: null,

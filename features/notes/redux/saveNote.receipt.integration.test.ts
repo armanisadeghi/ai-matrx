@@ -50,7 +50,7 @@ function note(overrides: Partial<Note> = {}): Note {
     id: NOTE_ID, content: "before", content_hash: null,
     created_at: "2026-09-12T00:00:00.000Z", created_by: "user-1", deleted_at: null,
     file_path: null, folder_id: null, folder_name: null, label: "Original", last_device_id: null,
-    metadata: {}, organization_id: ORG, position: 0, project_id: null, sync_version: 0,
+    metadata: {}, organization_id: ORG, position: 0, project_id: null, custom_fields: {}, sync_version: 0,
     tags: [], task_id: null, updated_at: "2026-09-12T00:00:00.000Z", updated_by: null,
     version: 7, visibility: "personal", ...overrides,
   };

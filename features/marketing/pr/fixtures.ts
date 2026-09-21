@@ -645,6 +645,7 @@ function buildAngles(now: number): StoryAngle[] {
       deleted_at: null,
       version: 1,
       metadata: {},
+      custom_fields: {},
       visibility: "internal",
     } satisfies StoryAngle;
   });
@@ -823,6 +824,7 @@ function buildRequests(now: number, angles: readonly StoryAngle[]): SourceReques
     deleted_at: null,
     version: 1,
     metadata: {},
+    custom_fields: {},
     visibility: "internal",
   })) satisfies SourceRequest[];
 }
@@ -934,6 +936,7 @@ function buildCoverage(now: number, angles: readonly StoryAngle[]): CoverageMent
         story_angle_id:
           seed.angleIndex === null ? null : (angles[seed.angleIndex]?.id ?? null),
       },
+      custom_fields: {},
     } satisfies CoverageMention;
   });
 }

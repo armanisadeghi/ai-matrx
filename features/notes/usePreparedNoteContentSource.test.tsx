@@ -5,7 +5,7 @@ import type { Note } from "./types";
 import { createBlankNoteRecord } from "./redux/notes.types";
 import { usePreparedNoteContentSource } from "./usePreparedNoteContentSource";
 const id="33333333-3333-4333-8333-333333333333", org="11111111-1111-4111-8111-111111111111", actor="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
-const note=(o:Partial<Note>={}):Note=>({id,organization_id:org,version:0,content:"same",label:"N",folder_name:null,folder_id:null,tags:[],metadata:{},visibility:"personal",position:0,project_id:null,task_id:null,created_at:"",created_by:actor,updated_at:"",updated_by:actor,deleted_at:null,content_hash:null,file_path:null,last_device_id:null,sync_version:0,...o});
+const note=(o:Partial<Note>={}):Note=>({id,organization_id:org,version:0,content:"same",label:"N",folder_name:null,folder_id:null,tags:[],metadata:{},visibility:"personal",position:0,project_id:null,task_id:null,created_at:"",created_by:actor,updated_at:"",updated_by:actor,deleted_at:null,content_hash:null,file_path:null,last_device_id:null,custom_fields:{},sync_version:0,...o});
 it("keeps an identical render stable and changes opaque snapshot identity for equal-length or metadata changes", async()=>{
  let latest=""; const root=createRoot(document.createElement("div"));
  (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT=true;

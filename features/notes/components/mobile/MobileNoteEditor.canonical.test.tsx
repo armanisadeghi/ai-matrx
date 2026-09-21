@@ -92,6 +92,7 @@ const row = (overrides: Partial<Note> = {}): Note => ({
   position: 0, project_id: null, task_id: null, created_at: "2026-09-14T00:00:00.000Z",
   created_by: ACTOR, updated_at: "2026-09-14T00:00:00.000Z", updated_by: ACTOR,
   deleted_at: null, content_hash: null, file_path: null, last_device_id: null,
+  custom_fields: {},
   sync_version: 0, ...overrides,
 });
 

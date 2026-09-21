@@ -37,7 +37,7 @@ jest.mock("./NoteEditorDock", () => ({ NoteEditorDock: ({onTagsChange}: {onTagsC
 
 const id = "33333333-3333-4333-8333-333333333333";
 const actor = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
-const note = (version: number): Note => ({ id, organization_id: "11111111-1111-4111-8111-111111111111", version, content: "base", label: "N", folder_name: null, folder_id: null, tags: [], metadata: {}, visibility: "personal", position: 0, project_id: null, task_id: null, created_at: "", created_by: actor, updated_at: "", updated_by: actor, deleted_at: null, content_hash: null, file_path: null, last_device_id: null, sync_version: 0 });
+const note = (version: number): Note => ({ id, organization_id: "11111111-1111-4111-8111-111111111111", version, content: "base", label: "N", folder_name: null, folder_id: null, tags: [], metadata: {}, visibility: "personal", position: 0, project_id: null, task_id: null, created_at: "", created_by: actor, updated_at: "", updated_by: actor, deleted_at: null, content_hash: null, file_path: null, last_device_id: null, custom_fields: {}, sync_version: 0 });
 const makeStore = () => configureStore({ reducer: { notes: notesReducer, userAuth: (state = { id: actor, authReady: true }) => state }, middleware: (gdm) => gdm({ serializableCheck: false }) });
 type State = ReturnType<ReturnType<typeof makeStore>["getState"]>;
 function Host() {
