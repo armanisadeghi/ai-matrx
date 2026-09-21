@@ -26,6 +26,7 @@ declare
   v_home uuid;
   v_boxes uuid; v_sites uuid; v_rel uuid; v_extra uuid; v_kennel uuid;
   v_n integer; v_msg text; v_keys text[]; v_types text[]; v_want text;
+  v_begin jsonb; v_res jsonb;
 begin
   if (select system_identifier from pg_control_system()) <> 7642734024280108049 then
     raise exception 'limitsfix_green.sql runs on the MAIN database only, and this is %',
@@ -231,6 +232,39 @@ begin
   perform custom.record_write(v_org, v_kennel, jsonb_build_object(
     'name','Biscuit', 'breed','Border Collie', 'nightly_rate', 48, 'parent_id', v_home::text));
   raise notice 'PART 7 PASSED — a column called `name` works, declaring it twice is idempotent, retyping it is refused.';
+
+  -- ══════════════════════════════════════════════════════════════════════════════════════
+  -- PART 8 — AN IMPORT ROW WITH NOTHING IN IT IS NOT A RECORD.
+  -- Real-data crew C: the import "silently writes fully-empty rows when nothing maps".
+  -- Crew E2 hit its mirror image — "Write N rows" reporting success and persisting none.
+  -- The farm's supplier sends a price list with a stray blank line and a column the farm's
+  -- table has never had.
+  -- ══════════════════════════════════════════════════════════════════════════════════════
+  v_begin := custom.io_import_begin(v_org, v_boxes, 'csv', 'hollis-street-week-38.csv',
+               jsonb_build_array('Box Week','Pickup Site','Subscriber Count'));
+  v_res := custom.io_import_rows(v_org, (v_begin ->> 'import_id')::uuid, jsonb_build_array(
+    jsonb_build_object('Box Week','2026-09-23','Pickup Site','Hollis Street Co-op','Subscriber Count','151'),
+    jsonb_build_object(),
+    jsonb_build_object('Truck Bay','North dock','Driver Note','back gate code 4417')
+  ), jsonb_build_object('Box Week','box_week','Pickup Site','pickup_site','Subscriber Count','subscriber_count'));
+
+  select count(*) into v_n from jsonb_array_elements(v_res -> 'outcomes') e
+   where e ->> 'outcome' = 'landed';
+  if v_n <> 1 then
+    raise exception 'PART 8 FAILED — one of the three rows is a real week and % landed.', v_n;
+  end if;
+  select count(*) into v_n from jsonb_array_elements(v_res -> 'outcomes') e
+   where e ->> 'outcome' = 'refused' and e ->> 'reason' like '%nothing to save%';
+  if v_n <> 2 then
+    raise exception 'PART 8 FAILED — the blank line and the unmatched line should both be refused with a reason; % were.', v_n;
+  end if;
+  -- AND THE OFFER SURVIVES THE REFUSAL: a column this table has never had is still proposed,
+  -- so refusing the row never costs the person the chance to add the column.
+  if not exists (select 1 from jsonb_array_elements(coalesce(v_res -> 'proposals','[]'::jsonb)) p
+                  where p ->> 'column' = 'Truck Bay') then
+    raise exception 'PART 8 FAILED — refusing the row also threw away the offer to add its column.';
+  end if;
+  raise notice 'PART 8 PASSED — the real week landed, the blank line and the unmatched line were refused by name, and their columns are still offered.';
 
   raise notice 'ALL PARTS PASSED — from the seat `authenticated`, through the doors a signed-in person reaches.';
 end

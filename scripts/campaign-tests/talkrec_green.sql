@@ -59,7 +59,7 @@ begin
   insert into custom.record (organization_id, table_id, data)
   values (v_org, null, jsonb_build_object('name','ZZ HQ')) returning id into v_home;
   insert into chat.conversation (id, organization_id, title, created_by)
-  values (v_conv, v_org, 'ZZ talk to Acme', c_admin);
+  values (v_conv, v_org, 'ZZ talk to Fairmont', c_admin);
 
   -- ══════════════════════════════════════════════════════════════════════════════════════
   -- PART 0 — THE SEAT.
@@ -92,7 +92,7 @@ begin
     'label','Tax ID','key','ssn','plain','text','sensitivity','confidential'));
 
   v_acme := custom.record_write(v_org, v_cust, jsonb_build_object(
-    'name','Acme Industrial','stage','Prospect','ssn','123-45-6789','parent_id',v_home::text));
+    'name','Fairmont Property Group','stage','Prospect','ssn','123-45-6789','parent_id',v_home::text));
   v_beta := custom.record_write(v_org, v_cust, jsonb_build_object(
     'name','Beta Works','stage','Won','parent_id',v_home::text));
   v_n1 := custom.record_write(v_org, v_note, jsonb_build_object(
@@ -176,7 +176,7 @@ begin
   end if;
 
   v_scope := custom.conversation_scope_bind(v_org, v_conv, v_acme);
-  if (v_scope ->> 'record_id')::uuid <> v_acme or v_scope ->> 'title' <> 'Acme Industrial' then
+  if (v_scope ->> 'record_id')::uuid <> v_acme or v_scope ->> 'title' <> 'Fairmont Property Group' then
     raise exception '2b: the binding did not answer the record it bound: %', v_scope::text;
   end if;
   if (v_scope ->> 'table_id')::uuid <> v_cust or v_scope ->> 'scope_type' <> 'Customer' then
@@ -208,7 +208,7 @@ begin
   if v_ctx is null or v_ctx = 'null'::jsonb then
     raise exception '3a: the bound conversation answered no context: %', v_res::text;
   end if;
-  if v_ctx -> 'record' ->> 'title' <> 'Acme Industrial' then
+  if v_ctx -> 'record' ->> 'title' <> 'Fairmont Property Group' then
     raise exception '3a: the context is about %', v_ctx -> 'record' ->> 'title';
   end if;
 
@@ -231,10 +231,10 @@ begin
       jsonb_array_length(v_ctx -> 'history');
   end if;
   if jsonb_array_length(v_ctx -> 'relations') = 0 then
-    raise exception '3d: the note carried onto Acme and the scope shows no relation';
+    raise exception '3d: the note carried onto Fairmont and the scope shows no relation';
   end if;
   if jsonb_array_length(v_ctx -> 'comments') = 0 then
-    raise exception '3e: a comment was written on Acme and the scope shows none';
+    raise exception '3e: a comment was written on Fairmont and the scope shows none';
   end if;
   if jsonb_array_length(v_ctx -> 'siblings' -> 'shown') = 0 then
     raise exception '3f: the table has another record this person may open and the scope shows none';

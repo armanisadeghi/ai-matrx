@@ -491,7 +491,7 @@ begin
     raise exception '7a: the slot key is not kept unique, so this would double-book: %', v_slots;
   end if;
   v_hold := custom.work_slot_hold(v_org, (v_slots ->> 'table_id')::uuid,
-                                  '2026-10-01T14:00', 'dana@example.com', interval '15 minutes');
+                                  '2026-10-01T14:00', 'dana@greenlinelandscaping.com', interval '15 minutes');
   if v_hold ->> 'hold_id' is null then
     raise exception '7a: the first hold did not take: %', v_hold;
   end if;
@@ -500,7 +500,7 @@ begin
   -- 7b — THE SECOND CALLER IS REFUSED BY THE INDEX'S OWN NAME. The other answer.
   begin
     perform custom.work_slot_hold(v_org, (v_slots ->> 'table_id')::uuid,
-                                  '2026-10-01T14:00', 'sam@example.com', interval '15 minutes');
+                                  '2026-10-01T14:00', 'sam@greenlinelandscaping.com', interval '15 minutes');
     raise exception '7b: two people hold the same slot';
   exception when unique_violation then
     get stacked diagnostics v_caught = message_text;
@@ -515,14 +515,14 @@ begin
 
   -- 7c — a different slot books, and releasing frees the first.
   if custom.work_slot_hold(v_org, (v_slots ->> 'table_id')::uuid,
-                           '2026-10-01T15:00', 'sam@example.com', interval '15 minutes') ->> 'hold_id' is null then
+                           '2026-10-01T15:00', 'sam@greenlinelandscaping.com', interval '15 minutes') ->> 'hold_id' is null then
     raise exception '7c: a different slot could not be booked';
   end if;
   if not custom.work_slot_release(v_org, (v_hold ->> 'hold_id')::uuid) then
     raise exception '7c: the hold could not be released';
   end if;
   if custom.work_slot_hold(v_org, (v_slots ->> 'table_id')::uuid,
-                           '2026-10-01T14:00', 'sam@example.com', interval '15 minutes') ->> 'hold_id' is null then
+                           '2026-10-01T14:00', 'sam@greenlinelandscaping.com', interval '15 minutes') ->> 'hold_id' is null then
     raise exception '7c: the released slot could not be taken';
   end if;
   raise notice '7c PASSED — a different slot books, a release frees the first, and somebody else takes it.';

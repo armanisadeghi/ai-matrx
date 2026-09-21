@@ -20,10 +20,10 @@ begin
   perform set_config('app.actor_system','campaign-test/writeperf_green', true);
 
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ WRITEPERF GREEN', 'zzz-wp-green-' || substr(md5(random()::text),1,8), 'ZWG', c_admin)
+  values ('Ironline Fitness Green', 'ironline-fitness-green-' || substr(md5(random()::text),1,8), 'IFG', c_admin)
   returning id into v_org;
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ WRITEPERF GREEN 2', 'zzz-wp-green2-' || substr(md5(random()::text),1,8), 'ZWH', c_admin)
+  values ('Ironline Fitness Green Annex', 'ironline-fitness-green-annex-' || substr(md5(random()::text),1,8), 'IFA', c_admin)
   returning id into v_org2;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
   values (v_org,  c_admin, 'owner', 'active', 'organization', v_org),
@@ -63,7 +63,7 @@ begin
   -- ═══ PART 2 — a table with 250 records, so a short page is observable ════════════════════
   v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Green Home'));
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WP Green','slug','zz_wp_green','type','entity',
+    'name','Member Check-ins','slug','member_checkins','type','entity',
     'label_singular','Row','label_plural','Rows','title_field','title','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',

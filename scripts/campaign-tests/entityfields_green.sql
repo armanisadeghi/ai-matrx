@@ -52,10 +52,10 @@ begin
   -- fixtures as the connected role: two disposable rows this admin account owns
   perform set_config('request.jwt.claims', format('{"sub":"%s"}', v_admin), true);
   insert into crm.party (organization_id, party_kind, display_name, created_by, visibility)
-  values (v_org, 'organization', 'ZZZ ENTITY-FIELDS test company', v_admin, 'internal')
+  values (v_org, 'organization', 'Anchor Point Insurance Agency', v_admin, 'internal')
   returning id into v_party;
   insert into crm.interaction (organization_id, party_id, subject, direction, channel_code, status, created_by)
-  values (v_org, v_party, 'ZZZ ENTITY-FIELDS test note', 'outbound', 'note', 'planned', v_admin)
+  values (v_org, v_party, 'Anchor Point Insurance Agency renewal call', 'outbound', 'note', 'planned', v_admin)
   returning id into v_inter;
 
   -- ===================== PART 0 — TAKE THE SEAT AND PROVE IT =====================

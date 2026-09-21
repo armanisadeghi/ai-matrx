@@ -125,7 +125,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W3-HIST RED', 'zz-w3hist-red-' || substr(v_org::text, 1, 8), 'ZWR', c_admin);
+  values (v_org, 'Meridian Auto Body Hist Red', 'meridian-auto-body-hist-red-' || substr(v_org::text, 1, 8), 'MHR', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -171,11 +171,11 @@ begin
   perform set_config('role', v_boss, true);
   select pg_get_triggerdef(tg.oid) into v_trg
     from pg_trigger tg where tg.tgrelid = 'custom.record'::regclass
-     and tg.tgname = 'zzz_history_capture' and not tg.tgisinternal;
+     and tg.tgname = 'zzz_history_capture' and not tg.tgisinternal;  -- matrx-real-data:allow zzz_history_capture is the real live trigger name from migrations/campaign/w3_hist_the_one_store.sql, not fixture data
   if v_trg is null then
-    raise exception 'RED 1 precondition: there is no zzz_history_capture trigger on custom.record to take away';
+    raise exception 'RED 1 precondition: there is no zzz_history_capture trigger on custom.record to take away';  -- matrx-real-data:allow zzz_history_capture is the real live trigger name from migrations/campaign/w3_hist_the_one_store.sql, not fixture data
   end if;
-  drop trigger zzz_history_capture on custom.record;
+  drop trigger zzz_history_capture on custom.record;  -- matrx-real-data:allow zzz_history_capture is the real live trigger name from migrations/campaign/w3_hist_the_one_store.sql, not fixture data
   select coalesce(max(id), 0) into v_mark from history.row_versions;
   perform set_config('role', 'authenticated', true);
 

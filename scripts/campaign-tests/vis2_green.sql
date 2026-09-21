@@ -135,7 +135,7 @@ begin
     'fields', jsonb_build_array(jsonb_build_object('name', 'name', 'kind', 'text')),
     'title_field', 'name', 'parent_id', v_hq_b::text));
   insert into custom.record (id, organization_id, table_id, data_class, data, created_by)
-  values (v_rec_b, v_b, v_btbl, 'record', jsonb_build_object('name', 'Acme Ltd'), v_admin);
+  values (v_rec_b, v_b, v_btbl, 'record', jsonb_build_object('name', 'Fairmont Office Supply'), v_admin);
 
   -- Part 4's Field: an ordinary text field, retyped later through the ordinary write door.
   insert into custom.field (id, organization_id, entity_definition_id, key, name, label, type,
@@ -314,7 +314,7 @@ begin
   values ('record', v_brec, v_dana, 'viewer', v_admin);
   select * into v_card from custom.relation_target_card(v_a, v_rec, 'supplier');
   if v_card.masked then raise exception '2f FAILED — a grant across the wall did not unmask the record.'; end if;
-  if v_card.card ->> 'name' is distinct from 'Acme Ltd' then
+  if v_card.card ->> 'name' is distinct from 'Fairmont Office Supply' then
     raise exception '2f FAILED — the unmasked card did not carry the record''s values (%).', v_card.card; end if;
   if v_card.reader_level is distinct from 'viewer'::public.permission_level then
     raise exception '2f FAILED — the level on the card is %, not the viewer she was granted.', v_card.reader_level; end if;

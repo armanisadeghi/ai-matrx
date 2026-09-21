@@ -329,7 +329,7 @@ begin
   raise notice '5 PASS — %', v_caught;
 
   v_res := custom.checklist_step_complete(v_org, v_contract,
-             jsonb_build_object('note', 'Signed contract sent to priya@example.com on the 20th.'));
+             jsonb_build_object('note', 'Signed contract sent to priya@willowcreekmontessori.com on the 20th.'));
   if not (v_res ->> 'completed')::boolean or (v_res ->> 'steps_left')::integer <> 3 then
     raise exception '5b: the contract step answered %', v_res;
   end if;

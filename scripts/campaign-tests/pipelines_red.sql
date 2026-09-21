@@ -36,7 +36,7 @@ begin
                               'pipeline_read','pipeline_transition_refusal','table_stage_field')) then
     raise exception 'RED 1 IS NOT RED — a pipeline door survived its own inverse';
   end if;
-  if exists (select 1 from pg_trigger where tgname = 'zzz_pipelines_on_entry') then
+  if exists (select 1 from pg_trigger where tgname = 'zzz_pipelines_on_entry') then  -- matrx-real-data:allow zzz_pipelines_on_entry is the real live trigger name from migrations/campaign/pipelines_a_stage_is_a_field_and_its_moves_are_rules.sql, not fixture data
     raise exception 'RED 1 IS NOT RED — the entry trigger survived its own inverse';
   end if;
   raise notice 'RED 1 IS RED — with this lane undone there is no stage field, no board, no move door, and a Rule cannot ask what a record USED to say. "Give me a board of deals by stage" has nowhere to land.';
@@ -104,7 +104,7 @@ begin
        jsonb_build_object('from','Qualified','to','Proposal'),
        jsonb_build_object('from','Proposal','to','Won')),
     'requires', jsonb_build_object('Won', jsonb_build_array('signed_proposal'))));
-  v_deal := custom.record_write(v_org, v_tbl, jsonb_build_object('name','Acme','stage','Lead'));
+  v_deal := custom.record_write(v_org, v_tbl, jsonb_build_object('name','Priya Anand','stage','Lead'));
 
   -- 2a — NOTHING DECIDED WHICH REFUSAL A PERSON READ. A deal in Lead trying to reach Won
   -- breaks TWO rules — it is not a move this deal can make, AND Won demands a column that

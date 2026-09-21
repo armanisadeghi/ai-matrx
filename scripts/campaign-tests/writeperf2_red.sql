@@ -26,7 +26,7 @@ begin
   -- THE FIXTURE, as the connected role (an organization, a membership and a knob are not
   -- client doors), and then the seat.
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ WRITEPERF2 RED', 'zzz-wp2-red-' || substr(md5(random()::text),1,8), 'ZWP', c_admin)
+  values ('Coastal Veterinary Clinic Red', 'coastal-vet-red-' || substr(md5(random()::text),1,8), 'CVR', c_admin)
   returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
   values (v_org, c_admin, 'owner', 'active', 'organization', v_org);
@@ -56,15 +56,15 @@ begin
   -- The inverses above already ran; this is the product clause, through the doors.
   v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Red Home'));
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WP2R Deal','slug','zz_wp2r_' || substr(md5(random()::text),1,8),'type','entity',
-    'label_singular','Deal','label_plural','Deals','title_field','deal','display','page',
+    'name','Treatment Plans','slug','treatment_plans_' || substr(md5(random()::text),1,8),'type','entity',
+    'label_singular','Treatment','label_plural','Treatments','title_field','treatment','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
-    'fields', jsonb_build_array(jsonb_build_object('name','deal')), 'parent_id', v_home::text));
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Deal','key','deal','type','text'));
+    'fields', jsonb_build_array(jsonb_build_object('name','treatment')), 'parent_id', v_home::text));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Treatment','key','treatment','type','text'));
   v_ok := false;
   begin
-    execute 'select custom.record_write_many($1, $2, $3)' using v_org, v_tbl, array[jsonb_build_object('deal','x')];
+    execute 'select custom.record_write_many($1, $2, $3)' using v_org, v_tbl, array[jsonb_build_object('treatment','x')];
     v_ok := true;
   exception when others then v_txt := sqlerrm;
   end;
@@ -74,7 +74,7 @@ begin
   v_red := v_red + 1;
   raise notice 'RED 6  a signed-in person asking for a batch gets "%" — the only route left is one row per statement', left(v_txt, 60);
   for i in 1..10 loop
-    v_ids := v_ids || custom.record_write(v_org, v_tbl, jsonb_build_object('deal','Red ' || i));
+    v_ids := v_ids || custom.record_write(v_org, v_tbl, jsonb_build_object('treatment','Red ' || i));
   end loop;
   select count(*) into n from custom.read_records(v_org, v_tbl, true, 200, 0);
   if n <> 10 then

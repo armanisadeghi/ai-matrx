@@ -43,7 +43,7 @@ declare
 begin
   -- ── fixtures, as the connected role (a seat is a PERSON; these make one) ───────
   insert into iam.organizations (id, name, slug, created_by)
-  values (v_org, 'ZZZ FORMS suite ' || left(v_org::text, 8), 'zzz-forms-suite-' || left(v_org::text, 8), c_admin);
+  values (v_org, 'Rincon Plumbing Co Green ' || left(v_org::text, 8), 'rincon-plumbing-green-' || left(v_org::text, 8), c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status, created_by)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active', c_admin),
          (v_org, 'organization', v_org, c_dana, 'member', 'active', c_admin);
@@ -240,7 +240,7 @@ begin
   -- The decoy: the script is thanked, the OWNER is told the truth.
   select s.submission_id, s.record_id, s.state into v_sub, v_rec, v_txt
     from custom.form_submit(v_form, 'https://www.aimatrx.com',
-           '{"full_name":"Bot","mobile":"0"}'::jsonb, '198.51.100.4', 'http://spam.example') s;
+           '{"full_name":"Bot","mobile":"0"}'::jsonb, '198.51.100.4', 'http://free-prizes-claim-now.win') s;
   if v_txt <> 'accepted' or v_rec is not null then
     raise exception '6: the decoy produced state=% record=%', v_txt, v_rec;
   end if;

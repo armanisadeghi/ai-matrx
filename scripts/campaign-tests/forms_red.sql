@@ -112,7 +112,7 @@ declare
   v_form    uuid; v_state text; v_rec uuid; v_n bigint; v_row record; v_red int := 0;
 begin
   insert into iam.organizations (id, name, slug, created_by)
-  values (v_org, 'ZZZ FORMS red ' || left(v_org::text, 8), 'zzz-forms-red-' || left(v_org::text, 8), c_admin);
+  values (v_org, 'Rincon Plumbing Co Red ' || left(v_org::text, 8), 'rincon-plumbing-red-' || left(v_org::text, 8), c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status, created_by)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active', c_admin);
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note, updated_by)

@@ -91,7 +91,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W3-DOC RED', 'zz-w3doc-red-' || substr(v_org::text, 1, 8), 'ZDR', c_admin);
+  values (v_org, 'Meridian Auto Body Doc Red', 'meridian-auto-body-doc-red-' || substr(v_org::text, 1, 8), 'MDR', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
@@ -125,7 +125,7 @@ begin
 
   -- ── THE FIXTURE, through the doors a person reaches ───────────────────────────────────
   v_job := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ W3-DOC RED','slug','zz_w3_doc_red','type','entity',
+    'name','Repair Jobs','slug','repair_jobs','type','entity',
     'label_singular','Job','label_plural','Jobs','title_field','client_name',
     'display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
@@ -141,10 +141,10 @@ begin
   v_f_sig  := custom.field_declare(v_org, v_job, jsonb_build_object(
     'key','signature','label','Signature','plain','text','format','signature','sort',30));
 
-  v_tpl := custom.doc_template_save(v_org, v_job, 'ZZ Red',
+  v_tpl := custom.doc_template_save(v_org, v_job, 'Repair Order Red',
     'Client: {{field:' || v_f_name || '}} Owes: {{field:' || v_f_amt || '}} Signed: {{field:' || v_f_sig || '}}');
   v_rec := custom.record_write(v_org, v_job, jsonb_build_object(
-    '_actor','user','client_name','Acme','amount',500));
+    '_actor','user','client_name','Ellery Vance','amount',500));
 
   -- ══════════════════════════════════════════════════════════════════════════
   -- RED 1 — REC-68's own refusal, removed.
@@ -174,7 +174,7 @@ begin
   end; $red$;
   perform set_config('role', 'authenticated', true);
 
-  v_bad := custom.doc_template_save(v_org, v_job, 'ZZ Broken Red',
+  v_bad := custom.doc_template_save(v_org, v_job, 'Broken Repair Order',
     'Dear {{field:00000000-0000-4000-8000-000000000999}},');
   v_j := custom.doc_template_read(v_org, v_bad);
   if (v_j ->> 'body') not like '%{{field:00000000-0000-4000-8000-000000000999}}%' then
@@ -221,8 +221,8 @@ begin
   -- ══════════════════════════════════════════════════════════════════════════
   -- The seal is made from the seat, the way a person makes one.
   v_doc2 := custom.doc_render_document(v_org, v_tpl, v_rec);
-  v_sig  := custom.doc_sign(v_org, v_doc2, 'signature', 'ZZ Red Signer');
-  if (custom.doc_signature_read(v_org, v_sig) ->> 'signer_name') <> 'ZZ Red Signer' then
+  v_sig  := custom.doc_sign(v_org, v_doc2, 'signature', 'Marcus Bellweather');
+  if (custom.doc_signature_read(v_org, v_sig) ->> 'signer_name') <> 'Marcus Bellweather' then
     raise exception 'RED 3 — the seal did not read back as it was made, so this red has nothing to break.';
   end if;
 
@@ -270,7 +270,7 @@ begin
 
   -- The edit AFTER signing, through the door a person uses.
   perform custom.record_update(v_org, v_rec,
-    jsonb_build_object('_actor','user','client_name','Definitely Not Acme'));
+    jsonb_build_object('_actor','user','client_name','Priya Anand'));
   v_j := custom.doc_signature_read(v_org, v_sig);
   if not (v_j ->> 'intact')::boolean then
     raise exception 'RED 4 — the broken verdict function still reported broken. This red is not exercising what it claims.';

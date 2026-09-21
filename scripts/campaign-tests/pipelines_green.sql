@@ -157,7 +157,7 @@ begin
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 2 — THE REFUSED MOVE AND THE ALLOWED MOVE, side by side.
   -- ════════════════════════════════════════════════════════════════════════════
-  v_acme := custom.record_write(v_org, v_tbl, jsonb_build_object('name','Acme','amount',5000,'stage','Lead'));
+  v_acme := custom.record_write(v_org, v_tbl, jsonb_build_object('name','Priya Anand','amount',5000,'stage','Lead'));
 
   -- 2a — ASKED BEFORE THE FINGER LETS GO. A board greys a column from this answer.
   v_ref := custom.pipeline_transition_refusal(v_org, v_acme, 'Won');

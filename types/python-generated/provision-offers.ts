@@ -326,6 +326,30 @@ export interface CommunicationsSmsAssistantTurnOffer {
   organization_id?: string;
 }
 
+/** Offered shape of provision `content_gate.tool_result_section` (kind `content_gate.tool_result_section.offer`). */
+export interface ContentGateToolResultSectionOffer {
+  __kind?: "content_gate.tool_result_section.offer";
+  section_text: string;
+  section_excerpt: string;
+  section_index: number;
+  section_heading?: string;
+  section_chars: number;
+  section_source: string;
+  result_section_count: number;
+  result_total_chars: number;
+  result_format: string;
+  sibling_headings?: string[];
+  user_question?: string;
+  last_assistant_turn?: string;
+  mandate_goal?: string;
+  tool_name: string;
+  tool_input?: unknown;
+  tool_input_summary?: string;
+  iteration: number;
+  budget_chars_remaining?: number;
+  threshold_hint?: number;
+}
+
 /** Offered shape of provision `content_ir.component_authoring` (kind `content_ir.component_authoring.offer`). */
 export interface ContentIrComponentAuthoringOffer {
   __kind?: "content_ir.component_authoring.offer";
@@ -472,7 +496,15 @@ export interface ContentPlanPageReviewOffer {
   planned_meta_description?: string;
   primary_keyword?: unknown;
   keyword_strategy?: unknown;
-  draft: unknown;
+  draft: {
+  h1: string;
+  intro?: string;
+  __kind: "plan_page_draft";
+  sections?: unknown[];
+  meta_title?: string;
+  call_to_action?: string;
+  meta_description?: string;
+};
   family_placement?: unknown;
   research?: string;
   guidance?: string;
@@ -937,6 +969,23 @@ export interface ExtendPageCaptureOffer {
   extracted_rows?: unknown;
 }
 
+/** Offered shape of provision `feedback.item_triage` (kind `feedback.item_triage.offer`). */
+export interface FeedbackItemTriageOffer {
+  __kind?: "feedback.item_triage.offer";
+  feedback_id: string;
+  description: string;
+  route?: string;
+  filed_type: string;
+  filed_priority: string;
+  reporter_name?: string;
+  created_at: string;
+  comments?: unknown;
+  comments_text?: string;
+  screenshots?: unknown;
+  prior_ai_assessment?: string;
+  similar_open_items?: unknown;
+}
+
 /** Offered shape of provision `flashcards.enrich_card` (kind `flashcards.enrich_card.offer`). */
 export interface FlashcardsEnrichCardOffer {
   __kind?: "flashcards.enrich_card.offer";
@@ -1240,6 +1289,50 @@ export interface KnowledgeSectionQaOffer {
   document_name?: string;
   processed_document_id?: string;
   document_outline?: string[];
+}
+
+/** Offered shape of provision `mandate_outcome.goal_text` (kind `mandate_outcome.goal_text.offer`). */
+export interface MandateOutcomeGoalTextOffer {
+  __kind?: "mandate_outcome.goal_text.offer";
+  mandate_key: string;
+  goal: string;
+  mandate_label: string;
+  mandate_description?: string;
+  declared_output_keys?: string[];
+  goal_chars: number;
+}
+
+/** Offered shape of provision `mandate_outcome.judged_run` (kind `mandate_outcome.judged_run.offer`). */
+export interface MandateOutcomeJudgedRunOffer {
+  __kind?: "mandate_outcome.judged_run.offer";
+  mandate_key: string;
+  goal: string;
+  goal_grounding: string;
+  mandate_label: string;
+  mandate_description?: string;
+  goal_never_clauses?: string[];
+  declared_output_keys?: string[];
+  declared_output_kind?: string;
+  input_variables_json?: string;
+  input_excerpt?: string;
+  input_keys?: string[];
+  input_chars_total?: number;
+  user_text?: string;
+  output_text: string;
+  output_excerpt: string;
+  output_chars_total: number;
+  output_artifact_json?: string;
+  output_artifact_keys?: string[];
+  structural_verdict: string;
+  structural_missing_keys?: string[];
+  structural_errors?: string[];
+  model_id?: string;
+  holder_type: string;
+  provenance: string;
+  cost_usd?: number;
+  duration_ms?: number;
+  prior_run_count: number;
+  prior_output_excerpts?: string[];
 }
 
 /** Offered shape of provision `marketing.image_prompt` (kind `marketing.image_prompt.offer`). */
@@ -1738,6 +1831,24 @@ export interface MediaYoutubeTranscriptionOffer {
   timestamp_instruction?: string;
 }
 
+/** Offered shape of provision `media_catalog.item_vetting` (kind `media_catalog.item_vetting.offer`). */
+export interface MediaCatalogItemVettingOffer {
+  __kind?: "media_catalog.item_vetting.offer";
+  item_id: string;
+  title: string;
+  description?: string;
+  description_excerpt?: string;
+  channel_title: string;
+  duration_seconds: number;
+  media_kind: string;
+  published_at?: string;
+  has_captions?: boolean;
+  transcript_text?: string;
+  transcript_excerpt?: string;
+  library_title: string;
+  sibling_titles?: string[];
+}
+
 /** Offered shape of provision `meet.meeting_record` (kind `meet.meeting_record.offer`). */
 export interface MeetMeetingRecordOffer {
   __kind?: "meet.meeting_record.offer";
@@ -1901,10 +2012,58 @@ export interface OrchestrasMemberRosterOffer {
   members: unknown;
 }
 
+/** Offered shape of provision `orchestration.tool_failure_standoff` (kind `orchestration.tool_failure_standoff.offer`). */
+export interface OrchestrationToolFailureStandoffOffer {
+  __kind?: "orchestration.tool_failure_standoff.offer";
+  tool_name: string;
+  tool_description?: string;
+  tool_schema?: unknown;
+  recent_calls_json: unknown;
+  recent_calls_text: string;
+  arguments_fingerprints: string[];
+  error_classes: string[];
+  error_messages?: string[];
+  assistant_text_between_calls?: string;
+  model_id: string;
+  run_goal?: string;
+  other_tools_available?: string[];
+  failures_this_tool: number;
+  consecutive_failures_this_tool: number;
+  successes_this_tool: number;
+  failures_in_window: number;
+  window_size: number;
+  failures_total: number;
+  call_count_total: number;
+  failure_limit: number;
+  is_unattended: boolean;
+  already_intervened: boolean;
+}
+
 /** Offered shape of provision `pdf.content_cleaning` (kind `pdf.content_cleaning.offer`). */
 export interface PdfContentCleaningOffer {
   __kind?: "pdf.content_cleaning.offer";
   content: string;
+}
+
+/** Offered shape of provision `personal_staff.escalation` (kind `personal_staff.escalation.offer`). */
+export interface PersonalStaffEscalationOffer {
+  __kind?: "personal_staff.escalation.offer";
+  requested_by: string;
+  local_datetime: string;
+  escalation_reason?: string;
+  channel?: string;
+  person_display_name?: string;
+}
+
+/** Offered shape of provision `personal_staff.front_line` (kind `personal_staff.front_line.offer`). */
+export interface PersonalStaffFrontLineOffer {
+  __kind?: "personal_staff.front_line.offer";
+  channel: string;
+  local_datetime: string;
+  staff_conversation_id: string;
+  person_display_name?: string;
+  person_timezone?: string;
+  organization_name?: string;
 }
 
 /** Offered shape of provision `podcast.audience_adaptation` (kind `podcast.audience_adaptation.offer`). */
@@ -2260,6 +2419,38 @@ export interface ResearchScrapeCondensationOffer {
   search_results: string;
 }
 
+/** Offered shape of provision `research.source_read_candidate` (kind `research.source_read_candidate.offer`). */
+export interface ResearchSourceReadCandidateOffer {
+  __kind?: "research.source_read_candidate.offer";
+  source_id: string;
+  url: string;
+  hostname: string;
+  source_type: string;
+  title: string;
+  description?: string;
+  extra_snippets?: string[];
+  snippet_block?: string;
+  content_head?: string;
+  content_excerpt?: string;
+  content_text?: string;
+  content_char_count?: number;
+  topic_name: string;
+  topic_description?: string;
+  research_question?: string;
+  search_query?: string;
+  keyword_goal?: string;
+  page_age?: string;
+  topic_freshness_weight?: string;
+  rank?: number;
+  batch_size: number;
+  sibling_titles?: string[];
+  sibling_sites?: string[];
+  redundancy_group?: string;
+  pre_read_score?: number;
+  authority_score?: number;
+  scrape_worthiness?: number;
+}
+
 /** Offered shape of provision `research.source_triage` (kind `research.source_triage.offer`). */
 export interface ResearchSourceTriageOffer {
   __kind?: "research.source_triage.offer";
@@ -2310,6 +2501,37 @@ export interface ResearchClientReportOutputOffer {
 export interface ScraperPageAnalysisOffer {
   __kind?: "scraper.page_analysis.offer";
   page_content: string;
+}
+
+/** Offered shape of provision `scraper.page_capture` (kind `scraper.page_capture.offer`). */
+export interface ScraperPageCaptureOffer {
+  __kind?: "scraper.page_capture.offer";
+  source_id: string;
+  requested_url: string;
+  final_url?: string;
+  http_status?: number;
+  redirect_chain?: string[];
+  page_title?: string;
+  search_result_title?: string;
+  search_result_snippet?: string;
+  text?: string;
+  text_head?: string;
+  text_char_count: number;
+  html_char_count?: number;
+  content_type: string;
+  extracted_link_count?: number;
+  extracted_image_count?: number;
+  capture_method: string;
+  search_keyword?: string;
+  topic_name: string;
+  topic_intent_brief?: string;
+  dimension_tags?: string[];
+  dimension_definitions?: string[];
+  prior_attempt_count?: number;
+  prior_failure_reason?: string;
+  prior_capture_char_counts?: string[];
+  host: string;
+  domain_policy_summary?: string;
 }
 
 /** Offered shape of provision `seo.ai_visibility_analysis` (kind `seo.ai_visibility_analysis.offer`). */
@@ -2530,6 +2752,27 @@ export interface SeoMapAuthorOffer {
   description_max_chars: string;
 }
 
+/** Offered shape of provision `seo.map_curation` (kind `seo.map_curation.offer`). */
+export interface SeoMapCurationOffer {
+  __kind?: "seo.map_curation.offer";
+  brand_id: string;
+  map_id: string;
+  map_name: string;
+  map_screen?: string;
+  site_id?: string;
+  map_outline: string;
+  topic_total: string;
+  expanded_topic_slugs?: string;
+  visible_topics?: string;
+  map_diagnostics?: string;
+  page_intents?: string;
+  page_intent_total?: string;
+  map_history?: string;
+  change_mode: string;
+  description_max_chars: string;
+  selected_topic_slug?: string;
+}
+
 /** Offered shape of provision `seo.money_map` (kind `seo.money_map.offer`). */
 export interface SeoMoneyMapOffer {
   __kind?: "seo.money_map.offer";
@@ -2575,6 +2818,26 @@ export interface SeoPageAnalysisOffer {
   page_content: string;
 }
 
+/** Offered shape of provision `seo.page_intent_proposer` (kind `seo.page_intent_proposer.offer`). */
+export interface SeoPageIntentProposerOffer {
+  __kind?: "seo.page_intent_proposer.offer";
+  brand_name: string;
+  brand_description: string;
+  site_label: string;
+  topic_label: string;
+  topic_keywords: string;
+  sibling_roster: string;
+  planned_pages: string;
+  page_batch: string;
+  page_count: string;
+  map_outline: string;
+  confidence_floor: string;
+  performance_window_days: string;
+  summary_max_words: string;
+  facet_note: string;
+  review_mode: string;
+}
+
 /** Offered shape of provision `seo.page_keyword_mapping` (kind `seo.page_keyword_mapping.offer`). */
 export interface SeoPageKeywordMappingOffer {
   __kind?: "seo.page_keyword_mapping.offer";
@@ -2583,6 +2846,20 @@ export interface SeoPageKeywordMappingOffer {
   existing_pages: unknown;
   site_constraints: unknown;
   mapper_version: string;
+}
+
+/** Offered shape of provision `seo.page_mapper` (kind `seo.page_mapper.offer`). */
+export interface SeoPageMapperOffer {
+  __kind?: "seo.page_mapper.offer";
+  brand_name: string;
+  brand_description: string;
+  site_label: string;
+  map_outline: string;
+  page_batch: string;
+  page_count: string;
+  max_topics_per_page: string;
+  confidence_floor: string;
+  summary_max_words: string;
 }
 
 /** Offered shape of provision `seo.press_source_request` (kind `seo.press_source_request.offer`). */
@@ -2741,6 +3018,27 @@ export interface SeoTopicAssignmentOffer {
   territory: string;
   business_guidelines: string;
   assigner_version: string;
+}
+
+/** Offered shape of provision `seo.topic_curation` (kind `seo.topic_curation.offer`). */
+export interface SeoTopicCurationOffer {
+  __kind?: "seo.topic_curation.offer";
+  brand_id: string;
+  map_id: string;
+  map_name: string;
+  map_screen?: string;
+  site_id?: string;
+  map_outline: string;
+  topic_total: string;
+  expanded_topic_slugs?: string;
+  visible_topics?: string;
+  map_diagnostics?: string;
+  page_intents?: string;
+  page_intent_total?: string;
+  map_history?: string;
+  change_mode: string;
+  description_max_chars: string;
+  selected_topic_slug: string;
 }
 
 /** Offered shape of provision `surfaces_client.binding_context` (kind `surfaces_client.binding_context.offer`). */
@@ -2927,6 +3225,7 @@ export interface ProvisionOffers {
   "commerce_intake.instant_capture": CommerceIntakeInstantCaptureOffer;
   "commerce_intake.valuation_dossier": CommerceIntakeValuationDossierOffer;
   "communications.sms_assistant_turn": CommunicationsSmsAssistantTurnOffer;
+  "content_gate.tool_result_section": ContentGateToolResultSectionOffer;
   "content_ir.component_authoring": ContentIrComponentAuthoringOffer;
   "content_ir.component_target": ContentIrComponentTargetOffer;
   "content_ir.kind_authoring": ContentIrKindAuthoringOffer;
@@ -2976,6 +3275,7 @@ export interface ProvisionOffers {
   "education.voice_tutor": EducationVoiceTutorOffer;
   "extend.browser_chat": ExtendBrowserChatOffer;
   "extend.page_capture": ExtendPageCaptureOffer;
+  "feedback.item_triage": FeedbackItemTriageOffer;
   "flashcards.enrich_card": FlashcardsEnrichCardOffer;
   "flashcards.expand_card": FlashcardsExpandCardOffer;
   "flashcards.generate_cards": FlashcardsGenerateCardsOffer;
@@ -3005,6 +3305,8 @@ export interface ProvisionOffers {
   "knowledge.document_verification": KnowledgeDocumentVerificationOffer;
   "knowledge.section_derivation": KnowledgeSectionDerivationOffer;
   "knowledge.section_qa": KnowledgeSectionQaOffer;
+  "mandate_outcome.goal_text": MandateOutcomeGoalTextOffer;
+  "mandate_outcome.judged_run": MandateOutcomeJudgedRunOffer;
   "marketing.image_prompt": MarketingImagePromptOffer;
   "marketing.local_endowment": MarketingLocalEndowmentOffer;
   "marketing.page_image": MarketingPageImageOffer;
@@ -3046,6 +3348,7 @@ export interface ProvisionOffers {
   "masterwork.understudy_run": MasterworkUnderstudyRunOffer;
   "masterwork.unfolding_verdict": MasterworkUnfoldingVerdictOffer;
   "media.youtube_transcription": MediaYoutubeTranscriptionOffer;
+  "media_catalog.item_vetting": MediaCatalogItemVettingOffer;
   "meet.meeting_record": MeetMeetingRecordOffer;
   "messaging.conversation": MessagingConversationOffer;
   "ner.deep_chunk_extraction": NerDeepChunkExtractionOffer;
@@ -3063,7 +3366,10 @@ export interface ProvisionOffers {
   "observability.tool_trace_pattern_window": ObservabilityToolTracePatternWindowOffer;
   "observability.tool_trace_triage_window": ObservabilityToolTraceTriageWindowOffer;
   "orchestras.member_roster": OrchestrasMemberRosterOffer;
+  "orchestration.tool_failure_standoff": OrchestrationToolFailureStandoffOffer;
   "pdf.content_cleaning": PdfContentCleaningOffer;
+  "personal_staff.escalation": PersonalStaffEscalationOffer;
+  "personal_staff.front_line": PersonalStaffFrontLineOffer;
   "podcast.audience_adaptation": PodcastAudienceAdaptationOffer;
   "podcast.audio_stage": PodcastAudioStageOffer;
   "podcast.chaptering": PodcastChapteringOffer;
@@ -3095,12 +3401,14 @@ export interface ProvisionOffers {
   "research.report_synthesis": ResearchReportSynthesisOffer;
   "research.report_update": ResearchReportUpdateOffer;
   "research.scrape_condensation": ResearchScrapeCondensationOffer;
+  "research.source_read_candidate": ResearchSourceReadCandidateOffer;
   "research.source_triage": ResearchSourceTriageOffer;
   "research.tagged_pages": ResearchTaggedPagesOffer;
   "research.topic_setup": ResearchTopicSetupOffer;
   "research_client.context_bundle": ResearchClientContextBundleOffer;
   "research_client.report_output": ResearchClientReportOutputOffer;
   "scraper.page_analysis": ScraperPageAnalysisOffer;
+  "scraper.page_capture": ScraperPageCaptureOffer;
   "seo.ai_visibility_analysis": SeoAiVisibilityAnalysisOffer;
   "seo.authority_routing": SeoAuthorityRoutingOffer;
   "seo.backlink_context_assessor": SeoBacklinkContextAssessorOffer;
@@ -3117,11 +3425,14 @@ export interface ProvisionOffers {
   "seo.keyword_research": SeoKeywordResearchOffer;
   "seo.landscape_brief": SeoLandscapeBriefOffer;
   "seo.map_author": SeoMapAuthorOffer;
+  "seo.map_curation": SeoMapCurationOffer;
   "seo.money_map": SeoMoneyMapOffer;
   "seo.offering_extraction": SeoOfferingExtractionOffer;
   "seo.offering_valuation": SeoOfferingValuationOffer;
   "seo.page_analysis": SeoPageAnalysisOffer;
+  "seo.page_intent_proposer": SeoPageIntentProposerOffer;
   "seo.page_keyword_mapping": SeoPageKeywordMappingOffer;
+  "seo.page_mapper": SeoPageMapperOffer;
   "seo.press_source_request": SeoPressSourceRequestOffer;
   "seo.press_story_analysis": SeoPressStoryAnalysisOffer;
   "seo.reputation_intelligence": SeoReputationIntelligenceOffer;
@@ -3132,6 +3443,7 @@ export interface ProvisionOffers {
   "seo.site_strategy_interview": SeoSiteStrategyInterviewOffer;
   "seo.starter_pack_proposal": SeoStarterPackProposalOffer;
   "seo.topic_assignment": SeoTopicAssignmentOffer;
+  "seo.topic_curation": SeoTopicCurationOffer;
   "surfaces_client.binding_context": SurfacesClientBindingContextOffer;
   "tool_viz.component_generation": ToolVizComponentGenerationOffer;
   "tools.content_summarization": ToolsContentSummarizationOffer;
@@ -3174,6 +3486,7 @@ export const PROVISION_OFFER_KINDS = {
   "commerce_intake.instant_capture": "commerce_intake.instant_capture.offer",
   "commerce_intake.valuation_dossier": "commerce_intake.valuation_dossier.offer",
   "communications.sms_assistant_turn": "communications.sms_assistant_turn.offer",
+  "content_gate.tool_result_section": "content_gate.tool_result_section.offer",
   "content_ir.component_authoring": "content_ir.component_authoring.offer",
   "content_ir.component_target": "content_ir.component_target.offer",
   "content_ir.kind_authoring": "content_ir.kind_authoring.offer",
@@ -3223,6 +3536,7 @@ export const PROVISION_OFFER_KINDS = {
   "education.voice_tutor": "education.voice_tutor.offer",
   "extend.browser_chat": "extend.browser_chat.offer",
   "extend.page_capture": "extend.page_capture.offer",
+  "feedback.item_triage": "feedback.item_triage.offer",
   "flashcards.enrich_card": "flashcards.enrich_card.offer",
   "flashcards.expand_card": "flashcards.expand_card.offer",
   "flashcards.generate_cards": "flashcards.generate_cards.offer",
@@ -3252,6 +3566,8 @@ export const PROVISION_OFFER_KINDS = {
   "knowledge.document_verification": "knowledge.document_verification.offer",
   "knowledge.section_derivation": "knowledge.section_derivation.offer",
   "knowledge.section_qa": "knowledge.section_qa.offer",
+  "mandate_outcome.goal_text": "mandate_outcome.goal_text.offer",
+  "mandate_outcome.judged_run": "mandate_outcome.judged_run.offer",
   "marketing.image_prompt": "marketing.image_prompt.offer",
   "marketing.local_endowment": "marketing.local_endowment.offer",
   "marketing.page_image": "marketing.page_image.offer",
@@ -3293,6 +3609,7 @@ export const PROVISION_OFFER_KINDS = {
   "masterwork.understudy_run": "masterwork.understudy_run.offer",
   "masterwork.unfolding_verdict": "masterwork.unfolding_verdict.offer",
   "media.youtube_transcription": "media.youtube_transcription.offer",
+  "media_catalog.item_vetting": "media_catalog.item_vetting.offer",
   "meet.meeting_record": "meet.meeting_record.offer",
   "messaging.conversation": "messaging.conversation.offer",
   "ner.deep_chunk_extraction": "ner.deep_chunk_extraction.offer",
@@ -3310,7 +3627,10 @@ export const PROVISION_OFFER_KINDS = {
   "observability.tool_trace_pattern_window": "observability.tool_trace_pattern_window.offer",
   "observability.tool_trace_triage_window": "observability.tool_trace_triage_window.offer",
   "orchestras.member_roster": "orchestras.member_roster.offer",
+  "orchestration.tool_failure_standoff": "orchestration.tool_failure_standoff.offer",
   "pdf.content_cleaning": "pdf.content_cleaning.offer",
+  "personal_staff.escalation": "personal_staff.escalation.offer",
+  "personal_staff.front_line": "personal_staff.front_line.offer",
   "podcast.audience_adaptation": "podcast.audience_adaptation.offer",
   "podcast.audio_stage": "podcast.audio_stage.offer",
   "podcast.chaptering": "podcast.chaptering.offer",
@@ -3342,12 +3662,14 @@ export const PROVISION_OFFER_KINDS = {
   "research.report_synthesis": "research.report_synthesis.offer",
   "research.report_update": "research.report_update.offer",
   "research.scrape_condensation": "research.scrape_condensation.offer",
+  "research.source_read_candidate": "research.source_read_candidate.offer",
   "research.source_triage": "research.source_triage.offer",
   "research.tagged_pages": "research.tagged_pages.offer",
   "research.topic_setup": "research.topic_setup.offer",
   "research_client.context_bundle": "research_client.context_bundle.offer",
   "research_client.report_output": "research_client.report_output.offer",
   "scraper.page_analysis": "scraper.page_analysis.offer",
+  "scraper.page_capture": "scraper.page_capture.offer",
   "seo.ai_visibility_analysis": "seo.ai_visibility_analysis.offer",
   "seo.authority_routing": "seo.authority_routing.offer",
   "seo.backlink_context_assessor": "seo.backlink_context_assessor.offer",
@@ -3364,11 +3686,14 @@ export const PROVISION_OFFER_KINDS = {
   "seo.keyword_research": "seo.keyword_research.offer",
   "seo.landscape_brief": "seo.landscape_brief.offer",
   "seo.map_author": "seo.map_author.offer",
+  "seo.map_curation": "seo.map_curation.offer",
   "seo.money_map": "seo.money_map.offer",
   "seo.offering_extraction": "seo.offering_extraction.offer",
   "seo.offering_valuation": "seo.offering_valuation.offer",
   "seo.page_analysis": "seo.page_analysis.offer",
+  "seo.page_intent_proposer": "seo.page_intent_proposer.offer",
   "seo.page_keyword_mapping": "seo.page_keyword_mapping.offer",
+  "seo.page_mapper": "seo.page_mapper.offer",
   "seo.press_source_request": "seo.press_source_request.offer",
   "seo.press_story_analysis": "seo.press_story_analysis.offer",
   "seo.reputation_intelligence": "seo.reputation_intelligence.offer",
@@ -3379,6 +3704,7 @@ export const PROVISION_OFFER_KINDS = {
   "seo.site_strategy_interview": "seo.site_strategy_interview.offer",
   "seo.starter_pack_proposal": "seo.starter_pack_proposal.offer",
   "seo.topic_assignment": "seo.topic_assignment.offer",
+  "seo.topic_curation": "seo.topic_curation.offer",
   "surfaces_client.binding_context": "surfaces_client.binding_context.offer",
   "tool_viz.component_generation": "tool_viz.component_generation.offer",
   "tools.content_summarization": "tools.content_summarization.offer",

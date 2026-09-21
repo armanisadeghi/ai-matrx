@@ -81,7 +81,7 @@ declare
 begin
   perform set_config('request.jwt.claims', format('{"sub":"%s"}', v_admin), true);
   insert into crm.party (organization_id, party_kind, display_name, created_by, visibility)
-  values (v_org, 'organization', 'ZZZ ENTITY-FIELDS red twin', v_admin, 'internal') returning id into v_party;
+  values (v_org, 'organization', 'Anchor Point Insurance Agency (red twin)', v_admin, 'internal') returning id into v_party;
   perform set_config('role', 'authenticated', true);
 
   -- RED 1 — there is no door onto a standard table's fields
@@ -104,7 +104,7 @@ begin
   -- RED 3 — the guard runs as the person again, so the CRM breaks
   begin
     insert into crm.party (organization_id, party_kind, display_name)
-    values (v_org, 'person', 'ZZZ red twin contact');
+    values (v_org, 'person', 'Anchor Point Insurance Agency red twin contact');
     raise exception 'RED 3 did not go red: the insert was accepted';
   exception when insufficient_privilege then
     v_red := v_red + 1; raise notice 'RED 3 ✗ a person cannot create a contact at all: %', sqlerrm;

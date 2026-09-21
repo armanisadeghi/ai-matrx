@@ -1,0 +1,26 @@
+[
+  {
+    "when": "2026-09-21T00:51:15.628Z",
+    "crew": "D",
+    "use_case": "A podcast's episode pipeline: guests, recordings, edits, publish dates and sponsors for a two-person B2B SaaS interview show.",
+    "doing": "fieldDeclare rollup (sponsors.episode_count via episodes.sponsor)",
+    "said": "the field episode_count reads through a relation called sponsor, and this table has no field called sponsor",
+    "expected": "a rollup column counting related episodes per sponsor"
+  },
+  {
+    "when": "2026-09-21T00:52:14.347Z",
+    "crew": "D",
+    "use_case": "A podcast's episode pipeline",
+    "doing": "fieldDeclare rollup (episodes.sponsor_rate_on_file via episodes.sponsor)",
+    "said": "the field sponsor_rate_on_file reads through a relation called sponsor, and this table has no field called sponsor",
+    "expected": "a rollup column surfacing the linked sponsor's rate on the episode"
+  },
+  {
+    "when": "2026-09-21T00:53:05.795Z",
+    "crew": "D",
+    "use_case": "A podcast's episode pipeline",
+    "doing": "store.fields({table_id}) on the Field Kinds Gallery table right after tableDeclare + one recordWrite",
+    "said": "returns an empty array — zero fields — for a table that was declared with 4 fields (name, topics, producor, featured_guest) and already holds one written row using all of them",
+    "expected": "the 4 declared fields back, so a caller (including fieldDeclare rollup, whose via/of validation reads this same list) can find a field it just declared by key"
+  }
+]

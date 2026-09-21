@@ -48,7 +48,7 @@ declare
 begin
   -- ── fixtures, as the connected role (a seat is a PERSON; these make one) ───────
   insert into iam.organizations (id, name, slug, created_by)
-  values (v_org, 'ZZZ CAPTURE suite ' || left(v_org::text, 8), 'zzz-capture-suite-' || left(v_org::text, 8), c_admin);
+  values (v_org, 'Hands & Hope Alliance Green ' || left(v_org::text, 8), 'hands-hope-green-' || left(v_org::text, 8), c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status, created_by)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active', c_admin),
          (v_org, 'organization', v_org, c_dana, 'member', 'active', c_admin);
@@ -184,7 +184,7 @@ begin
            jsonb_build_array(
              jsonb_build_object('field', 'photo', 'name', 'bin-b1.jpg', 'mime_type', 'image/jpeg',
                                 'size_bytes', '284913', 'file_id', gen_random_uuid()::text,
-                                'url', 'https://files.example/bin-b1.jpg'),
+                                'url', 'https://files.handsandhopealliance.org/bin-b1.jpg'),
              jsonb_build_object('field', 'voice_note', 'name', 'note.webm', 'mime_type', 'audio/webm',
                                 'size_bytes', '19204', 'duration_ms', '4100',
                                 'file_id', gen_random_uuid()::text)),

@@ -49,8 +49,8 @@ begin
   perform set_config('app.actor_system', 'campaign-test/fix7b_field_red', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZZ FIX7B RELATION RED — safe to delete',
-          'zzz-fix7b-red-' || substr(v_org::text, 1, 8), 'ZFD', c_admin);
+  values (v_org, 'Timberline Roofing RED — safe to delete',
+          'timberline-roofing-red-' || substr(v_org::text, 1, 8), 'TLD', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
@@ -75,13 +75,13 @@ begin
   end;
 
   v_cust := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZZ Customer','slug','zzz_fix7b_red_customer_'||substr(v_org::text,1,8),'type','entity',
+    'name','Customer','slug','customer_fix7b_red_'||substr(v_org::text,1,8),'type','entity',
     'label_singular','Customer','label_plural','Customers','title_field','cname',
     'display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','cname')), 'parent_id', v_home::text));
   v_job := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZZ Job','slug','zzz_fix7b_red_job_'||substr(v_org::text,1,8),'type','entity',
+    'name','Job','slug','job_fix7b_red_'||substr(v_org::text,1,8),'type','entity',
     'label_singular','Job','label_plural','Jobs','title_field','jname',
     'display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
@@ -115,8 +115,8 @@ begin
     perform custom.record_write(v_org, v_job, jsonb_build_object(
       'jname','Two customers',
       'customer', jsonb_build_array(
-        custom.record_write(v_org, v_cust, jsonb_build_object('cname','Acme'))::text,
-        custom.record_write(v_org, v_cust, jsonb_build_object('cname','Globex'))::text)));
+        custom.record_write(v_org, v_cust, jsonb_build_object('cname','Meridian Property Group'))::text,
+        custom.record_write(v_org, v_cust, jsonb_build_object('cname','Fairview Estates'))::text)));
   exception when others then v_caught := sqlerrm;
   end;
   if v_caught is null then

@@ -74,8 +74,8 @@ begin
   -- membership, a knob override or a Home record. No clause is asserted here.
   -- ══════════════════════════════════════════════════════════════════════════
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZZ HISTORY-SCREENS green',
-          'zzz-hs-green-' || replace(v_org::text,'-',''), 'ZHG', c_admin);
+  values (v_org, 'Cobblestone Bakery & Cafe',
+          'cobblestone-bakery-' || replace(v_org::text,'-',''), 'CBC', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
          (v_org, 'organization', v_org, c_dana,  'member', 'active');
