@@ -87504,6 +87504,48 @@ export type Database = {
     }
     Functions: {
       realtime_topic_admits: { Args: { p_topic: string }; Returns: boolean }
+      sch_run_claim: {
+        Args: {
+          p_lease_seconds?: number
+          p_queue?: string
+          p_surface: string
+          p_task_id: string
+          p_trigger_id?: string
+        }
+        Returns: {
+          claim_expires_at: string | null
+          claim_token: string | null
+          claimed_at: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          due_at: string
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          output_ref: Json | null
+          queue: string | null
+          result_metadata: Json | null
+          result_summary: string | null
+          started_at: string | null
+          status: string
+          surface: string | null
+          task_id: string
+          trigger_id: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "sch_run"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       sch_tasks_enabled_by_id:
         | {
             Args: { p_task_ids: Json }

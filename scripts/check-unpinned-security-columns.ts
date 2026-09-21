@@ -245,6 +245,28 @@ export interface PolicyFacts {
    * in the column resolves to one. See `VOCABULARY_NOT_A_SECRET`. Unproven is not exempt.
    */
   readonly vocabularyColumns?: readonly string[];
+  /**
+   * 🚨 A COLUMN A BEFORE-TRIGGER SPEAKS FOR IS NOT A SILENT COLUMN. (SECURITY-SWEEP, 2026-09-21.)
+   *
+   * Some rules cannot be written as a policy at all. `scheduler.sch_run.claim_token` is the
+   * worked example: a client MUST be able to CLEAR it (that is how a run finishes) and MUST be
+   * able to leave it untouched (markRunRunning), but may never INSERT one or swap one for a
+   * value it chose. A `WITH CHECK` sees only the NEW row and cannot tell those three apart. A
+   * BEFORE INSERT OR UPDATE trigger sees OLD and NEW, so that is where the rule lives.
+   *
+   * Without this, the guard went on reporting `claim_token` after the write had been refused at
+   * the row level and proven refused over HTTP — the third time in this lane that a real fix
+   * was invisible to the thing meant to measure it.
+   *
+   * The test is deliberately NARROW, because the generous version was measured and was wrong:
+   * asking only "does a before-trigger's body mention this column" cleared 107 baseline rows
+   * in one run, since the SHARED trigger functions attached to hundreds of tables (org
+   * stampers, governance guards, audit writers) all name `user_id`, `role` and
+   * `organization_id` in passing. So the trigger must RAISE, and must be BESPOKE to the table
+   * — attached to exactly one relation. That is what separates
+   * `scheduler._claim_token_is_minted_by_the_door` from `platform._stamp_org_default`.
+   */
+  readonly triggerGuardedColumns?: readonly string[];
 }
 
 /** What Postgres will actually apply to the NEW row. See `usingExpr`. */
@@ -331,8 +353,11 @@ export function findingsFor(policy: PolicyFacts): Finding[] {
   const writable =
     policy.writableColumns === undefined ? null : new Set(policy.writableColumns);
   const vocabulary = new Set(policy.vocabularyColumns ?? []);
+  const triggerGuarded = new Set(policy.triggerGuardedColumns ?? []);
   for (const column of policy.columns) {
     if (writable !== null && !writable.has(column)) continue;
+    // See `triggerGuardedColumns`: a rule a policy cannot state lives in a BEFORE trigger.
+    if (triggerGuarded.has(column)) continue;
     const severity = classify(column, ctx, vocabulary.has(column));
     if (severity === null) continue;
     if (isPinned(check, column)) continue;
@@ -421,7 +446,34 @@ select w.schema_name,
            and exists (
              select 1 from unnest(fk.confkey) as ck(attnum)
              join pg_attribute a3 on a3.attrelid = fk.confrelid and a3.attnum = ck.attnum
-            where a3.attname = 'token')) as fk_vocabulary_columns
+            where a3.attname = 'token')) as fk_vocabulary_columns,
+       -- Columns named in the body of an ENABLED, row-level BEFORE INSERT/UPDATE trigger on
+       -- this table. See PolicyFacts.triggerGuardedColumns: some rules (clear-yes,
+       -- set-no, leave-alone-yes) cannot be written as a policy at all.
+       (select coalesce(array_agg(distinct a4.attname::text), '{}'::text[])
+          from pg_trigger tg
+          join pg_proc tp on tp.oid = tg.tgfoid
+          join pg_attribute a4 on a4.attrelid = w.relid and a4.attnum > 0 and not a4.attisdropped
+         where tg.tgrelid = w.relid
+           and not tg.tgisinternal
+           and tg.tgenabled <> 'D'
+           and (tg.tgtype & 2) <> 0                    -- BEFORE
+           and (tg.tgtype & 1) <> 0                    -- FOR EACH ROW
+           and ((tg.tgtype & 4) <> 0 or (tg.tgtype & 16) <> 0)  -- INSERT or UPDATE
+           and tp.prosrc ~ ('\\m' || a4.attname || '\\M')
+           -- 🚨 THE THREE CONDITIONS THAT KEEP THIS HONEST. A first pass asked only "does a
+           -- before-trigger's body mention this column", and it cleared 107 baseline rows in
+           -- one go — because the generic, SHARED trigger functions this database attaches to
+           -- hundreds of tables (org stampers, governance guards, audit writers) name
+           -- user_id, role and organization_id in passing. A guard that clears 107 real
+           -- findings by accident is worse than no guard. So the trigger must:
+           --   * RAISE — it refuses something, rather than merely reading the column;
+           --   * be BESPOKE to this table — a function attached to exactly one relation, which
+           --     is what separates scheduler._claim_token_is_minted_by_the_door from
+           --     platform._stamp_org_default.
+           and tp.prosrc ~* 'raise +exception'
+           and (select count(distinct t2.tgrelid) from pg_trigger t2
+                 where t2.tgfoid = tp.oid and not t2.tgisinternal) = 1) as trigger_guarded_columns
   from client_writable w
   join pg_policy p on p.polrelid = w.relid
  where p.polpermissive = true
@@ -567,6 +619,36 @@ function selfTest(): number {
       .some((f) => f.column === "permission_level" && f.severity === "critical"),
     "…and proving one column says nothing about the next: permission_level, what the link " +
       "GRANTS, is still CRITICAL",
+  );
+
+  // A RULE A POLICY CANNOT STATE, STATED IN A TRIGGER. `scheduler.sch_run.claim_token`: a
+  // client may CLEAR it (finishing a run) and leave it untouched (markRunRunning), but may
+  // never INSERT one or swap one. WITH CHECK sees only the new row; a BEFORE trigger sees OLD
+  // and NEW. Both halves on the same bytes.
+  const leaseShape = {
+    schema: "scheduler",
+    table: "sch_run",
+    policy: "std_insert",
+    cmd: "a",
+    withCheck: "(created_by = ( SELECT auth.uid() AS uid))",
+    usingExpr: null,
+    columns: ["id", "task_id", "claim_token", "user_id", "created_by"],
+  } as const;
+  say(
+    findingsFor({ ...leaseShape })
+      .some((f) => f.column === "claim_token" && f.severity === "critical"),
+    "a lease token no policy and no trigger speaks for is CRITICAL",
+  );
+  say(
+    !findingsFor({ ...leaseShape, triggerGuardedColumns: ["claim_token"] })
+      .some((f) => f.column === "claim_token"),
+    "the same column named by a BEFORE INSERT/UPDATE trigger is NOT a finding — the rule " +
+      "(clear yes, set no, leave alone yes) is one a WITH CHECK cannot express",
+  );
+  say(
+    findingsFor({ ...leaseShape, triggerGuardedColumns: ["claim_token"] })
+      .some((f) => f.column === "user_id" && f.severity === "critical"),
+    "…and a trigger speaking for one column says nothing about the next: user_id stays CRITICAL",
   );
 
   // GREEN — the shape it has today: a restrictive refusal means the census never yields the
@@ -725,6 +807,7 @@ async function main(): Promise<number> {
           columns: r.columns ?? [],
           writableColumns: r.writable_columns ?? [],
           vocabularyColumns: [...(proven.get(`${r.schema_name}.${r.table_name}`) ?? [])],
+          triggerGuardedColumns: r.trigger_guarded_columns ?? [],
         }),
       );
     }
