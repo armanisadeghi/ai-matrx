@@ -111,8 +111,14 @@ describe("HtmlPageListView", () => {
     });
     expect(tableProps.copy).toBe(false);
 
+    if (tableProps.query?.mode !== "controlled-local") {
+      throw new Error(
+        "HTML pages table did not expose controlled local query state",
+      );
+    }
+
     act(() => {
-      tableProps?.query?.onStateChange({
+      tableProps.query.onStateChange({
         page: 1,
         pageSize: 25,
         search: "description",

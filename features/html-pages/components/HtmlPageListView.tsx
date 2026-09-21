@@ -374,7 +374,7 @@ export default function HtmlPageListView({
         </div>
       )}
 
-      {pages.length === 0 ? (
+      {viewMode === "grid" && pages.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
             <FileCode className="h-7 w-7 text-primary" />
