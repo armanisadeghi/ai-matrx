@@ -57,7 +57,7 @@ describe("buildRecentInteractionSamples", () => {
     const samples = buildRecentInteractionSamples([
       row("8", "user", { type: "secret", question: "Paste token" }),
       row("7", "google_email_send", {
-        to: "private@example.com",
+        to: "priya.chandra@harbordentalgroup.com",
         subject: "Private",
         body: "Private body",
       }),

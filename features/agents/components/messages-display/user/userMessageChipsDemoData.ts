@@ -183,14 +183,14 @@ export const DEMO_MULTI_ENTRIES: InstanceContextEntry[] = [
     label: "Reference PDF",
     type: "file_url",
     slotMatched: true,
-    value: "https://cdn.example.com/docs/agent-context-spec.pdf",
+    value: "https://cdn.aimatrx.com/docs/agent-context-spec.pdf",
   },
   {
     key: "owner",
     label: "Owner",
     type: "user",
     slotMatched: true,
-    value: { id: "user-1", name: "Arman", email: "admin@admin.com" },
+    value: { id: "usr_4f2a19", name: "Arman", email: "admin@admin.com" },
   },
   {
     key: "active_org",
@@ -204,7 +204,7 @@ export const DEMO_MULTI_ENTRIES: InstanceContextEntry[] = [
     label: "Current Task",
     type: "task",
     slotMatched: true,
-    value: { id: "task-42", title: "Fix record button context UX" },
+    value: { id: "task_a13f9c", title: "Fix record button context UX" },
   },
   {
     key: "temperature",
@@ -255,7 +255,7 @@ export const DEMO_TYPE_ENTRIES: {
       label: "File URL",
       type: "file_url",
       slotMatched: true,
-      value: "https://cdn.example.com/transcripts/session-001.txt",
+      value: "https://cdn.aimatrx.com/transcripts/session-001.txt",
     },
   },
   {
@@ -275,7 +275,7 @@ export const DEMO_TYPE_ENTRIES: {
       label: "User Entity",
       type: "user",
       slotMatched: true,
-      value: { id: "u-1", name: "Jane Doe", role: "admin" },
+      value: { id: "u-1", name: "Priya Chandrasekaran", role: "admin" },
     },
   },
   {
@@ -285,7 +285,7 @@ export const DEMO_TYPE_ENTRIES: {
       label: "Organization",
       type: "org",
       slotMatched: true,
-      value: { id: "o-1", name: "Acme Corp", slug: "acme" },
+      value: { id: "o-1", name: "Harbor Dental Group", slug: "harbor-dental-group" },
     },
   },
   {
@@ -511,13 +511,13 @@ export const DEMO_ALL_RESOURCES: {
     resourceId: "demo-all-video",
     blockType: "video",
     preview: "walkthrough.mp4",
-    source: { url: "https://cdn.example.com/walkthrough.mp4" },
+    source: { url: "https://cdn.aimatrx.com/walkthrough.mp4" },
   },
   {
     resourceId: "demo-all-document",
     blockType: "document",
     preview: "brief.pdf",
-    source: { url: "https://cdn.example.com/brief.pdf" },
+    source: { url: "https://cdn.aimatrx.com/brief.pdf" },
   },
   {
     resourceId: "demo-all-youtube",
@@ -542,7 +542,7 @@ export const DEMO_ALL_RESOURCES: {
     resourceId: "demo-all-project",
     blockType: "input_project",
     preview: "Agent UX Refresh",
-    source: { id: "project-1" },
+    source: { id: "proj_6b3d02" },
   },
   {
     resourceId: "demo-all-agent-app",

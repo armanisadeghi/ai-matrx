@@ -2,6 +2,11 @@
 
 > **Audience:** React frontend team building the AI Matrx web app.
 > **Purpose:** Everything you need to connect to Matrx Local, test all 23 tools, and build UI for the new scraper system.
+>
+> Example payloads below scrape/search the public site of Blue Ridge Recycling
+> (a fictional hauling-and-pickup-routes business, blueridgerecycling.com) and,
+> where an unrelated research example is useful, a fictional ML research blog
+> (mlresearchlabs.com) — invented, not real companies.
 
 ---
 
@@ -176,7 +181,7 @@ All messages are JSON.
   "id": "unique-request-id",
   "tool": "Scrape",
   "input": {
-    "urls": ["https://example.com"]
+    "urls": ["https://blueridgerecycling.com"]
   }
 }
 ```
@@ -186,10 +191,10 @@ All messages are JSON.
 {
   "id": "unique-request-id",
   "type": "success",
-  "output": "URL: https://example.com\nStatus: 200\n...",
+  "output": "URL: https://blueridgerecycling.com\nStatus: 200\n...",
   "metadata": {
     "status": "success",
-    "url": "https://example.com",
+    "url": "https://blueridgerecycling.com",
     "status_code": 200,
     "content_type": "html"
   }
@@ -302,7 +307,7 @@ Scrape one or more URLs with the full engine.
 {
   "tool": "Scrape",
   "input": {
-    "urls": ["https://example.com", "https://news.ycombinator.com"],
+    "urls": ["https://blueridgerecycling.com", "https://news.ycombinator.com"],
     "use_cache": true,
     "output_mode": "rich",
     "get_links": false,
@@ -325,10 +330,10 @@ Scrape one or more URLs with the full engine.
 ```json
 {
   "type": "success",
-  "output": "URL: https://example.com\nStatus: 200\nContent-Type: html\n\n<extracted text content>",
+  "output": "URL: https://blueridgerecycling.com\nStatus: 200\nContent-Type: html\n\n<extracted text content>",
   "metadata": {
     "status": "success",
-    "url": "https://example.com",
+    "url": "https://blueridgerecycling.com",
     "status_code": 200,
     "content_type": "html",
     "from_cache": false,
@@ -405,13 +410,13 @@ Search the web using Brave Search API.
 ```json
 {
   "type": "success",
-  "output": "Found 10 results in 832ms\n\n1. Title of First Result\n   https://example.com/page\n   Description...\n\n2. ...",
+  "output": "Found 10 results in 832ms\n\n1. Title of First Result\n   https://blueridgerecycling.com/pricing\n   Description...\n\n2. ...",
   "metadata": {
     "results": [
       {
-        "keyword": "latest AI frameworks 2026",
-        "title": "Top AI Frameworks in 2026",
-        "url": "https://example.com/ai-frameworks",
+        "keyword": "commercial recycling pickup scheduling software",
+        "title": "Best Commercial Recycling Pickup Scheduling Tools",
+        "url": "https://blueridgerecycling.com/blog/pickup-scheduling-software",
         "description": "A comprehensive guide...",
         "age": "2 days ago"
       }
@@ -459,7 +464,7 @@ Deep research: search for a query, scrape all result pages, compile findings.
 ```json
 {
   "type": "success",
-  "output": "Research complete: how does transformer attention mechanism work\nPages scraped: 18 | Failed: 7\nTime: 34521ms\n\n--- https://arxiv.org/... ---\n<content>\n\n--- https://blog.example.com/... ---\n<content>\n...",
+  "output": "Research complete: how does transformer attention mechanism work\nPages scraped: 18 | Failed: 7\nTime: 34521ms\n\n--- https://arxiv.org/... ---\n<content>\n\n--- https://blog.mlresearchlabs.com/... ---\n<content>\n...",
   "metadata": {
     "query": "how does transformer attention mechanism work",
     "pages_scraped": 18,
@@ -511,7 +516,7 @@ curl -X POST http://127.0.0.1:$PORT/tools/invoke \
 | Test | Tool | Input | Expected |
 |------|------|-------|----------|
 | Basic HTML scrape | `Scrape` | `{"urls": ["https://httpbin.org/html"]}` | Status: success, content_type: html, has text_data |
-| Multiple URLs | `Scrape` | `{"urls": ["https://httpbin.org/html", "https://example.com"]}` | Both succeed, metadata.results has 2 items |
+| Multiple URLs | `Scrape` | `{"urls": ["https://httpbin.org/html", "https://blueridgerecycling.com"]}` | Both succeed, metadata.results has 2 items |
 | Cache hit | `Scrape` | Same URL twice with `use_cache: true` | Second call returns `from_cache: true` |
 | Cache bypass | `Scrape` | Same URL with `use_cache: false` | Always fetches fresh |
 | Get links | `Scrape` | `{"urls": ["https://news.ycombinator.com"], "get_links": true}` | metadata.links populated |

@@ -27,7 +27,7 @@ export function InvitationCodeModal({ open, onOpenChange }: InvitationCodeModalP
     const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
     // Add hyphens every 4 characters
     const formatted = cleaned.match(/.{1,4}/g)?.join('-') || cleaned;
-    return formatted.slice(0, 14); // XXXX-XXXX-XXXX max length
+    return formatted.slice(0, 14); // max length: three 4-character groups, hyphen-separated
   };
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {

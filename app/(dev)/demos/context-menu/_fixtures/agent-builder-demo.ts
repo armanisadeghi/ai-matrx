@@ -27,7 +27,7 @@ export const DEMO_AGENT_BUILDER_SCOPE: AgentBuilderScopeInput = {
   is_dirty: false,
 };
 
-export const DEMO_AGENT_FIELD_INITIAL = `You are a helpful support agent for Acme Corp.
+export const DEMO_AGENT_FIELD_INITIAL = `You are a helpful support agent for Rincon Plumbing Co.
 Answer concisely. Cite sources when available.
 Never fabricate policy details.`;
 

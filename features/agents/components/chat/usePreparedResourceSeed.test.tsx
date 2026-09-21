@@ -3,7 +3,7 @@ import { renderHook } from "@/test-utils/renderHook";
 import { usePreparedResourceSeed, type PreparedResourceIdentity } from "./usePreparedResourceSeed";
 import type { Resource } from "@/features/agents/resources/types";
 
-const identity = { userId: "test-user", organizationId: "test-org" };
+const identity = { userId: "usr_7d21ac", organizationId: "org_4b9f10" };
 const resources: Resource[] = [{ type: "text", data: { id: "captured", label: "Edited note", text: "Exact edited bytes\n**keep this**" } }];
 type SeedProps = { ready: boolean; currentIdentity: PreparedResourceIdentity; expectedIdentity: PreparedResourceIdentity | null };
 async function mountSeed(initial: Partial<SeedProps> = {}) {
@@ -35,7 +35,7 @@ describe("prepared window resource seed", () => {
   it("discards on an organization change before readiness and cannot revive the seed", async () => {
     const { handle, attach, reportError } = await mountSeed();
     try {
-      await handle.act(() => handle.current.setProps((p) => ({ ...p, currentIdentity: { ...identity, organizationId: "other-org" } })));
+      await handle.act(() => handle.current.setProps((p) => ({ ...p, currentIdentity: { ...identity, organizationId: "org_e82c3f" } })));
       await handle.act(() => handle.current.setProps((p) => ({ ...p, ready: true, currentIdentity: identity })));
       expect(attach).not.toHaveBeenCalled();
       expect(reportError).toHaveBeenCalledTimes(1);
