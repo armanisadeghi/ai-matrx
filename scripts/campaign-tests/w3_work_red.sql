@@ -71,6 +71,7 @@ declare
   v_stable  uuid;
   v_field   uuid;
   v_n       bigint;
+  v_doc     jsonb;
   v_reds    integer := 0;
   v_guard_def text;
   v_refuse_def text;
@@ -148,8 +149,22 @@ begin
 
   perform custom.record_update(v_org, v_rec,
     jsonb_build_object('_actor','user','status', v_done::text));
-  if (custom.read_record(v_org, v_rec, true) -> 'status') #>> '{}' <> v_done::text then
-    raise exception 'RED 1 did not go red: the forbidden move was still refused with the model removed';
+  -- 🚨 THIS COMPARISON COULD NEVER MATCH (lane RED-SUITES-3, 2026-09-21). It read the record
+  -- back with `custom.read_record(..., true)` — the RESOLVING read — and compared the answer
+  -- to a uuid. A resolved read gives a person the WORD ("Done") and hangs the option's id
+  -- under `_choices`, so `-> 'status'` was never going to be `v_done::text` whether the move
+  -- landed or not, and the block reported "the forbidden move was still refused" about a move
+  -- that had gone through. Both halves are asserted now, which is what the resolving read
+  -- actually promises: the person reads the WORD, and the word still points at the option the
+  -- store was given.
+  v_doc := custom.read_record(v_org, v_rec, true);
+  if (v_doc ->> 'status') is distinct from 'Done' then
+    raise exception 'RED 1 did not go red: with the model removed the move should have landed, and the person reads status "%"',
+      coalesce(v_doc ->> 'status', 'nothing at all');
+  end if;
+  if (v_doc -> '_choices' -> 'status' ->> 'id') is distinct from v_done::text then
+    raise exception 'RED 1: the person reads "Done" and the word points at % rather than the Done option %',
+      coalesce(v_doc -> '_choices' -> 'status' ->> 'id', 'nothing'), v_done;
   end if;
   v_reds := v_reds + 1;
   raise notice 'RED 1 IS RED — with `next` gone from the states, a signed-in person moved a task Not started -> Done through custom.record_update and it LANDED. The refusal C-44 reads is the model, not a coincidence.';
