@@ -84,6 +84,7 @@ import { DefinitionEditHelp } from "./DefinitionEditHelp";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toastFailure } from "@/lib/failure/toastFailure";
+import { outputConstraintsOf } from "./definition-output";
 
 /** Plain words for H/V/A — never the letter alone. */
 export function GroundingBadge({ grounding }: { grounding: string | null }) {
@@ -805,13 +806,4 @@ export function TriadOutputSection({
       </ConfigurationTable>
     </Section>
   );
-}
-
-function outputConstraintsOf(
-  mandate: MandateWorkspaceData["mandate"],
-): string | null {
-  const metadata = (mandate as { metadata?: unknown }).metadata;
-  if (typeof metadata !== "object" || metadata === null) return null;
-  const value = (metadata as Record<string, unknown>).output_constraints;
-  return typeof value === "string" && value.trim() ? value.trim() : null;
 }

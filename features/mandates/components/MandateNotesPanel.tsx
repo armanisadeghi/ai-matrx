@@ -37,6 +37,7 @@ import {
   PropertyRow,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
+import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
 
 export interface MandateNotesPanelProps {
   /** The mandate the notes hang off. */
@@ -68,6 +69,26 @@ export function MandateNotesPanel({
     (notes ?? []).flatMap((note) =>
       note.observedAgentId ? [note.observedAgentId] : [],
     ),
+  );
+  useMandateAlchemyTabCapture(
+    "notes",
+    loadError
+      ? { status: "error", message: loadError }
+      : notes === null
+        ? { status: "loading" }
+        : {
+            status: "ready",
+            savedOnly: true,
+            data: {
+              notes: notes.map((note) => ({
+                body: note.body,
+                kind: note.noteKind,
+                author: note.authorName ?? null,
+                created_at: note.createdAt,
+                surface: note.surfaceName ?? null,
+              })),
+            },
+          },
   );
 
   const load = useCallback(async () => {

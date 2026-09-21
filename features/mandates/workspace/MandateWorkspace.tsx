@@ -88,6 +88,7 @@ import {
 import { loadFailedFailure } from "../mandate-address";
 import { useMandate } from "../useMandate";
 import { MANDATE_WORKSPACE_SURFACE_NAME } from "@/features/surfaces/manifests/mandate-workspace.manifest";
+import { MandateAlchemy, MandateAlchemyCaptureProvider, buildMandateDefinitionCore, type MandateAlchemyCapture } from "./MandateAlchemy";
 import type { ResolvedMandate } from "../service";
 import {
   ladderRowChangesHolder,
@@ -544,6 +545,7 @@ function OneMandateWorkspace({
           mandateKey={data.mandate.mandate_key}
           onAssignHolder={() => setActiveTab("holder")}
         />
+        <MandateAlchemyCaptureProvider>
         <Tabs
           value={activeTab}
           onValueChange={(value) => {
@@ -551,9 +553,10 @@ function OneMandateWorkspace({
             if (next && (!next.admin || authoring)) setActiveTab(next.id);
           }}
         >
+          <div className="mb-5 flex items-center gap-2">
           <TabsList
             aria-label="Mandate sections"
-            className={cn(styles.tabs, "mb-5 bg-muted/60 p-1")}
+            className={cn(styles.tabs, "bg-muted/60 p-1")}
           >
             {WORKSPACE_TABS.filter((item) => !item.admin || authoring).map(
               (item) => (
@@ -569,6 +572,17 @@ function OneMandateWorkspace({
               ),
             )}
           </TabsList>
+          <MandateAlchemy
+            data={data}
+            activeTab={activeTab}
+            tabs={WORKSPACE_TABS.filter((item) => !item.admin || authoring).map((item) => item.id)}
+            perspective={perspective}
+            organizationName={perspective === "organization" && principal.kind === "org" ? nameOfOrg(principal.orgId) : null}
+            buildTab={(tab): MandateAlchemyCapture => tab === "definition"
+              ? { status: "ready", savedOnly: true, data: { saved_definition: buildMandateDefinitionCore(data, perspective, perspective === "organization" && principal.kind === "org" ? nameOfOrg(principal.orgId) : null), omissions: ["Unsaved definition edits are not included."] } }
+              : { status: "error", message: "This tab has not finished publishing its saved data." }}
+          />
+          </div>
           {/* Draft owners remain mounted across tab changes; no duplicate editors. */}
           <div
             role="tabpanel"
@@ -733,6 +747,7 @@ function OneMandateWorkspace({
             </Section>
           </div>
         </Tabs>
+        </MandateAlchemyCaptureProvider>
       </div>
     </div>
   );
