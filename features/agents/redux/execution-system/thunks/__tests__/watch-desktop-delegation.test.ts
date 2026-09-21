@@ -28,6 +28,8 @@ type LoadStep = { fail: Error } | { toolCalls: CxToolCallRecord[] };
 type ResumeStep = { reject: string } | { status: InstanceStatus };
 
 const mockLedgerScript: LedgerStep[] = [];
+/** What the ledger keeps answering once the script runs out. */
+const mockLedgerDefault: { value: LedgerStep } = { value: [] };
 const mockLoadScript: LoadStep[] = [];
 const mockResumeScript: ResumeStep[] = [];
 const mockCounts = { ledgerReads: 0, loads: 0 };
@@ -38,7 +40,7 @@ const mockToastError = jest.fn();
 jest.mock("@/features/agents/api/fetch-pending-calls", () => ({
   fetchConversationPendingCallsStrict: () => async () => {
     mockCounts.ledgerReads += 1;
-    const step = mockLedgerScript.shift() ?? [];
+    const step = mockLedgerScript.shift() ?? mockLedgerDefault.value;
     if (step instanceof Error) throw step;
     return step;
   },
@@ -123,6 +125,7 @@ const USER_REQUEST_ID = "11111111-1111-4111-8111-111111111111";
 const LIFECYCLE_A = "req_client-lifecycle";
 const LIFECYCLE_B = "req_reentrant-lifecycle";
 const POLL_MS = 750;
+const MAX_POLL_MS = 15_000;
 
 function ledgerRow(callId: string): PendingCallSummary {
   return {
@@ -270,6 +273,7 @@ describe("watchDesktopDelegation", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     mockLedgerScript.length = 0;
+    mockLedgerDefault.value = [];
     mockLoadScript.length = 0;
     mockResumeScript.length = 0;
     mockResumes.length = 0;
@@ -606,5 +610,85 @@ describe("watchDesktopDelegation", () => {
     expect(mockCounts.ledgerReads).toBe(16);
     expect(mockToastError).not.toHaveBeenCalled();
     expect(mockResumes).toHaveLength(1);
+  });
+
+  // ── What watching COSTS ────────────────────────────────────────────────────
+  //
+  // These hold the property the flat 750ms loop could not: a watch that will
+  // never resolve has a BOUNDED price. Measured on an idle `/staff` before the
+  // fix (2026-09-21), three such watches spent 192 GETs per minute on
+  // production aidream. The two cost assertions below were run against that
+  // cadence and FAIL on it by an order of magnitude (80 vs 6, 160 vs 20), so
+  // they cannot pass by accident; the third holds the other half — that backing
+  // off never costs latency once the ledger actually moves.
+  describe("what an unresolved watch costs", () => {
+    const MINUTE = 60_000;
+    /** A minute of watching, with the row never leaving the ledger. */
+    async function readsInOneMinute(
+      store: TestStore,
+      extra: Partial<WatchDesktopDelegationArgs>,
+    ): Promise<number> {
+      mockLedgerDefault.value = [ledgerRow("call-1")];
+      void watch(store, {
+        userRequestId: USER_REQUEST_ID,
+        callId: "call-1",
+        ...extra,
+      });
+      await jest.advanceTimersByTimeAsync(MINUTE);
+      return mockCounts.ledgerReads;
+    }
+
+    it("a cold-resumed call no desktop ever claims costs at most 6 ledger reads a minute", async () => {
+      const store = makeStore();
+      seedDelegatedCall(store, LIFECYCLE_A, "call-1");
+
+      // 80 on the flat 750ms loop this replaced.
+      expect(await readsInOneMinute(store, { coldResume: true })).toBeLessThanOrEqual(6);
+    });
+
+    it("a LIVE delegation nobody answers also settles — fast first, then bounded", async () => {
+      const store = makeStore();
+      seedDelegatedCall(store, LIFECYCLE_A, "call-1");
+      mockLedgerDefault.value = [ledgerRow("call-1")];
+
+      void watch(store, { userRequestId: USER_REQUEST_ID, callId: "call-1" });
+
+      // The fast window is real: the desktop's normal answer is not delayed.
+      // Every one of the first eight ticks is still 750ms apart.
+      await jest.advanceTimersByTimeAsync(POLL_MS * 8);
+      expect(mockCounts.ledgerReads).toBe(8);
+
+      // Ride out the fast window and the ramp that follows it...
+      await jest.advanceTimersByTimeAsync(2 * MINUTE);
+      const settled = mockCounts.ledgerReads;
+
+      // ...and a minute in the steady state costs the ceiling, not 80.
+      await jest.advanceTimersByTimeAsync(MINUTE);
+      expect(mockCounts.ledgerReads - settled).toBeLessThanOrEqual(6);
+    });
+
+    it("a ledger that MOVES restores the fast cadence", async () => {
+      const store = makeStore();
+      seedDelegatedCall(store, LIFECYCLE_A, "call-1");
+      mockLedgerDefault.value = [ledgerRow("call-1")];
+
+      void watch(store, {
+        userRequestId: USER_REQUEST_ID,
+        callId: "call-1",
+        coldResume: true,
+      });
+      // Backed off to the ceiling.
+      await jest.advanceTimersByTimeAsync(MINUTE);
+      const settled = mockCounts.ledgerReads;
+
+      // The desktop re-delegates: a sibling row appears. Latency matters again.
+      mockLedgerDefault.value = [ledgerRow("call-1"), ledgerRow("call-9")];
+      await jest.advanceTimersByTimeAsync(MAX_POLL_MS);
+      const atChange = mockCounts.ledgerReads;
+      await jest.advanceTimersByTimeAsync(POLL_MS * 4);
+
+      expect(atChange).toBeGreaterThan(settled);
+      expect(mockCounts.ledgerReads - atChange).toBe(4);
+    });
   });
 });

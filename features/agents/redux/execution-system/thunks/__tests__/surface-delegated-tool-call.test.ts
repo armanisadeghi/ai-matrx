@@ -227,11 +227,28 @@ describe("surfaceDelegatedToolCall", () => {
         lifecycleRequestId: REQUEST_ID,
         userRequestId: USER_REQUEST_ID,
         callId: CALL_ID,
+        // `route` replays a PERSISTED row by default, so the watch must open
+        // already backed off — see watch-desktop-delegation's cadence.
+        coldResume: true,
       },
     ]);
     expect(mockSubmitted).toEqual([]);
     expect(mockRouted).toEqual([]);
     expect(requestRow(store).toolLifecycle[CALL_ID].status).toBe("started");
+  });
+
+  it("arms a LIVE delegation's watcher at the fast cadence, not the cold one", async () => {
+    // The other half of the cost fix: backing off must never be paid by a call
+    // the desktop is about to answer. `coldResume` is what separates them, so
+    // the wiring from `source` to the watcher is itself guarded.
+    mockPresence.mockResolvedValue(ONLINE_DESKTOP);
+    const store = makeStore();
+    route(store, { source: "live" });
+    await waitFor(() => mockWatches.length > 0, "the watcher was never armed");
+
+    expect(mockWatches).toEqual([
+      expect.objectContaining({ callId: CALL_ID, coldResume: false }),
+    ]);
   });
 
   it("keeps a cold-resumed desktop call durable when no desktop is online", async () => {

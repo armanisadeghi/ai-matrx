@@ -9,7 +9,31 @@ import { loadConversation } from "./load-conversation.thunk";
 import { resumeInstance } from "./resume-instance.thunk";
 import { reconcilePersistedToolLifecycle } from "../active-requests/active-requests.slice";
 
+/**
+ * 🚨 THE CADENCE IS A SCHEDULE, NOT A CONSTANT (measured 2026-09-21).
+ *
+ * This loop used a flat 750 ms `sleep` with no ceiling and no terminal
+ * condition. That is right for the first seconds of a LIVE delegation — the
+ * desktop normally claims and answers a `local_*` call in about a second — and
+ * indefensible afterwards. A call the desktop never claims stays `delegated`
+ * in `cx_tool_call` forever, so on every subsequent load `surfaceColdPendingCalls`
+ * re-surfaced it and started this loop again, permanently.
+ *
+ * Measured on an idle `/staff` (localhost dev, admin@admin.com) carrying three
+ * such stale calls: 192 GETs per minute to production aidream's
+ * `/ai/conversation/{id}/pending_calls`, for a page nobody was touching — and
+ * `/chat/<the same conversation>` measured 112/min, which is how we know this
+ * is the SHARED chat surface's cost and not something `/staff` adds.
+ *
+ * So: fast while something is plausibly about to happen, decayed to a ceiling
+ * once it plainly is not, and quickened again the moment the ledger changes.
+ */
 const POLL_MS = 750;
+/** Where a call nobody is going to claim settles. */
+const MAX_POLL_MS = 15_000;
+/** How long a live delegation holds the fast cadence before it decays. */
+const FAST_WINDOW_MS = 30_000;
+const BACKOFF_FACTOR = 1.5;
 const FAILURE_NOTICE_THRESHOLD = 8;
 const RESUME_RETRY_MS = 5_000;
 
@@ -63,6 +87,14 @@ export interface WatchDesktopDelegationArgs {
   /** Persisted chat.user_request UUID. Never substitute the Redux request key. */
   userRequestId?: string;
   callId: string;
+  /**
+   * TRUE when this call was replayed from the persisted ledger rather than
+   * delivered by a live `tool_delegated` event. Nothing is imminent for such a
+   * call — it has been sitting `delegated` since some earlier session — so the
+   * watch opens at `MAX_POLL_MS` instead of paying the fast cadence for a
+   * desktop that already had its chance to claim it.
+   */
+  coldResume?: boolean;
 }
 
 /**
@@ -102,6 +134,27 @@ export const watchDesktopDelegation = (
       let failureNotified = false;
       let nextResumeAt = 0;
       let nextFallbackHydrateAt = 0;
+
+      // ── The cadence (see the constants above) ──────────────────────────────
+      const coldResume = args.coldResume === true;
+      let pollMs = coldResume ? MAX_POLL_MS : POLL_MS;
+      let fastUntil = coldResume ? 0 : Date.now() + FAST_WINDOW_MS;
+      /** null until the first read, so arriving rows never read as a change. */
+      let lastLedgerSignature: string | null = null;
+
+      /** Nothing is happening. Cost less, up to the ceiling. */
+      const decay = () => {
+        if (Date.now() < fastUntil) {
+          pollMs = POLL_MS;
+          return;
+        }
+        pollMs = Math.min(MAX_POLL_MS, Math.round(pollMs * BACKOFF_FACTOR));
+      };
+      /** The ledger moved. Watch closely again — this is when latency matters. */
+      const quicken = () => {
+        fastUntil = Date.now() + FAST_WINDOW_MS;
+        pollMs = POLL_MS;
+      };
 
       const adoptUserRequestId = (candidate: string | undefined): boolean => {
         const recovered = asServerUserRequestId(candidate);
@@ -173,7 +226,7 @@ export const watchDesktopDelegation = (
       };
 
       while (!state.cancelled) {
-        await sleep(POLL_MS);
+        await sleep(pollMs);
         if (state.cancelled) return;
 
         // Logout/conversation teardown removes the instance. Do not leave a
@@ -198,8 +251,23 @@ export const watchDesktopDelegation = (
             "[desktop-native] pending-call reconciliation failed",
             error,
           );
+          // A server that is refusing must not be asked three times a second.
+          decay();
           continue;
         }
+
+        // Did the ledger move since the last tick? A row appearing, resolving,
+        // or being re-delegated is the only signal that watching closely is
+        // worth anything — so it, and nothing else, restores the fast cadence.
+        const ledgerSignature = pending
+          .map((call) => call.call_id)
+          .sort()
+          .join(",");
+        const ledgerChanged =
+          lastLedgerSignature !== null &&
+          ledgerSignature !== lastLedgerSignature;
+        lastLedgerSignature = ledgerSignature;
+        if (ledgerChanged) quicken();
         if (!userRequestId) {
           const matchingCall = pending.find((call) =>
             allCallIds(state).includes(call.call_id),
@@ -221,6 +289,10 @@ export const watchDesktopDelegation = (
           hydratedAfterResolution = false;
           nextResumeAt = 0;
           recordSuccess();
+          // THE IDLE BRANCH — the one this loop spends its life in when a
+          // desktop never claims the call. Every other branch below is the
+          // loop actively finishing a turn, and keeps whatever cadence it has.
+          if (!ledgerChanged) decay();
           continue;
         }
 

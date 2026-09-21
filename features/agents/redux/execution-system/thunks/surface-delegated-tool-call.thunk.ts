@@ -366,6 +366,10 @@ export const surfaceDelegatedToolCall = (
             lifecycleRequestId: requestId,
             userRequestId,
             callId,
+            // A replayed row has been pending since an earlier session, so its
+            // watch opens already backed off instead of polling the ledger
+            // three times a second for a claim that is not coming.
+            coldResume: source === "cold-resume",
           }),
         );
       };
