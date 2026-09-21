@@ -175,8 +175,14 @@ async function submitFeedback() {
     ...findPrivilegedFeedbackInsert(source),
     ...findSubmitFeedbackServiceBypass(source),
   ];
-  if (findings.length !== 3 || findings[0].line !== 2 || findings[1].line !== 3 || findings[2].line !== 5) {
-    console.error("[check:no-private-iam-rpc] SELF-TEST FAILED — planted authorization bypass was not found.", findings);
+  if (
+    findings.length !== 4 ||
+    findings[0].line !== 2 ||
+    findings[1].line !== 3 ||
+    findings[2].line !== 6 ||
+    findings[3].line !== 5
+  ) {
+    console.error("[check:no-private-iam-rpc] SELF-TEST FAILED — planted authorization bypass was not found.");
     process.exit(1);
   }
   console.log("[check:no-private-iam-rpc] self-test passed.");
