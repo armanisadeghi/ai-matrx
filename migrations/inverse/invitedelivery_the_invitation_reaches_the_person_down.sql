@@ -4,6 +4,7 @@
 begin;
 
 drop function if exists custom.table_share_outside_peek(text);
+drop function if exists public.table_share_peek(text);
 drop function if exists custom._table_share_invite_deliver(uuid);
 drop function if exists custom._table_share_invite_payload(uuid);
 drop function if exists communication.notify_from_sql(uuid, text, uuid, text, text, jsonb, text, text, uuid, text);
