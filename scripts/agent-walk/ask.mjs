@@ -60,16 +60,35 @@ const ASKS = {
     rail: /^Bookings$/,
     say: "let customers book a service call",
   },
+  // 🚨 THE PORTAL ASK CANNOT BE REACHED IN RINCON PLUMBING CO, AND THAT IS A PRODUCT
+  // DEFECT, NOT A MISSING FIXTURE. Measured on main 2026-09-21 (lane AGENT-BUILDS-2):
+  // the Portals rail is ORGANIZATION-scoped while every sibling rail on the same
+  // screen — Forms, Bookings — is TABLE-scoped. `PortalsPanel` calls
+  // `client.portals()`, which takes no table at all (`custom.portals(p_organization_id)`,
+  // versus `custom.forms(p_organization_id, p_table_id)`), and decides emptiness from
+  // `portals.length`. So standing on Rincon's `Parts` table — eight rows of copper pipe
+  // and wax rings — the rail reads "Portals 10" and lists ten cards titled "Your jobs
+  // and invoices", which belong to the `Jobs` table. The empty state never renders, so
+  // `BuildOrAsk` never renders, so the agent half is unreachable on EVERY table in any
+  // organization that already has one portal. The package documents this as deliberate
+  // ("a portal belongs to the organization, and hiding the others would answer a
+  // question nobody asked", `records-ui/src/PortalsPanel.tsx`), which makes it a design
+  // ruling to overturn rather than a bug to patch quietly — it is written up for the
+  // owner instead of changed here.
+  //
+  // So the portal ask runs where it is still REACHABLE, on the same product question
+  // and a real business: Ironclad Mobile Mechanic (0 portals) sells visits, and its
+  // owner wants a customer to see her own service calls without phoning him.
   portal: {
-    org: "6069a466-1445-42df-a64e-cf37ecdc1b99",
-    orgName: "Rincon Plumbing Co",
-    slug: "rincon-plumbing-co",
+    org: "0a751390-558e-4775-ba0e-3891bdf82d45",
+    orgName: "Ironclad Mobile Mechanic",
+    slug: "ironclad-mobile-mechanic",
     tables: [
-      { id: "af3bfff6-a255-41e5-9ac2-879d53816163", name: "Jobs" },
-      { id: "b3893755-a8e8-4aa5-9680-6bf7d32669eb", name: "Invoices" },
+      { id: "215e2e75-d04e-4c8a-b208-5be46488b18d", name: "Service Calls" },
+      { id: "ffbddf5c-e5d8-417c-b82b-eff823f55fc4", name: "Invoices" },
     ],
     rail: /^Portals$/,
-    say: "give my customers a portal to see their own jobs",
+    say: "give my customers a portal to see their own service calls",
   },
   digest: {
     org: "488fcc2f-22ee-49eb-9ec4-1b870591164a",
@@ -130,17 +149,34 @@ for (const key of which) {
     for (const candidate of A.tables) {
       await settleOnTable(page, candidate.id);
       await page.getByRole("button", { name: A.rail }).first().click();
-      await page.waitForTimeout(4000);
+
+      // 🚨 WAIT FOR THE BUTTON; A CLOCK IS NOT AN ANSWER. This used to sleep 4s and
+      // then read `isVisible()` once, so a panel still fetching — Hands & Hope's
+      // `donors` is 246 records behind a cold rail — reported "this tab is not empty"
+      // while the table in fact had ZERO dashboards (`custom.dashboards(org, donors)`
+      // = 0, measured 2026-09-21). That is the same defect as the org check one file
+      // over: absence of a positive signal read as proof of its opposite. It cost this
+      // lane two full walks before the database contradicted the walk's own summary.
       const ask = page.getByRole("button", { name: /Ask an agent/i }).first();
+      const offered = await ask
+        .waitFor({ state: "visible", timeout: 45000 })
+        .then(() => true)
+        .catch(() => false);
       railText = await page.evaluate(() => {
         const panel = document.querySelector("[role=dialog], aside, [data-slot=rail]");
         return (panel?.innerText || "").slice(0, 900);
       });
-      if (await ask.isVisible().catch(() => false)) {
+      if (offered) {
         table = candidate;
         break;
       }
-      note.steps.push(`${candidate.name}: this tab is not empty, so there is no empty state to ask from`);
+      // AND NEVER CONCLUDE SILENTLY. The walk quotes what the rail actually said, so
+      // "no empty state" can be checked against the panel's own words instead of being
+      // taken on the harness's word.
+      note.steps.push(
+        `${candidate.name}: no "Ask an agent" after 45s — the ${A.rail.source} panel said: ` +
+          JSON.stringify(railText.replace(/\s+/g, " ").slice(0, 220)),
+      );
     }
     if (!table) throw new Error(`no ${key} tab is still empty in ${A.orgName}`);
     note.table = `${table.name} (${table.id})`;
