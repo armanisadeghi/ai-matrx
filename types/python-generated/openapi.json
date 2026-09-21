@@ -846,6 +846,217 @@
         }
       }
     },
+    "/action-requests/open": {
+      "post": {
+        "tags": [
+          "Action Requests"
+        ],
+        "summary": "Open Action Request",
+        "description": "What the page draws. MUTATES NOTHING (adjudication ruling 10).\n\n🚨 IT IS A POST AND IT IS STILL A SAFE READ. The token would otherwise sit in\na URL, which means in this server's access log, in every proxy between here\nand it, and in whatever aggregates them. A body keeps it out of all of those.\nNothing here consumes, expires or reports anything — a link preview, a\ncarrier scanner and a mail gateway can all fetch the PAGE (which is a GET)\nand the row does not move.\n\n🚨 AND IT IS WHY THE PAGE DOES NOT TALK TO THE DATABASE DIRECTLY. The answer\ncarries `can_complete`, which is the kind's consequence class resolved\nagainst this organization's `credential_link_bearer_allowed` knob. That\ndecision lives in ONE place. A renderer that reached the door itself would\nhave to re-derive it in TypeScript, and the day the two disagreed, the\ndisagreement would be a credential page that let somebody in.",
+        "operationId": "open_action_request_action_requests_open_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Open Action Request Action Requests Open Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/action-requests/complete": {
+      "post": {
+        "tags": [
+          "Action Requests"
+        ],
+        "summary": "Complete Action Request",
+        "description": "Complete from the link, or from the signed-in page. One path, two doors.",
+        "operationId": "complete_action_request_action_requests_complete_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Complete Action Request Action Requests Complete Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/action-requests/remint": {
+      "post": {
+        "tags": [
+          "Action Requests"
+        ],
+        "summary": "Remint Action Request",
+        "description": "\"Text me a new link.\" No sign-in and no agent turn — the parked call is\nuntouched, so the agent on the other end never learns a link was re-sent.",
+        "operationId": "remint_action_request_action_requests_remint_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Remint Action Request Action Requests Remint Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/action-requests/pending": {
+      "get": {
+        "tags": [
+          "Action Requests"
+        ],
+        "summary": "Pending Action Requests",
+        "description": "What this person is being asked for right now. Never returns a token.",
+        "operationId": "pending_action_requests_action_requests_pending_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Pending Action Requests Action Requests Pending Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/action-requests/{request_id}/complete": {
+      "post": {
+        "tags": [
+          "Action Requests"
+        ],
+        "summary": "Complete Action Request Native",
+        "description": "The authenticated door — the same record and the same resolver as the link.\n\nA native client holding a session does not need a bearer capability, so it\nnever receives one. It names the request; the server finds that request's own\ntoken hash, and ONLY among rows whose subject is the caller — so an app\nasking about somebody else's request id gets the same answer as one asking\nabout an id that does not exist.",
+        "operationId": "complete_action_request_native_action_requests__request_id__complete_post",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NativeCompleteBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Complete Action Request Native Action Requests  Request Id  Complete Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/agents/{agent_id}/warm": {
       "post": {
         "tags": [
@@ -10349,6 +10560,28 @@
         }
       }
     },
+    "/sandboxes/internal/default-browser-profile": {
+      "get": {
+        "tags": [
+          "Sandboxes (internal)"
+        ],
+        "summary": "Get Default Browser Profile For User",
+        "description": "The acting person's default cloud browser in the admitted organization.\n\nService-token authed on the sandbox bridge, exactly like\n``/api/user-secrets/internal/sandbox-env-for-user``: the organization is\nPROVED (membership checked) before this route sees it, so the answer can\nnever name a browser in a tenant the person does not belong to.",
+        "operationId": "get_default_browser_profile_for_user_sandboxes_internal_default_browser_profile_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefaultBrowserProfileResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/organization-secrets/{organization_id}": {
       "get": {
         "tags": [
@@ -13161,6 +13394,328 @@
         }
       }
     },
+    "/vault/backups/preview": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Preview Vault Backup",
+        "operationId": "preview_vault_backup_vault_backups_preview_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultBackupDownloadPreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "item_ids": {
+                    "items": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "title": "Item Ids",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "item_ids"
+                ],
+                "title": "VaultBackupSelection",
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/backups/download": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Download Vault Backup",
+        "operationId": "download_vault_backup_vault_backups_download_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "item_ids": {
+                    "items": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "title": "Item Ids",
+                    "type": "array"
+                  },
+                  "revision": {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "title": "Revision",
+                    "type": "string"
+                  },
+                  "passphrase": {
+                    "format": "password",
+                    "title": "Passphrase",
+                    "type": "string",
+                    "writeOnly": true
+                  },
+                  "accept_omissions": {
+                    "title": "Accept Omissions",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "item_ids",
+                  "revision",
+                  "passphrase",
+                  "accept_omissions"
+                ],
+                "title": "VaultBackupDownload",
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/backups/restore/preview": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Preview Vault Restore",
+        "operationId": "preview_vault_restore_vault_backups_restore_preview_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultBackupRestorePreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "envelope_base64": {
+                    "title": "Envelope Base64",
+                    "type": "string"
+                  },
+                  "passphrase": {
+                    "format": "password",
+                    "title": "Passphrase",
+                    "type": "string",
+                    "writeOnly": true
+                  }
+                },
+                "required": [
+                  "envelope_base64",
+                  "passphrase"
+                ],
+                "title": "VaultBackupUpload",
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/backups/restore": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Restore Vault Backup",
+        "operationId": "restore_vault_backup_vault_backups_restore_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultBackupRestoreResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "envelope_base64": {
+                    "title": "Envelope Base64",
+                    "type": "string"
+                  },
+                  "passphrase": {
+                    "format": "password",
+                    "title": "Passphrase",
+                    "type": "string",
+                    "writeOnly": true
+                  },
+                  "expected_digest": {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "title": "Expected Digest",
+                    "type": "string"
+                  },
+                  "preview_actor_id": {
+                    "format": "uuid",
+                    "title": "Preview Actor Id",
+                    "type": "string"
+                  },
+                  "preview_organization_id": {
+                    "format": "uuid",
+                    "title": "Preview Organization Id",
+                    "type": "string"
+                  },
+                  "restore_run_id": {
+                    "format": "uuid",
+                    "title": "Restore Run Id",
+                    "type": "string"
+                  },
+                  "accept_omissions": {
+                    "title": "Accept Omissions",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "envelope_base64",
+                  "passphrase",
+                  "expected_digest",
+                  "preview_actor_id",
+                  "preview_organization_id",
+                  "restore_run_id",
+                  "accept_omissions"
+                ],
+                "title": "VaultBackupRestore",
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
     "/vault/native/passwords/matches": {
       "post": {
         "tags": [
@@ -13483,6 +14038,150 @@
                 ],
                 "title": "NativePasskeyCreateIn",
                 "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/native/passkeys/import": {
+      "post": {
+        "tags": [
+          "Credential Vault Native Passkeys"
+        ],
+        "summary": "Import Passkey",
+        "operationId": "import_passkey_vault_native_passkeys_import_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativePasskeyReceiptOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "mutation_id": {
+                    "title": "Mutation Id",
+                    "type": "string"
+                  },
+                  "source": {
+                    "maxLength": 87382,
+                    "minLength": 1,
+                    "title": "Source",
+                    "type": "string"
+                  },
+                  "label": {
+                    "maxLength": 1024,
+                    "minLength": 1,
+                    "title": "Label",
+                    "type": "string"
+                  },
+                  "principal_type": {
+                    "enum": [
+                      "organization",
+                      "user"
+                    ],
+                    "title": "Principal Type",
+                    "type": "string"
+                  },
+                  "format_version": {
+                    "const": "cxf1.0",
+                    "title": "Format Version",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mutation_id",
+                  "source",
+                  "label",
+                  "principal_type",
+                  "format_version"
+                ],
+                "title": "NativePasskeyImportIn",
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/native/passkeys/import/receipts/{mutation_id}": {
+      "get": {
+        "tags": [
+          "Credential Vault Native Passkeys"
+        ],
+        "summary": "Import Receipt",
+        "operationId": "import_receipt_vault_native_passkeys_import_receipts__mutation_id__get",
+        "parameters": [
+          {
+            "name": "mutation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Mutation Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativePasskeyReceiptOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -13849,6 +14548,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NativePasskeyCapabilitiesOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/native/passkeys/import/capabilities": {
+      "get": {
+        "tags": [
+          "Credential Vault Native Passkeys"
+        ],
+        "summary": "Import Capabilities",
+        "operationId": "import_capabilities_vault_native_passkeys_import_capabilities_get",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativePasskeyImportCapabilitiesOut"
                 }
               }
             }
@@ -85289,6 +86030,44 @@
         }
       }
     },
+    "/browser-manager/local/verify": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Verify Local Lifecycle",
+        "operationId": "verify_local_lifecycle_browser_manager_local_verify_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/local/ack": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Acknowledge Local Lifecycle",
+        "operationId": "acknowledge_local_lifecycle_browser_manager_local_ack_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/browser-manager/local/transport/verify": {
       "post": {
         "tags": [
@@ -85297,6 +86076,63 @@
         "summary": "Verify Local Transport",
         "description": "Verify a daemon's existing lifecycle grant without changing any state.",
         "operationId": "verify_local_transport_browser_manager_local_transport_verify_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/local/approval": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Local Command Approval",
+        "operationId": "local_command_approval_browser_manager_local_approval_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/local/commands/claim": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Claim Local Command",
+        "operationId": "claim_local_command_browser_manager_local_commands_claim_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/local/commands/complete": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Complete Local Command",
+        "operationId": "complete_local_command_browser_manager_local_commands_complete_post",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -133997,6 +134833,72 @@
         ],
         "title": "CompetitorOpportunityArtifact"
       },
+      "CompleteBody": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Token"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "field_values": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Values"
+          },
+          "authenticator_secret": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authenticator Secret"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "CompleteBody"
+      },
       "CompleteStageRequest": {
         "properties": {
           "organization_id": {
@@ -145517,6 +146419,67 @@
           "derivation_kind"
         ],
         "title": "DedupResponse"
+      },
+      "DefaultBrowserProfileResponse": {
+        "properties": {
+          "present": {
+            "type": "boolean",
+            "title": "Present",
+            "description": "True when this person has a browser here."
+          },
+          "profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Id"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "execution_target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Execution Target"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Plain sentence for a person when there is no browser to name."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "present"
+        ],
+        "title": "DefaultBrowserProfileResponse",
+        "description": "Names and ids only — this crosses a server boundary into a user's box."
       },
       "DefaultOrganizationBody": {
         "properties": {
@@ -203015,6 +203978,63 @@
         "title": "NasaImagesPublicAsset",
         "description": "Safe bounded projection of one public NASA media-catalog asset."
       },
+      "NativeCompleteBody": {
+        "properties": {
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "field_values": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Values"
+          },
+          "authenticator_secret": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authenticator Secret"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "NativeCompleteBody"
+      },
       "NativeErrorDetail": {
         "properties": {
           "code": {
@@ -203407,6 +204427,55 @@
           "user"
         ],
         "title": "NativePasskeyIdentityOut"
+      },
+      "NativePasskeyImportCapabilitiesOut": {
+        "properties": {
+          "protocol_version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Protocol Version"
+          },
+          "activation_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Activation Revision"
+          },
+          "max_source_bytes": {
+            "type": "integer",
+            "maximum": 65536,
+            "minimum": 1,
+            "title": "Max Source Bytes"
+          },
+          "max_request_body_bytes": {
+            "type": "integer",
+            "maximum": 98304,
+            "minimum": 1,
+            "title": "Max Request Body Bytes"
+          },
+          "max_transfer_items": {
+            "type": "integer",
+            "maximum": 2000,
+            "minimum": 1,
+            "title": "Max Transfer Items"
+          },
+          "max_file_bytes": {
+            "type": "integer",
+            "maximum": 16777216,
+            "minimum": 1,
+            "title": "Max File Bytes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "protocol_version",
+          "activation_revision",
+          "max_source_bytes",
+          "max_request_body_bytes",
+          "max_transfer_items",
+          "max_file_bytes"
+        ],
+        "title": "NativePasskeyImportCapabilitiesOut"
       },
       "NativePasskeyMatchOut": {
         "properties": {
@@ -210791,6 +211860,17 @@
               }
             ],
             "title": "Abbreviation"
+          },
+          "archived_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
           }
         },
         "type": "object",
@@ -262118,9 +263198,7 @@
             "type": "string",
             "enum": [
               "internal",
-              "link",
-              "personal",
-              "public"
+              "personal"
             ],
             "title": "Visibility",
             "default": "personal"
@@ -270934,6 +272012,23 @@
         ],
         "title": "TogglServiceStatus",
         "description": "Safe aggregate status projection for Toggl's fixed status page."
+      },
+      "TokenBody": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Token"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "TokenBody",
+        "description": "Just the link's token. Used by the open and re-mint doors, which need\nnothing else about the caller than what their own session already says."
       },
       "ToolCallPart": {
         "properties": {
@@ -281935,6 +283030,271 @@
           "count"
         ],
         "title": "VaultAuditResponse"
+      },
+      "VaultBackupDownloadPreview": {
+        "properties": {
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/VaultBackupRecordSummary"
+            },
+            "type": "array",
+            "title": "Records"
+          },
+          "omissions": {
+            "items": {
+              "$ref": "#/components/schemas/VaultBackupOmission"
+            },
+            "type": "array",
+            "title": "Omissions"
+          },
+          "record_count": {
+            "type": "integer",
+            "title": "Record Count"
+          },
+          "field_count": {
+            "type": "integer",
+            "title": "Field Count"
+          },
+          "attachment_count": {
+            "type": "integer",
+            "title": "Attachment Count"
+          },
+          "attachment_bytes": {
+            "type": "integer",
+            "title": "Attachment Bytes"
+          },
+          "revision": {
+            "type": "string",
+            "title": "Revision"
+          }
+        },
+        "type": "object",
+        "required": [
+          "records",
+          "omissions",
+          "record_count",
+          "field_count",
+          "attachment_count",
+          "attachment_bytes",
+          "revision"
+        ],
+        "title": "VaultBackupDownloadPreview"
+      },
+      "VaultBackupOmission": {
+        "properties": {
+          "component": {
+            "type": "string",
+            "title": "Component"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Count"
+          },
+          "source_item_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Item Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "component",
+          "reason"
+        ],
+        "title": "VaultBackupOmission"
+      },
+      "VaultBackupRecordSummary": {
+        "properties": {
+          "source_item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Item Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "field_count": {
+            "type": "integer",
+            "title": "Field Count"
+          },
+          "attachment_count": {
+            "type": "integer",
+            "title": "Attachment Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_item_id",
+          "display_name",
+          "field_count",
+          "attachment_count"
+        ],
+        "title": "VaultBackupRecordSummary"
+      },
+      "VaultBackupRestorePreview": {
+        "properties": {
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/VaultBackupRecordSummary"
+            },
+            "type": "array",
+            "title": "Records"
+          },
+          "omissions": {
+            "items": {
+              "$ref": "#/components/schemas/VaultBackupOmission"
+            },
+            "type": "array",
+            "title": "Omissions"
+          },
+          "record_count": {
+            "type": "integer",
+            "title": "Record Count"
+          },
+          "field_count": {
+            "type": "integer",
+            "title": "Field Count"
+          },
+          "attachment_count": {
+            "type": "integer",
+            "title": "Attachment Count"
+          },
+          "attachment_bytes": {
+            "type": "integer",
+            "title": "Attachment Bytes"
+          },
+          "envelope_digest": {
+            "type": "string",
+            "title": "Envelope Digest"
+          },
+          "actor_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Actor Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organization Id"
+          },
+          "quarantined": {
+            "type": "boolean",
+            "title": "Quarantined"
+          }
+        },
+        "type": "object",
+        "required": [
+          "records",
+          "omissions",
+          "record_count",
+          "field_count",
+          "attachment_count",
+          "attachment_bytes",
+          "envelope_digest",
+          "actor_id",
+          "organization_id",
+          "quarantined"
+        ],
+        "title": "VaultBackupRestorePreview"
+      },
+      "VaultBackupRestoreRecordResult": {
+        "properties": {
+          "source_item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Item Id"
+          },
+          "item_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "created",
+              "refused",
+              "replayed",
+              "retryable_failure"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_item_id",
+          "item_id",
+          "status"
+        ],
+        "title": "VaultBackupRestoreRecordResult"
+      },
+      "VaultBackupRestoreResult": {
+        "properties": {
+          "restore_run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Restore Run Id"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/VaultBackupRestoreRecordResult"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "created": {
+            "type": "integer",
+            "title": "Created"
+          },
+          "replayed": {
+            "type": "integer",
+            "title": "Replayed"
+          },
+          "refused": {
+            "type": "integer",
+            "title": "Refused"
+          },
+          "retryable_failure": {
+            "type": "integer",
+            "title": "Retryable Failure"
+          }
+        },
+        "type": "object",
+        "required": [
+          "restore_run_id",
+          "results",
+          "created",
+          "replayed",
+          "refused",
+          "retryable_failure"
+        ],
+        "title": "VaultBackupRestoreResult"
       },
       "VaultCapabilities": {
         "properties": {

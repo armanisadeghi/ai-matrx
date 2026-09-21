@@ -165,6 +165,7 @@ export const SOURCE_FEATURES = [
   "crm.media_lists.refresh",
   "conversation",
   "conversation_crash_recovery",
+  "conversation_fork",
   "conversation_resume",
   "crawl_run",
   "deep_research_v1",

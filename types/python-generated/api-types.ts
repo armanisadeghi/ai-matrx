@@ -527,6 +527,127 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/action-requests/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Open Action Request
+         * @description What the page draws. MUTATES NOTHING (adjudication ruling 10).
+         *
+         *     🚨 IT IS A POST AND IT IS STILL A SAFE READ. The token would otherwise sit in
+         *     a URL, which means in this server's access log, in every proxy between here
+         *     and it, and in whatever aggregates them. A body keeps it out of all of those.
+         *     Nothing here consumes, expires or reports anything — a link preview, a
+         *     carrier scanner and a mail gateway can all fetch the PAGE (which is a GET)
+         *     and the row does not move.
+         *
+         *     🚨 AND IT IS WHY THE PAGE DOES NOT TALK TO THE DATABASE DIRECTLY. The answer
+         *     carries `can_complete`, which is the kind's consequence class resolved
+         *     against this organization's `credential_link_bearer_allowed` knob. That
+         *     decision lives in ONE place. A renderer that reached the door itself would
+         *     have to re-derive it in TypeScript, and the day the two disagreed, the
+         *     disagreement would be a credential page that let somebody in.
+         */
+        post: operations["open_action_request_action_requests_open_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/action-requests/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete Action Request
+         * @description Complete from the link, or from the signed-in page. One path, two doors.
+         */
+        post: operations["complete_action_request_action_requests_complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/action-requests/remint": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remint Action Request
+         * @description "Text me a new link." No sign-in and no agent turn — the parked call is
+         *     untouched, so the agent on the other end never learns a link was re-sent.
+         */
+        post: operations["remint_action_request_action_requests_remint_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/action-requests/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pending Action Requests
+         * @description What this person is being asked for right now. Never returns a token.
+         */
+        get: operations["pending_action_requests_action_requests_pending_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/action-requests/{request_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete Action Request Native
+         * @description The authenticated door — the same record and the same resolver as the link.
+         *
+         *     A native client holding a session does not need a bearer capability, so it
+         *     never receives one. It names the request; the server finds that request's own
+         *     token hash, and ONLY among rows whose subject is the caller — so an app
+         *     asking about somebody else's request id gets the same answer as one asking
+         *     about an id that does not exist.
+         */
+        post: operations["complete_action_request_native_action_requests__request_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/agents/{agent_id}/warm": {
         parameters: {
             query?: never;
@@ -4456,6 +4577,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sandboxes/internal/default-browser-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Default Browser Profile For User
+         * @description The acting person's default cloud browser in the admitted organization.
+         *
+         *     Service-token authed on the sandbox bridge, exactly like
+         *     ``/api/user-secrets/internal/sandbox-env-for-user``: the organization is
+         *     PROVED (membership checked) before this route sees it, so the answer can
+         *     never name a browser in a tenant the person does not belong to.
+         */
+        get: operations["get_default_browser_profile_for_user_sandboxes_internal_default_browser_profile_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/organization-secrets/{organization_id}": {
         parameters: {
             query?: never;
@@ -5238,6 +5384,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vault/backups/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Vault Backup */
+        post: operations["preview_vault_backup_vault_backups_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/backups/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Download Vault Backup */
+        post: operations["download_vault_backup_vault_backups_download_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/backups/restore/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Vault Restore */
+        post: operations["preview_vault_restore_vault_backups_restore_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/backups/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Vault Backup */
+        post: operations["restore_vault_backup_vault_backups_restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vault/native/passwords/matches": {
         parameters: {
             query?: never;
@@ -5283,6 +5497,40 @@ export interface paths {
         put?: never;
         /** Create */
         post: operations["create_vault_native_passkeys_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/native/passkeys/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Passkey */
+        post: operations["import_passkey_vault_native_passkeys_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/native/passkeys/import/receipts/{mutation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Import Receipt */
+        get: operations["import_receipt_vault_native_passkeys_import_receipts__mutation_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5383,6 +5631,23 @@ export interface paths {
         };
         /** Capabilities */
         get: operations["capabilities_vault_native_passkeys_capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/native/passkeys/import/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Import Capabilities */
+        get: operations["import_capabilities_vault_native_passkeys_import_capabilities_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -38219,6 +38484,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/browser-manager/local/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify Local Lifecycle */
+        post: operations["verify_local_lifecycle_browser_manager_local_verify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/local/ack": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Acknowledge Local Lifecycle */
+        post: operations["acknowledge_local_lifecycle_browser_manager_local_ack_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/browser-manager/local/transport/verify": {
         parameters: {
             query?: never;
@@ -38233,6 +38532,57 @@ export interface paths {
          * @description Verify a daemon's existing lifecycle grant without changing any state.
          */
         post: operations["verify_local_transport_browser_manager_local_transport_verify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/local/approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Local Command Approval */
+        post: operations["local_command_approval_browser_manager_local_approval_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/local/commands/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim Local Command */
+        post: operations["claim_local_command_browser_manager_local_commands_claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/local/commands/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete Local Command */
+        post: operations["complete_local_command_browser_manager_local_commands_complete_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -58680,6 +59030,23 @@ export interface components {
             /** Error */
             error: string | null;
         };
+        /** CompleteBody */
+        CompleteBody: {
+            /** Token */
+            token: string;
+            /** Result */
+            result?: {
+                [key: string]: unknown;
+            } | null;
+            /** Field Values */
+            field_values?: {
+                [key: string]: string;
+            } | null;
+            /** Authenticator Secret */
+            authenticator_secret?: string | null;
+            /** Origin */
+            origin?: string | null;
+        };
         /** CompleteStageRequest */
         CompleteStageRequest: {
             /**
@@ -63477,6 +63844,28 @@ export interface components {
             canonical_clean_id?: string | null;
             /** Archived At */
             archived_at?: string | null;
+        };
+        /**
+         * DefaultBrowserProfileResponse
+         * @description Names and ids only — this crosses a server boundary into a user's box.
+         */
+        DefaultBrowserProfileResponse: {
+            /**
+             * Present
+             * @description True when this person has a browser here.
+             */
+            present: boolean;
+            /** Profile Id */
+            profile_id?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Execution Target */
+            execution_target?: string | null;
+            /**
+             * Reason
+             * @description Plain sentence for a person when there is no browser to name.
+             */
+            reason?: string | null;
         };
         /** DefaultOrganizationBody */
         DefaultOrganizationBody: {
@@ -89348,6 +89737,21 @@ export interface components {
             /** Asset Page */
             asset_page: string;
         };
+        /** NativeCompleteBody */
+        NativeCompleteBody: {
+            /** Result */
+            result?: {
+                [key: string]: unknown;
+            } | null;
+            /** Field Values */
+            field_values?: {
+                [key: string]: string;
+            } | null;
+            /** Authenticator Secret */
+            authenticator_secret?: string | null;
+            /** Origin */
+            origin?: string | null;
+        };
         /** NativeErrorDetail */
         NativeErrorDetail: {
             /**
@@ -89480,6 +89884,24 @@ export interface components {
             user_handle: string;
             /** User */
             user: string;
+        };
+        /** NativePasskeyImportCapabilitiesOut */
+        NativePasskeyImportCapabilitiesOut: {
+            /**
+             * Protocol Version
+             * @constant
+             */
+            protocol_version: 1;
+            /** Activation Revision */
+            activation_revision: number;
+            /** Max Source Bytes */
+            max_source_bytes: number;
+            /** Max Request Body Bytes */
+            max_request_body_bytes: number;
+            /** Max Transfer Items */
+            max_transfer_items: number;
+            /** Max File Bytes */
+            max_file_bytes: number;
         };
         /** NativePasskeyMatchOut */
         NativePasskeyMatchOut: {
@@ -92843,6 +93265,8 @@ export interface components {
             is_personal: boolean;
             /** Abbreviation */
             abbreviation?: string | null;
+            /** Archived At */
+            archived_at?: string | null;
         };
         /**
          * OsfPublicProject
@@ -115575,7 +115999,7 @@ export interface components {
              * @default personal
              * @enum {string}
              */
-            visibility?: "internal" | "link" | "personal" | "public";
+            visibility?: "internal" | "personal";
         };
         /** StorageUsageResponse */
         StorageUsageResponse: {
@@ -119728,6 +120152,15 @@ export interface components {
             indicator: "critical" | "major" | "minor" | "none";
             /** Operational */
             operational: boolean;
+        };
+        /**
+         * TokenBody
+         * @description Just the link's token. Used by the open and re-mint doors, which need
+         *     nothing else about the caller than what their own session already says.
+         */
+        TokenBody: {
+            /** Token */
+            token: string;
         };
         /** ToolCallPart */
         ToolCallPart: {
@@ -124428,6 +124861,110 @@ export interface components {
             entries: components["schemas"]["VaultAuditEntry"][];
             /** Count */
             count: number;
+        };
+        /** VaultBackupDownloadPreview */
+        VaultBackupDownloadPreview: {
+            /** Records */
+            records: components["schemas"]["VaultBackupRecordSummary"][];
+            /** Omissions */
+            omissions: components["schemas"]["VaultBackupOmission"][];
+            /** Record Count */
+            record_count: number;
+            /** Field Count */
+            field_count: number;
+            /** Attachment Count */
+            attachment_count: number;
+            /** Attachment Bytes */
+            attachment_bytes: number;
+            /** Revision */
+            revision: string;
+        };
+        /** VaultBackupOmission */
+        VaultBackupOmission: {
+            /** Component */
+            component: string;
+            /** Reason */
+            reason: string;
+            /** Count */
+            count?: number | null;
+            /** Source Item Id */
+            source_item_id?: string | null;
+        };
+        /** VaultBackupRecordSummary */
+        VaultBackupRecordSummary: {
+            /**
+             * Source Item Id
+             * Format: uuid
+             */
+            source_item_id: string;
+            /** Display Name */
+            display_name: string;
+            /** Field Count */
+            field_count: number;
+            /** Attachment Count */
+            attachment_count: number;
+        };
+        /** VaultBackupRestorePreview */
+        VaultBackupRestorePreview: {
+            /** Records */
+            records: components["schemas"]["VaultBackupRecordSummary"][];
+            /** Omissions */
+            omissions: components["schemas"]["VaultBackupOmission"][];
+            /** Record Count */
+            record_count: number;
+            /** Field Count */
+            field_count: number;
+            /** Attachment Count */
+            attachment_count: number;
+            /** Attachment Bytes */
+            attachment_bytes: number;
+            /** Envelope Digest */
+            envelope_digest: string;
+            /**
+             * Actor Id
+             * Format: uuid
+             */
+            actor_id: string;
+            /**
+             * Organization Id
+             * Format: uuid
+             */
+            organization_id: string;
+            /** Quarantined */
+            quarantined: boolean;
+        };
+        /** VaultBackupRestoreRecordResult */
+        VaultBackupRestoreRecordResult: {
+            /**
+             * Source Item Id
+             * Format: uuid
+             */
+            source_item_id: string;
+            /** Item Id */
+            item_id: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "created" | "refused" | "replayed" | "retryable_failure";
+        };
+        /** VaultBackupRestoreResult */
+        VaultBackupRestoreResult: {
+            /**
+             * Restore Run Id
+             * Format: uuid
+             */
+            restore_run_id: string;
+            /** Results */
+            results: components["schemas"]["VaultBackupRestoreRecordResult"][];
+            /** Created */
+            created: number;
+            /** Replayed */
+            replayed: number;
+            /** Refused */
+            refused: number;
+            /** Retryable Failure */
+            retryable_failure: number;
         };
         /** VaultCapabilities */
         VaultCapabilities: {
@@ -132659,6 +133196,170 @@ export interface operations {
             };
         };
     };
+    open_action_request_action_requests_open_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TokenBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_action_request_action_requests_complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remint_action_request_action_requests_remint_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TokenBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pending_action_requests_action_requests_pending_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    complete_action_request_native_action_requests__request_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeCompleteBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     warm_agent_ai_agents__agent_id__warm_post: {
         parameters: {
             query?: never;
@@ -139329,6 +140030,26 @@ export interface operations {
             };
         };
     };
+    get_default_browser_profile_for_user_sandboxes_internal_default_browser_profile_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefaultBrowserProfileResponse"];
+                };
+            };
+        };
+    };
     list_secrets_organization_secrets__organization_id__get: {
         parameters: {
             query?: never;
@@ -141043,6 +141764,196 @@ export interface operations {
             };
         };
     };
+    preview_vault_backup_vault_backups_preview_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Item Ids */
+                    item_ids: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultBackupDownloadPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_vault_backup_vault_backups_download_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Item Ids */
+                    item_ids: string[];
+                    /** Revision */
+                    revision: string;
+                    /**
+                     * Passphrase
+                     * Format: password
+                     */
+                    passphrase: string;
+                    /** Accept Omissions */
+                    accept_omissions: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_vault_restore_vault_backups_restore_preview_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Envelope Base64 */
+                    envelope_base64: string;
+                    /**
+                     * Passphrase
+                     * Format: password
+                     */
+                    passphrase: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultBackupRestorePreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_vault_backup_vault_backups_restore_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Envelope Base64 */
+                    envelope_base64: string;
+                    /**
+                     * Passphrase
+                     * Format: password
+                     */
+                    passphrase: string;
+                    /** Expected Digest */
+                    expected_digest: string;
+                    /**
+                     * Preview Actor Id
+                     * Format: uuid
+                     */
+                    preview_actor_id: string;
+                    /**
+                     * Preview Organization Id
+                     * Format: uuid
+                     */
+                    preview_organization_id: string;
+                    /**
+                     * Restore Run Id
+                     * Format: uuid
+                     */
+                    restore_run_id: string;
+                    /** Accept Omissions */
+                    accept_omissions: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultBackupRestoreResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     matches_vault_native_passwords_matches_post: {
         parameters: {
             query?: never;
@@ -141272,6 +142183,91 @@ export interface operations {
             };
         };
     };
+    import_passkey_vault_native_passkeys_import_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Mutation Id */
+                    mutation_id: string;
+                    /** Source */
+                    source: string;
+                    /** Label */
+                    label: string;
+                    /**
+                     * Principal Type
+                     * @enum {string}
+                     */
+                    principal_type: "organization" | "user";
+                    /**
+                     * Format Version
+                     * @constant
+                     */
+                    format_version: "cxf1.0";
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativePasskeyReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_receipt_vault_native_passkeys_import_receipts__mutation_id__get: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                mutation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativePasskeyReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     receipt_vault_native_passkeys_receipts__mutation_id__get: {
         parameters: {
             query?: never;
@@ -141478,6 +142474,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NativePasskeyCapabilitiesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_capabilities_vault_native_passkeys_import_capabilities_get: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativePasskeyImportCapabilitiesOut"];
                 };
             };
             /** @description Validation Error */
@@ -191849,7 +192876,107 @@ export interface operations {
             };
         };
     };
+    verify_local_lifecycle_browser_manager_local_verify_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    acknowledge_local_lifecycle_browser_manager_local_ack_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     verify_local_transport_browser_manager_local_transport_verify_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    local_command_approval_browser_manager_local_approval_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    claim_local_command_browser_manager_local_commands_claim_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    complete_local_command_browser_manager_local_commands_complete_post: {
         parameters: {
             query?: never;
             header?: never;
