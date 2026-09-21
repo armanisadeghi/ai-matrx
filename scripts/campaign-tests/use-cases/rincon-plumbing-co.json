@@ -1,0 +1,1704 @@
+{
+  "use_case": "A residential and light-commercial plumbing service business that needs to track service calls, technician crews, parts inventory and invoicing across jobs so the owner knows what is scheduled, in progress, and unpaid.",
+  "organization": {
+    "name": "Rincon Plumbing Co",
+    "id": "6069a466-1445-42df-a64e-cf37ecdc1b99",
+    "settings_tag": {
+      "test_fixture": true
+    }
+  },
+  "entered_live_2026_09_20": true,
+  "tables": [
+    {
+      "key": "customers",
+      "name": "Customers",
+      "title_field": "customer_name",
+      "fields": [
+        {
+          "key": "customer_name",
+          "label": "Customer Name",
+          "type": "text",
+          "sort": 10
+        },
+        {
+          "key": "phone",
+          "label": "Phone",
+          "type": "phone",
+          "sort": 20
+        },
+        {
+          "key": "email",
+          "label": "Email",
+          "type": "email",
+          "sort": 30
+        },
+        {
+          "key": "address",
+          "label": "Address",
+          "type": "text",
+          "sort": 40
+        },
+        {
+          "key": "city",
+          "label": "City",
+          "type": "text",
+          "sort": 50
+        },
+        {
+          "key": "customer_since",
+          "label": "Customer Since",
+          "type": "datetime",
+          "kind": "date",
+          "sort": 60
+        }
+      ],
+      "row_count": 25,
+      "sample_rows": [
+        {
+          "customer_name": "Maria Chen",
+          "phone": "555-0110",
+          "email": "maria.chen@example-mail.test",
+          "address": "100 Elm St",
+          "city": "Rincon",
+          "customer_since": "2023-01-01"
+        },
+        {
+          "customer_name": "James Grant",
+          "phone": "555-0111",
+          "email": "james.grant@example-mail.test",
+          "address": "107 Maple Ave",
+          "city": "Millbrook",
+          "customer_since": "2024-02-02"
+        },
+        {
+          "customer_name": "Linda Jensen",
+          "phone": "555-0112",
+          "email": "linda.jensen@example-mail.test",
+          "address": "114 5th St",
+          "city": "Fairhaven",
+          "customer_since": "2025-03-03"
+        }
+      ]
+    },
+    {
+      "key": "crews",
+      "name": "Crews",
+      "title_field": "crew_name",
+      "fields": [
+        {
+          "key": "crew_name",
+          "label": "Crew Name",
+          "type": "text",
+          "sort": 10
+        },
+        {
+          "key": "lead_tech",
+          "label": "Lead Technician",
+          "type": "text",
+          "sort": 20
+        },
+        {
+          "key": "phone",
+          "label": "Phone",
+          "type": "phone",
+          "sort": 30
+        },
+        {
+          "key": "vehicle",
+          "label": "Vehicle",
+          "type": "text",
+          "sort": 40
+        },
+        {
+          "key": "city_zone",
+          "label": "Coverage Zone",
+          "type": "text",
+          "sort": 50
+        }
+      ],
+      "row_count": 4,
+      "sample_rows": [
+        {
+          "crew_name": "Truck 1 — Alvarado",
+          "lead_tech": "Danny Alvarado",
+          "phone": "555-0201",
+          "vehicle": "Ford Transit #1",
+          "city_zone": "North Rincon"
+        },
+        {
+          "crew_name": "Truck 2 — Reyes",
+          "lead_tech": "Sofia Reyes",
+          "phone": "555-0202",
+          "vehicle": "Ford Transit #2",
+          "city_zone": "South Rincon"
+        },
+        {
+          "crew_name": "Truck 3 — Whitfield",
+          "lead_tech": "Marcus Whitfield",
+          "phone": "555-0203",
+          "vehicle": "Chevy Express #1",
+          "city_zone": "Millbrook / Fairhaven"
+        }
+      ]
+    },
+    {
+      "key": "parts",
+      "name": "Parts",
+      "title_field": "part_name",
+      "fields": [
+        {
+          "key": "part_name",
+          "label": "Part Name",
+          "type": "text",
+          "sort": 10
+        },
+        {
+          "key": "sku",
+          "label": "SKU",
+          "type": "text",
+          "sort": 20
+        },
+        {
+          "key": "unit_cost",
+          "label": "Unit Cost",
+          "type": "currency",
+          "unit": "$",
+          "sort": 30
+        },
+        {
+          "key": "unit_price",
+          "label": "Unit Price",
+          "type": "currency",
+          "unit": "$",
+          "sort": 40
+        },
+        {
+          "key": "qty_on_hand",
+          "label": "Qty On Hand",
+          "type": "number",
+          "sort": 50
+        }
+      ],
+      "row_count": 8,
+      "sample_rows": [
+        {
+          "part_name": "1/2in Copper Pipe (10ft)",
+          "sku": "CU-050-10",
+          "unit_cost": 18.4,
+          "unit_price": 32,
+          "qty_on_hand": 64
+        },
+        {
+          "part_name": "PVC Coupling 3in",
+          "sku": "PVC-C3",
+          "unit_cost": 2.1,
+          "unit_price": 6.5,
+          "qty_on_hand": 210
+        },
+        {
+          "part_name": "Water Heater 50gal Gas",
+          "sku": "WH-50G",
+          "unit_cost": 610,
+          "unit_price": 975,
+          "qty_on_hand": 6
+        }
+      ]
+    },
+    {
+      "key": "jobs",
+      "name": "Jobs",
+      "title_field": "job_number",
+      "fields": [
+        {
+          "key": "job_number",
+          "label": "Job Number",
+          "type": "text",
+          "sort": 10
+        },
+        {
+          "key": "customer",
+          "label": "Customer",
+          "type": "relation",
+          "relationTargetKey": "customers",
+          "sort": 20
+        },
+        {
+          "key": "crew",
+          "label": "Crew",
+          "type": "relation",
+          "relationTargetKey": "crews",
+          "sort": 30
+        },
+        {
+          "key": "service_type",
+          "label": "Service Type",
+          "type": "select",
+          "sort": 40,
+          "options": [
+            "Drain Cleaning",
+            "Water Heater Install",
+            "Leak Repair",
+            "Fixture Install",
+            "Sump Pump Service",
+            "Pipe Replacement",
+            "Inspection"
+          ]
+        },
+        {
+          "key": "scheduled_date",
+          "label": "Scheduled Date",
+          "type": "datetime",
+          "kind": "date",
+          "sort": 50
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "select",
+          "sort": 60,
+          "options": [
+            "Scheduled",
+            "In Progress",
+            "Completed",
+            "Invoiced",
+            "Cancelled"
+          ]
+        },
+        {
+          "key": "address",
+          "label": "Service Address",
+          "type": "text",
+          "sort": 70
+        },
+        {
+          "key": "notes",
+          "label": "Notes",
+          "type": "long_text",
+          "sort": 80
+        }
+      ],
+      "row_count": 40,
+      "sample_rows": [
+        {
+          "job_number": "RPC-1000",
+          "customer": {
+            "__relTable": "customers",
+            "__relRowIndex": 0
+          },
+          "crew": {
+            "__relTable": "crews",
+            "__relRowIndex": 0
+          },
+          "service_type": "Drain Cleaning",
+          "scheduled_date": "2026-01-01",
+          "status": "Scheduled",
+          "address": "100 Elm St",
+          "notes": "Drain Cleaning at 100 Elm St."
+        },
+        {
+          "job_number": "RPC-1001",
+          "customer": {
+            "__relTable": "customers",
+            "__relRowIndex": 1
+          },
+          "crew": {
+            "__relTable": "crews",
+            "__relRowIndex": 1
+          },
+          "service_type": "Water Heater Install",
+          "scheduled_date": "2026-02-02",
+          "status": "Scheduled",
+          "address": "107 Maple Ave",
+          "notes": "Water Heater Install at 107 Maple Ave."
+        },
+        {
+          "job_number": "RPC-1002",
+          "customer": {
+            "__relTable": "customers",
+            "__relRowIndex": 2
+          },
+          "crew": {
+            "__relTable": "crews",
+            "__relRowIndex": 2
+          },
+          "service_type": "Leak Repair",
+          "scheduled_date": "2026-03-03",
+          "status": "Scheduled",
+          "address": "114 5th St",
+          "notes": "Leak Repair at 114 5th St."
+        }
+      ]
+    },
+    {
+      "key": "invoices",
+      "name": "Invoices",
+      "title_field": "invoice_number",
+      "fields": [
+        {
+          "key": "invoice_number",
+          "label": "Invoice Number",
+          "type": "text",
+          "sort": 10
+        },
+        {
+          "key": "job",
+          "label": "Job",
+          "type": "relation",
+          "relationTargetKey": "jobs",
+          "sort": 20
+        },
+        {
+          "key": "amount_due",
+          "label": "Amount Due",
+          "type": "currency",
+          "unit": "$",
+          "sort": 30
+        },
+        {
+          "key": "amount_paid",
+          "label": "Amount Paid",
+          "type": "currency",
+          "unit": "$",
+          "sort": 40
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "select",
+          "sort": 50,
+          "options": [
+            "Draft",
+            "Sent",
+            "Paid",
+            "Overdue"
+          ]
+        },
+        {
+          "key": "issue_date",
+          "label": "Issue Date",
+          "type": "datetime",
+          "kind": "date",
+          "sort": 60
+        },
+        {
+          "key": "due_date",
+          "label": "Due Date",
+          "type": "datetime",
+          "kind": "date",
+          "sort": 70
+        }
+      ],
+      "row_count": 28,
+      "sample_rows": [
+        {
+          "invoice_number": "INV-5000",
+          "job": {
+            "__relTable": "jobs",
+            "__relRowIndex": 8
+          },
+          "amount_due": 480,
+          "amount_paid": 480,
+          "status": "Paid",
+          "issue_date": "2026-09-10",
+          "due_date": "2026-09-24"
+        },
+        {
+          "invoice_number": "INV-5001",
+          "job": {
+            "__relTable": "jobs",
+            "__relRowIndex": 9
+          },
+          "amount_due": 120,
+          "amount_paid": 60,
+          "status": "Sent",
+          "issue_date": "2026-01-11",
+          "due_date": "2026-01-25"
+        },
+        {
+          "invoice_number": "INV-5002",
+          "job": {
+            "__relTable": "jobs",
+            "__relRowIndex": 10
+          },
+          "amount_due": 165,
+          "amount_paid": 165,
+          "status": "Paid",
+          "issue_date": "2026-02-12",
+          "due_date": "2026-02-26"
+        }
+      ]
+    }
+  ],
+  "full_rows": {
+    "customers": [
+      {
+        "customer_name": "Maria Chen",
+        "phone": "555-0110",
+        "email": "maria.chen@example-mail.test",
+        "address": "100 Elm St",
+        "city": "Rincon",
+        "customer_since": "2023-01-01"
+      },
+      {
+        "customer_name": "James Grant",
+        "phone": "555-0111",
+        "email": "james.grant@example-mail.test",
+        "address": "107 Maple Ave",
+        "city": "Millbrook",
+        "customer_since": "2024-02-02"
+      },
+      {
+        "customer_name": "Linda Jensen",
+        "phone": "555-0112",
+        "email": "linda.jensen@example-mail.test",
+        "address": "114 5th St",
+        "city": "Fairhaven",
+        "customer_since": "2025-03-03"
+      },
+      {
+        "customer_name": "Robert Marsh",
+        "phone": "555-0113",
+        "email": "robert.marsh@example-mail.test",
+        "address": "121 Sunset Blvd",
+        "city": "Dellwood",
+        "customer_since": "2023-04-04"
+      },
+      {
+        "customer_name": "Susan Pruitt",
+        "phone": "555-0114",
+        "email": "susan.pruitt@example-mail.test",
+        "address": "128 Birch Ln",
+        "city": "Ashport",
+        "customer_since": "2024-05-05"
+      },
+      {
+        "customer_name": "David Chen",
+        "phone": "555-0115",
+        "email": "david.chen@example-mail.test",
+        "address": "135 Ridge Rd",
+        "city": "Rincon",
+        "customer_since": "2025-06-06"
+      },
+      {
+        "customer_name": "Karen Grant",
+        "phone": "555-0116",
+        "email": "karen.grant@example-mail.test",
+        "address": "142 Harbor Dr",
+        "city": "Millbrook",
+        "customer_since": "2023-07-07"
+      },
+      {
+        "customer_name": "Michael Jensen",
+        "phone": "555-0117",
+        "email": "michael.jensen@example-mail.test",
+        "address": "149 Cedar Ct",
+        "city": "Fairhaven",
+        "customer_since": "2024-08-08"
+      },
+      {
+        "customer_name": "Patricia Marsh",
+        "phone": "555-0118",
+        "email": "patricia.marsh@example-mail.test",
+        "address": "156 Willow Way",
+        "city": "Dellwood",
+        "customer_since": "2025-09-09"
+      },
+      {
+        "customer_name": "Kevin Pruitt",
+        "phone": "555-0119",
+        "email": "kevin.pruitt@example-mail.test",
+        "address": "163 Grove St",
+        "city": "Ashport",
+        "customer_since": "2023-10-10"
+      },
+      {
+        "customer_name": "Nancy Chen",
+        "phone": "555-0120",
+        "email": "nancy.chen@example-mail.test",
+        "address": "170 Elm St",
+        "city": "Rincon",
+        "customer_since": "2024-11-11"
+      },
+      {
+        "customer_name": "Brian Grant",
+        "phone": "555-0121",
+        "email": "brian.grant@example-mail.test",
+        "address": "177 Maple Ave",
+        "city": "Millbrook",
+        "customer_since": "2025-12-12"
+      },
+      {
+        "customer_name": "Carol Jensen",
+        "phone": "555-0122",
+        "email": "carol.jensen@example-mail.test",
+        "address": "184 5th St",
+        "city": "Fairhaven",
+        "customer_since": "2023-01-13"
+      },
+      {
+        "customer_name": "Steven Marsh",
+        "phone": "555-0123",
+        "email": "steven.marsh@example-mail.test",
+        "address": "191 Sunset Blvd",
+        "city": "Dellwood",
+        "customer_since": "2024-02-14"
+      },
+      {
+        "customer_name": "Diane Pruitt",
+        "phone": "555-0124",
+        "email": "diane.pruitt@example-mail.test",
+        "address": "198 Birch Ln",
+        "city": "Ashport",
+        "customer_since": "2025-03-15"
+      },
+      {
+        "customer_name": "Maria Chen",
+        "phone": "555-0125",
+        "email": "maria.chen@example-mail.test",
+        "address": "205 Ridge Rd",
+        "city": "Rincon",
+        "customer_since": "2023-04-16"
+      },
+      {
+        "customer_name": "James Grant",
+        "phone": "555-0126",
+        "email": "james.grant@example-mail.test",
+        "address": "212 Harbor Dr",
+        "city": "Millbrook",
+        "customer_since": "2024-05-17"
+      },
+      {
+        "customer_name": "Linda Jensen",
+        "phone": "555-0127",
+        "email": "linda.jensen@example-mail.test",
+        "address": "219 Cedar Ct",
+        "city": "Fairhaven",
+        "customer_since": "2025-06-18"
+      },
+      {
+        "customer_name": "Robert Marsh",
+        "phone": "555-0128",
+        "email": "robert.marsh@example-mail.test",
+        "address": "226 Willow Way",
+        "city": "Dellwood",
+        "customer_since": "2023-07-19"
+      },
+      {
+        "customer_name": "Susan Pruitt",
+        "phone": "555-0129",
+        "email": "susan.pruitt@example-mail.test",
+        "address": "233 Grove St",
+        "city": "Ashport",
+        "customer_since": "2024-08-20"
+      },
+      {
+        "customer_name": "David Chen",
+        "phone": "555-0130",
+        "email": "david.chen@example-mail.test",
+        "address": "240 Elm St",
+        "city": "Rincon",
+        "customer_since": "2025-09-21"
+      },
+      {
+        "customer_name": "Karen Grant",
+        "phone": "555-0131",
+        "email": "karen.grant@example-mail.test",
+        "address": "247 Maple Ave",
+        "city": "Millbrook",
+        "customer_since": "2023-10-22"
+      },
+      {
+        "customer_name": "Michael Jensen",
+        "phone": "555-0132",
+        "email": "michael.jensen@example-mail.test",
+        "address": "254 5th St",
+        "city": "Fairhaven",
+        "customer_since": "2024-11-23"
+      },
+      {
+        "customer_name": "Patricia Marsh",
+        "phone": "555-0133",
+        "email": "patricia.marsh@example-mail.test",
+        "address": "261 Sunset Blvd",
+        "city": "Dellwood",
+        "customer_since": "2025-12-24"
+      },
+      {
+        "customer_name": "Kevin Pruitt",
+        "phone": "555-0134",
+        "email": "kevin.pruitt@example-mail.test",
+        "address": "268 Birch Ln",
+        "city": "Ashport",
+        "customer_since": "2023-01-25"
+      }
+    ],
+    "crews": [
+      {
+        "crew_name": "Truck 1 — Alvarado",
+        "lead_tech": "Danny Alvarado",
+        "phone": "555-0201",
+        "vehicle": "Ford Transit #1",
+        "city_zone": "North Rincon"
+      },
+      {
+        "crew_name": "Truck 2 — Reyes",
+        "lead_tech": "Sofia Reyes",
+        "phone": "555-0202",
+        "vehicle": "Ford Transit #2",
+        "city_zone": "South Rincon"
+      },
+      {
+        "crew_name": "Truck 3 — Whitfield",
+        "lead_tech": "Marcus Whitfield",
+        "phone": "555-0203",
+        "vehicle": "Chevy Express #1",
+        "city_zone": "Millbrook / Fairhaven"
+      },
+      {
+        "crew_name": "Truck 4 — Osei",
+        "lead_tech": "Ama Osei",
+        "phone": "555-0204",
+        "vehicle": "Ford Transit #3",
+        "city_zone": "Dellwood / Ashport"
+      }
+    ],
+    "parts": [
+      {
+        "part_name": "1/2in Copper Pipe (10ft)",
+        "sku": "CU-050-10",
+        "unit_cost": 18.4,
+        "unit_price": 32,
+        "qty_on_hand": 64
+      },
+      {
+        "part_name": "PVC Coupling 3in",
+        "sku": "PVC-C3",
+        "unit_cost": 2.1,
+        "unit_price": 6.5,
+        "qty_on_hand": 210
+      },
+      {
+        "part_name": "Water Heater 50gal Gas",
+        "sku": "WH-50G",
+        "unit_cost": 610,
+        "unit_price": 975,
+        "qty_on_hand": 6
+      },
+      {
+        "part_name": "Garbage Disposal 1/2HP",
+        "sku": "GD-05HP",
+        "unit_cost": 74,
+        "unit_price": 149,
+        "qty_on_hand": 11
+      },
+      {
+        "part_name": "Wax Ring Toilet Seal",
+        "sku": "WX-RING",
+        "unit_cost": 3.2,
+        "unit_price": 9,
+        "qty_on_hand": 88
+      },
+      {
+        "part_name": "Ball Valve 3/4in",
+        "sku": "BV-075",
+        "unit_cost": 9.9,
+        "unit_price": 21,
+        "qty_on_hand": 46
+      },
+      {
+        "part_name": "Sump Pump 1/3HP",
+        "sku": "SP-033HP",
+        "unit_cost": 118,
+        "unit_price": 219,
+        "qty_on_hand": 8
+      },
+      {
+        "part_name": "Drain Snake Cable 25ft",
+        "sku": "DS-25",
+        "unit_cost": 44,
+        "unit_price": 79,
+        "qty_on_hand": 5
+      }
+    ],
+    "jobs": [
+      {
+        "job_number": "RPC-1000",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 0
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 0
+        },
+        "service_type": "Drain Cleaning",
+        "scheduled_date": "2026-01-01",
+        "status": "Scheduled",
+        "address": "100 Elm St",
+        "notes": "Drain Cleaning at 100 Elm St."
+      },
+      {
+        "job_number": "RPC-1001",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 1
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 1
+        },
+        "service_type": "Water Heater Install",
+        "scheduled_date": "2026-02-02",
+        "status": "Scheduled",
+        "address": "107 Maple Ave",
+        "notes": "Water Heater Install at 107 Maple Ave."
+      },
+      {
+        "job_number": "RPC-1002",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 2
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 2
+        },
+        "service_type": "Leak Repair",
+        "scheduled_date": "2026-03-03",
+        "status": "Scheduled",
+        "address": "114 5th St",
+        "notes": "Leak Repair at 114 5th St."
+      },
+      {
+        "job_number": "RPC-1003",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 3
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 3
+        },
+        "service_type": "Fixture Install",
+        "scheduled_date": "2026-04-04",
+        "status": "Scheduled",
+        "address": "121 Sunset Blvd",
+        "notes": "Fixture Install at 121 Sunset Blvd."
+      },
+      {
+        "job_number": "RPC-1004",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 4
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 0
+        },
+        "service_type": "Sump Pump Service",
+        "scheduled_date": "2026-05-05",
+        "status": "In Progress",
+        "address": "128 Birch Ln",
+        "notes": "Sump Pump Service at 128 Birch Ln."
+      },
+      {
+        "job_number": "RPC-1005",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 5
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 1
+        },
+        "service_type": "Pipe Replacement",
+        "scheduled_date": "2026-06-06",
+        "status": "In Progress",
+        "address": "135 Ridge Rd",
+        "notes": "Pipe Replacement at 135 Ridge Rd."
+      },
+      {
+        "job_number": "RPC-1006",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 6
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 2
+        },
+        "service_type": "Inspection",
+        "scheduled_date": "2026-07-07",
+        "status": "In Progress",
+        "address": "142 Harbor Dr",
+        "notes": "Inspection at 142 Harbor Dr."
+      },
+      {
+        "job_number": "RPC-1007",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 7
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 3
+        },
+        "service_type": "Drain Cleaning",
+        "scheduled_date": "2026-08-08",
+        "status": "In Progress",
+        "address": "149 Cedar Ct",
+        "notes": "Drain Cleaning at 149 Cedar Ct."
+      },
+      {
+        "job_number": "RPC-1008",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 8
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 0
+        },
+        "service_type": "Water Heater Install",
+        "scheduled_date": "2026-09-09",
+        "status": "Completed",
+        "address": "156 Willow Way",
+        "notes": "Water Heater Install at 156 Willow Way."
+      },
+      {
+        "job_number": "RPC-1009",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 9
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 1
+        },
+        "service_type": "Leak Repair",
+        "scheduled_date": "2026-01-10",
+        "status": "Invoiced",
+        "address": "163 Grove St",
+        "notes": "Leak Repair at 163 Grove St."
+      },
+      {
+        "job_number": "RPC-1010",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 10
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 2
+        },
+        "service_type": "Fixture Install",
+        "scheduled_date": "2026-02-11",
+        "status": "Completed",
+        "address": "170 Elm St",
+        "notes": "Fixture Install at 170 Elm St."
+      },
+      {
+        "job_number": "RPC-1011",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 11
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 3
+        },
+        "service_type": "Sump Pump Service",
+        "scheduled_date": "2026-03-12",
+        "status": "Completed",
+        "address": "177 Maple Ave",
+        "notes": "Sump Pump Service at 177 Maple Ave."
+      },
+      {
+        "job_number": "RPC-1012",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 12
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 0
+        },
+        "service_type": "Pipe Replacement",
+        "scheduled_date": "2026-04-13",
+        "status": "Invoiced",
+        "address": "184 5th St",
+        "notes": "Pipe Replacement at 184 5th St."
+      },
+      {
+        "job_number": "RPC-1013",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 13
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 1
+        },
+        "service_type": "Inspection",
+        "scheduled_date": "2026-05-14",
+        "status": "Completed",
+        "address": "191 Sunset Blvd",
+        "notes": "Inspection at 191 Sunset Blvd."
+      },
+      {
+        "job_number": "RPC-1014",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 14
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 2
+        },
+        "service_type": "Drain Cleaning",
+        "scheduled_date": "2026-06-15",
+        "status": "Completed",
+        "address": "198 Birch Ln",
+        "notes": "Drain Cleaning at 198 Birch Ln."
+      },
+      {
+        "job_number": "RPC-1015",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 15
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 3
+        },
+        "service_type": "Water Heater Install",
+        "scheduled_date": "2026-07-16",
+        "status": "Invoiced",
+        "address": "205 Ridge Rd",
+        "notes": "Water Heater Install at 205 Ridge Rd."
+      },
+      {
+        "job_number": "RPC-1016",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 16
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 0
+        },
+        "service_type": "Leak Repair",
+        "scheduled_date": "2026-08-17",
+        "status": "Completed",
+        "address": "212 Harbor Dr",
+        "notes": "Leak Repair at 212 Harbor Dr."
+      },
+      {
+        "job_number": "RPC-1017",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 17
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 1
+        },
+        "service_type": "Fixture Install",
+        "scheduled_date": "2026-09-18",
+        "status": "Completed",
+        "address": "219 Cedar Ct",
+        "notes": "Fixture Install at 219 Cedar Ct."
+      },
+      {
+        "job_number": "RPC-1018",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 18
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 2
+        },
+        "service_type": "Sump Pump Service",
+        "scheduled_date": "2026-01-19",
+        "status": "Invoiced",
+        "address": "226 Willow Way",
+        "notes": "Sump Pump Service at 226 Willow Way."
+      },
+      {
+        "job_number": "RPC-1019",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 19
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 3
+        },
+        "service_type": "Pipe Replacement",
+        "scheduled_date": "2026-02-20",
+        "status": "Completed",
+        "address": "233 Grove St",
+        "notes": "Pipe Replacement at 233 Grove St."
+      },
+      {
+        "job_number": "RPC-1020",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 20
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 0
+        },
+        "service_type": "Inspection",
+        "scheduled_date": "2026-03-21",
+        "status": "Completed",
+        "address": "240 Elm St",
+        "notes": "Inspection at 240 Elm St."
+      },
+      {
+        "job_number": "RPC-1021",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 21
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 1
+        },
+        "service_type": "Drain Cleaning",
+        "scheduled_date": "2026-04-22",
+        "status": "Invoiced",
+        "address": "247 Maple Ave",
+        "notes": "Drain Cleaning at 247 Maple Ave."
+      },
+      {
+        "job_number": "RPC-1022",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 22
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 2
+        },
+        "service_type": "Water Heater Install",
+        "scheduled_date": "2026-05-23",
+        "status": "Completed",
+        "address": "254 5th St",
+        "notes": "Water Heater Install at 254 5th St."
+      },
+      {
+        "job_number": "RPC-1023",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 23
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 3
+        },
+        "service_type": "Leak Repair",
+        "scheduled_date": "2026-06-24",
+        "status": "Completed",
+        "address": "261 Sunset Blvd",
+        "notes": "Leak Repair at 261 Sunset Blvd."
+      },
+      {
+        "job_number": "RPC-1024",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 24
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 0
+        },
+        "service_type": "Fixture Install",
+        "scheduled_date": "2026-07-25",
+        "status": "Invoiced",
+        "address": "268 Birch Ln",
+        "notes": "Fixture Install at 268 Birch Ln."
+      },
+      {
+        "job_number": "RPC-1025",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 0
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 1
+        },
+        "service_type": "Sump Pump Service",
+        "scheduled_date": "2026-08-26",
+        "status": "Completed",
+        "address": "100 Elm St",
+        "notes": "Sump Pump Service at 100 Elm St."
+      },
+      {
+        "job_number": "RPC-1026",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 1
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 2
+        },
+        "service_type": "Pipe Replacement",
+        "scheduled_date": "2026-09-27",
+        "status": "Completed",
+        "address": "107 Maple Ave",
+        "notes": "Pipe Replacement at 107 Maple Ave."
+      },
+      {
+        "job_number": "RPC-1027",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 2
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 3
+        },
+        "service_type": "Inspection",
+        "scheduled_date": "2026-01-01",
+        "status": "Invoiced",
+        "address": "114 5th St",
+        "notes": "Inspection at 114 5th St."
+      },
+      {
+        "job_number": "RPC-1028",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 3
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 0
+        },
+        "service_type": "Drain Cleaning",
+        "scheduled_date": "2026-02-02",
+        "status": "Completed",
+        "address": "121 Sunset Blvd",
+        "notes": "Drain Cleaning at 121 Sunset Blvd."
+      },
+      {
+        "job_number": "RPC-1029",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 4
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 1
+        },
+        "service_type": "Water Heater Install",
+        "scheduled_date": "2026-03-03",
+        "status": "Completed",
+        "address": "128 Birch Ln",
+        "notes": "Water Heater Install at 128 Birch Ln."
+      },
+      {
+        "job_number": "RPC-1030",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 5
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 2
+        },
+        "service_type": "Leak Repair",
+        "scheduled_date": "2026-04-04",
+        "status": "Invoiced",
+        "address": "135 Ridge Rd",
+        "notes": "Leak Repair at 135 Ridge Rd."
+      },
+      {
+        "job_number": "RPC-1031",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 6
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 3
+        },
+        "service_type": "Fixture Install",
+        "scheduled_date": "2026-05-05",
+        "status": "Completed",
+        "address": "142 Harbor Dr",
+        "notes": "Fixture Install at 142 Harbor Dr."
+      },
+      {
+        "job_number": "RPC-1032",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 7
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 0
+        },
+        "service_type": "Sump Pump Service",
+        "scheduled_date": "2026-06-06",
+        "status": "Completed",
+        "address": "149 Cedar Ct",
+        "notes": "Sump Pump Service at 149 Cedar Ct."
+      },
+      {
+        "job_number": "RPC-1033",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 8
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 1
+        },
+        "service_type": "Pipe Replacement",
+        "scheduled_date": "2026-07-07",
+        "status": "Invoiced",
+        "address": "156 Willow Way",
+        "notes": "Pipe Replacement at 156 Willow Way."
+      },
+      {
+        "job_number": "RPC-1034",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 9
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 2
+        },
+        "service_type": "Inspection",
+        "scheduled_date": "2026-08-08",
+        "status": "Completed",
+        "address": "163 Grove St",
+        "notes": "Inspection at 163 Grove St."
+      },
+      {
+        "job_number": "RPC-1035",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 10
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 3
+        },
+        "service_type": "Drain Cleaning",
+        "scheduled_date": "2026-09-09",
+        "status": "Completed",
+        "address": "170 Elm St",
+        "notes": "Drain Cleaning at 170 Elm St."
+      },
+      {
+        "job_number": "RPC-1036",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 11
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 0
+        },
+        "service_type": "Water Heater Install",
+        "scheduled_date": "2026-01-10",
+        "status": "Cancelled",
+        "address": "177 Maple Ave",
+        "notes": "Customer rescheduled for next month."
+      },
+      {
+        "job_number": "RPC-1037",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 12
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 1
+        },
+        "service_type": "Leak Repair",
+        "scheduled_date": "2026-02-11",
+        "status": "Cancelled",
+        "address": "184 5th St",
+        "notes": "Customer rescheduled for next month."
+      },
+      {
+        "job_number": "RPC-1038",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 13
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 2
+        },
+        "service_type": "Fixture Install",
+        "scheduled_date": "2026-03-12",
+        "status": "Cancelled",
+        "address": "191 Sunset Blvd",
+        "notes": "Customer rescheduled for next month."
+      },
+      {
+        "job_number": "RPC-1039",
+        "customer": {
+          "__relTable": "customers",
+          "__relRowIndex": 14
+        },
+        "crew": {
+          "__relTable": "crews",
+          "__relRowIndex": 3
+        },
+        "service_type": "Sump Pump Service",
+        "scheduled_date": "2026-04-13",
+        "status": "Cancelled",
+        "address": "198 Birch Ln",
+        "notes": "Customer rescheduled for next month."
+      }
+    ],
+    "invoices": [
+      {
+        "invoice_number": "INV-5000",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 8
+        },
+        "amount_due": 480,
+        "amount_paid": 480,
+        "status": "Paid",
+        "issue_date": "2026-09-10",
+        "due_date": "2026-09-24"
+      },
+      {
+        "invoice_number": "INV-5001",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 9
+        },
+        "amount_due": 120,
+        "amount_paid": 60,
+        "status": "Sent",
+        "issue_date": "2026-01-11",
+        "due_date": "2026-01-25"
+      },
+      {
+        "invoice_number": "INV-5002",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 10
+        },
+        "amount_due": 165,
+        "amount_paid": 165,
+        "status": "Paid",
+        "issue_date": "2026-02-12",
+        "due_date": "2026-02-26"
+      },
+      {
+        "invoice_number": "INV-5003",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 11
+        },
+        "amount_due": 210,
+        "amount_paid": 210,
+        "status": "Paid",
+        "issue_date": "2026-03-13",
+        "due_date": "2026-03-27"
+      },
+      {
+        "invoice_number": "INV-5004",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 12
+        },
+        "amount_due": 255,
+        "amount_paid": 255,
+        "status": "Paid",
+        "issue_date": "2026-04-14",
+        "due_date": "2026-04-28"
+      },
+      {
+        "invoice_number": "INV-5005",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 13
+        },
+        "amount_due": 300,
+        "amount_paid": 300,
+        "status": "Paid",
+        "issue_date": "2026-05-15",
+        "due_date": "2026-05-29"
+      },
+      {
+        "invoice_number": "INV-5006",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 14
+        },
+        "amount_due": 345,
+        "amount_paid": 345,
+        "status": "Paid",
+        "issue_date": "2026-06-16",
+        "due_date": "2026-06-30"
+      },
+      {
+        "invoice_number": "INV-5007",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 15
+        },
+        "amount_due": 390,
+        "amount_paid": 195,
+        "status": "Overdue",
+        "issue_date": "2026-07-17",
+        "due_date": "2026-07-31"
+      },
+      {
+        "invoice_number": "INV-5008",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 16
+        },
+        "amount_due": 435,
+        "amount_paid": 435,
+        "status": "Paid",
+        "issue_date": "2026-08-18",
+        "due_date": "2026-09-01"
+      },
+      {
+        "invoice_number": "INV-5009",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 17
+        },
+        "amount_due": 480,
+        "amount_paid": 480,
+        "status": "Paid",
+        "issue_date": "2026-09-19",
+        "due_date": "2026-10-03"
+      },
+      {
+        "invoice_number": "INV-5010",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 18
+        },
+        "amount_due": 120,
+        "amount_paid": 60,
+        "status": "Sent",
+        "issue_date": "2026-01-20",
+        "due_date": "2026-02-03"
+      },
+      {
+        "invoice_number": "INV-5011",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 19
+        },
+        "amount_due": 165,
+        "amount_paid": 165,
+        "status": "Paid",
+        "issue_date": "2026-02-21",
+        "due_date": "2026-03-07"
+      },
+      {
+        "invoice_number": "INV-5012",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 20
+        },
+        "amount_due": 210,
+        "amount_paid": 210,
+        "status": "Paid",
+        "issue_date": "2026-03-22",
+        "due_date": "2026-04-05"
+      },
+      {
+        "invoice_number": "INV-5013",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 21
+        },
+        "amount_due": 255,
+        "amount_paid": 127.5,
+        "status": "Sent",
+        "issue_date": "2026-04-23",
+        "due_date": "2026-05-07"
+      },
+      {
+        "invoice_number": "INV-5014",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 22
+        },
+        "amount_due": 300,
+        "amount_paid": 300,
+        "status": "Paid",
+        "issue_date": "2026-05-24",
+        "due_date": "2026-06-07"
+      },
+      {
+        "invoice_number": "INV-5015",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 23
+        },
+        "amount_due": 345,
+        "amount_paid": 345,
+        "status": "Paid",
+        "issue_date": "2026-06-25",
+        "due_date": "2026-07-09"
+      },
+      {
+        "invoice_number": "INV-5016",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 24
+        },
+        "amount_due": 390,
+        "amount_paid": 390,
+        "status": "Paid",
+        "issue_date": "2026-07-26",
+        "due_date": "2026-08-09"
+      },
+      {
+        "invoice_number": "INV-5017",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 25
+        },
+        "amount_due": 435,
+        "amount_paid": 435,
+        "status": "Paid",
+        "issue_date": "2026-08-27",
+        "due_date": "2026-09-10"
+      },
+      {
+        "invoice_number": "INV-5018",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 26
+        },
+        "amount_due": 480,
+        "amount_paid": 480,
+        "status": "Paid",
+        "issue_date": "2026-09-28",
+        "due_date": "2026-10-12"
+      },
+      {
+        "invoice_number": "INV-5019",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 27
+        },
+        "amount_due": 120,
+        "amount_paid": 60,
+        "status": "Sent",
+        "issue_date": "2026-01-02",
+        "due_date": "2026-01-16"
+      },
+      {
+        "invoice_number": "INV-5020",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 28
+        },
+        "amount_due": 165,
+        "amount_paid": 165,
+        "status": "Paid",
+        "issue_date": "2026-02-03",
+        "due_date": "2026-02-17"
+      },
+      {
+        "invoice_number": "INV-5021",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 29
+        },
+        "amount_due": 210,
+        "amount_paid": 210,
+        "status": "Paid",
+        "issue_date": "2026-03-04",
+        "due_date": "2026-03-18"
+      },
+      {
+        "invoice_number": "INV-5022",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 30
+        },
+        "amount_due": 255,
+        "amount_paid": 127.5,
+        "status": "Overdue",
+        "issue_date": "2026-04-05",
+        "due_date": "2026-04-19"
+      },
+      {
+        "invoice_number": "INV-5023",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 31
+        },
+        "amount_due": 300,
+        "amount_paid": 300,
+        "status": "Paid",
+        "issue_date": "2026-05-06",
+        "due_date": "2026-05-20"
+      },
+      {
+        "invoice_number": "INV-5024",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 32
+        },
+        "amount_due": 345,
+        "amount_paid": 345,
+        "status": "Paid",
+        "issue_date": "2026-06-07",
+        "due_date": "2026-06-21"
+      },
+      {
+        "invoice_number": "INV-5025",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 33
+        },
+        "amount_due": 390,
+        "amount_paid": 195,
+        "status": "Sent",
+        "issue_date": "2026-07-08",
+        "due_date": "2026-07-22"
+      },
+      {
+        "invoice_number": "INV-5026",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 34
+        },
+        "amount_due": 435,
+        "amount_paid": 435,
+        "status": "Paid",
+        "issue_date": "2026-08-09",
+        "due_date": "2026-08-23"
+      },
+      {
+        "invoice_number": "INV-5027",
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 35
+        },
+        "amount_due": 480,
+        "amount_paid": 480,
+        "status": "Paid",
+        "issue_date": "2026-09-10",
+        "due_date": "2026-09-24"
+      }
+    ]
+  }
+}

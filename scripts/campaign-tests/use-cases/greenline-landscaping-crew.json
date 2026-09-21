@@ -1,0 +1,1532 @@
+{
+  "use_case": "A landscape maintenance and install crew that needs to track recurring client properties, crew members, equipment and scheduled jobs with pricing so the owner can route trucks and bill accurately.",
+  "organization": {
+    "name": "Greenline Landscaping Crew",
+    "id": "f4a02eca-6547-4622-aa95-52e75ac9aae6",
+    "settings_tag": {
+      "test_fixture": true
+    }
+  },
+  "entered_live_2026_09_20": true,
+  "tables": [
+    {
+      "key": "clients",
+      "name": "Clients",
+      "title_field": "client_name",
+      "fields": [
+        {
+          "key": "client_name",
+          "label": "Client Name",
+          "type": "text",
+          "sort": 10
+        },
+        {
+          "key": "phone",
+          "label": "Phone",
+          "type": "phone",
+          "sort": 20
+        },
+        {
+          "key": "email",
+          "label": "Email",
+          "type": "email",
+          "sort": 30
+        },
+        {
+          "key": "property_address",
+          "label": "Property Address",
+          "type": "text",
+          "sort": 40
+        },
+        {
+          "key": "service_frequency",
+          "label": "Service Frequency",
+          "type": "select",
+          "sort": 50,
+          "options": [
+            "Weekly",
+            "Biweekly",
+            "Monthly",
+            "One-time"
+          ]
+        }
+      ],
+      "row_count": 22,
+      "sample_rows": [
+        {
+          "client_name": "Angela Corwin",
+          "phone": "555-0420",
+          "email": "angelacorwin@example-mail.test",
+          "property_address": "200 Hollow Rd, Greenline",
+          "service_frequency": "Weekly"
+        },
+        {
+          "client_name": "Thomas Ekwueme",
+          "phone": "555-0421",
+          "email": "thomasekwueme@example-mail.test",
+          "property_address": "205 Fescue Ln, Northfield",
+          "service_frequency": "Biweekly"
+        },
+        {
+          "client_name": "Rachel Gable",
+          "phone": "555-0422",
+          "email": "rachelgable@example-mail.test",
+          "property_address": "210 Meadow Ct, Bellmont",
+          "service_frequency": "Monthly"
+        }
+      ]
+    },
+    {
+      "key": "crew_members",
+      "name": "Crew Members",
+      "title_field": "name",
+      "fields": [
+        {
+          "key": "name",
+          "label": "Name",
+          "type": "text",
+          "sort": 10
+        },
+        {
+          "key": "role",
+          "label": "Role",
+          "type": "select",
+          "sort": 20,
+          "options": [
+            "Crew Lead",
+            "Laborer",
+            "Equipment Operator"
+          ]
+        },
+        {
+          "key": "phone",
+          "label": "Phone",
+          "type": "phone",
+          "sort": 30
+        },
+        {
+          "key": "hire_date",
+          "label": "Hire Date",
+          "type": "datetime",
+          "kind": "date",
+          "sort": 40
+        },
+        {
+          "key": "hourly_rate",
+          "label": "Hourly Rate",
+          "type": "currency",
+          "unit": "$",
+          "sort": 50
+        }
+      ],
+      "row_count": 6,
+      "sample_rows": [
+        {
+          "name": "Hector Villanueva",
+          "role": "Crew Lead",
+          "phone": "555-0501",
+          "hire_date": "2021-03-01",
+          "hourly_rate": 28
+        },
+        {
+          "name": "Dana Whitfield",
+          "role": "Crew Lead",
+          "phone": "555-0502",
+          "hire_date": "2022-06-15",
+          "hourly_rate": 27
+        },
+        {
+          "name": "Miguel Ortiz",
+          "role": "Equipment Operator",
+          "phone": "555-0503",
+          "hire_date": "2022-09-10",
+          "hourly_rate": 24
+        }
+      ]
+    },
+    {
+      "key": "equipment",
+      "name": "Equipment",
+      "title_field": "equipment_name",
+      "fields": [
+        {
+          "key": "equipment_name",
+          "label": "Equipment Name",
+          "type": "text",
+          "sort": 10
+        },
+        {
+          "key": "type",
+          "label": "Type",
+          "type": "select",
+          "sort": 20,
+          "options": [
+            "Mower",
+            "Trimmer",
+            "Blower",
+            "Truck",
+            "Trailer"
+          ]
+        },
+        {
+          "key": "serial_number",
+          "label": "Serial Number",
+          "type": "text",
+          "sort": 30
+        },
+        {
+          "key": "purchase_date",
+          "label": "Purchase Date",
+          "type": "datetime",
+          "kind": "date",
+          "sort": 40
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "select",
+          "sort": 50,
+          "options": [
+            "In Service",
+            "Maintenance",
+            "Retired"
+          ]
+        }
+      ],
+      "row_count": 8,
+      "sample_rows": [
+        {
+          "equipment_name": "Zero-Turn Mower #1",
+          "type": "Mower",
+          "serial_number": "ZTM-2201",
+          "purchase_date": "2022-03-01",
+          "status": "In Service"
+        },
+        {
+          "equipment_name": "Zero-Turn Mower #2",
+          "type": "Mower",
+          "serial_number": "ZTM-2305",
+          "purchase_date": "2023-04-18",
+          "status": "In Service"
+        },
+        {
+          "equipment_name": "Stick Edger #1",
+          "type": "Trimmer",
+          "serial_number": "EDG-1190",
+          "purchase_date": "2021-05-09",
+          "status": "In Service"
+        }
+      ]
+    },
+    {
+      "key": "jobs",
+      "name": "Jobs",
+      "title_field": "job_number",
+      "fields": [
+        {
+          "key": "job_number",
+          "label": "Job Number",
+          "type": "text",
+          "sort": 10
+        },
+        {
+          "key": "client",
+          "label": "Client",
+          "type": "relation",
+          "relationTargetKey": "clients",
+          "sort": 20
+        },
+        {
+          "key": "crew_lead",
+          "label": "Crew Lead",
+          "type": "relation",
+          "relationTargetKey": "crew_members",
+          "sort": 30
+        },
+        {
+          "key": "service_type",
+          "label": "Service Type",
+          "type": "select",
+          "sort": 40,
+          "options": [
+            "Mow & Edge",
+            "Cleanup",
+            "Install",
+            "Irrigation Repair",
+            "Tree Trim"
+          ]
+        },
+        {
+          "key": "scheduled_date",
+          "label": "Scheduled Date",
+          "type": "datetime",
+          "kind": "date",
+          "sort": 50
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "select",
+          "sort": 60,
+          "options": [
+            "Scheduled",
+            "In Progress",
+            "Completed",
+            "Billed"
+          ]
+        },
+        {
+          "key": "price",
+          "label": "Price",
+          "type": "currency",
+          "unit": "$",
+          "sort": 70
+        }
+      ],
+      "row_count": 35,
+      "sample_rows": [
+        {
+          "job_number": "GL-2000",
+          "client": {
+            "__relTable": "clients",
+            "__relRowIndex": 0
+          },
+          "crew_lead": {
+            "__relTable": "crew_members",
+            "__relRowIndex": 0
+          },
+          "service_type": "Mow & Edge",
+          "scheduled_date": "2026-03-01",
+          "status": "Scheduled",
+          "price": 65
+        },
+        {
+          "job_number": "GL-2001",
+          "client": {
+            "__relTable": "clients",
+            "__relRowIndex": 1
+          },
+          "crew_lead": {
+            "__relTable": "crew_members",
+            "__relRowIndex": 1
+          },
+          "service_type": "Cleanup",
+          "scheduled_date": "2026-04-02",
+          "status": "Scheduled",
+          "price": 80
+        },
+        {
+          "job_number": "GL-2002",
+          "client": {
+            "__relTable": "clients",
+            "__relRowIndex": 2
+          },
+          "crew_lead": {
+            "__relTable": "crew_members",
+            "__relRowIndex": 0
+          },
+          "service_type": "Install",
+          "scheduled_date": "2026-05-03",
+          "status": "Scheduled",
+          "price": 1100
+        }
+      ]
+    },
+    {
+      "key": "schedule",
+      "name": "Schedule",
+      "title_field": "date",
+      "fields": [
+        {
+          "key": "date",
+          "label": "Date",
+          "type": "datetime",
+          "kind": "date",
+          "sort": 10
+        },
+        {
+          "key": "crew_lead",
+          "label": "Crew Lead",
+          "type": "relation",
+          "relationTargetKey": "crew_members",
+          "sort": 20
+        },
+        {
+          "key": "job",
+          "label": "Job",
+          "type": "relation",
+          "relationTargetKey": "jobs",
+          "sort": 30
+        },
+        {
+          "key": "start_time",
+          "label": "Start Time",
+          "type": "text",
+          "sort": 40
+        },
+        {
+          "key": "end_time",
+          "label": "End Time",
+          "type": "text",
+          "sort": 50
+        }
+      ],
+      "row_count": 25,
+      "sample_rows": [
+        {
+          "date": "2026-03-01",
+          "crew_lead": {
+            "__relTable": "crew_members",
+            "__relRowIndex": 0
+          },
+          "job": {
+            "__relTable": "jobs",
+            "__relRowIndex": 0
+          },
+          "start_time": "08:00",
+          "end_time": "10:30"
+        },
+        {
+          "date": "2026-04-02",
+          "crew_lead": {
+            "__relTable": "crew_members",
+            "__relRowIndex": 1
+          },
+          "job": {
+            "__relTable": "jobs",
+            "__relRowIndex": 1
+          },
+          "start_time": "12:30",
+          "end_time": "15:00"
+        },
+        {
+          "date": "2026-05-03",
+          "crew_lead": {
+            "__relTable": "crew_members",
+            "__relRowIndex": 0
+          },
+          "job": {
+            "__relTable": "jobs",
+            "__relRowIndex": 2
+          },
+          "start_time": "08:00",
+          "end_time": "10:30"
+        }
+      ]
+    }
+  ],
+  "full_rows": {
+    "clients": [
+      {
+        "client_name": "Angela Corwin",
+        "phone": "555-0420",
+        "email": "angelacorwin@example-mail.test",
+        "property_address": "200 Hollow Rd, Greenline",
+        "service_frequency": "Weekly"
+      },
+      {
+        "client_name": "Thomas Ekwueme",
+        "phone": "555-0421",
+        "email": "thomasekwueme@example-mail.test",
+        "property_address": "205 Fescue Ln, Northfield",
+        "service_frequency": "Biweekly"
+      },
+      {
+        "client_name": "Rachel Gable",
+        "phone": "555-0422",
+        "email": "rachelgable@example-mail.test",
+        "property_address": "210 Meadow Ct, Bellmont",
+        "service_frequency": "Monthly"
+      },
+      {
+        "client_name": "Eric Iversen",
+        "phone": "555-0423",
+        "email": "ericiversen@example-mail.test",
+        "property_address": "215 Orchard Ave, Cresthaven",
+        "service_frequency": "One-time"
+      },
+      {
+        "client_name": "Monica Kessler",
+        "phone": "555-0424",
+        "email": "monicakessler@example-mail.test",
+        "property_address": "220 Trailhead Dr, Greenline",
+        "service_frequency": "Weekly"
+      },
+      {
+        "client_name": "Paul Moreno",
+        "phone": "555-0425",
+        "email": "paulmoreno@example-mail.test",
+        "property_address": "225 Sycamore St, Northfield",
+        "service_frequency": "Biweekly"
+      },
+      {
+        "client_name": "Denise Corwin",
+        "phone": "555-0426",
+        "email": "denisecorwin@example-mail.test",
+        "property_address": "230 Vineyard Way, Bellmont",
+        "service_frequency": "Monthly"
+      },
+      {
+        "client_name": "Jason Ekwueme",
+        "phone": "555-0427",
+        "email": "jasonekwueme@example-mail.test",
+        "property_address": "235 Pinehurst Rd, Cresthaven",
+        "service_frequency": "One-time"
+      },
+      {
+        "client_name": "Lauren Gable",
+        "phone": "555-0428",
+        "email": "laurengable@example-mail.test",
+        "property_address": "240 Hollow Rd, Greenline",
+        "service_frequency": "Weekly"
+      },
+      {
+        "client_name": "Craig Iversen",
+        "phone": "555-0429",
+        "email": "craigiversen@example-mail.test",
+        "property_address": "245 Fescue Ln, Northfield",
+        "service_frequency": "Biweekly"
+      },
+      {
+        "client_name": "Vanessa Kessler",
+        "phone": "555-0430",
+        "email": "vanessakessler@example-mail.test",
+        "property_address": "250 Meadow Ct, Bellmont",
+        "service_frequency": "Monthly"
+      },
+      {
+        "client_name": "Todd Moreno",
+        "phone": "555-0431",
+        "email": "toddmoreno@example-mail.test",
+        "property_address": "255 Orchard Ave, Cresthaven",
+        "service_frequency": "One-time"
+      },
+      {
+        "client_name": "Yolanda Corwin",
+        "phone": "555-0432",
+        "email": "yolandacorwin@example-mail.test",
+        "property_address": "260 Trailhead Dr, Greenline",
+        "service_frequency": "Weekly"
+      },
+      {
+        "client_name": "Peter Ekwueme",
+        "phone": "555-0433",
+        "email": "peterekwueme@example-mail.test",
+        "property_address": "265 Sycamore St, Northfield",
+        "service_frequency": "Biweekly"
+      },
+      {
+        "client_name": "Angela Gable",
+        "phone": "555-0434",
+        "email": "angelagable@example-mail.test",
+        "property_address": "270 Vineyard Way, Bellmont",
+        "service_frequency": "Monthly"
+      },
+      {
+        "client_name": "Thomas Iversen",
+        "phone": "555-0435",
+        "email": "thomasiversen@example-mail.test",
+        "property_address": "275 Pinehurst Rd, Cresthaven",
+        "service_frequency": "One-time"
+      },
+      {
+        "client_name": "Rachel Kessler",
+        "phone": "555-0436",
+        "email": "rachelkessler@example-mail.test",
+        "property_address": "280 Hollow Rd, Greenline",
+        "service_frequency": "Weekly"
+      },
+      {
+        "client_name": "Eric Moreno",
+        "phone": "555-0437",
+        "email": "ericmoreno@example-mail.test",
+        "property_address": "285 Fescue Ln, Northfield",
+        "service_frequency": "Biweekly"
+      },
+      {
+        "client_name": "Monica Corwin",
+        "phone": "555-0438",
+        "email": "monicacorwin@example-mail.test",
+        "property_address": "290 Meadow Ct, Bellmont",
+        "service_frequency": "Monthly"
+      },
+      {
+        "client_name": "Paul Ekwueme",
+        "phone": "555-0439",
+        "email": "paulekwueme@example-mail.test",
+        "property_address": "295 Orchard Ave, Cresthaven",
+        "service_frequency": "One-time"
+      },
+      {
+        "client_name": "Denise Gable",
+        "phone": "555-0440",
+        "email": "denisegable@example-mail.test",
+        "property_address": "300 Trailhead Dr, Greenline",
+        "service_frequency": "Weekly"
+      },
+      {
+        "client_name": "Jason Iversen",
+        "phone": "555-0441",
+        "email": "jasoniversen@example-mail.test",
+        "property_address": "305 Sycamore St, Northfield",
+        "service_frequency": "Biweekly"
+      }
+    ],
+    "crew_members": [
+      {
+        "name": "Hector Villanueva",
+        "role": "Crew Lead",
+        "phone": "555-0501",
+        "hire_date": "2021-03-01",
+        "hourly_rate": 28
+      },
+      {
+        "name": "Dana Whitfield",
+        "role": "Crew Lead",
+        "phone": "555-0502",
+        "hire_date": "2022-06-15",
+        "hourly_rate": 27
+      },
+      {
+        "name": "Miguel Ortiz",
+        "role": "Equipment Operator",
+        "phone": "555-0503",
+        "hire_date": "2022-09-10",
+        "hourly_rate": 24
+      },
+      {
+        "name": "Casey Nolan",
+        "role": "Laborer",
+        "phone": "555-0504",
+        "hire_date": "2023-04-03",
+        "hourly_rate": 19.5
+      },
+      {
+        "name": "Brianna Kohl",
+        "role": "Laborer",
+        "phone": "555-0505",
+        "hire_date": "2023-07-22",
+        "hourly_rate": 19.5
+      },
+      {
+        "name": "Wyatt Simmons",
+        "role": "Laborer",
+        "phone": "555-0506",
+        "hire_date": "2024-02-12",
+        "hourly_rate": 20
+      }
+    ],
+    "equipment": [
+      {
+        "equipment_name": "Zero-Turn Mower #1",
+        "type": "Mower",
+        "serial_number": "ZTM-2201",
+        "purchase_date": "2022-03-01",
+        "status": "In Service"
+      },
+      {
+        "equipment_name": "Zero-Turn Mower #2",
+        "type": "Mower",
+        "serial_number": "ZTM-2305",
+        "purchase_date": "2023-04-18",
+        "status": "In Service"
+      },
+      {
+        "equipment_name": "Stick Edger #1",
+        "type": "Trimmer",
+        "serial_number": "EDG-1190",
+        "purchase_date": "2021-05-09",
+        "status": "In Service"
+      },
+      {
+        "equipment_name": "Backpack Blower #1",
+        "type": "Blower",
+        "serial_number": "BLW-0552",
+        "purchase_date": "2021-05-09",
+        "status": "Maintenance"
+      },
+      {
+        "equipment_name": "Backpack Blower #2",
+        "type": "Blower",
+        "serial_number": "BLW-0741",
+        "purchase_date": "2023-08-02",
+        "status": "In Service"
+      },
+      {
+        "equipment_name": "Flatbed Truck",
+        "type": "Truck",
+        "serial_number": "TRK-4421",
+        "purchase_date": "2020-01-15",
+        "status": "In Service"
+      },
+      {
+        "equipment_name": "Landscape Trailer",
+        "type": "Trailer",
+        "serial_number": "TRL-7702",
+        "purchase_date": "2020-01-15",
+        "status": "In Service"
+      },
+      {
+        "equipment_name": "Trimmer Mower #3",
+        "type": "Mower",
+        "serial_number": "ZTM-1987",
+        "purchase_date": "2019-06-04",
+        "status": "Retired"
+      }
+    ],
+    "jobs": [
+      {
+        "job_number": "GL-2000",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 0
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "service_type": "Mow & Edge",
+        "scheduled_date": "2026-03-01",
+        "status": "Scheduled",
+        "price": 65
+      },
+      {
+        "job_number": "GL-2001",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 1
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "service_type": "Cleanup",
+        "scheduled_date": "2026-04-02",
+        "status": "Scheduled",
+        "price": 80
+      },
+      {
+        "job_number": "GL-2002",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 2
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "service_type": "Install",
+        "scheduled_date": "2026-05-03",
+        "status": "Scheduled",
+        "price": 1100
+      },
+      {
+        "job_number": "GL-2003",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 3
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "service_type": "Irrigation Repair",
+        "scheduled_date": "2026-06-04",
+        "status": "Scheduled",
+        "price": 140
+      },
+      {
+        "job_number": "GL-2004",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 4
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "service_type": "Tree Trim",
+        "scheduled_date": "2026-07-05",
+        "status": "Scheduled",
+        "price": 180
+      },
+      {
+        "job_number": "GL-2005",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 5
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "service_type": "Mow & Edge",
+        "scheduled_date": "2026-08-06",
+        "status": "In Progress",
+        "price": 95
+      },
+      {
+        "job_number": "GL-2006",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 6
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "service_type": "Cleanup",
+        "scheduled_date": "2026-03-07",
+        "status": "In Progress",
+        "price": 65
+      },
+      {
+        "job_number": "GL-2007",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 7
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "service_type": "Install",
+        "scheduled_date": "2026-04-08",
+        "status": "In Progress",
+        "price": 1100
+      },
+      {
+        "job_number": "GL-2008",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 8
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "service_type": "Irrigation Repair",
+        "scheduled_date": "2026-05-09",
+        "status": "In Progress",
+        "price": 220
+      },
+      {
+        "job_number": "GL-2009",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 9
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "service_type": "Tree Trim",
+        "scheduled_date": "2026-06-10",
+        "status": "Completed",
+        "price": 240
+      },
+      {
+        "job_number": "GL-2010",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 10
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "service_type": "Mow & Edge",
+        "scheduled_date": "2026-07-11",
+        "status": "Completed",
+        "price": 80
+      },
+      {
+        "job_number": "GL-2011",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 11
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "service_type": "Cleanup",
+        "scheduled_date": "2026-08-12",
+        "status": "Completed",
+        "price": 95
+      },
+      {
+        "job_number": "GL-2012",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 12
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "service_type": "Install",
+        "scheduled_date": "2026-03-13",
+        "status": "Billed",
+        "price": 1100
+      },
+      {
+        "job_number": "GL-2013",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 13
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "service_type": "Irrigation Repair",
+        "scheduled_date": "2026-04-14",
+        "status": "Completed",
+        "price": 180
+      },
+      {
+        "job_number": "GL-2014",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 14
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "service_type": "Tree Trim",
+        "scheduled_date": "2026-05-15",
+        "status": "Completed",
+        "price": 300
+      },
+      {
+        "job_number": "GL-2015",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 15
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "service_type": "Mow & Edge",
+        "scheduled_date": "2026-06-16",
+        "status": "Completed",
+        "price": 65
+      },
+      {
+        "job_number": "GL-2016",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 16
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "service_type": "Cleanup",
+        "scheduled_date": "2026-07-17",
+        "status": "Billed",
+        "price": 80
+      },
+      {
+        "job_number": "GL-2017",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 17
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "service_type": "Install",
+        "scheduled_date": "2026-08-18",
+        "status": "Completed",
+        "price": 1100
+      },
+      {
+        "job_number": "GL-2018",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 18
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "service_type": "Irrigation Repair",
+        "scheduled_date": "2026-03-19",
+        "status": "Completed",
+        "price": 140
+      },
+      {
+        "job_number": "GL-2019",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 19
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "service_type": "Tree Trim",
+        "scheduled_date": "2026-04-20",
+        "status": "Completed",
+        "price": 360
+      },
+      {
+        "job_number": "GL-2020",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 20
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "service_type": "Mow & Edge",
+        "scheduled_date": "2026-05-21",
+        "status": "Billed",
+        "price": 95
+      },
+      {
+        "job_number": "GL-2021",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 21
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "service_type": "Cleanup",
+        "scheduled_date": "2026-06-22",
+        "status": "Completed",
+        "price": 65
+      },
+      {
+        "job_number": "GL-2022",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 0
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "service_type": "Install",
+        "scheduled_date": "2026-07-23",
+        "status": "Completed",
+        "price": 1100
+      },
+      {
+        "job_number": "GL-2023",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 1
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "service_type": "Irrigation Repair",
+        "scheduled_date": "2026-08-24",
+        "status": "Completed",
+        "price": 220
+      },
+      {
+        "job_number": "GL-2024",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 2
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "service_type": "Tree Trim",
+        "scheduled_date": "2026-03-25",
+        "status": "Billed",
+        "price": 180
+      },
+      {
+        "job_number": "GL-2025",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 3
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "service_type": "Mow & Edge",
+        "scheduled_date": "2026-04-26",
+        "status": "Completed",
+        "price": 80
+      },
+      {
+        "job_number": "GL-2026",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 4
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "service_type": "Cleanup",
+        "scheduled_date": "2026-05-27",
+        "status": "Completed",
+        "price": 95
+      },
+      {
+        "job_number": "GL-2027",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 5
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "service_type": "Install",
+        "scheduled_date": "2026-06-01",
+        "status": "Completed",
+        "price": 1100
+      },
+      {
+        "job_number": "GL-2028",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 6
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "service_type": "Irrigation Repair",
+        "scheduled_date": "2026-07-02",
+        "status": "Billed",
+        "price": 180
+      },
+      {
+        "job_number": "GL-2029",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 7
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "service_type": "Tree Trim",
+        "scheduled_date": "2026-08-03",
+        "status": "Completed",
+        "price": 240
+      },
+      {
+        "job_number": "GL-2030",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 8
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "service_type": "Mow & Edge",
+        "scheduled_date": "2026-03-04",
+        "status": "Completed",
+        "price": 65
+      },
+      {
+        "job_number": "GL-2031",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 9
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "service_type": "Cleanup",
+        "scheduled_date": "2026-04-05",
+        "status": "Completed",
+        "price": 80
+      },
+      {
+        "job_number": "GL-2032",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 10
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "service_type": "Install",
+        "scheduled_date": "2026-05-06",
+        "status": "Billed",
+        "price": 1100
+      },
+      {
+        "job_number": "GL-2033",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 11
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "service_type": "Irrigation Repair",
+        "scheduled_date": "2026-06-07",
+        "status": "Completed",
+        "price": 140
+      },
+      {
+        "job_number": "GL-2034",
+        "client": {
+          "__relTable": "clients",
+          "__relRowIndex": 12
+        },
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "service_type": "Tree Trim",
+        "scheduled_date": "2026-07-08",
+        "status": "Completed",
+        "price": 300
+      }
+    ],
+    "schedule": [
+      {
+        "date": "2026-03-01",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 0
+        },
+        "start_time": "08:00",
+        "end_time": "10:30"
+      },
+      {
+        "date": "2026-04-02",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 1
+        },
+        "start_time": "12:30",
+        "end_time": "15:00"
+      },
+      {
+        "date": "2026-05-03",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 2
+        },
+        "start_time": "08:00",
+        "end_time": "10:30"
+      },
+      {
+        "date": "2026-06-04",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 3
+        },
+        "start_time": "12:30",
+        "end_time": "15:00"
+      },
+      {
+        "date": "2026-07-05",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 4
+        },
+        "start_time": "08:00",
+        "end_time": "10:30"
+      },
+      {
+        "date": "2026-08-06",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 5
+        },
+        "start_time": "12:30",
+        "end_time": "15:00"
+      },
+      {
+        "date": "2026-03-07",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 6
+        },
+        "start_time": "08:00",
+        "end_time": "10:30"
+      },
+      {
+        "date": "2026-04-08",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 7
+        },
+        "start_time": "12:30",
+        "end_time": "15:00"
+      },
+      {
+        "date": "2026-05-09",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 8
+        },
+        "start_time": "08:00",
+        "end_time": "10:30"
+      },
+      {
+        "date": "2026-06-10",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 9
+        },
+        "start_time": "12:30",
+        "end_time": "15:00"
+      },
+      {
+        "date": "2026-07-11",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 10
+        },
+        "start_time": "08:00",
+        "end_time": "10:30"
+      },
+      {
+        "date": "2026-08-12",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 11
+        },
+        "start_time": "12:30",
+        "end_time": "15:00"
+      },
+      {
+        "date": "2026-03-13",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 12
+        },
+        "start_time": "08:00",
+        "end_time": "10:30"
+      },
+      {
+        "date": "2026-04-14",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 13
+        },
+        "start_time": "12:30",
+        "end_time": "15:00"
+      },
+      {
+        "date": "2026-05-15",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 14
+        },
+        "start_time": "08:00",
+        "end_time": "10:30"
+      },
+      {
+        "date": "2026-06-16",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 15
+        },
+        "start_time": "12:30",
+        "end_time": "15:00"
+      },
+      {
+        "date": "2026-07-17",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 16
+        },
+        "start_time": "08:00",
+        "end_time": "10:30"
+      },
+      {
+        "date": "2026-08-18",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 17
+        },
+        "start_time": "12:30",
+        "end_time": "15:00"
+      },
+      {
+        "date": "2026-03-19",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 18
+        },
+        "start_time": "08:00",
+        "end_time": "10:30"
+      },
+      {
+        "date": "2026-04-20",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 19
+        },
+        "start_time": "12:30",
+        "end_time": "15:00"
+      },
+      {
+        "date": "2026-05-21",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 20
+        },
+        "start_time": "08:00",
+        "end_time": "10:30"
+      },
+      {
+        "date": "2026-06-22",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 21
+        },
+        "start_time": "12:30",
+        "end_time": "15:00"
+      },
+      {
+        "date": "2026-07-23",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 22
+        },
+        "start_time": "08:00",
+        "end_time": "10:30"
+      },
+      {
+        "date": "2026-08-24",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 1
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 23
+        },
+        "start_time": "12:30",
+        "end_time": "15:00"
+      },
+      {
+        "date": "2026-03-25",
+        "crew_lead": {
+          "__relTable": "crew_members",
+          "__relRowIndex": 0
+        },
+        "job": {
+          "__relTable": "jobs",
+          "__relRowIndex": 24
+        },
+        "start_time": "08:00",
+        "end_time": "10:30"
+      }
+    ]
+  }
+}
