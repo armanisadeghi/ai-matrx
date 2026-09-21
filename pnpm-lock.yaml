@@ -47,7 +47,7 @@ importers:
         version: 0.11.9(react@19.3.0)
       '@ai-matrx/data':
         specifier: latest
-        version: 0.17.1(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)
+        version: 0.18.0(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)
       '@ai-matrx/design-system':
         specifier: latest
         version: 0.32.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -930,8 +930,8 @@ packages:
     resolution: {integrity: sha512-wAPmHwOv+uy15Ff6FGXnMCQef6yEz9BzL9qdhrvS9soZjCSOOA0QEecvgVhsL9NIWmI/T909XH/q9FhaQMIuFA==}
     engines: {node: '>=20'}
 
-  '@ai-matrx/data@0.17.1':
-    resolution: {integrity: sha512-IbxVakQeqQMiRgUYolx3j8ULU07znFqkRg6jpUqghOAxFVpp628i5xR4Mgp+JiJpbLjCKdZbI4B6ga8gRyQ3kA==}
+  '@ai-matrx/data@0.18.0':
+    resolution: {integrity: sha512-sBMdVnYs9auPdKMIQc1dZHsGWt69brr3syPH71tTUyTjKqxyiDe3q96DV6fT8t6AhZDuKrN3euxIro8Uj0NIxQ==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -12866,7 +12866,7 @@ snapshots:
 
   '@ai-matrx/agents@0.13.3(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@ai-matrx/data': 0.17.1(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)
+      '@ai-matrx/data': 0.18.0(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)
       '@ai-matrx/design-system': 0.32.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/kit': 0.16.1(react@19.3.0)
     optionalDependencies:
@@ -12924,7 +12924,7 @@ snapshots:
     dependencies:
       ajv: 8.20.0
 
-  '@ai-matrx/data@0.17.1(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)':
+  '@ai-matrx/data@0.18.0(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)':
     dependencies:
       '@ai-matrx/realtime': 0.8.6(react@19.3.0)
       '@supabase/ssr': 0.12.7(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))
@@ -24356,7 +24356,7 @@ snapshots:
 
   md5.js@1.3.5:
     dependencies:
-      hash-base: 3.1.2
+      hash-base: 3.0.5
       inherits: 2.0.4
       safe-buffer: 5.2.1
 
