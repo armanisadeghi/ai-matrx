@@ -267,6 +267,101 @@ export interface PolicyFacts {
    * `scheduler._claim_token_is_minted_by_the_door` from `platform._stamp_org_default`.
    */
   readonly triggerGuardedColumns?: readonly string[];
+  /**
+   * 🚨 A RESTRICTIVE POLICY THAT NAMES A COLUMN PINS IT. (SECURITY-SWEEP-2, 2026-09-21.)
+   *
+   * `with check (false)` is only the BLUNTEST restrictive shape — "no client write at all". The
+   * shape that closes the ~36 `user_id`-names-the-caller tables is a restrictive policy that
+   * keeps the write and pins the column:
+   *
+   *     create policy user_id_is_the_caller on <t> as restrictive for insert to authenticated
+   *       with check (user_id = (select auth.uid()) or is_platform_admin());
+   *
+   * A RESTRICTIVE policy is ANDed with every permissive one, so this constrains the column no
+   * matter what `iam.apply_rls` regenerates into `std_insert` — which is exactly why it is the
+   * mechanism, and exactly why the guard has to be able to see it. Before this, the guard's only
+   * notion of "closed" was `with check (false)`, so pinning a column the platform's own
+   * regeneration-proof way would NOT have shrunk the baseline. That is the fourth time in this
+   * campaign that a real fix was invisible to the thing meant to measure it, and the trap had
+   * already closed three times before anybody wrote it down.
+   *
+   * TWO THINGS KEEP IT HONEST, and both are asserted in the self-test on real bytes:
+   *   * PERMISSIVE DOES NOT COUNT. Permissive policies are ORed, so a second permissive policy
+   *     naming `user_id` does not constrain anything — it ADDS a way in. Only the restrictive
+   *     AND narrows.
+   *   * A TAUTOLOGY IS NOT A PIN. `user_id = user_id` and `user_id is not null` name the column
+   *     and constrain nothing; a generous "is the name mentioned" test (which is the right,
+   *     deliberately generous rule for a PERMISSIVE policy, where mentioning the column means the
+   *     author considered it) becomes a loophole the moment clearing a baseline row is the prize.
+   *     So the tautological atoms are stripped before the mention is counted.
+   *
+   * Per (cmd, column): a restrictive INSERT policy says nothing about UPDATE.
+   */
+  readonly restrictiveChecks?: readonly RestrictiveCheck[];
+}
+
+/** A RESTRICTIVE policy on the same table that applies to a client role. */
+export interface RestrictiveCheck {
+  readonly policy: string;
+  /** 'a' INSERT · 'w' UPDATE · '*' ALL */
+  readonly cmd: string;
+  readonly withCheck: string | null;
+  readonly usingExpr: string | null;
+}
+
+/**
+ * Remove every TAUTOLOGICAL mention of `column` from an expression: comparisons of the column
+ * with itself, and null tests. What is left is the text in which a real mention would have to
+ * appear. See `PolicyFacts.restrictiveChecks`.
+ */
+export function stripTautologies(expr: string, column: string): string {
+  const c = column.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // Optional `new.` / `old.` / table qualification on either side.
+  const ref = `(?:(?:new|old|[a-z_][a-z0-9_$]*)\\.)?${c}`;
+  return expr
+    // `user_id = user_id`, `new.user_id <> user_id`, with optional casts.
+    .replace(
+      new RegExp(`\\b${ref}\\b(?:::[a-z_ ]+)?\\s*(?:=|<>|!=)\\s*\\b${ref}\\b(?:::[a-z_ ]+)?`, "gi"),
+      " TAUTOLOGY ",
+    )
+    // `user_id is not null`, `user_id is null`.
+    .replace(new RegExp(`\\b${ref}\\b\\s+is\\s+(?:not\\s+)?(?:null|distinct\\s+from\\s+${ref})\\b`, "gi"), " TAUTOLOGY ");
+}
+
+/** Does this restrictive policy apply to the command the permissive policy covers? */
+function restrictiveCovers(restrictiveCmd: string, permissiveCmd: string): boolean {
+  if (restrictiveCmd === "*") return true;
+  return restrictiveCmd === permissiveCmd;
+}
+
+/**
+ * The columns a RESTRICTIVE policy genuinely constrains for this permissive policy's command.
+ * See `PolicyFacts.restrictiveChecks`.
+ */
+export function restrictivePinnedColumns(policy: PolicyFacts): Set<string> {
+  const out = new Set<string>();
+  const checks = policy.restrictiveChecks ?? [];
+  if (checks.length === 0) return out;
+  for (const column of policy.columns) {
+    // A restrictive policy's effective check on the NEW row follows the same Postgres rule as a
+    // permissive one: WITH CHECK, falling back to USING on UPDATE/ALL.
+    const naming = checks.filter((rc) => {
+      const text = effectiveCheck(rc);
+      if (text === null) return false;
+      return isPinned(stripTautologies(text, column), column);
+    });
+    if (naming.length === 0) continue;
+    if (policy.cmd === "*") {
+      // An ALL permissive policy is only narrowed on BOTH write commands — the same rule the
+      // census already applies to `with check (false)` closure.
+      const insert = naming.some((rc) => restrictiveCovers(rc.cmd, "a"));
+      const update = naming.some((rc) => restrictiveCovers(rc.cmd, "w"));
+      if (insert && update) out.add(column);
+      continue;
+    }
+    if (naming.some((rc) => restrictiveCovers(rc.cmd, policy.cmd))) out.add(column);
+  }
+  return out;
 }
 
 /** What Postgres will actually apply to the NEW row. See `usingExpr`. */
@@ -354,10 +449,14 @@ export function findingsFor(policy: PolicyFacts): Finding[] {
     policy.writableColumns === undefined ? null : new Set(policy.writableColumns);
   const vocabulary = new Set(policy.vocabularyColumns ?? []);
   const triggerGuarded = new Set(policy.triggerGuardedColumns ?? []);
+  const restrictivePinned = restrictivePinnedColumns(policy);
   for (const column of policy.columns) {
     if (writable !== null && !writable.has(column)) continue;
     // See `triggerGuardedColumns`: a rule a policy cannot state lives in a BEFORE trigger.
     if (triggerGuarded.has(column)) continue;
+    // See `restrictiveChecks`: a RESTRICTIVE policy is ANDed with every permissive one, so a
+    // column it genuinely names is pinned regardless of what `iam.apply_rls` regenerates.
+    if (restrictivePinned.has(column)) continue;
     const severity = classify(column, ctx, vocabulary.has(column));
     if (severity === null) continue;
     if (isPinned(check, column)) continue;
@@ -473,7 +572,30 @@ select w.schema_name,
            --     platform._stamp_org_default.
            and tp.prosrc ~* 'raise +exception'
            and (select count(distinct t2.tgrelid) from pg_trigger t2
-                 where t2.tgfoid = tp.oid and not t2.tgisinternal) = 1) as trigger_guarded_columns
+                 where t2.tgfoid = tp.oid and not t2.tgisinternal) = 1) as trigger_guarded_columns,
+       -- EVERY RESTRICTIVE WRITE POLICY ON THIS TABLE THAT APPLIES TO A CLIENT ROLE, with its
+       -- command and both expressions. A restrictive policy is ANDed with every permissive one,
+       -- so a column it genuinely names is pinned no matter what iam.apply_rls regenerates --
+       -- which is why it is the mechanism for the ~36 user_id-names-the-caller tables, and
+       -- why the guard has to see it. "with check (false)" (the closed CTE above) is only the
+       -- bluntest member of this family. The naming/tautology judgement is made in TypeScript,
+       -- beside its self-test, not in this query.
+       (select coalesce(jsonb_agg(jsonb_build_object(
+                 'policy',    rp.polname,
+                 'cmd',       rp.polcmd::text,
+                 'withCheck', pg_get_expr(rp.polwithcheck, rp.polrelid),
+                 'usingExpr', pg_get_expr(rp.polqual, rp.polrelid))), '[]'::jsonb)
+          from pg_policy rp
+         where rp.polrelid = w.relid
+           and rp.polpermissive = false
+           and rp.polcmd in ('a','w','*')
+           and (
+             rp.polroles = '{0}'
+             or exists (
+               select 1 from pg_roles r
+                where r.oid = any(rp.polroles) and r.rolname = any($1::text[])
+             )
+           )) as restrictive_checks
   from client_writable w
   join pg_policy p on p.polrelid = w.relid
  where p.polpermissive = true
@@ -651,6 +773,97 @@ function selfTest(): number {
     "…and a trigger speaking for one column says nothing about the next: user_id stays CRITICAL",
   );
 
+  // A RESTRICTIVE POLICY THAT NAMES A COLUMN PINS IT — the mechanism for the ~36
+  // `user_id`-names-the-caller tables, and the fourth fix this guard could not see. The fixture
+  // is the real live shape: `communication.sms_conversations`, whose generated `std_insert`
+  // pins `created_by` and `organization_id` and says nothing about `user_id`.
+  const namesTheCaller = {
+    schema: "communication",
+    table: "sms_conversations",
+    policy: "std_insert",
+    cmd: "a",
+    withCheck:
+      "(( SELECT is_platform_admin() AS is_platform_admin) OR ((created_by = ( SELECT auth.uid() AS uid)) " +
+      "AND ((organization_id IS NULL) OR iam.has_org_access(organization_id))))",
+    usingExpr: null,
+    columns: ["id", "user_id", "phone_number", "created_by", "organization_id"],
+  } as const;
+  const theRealPin: RestrictiveCheck = {
+    policy: "sms_conversations_user_id_is_the_caller",
+    cmd: "a",
+    withCheck:
+      "((user_id = ( SELECT auth.uid() AS uid)) OR ( SELECT is_platform_admin() AS is_platform_admin))",
+    usingExpr: null,
+  };
+  // RED half — the bytes as they stand today.
+  say(
+    findingsFor({ ...namesTheCaller })
+      .some((f) => f.column === "user_id" && f.severity === "critical"),
+    "a `user_id` the generated policy never names is CRITICAL (communication.sms_conversations)",
+  );
+  // GREEN half — the SAME bytes with the restrictive pin added, and nothing else changed.
+  const pinned = findingsFor({ ...namesTheCaller, restrictiveChecks: [theRealPin] });
+  say(
+    !pinned.some((f) => f.column === "user_id"),
+    "the same column named in a RESTRICTIVE policy's WITH CHECK is NOT a finding — a " +
+      "restrictive policy is ANDed with every permissive one, so it survives iam.apply_rls",
+  );
+  say(
+    pinned.some((f) => f.column === "phone_number") === false &&
+      findingsFor({
+        ...namesTheCaller,
+        columns: [...namesTheCaller.columns, "permission_level"],
+        restrictiveChecks: [theRealPin],
+      }).some((f) => f.column === "permission_level"),
+    "…and it clears EXACTLY that column: a `permission_level` on the same table, which the " +
+      "restrictive policy does not name, is still a finding",
+  );
+  // A PERMISSIVE policy naming it is not a pin: permissive policies are ORed, so a second one
+  // naming `user_id` ADDS a way in rather than narrowing anything.
+  say(
+    findingsFor({
+      ...namesTheCaller,
+      restrictiveChecks: [],
+      // The identical expression, arriving as a second PERMISSIVE policy instead.
+    }).some((f) => f.column === "user_id" && f.severity === "critical") &&
+      findingsFor({
+        schema: "communication",
+        table: "sms_conversations",
+        policy: "sms_conversations_user_id_permissive",
+        cmd: "a",
+        withCheck: theRealPin.withCheck,
+        usingExpr: null,
+        columns: [...namesTheCaller.columns],
+      }).every((f) => f.column !== "user_id"),
+    "a PERMISSIVE policy naming the column does not pin it for the OTHER policy — permissive " +
+      "policies are ORed, so the unpinned door is still open (each policy is judged on its own)",
+  );
+  // A TAUTOLOGY IS NOT A PIN. Both shapes name the column and constrain nothing.
+  for (const [label, expr] of [
+    ["user_id = user_id", "((user_id = user_id) AND ( SELECT is_platform_admin() AS is_platform_admin))"],
+    ["user_id is not null", "(user_id IS NOT NULL)"],
+  ] as const) {
+    say(
+      findingsFor({
+        ...namesTheCaller,
+        restrictiveChecks: [{ ...theRealPin, withCheck: expr }],
+      }).some((f) => f.column === "user_id" && f.severity === "critical"),
+      `a RESTRICTIVE policy that names the column only in a tautology (\`${label}\`) does NOT ` +
+        `pin it — the generous "is it mentioned" rule becomes a loophole the moment clearing a ` +
+        `baseline row is the prize`,
+    );
+  }
+  // PER COMMAND: a restrictive INSERT policy says nothing about UPDATE.
+  say(
+    findingsFor({
+      ...namesTheCaller,
+      policy: "std_update",
+      cmd: "w",
+      restrictiveChecks: [theRealPin],
+    }).some((f) => f.column === "user_id" && f.severity === "critical"),
+    "a restrictive INSERT pin does not clear the UPDATE policy — the pin is per command",
+  );
+
   // GREEN — the shape it has today: a restrictive refusal means the census never yields the
   // table at all, so the classifier is handed nothing to judge.
   say(
@@ -808,6 +1021,7 @@ async function main(): Promise<number> {
           writableColumns: r.writable_columns ?? [],
           vocabularyColumns: [...(proven.get(`${r.schema_name}.${r.table_name}`) ?? [])],
           triggerGuardedColumns: r.trigger_guarded_columns ?? [],
+          restrictiveChecks: (r.restrictive_checks ?? []) as RestrictiveCheck[],
         }),
       );
     }
