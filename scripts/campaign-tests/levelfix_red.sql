@@ -436,56 +436,70 @@ $function$;
 -- so the way to put it back is to make the lane confer nothing, which is exactly what the
 -- kernel saw before LEVEL-FIX existed. Same for `iam.grant_addressed_level`, which
 -- `custom.addressed_cap_specific` calls on its rung 1 and which this file used to drop too.
--- 🚨 NOT CLOSED — READ THIS BEFORE TRUSTING THIS TWIN (lane RED-SUITES-3, 2026-09-21).
--- Two REAL defects in this file were fixed and are described above: it DROPPED
--- `iam.grant_addressed_level` and `iam.member_lane_confers`, both of which the access kernel
--- (`custom.addressed_cap_specific` rung 1, `custom.addressed_cap` line 25) now calls, so the
--- twin died with "function does not exist" inside `custom.share_revoke` before asking any of
--- its five questions. That is fixed: the lane is NEUTERED from the live bytes instead of
--- dropped, and it refuses by name if the arm it removes is not there.
+-- 🚨 TWO OF FIVE, AND THE OTHER THREE ARE A HAND-UP (lane RED-SUITES-3, 2026-09-21).
 --
--- WHAT IS STILL WRONG, said plainly rather than papered over: the twin now RUNS and reports
--- "only 0 of 5 blocks went red". Its five blocks were written against a defect that lived in
--- `iam.effective_level` and `iam.has_access_for_base`, which this file still replaces at lines
--- 140 and 391 — and the access path moved into `custom.addressed_cap` /
--- `custom.reaches_directly` / `custom.effective_level`, so neither replacement is on the path
--- any more. Removing the VIS-19 override arm alone, and then the two switch guards as well,
--- each left 0 of 5 flipping, so the role default is not reaching `custom.my_level` by this
--- route at all. Re-deriving these five blocks needs the pre-LEVEL-FIX `custom.addressed_cap`
--- body, which is LEVEL-FIX's own knowledge and not a test lane's guess.
-do $plant_lane$
-declare
-  v_def  text;
-  v_arm  constant text :=
-    '  if p_id is not null' || E'\n' ||
-    '     and iam.grant_addressed_level(p_user_id, p_type, p_id) is not null then' || E'\n' ||
-    '    return null;' || E'\n' ||
-    '  end if;' || E'\n';
-begin
-  select pg_get_functiondef(p.oid) into v_def
-    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-   where n.nspname = 'iam' and p.proname = 'member_lane_confers';
-  if v_def is null then
-    raise exception 'RED precondition: iam.member_lane_confers does not exist, so its override arm cannot be taken out';
-  end if;
-  if position(v_arm in v_def) = 0 then
-    raise exception 'RED precondition: the live iam.member_lane_confers no longer carries the VIS-19 override arm this twin removes, so the plant would prove nothing. Re-derive it from the live body before trusting anything below.';
-  end if;
-  v_def := replace(v_def, v_arm, '');
-  -- and the two switches, so the lane confers unconditionally, which is what the kernel saw
-  -- before LEVEL-FIX gave it any of these three arms.
-  v_def := replace(v_def, '  if not v_store_on then' || E'\n' || '    return null;' || E'\n' || '  end if;' || E'\n', '');
-  v_def := replace(v_def, '  if not iam.member_lane_open(p_organization_id) then' || E'\n' || '    return null;' || E'\n' || '  end if;' || E'\n', '');
-  execute v_def;
-end
-$plant_lane$;
+-- WHAT WAS WRONG AND IS FIXED. (a) This file DROPPED `iam.grant_addressed_level` and
+-- `iam.member_lane_confers`, both of which the access kernel calls
+-- (`custom.addressed_cap_specific` rung 1, `custom.addressed_cap` line 25), so the twin died
+-- with "function does not exist" inside `custom.share_revoke` before asking any of its five
+-- questions. (b) It reverted `custom/member_default_level`'s `overridable_by` to empty BEFORE
+-- the five blocks — LEVEL-FIX did two things, made the knob settable by an organization AND
+-- made a deliberate grant override it, and reverting both at once left the organization unable
+-- to raise its default to editor, so there was nothing for the pre-fix ladder to union a
+-- viewer share with. That revert now happens after the blocks, where this file already checks
+-- it was restored, and the organization raises its own default before block 1.
+--
+-- With those two fixed the twin RUNS and **2 of 5 blocks go red**: 1a (the read door says
+-- viewer and the organization knob says editor) and 4a (still editor after the share was
+-- revoked). It was 0 of 5.
+--
+-- WHAT IS STILL OPEN, MEASURED RATHER THAN GUESSED. Blocks 2, 3 and 5 say a deliberate viewer
+-- share ON THE ROW is raised back to editor by the organization default. Probed from inside
+-- this file at block 1's moment:
+--     iam.member_lane_confers  -> editor      (the lane confers the organization's default)
+--     iam.effective_level      -> editor      (the pre-fix greatest(granted, default) body,
+--                                              restored above, works)
+--     custom.addressed_cap     -> viewer
+--     custom.my_level          -> viewer
+-- `custom.my_level` never consults `iam.effective_level` when `custom.addressed_cap` answers,
+-- and `custom.addressed_cap_specific` answers `viewer` from the fixture's row grant. Running
+-- LADDER-CAP's own inverse below was tried and is kept, because it is the right restoration
+-- for `custom.addressed_cap` — but its pre-fix body only lets the default overrule a grant on
+-- a TABLE or a HOME, never one addressed to the ROW, so it does not move these three either.
+--
+-- The body that would is the pre-LEVEL-FIX `custom.reaches_directly` / `custom.effective_level`,
+-- which took the greatest of the addressed cap and `iam.effective_level`. It is in NO inverse
+-- file in this tree, and inventing a body for the access ladder is exactly the guess this
+-- campaign forbids. It needs the lane that wrote it, or the catalogue's own history.
+
+-- 🚨 THE DECISION THESE BLOCKS ARE ABOUT LIVES IN A LATER LANE'S BODY (lane RED-SUITES-3,
+-- 2026-09-21). Neutering `iam.member_lane_confers` from the live bytes was not enough, and the
+-- measurement says why: with the lane conferring the organization's `editor` unconditionally,
+-- `iam.effective_level` answered editor — and `custom.my_level` still answered VIEWER, because
+-- LADDER-CAP moved the decision into `custom.addressed_cap`, where a specific rung is resolved
+-- FIRST and the organization default steps aside for it. Three of the five blocks below are
+-- about the organization default overruling a deliberate share, and that is LADDER-CAP's body,
+-- not LEVEL-FIX's. A red twin can only put back what its own lane changed — so this runs
+-- LADDER-CAP's OWN inverse, which restores both `iam.member_lane_confers` and
+-- `custom.addressed_cap` to the bodies where the default overruled the grant. It is the same
+-- file `laddercap_red.sql` executes to prove its own clauses, and it rolls back with this
+-- transaction like everything else here.
+\i migrations/inverse/laddercap_the_organization_default_steps_aside_for_every_specific_rung_down.sql
 -- LEVEL-FIX (2 of 4) — THE INVERSE. The knob row exactly as it stood: a platform constant no
 -- organization could set, with the label and sentence it shipped with.
 
 
+-- 🚨 `overridable_by` IS NOT EMPTIED HERE ANY MORE, AND THAT IS THE FIXTURE THAT HAD STOPPED
+-- BITING (lane RED-SUITES-3, 2026-09-21). LEVEL-FIX did two things: it made
+-- `custom/member_default_level` settable BY AN ORGANIZATION, and it made a deliberate grant
+-- override that default (VIS-19). This inverse reverted BOTH at once — and all five blocks
+-- below are about the SECOND half. With the knob back to a platform constant, an organization
+-- cannot raise its default to editor, so there is nothing for the pre-fix ladder to union a
+-- viewer share with, and every block came back green: "only 0 of 5 blocks went red" while the
+-- plants were all in place and biting. The settability revert now happens AFTER the five
+-- blocks, where the file already checks that it was restored.
 update platform.feature_knob
-   set overridable_by   = array[]::text[],
-       value_type       = 'string',
+   set value_type       = 'string',
        allowed_values   = null,
        taxonomy_node_id = null,
        label            = 'What membership alone confers',
@@ -513,6 +527,13 @@ begin
   -- confers. There is no client door that answers a knob, and RED 1 is the comparison between
   -- that sentence and what the read door actually hands a person — so the sentence is read
   -- here, by the operator, and the door is asked below, by her.
+  -- THE ORGANIZATION RAISES ITS OWN DEFAULT, which is the whole thing LEVEL-FIX made
+  -- possible and the thing the five blocks below are measured against. A knob has no client
+  -- door, so this is an operator step and says so; nothing is asserted while out.
+  perform set_config('role', v_boss, true);
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('custom', 'member_default_level', 'organization', v_org, v_org, '"editor"'::jsonb, 'LEVEL-FIX red twin')
+  on conflict do nothing;
   v_knob := iam.member_default_level(v_org, v_tbl);
 
   -- ════════════════════════════════════════════════════════════════════════════
@@ -573,10 +594,8 @@ begin
   -- with the organization default and silently raised back.
   -- The knob override is an operator step (a knob has no client door), so the seat is stepped
   -- out of for that ONE statement and back in before anything is asked.
-  perform set_config('role', v_boss, true);
-  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
-  values ('custom', 'member_default_level', 'organization', v_org, v_org, '"editor"'::jsonb, 'LEVEL-FIX red twin');
-  perform set_config('role', 'authenticated', true);
+  -- (the organization's raised default is already in place — it was set before block 1, where
+  -- every block below needs it.)
   perform set_config('request.jwt.claims', v_admin_j, true);
   perform custom.share_grant(v_org, v_rec, 'person', v_dana, 'viewer'::public.permission_level);
   perform set_config('request.jwt.claims', v_dana_j, true);
