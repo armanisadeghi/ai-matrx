@@ -26,7 +26,7 @@ jest.mock("next/navigation", () => ({
   usePathname: () => "/cms/html-pages",
   useRouter: () => ({ replace, push: jest.fn() }),
   useSearchParams: () =>
-    new URLSearchParams("q=launch&ix=1&sort=meta_title&dir=asc"),
+    new URLSearchParams("q=launch&sort=meta_title&dir=asc"),
 }));
 jest.mock("./HtmlPagesContextMenu", () => ({
   HtmlPagesContextMenu: ({ children }: { children: React.ReactNode }) =>
@@ -60,7 +60,7 @@ describe("HtmlPageListView", () => {
     window.history.replaceState(
       null,
       "",
-      "/cms/html-pages?q=launch&ix=1&sort=meta_title&dir=asc",
+      "/cms/html-pages?q=launch&sort=meta_title&dir=asc",
     );
     host = document.createElement("div");
     document.body.append(host);
@@ -129,7 +129,7 @@ describe("HtmlPageListView", () => {
       });
     });
     expect(replace).toHaveBeenLastCalledWith(
-      "/cms/html-pages?q=description&ix=1&sort=meta_description",
+      "/cms/html-pages?q=description&sort=meta_description",
       { scroll: false },
     );
 
@@ -137,9 +137,20 @@ describe("HtmlPageListView", () => {
     if (!facet || facet.type !== "button-group") {
       throw new Error("Indexable facet is missing");
     }
-    act(() => facet.onChange("indexable"));
+    replace.mockClear();
+    act(() => {
+      facet.onChange("indexable");
+      controlledQuery.onStateChange({
+        page: 1,
+        pageSize: 25,
+        search: "launch",
+        anyOf: "",
+        columnFilters: {},
+        sort: { id: "meta_title", direction: "asc" },
+      });
+    });
     expect(replace).toHaveBeenLastCalledWith(
-      "/cms/html-pages?q=description&ix=1&sort=meta_description",
+      "/cms/html-pages?q=launch&ix=1&sort=meta_title&dir=asc",
       { scroll: false },
     );
   });

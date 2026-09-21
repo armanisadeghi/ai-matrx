@@ -115,13 +115,10 @@ export default function HtmlPageListView({
     columnFilters: {},
     sort: { id: sortField, direction: sortDir },
   });
-  const listStateRef = useRef(listState);
-  listStateRef.current = listState;
   const restoredScroll = useRef(false);
 
   const replaceListState = (patch: Partial<HtmlPagesListState>) => {
-    // Keep sequential toolbar events together before Next has committed its URL replace.
-    const current = listStateRef.current;
+    const current = listState;
     const next: HtmlPagesListState = { ...current, ...patch };
     if (patch.view === "table") {
       next.n = HTML_PAGES_GRID_INITIAL;
@@ -136,7 +133,6 @@ export default function HtmlPageListView({
     ) {
       next.n = HTML_PAGES_GRID_INITIAL;
     }
-    listStateRef.current = next;
     const qs = htmlPagesListStateToSearchParams(next).toString();
     const href = qs ? `${pathname}?${qs}` : pathname;
     router.replace(href, { scroll: false });
@@ -436,15 +432,23 @@ export default function HtmlPageListView({
             onStateChange: (next) => {
               setTableQuery(next);
               const nextSort = next.sort;
-              replaceListState({
-                q: next.search,
-                ...(nextSort && isHtmlPagesSortField(nextSort.id)
-                  ? {
-                      sort: nextSort.id,
-                      dir: nextSort.direction === "asc" ? "asc" : "desc",
-                    }
-                  : {}),
-              });
+              const nextUrlSort =
+                nextSort && isHtmlPagesSortField(nextSort.id)
+                  ? nextSort.id
+                  : null;
+              const nextUrlDir = nextSort?.direction === "asc" ? "asc" : "desc";
+              if (
+                next.search !== search ||
+                (nextUrlSort !== null &&
+                  (nextUrlSort !== sortField || nextUrlDir !== sortDir))
+              ) {
+                replaceListState({
+                  q: next.search,
+                  ...(nextUrlSort !== null
+                    ? { sort: nextUrlSort, dir: nextUrlDir }
+                    : {}),
+                });
+              }
             },
             sourceProcessing: { search: "source" },
           }}
