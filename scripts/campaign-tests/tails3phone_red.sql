@@ -23,7 +23,7 @@
 \set ON_ERROR_STOP on
 begin;
 set local lock_timeout = '10s';
-set local statement_timeout = '120s';
+set local statement_timeout = '60s';
 
 do $t$
 declare
