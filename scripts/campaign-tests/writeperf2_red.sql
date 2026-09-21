@@ -21,7 +21,7 @@ declare
   c_admin uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
   v_boss  text := current_user;
   v_org uuid; v_home uuid; v_tbl uuid; v_ids uuid[]; i int;
-  n int; v_txt text; v_ok boolean; v_red int := 0; v_blocks int := 7;
+  n int; v_txt text; v_ok boolean; v_red int := 0; v_blocks int := 7; v_names text[]; v_missing text[];
 begin
   -- THE FIXTURE, as the connected role (an organization, a membership and a knob are not
   -- client doors), and then the seat.
@@ -137,24 +137,59 @@ begin
   end if;
 
   -- 4  THE REPLANNER CENSUS ON THE WRITE PATH IS NOT EMPTY
-  select count(*) into n from custom.ladder_replanners(array[
+  --
+  -- 🚨 RE-PINNED, AND THE OLD PIN HID A REAL DEFECT (lane RED-SUITES-3, 2026-09-21). This
+  -- clause demanded the NUMBER 20 and got 12, which is the shape of a census ratchet that
+  -- names a number measured on one day. Two things were wrong with it.
+  --
+  -- (a) FIVE of its forty-one roots named nothing: `custom._stamp_actor`, `_stamp_actor_tier`,
+  --     `_touch_row`, `_metadata_guard` and `_guard_governance_columns` live in `platform` and
+  --     `iam`. `custom.ladder_replanners` walks what a root REACHES, and a name that resolves
+  --     to no function reaches nothing — so five trigger functions fired on EVERY write to
+  --     `custom.record` were reported clean by never being looked at. Corrected below and in
+  --     `writeperf2_green.sql` clause 9. What was behind them is a REAL defect and is written
+  --     up in `migrations/campaign/redsuites3_two_helpers_the_write_path_census_could_not_see.sql`.
+  --
+  -- (b) A COUNT IS THE WRONG ASSERTION HERE. The number moves whenever the write path grows a
+  --     root or a peer lane converts a helper, and it moved again the moment (a) was fixed.
+  --     What this block actually means is "the helpers this lane converted are back, and they
+  --     re-plan on every call", so it names them. Any EXTRA name is reported out loud rather
+  --     than failed on, because an extra is a finding for the GREEN suite — which asserts zero
+  --     — and never for the twin.
+  select array_agg(r.fn order by r.fn) into v_names from custom.ladder_replanners(array[
     'custom.record_write','custom.record_update','custom.io_import_rows',
     'custom._record_rule_uses','custom._value_envelope','custom._resolve_choice_words','custom._derived_fields',
     'custom._record_field_validation','custom._entity_custom_fields_guard','custom._containment_association',
     'custom._relation_associations','custom.io_record_changed','history.record_capture','custom._checklist_watch',
     'custom._pipeline_on_entry','custom._field_type_converts_values','custom._table_owner_stamp',
     'custom._field_class_guard','custom._field_type_parity_guard','custom._unique_rule_holds',
-    'custom._work_shape_guard','custom._organization_wall_guard','custom._stamp_actor','custom._stamp_actor_tier',
-    'custom._touch_row','custom._metadata_guard','custom._table_shape_guard','custom._rule_shape_guard',
+    'custom._work_shape_guard','custom._organization_wall_guard','platform._stamp_actor','platform._stamp_actor_tier',
+    'platform._touch_row','platform._metadata_guard','custom._table_shape_guard','custom._rule_shape_guard',
     'custom._rule_topology_guard','custom._merge_field_shape_guard','custom._merge_field_temporal_guard',
     'custom._containment_guard','custom._dated_values_guard','custom._field_shape_guard','custom._field_write_door',
     'custom._promoted_field_cap_guard','custom._workdoors_approval_guard','custom._checklist_step_guard',
-    'custom._store_door','custom._guard_governance_columns','platform._gc_entity_associations']);
-  if n = 20 then
+    'custom._store_door','iam._guard_governance_columns','platform._gc_entity_associations']) r;
+  v_missing := array(select x from unnest(array[
+      'custom._checklist_finished','custom._stage_field_key','custom.choice_synonyms',
+      'custom.dependency_cycle','custom.dependency_label','custom.portal_admits',
+      'custom.record_values','custom.rule_context','custom.rule_field_key','custom.rule_field_label',
+      'custom.work_assignment_fields','custom.work_state_id']) x
+    where x <> all (coalesce(v_names, '{}'::text[])));
+  if array_length(v_missing, 1) is null then
     v_red := v_red + 1;
-    raise notice 'RED 4  % non-inlinable SQL helpers are back on the write path, each re-planned on every call', n;
+    raise notice 'RED 4  all twelve helpers this lane converted are back on the write path, each re-planned on every call (census names % in total)', coalesce(array_length(v_names,1), 0);
+    if coalesce(array_length(v_names,1), 0) > 12 then
+      raise notice 'RED 4  and the census names % more that this lane never converted: % — the GREEN suite''s clause 9 is where that is a failure.',
+        array_length(v_names,1) - 12,
+        array_to_string(array(select y from unnest(v_names) y where y <> all (array[
+          'custom._checklist_finished','custom._stage_field_key','custom.choice_synonyms',
+          'custom.dependency_cycle','custom.dependency_label','custom.portal_admits',
+          'custom.record_values','custom.rule_context','custom.rule_field_key','custom.rule_field_label',
+          'custom.work_assignment_fields','custom.work_state_id'])), ', ');
+    end if;
   else
-    raise exception 'RED 4 DID NOT GO RED: the census names % helpers, expected the 20 this lane converted', n;
+    raise exception 'RED 4 DID NOT GO RED: the inverse was supposed to put these helpers back as non-inlinable SQL and the census does not name them: %. The census names % in total.',
+      array_to_string(v_missing, ', '), coalesce(array_length(v_names,1), 0);
   end if;
 
   -- 5  NO TRANSITION TABLE IS READ ANYWHERE ON custom.record

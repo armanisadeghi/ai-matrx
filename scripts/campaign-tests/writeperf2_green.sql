@@ -251,6 +251,14 @@ begin
 
   -- ── 9  THE CENSUS: NOTHING ON THE WRITE PATH RE-PLANS ITSELF PER CALL ────────────────
   perform set_config('role', v_boss, true);
+  -- 🚨 FIVE OF THESE ROOTS NAMED NOTHING (lane RED-SUITES-3, 2026-09-21). `custom._stamp_actor`,
+  -- `_stamp_actor_tier`, `_touch_row`, `_metadata_guard` and `_guard_governance_columns` live in
+  -- `platform` and `iam`, not `custom`. `custom.ladder_replanners` walks what a root REACHES, and
+  -- a name that resolves to no function reaches nothing — so five trigger functions fired on
+  -- EVERY write to `custom.record` were reported clean by never being looked at. The census was
+  -- measuring thirty-six of the write path's roots and calling that all of them. Corrected here
+  -- and in the red twin, and what was behind them is in
+  -- `migrations/campaign/redsuites3_two_helpers_the_write_path_census_could_not_see.sql`.
   select count(*) into n from custom.ladder_replanners(array[
     'custom.record_write','custom.record_write_many','custom.record_update','custom.io_import_rows',
     'custom._record_rule_uses','custom._value_envelope','custom._resolve_choice_words','custom._derived_fields',
@@ -259,12 +267,12 @@ begin
     'custom._checklist_watch_for','custom._pipeline_on_entry','custom._field_type_converts_values',
     'custom._table_owner_stamp','custom._field_class_guard','custom._field_type_parity_guard',
     'custom._unique_rule_holds','custom._work_shape_guard','custom._organization_wall_guard',
-    'custom._stamp_actor','custom._stamp_actor_tier','custom._touch_row','custom._metadata_guard',
+    'platform._stamp_actor','platform._stamp_actor_tier','platform._touch_row','platform._metadata_guard',
     'custom._table_shape_guard','custom._rule_shape_guard','custom._rule_topology_guard',
     'custom._merge_field_shape_guard','custom._merge_field_temporal_guard','custom._containment_guard',
     'custom._dated_values_guard','custom._field_shape_guard','custom._field_write_door',
     'custom._promoted_field_cap_guard','custom._workdoors_approval_guard','custom._checklist_step_guard',
-    'custom._store_door','custom._guard_governance_columns','platform._gc_entity_associations',
+    'custom._store_door','iam._guard_governance_columns','platform._gc_entity_associations',
     'custom.io_record_changed_stmt_insert','custom.io_record_changed_stmt_update','custom.io_record_changed_stmt_delete',
     'history.record_capture_stmt_insert','history.record_capture_stmt_update','history.record_capture_stmt_delete',
     'custom._containment_association_stmt_insert','custom._containment_association_stmt_update',
@@ -272,7 +280,28 @@ begin
     'custom._checklist_watch_stmt_insert','custom._checklist_watch_stmt_update',
     'platform._gc_entity_associations_stmt_softdelete','platform._gc_entity_associations_stmt_harddelete']);
   if n <> 0 then
-    raise exception '9: % non-inlinable SQL helpers are still on the write path, re-planned on every call', n;
+    select string_agg(r.fn, ', ' order by r.fn) into v_txt from custom.ladder_replanners(array[
+      'custom.record_write','custom.record_write_many','custom.record_update','custom.io_import_rows',
+      'custom._record_rule_uses','custom._value_envelope','custom._resolve_choice_words','custom._derived_fields',
+      'custom._record_field_validation','custom._entity_custom_fields_guard','custom._containment_association',
+      'custom._relation_associations','custom.io_record_changed','history.record_capture','custom._checklist_watch',
+      'custom._checklist_watch_for','custom._pipeline_on_entry','custom._field_type_converts_values',
+      'custom._table_owner_stamp','custom._field_class_guard','custom._field_type_parity_guard',
+      'custom._unique_rule_holds','custom._work_shape_guard','custom._organization_wall_guard',
+      'platform._stamp_actor','platform._stamp_actor_tier','platform._touch_row','platform._metadata_guard',
+      'custom._table_shape_guard','custom._rule_shape_guard','custom._rule_topology_guard',
+      'custom._merge_field_shape_guard','custom._merge_field_temporal_guard','custom._containment_guard',
+      'custom._dated_values_guard','custom._field_shape_guard','custom._field_write_door',
+      'custom._promoted_field_cap_guard','custom._workdoors_approval_guard','custom._checklist_step_guard',
+      'custom._store_door','iam._guard_governance_columns','platform._gc_entity_associations',
+      'custom.io_record_changed_stmt_insert','custom.io_record_changed_stmt_update','custom.io_record_changed_stmt_delete',
+      'history.record_capture_stmt_insert','history.record_capture_stmt_update','history.record_capture_stmt_delete',
+      'custom._containment_association_stmt_insert','custom._containment_association_stmt_update',
+      'custom._relation_associations_stmt_insert','custom._relation_associations_stmt_update',
+      'custom._checklist_watch_stmt_insert','custom._checklist_watch_stmt_update',
+      'platform._gc_entity_associations_stmt_softdelete','platform._gc_entity_associations_stmt_harddelete']) r;
+    raise exception '9: % non-inlinable SQL helper(s) are still on the write path, re-planned on every call: %', n, v_txt
+      using hint = 'Move each identical body into plpgsql. The fix for the two this census found on 2026-09-21 is written and judged accept at both targets: migrations/campaign/redsuites3_two_helpers_the_write_path_census_could_not_see.sql. Its production apply needs the iam and platform build locks, which RLS-REFERENCE and LINKS-2 hold.';
   end if;
   raise notice '9  the write-path replanner census is 0 across 57 roots';
 
