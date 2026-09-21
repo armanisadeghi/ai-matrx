@@ -15,18 +15,15 @@
 
 import { AlertTriangle } from "lucide-react";
 import { VoiceAgentSurface } from "@/features/voice-agent/components/VoiceAgentSurface";
-import { resolveMandateServer } from "@/features/mandates/service.server";
+import { resolveMandateSeed } from "@/features/mandates/seed.server";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export default async function VoiceIntroPage() {
-  let agentId: string;
-  try {
-    agentId = (await resolveMandateServer(MANDATE_KEYS.voice__intro)).agentId;
-  } catch (error) {
-    console.error(
-      "[chat/voice] the voice.intro mandate did not resolve:",
-      error,
-    );
+  // BOUNDED: `resolveMandateSeed` screams, never throws, and gives up at its
+  // deadline — an unbounded await here is what answered /staff with a 504 on
+  // 2026-09-21 (see seed.server.ts).
+  const seed = await resolveMandateSeed(MANDATE_KEYS.voice__intro);
+  if (!seed.agentId) {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <div className="flex max-w-md items-start gap-3 rounded-lg border border-border bg-card p-4">
@@ -39,11 +36,12 @@ export default async function VoiceIntroPage() {
               Its mandate could not be resolved, so we did not start a
               session. Please try again shortly.
             </p>
+            <p className="text-xs text-muted-foreground">{seed.unavailable}</p>
           </div>
         </div>
       </div>
     );
   }
 
-  return <VoiceAgentSurface preset="intro" agentId={agentId} />;
+  return <VoiceAgentSurface preset="intro" agentId={seed.agentId} />;
 }

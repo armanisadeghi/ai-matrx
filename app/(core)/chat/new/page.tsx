@@ -7,7 +7,7 @@ import {
 import { ChatNewHeader } from "@/features/agents/components/chat/ChatNewHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { resolveMandateServer } from "@/features/mandates/service.server";
+import { resolveMandateSeed } from "@/features/mandates/seed.server";
 
 /**
  * SSR mandate resolution: which agent owns `/chat/new` for THIS user (system
@@ -18,16 +18,8 @@ import { resolveMandateServer } from "@/features/mandates/service.server";
  * state; there is no hardcoded-agent fallback.
  */
 async function resolveDefaultChatAgentId(): Promise<string | null> {
-  try {
-    const resolved = await resolveMandateServer(DEFAULT_NEW_CHAT_MANDATE_KEY);
-    return resolved.agentId;
-  } catch (error) {
-    console.error(
-      `[chat/new] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve at SSR — deferring to client resolution:`,
-      error,
-    );
-    return null;
-  }
+  // BOUNDED — see seed.server.ts. The seed screams on its own and never throws.
+  return (await resolveMandateSeed(DEFAULT_NEW_CHAT_MANDATE_KEY)).agentId;
 }
 
 /**

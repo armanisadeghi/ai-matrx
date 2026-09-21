@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { AiWorkHeader } from "@/features/ai-work/components/AiWorkHeader";
 import { AiWorkComposer } from "@/features/ai-work/compose/components/AiWorkComposer";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { resolveMandateServer } from "@/features/mandates/service.server";
+import { resolveMandateSeed } from "@/features/mandates/seed.server";
 
 export function generateMetadata() {
   return { title: "Start work" };
@@ -16,16 +16,8 @@ export function generateMetadata() {
  * choose one. There is no hardcoded-agent fallback.
  */
 async function resolveDefaultAgentId(): Promise<string | null> {
-  try {
-    const resolved = await resolveMandateServer(DEFAULT_NEW_CHAT_MANDATE_KEY);
-    return resolved.agentId;
-  } catch (error) {
-    console.error(
-      `[work/new] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve at SSR:`,
-      error,
-    );
-    return null;
-  }
+  // BOUNDED — see seed.server.ts. The seed screams on its own and never throws.
+  return (await resolveMandateSeed(DEFAULT_NEW_CHAT_MANDATE_KEY)).agentId;
 }
 
 async function resolveAgentName(agentId: string): Promise<string | null> {

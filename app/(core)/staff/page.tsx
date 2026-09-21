@@ -33,6 +33,15 @@ export default async function StaffPage() {
           seedAgentName={seed.agentName}
         />
       </PageHeader>
+      {/* NOTHING FAILS SILENTLY. The seed is optional — the door answers with
+          the rung that actually runs a hop after hydration — but a page that
+          painted without it says so in one line rather than looking merely
+          empty. It is a notice, never an error state: the thread still loads. */}
+      {seed.seedNotice ? (
+        <p className="border-b border-border bg-card px-4 py-2 text-xs text-muted-foreground">
+          {seed.seedNotice} Your staff is still loading normally.
+        </p>
+      ) : null}
       <div className="h-full overflow-hidden">
         <StaffRoom seedAgentId={seed.agentId} />
       </div>

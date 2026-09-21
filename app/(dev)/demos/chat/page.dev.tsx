@@ -7,7 +7,7 @@ import {
   getDefaultAgent,
   resolveAgentForSSR,
 } from "@/features/cx-chat/components/agent/agents";
-import { resolveMandateServer } from "@/features/mandates/service.server";
+import { resolveMandateSeed } from "@/features/mandates/seed.server";
 import { BACKEND_URLS } from "@/lib/api/endpoints";
 import { warmAgent } from "@/lib/api/warm-helpers";
 
@@ -17,17 +17,11 @@ export default async function ChatPage() {
   // hardcoded display data for known builtins and a stub (client-hydrated)
   // for anything else. A resolution failure on this dev demo screams and
   // falls back to the seed-mirror agent rather than 500ing the page.
-  let agent;
-  try {
-    const resolved = await resolveMandateServer(CX_DEFAULT_MANDATE_KEY);
-    agent = resolveAgentForSSR(resolved.agentId);
-  } catch (error) {
-    console.error(
-      `[demos/chat] mandate "${CX_DEFAULT_MANDATE_KEY}" failed to resolve — using the seed mirror:`,
-      error,
-    );
-    agent = getDefaultAgent();
-  }
+  // BOUNDED — see seed.server.ts.
+  const seed = await resolveMandateSeed(CX_DEFAULT_MANDATE_KEY);
+  const agent = seed.agentId
+    ? resolveAgentForSSR(seed.agentId)
+    : getDefaultAgent();
 
   warmAgent(agent.promptId, { baseUrl: BACKEND_URLS.production ?? "" });
 

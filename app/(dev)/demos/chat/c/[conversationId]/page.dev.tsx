@@ -4,7 +4,7 @@ import ChatHeaderControls from "@/features/cx-chat/components/ChatHeaderControls
 import { ChatInstanceManager } from "@/features/cx-chat/components/ChatInstanceManager";
 import { DEFAULT_AGENT_ID } from "@/features/cx-chat/components/agent/local-agents";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { resolveMandateServer } from "@/features/mandates/service.server";
+import { resolveMandateSeed } from "@/features/mandates/seed.server";
 
 export default async function ConversationPage({
   params,
@@ -23,15 +23,10 @@ export default async function ConversationPage({
   // and falls back to the documented seed mirror rather than 500ing the page.
   let agentId = resolvedSearchParams.agent ?? null;
   if (!agentId) {
-    try {
-      agentId = (await resolveMandateServer(DEFAULT_NEW_CHAT_MANDATE_KEY)).agentId;
-    } catch (error) {
-      console.error(
-        `[demos/chat] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve — using the seed mirror:`,
-        error,
-      );
-      agentId = DEFAULT_AGENT_ID;
-    }
+    // BOUNDED — see seed.server.ts.
+    agentId =
+      (await resolveMandateSeed(DEFAULT_NEW_CHAT_MANDATE_KEY)).agentId ??
+      DEFAULT_AGENT_ID;
   }
 
   return (

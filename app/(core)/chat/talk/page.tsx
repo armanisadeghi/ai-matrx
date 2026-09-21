@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { resolveMandateServer } from "@/features/mandates/service.server";
+import { resolveMandateSeed } from "@/features/mandates/seed.server";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
 
 /**
@@ -10,24 +10,18 @@ import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/
  * failure in its own loud error state rather than inventing an agent here.
  */
 export default async function VoiceChatEntryPage() {
-  try {
-    const resolved = await resolveMandateServer(DEFAULT_NEW_CHAT_MANDATE_KEY);
-    redirect(`/chat/talk/a/${encodeURIComponent(resolved.agentId)}`);
-  } catch (error) {
-    // `redirect()` throws by design — never swallow it as a resolution failure.
-    if (
-      error &&
-      typeof error === "object" &&
-      "digest" in error &&
-      typeof (error as { digest?: unknown }).digest === "string" &&
-      (error as { digest: string }).digest.startsWith("NEXT_REDIRECT")
-    ) {
-      throw error;
-    }
+  // BOUNDED, and the redirect now lives OUTSIDE the failure handling: `redirect()`
+  // throws by design, so the old shape had to recognise its own digest to avoid
+  // swallowing it. `resolveMandateSeed` never throws and gives up at its
+  // deadline (see seed.server.ts — an unbounded await here is a 504, not a
+  // slow page).
+  const seed = await resolveMandateSeed(DEFAULT_NEW_CHAT_MANDATE_KEY);
+  if (!seed.agentId) {
     console.error(
       `[chat/talk] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve:`,
-      error,
+      seed.unavailable,
     );
     redirect("/chat/new");
   }
+  redirect(`/chat/talk/a/${encodeURIComponent(seed.agentId)}`);
 }

@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { ChatConversationRoom } from "@/features/agents/components/chat/ChatConversationRoom";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { resolveMandateServer } from "@/features/mandates/service.server";
+import { resolveMandateSeed } from "@/features/mandates/seed.server";
 import { ChatRunHeader } from "@/features/agents/components/chat/ChatRunHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
@@ -132,20 +132,14 @@ async function resolveMandateAgent(): Promise<{
   agentId: string;
   agentName: string | null;
 } | null> {
-  try {
-    const resolved = await resolveMandateServer(DEFAULT_NEW_CHAT_MANDATE_KEY);
-    const supabase = await createClient();
-    return {
-      agentId: resolved.agentId,
-      agentName: await resolveAgentName(supabase, resolved.agentId),
-    };
-  } catch (error) {
-    console.error(
-      `[chat/[conversationId]] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve at SSR — deferring to client resolution:`,
-      error,
-    );
-    return null;
-  }
+  // BOUNDED — see seed.server.ts. The seed screams on its own and never throws.
+  const seed = await resolveMandateSeed(DEFAULT_NEW_CHAT_MANDATE_KEY);
+  if (!seed.agentId) return null;
+  const supabase = await createClient();
+  return {
+    agentId: seed.agentId,
+    agentName: await resolveAgentName(supabase, seed.agentId),
+  };
 }
 
 export default async function ChatConversationPage({

@@ -65,18 +65,34 @@ import {
   type BindingPresentation,
 } from "@/features/bindings/treatment-shape";
 
+/**
+ * Options for the SSR resolution.
+ *
+ * `signal` is not decoration: without it, a caller that gave up on this read
+ * (see `seed.server.ts`) would leave a stuck PostgREST request open behind a
+ * page that has already answered. Every query below carries it.
+ */
+export interface ResolveMandateServerOptions {
+  signal?: AbortSignal;
+}
+
 export async function resolveMandateServer(
   mandateKey: AnyMandateKey,
+  options: ResolveMandateServerOptions = {},
 ): Promise<ResolvedMandate> {
   const supabase = await createClient();
+  const { signal } = options;
   // `select("*")` on purpose: the wave-1 columns (provision_key, pins,
   // pinned_context) are live but ahead of the generated Row type — they ride
   // the full row and are narrowed at ingress by `parseMandateWave1`.
-  const { data: mandate, error } = await mandateDefinitions(supabase)
+  const mandateQuery = mandateDefinitions(supabase)
     .select("*")
     .eq("mandate_key", mandateKey)
-    .is("deleted_at", null)
-    .maybeSingle();
+    .is("deleted_at", null);
+  const { data: mandate, error } = await (signal
+    ? mandateQuery.abortSignal(signal)
+    : mandateQuery
+  ).maybeSingle();
   if (error) throw error;
   if (!mandate) {
     throw recordUnavailable({
@@ -102,15 +118,16 @@ export async function resolveMandateServer(
   // identity, not a resolution rung: one row, keyed on the job.
   let presentation: BindingPresentation | null = null;
   {
-    const { data: treatment, error: treatmentError } = await mandateTreatments(
-      supabase,
-    )
+    const treatmentQuery = mandateTreatments(supabase)
       .select("config, is_enabled")
       .eq("mandate_id", mandate.id)
       .eq("tier", TREATMENT_TIER_WIDGET)
       .eq("is_default", true)
-      .is("deleted_at", null)
-      .maybeSingle();
+      .is("deleted_at", null);
+    const { data: treatment, error: treatmentError } = await (signal
+      ? treatmentQuery.abortSignal(signal)
+      : treatmentQuery
+    ).maybeSingle();
     if (treatmentError) {
       console.error(
         `[resolveMandateServer] "${mandateKey}": its display options could not be read; painting the platform default presentation`,
