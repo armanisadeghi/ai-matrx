@@ -33,6 +33,7 @@ const OUT = resolve(argOf("out", "/tmp/screens2"));
 const ORG = argOf("org", "");
 const DEALS = argOf("deals", "");
 const PEOPLE = argOf("people", "");
+const RECORD = argOf("record", "");
 if (!ORG || !DEALS || !PEOPLE) throw new Error("--org, --deals and --people are required");
 mkdirSync(OUT, { recursive: true });
 
@@ -52,6 +53,10 @@ async function shoot(page, name, mustSee) {
 const main = async () => {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 950 } });
+  // A COLD Next dev route compiles for well over the default 30s, and a navigation that times
+  // out there is a fact about the compiler, not about the screen.
+  page.setDefaultNavigationTimeout(180_000);
+  page.setDefaultTimeout(90_000);
 
   const nonce = randomBytes(16).toString("hex");
   writeFileSync(resolve(ROOT, `.dev-login-nonce.${HOST}`), `${nonce}\n`);
@@ -67,7 +72,7 @@ const main = async () => {
   const picked = await page.evaluate(() => {
     let hit = null;
     document.querySelectorAll("*").forEach((e) => {
-      if (!hit && e.children.length === 0 && (e.textContent || "").trim() === "SCREENS-2 Walkthrough") {
+      if (!hit && e.children.length === 0 && (e.textContent || "").trim() === "Cedar Ridge Dental") {
         const b = e.closest("button");
         if (b) {
           b.click();
@@ -77,7 +82,7 @@ const main = async () => {
     });
     return hit;
   });
-  console.log(picked ? "  organization set: SCREENS-2 Walkthrough" : "  organization NOT picked");
+  console.log(picked ? "  organization set: Cedar Ridge Dental" : "  organization NOT picked");
   await page.waitForTimeout(4000);
   if (!picked) {
     const said = (await page.evaluate(() => document.body.innerText)).slice(0, 700);
@@ -86,7 +91,10 @@ const main = async () => {
 
   // 1 — THE INBOX: a checklist step is a work item, and it reached the person it belongs to.
   await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded" });
-  await shoot(page, "01-inbox-checklist-steps-are-work", ["Send the contract", "Send the welcome email"]);
+  await shoot(page, "01-inbox-checklist-steps-are-work", [
+    "Verify the state dental hygiene licence",
+    "Submit credentialing to Delta and Cigna",
+  ]);
 
   // 2 — THE PIPELINE BOARD, through the saved view's kanban layout.
   await page.goto(`${ORIGIN}/data-v2/${DEALS}`, { waitUntil: "domcontentloaded" });
@@ -95,23 +103,30 @@ const main = async () => {
   await board.waitFor({ timeout: 45_000 });
   await board.click();
   await page.waitForTimeout(3500);
-  await shoot(page, "02-pipeline-board", ["Qualifying", "Proposal", "Negotiation"]);
+  await shoot(page, "02-pipeline-board", ["Proposed", "Insurance review", "Scheduled"]);
 
-  // 3 — THE RECORD PAGE with the checklists running on this record.
-  await page.goto(`${ORIGIN}/data-v2/${PEOPLE}`, { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(3000);
-  const row = page.getByText("Priya Raman", { exact: false }).first();
-  await row.waitFor({ timeout: 45_000 });
-  await row.click();
-  await page.waitForTimeout(3500);
-  await shoot(page, "03-record-page-checklist-run", ["Priya Raman"]);
-  // The rails live on the table page; the record rail is the one just captured.
+  // 3 — THE RECORD PAGE with the checklists running on this record, reached the way the
+  //     inbox reaches it: the link that names the record. Needs records-ui 0.44.0 in the app;
+  //     before that the parameter is read by nobody and the record stays shut, so this SKIPS
+  //     rather than photographing a table and calling it a record page.
+  await page.goto(`${ORIGIN}/data-v2/${PEOPLE}?record=${RECORD}`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(5000);
+  // THE RAIL, NOT THE HEADER BUTTON. The page always carries a "Checklists" control; the
+  // record rail is an <aside>, and `ChecklistRunner` inside it carries its own test id. A
+  // looser check photographed the plain table and called it the record page — which is the
+  // one thing this walk exists to prevent, so it is checked by the rail's own marker.
+  const railOpened = (await page.locator('aside [data-testid="checklist-runner"]').count()) > 0;
+  if (railOpened) {
+    await shoot(page, "03-record-page-checklist-run", ["Rosalind Tam", "Checklists"]);
+  } else {
+    console.log("  SKIPPED 03 — this build's records-ui does not read ?record= yet (needs 0.44.0)");
+  }
 
   // 4 — THE TABLE'S OWN RAILS: bookings and checklists.
   await page.goto(`${ORIGIN}/data-v2/${DEALS}`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(2500);
   for (const [rail, name, mustSee] of [
-    ["Bookings", "04-bookings-panel", ["Book a 30-minute consult"]],
+    ["Bookings", "04-bookings-panel", ["Book a new-patient consult"]],
     ["Checklists", "05-checklists-panel", ["Checklists"]],
   ]) {
     const control = page.getByRole("button", { name: rail, exact: true }).first();
