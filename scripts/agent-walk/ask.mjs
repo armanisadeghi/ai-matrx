@@ -98,7 +98,15 @@ const ASKS = {
       { id: "335be3d6-39ed-4fe6-9725-c28952bc18c3", name: "donors" },
       { id: "0f9c8a0b-c8ab-481d-8070-fc1c689eb968", name: "pledges" },
     ],
-    rail: /^Dashboards$/,
+    // 🚨 THE DIGEST ASK IS ON **Notifications**, NOT Dashboards. Measured 2026-09-21:
+    // `BuildOrAsk` — the whole two-button empty state — is imported by exactly four
+    // panels (`FormsPanel`, `BookingSlots`, `PortalsPanel`, `SubscriptionsPanel`), and
+    // it is `SubscriptionsPanel` that offers `kind: "digest"`. There is no dashboards
+    // panel at all; a dashboard renders through `DashboardCanvas`, which has no agent
+    // half. So a walk pointed at the Dashboards tab waits for a button that cannot be
+    // there, and reports the tab "not empty" — which is what this one did twice, on a
+    // donors table carrying ZERO dashboards.
+    rail: /^Notifications$/,
     say: "send me the donor dashboard every Monday",
   },
 };
