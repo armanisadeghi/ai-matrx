@@ -120,7 +120,14 @@ begin
       v_channels := hr._notify_channels(p_event_key, inst.organization_id);
       v_policy := coalesce(ft.channel_policy, '{}'::jsonb);
       -- §2.1: the object route, resolving to the exact actionable object.
-      v_link := '/hr/tasks/' || p_instance::text || coalesce('?step=' || p_step::text, '');
+      -- 🚨 LINKS-2 (2026-09-21): THE EMPLOYER IS PART OF THE ROUTE, not a decoration. These
+      -- bytes are re-runnable, and without `org=` a re-run would take the employer back off a
+      -- link that has carried it since 2026-08-28. The live producer now builds through
+      -- `hr.link_names_its_employer` (migrations/campaign/links2_an_hr_link_names_its_employer.sql);
+      -- this file predates that function and must not depend on it, so it names the employer
+      -- itself and the guard above refuses to overwrite the newer body anyway.
+      v_link := '/hr/tasks/' || p_instance::text || '?org=' || inst.organization_id::text
+             || coalesce('&step=' || p_step::text, '');
 
       v_payload := coalesce(p_extra,'{}'::jsonb) || jsonb_build_object(
         'instance_id', p_instance, 'step_id', p_step, 'flow_key', inst.flow_key,

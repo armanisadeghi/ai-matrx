@@ -84,7 +84,11 @@ begin
     v_basis := 'notify_channels_resolver';
   end if;
 
-  v_link := '/hr/me/timesheet?punch=' || coalesce(p_replacement_punch_id, p_voided_punch_id)::text;
+  -- 🚨 LINKS-2 (2026-09-21): the employer is part of the route. These bytes are re-runnable,
+  -- so they name it; the live producer builds it through `hr.link_names_its_employer`
+  -- (migrations/campaign/links2_an_hr_link_names_its_employer.sql), which this file predates.
+  v_link := '/hr/me/timesheet?org=' || p_organization_id::text
+         || '&punch=' || coalesce(p_replacement_punch_id, p_voided_punch_id)::text;
   v_payload := jsonb_build_object(
     'voided_punch_id', p_voided_punch_id,
     'replacement_punch_id', p_replacement_punch_id,

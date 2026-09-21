@@ -89,7 +89,12 @@ begin
        target_kind, target_id, deep_link, dedupe_key, visibility)
     values (v_org, 'hr.people.verification_consent_requested', v_uid, 'user', v_ch,
             jsonb_build_object('requester', jsonb_build_object('label', v_requester)),
-            'hr_verification_letter_request', p_request_id, '/hr/me',
+            -- 🚨 LINKS-2 (2026-09-21): a bare `/hr/me` opens whichever employer the picker
+            -- holds. These bytes are re-runnable, so the employer is named here too; the live
+            -- producer builds it through `hr.link_names_its_employer`
+            -- (migrations/campaign/links2_an_hr_link_names_its_employer.sql), which this file
+            -- predates and must not depend on.
+            'hr_verification_letter_request', p_request_id, '/hr/me?org=' || v_org::text,
             'hrvercons:' || p_request_id::text || ':' || v_ch,
             'personal'::platform.visibility)
     on conflict do nothing;
