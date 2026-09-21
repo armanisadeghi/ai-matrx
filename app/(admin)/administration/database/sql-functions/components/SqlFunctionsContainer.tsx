@@ -445,7 +445,7 @@ export default function SqlFunctionsContainer({
                     </div>
                   ) : (
                     <SqlFunctionsList
-                      functions={currentFunctions}
+                      functions={functions}
                       loading={loading || isRefreshing}
                       selectedFunctionKey={selectedFunctionKey}
                       onViewDetails={(func) => selectFunction(func)}
@@ -488,7 +488,7 @@ export default function SqlFunctionsContainer({
                     </div>
                   ) : (
                     <SqlFunctionsList
-                      functions={currentFunctions}
+                      functions={functions}
                       loading={loading || isRefreshing}
                       selectedFunctionKey={selectedFunctionKey}
                       onViewDetails={(func) => selectFunction(func)}

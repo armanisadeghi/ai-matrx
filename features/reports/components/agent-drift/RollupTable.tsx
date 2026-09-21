@@ -46,7 +46,6 @@ export function RollupTable({
   selectedAgentId,
   onSelect,
   sort,
-  onSort,
   summary,
 }: RollupTableProps) {
   const isAdmin = mode === "admin";
@@ -87,7 +86,7 @@ export function RollupTable({
           className="px-3 py-1.5"
         />
       ) : null}
-      <MatrxDataTable urlState={{ id: `agent-drift-${mode}` }} data={canonicalRows} columns={columns} getRowId={(row) => row.agentId} defaultSort={{ id: sort.key === 'agentName' ? 'agent' : sort.key === 'totalUsages' ? 'usages' : sort.key === 'stalePins' ? 'stale' : sort.key, direction: sort.desc ? 'desc' : 'asc' }} pageSize={50} onRowOpen={(row) => onSelect(row.agentId)} rowClassName={(row) => row.agentId === selectedAgentId ? 'bg-accent' : undefined} toolbar={{ search: true, searchPlaceholder: 'Search agents…', actions: <button type="button" className="sr-only" onClick={() => onSort(sort.key)}>Refresh report sort</button> }} detail={{ enabled: false }} />
+      <MatrxDataTable urlState={{ id: `agent-drift-${mode}`, defaultSort: { id: sort.key === 'agentName' ? 'agent' : sort.key === 'totalUsages' ? 'usages' : sort.key === 'stalePins' ? 'stale' : sort.key, direction: sort.desc ? 'desc' : 'asc' } }} data={canonicalRows} columns={columns} getRowId={(row) => row.agentId} pageSize={50} onRowOpen={(row) => onSelect(row.agentId)} rowClassName={(row) => row.agentId === selectedAgentId ? 'bg-accent' : undefined} toolbar={{ search: true, searchPlaceholder: 'Search agents…' }} detail={{ enabled: false }} />
     </>
   );
 }
