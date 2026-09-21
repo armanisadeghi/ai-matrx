@@ -61,6 +61,20 @@ sign out.
 
 ## Change log
 
+- **2026-09-21** — The account menu's collapsed groups are now HIDDEN, not just
+  clipped. `MenuGroup`'s `grid-rows-[0fr]` disclosure kept every collapsed row
+  in the hit-test tree and the tab order, so a group low in the panel parked
+  live buttons below the panel and below the window: cold walk 16's defect E
+  measured the theme row at `top 878, bottom 906` in a 900px window, answering
+  `elementFromPoint` with `LABEL.shell-user-menu-backdrop`, unscrollable (a
+  clipped child adds nothing to `scrollHeight`) and unclickable (three real
+  mouse clicks timed out). Fixed with `invisible peer-checked:visible` on the
+  disclosure; `.shell-user-menu-panel` / `.elevated-shell-user-menu-panel` now
+  also subtract the safe-area insets from their viewport bound. Gate:
+  `features/shell/layout-gate/user-menu-reachability.spec.ts`, which runs at
+  1280x720, **1440x900** (added to `playwright.shell-layout.config.ts` for
+  this defect) and 390x844.
+
 - **2026-09-19** — Created with the header right set and the bottom-left user
   block. Deleted: `CanvasPaneHeaderChrome.tsx`, `CanvasReopenChip.tsx`,
   `ElevatedShellUserMenu.tsx` + store, the canvas/elevated menu CSS, the
