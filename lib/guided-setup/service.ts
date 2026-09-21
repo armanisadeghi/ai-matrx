@@ -14,6 +14,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { guardedUpdate } from "@ai-matrx/data/db";
+import type { MaybeSingleResponse } from "@ai-matrx/data";
 import { EMPTY_RUN_STATE } from "./engine";
 import type { ChecklistRun, ChecklistRunState, ChecklistScope } from "./types";
 
@@ -127,23 +128,23 @@ export async function loadOrCreateRun(
   const existing = await loadRun(checklistKey, scope);
   if (existing) return existing;
 
-  const { data, error } = await table()
-    .insert({
-      checklist_key: checklistKey,
-      target_key: scope.targetKey ?? "",
-      organization_id: scope.organizationId,
-      state: EMPTY_RUN_STATE as never,
-    })
-    .select(COLUMNS)
-    .single();
+  // THROUGH THE DOOR. `platform` is not a client-writable schema (DOORS-ONLY-3), and
+  // `public.checklist_run_start` does the read-then-insert INSIDE the database, so the
+  // two-tab race is impossible rather than recoverable. `created_by` is stamped from
+  // `auth.uid()` in the door, never sent from here.
+  const { data, error } = await createClient().rpc("checklist_run_start", {
+    p_organization_id: scope.organizationId,
+    p_checklist_key: checklistKey,
+    p_target_key: scope.targetKey ?? "",
+  });
 
-  if (error) {
+  if (error || !data) {
     // A parallel tab won the unique index — its row is the right answer.
     const raced = await loadRun(checklistKey, scope);
     if (raced) return raced;
     throw new ChecklistRunCreateError(error);
   }
-  return toRun(data as RunRow);
+  return toRun(data as unknown as RunRow);
 }
 
 export type StateMutation = (state: ChecklistRunState) => ChecklistRunState;
@@ -171,22 +172,21 @@ export async function saveRunState(
     const nextState = mutate(current.state);
     const result = await guardedUpdate<RunRow>({
       expectedVersion: current.version,
-      applyUpdate: ({ expectedVersion, nextVersion }) =>
-        table()
-          .update({
-            state: nextState as never,
-            version: nextVersion,
-            ...(patch?.completedAt !== undefined
-              ? { completed_at: patch.completedAt }
-              : {}),
-            ...(patch?.dismissedAt !== undefined
-              ? { dismissed_at: patch.dismissedAt }
-              : {}),
-          })
-          .eq("id", current.id)
-          .eq("version", expectedVersion)
-          .select(COLUMNS)
-          .maybeSingle(),
+      // THROUGH THE DOOR. The CAS on `version` now happens in ONE statement inside
+      // `public.checklist_run_save` instead of a round trip the client can lose; a
+      // miss returns NULL, which is exactly the `maybeSingle()` shape guardedUpdate
+      // already reads as a conflict, so the retry path below is unchanged.
+      applyUpdate: ({ expectedVersion }) =>
+        createClient().rpc("checklist_run_save", {
+          p_organization_id: current.organizationId,
+          p_run_id: current.id,
+          p_state: nextState as never,
+          p_expected_version: expectedVersion,
+          p_set_completed: patch?.completedAt !== undefined,
+          p_completed_at: patch?.completedAt ?? undefined,
+          p_set_dismissed: patch?.dismissedAt !== undefined,
+          p_dismissed_at: patch?.dismissedAt ?? undefined,
+        }) as unknown as PromiseLike<MaybeSingleResponse<RunRow>>,
       fetchCurrent: () =>
         table().select(COLUMNS).eq("id", current.id).maybeSingle(),
     });

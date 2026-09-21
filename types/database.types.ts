@@ -75874,6 +75874,27 @@ export type Database = {
         Args: { p_is_guest?: boolean; p_size_bytes: number; p_user_id: string }
         Returns: Json
       }
+      checklist_run_save: {
+        Args: {
+          p_completed_at?: string
+          p_dismissed_at?: string
+          p_expected_version: number
+          p_organization_id: string
+          p_run_id: string
+          p_set_completed?: boolean
+          p_set_dismissed?: boolean
+          p_state: Json
+        }
+        Returns: Json
+      }
+      checklist_run_start: {
+        Args: {
+          p_checklist_key: string
+          p_organization_id: string
+          p_target_key?: string
+        }
+        Returns: Json
+      }
       claim_feedback_item: {
         Args: {
           p_admin_notes?: string
@@ -77226,6 +77247,14 @@ export type Database = {
           reset: number
           scanned: number
         }[]
+      }
+      egress_device_set: {
+        Args: {
+          p_device_id: string
+          p_display_name?: string
+          p_enabled?: boolean
+        }
+        Returns: Json
       }
       ensure_folder_chain: {
         Args: {
@@ -80197,6 +80226,14 @@ export type Database = {
           review_cadence: number
           review_count: number
         }[]
+      }
+      masterwork_run_score: {
+        Args: {
+          p_expert_score: number
+          p_expert_verdict?: string
+          p_run_id: string
+        }
+        Returns: Json
       }
       may_manage_sharing: {
         Args: { p_resource_id: string; p_resource_type: string }

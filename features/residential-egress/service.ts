@@ -81,31 +81,33 @@ export async function fetchHomeConnections(
 }
 
 /**
- * The switch. `enabled` is the user's INTENT and the only behavioural column
- * the owner's RLS policy lets a browser write — the gateway owns `connected`,
- * `last_seen_at` and the rest, so a pause here can never be erased by the next
- * heartbeat.
+ * The switch, through the door. `enabled` is the user's INTENT and one of the
+ * only two columns a browser may write at all — `public.egress_device_set` takes
+ * `enabled` and `display_name` and nothing else, so the gateway keeps `connected`,
+ * `last_seen_at`, `token_hash` and the rest and a pause here can never be erased
+ * by the next heartbeat. `platform` is not a client-writable schema (DOORS-ONLY-3):
+ * the base table refuses this write by policy name.
  */
 export async function setHomeConnectionEnabled(
   deviceId: string,
   enabled: boolean,
 ): Promise<void> {
-  const { error } = await egressDb(supabase)
-    .from("egress_device")
-    .update({ enabled })
-    .eq("id", deviceId);
+  const { error } = await supabase.rpc("egress_device_set", {
+    p_device_id: deviceId,
+    p_enabled: enabled,
+  });
   if (error) throw error;
 }
 
-/** Rename a computer. The other column the owner may write. */
+/** Rename a computer — the other column the door takes. */
 export async function renameHomeConnection(
   deviceId: string,
   displayName: string,
 ): Promise<void> {
-  const { error } = await egressDb(supabase)
-    .from("egress_device")
-    .update({ display_name: displayName })
-    .eq("id", deviceId);
+  const { error } = await supabase.rpc("egress_device_set", {
+    p_device_id: deviceId,
+    p_display_name: displayName,
+  });
   if (error) throw error;
 }
 

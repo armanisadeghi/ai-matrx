@@ -81,10 +81,14 @@ export async function saveExpertCall(
   score: number,
   why: string,
 ): Promise<void> {
-  const { error } = await supabase
-    .schema("platform")
-    .from("masterwork_run")
-    .update({ expert_score: score, expert_verdict: why.trim() || null })
-    .eq("id", runId);
+  // THROUGH THE DOOR. `platform` is not a client-writable schema (DOORS-ONLY-3):
+  // `public.masterwork_run_score` writes `expert_score` and `expert_verdict` and
+  // cannot touch `status`, `result`, `error` or the heartbeat, which belong to the
+  // run's own lifecycle in aidream.
+  const { error } = await supabase.rpc("masterwork_run_score", {
+    p_run_id: runId,
+    p_expert_score: score,
+    p_expert_verdict: why.trim() || undefined,
+  });
   if (error) throw operationFailed("save your verdict", error);
 }

@@ -82,6 +82,59 @@ export async function rpc<T>(env: Env, fn: string, args: Record<string, unknown>
   return (await res.json()) as T;
 }
 
+/**
+ * Call a door AS A SIGNED-IN USER, over the same PostgREST path a browser uses.
+ *
+ * The campaign's ruling is that `platform` and `iam` are not client-writable and every write
+ * goes through a SECURITY DEFINER door, so a probe that only knows how to POST to a TABLE can
+ * no longer test any of those writes. Without this, every closure would have to be proven by
+ * the absence of a 201 -- which proves the table is shut, and nothing at all about the feature
+ * still working. This is the other half: the write really happens, under a real user's JWT,
+ * through the door the browser calls.
+ *
+ * Distinguishes REFUSED (a real DB error with its SQLSTATE, e.g. a door's own 42501) from an
+ * accepted call, because those mean very different things -- the same distinction `rlsPatch`
+ * draws for a table write.
+ */
+export async function rlsRpc<T>(
+  env: Env,
+  jwt: string,
+  fn: string,
+  args: Record<string, unknown>,
+  schema = "public",
+): Promise<{ status: number; data: T | null; error?: string; code?: string }> {
+  const res = await fetch(`${env.url}/rest/v1/rpc/${fn}`, {
+    method: "POST",
+    headers: {
+      apikey: env.publishableKey,
+      Authorization: `Bearer ${jwt}`,
+      "Content-Type": "application/json",
+      "Content-Profile": schema,
+      "Accept-Profile": schema,
+      Accept: "application/json",
+    },
+    body: JSON.stringify(args),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    let message = text.slice(0, 300);
+    let code: string | undefined;
+    try {
+      const parsed = JSON.parse(text) as { message?: string; code?: string };
+      if (parsed.message) message = parsed.message;
+      code = parsed.code;
+    } catch {
+      // non-JSON body — keep the raw text
+    }
+    return { status: res.status, data: null, error: message, code };
+  }
+  try {
+    return { status: res.status, data: JSON.parse(text) as T };
+  } catch {
+    return { status: res.status, data: null };
+  }
+}
+
 /** Mint a REAL session JWT for a user via the GoTrue admin API. */
 export async function mintUserJwt(env: Env, userId: string): Promise<string> {
   const userRes = await fetch(`${env.url}/auth/v1/admin/users/${userId}`, {
