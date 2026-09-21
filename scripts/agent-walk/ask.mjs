@@ -149,17 +149,34 @@ for (const key of which) {
     for (const candidate of A.tables) {
       await settleOnTable(page, candidate.id);
       await page.getByRole("button", { name: A.rail }).first().click();
-      await page.waitForTimeout(4000);
+
+      // 🚨 WAIT FOR THE BUTTON; A CLOCK IS NOT AN ANSWER. This used to sleep 4s and
+      // then read `isVisible()` once, so a panel still fetching — Hands & Hope's
+      // `donors` is 246 records behind a cold rail — reported "this tab is not empty"
+      // while the table in fact had ZERO dashboards (`custom.dashboards(org, donors)`
+      // = 0, measured 2026-09-21). That is the same defect as the org check one file
+      // over: absence of a positive signal read as proof of its opposite. It cost this
+      // lane two full walks before the database contradicted the walk's own summary.
       const ask = page.getByRole("button", { name: /Ask an agent/i }).first();
+      const offered = await ask
+        .waitFor({ state: "visible", timeout: 45000 })
+        .then(() => true)
+        .catch(() => false);
       railText = await page.evaluate(() => {
         const panel = document.querySelector("[role=dialog], aside, [data-slot=rail]");
         return (panel?.innerText || "").slice(0, 900);
       });
-      if (await ask.isVisible().catch(() => false)) {
+      if (offered) {
         table = candidate;
         break;
       }
-      note.steps.push(`${candidate.name}: this tab is not empty, so there is no empty state to ask from`);
+      // AND NEVER CONCLUDE SILENTLY. The walk quotes what the rail actually said, so
+      // "no empty state" can be checked against the panel's own words instead of being
+      // taken on the harness's word.
+      note.steps.push(
+        `${candidate.name}: no "Ask an agent" after 45s — the ${A.rail.source} panel said: ` +
+          JSON.stringify(railText.replace(/\s+/g, " ").slice(0, 220)),
+      );
     }
     if (!table) throw new Error(`no ${key} tab is still empty in ${A.orgName}`);
     note.table = `${table.name} (${table.id})`;
