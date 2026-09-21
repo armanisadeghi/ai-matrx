@@ -130,6 +130,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 
 ## Production gaps verified 2026-08-15
 
+- 🚨 **A pairing text is never phrased like an OTP, and that is load-bearing.** Twilio classifies OTP-shaped CONTENT and both redacts it in the Messages API and refuses to deliver it to another Twilio number. Measured 2026-09-21 with the sender route held constant: the same six digits phrased `your verification code is: N` came back `undelivered` (30008 outbound / 30038 inbound) from BOTH our Messaging Service and a plain number, while `AI Matrx test handset pairing N` delivered from both and arrived with its digits intact. The code therefore travels as a pairing token (`TEST_HANDSET_PAIRING_PREFIX`); reverting that sentence to OTP phrasing silently breaks every handset enrollment.
 - Legacy `lib/sms/send.ts` calls the provider before durable local intent/claim creation; assistant/test delivery already uses the durable outbox.
 - The canonical task-reminder producer enforces both hourly and timezone-local daily caps; legacy notification senders have not all converged on that producer contract.
 - The broad `system` category bypasses consent and quiet hours and needs a closed, allowlisted definition.

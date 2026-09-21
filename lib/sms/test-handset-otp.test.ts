@@ -134,6 +134,9 @@ describe("sendTestHandsetVerification", () => {
     // The code that goes out is six digits, and it is NOT in the stored row.
     const body = (fetchMock.mock.calls[0][1] as { body: URLSearchParams }).body;
     const sentText = body.get("Body") ?? "";
+    // The wording must NOT be OTP-shaped: Twilio blocks and redacts that.
+    expect(sentText).toContain("test handset pairing");
+    expect(sentText).not.toMatch(/verification code/i);
     const code = sentText.match(/(\d{6})/)?.[1];
     expect(code).toMatch(/^\d{6}$/);
     expect(row.code_hash).not.toContain(code as string);

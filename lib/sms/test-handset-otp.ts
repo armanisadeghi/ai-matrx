@@ -33,6 +33,12 @@ import { createHash, randomBytes, randomInt, timingSafeEqual } from "crypto";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { TEST_HANDSET_PROGRAM_KEY } from "@/lib/sms/test-handset-inbox";
 
+/**
+ * The wording a pairing text uses. Deliberately NOT OTP-shaped — see the note
+ * at the send call. The battery anchors its reader to this exact prefix.
+ */
+export const TEST_HANDSET_PAIRING_PREFIX = "AI Matrx test handset pairing";
+
 /** Matches Twilio Verify's own defaults, so the semantics do not drift. */
 export const OTP_TTL_MS = 10 * 60 * 1000;
 export const OTP_MAX_ATTEMPTS = 5;
@@ -134,9 +140,18 @@ export async function sendTestHandsetVerification(
     return { success: false, status: "denied", error: insertError.message };
   }
 
+  // 🚨 THE WORDING IS LOAD-BEARING, NOT COSMETIC. Twilio classifies
+  // OTP-SHAPED CONTENT and both REDACTS it in the Messages API and REFUSES to
+  // deliver it to another Twilio number (error 30008 outbound / 30038
+  // inbound). Measured 2026-09-21 with the sender route held constant: the
+  // same six digits phrased "your verification code is: N" came back
+  // undelivered from BOTH our Messaging Service and a plain number, while
+  // this neutral phrasing delivered from both and arrived with its digits
+  // intact. So the code travels as a PAIRING token. Changing this sentence
+  // back to OTP phrasing silently breaks every handset enrollment.
   const sent = await sendOverMessagingService(
     phoneNumber,
-    `AI Matrx: your verification code is: ${code}`,
+    `${TEST_HANDSET_PAIRING_PREFIX} ${code}`,
   );
   if (!sent.ok) {
     return { success: false, status: "denied", error: sent.error };
