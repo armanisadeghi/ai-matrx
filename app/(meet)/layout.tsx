@@ -46,8 +46,38 @@ export default async function MeetLayout({
   children: React.ReactNode;
 }) {
   // Request-scoped cached auth lookup — shared with the page below, so the
-  // whole tree pays one JWT validation.
-  const { user } = await getServerAuth();
+  // whole tree pays one identity resolve.
+  const { user, authUnavailable } = await getServerAuth();
+
+  // 🚨 AN AUTHORITY WE COULD NOT REACH IS NOT A GUEST.
+  //
+  // This is the one group where the distinction is easy to get backwards,
+  // because a guest IS a first-class identity here (D6) — so falling through
+  // to the guest branch looks harmless. It is not. The guest branch seeds
+  // guest Redux state, and this layout's own header says what that costs a
+  // signed-in person: `<MeetHost>` goes inert, and "a host with no org cannot
+  // mint a token or admit anybody." The host would sit in their own meeting
+  // unable to let anyone in, with nothing on screen saying why. That is the
+  // silent failure this codebase does not allow.
+  //
+  // Holding costs real guests NOTHING: a guest has no token to verify, and
+  // `getClaims()` reports that as an ANSWER (`error: null`), so this branch is
+  // only ever the "we could not tell" case. The durable meeting link (R3) is
+  // unaffected — it resolves; it just asks for one reload when the auth
+  // authority is unreachable, instead of opening a meeting that cannot work.
+  if (authUnavailable) {
+    console.warn(
+      "[(meet)/layout] identity could not be verified — holding the stage, NOT seeding a guest identity over a possible host.",
+    );
+    return (
+      <Providers initialReduxState={{ user: mapUserData(null, undefined, false) }}>
+        <div className="flex h-dvh items-center justify-center p-6 text-center text-sm text-muted-foreground">
+          We could not verify who you are on this request, so this meeting is
+          not opening yet. You have not been signed out — reload in a moment.
+        </div>
+      </Providers>
+    );
+  }
 
   let initialReduxState: BaseReduxState;
 

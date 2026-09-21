@@ -44,9 +44,51 @@ export default async function AppLayout({
   const sidebarExpanded = await readSidebarExpandedCookie();
 
   // Request-scoped cached auth lookup — child server layouts/pages that also
-  // call `getServerAuth()` share this validated `getUser()` result, so each
-  // request only pays one JWT-validation round-trip across the whole tree.
-  const { user, isAuthenticated } = await getServerAuth();
+  // call `getServerAuth()` share this one locally-verified claims read, so the
+  // whole tree pays a single identity resolve per request.
+  const { user, isAuthenticated, authUnavailable } = await getServerAuth();
+
+  // 🚨 AN AUTHORITY WE COULD NOT REACH IS NOT A SIGNED-OUT PERSON.
+  //
+  // `serverClient` bounds the identity resolve at 2.5s (`createAuthBudget` in
+  // @ai-matrx/data/next). When that budget is spent the resolve hands back
+  // `user: null` — which looks EXACTLY like a guest. Rendering the guest shell
+  // on it is not a cosmetic slip: `isAuthenticated` is what strips the nav
+  // items, the favorites group, the org switcher, the inbox, and swaps the user
+  // block for a Sign In button. A signed-in person would watch their whole
+  // application disappear because the network blinked for two seconds.
+  //
+  // It is also NOT self-healing. The client re-resolves identity after
+  // hydration (`DeferredShellData`) and repairs Redux — but this shell's chrome
+  // is driven by a SERVER prop the client never revisits, so the guest shell
+  // would sit there, lying, until the next navigation.
+  //
+  // So we hold, exactly as `(admin)` and `(transitional)` do: shell chrome, one
+  // honest sentence, no redirect and no "signed out" claim. This costs a guest
+  // nothing — a genuine guest resolves cleanly (`getClaims()` reports "no
+  // session" as an answer, with `error: null`), so `authUnavailable` is only
+  // ever the "we could not tell" case.
+  if (authUnavailable) {
+    console.warn(
+      `[(core)/layout] identity could not be verified for ${pathname} — holding the shell, NOT rendering it as signed out.`,
+    );
+    const unresolvedUserData = mapUserData(null, undefined, false);
+    return (
+      <AppShell
+        initialReduxState={{ user: unresolvedUserData }}
+        userData={unresolvedUserData}
+        isAuthenticated={false}
+        pathname={pathname}
+        sidebarExpanded={sidebarExpanded}
+      >
+        <div className="p-4 text-sm text-muted-foreground">
+          We could not verify who you are on this request, so this page is not
+          loading its data. You have not been signed out — reload in a moment.
+        </div>
+      </AppShell>
+    );
+  }
+
   const supabase = await createClient();
 
   let initialReduxState: BaseReduxState;

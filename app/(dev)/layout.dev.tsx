@@ -54,9 +54,30 @@ export default async function AppLayout({
   const sidebarExpanded = await readSidebarExpandedCookie();
 
   // Request-scoped cached auth lookup — child server layouts/pages that also
-  // call `getServerAuth()` share this validated `getUser()` result, so each
-  // request only pays one JWT-validation round-trip across the whole tree.
-  const { user, isAuthenticated } = await getServerAuth();
+  // call `getServerAuth()` share this one locally-verified claims read, so the
+  // whole tree pays a single identity resolve per request.
+  const { user, isAuthenticated, authUnavailable } = await getServerAuth();
+
+  // 🚨 AN AUTHORITY WE COULD NOT REACH IS NOT A SIGNED-OUT PERSON. Same rule
+  // and same reason as `(core)` — the 2.5s resolve budget hands back a null
+  // user that is indistinguishable from a guest, and `isAuthenticated` is what
+  // decides whether this shell keeps its nav or paints a Sign In button. See
+  // `app/(core)/layout.tsx` for the full reasoning; a genuine guest resolves
+  // cleanly, so this branch is only ever the "we could not tell" case.
+  if (authUnavailable) {
+    console.warn(
+      `[(dev)/layout] identity could not be verified for ${pathname} — holding, NOT rendering as signed out.`,
+    );
+    return (
+      <Providers initialReduxState={{ user: mapUserData(null, undefined, false) }}>
+        <div className="p-4 text-sm text-muted-foreground">
+          We could not verify who you are on this request, so this page is not
+          loading its data. You have not been signed out — reload in a moment.
+        </div>
+      </Providers>
+    );
+  }
+
   const supabase = await createClient();
 
   let initialReduxState: BaseReduxState;

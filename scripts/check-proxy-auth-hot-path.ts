@@ -143,6 +143,60 @@ const MATCHER_CASES: [string, boolean][] = [
   ["/_next/static/chunk.js", false],
 ];
 
+/**
+ * THE SHELL-LAYOUT HALF.
+ *
+ * `getServerAuth()` is bounded (2.5s, `createAuthBudget` in @ai-matrx/data/next),
+ * and a spent budget hands back `user: null` — indistinguishable from a guest.
+ * These are the layouts that build `UserData` and decide the shell's posture, so
+ * in each of them that null is the difference between "a guest is browsing" and
+ * "a signed-in person watches their nav, org switcher, inbox and user menu
+ * vanish because the network blinked for two seconds".
+ *
+ * It does not self-heal. The client re-resolves identity after hydration
+ * (`DeferredShellData`) and repairs Redux, but the chrome is driven by a SERVER
+ * prop the client never revisits — the guest shell sits there until the next
+ * navigation.
+ *
+ * So every one of these files must READ `authUnavailable`. What it then does is
+ * its own call (hold the shell, hold the stage, refuse in place), but silently
+ * treating it as a guest is never one of them.
+ */
+const SHELL_LAYOUTS = [
+  "app/(core)/layout.tsx",
+  "app/(admin)/layout.tsx",
+  "app/(transitional)/layout.tsx",
+  "app/(dev)/layout.dev.tsx",
+  "app/(meet)/layout.tsx",
+  "lib/auth/authedLayoutData.ts",
+];
+
+export function auditShellLayouts(files: Record<string, string>): Finding[] {
+  const findings: Finding[] = [];
+  for (const path of SHELL_LAYOUTS) {
+    // Absent from the map is not this function's business — `readShellLayouts`
+    // owns "the file is gone", because only a read against DISK can tell a
+    // deleted layout from a fixture that simply did not supply one.
+    const raw = files[path];
+    if (raw === undefined) continue;
+    const body = code(raw);
+    // A file that does not resolve identity at all has nothing to get wrong.
+    if (!/getServerAuth\s*\(/.test(body)) continue;
+    if (/authUnavailable/.test(body)) continue;
+    findings.push({
+      where: path,
+      what: "builds the shell from getServerAuth() but never reads authUnavailable",
+      remedy:
+        "A null user here is EITHER a guest OR an identity resolve that hit its 2.5s budget, " +
+        "and this file cannot tell them apart without the flag. Destructure it — " +
+        "`const { user, isAuthenticated, authUnavailable } = await getServerAuth()` — and when it " +
+        "is set, hold rather than rendering the signed-out shell or redirecting to /login. " +
+        "The client cannot fix it for you: the chrome is a server prop it never revisits.",
+    });
+  }
+  return findings;
+}
+
 const WATCHED = [
   "proxy.ts",
   "utils/supabase/middleware.ts",
@@ -381,6 +435,34 @@ function readSweptFiles(): Record<string, string> {
 const REAL_MATCHER_FIXTURE =
   'export const config = { matcher: ["/((?!api|_next/static|_next/image|public|auth|app_redirect|app_callback|favicon.ico|sitemap.xml|robots.txt|manifest.webmanifest|.*\\\\.(?:js|mjs|css|map|json|txt|xml|svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf|eot|mp3|mp4|webm|wasm|pdf)$).*)"] };';
 
+/**
+ * Read the shell layouts off disk — and make a MISSING one a finding rather
+ * than a silent skip. A rename or a delete would otherwise void the rule with
+ * nobody noticing, which reads as coverage this guard is not giving.
+ */
+function readShellLayouts(): {
+  shellLayouts: Record<string, string>;
+  missingLayouts: Finding[];
+} {
+  const shellLayouts: Record<string, string> = {};
+  const missingLayouts: Finding[] = [];
+  for (const rel of SHELL_LAYOUTS) {
+    const abs = join(ROOT, rel);
+    if (existsSync(abs)) {
+      shellLayouts[rel] = readFileSync(abs, "utf8");
+      continue;
+    }
+    missingLayouts.push({
+      where: rel,
+      what: "is named as a shell layout but no longer exists",
+      remedy:
+        "If it moved, update SHELL_LAYOUTS to the new path. If the group is gone, remove the " +
+        "entry. Do not leave a stale row — it reads as coverage this guard is not giving.",
+    });
+  }
+  return { shellLayouts, missingLayouts };
+}
+
 function selfTest(): boolean {
   const cases: [string, Record<string, string>, number][] = [
     [
@@ -417,6 +499,38 @@ function selfTest(): boolean {
       // One finding per real path that would now wake a Lambda:
       // /matrx/favicon-32x32.png, /blob-sw.js, /styles/app.css.
       3,
+    ],
+    [
+      "a shell layout that holds on authUnavailable is clean",
+      {
+        "app/(core)/layout.tsx":
+          "const { user, isAuthenticated, authUnavailable } = await getServerAuth();\n" +
+          "if (authUnavailable) return <AppShell>held</AppShell>;",
+      },
+      0,
+    ],
+    [
+      "a shell layout that ignores authUnavailable is caught",
+      {
+        "app/(core)/layout.tsx":
+          "const { user, isAuthenticated } = await getServerAuth();\n" +
+          "if (!user) return <AppShell isAuthenticated={false} />;",
+      },
+      1,
+    ],
+    [
+      "authUnavailable named only in a COMMENT does not satisfy the rule",
+      {
+        "app/(meet)/layout.tsx":
+          "// TODO: read authUnavailable one day\n" +
+          "const { user } = await getServerAuth();",
+      },
+      1,
+    ],
+    [
+      "a layout that resolves no identity at all is not flagged",
+      { "app/(meet)/layout.tsx": "export default function L({ children }) { return children; }" },
+      0,
     ],
     [
       "a comment NAMING getUser is not a call",
@@ -557,7 +671,7 @@ function selfTest(): boolean {
 
   let ok = true;
   for (const [name, files, expected] of cases) {
-    const got = auditProxyAuth(files).length;
+    const got = auditProxyAuth(files).length + auditShellLayouts(files).length;
     const pass = got === expected;
     if (!pass) ok = false;
     console.log(`  ${pass ? "PASS" : "FAIL"}  ${name} — expected ${expected}, got ${got}`);
@@ -591,10 +705,21 @@ function main(): void {
     if (existsSync(abs)) files[rel] = readFileSync(abs, "utf8");
   }
 
+  // Read SEPARATELY from WATCHED, on purpose. `auditProxyAuth`'s getSession()
+  // rule is a PROXY-PATH rule — there, getSession() decides access and must
+  // never be trusted. These layouts call it for the access token AFTER identity
+  // is already settled from the JWT, which is the ordinary, correct read (the
+  // repo-wide sweep draws the same distinction). Feeding them to auditProxyAuth
+  // would report all six as findings and teach the next agent to ignore this
+  // guard.
+  const { shellLayouts, missingLayouts } = readShellLayouts();
+
   const apiRoutes = readApiRoutes();
   const swept = readSweptFiles();
   const findings = [
     ...auditProxyAuth(files),
+    ...auditShellLayouts(shellLayouts),
+    ...missingLayouts,
     ...auditApiRoutes(apiRoutes),
     ...auditRepoIdentityCalls(swept),
   ];

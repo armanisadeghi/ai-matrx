@@ -91,6 +91,40 @@ export async function getClaimsUser(
   return { data: { user }, error: null };
 }
 
+/**
+ * Is this `getClaims()` error an authority we could not REACH, as opposed to a
+ * token we could reach a verdict on?
+ *
+ * 🚨 THIS IS THE LINE `authUnavailable` DRAWS, and getting it wrong is costly in
+ * BOTH directions:
+ *
+ *  - Too NARROW (only transport, but missing a case) → a real outage reads as a
+ *    logout: signed-in people bounced to /login by a network blink.
+ *  - Too WIDE (any error at all) → a genuinely BAD token — forged, corrupted,
+ *    signed by a rotated key — reads as an outage. The person is then held on
+ *    "reload in a moment" forever and NEVER told to sign in again, while the
+ *    proxy, which draws the line correctly, bounces the same request to /login.
+ *    Two halves of the app disagreeing about one request is worse than either
+ *    answer alone. Verified live on 2026-09-21 by presenting a badly-signed
+ *    token: the proxy redirected to /login while `getServerAuth` was calling it
+ *    `authUnavailable`.
+ *
+ * This MIRRORS `isAuthTransportFailure` in `@ai-matrx/data/next`, which the
+ * package does not currently export (0.18.0). Keep the two in step; if they
+ * ever disagree, the package is right — it is what the proxy runs on.
+ */
+export function isAuthTransportFailure(error: AuthError): boolean {
+  const name = String(error.name ?? "");
+  if (name === "AuthRetryableFetchError" || name === "TimeoutError" || name === "AbortError") {
+    return true;
+  }
+  const status = error.status;
+  if (status === 0 || status === 504 || status === 503) return true;
+  // 408 / `auth_budget_exhausted` is the synthetic answer `createAuthBudget`
+  // returns once the request's 2.5s identity budget is spent.
+  return status === 408 || error.code === "auth_budget_exhausted";
+}
+
 /** Is this `getClaims()` error the settled fact "nobody is signed in"? */
 export function isSignedOutError(error: AuthError): boolean {
   return (

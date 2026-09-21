@@ -32,7 +32,11 @@
 
 import { cache } from "react";
 import { createClient } from "./server";
-import { getClaimsUser, type ApiClaimsUser } from "./claimsUser";
+import {
+  getClaimsUser,
+  isAuthTransportFailure,
+  type ApiClaimsUser,
+} from "./claimsUser";
 
 export interface ServerAuthState {
   /** `true` when the request carries a locally verified access token. */
@@ -43,8 +47,14 @@ export interface ServerAuthState {
    */
   user: ApiClaimsUser | null;
   /**
-   * `true` when the token could not be VERIFIED (auth authority or JWKS
-   * unreachable, malformed token) as opposed to there being no token at all.
+   * `true` when we could not REACH a verdict — the auth authority or the JWKS
+   * endpoint was unreachable, or this request's 2.5s identity budget was spent.
+   *
+   * 🚨 NOT set for a token we DID reach a verdict on. A badly-signed, forged or
+   * expired-key token is a settled answer ("this is not a valid session"), and
+   * calling it "unavailable" would hold the person on "reload in a moment"
+   * forever while the proxy sends the same request to /login. Same line the
+   * package draws for `MiddlewareSession.authUnavailable`.
    */
   authUnavailable: boolean;
 }
@@ -55,7 +65,9 @@ export const getServerAuth = cache(async (): Promise<ServerAuthState> => {
     data: { user },
     error,
   } = await getClaimsUser(supabase);
-  const authUnavailable = !user && error !== null;
+  // Mirror the proxy exactly: unavailable means UNREACHABLE (or a spent
+  // budget), never "the token was bad". See `isAuthTransportFailure`.
+  const authUnavailable = !user && error !== null && isAuthTransportFailure(error);
   if (authUnavailable) {
     console.warn(
       "[getServerAuth] identity could not be verified on this request — rendering " +
