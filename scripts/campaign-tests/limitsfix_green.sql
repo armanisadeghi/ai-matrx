@@ -24,7 +24,7 @@ declare
   c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
   v_org  uuid := gen_random_uuid();
   v_home uuid;
-  v_boxes uuid; v_sites uuid; v_rel uuid; v_extra uuid;
+  v_boxes uuid; v_sites uuid; v_rel uuid; v_extra uuid; v_kennel uuid;
   v_n integer; v_msg text; v_keys text[]; v_types text[]; v_want text;
 begin
   if (select system_identifier from pg_control_system()) <> 7642734024280108049 then
@@ -187,6 +187,50 @@ begin
     raise exception 'PART 6 FAILED — the week''s box was written and the store reads back % rows.', v_n;
   end if;
   raise notice 'PART 6 PASSED — the farm declared its table, its columns and its relation, and packed a box through the doors.';
+
+  -- ══════════════════════════════════════════════════════════════════════════════════════
+  -- PART 7 — A COLUMN CALLED `name`, AND DECLARING IT TWICE.
+  -- Real-data crew E2: New record and import both refused with 23505 on a table whose own
+  -- column is literally called `name`. Real-data crew A: 409 on a brand-new table's own
+  -- default Title, because the create path declares it and the import path declares it
+  -- again. Both are one thing — saying the same true thing twice was read as a
+  -- contradiction. The farm's boarding kennel neighbour has exactly that column.
+  -- ══════════════════════════════════════════════════════════════════════════════════════
+  v_kennel := custom.table_declare(v_org, jsonb_build_object(
+    'name','boarders', 'type','entity', 'slug','boarders',
+    'label_singular','Boarder', 'label_plural','Boarders',
+    'display','list', 'ordered', false, 'weight','light',
+    'retention_days', 2555, 'row_order','sorted', 'agent_writable', true,
+    'default_sort', jsonb_build_array(jsonb_build_object('field','name','direction','asc')),
+    'title_field','name', 'parent_id', v_home::text,
+    'fields', jsonb_build_array(
+      jsonb_build_object('name','name','type','text'),
+      jsonb_build_object('name','breed','type','text'),
+      jsonb_build_object('name','nightly_rate','type','currency'))));
+  select count(*) into v_n from custom.applicable_fields(v_org, v_kennel, null);
+  if v_n <> 3 then
+    raise exception 'PART 7 FAILED — a table whose own column is called "name" has % columns.', v_n;
+  end if;
+
+  -- the same column, declared again, is the same column
+  if custom.field_declare(v_org, v_kennel, jsonb_build_object('name','name','type','text')) is null then
+    raise exception 'PART 7 FAILED — re-declaring the same column answered nothing.';
+  end if;
+  select count(*) into v_n from custom.applicable_fields(v_org, v_kennel, null);
+  if v_n <> 3 then
+    raise exception 'PART 7 FAILED — re-declaring the same column made a second one (% now).', v_n;
+  end if;
+
+  -- but a DIFFERENT type is a real conflict and is still refused
+  begin
+    perform custom.field_declare(v_org, v_kennel, jsonb_build_object('name','name','type','number'));
+    raise exception 'PART 7 FAILED — retyping a live column to a number was accepted silently.';
+  exception when sqlstate '23505' then
+    null;
+  end;
+  perform custom.record_write(v_org, v_kennel, jsonb_build_object(
+    'name','Biscuit', 'breed','Border Collie', 'nightly_rate', 48, 'parent_id', v_home::text));
+  raise notice 'PART 7 PASSED — a column called `name` works, declaring it twice is idempotent, retyping it is refused.';
 
   raise notice 'ALL PARTS PASSED — from the seat `authenticated`, through the doors a signed-in person reaches.';
 end
