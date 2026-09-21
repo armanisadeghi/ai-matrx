@@ -225,9 +225,31 @@ begin
   if v_cad is null or array_length(v_cad, 1) < 1 then
     raise exception '5a: the cadence door answered nothing, so every picker would fall back to a typed word';
   end if;
-  if not ('immediate' = any(v_cad)) then
-    raise exception '5b: the cadence list does not contain immediate — it is %', v_cad;
+  -- 🚨 RE-PINNED (lane RED-SUITES-2, 2026-09-21). The cadence vocabulary was changed on
+  -- purpose by lane DIGESTS (`migrations/campaign/digests_the_cadence_the_quiet_hours_and_the_real_digest.sql`,
+  -- commit `4b038561a4`): it was two words, `immediate` and `digest`, with no way to say
+  -- "hourly" and no way to say "Monday" — so the second half of "text me on a new lead, email
+  -- me a Monday summary" could not be written down at all. The canonical list is now
+  -- `{instant,hourly,daily,weekly}` and `custom.agg_cadence_normalize` maps `immediate`,
+  -- `instant` and `now` onto `instant`.
+  --
+  -- BOTH HALVES ARE ASSERTED, which is stricter than the old clause: the canonical word is in
+  -- the list a picker offers, AND the older word a person — or an older client — may still
+  -- send is still understood rather than silently dropped.
+  if not ('instant' = any(v_cad)) then
+    raise exception '5b: the cadence list does not contain instant — it is %', v_cad;
   end if;
+  -- OUT OF THE SEAT for the normaliser only: `custom.agg_cadence_normalize` is the notifier's
+  -- own helper and is server-side by design, exactly like `custom.agg_subscription_cadences`
+  -- two lines below. What a PERSON sends is asserted from the seat in PART 6, which writes a
+  -- subscription with the word `immediate` through `custom.rule_declare`.
+  perform set_config('role', v_boss, true);
+  if custom.agg_cadence_normalize('immediate') is distinct from 'instant' then
+    perform set_config('role', 'authenticated', true);
+    raise exception '5b: the word a person used to send, "immediate", is no longer understood — it normalises to %',
+      coalesce(custom.agg_cadence_normalize('immediate'), '<nothing>');
+  end if;
+  perform set_config('role', 'authenticated', true);
   -- THE SAME LIST. The whole point: a picker and the digest runner can never disagree.
   perform set_config('role', v_boss, true);  -- agg_subscription_cadences is server-only by design
   if v_cad is distinct from custom.agg_subscription_cadences() then
@@ -278,7 +300,8 @@ begin
   -- THE CONTROL, so the clause is not satisfied by a door that refuses her everything:
   -- the cadence catalogue is not about any table, and she is a member, so she gets it.
   v_cad := custom.subscription_cadences(v_org);
-  if v_cad is null or not ('immediate' = any(v_cad)) then
+  -- (`instant`, not `immediate` — the DIGESTS vocabulary ruling, see 5b.)
+  if v_cad is null or not ('instant' = any(v_cad)) then
     raise exception '7c: a member was refused the cadence catalogue, which is about no table at all';
   end if;
   -- And her own subscription list over this table is EMPTY, not refused — nothing is

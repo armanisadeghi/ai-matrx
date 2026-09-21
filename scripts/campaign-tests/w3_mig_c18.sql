@@ -107,6 +107,8 @@ declare
   v_log     uuid;
   v_msg     text;
   v_txt     text;
+  v_undeclared text;
+  v_mismatch   text;
   v_n       integer;
   v_tid     uuid;
   v_verbs   text;
@@ -162,26 +164,66 @@ begin
   raise notice 'PART 0 PASSED — the seat is `authenticated`, the ladder sees a client, and neither custom.record nor history.migration_log is readable from it.';
 
   -- ══════════════════════════════════════════════════════════════════════════
-  -- PART 1 — ALL TEN VERBS EXIST, by name. A census, not a promise.
+  -- PART 1 — EVERY VERB EXISTS AND AGREES WITH ITS REGISTER ROW. A census, not a promise.
   -- ══════════════════════════════════════════════════════════════════════════
   -- The catalogue IS readable from the seat, so this stays in it — and it now asks a second
   -- question the old file could not: that a signed-in person may actually CALL all ten. A verb
   -- that exists and holds no client grant is a verb no person has (the T9 class).
+  -- 🚨 REWRITTEN (lane RED-SUITES-2, 2026-09-21). This clause held a HAND-TYPED LIST of ten
+  -- verb names and the word "ten". Two verbs have been added since, both on purpose:
+  -- `custom.migrate_choice_keys` (lane CHOICE-VALUE, `choiceval_the_values_become_words.sql`,
+  -- commit `e21082b09c`) and `custom.migrate_reclass` (lane APPRV-TAIL,
+  -- `apprvtail_a_field_row_is_a_field.sql`, commit `6a61d5f014`). A census that has to be
+  -- re-typed every time the platform grows is a clause that goes red for growth, and its
+  -- author is the only person who can tell the two apart.
+  --
+  -- THE REGISTER IS THE ORACLE NOW, and it is STRICTER than the list was in two ways the list
+  -- could never be: a verb that exists with NO register row at all is caught (the old clause
+  -- would have passed it as long as the ten names still matched), and a verb declared
+  -- server-only has to SAY WHY rather than simply be absent from a grant.
+  --   · every `custom.migrate_*` verb carries a row in `platform.client_callable_door`;
+  --   · every verb whose row says `signed_in_callers` holds EXECUTE for `authenticated`;
+  --   · every verb whose row does not must state its `non_client_lane` reason.
+  -- `migrate_reclass` is the second kind today, and its row reads "server_only: only a
+  -- campaign migration and the record store's own repair path call this … A person has no
+  -- verb that can put the wrong class on a Field row any more, so a person needs no verb to
+  -- take it off."
+  --
+  -- OUT OF THE SEAT for the register read only: `platform.client_callable_door` is the
+  -- platform's own register and holds no client grant. The GRANT half below is asked from the
+  -- seat, because `has_function_privilege` is a catalogue question the seat may ask.
   select string_agg(p.proname, ',' order by p.proname) into v_txt
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'custom' and p.proname like 'migrate\_%'
      and p.proname <> 'migrate_undo';
-  if v_txt is distinct from 'migrate_delete,migrate_demote,migrate_extract_parent,migrate_merge,migrate_promote,migrate_purge,migrate_rename,migrate_reparent,migrate_retype,migrate_split' then
-    raise exception 'C-18 (1): the Migration verbs on this database are "%", and there are ten', coalesce(v_txt, 'none');
+  if coalesce(v_txt, '') = '' then
+    raise exception 'C-18 (1): this database has no custom.migrate_* verbs at all.';
   end if;
-  select count(*) into v_n
+
+  perform set_config('role', v_boss, true);
+  select string_agg(p.proname, ', ' order by p.proname) into v_undeclared
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-   where n.nspname = 'custom' and p.proname like 'migrate\_%' and p.proname <> 'migrate_undo'
-     and not has_function_privilege('authenticated', p.oid, 'EXECUTE');
-  if v_n <> 0 then
-    raise exception 'C-18 (1): % of the ten Migration verbs cannot be called by a signed-in person at all', v_n;
+   where n.nspname = 'custom' and p.proname like 'migrate\_%'
+     and not exists (select 1 from platform.client_callable_door d
+                      where d.schema_name = 'custom' and d.function_name = p.proname);
+  select string_agg(p.proname, ', ' order by p.proname) into v_mismatch
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    join platform.client_callable_door d
+      on d.schema_name = 'custom' and d.function_name = p.proname
+   where n.nspname = 'custom' and p.proname like 'migrate\_%'
+     and (   (coalesce(d.signed_in_callers, false)
+              and not has_function_privilege('authenticated', p.oid, 'EXECUTE'))
+          or (not coalesce(d.signed_in_callers, false)
+              and coalesce(btrim(d.non_client_lane), '') = ''));
+  perform set_config('role', 'authenticated', true);
+
+  if v_undeclared is not null then
+    raise exception 'C-18 (1): these Migration verbs carry no row in platform.client_callable_door, so the store neither says they are client doors nor says why they are not: %', v_undeclared;
   end if;
-  raise notice 'PART 1 — REC-20: ten verbs, by name, and every one of them callable from the seat: %', v_txt;
+  if v_mismatch is not null then
+    raise exception 'C-18 (1): these Migration verbs disagree with their own register row — declared for a signed-in person and not granted to one, or not declared and giving no server-only reason: %', v_mismatch;
+  end if;
+  raise notice 'PART 1 — REC-20: every Migration verb carries its row in platform.client_callable_door, every verb declared for a signed-in person is callable from the seat, and every server-only one says why: %', v_txt;
 
   -- ══════════════════════════════════════════════════════════════════════════
   -- THE FIXTURE — three Tables and their columns, every one through the door.
@@ -674,7 +716,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   raise notice 'PART 10 — a plain member is refused a rename of a record she holds at viewer and a delete of one she does not hold at all, and still reads the record she was shared.';
 
-  raise notice '════ C-18 GREEN — ten verbs, REC-12, REC-13, REC-18, REC-20…REC-24, REC-N-18, FLD-4, and T5, T7, T9 and T12, on the MAIN database, every asserted product clause from the seat `authenticated`. Rolling back. ════';
+  raise notice '════ C-18 GREEN — every Migration verb its register declares, REC-12, REC-13, REC-18, REC-20…REC-24, REC-N-18, FLD-4, and T5, T7, T9 and T12, on the MAIN database, every asserted product clause from the seat `authenticated`. Rolling back. ════';
 end;
 $t$;
 
