@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useId, useRef } from "react";
 import { Plus, X, Loader2, ChevronDown, ChevronRight } from "lucide-react";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+import {
+  MatrxDynamicPanelHost,
+  type PanelPresentation,
+} from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -38,6 +41,14 @@ interface AddScopeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orgId: string;
+  /**
+   * Where the form is shown. `"docked"` is what every live call site has
+   * always had; `"floating"` puts the SAME form body in the lightweight
+   * window (drag, resize, the page behind stays live) — the shape
+   * `common-docs/policies/every-picker-takes-new-input.md` §4 asks for.
+   * The body below is identical either way; only the host changes.
+   */
+  presentation?: PanelPresentation;
 }
 
 const NONE_VALUE = "__none__";
@@ -51,6 +62,7 @@ export function AddScopeModal({
   open,
   onOpenChange,
   orgId,
+  presentation = "docked",
 }: AddScopeModalProps) {
   const generatedId = useId();
   const singularId = `scope-type-singular-${generatedId}`;
@@ -233,6 +245,9 @@ export function AddScopeModal({
       initialFocus
       position="right"
       defaultSize={38}
+      presentation={presentation}
+      floatingSize="lg"
+      contentClassName={presentation === "floating" ? "px-4 py-4" : "px-3 pb-4"}
     >
       <form className="space-y-5" onSubmit={handleSave}>
         {/* Basics */}

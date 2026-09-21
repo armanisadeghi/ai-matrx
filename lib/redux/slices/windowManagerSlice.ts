@@ -144,6 +144,22 @@ export interface WindowManagerState {
    * out" outline + ghost label). Cleared on every `pointerup`.
    */
   popoutCandidateId: string | null;
+  /**
+   * Z-index lane for LITE windows (`MatrxDynamicPanelHost presentation="floating"`).
+   *
+   * They are deliberately NOT entries in `windows`: a lite window is a
+   * transient form/picker host with no tray chip, no minimize and no
+   * persistence, so joining `windows` would put a half-typed create form into
+   * "minimize all" and the tray — the lost-work trap the lite window exists to
+   * avoid. Keeping them in their own map means every tray/minimize/arrange
+   * selector excludes them BY CONSTRUCTION rather than by a flag somebody must
+   * remember to filter on.
+   *
+   * They still draw from the SAME `nextZIndex` counter, so there is one
+   * z-order: a lite window opened from a WindowPanel always lands above it,
+   * and clicking the WindowPanel afterwards raises it above the lite window.
+   */
+  transientZ: Record<string, number>;
 }
 
 // ─── Tray layout constants ────────────────────────────────────────────────────
@@ -179,6 +195,7 @@ const initialState: WindowManagerState = {
   windowsHidden: false,
   activePipWindowId: null,
   popoutCandidateId: null,
+  transientZ: {},
 };
 
 function recomputeAllTrayRects(state: WindowManagerState): void {
@@ -275,6 +292,20 @@ const windowManagerSlice = createSlice({
   name: "windowManager",
   initialState,
   reducers: {
+    /**
+     * Put a transient (lite) window on top of the shared stack, or raise one
+     * that is already there. Same counter as `focusWindow`, so heavy and lite
+     * windows interleave correctly.
+     */
+    raiseTransientWindow(state, action: PayloadAction<string>) {
+      state.transientZ[action.payload] = state.nextZIndex++;
+    },
+
+    /** Drop a transient window's z registration when it unmounts. */
+    releaseTransientWindow(state, action: PayloadAction<string>) {
+      delete state.transientZ[action.payload];
+    },
+
     /** Register a new window. Idempotent — ignored if id already exists. */
     registerWindow(
       state,
@@ -1252,6 +1283,8 @@ const windowManagerSlice = createSlice({
 });
 
 export const {
+  raiseTransientWindow,
+  releaseTransientWindow,
   registerWindow,
   unregisterWindow,
   focusWindow,
@@ -1305,6 +1338,10 @@ export const selectWindowRect = (id: string) => (state: StateWithWM) =>
 
 export const selectWindowZIndex = (id: string) => (state: StateWithWM) =>
   state.windowManager.windows[id]?.zIndex ?? BASE_Z;
+
+/** z-index for a transient (lite) window; BASE_Z until it has been raised. */
+export const selectTransientZIndex = (id: string) => (state: StateWithWM) =>
+  state.windowManager.transientZ[id] ?? BASE_Z;
 
 export const selectWindowTitle = (id: string) => (state: StateWithWM) =>
   state.windowManager.windows[id]?.title ?? id;
