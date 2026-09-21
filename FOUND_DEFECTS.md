@@ -15,6 +15,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D339 — The sync engine's persisted hydration hits its 8 s backstop on /notes (2026-09-21)
+
+Seen on the dev server, signed in as the test admin, on a plain load of `/notes`: the console error from `lib/sync/useSyncHydrated.ts` — `[sync] persisted hydration did not settle within 8000ms — surfaces waiting on restored state will now show their empty state. This is a defect in the sync engine's boot path, not a normal path.` The sidebar showed "Loading notes…" for the whole eight seconds while the start screen already listed recent notes. The same console shows `idb.write` for `scopesTree` at 73,208 bytes and a `remote.write.scheduled` for it during boot, so the engine is busy writing while hydration waits; whether hydration is blocked behind those writes, or a slice never reports settled, was not determined. Seen while measuring the slow folder create (features/notes/FEATURE.md, 2026-09-21); not investigated further. Reproduce: load `/notes` as the test admin with the console open and wait eight seconds.
+
 ### D344 — the user-facing mandate console can show a job but never run one, and a mandate GROUP has no page and no description anywhere (2026-09-21)
 
 Walked as `admin@admin.com` on the two Personal Staff jobs (`/mandates/personal_staff.front_line`,
@@ -4886,3 +4890,18 @@ silently reverting `pins: normalizeTransferJson(data.pins)` back to `pins: data.
 that revert WAS the type error. Restored. THE CLASS: a whole-file rewrite from an
 in-memory copy is a blind `CREATE OR REPLACE` on a shared checkout; on this tree,
 targeted edits only, and re-read immediately before writing.
+
+## `agents.model_prefs.decision_default_model` is read but not seeded (found 2026-09-21)
+
+`lib/scoped-config/__tests__/every-knob-read-addresses-a-real-row.test.ts` fails one case:
+
+> `features/ai-models/preferredDecisionModel.ts:34 resolveSessionKnob(DECISION_DEFAULT_MODEL_KNOB)
+> resolves to feature='agents.model_prefs', key='decision_default_model' — no seed declares that
+> pair.`
+
+Verified PRE-EXISTING: red with the settings-honesty work stashed off the tree. The read arrived
+with `5f779849dd` ("The Decision playground is normal UI: it moves from admin to /decisions") and
+its registry seed did not. Belongs to whoever owns the Decision playground / `features/ai-models`.
+Not fixed here because the remedy is a registry seed declaring that key — that lane's contract to
+write, not this one's to guess. It is the `check:settings-unregistered` class: a knob read whose
+key has no live `platform.feature_knob` row RAISES at run time by design.

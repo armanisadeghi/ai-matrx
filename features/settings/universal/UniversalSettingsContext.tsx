@@ -34,6 +34,7 @@ import { invalidateEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import { invalidateFeatureKnobs } from "@/lib/knobs/featureKnobs";
 import { registerDirectiveHandler } from "@/lib/client-directives/directiveRegistry";
 import type { KnobUiHints, ScopedKnob } from "@/lib/scoped-config/types";
+import type { ViewerEffect } from "@/lib/scoped-config/ladder";
 import { isJsonObject } from "@/types/json";
 import { extractErrorMessage } from "@/utils/errors";
 import { pickableRungsFor } from "./scopeRows";
@@ -119,6 +120,37 @@ export type RungOverridesState =
   | { status: "ready"; rows: KnobRungOverrideRow[] }
   | { status: "error"; message: string };
 
+/**
+ * 🚨 WHAT IS IN FORCE FOR THE VIEWER — the second resolver read (feedback
+ * 7dc1e5ae, 2026-09-21).
+ *
+ * `resolverRequestForTarget` deliberately withholds the personal and device
+ * rungs from an ORGANIZATION read, so that read cannot move the write target.
+ * The cost was that the organization pane had no way to know a personal
+ * override was masking what it displayed, and it showed "Never" while "auto"
+ * was running for the very person reading it.
+ *
+ * So the organization destination takes a SECOND `knob_index` read, addressed
+ * at the viewer (their user rung and this browser's device rung), whose answer
+ * is used for DISPLAY ONLY — never for a write, never to choose a control, and
+ * never merged into the rows the pane edits. The resolution is the database's
+ * (`platform.knob_index` resolves the chain in SQL, the same resolution
+ * `platform.knob_resolve` answers one key with); nothing about precedence is
+ * recomputed here.
+ *
+ * On the PERSONAL destination the first read already addresses the viewer, so
+ * the same answer comes off the row itself and no second read is made.
+ */
+export type ViewerEffectState =
+  /** The rows the pane renders ARE the viewer's own answer (personal destination). */
+  | { status: "self" }
+  | { status: "loading" }
+  | { status: "ready"; byKey: Readonly<Record<string, ViewerEffect>> }
+  /** A failed read is stated, never treated as "nothing masks this". */
+  | { status: "error"; message: string }
+  /** No organization / no person to resolve for — the platform register. */
+  | { status: "unavailable" };
+
 export type UniversalSettingsValue = {
   editingContext: "user" | "organization" | "system";
   canManageSystem: boolean;
@@ -144,6 +176,14 @@ export type UniversalSettingsValue = {
   error: string | null;
   /** Keys the resolver could not value at all — rendered as errors, never blanks. */
   missing: ScopedKnob[];
+  /** How the "what is in force for you" read stands for this destination. */
+  viewerEffect: ViewerEffectState;
+  /**
+   * What the resolver says is in force FOR THE VIEWER for one key, or `null`
+   * when that is not known (still reading, read failed, or no viewer rung).
+   * `null` NEVER means "nothing masks it" — the row says which it is.
+   */
+  viewerEffectFor: (knob: ScopedKnob) => ViewerEffect | null;
   /** Per-knob standing overrides at the picked rungs, by full key. */
   rungOverrides: Readonly<Record<string, RungOverridesState>>;
   /** Read this key's picked-rung overrides once; a no-op while one is in flight. */
@@ -171,6 +211,8 @@ const EMPTY: UniversalSettingsValue = {
   isLoading: false,
   error: null,
   missing: [],
+  viewerEffect: { status: "unavailable" },
+  viewerEffectFor: () => null,
   rungOverrides: {},
   loadRungOverrides: () => {},
   reloadRungOverrides: () => {},
@@ -328,13 +370,25 @@ export function UniversalSettingsProvider({
   const activeOrganizationId = useAppSelector(selectOrganizationId);
   const editingContext = target;
   const [changedOnly, setChangedOnly] = useState(false);
-  const organizationId = target === "organization"
-    ? fixedOrganizationId ?? null
-    : activeOrganizationId;
+  // An organization a HOST supplied always wins — for the organization
+  // destination it IS the destination, and for the personal destination it is
+  // the organization the person clicked a link naming (feedback 7dc1e5ae; see
+  // `SettingsRouteProvider`). Neither is a default: with nothing supplied the
+  // personal surface reads the ACTIVE organization, and with none of those it
+  // reads nothing and the pane asks.
+  const organizationId = fixedOrganizationId
+    ?? (target === "organization" ? null : activeOrganizationId);
   const organization = organizations.find((org) => org.id === organizationId) ?? null;
   const [deviceId, setDeviceId] = useState<string | null>(null);
+  // `null` means BOTH "not looked yet" and "this browser has no device id"
+  // (storage blocked), which are different answers. The viewer read below must
+  // not fire on the first — a read that omits the device rung would report
+  // "nothing masks this" for a key a device value is masking, which is the
+  // defect it exists to end, one rung down.
+  const [deviceResolved, setDeviceResolved] = useState(false);
   useEffect(() => {
     setDeviceId(getWebDeviceId());
+    setDeviceResolved(true);
   }, []);
 
   const [generation, setGeneration] = useState(0);
@@ -437,6 +491,52 @@ export function UniversalSettingsProvider({
     taxonomy: TaxonomyIndex;
     error: string | null;
   } | null>(null);
+  // ── WHAT IS IN FORCE FOR THE VIEWER (feedback 7dc1e5ae) ──────────────────
+  // Only the ORGANIZATION destination needs this: its own read withholds the
+  // personal and device rungs on purpose, so it cannot see a personal override
+  // masking what it shows. The personal destination's read already addresses
+  // the viewer, and the platform register has no person to resolve for.
+  const [viewerRead, setViewerRead] = useState<{
+    requestKey: string;
+    byKey: Record<string, ViewerEffect> | null;
+    error: string | null;
+  } | null>(null);
+  useEffect(() => {
+    if (!enabled || editingContext !== "organization") return;
+    if (!organizationId || !userId || !deviceResolved) return;
+    let cancelled = false;
+    const viewerRequestKey = `${requestKey}|${generation}|viewer:${deviceId ?? ""}`;
+    void fetchKnobIndex({
+      organizationId,
+      userId,
+      deviceId: deviceId ?? undefined,
+    })
+      .then((rows) => {
+        if (cancelled) return;
+        const byKey: Record<string, ViewerEffect> = {};
+        for (const row of rows) {
+          byKey[row.full_key] = {
+            value: row.effective_value,
+            origin: row.origin,
+            originPrecedence: row.origin_precedence,
+          };
+        }
+        setViewerRead({ requestKey: viewerRequestKey, byKey, error: null });
+      })
+      .catch((err: unknown) => {
+        // A failed read is NOT "nothing masks this" — that is the lie this
+        // whole read exists to end, arriving through the back door.
+        if (!cancelled) {
+          setViewerRead({
+            requestKey: viewerRequestKey,
+            byKey: null,
+            error: extractErrorMessage(err),
+          });
+        }
+      });
+    return () => { cancelled = true; };
+  }, [enabled, editingContext, organizationId, userId, deviceId, deviceResolved, requestKey, generation]);
+
   const [systemRows, setSystemRows] = useState<{
     requestKey: string;
     rows: ScopedKnob[];
@@ -533,6 +633,33 @@ export function UniversalSettingsProvider({
   const domains = groupDomains(destinationKnobs, taxonomy, editingContext === "system");
   const byKey = new Map(destinationKnobs.map((knob) => [knob.full_key, knob]));
 
+  const viewerRequestKey = `${requestKey}|${generation}|viewer:${deviceId ?? ""}`;
+  const viewer = viewerRead?.requestKey === viewerRequestKey ? viewerRead : null;
+  const viewerEffect: ViewerEffectState =
+    editingContext === "user"
+      ? { status: "self" }
+      : editingContext === "system" || !organizationId || !userId
+        ? { status: "unavailable" }
+        : viewer === null
+          ? { status: "loading" }
+          : viewer.byKey === null
+            ? { status: "error", message: viewer.error ?? "The read gave no reason." }
+            : { status: "ready", byKey: viewer.byKey };
+  const viewerEffectFor = (knob: ScopedKnob): ViewerEffect | null => {
+    // The personal destination's OWN row is the viewer's answer — the read
+    // addressed their user and device rungs, so `effective_value`/`origin`
+    // already say what is running for them. No second read, no second ladder.
+    if (viewerEffect.status === "self") {
+      return {
+        value: knob.effective_value,
+        origin: knob.origin,
+        originPrecedence: knob.origin_precedence,
+      };
+    }
+    if (viewerEffect.status !== "ready") return null;
+    return viewerEffect.byKey[knob.full_key] ?? null;
+  };
+
   const value: UniversalSettingsValue = {
     editingContext,
     canManageSystem,
@@ -555,6 +682,8 @@ export function UniversalSettingsProvider({
       : Boolean(organizationId && userId) && !current),
     error: editingContext === "system" ? system?.error ?? null : current?.error ?? taxonomyStateForRequest?.error ?? null,
     missing: destinationKnobs.filter((knob) => knob.origin === "missing"),
+    viewerEffect,
+    viewerEffectFor,
     rungOverrides,
     loadRungOverrides,
     reloadRungOverrides,

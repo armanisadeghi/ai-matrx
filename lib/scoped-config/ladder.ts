@@ -15,6 +15,7 @@
 import type {
   KnobCanWriteReason,
   KnobLocked,
+  KnobOrigin,
   KnobScopeKindName,
   KnobScopeRung,
   KnobUiHints,
@@ -254,6 +255,94 @@ export function resolveKnobLadder(
     ui,
     group: ui.group ?? knob.feature,
     order: ui.order ?? Number.MAX_SAFE_INTEGER,
+  };
+}
+
+/**
+ * 🚨 WHAT IS ACTUALLY IN FORCE FOR THE PERSON READING THE SCREEN.
+ *
+ * The defect this exists to close (feedback 7dc1e5ae, 2026-09-21): an admin set
+ * `personal_staff.escalation_mode` to "Never" at the ORGANIZATION rung, the
+ * organization configuration pane read "Never" back, and the value actually
+ * running for that same admin was still "auto" — because their own USER-rung
+ * override outranks the organization's, which is correct ladder behaviour. The
+ * pane said nothing. It was not absent and it was not honest; it was
+ * confidently wrong, and every key whose `overridable_by` names both a rung the
+ * screen edits and a rung above it has that same shape.
+ *
+ * The cause is structural, not cosmetic: the organization destination calls
+ * `knob_index` WITHOUT `p_user_id` (deliberately — an organization page must
+ * never send a personal rung that could move the write target), so the row it
+ * renders has no idea a personal value exists. The answer is a SECOND resolver
+ * read, addressed at the viewer, whose result is used for DISPLAY ONLY. It is
+ * read from `platform.knob_index` — the SQL resolver that
+ * `platform.knob_resolve` shares — and never recomputed in TypeScript: a client
+ * that re-derives precedence is a second ladder, which is the one thing this
+ * campaign exists to prevent.
+ */
+export type ViewerEffect = {
+  /** The effective value for the VIEWER, exactly as the resolver answered. */
+  value: unknown;
+  /** The rung it came from, in the resolver's own words. */
+  origin: KnobOrigin;
+  /** That rung's precedence. `null` when the answer is the platform default. */
+  originPrecedence: number | null;
+};
+
+/** What the row says about the viewer's own answer, once compared to this rung. */
+export type ViewerStanding = {
+  value: unknown;
+  /** Rung kind, or `platform_default` / `missing`. */
+  originKind: KnobOrigin;
+  /** Plain-English name of the rung that wins for the viewer. */
+  originName: string;
+  /** A rung ABOVE the one this screen edits holds the answer for this viewer. */
+  masked: boolean;
+  /** The sentence a masked row prints. `null` when nothing masks it. */
+  sentence: string | null;
+};
+
+/**
+ * The sentence for each masking rung. Plain English, naming the rung, in the
+ * second person — never "user rung precedence 100 wins".
+ */
+function maskingSentence(kind: string): string {
+  if (kind === "user") return "Your own setting overrides this for you.";
+  if (kind === "device")
+    return "Your setting in this browser overrides this for you.";
+  const name = rungName(kind);
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)}’s own setting overrides this for you.`;
+}
+
+/**
+ * Compare the rung this screen edits with what the resolver says is in force
+ * for the viewer.
+ *
+ * Returns `null` when the comparison cannot be made HONESTLY — no viewer
+ * answer, or this key's chain does not carry the edited rung. A guess here
+ * would be the same class of lie one layer down.
+ */
+export function resolveViewerStanding(
+  knob: ScopedKnob,
+  scopeKind: KnobScopeKindName,
+  viewer: ViewerEffect | null,
+): ViewerStanding | null {
+  if (!viewer) return null;
+  const here = (knob.scope_chain ?? []).find((rung) => rung.kind === scopeKind);
+  if (!here) return null;
+  const originKind = viewer.origin;
+  const masked =
+    viewer.originPrecedence !== null &&
+    viewer.originPrecedence > here.precedence;
+  return {
+    value: viewer.value,
+    originKind,
+    originName:
+      originKind === "platform_default" || originKind === "missing"
+        ? rungName("platform")
+        : rungName(originKind),
+    masked,
+    sentence: masked ? maskingSentence(originKind) : null,
   };
 }
 

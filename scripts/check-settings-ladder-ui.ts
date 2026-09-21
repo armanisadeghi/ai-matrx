@@ -110,6 +110,27 @@ const ORG_DESTINATION_FILE = join(
  */
 const HR_BRIDGE_FILE = join(ROOT, "features", "hr", "settings", "components", "HrKnobExceptions.tsx");
 const HR_KNOB_ROW_FILE = join(ROOT, "features", "hr", "settings", "components", "KnobPanel.tsx");
+/**
+ * 🚨 THE PERSONAL DESTINATION (feedback 7dc1e5ae, 2026-09-21).
+ *
+ * The `user` rung used to be "addressed" because the STRING `userId` appeared
+ * somewhere under `features/settings/universal/` — the exact declaration V-57
+ * killed for the row-keyed rungs, left standing for the one rung a person is
+ * most likely to need. It let this gate print green over a class it was built
+ * to catch: a knob whose registry row says `overridable_by: [organization,
+ * user]`, whose personal value silently outranks the organization's, and which
+ * no screen offers the person a way to see or clear. The report that found it
+ * had to go through `knob_override_set` by hand.
+ *
+ * Now it is measured, from disk, the same way the row-keyed rungs are: the
+ * route surface must mount the personal destination, the destination's key
+ * filter must be the `overridable_by`-narrowing one, and the pane must edit
+ * the `user` rung when it is standing there. Any of those missing and NO key
+ * is user-addressed — a green gate over a rung nothing renders is the lie.
+ */
+const USER_DESTINATION_FILE = join(
+  ROOT, "features", "settings", "route-shell", "SettingsRouteProvider.tsx",
+);
 /** Rungs keyed by a ROW — the ones a person reaches only through a picker. */
 const ROW_KEYED_RUNGS = new Set([
   "employer_profile", "brand", "pay_group", "site", "location", "table", "agent",
@@ -204,11 +225,61 @@ async function main(): Promise<void> {
   if (named.size === 0) {
     unmeasured(GUARD, "Could not parse KnobScopeKindName / RUNG_NAMES — the UI vocabulary is unreadable.", "keep the union and RUNG_NAMES literal");
   }
-  // The destinations. These three are reached by BEING the screen.
+  // The destinations. `organization` and `device` are still reached by BEING
+  // the screen; `user` is MEASURED below (feedback 7dc1e5ae).
   const addressed = new Set<string>();
   if (/organizationId/.test(ui.text)) addressed.add("organization");
-  if (/userId/.test(ui.text)) addressed.add("user");
   if (/deviceId/.test(ui.text)) addressed.add("device");
+
+  // ── THE PERSONAL DESTINATION, MEASURED (feedback 7dc1e5ae) ──────────────
+  // Three independent facts, all read off disk. A person reaches the `user`
+  // rung for a key only when ALL of them hold.
+  if (!existsSync(USER_DESTINATION_FILE)) {
+    unmeasured(
+      GUARD,
+      `The personal settings destination (${relative(ROOT, USER_DESTINATION_FILE)}) is not on disk, so whether anyone can reach the 'user' rung cannot be read.`,
+      "restore the personal settings route provider, or point USER_DESTINATION_FILE at its replacement",
+    );
+  }
+  const userDestination = readFileSync(USER_DESTINATION_FILE, "utf8");
+  //   1. the personal destination is mounted at all;
+  const userDestinationMounted =
+    /<\s*UniversalSettingsProvider\b[^>]*target\s*=\s*"user"/s.test(userDestination);
+  //   2. the destination narrows its keys by `overridable_by`, not by a hand
+  //      list — so a key that declares the rung is the key that renders;
+  const userFilterIsTheRegistry =
+    /export function filterKnobsForTarget\([\s\S]*?knob\.overridable_by\.includes\(target\)/.test(ui.text);
+  //   3. the pane actually EDITS the user rung when standing there, rather
+  //      than rendering an organization row on a personal page.
+  const userRungEdited =
+    /kind:\s*"user"\s+as\s+KnobScopeKindName/.test(ui.text);
+  if (userDestinationMounted && !(userFilterIsTheRegistry && userRungEdited)) {
+    unmeasured(
+      GUARD,
+      "The personal settings destination is mounted, but this guard could not read how it chooses keys " +
+        `(filterKnobsForTarget narrowing on overridable_by: ${userFilterIsTheRegistry}) or that it edits the user rung ` +
+        `(a \`kind: "user" as KnobScopeKindName\` rung in the pane: ${userRungEdited}). Calling the rung reachable on ` +
+        "a mount alone is exactly the declaration this arm replaced.",
+      "keep filterKnobsForTarget's `knob.overridable_by.includes(target)` and the pane's user rung literal readable, or teach this guard the new shape",
+    );
+  }
+  // Which features does the personal destination refuse to show? Parsed the
+  // same way the organization destination's exclusions are, so the day the
+  // personal surface starts excluding a namespace this guard follows it.
+  const userExcludedPrefixes = [
+    ...userDestination.matchAll(/!\s*\w+\.feature\.startsWith\(\s*["']([^"']+)["']\s*\)/g),
+  ].map((m) => m[1]);
+
+  /**
+   * Can a person reach their OWN value for this key on a rendered screen?
+   * `withDestination` exists so the self-test can take the destination away
+   * and prove the answer flips — a measurement that cannot change is not one.
+   */
+  const reachesUserRung = (row: KnobRow, withDestination = userDestinationMounted): boolean => {
+    if (!withDestination) return false;
+    if (!userFilterIsTheRegistry || !userRungEdited) return false;
+    return !userExcludedPrefixes.some((prefix) => row.feature.startsWith(prefix));
+  };
 
   // Row-keyed rungs: measured, never declared. First — is the picker mounted?
   const pickerMounted = /<\s*KnobRungOverrides\b/.test(ui.text);
@@ -347,6 +418,39 @@ async function main(): Promise<void> {
     );
   }
 
+  // 🚨 THE PERSONAL-DESTINATION ARM (feedback 7dc1e5ae). Same shape, same
+  // reason: without it the guard would read identically if the personal
+  // settings surface rendered nothing at all. The key it proves against is the
+  // one from the report — an organization admin set it to "Never", their own
+  // personal value kept "auto" running, and there was no screen to clear it on.
+  if (selfTest) {
+    const proof = rows.find(
+      (r) => r.feature === "personal_staff" && r.key === "escalation_mode",
+    );
+    if (!proof) {
+      unmeasured(
+        GUARD,
+        "personal_staff.escalation_mode is not in the registry, so the personal destination cannot be self-tested.",
+        "seed the key, or point this arm at another key whose overridable_by names 'user'",
+      );
+    }
+    const withUser = reachesUserRung(proof!, true);
+    const withoutUser = reachesUserRung(proof!, false);
+    if (!withUser || withoutUser) {
+      console.error(
+        `[LOUD] ${GUARD} SELF-TEST FAILED: personal_staff.escalation_mode at the 'user' rung ` +
+          `is reachable=${withUser} with the personal destination and reachable=${withoutUser} without it. ` +
+          "It must be true then false, or the 'user' rung is being declared reachable rather than measured — " +
+          "which is the defect feedback 7dc1e5ae reported.",
+      );
+      exitAfterDrain(1);
+    }
+    console.log(
+      "Self-test: the personal destination is measured — personal_staff.escalation_mode at 'user' " +
+        "is reachable WITH the personal settings route mounted and unreachable without it.",
+    );
+  }
+
   let findings: Finding[] = [];
   const tolerated: KnobRow[] = [];
   for (const r of graded) {
@@ -362,6 +466,14 @@ async function main(): Promise<void> {
         findings.push({ feature: r.feature, key: r.key, overridable_by: ob, problem: "UNNAMED_RUNG", rung });
       } else if (ROW_KEYED_RUNGS.has(rung)) {
         if (!reachesRowKeyedRung(r, rung)) {
+          findings.push({ feature: r.feature, key: r.key, overridable_by: ob, problem: "UNADDRESSED_RUNG", rung });
+        }
+      } else if (rung === "user") {
+        // MEASURED, not declared (feedback 7dc1e5ae). A key opened to a person
+        // with no screen that renders their own copy is a personal override
+        // they cannot see, cannot clear, and which silently outranks whatever
+        // their organization sets.
+        if (!reachesUserRung(r)) {
           findings.push({ feature: r.feature, key: r.key, overridable_by: ob, problem: "UNADDRESSED_RUNG", rung });
         }
       } else if (!addressed.has(rung)) {
@@ -479,7 +591,7 @@ async function main(): Promise<void> {
 
   console.log(`\n${C.bold}${C.white}SETTINGS LADDER UI REACHABILITY${C.reset} ${C.dim}(${GUARD})${C.reset}`);
   console.log(
-    `${C.dim}${graded.length} customer-tunable knobs (overridable_by non-empty) of ${rows.length} · rungs registered: ${[...registeredKinds].join(", ")} · named by the UI: ${[...named].join(", ")} · addressed by features/settings/universal: ${[...addressed].join(", ") || "none"} · row-keyed pickers mounted: ${[pickerMounted ? "organization configuration" : null, hrPickerMounted ? `/hr/settings (${hrPrefixes.join(", ")})` : null].filter(Boolean).join(", ") || "none"}${C.reset}\n`,
+    `${C.dim}${graded.length} customer-tunable knobs (overridable_by non-empty) of ${rows.length} · rungs registered: ${[...registeredKinds].join(", ")} · named by the UI: ${[...named].join(", ")} · addressed by features/settings/universal: ${[...addressed].join(", ") || "none"} · personal destination: ${userDestinationMounted ? `mounted${userExcludedPrefixes.length > 0 ? ` (excludes ${userExcludedPrefixes.join(", ")})` : ""}` : "NOT MOUNTED"} · row-keyed pickers mounted: ${[pickerMounted ? "organization configuration" : null, hrPickerMounted ? `/hr/settings (${hrPrefixes.join(", ")})` : null].filter(Boolean).join(", ") || "none"}${C.reset}\n`,
   );
 
   if (findings.length === 0) {

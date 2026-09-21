@@ -23,10 +23,15 @@ import { SettingsNavigationRow } from "@/components/official/settings/SettingsNa
 import { SettingsButton } from "@/components/official/settings/primitives/SettingsButton";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { KnobOverrideRow } from "@/lib/scoped-config/KnobOverrideRow";
-import { blastRadiusFor, compareKnobOrder, resolveKnobLadder } from "@/lib/scoped-config/ladder";
+import {
+  blastRadiusFor,
+  compareKnobOrder,
+  resolveKnobLadder,
+  resolveViewerStanding,
+} from "@/lib/scoped-config/ladder";
 import type { KnobScopeKindName, ScopedKnob } from "@/lib/scoped-config/types";
 import { useActiveSettingsTabId } from "../components/SettingsTabHost";
-import { resolveConfigSection } from "./configTree";
+import { personalKnobHref, resolveConfigSection } from "./configTree";
 import { useUniversalSettings } from "./UniversalSettingsContext";
 import { SETTINGS_BASE, tabIdToHref } from "../route-shell/routing";
 import { auditedSettingsDispositions, dispositionFor } from "./disposition";
@@ -94,12 +99,32 @@ export function UniversalSettingsRows({
             // and ignored by the panel below it, so a key that said "not
             // available yet" still offered a live per-table picker (V-57 F1).
             const stateOnly = dispositionFor(knob.full_key, settings.editingContext);
+            // 🚨 WHAT IS IN FORCE FOR THE PERSON READING THIS (feedback
+            // 7dc1e5ae). The resolver's answer for the VIEWER, compared to the
+            // rung this row edits. `null` when it is not known — the row then
+            // says so rather than implying nothing masks it.
+            const viewer = resolveViewerStanding(
+              knob,
+              scopeKind as KnobScopeKindName,
+              settings.viewerEffectFor(knob),
+            );
+            const viewerUnknown =
+              viewer === null && settings.viewerEffect.status === "error"
+                ? settings.viewerEffect.message
+                : null;
             return (
             <div key={knob.full_key}>
               <KnobOverrideRow
                 knob={knob}
                 scopeKind={scopeKind}
                 scopeId={scopeId}
+                viewer={viewer}
+                viewerUnknown={viewerUnknown}
+                viewerDoor={
+                  viewer?.masked && viewer.originKind === "user"
+                    ? personalKnobHref(knob, organizationId)
+                    : null
+                }
                 organizationId={organizationId ?? ""}
                 ladder={ladder}
                 blastRadius={blastRadiusFor(scopeKind, {
@@ -215,19 +240,48 @@ export default function UniversalSettingsPane() {
       <SettingsSubHeader
         title={section.title}
         description={
-          section.feature
-            ? `${section.domain.name} › ${section.feature.name}`
-            : `Settings that apply across ${section.domain.name}.`
+          // A personal value is held PER ORGANIZATION, and a door from an
+          // organization's pane can land here naming one that is not the
+          // active one (feedback 7dc1e5ae). Saying which organization these
+          // are is the difference between a deep link and a silent switch.
+          [
+            section.feature
+              ? `${section.domain.name} › ${section.feature.name}`
+              : `Settings that apply across ${section.domain.name}.`,
+            settings.editingContext === "user" && settings.organizationName
+              ? `Your own settings in ${settings.organizationName}.`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")
         }
       />
       {settings.editingContext === "system" && <RegistryCoverage />}
       {section.feature === null && <DomainChildNavigation section={section} />}
+      {/*
+        🚨 "NOTHING IS REGISTERED" AND "YOU HAVE NOT PICKED AN ORGANIZATION"
+        ARE DIFFERENT ANSWERS (found walking feedback 7dc1e5ae, 2026-09-21).
+        A personal value is always qualified by an organization, so with none
+        chosen this surface reads ZERO keys — and then said the category has no
+        controls, which is false and is the same lie one screen over: the
+        person came here from a row telling them their own setting overrides
+        the organization's, and was told the control does not exist. Say which
+        it is, and never in the sentence that closes the subject.
+      */}
       {hasNoRegisteredControls && (
-        <SettingsCallout tone="info" title="No controls are registered yet">
-          This category is part of the product structure, but it does not have
-          configurable controls yet. It remains here so the settings map stays
-          complete as controls are added.
-        </SettingsCallout>
+        settings.editingContext !== "system" && !settings.organizationId ? (
+          <SettingsCallout tone="warning" title="Pick an organization to see your settings">
+            Your own settings are kept per organization, so this page needs to
+            know which one you mean. Choose one at the top of the page and these
+            controls appear.
+          </SettingsCallout>
+        ) : (
+          <SettingsCallout tone="info" title="No controls are registered yet">
+            This category is part of the product structure, but it does not have
+            configurable controls yet. It remains here so the settings map stays
+            complete as controls are added.
+          </SettingsCallout>
+        )
       )}
       {missingHere.length > 0 && (
         <SettingsCallout tone="error" title="Some settings resolved to nothing">

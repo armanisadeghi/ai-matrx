@@ -35,7 +35,8 @@ import {
   hasFieldControl,
 } from "@/features/settings/universal/KnobFieldControl";
 import { knobChoices } from "./choices";
-import { formatKnobValue, type KnobLadder } from "./ladder";
+import Link from "next/link";
+import { formatKnobValue, type KnobLadder, type ViewerStanding } from "./ladder";
 import { availableVoices } from "@/lib/cartesia/voices";
 import {
   setKnobOverride,
@@ -83,7 +84,20 @@ function formatRowValue(
   value: unknown,
   unit: string | null,
   control: KnobLadder["control"] | undefined,
+  /**
+   * 🚨 A CHOICE IS SAID IN WORDS, NEVER AS ITS STORED TOKEN. The control
+   * already obeys this (`knobChoices`); every SENTENCE on the row — the
+   * inherit confirmation, the platform-default line, and the "in force for
+   * you" notice — used to print the raw token, so a person was told their
+   * setting falls back to `off` rather than to "Never". Same registry words,
+   * one formatter.
+   */
+  choices?: ReadonlyArray<{ value: string; label: string }> | null,
 ): string {
+  if (choices && (typeof value === "string" || typeof value === "boolean")) {
+    const match = choices.find((choice) => choice.value === String(value));
+    if (match) return match.label;
+  }
   if (control !== "voice") return formatKnobValue(value, unit);
   if (value === null || value === undefined || value === "") {
     return "Default for each use";
@@ -178,6 +192,21 @@ export function KnobOverrideRow(props: {
    */
   writeDoor?: KnobWriteDoor;
   stateOnly?: { reason: string; consumerEvidence: string } | null;
+  /**
+   * 🚨 WHAT IS IN FORCE FOR THE PERSON READING THE ROW (feedback 7dc1e5ae,
+   * 2026-09-21), as `platform.knob_index` resolved it for THEM — not as this
+   * rung reads. When a rung above the one being edited holds their answer, the
+   * row says so in words and names the rung; otherwise the effective value is
+   * still stated, in the row's own options panel, so the screen always carries
+   * the answer somewhere rather than only when it is bad news.
+   *
+   * `undefined` / `null` means NOT KNOWN — never "nothing masks this".
+   */
+  viewer?: ViewerStanding | null;
+  /** The sentence to print when the viewer's answer could not be read at all. */
+  viewerUnknown?: string | null;
+  /** Where the viewer changes the setting that is overriding this one. */
+  viewerDoor?: string | null;
   onChanged: () => void;
 }) {
   const {
@@ -192,6 +221,9 @@ export function KnobOverrideRow(props: {
     stateOnly,
     scopeLabel,
     writeDoor,
+    viewer,
+    viewerUnknown,
+    viewerDoor,
     onChanged,
   } = props;
   const flatOverride =
@@ -228,8 +260,14 @@ export function KnobOverrideRow(props: {
     overrideValue,
   );
   const overrideText = valueText(editableValue);
+  // The ONE choice vocabulary for this row — the control and every sentence
+  // about a value read from the same list (`./choices`).
+  const rowChoices =
+    knob.value_type === "enum" || knob.value_type === "boolean"
+      ? knobChoices(knob)
+      : null;
   const displayValue = (value: unknown) =>
-    formatRowValue(value, knob.unit, ladder?.control);
+    formatRowValue(value, knob.unit, ladder?.control, rowChoices);
   const draftIdentity = `${knob.full_key}:${organizationId}:${scopeId}:${overrideText}`;
   const [draft, setDraft] = useState<string>(overrideText);
   const [syncedDraftIdentity, setSyncedDraftIdentity] = useState(draftIdentity);
@@ -430,10 +468,7 @@ export function KnobOverrideRow(props: {
   // render `allowed_values` verbatim, so the six keys whose registry rows carry
   // real sentences (`ui.options`) offered `hash_only` and `manual_wins` to a
   // person. `knobChoices` is the one place those words live (`./choices`).
-  const enumOptions =
-    knob.value_type === "enum" || knob.value_type === "boolean"
-      ? knobChoices(knob)
-      : null;
+  const enumOptions = rowChoices;
   // A picked scope row qualifies every DOM identity on the row; the section's
   // own rung keeps the bare key so existing anchors and deep links still land.
   const rowIdentity = scopeLabel
@@ -441,6 +476,38 @@ export function KnobOverrideRow(props: {
     : knob.full_key;
   const inputId = `${rowIdentity}-input`;
   const labelId = `${inputId}-label`;
+  // 🚨 THE HONESTY LINE (feedback 7dc1e5ae). Three states, all of them said
+  // out loud, none of them silence:
+  //   MASKED   — a rung above this one answers for the reader; name it, print
+  //              the value that is really running, and open the door to it.
+  //   UNKNOWN  — the viewer read failed; say that, rather than let the absence
+  //              of a warning read as "nothing masks this".
+  //   AGREED   — the control already shows the answer; the options panel
+  //              restates it with its rung, and the row stays quiet.
+  const viewerNotice =
+    viewer?.masked === true ? (
+      <span>
+        {viewer.sentence} In effect for you: {displayValue(viewer.value)}.
+        {viewerDoor ? (
+          <>
+            {" "}
+            <Link
+              href={viewerDoor}
+              className="underline underline-offset-2 hover:no-underline"
+            >
+              Change your own setting
+            </Link>
+            .
+          </>
+        ) : null}
+      </span>
+    ) : viewerUnknown ? (
+      <span>
+        What is in force for you could not be read, so this may not be the value
+        running for you: {viewerUnknown}
+      </span>
+    ) : undefined;
+
   const usesLabelledGroup =
     Boolean(stateOnly) ||
     lockedForMe ||
@@ -455,6 +522,7 @@ export function KnobOverrideRow(props: {
       label={scopeLabel ?? knob.label}
       description={scopeLabel ? undefined : knob.description}
       helpText={scopeLabel ? undefined : knob.ui.help}
+      warning={viewerNotice}
       error={
         inlineError ??
         (!canWrite
@@ -590,6 +658,21 @@ export function KnobOverrideRow(props: {
                         ? "Set here."
                         : `Inherited from ${inheritedFrom}.`}
                 </p>
+                {/*
+                  🚨 THE EFFECTIVE VALUE FOR THE READER, ALWAYS (feedback
+                  7dc1e5ae). The row's warning line only appears when a higher
+                  rung masks this one; this panel carries the answer even when
+                  it agrees, so the screen is never in a state where "what is
+                  actually running for me" has to be inferred from silence.
+                */}
+                {viewer ? (
+                  <p>
+                    In effect for you: {displayValue(viewer.value)} — from{" "}
+                    {viewer.originName}
+                  </p>
+                ) : viewerUnknown ? (
+                  <p>In effect for you: could not be read ({viewerUnknown})</p>
+                ) : null}
                 {!hideKey && <p>Key: {knob.full_key}</p>}
                 <p>
                   {system
