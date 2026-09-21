@@ -90,11 +90,20 @@ const which = only ? [only] : Object.keys(ASKS);
 
 /** Everything the agent's turn did, so a wasted call is COUNTED, never guessed. */
 function toolCallsOnPage(page) {
-  return page.evaluate(() =>
-    Array.from(document.querySelectorAll("[data-tool-call], [data-slot=tool-call]")).map((n) =>
-      (n.getAttribute("data-tool-call") || n.textContent || "").trim().slice(0, 160),
-    ),
-  );
+  // The window draws each call as its own collapsed row — "Worked with records ·
+  // record read", "The record store refused". Reading the ROWS is how a wasted
+  // call gets counted instead of estimated.
+  return page.evaluate(() => {
+    const seen = [];
+    for (const n of document.querySelectorAll("div,li,button")) {
+      const t = (n.innerText || "").trim();
+      if (!t || t.length > 120) continue;
+      if (!/^(Worked with records|The record store refused|Using tool)/i.test(t)) continue;
+      const line = t.replace(/\s+/g, " ");
+      if (!seen.includes(line)) seen.push(line);
+    }
+    return seen;
+  });
 }
 
 const browser = await chromium.launch({ headless: true });
@@ -143,29 +152,44 @@ for (const key of which) {
     await page.waitForTimeout(9000);
     await shot(page, `ask-${key}-02-composer`);
 
+    // The Agent window's own composer — matched by the words on it, because a
+    // page with a grid, a rail and a picker on it has a dozen other inputs.
     const box = page
-      .locator("textarea:visible, [contenteditable=true]:visible")
+      .locator(
+        '[placeholder="Type your message..."]:visible, [aria-label="Type your message"]:visible',
+      )
       .first();
-    await box.waitFor({ state: "visible", timeout: 60000 });
-    // The package opens the composer with its own suggestion already typed, so
-    // clear it: the sentence under test is the PERSON'S, not the screen's.
-    await box.fill("");
+    await box.waitFor({ state: "visible", timeout: 90000 });
+    await box.click();
     await box.fill(A.say);
     await page.waitForTimeout(800);
     await box.press("Enter");
+    const submitted = Date.now();
 
     // ── and waits, the way she would ────────────────────────────────────────
     // A build is several provider round trips and a write; the wait is on the
     // answer appearing, not on a number.
-    const deadline = Date.now() + 300000;
+    // WAIT FOR THE TURN TO END, NOT FOR A WORD TO APPEAR. The first version of
+    // this loop broke as soon as the page contained "refused" — and "The record
+    // store refused" is the label of ONE collapsed tool call in a turn that then
+    // went on working, so the walk stopped at 109 seconds, reported zero tool
+    // calls, and would have called a working agent a failure. A turn is over
+    // when the thinking stops, or when the link is on screen.
+    const deadline = Date.now() + 420000;
     let answer = "";
+    let still = 0;
     while (Date.now() < deadline) {
-      await page.waitForTimeout(5000);
+      await page.waitForTimeout(6000);
       answer = await page.evaluate(() => document.body.innerText);
-      if (/https?:\/\/[^\s]+\/(f|b|portal|d)\//i.test(answer)) break;
-      if (/did not happen|cannot|not allowed|refused/i.test(answer) && Date.now() - started > 60000) break;
+      if (/https?:\/\/[^\s]+\/(f|b|d|portal\/c)\//i.test(answer)) break;
+      const working = /Reasoning\.\.\.|Using tool|Working with records|Thinking/i.test(answer);
+      still = working ? 0 : still + 1;
+      // Time since SUBMIT, never since the walk began: sign-in, the org picker
+      // and a cold compile eat the first minute, so a start-relative guard
+      // declared the turn finished before the first token arrived.
+      if (still >= 4 && Date.now() - submitted > 120000) break;
     }
-    note.seconds = Math.round((Date.now() - started) / 1000);
+    note.seconds = Math.round((Date.now() - submitted) / 1000);
     note.toolCalls = await toolCallsOnPage(page);
     await shot(page, `ask-${key}-03-answer`);
     note.answerTail = answer.slice(-2500);
