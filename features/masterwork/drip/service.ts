@@ -16,6 +16,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { guardedUpdate } from "@ai-matrx/data/db";
+import { doorCas } from "@/lib/db/door-cas";
 import { operationFailed } from "@/utils/errors";
 import { callApi } from "@/lib/api/call-api";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
@@ -93,33 +94,32 @@ async function mutateDrip(
     if (!data) return { status: "not_found" };
 
     const row = data as RulebookRow;
-    const baseMeta =
-      row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
-        ? (row.metadata as Record<string, unknown>)
-        : {};
     const next = transform(readDrip(row.metadata));
-    const metadata = {
-      ...baseMeta,
-      daily_drip: {
-        schema: DAILY_DRIP_SCHEMA,
-        subscription: next.subscription,
-        days: next.days,
-      },
-    };
 
     const result = await guardedUpdate<RulebookRow>({
       expectedVersion: row.version,
       // No `nextVersion` in the patch — see the header. The guard is the
       // `.eq("version", expectedVersion)` filter, which still refuses a write
       // over a row someone else moved.
+      // THE DOOR, and it removes the read-modify-write this block was built on:
+      // only the ONE metadata key this feature owns is sent, and `rulebook_save`
+      // MERGES it, so a sibling key written between the read above and this write
+      // can no longer be lost. The CAS is unchanged — it now lives inside the door,
+      // which answers NULL on a miss exactly as guardedUpdate already reads.
       applyUpdate: ({ expectedVersion }) =>
-        rulebookTable()
-          .update({ metadata } as never)
-          .eq("id", rulebookId)
-          .eq("version", expectedVersion)
-          .is("deleted_at", null)
-          .select("*")
-          .maybeSingle(),
+        doorCas<RulebookRow>(
+          supabase.rpc("rulebook_save", {
+            p_rulebook_id: rulebookId,
+            p_expected_version: expectedVersion,
+            p_metadata_patch: {
+              daily_drip: {
+                schema: DAILY_DRIP_SCHEMA,
+                subscription: next.subscription,
+                days: next.days,
+              },
+            } as never,
+          }),
+        ),
       fetchCurrent: () =>
         rulebookTable()
           .select("*")

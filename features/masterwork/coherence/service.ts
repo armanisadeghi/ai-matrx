@@ -23,6 +23,7 @@ import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { operationFailed } from "@/utils/errors";
 import { guardedUpdate } from "@ai-matrx/data/db";
+import { doorCas } from "@/lib/db/door-cas";
 import type { RulebookRow, RulebookRule } from "../types";
 import { applySettlement } from "./settlement";
 import { allTensions, SETTLED_STATES } from "./types";
@@ -71,16 +72,6 @@ export async function settleTension(opts: {
     const match = tensions.find((t) => t.id === opts.tensionId);
     if (!match) return { status: "not_found" };
 
-    const baseMeta =
-      row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
-        ? (row.metadata as Record<string, unknown>)
-        : {};
-    const block =
-      baseMeta.coherence &&
-      typeof baseMeta.coherence === "object" &&
-      !Array.isArray(baseMeta.coherence)
-        ? (baseMeta.coherence as Record<string, unknown>)
-        : {};
     const answer = opts.answer?.trim();
     const settledAt = new Date().toISOString();
     // What the ruling leaves ON THE RULES. `null` means this outcome writes
@@ -91,31 +82,31 @@ export async function settleTension(opts: {
       opts.outcome,
       { condition: answer, settledBy, at: settledAt },
     );
-    const next = tensions.map((t) =>
-      t.id === opts.tensionId
-        ? {
-            ...t,
-            state: opts.outcome,
-            ...(answer ? { answer } : {}),
-            answered_at: settledAt,
-          }
-        : t,
-    );
 
     const result = await guardedUpdate<{ id: string; version: number }>({
       expectedVersion: row.version,
-      applyUpdate: ({ expectedVersion, nextVersion }) =>
-        rulebookTable()
-          .update({
-            metadata: { ...baseMeta, coherence: { ...block, tensions: next } },
-            ...(nextRules ? { rules: nextRules } : {}),
-            version: nextVersion,
-          } as never)
-          .eq("id", opts.rulebookId)
-          .eq("version", expectedVersion)
-          .is("deleted_at", null)
-          .select("id, version")
-          .maybeSingle(),
+      // 🚨 THE SURGICAL DOOR, and it is why this is the one metadata write in the
+      // Masterwork that did NOT become a generic patch. This code used to rebuild
+      // the whole `coherence` block from the row it had read
+      // (`{ ...block, tensions: next }`) — so any key the Coherence Partner wrote
+      // between that read and this write was lost, and the CAS could not see it,
+      // because `platform._touch_rulebook` deliberately does not bump `version`
+      // for a coherence-only write (that is what stops the Partner ageing out the
+      // save an Expert is in the middle of). `rulebook_tension_settle` rewrites
+      // ONE tension, matched by id, against the block AS IT STANDS AT WRITE TIME.
+      // It also cannot produce `moot`, which is the machine's own state for a
+      // question whose rules were removed — this door is the Expert's only.
+      applyUpdate: ({ expectedVersion }) =>
+        doorCas<{ id: string; version: number }>(
+          supabase.rpc("rulebook_tension_settle", {
+            p_rulebook_id: opts.rulebookId,
+            p_expected_version: expectedVersion,
+            p_tension_id: opts.tensionId,
+            p_outcome: opts.outcome,
+            ...(answer ? { p_answer: answer } : {}),
+            ...(nextRules ? { p_rules: nextRules as never } : {}),
+          }),
+        ),
       fetchCurrent: () =>
         rulebookTable()
           .select("id, version")

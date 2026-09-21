@@ -40,6 +40,11 @@ export interface CheckupReceiptEntry {
 
 export interface CheckupProjection {
   rules: RulebookRule[];
+  /**
+   * The metadata PATCH this checkup writes — `{ checkup }` and nothing else. It
+   * is handed straight to `saveRules`, which hands it to `rulebook_save`, which
+   * merges it into the column.
+   */
   metadata: Record<string, unknown>;
   applied: CheckupReceiptEntry[];
   dismissed: number;
@@ -199,9 +204,13 @@ export function projectCheckup(opts: {
     });
   }
 
-  const metadata = {
-    ...((rulebook.metadata ?? {}) as Record<string, unknown>),
-  };
+  // 🚨 ONLY THIS FEATURE'S OWN KEY, never the whole column. `rulebook_save` takes
+  // a metadata PATCH and merges it, and refuses BY NAME any key outside the
+  // declared client set — so handing it the whole column (which carries the
+  // server lane's `coherence`) would now be refused, and used to mean this
+  // checkup could silently clobber a sibling feature's key written since the
+  // read. The door is the reason this is a one-key object.
+  const metadata: Record<string, unknown> = {};
   const previous = readCheckupMemory(rulebook);
   const merged = new Map<string, CheckupDismissal>();
   for (const entry of previous.dismissed ?? []) {
