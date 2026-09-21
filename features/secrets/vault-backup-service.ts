@@ -41,6 +41,7 @@ export interface VaultBackupRestoreRecordResult {
   source_item_id: string;
   item_id: string | null;
   status: "created" | "replayed" | "refused" | "retryable_failure";
+  reason?: "alias_conflict" | null;
 }
 export interface VaultBackupRestoreResult {
   restore_run_id: string;

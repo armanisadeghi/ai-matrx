@@ -760,6 +760,13 @@ export function VaultBackupDialog({
                           <li key={entry.source_item_id}>
                             Credential {index + 1}:{" "}
                             {entry.status.replaceAll("_", " ")}
+                            {entry.reason === "alias_conflict" && (
+                              <p>
+                                An environment alias from this backup is already in use.
+                                Existing credentials were unchanged. Rename or remove
+                                the conflicting alias, then retry.
+                              </p>
+                            )}
                           </li>
                         ))}
                       </ul>
