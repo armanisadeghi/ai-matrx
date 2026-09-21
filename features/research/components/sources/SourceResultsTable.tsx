@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ExternalLink } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -130,13 +130,12 @@ export function SourceResultsTable({
     sort: null,
   });
 
-  useEffect(() => {
-    setQuery((current) =>
-      current.search === (sourceSearch ?? "")
-        ? current
-        : { ...current, page: 1, search: sourceSearch ?? "" },
-    );
-  }, [sourceSearch]);
+  // ContentList owns weighted search; derive the canonical query's search from
+  // that source of truth without an effect-driven state repair.
+  const tableQuery =
+    query.search === (sourceSearch ?? "")
+      ? query
+      : { ...query, page: 1, search: sourceSearch ?? "" };
 
   const columns: MatrxColumnDef<ResearchSource>[] = [
     {
@@ -457,10 +456,10 @@ export function SourceResultsTable({
         ? {
             query: {
               mode: "controlled-local" as const,
-              state: query,
+              state: tableQuery,
               onStateChange: (next: MatrxDataTableQueryState) => {
                 setQuery(next);
-                if (next.search !== query.search)
+                if (next.search !== (sourceSearch ?? ""))
                   onSourceSearchChange?.(next.search);
               },
               sourceProcessing: { search: "source" as const },
