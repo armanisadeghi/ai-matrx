@@ -31,15 +31,28 @@ import {
 /** Univer's key for the object that paints the desk, the page and its border. */
 export const DOC_BACKGROUND_COMPONENT_KEY = "__Document_Render_Background__";
 
-interface FillColorTarget {
-  setFillColors?: (
+interface FillColorSetter {
+  (
     backgroundFillColor?: string,
     pageFillColor?: string,
     pageStrokeColor?: string,
     marginStrokeColor?: string,
-  ) => void;
+  ): void;
+  /**
+   * Present on the wrapper this module installs. Holds the colours the host
+   * currently wants, so a theme flip updates the wrapper instead of stacking a
+   * second one on top of it.
+   */
+  [HOST_COLORS]?: UniverDocSurfaceColors;
+}
+
+interface FillColorTarget {
+  setFillColors?: FillColorSetter;
   makeDirty?: (dirty: boolean) => void;
 }
+
+/** Marks (and carries the state of) the wrapper installed below. */
+const HOST_COLORS = Symbol.for("matrx.univerDocSurfaceColors");
 
 /** The narrow slice of Univer's `IRender` this needs. Structural on purpose. */
 export interface UniverDocRenderLike {
@@ -52,7 +65,22 @@ export interface UniverDocRenderLike {
 }
 
 /**
- * Paint one document render in `colors`.
+ * Paint one document render in `colors`, and make the statement STICK.
+ *
+ * ─── WHY A WRAPPER AND NOT JUST A CALL ──────────────────────────────────────
+ * `DocRenderController._syncCanvasBackground()` (docs-ui 0.25.1) re-pins the
+ * canvas element's CSS background to `#fafafa` and calls
+ * `setFillColors(undefined, undefined, undefined, undefined)`, which resets all
+ * four fills to Univer's own light constants. It runs on EVERY
+ * `RichTextEditingMutation` — that is, on every keystroke — and again whenever
+ * the skeleton is rebuilt. A host that states its colours once watches the page
+ * turn white the moment the Expert starts typing.
+ *
+ * So the host's colours become the DEFAULTS: the setter is wrapped once, and
+ * every slot Univer passes as `undefined` is filled from the host's palette
+ * instead of from Univer's light constants. The wrapper re-asserts the canvas
+ * element's background at the same time, because the same method resets it.
+ * A theme flip updates the wrapper's palette rather than adding a second layer.
  *
  * Returns what it could not reach, never an empty success it did not earn —
  * the caller announces a miss rather than leaving a surface silently wearing
@@ -68,17 +96,41 @@ export function applyUniverDocSurfaceColors(
   // The canvas ELEMENT's CSS background is what shows wherever the renderer
   // has not painted — the bright L-shaped margin in cold walk 18's screenshot.
   const canvasEle = render.engine?.getCanvas?.()?.getCanvasEle?.();
-  if (canvasEle && "style" in canvasEle) {
-    canvasEle.style.backgroundColor = colors.frame;
-  } else {
-    unreached.push("canvas element");
-  }
+  const paintCanvasElement = () => {
+    if (canvasEle && "style" in canvasEle) {
+      canvasEle.style.backgroundColor = colors.frame;
+      return true;
+    }
+    return false;
+  };
+  if (!paintCanvasElement()) unreached.push("canvas element");
 
   const background = render.components?.get(DOC_BACKGROUND_COMPONENT_KEY) as
     | FillColorTarget
     | undefined;
-  if (typeof background?.setFillColors === "function") {
-    background.setFillColors(
+  const setter = background?.setFillColors;
+  if (background && typeof setter === "function") {
+    if (setter[HOST_COLORS]) {
+      // Already wrapped — just move the palette it defaults to.
+      setter[HOST_COLORS] = colors;
+    } else {
+      const original = setter.bind(background);
+      const wrapped: FillColorSetter = (frame, page, stroke, margin) => {
+        const host = wrapped[HOST_COLORS] ?? colors;
+        if (canvasEle && "style" in canvasEle) {
+          canvasEle.style.backgroundColor = host.frame;
+        }
+        original(
+          frame ?? host.frame,
+          page ?? host.page,
+          stroke ?? host.pageStroke,
+          margin ?? host.marginStroke,
+        );
+      };
+      wrapped[HOST_COLORS] = colors;
+      background.setFillColors = wrapped;
+    }
+    background.setFillColors?.(
       colors.frame,
       colors.page,
       colors.pageStroke,
@@ -104,24 +156,31 @@ interface InjectorLike {
 
 type UniverLike = { __getInjector?: () => InjectorLike | undefined } | null;
 
+/** The slice of `IRenderManagerService` this needs. Structural on purpose. */
+interface RenderManagerLike {
+  getRenderById?: (id: string) => UniverDocRenderLike | null;
+  /** Emits every render the instance creates, for as long as it lives. */
+  created$?: {
+    subscribe: (next: (render: UniverDocRenderLike) => void) => {
+      unsubscribe: () => void;
+    };
+  };
+}
+
 /**
- * Resolve the render for `unitId` out of a booted Univer instance.
+ * Resolve the render manager out of a booted Univer instance.
  *
  * The injector is the same door `registerUniverFacadeDependencies` and the
  * collab session already use; `IRenderManagerService` is imported lazily so a
  * surface that never mounts a document never pays for it.
  */
-async function resolveDocRender(
+async function resolveRenderManager(
   univer: UniverLike,
-  unitId: string,
-): Promise<UniverDocRenderLike | null> {
+): Promise<RenderManagerLike | null> {
   const injector = univer?.__getInjector?.();
   if (!injector) return null;
   const { IRenderManagerService } = await import("@univerjs/engine-render");
-  const manager = injector.get<{
-    getRenderById?: (id: string) => UniverDocRenderLike | null;
-  }>(IRenderManagerService as unknown);
-  return manager?.getRenderById?.(unitId) ?? null;
+  return injector.get<RenderManagerLike>(IRenderManagerService as unknown) ?? null;
 }
 
 /**
@@ -139,28 +198,51 @@ export function useUniverDocSurfaceTheme(
   useEffect(() => {
     if (!ready) return undefined;
     let cancelled = false;
+    let subscription: { unsubscribe: () => void } | null = null;
 
     (async () => {
       const colors = univerDocSurfaceColors(mode, domTokenReader());
-      const render = await resolveDocRender(
-        univerRef.current as UniverLike,
-        unitId,
-      );
+      const manager = await resolveRenderManager(univerRef.current as UniverLike);
       if (cancelled) return;
-      const result = applyUniverDocSurfaceColors(render, colors);
-      if (!result.applied) {
-        // NOTHING FAILS SILENTLY. A miss here means the document is wearing
-        // Univer's hardcoded light page and desk inside whatever theme the
-        // person actually chose — the cold walk 18 defect, back. It is
-        // cosmetic, so it does not take the editor down, but it says so.
-        console.warn(
-          `[document] theme not applied to the page surface (could not reach: ${result.unreached.join(", ")}) — the page may keep Univer's light defaults in dark mode`,
-        );
-      }
+
+      const paint = (render: UniverDocRenderLike | null) => {
+        const result = applyUniverDocSurfaceColors(render, colors);
+        if (!result.applied) {
+          // NOTHING FAILS SILENTLY. A miss here means the document is wearing
+          // Univer's hardcoded light page and desk inside whatever theme the
+          // person actually chose — the cold walk 18 defect, back. It is
+          // cosmetic, so it does not take the editor down, but it says so.
+          console.warn(
+            `[document] theme not applied to the page surface (could not reach: ${result.unreached.join(", ")}) — the page may keep Univer's light defaults in dark mode`,
+          );
+        }
+      };
+
+      paint(manager?.getRenderById?.(unitId) ?? null);
+
+      // A DOCUMENT RENDER IS NOT CREATED ONCE. Autosave's realtime echo, a
+      // remote snapshot and the history viewer all re-run `createUniverDoc`,
+      // and every new render arrives wearing Univer's hardcoded light fills
+      // with `DocsRenderService` re-pinning the canvas element's CSS
+      // background to `#fafafa`. Painting only the render that existed when
+      // this effect ran is how a dark document turned white mid-sentence.
+      // `created$` is the one place that hears about all of them.
+      subscription =
+        manager?.created$?.subscribe((render) => {
+          // `DocsRenderService` sets its canvas background from the SAME
+          // event; land after it rather than racing it.
+          queueMicrotask(() => {
+            if (!cancelled) paint(render);
+          });
+          requestAnimationFrame(() => {
+            if (!cancelled) paint(render);
+          });
+        }) ?? null;
     })();
 
     return () => {
       cancelled = true;
+      subscription?.unsubscribe();
     };
   }, [univerRef, unitId, ready, mode]);
 }

@@ -42,6 +42,10 @@ import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamic
 import { toast } from "@/components/ui/use-toast";
 
 import { defaultDocumentPageStyle } from "../document-page-style";
+import {
+  renderDocumentCanvasColorsVerbatim,
+  type ReplaceableInjector,
+} from "../univer-doc-canvas-colors";
 import { useDocumentRealtime } from "../hooks/useDocumentRealtime";
 import { useUniverDarkModeSync } from "../hooks/useUniverDarkModeSync";
 import { useUniverDocSurfaceTheme } from "../hooks/useUniverDocSurfaceTheme";
@@ -229,6 +233,23 @@ export default function DocumentEditor({
         }
         univerRef.current = univer;
         apiRef.current = univerAPI;
+
+        // THE CANVAS PAINTS WHAT IT IS TOLD. Univer's dark mode otherwise
+        // inverts every fill on its way to the context and THROWS on a colour
+        // its ColorKit cannot parse — inside the render pass, which leaves the
+        // whole page unpainted (cold walk 19). Must happen before the document
+        // unit exists: `ICanvasColorService` is injected into that unit's
+        // `Engine` at creation. Full argument in `../univer-doc-canvas-colors`.
+        const verbatim = renderDocumentCanvasColorsVerbatim(
+          univer.__getInjector() as unknown as ReplaceableInjector,
+        );
+        if (!verbatim.applied) {
+          // NOTHING FAILS SILENTLY: the page is about to be painted by the
+          // inverting service, which is the defect this guards.
+          console.warn(
+            `[document] could not take Univer's dark-mode colour inversion off the canvas (${verbatim.reason}) — the page may render inverted or blank in dark mode`,
+          );
+        }
 
         // Sheets Facade mixins are process-global. Once their module exists in
         // this SPA, FUniver attaches the observer to every later instance and

@@ -2,44 +2,58 @@
  * The colours a Univer DOCUMENT surface paints itself with, in each theme.
  *
  * ─── THE DEFECT THIS EXISTS FOR ─────────────────────────────────────────────
- * Univer's docs renderer is THEME-BLIND. `@univerjs/docs-ui` contains not one
- * reference to `darkMode` or the theme service, and `@univerjs/engine-render`'s
- * `DocBackground` paints the workspace and the page from four module-level
- * light constants (`DOCS_WORKSPACE_FILL_COLOR = "#fafafa"`,
- * `PAGE_FILL_COLOR = "rgba(255,255,255,1)"`, …). `univerAPI.toggleDarkMode()`
- * only flips Univer's CHROME (it adds `univer-dark` to `<html>`, which its own
- * `:is(.univer-dark, .univer-dark *)` CSS keys off) — it never reaches the
- * canvas. So the only inputs to the page and the frame are the ones a host
- * pushes in through `DocBackground.setFillColors(...)` and the canvas
- * element's own `style.backgroundColor`.
+ * Univer's docs renderer is THEME-BLIND at the top and THEME-SURGICAL at the
+ * bottom, and both halves bite.
  *
- * Cold walk 18 (2026-09-21, production, dark) opened a Rulebook's
- * "Add more → New document" and measured the editing surface: page fill
- * `rgb(0, 0, 0)` inside a frame still painting `rgb(250, 250, 250)` — a black
- * sheet in a white frame, unreadable, in an app that was otherwise dark. The
- * frame was Univer's hardcoded light `#fafafa`; the page was black because a
- * fill string the 2D context could not parse leaves `ctx.fillStyle` at its
- * spec default of opaque black. Either way the host had told Univer NOTHING,
- * so whatever Univer happened to hold is what the Expert saw.
+ * At the top, `@univerjs/docs-ui` contains not one reference to `darkMode` or
+ * the theme service, and `@univerjs/engine-render`'s `DocBackground` paints the
+ * workspace and the page from four module-level LIGHT constants
+ * (`DOCS_WORKSPACE_FILL_COLOR = "#fafafa"`, `PAGE_FILL_COLOR = white`, …).
+ * `univerAPI.toggleDarkMode()` flips Univer's CHROME (it adds `univer-dark` to
+ * `<html>`, which its own CSS keys off) and stops there. So the only inputs to
+ * the page and the frame are the ones a host pushes in through
+ * `DocBackground.setFillColors(...)` and the canvas element's `style`.
+ *
+ * At the bottom, every `ctx.fillStyle = <string>` on Univer's rendering context
+ * goes through `ICanvasColorService.getRenderColor()`, which in dark mode
+ * INVERTS the colour — and THROWS on anything its `ColorKit` cannot parse.
+ * `features/data-tables/univer-doc-canvas-colors.ts` takes that service off the
+ * document canvas so the colours below land verbatim; this file's job is to
+ * make sure they are colours nothing in the stack can choke on.
+ *
+ * Two cold walks, same screen, 2026-09-21, production, dark:
+ *   · WALK 18 — a BLACK sheet in a WHITE frame. The host stated nothing, so
+ *     Univer painted its own white page and the inverter turned it black,
+ *     inside the canvas element's un-themed CSS `#fafafa`.
+ *   · WALK 19 — NOTHING AT ALL: a 1396x684 canvas, 0.00% non-background
+ *     pixels, swallowing a 519-character paragraph that was being saved the
+ *     whole time (light mode, reloaded, showed it sitting on the paper). The
+ *     host had by then stated its colours — as `hsl(240 4% 16%)`, the
+ *     space-separated CSS Color 4 form this app's tokens are written in.
+ *     ColorKit's `hslToColor` splits on COMMAS and throws on it. The throw is
+ *     raised inside the `fillStyle` setter, i.e. inside the render pass, so the
+ *     whole draw aborted and the canvas stayed as `clearRect` left it. Every
+ *     later frame threw again, which is why flipping back to light never
+ *     brought the page back.
  *
  * ─── THE DECISION ───────────────────────────────────────────────────────────
- * The host now states all four colours explicitly, in both themes, every time
- * the theme changes. The shape of the answer is the one Word, Pages and Google
- * Docs all ship:
+ *   THE PAGE IS PAPER WITH BLACK INK IN BOTH THEMES; THE FRAME FOLLOWS THE APP.
  *
- *   THE PAGE IS PAPER IN BOTH THEMES; THE FRAME AROUND IT FOLLOWS THE APP.
- *
- * The page stays paper because the INK cannot follow the theme: Univer stores
- * text colour in the document's own runs and defaults it to black, so a dark
- * page would be black-on-black — the defect, moved rather than fixed. Paper
- * with black ink is legible in both themes and is what the document will look
- * like when it is printed or exported. The frame, the page outline and the
- * margin guides are the parts that are genuinely chrome, and they follow the
- * app's semantic tokens so a dark app never wraps a document in a white void.
+ * The page stays paper because the INK cannot follow the theme by itself:
+ * Univer stores text colour in the document's own runs and defaults it to
+ * black, so a dark page is black-on-black unless something inverts the ink too
+ * — and the only thing that would is the service whose inversion also blanks
+ * the page. Paper with black ink is legible in both themes, is what Word, Pages
+ * and Google Docs show by default, and is what the document looks like printed
+ * or exported. The frame, the page outline and the margin guides are the parts
+ * that are genuinely chrome; they follow the app's semantic tokens so a dark
+ * app never wraps a document in a white void.
  *
  * Tokens are read LIVE from `app/globals.css` (`--background`, `--border`) so
  * this file never becomes a second palette that drifts from the real one; the
  * fallbacks below are only for a context with no computed style (tests, SSR).
+ * They are resolved to `rgb(...)` HERE, once, rather than passed through as
+ * `hsl(...)` — see `rgbFromHslToken`.
  */
 
 /** The four fills Univer's `DocBackground` takes, plus the canvas element's. */
@@ -112,10 +126,29 @@ export function domTokenReader(): TokenReader {
   };
 }
 
-/** An hsl triple like `240 4% 16%` → a string any canvas / CSS parser accepts. */
-function hslFromToken(raw: string, fallback: string): string {
+/**
+ * An hsl triple like `240 4% 16%` (Tailwind/shadcn token form) → `rgb(r, g, b)`.
+ *
+ * IT MUST BE `rgb(...)`, NOT `hsl(...)`. Browsers parse both, but every fill
+ * this module produces is handed to Univer's `CanvasColorService`, and that
+ * service calls `new ColorKit(color)` on anything that is not hex / rgb /
+ * rgba. ColorKit's `hslToColor` splits on commas and THROWS
+ * (`illegal hsl color`) on the space-separated form CSS Color 4 introduced and
+ * this app's tokens are written in. The throw lands inside the `fillStyle`
+ * setter, i.e. inside the render pass, and takes the whole page down with it —
+ * cold walk 19's 1396x684 canvas with 0.00% non-background pixels. Resolving
+ * the token to `rgb()` here means the colour is parseable by every consumer,
+ * not just by the browser.
+ */
+function rgbFromHslToken(raw: string, fallback: string): string {
   const value = raw && /\d/.test(raw) ? raw : fallback;
-  return `hsl(${value})`;
+  const parts = value.split(/[\s,/]+/).filter(Boolean);
+  const h = Number.parseFloat(parts[0] ?? "");
+  const s = Number.parseFloat(parts[1] ?? "") / 100;
+  const l = Number.parseFloat(parts[2] ?? "") / 100;
+  if ([h, s, l].some(Number.isNaN)) return rgbFromHslToken(fallback, fallback);
+  const [r, g, b] = hslToRgb(h, s, l);
+  return `rgb(${r}, ${g}, ${b})`;
 }
 
 /**
@@ -130,9 +163,9 @@ export function univerDocSurfaceColors(
 ): UniverDocSurfaceColors {
   const fallbacks = TOKEN_FALLBACKS[mode];
   return {
-    frame: hslFromToken(readToken("--background"), fallbacks.background),
+    frame: rgbFromHslToken(readToken("--background"), fallbacks.background),
     page: PAPER[mode],
-    pageStroke: hslFromToken(readToken("--border"), fallbacks.border),
+    pageStroke: rgbFromHslToken(readToken("--border"), fallbacks.border),
     marginStroke: MARGIN_GUIDE,
   };
 }
@@ -219,6 +252,29 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   ];
 }
 
+/**
+ * The colour grammar EVERY consumer in the stack accepts.
+ *
+ * Not "what a browser accepts" — the browser is the most permissive reader in
+ * the chain and was green through both cold walks. The strictest reader is
+ * Univer's own `ColorKit` (`@univerjs/core`), which every fill passes through
+ * on its way to the canvas: hex, and `rgb()`/`rgba()`/`hsl()`/`hsla()` with
+ * COMMAS. Hand it CSS Color 4's space-separated `hsl(240 4% 16%)` — the form
+ * this app's design tokens are written in — and it throws inside the render
+ * pass, which is how cold walk 19's page came out empty. So the rule is the
+ * intersection, and this module only ever emits `rgb(...)` and `rgba(...)`.
+ */
+const UNIVER_PARSEABLE_COLOR =
+  /^(#[0-9a-f]{3,8}|rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)|hsla?\(\s*[\d.]+\s*,\s*[\d.]+%\s*,\s*[\d.]+%\s*(,\s*[\d.]+\s*)?\))$/i;
+
+/**
+ * Would every reader in the stack — the 2D context AND Univer's ColorKit —
+ * accept this string?
+ */
+export function isUniverParseableColor(color: string): boolean {
+  return UNIVER_PARSEABLE_COLOR.test(color.trim());
+}
+
 /** A frame lighter than this in dark mode is the white-void defect. */
 const DARK_FRAME_MAX_LUMINANCE = 0.2;
 /** Ink is black, so the paper has to stay genuinely paper. */
@@ -227,11 +283,13 @@ const PAGE_MIN_LUMINANCE = 0.6;
 /**
  * Judge one theme's colours. Returns every violation, empty when clean.
  *
- * THE INVARIANT, in words: the page is always paper the black ink can be read
- * on; the frame is never LIGHTER than the page (that is the white-frame-around-
- * a-dark-page inversion cold walk 18 photographed); in dark mode the frame is
- * genuinely dark; and every colour parses, because one that does not renders
- * as opaque black on a canvas.
+ * THE INVARIANT, in words: every colour is one EVERY reader in the stack
+ * accepts — a string the browser takes and Univer's ColorKit throws on empties
+ * the whole page (cold walk 19), and one nothing can parse leaves `fillStyle`
+ * at its spec default of opaque black (cold walk 18); the page is always paper
+ * the black ink can be read on; the frame is never LIGHTER than the page (the
+ * white-frame-around-a-dark-page inversion cold walk 18 photographed); and in
+ * dark mode the frame is genuinely dark.
  */
 export function univerDocSurfaceViolations(
   mode: ThemeModeName,
@@ -246,10 +304,17 @@ export function univerDocSurfaceViolations(
     "pageStroke",
     "marginStroke",
   ] as (keyof UniverDocSurfaceColors)[]) {
-    const l = relativeLuminance(colors[key]);
+    const value = colors[key];
+    if (!value || !isUniverParseableColor(value)) {
+      violations.push(
+        `${mode}: ${key} is "${value}", which is not in the grammar every reader in the stack accepts (hex, or rgb/rgba/hsl/hsla with COMMAS) — Univer's ColorKit throws on it inside the render pass and the whole page comes out blank`,
+      );
+      continue;
+    }
+    const l = relativeLuminance(value);
     if (l === null) {
       violations.push(
-        `${mode}: ${key} is "${colors[key]}", which a 2D context cannot parse — it would paint opaque black`,
+        `${mode}: ${key} is "${value}", which a 2D context cannot parse — it would paint opaque black`,
       );
       continue;
     }

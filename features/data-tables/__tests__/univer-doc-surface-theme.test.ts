@@ -42,16 +42,23 @@ describe("Univer document surface theme", () => {
       expect(violations.join(" | ")).toMatch(/light surface in a dark app/);
     });
 
-    it("a fill string a 2D context cannot parse is a violation, not a pass", () => {
+    it("a fill string the stack cannot parse is a violation, not a pass", () => {
       // An unparseable `fillStyle` leaves the context at its spec default of
       // opaque black — which is how a page renders `rgb(0, 0, 0)` while the
-      // code that set it looks perfectly reasonable.
-      const violations = univerDocSurfaceViolations("dark", {
+      // code that set it looks perfectly reasonable. And a string only
+      // Univer's ColorKit rejects is worse still: it throws inside the render
+      // pass and the page comes out blank (cold walk 19).
+      const unparseable = univerDocSurfaceViolations("dark", {
         ...UNIVER_UPSTREAM_DEFAULT_COLORS,
         page: "var(--univer-bg-color)",
       });
-      expect(violations.join(" | ")).toMatch(/cannot parse/);
-      expect(violations.join(" | ")).toMatch(/opaque black/);
+      expect(unparseable.join(" | ")).toMatch(/not in the grammar/);
+
+      const hslSpaceSyntax = univerDocSurfaceViolations("dark", {
+        ...UNIVER_UPSTREAM_DEFAULT_COLORS,
+        frame: "hsl(240 4% 16%)",
+      });
+      expect(hslSpaceSyntax.join(" | ")).toMatch(/ColorKit throws/);
     });
 
     it("a dark page under Univer's black ink is a violation", () => {
@@ -74,8 +81,11 @@ describe("Univer document surface theme", () => {
     it("the frame follows the app background in each theme", () => {
       const light = univerDocSurfaceColors("light", readerFor("light"));
       const dark = univerDocSurfaceColors("dark", readerFor("dark"));
-      expect(light.frame).toBe("hsl(240 5% 96%)");
-      expect(dark.frame).toBe("hsl(240 4% 16%)");
+      // Resolved to rgb() here, once — `hsl(h s% l%)` is the form Univer's
+      // ColorKit throws on, and a token passed straight through is what
+      // emptied the page in cold walk 19.
+      expect(light.frame).toBe("rgb(244, 244, 245)");
+      expect(dark.frame).toBe("rgb(39, 39, 42)");
       expect(relativeLuminance(dark.frame)!).toBeLessThan(
         relativeLuminance(light.frame)!,
       );
