@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 530 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 533 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "d18687b77492";
+export const KIND_REGISTRY_FINGERPRINT = "1a14753b4952";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -1480,6 +1480,43 @@ export interface DecisionProvenance {
    * The answer-by deadline that applied to this decision, when one did.
    */
   deadline_at?: string | null;
+}
+
+/**
+ * One question. Not a kind: it has no meaning outside its batch.
+ *  *
+ *  * From kind `decision_questions`.
+ */
+export interface DecisionQuestion {
+  name: string;
+  type: "noul" | "choice" | "score";
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  criteria?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: string | undefined;
+  } | string[] | null;
+  instructions: string;
+  suggested_threshold?: number | null;
+}
+
+/**
+ * What the decision call consumed. Zero is a real value, never a stand-in.
+ *  *
+ *  * From kind `decision_answers`.
+ */
+export interface DecisionUsage {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  input_tokens: number;
+  output_tokens: number;
 }
 
 /**
@@ -8336,6 +8373,79 @@ export interface DatetimeSnapshot {
    * Current instant as Unix seconds (fractional).
    */
   unix_seconds: number;
+}
+
+/**
+ * One answer, with the holder's own uncertainty attached.
+ *  *
+ *  * Kind `decision_answer` (registry v2).
+ */
+export interface DecisionAnswer {
+  type: "noul" | "choice" | "score";
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "decision_answer";
+  answer: boolean | number | string;
+  legend?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: string | undefined;
+  } | null;
+  confidence: number;
+  probability?: number | null;
+  probabilities?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: number | string | undefined;
+  } | null;
+}
+
+/**
+ * The assistant turn a decision request produces.
+ *  *
+ *  * Kind `decision_answers` (registry v2).
+ */
+export interface DecisionAnswers {
+  model: string;
+  usage: DecisionUsage;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "decision_answers";
+  method: "native" | "verbalized" | "verbalized_calibrated";
+  answers?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: DecisionAnswer | string | undefined;
+  };
+  cost_usd: number;
+  unanswerable?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: string | undefined;
+  };
+}
+
+/**
+ * A batch of questions asked of whatever state shares their message.
+ *  *
+ *  * Kind `decision_questions` (registry v2).
+ */
+export interface DecisionQuestions {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "decision_questions";
+  questions: DecisionQuestion[];
 }
 
 /**
@@ -22044,6 +22154,9 @@ export type GeneratedKindSlug =
   | "custom_script_result"
   | "data_table"
   | "datetime_snapshot"
+  | "decision_answer"
+  | "decision_answers"
+  | "decision_questions"
   | "decision_tree"
   | "diagram_spec"
   | "digital_pr_reputation_brief_v1"
@@ -22577,6 +22690,9 @@ export interface KindPayloadBySlug {
   "custom_script_result": CustomScriptResult;
   "data_table": DataTable;
   "datetime_snapshot": DatetimeSnapshot;
+  "decision_answer": DecisionAnswer;
+  "decision_answers": DecisionAnswers;
+  "decision_questions": DecisionQuestions;
   "decision_tree": DecisionTree;
   "diagram_spec": DiagramSpec;
   "digital_pr_reputation_brief_v1": DigitalPrReputationBriefV1;
@@ -23114,6 +23230,9 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "custom_script_result",
   "data_table",
   "datetime_snapshot",
+  "decision_answer",
+  "decision_answers",
+  "decision_questions",
   "decision_tree",
   "diagram_spec",
   "digital_pr_reputation_brief_v1",
