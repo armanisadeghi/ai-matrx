@@ -272,11 +272,33 @@ begin
   -- (The save and the read are two statements on purpose: `custom.doc_template_read` is
   -- STABLE, so inside one statement it would read the snapshot taken before the VOLATILE
   -- save and answer "there is no document template" about the row just written.)
+  -- 🚨 RE-PINNED, AND THE PROMISE GOT BETTER (lane RED-SUITES-3, 2026-09-21). This clause used
+  -- to save a name-keyed body and require the door to count ZERO tokens. Saving it at all was
+  -- the defect: `custom.doc_token_pattern()` matches `{{field:<uuid>}}` and nothing else, so
+  -- `{{field:client_name}}` was not a token, passed the save untouched, was absent from
+  -- `custom.doc_unresolved_tokens` — and RENDERED INTO THE DOCUMENT AS ITSELF. A proposal
+  -- handed to a customer with `{{field:salary}}` printed in it is the merge lying about what
+  -- it merged. `docgen_a_template_is_the_tables_wording.sql` refuses it AT SAVE now, in the
+  -- same sentence and the same place as a wrong id, with the table's real columns listed.
+  -- So the clause asserts the refusal, by the door's own words, with the positive control
+  -- immediately after it: the SAME body with the SAME text written as a real id saves and
+  -- counts one token.
+  begin
+    perform custom.doc_template_save(v_org, v_job, 'Name-keyed',
+              'Hello {{field:client_name}} and {{Client name}}');
+    raise exception 'REC-68: a template whose token names a column by WORD was saved, and it would render "{{field:client_name}}" into a document somebody is about to sign';
+  exception when sqlstate '23503' then
+    get stacked diagnostics v_msg = message_text;
+    if v_msg not like '%names no column of this table%' then
+      raise exception 'REC-68: the name-keyed token was refused for another reason: "%"', v_msg;
+    end if;
+  end;
+  -- the positive control: the same sentence with the token written as the Field's ID lands.
   v_tpl_pl := custom.doc_template_save(v_org, v_job, 'Name-keyed',
-                'Hello {{field:client_name}} and {{Client name}}');
+                'Hello {{field:' || v_f_name || '}} and {{Client name}}');
   v_j := custom.doc_template_read(v_org, v_tpl_pl);
-  if (v_j ->> 'token_count')::integer <> 0 then
-    raise exception 'REC-68: a token names a Field by its ID. A name-keyed token counted as % token(s), which is the merge that silently empties when somebody renames a column.', v_j ->> 'token_count';
+  if (v_j ->> 'token_count')::integer <> 1 then
+    raise exception 'REC-68: the id-keyed control counted % token(s), expected 1', v_j ->> 'token_count';
   end if;
 
   -- ══════════════════════════════════════════════════════════════════════════
@@ -574,8 +596,15 @@ begin
     raise exception 'I: this clause is about what a VIEWER may do, and the store says she holds % on the record',
                     coalesce(custom.my_level(v_org, v_rec2, 'record')::text, 'nothing at all');
   end if;
-  if custom.my_level(v_org, v_job, 'table') is not null then
-    raise exception 'I: she was made no admin of the Table and the store says she holds % on it',
+  -- 🚨 RE-PINNED (lane RED-SUITES-3, 2026-09-21). This asked for NOTHING on the Table, and the
+  -- platform default moved: `custom/member_default_level` ships as "viewer", and a Table IS a
+  -- record (REC-25), so a plain member of the organization now holds `viewer` on it — the
+  -- same answer she gets on the Job two lines above, for the same reason. The clause's point
+  -- is unchanged and is now stated as itself: she is no ADMIN of the Table. Asserting the
+  -- exact level rather than "not null" keeps it from passing if membership ever started
+  -- conferring editor or admin, which is the thing this block is actually about.
+  if custom.my_level(v_org, v_job, 'table') is distinct from 'viewer'::public.permission_level then
+    raise exception 'I: membership alone confers viewer on a Table (custom/member_default_level) and she was made no admin of it, and the store says she holds % on it',
                     custom.my_level(v_org, v_job, 'table')::text;
   end if;
 
@@ -602,7 +631,7 @@ begin
   exception when insufficient_privilege then null;
   end;
   perform set_config('request.jwt.claims', c_admin_j, true);
-  raise notice 'PART I PASSED — test@test.com holds viewer on the record and nothing on the Table: she reads the document and the seal and renders the template, and she is refused the SIGNATURE and the TEMPLATE SAVE.';
+  raise notice 'PART I PASSED — test@test.com holds viewer on the record and viewer — never admin — on the Table: she reads the document and the seal and renders the template, and she is refused the SIGNATURE and the TEMPLATE SAVE.';
 
   raise notice '';
   raise notice '=== W3-DOC — A..I ALL GREEN, every clause from the seat `authenticated` through the doors a signed-in person reaches. REC-68, VAL-10 and C-43 hold on the MAIN database. ===';
