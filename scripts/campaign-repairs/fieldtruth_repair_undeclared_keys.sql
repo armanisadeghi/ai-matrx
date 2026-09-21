@@ -1,4 +1,4 @@
--- scripts/campaign-tests/fieldtruth_repair_undeclared_keys.sql — LANE FIELD-TRUTH.
+-- scripts/campaign-repairs/fieldtruth_repair_undeclared_keys.sql — LANE FIELD-TRUTH.
 --
 -- THE ORPHANS THAT ARE ALREADY LIVE. Before this lane's door existed, `custom.record_write`
 -- took a value for any key at all and kept it: stored, readable through the doors, and
@@ -29,8 +29,8 @@
 -- "free_form"`. A key it cannot type — an array or an object, of which live data has none —
 -- is NAMED and left alone rather than guessed at.
 --
--- Run:  <scratchpad>/prod.sh -f scripts/campaign-tests/fieldtruth_repair_undeclared_keys.sql
---       <scratchpad>/prod.sh -v commit_it=true -f scripts/campaign-tests/fieldtruth_repair_undeclared_keys.sql
+-- Run:  <scratchpad>/prod.sh -f scripts/campaign-repairs/fieldtruth_repair_undeclared_keys.sql
+--       <scratchpad>/prod.sh -v commit_it=true -f scripts/campaign-repairs/fieldtruth_repair_undeclared_keys.sql
 --       ... -v mode=quarantine   to take the other branch
 -- It runs as the store's owner: this is a repair of the store's own rows, not a client door.
 
