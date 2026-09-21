@@ -17,6 +17,10 @@ import {
 } from "@/features/agents/types/agent-definition.types";
 import type { components } from "@/types/python-generated/api-types";
 import { isMessagePart } from "@/types/python-generated/stream-events";
+import {
+  DECISION_QUESTIONS_KIND,
+  isDecisionQuestionsPart,
+} from "@/features/agents/decision-questions/types";
 
 type DefinitionMessage = AgentDefinition["messages"][number];
 type DefinitionMessagePart = DefinitionMessage["content"][number];
@@ -436,6 +440,17 @@ function isDefinitionMessageRole(
 function isDefinitionMessagePart(
   value: unknown,
 ): value is DefinitionMessagePart {
+  // The decision modality's ask. It is checked BEFORE `isMessagePart`: that
+  // guard is generated from the aidream OpenAPI, and `decision_questions` is
+  // not in the generated `UserInputPart` union yet (the local contract in
+  // `features/agents/decision-questions/types.ts` says so, and says to delete
+  // itself the day the union carries it). Without this branch a saved
+  // Questions part failed validation on the NEXT LOAD and the reader dropped
+  // EVERY message in the agent — the builder came back empty over a database
+  // row that was perfectly intact.
+  if (isDecisionQuestionsPart(value as Record<string, unknown>)) {
+    return Array.isArray((value as { questions?: unknown }).questions);
+  }
   if (!isMessagePart(value)) return false;
   return (
     value.type === "text" ||
@@ -487,6 +502,21 @@ export function parseAgentMessages(raw: unknown): AgentDefinition["messages"] {
       fail(`${path}.content`, "must be an array");
     }
     const content = rawContent.map((part, partIndex) => {
+      // A questions part stored with only `__kind` predates
+      // `newDecisionQuestionsPart`. Every message-part reader on the platform
+      // dispatches on `type` (aidream's `reconstruct_content` defaults a
+      // missing one to "text"), so such a row reaches the provider as an empty
+      // text block and the decision is never found. Repair it on read — and
+      // SCREAM, so the row gets re-saved rather than quietly running wrong.
+      if (isRecord(part) && isDecisionQuestionsPart(part) && !part.type) {
+        console.error(
+          `[agent-definition] LOUD: ${path}.content[${partIndex}] is a ` +
+            `decision_questions part carrying no "type" key. Reading it as one ` +
+            `anyway; re-save this agent in the builder — until you do, the ` +
+            `server reads it as an empty text block and the decision is refused.`,
+        );
+        part = { ...part, type: DECISION_QUESTIONS_KIND };
+      }
       if (!isDefinitionMessagePart(part)) {
         fail(
           `${path}.content[${partIndex}]`,

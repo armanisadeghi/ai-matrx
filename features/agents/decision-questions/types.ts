@@ -40,12 +40,34 @@ export interface DecisionQuestionSpec {
   suggested_threshold?: number | null;
 }
 
+/**
+ * 🚨 BOTH KEYS, ALWAYS. `__kind` is the kind marker and is DATA (the __kind
+ * law); `type` is how EVERY message-part reader on the platform dispatches —
+ * aidream's `reconstruct_content` reads `block.get("type", "text")` and its
+ * `_content_type` reads `type` alone, so a part stored with only `__kind`
+ * arrives at the provider layer as an empty TEXT block and the decision is
+ * never found (`DecisionQuestionsMissing`). The server's own part model
+ * (`matrx_ai/db/message_parts.py::DecisionQuestionsPart`) declares both, so
+ * every writer here declares both too. Build one with `newDecisionQuestionsPart`.
+ */
 export interface DecisionQuestionsPart {
   __kind: "decision_questions";
+  type: "decision_questions";
   questions: DecisionQuestionSpec[];
 }
 
 export const DECISION_QUESTIONS_KIND = "decision_questions" as const;
+
+/** The ONE constructor for the part — both keys, never one. */
+export function newDecisionQuestionsPart(
+  questions: DecisionQuestionSpec[],
+): DecisionQuestionsPart {
+  return {
+    __kind: DECISION_QUESTIONS_KIND,
+    type: DECISION_QUESTIONS_KIND,
+    questions,
+  };
+}
 
 /** Contract bounds from FEATURE.md — not taste, not adjustable per surface. */
 export const CHOICE_OPTION_MIN = 2;

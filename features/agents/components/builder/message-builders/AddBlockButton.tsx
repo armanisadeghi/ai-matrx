@@ -44,6 +44,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
 import {
   DECISION_QUESTIONS_KIND,
+  newDecisionQuestionsPart,
   isDecisionQuestionsPart,
   partKind,
   readQuestions,
@@ -815,10 +816,7 @@ export function BlockList({
   // into a box that is not the editor.
   useEffect(() => {
     if (pendingAddType !== DECISION_QUESTIONS_KIND) return;
-    onAddBlock({
-      __kind: DECISION_QUESTIONS_KIND,
-      questions: [newDecisionQuestion([])],
-    });
+    onAddBlock({ ...newDecisionQuestionsPart([newDecisionQuestion([])]) });
     onPendingAddTypeClear?.();
   }, [pendingAddType, onAddBlock, onPendingAddTypeClear]);
 
@@ -854,8 +852,7 @@ export function BlockList({
             onChange={(questions: DecisionQuestionSpec[]) =>
               onUpdateBlock(i, {
                 ...block,
-                __kind: DECISION_QUESTIONS_KIND,
-                questions,
+                ...newDecisionQuestionsPart(questions),
               })
             }
           />

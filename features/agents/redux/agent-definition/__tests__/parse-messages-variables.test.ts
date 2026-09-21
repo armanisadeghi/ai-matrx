@@ -176,3 +176,53 @@ describe("parseAgentVariableDefinitions", () => {
     expect(() => parseAgentVariableDefinitions(value)).toThrow(TypeError);
   });
 });
+
+describe("parseAgentMessages — the decision modality's Questions part", () => {
+  const QUESTIONS = [
+    {
+      name: "is_defect",
+      type: "noul",
+      instructions: "Is this a defect rather than a request?",
+      criteria: { true: "existing behaviour is wrong", false: "new behaviour is wanted" },
+      suggested_threshold: 0.7,
+    },
+  ];
+
+  // THE BREAK THIS CATCHES: the reader's part allowlist stops recognising
+  // `decision_questions`. Before 2026-09-20 it did not recognise it at all, so
+  // saving a decision agent worked and the NEXT LOAD threw, dropping EVERY
+  // message in the agent — the builder came back empty over an intact row.
+  it("keeps a whole decision message instead of dropping the agent's messages", () => {
+    const messages = [
+      { role: "system", content: [{ type: "text", text: "You triage feedback." }] },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: '{"id":"2f6af047","reported_type":"bug"}' },
+          { __kind: "decision_questions", type: "decision_questions", questions: QUESTIONS },
+        ],
+      },
+    ];
+
+    expect(parseAgentMessages(messages)).toEqual(messages);
+  });
+
+  // THE SECOND BREAK: a part written with only `__kind`. Every message-part
+  // reader dispatches on `type` (aidream's reconstruct_content defaults a
+  // missing one to "text"), so such a row reaches the provider as an empty
+  // text block and the decision is refused as missing. The reader repairs it.
+  it("repairs a part stored with only the kind marker, and keeps the marker", () => {
+    const parsed = parseAgentMessages([
+      {
+        role: "user",
+        content: [{ __kind: "decision_questions", questions: QUESTIONS }],
+      },
+    ]);
+
+    expect(parsed[0].content[0]).toEqual({
+      __kind: "decision_questions",
+      type: "decision_questions",
+      questions: QUESTIONS,
+    });
+  });
+});

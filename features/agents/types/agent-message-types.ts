@@ -78,6 +78,7 @@ import type {
 } from "./message-types";
 import type { Enums } from "@/types/database.types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
+import type { DecisionQuestionsPart } from "@/features/agents/decision-questions/types";
 
 // The canonical role union, sourced from the generated DB enum so it can never
 // drift from `public.cx_message.role`. Aliased here so `MessageRole` below
@@ -436,6 +437,13 @@ export interface AgentDefinitionMessage {
     | VideoBlock
     | YouTubeVideoBlock
     | DocumentBlock
+    // The decision modality's ask. An agent whose model is a decision holder
+    // authors its questions HERE, in the message, because the state a decision
+    // reasons over is the OTHER parts of the same message
+    // (`common-docs/systems/agents/typed-messages/FEATURE.md`). Typed from the
+    // local contract until the generated `UserInputPart` union carries it —
+    // see the note at the top of `features/agents/decision-questions/types.ts`.
+    | DecisionQuestionsPart
   >;
 }
 
