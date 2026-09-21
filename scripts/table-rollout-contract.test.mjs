@@ -41,14 +41,18 @@ test("System apps use the canonical table without inventing a source total or ge
   assert.match(page, /<MatrxDataTable/);
   assert.match(
     page,
-    /coverage=\{\{\s*matched: apps\.length,\s*cap: 500,\s*answeredBy: "client"/,
+    /coverage=\{\{\s*cap: 500,\s*answeredBy: "client"/,
   );
   assert.match(page, /searchPlaceholder: "Search system apps…"/);
+  assert.match(page, /searchText=\{\(app\) => app\.id\}/);
+  assert.match(page, /onViewChange=\{setVisibleApps\}/);
   assert.match(page, /copy=\{false\}/);
   assert.match(page, /detail=\{\{ enabled: false \}\}/);
   assert.match(page, /window=\{\{ enabled: false \}\}/);
   assert.match(page, /agentAppExecutionsHref\(app\.id\)/);
   assert.match(page, /setDeleteTarget\(app\)/);
-  assert.match(page, /JSON \(loaded window\)/);
+  assert.match(page, /JSON \(visible loaded view\)/);
+  assert.match(page, /json=\{\(\) => visibleApps\}/);
+  assert.match(page, /void load\(true\)/);
   assert.doesNotMatch(page, /const \[search, setSearch\]/);
 });

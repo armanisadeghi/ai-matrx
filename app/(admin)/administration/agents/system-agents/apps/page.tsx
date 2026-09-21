@@ -92,6 +92,7 @@ export default function AdminSystemAppsListPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [apps, setApps] = useState<AgentAppAdminView[]>([]);
+  const [visibleApps, setVisibleApps] = useState<AgentAppAdminView[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   // Per-row inflight flags so a slow update on one row doesn't disable the
@@ -108,6 +109,7 @@ export default function AdminSystemAppsListPage() {
     try {
       const data = await fetchAgentAppsAdmin({ scope: "global", limit: 500 });
       setApps(data);
+      setVisibleApps(data);
     } catch (error) {
       console.error("Failed to load system apps:", error);
     } finally {
@@ -314,17 +316,6 @@ export default function AdminSystemAppsListPage() {
       <div className="flex-shrink-0 px-4 py-3 border-b border-border bg-card">
         <div className="flex items-center justify-end gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => load(true)}
-              disabled={refreshing}
-            >
-              <RefreshCw
-                className={`h-4 w-4 mr-1.5 ${refreshing ? "animate-spin" : ""}`}
-              />
-              Refresh
-            </Button>
             <AppLink href="/administration/agents/system-agents/apps/new">
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-1.5" />
@@ -356,11 +347,12 @@ export default function AdminSystemAppsListPage() {
                   data={apps}
                   columns={columns}
                   getRowId={(app) => app.id}
+                  searchText={(app) => app.id}
+                  onViewChange={setVisibleApps}
                   isLoading={loading}
                   isFetching={refreshing}
                   pageSize={50}
                   coverage={{
-                    matched: apps.length,
                     cap: 500,
                     answeredBy: "client",
                     noun: "loaded system app",
@@ -375,33 +367,39 @@ export default function AdminSystemAppsListPage() {
                     search: true,
                     searchPlaceholder: "Search system apps…",
                     actions: (
-                      <CopyButtons
-                        size="icon"
-                        label="Loaded system apps"
-                        human={() => apps.map(agentAppAdminSummary).join("\n")}
-                        json={() => apps}
-                        agent={() => ({
-                          kind: "agent-apps",
-                          location:
-                            "AI Matrx Admin — System Agents · Apps (/administration/agents/system-agents/apps)",
-                          description:
-                            "The bounded global-scope system-app snapshot loaded by this page.",
-                          data: apps,
-                          attributes: { count: apps.length, cap: 500 },
-                        })}
-                        export={{
-                          items: [
-                            jsonExportItem(() => apps, "JSON (loaded window)"),
-                            csvExportItem(
-                              () =>
-                                apps as unknown as Array<
+                      <div className="flex items-center gap-1">
+                        <CopyButtons
+                          size="icon"
+                          label="Visible system apps"
+                          human={() => visibleApps.map(agentAppAdminSummary).join("\n")}
+                          json={() => visibleApps}
+                          agent={() => ({
+                            kind: "agent-apps",
+                            location:
+                              "AI Matrx Admin — System Agents · Apps (/administration/agents/system-agents/apps)",
+                            description:
+                              "The filtered and sorted loaded system-app view on this page.",
+                            data: visibleApps,
+                            attributes: { count: visibleApps.length, cap: 500 },
+                          })}
+                          export={{
+                            items: [
+                              jsonExportItem(() => visibleApps, "JSON (visible loaded view)"),
+                              csvExportItem(
+                                () =>
+                                  visibleApps as unknown as Array<
                                   Record<string, unknown>
-                                >,
-                              "CSV (loaded window)",
-                            ),
-                          ],
-                        }}
-                      />
+                                  >,
+                                "CSV (visible loaded view)",
+                              ),
+                            ],
+                          }}
+                        />
+                        <Button variant="outline" size="sm" onClick={() => void load(true)} disabled={refreshing}>
+                          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                          Refresh
+                        </Button>
+                      </div>
                     ),
                   }}
                   copy={false}
