@@ -18,7 +18,7 @@ import type {
 
 const db = supabase.schema("marketing");
 const COLUMNS =
-  "id,name,description,brand_id,status,objective,goal,starts_on,ends_on,budget_amount,budget_currency,details,organization_id,created_by,updated_by,created_at,updated_at,deleted_at,version,metadata,visibility";
+  "id,name,description,brand_id,status,objective,goal,starts_on,ends_on,budget_amount,budget_currency,details,organization_id,created_by,updated_by,created_at,updated_at,deleted_at,version,metadata,custom_fields,visibility";
 
 export async function fetchInitiativeListPage(
   query: EntityListQuery,

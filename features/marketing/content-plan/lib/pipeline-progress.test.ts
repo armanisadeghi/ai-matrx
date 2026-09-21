@@ -14,6 +14,7 @@ function stepRow(
     attempts: 1,
     created_at: "2026-08-13T00:00:00.000Z",
     created_by: null,
+    custom_fields: {},
     deleted_at: null,
     error: null,
     finished_at: null,

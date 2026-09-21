@@ -265,7 +265,7 @@ export function assertMutated(
 
 /** Every `web.site` column — ONE list so selects can never drift per call site. */
 export const SITE_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, slug, previous_slugs, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings, brand_id, description, favicon_url, logo_url, og_image_url, initialized_at, initialization, gsc_synced_at, gsc_sync, plan_profile_id";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, name, slug, previous_slugs, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings, brand_id, description, favicon_url, logo_url, og_image_url, initialized_at, initialization, gsc_synced_at, gsc_sync, plan_profile_id";
 
 /**
  * VIEW LAW: listSites / listSiteOptions are DELIBERATE org-browse surfaces,
@@ -774,7 +774,7 @@ export async function getSiteOverview(
     db
       .from("crawl_session")
       .select(
-        "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, status, trigger, scope, stats, started_at, finished_at, error",
+        "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, site_id, status, trigger, scope, stats, started_at, finished_at, error",
       )
       .eq("site_id", siteId)
       .is("deleted_at", null)
@@ -960,7 +960,7 @@ export async function listBrandOptions(
 
 /** Every `web.page` column — ONE list so selects can never drift per call site. */
 export const PAGE_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, canonical_page_id, url, url_hash, path, provenance, status, first_seen, last_seen, http_status_last, content_type_last, target_keyword, meta_title_desired, meta_description_desired, seo_metrics_desired, desired_values, latest_snapshot_id, launch_tracking, link_score, link_score_computed_at";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, site_id, canonical_page_id, url, url_hash, path, provenance, status, first_seen, last_seen, http_status_last, content_type_last, target_keyword, meta_title_desired, meta_description_desired, seo_metrics_desired, desired_values, latest_snapshot_id, launch_tracking, link_score, link_score_computed_at";
 
 /** Every `web.snapshot` column — ONE list so selects can never drift per call site. */
 export const SNAPSHOT_COLUMNS =
@@ -1233,7 +1233,7 @@ export async function listPageSitemapMemberships(
   )
     .from("page_sitemap")
     .select(
-      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, sitemap_id, lastmod, changefreq, priority, first_seen, last_seen, sitemap:sitemap_id!inner(id, url, kind)",
+      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, site_id, page_id, sitemap_id, lastmod, changefreq, priority, first_seen, last_seen, sitemap:sitemap_id!inner(id, url, kind)",
     )
     .eq("site_id", siteId)
     .eq("page_id", pageId)
@@ -2045,7 +2045,7 @@ export async function listCrawls(
   let query = (await authenticatedWebDb(supabase))
     .from("crawl_session")
     .select(
-      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, status, trigger, scope, stats, started_at, finished_at, error",
+      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, site_id, status, trigger, scope, stats, started_at, finished_at, error",
       { count: "exact" },
     )
     .eq("site_id", siteId)
@@ -2089,7 +2089,7 @@ export async function listActiveCrawlSessions(
   )
     .from("crawl_session")
     .select(
-      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, status, trigger, scope, stats, started_at, finished_at, error",
+      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, site_id, status, trigger, scope, stats, started_at, finished_at, error",
     )
     .eq("site_id", siteId)
     .in("status", ["queued", "running"])
@@ -2110,7 +2110,7 @@ export async function getCrawl(
   )
     .from("crawl_session")
     .select(
-      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, status, trigger, scope, stats, started_at, finished_at, error",
+      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, site_id, status, trigger, scope, stats, started_at, finished_at, error",
     )
     .eq("site_id", siteId)
     .eq("id", crawlId)
@@ -2207,7 +2207,7 @@ export async function listCrawlUrls(
   let query = (await authenticatedWebDb(supabase))
     .from("crawl_url")
     .select(
-      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, session_id, sequence, page_id, snapshot_id, discovered_from_page_id, raw_url, normalized_url, url_hash, discovery_source, classification, outcome, is_in_scope, depth, http_status, final_url, reason_code, reason, discovered_at, completed_at",
+      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, site_id, session_id, sequence, page_id, snapshot_id, discovered_from_page_id, raw_url, normalized_url, url_hash, discovery_source, classification, outcome, is_in_scope, depth, http_status, final_url, reason_code, reason, discovered_at, completed_at",
       { count: "exact" },
     )
     .eq("site_id", siteId)
@@ -2283,7 +2283,7 @@ export async function listRecentLiveCrawlEvents(
   )
     .from("crawl_event")
     .select(
-      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, session_id, sequence, event_type, phase, level, message, page_id, crawl_url_id, payload, occurred_at",
+      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, site_id, session_id, sequence, event_type, phase, level, message, page_id, crawl_url_id, payload, occurred_at",
     )
     .eq("site_id", siteId)
     .eq("session_id", crawlId)
@@ -2316,7 +2316,7 @@ export async function listCrawlEvents(
   let query = (await authenticatedWebDb(supabase))
     .from("crawl_event")
     .select(
-      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, session_id, sequence, event_type, phase, level, message, page_id, crawl_url_id, payload, occurred_at",
+      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, site_id, session_id, sequence, event_type, phase, level, message, page_id, crawl_url_id, payload, occurred_at",
       { count: "exact" },
     )
     .eq("site_id", siteId)
@@ -2381,7 +2381,7 @@ export async function updateSiteIdentity(
 }
 
 const SCREENSHOT_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, snapshot_id, kind, width, height, captured_at, file_id";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, site_id, page_id, snapshot_id, kind, width, height, captured_at, file_id";
 
 /** Read the above-the-fold homepage hero capture. */
 export async function getSiteHeroScreenshot(
@@ -2457,7 +2457,7 @@ export async function getSiteHeroScreenshot(
 }
 
 const DISCOVERED_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, brand_id, site_id, snapshot_id, source, category, guessed_kind, url, value, value_hash, context, confidence, status, resolved_asset_id, resolved_fact_id, resolved_property_id, reviewed_by, reviewed_at";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, brand_id, site_id, snapshot_id, source, category, guessed_kind, url, value, value_hash, context, confidence, status, resolved_asset_id, resolved_fact_id, resolved_property_id, reviewed_by, reviewed_at";
 
 /**
  * Discovery inbox for a brand, optionally narrowed by status. Controlled
@@ -2739,7 +2739,7 @@ export async function dismissDiscoveredItem(itemId: string): Promise<void> {
 // ============================================================================
 
 const BRAND_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, slug, previous_slugs, description, website_url, logo_url, favicon_url, og_image_url, industry, notes, status, visibility, settings, profile";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, name, slug, previous_slugs, description, website_url, logo_url, favicon_url, og_image_url, industry, notes, status, visibility, settings, integrations, profile";
 
 export async function listBrands(
   state: MatrxDataTableQueryState,
@@ -2911,7 +2911,7 @@ export async function listBrandSites(
 }
 
 const PROPERTY_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, brand_id, kind, url, handle, display_name, status, site_id, connection, settings";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, brand_id, kind, url, handle, display_name, status, site_id, connection, settings";
 
 export async function listBrandProperties(
   brandId: string,
@@ -2931,7 +2931,7 @@ export async function listBrandProperties(
 }
 
 const BRAND_ASSET_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, brand_id, kind, file_id, source_url, title, notes, source, is_primary, sort_order, data, confirmed_by, confirmed_at";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, brand_id, kind, file_id, source_url, title, notes, source, is_primary, sort_order, data, confirmed_by, confirmed_at";
 
 export async function listBrandAssets(
   brandId: string,
@@ -2951,7 +2951,7 @@ export async function listBrandAssets(
 }
 
 const BUSINESS_FACT_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, brand_id, kind, label, value, source, confirmed_by, confirmed_at";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, brand_id, kind, label, value, source, confirmed_by, confirmed_at";
 
 export async function listBusinessFacts(
   brandId: string,
@@ -2975,7 +2975,7 @@ export async function listBusinessFacts(
 // ============================================================================
 
 const SITEMAP_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, url, kind, parent_sitemap_id, status_code, url_count, child_count, is_active, first_seen, last_seen, last_fetched_at, fetch_error";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, site_id, url, kind, parent_sitemap_id, status_code, url_count, child_count, is_active, first_seen, last_seen, last_fetched_at, fetch_error";
 
 /** All sitemap documents for a site (bounded; a site has dozens, not thousands). */
 export async function listSitemaps(
@@ -3037,7 +3037,7 @@ export async function listSitemapPages(
   let query = db
     .from("page_sitemap")
     .select(
-      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, sitemap_id, lastmod, changefreq, priority, first_seen, last_seen, page:page_id!inner(id, url, path, status, provenance, http_status_last, latest_snapshot_id, last_seen)",
+      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, site_id, page_id, sitemap_id, lastmod, changefreq, priority, first_seen, last_seen, page:page_id!inner(id, url, path, status, provenance, http_status_last, latest_snapshot_id, last_seen)",
       { count: "exact" },
     )
     .eq("site_id", siteId)
@@ -4231,13 +4231,13 @@ export async function fetchSiteStructureRows(
 // ─── Local & Listings (web.business_location / web.listing_publisher / web.location_listing) ───
 
 const BUSINESS_LOCATION_COLUMNS =
-  "id, organization_id, brand_id, name, status, is_primary, street_address, address_line2, locality, region, postal_code, country_code, phone, email, website_url, latitude, longitude, business_type, categories, opening_hours, special_hours, attributes, identifiers, description, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata";
+  "id, organization_id, brand_id, name, status, is_primary, street_address, address_line2, locality, region, postal_code, country_code, phone, email, website_url, latitude, longitude, business_type, categories, opening_hours, special_hours, attributes, identifiers, description, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields";
 
 const LISTING_PUBLISHER_COLUMNS =
   "id, organization_id, slug, name, domain, tier, is_aggregator, api_access, api_notes, manage_url, categories, citation_weight, sort_rank, visibility, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata";
 
 const LOCATION_LISTING_COLUMNS =
-  "id, organization_id, location_id, publisher_id, status, listing_url, observed, nap_match, match_score, last_checked_at, source, notes, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata";
+  "id, organization_id, location_id, publisher_id, status, listing_url, observed, nap_match, match_score, last_checked_at, source, notes, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields";
 
 export async function listBusinessLocations(
   brandId: string,

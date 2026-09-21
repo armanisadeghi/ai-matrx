@@ -44,7 +44,7 @@ import type { MarketingFinding } from "@/features/marketing/data/analysis-types"
 import { assertFound } from "@/features/marketing/data/service";
 
 const FINDING_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, subject_type, subject_id, page_id, item_id, item_key, category, subcategory, severity, status, suppressed, suppressed_reason, first_result_id, last_result_id, first_detected_at, last_detected_at, resolved_at";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, site_id, subject_type, subject_id, page_id, item_id, item_key, category, subcategory, severity, status, suppressed, suppressed_reason, first_result_id, last_result_id, first_detected_at, last_detected_at, resolved_at";
 
 /** Statuses that mean "this is live" — everything except `resolved`. */
 export const LIVE_FINDING_STATUSES = [

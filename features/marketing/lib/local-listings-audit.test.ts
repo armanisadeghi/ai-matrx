@@ -51,6 +51,7 @@ function makeLocation(overrides: Partial<BusinessLocation> = {}): BusinessLocati
     deleted_at: null,
     version: 1,
     metadata: {},
+    custom_fields: {},
     ...overrides,
   };
 }
