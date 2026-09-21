@@ -42,7 +42,7 @@ const { default: SandboxDetailPage }: typeof import("./page") = require("./page"
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const initial: SandboxInstance = {
-  id: "sandbox-1", sandbox_id: "sandbox-1", name: "Sandbox", status: "ready", created_at: "2026-01-01T00:00:00.000Z", updated_at: "2026-01-01T00:00:00.000Z", config: {}, cold_path: null, container_id: null, created_by: null, deleted_at: null, expires_at: "2026-01-01T01:00:00.000Z", hot_path: null, labels: null, last_heartbeat_at: null, metadata: {}, organization_id: "org-a", persistence_volume: null, project_id: null, proxy_url: null, stop_reason: null, stopped_at: null, task_id: null, template: null, template_version: null, tier: "ec2", ttl_seconds: 3600, updated_by: null, user_id: "user-a", version: 1,
+  boot_kind: null, boot_phase_seconds: null, boot_seconds: null, custom_fields: {}, ready_at: null, id: "sandbox-1", sandbox_id: "sandbox-1", name: "Sandbox", status: "ready", created_at: "2026-01-01T00:00:00.000Z", updated_at: "2026-01-01T00:00:00.000Z", config: {}, cold_path: null, container_id: null, created_by: null, deleted_at: null, expires_at: "2026-01-01T01:00:00.000Z", hot_path: null, labels: null, last_heartbeat_at: null, metadata: {}, organization_id: "org-a", persistence_volume: null, project_id: null, proxy_url: null, stop_reason: null, stopped_at: null, task_id: null, template: null, template_version: null, tier: "ec2", ttl_seconds: 3600, updated_by: null, user_id: "user-a", version: 1,
 };
 
 function response(instance = initial) {
