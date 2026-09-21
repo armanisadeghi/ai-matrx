@@ -112,6 +112,9 @@ export async function getTableMetadata(
           token: "dataset",
           relation: "workbench.udt_datasets",
         }).message,
+        // NOT "it is gone". It is not in THIS store — and there is a second one.
+        // The caller decides what that means (see `whereThisTableLives`).
+        code: "dataset_not_here",
       };
     }
     return { success: false, error: error.message };

@@ -300,6 +300,18 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "THE unified table page: views, the four layouts, peek with history and comments, settings, the action inbox, import and export. Served to users, so it reads the switch.",
     },
     {
+        id: "where-this-table-lives",
+        file: "features/unified-data/whereThisTableLives.ts",
+        kind: "door_gated",
+        why: "THE OTHER STORE'S ANSWER, asked only after the older /data/<id> viewer has already refused an id. It calls custom.table_kernel_id and custom.read_records as the signed-in person, through their own client doors, which read the switch themselves: with the campaign off those doors refuse and this returns `unknown` with the door's own sentence, never `nowhere`, so a switched-off store can never be reported to a person as a deleted table. It creates nothing, writes nothing and is reachable only from a failure path.",
+    },
+    {
+        id: "data-id-sends-you-to-the-other-store",
+        file: "app/(core)/data/[id]/DataTableDetailClient.tsx",
+        kind: "door_gated",
+        why: "The OLD viewer's shell. Its only campaign reach is the failure path above: when workbench.udt_datasets has no such dataset for this person it asks the record store through `whereThisTableLives`, whose doors are custom.table_kernel_id and custom.read_records — custom.read_records calls custom.assert_store_door, which reads custom/system_enabled, so with the switch off it refuses and this screen says it could not ask rather than claiming the table is gone. Everything else on this route is unchanged and touches no campaign code.",
+    },
+    {
         id: "shell-nav-gates",
         file: "features/shell/navigation/useShellNavGates.ts",
         kind: "runtime",

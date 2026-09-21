@@ -219,7 +219,15 @@ export type ValidationMode = "permissive" | "strict";
 // ─── Service result envelope (matches existing convention) ───────────────────
 
 export type ServiceOk<T> = { success: true; data: T };
-export type ServiceErr = { success: false; error: string };
+/**
+ * A machine-readable reason, for the few failures a CALLER has to act on
+ * differently rather than print. `dataset_not_here` is the only one so far: the
+ * older table store has no such dataset for this person, which is NOT proof the
+ * id is nothing — `/data-v2` may hold it, and telling somebody their table was
+ * deleted when it is one route along is a screen lying.
+ */
+export type ServiceErrCode = "dataset_not_here";
+export type ServiceErr = { success: false; error: string; code?: ServiceErrCode };
 export type ServiceResult<T> = ServiceOk<T> | ServiceErr;
 
 /**
