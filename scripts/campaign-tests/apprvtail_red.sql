@@ -160,9 +160,24 @@ begin
   -- The Table declares the name first — custom._field_shape_guard refuses a definition for a
   -- column the Table never named, and it is right to. That refusal is not the defect; the
   -- CLASS the row is then written with is.
-  perform custom.record_update(v_org, v_tbl, jsonb_build_object(
-    'fields', jsonb_build_array(jsonb_build_object('name','crew_name'),
-                                jsonb_build_object('name','region'))));
+  -- 🚨 THE NAME GOES ON OUT OF THE SEAT NOW, AND SAYS SO (lane RED-SUITES-3, 2026-09-21).
+  -- This used to go through `custom.record_update`, and FIELD-TRUTH closed that door:
+  -- `custom.assert_columns_are_defined` refuses a Table that claims a column no Field record
+  -- backs — "Crews says it has a column called "region", and there is no such field." — which
+  -- is RIGHT, and is exactly why `custom.field_declare` now adds the name and the definition
+  -- together. But a Table claiming a name with no definition is the PRECONDITION this block
+  -- needs: the defect it plants is the CLASS the Field row is then written with, and the row
+  -- has to be written through the raw record door for that to be possible at all. So the name
+  -- is put on as the connected role, deliberately, with no product clause asserted while out.
+  perform set_config('role', v_boss, true);
+  set local session_replication_role = 'replica';
+  update custom.record
+     set data = jsonb_set(data, '{fields}',
+                  jsonb_build_array(jsonb_build_object('name','crew_name'),
+                                    jsonb_build_object('name','region')))
+   where organization_id = v_org and id = v_tbl;
+  set local session_replication_role = 'origin';
+  perform set_config('role', 'authenticated', true);
   v_field := custom.record_write(v_org, custom.field_kernel_id(), jsonb_build_object(
     'key','region','label','Region','type','text','multi',false,'dated',false,
     'rules','[]'::jsonb,'config','{}'::jsonb,'source','manual','source_config','{}'::jsonb,
@@ -209,39 +224,48 @@ begin
   -- `custom._options_table_for` is what a list field's choices go through, and it named
   -- no class on either column it writes.
   -- ════════════════════════════════════════════════════════════════════════════
-  declare
-    v_opts uuid;
-    v_bad  integer;
   begin
     -- THROUGH THE CLIENT DOOR, because that is how a person makes a dropdown:
     -- custom.field_declare makes the choices table for a `list` column, and
     -- custom._options_table_for is what it calls.
-    perform custom.record_update(v_org, v_tbl, jsonb_build_object(
-      'fields', jsonb_build_array(jsonb_build_object('name','crew_name'),
-                                  jsonb_build_object('name','region'),
-                                  jsonb_build_object('name','area'))));
-    perform custom.field_declare(v_org, v_tbl, jsonb_build_object(
-      'key','area','label','Area','type','list','multi',false,'dated',false,
-      'rules','[]'::jsonb,'config','{}'::jsonb,'source','manual','source_config','{}'::jsonb,
-      'sensitivity','internal','context_policy','include','applies_to_types','[]'::jsonb,
-      'depends_on','[]'::jsonb, 'options', jsonb_build_array('North','South')));
-    v_opts := (select nullif(f.data -> 'config' ->> 'options_table_id','')::uuid
-                 from custom.applicable_fields(v_org, v_tbl, null) f
-                where f.data ->> 'key' = 'area');
-    if v_opts is null then
-      raise exception '3: the list column named no choices table, so the clause proves nothing';
-    end if;
-    -- The catalogue question again, out of the seat for one SELECT.
+    -- Same precondition, same reason as PART 2 above: the name without the definition, put on
+    -- as the connected role because no client door will do it and the block is about what
+    -- `custom._options_table_for` writes, not about how the name got there.
     perform set_config('role', v_boss, true);
-    select count(*) into v_bad from custom.record r
-     where r.organization_id = v_org and r.table_id = custom.field_kernel_id()
-       and r.data ->> 'entity_definition_id' = v_opts::text
-       and r.data_class <> 'field';
+    set local session_replication_role = 'replica';
+    update custom.record
+       set data = jsonb_set(data, '{fields}',
+                    jsonb_build_array(jsonb_build_object('name','crew_name'),
+                                      jsonb_build_object('name','region'),
+                                      jsonb_build_object('name','area')))
+     where organization_id = v_org and id = v_tbl;
+    set local session_replication_role = 'origin';
     perform set_config('role', 'authenticated', true);
-    if v_bad = 0 then
-      raise exception '3: the choices table wrote its columns as fields, so the fix is still in place';
-    end if;
-    raise notice '3 RED: a dropdown left % second-class column(s) behind', v_bad;
+    -- 🚨 THE DEFECT NOW SURFACES LOUDER, AND THIS BLOCK SAYS SO (lane RED-SUITES-3,
+    -- 2026-09-21). This used to make the dropdown, let it succeed, and then count the
+    -- second-class Field rows it left behind. The undeclared-key guard landed since, and it
+    -- reads a table's columns through `custom.applicable_fields`, which filters on
+    -- `data_class = 'field'` — so the two columns the pre-fix `custom._options_table_for`
+    -- writes WITHOUT a class are invisible to it, and the very next statement, the one that
+    -- writes "North" and "South" into the Choice table, is refused:
+    --     Choice has no field called "key", "title", so there is nowhere to keep those values.
+    -- That is the same defect with a bigger consequence: with the fix removed a person cannot
+    -- MAKE a dropdown at all. The block asserts the refusal, and names its cause, instead of
+    -- asserting a silent count that can no longer be reached.
+    begin
+      perform custom.field_declare(v_org, v_tbl, jsonb_build_object(
+        'key','area','label','Area','type','list','multi',false,'dated',false,
+        'rules','[]'::jsonb,'config','{}'::jsonb,'source','manual','source_config','{}'::jsonb,
+        'sensitivity','internal','context_policy','include','applies_to_types','[]'::jsonb,
+        'depends_on','[]'::jsonb, 'options', jsonb_build_array('North','South')));
+      raise exception '3: the dropdown was made, so the choices table wrote its columns as fields and the fix is still in place';
+    exception when others then
+      get stacked diagnostics v_caught = message_text;
+      if v_caught not like '%has no field called%' then
+        raise exception '3: making a dropdown failed for another reason: "%"', v_caught;
+      end if;
+    end;
+    raise notice '3 RED: with the pre-fix choices body in place a person cannot make a dropdown at all — the two columns it writes carry no class, so custom.applicable_fields cannot see them and the store refuses the choices themselves: "%"', v_caught;
   end;
 end
 $t$;
