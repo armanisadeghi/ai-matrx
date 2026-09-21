@@ -17809,6 +17809,57 @@ export type Database = {
         }
         Relationships: []
       }
+      test_handset_verification: {
+        Row: {
+          attempts: number
+          code_hash: string
+          code_salt: string
+          consumed_at: string | null
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          metadata: Json
+          organization_id: string
+          phone_number: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          code_salt: string
+          consumed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          phone_number: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          code_salt?: string
+          consumed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          phone_number?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -30087,6 +30138,10 @@ export type Database = {
     }
     Functions: {
       assert_safe_file_name: {
+        Args: { p_max_segment?: number; p_raw: string }
+        Returns: string
+      }
+      assert_storable_file_name: {
         Args: { p_max_segment?: number; p_raw: string }
         Returns: string
       }
