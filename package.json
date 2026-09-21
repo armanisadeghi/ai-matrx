@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2100",
+  "version": "0.4.2101",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
@@ -36,6 +36,8 @@
     "check:install-gate:self-test": "node scripts/check-install-gate.mjs --self-test",
     "check:preview-session": "node scripts/check-preview-session.mjs --self-test",
     "check:release-outcome:self-test": "bash scripts/release-outcome.sh --self-test",
+    "worktree:janitor": "bash scripts/worktree-janitor.sh",
+    "worktree:janitor:self-test": "bash scripts/worktree-janitor.sh --self-test",
     "measure:strict": "tsx scripts/measure-strict-flags.ts",
     "start": "next start",
     "lint": "eslint .",

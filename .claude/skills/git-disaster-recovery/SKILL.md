@@ -88,6 +88,14 @@ local work is `git cherry origin/main HEAD`.
 Open one intake worktree from current `origin/main`. All landing goes
 through it. Refresh it from `origin/main` before every land.
 
+Then run the same count in **every sibling repo** under the workspace, and
+list every registered worktree, every local branch, every remote branch
+besides main, and every unregistered directory under `.wt/`. The disease
+is never in one repo: on 2026-09-20 the frontend was the loud one while
+aidream, matrx-extend, matrx-local and common-docs each carried dozens of
+branches and worktrees of their own. One inventory table for all repos is
+what Arman and the other lanes work from.
+
 Report two sentences: what the status line implied, what the patches say.
 Then start step 2 immediately. No approval is needed for anything below
 except a real conflict.
@@ -231,6 +239,13 @@ paths nobody owns. Do not let that pile grow back. Every 30 minutes:
   unique files on main first. Idle or live makes no difference: nothing
   waits in a worktree. A slow filesystem makes `worktree remove` hang: unregister it under
   `.git/worktrees/` and delete the directory in the background.
+- Install the standing guard: matrx-frontend has `pnpm worktree:janitor`
+  (scripts/worktree-janitor.sh, self-tested), run by the release script
+  after every push. It removes every worktree and local branch whose tip is
+  already on `origin/main`, deletes unregistered `.wt/` leftovers, and
+  names the rest with "land it on main and remove it". Port it to any repo
+  that shows the same disease; a guard you cannot demonstrate failing is
+  not a guard, so keep its self-test.
 - The shared-checkout guard reads the whole command line. One `checkout -- .`
   or `add -A` anywhere in a chained command refuses the entire chain before
   any of it runs. Name every path.

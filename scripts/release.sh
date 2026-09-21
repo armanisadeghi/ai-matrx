@@ -298,7 +298,10 @@ ship_build_commit() {  # uses CURRENT_VERSION NEW_VERSION RELEASE_COMMIT_MSG; se
     blob=$(git cat-file -p "$SHIP_BASE_TREE:$VERSION_FILE" \
         | sed "s/^  \"version\": \"${CURRENT_VERSION}\"/  \"version\": \"${NEW_VERSION}\"/" \
         | git hash-object -w --stdin) || return 1
-    git cat-file -p "$blob" | grep -q "^  \"version\": \"${NEW_VERSION}\"" || return 1
+    # Do not use grep -q here: with pipefail, grep can close the pipe before
+    # git cat-file finishes writing package.json and turn a valid blob into a
+    # SIGPIPE failure.
+    git cat-file -p "$blob" | grep "^  \"version\": \"${NEW_VERSION}\"" >/dev/null || return 1
     GIT_INDEX_FILE="$idx" git update-index --cacheinfo "100644,$blob,$VERSION_FILE" || return 1
     tree=$(GIT_INDEX_FILE="$idx" git write-tree) || return 1
     rm -f "$idx"
@@ -559,6 +562,11 @@ else
     after_watch_rollout &
     WATCH_PID=$!
 fi
+
+# ── Worktree janitor: every release sweeps the abandoned agent worktrees and
+# branches (no worktrees, no branches — Arman, 2026-09-20). It only cleans and
+# screams; it always exits 0 and can never affect the release.
+bash "$SCRIPT_DIR/worktree-janitor.sh" >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1 || true
 
 # ── Checks: ONE parallel runner, ONE table, findings as JSON (scripts/checks/run.mjs)
 # Rows come from scripts/run-release-gates.sh --list plus the checks the old
