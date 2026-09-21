@@ -19,6 +19,7 @@ import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { PersistentDOMConnector } from "@/providers/persistance/PersistentDOMConnector";
 import OverlayController from "@/features/overlays/OverlayController";
 import AuthSessionWatcher from "@/components/layout/AuthSessionWatcher";
+import { LinkOrganizationWatcher } from "@/features/organizations/components/LinkOrganizationWatcher";
 import AnnouncementProvider from "@/components/layout/AnnouncementProvider";
 import AdminFeatureProvider from "@/features/admin/AdminFeatureProvider";
 import LazyMessagingIsland from "@/features/shell/islands/LazyMessagingIsland";
@@ -130,6 +131,13 @@ export default function DeferredSingletonCore() {
           land on any route and the person must never have to go find the
           browser themselves. */}
       <CloudBrowserHandoffDeepLink />
+      {/* Render-free. Reads `?org=` — the organization every deep link the
+          platform emits now names — and honours it against the LIVE membership
+          list, announcing a move and refusing a link that is not this
+          account's in words. Global, because a notification's door can land on
+          any route, and the cold-boot half (appContextPolicy) does not run for
+          a link followed while the app is already warm. */}
+      <LinkOrganizationWatcher />
       <AuthSessionWatcher />
       <AnnouncementProvider />
       <AdminFeatureProvider />

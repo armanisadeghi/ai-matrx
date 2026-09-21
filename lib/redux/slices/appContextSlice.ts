@@ -670,11 +670,16 @@ export const appContextPolicy = definePolicy<AppContextState>({
         readSwitchWhenALinkAsks,
         readSignedInAs,
         announceLinkOrganizationDecision,
+        claimLinkOrganizationDecision,
       } = await import("@/lib/organizations/linkOrganizationSession");
+      // Claim the value so the in-session watcher does not decide — and say —
+      // the same link a second time.
+      const linkOrganizationId = readLinkOrganizationFromLocation();
+      const ourLink = claimLinkOrganizationDecision(linkOrganizationId);
       let resolved: Awaited<ReturnType<typeof resolveActiveOrgContext>>;
       try {
         resolved = await resolveActiveOrgContext(identity.userId, {
-          linkOrganizationId: readLinkOrganizationFromLocation(),
+          linkOrganizationId,
           switchWhenALinkAsks: readSwitchWhenALinkAsks(),
           signedInAs: readSignedInAs(),
         });
@@ -700,7 +705,7 @@ export const appContextPolicy = definePolicy<AppContextState>({
       const { unreadableReason, link, ...context } = resolved;
       // Law 4: a move is announced and a refusal is said in words. Fired and
       // not awaited — the boot answer must not wait on a toast module.
-      void announceLinkOrganizationDecision(link, (organizationId, organizationName) => {
+      void announceLinkOrganizationDecision(ourLink ? link : undefined, (organizationId, organizationName) => {
         getStoreSingleton()?.dispatch(
           setOrganization({ id: organizationId, name: organizationName }),
         );

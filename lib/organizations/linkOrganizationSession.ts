@@ -65,6 +65,33 @@ export function readLinkOrganizationFromLocation(): string | null {
     : param.organizationId;
 }
 
+/**
+ * ONE DECISION PER LINK VALUE PER SESSION.
+ *
+ * Two paths can see the same `?org=`: the boot reconciliation
+ * (`appContextPolicy.remote.fetch`, which runs on a cold boot) and the
+ * in-session watcher (`LinkOrganizationWatcher`, which catches a link followed
+ * while the app is already warm and a client-side navigation that the boot
+ * fetch never re-runs for). Whichever gets there first claims the value; the
+ * other says nothing, so nobody reads the same announcement twice.
+ *
+ * Keyed by the raw value, so a SECOND, different link later in the same
+ * session is still decided and still announced.
+ */
+const claimed = new Set<string>();
+
+export function claimLinkOrganizationDecision(raw: string | null): boolean {
+  if (raw === null) return false;
+  if (claimed.has(raw)) return false;
+  claimed.add(raw);
+  return true;
+}
+
+/** Tests and in-place auth swaps only. */
+export function resetLinkOrganizationClaims(): void {
+  claimed.clear();
+}
+
 /** The account this session is signed in as, for the refusal sentence. */
 export function readSignedInAs(): string | null {
   try {
