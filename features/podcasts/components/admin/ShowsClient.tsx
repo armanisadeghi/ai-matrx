@@ -1,24 +1,18 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useTransition } from "react";
+import { useState, useEffect, useMemo, useTransition } from "react";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
-import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Plus,
-  RefreshCw,
-  Search,
   Pencil,
   Trash2,
   Link,
   Mic,
   CheckCircle2,
   Circle,
-  Loader2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,8 +29,7 @@ import { InlineMediaRef } from "@ai-matrx/media/react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { PublicPageLink } from "./PublicPageLink";
 import { podcastShowAdminHref } from "../../utils";
-import { cn } from "@/lib/utils";
-import { MOBILE_TABLE_FROZEN } from "@/components/official/mobile-table/mobileTable";
+import { podcastShowSearchText } from "./shows-table-contract";
 import { pushAppHref, replaceAppHref } from "@/lib/deployment/navigate";
 
 function CopyLinkButton({ slug }: { slug: string }) {
@@ -98,18 +91,6 @@ export function ShowsClient() {
     load();
   }, []);
 
-  const filtered = useMemo(
-    () =>
-      shows.filter(
-        (s) =>
-          s.title.toLowerCase().includes(search.toLowerCase()) ||
-          s.slug.toLowerCase().includes(search.toLowerCase()) ||
-          (s.author ?? "").toLowerCase().includes(search.toLowerCase()) ||
-          idMatchesQuery(s, search),
-      ),
-    [shows, search],
-  );
-
   const handleDeleteConfirm = async () => {
     if (!pendingDeleteId) return;
     setIsDeleting(true);
@@ -124,191 +105,36 @@ export function ShowsClient() {
     }
   };
 
-  const SKELETON_WIDTHS = [
-    ["w-3/5", "w-2/5", "w-4/5", "w-1/2"],
-    ["w-4/5", "w-3/5", "w-2/5", "w-3/4"],
-    ["w-1/2", "w-4/5", "w-3/5", "w-2/3"],
-    ["w-2/3", "w-1/2", "w-4/5", "w-3/5"],
-    ["w-3/4", "w-2/3", "w-1/2", "w-4/5"],
-  ] as const;
+  const columns = useMemo<MatrxColumnDef<PcShow>[]>(() => [
+    { id: "show", header: "Show", accessorFn: (show) => show.title, cell: (show) => {
+      return <div className="flex items-center gap-2"><InlineMediaRef ref={show.image_url ?? null} size={{ width: 32, height: 32 }} fit="cover" rounded="md" fallbackIcon={<Mic className="h-4 w-4 text-muted-foreground" />} className="shrink-0" alt="" /><div className="min-w-0"><EntityRef token="pc_show" id={show.id} name={show.title} href={podcastShowAdminHref(show.id)} showIcon={false} className="max-w-[200px] font-medium" /><p className="text-xs text-muted-foreground">{show.is_published ? "Published" : "Draft"}</p></div></div>;
+    } },
+    { accessorKey: "slug", header: "Slug", cell: (show) => <span className="block max-w-[140px] truncate font-mono text-xs text-muted-foreground">{show.slug}</span> },
+    { id: "author", header: "Author", accessorFn: (show) => show.author ?? "", cell: (show) => <span className="block max-w-[140px] truncate text-sm text-muted-foreground">{show.author ?? "—"}</span> },
+    { accessorKey: "is_published", header: "Published", cell: (show) => show.is_published ? <CheckCircle2 className="h-4 w-4 text-success" /> : <Circle className="h-4 w-4 text-muted-foreground" /> },
+  ], []);
 
   return (
     <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "podcasts_shows", podcast_shows: shows, podcast_shows_search: search })}>
     <>
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b bg-background shrink-0">
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search shows…"
-            className="pl-8 h-8 text-sm"
-          />
-          {isPending && (
-            <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3 w-3 animate-spin text-muted-foreground" />
-          )}
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={load}
-          className="h-8 px-2"
-          title="Refresh"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          size="sm"
-          className="h-8 gap-1.5"
-          onClick={() =>
-            startTransition(() =>
-              pushAppHref(router, "/administration/knowledge/podcasts/shows/new"),
-            )
-          }
-        >
-          <Plus className="h-3.5 w-3.5" />
-          New Show
-        </Button>
-      </div>
-
-      {/* Table */}
-      <div className="flex-1 overflow-auto">
-        <table className={cn("text-sm", MOBILE_TABLE_FROZEN)}>
-          <thead className="sticky top-0 bg-muted/50 border-b z-10">
-            <tr>
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground">
-                Show
-              </th>
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground">
-                Slug
-              </th>
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground">
-                Author
-              </th>
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground w-24">
-                Published
-              </th>
-              <th className="w-28 px-4 py-2" />
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              SKELETON_WIDTHS.map((cols, i) => (
-                <tr key={i} className="border-b">
-                  {cols.map((w, j) => (
-                    <td key={j} className="px-4 py-3">
-                      <div
-                        className={`h-4 bg-muted rounded animate-pulse ${w}`}
-                      />
-                    </td>
-                  ))}
-                </tr>
-              ))
-            ) : filtered.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-16 text-center text-muted-foreground text-sm"
-                >
-                  {search
-                    ? "No shows match your search."
-                    : "No shows yet. Create one to get started."}
-                </td>
-              </tr>
-            ) : (
-              filtered.map((show) => (
-                <tr
-                  key={show.id}
-                  onClick={() =>
-                    startTransition(() =>
-                      pushAppHref(router, `/administration/knowledge/podcasts/shows/${show.id}`),
-                    )
-                  }
-                  className="border-b cursor-pointer group transition-colors hover:bg-muted/40"
-                >
-                  <td className="px-4 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <InlineMediaRef
-                        ref={show.image_url ?? null}
-                        size={{ width: 32, height: 32 }}
-                        fit="cover"
-                        rounded="md"
-                        fallbackIcon={<Mic className="h-4 w-4 text-muted-foreground" />}
-                        className="shrink-0"
-                        alt=""
-                      />
-                      <div className="min-w-0">
-                        {/* THE DOOR LAW: the title is the door (real anchor —
-                            cmd/middle-click, keyboard, context menu), plus the
-                            new-tab + registry peek EntityRef resolves from the
-                            `pc_show` token. The row click stays a convenience. */}
-                        <EntityRef
-                          token="pc_show"
-                          id={show.id}
-                          name={show.title}
-                          href={podcastShowAdminHref(show.id)}
-                          showIcon={false}
-                          className="max-w-[200px] font-medium"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          {show.is_published ? "Published" : "Draft"}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-2.5 text-muted-foreground font-mono text-xs truncate max-w-[140px]">
-                    {show.slug}
-                  </td>
-                  <td className="px-4 py-2.5 text-muted-foreground text-sm truncate max-w-[140px]">
-                    {show.author ?? "—"}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    {show.is_published ? (
-                      <CheckCircle2 className="h-4 w-4 text-success" />
-                    ) : (
-                      <Circle className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <div className="flex items-center justify-end gap-0.5">
-                      <PublicPageLink
-                        slug={show.slug}
-                        label={show.title}
-                        className="opacity-0 group-hover:opacity-100"
-                      />
-                      <CopyLinkButton slug={show.slug} />
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          startTransition(() =>
-                            pushAppHref(router, `/administration/knowledge/podcasts/shows/${show.id}`,
-                            ),
-                          );
-                        }}
-                        className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
-                        title="Edit show"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPendingDeleteId(show.id);
-                        }}
-                        className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
-                        title="Delete"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <MatrxDataTable<PcShow>
+        tableId="admin/podcasts/shows"
+        data={shows}
+        columns={columns}
+        getRowId={(show) => show.id}
+        searchText={podcastShowSearchText}
+        isLoading={isLoading}
+        isFetching={isPending}
+        density="condensed"
+        copy={false}
+        detail={{ enabled: false }}
+        hidePagination
+        coverage={{ noun: "show", answeredBy: "client" }}
+        onRowOpen={(show) => startTransition(() => pushAppHref(router, podcastShowAdminHref(show.id)))}
+        rowActions={(show) => <div className="flex items-center gap-0.5"><PublicPageLink slug={show.slug} label={show.title} /><CopyLinkButton slug={show.slug} /><button type="button" onClick={() => startTransition(() => pushAppHref(router, podcastShowAdminHref(show.id)))} className="p-1.5 text-muted-foreground hover:text-foreground" title="Edit show"><Pencil className="h-3.5 w-3.5" /></button><button type="button" onClick={() => setPendingDeleteId(show.id)} className="p-1.5 text-muted-foreground hover:text-destructive" title="Delete"><Trash2 className="h-3.5 w-3.5" /></button></div>}
+        emptyState={{ title: search ? "No shows match your search." : "No shows yet. Create one to get started." }}
+        toolbar={{ title: "Shows", search: true, searchValue: search, onSearchChange: setSearch, searchPlaceholder: "Search shows…", refresh: { onRefresh: load, label: "Refresh" }, add: { onAdd: () => startTransition(() => pushAppHref(router, "/administration/knowledge/podcasts/shows/new")) } }}
+      />
 
       <AlertDialog
         open={!!pendingDeleteId}

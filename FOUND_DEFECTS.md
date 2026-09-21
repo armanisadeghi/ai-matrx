@@ -15,6 +15,33 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D344 — the user-facing mandate console can show a job but never run one, and a mandate GROUP has no page and no description anywhere (2026-09-21)
+
+Walked as `admin@admin.com` on the two Personal Staff jobs (`/mandates/personal_staff.front_line`,
+`/mandates/personal_staff.escalation`). Two gaps, both in the shared mandates UI, both too large to
+take inside a feature task:
+
+- **No way to run a job from `/mandates/[mandateKey]`.** `WORKSPACE_TABS` marks `test` as
+  `admin: true` (`features/mandates/workspace/MandateWorkspace.tsx:169`) and `authoring` is
+  `host === "admin-route"` (`:484`), so the Test tab — the "Run once" form and the saved test cases,
+  `features/mandates/admin/MandateTestBench.tsx` + `TryItNowPanel.tsx` — exists only at
+  `/administration/mandates/[mandateKey]`. The user-facing console therefore describes a job's
+  inputs in full and offers no door to try it. Worse on the admin route for a non-super-admin:
+  `AdminControls` returns `null` (`features/mandates/admin/AdminMandateWorkspacePage.tsx:274`) while
+  the tab still renders, so Test, Source & Usage and Diagnostics are clickable tabs with an empty
+  body — a dead control, which law 4 forbids. Fix: either mount the bench on the core route behind
+  the same super-admin check that already gates `runMandateAdHocTest`, or hide the tabs whose body
+  will be null. Decision-gated on whether "run this job" is a user-console capability at all.
+- **A mandate group is a facet, not a place.** The key's first segment (`personal_staff`) is parsed
+  once (`features/mandates/mandate-key.ts:74`) and surfaced only as a filter facet
+  (`features/mandates/browse/listConfig.tsx:129`) and a property row on the detail page
+  (`MandateWorkspace.tsx:628`). There is no group route, no group title and no group description in
+  the frontend, the DB or the python declarations — `declare_mandate_family` in
+  `aidream/services/mandates/carriers.py:167` registers a prefix and a member roster and carries
+  neither. So there is nowhere to write "here is how these two jobs work together", which is the
+  first thing a person opening a family of jobs needs. Workaround used meanwhile: the per-mandate
+  Notes tab (`agent.mandate_note`), which is visible on both hosts.
+
 ### D343 — Two `features/shell` jest suites are red on `main`, and one of them says the shell docs lie (2026-09-21)
 
 Found red before any of 2026-09-21's shell work, unrelated to it, still red:
