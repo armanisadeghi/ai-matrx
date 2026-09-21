@@ -92,7 +92,9 @@ export async function archiveOrganization(
     {
       p_org: organizationId,
       p_confirm_name: confirmName,
-      p_reason: reason && reason.trim() ? reason.trim() : null,
+      // The door's own argument default is null; omitting it says the same
+      // thing and matches the generated optional-argument type.
+      p_reason: reason && reason.trim() ? reason.trim() : undefined,
     },
   );
   if (error) throw pgErrorToError(error);
