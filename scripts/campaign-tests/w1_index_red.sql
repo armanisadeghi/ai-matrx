@@ -81,7 +81,7 @@ begin
   perform set_config('app.actor_system', 'campaign-test/w1_index_red', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W1-INDEX RED', 'zz-w1-index-red-' || substr(v_org::text, 1, 8), 'ZWR', c_admin);
+  values (v_org, 'Greenline Landscaping Crew', 'greenline-landscaping-' || substr(v_org::text, 1, 8), 'GLC', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -120,12 +120,12 @@ begin
   -- ── THE TABLE AND ITS EIGHT INDEXED COLUMNS, all asked for by a PERSON: declared with
   --    `custom.field_declare` and promoted with `custom.field_update`.
   v_table := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'W1-INDEX RED', 'slug', 'zz_w1_index_red', 'type', 'entity',
+    'name', 'W1-INDEX RED', 'slug', 'greenline_jobs', 'type', 'entity',
     'label_singular', 'Thing', 'label_plural', 'Things', 'title_field', 'code',
     'display', 'page', 'weight', 'light', 'ordered', false, 'row_order', 'sorted',
     'default_sort', '[]'::jsonb, 'agent_writable', true, 'retention_days', 365,
     'fields', jsonb_build_array(jsonb_build_object('name', 'code')) ||
-              (select jsonb_agg(jsonb_build_object('name', 'zz_p' || g)) from generate_series(2, 9) g),
+              (select jsonb_agg(jsonb_build_object('name', 'job_tag_' || g)) from generate_series(2, 9) g),
     'parent_id', v_home::text));
   v_fid := custom.field_declare(v_org, v_table, jsonb_build_object(
     'key', 'code', 'label', 'Code', 'plain', 'text', 'sort', 10));
@@ -133,7 +133,7 @@ begin
   for v_n in 2..8 loop
     perform custom.field_update(v_org,
       custom.field_declare(v_org, v_table, jsonb_build_object(
-        'key', 'zz_p' || v_n, 'label', 'P' || v_n, 'plain', 'text', 'sort', v_n)),
+        'key', 'job_tag_' || v_n, 'label', 'P' || v_n, 'plain', 'text', 'sort', v_n)),
       jsonb_build_object('promoted', true));
   end loop;
   select count(*) into v_n from custom.applicable_fields(v_org, v_table, null) f
@@ -151,7 +151,7 @@ begin
   -- refused, from the same seat, on the same Table.
   perform custom.field_update(v_org,
     custom.field_declare(v_org, v_table, jsonb_build_object(
-      'key', 'zz_p9', 'label', 'P9', 'plain', 'text', 'sort', 9)),
+      'key', 'job_tag_9', 'label', 'P9', 'plain', 'text', 'sort', 9)),
     jsonb_build_object('promoted', true));
   select count(*) into v_n from custom.applicable_fields(v_org, v_table, null) f
    where (f.data ->> 'promoted')::boolean;
@@ -167,7 +167,7 @@ begin
   -- `custom.promoted_value_path` and `custom.promoted_index_expr` are the server lane's own
   -- map of where an index goes, with no client grant and no door row.
   perform set_config('role', v_boss, true);
-  v_json := jsonb_build_object('key', 'zz_derived', 'type', 'text', 'compute_on', 'read');
+  v_json := jsonb_build_object('key', 'crew_hours', 'type', 'text', 'compute_on', 'read');
   if custom.promoted_index_expr(v_json) is not null then
     raise exception 'RED 2 fixture is wrong: a derived Field already answers an expression';
   end if;
@@ -221,7 +221,7 @@ begin
   perform set_config('role', v_boss, true);
   set local lock_timeout = '60s';
   set local statement_timeout = '600s';
-  v_name := 'zz_red_unrenamed';
+  v_name := 'greenline_unrenamed_code_idx';
   execute format('create unique index %I on custom.record (organization_id, ((data->>''code''))) where table_id = %L::uuid and deleted_at is null',
                  v_name, v_table);
   perform set_config('role', 'authenticated', true);
@@ -237,7 +237,7 @@ begin
   if v_msg is null then
     raise exception 'RED 4 fixture is wrong: the duplicate landed';
   end if;
-  if position('zz_red_unrenamed' in v_msg) > 0 then
+  if position('greenline_unrenamed_code_idx' in v_msg) > 0 then
     raise exception 'RED 4 FAILED TO GO RED: Postgres named the partition index after its parent, so the defect this fix closes does not exist here. Message: %', v_msg;
   end if;
   v_red := v_red + 1;
@@ -253,7 +253,7 @@ begin
   v_msg := null;
   begin
     perform custom.field_declare(v_org, v_table, jsonb_build_object(
-      'key', 'zz_sneak', 'label', 'Sneaked in', 'plain', 'text', 'sort', 99));
+      'key', 'crew_note', 'label', 'Sneaked in', 'plain', 'text', 'sort', 99));
   exception when others then
     get stacked diagnostics v_msg = message_text;
   end;

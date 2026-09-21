@@ -70,7 +70,7 @@ declare
 begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W4-ANON Green', 'zz-w4-anon-green-' || substr(v_org::text, 1, 8), 'ZAG', c_admin);
+  values (v_org, 'Trailhead & Torch Journeys', 'trailhead-torch-journeys-' || substr(v_org::text, 1, 8), 'TTJ', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -113,7 +113,7 @@ declare
   v_t   uuid;
 begin
   v_t := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'ZZ ANON Enquiry', 'slug', 'zz_anon_enquiry', 'type', 'entity', 'display', 'list',
+    'name', 'Trip Enquiries', 'slug', 'trip_enquiries', 'type', 'entity', 'display', 'list',
     'label_singular', 'Enquiry', 'label_plural', 'Enquiries', 'ordered', false, 'weight', 'light',
     'retention_days', 365, 'row_order', 'sorted', 'agent_writable', true,
     'parent_id', current_setting('zz.home'), 'title_field', 'name', 'default_sort', '[]'::jsonb,
@@ -134,7 +134,7 @@ insert into custom.anon_form (organization_id, table_id, slug, title,
                               exposed_field_keys, required_field_keys,
                               rate_limit_per_window, rate_limit_window)
 values (current_setting('zz.org')::uuid, current_setting('zz.tenq')::uuid,
-        'zz-anon-green', 'Contact us',
+        'plan-my-trip', 'Plan my trip',
         '["name","message"]'::jsonb, '["name"]'::jsonb,
         2, interval '1 hour')
 returning set_config('zz.form', id::text, true) as form_id;
@@ -443,13 +443,13 @@ begin
   -- network actually produces.
   for v_i in 1 .. 3 loop
     v_ids := v_ids || custom.anon_write(v_secret, 'https://example.test',
-                                        '{"name":"Offline A"}'::jsonb, 'zz-client-key-a');
+                                        '{"name":"Offline A"}'::jsonb, 'trailhead-website-capture');
     v_ids := v_ids || custom.anon_write(v_secret, 'https://example.test',
-                                        '{"name":"Offline B"}'::jsonb, 'zz-client-key-b');
+                                        '{"name":"Offline B"}'::jsonb, 'partner-portal-key');
   end loop;
   -- `custom.anon_replay` is the write path's own ledger and carries no client grant.
   select coalesce(sum(replays), 0) into v_replays from custom.anon_replay
-   where organization_id = v_org and client_key in ('zz-client-key-a', 'zz-client-key-b');
+   where organization_id = v_org and client_key in ('trailhead-website-capture', 'partner-portal-key');
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
 
@@ -457,7 +457,7 @@ begin
   -- DOOR, which is where a person would notice six attempts had become two.
   select count(*) into v_rows
     from custom.anon_submissions(v_org, current_setting('zz.tenq')::uuid, null, 200, 0) s
-   where s.client_key in ('zz-client-key-a', 'zz-client-key-b');
+   where s.client_key in ('trailhead-website-capture', 'partner-portal-key');
   if v_rows <> 2 then
     raise exception 'DOOR-21 FAIL: two client-minted ids replayed three times each produced % submission rows, and the answer is 2', v_rows;
   end if;
@@ -480,7 +480,7 @@ declare
   c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
   v_org    uuid := current_setting('zz.org')::uuid;
   v_boss   text := current_setting('zz.boss');
-  v_secret text := 'zz-webhook-secret';
+  v_secret text := 'torchlight-partner-secret';
   v_id     uuid;
   v_sub    record;
 begin
@@ -492,23 +492,23 @@ begin
   perform set_config('request.jwt.claims', '', true);
   insert into custom.anon_inbound (organization_id, table_id, channel, address, secret_hash, source)
   values (v_org, current_setting('zz.tenq')::uuid, 'webhook',
-          'zz-green-hook', encode(digest(v_secret, 'sha256'), 'hex'), 'webhook');
+          'partner-booking-webhook', encode(digest(v_secret, 'sha256'), 'hex'), 'webhook');
 
   -- THE POSITIVE CONTROL: the right secret lands a submission.
-  v_id := custom.anon_inbound_land('zz-green-hook', v_secret,
+  v_id := custom.anon_inbound_land('partner-booking-webhook', v_secret,
                                    '{"name":"From a webhook"}'::jsonb,
                                    '{"headers":{"x-source":"zapier"},"body":"raw"}'::jsonb);
 
   -- THE WRONG SECRET IS REFUSED.
   begin
-    perform custom.anon_inbound_land('zz-green-hook', 'wrong', '{"name":"Nope"}'::jsonb);
+    perform custom.anon_inbound_land('partner-booking-webhook', 'wrong', '{"name":"Nope"}'::jsonb);
     raise exception 'DOOR-19 FAIL: the wrong shared secret landed a submission';
   exception when sqlstate '42501' then null;
   end;
 
   -- AN UNKNOWN ADDRESS IS REFUSED WITHOUT CONFIRMING ANYTHING ABOUT IT.
   begin
-    perform custom.anon_inbound_land('zz-does-not-exist', v_secret, '{"name":"Nope"}'::jsonb);
+    perform custom.anon_inbound_land('no-such-inbound-address', v_secret, '{"name":"Nope"}'::jsonb);
     raise exception 'DOOR-19 FAIL: an unknown inbound address accepted a delivery';
   exception when sqlstate '42501' then null;
   end;
@@ -554,7 +554,7 @@ begin
   -- it takes EDITOR on the Table and writes a RECORD — and that is exactly why it is asked from
   -- the seat, where `custom.has_visibility` actually decides.
   perform set_config('request.jwt.claims', c_admin_j, true);
-  v_a := custom.anon_capture(v_org, 'zz-capture-key-1', current_setting('zz.tenq')::uuid,
+  v_a := custom.anon_capture(v_org, 'roadshow-kiosk-capture', current_setting('zz.tenq')::uuid,
                              '{"name":"Captured in the van","message":"no signal"}'::jsonb,
                              'field-tablet', now());
   if v_a is null then
@@ -564,13 +564,13 @@ begin
   -- THE REPLAY, twice: the same client-minted key comes back as the same record, whatever the
   -- device believes. A reconnect that cannot tell a retry from a second capture is how one
   -- enquiry becomes three.
-  v_b := custom.anon_capture(v_org, 'zz-capture-key-1', current_setting('zz.tenq')::uuid,
+  v_b := custom.anon_capture(v_org, 'roadshow-kiosk-capture', current_setting('zz.tenq')::uuid,
                              '{"name":"Captured in the van","message":"no signal"}'::jsonb,
                              'field-tablet', now());
   if v_b <> v_a then
     raise exception 'DOOR-21 FAIL: replaying one client-minted capture key returned % and then %', v_a, v_b;
   end if;
-  v_b := custom.anon_capture(v_org, 'zz-capture-key-1', current_setting('zz.tenq')::uuid,
+  v_b := custom.anon_capture(v_org, 'roadshow-kiosk-capture', current_setting('zz.tenq')::uuid,
                              '{"name":"Captured in the van","message":"no signal"}'::jsonb,
                              'field-tablet', now());
   if v_b <> v_a then
@@ -593,7 +593,7 @@ begin
   -- because a signed-in editor is not a stranger. Asked of the triage door, from the seat.
   select count(*) into v_rows
     from custom.anon_submissions(v_org, current_setting('zz.tenq')::uuid, null, 200, 0) s
-   where s.client_key = 'zz-capture-key-1';
+   where s.client_key = 'roadshow-kiosk-capture';
   if v_rows <> 0 then
     raise exception 'DOOR-21 FAIL: a signed-in person''s capture left % row(s) in the quarantine — quarantine is for callers with no account', v_rows;
   end if;

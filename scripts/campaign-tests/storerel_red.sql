@@ -48,7 +48,8 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ STORE-REL Red', 'zz-storerel-red-' || substr(v_org::text, 1, 8), 'ZSR', c_admin);
+  values (v_org, 'Kessler Lab for Applied Microbial Ecology — Compost Annex',
+          'kessler-compost-annex-' || substr(v_org::text, 1, 8), 'KLC', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active'),
          (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -57,40 +58,40 @@ begin
          ('custom', 'member_default_visibility', 'organization', v_org, v_org, '"shared_only"'::jsonb, 'campaign-test/storerel_red');
 
   insert into custom.record (organization_id, table_id, data)
-  values (v_org, null, jsonb_build_object('name','ZZ HQ')) returning id into v_home;
+  values (v_org, null, jsonb_build_object('name','Kessler Lab — Main Laboratory')) returning id into v_home;
   v_proj := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Project','slug','zz_storerel_r_project','type','entity',
-    'label_singular','Project','label_plural','Projects','title_field','pname',
+    'name','Experiment','slug','experiments','type','entity',
+    'label_singular','Experiment','label_plural','Experiments','title_field','pname',
     'display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','pname')), 'parent_id', v_home::text));
-  v_x := custom.record_write(v_org, v_proj, jsonb_build_object('pname','Project X','parent_id',v_home::text));
-  v_y := custom.record_write(v_org, v_proj, jsonb_build_object('pname','Project Y','parent_id',v_home::text));
+  v_x := custom.record_write(v_org, v_proj, jsonb_build_object('pname','Riparian nitrogen amendment trial','parent_id',v_home::text));
+  v_y := custom.record_write(v_org, v_proj, jsonb_build_object('pname','Anaerobic sulfate reducer screen','parent_id',v_home::text));
   v_risk := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Risk','slug','zz_storerel_r_risk','type','entity',
-    'label_singular','Risk','label_plural','Risks','title_field','rtitle',
+    'name','Measurement','slug','measurements','type','entity',
+    'label_singular','Measurement','label_plural','Measurements','title_field','rtitle',
     'display','list','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','rtitle')), 'parent_id', v_home::text));
   perform custom.home_add(v_org, v_risk, v_x);
   v_inc := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Incident','slug','zz_storerel_r_incident','type','entity',
-    'label_singular','Incident','label_plural','Incidents','title_field','ititle',
+    'name','Protocol deviation','slug','protocol_deviations','type','entity',
+    'label_singular','Protocol deviation','label_plural','Protocol deviations','title_field','ititle',
     'display','list','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','ititle')), 'parent_id', v_y::text));
-  v_r1 := custom.record_write(v_org, v_risk, jsonb_build_object('rtitle','X risk','parent_id',v_x::text));
+  v_r1 := custom.record_write(v_org, v_risk, jsonb_build_object('rtitle','nifH copies per gram, week 4','parent_id',v_x::text));
 
   -- ── BLOCK 1 (T7) — the ordinary write door leaves the edge nameless, so restrict does nothing.
   v_sup_t := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Supplier','slug','zz_storerel_r_sup','type','entity',
-    'label_singular','S','label_plural','Ss','title_field','sname',
+    'name','Reagent supplier','slug','reagent_suppliers','type','entity',
+    'label_singular','Reagent supplier','label_plural','Reagent suppliers','title_field','sname',
     'display','list','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','sname')), 'parent_id', v_home::text));
   v_po_t := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ PO','slug','zz_storerel_r_po','type','entity',
-    'label_singular','P','label_plural','Ps','title_field','ponum',
+    'name','Reagent order','slug','reagent_orders','type','entity',
+    'label_singular','Reagent order','label_plural','Reagent orders','title_field','ponum',
     'display','list','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','ponum'), jsonb_build_object('name','supplier')),
@@ -103,7 +104,7 @@ begin
       'context_policy','include','applies_to_types','[]'::jsonb,'entity_definition_id',v_po_t,
       'relation_target', v_sup_t, 'relation_max', 1, 'on_target_delete', 'restrict'))
     returning id into v_f_sup;
-  v_sup := custom.record_write(v_org, v_sup_t, jsonb_build_object('sname','Cascade Irrigation Supply','parent_id',v_home::text));
+  v_sup := custom.record_write(v_org, v_sup_t, jsonb_build_object('sname','Meridian Molecular Reagents','parent_id',v_home::text));
   v_po  := custom.record_write(v_org, v_po_t, jsonb_build_object('ponum','PO-1','supplier',v_sup::text,'parent_id',v_home::text));
   select count(*) into v_n from platform.associations a
    where a.source_id = v_po and a.role = 'supplier' and a.relation_field_id is not null and a.deleted_at is null;
@@ -127,7 +128,7 @@ begin
   end if;
 
   -- ── BLOCK 3 (T3) — the second call SILENTLY MOVES the record.
-  v_cls := custom.record_write(v_org, v_risk, jsonb_build_object('rtitle','Class 101'));
+  v_cls := custom.record_write(v_org, v_risk, jsonb_build_object('rtitle','Total organic carbon, replicate 3'));
   perform custom.relation_own(v_org, v_x, v_cls);
   v_caught := null;
   begin perform custom.relation_own(v_org, v_y, v_cls); exception when others then v_caught := sqlerrm; end;
@@ -159,8 +160,8 @@ begin
 
   -- ── BLOCK 5 (T5) — the read door strips the alternates and the merged id resolves nowhere.
   v_per_t := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Person','slug','zz_storerel_r_person','type','entity',
-    'label_singular','Person','label_plural','People','title_field','pname',
+    'name','Researcher','slug','researchers','type','entity',
+    'label_singular','Researcher','label_plural','Researchers','title_field','pname',
     'display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','pname'), jsonb_build_object('name','phone')),
@@ -206,4 +207,4 @@ $t$;
 rollback;
 
 select count(*) as organizations_left_behind
-  from iam.organizations o where o.name like 'ZZ STORE-REL%';
+  from iam.organizations o where o.slug like 'kessler-compost-annex-%';

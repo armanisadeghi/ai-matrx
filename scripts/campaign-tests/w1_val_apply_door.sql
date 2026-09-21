@@ -74,7 +74,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W1-VAL door', 'zz-w1-val-door-' || substr(v_org::text, 1, 8), 'ZVD', c_admin);
+  values (v_org, 'Ridgeline Physical Therapy', 'ridgeline-physical-therapy-' || substr(v_org::text, 1, 8), 'RPT', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -85,7 +85,7 @@ begin
   values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_val_apply_door');
   -- A Home has no client door of its own.
   insert into custom.record (organization_id, table_id, data)
-  values (v_org, null, jsonb_build_object('name', 'W1-VAL door HQ'))
+  values (v_org, null, jsonb_build_object('name', 'Ridgeline Physical Therapy — Clinic'))
   returning id into v_home;
 
   -- ════════════════════════════════════════════════════════════════════════════
@@ -110,22 +110,22 @@ begin
   -- A declared Table with one declared Field, so the validator below the door has something
   -- to check and C is a real refusal rather than an empty pass.
   v_table := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'W1-VAL door', 'slug', 'zz_wvd_site', 'type', 'entity',
-    'label_singular', 'Door test', 'label_plural', 'Door tests',
-    'title_field', 'site_name', 'display', 'page', 'weight', 'light',
+    'name', 'Patients', 'slug', 'patients', 'type', 'entity',
+    'label_singular', 'Patient', 'label_plural', 'Patients',
+    'title_field', 'full_name', 'display', 'page', 'weight', 'light',
     'ordered', false, 'row_order', 'sorted', 'default_sort', '[]'::jsonb,
     'agent_writable', true, 'retention_days', 365,
-    'fields', jsonb_build_array(jsonb_build_object('name','site_name')),
+    'fields', jsonb_build_array(jsonb_build_object('name','full_name')),
     'parent_id', v_home::text));
   perform custom.field_declare(v_org, v_table, jsonb_build_object(
-    'key','site_name','label','Site name','plain','text'));
+    'key','full_name','label','Full name','plain','text'));
 
   -- ── A. THE POSITIVE CONTROL: a person writes, with the switch ON, and it lands. ────
   if not coalesce((platform.unified_data_store_state(v_org) ->> 'switched_on')::boolean, false) then
     raise exception 'A: this organization''s store reads OFF before anything was turned off';
   end if;
-  v_rec := custom.record_write(v_org, v_table, jsonb_build_object('site_name', 'North yard'));
-  if v_rec is null or (custom.read_record(v_org, v_rec, true) ->> 'site_name') <> 'North yard' then
+  v_rec := custom.record_write(v_org, v_table, jsonb_build_object('full_name', 'Nora Castellan'));
+  if v_rec is null or (custom.read_record(v_org, v_rec, true) ->> 'full_name') <> 'Nora Castellan' then
     raise exception 'A FAILED: the person''s valid write did not land through custom.record_write.';
   end if;
   raise notice 'A. a signed-in person writes with the switch ON and it LANDS, validated, and reads back through the read door (record %).', v_rec;
@@ -137,7 +137,7 @@ begin
   end if;
 
   begin
-    perform custom.record_write(v_org, v_table, jsonb_build_object('site_name', 'South yard'));
+    perform custom.record_write(v_org, v_table, jsonb_build_object('full_name', 'Devon Ashworth'));
     raise exception 'B FAILED: a record was written into a store whose switch is off. The door is not there.';
   exception when others then
     get stacked diagnostics v_msg = message_text, v_state = returned_sqlstate, v_hint = pg_exception_hint;
@@ -157,7 +157,7 @@ begin
   -- at the same door, naming the same switch. A body that returned NEW while the switch is
   -- off would let this one land, unvalidated, in a store that is supposed to be closed.
   begin
-    perform custom.record_write(v_org, v_table, jsonb_build_object('site_name', 12));
+    perform custom.record_write(v_org, v_table, jsonb_build_object('full_name', 12));
     raise exception 'C FAILED: an invalid document landed while the switch is off — the switch is removing a check.';
   exception when others then
     get stacked diagnostics v_msg = message_text, v_state = returned_sqlstate;
@@ -176,7 +176,7 @@ begin
   end if;
   v_caught := null;
   begin
-    perform custom.record_write(v_org, v_table, jsonb_build_object('site_name', 12));
+    perform custom.record_write(v_org, v_table, jsonb_build_object('full_name', 12));
   exception when others then v_caught := sqlerrm;
   end;
   if v_caught is null then
@@ -185,7 +185,7 @@ begin
   if v_caught like '%switched off%' then
     raise exception 'C FAILED: with the store ON the refusal still blames the switch: %', v_caught;
   end if;
-  if custom.record_write(v_org, v_table, jsonb_build_object('site_name', 'East yard')) is null then
+  if custom.record_write(v_org, v_table, jsonb_build_object('full_name', 'Priya Vantana')) is null then
     raise exception 'C FAILED: with the store ON a valid write was refused, so the door refuses everything';
   end if;
   raise notice 'C. switch back ON — the same invalid document is refused by the VALIDATOR ("%"), and the valid one lands. The switch closes the store; it removes no check.', left(v_caught, 110);
@@ -203,7 +203,7 @@ begin
   if v_caught is null then
     raise exception 'D FAILED: test@test.com changed the shape of a table she is not an admin of';
   end if;
-  if (custom.read_record(v_org, v_rec, true) ->> 'site_name') <> 'North yard' then
+  if (custom.read_record(v_org, v_rec, true) ->> 'full_name') <> 'Nora Castellan' then
     raise exception 'D FAILED: the record shared with test@test.com at viewer does not read back for her';
   end if;
   perform set_config('request.jwt.claims', c_admin_j, true);

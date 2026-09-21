@@ -55,20 +55,20 @@ begin
     raise exception 'this harness did not take the seat — current_user is %', current_user;
   end if;
 
-  v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Profile Home'));
+  v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Peak Ridge Roofing — Main Office'));
   v_acct := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WP3 Account','slug','zz_wp3_acct_' || substr(md5(random()::text),1,8),'type','entity',
+    'name','Accounts','slug','accounts_' || substr(md5(random()::text),1,8),'type','entity',
     'label_singular','Account','label_plural','Accounts','title_field','title','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','title')), 'parent_id', v_home::text));
   perform custom.field_declare(v_org, v_acct, jsonb_build_object('label','Title','key','title','type','text'));
   for i in 1..10 loop
-    v_accts := v_accts || custom.record_write(v_org, v_acct, jsonb_build_object('title','Account ' || i));
+    v_accts := v_accts || custom.record_write(v_org, v_acct, jsonb_build_object('title','PRR-2026-' || lpad((100 + i)::text, 4, '0')));
   end loop;
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WP3 Deal','slug','zz_wp3_deal_' || substr(md5(random()::text),1,8),'type','entity',
+    'name','Deals','slug','deals_' || substr(md5(random()::text),1,8),'type','entity',
     'label_singular','Deal','label_plural','Deals','title_field','deal','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',

@@ -480,22 +480,22 @@ describe("a guarded body must READ its guard (ATTACK-6 finding 2, second half)",
 describe("the schema-`custom` exemption does not cover a RETURNS TRIGGER function", () => {
   // Postgres resolves a trigger's function by OID at fire time, not by schema
   // privilege — a `custom.*` function already bound with `CREATE TRIGGER … ON
-  // platform.associations … EXECUTE FUNCTION custom.zz_hook()` (a7-02) is a live path
+  // platform.associations … EXECUTE FUNCTION custom.job_status_sync()` (a7-02) is a live path
   // the moment that trigger exists, so revoking schema `custom` stops nothing. A LATER
   // file that replaces that function's body must still read its guard, exactly as if
   // it were outside `custom`.
   const HEAD = "-- target: branch,production\n-- additive: yes\n-- guard: custom/system_enabled\n";
   const TRIGGER_BASED_ON =
-    "-- based-on: custom.zz_hook() " +
+    "-- based-on: custom.job_status_sync() " +
     "0000000000000000000000000000000000000000000000000000000000000000\n";
   const triggerFn = (inner: string) =>
-    `create or replace function custom.zz_hook() returns trigger ` +
+    `create or replace function custom.job_status_sync() returns trigger ` +
     `language plpgsql as $$ begin ${inner} return new; end $$;\n`;
   const PROJECTION_BASED_ON =
-    "-- based-on: custom.zz_projection(uuid) " +
+    "-- based-on: custom.job_summary_projection(uuid) " +
     "0000000000000000000000000000000000000000000000000000000000000000\n";
   const projectionFn =
-    "create or replace function custom.zz_projection(p_organization_id uuid) returns jsonb " +
+    "create or replace function custom.job_summary_projection(p_organization_id uuid) returns jsonb " +
     "language sql stable as $$ select '{}'::jsonb $$;\n";
 
   it("refuses a custom.* RETURNS TRIGGER replacement whose body never names its guard", () => {
@@ -567,9 +567,9 @@ describe("ATTACK-7 finding 2 — `-- chair-step:` waives nothing on a header tha
 describe("ATTACK-7 finding 3 — a new trigger on a live table must name its guard", () => {
   const HEAD = "-- target: branch,production\n-- additive: yes\n-- guard: custom/system_enabled\n";
   const fn = (inner: string) =>
-    `create function custom.zz_hook() returns trigger language plpgsql as $$ begin ${inner} return new; end $$;\n`;
+    `create function custom.job_status_sync() returns trigger language plpgsql as $$ begin ${inner} return new; end $$;\n`;
   const trg = (table: string) =>
-    `create trigger zz_hook_trg before insert on ${table} for each row execute function custom.zz_hook();\n`;
+    `create trigger job_status_sync_trg before insert on ${table} for each row execute function custom.job_status_sync();\n`;
 
   it("refuses the ATTACK-7 probe: a trigger on platform.associations whose file never names the knob", () => {
     let code = "";
@@ -588,7 +588,7 @@ describe("ATTACK-7 finding 3 — a new trigger on a live table must name its gua
   });
 
   it("exempts schema `custom`, which nothing reads until the switch", () => {
-    expect(judge(HEAD + fn("") + trg("custom.zz_thing"))).toBeTruthy();
+    expect(judge(HEAD + fn("") + trg("custom.job_widget"))).toBeTruthy();
   });
 
   it("treats an UNQUALIFIED table as outside custom — search_path decides it at run time", () => {
@@ -598,7 +598,7 @@ describe("ATTACK-7 finding 3 — a new trigger on a live table must name its gua
 
 describe("ATTACK-7 finding 3 — platform.entity_types is a branch fixture, not a production mint", () => {
   const HEAD = "-- target: branch,production\n-- additive: yes\n-- guard: custom/system_enabled\n";
-  const INSERT = "insert into platform.entity_types (token, rls_variant) values ('custom:zz', 'entity');\n";
+  const INSERT = "insert into platform.entity_types (token, rls_variant) values ('custom:job_status', 'entity');\n";
 
   it("refuses the INSERT at --target production", () => {
     expect(() => judge(HEAD + INSERT, "production")).toThrow(/MINTS A LIVE ENTITY TOKEN/);
@@ -610,7 +610,7 @@ describe("ATTACK-7 finding 3 — platform.entity_types is a branch fixture, not 
 
   it("still admits an INSERT into the knob register at both targets", () => {
     const knob =
-      "insert into platform.feature_knob (feature, key, value) values ('custom', 'zz', 'false'::jsonb);\n";
+      "insert into platform.feature_knob (feature, key, value) values ('custom', 'job_status_flag', 'false'::jsonb);\n";
     expect(judge(HEAD + knob, "production")).toBeTruthy();
     expect(judge(HEAD + knob, "branch")).toBeTruthy();
   });
@@ -685,7 +685,7 @@ describe("CHAIR RULING 2026-09-17 — the custom-data INSERT, bounded four ways"
       code = (e as TargetRefusal).code;
     }
     expect(code).toBe("production-no-guard");
-    const foreign = "-- target: branch,production\n-- additive: yes\n-- guard: platform/zz_knob\n";
+    const foreign = "-- target: branch,production\n-- additive: yes\n-- guard: platform/job_status_knob\n";
     expect(refusal(foreign + VALUES)).toContain("custom-data INSERT is admitted only under");
   });
 

@@ -74,7 +74,7 @@ declare
 begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W4-AGG Red', 'zz-w4-agg-red-' || substr(v_org::text, 1, 8), 'ZWA', c_admin);
+  values (v_org, 'Meridian Software', 'meridian-software-' || substr(v_org::text, 1, 8), 'MSW', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -107,7 +107,7 @@ begin
   raise notice 'PART 0 PASSED — the seat is `authenticated`, the ladder sees a client, and custom.record is not readable from it.';
 
   v_tdeal := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'ZZ A Deal', 'slug', 'zz_a_deal', 'type', 'entity', 'display', 'list',
+    'name', 'Deals', 'slug', 'deals', 'type', 'entity', 'display', 'list',
     'label_singular', 'Deal', 'label_plural', 'Deals', 'ordered', false, 'weight', 'light',
     'retention_days', 365, 'row_order', 'sorted', 'agent_writable', true,
     'parent_id', v_home::text, 'title_field', 'title', 'default_sort', '[]'::jsonb,
@@ -135,12 +135,12 @@ begin
   -- assert nothing; RED 3 and RED 4 are what read them.
   perform set_config('role', v_boss, true);
   insert into platform.saved_view (name, surface_key, organization_id, definition, visibility)
-  values ('ZZ A Open deals', 'custom/records', v_org,
+  values ('Open deals', 'custom/records', v_org,
           jsonb_build_object('table_id', v_tdeal, 'filters', jsonb_build_object('status', 'open')),
           'internal'::platform.visibility)
   returning id into v_open;
   insert into platform.saved_view (name, surface_key, organization_id, definition, visibility)
-  values ('ZZ A Everything', 'custom/records', v_org,
+  values ('All deals', 'custom/records', v_org,
           jsonb_build_object('table_id', v_tdeal, 'filters', '{}'::jsonb),
           'internal'::platform.visibility)
   returning id into v_all;
@@ -149,7 +149,7 @@ begin
   -- Rule records of the same kind differing in two keys.
   insert into custom.record (organization_id, table_id, data_class, data)
   values (v_org, custom.rule_kernel_id(), 'rule', jsonb_build_object(
-            'kind','predicate','name','ZZ A Now','sort',10,
+            'kind','predicate','name','Notify on close','sort',10,
             'uses', jsonb_build_array('membership'),
             'expr', jsonb_build_object('op','const','args', jsonb_build_array(true)),
             'message','this deal counts','applies_to_types','[]'::jsonb,
@@ -159,7 +159,7 @@ begin
               'recipient_user_id','87a6e699-3622-4869-8843-d0867456c0dd',
               'event_key','records.changed'))),
          (v_org, custom.rule_kernel_id(), 'rule', jsonb_build_object(
-            'kind','predicate','name','ZZ A Monday','sort',20,
+            'kind','predicate','name','Monday pipeline digest','sort',20,
             'uses', jsonb_build_array('membership'),
             'expr', jsonb_build_object('op','const','args', jsonb_build_array(true)),
             'message','this deal counts','applies_to_types','[]'::jsonb,

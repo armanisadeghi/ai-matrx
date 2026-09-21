@@ -77,7 +77,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ LADDER-PERF Seats', 'zz-ladderperf-' || substr(v_org::text, 1, 8), 'ZLP', c_admin);
+  values (v_org, 'Meridian Software — Denver Studio', 'meridian-denver-' || substr(v_org::text, 1, 8), 'MSD', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -94,8 +94,8 @@ begin
   values (v_org, null, jsonb_build_object('name', 'Home')) returning id into v_home;
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'ZZ Thing', 'slug', 'zz_ladderperf_thing', 'type', 'entity',
-    'label_singular', 'Thing', 'label_plural', 'Things', 'title_field', 'tname',
+    'name', 'Work Items', 'slug', 'work_items', 'type', 'entity',
+    'label_singular', 'Work Item', 'label_plural', 'Work Items', 'title_field', 'tname',
     'display', 'page', 'weight', 'light', 'ordered', false, 'row_order', 'sorted',
     'default_sort', '[]'::jsonb, 'agent_writable', true, 'retention_days', 365,
     'fields', jsonb_build_array(jsonb_build_object('name', 'tname')),

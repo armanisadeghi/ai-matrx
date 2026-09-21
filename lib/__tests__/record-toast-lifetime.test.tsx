@@ -41,7 +41,7 @@ import {
   liveRecordToastRefs,
 } from "@/lib/toast";
 
-const RECORD_A = { type: "mandate", id: "AAAA-1111", title: "ZZZ Alpha" };
+const RECORD_A = { type: "mandate", id: "AAAA-1111", title: "Greenline Crew Schedule" };
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean })
   .IS_REACT_ACT_ENVIRONMENT = true;
@@ -139,7 +139,7 @@ afterEach(async () => {
  *
  * A FEW TURNS, NOT ONE. A single macrotask was enough on an idle machine and not
  * under the whole battery's 40 workers — `record-toast-lifetime` failed its very
- * first assertion (`Created "ZZZ Alpha"` not on screen yet) in the 2026-09-19
+ * first assertion (`Created "Greenline Crew Schedule"` not on screen yet) in the 2026-09-19
  * whole-suite run and passed alone. Turns are load-independent; the wall-clock
  * durations below are what must leave room, and they do.
  */
@@ -193,10 +193,10 @@ describe("a record toast cannot outlive its record on screen", () => {
       // sonner's own clock is still paused because the document is hidden — and
       // costs the suite three seconds to stop being a coin flip.
       toast.success("Plain notice", { duration: 3_000 });
-      recordToast.success(RECORD_A, 'Created "ZZZ Alpha"', { duration: 3_000 });
+      recordToast.success(RECORD_A, 'Created "Greenline Crew Schedule"', { duration: 3_000 });
     });
     await settle();
-    expect(toastText()).toContain('Created "ZZZ Alpha"');
+    expect(toastText()).toContain('Created "Greenline Crew Schedule"');
     expect(toastText()).toContain("Plain notice");
 
     await act(async () => {
@@ -206,7 +206,7 @@ describe("a record toast cannot outlive its record on screen", () => {
     // Sonner's own timer is paused because the document is hidden. Neither
     // toast is on sonner's clock any more: both ran on the wall clock.
     expect(liveRecordToastRefs()).toHaveLength(0);
-    expect(toastText()).not.toContain("ZZZ Alpha");
+    expect(toastText()).not.toContain("Greenline Crew Schedule");
     expect(toastText()).not.toContain("Plain notice");
   });
 
@@ -220,14 +220,14 @@ describe("a record toast cannot outlive its record on screen", () => {
       toast.success(`Created "${RECORD_A.title}"`, { duration: 3_000 });
     });
     await settle();
-    expect(toastText()).toContain('Created "ZZZ Alpha"');
+    expect(toastText()).toContain('Created "Greenline Crew Schedule"');
 
     await navigateTo("/mandates/BBBB-2222");
     await act(async () => {
       await wait(3_400);
     });
 
-    expect(toastText()).not.toContain("ZZZ Alpha");
+    expect(toastText()).not.toContain("Greenline Crew Schedule");
   });
 
   it("leaves loading toasts and duration:Infinity toasts alone — they end when their caller says so", async () => {
@@ -261,12 +261,12 @@ describe("a record toast cannot outlive its record on screen", () => {
     hideDocument();
 
     await act(async () => {
-      recordToast.success(RECORD_A, 'Created "ZZZ Alpha"', {
+      recordToast.success(RECORD_A, 'Created "Greenline Crew Schedule"', {
         duration: 60_000,
       });
     });
     await settle();
-    expect(toastText()).toContain('Created "ZZZ Alpha"');
+    expect(toastText()).toContain('Created "Greenline Crew Schedule"');
     expect(liveRecordToastRefs()).toHaveLength(1);
 
     await navigateTo("/mandates/BBBB-2222");
@@ -276,12 +276,12 @@ describe("a record toast cannot outlive its record on screen", () => {
     });
 
     expect(liveRecordToastRefs()).toHaveLength(0);
-    expect(toastText()).not.toContain("ZZZ Alpha");
+    expect(toastText()).not.toContain("Greenline Crew Schedule");
   });
 
   it("survives a navigation that stays on the same record", async () => {
     await act(async () => {
-      recordToast.success(RECORD_A, 'Created "ZZZ Alpha"', {
+      recordToast.success(RECORD_A, 'Created "Greenline Crew Schedule"', {
         duration: 60_000,
       });
     });
@@ -294,7 +294,7 @@ describe("a record toast cannot outlive its record on screen", () => {
     });
 
     expect(liveRecordToastRefs()).toHaveLength(1);
-    expect(toastText()).toContain("ZZZ Alpha");
+    expect(toastText()).toContain("Greenline Crew Schedule");
   });
 
   it("survives a navigation to the record's own KEY-routed page", async () => {
@@ -302,20 +302,20 @@ describe("a record toast cannot outlive its record on screen", () => {
     // create and followed by a push to that record's page must survive it.
     await act(async () => {
       recordToast.success(
-        { type: "mandate", id: "DDDD-4444", title: "zzz.fixq12.demo" },
-        'Created "zzz.fixq12.demo"',
+        { type: "mandate", id: "DDDD-4444", title: "greenline_landscaping.crew_schedule" },
+        'Created "greenline_landscaping.crew_schedule"',
         { duration: 60_000 },
       );
     });
     await settle();
 
-    await navigateTo("/administration/mandates/zzz.fixq12.demo");
+    await navigateTo("/administration/mandates/greenline_landscaping.crew_schedule");
     await act(async () => {
       await wait(0);
     });
 
     expect(liveRecordToastRefs()).toHaveLength(1);
-    expect(toastText()).toContain("zzz.fixq12.demo");
+    expect(toastText()).toContain("greenline_landscaping.crew_schedule");
   });
 
   it("does not keep a toast alive on a route that merely CONTAINS the id", async () => {
@@ -340,7 +340,7 @@ describe("a record toast cannot outlive its record on screen", () => {
   it("a duration:Infinity record toast is never swept by wall-clock expiry", async () => {
     hideDocument();
     await act(async () => {
-      recordToast.info(RECORD_A, 'Renaming "ZZZ Alpha"…', {
+      recordToast.info(RECORD_A, 'Renaming "Greenline Crew Schedule"…', {
         duration: Infinity,
       });
     });
@@ -355,15 +355,15 @@ describe("a record toast cannot outlive its record on screen", () => {
     });
 
     expect(liveRecordToastRefs()).toHaveLength(1);
-    expect(toastText()).toContain("ZZZ Alpha");
+    expect(toastText()).toContain("Greenline Crew Schedule");
   });
 
   it("resolves when the record it names is deleted", async () => {
     await act(async () => {
-      recordToast.success(RECORD_A, 'Created "ZZZ Alpha"', {
+      recordToast.success(RECORD_A, 'Created "Greenline Crew Schedule"', {
         duration: 60_000,
       });
-      recordToast.info(RECORD_A, 'Renaming "ZZZ Alpha"', { duration: 60_000 });
+      recordToast.info(RECORD_A, 'Renaming "Greenline Crew Schedule"', { duration: 60_000 });
       recordToast.success(
         { type: "mandate", id: "CCCC-3333", title: "Other" },
         'Created "Other"',
@@ -380,7 +380,7 @@ describe("a record toast cannot outlive its record on screen", () => {
     });
 
     expect(dismissed).toBe(2);
-    expect(toastText()).not.toContain("ZZZ Alpha");
+    expect(toastText()).not.toContain("Greenline Crew Schedule");
     expect(toastText()).toContain("Other");
     expect(liveRecordToastRefs()).toEqual([
       expect.objectContaining({ id: "CCCC-3333" }),

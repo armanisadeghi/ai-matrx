@@ -98,7 +98,7 @@ begin
   end;
 
   v_landed := custom.record_write(v_org, custom.rule_kernel_id(), jsonb_build_object(
-    'name','zz red rule','kind','predicate','scope_table_id', v_tbl::text,
+    'name','Floor tile sides must match','kind','predicate','scope_table_id', v_tbl::text,
     'uses', jsonb_build_array('validate','summarise'),
     'applies_to_types','[]'::jsonb,
     'use_types', jsonb_build_object('compute', jsonb_build_array('square')),
@@ -177,7 +177,7 @@ begin
     raise exception 'RED 2: this suite did not take the seat — current_user is %', current_user;
   end if;
 
-  v_landed := custom.record_write(v_org, v_tbl, '{"title":"ZZ RED","kind":"square","width":4,"height":5}'::jsonb);
+  v_landed := custom.record_write(v_org, v_tbl, '{"title":"Operatory 3 floor tile","kind":"square","width":4,"height":5}'::jsonb);
   if v_landed is null then
     raise exception 'RED 2: the write did not land with custom._record_rule_uses gone';
   end if;
@@ -242,7 +242,7 @@ begin
   -- Asked from the seat, the way a person asks it.
   begin
     perform custom.record_write(v_org, '11111111-0004-4000-8000-000000000001'::uuid,
-      '{"title":"ZZ RED 3","kind":"square","width":4,"height":5}'::jsonb);
+      '{"title":"Operatory 5 floor tile","kind":"square","width":4,"height":5}'::jsonb);
     raise exception 'RED 3 INCONCLUSIVE: the id-keyed Rule stopped refusing the bad square';
   exception when check_violation then null;
   end;
@@ -300,7 +300,7 @@ begin
   end if;
 
   v_landed := custom.record_write(v_org, v_tbl,
-    '{"title":"ZZ FORGED","kind":"square","width":2,"height":2,
+    '{"title":"Reception floor tile","kind":"square","width":2,"height":2,
       "_computed":{"title":{"value":"forged","rule_id":"11111111-0004-4000-8000-000000000101","rule_version":99}}}'::jsonb);
   if v_landed is null then raise exception 'RED 4: the write did not land'; end if;
 

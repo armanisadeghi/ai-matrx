@@ -271,7 +271,7 @@ describe("the address's externalId is reconciled against what the read returns",
     await settle();
     expect(container.textContent ?? "").toContain("1 selected");
 
-    await typeQuery("zzz-no-match");
+    await typeQuery("no-such-contact");
 
     const text = container.textContent ?? "";
     // 🚨 THE DEFECT: the old fix reconciled against the LATEST page (the
@@ -388,7 +388,7 @@ describe("the address's externalId is reconciled against what the read returns",
       "value",
     )!.set!;
     await act(async () => {
-      setter.call(input, "zzz-no-match");
+      setter.call(input, "no-such-contact");
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
     await act(async () => {

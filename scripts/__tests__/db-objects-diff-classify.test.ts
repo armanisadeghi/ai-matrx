@@ -15,6 +15,11 @@
  * be healthy today, so they are asserted here against a fixed delta set.
  *
  * Every case below is a delta shape the live databases actually produce.
+ *
+ * matrx-real-data:allow — the `zz_`/`zzz_` names in this file are not placeholder data: they
+ * exercise `LANE_SCRATCH_PREFIX = "zz_"`, the classifier's own real, functional reserved-namespace
+ * constant (scripts/lib/db-objects-diff-core.ts), the same way a trigger-name test quotes a live
+ * trigger. Renaming them would stop testing the actual prefix the tool checks for.
  */
 import {
   classifyDelta,

@@ -85,7 +85,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ DOOR-FIX Red', 'zz-doorfix-red-' || substr(v_org::text, 1, 8), 'ZDR', c_admin);
+  values (v_org, 'Harbor Dental Group — Lakeside Office', 'harbor-dental-lakeside-red-' || substr(v_org::text, 1, 8), 'HDL', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -96,8 +96,8 @@ begin
   values (v_org, null, jsonb_build_object('name', 'Home')) returning id into v_home;
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'ZZ Person', 'slug', 'zz_doorfix_person', 'type', 'entity',
-    'label_singular', 'Person', 'label_plural', 'People', 'title_field', 'pname',
+    'name', 'Patients', 'slug', 'patients', 'type', 'entity',
+    'label_singular', 'Patient', 'label_plural', 'Patients', 'title_field', 'pname',
     'display', 'page', 'weight', 'light', 'ordered', false, 'row_order', 'sorted',
     'default_sort', '[]'::jsonb, 'agent_writable', true, 'retention_days', 365,
     'fields', jsonb_build_array(jsonb_build_object('name', 'pname'),
@@ -219,15 +219,15 @@ begin
   -- A brand-new table, declared through the door, whose one column name has no Field row —
   -- which is every table a person makes.
   v_tbl2_red := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Red Six','slug','zz_doorfix_red_six','type','entity',
-    'label_singular','Six','label_plural','Sixes','title_field','red_six','display','page',
+    'name','Recall Reminders','slug','recall_reminders','type','entity',
+    'label_singular','Recall Reminder','label_plural','Recall Reminders','title_field','reminder_note','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,
-    'fields', jsonb_build_array(jsonb_build_object('name','red_six')),
+    'fields', jsonb_build_array(jsonb_build_object('name','reminder_note')),
     'parent_id', v_home::text));
   v_caught := null;
   begin
-    perform custom.field_declare(v_org, v_tbl2_red, jsonb_build_object('key','red_six','label','Red six','plain','text'));
+    perform custom.field_declare(v_org, v_tbl2_red, jsonb_build_object('key','reminder_note','label','Reminder note','plain','text'));
   exception when others then
     v_caught := sqlerrm;
   end;

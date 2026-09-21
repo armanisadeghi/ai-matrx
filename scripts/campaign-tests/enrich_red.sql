@@ -15,7 +15,7 @@ begin;
 set local lock_timeout = '120s';
 set local statement_timeout = '600s';
 
-create temporary table zz_enrich_red (k text primary key, v text) on commit drop;
+create temporary table textiles_wing_fixtures (k text primary key, v text) on commit drop;
 
 -- ══ PART A — THE FIXTURE, WITH THIS LANE'S BYTES LIVE ══════════════════════════════════
 do $setup$
@@ -33,7 +33,7 @@ declare
 begin
   perform set_config('app.actor_system', 'campaign-test/enrich_red.sql', true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ENRICH red twin', 'enrich-red-' || replace(v_org::text,'-',''), 'ERT', c_admin);
+  values (v_org, 'Wraithmoor Regional Museum of Art & Craft — Textiles Wing', 'wraithmoor-textiles-wing-red-' || replace(v_org::text,'-',''), 'WTW', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value)
@@ -69,7 +69,7 @@ begin
     jsonb_build_object('trigger','batch','model','claude-fable-5-latest','cost_cents', 0.4));
 
   perform set_config('role', v_boss, true);
-  insert into zz_enrich_red values ('org', v_org::text), ('tbl', v_tbl::text),
+  insert into textiles_wing_fixtures values ('org', v_org::text), ('tbl', v_tbl::text),
                                    ('ind', v_ind::text), ('head', v_head::text),
                                    ('one', v_one::text);
   raise notice 'FIXTURE READY — one company, one agent-written value, with this lane''s bytes live';
@@ -85,11 +85,11 @@ do $red$
 declare
   c_admin_j text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
   v_boss  text := current_user;
-  v_org   uuid := (select v from zz_enrich_red where k = 'org')::uuid;
-  v_tbl   uuid := (select v from zz_enrich_red where k = 'tbl')::uuid;
-  v_ind   uuid := (select v from zz_enrich_red where k = 'ind')::uuid;
-  v_head  uuid := (select v from zz_enrich_red where k = 'head')::uuid;
-  v_one   uuid := (select v from zz_enrich_red where k = 'one')::uuid;
+  v_org   uuid := (select v from textiles_wing_fixtures where k = 'org')::uuid;
+  v_tbl   uuid := (select v from textiles_wing_fixtures where k = 'tbl')::uuid;
+  v_ind   uuid := (select v from textiles_wing_fixtures where k = 'ind')::uuid;
+  v_head  uuid := (select v from textiles_wing_fixtures where k = 'head')::uuid;
+  v_one   uuid := (select v from textiles_wing_fixtures where k = 'one')::uuid;
   v_doc   jsonb;
   v_at    timestamptz;
   v_at2   timestamptz;

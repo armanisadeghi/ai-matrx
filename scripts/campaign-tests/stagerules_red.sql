@@ -98,7 +98,7 @@ begin
 
   -- ── RED 2 — A GATE CAN CLAIM ANY BEHAVIOUR AT ALL, AND NOBODY CHECKS. ─────────────
   perform custom.rule_declare(v_org, jsonb_build_object(
-    'name','ZZ a gate with an answer nobody has','message','no','kind','predicate',
+    'name','Contractor named before the stage moves','message','no','kind','predicate',
     'uses', jsonb_build_array('validate'), 'scope_table_id', v_tbl,
     'applies_to_types','[]'::jsonb, 'on_fail','escalate_to_legal',
     'expr', jsonb_build_object('op','present','args', jsonb_build_array(

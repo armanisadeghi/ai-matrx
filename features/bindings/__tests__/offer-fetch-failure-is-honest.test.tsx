@@ -84,7 +84,7 @@ jest.mock("@/lib/redux/hooks", () => ({
   },
 }));
 
-const MANDATE_KEY = "zzz_fixq8.scratch";
+const MANDATE_KEY = "signal_scale_podcast.episode_notes";
 
 /** The bare transport code that reached a person's screen. */
 const BARE = /HTTP\s*\d{3}/;

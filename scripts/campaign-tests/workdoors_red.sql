@@ -28,7 +28,7 @@ set statement_timeout = '600s';
 -- ════════════════════════════════════════════════════════════════════════════════
 -- THE FIXTURE, and the two original bodies this file will replace by hand.
 -- ════════════════════════════════════════════════════════════════════════════════
-create temporary table zz_workdoors_red_fx (k text primary key, v text) on commit drop;
+create temporary table rincon_millbrook_fixtures (k text primary key, v text) on commit drop;
 
 do $t$
 declare
@@ -46,7 +46,7 @@ begin
   end if;
 
   -- The bodies as they stand RIGHT NOW, so the last block can prove the file put them back.
-  insert into zz_workdoors_red_fx values
+  insert into rincon_millbrook_fixtures values
     ('work_assign',          pg_get_functiondef('custom.work_assign(uuid, uuid, uuid, timestamptz, boolean)'::regprocedure)),
     ('work_approval_decide', pg_get_functiondef('custom.work_approval_decide(uuid, uuid, boolean, text)'::regprocedure)),
     ('work_slots_declare',   pg_get_functiondef('custom.work_slots_declare(uuid, text, text, uuid)'::regprocedure)),
@@ -58,8 +58,8 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ WORK-DOORS Red ' || substr(v_org::text, 1, 8),
-          'zz-workdoors-red-' || substr(v_org::text, 1, 8), 'ZWR', c_admin);
+  values (v_org, 'Rincon Plumbing Co — Millbrook Branch ' || substr(v_org::text, 1, 8),
+          'rincon-plumbing-millbrook-red-' || substr(v_org::text, 1, 8), 'RPM', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -71,8 +71,8 @@ begin
 
   perform set_config('role', 'authenticated', true);
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WDR Quote','slug','zz_wdr_quote','type','entity',
-    'label_singular','Quote','label_plural','Quotes','title_field','name','display','page',
+    'name','Estimates','slug','estimates','type','entity',
+    'label_singular','Estimate','label_plural','Estimates','title_field','name','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','name'), jsonb_build_object('name','price')),
@@ -83,7 +83,7 @@ begin
   perform custom.work_take_assignment(v_org, v_tbl);
   perform set_config('role', 'postgres', true);
 
-  insert into zz_workdoors_red_fx values
+  insert into rincon_millbrook_fixtures values
     ('org', v_org::text), ('home', v_home::text), ('tbl', v_tbl::text), ('rec', v_rec::text);
 end
 $t$;
@@ -96,14 +96,14 @@ $t$;
 
 do $t$
 declare
-  v_org   uuid := (select v from zz_workdoors_red_fx where k = 'org')::uuid;
-  v_home  uuid := (select v from zz_workdoors_red_fx where k = 'home')::uuid;
+  v_org   uuid := (select v from rincon_millbrook_fixtures where k = 'org')::uuid;
+  v_home  uuid := (select v from rincon_millbrook_fixtures where k = 'home')::uuid;
   v_caught text;
 begin
   perform set_config('request.jwt.claims', '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
   perform set_config('role', 'authenticated', true);
   begin
-    perform custom.work_slots_declare(v_org, 'Consults', 'zz_wdr_consult', v_home);
+    perform custom.work_slots_declare(v_org, 'Site Visits', 'site_visits', v_home);
     raise exception 'RED 1 DID NOT GO RED: a booking table was declared while the door still reads the retired knob';
   exception when feature_not_supported then
     get stacked diagnostics v_caught = message_text;
@@ -125,8 +125,8 @@ $t$;
 do $t$
 declare
   c_dana   constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
-  v_org    uuid := (select v from zz_workdoors_red_fx where k = 'org')::uuid;
-  v_rec    uuid := (select v from zz_workdoors_red_fx where k = 'rec')::uuid;
+  v_org    uuid := (select v from rincon_millbrook_fixtures where k = 'org')::uuid;
+  v_rec    uuid := (select v from rincon_millbrook_fixtures where k = 'rec')::uuid;
   v_caught text;
   v_n      integer;
   v_started uuid;
@@ -173,8 +173,8 @@ $t$;
 do $t$
 declare
   c_dana   constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
-  v_org    uuid := (select v from zz_workdoors_red_fx where k = 'org')::uuid;
-  v_rec    uuid := (select v from zz_workdoors_red_fx where k = 'rec')::uuid;
+  v_org    uuid := (select v from rincon_millbrook_fixtures where k = 'org')::uuid;
+  v_rec    uuid := (select v from rincon_millbrook_fixtures where k = 'rec')::uuid;
   v_other  uuid := gen_random_uuid();
   v_n      integer;
   v_person uuid;
@@ -185,8 +185,8 @@ begin
   -- 3a — A STRANGER'S ORGANIZATION. Dana is a member of the fixture organization and of
   --      nothing else; this id is one she has never heard of.
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_other, 'ZZ WDR Stranger ' || substr(v_other::text, 1, 8),
-          'zz-wdr-stranger-' || substr(v_other::text, 1, 8), 'ZWS',
+  values (v_other, 'Rincon Plumbing Co — Fairhaven Branch ' || substr(v_other::text, 1, 8),
+          'rincon-plumbing-fairhaven-' || substr(v_other::text, 1, 8), 'RPF',
           '87a6e699-3622-4869-8843-d0867456c0dd');
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_other, 'organization', v_other, '87a6e699-3622-4869-8843-d0867456c0dd', 'owner', 'active');
@@ -205,14 +205,14 @@ begin
   perform set_config('request.jwt.claims', '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
   perform set_config('role', 'authenticated', true);
   v_stbl := custom.table_declare(v_other, jsonb_build_object(
-    'name','ZZ WDR Their Thing','slug','zz_wdr_their_thing','type','entity',
-    'label_singular','Thing','label_plural','Things','title_field','name','display','page',
+    'name','Service Calls','slug','service_calls','type','entity',
+    'label_singular','Service Call','label_plural','Service Calls','title_field','name','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',false,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','name')),
     'parent_id', v_shome::text));
   perform custom.field_declare(v_other, v_stbl, jsonb_build_object('key','name','label','Name','plain','text','sort',10));
-  v_srec := custom.record_write(v_other, v_stbl, jsonb_build_object('name','Their private thing'));
+  v_srec := custom.record_write(v_other, v_stbl, jsonb_build_object('name','Water heater replacement — 114 5th St'));
   perform set_config('role', 'postgres', true);
 
   perform set_config('request.jwt.claims', '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}', true);
@@ -282,8 +282,8 @@ $$;
 do $t$
 declare
   c_dana  constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
-  v_org   uuid := (select v from zz_workdoors_red_fx where k = 'org')::uuid;
-  v_tbl   uuid := (select v from zz_workdoors_red_fx where k = 'tbl')::uuid;
+  v_org   uuid := (select v from rincon_millbrook_fixtures where k = 'org')::uuid;
+  v_tbl   uuid := (select v from rincon_millbrook_fixtures where k = 'tbl')::uuid;
   v_new   uuid;
   v_n     integer;
 begin
@@ -336,8 +336,8 @@ $$;
 do $t$
 declare
   c_dana  constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
-  v_org   uuid := (select v from zz_workdoors_red_fx where k = 'org')::uuid;
-  v_rec   uuid := (select v from zz_workdoors_red_fx where k = 'rec')::uuid;
+  v_org   uuid := (select v from rincon_millbrook_fixtures where k = 'org')::uuid;
+  v_rec   uuid := (select v from rincon_millbrook_fixtures where k = 'rec')::uuid;
   v_appr  jsonb;
   v_res   jsonb;
   v_price numeric;
@@ -377,7 +377,7 @@ revoke execute on function custom.work_inbox(uuid, integer, integer, boolean) fr
 
 do $t$
 declare
-  v_org    uuid := (select v from zz_workdoors_red_fx where k = 'org')::uuid;
+  v_org    uuid := (select v from rincon_millbrook_fixtures where k = 'org')::uuid;
   v_caught text;
 begin
   perform set_config('request.jwt.claims', '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
@@ -404,7 +404,7 @@ declare
   v_now text;
   v_bad text[] := '{}';
 begin
-  for r in select k, v from zz_workdoors_red_fx where k not in ('org','home','tbl','rec') loop
+  for r in select k, v from rincon_millbrook_fixtures where k not in ('org','home','tbl','rec') loop
     v_now := case r.k
       when 'work_assign' then pg_get_functiondef('custom.work_assign(uuid, uuid, uuid, timestamptz, boolean)'::regprocedure)
       when 'work_approval_decide' then pg_get_functiondef('custom.work_approval_decide(uuid, uuid, boolean, text)'::regprocedure)

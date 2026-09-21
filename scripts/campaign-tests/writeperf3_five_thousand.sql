@@ -59,7 +59,7 @@ begin
 
   v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Dispatch desk'));
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','Shipment','slug','zz_wp3_5k_' || substr(md5(random()::text),1,8),'type','entity',
+    'name','Shipment','slug','shipments_' || substr(md5(random()::text),1,8),'type','entity',
     'label_singular','Shipment','label_plural','Shipments','title_field','reference','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',

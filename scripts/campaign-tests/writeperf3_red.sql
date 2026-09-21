@@ -45,7 +45,7 @@ begin
 
   v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Dispatch desk'));
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','Shipment','slug','zz_wp3r0_' || substr(md5(random()::text),1,8),'type','entity',
+    'name','Shipment','slug','shipments_' || substr(md5(random()::text),1,8),'type','entity',
     'label_singular','Shipment','label_plural','Shipments','title_field','reference','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
@@ -181,16 +181,16 @@ begin
   perform set_config('request.jwt.claims',
                      jsonb_build_object('sub', c_admin, 'role', 'authenticated')::text, true);
   perform set_config('role','authenticated', true);
-  v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Red Home'));
+  v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Dispatch desk'));
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WP3 Red','slug','zz_wp3r_' || substr(md5(random()::text),1,8),'type','entity',
+    'name','Deals','slug','deals_' || substr(md5(random()::text),1,8),'type','entity',
     'label_singular','Deal','label_plural','Deals','title_field','deal','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','deal')), 'parent_id', v_home::text));
   perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Deal','key','deal','type','text'));
   v_ids := custom.record_write_many(v_org, v_tbl,
-             (select array_agg(jsonb_build_object('deal','Red ' || g.i) order by g.i)
+             (select array_agg(jsonb_build_object('deal','CC-2026-' || lpad((700 + g.i)::text, 5, '0')) order by g.i)
                 from generate_series(1,10) g(i)));
   select count(*) into n from custom.read_records(v_org, v_tbl, true, 200, 0);
   if n <> 10 then

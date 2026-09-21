@@ -76,7 +76,8 @@ begin
 
   perform set_config('request.jwt.claims', c_admin_j, true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ STORE-ASOF Red', 'zz-asof-red-' || substr(v_org::text, 1, 8), 'ZAR', c_admin);
+  values (v_org, 'Compass Route Relocation Advisors — Airport Desk',
+          'compass-route-relocation-desk-' || substr(v_org::text, 1, 8), 'CRR', c_admin);
   -- A seat is a PERSON, and a person reaches an organization only through a membership.
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
@@ -91,7 +92,7 @@ begin
   -- A HOME record has no client door of its own (a Home is made by the onboarding path, not by
   -- a person's browser). This step asserts nothing.
   insert into custom.record (organization_id, table_id, data)
-  values (v_org, null, jsonb_build_object('name', 'Home')) returning id into v_home;
+  values (v_org, null, jsonb_build_object('name', 'Compass Route Relocation Advisors — Main Office')) returning id into v_home;
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 0 — THE SEAT. Everything below this line runs as a signed-in person.
@@ -113,8 +114,8 @@ begin
   raise notice 'PART 0 PASSED — the seat is `authenticated`, the ladder sees a client, and custom.record is not readable from it.';
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Contract','slug','zz_asof_contract','type','entity',
-    'label_singular','Contract','label_plural','Contracts','title_field','name','display','list',
+    'name','Relocation contract','slug','relocation_contracts','type','entity',
+    'label_singular','Relocation contract','label_plural','Relocation contracts','title_field','name','display','list',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','name')),
@@ -123,7 +124,7 @@ begin
   v_f := custom.field_declare(v_org, v_tbl, jsonb_build_object(
     'key','terms','label','Terms','plain','text','sort',20,'dated',true));
 
-  v_contract := custom.record_write(v_org, v_tbl, jsonb_build_object('name','ABC Contract'));
+  v_contract := custom.record_write(v_org, v_tbl, jsonb_build_object('name','Albuquerque International Sunport corridor, 2027 move'));
 
   -- THE FIXTURE STEP NO DOOR COVERS: a HIS-5 period lives in `data._values.<key>.dated`, and
   -- `custom.record_update` refuses an object on a text field by design — periods are written by
@@ -275,7 +276,7 @@ begin
   if v_now -> 'terms' is distinct from 'null'::jsonb and v_now -> 'terms' is not null then
     raise exception 'RED 2 FAILED — the new answer hands back a 2027 term as today''s value: %', v_now -> 'terms';
   end if;
-  if v_2027 -> 'name' is distinct from '"ABC Contract"'::jsonb then
+  if v_2027 -> 'name' is distinct from '"Albuquerque International Sunport corridor, 2027 move"'::jsonb then
     raise exception 'RED 2 FAILED — the new answer loses the undated key it is supposed to keep: %', v_2027;
   end if;
   if v_2027 -> 'terms' is distinct from '"gold"'::jsonb then
@@ -529,7 +530,7 @@ rollback;
 do $t$
 declare v_body text;
 begin
-  if exists (select 1 from iam.organizations where slug like 'zz-asof-red-%') then
+  if exists (select 1 from iam.organizations where slug like 'compass-route-relocation-desk-%') then
     raise exception 'ROLLBACK DID NOT TAKE — this suite''s throwaway organization is still there.';
   end if;
   v_body := pg_get_functiondef('custom.visibility_parity()'::regprocedure);

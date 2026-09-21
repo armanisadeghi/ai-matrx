@@ -392,12 +392,12 @@ begin
   perform set_config('app.actor_system','campaign-test/seatsuites_inverse_proof',true);
   perform set_config('request.jwt.claims', json_build_object('sub',c_admin,'role','authenticated')::text, true);
   insert into iam.organizations (id,name,slug,abbreviation,created_by)
-    values (v_org,'ZZ SEAT inv','zz-seat-inv-'||substr(v_org::text,1,8),'ZSI',c_admin);
+    values (v_org,'The Offside Rule — Trivia Night','offside-rule-trivia-night-'||substr(v_org::text,1,8),'TOR',c_admin);
   insert into iam.memberships (organization_id,container_type,container_id,user_id,role,status)
     values (v_org,'organization',v_org,c_admin,'owner','active');
   insert into platform.knob_override (feature,key,scope_kind,scope_id,organization_id,value,set_note)
     values ('custom','system_enabled','organization',v_org,v_org,'true'::jsonb,'inv');
-  insert into custom.record (organization_id,table_id,data) values (v_org,null,jsonb_build_object('name','Home')) returning id into v_home;
+  insert into custom.record (organization_id,table_id,data) values (v_org,null,jsonb_build_object('name','The Offside Rule — Main Bar')) returning id into v_home;
   perform set_config('role','authenticated',true);
   -- THE SEAT, PROVEN. Without these three lines "taking the seat" is a spelling, not a fact.
   if current_user <> 'authenticated' then
@@ -414,7 +414,7 @@ begin
   exception when insufficient_privilege then null;
   end;
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Inv','slug','zz_seat_inv','type','entity','label_singular','I','label_plural','Is',
+    'name','Quiz team','slug','quiz_teams','type','entity','label_singular','Quiz team','label_plural','Quiz teams',
     'title_field','pname','display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields',jsonb_build_array(jsonb_build_object('name','pname')),'parent_id',v_home::text));
@@ -432,8 +432,8 @@ begin
   end if;
   raise notice 'RED 8 IS RED with the inverse in place: the field door said yes to `unique` and changed nothing.';
   -- RED 7
-  v_a := custom.record_write(v_org,v_tbl,jsonb_build_object('pname','Chen','nickname','Chenny'));
-  v_b := custom.record_write(v_org,v_tbl,jsonb_build_object('pname','Chen','nickname','Chen-Chen'));
+  v_a := custom.record_write(v_org,v_tbl,jsonb_build_object('pname','The Golden Goal','nickname','Goldies'));
+  v_b := custom.record_write(v_org,v_tbl,jsonb_build_object('pname','The Golden Goal','nickname','The Goal'));
   perform custom.migrate_merge(v_org,v_a,v_b,'inv 7');
   v_doc := custom.read_record(v_org,v_a,true);
   if v_doc ? '_retired' then raise exception 'INVERSE PROOF FAILED: read_record still carries _retired'; end if;

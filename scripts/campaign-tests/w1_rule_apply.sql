@@ -395,8 +395,8 @@ begin
   --     so each one is declared with a trivial expression of its own; the CIRCLE is between
   --     the two RULES that later target them.
   v_t2 := custom.table_declare(v_org, jsonb_build_object(
-    'name','W1-RULE-APPLY cycle','slug','zz_w1_rule_apply_cycle','type','entity',
-    'label_singular','Cycle','label_plural','Cycles','title_field','a','display','page',
+    'name','Account Balances','slug','account_balances','type','entity',
+    'label_singular','Account Balance','label_plural','Account Balances','title_field','a','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','a'), jsonb_build_object('name','b')),

@@ -106,9 +106,9 @@ begin
    where t.tgrelid='custom.record'::regclass and not t.tgisinternal
      and (t.tgtype & 2) = 0 and (t.tgtype & 1) = 0
      and t.tgname in ('io_record_changed_s_i','io_record_changed_s_u','io_record_changed_s_d',
-                      'zz_ckl_watch_s_i','zz_ckl_watch_s_u',
-                      'zz_w2_containment_association_s_i','zz_w2_containment_association_s_u',
-                      'zz_w2a_relation_association_s_i','zz_w2a_relation_association_s_u',
+                      'zz_ckl_watch_s_i','zz_ckl_watch_s_u',  -- matrx-real-data:allow live trigger names on custom.record and platform.associations, ordering devices created by applied migrations, not fixture data
+                      'zz_w2_containment_association_s_i','zz_w2_containment_association_s_u',  -- matrx-real-data:allow live trigger names on custom.record and platform.associations, ordering devices created by applied migrations, not fixture data
+                      'zz_w2a_relation_association_s_i','zz_w2a_relation_association_s_u',  -- matrx-real-data:allow live trigger names on custom.record and platform.associations, ordering devices created by applied migrations, not fixture data
                       'zzz_history_capture_s_i','zzz_history_capture_s_u','zzz_history_capture_s_d',  -- matrx-real-data:allow the live history-capture trigger names on custom.record, created by an applied migration, not fixture data
                       '_gc_assoc_softdelete_s','_gc_assoc_harddelete_s');
   if n <> 0 then raise exception 'RED 1 DID NOT GO RED: % of this lane''s 14 statement-level AFTER triggers survived the inverse', n; end if;
@@ -158,16 +158,16 @@ begin
   end if;
 
   -- 5  NO TRANSITION TABLE IS READ ANYWHERE ON custom.record
-  -- BY NAME (amended by lane WRITE-PERF-3, 2026-09-21): WRITE-PERF-3's `zz_memo_clear_i` reads a
+  -- BY NAME (amended by lane WRITE-PERF-3, 2026-09-21): WRITE-PERF-3's `zz_memo_clear_i` reads a  -- matrx-real-data:allow zz_memo_clear_* is a live trigger name, an ordering device, not data
   -- transition table too, and it is correct and deliberately left standing by this lane's
   -- inverse. What this clause means is that none of THIS lane's fourteen is left.
   select count(*) into n from pg_trigger t
    where t.tgrelid='custom.record'::regclass and not t.tgisinternal
      and (t.tgoldtable is not null or t.tgnewtable is not null)
      and t.tgname in ('io_record_changed_s_i','io_record_changed_s_u','io_record_changed_s_d',
-                      'zz_ckl_watch_s_i','zz_ckl_watch_s_u',
-                      'zz_w2_containment_association_s_i','zz_w2_containment_association_s_u',
-                      'zz_w2a_relation_association_s_i','zz_w2a_relation_association_s_u',
+                      'zz_ckl_watch_s_i','zz_ckl_watch_s_u',  -- matrx-real-data:allow live trigger names on custom.record and platform.associations, ordering devices created by applied migrations, not fixture data
+                      'zz_w2_containment_association_s_i','zz_w2_containment_association_s_u',  -- matrx-real-data:allow live trigger names on custom.record and platform.associations, ordering devices created by applied migrations, not fixture data
+                      'zz_w2a_relation_association_s_i','zz_w2a_relation_association_s_u',  -- matrx-real-data:allow live trigger names on custom.record and platform.associations, ordering devices created by applied migrations, not fixture data
                       'zzz_history_capture_s_i','zzz_history_capture_s_u','zzz_history_capture_s_d',  -- matrx-real-data:allow the live history-capture trigger names on custom.record, created by an applied migration, not fixture data
                       '_gc_assoc_softdelete_s','_gc_assoc_harddelete_s');
   if n = 0 then

@@ -67,7 +67,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ MERGE-HISTORY Red', 'zz-mergehist-red-' || substr(v_org::text, 1, 8), 'ZMR', c_admin);
+  values (v_org, 'Hands & Hope Alliance', 'hands-and-hope-alliance-' || substr(v_org::text, 1, 8), 'HHA', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -77,7 +77,7 @@ begin
 
   -- A Home has no client door of its own, so it is made before the seat is taken.
   insert into custom.record (organization_id, table_id, data)
-  values (v_org, null, jsonb_build_object('name', 'ZZ HQ')) returning id into v_home;
+  values (v_org, null, jsonb_build_object('name', 'Hands & Hope Alliance — Main Office')) returning id into v_home;
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 0 — THE SEAT. Everything below this line runs as a signed-in person.
@@ -99,8 +99,8 @@ begin
   raise notice 'PART 0 PASSED — the seat is `authenticated`, the ladder sees a client, and custom.record is not readable from it.';
 
   v_per_t := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Person','slug','zz_mergehist_r_person','type','entity',
-    'label_singular','Person','label_plural','People','title_field','pname',
+    'name','Donors','slug','donors','type','entity',
+    'label_singular','Donor','label_plural','Donors','title_field','pname',
     'display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','pname'), jsonb_build_object('name','phone')),
@@ -112,16 +112,16 @@ begin
   perform custom.record_update(v_org, v_ch1, jsonb_build_object('pname','Chen Practitioner'));
 
   v_proj := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Project','slug','zz_mergehist_r_project','type','entity',
-    'label_singular','Project','label_plural','Projects','title_field','pjname',
+    'name','Campaigns','slug','campaigns','type','entity',
+    'label_singular','Campaign','label_plural','Campaigns','title_field','pjname',
     'display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','pjname')),
     'parent_id', v_home::text));
   v_x := custom.record_write(v_org, v_proj, jsonb_build_object('pjname','Project X','parent_id',v_home::text));
   v_note_t := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Note','slug','zz_mergehist_r_note','type','entity',
-    'label_singular','Note','label_plural','Notes','title_field','ntext',
+    'name','Contact Notes','slug','contact_notes','type','entity',
+    'label_singular','Contact Note','label_plural','Contact Notes','title_field','ntext',
     'display','list','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','ntext')),
@@ -129,28 +129,28 @@ begin
   v_n1 := custom.record_write(v_org, v_note_t, jsonb_build_object('ntext','first note','parent_id',v_x::text));
   v_n2 := custom.record_write(v_org, v_note_t, jsonb_build_object('ntext','second note','parent_id',v_x::text));
 
-  perform set_config('zz.org',  v_org::text,   false);
-  perform set_config('zz.ch1',  v_ch1::text,   false);
-  perform set_config('zz.ch2',  v_ch2::text,   false);
-  perform set_config('zz.x',    v_x::text,     false);
-  perform set_config('zz.n1',   v_n1::text,    false);
-  perform set_config('zz.tbl',  v_per_t::text, false);
-  perform set_config('zz.boss', v_boss,        false);
+  perform set_config('hha.org',  v_org::text,   false);
+  perform set_config('hha.ch1',  v_ch1::text,   false);
+  perform set_config('hha.ch2',  v_ch2::text,   false);
+  perform set_config('hha.x',    v_x::text,     false);
+  perform set_config('hha.n1',   v_n1::text,    false);
+  perform set_config('hha.tbl',  v_per_t::text, false);
+  perform set_config('hha.boss', v_boss,        false);
 end $t$;
 
 -- The three compound operations, each its own statement, each sent from the seat.
-select custom.migrate_merge(current_setting('zz.org')::uuid, current_setting('zz.ch1')::uuid,
-                            current_setting('zz.ch2')::uuid, 'campaign-test/mergehist_red') ->> 'verb' as merged;
-select custom.migrate_delete(current_setting('zz.org')::uuid, current_setting('zz.x')::uuid,
+select custom.migrate_merge(current_setting('hha.org')::uuid, current_setting('hha.ch1')::uuid,
+                            current_setting('hha.ch2')::uuid, 'campaign-test/mergehist_red') ->> 'verb' as merged;
+select custom.migrate_delete(current_setting('hha.org')::uuid, current_setting('hha.x')::uuid,
                              'campaign-test/mergehist_red') ->> 'cascaded' as cascaded;
-select custom.migrate_undo(current_setting('zz.org')::uuid,
-         (select m.id from custom.migrations(current_setting('zz.org')::uuid, null, 50) m
+select custom.migrate_undo(current_setting('hha.org')::uuid,
+         (select m.id from custom.migrations(current_setting('hha.org')::uuid, null, 50) m
            where m.verb = 'merge' order by m.applied_at desc limit 1)) ->> 'verb' as undone;
 
 -- ── THE FIVE QUESTIONS, ASKED OF THE OLD BODIES, FROM THE SEAT ───────────────────────────
 do $t$
 declare
-  v_org uuid := current_setting('zz.org')::uuid;
+  v_org uuid := current_setting('hha.org')::uuid;
   v_sum text;
   v_red integer := 0;
 begin
@@ -161,7 +161,7 @@ begin
   -- would fail to COMPILE rather than answer wrongly, which proves nothing about the defect.
 
   -- RED 1 — the merge does not appear in the winner's history at all.
-  select r.summary into v_sum from custom.io_revisions(v_org, current_setting('zz.ch1')::uuid) r
+  select r.summary into v_sum from custom.io_revisions(v_org, current_setting('hha.ch1')::uuid) r
    order by r.version desc limit 1;
   if v_sum ~ 'merge' then
     raise exception 'RED 1 did not flip: the old door already showed the merge — "%"', v_sum;
@@ -173,7 +173,7 @@ begin
   v_red := v_red + 1;
 
   -- RED 2 — and so does an ORDINARY edit, which is what makes it a class.
-  select r.summary into v_sum from custom.io_revisions(v_org, current_setting('zz.ch1')::uuid) r
+  select r.summary into v_sum from custom.io_revisions(v_org, current_setting('hha.ch1')::uuid) r
    where r.version = 2;
   if v_sum !~ '0 field\(s\) changed' then
     raise exception 'RED 2 did not flip: an ordinary edit was already described — "%"', v_sum;
@@ -182,7 +182,7 @@ begin
   v_red := v_red + 1;
 
   -- RED 3 — the merged-away record's removal is unexplained.
-  select r.summary into v_sum from custom.io_revisions(v_org, current_setting('zz.ch2')::uuid) r
+  select r.summary into v_sum from custom.io_revisions(v_org, current_setting('hha.ch2')::uuid) r
    order by r.version desc limit 1;
   if v_sum ~ 'merge' then
     raise exception 'RED 3 did not flip: the loser''s removal already named the merge — "%"', v_sum;
@@ -190,7 +190,7 @@ begin
   v_red := v_red + 1;
 
   -- RED 4 — a record a cascade took with it cannot say what took it.
-  select r.summary into v_sum from custom.io_revisions(v_org, current_setting('zz.n1')::uuid) r
+  select r.summary into v_sum from custom.io_revisions(v_org, current_setting('hha.n1')::uuid) r
    order by r.version desc limit 1;
   if v_sum ~ 'delete' then
     raise exception 'RED 4 did not flip: a cascaded record already named the delete — "%"', v_sum;
@@ -199,7 +199,7 @@ begin
   v_red := v_red + 1;
 
   -- RED 5 — and the undo is an unexplained RESTORE.
-  select r.summary into v_sum from custom.io_revisions(v_org, current_setting('zz.ch2')::uuid) r
+  select r.summary into v_sum from custom.io_revisions(v_org, current_setting('hha.ch2')::uuid) r
    order by r.version desc limit 1;
   if v_sum ~ 'undo' then
     raise exception 'RED 5 did not flip: the undo already said its own name — "%"', v_sum;
@@ -224,9 +224,9 @@ declare
   c_dana    constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
   c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
   c_dana_j  constant text := '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}';
-  v_org constant uuid := current_setting('zz.org')::uuid;
-  v_ch1 constant uuid := current_setting('zz.ch1')::uuid;
-  v_tbl constant uuid := current_setting('zz.tbl')::uuid;
+  v_org constant uuid := current_setting('hha.org')::uuid;
+  v_ch1 constant uuid := current_setting('hha.ch1')::uuid;
+  v_tbl constant uuid := current_setting('hha.tbl')::uuid;
   v_caught text;
   v_n integer;
 begin

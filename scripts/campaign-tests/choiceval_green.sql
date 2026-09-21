@@ -31,12 +31,12 @@ declare
   v_boss    text := current_user;
   v_org     uuid := gen_random_uuid();
   v_home    uuid;
-  v_sh_t    uuid; v_f_kind uuid; v_f_rad uuid; v_f_w uuid; v_f_h uuid; v_f_tags uuid;
+  v_sh_t    uuid; v_f_kind uuid; v_f_bikes uuid; v_f_w uuid; v_f_h uuid; v_f_tags uuid;
   v_opts    uuid;
   v_s1      uuid; v_s2 uuid;
   v_doc     jsonb; v_res jsonb; v_map jsonb; v_exp jsonb;
   v_n       integer; v_caught text; v_txt text; v_grp jsonb;
-  v_circle  uuid;
+  v_spin  uuid;
 begin
   if (select system_identifier from pg_control_system()) <> 7642734024280108049 then
     raise exception 'choiceval_green.sql runs on the MAIN database only, and this is %',
@@ -47,14 +47,14 @@ begin
 
   -- ── THE THROWAWAY ORGANIZATION ─────────────────────────────────────────────────────────
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ CHOICE-VALUE Green', 'zz-cv-g-'||substr(v_org::text,1,8), 'ZCV', c_admin);
+  values (v_org, 'Ironline Fitness', 'ironline-fitness-'||substr(v_org::text,1,8), 'IRF', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org,'organization',v_org,c_admin,'owner','active'),
     (v_org,'organization',v_org,c_dana,'member','active');
   insert into platform.knob_override (feature,key,scope_kind,scope_id,organization_id,value,set_note)
   values ('custom','system_enabled','organization',v_org,v_org,'true'::jsonb,'campaign-test/choiceval_green');
   insert into custom.record (organization_id, table_id, data)
-  values (v_org, null, jsonb_build_object('name','ZZ HQ')) returning id into v_home;
+  values (v_org, null, jsonb_build_object('name','Ironline Fitness — Main Gym')) returning id into v_home;
 
   -- ══════════════════════════════════════════════════════════════════════════════════════
   -- PART 0 — THE SEAT.
@@ -79,19 +79,19 @@ begin
   -- PART 1 — THE TABLE, THE CHOICE COLUMN AND THE COLUMNS A KIND SELECTS. (T8's shape.)
   -- ══════════════════════════════════════════════════════════════════════════════════════
   v_sh_t := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Shape','slug','zz_cv_shape','type','entity','label_singular','Shape',
-    'label_plural','Shapes','title_field','shname','display','page','weight','light','ordered',false,
+    'name','Classes','slug','classes','type','entity','label_singular','Class',
+    'label_plural','Classes','title_field','class_name','display','page','weight','light','ordered',false,
     'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
-    'fields', jsonb_build_array(jsonb_build_object('name','shname')),'parent_id',v_home::text,
+    'fields', jsonb_build_array(jsonb_build_object('name','class_name')),'parent_id',v_home::text,
     'type_field','kind'));
   v_f_kind := custom.field_declare(v_org, v_sh_t, jsonb_build_object(
-    'label','Kind','parity_type','select','options', jsonb_build_array('Circle','Rectangle','Square')));
-  v_f_rad := custom.field_declare(v_org, v_sh_t, jsonb_build_object(
-    'label','Radius','plain','number','applies_to_types', jsonb_build_array('Circle')));
+    'label','Kind','parity_type','select','options', jsonb_build_array('Spin','Yoga','Bootcamp')));
+  v_f_bikes := custom.field_declare(v_org, v_sh_t, jsonb_build_object(
+    'label','Bikes','plain','number','applies_to_types', jsonb_build_array('Spin')));
   v_f_w := custom.field_declare(v_org, v_sh_t, jsonb_build_object(
-    'label','Width','plain','number','applies_to_types', jsonb_build_array('Rectangle','Square')));
+    'label','Mats','plain','number','applies_to_types', jsonb_build_array('Yoga','Bootcamp')));
   v_f_h := custom.field_declare(v_org, v_sh_t, jsonb_build_object(
-    'label','Height','plain','number','applies_to_types', jsonb_build_array('Rectangle','Square')));
+    'label','Capacity','plain','number','applies_to_types', jsonb_build_array('Yoga','Bootcamp')));
   v_f_tags := custom.field_declare(v_org, v_sh_t, jsonb_build_object(
     'label','Tags','parity_type','multi_select','options', jsonb_build_array('Red','Blue','Green')));
 
@@ -102,36 +102,36 @@ begin
     raise exception '1a: % of Kind''s options have no stable key', v_n;
   end if;
   select o.metadata ->> 'option_key' into v_txt from custom.field_options(v_org, v_f_kind) o
-   where o.data ->> 'title' = 'Circle';
-  if v_txt is distinct from 'circle' then
-    raise exception '1a: "Circle" got the key % instead of circle', coalesce(v_txt,'nothing');
+   where o.data ->> 'title' = 'Spin';
+  if v_txt is distinct from 'spin' then
+    raise exception '1a: "Spin" got the key % instead of spin', coalesce(v_txt,'nothing');
   end if;
-  select o.id into v_circle from custom.field_options(v_org, v_f_kind) o where o.data ->> 'title' = 'Circle';
-  raise notice 'PART 1 PASSED — a choice list is born with a stable key on every option ("Circle" -> circle).';
+  select o.id into v_spin from custom.field_options(v_org, v_f_kind) o where o.data ->> 'title' = 'Spin';
+  raise notice 'PART 1 PASSED — a choice list is born with a stable key on every option ("Spin" -> spin).';
 
   -- ══════════════════════════════════════════════════════════════════════════════════════
   -- PART 2 — WHAT IS STORED IS THE WORD'S KEY, NOT A UUID. Three ways in, one thing stored.
   -- ══════════════════════════════════════════════════════════════════════════════════════
   -- 2a. The LABEL, which is what a person types and what an agent writes.
   v_s1 := custom.record_write(v_org, v_sh_t, jsonb_build_object(
-    'shname','S1','kind','Circle','radius',5,'tags', jsonb_build_array('Red','Blue'),
+    'class_name','Sunrise Spin','kind','Spin','bikes',5,'tags', jsonb_build_array('Red','Blue'),
     'parent_id', v_home::text));
   -- 2b. The KEY, straight in.
   v_s2 := custom.record_write(v_org, v_sh_t, jsonb_build_object(
-    'shname','S2','kind','rectangle','width',3,'height',4,'parent_id', v_home::text));
+    'class_name','Evening Yoga','kind','yoga','mats',3,'capacity',4,'parent_id', v_home::text));
   -- 2c. The option record's ID, which nothing is required to know but nothing breaks on.
-  perform custom.record_update(v_org, v_s1, jsonb_build_object('kind', v_circle::text));
+  perform custom.record_update(v_org, v_s1, jsonb_build_object('kind', v_spin::text));
   -- 2d. A word that names no choice is refused WITH THE CHOICES, in the words a person reads.
   begin
-    perform custom.record_write(v_org, v_sh_t, jsonb_build_object('shname','S3','kind','Trapezoid','parent_id',v_home::text));
-    raise exception '2d: "Trapezoid" was accepted as a choice of Kind';
+    perform custom.record_write(v_org, v_sh_t, jsonb_build_object('class_name','Weekend Pilates','kind','Pilates','parent_id',v_home::text));
+    raise exception '2d: "Pilates" was accepted as a choice of Kind';
   exception when check_violation then
     get stacked diagnostics v_caught = message_text;
-    if v_caught not like '%does not have a choice called "Trapezoid"%' then
+    if v_caught not like '%does not have a choice called "Pilates"%' then
       raise exception '2d: refused, but not by name: %', v_caught;
     end if;
   end;
-  raise notice 'PART 2 PASSED — a choice arrives as a label, as a key or as an option id; "Trapezoid" is refused naming the three choices.';
+  raise notice 'PART 2 PASSED — a choice arrives as a label, as a key or as an option id; "Pilates" is refused naming the three choices.';
 
   -- ══════════════════════════════════════════════════════════════════════════════════════
   -- PART 3 — THE STORED FORM, SEEN FROM OUTSIDE. Stepping out for ONE read of the raw row,
@@ -145,22 +145,22 @@ begin
   if (v_doc ->> 'kind') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-' then
     raise exception '3a: the stored choice is still an option record''s id: %', v_doc ->> 'kind';
   end if;
-  if (v_doc ->> 'kind') is distinct from 'circle' then
-    raise exception '3a: the stored choice is %, and the option''s key is circle', coalesce(v_doc ->> 'kind','nothing');
+  if (v_doc ->> 'kind') is distinct from 'spin' then
+    raise exception '3a: the stored choice is %, and the option''s key is spin', coalesce(v_doc ->> 'kind','nothing');
   end if;
   if (v_doc -> 'tags') is distinct from jsonb_build_array('red','blue') then
     raise exception '3b: the stored multi-choice is %, and the keys are ["red","blue"]', v_doc -> 'tags';
   end if;
-  raise notice 'PART 3 PASSED — the row holds `circle` and ["red","blue"]: the option''s own words, and not one uuid.';
+  raise notice 'PART 3 PASSED — the row holds `spin` and ["red","blue"]: the option''s own words, and not one uuid.';
 
   -- ══════════════════════════════════════════════════════════════════════════════════════
   -- PART 4 — THE READ DOORS SAY THE WORD, AND NAME THE KEY BESIDE IT.
   -- ══════════════════════════════════════════════════════════════════════════════════════
   v_doc := custom.read_record(v_org, v_s1, true);
-  if (v_doc ->> 'kind') is distinct from 'Circle' then
-    raise exception '4a: custom.read_record answers kind = % where a person would read Circle', coalesce(v_doc ->> 'kind','nothing');
+  if (v_doc ->> 'kind') is distinct from 'Spin' then
+    raise exception '4a: custom.read_record answers kind = % where a person would read Spin', coalesce(v_doc ->> 'kind','nothing');
   end if;
-  if (v_doc -> '_choices' -> 'kind' ->> 'key') is distinct from 'circle' then
+  if (v_doc -> '_choices' -> 'kind' ->> 'key') is distinct from 'spin' then
     raise exception '4a: the read door did not name the key behind the label: %', v_doc -> '_choices';
   end if;
   if (v_doc -> 'tags') is distinct from jsonb_build_array('Red','Blue') then
@@ -170,93 +170,93 @@ begin
   -- whole document by field id when the caller asks for it, and every list surface in the
   -- product asks for it — so the shape a person actually reads is the second one.
   select count(*) into v_n from custom.read_records(v_org, v_sh_t, false, 50, 0) rr
-   where rr.document ->> 'kind' in ('Circle','Rectangle');
+   where rr.document ->> 'kind' in ('Spin','Yoga');
   if v_n <> 2 then
     raise exception '4c: the page door labelled % of the 2 rows by name', v_n;
   end if;
   select count(*) into v_n from custom.read_records(v_org, v_sh_t, true, 50, 0) rr
-   where rr.document ->> (v_f_kind::text) in ('Circle','Rectangle');
+   where rr.document ->> (v_f_kind::text) in ('Spin','Yoga');
   if v_n <> 2 then
     raise exception '4c: asked BY FIELD ID — the shape every list surface uses — the page door labelled % of the 2 rows', v_n;
   end if;
   select count(*) into v_n from custom.read_records(v_org, v_sh_t, true, 50, 0) rr
-   where rr.document -> '_choices' -> (v_f_kind::text) ->> 'key' in ('circle','rectangle');
+   where rr.document -> '_choices' -> (v_f_kind::text) ->> 'key' in ('spin','yoga');
   if v_n <> 2 then
     raise exception '4c: the by-id page did not name the key behind the label on % of the 2 rows', 2 - v_n;
   end if;
   select count(*) into v_n from custom.query_across_homes(v_org, v_sh_t, 50, 0) q
-   where q.data ->> 'kind' in ('Circle','Rectangle');
+   where q.data ->> 'kind' in ('Spin','Yoga');
   if v_n <> 2 then
     raise exception '4d: custom.query_across_homes labelled % of the 2 rows', v_n;
   end if;
   select v.value #>> '{}' into v_txt from custom.value_read(v_org, v_s1, 'kind') v;
-  if v_txt is distinct from 'Circle' then
+  if v_txt is distinct from 'Spin' then
     raise exception '4e: custom.value_read answers % for one value''s envelope', coalesce(v_txt,'nothing');
   end if;
-  raise notice 'PART 4 PASSED — read_record, read_records, query_across_homes and value_read all say "Circle", and _choices names `circle` behind it.';
+  raise notice 'PART 4 PASSED — read_record, read_records, query_across_homes and value_read all say "Spin", and _choices names `spin` behind it.';
 
   -- ══════════════════════════════════════════════════════════════════════════════════════
   -- PART 5 — T8's OWN CLAUSE: WHICH COLUMNS DOES *THIS RECORD* HAVE.
   -- ══════════════════════════════════════════════════════════════════════════════════════
-  -- The stored value is `circle`; whoever declared Radius wrote "Circle". Both name the same
+  -- The stored value is `spin`; whoever declared Bikes wrote "Spin". Both name the same
   -- choice, and the seventh independent pass failed exactly here.
   select count(*) into v_n
     from custom.applicable_fields(v_org, v_sh_t, (custom.read_record(v_org, v_s1, true) -> '_choices' -> 'kind' ->> 'key')) f
-   where f.data ->> 'key' = 'radius';
+   where f.data ->> 'key' = 'bikes';
   if v_n <> 1 then
-    raise exception '5a: asked what columns THIS Circle has, the table did not offer Radius';
+    raise exception '5a: asked what columns THIS Spin has, the table did not offer Bikes';
   end if;
   select count(*) into v_n
     from custom.applicable_fields(v_org, v_sh_t, (custom.read_record(v_org, v_s1, true) -> '_choices' -> 'kind' ->> 'key')) f
-   where f.data ->> 'key' = 'width';
+   where f.data ->> 'key' = 'mats';
   if v_n <> 0 then
-    raise exception '5a: asked what columns THIS Circle has, the table offered Width';
+    raise exception '5a: asked what columns THIS Spin has, the table offered Mats';
   end if;
   -- And the label still answers, so nothing that worked before stopped working.
-  select count(*) into v_n from custom.applicable_fields(v_org, v_sh_t, 'Circle') f where f.data ->> 'key' = 'radius';
+  select count(*) into v_n from custom.applicable_fields(v_org, v_sh_t, 'Spin') f where f.data ->> 'key' = 'bikes';
   if v_n <> 1 then
-    raise exception '5b: asked with the word "Circle" the table did not offer Radius';
+    raise exception '5b: asked with the word "Spin" the table did not offer Bikes';
   end if;
-  -- 5c. The Square rule: Width must equal Height, and the rule was declared against the WORD.
+  -- 5c. The Bootcamp rule: Mats must equal Capacity, and the rule was declared against the WORD.
   perform custom.field_update(v_org, v_f_w, jsonb_build_object('rules', jsonb_build_array(
-    jsonb_build_object('kind','equals_field','value','height','applies_to_types', jsonb_build_array('Square')))));
+    jsonb_build_object('kind','equals_field','value','capacity','applies_to_types', jsonb_build_array('Bootcamp')))));
   begin
     perform custom.record_write(v_org, v_sh_t, jsonb_build_object(
-      'shname','SQ','kind','Square','width',3,'height',4,'parent_id',v_home::text));
-    raise exception '5c: a Square with Width 3 and Height 4 was accepted';
+      'class_name','Bootcamp Bravo','kind','Bootcamp','mats',3,'capacity',4,'parent_id',v_home::text));
+    raise exception '5c: a Bootcamp with Mats 3 and Capacity 4 was accepted';
   exception when check_violation then
     get stacked diagnostics v_caught = message_text;
     if v_caught not like '%have to be the same%' then
-      raise exception '5c: refused, but not by the Square rule: %', v_caught;
+      raise exception '5c: refused, but not by the Bootcamp rule: %', v_caught;
     end if;
   end;
   perform custom.record_write(v_org, v_sh_t, jsonb_build_object(
-    'shname','SQ','kind','Square','width',3,'height',3,'parent_id',v_home::text));
-  raise notice 'PART 5 PASSED (T8) — this Circle offers Radius and not Width; the Square rule, declared against the word, fires on the stored key.';
+    'class_name','Bootcamp Bravo','kind','Bootcamp','mats',3,'capacity',3,'parent_id',v_home::text));
+  raise notice 'PART 5 PASSED (T8) — this Spin offers Bikes and not Mats; the Bootcamp rule, declared against the word, fires on the stored key.';
 
   -- ══════════════════════════════════════════════════════════════════════════════════════
   -- PART 6 — RENAMING AN OPTION REWRITES NO ROW.
   -- ══════════════════════════════════════════════════════════════════════════════════════
-  perform custom.record_update(v_org, v_circle, jsonb_build_object('title','Round'));
+  perform custom.record_update(v_org, v_spin, jsonb_build_object('title','Cycling'));
   perform set_config('role', v_boss, true);
   select r.data into v_doc from custom.record r where r.organization_id = v_org and r.id = v_s1;
   perform set_config('role', 'authenticated', true);
-  if (v_doc ->> 'kind') is distinct from 'circle' then
+  if (v_doc ->> 'kind') is distinct from 'spin' then
     raise exception '6a: renaming the option rewrote the row: it now holds %', v_doc ->> 'kind';
   end if;
   v_doc := custom.read_record(v_org, v_s1, true);
-  if (v_doc ->> 'kind') is distinct from 'Round' then
-    raise exception '6b: after the rename the record reads % instead of Round', coalesce(v_doc ->> 'kind','nothing');
+  if (v_doc ->> 'kind') is distinct from 'Cycling' then
+    raise exception '6b: after the rename the record reads % instead of Cycling', coalesce(v_doc ->> 'kind','nothing');
   end if;
-  perform custom.record_update(v_org, v_circle, jsonb_build_object('title','Circle'));
-  raise notice 'PART 6 PASSED — "Circle" became "Round": no row was rewritten and every reader says the new word.';
+  perform custom.record_update(v_org, v_spin, jsonb_build_object('title','Spin'));
+  raise notice 'PART 6 PASSED — "Spin" became "Cycling": no row was rewritten and every reader says the new word.';
 
   -- ══════════════════════════════════════════════════════════════════════════════════════
   -- PART 7 — RETIRING AN OPTION DOES NOT MAKE A VALUE VANISH.
   -- ══════════════════════════════════════════════════════════════════════════════════════
-  perform custom.record_delete(v_org, v_circle);
+  perform custom.record_delete(v_org, v_spin);
   v_doc := custom.read_record(v_org, v_s1, true);
-  if (v_doc ->> 'kind') is distinct from 'Circle' then
+  if (v_doc ->> 'kind') is distinct from 'Spin' then
     raise exception '7a: after the choice was retired the value reads % instead of its label', coalesce(v_doc ->> 'kind','nothing');
   end if;
   if coalesce((v_doc -> '_choices' -> 'kind' ->> 'retired')::boolean, false) is not true then
@@ -267,7 +267,7 @@ begin
   end if;
   -- 7b. And it cannot be picked ANEW, by name.
   begin
-    perform custom.record_write(v_org, v_sh_t, jsonb_build_object('shname','S4','kind','Circle','parent_id',v_home::text));
+    perform custom.record_write(v_org, v_sh_t, jsonb_build_object('class_name','Late Spin','kind','Spin','parent_id',v_home::text));
     raise exception '7b: a retired choice was picked for a new record';
   exception when check_violation then
     get stacked diagnostics v_caught = message_text;
@@ -276,7 +276,7 @@ begin
     end if;
   end;
   -- 7c. The record that already holds it stays editable — a different column saves fine.
-  perform custom.record_update(v_org, v_s1, jsonb_build_object('radius', 9));
+  perform custom.record_update(v_org, v_s1, jsonb_build_object('bikes', 9));
   raise notice 'PART 7 PASSED — a retired choice reads as its label WITH the reason, cannot be picked anew, and does not lock the record that holds it.';
 
   -- ══════════════════════════════════════════════════════════════════════════════════════
@@ -284,34 +284,34 @@ begin
   -- ══════════════════════════════════════════════════════════════════════════════════════
   select r.groups into v_grp from custom.record_aggregate(
     v_org, v_sh_t, jsonb_build_array('kind'), '[]'::jsonb, null, '{}'::jsonb, 50, 'viewer') r
-   where r.groups ->> 'kind' = 'Rectangle';
+   where r.groups ->> 'kind' = 'Yoga';
   if v_grp is null then
-    raise exception '8a: the group-by did not name a group "Rectangle"; it answered %',
+    raise exception '8a: the group-by did not name a group "Yoga"; it answered %',
       (select coalesce(string_agg(x.groups ->> 'kind', ', '), 'nothing')
          from custom.record_aggregate(v_org, v_sh_t, jsonb_build_array('kind'), '[]'::jsonb, null, '{}'::jsonb, 50, 'viewer') x);
   end if;
   -- 8b. A filter by the LABEL finds it.
   select r.row_count into v_n from custom.record_aggregate(
-    v_org, v_sh_t, '[]'::jsonb, '[]'::jsonb, null, jsonb_build_object('kind','Rectangle'), 50, 'viewer') r;
+    v_org, v_sh_t, '[]'::jsonb, '[]'::jsonb, null, jsonb_build_object('kind','Yoga'), 50, 'viewer') r;
   if coalesce(v_n, 0) <> 1 then
-    raise exception '8b: filtering by the word "Rectangle" found % rows', coalesce(v_n, 0);
+    raise exception '8b: filtering by the word "Yoga" found % rows', coalesce(v_n, 0);
   end if;
   -- 8c. And by the KEY.
   select r.row_count into v_n from custom.record_aggregate(
-    v_org, v_sh_t, '[]'::jsonb, '[]'::jsonb, null, jsonb_build_object('kind','rectangle'), 50, 'viewer') r;
+    v_org, v_sh_t, '[]'::jsonb, '[]'::jsonb, null, jsonb_build_object('kind','yoga'), 50, 'viewer') r;
   if coalesce(v_n, 0) <> 1 then
-    raise exception '8c: filtering by the key "rectangle" found % rows', coalesce(v_n, 0);
+    raise exception '8c: filtering by the key "yoga" found % rows', coalesce(v_n, 0);
   end if;
   -- 8d. The export carries the label, and the vocabulary beside it.
   v_exp := custom.io_export(v_org, v_sh_t, null, 100, 'viewer');
-  if not exists (select 1 from jsonb_array_elements(v_exp -> 'rows') x where x ->> 'kind' = 'Rectangle') then
-    raise exception '8d: the export carries no row whose Kind reads "Rectangle": %',
+  if not exists (select 1 from jsonb_array_elements(v_exp -> 'rows') x where x ->> 'kind' = 'Yoga') then
+    raise exception '8d: the export carries no row whose Kind reads "Yoga": %',
       (select coalesce(string_agg(x ->> 'kind', ', '), 'nothing') from jsonb_array_elements(v_exp -> 'rows') x);
   end if;
-  if (v_exp -> 'choices' -> 'kind' -> 'options' -> 'rectangle' ->> 'label') is distinct from 'Rectangle' then
+  if (v_exp -> 'choices' -> 'kind' -> 'options' -> 'yoga' ->> 'label') is distinct from 'Yoga' then
     raise exception '8e: the export does not carry the key behind the label: %', v_exp -> 'choices';
   end if;
-  raise notice 'PART 8 PASSED — the group is called "Rectangle", the filter takes the word OR the key, and the export carries the label with the vocabulary beside it.';
+  raise notice 'PART 8 PASSED — the group is called "Yoga", the filter takes the word OR the key, and the export carries the label with the vocabulary beside it.';
 
   -- ══════════════════════════════════════════════════════════════════════════════════════
   -- PART 9 — THE CONVERSION VERB, FROM THE SEAT, AND ITS CENSUS.
@@ -350,13 +350,13 @@ begin
 
   -- 10a. THE CONTROL: at viewer she reads it, and reads the WORD.
   v_doc := custom.read_record(v_org, v_s2, true);
-  if (v_doc ->> 'kind') is distinct from 'Rectangle' then
-    raise exception '10a: the colleague reads kind = % where a person would read Rectangle', coalesce(v_doc ->> 'kind','nothing');
+  if (v_doc ->> 'kind') is distinct from 'Yoga' then
+    raise exception '10a: the colleague reads kind = % where a person would read Yoga', coalesce(v_doc ->> 'kind','nothing');
   end if;
   -- 10b. A viewer may not ASK for a change, and is told the true thing.
   begin
     perform custom.work_approval_request(v_org, v_s2,
-      jsonb_build_object('kind','record_patch','patch', jsonb_build_object('width', 9)),
+      jsonb_build_object('kind','record_patch','patch', jsonb_build_object('mats', 9)),
       'campaign-test/choiceval_green');
     raise exception '10b: a viewer filed a change request against a record she may only read';
   exception when insufficient_privilege then
@@ -370,7 +370,7 @@ begin
   perform custom.share_grant(v_org, v_s2, 'person', c_dana, 'commenter'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
   v_res := custom.work_approval_request(v_org, v_s2,
-    jsonb_build_object('kind','record_patch','patch', jsonb_build_object('width', 9)),
+    jsonb_build_object('kind','record_patch','patch', jsonb_build_object('mats', 9)),
     'campaign-test/choiceval_green');
   if (v_res ->> 'state') <> 'pending' or (v_res ->> 'approval_id') is null then
     raise exception '10c: a commenter''s request did not file: %', v_res;

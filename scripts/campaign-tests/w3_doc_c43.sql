@@ -136,7 +136,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W3-DOC C43', 'zz-w3doc-c43-' || substr(v_org::text, 1, 8), 'ZWD', c_admin);
+  values (v_org, 'Fairhaven Steelworks — Drafting Room', 'fairhaven-steelworks-drafting-' || substr(v_org::text, 1, 8), 'FHS', c_admin);
   -- A seat is a PERSON, and a person reaches an organization only through a membership.
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),

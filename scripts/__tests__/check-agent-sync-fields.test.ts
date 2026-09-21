@@ -230,11 +230,11 @@ describe("extractFunctionDefinition", () => {
     const dump =
       "CREATE OR REPLACE FUNCTION public.something_else(a int)\n RETURNS int\nAS $function$ BEGIN RETURN 1; END; $function$\n;\n\n" +
       REAL_DEFINITION +
-      ";\n\nCREATE OR REPLACE FUNCTION public.zzz_after()\n RETURNS void\nAS $function$ BEGIN END; $function$\n;\n";
+      ";\n\nCREATE OR REPLACE FUNCTION public.job_notify_after()\n RETURNS void\nAS $function$ BEGIN END; $function$\n;\n";
     const extracted = extractFunctionDefinition(dump);
     expect(extracted).not.toBeNull();
     expect(extracted).toContain("agx_sync_linked_agents");
-    expect(extracted).not.toContain("zzz_after");
+    expect(extracted).not.toContain("job_notify_after");
     expect(parseSyncSetClause(extracted ?? "").columns).toHaveLength(AGENT_SYNC_FIELDS.length);
   });
 

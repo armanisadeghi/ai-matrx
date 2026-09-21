@@ -13,7 +13,7 @@
 -- that there is no production and everything is the main database, so this suite now runs
 -- there and nowhere else.
 --
--- It also used to CREATE A DISPOSABLE ROLE (`zz_v1_green_writer`) to stand in for "a role that
+-- It also used to CREATE A DISPOSABLE ROLE (`ttj_record_writer`) to stand in for "a role that
 -- is not a member of the store's owner" — which is what `authenticated` already IS. The
 -- stand-in is gone: the suite builds its fixtures as the connected role, takes the seat
 -- `authenticated` in PART 0, proves it holds it, and runs EVERY asserted clause through the
@@ -91,7 +91,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ V1-FIXES Green', 'zz-v1-fixes-green-' || substr(v_org::text, 1, 8), 'ZVG', c_admin);
+  values (v_org, 'Trailhead & Torch Journeys', 'trailhead-torch-' || substr(v_org::text, 1, 8), 'TTJ', c_admin);
   -- A seat is a PERSON, and a person reaches an organization only through a membership.
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
@@ -127,8 +127,8 @@ begin
   -- The Table and its one column, THROUGH THE DOORS a person has. The old file INSERTed the
   -- Field row straight into `custom.record`, which needs a table privilege no person holds.
   v_table := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'V1 fixes GREEN', 'slug', 'zz_v1_fixes_green', 'type', 'entity',
-    'label_singular', 'Green row', 'label_plural', 'Green rows',
+    'name', 'Itineraries', 'slug', 'itineraries', 'type', 'entity',
+    'label_singular', 'Itinerary', 'label_plural', 'Itineraries',
     'title_field', 'nm', 'display', 'page', 'weight', 'light',
     'ordered', false, 'row_order', 'sorted', 'default_sort', '[]'::jsonb,
     'agent_writable', true, 'retention_days', 365,

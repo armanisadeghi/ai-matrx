@@ -77,7 +77,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W1-TIER Red', 'zz-w1-tier-red-' || substr(v_org::text,1,8), 'ZTR', c_admin);
+  values (v_org, 'Ironline Fitness', 'ironline-fitness-' || substr(v_org::text,1,8), 'IRF', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -109,7 +109,7 @@ begin
 
   -- The Table, through the door a person has.
   v_table := custom.table_declare(v_org, jsonb_build_object(
-    'name','External Widget','slug','zz_w1_tier_external_widget',
+    'name','External Widget','slug','external_class_bookings',
     'label_singular','External Widget','label_plural','External Widgets',
     'type','entity','display','page','ordered',false,'weight','light','retention_days',30,
     'default_sort','[]'::jsonb,'row_order','sorted','agent_writable',true,
@@ -184,9 +184,9 @@ begin
   delete from custom.external_link where record_id = v_home and external_key = 'MALFORMED';
 
   -- ── RED 3: DOOR-N-6's Visibility filter inside the definer door ─────────────
-  create table custom_external.zz_w1_tier_widgets (external_key text primary key, title text);
-  insert into custom_external.zz_w1_tier_widgets values ('EXT-1','Widget A remote'), ('EXT-9','Never linked');
-  update custom.external_source set external_table = 'zz_w1_tier_widgets' where id = v_src;
+  create table custom_external.ironline_class_bookings (external_key text primary key, title text);
+  insert into custom_external.ironline_class_bookings values ('EXT-1','Widget A remote'), ('EXT-9','Never linked');
+  update custom.external_source set external_table = 'ironline_class_bookings' where id = v_src;
   perform set_config('request.jwt.claims', v_b_j, true);
   select count(*) into v_n from custom.external_rows(v_org, v_src) x;
   if v_n <> 0 then
@@ -271,7 +271,7 @@ begin
   raise notice 'RED 5 PASS  with the refusal removed, tier managed_postgres is stored — the 0A000 is the door''s own, and the row shape was never the obstacle';
 
   -- ── RED 6: DOOR-N-6's exposure guard ────────────────────────────────────────
-  grant select on table custom_external.zz_w1_tier_widgets to authenticated;
+  grant select on table custom_external.ironline_class_bookings to authenticated;
   select count(*) into v_n from custom.external_foreign_table_findings();
   if v_n <> 1 then
     raise exception 'RED 6 SETUP FAIL: the live guard reports % finding(s) for a client-granted private relation, expected 1', v_n;

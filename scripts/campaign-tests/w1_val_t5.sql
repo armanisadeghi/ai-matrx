@@ -113,7 +113,7 @@ begin
   v_retired := custom.retired_actor_words();
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W1-VAL', 'zz-w1-val-' || substr(v_org::text, 1, 8), 'ZWV', c_admin);
+  values (v_org, 'Ridgeline Physical Therapy', 'ridgeline-physical-therapy-' || substr(v_org::text, 1, 8), 'RPT', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -121,7 +121,7 @@ begin
   values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_val_t5');
   -- A Home has no client door of its own.
   insert into custom.record (organization_id, table_id, data)
-  values (v_org, null, jsonb_build_object('name', 'W1-VAL HQ'))
+  values (v_org, null, jsonb_build_object('name', 'Ridgeline Physical Therapy — Clinic'))
   returning id into v_home;
 
   -- ════════════════════════════════════════════════════════════════════════════
@@ -148,8 +148,8 @@ begin
   -- DEFINED through the store's own doors, exactly as an organization would.
   -- ══════════════════════════════════════════════════════════════════════════
   v_person := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'W1-VAL Person', 'slug', 'zz_wv_person', 'type', 'entity',
-    'label_singular', 'Person', 'label_plural', 'People',
+    'name', 'Patients', 'slug', 'patients', 'type', 'entity',
+    'label_singular', 'Patient', 'label_plural', 'Patients',
     'title_field', 'full_name', 'display', 'page', 'weight', 'light',
     'ordered', false, 'row_order', 'sorted', 'default_sort', '[]'::jsonb,
     'agent_writable', true, 'retention_days', 365,

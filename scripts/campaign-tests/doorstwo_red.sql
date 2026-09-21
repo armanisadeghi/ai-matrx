@@ -74,7 +74,7 @@ begin
 
   -- ══ RED 1 — custom.doc_templates without its subject wall ════════════════════
   perform set_config('role', v_boss, true);
-  create or replace function custom.zz_red_doc_templates(p_organization_id uuid, p_table_id uuid)
+  create or replace function custom.proposal_templates_unwalled(p_organization_id uuid, p_table_id uuid)
   returns bigint language plpgsql stable security definer set search_path to 'pg_catalog' as $red$
   begin
     perform custom.assert_client_may_reach(p_organization_id, 'custom.doc_templates');
@@ -91,10 +91,10 @@ begin
   insert into platform.client_callable_door
     (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
      non_client_lane, signed_in_callers, anonymous_callers)
-  values ('custom', 'zz_red_doc_templates', 'p_organization_id uuid, p_table_id uuid', array['uuid'::regtype,'uuid'::regtype]::oid[],
+  values ('custom', 'proposal_templates_unwalled', 'p_organization_id uuid, p_table_id uuid', array['uuid'::regtype,'uuid'::regtype]::oid[],
           'A red-twin helper inside a transaction that always rolls back. It exists for the length of one campaign test to prove which line of the real door does the refusing, and it is never reachable outside it.',
           'scripts/campaign-tests/doorstwo_red.sql', null, true, false);
-  grant execute on function custom.zz_red_doc_templates(uuid, uuid) to authenticated;
+  grant execute on function custom.proposal_templates_unwalled(uuid, uuid) to authenticated;
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims', c_dana_j, true);
 
@@ -103,7 +103,7 @@ begin
     raise exception 'RED 1 did not reproduce: the real door let a stranger list the templates';
   exception when insufficient_privilege or no_data_found then null;
   end;
-  select custom.zz_red_doc_templates(v_org, v_table) into v_n;
+  select custom.proposal_templates_unwalled(v_org, v_table) into v_n;
   if v_n <> 1 then
     raise exception 'RED 1 is not a proof: without the wall the count is %, so the wall was not what refused her', v_n;
   end if;
@@ -112,7 +112,7 @@ begin
 
   -- ══ RED 2 — custom.doc_renders without its subject wall ══════════════════════
   perform set_config('role', v_boss, true);
-  create or replace function custom.zz_red_doc_renders(p_organization_id uuid, p_record_id uuid)
+  create or replace function custom.proposal_renders_unwalled(p_organization_id uuid, p_record_id uuid)
   returns text language plpgsql stable security definer set search_path to 'pg_catalog' as $red$
   begin
     perform custom.assert_client_may_reach(p_organization_id, 'custom.doc_renders');
@@ -129,10 +129,10 @@ begin
   insert into platform.client_callable_door
     (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
      non_client_lane, signed_in_callers, anonymous_callers)
-  values ('custom', 'zz_red_doc_renders', 'p_organization_id uuid, p_record_id uuid', array['uuid'::regtype,'uuid'::regtype]::oid[],
+  values ('custom', 'proposal_renders_unwalled', 'p_organization_id uuid, p_record_id uuid', array['uuid'::regtype,'uuid'::regtype]::oid[],
           'A red-twin helper inside a transaction that always rolls back. It exists for the length of one campaign test to prove which line of the real door does the refusing, and it is never reachable outside it.',
           'scripts/campaign-tests/doorstwo_red.sql', null, true, false);
-  grant execute on function custom.zz_red_doc_renders(uuid, uuid) to authenticated;
+  grant execute on function custom.proposal_renders_unwalled(uuid, uuid) to authenticated;
   perform set_config('role', 'authenticated', true);
 
   begin
@@ -140,7 +140,7 @@ begin
     raise exception 'RED 2 did not reproduce: the real door let a stranger read the document';
   exception when insufficient_privilege or no_data_found then null;
   end;
-  if custom.zz_red_doc_renders(v_org, v_rec) not like '%Marchetti Events Group%' then
+  if custom.proposal_renders_unwalled(v_org, v_rec) not like '%Marchetti Events Group%' then
     raise exception 'RED 2 is not a proof: without the wall she still got nothing, so something else was refusing';
   end if;
   v_reds := v_reds + 1;
@@ -148,7 +148,7 @@ begin
 
   -- ══ RED 3 — custom.doc_template_delete without its editor wall ═══════════════
   perform set_config('role', v_boss, true);
-  create or replace function custom.zz_red_template_delete(p_organization_id uuid, p_template_id uuid)
+  create or replace function custom.proposal_template_retire_unwalled(p_organization_id uuid, p_template_id uuid)
   returns boolean language plpgsql security definer set search_path to 'pg_catalog' as $red$
   begin
     perform custom.assert_client_may_reach(p_organization_id, 'custom.doc_template_delete');
@@ -165,10 +165,10 @@ begin
   insert into platform.client_callable_door
     (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
      non_client_lane, signed_in_callers, anonymous_callers)
-  values ('custom', 'zz_red_template_delete', 'p_organization_id uuid, p_template_id uuid', array['uuid'::regtype,'uuid'::regtype]::oid[],
+  values ('custom', 'proposal_template_retire_unwalled', 'p_organization_id uuid, p_template_id uuid', array['uuid'::regtype,'uuid'::regtype]::oid[],
           'A red-twin helper inside a transaction that always rolls back. It exists for the length of one campaign test to prove which line of the real door does the refusing, and it is never reachable outside it.',
           'scripts/campaign-tests/doorstwo_red.sql', null, true, false);
-  grant execute on function custom.zz_red_template_delete(uuid, uuid) to authenticated;
+  grant execute on function custom.proposal_template_retire_unwalled(uuid, uuid) to authenticated;
   perform set_config('role', 'authenticated', true);
 
   begin
@@ -182,12 +182,12 @@ begin
   -- assigned inside it survive — which is how the measurement escapes.
   begin
     perform set_config('role', 'authenticated', true);
-    perform custom.zz_red_template_delete(v_org, v_tmpl);
+    perform custom.proposal_template_retire_unwalled(v_org, v_tmpl);
     perform set_config('request.jwt.claims', c_admin_j, true);
     select count(*) into v_n from custom.doc_templates(v_org, v_table);
-    raise exception 'ZZ_RED_UNDO';
+    raise exception 'PROPOSAL_UNDO';
   exception when others then
-    if sqlerrm <> 'ZZ_RED_UNDO' then raise; end if;
+    if sqlerrm <> 'PROPOSAL_UNDO' then raise; end if;
   end;
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
@@ -205,7 +205,7 @@ begin
   -- VAL-10 lives or dies here: a signature is over frozen bytes, so a hard delete that
   -- cascaded to the render would let somebody tidying up invalidate a seal.
   perform set_config('role', v_boss, true);
-  create or replace function custom.zz_red_hard_delete(p_organization_id uuid, p_template_id uuid)
+  create or replace function custom.proposal_template_purge_unwalled(p_organization_id uuid, p_template_id uuid)
   returns boolean language plpgsql security definer set search_path to 'pg_catalog' as $red$
   begin
     -- THE ARM THAT IS GONE: `set deleted_at = now()`. This is what "retire" would mean if
@@ -224,12 +224,12 @@ begin
       raise exception 'RED 4 did not reproduce: the real door already lost the document — % left', v_n;
     end if;
     perform set_config('role', v_boss, true);
-    perform custom.zz_red_hard_delete(v_org, v_tmpl);
+    perform custom.proposal_template_purge_unwalled(v_org, v_tmpl);
     perform set_config('role', 'authenticated', true);
     select count(*) into v_n from custom.doc_renders(v_org, v_rec);
-    raise exception 'ZZ_RED_UNDO';
+    raise exception 'PROPOSAL_UNDO';
   exception when others then
-    if sqlerrm <> 'ZZ_RED_UNDO' then raise; end if;
+    if sqlerrm <> 'PROPOSAL_UNDO' then raise; end if;
   end;
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
@@ -245,7 +245,7 @@ begin
 
   -- ══ RED 5 — a cadence list typed rather than delegated ═══════════════════════
   perform set_config('role', v_boss, true);
-  create or replace function custom.zz_red_cadences(p_organization_id uuid)
+  create or replace function custom.booking_cadences_typed(p_organization_id uuid)
   returns text[] language plpgsql stable security definer set search_path to 'pg_catalog' as $red$
   begin
     perform custom.assert_client_may_reach(p_organization_id, 'custom.subscription_cadences');
@@ -261,10 +261,10 @@ begin
   insert into platform.client_callable_door
     (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
      non_client_lane, signed_in_callers, anonymous_callers)
-  values ('custom', 'zz_red_cadences', 'p_organization_id uuid', array['uuid'::regtype]::oid[],
+  values ('custom', 'booking_cadences_typed', 'p_organization_id uuid', array['uuid'::regtype]::oid[],
           'A red-twin helper inside a transaction that always rolls back. It exists for the length of one campaign test to prove which line of the real door does the refusing, and it is never reachable outside it.',
           'scripts/campaign-tests/doorstwo_red.sql', null, true, false);
-  grant execute on function custom.zz_red_cadences(uuid) to authenticated;
+  grant execute on function custom.booking_cadences_typed(uuid) to authenticated;
   perform set_config('role', 'authenticated', true);
 
   v_cad := custom.subscription_cadences(v_org);
@@ -272,7 +272,7 @@ begin
   if v_cad is distinct from custom.agg_subscription_cadences() then
     raise exception 'RED 5 did not reproduce: the real door already disagrees with the runner';
   end if;
-  if custom.zz_red_cadences(v_org) is not distinct from custom.agg_subscription_cadences() then
+  if custom.booking_cadences_typed(v_org) is not distinct from custom.agg_subscription_cadences() then
     raise exception 'RED 5 is not a proof: the typed list happens to equal the runner''s today, so it proves nothing';
   end if;
   perform set_config('role', 'authenticated', true);

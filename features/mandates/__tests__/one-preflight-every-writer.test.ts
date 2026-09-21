@@ -161,7 +161,7 @@ describe("layer 2 — the control is honest before it is pressed", () => {
 
   it("refuses the shortcut editor's Save while the question is blank", () => {
     const refusals = shortcutSaveRefusals({
-      label: "ZZZ scratch",
+      label: "Kessler Lab Intake",
       categoryId: "cat-1",
       surfaceName: "matrx-default/default",
       valueMappings: BLANK_QUESTION,
@@ -174,7 +174,7 @@ describe("layer 2 — the control is honest before it is pressed", () => {
   it("lets a complete shortcut through — the gate is not a wall", () => {
     expect(
       shortcutSaveRefusals({
-        label: "ZZZ scratch",
+        label: "Kessler Lab Intake",
         categoryId: "cat-1",
         surfaceName: "matrx-default/default",
         valueMappings: {

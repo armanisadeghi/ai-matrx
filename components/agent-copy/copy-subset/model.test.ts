@@ -104,7 +104,7 @@ describe("copy-subset model — the origin is untouched", () => {
 
     const { text, computation } = copySubsetText(session, {
       ...shaped,
-      selectedRowIds: ["c", "zzz-not-a-match"],
+      selectedRowIds: ["c", "f"],
     });
     expect(computation.rows.map((r) => r.id)).toEqual(["c"]);
     expect(computation.meta).toMatchObject({

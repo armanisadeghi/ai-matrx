@@ -61,8 +61,8 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by) values
-    (v_shared, 'ZZ STORE-T Red shared', 'zz-storet-r-s-'||substr(v_shared::text,1,8), 'ZRS', c_admin),
-    (v_open,   'ZZ STORE-T Red open',   'zz-storet-r-o-'||substr(v_open::text,1,8),   'ZRO', c_admin);
+    (v_shared, 'Wraithmoor Regional Museum — Registrar Office', 'wraithmoor-registrar-'||substr(v_shared::text,1,8), 'WRR', c_admin),
+    (v_open,   'Wraithmoor Regional Museum — Loans Office', 'wraithmoor-loans-'||substr(v_open::text,1,8), 'WRL', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_shared,'organization',v_shared,c_admin,'owner','active'),
     (v_shared,'organization',v_shared,c_dana,'member','active'),
@@ -73,30 +73,30 @@ begin
     ('custom','member_default_visibility','organization',v_shared,v_shared,'"shared_only"'::jsonb,'campaign-test/storet_red'),
     ('custom','system_enabled','organization',v_open,v_open,'true'::jsonb,'campaign-test/storet_red');
   insert into custom.record (organization_id, table_id, data)
-  values (v_shared, null, jsonb_build_object('name','ZZ HQ')) returning id into v_h1;
+  values (v_shared, null, jsonb_build_object('name','Wraithmoor Regional Museum — Main Building')) returning id into v_h1;
   insert into custom.record (organization_id, table_id, data)
-  values (v_open, null, jsonb_build_object('name','ZZ HQ')) returning id into v_h2;
+  values (v_open, null, jsonb_build_object('name','Wraithmoor Regional Museum — Main Building')) returning id into v_h2;
 
   -- the fixtures, built as the OWNER (this is setup, not the thing under test)
   v_proj_t := custom.table_declare(v_shared, jsonb_build_object(
-    'name','ZZ Project','slug','zz_storet_r_project','type','entity','label_singular','Project',
-    'label_plural','Projects','title_field','pname','display','page','weight','light','ordered',false,
+    'name','Exhibition','slug','exhibitions','type','entity','label_singular','Exhibition',
+    'label_plural','Exhibitions','title_field','pname','display','page','weight','light','ordered',false,
     'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','pname')),'parent_id',v_h1::text));
   v_note_t := custom.table_declare(v_shared, jsonb_build_object(
-    'name','ZZ Note','slug','zz_storet_r_note','type','entity','label_singular','Note',
-    'label_plural','Notes','title_field','body','display','page','weight','light','ordered',false,
+    'name','Condition note','slug','condition_notes','type','entity','label_singular','Condition note',
+    'label_plural','Condition notes','title_field','body','display','page','weight','light','ordered',false,
     'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','body')),'parent_id',v_h1::text));
   perform custom.field_declare(v_shared, v_note_t, jsonb_build_object('label','Detail','plain','text'));
-  v_proj := custom.record_write(v_shared, v_proj_t, jsonb_build_object('pname','Project A','parent_id',v_h1::text));
+  v_proj := custom.record_write(v_shared, v_proj_t, jsonb_build_object('pname','The Unfinished Object','parent_id',v_h1::text));
   v_note := custom.record_write(v_shared, v_note_t, jsonb_build_object('body','the note','parent_id',v_h1::text));
   perform custom.relation_carry(v_shared, v_proj, v_note);
   perform custom.share_grant(v_shared, v_proj, 'user', c_dana, 'viewer'::public.permission_level);
 
   v_wid_t := custom.table_declare(v_open, jsonb_build_object(
-    'name','ZZ Widget','slug','zz_storet_r_widget','type','entity','label_singular','Widget',
-    'label_plural','Widgets','title_field','wname','display','page','weight','light','ordered',false,
+    'name','Object','slug','objects','type','entity','label_singular','Object',
+    'label_plural','Objects','title_field','wname','display','page','weight','light','ordered',false,
     'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','wname')),'parent_id',v_h2::text));
   v_f_code := custom.field_declare(v_open, v_wid_t, jsonb_build_object('label','Code','plain','text'));
@@ -104,20 +104,20 @@ begin
   v_b := custom.record_write(v_open, v_wid_t, jsonb_build_object('wname','B','code','12','parent_id',v_h2::text));
 
   v_sh_t := custom.table_declare(v_open, jsonb_build_object(
-    'name','ZZ Shape','slug','zz_storet_r_shape','type','entity','label_singular','Shape',
-    'label_plural','Shapes','title_field','shname','display','page','weight','light','ordered',false,
+    'name','Display case','slug','display_cases','type','entity','label_singular','Display case',
+    'label_plural','Display cases','title_field','shname','display','page','weight','light','ordered',false,
     'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','shname')),'parent_id',v_h2::text));
   v_f_kind := custom.field_declare(v_open, v_sh_t, jsonb_build_object(
     'label','Kind','parity_type','select','options', jsonb_build_array('Circle','Rectangle','Square')));
 
   v_co_t := custom.table_declare(v_open, jsonb_build_object(
-    'name','ZZ Company','slug','zz_storet_r_company','type','entity','label_singular','Company',
-    'label_plural','Companies','title_field','cname','display','page','weight','light','ordered',false,
+    'name','Lending institution','slug','lending_institutions','type','entity','label_singular','Lending institution',
+    'label_plural','Lending institutions','title_field','cname','display','page','weight','light','ordered',false,
     'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','cname')),'parent_id',v_h2::text));
-  v_ca := custom.record_write(v_open, v_co_t, jsonb_build_object('cname','Company A','parent_id',v_h2::text));
-  v_cb := custom.record_write(v_open, v_co_t, jsonb_build_object('cname','Company B','parent_id',v_h2::text));
+  v_ca := custom.record_write(v_open, v_co_t, jsonb_build_object('cname','Design History Museum','parent_id',v_h2::text));
+  v_cb := custom.record_write(v_open, v_co_t, jsonb_build_object('cname','Nordic Photography Archive','parent_id',v_h2::text));
   perform custom.relation_carry(v_open, v_ca, v_cb);
   perform custom.relation_carry(v_open, v_cb, v_ca);
 
@@ -125,12 +125,12 @@ begin
   -- The old `custom.migrate_retype` is back and it is SECURITY INVOKER again. From the owner's
   -- seat — the seat EVERY campaign suite before this one ran in — it works. From a signed-in
   -- seat it is `permission denied` on its own first line. Same body, same transaction.
-  if (custom.migrate_retype(v_open, v_a, 'zz_storet_r_widget', 'red') ->> 'verb') is distinct from 'retype' then
+  if (custom.migrate_retype(v_open, v_a, 'objects', 'red') ->> 'verb') is distinct from 'retype' then
     raise exception '0: the owner seat could not run the unfixed verb, so this block proves nothing';
   end if;
   perform set_config('role', 'authenticated', true);
   begin
-    perform custom.migrate_retype(v_open, v_b, 'zz_storet_r_widget', 'red');
+    perform custom.migrate_retype(v_open, v_b, 'objects', 'red');
     raise notice 'BLOCK 0 is GREEN — the unfixed verb ran from a signed-in seat too';
   exception when insufficient_privilege then
     v_red := v_red + 1;
@@ -180,8 +180,8 @@ begin
 
   -- ══════ BLOCK 4 — T7: the declaring door throws the caller's words away ═══════════════
   v_per_t := custom.table_declare(v_open, jsonb_build_object(
-    'name','ZZ Asset','slug','zz_storet_r_asset','type','entity','label_singular','Asset',
-    'label_plural','Assets','title_field','aname','display','page','weight','light','ordered',false,
+    'name','Conservation equipment','slug','conservation_equipment','type','entity','label_singular','Equipment item',
+    'label_plural','Equipment items','title_field','aname','display','page','weight','light','ordered',false,
     'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','aname')),'parent_id',v_h2::text));
   v_f_own := custom.field_declare(v_open, v_per_t, jsonb_build_object(
@@ -213,7 +213,7 @@ begin
   select count(*) into v_n from custom.query_rollup(v_open, array[v_ca], null, null, 33, 'viewer');
   if v_n < 2 then
     v_red := v_red + 1;
-    raise notice 'BLOCK 5 RED — T11: rolling up from Company A reaches % node(s), and A partners B', v_n;
+    raise notice 'BLOCK 5 RED — T11: rolling up from Design History Museum reaches % node(s), and it partners Nordic Photography Archive', v_n;
   else
     raise notice 'BLOCK 5 is GREEN — the old edge set followed the carrying link';
   end if;

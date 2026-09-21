@@ -49,16 +49,16 @@ set local lock_timeout = '60s';
 -- filter and the door is the write barrier. A role RLS happens to hide the row from proves
 -- nothing about the door; this one removes the filter so the door is the only thing left that
 -- could refuse — and RED 2 says there is none on DELETE.
-create role zz_v1store_red nologin bypassrls;
-grant usage on schema custom to zz_v1store_red;
-grant select, insert, update, delete on custom.record to zz_v1store_red;
-grant usage on schema platform to zz_v1store_red;
+create role ttj_archive_lane nologin bypassrls;
+grant usage on schema custom to ttj_archive_lane;
+grant select, insert, update, delete on custom.record to ttj_archive_lane;
+grant usage on schema platform to ttj_archive_lane;
 grant select on platform.feature_knob, platform.knob_override,
-                platform.knob_scope_kind, platform.knob_rung_lock to zz_v1store_red;
-grant execute on function custom.assert_store_door(uuid, text) to zz_v1store_red;
-grant execute on function custom.caller_role() to zz_v1store_red;
-grant execute on function custom.store_is_open(uuid) to zz_v1store_red;
-do $g$ begin execute format('grant zz_v1store_red to %I', current_user); end $g$;
+                platform.knob_scope_kind, platform.knob_rung_lock to ttj_archive_lane;
+grant execute on function custom.assert_store_door(uuid, text) to ttj_archive_lane;
+grant execute on function custom.caller_role() to ttj_archive_lane;
+grant execute on function custom.store_is_open(uuid) to ttj_archive_lane;
+do $g$ begin execute format('grant ttj_archive_lane to %I', current_user); end $g$;
 
 do $t$
 declare
@@ -90,8 +90,8 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by) values
-    (v_org_a, 'ZZ V1STORE Red A', 'zz-v1store-red-a-' || substr(v_org_a::text,1,8), 'ZRA', c_admin),
-    (v_org_b, 'ZZ V1STORE Red B', 'zz-v1store-red-b-' || substr(v_org_b::text,1,8), 'ZRB', c_admin);
+    (v_org_a, 'Trailhead & Torch Journeys — Moab Desk', 'trailhead-torch-moab-' || substr(v_org_a::text,1,8), 'TTM', c_admin),
+    (v_org_b, 'Trailhead & Torch Journeys — Bar Harbor Desk', 'trailhead-torch-bar-harbor-' || substr(v_org_b::text,1,8), 'TTB', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org_a, 'organization', v_org_a, c_admin, 'owner',  'active'),
     (v_org_b, 'organization', v_org_b, c_admin, 'owner',  'active'),
@@ -125,14 +125,14 @@ begin
   raise notice 'PART 0 PASSED — the seat is `authenticated`, the ladder sees a client, and custom.record is not readable from it.';
 
   v_table_a := custom.table_declare(v_org_a, jsonb_build_object(
-    'type','entity','name','Order','slug','zz_v1store_red_a_order',
+    'type','entity','name','Order','slug','trip_orders',
     'label_singular','Order','label_plural','Orders','display','page','ordered',false,
     'weight','light','retention_days',30,'default_sort','[]'::jsonb,'row_order','sorted',
     'agent_writable',true,'title_field','name','parent_id', v_home_a::text,
     'fields', jsonb_build_array(jsonb_build_object('name','name'))));
   perform custom.field_declare(v_org_a, v_table_a, jsonb_build_object('key','name','label','Name','plain','text','sort',10));
   v_table_b := custom.table_declare(v_org_b, jsonb_build_object(
-    'type','entity','name','Order','slug','zz_v1store_red_b_order',
+    'type','entity','name','Order','slug','trip_orders',
     'label_singular','Order','label_plural','Orders','display','page','ordered',false,
     'weight','light','retention_days',30,'default_sort','[]'::jsonb,'row_order','sorted',
     'agent_writable',true,'title_field','name','parent_id', v_home_b::text,
@@ -221,7 +221,7 @@ begin
   insert into custom.record (organization_id, table_id, data)
   values (v_org_b, null, jsonb_build_object('note','hard delete me')) returning id into v_id;
   set local lock_timeout = '60s';
-  set local role zz_v1store_red;
+  set local role ttj_archive_lane;
   v_n := 0; v_caught := null;
   begin
     delete from custom.record where organization_id = v_org_b and id = v_id;

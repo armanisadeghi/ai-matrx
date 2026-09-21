@@ -86,7 +86,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W3-WORK RED', 'zz-w3work-red-' || substr(v_org::text, 1, 8), 'ZWR', c_admin);
+  values (v_org, 'Rincon Plumbing Co — Millbrook Branch', 'rincon-plumbing-millbrook-work-' || substr(v_org::text, 1, 8), 'RPM', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
@@ -116,7 +116,7 @@ begin
   -- ── THE FIXTURE. The Table and its column are the person's, through the doors; the
   -- assignment fields are not, because `custom.work_take_assignment` holds no client grant.
   v_table := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ W3 Work RED','slug','zz_w3_work_red','type','entity',
+    'name','Punch List Tasks','slug','punch_list_tasks','type','entity',
     'label_singular','Task','label_plural','Tasks','title_field','title',
     'display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
@@ -165,7 +165,7 @@ begin
   create or replace function custom.work_template_refusal(p_graph jsonb)
   returns text language sql immutable set search_path to 'pg_catalog' as $red$ select null::text; $red$;
 
-  v_tpl := custom.work_template_declare(v_org, 'ZZ RED referenced', jsonb_build_object(
+  v_tpl := custom.work_template_declare(v_org, 'Rough-In Before Trim-Out', jsonb_build_object(
     'nodes', jsonb_build_array(jsonb_build_object('ref','a','table',v_table::text,'data',jsonb_build_object('title','A')),
                                jsonb_build_object('ref','b','table',v_table::text,'data',jsonb_build_object('title','B'))),
     'relations', jsonb_build_array(jsonb_build_object('kind','referenced','from','a','to','b'))));
@@ -186,7 +186,7 @@ begin
   --         reason: `custom.work_slot_hold` holds no client grant either.
   -- ══════════════════════════════════════════════════════════════════════════
   v_stable := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ RED Slots','slug','zz_w3_work_red_slots','type','entity',
+    'name','Truck Bay Holds','slug','truck_bay_holds','type','entity',
     'label_singular','Hold','label_plural','Holds','title_field','slot_key',
     'display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',false,'retention_days',365,

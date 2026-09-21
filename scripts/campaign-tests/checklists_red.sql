@@ -24,18 +24,18 @@ set local statement_timeout = '180s';
 -- (rule 15): planting bytes is an OPERATOR act and the seat may not do it. Every block that
 -- writes a function body steps out to this role first and says so; every block that asserts a
 -- product clause takes the seat back.
-create temporary table zz_ckl_boss on commit drop as select current_user as who;
-grant select on zz_ckl_boss to authenticated;
+create temporary table ridgeline_boss on commit drop as select current_user as who;
+grant select on ridgeline_boss to authenticated;
 
 -- The two trigger bodies, kept whole so the blocks below can put them back exactly.
-create temporary table zz_ckl_guards on commit drop as
+create temporary table ridgeline_guards on commit drop as
   select p.proname, pg_get_functiondef(p.oid) as def
     from pg_proc p
    where p.pronamespace = 'custom'::regnamespace
      and p.proname in ('_checklist_step_guard', '_checklist_watch');
 
 -- The six bodies as they stand RIGHT NOW, so PART 5 can prove nothing leaked out.
-create temporary table zz_ckl_before on commit drop as
+create temporary table ridgeline_before on commit drop as
   select p.proname, md5(pg_get_functiondef(p.oid)) as fingerprint
     from pg_proc p
    where p.pronamespace = 'custom'::regnamespace
@@ -44,7 +44,7 @@ create temporary table zz_ckl_before on commit drop as
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- THE FIXTURE, once, for every block below. Written as the connected role; it asserts nothing.
-create temporary table zz_ckl_fixture on commit drop as select
+create temporary table ridgeline_fixture on commit drop as select
   '87a6e699-3622-4869-8843-d0867456c0dd'::uuid as admin_id,
   '4060701e-706a-4c76-b3ca-0bbc69fa5a14'::uuid as dana_id,
   gen_random_uuid() as org,
@@ -53,7 +53,7 @@ create temporary table zz_ckl_fixture on commit drop as select
 -- The seat reads and writes this one row. A temporary table is not the store, it dies with the
 -- transaction, and it carries no product clause — it is how the four blocks below share one
 -- fixture without rebuilding an organization four times.
-grant select, update on zz_ckl_fixture to authenticated;
+grant select, update on ridgeline_fixture to authenticated;
 
 do $t$
 declare
@@ -66,15 +66,15 @@ begin
     raise exception 'checklists_red.sql runs on the MAIN database only, and this is %',
       (select system_identifier from pg_control_system());
   end if;
-  select * into f from zz_ckl_fixture;
+  select * into f from ridgeline_fixture;
 
   perform set_config('app.actor_system', 'campaign-test/checklists_red', true);
   perform set_config('request.jwt.claims',
                      '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (f.org, 'ZZ CHECKLISTS Red ' || substr(f.org::text, 1, 8),
-          'zz-checklists-red-' || substr(f.org::text, 1, 8), 'ZCR', f.admin_id);
+  values (f.org, 'Ridgeline Physical Therapy ' || substr(f.org::text, 1, 8),
+          'ridgeline-physical-therapy-' || substr(f.org::text, 1, 8), 'RPT', f.admin_id);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (f.org, 'organization', f.org, f.admin_id, 'owner',  'active'),
     (f.org, 'organization', f.org, f.dana_id,  'member', 'active');
@@ -110,7 +110,7 @@ begin
       jsonb_build_object('ref', 'laptop', 'title', 'Order the laptop', 'role', 'it',
                          'due_days', 2, 'depends_on', jsonb_build_array('contract'))))) ->> 'template_id')::uuid;
 
-  update zz_ckl_fixture set people = v_people, tpl = v_tpl, home = v_home;
+  update ridgeline_fixture set people = v_people, tpl = v_tpl, home = v_home;
   raise notice 'fixture ready — organization %, checklist %', f.org, v_tpl;
 end
 $t$;
@@ -129,7 +129,7 @@ $t$;
 do $t$
 begin
   -- OUT OF THE SEAT: planting bytes is an operator act. No product clause is asserted here.
-  perform set_config('role', (select who from zz_ckl_boss), true);
+  perform set_config('role', (select who from ridgeline_boss), true);
 end
 $t$;
 
@@ -154,7 +154,7 @@ declare
   v_step uuid;
   v_done uuid;
 begin
-  select * into f from zz_ckl_fixture;
+  select * into f from ridgeline_fixture;
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims',
                      '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
@@ -168,7 +168,7 @@ begin
                      '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}', true);
   perform custom.work_set_state(f.org, v_step, v_done);
   if not (select s.finished from custom.checklist_run(f.org, v_run) s where s.ref = 'laptop') then
-    raise exception 'RED 1 CAME OUT GREEN — the step refused even with zz_ckl_step_guard dropped, so something else is holding the rule and the green suite is measuring that instead';
+    raise exception 'RED 1 CAME OUT GREEN — the step refused even with the zz_ckl_step_guard trigger dropped, so something else is holding the rule and the green suite is measuring that instead';
   end if;
   raise notice 'RED 1 — with the guard deciding nothing, the laptop was ordered before the contract was sent, and nobody was told.';
 end
@@ -177,13 +177,13 @@ $t$;
 do $t$
 begin
   -- OUT OF THE SEAT: planting bytes is an operator act. No product clause is asserted here.
-  perform set_config('role', (select who from zz_ckl_boss), true);
+  perform set_config('role', (select who from ridgeline_boss), true);
 end
 $t$;
 
 do $t$
 begin
-  execute (select b.def from zz_ckl_guards b where b.proname = '_checklist_step_guard');
+  execute (select b.def from ridgeline_guards b where b.proname = '_checklist_step_guard');
 end
 $t$;
 
@@ -193,7 +193,7 @@ $t$;
 do $t$
 begin
   -- OUT OF THE SEAT: planting bytes is an operator act. No product clause is asserted here.
-  perform set_config('role', (select who from zz_ckl_boss), true);
+  perform set_config('role', (select who from ridgeline_boss), true);
 end
 $t$;
 
@@ -205,7 +205,7 @@ declare
   v_hire  uuid;
   v_caught text;
 begin
-  select * into f from zz_ckl_fixture;
+  select * into f from ridgeline_fixture;
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims',
                      '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
@@ -228,7 +228,7 @@ $t$;
 do $t$
 begin
   -- OUT OF THE SEAT: planting bytes is an operator act. No product clause is asserted here.
-  perform set_config('role', (select who from zz_ckl_boss), true);
+  perform set_config('role', (select who from ridgeline_boss), true);
 end
 $t$;
 
@@ -239,7 +239,7 @@ declare
   f        record;
   v_caught text;
 begin
-  select * into f from zz_ckl_fixture;
+  select * into f from ridgeline_fixture;
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims',
                      '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}', true);
@@ -263,7 +263,7 @@ $t$;
 do $t$
 begin
   -- OUT OF THE SEAT: planting bytes is an operator act. No product clause is asserted here.
-  perform set_config('role', (select who from zz_ckl_boss), true);
+  perform set_config('role', (select who from ridgeline_boss), true);
 end
 $t$;
 
@@ -286,7 +286,7 @@ declare
   v_hire uuid;
   v_n    integer;
 begin
-  select * into f from zz_ckl_fixture;
+  select * into f from ridgeline_fixture;
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims',
                      '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
@@ -295,7 +295,7 @@ begin
   v_hire := custom.record_write(f.org, f.people, jsonb_build_object('name', 'Red Four'));
   select count(*) into v_n from custom.checklist_runs(f.org, f.people, v_hire, true, 10);
   if v_n <> 0 then
-    raise exception 'RED 4 CAME OUT GREEN — % run(s) started with zz_ckl_watch dropped', v_n;
+    raise exception 'RED 4 CAME OUT GREEN — % run(s) started with the zz_ckl_watch trigger dropped', v_n;
   end if;
   raise notice 'RED 4 — a new hire arrived and no checklist started. Nobody was told that either.';
 end
@@ -304,13 +304,13 @@ $t$;
 do $t$
 begin
   -- OUT OF THE SEAT: planting bytes is an operator act. No product clause is asserted here.
-  perform set_config('role', (select who from zz_ckl_boss), true);
+  perform set_config('role', (select who from ridgeline_boss), true);
 end
 $t$;
 
 do $t$
 begin
-  execute (select b.def from zz_ckl_guards b where b.proname = '_checklist_watch');
+  execute (select b.def from ridgeline_guards b where b.proname = '_checklist_watch');
 end
 $t$;
 
@@ -319,7 +319,7 @@ $t$;
 do $t$
 begin
   -- OUT OF THE SEAT: planting bytes is an operator act. No product clause is asserted here.
-  perform set_config('role', (select who from zz_ckl_boss), true);
+  perform set_config('role', (select who from ridgeline_boss), true);
 end
 $t$;
 
@@ -327,7 +327,7 @@ $t$;
 do $t$
 begin
   -- OUT OF THE SEAT: planting bytes is an operator act. No product clause is asserted here.
-  perform set_config('role', (select who from zz_ckl_boss), true);
+  perform set_config('role', (select who from ridgeline_boss), true);
 end
 $t$;
 
@@ -338,7 +338,7 @@ declare
   v_drift text;
 begin
   select string_agg(b.proname, ', ') into v_drift
-    from zz_ckl_before b
+    from ridgeline_before b
     join pg_proc p on p.proname = b.proname and p.pronamespace = 'custom'::regnamespace
    where md5(pg_get_functiondef(p.oid)) is distinct from b.fingerprint;
   if v_drift is not null then

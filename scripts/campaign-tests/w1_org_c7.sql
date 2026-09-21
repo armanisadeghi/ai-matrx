@@ -63,7 +63,7 @@ declare
 begin
   -- ---------------------------------------------------------------- fixtures
   insert into iam.organizations (id, name, slug, abbreviation)
-  values (v_org, 'ZZ W1ORG C7', 'zz-w1org-c7', 'ZZC');
+  values (v_org, 'Cascade Electronics Recovery', 'cascade-electronics-recovery', 'CER');
 
   select u.id into v_user from auth.users u order by u.created_at limit 1;
   if v_user is null then
@@ -76,7 +76,7 @@ begin
   -- The extensibility layer's own guard (`_guard_definition`) refuses a custom_entity field
   -- whose definition does not exist, so the fixture creates a real one to hang fields on.
   insert into platform.custom_entity_definition (id, slug, name, name_plural, organization_id)
-  values (gen_random_uuid(), 'zz-c7-thing', 'ZZ C7 Thing', 'ZZ C7 Things', v_org)
+  values (gen_random_uuid(), 'client-sites', 'Client Site', 'Client Sites', v_org)
   returning id into v_defn;
 
   insert into users.user_preferences (user_id, preferences, default_organization_id)
@@ -170,14 +170,14 @@ begin
 
   -- ====================================================== 4. REC-64 — the audience is a word
   insert into context.templates (key, name, category, audience)
-  values ('zz-c7-individual', 'ZZ C7 Individual', 'zz', 'individual') returning id into v_tmpl;
+  values ('cascade-technician-intake', 'Technician Intake', 'electronics-recycling', 'individual') returning id into v_tmpl;
   insert into context.templates (key, name, category, audience)
-  values ('zz-c7-org', 'ZZ C7 Org', 'zz', 'organization');
+  values ('cascade-client-site-intake', 'Client Site Intake', 'electronics-recycling', 'organization');
 
   v_caught := null;
   begin
     insert into context.templates (key, name, category, audience)
-    values ('zz-c7-bad', 'ZZ C7 Bad', 'zz', 'team');
+    values ('cascade-crew-intake', 'Crew Intake', 'electronics-recycling', 'team');
   exception when check_violation then
     get stacked diagnostics v_caught = message_text;
   end;
@@ -185,15 +185,15 @@ begin
     raise exception 'C-7 4a: a third audience word landed';
   end if;
 
-  v_json := public.list_templates('zz', null);
+  v_json := public.list_templates('electronics-recycling', null);
   if not exists (select 1 from jsonb_array_elements(v_json) e
-                  where e ->> 'key' = 'zz-c7-individual'
+                  where e ->> 'key' = 'cascade-technician-intake'
                     and e ->> 'audience' = 'individual'
                     and (e ->> 'is_personal')::boolean) then
     raise exception 'C-7 4b: list_templates did not emit the word (and the derived boolean) for the individual template';
   end if;
-  if not exists (select 1 from jsonb_array_elements(public.list_templates('zz', false)) e
-                  where e ->> 'key' = 'zz-c7-org') then
+  if not exists (select 1 from jsonb_array_elements(public.list_templates('electronics-recycling', false)) e
+                  where e ->> 'key' = 'cascade-client-site-intake') then
     raise exception 'C-7 4c: the legacy boolean argument stopped selecting organization templates';
   end if;
   raise notice 'GREEN 4 — REC-64: individual and organization both land, a third word is refused by the table''s own CHECK, and list_templates emits the word while the old boolean argument still works';

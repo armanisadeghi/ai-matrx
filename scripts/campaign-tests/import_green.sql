@@ -49,7 +49,7 @@ begin
   -- ── FIXTURE, as the connected role. No client door makes an organization, a
   --    membership or a knob override, and this suite asserts nothing while it is out here.
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('Blue Ridge Recycling — safe to delete',
+  values ('Blue Ridge Recycling',
           'blue-ridge-recycling-green-' || substr(md5(random()::text), 1, 8), 'BRR', c_admin)
   returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
@@ -81,7 +81,7 @@ begin
   -- ── the two tables this suite imports into, built through the doors ─────────
   v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name', 'IMPORT Home'));
   v_acct := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ IMP Account','slug','zz_imp_account','type','entity',
+    'name','Accounts','slug','accounts','type','entity',
     'label_singular','Account','label_plural','Accounts','title_field','title','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
@@ -92,7 +92,7 @@ begin
   v_acme  := custom.record_write(v_org, v_acct, jsonb_build_object('title','Fairbanks Wholesale Supply'));
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ IMP Deal','slug','zz_imp_deal','type','entity',
+    'name','Deals','slug','deals','type','entity',
     'label_singular','Deal','label_plural','Deals','title_field','deal','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',

@@ -107,11 +107,11 @@ begin
   for v_case in
     select * from (values
       ('a lookup with nothing to read through',
-       '{"key":"zz_red_blind","label":"Blind lookup","parity_type":"lookup","pick":"full_name"}'::jsonb),
+       '{"key":"cedar_contractor_contact","label":"Blind lookup","parity_type":"lookup","pick":"full_name"}'::jsonb),
       ('a rollup along a single relation',
-       '{"key":"zz_red_single","label":"Single rollup","parity_type":"rollup","via":"owner","of":"full_name","agg":"count"}'::jsonb),
+       '{"key":"cedar_contractor_job_count","label":"Single rollup","parity_type":"rollup","via":"owner","of":"full_name","agg":"count"}'::jsonb),
       ('an attachment that would cascade',
-       '{"key":"zz_red_casc","label":"Cascading photo","parity_type":"attachment","on_target_delete":"cascade"}'::jsonb)
+       '{"key":"cedar_site_photo","label":"Cascading photo","parity_type":"attachment","on_target_delete":"cascade"}'::jsonb)
     ) as t(what, spec)
   loop
     v_id := custom.field_declare(v_org, v_tbl, v_case.spec);
@@ -133,7 +133,7 @@ begin
   -- and not about the door: a parity name nobody ships is still refused, by name.
   v_seen := null;
   begin
-    perform custom.field_declare(v_org, v_tbl, '{"key":"zz_red_bad","label":"Bad name","parity_type":"barcode"}'::jsonb);
+    perform custom.field_declare(v_org, v_tbl, '{"key":"cedar_permit_code","label":"Bad name","parity_type":"barcode"}'::jsonb);
   exception when others then v_seen := sqlerrm;
   end;
   if v_seen is null or position('There is no field type called "barcode"' in v_seen) = 0 then
@@ -142,7 +142,7 @@ begin
   -- and the three the door CORRECTS are still corrected.
   -- Two statements, deliberately: `custom.read_record` is STABLE, so nesting the declaration
   -- inside the read would hand the read the statement snapshot taken BEFORE the write.
-  v_id := custom.field_declare(v_org, v_tbl, '{"key":"zz_red_url","label":"Still a url","parity_type":"url"}'::jsonb);
+  v_id := custom.field_declare(v_org, v_tbl, '{"key":"cedar_vendor_website","label":"Still a url","parity_type":"url"}'::jsonb);
   v_doc := custom.read_record(v_org, v_id, true);
   if not exists (select 1 from jsonb_array_elements(coalesce(v_doc -> 'rules','[]'::jsonb)) r where r ->> 'kind' = 'pattern') then
     raise exception 'RED 1: the door stopped writing a url its pattern Rule';

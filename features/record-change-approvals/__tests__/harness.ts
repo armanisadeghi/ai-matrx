@@ -220,14 +220,14 @@ export async function onAFreshTable(
   if (!home.ok) throw new Error(`personKernelId refused: ${home.error.message}`);
   const homeRecord = await store.recordWrite({
     table_id: home.data,
-    data: { name: "ZZZ RELEASE-2 approval-card suite home" },
+    data: { name: "Rincon Plumbing Co — Approval Card Suite Home" },
   });
   if (!homeRecord.ok) throw new Error(`writing the home refused: ${homeRecord.error.message}`);
   const stamp = `${Date.now()}`;
   const declared = await store.tableDeclare({
     spec: {
-      name: `ZZZ RELEASE-2 approval-card table ${stamp}`,
-      slug: `zzz_release2_card_${stamp}`,
+      name: `Rincon Plumbing Crews ${stamp}`,
+      slug: `rincon_plumbing_crews_${stamp}`,
       type: "entity",
       label_singular: "Crew",
       label_plural: "Crews",

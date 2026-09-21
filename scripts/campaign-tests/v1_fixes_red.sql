@@ -93,7 +93,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ V1-FIXES Red', 'zz-v1-fixes-red-' || substr(v_org::text, 1, 8), 'ZVR', c_admin);
+  values (v_org, 'Trailhead & Torch Journeys', 'trailhead-torch-' || substr(v_org::text, 1, 8), 'TTJ', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -125,8 +125,8 @@ begin
   raise notice 'PART 0 PASSED — the seat is `authenticated`, the ladder sees a client, and custom.record is not readable from it.';
 
   v_table := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'V1 fixes RED', 'slug', 'zz_v1_fixes_red', 'type', 'entity',
-    'label_singular', 'Red row', 'label_plural', 'Red rows',
+    'name', 'Itineraries', 'slug', 'itineraries', 'type', 'entity',
+    'label_singular', 'Itinerary', 'label_plural', 'Itineraries',
     'title_field', 'nm', 'display', 'page', 'weight', 'light',
     'ordered', false, 'row_order', 'sorted', 'default_sort', '[]'::jsonb,
     'agent_writable', true, 'retention_days', 365,

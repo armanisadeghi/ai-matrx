@@ -22,7 +22,7 @@
 --      layer is back to being unreachable from a browser, which is what this lane found.
 --   2  drop the `custom.share_grant` call from `custom.work_assign` → a person is handed a row
 --      in her inbox and refused when she opens it.
---   3  drop `zz_w3_work_shape_guard`, or the model question from `custom.work_set_state` → a
+--   3  drop `zz_w3_work_shape_guard`, or the model question from `custom.work_set_state` → a  -- matrx-real-data:allow zz_w3_work_shape_guard is a live trigger name, an ordering device, not data
 --      record moves to a state the workflow forbids and nobody is told.
 --   4  let the requester decide their own request, or drop the approver query → "somebody has
 --      to say yes" becomes "I say yes to myself".
@@ -90,9 +90,9 @@ begin
   perform set_config('app.actor_system', 'campaign-test/workdoors_green', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
 
-  v_name := 'ZZ WORK-DOORS Green ' || substr(v_org::text, 1, 8);
+  v_name := 'Rincon Plumbing Co — Millbrook Branch ' || substr(v_org::text, 1, 8);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, v_name, 'zz-workdoors-' || substr(v_org::text, 1, 8), 'ZWD', c_admin);
+  values (v_org, v_name, 'rincon-plumbing-millbrook-' || substr(v_org::text, 1, 8), 'RPM', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -151,8 +151,8 @@ begin
 
   -- ── One table with two records, all through the doors. ──────────────────────
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WD Quote','slug','zz_wd_quote','type','entity',
-    'label_singular','Quote','label_plural','Quotes','title_field','name','display','page',
+    'name','Estimates','slug','estimates','type','entity',
+    'label_singular','Estimate','label_plural','Estimates','title_field','name','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','name'), jsonb_build_object('name','price')),
@@ -486,7 +486,7 @@ begin
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 7 — REC-71: THE SLOT HOLD, DECIDED BY THE DATABASE.
   -- ════════════════════════════════════════════════════════════════════════════
-  v_slots := custom.work_slots_declare(v_org, 'Consults', 'zz_wd_consult', v_home);
+  v_slots := custom.work_slots_declare(v_org, 'Site Visits', 'site_visits', v_home);
   if not (v_slots ->> 'unique')::boolean then
     raise exception '7a: the slot key is not kept unique, so this would double-book: %', v_slots;
   end if;

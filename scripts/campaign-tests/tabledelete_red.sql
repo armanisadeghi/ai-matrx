@@ -70,7 +70,8 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ TABLE-DELETE Red', 'zz-tabledelete-red-' || substr(v_org::text, 1, 8), 'ZTR', c_admin);
+  values (v_org, 'Signal & Scale Podcast — Edit Bay',
+          'signal-scale-edit-bay-' || substr(v_org::text, 1, 8), 'SSE', c_admin);
   -- A seat is a PERSON, and a person reaches an organization only through a membership.
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
@@ -83,7 +84,7 @@ begin
 
   -- A Home record has no client door of its own; it is a fixture, written before the seat.
   insert into custom.record (organization_id, table_id, data)
-  values (v_org, null, jsonb_build_object('name', 'Home')) returning id into v_home;
+  values (v_org, null, jsonb_build_object('name', 'Signal & Scale Podcast — Show Home')) returning id into v_home;
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 0 — THE SEAT. Everything below this line runs as a signed-in person.
@@ -105,8 +106,8 @@ begin
   raise notice 'PART 0 PASSED — the seat is `authenticated`, the ladder sees a client, and custom.record is not readable from it.';
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ TDR Person','slug','zz_tdr_person','type','entity',
-    'label_singular','Person','label_plural','People','title_field','pname','display','page',
+    'name','Guest','slug','guests','type','entity',
+    'label_singular','Guest','label_plural','Guests','title_field','pname','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','pname'),
@@ -116,7 +117,7 @@ begin
     'key','pname','label','Name','plain','text','sort',10));
   v_f2 := custom.field_declare(v_org, v_tbl, jsonb_build_object(
     'key','note','label','Note','plain','text','sort',20));
-  v_rec := custom.record_write(v_org, v_tbl, jsonb_build_object('pname','Ana','note','hello'));
+  v_rec := custom.record_write(v_org, v_tbl, jsonb_build_object('pname','Priya Nathaniel','note','confirmed for the 12th'));
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- RED 1 — the Table goes and its Fields and records stay.
@@ -140,8 +141,8 @@ begin
     v_fS   uuid;
   begin
     v_tblS := custom.table_declare(v_org, jsonb_build_object(
-      'name','ZZ TDR Orphans','slug','zz_tdr_orphans','type','entity',
-      'label_singular','Orphan','label_plural','Orphans','title_field','label','display','page',
+      'name','Edit task','slug','edit_tasks','type','entity',
+      'label_singular','Edit task','label_plural','Edit tasks','title_field','label','display','page',
       'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
       'agent_writable',true,'retention_days',365,'on_delete','cascade',
       'fields', jsonb_build_array(jsonb_build_object('name','label')),
@@ -170,8 +171,8 @@ begin
   -- Made red by: the Table arm's cascade_to reaching custom.delete_cascade_closure.
   -- ════════════════════════════════════════════════════════════════════════════
   v_tblA := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ TDR Invoice','slug','zz_tdr_invoice','type','entity',
-    'label_singular','Invoice','label_plural','Invoices','title_field','title','display','page',
+    'name','Sponsor invoice','slug','sponsor_invoices','type','entity',
+    'label_singular','Sponsor invoice','label_plural','Sponsor invoices','title_field','title','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','title')),
@@ -188,8 +189,8 @@ begin
   -- Made red by: the Table arm's "This table's fields are used by …" refusal.
   -- ════════════════════════════════════════════════════════════════════════════
   v_tblB := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ TDR Rates','slug','zz_tdr_rates','type','entity',
-    'label_singular','Rate','label_plural','Rates','title_field','base','display','page',
+    'name','Sponsor rate','slug','sponsor_rates','type','entity',
+    'label_singular','Sponsor rate','label_plural','Sponsor rates','title_field','base','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','base')),
@@ -201,8 +202,8 @@ begin
     v_fC   uuid;
   begin
     v_tblC := custom.table_declare(v_org, jsonb_build_object(
-      'name','ZZ TDR Quotes','slug','zz_tdr_quotes','type','entity',
-      'label_singular','Quote','label_plural','Quotes','title_field','quoted','display','page',
+      'name','Sponsor quote','slug','sponsor_quotes','type','entity',
+      'label_singular','Sponsor quote','label_plural','Sponsor quotes','title_field','quoted','display','page',
       'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
       'agent_writable',true,'retention_days',365,'on_delete','cascade',
       'fields', jsonb_build_array(jsonb_build_object('name','quoted')),
@@ -234,15 +235,15 @@ begin
   -- A table and a record of its own, so PART 2 never asks about something one of the four
   -- blocks above deleted — whichever way those blocks answered.
   v_tblP := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ TDR Access','slug','zz_tdr_access','type','entity',
-    'label_singular','Thing','label_plural','Things','title_field','pname','display','page',
+    'name','Episode','slug','episodes','type','entity',
+    'label_singular','Episode','label_plural','Episodes','title_field','pname','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','pname')),
     'parent_id', v_home::text));
   v_fP := custom.field_declare(v_org, v_tblP, jsonb_build_object(
     'key','pname','label','Name','plain','text','sort',10));
-  v_recP := custom.record_write(v_org, v_tblP, jsonb_build_object('pname','Ana'));
+  v_recP := custom.record_write(v_org, v_tblP, jsonb_build_object('pname','The Golden Path Nobody Follows'));
 
   perform set_config('request.jwt.claims', c_dana_j, true);
   v_caught := null;
@@ -267,7 +268,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform custom.share_grant(v_org, v_recP, 'user', c_dana, 'viewer'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
-  if (custom.read_record(v_org, v_recP, true) ->> 'pname') <> 'Ana' then
+  if (custom.read_record(v_org, v_recP, true) ->> 'pname') <> 'The Golden Path Nobody Follows' then
     raise exception 'ACCESS 2c (this file, not a red block): the record shared with test@test.com at viewer does not read back for her';
   end if;
   perform set_config('request.jwt.claims', c_admin_j, true);

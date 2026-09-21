@@ -68,8 +68,8 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ PIPELINES Green ' || substr(v_org::text, 1, 8),
-          'zz-pipelines-' || substr(v_org::text, 1, 8), 'ZPG', c_admin);
+  values (v_org, 'Meridian Software ' || substr(v_org::text, 1, 8),
+          'meridian-software-' || substr(v_org::text, 1, 8), 'MSW', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -109,7 +109,7 @@ begin
   -- One table, one sentence's worth of pipeline, and a board exists.
   -- ════════════════════════════════════════════════════════════════════════════
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ PL Deal','slug','zz_pl_deal_' || substr(v_org::text, 1, 8),'type','entity',
+    'name','Deals','slug','deals_' || substr(v_org::text, 1, 8),'type','entity',
     'label_singular','Deal','label_plural','Deals','title_field','name','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',

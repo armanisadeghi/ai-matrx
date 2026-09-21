@@ -91,7 +91,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W1-REL RED', 'zz-w1-rel-red-' || substr(v_org::text, 1, 8), 'ZRR', c_admin);
+  values (v_org, 'Hands & Hope Alliance', 'hands-hope-alliance-red-' || substr(v_org::text, 1, 8), 'HHA', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -99,7 +99,7 @@ begin
   values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_rel_red');
   -- A Home has no client door of its own.
   insert into custom.record (organization_id, table_id, data)
-  values (v_org, null, jsonb_build_object('name', 'W1-REL RED HQ'))
+  values (v_org, null, jsonb_build_object('name', 'Hands & Hope Alliance — Main Office'))
   returning id into v_home;
 
   -- ════════════════════════════════════════════════════════════════════════════
@@ -128,34 +128,34 @@ begin
   -- another Table is written into the `custom.field` view as the connected role, which is the
   -- second half of the same finding RED 0 records. Nothing is asserted while out.
   v_note_t := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Red Note','slug','zz_rr_note','type','entity','display','list',
-    'label_singular','ZZ Red Note','label_plural','ZZ Red Notes','ordered',true,'weight','light',
+    'name','Gift Notes','slug','gift_notes','type','entity','display','list',
+    'label_singular','Gift Note','label_plural','Gift Notes','ordered',true,'weight','light',
     'retention_days',365,'row_order','manual','agent_writable',true,
     'parent_id', v_home::text,'title_field','title',
     'default_sort', jsonb_build_array(jsonb_build_object('field','title','direction','asc')),
     'fields', jsonb_build_array(jsonb_build_object('name','title'))));
   perform custom.field_declare(v_org, v_note_t, jsonb_build_object('key','title','label','Title','plain','text'));
   v_proj_t := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Red Project','slug','zz_rr_project','type','entity','display','list',
-    'label_singular','ZZ Red Project','label_plural','ZZ Red Projects','ordered',true,'weight','light',
+    'name','Campaigns','slug','campaigns','type','entity','display','list',
+    'label_singular','Campaign','label_plural','Campaigns','ordered',true,'weight','light',
     'retention_days',365,'row_order','manual','agent_writable',true,
     'parent_id', v_home::text,'title_field','title',
     'default_sort', jsonb_build_array(jsonb_build_object('field','title','direction','asc')),
     'fields', jsonb_build_array(jsonb_build_object('name','title'))));
   perform custom.field_declare(v_org, v_proj_t, jsonb_build_object('key','title','label','Title','plain','text'));
   v_tag_t := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Red Tag','slug','zz_rr_tag','type','entity','display','list',
-    'label_singular','ZZ Red Tag','label_plural','ZZ Red Tags','ordered',true,'weight','light',
+    'name','Appeal Codes','slug','appeal_codes','type','entity','display','list',
+    'label_singular','Appeal Code','label_plural','Appeal Codes','ordered',true,'weight','light',
     'retention_days',365,'row_order','manual','agent_writable',true,
     'parent_id', v_home::text,'title_field','title',
     'default_sort', jsonb_build_array(jsonb_build_object('field','title','direction','asc')),
     'fields', jsonb_build_array(jsonb_build_object('name','title'))));
   perform custom.field_declare(v_org, v_tag_t, jsonb_build_object('key','title','label','Title','plain','text'));
 
-  v_note := custom.record_write(v_org, v_note_t, '{"title":"Red note"}'::jsonb);
-  v_a    := custom.record_write(v_org, v_proj_t, '{"title":"Red project A"}'::jsonb);
-  v_b    := custom.record_write(v_org, v_proj_t, '{"title":"Red project B"}'::jsonb);
-  v_tag  := custom.record_write(v_org, v_tag_t,  '{"title":"Red tag"}'::jsonb);
+  v_note := custom.record_write(v_org, v_note_t, '{"title":"Thank-you call note"}'::jsonb);
+  v_a    := custom.record_write(v_org, v_proj_t, '{"title":"Winter Coat Drive 2026"}'::jsonb);
+  v_b    := custom.record_write(v_org, v_proj_t, '{"title":"Annual Gala 2026"}'::jsonb);
+  v_tag  := custom.record_write(v_org, v_tag_t,  '{"title":"Year-End Appeal"}'::jsonb);
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- RED 0 — THE FINDING. The relations door is not reachable from this seat.
@@ -295,7 +295,7 @@ begin
   if v_caught is null then
     raise exception 'RED 3: with three triggers dropped on platform.associations, test@test.com could also reshape a table — those drops were supposed to touch the relation contract and not the ladder';
   end if;
-  if (custom.read_record(v_org, v_note, true) ->> 'title') <> 'Red note' then
+  if (custom.read_record(v_org, v_note, true) ->> 'title') <> 'Thank-you call note' then
     raise exception 'RED 3: the record shared with test@test.com at viewer does not read back for her';
   end if;
   perform set_config('request.jwt.claims', c_admin_j, true);

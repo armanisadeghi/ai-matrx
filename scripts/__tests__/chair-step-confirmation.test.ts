@@ -19,7 +19,7 @@ import { writeFileSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import { chairStepRefusal, confirmChairStep } from "../lib/chair-step";
 
-const FILE = "zz_example_drop.sql";
+const FILE = "rincon_plumbing_jobs_index_drop.sql";
 const WHY = "drops one index nobody reads";
 
 describe("the chair-step confirmation", () => {
@@ -30,7 +30,7 @@ describe("the chair-step confirmation", () => {
 
   it("REFUSES when the command did not name it, or named a different file", async () => {
     await expect(confirmChairStep(FILE, WHY, [])).resolves.toBe(chairStepRefusal(FILE, WHY));
-    await expect(confirmChairStep(FILE, WHY, ["zz_example_drop"])).resolves.toBe(chairStepRefusal(FILE, WHY));
+    await expect(confirmChairStep(FILE, WHY, ["rincon_plumbing_jobs_index_drop"])).resolves.toBe(chairStepRefusal(FILE, WHY));
     await expect(confirmChairStep(FILE, WHY, ["other.sql"])).resolves.toBe(chairStepRefusal(FILE, WHY));
   });
 
@@ -49,9 +49,9 @@ describe("the chair-step confirmation", () => {
     // The runner refuses any file outside migrations/, so the probe lives where a real pending
     // chair step lives: migrations/inverse/, the directory no release sweeps. Unique per process,
     // removed in `finally`, and it could not run even if it were left behind — it is unnamed.
-    const probe = `zz_chair_step_probe_${process.pid}.sql`;
+    const probe = `rincon_plumbing_chair_step_probe_${process.pid}.sql`;
     const file = resolve(__dirname, "..", "..", "migrations", "inverse", probe);
-    writeFileSync(file, `-- chair-step: ${WHY}\ndrop index if exists public.zz_never_existed;\n`);
+    writeFileSync(file, `-- chair-step: ${WHY}\ndrop index if exists public.jobs_status_idx_never_existed;\n`);
     try {
       const runner = resolve(__dirname, "..", "apply-migration.ts");
       const cli = resolve(__dirname, "..", "..", "node_modules", "tsx", "dist", "cli.mjs");
