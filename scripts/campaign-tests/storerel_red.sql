@@ -200,7 +200,9 @@ begin
   if v_red <> 6 then
     raise exception 'only % of 6 blocks were RED', v_red;
   end if;
-  raise notice '% of 6 blocks are RED (the defect they assert is gone)', v_red;
+  -- Wording corrected by lane RED-SUITES-3, 2026-09-21: this twin PASSES when all six flip,
+  -- and a block that flipped is a defect PUT BACK by the inverses above, not one that is gone.
+  raise notice '% of 6 blocks are RED — every defect STORE-REL closed was put back by its own inverse and observed', v_red;
 end;
 $t$;
 

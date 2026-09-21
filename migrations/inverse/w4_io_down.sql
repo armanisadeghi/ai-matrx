@@ -19,12 +19,28 @@ drop function if exists platform._reopen_declared_doors_after_revoke();
 drop function if exists platform.reopen_declared_doors(text);
 
 drop trigger if exists io_outbox_announce on custom.io_outbox;
-drop trigger if exists io_record_changed on custom.record;
+-- 🚨 RE-POINTED TO THE LIVE TRIGGERS (lane RED-SUITES-3, 2026-09-21). This file named only the
+-- ROW-level trigger `io_record_changed`, and
+-- `writeperf2_the_after_triggers_fire_once_per_statement.sql` replaced it with a STATEMENT-level
+-- trio (`io_record_changed_s_i` / `_s_u` / `_s_d` over `custom.io_record_changed_stmt_insert` /
+-- `_stmt_update` / `_stmt_delete`). Those three bodies call `custom.io_changed_field_ids` and
+-- `custom.io_changed_keys` and write into `custom.io_outbox` — all three dropped below — so as
+-- written this inverse left live triggers calling functions and a table that no longer existed,
+-- and the next write to `custom.record` in the transaction would have died on that rather than
+-- on the defect this file exists to restore. The same class took `storerel_red` out for a whole
+-- session. The triggers come off BEFORE their functions.
+drop trigger if exists io_record_changed     on custom.record;
+drop trigger if exists io_record_changed_s_i on custom.record;
+drop trigger if exists io_record_changed_s_u on custom.record;
+drop trigger if exists io_record_changed_s_d on custom.record;
 
 drop view if exists custom.record_outbox;
 
 drop function if exists custom.io_outbox_announce();
 drop function if exists custom.io_record_changed();
+drop function if exists custom.io_record_changed_stmt_insert();
+drop function if exists custom.io_record_changed_stmt_update();
+drop function if exists custom.io_record_changed_stmt_delete();
 drop function if exists custom.io_outbox_drain(uuid, text, integer, text);
 drop function if exists custom.io_outbox_release(uuid, text, interval);
 drop function if exists custom.io_changed_field_ids(uuid, uuid, jsonb, jsonb);
@@ -55,4 +71,17 @@ drop table if exists custom.io_comment;
 drop table if exists custom.io_import;
 drop table if exists custom.io_outbox;
 
+-- 🚨 THE REGISTRY ROW IS NOT ALONE ANY MORE (lane RED-SUITES-3, 2026-09-21). A registered
+-- token has grown dependants since this inverse was written: the data-lifecycle platform
+-- gives every enlisted entity a `platform.lifecycle_entity_plan` row, and
+-- `lifecycle_entity_plan_entity_token_fkey` made this DELETE refuse by name —
+--     update or delete on table "entity_types" violates foreign key constraint
+--     "lifecycle_entity_plan_entity_token_fkey" on table "lifecycle_entity_plan"
+--     Key (token)=(io_comment) is still referenced
+-- which killed the inverse two statements from its end. The plan and the archive ledger are
+-- the registry's own bookkeeping about a token, so they go when the token goes; nothing that
+-- belongs to a person is touched here.
+delete from platform.lifecycle_archive_row where entity_token in ('io_outbox', 'io_import', 'io_comment');
+delete from platform.lifecycle_entity_plan  where entity_token in ('io_outbox', 'io_import', 'io_comment');
+delete from platform.retention_policy       where entity_token in ('io_outbox', 'io_import', 'io_comment');
 delete from platform.entity_types where token in ('io_outbox', 'io_import', 'io_comment');
