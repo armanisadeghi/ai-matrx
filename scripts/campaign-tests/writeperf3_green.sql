@@ -120,7 +120,7 @@ begin
   -- the fixture the rest of the suite writes into
   v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Dispatch desk'));
   v_acct := custom.table_declare(v_org, jsonb_build_object(
-    'name','Carrier','slug','zz_wp3g_carrier_' || substr(md5(random()::text),1,8),'type','entity',
+    'name','Carrier','slug','carriers_' || substr(md5(random()::text),1,8),'type','entity',
     'label_singular','Carrier','label_plural','Carriers','title_field','title','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
@@ -134,7 +134,7 @@ begin
              'High Plains Refrigerated','Gulf Coast Perishables'])[i]));
   end loop;
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','Shipment','slug','zz_wp3g_shipment_' || substr(md5(random()::text),1,8),'type','entity',
+    'name','Shipment','slug','shipments_' || substr(md5(random()::text),1,8),'type','entity',
     'label_singular','Shipment','label_plural','Shipments','title_field','reference','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',

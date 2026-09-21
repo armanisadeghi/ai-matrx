@@ -418,7 +418,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ TALK-TO-RECORD red', 'zz-talkrec-r-'||substr(v_org::text,1,8), 'ZTD', c_admin);
+  values (v_org, 'Wraithmoor Regional Museum of Art & Craft', 'wraithmoor-museum-'||substr(v_org::text,1,8), 'WRM', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org,'organization',v_org,c_admin,'owner','active'),
     (v_org,'organization',v_org,c_dana,'member','active');
@@ -426,16 +426,16 @@ begin
     ('custom','system_enabled','organization',v_org,v_org,'true'::jsonb,'campaign-test/talkrec_red'),
     ('custom','member_default_visibility','organization',v_org,v_org,'"shared_only"'::jsonb,'campaign-test/talkrec_red');
   insert into custom.record (organization_id, table_id, data)
-  values (v_org, null, jsonb_build_object('name','ZZ HQ')) returning id into v_home;
+  values (v_org, null, jsonb_build_object('name','Wraithmoor Regional Museum — Collections Store')) returning id into v_home;
   insert into chat.conversation (id, organization_id, title, created_by)
-  values (v_conv, v_org, 'ZZ red', c_admin);
+  values (v_conv, v_org, 'Provenance query on the Achebe-Foss sculpture', c_admin);
 
   perform set_config('role', 'authenticated', true);
   if current_user <> 'authenticated' then raise exception '0: no seat'; end if;
 
   v_cust := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Customer','slug','zz_talkrec_r_'||substr(v_org::text,1,8),'type','entity',
-    'label_singular','Customer','label_plural','Customers','title_field','name','display','page',
+    'name','Enquirers','slug','enquirers_'||substr(v_org::text,1,8),'type','entity',
+    'label_singular','Enquirer','label_plural','Enquirers','title_field','name','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','name')),'parent_id',v_home::text));

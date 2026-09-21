@@ -357,53 +357,53 @@ begin
   -- four ways the law actually gets broken in practice.
   begin
     perform custom.record_write(v_org, custom.rule_kernel_id(), jsonb_build_object(
-      'name','zz by name','kind','predicate','scope_table_id',v_tbl::text,'uses',jsonb_build_array('validate'),
+      'name','Insurance carrier must be on file','kind','predicate','scope_table_id',v_tbl::text,'uses',jsonb_build_array('validate'),
       'applies_to_types','[]'::jsonb,
       'expr', jsonb_build_object('op','eq','args', jsonb_build_array(
                 jsonb_build_object('field_name','width'), jsonb_build_object('field', v_f_hgt::text)))));
     raise exception 'REC-17: a Rule naming a field was stored';
   exception when check_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'the rule zz by name names a field instead of pointing at it' then
+    if v_msg <> 'the rule Insurance carrier must be on file names a field instead of pointing at it' then
       raise exception 'REC-17 field_name: the refusal said "%"', v_msg;
     end if;
   end;
   begin
     perform custom.record_write(v_org, custom.rule_kernel_id(), jsonb_build_object(
-      'name','zz name in the id slot','kind','predicate','scope_table_id',v_tbl::text,
+      'name','Chart number must be six digits','kind','predicate','scope_table_id',v_tbl::text,
       'uses',jsonb_build_array('validate'),'applies_to_types','[]'::jsonb,
       'expr', jsonb_build_object('op','eq','args', jsonb_build_array(
                 jsonb_build_object('field','width'), jsonb_build_object('field', v_f_hgt::text)))));
     raise exception 'REC-17: a Rule with a field NAME in the id slot was stored';
   exception when check_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'the rule zz name in the id slot points at a field with width instead of with its id' then
+    if v_msg <> 'the rule Chart number must be six digits points at a field with width instead of with its id' then
       raise exception 'REC-17 name-in-id-slot: the refusal said "%"', v_msg;
     end if;
   end;
   begin
     perform custom.record_write(v_org, custom.rule_kernel_id(), jsonb_build_object(
-      'name','zz someone else''s field','kind','predicate','scope_table_id',v_tbl::text,
+      'name','Balance due must stay under the plan limit','kind','predicate','scope_table_id',v_tbl::text,
       'uses',jsonb_build_array('validate'),'applies_to_types','[]'::jsonb,
       'expr', jsonb_build_object('op','present','args', jsonb_build_array(
                 jsonb_build_object('field','11111111-0003-4000-8000-000000000001')))));
     raise exception 'REC-17: a Rule pointing at another table''s field was stored';
   exception when check_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'the rule zz someone else''s field points at a field that is not one of that table''s fields' then
+    if v_msg <> 'the rule Balance due must stay under the plan limit points at a field that is not one of that table''s fields' then
       raise exception 'REC-17 foreign field: the refusal said "%"', v_msg;
     end if;
   end;
   begin
     perform custom.record_write(v_org, custom.rule_kernel_id(), jsonb_build_object(
-      'name','zz a field that is not there','kind','predicate','scope_table_id',v_tbl::text,
+      'name','Recall interval must be set','kind','predicate','scope_table_id',v_tbl::text,
       'uses',jsonb_build_array('validate'),'applies_to_types','[]'::jsonb,
       'expr', jsonb_build_object('op','present','args', jsonb_build_array(
                 jsonb_build_object('field','11111111-9999-4000-8000-000000000099')))));
     raise exception 'REC-17: a Rule pointing at no field at all was stored';
   exception when check_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'the rule zz a field that is not there points at a field that is not one of that table''s fields' then
+    if v_msg <> 'the rule Recall interval must be set points at a field that is not one of that table''s fields' then
       raise exception 'REC-17 absent field: the refusal said "%"', v_msg;
     end if;
   end;
@@ -460,7 +460,7 @@ begin
   -- REC-16: the node is STORABLE and never answers wrongly. With no parent in the context it
   -- is UNDECIDED (null), never false; with a parent it reads the PARENT's value.
   v_r2 := custom.record_write(v_org, custom.rule_kernel_id(), jsonb_build_object(
-    'name','zz reads the parent','kind','predicate','scope_table_id',v_tbl::text,
+    'name','Visit fee follows the patient plan','kind','predicate','scope_table_id',v_tbl::text,
     'uses',jsonb_build_array('applicability'),'applies_to_types','[]'::jsonb,
     'expr', jsonb_build_object('op','eq','args', jsonb_build_array(
               jsonb_build_object('field', v_f_kind::text),
@@ -485,7 +485,7 @@ begin
   -- comparison answers about a different value, which is a rule that lies. The Rule is
   -- DECLARED from the seat; only the direct run steps out.
   v_r2 := custom.record_write(v_org, custom.rule_kernel_id(), jsonb_build_object(
-    'name','zz words against numbers','kind','predicate','scope_table_id',v_tbl::text,
+    'name','Allergy list must be reviewed','kind','predicate','scope_table_id',v_tbl::text,
     'uses',jsonb_build_array('validate'),'applies_to_types','[]'::jsonb,
     'expr', jsonb_build_object('op','gt','args', jsonb_build_array(
               jsonb_build_object('field', v_f_title::text), jsonb_build_object('const', 1)))));
@@ -546,7 +546,7 @@ begin
   -- All of §G is asked from the seat, through the same write door.
   begin
     perform custom.record_write(v_org, custom.rule_kernel_id(), jsonb_build_object(
-      'name','zz an expression that judges','kind','expression','scope_table_id',v_tbl::text,
+      'name','Outstanding balance total','kind','expression','scope_table_id',v_tbl::text,
       'uses',jsonb_build_array('compute','validate'),'applies_to_types','[]'::jsonb,
       'target_field_id', v_f_sides::text,
       'expr', jsonb_build_object('op','add','args', jsonb_build_array(
@@ -554,13 +554,13 @@ begin
     raise exception 'REC-15: an expression Rule was allowed to validate';
   exception when check_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'the rule zz an expression that judges works out a value, so it cannot also decide validate' then
+    if v_msg <> 'the rule Outstanding balance total works out a value, so it cannot also decide validate' then
       raise exception 'REC-15 kind: the refusal said "%"', v_msg;
     end if;
   end;
   -- THE CONTROL: the same expression Rule, computing only, LANDS.
   v_r2 := custom.record_write(v_org, custom.rule_kernel_id(), jsonb_build_object(
-    'name','zz an expression that computes','kind','expression','scope_table_id',v_tbl::text,
+    'name','Visit fee total','kind','expression','scope_table_id',v_tbl::text,
     'uses',jsonb_build_array('compute'),'applies_to_types','[]'::jsonb,'sort',20,
     'target_field_id', v_f_sides::text,
     'expr', jsonb_build_object('op','add','args', jsonb_build_array(
@@ -582,20 +582,20 @@ begin
   -- hand-filled field is refused by that field's own name.
   begin
     perform custom.record_write(v_org, custom.rule_kernel_id(), jsonb_build_object(
-      'name','zz nowhere to put it','kind','predicate','scope_table_id',v_tbl::text,
+      'name','Treatment estimate total','kind','predicate','scope_table_id',v_tbl::text,
       'uses',jsonb_build_array('compute'),'applies_to_types','[]'::jsonb,
       'expr', jsonb_build_object('op','present','args', jsonb_build_array(
                 jsonb_build_object('field', v_f_width::text)))));
     raise exception 'REC-15: a compute Rule with no target field was stored';
   exception when check_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'the rule zz nowhere to put it works something out, so it has to say which field holds the answer' then
+    if v_msg <> 'the rule Treatment estimate total works something out, so it has to say which field holds the answer' then
       raise exception 'REC-15 target: the refusal said "%"', v_msg;
     end if;
   end;
   begin
     perform custom.record_write(v_org, custom.rule_kernel_id(), jsonb_build_object(
-      'name','zz over the typing','kind','predicate','scope_table_id',v_tbl::text,
+      'name','Patient display name','kind','predicate','scope_table_id',v_tbl::text,
       'uses',jsonb_build_array('compute'),'applies_to_types','[]'::jsonb,
       'target_field_id', v_f_title::text,
       'expr', jsonb_build_object('op','present','args', jsonb_build_array(
@@ -603,7 +603,7 @@ begin
     raise exception 'REC-15: a Rule computing a hand-filled field was stored';
   exception when check_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'the rule zz over the typing puts its answer in Title, and that field is filled in by hand' then
+    if v_msg <> 'the rule Patient display name puts its answer in Title, and that field is filled in by hand' then
       raise exception 'FLD-9 target: the refusal said "%"', v_msg;
     end if;
   end;
@@ -611,50 +611,50 @@ begin
   -- does not have, and a Rule about no Table.
   begin
     perform custom.record_write(v_org, custom.rule_kernel_id(), jsonb_build_object(
-      'name','zz for nothing','kind','predicate','scope_table_id',v_tbl::text,
+      'name','Intake stage must advance','kind','predicate','scope_table_id',v_tbl::text,
       'uses','[]'::jsonb,'applies_to_types','[]'::jsonb,
       'expr', jsonb_build_object('op','present','args', jsonb_build_array(jsonb_build_object('field', v_f_width::text)))));
     raise exception 'REC-15: a Rule for no use at all was stored';
   exception when check_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'the rule zz for nothing has to say what it is for' then
+    if v_msg <> 'the rule Intake stage must advance has to say what it is for' then
       raise exception 'REC-15 uses empty: the refusal said "%"', v_msg;
     end if;
   end;
   begin
     perform custom.record_write(v_org, custom.rule_kernel_id(), jsonb_build_object(
-      'name','zz a fifth use','kind','predicate','scope_table_id',v_tbl::text,
+      'name','Member ID must match the carrier','kind','predicate','scope_table_id',v_tbl::text,
       'uses',jsonb_build_array('validate','summarise'),'applies_to_types','[]'::jsonb,
       'expr', jsonb_build_object('op','present','args', jsonb_build_array(jsonb_build_object('field', v_f_width::text)))));
     raise exception 'REC-15: a fifth use was stored';
   exception when check_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'the rule zz a fifth use says it is used to summarise, and there is no such use' then
+    if v_msg <> 'the rule Member ID must match the carrier says it is used to summarise, and there is no such use' then
       raise exception 'REC-15 fifth use: the refusal said "%"', v_msg;
     end if;
   end;
   begin
     perform custom.record_write(v_org, custom.rule_kernel_id(), jsonb_build_object(
-      'name','zz narrowed for nothing','kind','predicate','scope_table_id',v_tbl::text,
+      'name','Primary dentist must be assigned','kind','predicate','scope_table_id',v_tbl::text,
       'uses',jsonb_build_array('validate'),'applies_to_types','[]'::jsonb,
       'use_types', jsonb_build_object('compute', jsonb_build_array('square')),
       'expr', jsonb_build_object('op','present','args', jsonb_build_array(jsonb_build_object('field', v_f_width::text)))));
     raise exception 'REC-15: a narrowing of a use the Rule does not have was stored';
   exception when check_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'the rule zz narrowed for nothing narrows its compute use, and it is not used to compute at all' then
+    if v_msg <> 'the rule Primary dentist must be assigned narrows its compute use, and it is not used to compute at all' then
       raise exception 'REC-15 narrowing: the refusal said "%"', v_msg;
     end if;
   end;
   begin
     perform custom.record_write(v_org, custom.rule_kernel_id(), jsonb_build_object(
-      'name','zz about nothing','kind','predicate','scope_table_id', v_mf_kern::text,
+      'name','Referral source must be recorded','kind','predicate','scope_table_id', v_mf_kern::text,
       'uses',jsonb_build_array('validate'),'applies_to_types','[]'::jsonb,
       'expr', jsonb_build_object('op','present','args', jsonb_build_array(jsonb_build_object('field', v_f_width::text)))));
     raise exception 'REC-15: a Rule about a table that is not a table was stored';
   exception when check_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'the rule zz about nothing says it is about a table this organization does not have' then
+    if v_msg <> 'the rule Referral source must be recorded says it is about a table this organization does not have' then
       raise exception 'REC-15 scope: the refusal said "%"', v_msg;
     end if;
   end;
@@ -675,7 +675,7 @@ begin
   -- And a DELETE through the door a person HAS soft-deletes rather than erasing, so History
   -- has something to read (W3-HIST).
   v_r2 := custom.record_write(v_org, custom.rule_kernel_id(), jsonb_build_object(
-    'name','zz written through the door','kind','predicate','scope_table_id',v_tbl::text,
+    'name','Phone number must be reachable','kind','predicate','scope_table_id',v_tbl::text,
     'uses',jsonb_build_array('validate'),'applies_to_types','[]'::jsonb,
     'expr', jsonb_build_object('op','present','args', jsonb_build_array(jsonb_build_object('field', v_f_width::text)))));
   perform custom.record_delete(v_org, v_r2);
@@ -688,13 +688,13 @@ begin
   -- The OPERATOR half: a Rule written through the projection meets the SAME guard.
   begin
     insert into custom.rule (organization_id, name, kind, scope_table_id, uses, applies_to_types, expr)
-    values (v_org, 'zz named through the surface', 'predicate', v_tbl,
+    values (v_org, 'Email must be on file', 'predicate', v_tbl,
             jsonb_build_array('validate'), '[]'::jsonb,
             jsonb_build_object('op','present','args', jsonb_build_array(jsonb_build_object('field_name','width'))));
     raise exception 'REC-17: the surface let a name-referencing Rule through';
   exception when check_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'the rule zz named through the surface names a field instead of pointing at it' then
+    if v_msg <> 'the rule Email must be on file names a field instead of pointing at it' then
       raise exception 'REC-17 through the surface: the refusal said "%"', v_msg;
     end if;
   end;

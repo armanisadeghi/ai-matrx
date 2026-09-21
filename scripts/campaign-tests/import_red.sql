@@ -36,7 +36,7 @@ begin
   perform set_config('app.actor_system', 'campaign-test/import_red.sql', true);
 
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('Blue Ridge Recycling RED — safe to delete',
+  values ('Blue Ridge Recycling',
           'blue-ridge-recycling-red-' || substr(md5(random()::text), 1, 8), 'BRD', c_admin)
   returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
@@ -48,7 +48,7 @@ begin
 
   v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','RED Home'));
   v_acct := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ RED Account','slug','zz_red_account','type','entity',
+    'name','Accounts','slug','accounts','type','entity',
     'label_singular','Account','label_plural','Accounts','title_field','title','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
@@ -57,7 +57,7 @@ begin
   perform custom.field_declare(v_org, v_acct, jsonb_build_object('label','Title','key','title','type','text'));
   perform custom.record_write(v_org, v_acct, jsonb_build_object('title','Northwind Trading'));
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ RED Deal','slug','zz_red_deal','type','entity',
+    'name','Deals','slug','deals','type','entity',
     'label_singular','Deal','label_plural','Deals','title_field','deal','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',

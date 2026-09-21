@@ -68,7 +68,7 @@ declare
 begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W4-IO Red', 'zz-w4-io-red-' || substr(v_org::text, 1, 8), 'ZIR', c_admin);
+  values (v_org, 'Blue Ridge Recycling', 'blue-ridge-recycling-' || substr(v_org::text, 1, 8), 'BRR', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -111,7 +111,7 @@ declare
   v_other  uuid;
 begin
   v_lead := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'ZZ RED Lead', 'slug', 'zz_red_lead', 'type', 'entity', 'display', 'list',
+    'name', 'Leads', 'slug', 'leads', 'type', 'entity', 'display', 'list',
     'label_singular', 'Lead', 'label_plural', 'Leads', 'ordered', false, 'weight', 'light',
     'retention_days', 365, 'row_order', 'sorted', 'agent_writable', true,
     'parent_id', v_home::text, 'title_field', 'name', 'default_sort', '[]'::jsonb,
@@ -124,8 +124,8 @@ begin
   -- looked like in the wild: two Tables in one organization both having a `company` field.
   -- Under the unscoped join, changing one record's company named BOTH Fields.
   v_other := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'ZZ RED Other', 'slug', 'zz_red_other', 'type', 'entity', 'display', 'list',
-    'label_singular', 'O', 'label_plural', 'Os', 'ordered', false, 'weight', 'light',
+    'name', 'Commercial Accounts', 'slug', 'commercial_accounts', 'type', 'entity', 'display', 'list',
+    'label_singular', 'Commercial Account', 'label_plural', 'Commercial Accounts', 'ordered', false, 'weight', 'light',
     'retention_days', 365, 'row_order', 'sorted', 'agent_writable', true,
     'parent_id', v_home::text, 'title_field', 'company', 'default_sort', '[]'::jsonb,
     'fields', jsonb_build_array(jsonb_build_object('name','company'))));
@@ -168,7 +168,7 @@ begin
   -- signed-in person has, and it is what the green suite reads too.
   select (array_agg(d.changed_field_ids) filter (where d.operation = 'updated'))[1]
     into v_changed
-    from custom.io_outbox_drain(v_org, 'zz-red-b1', 1000) d
+    from custom.io_outbox_drain(v_org, 'billing-sync', 1000) d
    where d.record_id = v_rec;
 
   -- The green suite's PART 1 check is `jsonb_array_length(changed) = 1`. Under the break the
@@ -206,8 +206,8 @@ begin
   -- A Table whose fields are declared on the Table and nowhere else — exactly what
   -- custom.table_declare produces, and the class the old trigger was silent for.
   v_t := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'ZZ RED Silent', 'slug', 'zz_red_silent', 'type', 'entity', 'display', 'list',
-    'label_singular', 'S', 'label_plural', 'Ss', 'ordered', false, 'weight', 'light',
+    'name', 'Service Areas', 'slug', 'service_areas', 'type', 'entity', 'display', 'list',
+    'label_singular', 'Service Area', 'label_plural', 'Service Areas', 'ordered', false, 'weight', 'light',
     'retention_days', 365, 'row_order', 'sorted', 'agent_writable', true,
     'parent_id', current_setting('zz.home'), 'title_field', 'name', 'default_sort', '[]'::jsonb,
     'fields', jsonb_build_array(jsonb_build_object('name','name'))));
@@ -215,7 +215,7 @@ begin
   v_rec := custom.record_write(v_org, v_t, '{"name":"before"}'::jsonb);
   perform custom.record_update(v_org, v_rec, '{"name":"after"}'::jsonb, null);
   select count(*) into v_n
-    from custom.io_outbox_drain(v_org, 'zz-red-b2', 1000) d
+    from custom.io_outbox_drain(v_org, 'route-planner', 1000) d
    where d.record_id = v_rec and d.operation = 'updated';
   if v_n <> 1 then
     raise exception 'RED TWIN UNDETECTED (break 2): the CURRENT trigger raised % updated event(s) for a Table with no Field records, and the whole point of file 5 is that it raises exactly 1', v_n;

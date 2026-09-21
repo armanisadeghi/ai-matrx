@@ -66,19 +66,19 @@ const PROSE = "CREATE INDEX CONCURRENTLY";
 const CASES: ReadonlyArray<readonly [string, string]> = [
   [
     "dollar-hint",
-    `create function public.zz_hint() returns void language plpgsql as $$\n` +
+    `create function public.job_dispatch_hint() returns void language plpgsql as $$\n` +
       `begin\n  raise exception 'hot table' using hint = 'build it with ${PROSE}';\nend\n$$;\n`,
   ],
   [
     "tagged-body",
-    `create function public.zz_doc() returns text language sql as $doc$\n` +
+    `create function public.job_summary_doc() returns text language sql as $doc$\n` +
       `  select '${PROSE} is how it was built'::text\n$doc$;\n`,
   ],
   [
     "single-quoted",
-    `insert into public.zz_notes (body)\n  values ('later: ${PROSE}, and ''VACUUM'' after that');\n`,
+    `insert into public.job_notes (body)\n  values ('later: ${PROSE}, and ''VACUUM'' after that');\n`,
   ],
-  ["commented", `-- ${PROSE.toLowerCase()} zz_idx on public.zz (id);\n/* vacuum public.zz; */\ncreate table if not exists public.zz (id bigint primary key);\n`],
+  ["commented", `-- ${PROSE.toLowerCase()} jobs_status_idx on public.jobs (id);\n/* vacuum public.jobs; */\ncreate table if not exists public.jobs (id bigint primary key);\n`],
 ];
 
 describe("the autocommit detector reads statements, not prose", () => {
@@ -91,7 +91,7 @@ describe("the autocommit detector reads statements, not prose", () => {
 
   it("a real top-level CREATE INDEX CONCURRENTLY is still detected — unchanged behaviour", () => {
     expect(
-      judge("real", "create index concurrently if not exists zz_idx on public.zz (id);\n").autocommit,
+      judge("real", "create index concurrently if not exists jobs_status_idx on public.jobs (id);\n").autocommit,
     ).toBe(true);
   });
 });
@@ -99,7 +99,7 @@ describe("the autocommit detector reads statements, not prose", () => {
 describe("the other two detectors read the same stripped text", () => {
   it("prose about the ledger is not a ledger write; a real write is", () => {
     const prose =
-      `create function public.zz_warn() returns void language plpgsql as $$\n` +
+      `create function public.job_ledger_warn() returns void language plpgsql as $$\n` +
       `begin raise exception 'never INSERT INTO public._schema_migrations yourself'; end\n$$;\n`;
     expect(judge("ledger-prose", prose).self_ledger).toBe(false);
     expect(
@@ -110,6 +110,6 @@ describe("the other two detectors read the same stripped text", () => {
 
   it("a plpgsql block's begin/end is not transaction control; a bare BEGIN; is", () => {
     expect(judge("do-block", "do $$ begin perform 1; end $$;\n").txn_control).toBeNull();
-    expect(judge("bare-begin", "begin;\ncreate table zz (id int);\ncommit;\n").txn_control).toBe("BEGIN");
+    expect(judge("bare-begin", "begin;\ncreate table jobs (id int);\ncommit;\n").txn_control).toBe("BEGIN");
   });
 });

@@ -111,7 +111,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W1-INDEX C5', 'zz-w1-index-c5-' || substr(v_org::text, 1, 8), 'ZWI', c_admin);
+  values (v_org, 'Greenline Landscaping Crew', 'greenline-landscaping-' || substr(v_org::text, 1, 8), 'GLC', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -163,15 +163,15 @@ begin
   -- (`promoted`, `unique`) that no door would ever have produced.
   -- ════════════════════════════════════════════════════════════════════════════════════
   v_table := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'W1-INDEX C5', 'slug', 'zz_w1_index_c5', 'type', 'entity',
+    'name', 'W1-INDEX C5', 'slug', 'greenline_jobs', 'type', 'entity',
     'label_singular', 'Thing', 'label_plural', 'Things', 'title_field', 'code',
     'display', 'page', 'weight', 'light', 'ordered', false, 'row_order', 'sorted',
     'default_sort', '[]'::jsonb, 'agent_writable', true, 'retention_days', 365,
-    -- The Table declares every field this proof will define, `zz_p9` included: a Field whose
+    -- The Table declares every field this proof will define, `job_tag_9` included: a Field whose
     -- Table never declared it is refused by `custom._field_shape_guard` before the cap is
     -- reached, and PART 5 would then pass for the wrong reason.
     'fields', jsonb_build_array(jsonb_build_object('name', 'code')) ||
-              (select jsonb_agg(jsonb_build_object('name', 'zz_p' || g)) from generate_series(2, 9) g),
+              (select jsonb_agg(jsonb_build_object('name', 'job_tag_' || g)) from generate_series(2, 9) g),
     'parent_id', v_home::text));
 
   -- A PERSON declares the column, then ASKS for it to be indexed and unique. `promoted` and
@@ -228,12 +228,12 @@ begin
   -- changes one arm's output fails here rather than silently rebuilding somebody's index over a
   -- different expression.
   v_texts := jsonb_build_object(
-    'number',       '(((data->>''zz_probe_key'')::numeric))',
-    'boolean',      '(((data->>''zz_probe_key'')::boolean))',
-    'currency',     '(((data->''zz_probe_key''->>''amount'')::numeric))',
+    'number',       '(((data->>''job_price'')::numeric))',
+    'boolean',      '(((data->>''job_price'')::boolean))',
+    'currency',     '(((data->''job_price''->>''amount'')::numeric))',
     'multi_select', null,
     'file',         null,
-    'text',         '((data->>''zz_probe_key''))');
+    'text',         '((data->>''job_price''))');
 
   -- THE LOCK AND THE CLOCK. Each CREATE INDEX below takes ACCESS EXCLUSIVE on all sixteen live
   -- partitions of `custom.record`, so under traffic it dies on the short `lock_timeout` this
@@ -246,7 +246,7 @@ begin
   set local statement_timeout = '600s';
 
   foreach v_arm in array v_arms loop
-    v_expr := platform.custom_field_index_expr(v_arm, 'zz_probe_key', 'data');
+    v_expr := platform.custom_field_index_expr(v_arm, 'job_price', 'data');
     if not v_texts ? v_arm then
       raise exception 'PART 1 — platform.custom_field_index_expr has grown an arm nobody named: %', v_arm
         using hint = 'REC-N-3: an arm either builds an index over a path the values live on, or answers NULL by name. A new one is decided, never inherited.';
@@ -260,7 +260,7 @@ begin
       v_nulls := v_nulls || v_arm;
       continue;
     end if;
-    v_name := 'zz_w1_index_arm_' || v_arm;
+    v_name := 'greenline_index_arm_' || v_arm;
     execute format('create index %I on custom.record (organization_id, %s) where organization_id = %L::uuid and deleted_at is null',
                    v_name, v_expr, v_org);
     v_built := v_built || v_arm;
@@ -322,7 +322,7 @@ begin
   v_caught := null;
   begin
     perform custom.record_write(v_org, v_table, jsonb_build_object(
-      'code', 'zz_envelope',
+      'code', 'HARBORVIEW-SPRING-CLEANUP',
       '_values', jsonb_build_object('code', jsonb_build_object('v', 'x'))));
   exception when others then
     get stacked diagnostics v_caught = message_text;
@@ -337,7 +337,7 @@ begin
   raise notice 'PART 2 —   refused at the write door: %', v_caught;
   -- THE SECOND INPUT WITH A DIFFERENT EXPECTED ANSWER, so PART 2 is not a door that refuses
   -- everything: the same call, the same person, the same Table, without the envelope, LANDS.
-  if custom.record_write(v_org, v_table, jsonb_build_object('code', 'zz_plain')) is null then
+  if custom.record_write(v_org, v_table, jsonb_build_object('code', 'CEDARBROOK-IRRIGATION-REPAIR')) is null then
     raise exception 'PART 2 — the same write without the envelope was refused too, so the refusal is not about the envelope';
   end if;
   raise notice 'PART 2 PASS — `data -> ''_values'' -> k -> ''v''` is not an empty path, it is a shape the WRITE DOOR refuses by name, and the same write without it lands.';
@@ -352,16 +352,16 @@ begin
   perform set_config('role', v_boss, true);
 
   -- stored
-  v_json := jsonb_build_object('key', 'zz_stored', 'type', 'text', 'label', 'Stored');
+  v_json := jsonb_build_object('key', 'serial_number', 'type', 'text', 'label', 'Stored');
   if custom.promoted_value_path(v_json) <> 'stored'
-     or custom.promoted_index_expr(v_json) <> '((data->>''zz_stored''))' then
+     or custom.promoted_index_expr(v_json) <> '((data->>''serial_number''))' then
     raise exception 'PART 3 — a stored Field is supposed to be indexed at its own key, and it answered path=% expr=%',
                     custom.promoted_value_path(v_json), custom.promoted_index_expr(v_json);
   end if;
   raise notice 'PART 3 —   stored   -> % -> %', custom.promoted_value_path(v_json), custom.promoted_index_expr(v_json);
 
   -- computed (compute_on = write): the value lives one level in, under _computed -> key -> value
-  v_json := jsonb_build_object('key', 'zz_computed', 'type', 'text', 'compute_on', 'write');
+  v_json := jsonb_build_object('key', 'job_total', 'type', 'text', 'compute_on', 'write');
   v_expr := custom.promoted_index_expr(v_json);
   if custom.promoted_value_path(v_json) <> 'computed'
      or position('_computed' in v_expr) = 0
@@ -372,7 +372,7 @@ begin
   raise notice 'PART 3 —   computed -> % -> %', custom.promoted_value_path(v_json), v_expr;
 
   -- derived (compute_on = read): worked out when somebody reads it, so there is no path at all
-  v_json := jsonb_build_object('key', 'zz_derived', 'type', 'text', 'compute_on', 'read');
+  v_json := jsonb_build_object('key', 'crew_hours', 'type', 'text', 'compute_on', 'read');
   if custom.promoted_value_path(v_json) <> 'derived'
      or custom.promoted_index_expr(v_json) is not null then
     raise exception 'PART 3 — a derived Field has no stored value and is supposed to be refused an index, and it answered %',
@@ -448,7 +448,7 @@ begin
   -- ════════════════════════════════════════════════════════════════════════════════════
   for v_n in 2..8 loop
     v_fid2 := custom.field_declare(v_org, v_table, jsonb_build_object(
-      'key', 'zz_p' || v_n, 'label', 'P' || v_n, 'plain', 'text', 'sort', v_n));
+      'key', 'job_tag_' || v_n, 'label', 'P' || v_n, 'plain', 'text', 'sort', v_n));
     perform custom.field_update(v_org, v_fid2, jsonb_build_object('promoted', true));
   end loop;
   select count(*) into v_n from custom.applicable_fields(v_org, v_table, null) f
@@ -461,7 +461,7 @@ begin
   v_hint := null;
   begin
     v_fid2 := custom.field_declare(v_org, v_table, jsonb_build_object(
-      'key', 'zz_p9', 'label', 'P9', 'plain', 'text', 'sort', 9));
+      'key', 'job_tag_9', 'label', 'P9', 'plain', 'text', 'sort', 9));
     perform custom.field_update(v_org, v_fid2, jsonb_build_object('promoted', true));
   exception when others then
     get stacked diagnostics v_caught = message_text, v_hint = pg_exception_hint;
@@ -605,9 +605,9 @@ begin
     (id, target_kind, target_token, field_key, display_name, field_type, field_order,
      is_indexed, is_unique, sensitivity_tier, ai_exposure, organization_id, visibility)
   values ('11111111-9999-4000-8000-00000000c501', 'entity_table', 'party',
-          'zz_probe_key', 'Probe', 'text', 1, true, false, 'standard', 'never', v_org, 'internal'),
+          'job_price', 'Probe', 'text', 1, true, false, 'standard', 'never', v_org, 'internal'),
          ('11111111-9999-4000-8000-00000000c502', 'entity_table', 'hr_employee',
-          'zz_probe_key', 'Probe', 'number', 1, true, false, 'standard', 'never', v_org, 'internal');
+          'job_price', 'Probe', 'number', 1, true, false, 'standard', 'never', v_org, 'internal');
 
   v_plan := platform.custom_field_index_ddl('11111111-9999-4000-8000-00000000c501'::uuid, false);
   if position('custom_fields' in v_plan) = 0 or position('(custom->>' in v_plan) > 0 then
@@ -701,7 +701,7 @@ begin
   v_caught := null;
   begin
     perform custom.field_declare(v_org, v_table, jsonb_build_object(
-      'key', 'zz_sneak', 'label', 'Sneaked in', 'plain', 'text', 'sort', 99));
+      'key', 'crew_note', 'label', 'Sneaked in', 'plain', 'text', 'sort', 99));
   exception when others then
     get stacked diagnostics v_caught = message_text;
   end;

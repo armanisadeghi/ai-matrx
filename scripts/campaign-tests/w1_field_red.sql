@@ -98,7 +98,7 @@ begin
   end;
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Red Definitions','slug','zz_red_defs','label_singular','Row','label_plural','Rows',
+    'name','Birchwood Rooms','slug','birchwood_rooms','label_singular','Row','label_plural','Rows',
     'type','entity','display','page','ordered',false,'weight','light','retention_days',365,
     'default_sort','[]'::jsonb,'row_order','sorted','agent_writable',true,
     'fields', jsonb_build_array(jsonb_build_object('name','name')),
@@ -179,7 +179,7 @@ begin
   -- THE FIXTURE, THROUGH THE DOORS, WITH EVERY GUARD STILL ON: a table with a required list
   -- field and a required text field.
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Red Validation','slug','zz_red_validation','label_singular','Row','label_plural','Rows',
+    'name','Birchwood Contractors','slug','birchwood_contractors','label_singular','Row','label_plural','Rows',
     'type','entity','display','page','ordered',false,'weight','light','retention_days',365,
     'default_sort','[]'::jsonb,'row_order','sorted','agent_writable',true,
     'fields', jsonb_build_array(jsonb_build_object('name','name')),
@@ -251,7 +251,7 @@ begin
   end if;
 
   v_id := custom.record_write(v_org, v_mf_kern,
-    '{"key":"zz_red_mf","type":"overrideable_state_person_reference_variable",
+    '{"key":"birchwood_room_name","type":"overrideable_state_person_reference_variable",
       "source":["record","tool"],"semantic_type":"everything","modifiers":["urgent"],
       "override_policy":"whenever"}'::jsonb);
   if v_id is null then raise exception 'RED 3: the write did not land'; end if;
@@ -302,7 +302,7 @@ begin
   perform set_config('role', v_boss, true);
   insert into custom.record (organization_id, table_id, data_class, data)
   values (v_org, custom.field_kernel_id(), 'field', jsonb_build_object(
-    'table_token','party','key','zz_red_tier','label','ZZ Red tier','type','list',
+    'table_token','party','key','birchwood_contractor_trade','label','Birchwood contractor trade','type','list',
     'multi',false,'dated',false,'rules','[]'::jsonb,
     'config', jsonb_build_object('options_table_id', v_src_tbl::text),
     'required', false,'sort',10,'source','manual','source_config','{}'::jsonb,
@@ -313,11 +313,11 @@ begin
   -- is the green suite's clause, restated here so RED 4 compares two states rather than one.
   begin
     insert into crm.party (party_kind, display_name, organization_id, custom_fields)
-    values ('person','ZZ Red party', v_org, '{"zz_red_tier":"not-an-option"}'::jsonb);
+    values ('person','Dominic Ferro', v_org, '{"birchwood_contractor_trade":"not-an-option"}'::jsonb);
     raise exception 'RED 4 INCONCLUSIVE: the invalid payload landed with the guard still in place';
   exception when check_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'ZZ Red tier was given a choice that is not one of its choices' then
+    if v_msg <> 'Birchwood contractor trade was given a choice that is not one of its choices' then
       raise exception 'RED 4 INCONCLUSIVE: it was refused for some other reason: "%"', v_msg;
     end if;
   end;
@@ -327,10 +327,10 @@ begin
   create or replace function custom._entity_custom_fields_guard() returns trigger
     language plpgsql as $g$ begin return new; end $g$;
   insert into crm.party (party_kind, display_name, organization_id, custom_fields)
-  values ('person','ZZ Red party two', v_org, '{"zz_red_tier":"not-an-option"}'::jsonb)
+  values ('person','Tanya Iversen', v_org, '{"birchwood_contractor_trade":"not-an-option"}'::jsonb)
     returning id into v_party;
   select count(*) into v_n from crm.party
-   where id = v_party and custom_fields ->> 'zz_red_tier' = 'not-an-option';
+   where id = v_party and custom_fields ->> 'birchwood_contractor_trade' = 'not-an-option';
   if v_n <> 1 then raise exception 'RED 4: the write did not land with the guard gone'; end if;
   raise notice 'RED 4 CONFIRMED — with the organization''s store ON the invalid custom_fields payload is refused by the field''s own name, and with custom._entity_custom_fields_guard gone the SAME payload lands: what the guard withholds is real';
 end;
@@ -372,7 +372,7 @@ begin
   end if;
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Red Access','slug','zz_red_access','label_singular','Row','label_plural','Rows',
+    'name','Birchwood Purchases','slug','birchwood_purchases','label_singular','Row','label_plural','Rows',
     'type','entity','display','page','ordered',false,'weight','light','retention_days',365,
     'default_sort','[]'::jsonb,'row_order','sorted','agent_writable',true,
     'fields', jsonb_build_array(jsonb_build_object('name','name')),

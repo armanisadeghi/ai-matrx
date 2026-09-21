@@ -71,7 +71,7 @@ begin
   perform set_config('app.actor_system', 'campaign-test/orgdel_red', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ ORG-DELETE Red', 'zz-orgdel-red-' || substr(v_org::text, 1, 8), 'ZOR', c_admin);
+  values (v_org, 'Ironclad Mobile Mechanic — Ironclad Yard', 'ironclad-mobile-ironclad-' || substr(v_org::text, 1, 8), 'IMI', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
@@ -81,7 +81,7 @@ begin
 
   perform set_config('role', 'authenticated', true);
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ OD Red','slug','zz_od_red','type','entity','label_singular','R','label_plural','Rs',
+    'name','Service Calls','slug','service_calls','type','entity','label_singular','Service Call','label_plural','Service Calls',
     'title_field','n','display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','n')), 'parent_id', v_home::text));
@@ -126,11 +126,11 @@ declare
   c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
   v_org uuid := gen_random_uuid(); v_name text; v_home uuid; v_caught text;
 begin
-  v_name := 'ZZ ORG-DELETE Red3 ' || substr(v_org::text, 1, 8);
+  v_name := 'Ironclad Mobile Mechanic — Brackenfield Yard ' || substr(v_org::text, 1, 8);
   perform set_config('app.actor_system', 'campaign-test/orgdel_red', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, v_name, 'zz-orgdel-red3-' || substr(v_org::text, 1, 8), 'ZRC', c_admin);
+  values (v_org, v_name, 'ironclad-mobile-brackenfield-' || substr(v_org::text, 1, 8), 'IMB', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
@@ -168,11 +168,11 @@ declare
   v_org uuid := gen_random_uuid(); v_name text; v_home uuid; v_tbl uuid;
   v_res jsonb; v_logs integer;
 begin
-  v_name := 'ZZ ORG-DELETE Red4 ' || substr(v_org::text, 1, 8);
+  v_name := 'Ironclad Mobile Mechanic — Union City Yard ' || substr(v_org::text, 1, 8);
   perform set_config('app.actor_system', 'campaign-test/orgdel_red', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, v_name, 'zz-orgdel-red4-' || substr(v_org::text, 1, 8), 'ZRD', c_admin);
+  values (v_org, v_name, 'ironclad-mobile-union-city-' || substr(v_org::text, 1, 8), 'IMU', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
@@ -182,7 +182,7 @@ begin
 
   perform set_config('role', 'authenticated', true);
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ OD Red4','slug','zz_od_red4','type','entity','label_singular','R','label_plural','Rs',
+    'name','Invoices','slug','invoices','type','entity','label_singular','Invoice','label_plural','Invoices',
     'title_field','n','display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','n')), 'parent_id', v_home::text));
@@ -217,11 +217,11 @@ declare
   v_org uuid := gen_random_uuid(); v_name text; v_home uuid; v_tbl uuid; v_caught text;
   v_boss text := current_user;
 begin
-  v_name := 'ZZ ORG-DELETE Red5 ' || substr(v_org::text, 1, 8);
+  v_name := 'Ironclad Mobile Mechanic — Westgate Yard ' || substr(v_org::text, 1, 8);
   perform set_config('app.actor_system', 'campaign-test/orgdel_red', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, v_name, 'zz-orgdel-red5-' || substr(v_org::text, 1, 8), 'ZRE', c_admin);
+  values (v_org, v_name, 'ironclad-mobile-westgate-' || substr(v_org::text, 1, 8), 'IMW', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
@@ -231,7 +231,7 @@ begin
 
   perform set_config('role', 'authenticated', true);
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ OD Red5','slug','zz_od_red5','type','entity','label_singular','R','label_plural','Rs',
+    'name','Parts Used','slug','parts_used','type','entity','label_singular','Part Used','label_plural','Parts Used',
     'title_field','n','display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','n')), 'parent_id', v_home::text));

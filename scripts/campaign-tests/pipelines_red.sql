@@ -65,7 +65,7 @@ begin
   perform set_config('app.actor_system','campaign-test/pipelines_red', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ PL Red '||substr(v_org::text,1,8), 'zz-plr-'||substr(v_org::text,1,8), 'ZPR', c_admin);
+  values (v_org, 'Meridian Software '||substr(v_org::text,1,8), 'meridian-software-'||substr(v_org::text,1,8), 'MSW', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org,'organization',v_org,c_admin,'owner','active');
   insert into platform.knob_override (feature,key,scope_kind,scope_id,organization_id,value,set_note)
@@ -87,7 +87,7 @@ begin
   end;
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ PL Red Deal','slug','zz_plr_deal_'||substr(v_org::text,1,8),'type','entity',
+    'name','Deals','slug','deals_'||substr(v_org::text,1,8),'type','entity',
     'label_singular','Deal','label_plural','Deals','title_field','name','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
@@ -172,7 +172,7 @@ begin
   perform set_config('app.actor_system','campaign-test/pipelines_red', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ PL Red2 '||substr(v_org::text,1,8), 'zz-plr2-'||substr(v_org::text,1,8), 'ZPQ', c_admin);
+  values (v_org, 'Meridian Software — Denver Office '||substr(v_org::text,1,8), 'meridian-software-denver-'||substr(v_org::text,1,8), 'MSD', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org,'organization',v_org,c_admin,'owner','active');
   insert into platform.knob_override (feature,key,scope_kind,scope_id,organization_id,value,set_note)
@@ -194,7 +194,7 @@ begin
   end;
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ PL Red2 Deal','slug','zz_plr2_deal_'||substr(v_org::text,1,8),'type','entity',
+    'name','Deals','slug','deals_'||substr(v_org::text,1,8),'type','entity',
     'label_singular','Deal','label_plural','Deals','title_field','name','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',

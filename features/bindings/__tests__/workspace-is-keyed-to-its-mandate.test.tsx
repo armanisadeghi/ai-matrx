@@ -2,8 +2,8 @@
  * ── A VERDICT ABOUT ONE JOB CANNOT OUTLIVE THE JOB IT IS ABOUT ───────────────
  *
  * 🚨 THE DEFECT (V-PARITY/UX R-O6, closing lens round 2, on production). The
- * walker triggered the server's containment refusal on `zzz_vpux2.scratch`,
- * then let the SPA navigate to `zzz_vpux2.scratch_2`. The refusal about the
+ * walker triggered the server's containment refusal on `ironclad_mechanic.dispatch_summary`,
+ * then let the SPA navigate to `ironclad_mechanic.dispatch_summary_2`. The refusal about the
  * FIRST job was still in the DOM, now sitting under the SECOND job's heading.
  * Only a hard reload cleared it. Stale, not false — and the fourth law does not
  * distinguish: a screen that shows a refusal about a job you are not looking at
@@ -32,7 +32,7 @@
  * The fresh Sonnet walk of the SERVED v0.4.1754 confirmed the in-page refusal
  * clears — and FAILED this observation anyway, because the same sentence was
  * ALSO in a toast, and a toast lives in an app-wide portal that no key on this
- * component can reach. It named `zzz_fixr17.walk` while the reader was looking
+ * component can reach. It named `ironclad_mechanic.roadside_walk` while the reader was looking
  * at `crm.journalist_beat_analyst`, and it was still there 8+ seconds later
  * (sonner pauses dismiss timers while the document is hidden — a browser pane
  * usually is).
@@ -210,7 +210,7 @@ jest.mock("@/lib/toast", () => ({
 
 /** The door refuses exactly as `mandate.guard_binding_containment` does. */
 const CONTAINMENT_REFUSAL =
-  "Mandate 'zzz_vpux2.scratch' is homed in a single organization, so it cannot carry a GLOBAL binding.";
+  "Mandate 'ironclad_mechanic.dispatch_summary' is homed in a single organization, so it cannot carry a GLOBAL binding.";
 jest.mock("@/features/mandates/overrides", () => ({
   ...jest.requireActual("@/features/mandates/overrides"),
   putMandateDefaultHolder: () => Promise.reject(new Error(CONTAINMENT_REFUSAL)),
@@ -231,8 +231,8 @@ jest.mock("@/features/mandates/input-surface", () => ({
 import { OneBindingWorkspace } from "@/features/bindings/OneBindingWorkspace";
 import { HELD_AGENT_ID, makeWorkspaceData } from "./workspace-fixtures";
 
-const MANDATE_A = "zzz_vpux2.scratch";
-const MANDATE_B = "zzz_vpux2.scratch_2";
+const MANDATE_A = "ironclad_mechanic.dispatch_summary";
+const MANDATE_B = "ironclad_mechanic.dispatch_summary_2";
 
 describe("a refusal is keyed to the mandate it is about", () => {
   let host: HTMLDivElement;

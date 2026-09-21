@@ -55,8 +55,8 @@ begin
 
   -- ── THE TWO THROWAWAY ORGANIZATIONS ────────────────────────────────────────────────────
   insert into iam.organizations (id, name, slug, abbreviation, created_by) values
-    (v_shared, 'ZZ STORE-T Green shared', 'zz-storet-g-s-'||substr(v_shared::text,1,8), 'ZTS', c_admin),
-    (v_open,   'ZZ STORE-T Green open',   'zz-storet-g-o-'||substr(v_open::text,1,8),   'ZTO', c_admin);
+    (v_shared, 'Wraithmoor Regional Museum — Conservation Lab', 'wraithmoor-conservation-'||substr(v_shared::text,1,8), 'WRC', c_admin),
+    (v_open,   'Wraithmoor Regional Museum — Collections Store', 'wraithmoor-collections-'||substr(v_open::text,1,8), 'WRS', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_shared,'organization',v_shared,c_admin,'owner','active'),
     (v_shared,'organization',v_shared,c_dana,'member','active'),
@@ -68,9 +68,9 @@ begin
      'campaign-test/storet_green: the stricter of the two privacy settings — the one T2 needs'),
     ('custom','system_enabled','organization',v_open,v_open,'true'::jsonb,'campaign-test/storet_green');
   insert into custom.record (organization_id, table_id, data)
-  values (v_shared, null, jsonb_build_object('name','ZZ HQ')) returning id into v_h1;
+  values (v_shared, null, jsonb_build_object('name','Wraithmoor Regional Museum — Main Building')) returning id into v_h1;
   insert into custom.record (organization_id, table_id, data)
-  values (v_open, null, jsonb_build_object('name','ZZ HQ')) returning id into v_h2;
+  values (v_open, null, jsonb_build_object('name','Wraithmoor Regional Museum — Main Building')) returning id into v_h2;
 
   -- ══════════════════════════════════════════════════════════════════════════════════════
   -- PART 0 — THE SEAT. Everything below this line runs as a signed-in person.
@@ -100,19 +100,19 @@ begin
   -- PART 1 — T2. A NOTE SHARED THROUGH ONE OF ITS CARRIERS, UNDER `shared_only`.
   -- ══════════════════════════════════════════════════════════════════════════════════════
   v_proj_t := custom.table_declare(v_shared, jsonb_build_object(
-    'name','ZZ Project','slug','zz_storet_project','type','entity','label_singular','Project',
-    'label_plural','Projects','title_field','pname','display','page','weight','light','ordered',false,
+    'name','Exhibition','slug','exhibitions','type','entity','label_singular','Exhibition',
+    'label_plural','Exhibitions','title_field','pname','display','page','weight','light','ordered',false,
     'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','pname')),'parent_id',v_h1::text));
   v_note_t := custom.table_declare(v_shared, jsonb_build_object(
-    'name','ZZ Note','slug','zz_storet_note','type','entity','label_singular','Note',
-    'label_plural','Notes','title_field','body','display','page','weight','light','ordered',false,
+    'name','Condition note','slug','condition_notes','type','entity','label_singular','Condition note',
+    'label_plural','Condition notes','title_field','body','display','page','weight','light','ordered',false,
     'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','body')),'parent_id',v_h1::text));
   -- A real Field row, because a name in the table's own `fields` list is not one and
   -- custom.applicable_fields answers with Field ROWS.
   perform custom.field_declare(v_shared, v_note_t, jsonb_build_object('label','Detail','plain','text'));
-  v_proj := custom.record_write(v_shared, v_proj_t, jsonb_build_object('pname','Project A','parent_id',v_h1::text));
+  v_proj := custom.record_write(v_shared, v_proj_t, jsonb_build_object('pname','The Unfinished Object','parent_id',v_h1::text));
   v_note := custom.record_write(v_shared, v_note_t, jsonb_build_object('body','the note','parent_id',v_h1::text));
   perform custom.relation_carry(v_shared, v_proj, v_note);
   perform custom.share_grant(v_shared, v_proj, 'user', c_dana, 'viewer'::public.permission_level);
@@ -121,7 +121,7 @@ begin
   -- 1a. She reads the note itself.
   v_doc := custom.read_record(v_shared, v_note, true);
   if coalesce(v_doc ->> 'body', '') <> 'the note' then
-    raise exception '1a: the note is shared with her through Project A and the read door answers %', coalesce(v_doc::text,'nothing');
+    raise exception '1a: the note is shared with her through The Unfinished Object and the read door answers %', coalesce(v_doc::text,'nothing');
   end if;
   -- 1b. And the SHAPE of its table, which is what every screen asks for first.
   select count(*) into v_n from custom.applicable_fields(v_shared, v_note_t, null);
@@ -136,12 +136,12 @@ begin
   -- 1d. T10 IS UNTOUCHED: a table she holds nothing in stays secret.
   begin
     perform count(*) from custom.applicable_fields(v_shared, v_proj_t, null);
-    -- Project A itself IS shared with her, so its table is legitimately known. Make a table
+    -- The Unfinished Object itself IS shared with her, so its table is legitimately known. Make a table
     -- she holds nothing in at all and ask about that one instead.
     perform set_config('request.jwt.claims', c_admin_j, true);
     v_sh_t := custom.table_declare(v_shared, jsonb_build_object(
-      'name','ZZ Secret','slug','zz_storet_secret','type','entity','label_singular','Secret',
-      'label_plural','Secrets','title_field','sname','display','page','weight','light','ordered',false,
+      'name','Donor file','slug','donor_files','type','entity','label_singular','Donor file',
+      'label_plural','Donor files','title_field','sname','display','page','weight','light','ordered',false,
       'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
       'fields', jsonb_build_array(jsonb_build_object('name','sname')),'parent_id',v_h1::text));
     perform custom.record_write(v_shared, v_sh_t, jsonb_build_object('sname','not hers','parent_id',v_h1::text));
@@ -161,8 +161,8 @@ begin
   -- PART 2 — THE SEVEN DOORS THE SIXTH PASS COULD NOT CALL AT ALL.
   -- ══════════════════════════════════════════════════════════════════════════════════════
   v_wid_t := custom.table_declare(v_open, jsonb_build_object(
-    'name','ZZ Widget','slug','zz_storet_widget','type','entity','label_singular','Widget',
-    'label_plural','Widgets','title_field','wname','display','page','weight','light','ordered',false,
+    'name','Object','slug','objects','type','entity','label_singular','Object',
+    'label_plural','Objects','title_field','wname','display','page','weight','light','ordered',false,
     'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','wname')),'parent_id',v_h2::text));
   v_f_code := custom.field_declare(v_open, v_wid_t, jsonb_build_object('label','Code','plain','text'));
@@ -223,8 +223,8 @@ begin
   -- PART 4 — T8. A CHOICE IS GIVEN BY ITS WORD, AND THE COLUMNS THAT APPLY ARE OFFERED.
   -- ══════════════════════════════════════════════════════════════════════════════════════
   v_sh_t := custom.table_declare(v_open, jsonb_build_object(
-    'name','ZZ Shape','slug','zz_storet_shape','type','entity','label_singular','Shape',
-    'label_plural','Shapes','title_field','shname','display','page','weight','light','ordered',false,
+    'name','Display case','slug','display_cases','type','entity','label_singular','Display case',
+    'label_plural','Display cases','title_field','shname','display','page','weight','light','ordered',false,
     'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','shname')),'parent_id',v_h2::text,
     'type_field','kind'));
@@ -282,7 +282,7 @@ begin
   -- ══════════════════════════════════════════════════════════════════════════════════════
   -- PART 5 — T9. A RECORD IS RETYPED TO ANOTHER TABLE, FROM A SEAT.
   -- ══════════════════════════════════════════════════════════════════════════════════════
-  v_res := custom.migrate_retype(v_open, v_s1, 'zz_storet_widget', 'campaign-test/storet_green');
+  v_res := custom.migrate_retype(v_open, v_s1, 'objects', 'campaign-test/storet_green');
   if coalesce(v_res ->> 'kept_the_id', '') <> 'true' then
     raise exception '5: custom.migrate_retype did not keep the id: %', v_res::text;
   end if;
@@ -290,7 +290,7 @@ begin
     raise exception '5: the record did not move to the table it was asked for: %', v_res::text;
   end if;
   if (v_res -> 'misfits') = '{}'::jsonb then
-    raise exception '5: a Shape became a Widget and nothing was recorded as not fitting';
+    raise exception '5: a Display case became an Object and nothing was recorded as not fitting';
   end if;
   select count(*) into v_n from custom.migrations(v_open, v_s1, 50) m
    where m.verb = 'retype' and m.target_kind = 'record';
@@ -303,8 +303,8 @@ begin
   -- PART 6 — T7. RESTRICT REFUSES BY NAME, AND A FORMULA'S FIELD CANNOT BE DELETED UNDER IT.
   -- ══════════════════════════════════════════════════════════════════════════════════════
   v_per_t := custom.table_declare(v_open, jsonb_build_object(
-    'name','ZZ Asset','slug','zz_storet_asset','type','entity','label_singular','Asset',
-    'label_plural','Assets','title_field','aname','display','page','weight','light','ordered',false,
+    'name','Conservation equipment','slug','conservation_equipment','type','entity','label_singular','Equipment item',
+    'label_plural','Equipment items','title_field','aname','display','page','weight','light','ordered',false,
     'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','aname')),'parent_id',v_h2::text));
   -- A relation column that says what happens when the thing it points at is deleted. The door
@@ -315,17 +315,17 @@ begin
        where f.data ->> 'key' = 'owner') <> 'restrict' then
     raise exception '6a: the declaring door threw the caller''s on_target_delete away';
   end if;
-  v_person := custom.record_write(v_open, custom.person_kernel_id(), jsonb_build_object('title','ZZ Owner'));
+  v_person := custom.record_write(v_open, custom.person_kernel_id(), jsonb_build_object('title','Owen Faircloth'));
   v_asset  := custom.record_write(v_open, v_per_t, jsonb_build_object('aname','Press','owner',v_person::text,'parent_id',v_h2::text));
   -- 6b. THE PREVIEW SAYS IT WOULD BE REFUSED, before anybody presses anything.
   v_res := custom.delete_preview(v_open, v_person);
   if not coalesce((v_res ->> 'would_be_refused')::boolean, false) then
-    raise exception '6b: deleting a record an Asset points at under `restrict` previews as allowed: %', v_res::text;
+    raise exception '6b: deleting a record an Equipment item points at under `restrict` previews as allowed: %', v_res::text;
   end if;
   -- 6c. AND THE DELETE ITSELF IS REFUSED.
   begin
     perform custom.record_delete(v_open, v_person);
-    raise exception '6c: deleting the owner an Asset points at under `restrict` was accepted';
+    raise exception '6c: deleting the owner an Equipment item points at under `restrict` was accepted';
   exception when foreign_key_violation then null;
   end;
   -- 6d. A FORMULA'S DEPENDENCY IS KEPT, so REC-18 can fire for a column a person made.
@@ -354,31 +354,31 @@ begin
   -- PART 7 — T11. THE WALK FOLLOWS A CARRYING LINK: A ONCE AND B ONCE.
   -- ══════════════════════════════════════════════════════════════════════════════════════
   v_co_t := custom.table_declare(v_open, jsonb_build_object(
-    'name','ZZ Company','slug','zz_storet_company','type','entity','label_singular','Company',
-    'label_plural','Companies','title_field','cname','display','page','weight','light','ordered',false,
+    'name','Lending institution','slug','lending_institutions','type','entity','label_singular','Lending institution',
+    'label_plural','Lending institutions','title_field','cname','display','page','weight','light','ordered',false,
     'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','cname')),'parent_id',v_h2::text));
-  v_ca := custom.record_write(v_open, v_co_t, jsonb_build_object('cname','Company A','parent_id',v_h2::text));
-  v_cb := custom.record_write(v_open, v_co_t, jsonb_build_object('cname','Company B','parent_id',v_h2::text));
+  v_ca := custom.record_write(v_open, v_co_t, jsonb_build_object('cname','Design History Museum','parent_id',v_h2::text));
+  v_cb := custom.record_write(v_open, v_co_t, jsonb_build_object('cname','Nordic Photography Archive','parent_id',v_h2::text));
   perform custom.relation_carry(v_open, v_ca, v_cb);
   perform custom.relation_carry(v_open, v_cb, v_ca);
 
   select count(*) into v_n from custom.query_rollup(v_open, array[v_ca], null, null, 33, 'viewer') q
    where q.record_id in (v_ca, v_cb);
   if v_n <> 2 then
-    raise exception '7a: rolling up from Company A reaches % of the two companies — the walk stops at the root', v_n;
+    raise exception '7a: rolling up from Design History Museum reaches % of the two institutions — the walk stops at the root', v_n;
   end if;
   -- 7b. ONCE EACH. A loop that double-counted would answer more than two rows in total.
   select count(*) into v_n from custom.query_rollup(v_open, array[v_ca], null, null, 33, 'viewer');
   if v_n <> 2 then
-    raise exception '7b: the loop was walked more than once — % row(s) for two companies', v_n;
+    raise exception '7b: the loop was walked more than once — % row(s) for two institutions', v_n;
   end if;
   -- 7c. And it terminates: the same answer with a deep cap.
   select count(*) into v_n from custom.query_rollup(v_open, array[v_ca], null, null, 64, 'viewer');
   if v_n <> 2 then
     raise exception '7c: at the deepest cap the loop answers % row(s)', v_n;
   end if;
-  raise notice 'PART 7 PASSED (T11) — A partners B and B partners A; the rollup from A returns A once and B once, and terminates at every cap.';
+  raise notice 'PART 7 PASSED (T11) — Design History Museum partners Nordic Photography Archive and back; the rollup from the first returns each once, and terminates at every cap.';
 
   -- ══════════════════════════════════════════════════════════════════════════════════════
   -- PART 8 — B1. A COLUMN CAN BE MARKED UNIQUE, AND A DUPLICATE IS REFUSED BY NAME.

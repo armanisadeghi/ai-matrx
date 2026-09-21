@@ -56,7 +56,7 @@ begin
   perform set_config('role', 'authenticated', true);
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ HS Red Job','slug','zz_hs_red_job','type','entity',
+    'name','Maintenance Jobs','slug','maintenance_jobs','type','entity',
     'label_singular','Job','label_plural','Jobs','title_field','title','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',

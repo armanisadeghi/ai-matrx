@@ -73,7 +73,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W1-TABLE RED', 'zz-w1-table-red-' || substr(v_org::text, 1, 8), 'ZTR', c_admin);
+  values (v_org, 'Rincon Plumbing Co', 'rincon-plumbing-' || substr(v_org::text, 1, 8), 'RPC', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -104,7 +104,7 @@ begin
   raise notice 'PART 0 PASSED — the seat is `authenticated`, the ladder sees a client, and custom.record is not readable from it.';
 
   v_project := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'Project', 'slug', 'zz_wtr_project',
+    'name', 'Project', 'slug', 'projects',
     'label_singular', 'Project', 'label_plural', 'Projects',
     'type', 'entity', 'display', 'page', 'ordered', false,
     'weight', 'light', 'retention_days', 30,
@@ -167,7 +167,7 @@ begin
   -- ── RED 2: the Table shape guard ─────────────────────────────────────────────
   -- Still disabled from the one statement above.
   v_landed := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'Untitled', 'slug', 'zz_wtr_untitled',
+    'name', 'Untitled', 'slug', 'untitled',
     'label_singular', 'U', 'label_plural', 'Us',
     'type', 'entity', 'display', 'list', 'ordered', false,
     'weight', 'light', 'retention_days', 30,
@@ -193,7 +193,7 @@ begin
   -- makes goes false, which is what stops it being a query that could never fail.
   v_x := custom.record_write(v_org, v_project, jsonb_build_object('pname', 'Project X', 'parent_id', v_hq::text));
   v_risk := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'Risk', 'slug', 'zz_wtr_risk',
+    'name', 'Risk', 'slug', 'risks',
     'label_singular', 'Risk', 'label_plural', 'Risks',
     'type', 'entity', 'display', 'list', 'ordered', false,
     'weight', 'light', 'retention_days', 30,

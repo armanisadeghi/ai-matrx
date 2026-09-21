@@ -84,8 +84,8 @@ describe("agent delete confirm copy is honest about a soft delete", () => {
   });
 
   it("the shared copy names what stops, what survives, and the way back", () => {
-    const copy = buildAgentDeleteConfirm("ZZZ Scratch Agent");
-    expect(copy.title).toBe('Delete "ZZZ Scratch Agent"?');
+    const copy = buildAgentDeleteConfirm("Ironclad Dispatch Agent");
+    expect(copy.title).toBe('Delete "Ironclad Dispatch Agent"?');
     expect(copy.description).toMatch(/stops running/i);
     expect(copy.description).toMatch(/soft delete/i);
     expect(copy.description).toMatch(/restore/i);
@@ -123,7 +123,7 @@ describe("the Delete control is absent, never dead", () => {
         <AgentActionModal
           isOpen
           onClose={() => {}}
-          agentName="ZZZ Scratch Agent"
+          agentName="Ironclad Dispatch Agent"
           onRun={() => {}}
           onEdit={() => {}}
           onDelete={onDelete}

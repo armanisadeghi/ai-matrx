@@ -18,16 +18,16 @@
 -- WHAT MAKES IT FAIL — the production change, named, one per part:
 --   1  let `custom.checklist_declare` store a checklist whose step waits for a step that comes
 --      after it → a run of it could never finish, and nobody would be told until it did not.
---   2  drop `zz_ckl_watch` → "every new hire gets these twelve steps" becomes "every new hire
+--   2  drop the `zz_ckl_watch` trigger → "every new hire gets these twelve steps" becomes "every new hire
 --      gets these twelve steps if somebody remembers", which is the whole product.
 --   3  drop the `custom.work_assign` call from the instantiation → twelve rows nobody owns and
 --      nobody can open, in nobody's inbox.
 --   4  drop the due offsets → twelve undated rows the inbox files under `undated` forever.
---   5  drop `zz_ckl_step_guard` → step 12 can be ticked on the first morning through
+--   5  drop the `zz_ckl_step_guard` trigger → step 12 can be ticked on the first morning through
 --      `custom.work_set_state`, with `custom.checklist_step_complete` still politely refusing
 --      beside it. A safe path beside an unsafe one is not a rule.
 --   6  stop checking `requires` → a checklist closes with nothing in it.
---   7  drop the run-closing arm of `zz_ckl_watch` → a finished checklist stays open forever.
+--   7  drop the run-closing arm of the `zz_ckl_watch` trigger → a finished checklist stays open forever.
 --
 -- A SECOND INPUT WITH A DIFFERENT EXPECTED VALUE IN EVERY PART: PART 1 pairs the refused
 -- checklist with the one that stores; PART 3 pairs the step that IS in a person's work with the
@@ -79,9 +79,9 @@ begin
   perform set_config('app.actor_system', 'campaign-test/checklists_green', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
 
-  v_name := 'ZZ CHECKLISTS Green ' || substr(v_org::text, 1, 8);
+  v_name := 'Ridgeline Physical Therapy ' || substr(v_org::text, 1, 8);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, v_name, 'zz-checklists-' || substr(v_org::text, 1, 8), 'ZCK', c_admin);
+  values (v_org, v_name, 'ridgeline-physical-therapy-' || substr(v_org::text, 1, 8), 'RPT', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');

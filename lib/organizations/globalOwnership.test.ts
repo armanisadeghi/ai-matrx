@@ -134,12 +134,12 @@ describe("global ownership on the wire", () => {
     const stamped = {
       organization_id: SYSTEM_ORG_ID,
       created_by: "87a6e699-3622-4869-8843-d0867456c0dd", // admin@admin.com
-      label: "ZZ-GLOBAL",
+      label: "RIDGELINE-PT-GLOBAL-SHORTCUT",
     };
     const wired = toGlobalOwnershipWire(stamped, SYSTEM_ORG_ID);
     expect(wired.organization_id).toBeNull();
     expect(wired.created_by).toBeNull();
-    expect(wired.label).toBe("ZZ-GLOBAL");
+    expect(wired.label).toBe("RIDGELINE-PT-GLOBAL-SHORTCUT");
 
     // A tenant row keeps BOTH — the creator there is real ownership.
     const personal = { ...stamped, organization_id: TENANT_ORG_ID };

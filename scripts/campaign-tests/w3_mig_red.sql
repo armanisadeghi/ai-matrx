@@ -111,7 +111,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W3-MIG RED', 'zz-w3mig-red-' || substr(v_org::text, 1, 8), 'ZMR', c_admin);
+  values (v_org, 'Fairhaven Steelworks — Paint Shop', 'fairhaven-steelworks-paint-' || substr(v_org::text, 1, 8), 'FHS', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');

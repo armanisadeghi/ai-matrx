@@ -3,7 +3,7 @@
  *
  * The defect, found by an independent walker on production v0.4.1736:
  * `/administration/mandates/new` changed route under them while they were
- * typing, into the EXISTING mandate `zzz_fixr13.scratch_test` — so the name
+ * typing, into the EXISTING mandate `rincon_plumbing.dispatch_summary` — so the name
  * and the goal they were writing went into that record, and the creation they
  * meant to make never happened. Data loss, on every attempt.
  *
@@ -82,9 +82,9 @@ import { probeMandateKey } from "../key-availability";
 
 const TAKEN = {
   status: "taken" as const,
-  mandateKey: "zzz_fixr13.scratch_test",
-  label: "ZZZ FIXR13 scratch",
-  href: "/administration/mandates/zzz_fixr13.scratch_test",
+  mandateKey: "rincon_plumbing.dispatch_summary",
+  label: "Rincon Plumbing — Dispatch Summary",
+  href: "/administration/mandates/rincon_plumbing.dispatch_summary",
 };
 
 let container: HTMLDivElement;
@@ -147,13 +147,13 @@ describe("a key that already exists", () => {
   it("refuses ON THE FIELD, names the job that holds it, and offers a link", async () => {
     (probeMandateKey as jest.Mock).mockResolvedValue(TAKEN);
     mount();
-    typeInto("Mandate key", "zzz_fixr13.scratch_test");
+    typeInto("Mandate key", "rincon_plumbing.dispatch_summary");
     await settleProbe();
 
     expect(container.textContent).toContain("That key is taken");
-    expect(container.textContent).toContain("ZZZ FIXR13 scratch");
+    expect(container.textContent).toContain("Rincon Plumbing — Dispatch Summary");
     const link = container.querySelector<HTMLAnchorElement>(
-      'a[href="/administration/mandates/zzz_fixr13.scratch_test"]',
+      'a[href="/administration/mandates/rincon_plumbing.dispatch_summary"]',
     );
     // Following it is the PERSON'S choice, and it must not cost them the form.
     expect(link?.target).toBe("_blank");
@@ -163,7 +163,7 @@ describe("a key that already exists", () => {
   it("does NOT navigate — the route is exactly where the person left it", async () => {
     (probeMandateKey as jest.Mock).mockResolvedValue(TAKEN);
     mount();
-    typeInto("Mandate key", "zzz_fixr13.scratch_test");
+    typeInto("Mandate key", "rincon_plumbing.dispatch_summary");
     await settleProbe();
 
     expect(push).not.toHaveBeenCalled();
@@ -174,8 +174,8 @@ describe("a key that already exists", () => {
   it("refuses Create with that reason, so nothing is written to the wrong record", async () => {
     (probeMandateKey as jest.Mock).mockResolvedValue(TAKEN);
     mount();
-    typeInto("Mandate name", "ZZZ FIXR14 Walk");
-    typeInto("Mandate key", "zzz_fixr13.scratch_test");
+    typeInto("Mandate name", "Rincon Plumbing Invoice Followup");
+    typeInto("Mandate key", "rincon_plumbing.dispatch_summary");
     typeInto("Goal", "Everything this job must do well.");
     await settleProbe();
 
@@ -193,8 +193,8 @@ describe("a key that already exists", () => {
 describe("nothing navigates while the form is dirty", () => {
   it("no router call is made by filling the whole form in", async () => {
     mount();
-    typeInto("Mandate name", "ZZZ FIXR14 Walk");
-    typeInto("Mandate key", "zzz_fixr14.walk");
+    typeInto("Mandate name", "Rincon Plumbing Invoice Followup");
+    typeInto("Mandate key", "rincon_plumbing.invoice_followup");
     typeInto("Goal", "Everything this job must do well.");
     typeInto("Output constraints", "markdown, max 200 words");
     await settleProbe();
@@ -223,7 +223,7 @@ describe("nothing navigates while the form is dirty", () => {
 describe("what was typed survives the page going away", () => {
   it("comes back on the next mount, and the restore is announced", async () => {
     mount();
-    typeInto("Mandate name", "ZZZ FIXR14 Walk");
+    typeInto("Mandate name", "Rincon Plumbing Invoice Followup");
     typeInto("Goal", "Everything this job must do well.");
     await settleProbe();
     unmount();
@@ -235,7 +235,7 @@ describe("what was typed survives the page going away", () => {
     const name = container.querySelector<HTMLInputElement>(
       '[aria-label="Mandate name"]',
     );
-    expect(name?.value).toBe("ZZZ FIXR14 Walk");
+    expect(name?.value).toBe("Rincon Plumbing Invoice Followup");
     expect(container.textContent).toContain("Put back what you were typing");
     unmount();
   });

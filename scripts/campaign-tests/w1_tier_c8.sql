@@ -532,8 +532,8 @@ begin
   -- and nothing is ever selected from it.
   create extension if not exists postgres_fdw;
   create server custom_external_rehearsal foreign data wrapper postgres_fdw options (host 'localhost', dbname 'postgres');
-  create schema zz_w1tier_wrong_place;
-  create foreign table zz_w1tier_wrong_place.w1_tier_widgets (external_key text)
+  create schema ironline_fitness_reports;
+  create foreign table ironline_fitness_reports.w1_tier_widgets (external_key text)
     server custom_external_rehearsal options (schema_name 'public', table_name 'w1_tier_widgets');
   select count(*), min(f) into v_n, v_txt from custom.external_foreign_table_findings() f;
   if v_n <> 1 or v_txt not like '%outside the private schema custom_external%' then

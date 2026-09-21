@@ -54,7 +54,8 @@ begin
 
   -- ── THE THROWAWAY ORGANIZATION ───────────────────────────────────────────────────────────
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ STORE-REL Green', 'zz-storerel-green-' || substr(v_org::text, 1, 8), 'ZSG', c_admin);
+  values (v_org, 'Kessler Lab for Applied Microbial Ecology — Riparian Field Station',
+          'kessler-riparian-field-station-' || substr(v_org::text, 1, 8), 'KLA', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active'),
          (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -65,23 +66,23 @@ begin
           'campaign-test/storerel_green: VIS-33 shared_only, so membership alone reaches nothing');
 
   insert into custom.record (organization_id, table_id, data)
-  values (v_org, null, jsonb_build_object('name', 'ZZ HQ')) returning id into v_home;
+  values (v_org, null, jsonb_build_object('name', 'Kessler Lab — Main Laboratory')) returning id into v_home;
 
   v_proj := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Project','slug','zz_storerel_project','type','entity',
-    'label_singular','Project','label_plural','Projects','title_field','pname',
+    'name','Experiment','slug','experiments','type','entity',
+    'label_singular','Experiment','label_plural','Experiments','title_field','pname',
     'display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','pname')),
     'parent_id', v_home::text));
-  v_x := custom.record_write(v_org, v_proj, jsonb_build_object('pname','Project X','parent_id',v_home::text));
-  v_y := custom.record_write(v_org, v_proj, jsonb_build_object('pname','Project Y','parent_id',v_home::text));
+  v_x := custom.record_write(v_org, v_proj, jsonb_build_object('pname','Riparian nitrogen amendment trial','parent_id',v_home::text));
+  v_y := custom.record_write(v_org, v_proj, jsonb_build_object('pname','Anaerobic sulfate reducer screen','parent_id',v_home::text));
 
-  -- T10's shape: Risk declared ONCE at the organization and placed in BOTH projects; Incident
+  -- T10's shape: Measurement declared ONCE at the organization and placed in BOTH experiments; Protocol deviation
   -- lives in Y and nowhere else.
   v_risk := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Risk','slug','zz_storerel_risk','type','entity',
-    'label_singular','Risk','label_plural','Risks','title_field','rtitle',
+    'name','Measurement','slug','measurements','type','entity',
+    'label_singular','Measurement','label_plural','Measurements','title_field','rtitle',
     'display','list','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','rtitle')),
@@ -89,29 +90,29 @@ begin
   perform custom.home_add(v_org, v_risk, v_x);
   perform custom.home_add(v_org, v_risk, v_y);
   v_inc := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Incident','slug','zz_storerel_incident','type','entity',
-    'label_singular','Incident','label_plural','Incidents','title_field','ititle',
+    'name','Protocol deviation','slug','protocol_deviations','type','entity',
+    'label_singular','Protocol deviation','label_plural','Protocol deviations','title_field','ititle',
     'display','list','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','ititle')),
     'parent_id', v_y::text));
-  v_r1 := custom.record_write(v_org, v_risk, jsonb_build_object('rtitle','X risk','parent_id',v_x::text));
-  v_r2 := custom.record_write(v_org, v_risk, jsonb_build_object('rtitle','Y risk','parent_id',v_y::text));
-  v_i1 := custom.record_write(v_org, v_inc,  jsonb_build_object('ititle','Y incident','parent_id',v_y::text));
+  v_r1 := custom.record_write(v_org, v_risk, jsonb_build_object('rtitle','nifH copies per gram, week 4','parent_id',v_x::text));
+  v_r2 := custom.record_write(v_org, v_risk, jsonb_build_object('rtitle','Sulfate concentration, day 12','parent_id',v_y::text));
+  v_i1 := custom.record_write(v_org, v_inc,  jsonb_build_object('ititle','Anaerobic chamber O2 excursion','parent_id',v_y::text));
 
   -- ════════════════════════════════════════════════════════════════════════════════════════
   -- PART 1 — T7. A RELATION EDGE NAMES ITS FIELD, SO THE DELETE RULES FIRE.
   -- ════════════════════════════════════════════════════════════════════════════════════════
   v_sup_t := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Supplier','slug','zz_storerel_supplier','type','entity',
-    'label_singular','Supplier','label_plural','Suppliers','title_field','sname',
+    'name','Reagent supplier','slug','reagent_suppliers','type','entity',
+    'label_singular','Reagent supplier','label_plural','Reagent suppliers','title_field','sname',
     'display','list','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','sname')),
     'parent_id', v_home::text));
   v_po_t := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Purchase order','slug','zz_storerel_po','type','entity',
-    'label_singular','Purchase order','label_plural','Purchase orders','title_field','ponum',
+    'name','Reagent order','slug','reagent_orders','type','entity',
+    'label_singular','Reagent order','label_plural','Reagent orders','title_field','ponum',
     'display','list','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','ponum'),
@@ -183,7 +184,7 @@ begin
   v_caught := null;
   begin
     insert into platform.associations (source_type, source_id, target_type, target_id, role, organization_id)
-    values ('record', v_r1, 'record', v_r2, 'zz_not_a_field', v_org);
+    values ('record', v_r1, 'record', v_r2, 'related_measurement', v_org);
   exception when others then v_caught := sqlerrm;
   end;
   if v_caught is null or v_caught !~ 'which field it came from' then
@@ -253,15 +254,15 @@ begin
   -- PART 2 — T2. A NOTE ON THREE RECORDS, THROUGH A CLIENT DOOR.
   -- ════════════════════════════════════════════════════════════════════════════════════════
   v_note_t := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Note','slug','zz_storerel_note','type','entity',
-    'label_singular','Note','label_plural','Notes','title_field','body',
+    'name','Lab note','slug','lab_notes','type','entity',
+    'label_singular','Lab note','label_plural','Lab notes','title_field','body',
     'display','list','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','body')),
     'parent_id', v_home::text));
   v_note := custom.record_write(v_org, v_note_t, jsonb_build_object('body','the note','parent_id',v_home::text));
-  v_b := custom.record_write(v_org, v_risk, jsonb_build_object('rtitle','B, a Risk','parent_id',v_home::text));
-  v_c := custom.record_write(v_org, v_inc,  jsonb_build_object('ititle','C, an Incident','parent_id',v_home::text));
+  v_b := custom.record_write(v_org, v_risk, jsonb_build_object('rtitle','Dissolved organic carbon, week 4','parent_id',v_home::text));
+  v_c := custom.record_write(v_org, v_inc,  jsonb_build_object('ititle','Thermocycler lid failure mid-run','parent_id',v_home::text));
 
   -- THE DOOR THAT DID NOT EXIST. Three carrying links, three different Tables.
   perform custom.relation_carry(v_org, v_x,  v_note);
@@ -318,7 +319,7 @@ begin
   -- ════════════════════════════════════════════════════════════════════════════════════════
   -- PART 3 — T3. TWO PARENTS IS REFUSED, AND IT NAMES THE FIRST ONE.
   -- ════════════════════════════════════════════════════════════════════════════════════════
-  v_cls := custom.record_write(v_org, v_risk, jsonb_build_object('rtitle','Class 101'));
+  v_cls := custom.record_write(v_org, v_risk, jsonb_build_object('rtitle','Total organic carbon, replicate 3'));
   perform custom.relation_own(v_org, v_x, v_cls);
   if (select custom.containment_parent(r.data) from custom.record r where r.id = v_cls) <> v_x then
     raise exception '3a (T3): the containment door did not put the class inside X';
@@ -329,7 +330,7 @@ begin
   if v_caught is null or v_caught !~ 'already inside' then
     raise exception '3b (T3): a SECOND parent was accepted (got %)', coalesce(v_caught,'no refusal at all');
   end if;
-  if v_caught !~ 'Project X' then
+  if v_caught !~ 'Riparian nitrogen amendment trial' then
     raise exception '3b (T3): the refusal did not NAME the parent that is in the way: %', v_caught;
   end if;
   if (select custom.containment_parent(r.data) from custom.record r where r.id = v_cls) <> v_x then
@@ -375,50 +376,50 @@ begin
     raise exception '4a (T10): she can see a risk that lives in Y';
   end if;
 
-  -- 4b. THE HOMES-AT-A-RECORD DOOR. X answers with Risk; Y answers with nothing at all.
+  -- 4b. THE HOMES-AT-A-RECORD DOOR. X answers with Measurement; Y answers with nothing at all.
   select count(*) into v_n from custom.tables_at_home(v_org, array[v_x]) t where t.table_id = v_risk;
-  if v_n <> 1 then raise exception '4b (T10): the tables-at-a-home door did not return Risk at X (% rows)', v_n; end if;
+  if v_n <> 1 then raise exception '4b (T10): the tables-at-a-home door did not return Measurement at X (% rows)', v_n; end if;
   select count(*) into v_n from custom.tables_at_home(v_org, array[v_y]);
-  if v_n <> 0 then raise exception '4b (T10): the tables-at-a-home door told her about % table(s) at Project Y', v_n; end if;
+  if v_n <> 0 then raise exception '4b (T10): the tables-at-a-home door told her about % table(s) at the sulfate reducer screen', v_n; end if;
 
   -- 4c-4i. EVERY DOOR THAT DESCRIBES THE HIDDEN TABLE REFUSES, and the same door answers for
   --        the table she may see. Nine doors, one question.
   v_caught := null;
   begin perform custom.query_table_homes(v_org, v_inc); exception when others then v_caught := sqlerrm; end;
-  if v_caught is null then raise exception '4c (T10): the homes-of-a-table door described Incident to her'; end if;
+  if v_caught is null then raise exception '4c (T10): the homes-of-a-table door described Protocol deviation to her'; end if;
   perform custom.query_table_homes(v_org, v_risk);
 
   v_caught := null;
   begin perform custom.io_export(v_org, v_inc); exception when others then v_caught := sqlerrm; end;
-  if v_caught is null then raise exception '4d (T10): the export door returned Incident''s column names to her'; end if;
+  if v_caught is null then raise exception '4d (T10): the export door returned Protocol deviation''s column names to her'; end if;
   perform custom.io_export(v_org, v_risk);
 
   v_caught := null;
   begin perform custom.table_capacity(v_org, v_inc); exception when others then v_caught := sqlerrm; end;
-  if v_caught is null then raise exception '4e (T10): the capacity door told her how many records Incident holds'; end if;
+  if v_caught is null then raise exception '4e (T10): the capacity door told her how many records Protocol deviation holds'; end if;
   perform custom.table_capacity(v_org, v_risk);
 
   v_caught := null;
   begin perform count(*) from custom.applicable_fields(v_org, v_inc, null); exception when others then v_caught := sqlerrm; end;
-  if v_caught is null then raise exception '4f (T10): the fields door returned Incident''s fields to her'; end if;
+  if v_caught is null then raise exception '4f (T10): the fields door returned Protocol deviation''s fields to her'; end if;
   perform count(*) from custom.applicable_fields(v_org, v_risk, null);
 
   v_caught := null;
   begin perform count(*) from custom.read_records(v_org, v_inc, false, 10, 0); exception when others then v_caught := sqlerrm; end;
-  if v_caught is null then raise exception '4g (T10): the read door answered about Incident with a silent empty set instead of refusing'; end if;
+  if v_caught is null then raise exception '4g (T10): the read door answered about Protocol deviation with a silent empty set instead of refusing'; end if;
   perform count(*) from custom.read_records(v_org, v_risk, false, 10, 0);
 
   v_caught := null;
   begin perform count(*) from custom.record_aggregate(v_org, v_inc); exception when others then v_caught := sqlerrm; end;
-  if v_caught is null then raise exception '4h (T10): the aggregate door counted Incident for her'; end if;
+  if v_caught is null then raise exception '4h (T10): the aggregate door counted Protocol deviation for her'; end if;
 
   v_caught := null;
   begin perform custom.agg_explain(v_org, v_inc); exception when others then v_caught := sqlerrm; end;
-  if v_caught is null then raise exception '4h (T10): the explain door described Incident''s shape to her'; end if;
+  if v_caught is null then raise exception '4h (T10): the explain door described Protocol deviation''s shape to her'; end if;
 
   v_caught := null;
   begin perform count(*) from custom.query_by_coordinates(v_org, v_inc); exception when others then v_caught := sqlerrm; end;
-  if v_caught is null then raise exception '4i (T10): the coordinates door answered about Incident'; end if;
+  if v_caught is null then raise exception '4i (T10): the coordinates door answered about Protocol deviation'; end if;
 
   -- 4j. THE CENSUS ITSELF, so the class cannot reopen through a tenth door.
   perform set_config('role', 'none', true);
@@ -434,8 +435,8 @@ begin
   -- PART 5 — T5. TWO CHENS: THE ALTERNATES, THE ID, AND THE UNDO.
   -- ════════════════════════════════════════════════════════════════════════════════════════
   v_per_t := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Person','slug','zz_storerel_person','type','entity',
-    'label_singular','Person','label_plural','People','title_field','pname',
+    'name','Researcher','slug','researchers','type','entity',
+    'label_singular','Researcher','label_plural','Researchers','title_field','pname',
     'display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','pname'),
@@ -595,10 +596,10 @@ $t$;
 
 -- THE CENSUS. Nothing of this suite survives the rollback; this proves it while the
 -- transaction is still open, and the rollback is what makes it true afterwards.
-select count(*) filter (where o.name like 'ZZ STORE-REL%') as throwaway_organizations
+select count(*) filter (where o.slug like 'kessler-riparian-field-station-%') as throwaway_organizations
   from iam.organizations o;
 
 rollback;
 
 select count(*) as organizations_left_behind
-  from iam.organizations o where o.name like 'ZZ STORE-REL%';
+  from iam.organizations o where o.slug like 'kessler-riparian-field-station-%';

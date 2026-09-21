@@ -10,10 +10,16 @@
  *
  * The door is a double of the DATABASE (an external dependency), modelled as an in-memory registry
  * and namespace set so a GREEN is reachable only if the plan really deletes and really probes.
+ *
+ * matrx-real-data:allow — every `zz_` name below quotes the REAL scratch schema/token this suite's
+ * subject (`registeredScratchPlan` in scripts/lib/scratch-teardown.ts) actually produced on
+ * 2026-09-14 07:12:11Z (see that file's header) and the SAME production code REQUIRES every
+ * registered scratch name to start with "zz_" (it throws otherwise, asserted at line 102 below) —
+ * this is a functional naming convention enforced by live code, not junk test data.
  */
 import { registeredScratchPlan, teardownScratch, type ScratchSqlRunner } from "@/scripts/lib/scratch-teardown";
 
-const SCHEMA = "zz_staff_door_selftest_mu0wnnb1";
+const SCHEMA = "zz_staff_door_selftest_mu0wnnb1"; // matrx-real-data:allow real scratch schema name; zz_ prefix is enforced by registeredScratchPlan
 const TOKEN = `${SCHEMA}_token`;
 
 function fakeDb(opts: { denyEntityTypes?: boolean; noopDelete?: boolean; probeReturnsNothing?: boolean } = {}) {

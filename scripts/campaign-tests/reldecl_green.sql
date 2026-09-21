@@ -66,8 +66,9 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by) values
-    (v_org, 'ZZ RELDECL Green', 'zz-reldecl-green-' || substr(v_org::text, 1, 8), 'ZRG', c_admin),
-    (v_far, 'ZZ RELDECL Far',   'zz-reldecl-far-'   || substr(v_far::text, 1, 8), 'ZRF', c_admin);
+    (v_org, 'Greenline Landscaping Crew', 'greenline-landscaping-' || substr(v_org::text, 1, 8), 'GLC', c_admin),
+    (v_far, 'Greenline Landscaping Crew — Northfield Branch',
+            'greenline-landscaping-northfield-' || substr(v_far::text, 1, 8), 'GLN', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active'),
@@ -106,7 +107,7 @@ begin
   -- PART 1 — TWO TABLES AND THE COLUMNS THAT JOIN THEM.
   -- ════════════════════════════════════════════════════════════════════════════
   v_client := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Client','slug','zz_reldecl_client','type','entity','label_singular','Client',
+    'name','Clients','slug','clients','type','entity','label_singular','Client',
     'label_plural','Clients','title_field','cname','display','page','weight','light',
     'ordered',false,'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,
     'retention_days',365,'fields', jsonb_build_array(jsonb_build_object('name','cname')),
@@ -114,7 +115,7 @@ begin
   perform custom.field_declare(v_org, v_client, jsonb_build_object('label','Name','key','cname','type','text'));
 
   v_job := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Job','slug','zz_reldecl_job','type','entity','label_singular','Job',
+    'name','Jobs','slug','jobs','type','entity','label_singular','Job',
     'label_plural','Jobs','title_field','jname','display','page','weight','light',
     'ordered',false,'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,
     'retention_days',365,'fields', jsonb_build_array(jsonb_build_object('name','jname')),
@@ -186,8 +187,8 @@ begin
   perform set_config('role', v_boss, true);   -- no client door makes a Table in another org for this fixture
   perform set_config('request.jwt.claims', c_admin_j, true);
   v_fartbl := custom.table_declare(v_far, jsonb_build_object(
-    'name','ZZ Far','slug','zz_reldecl_far','type','entity','label_singular','Far',
-    'label_plural','Fars','title_field','fname','display','page','weight','light',
+    'name','Equipment','slug','equipment','type','entity','label_singular','Equipment Item',
+    'label_plural','Equipment','title_field','fname','display','page','weight','light',
     'ordered',false,'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,
     'retention_days',365,'fields', jsonb_build_array(jsonb_build_object('name','fname')),
     'parent_id', v_home2::text));
@@ -195,7 +196,7 @@ begin
   v_caught := null;
   begin
     perform custom.field_declare(v_org, v_job, jsonb_build_object(
-      'label','Far','type','relation','relation_target', v_fartbl::text));
+      'label','Equipment','type','relation','relation_target', v_fartbl::text));
   exception when others then get stacked diagnostics v_caught = message_text;
   end;
   if v_caught is null then

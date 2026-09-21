@@ -3,7 +3,7 @@
 --
 -- It removes this lane's ONE enforcement point — the trigger `custom_record_rule_topology_guard`
 -- — inside a transaction that ROLLS BACK, and shows every write the GREEN suite watches being
--- REFUSED landing instead. The evidence is written into a disposable `zz_w1_rule_apply_red`
+-- REFUSED landing instead. The evidence is written into a disposable `harbor_dental_red_ledger`
 -- schema (rule 2's own words), read back from there, and rolled away with everything else.
 --
 -- RUN IT:
@@ -54,8 +54,8 @@ begin
 end
 $guard$;
 
-create schema zz_w1_rule_apply_red;
-create table zz_w1_rule_apply_red.landed (
+create schema harbor_dental_red_ledger;
+create table harbor_dental_red_ledger.landed (
   red       text primary key,
   what      text not null,
   row_id    uuid,
@@ -64,8 +64,8 @@ create table zz_w1_rule_apply_red.landed (
 -- THE LEDGER IS NOT A PRODUCT SURFACE, but the seat must not be dropped to write to it — a
 -- suite that steps out for bookkeeping ends up stepping out for clauses. Granted for the life
 -- of this transaction, and gone with the rollback.
-grant usage on schema zz_w1_rule_apply_red to authenticated;
-grant select, insert on zz_w1_rule_apply_red.landed to authenticated;
+grant usage on schema harbor_dental_red_ledger to authenticated;
+grant select, insert on harbor_dental_red_ledger.landed to authenticated;
 
 -- THE ENFORCEMENT POINT, REMOVED, as the connected role: dropping a trigger is operator DDL
 -- and no client could ever do it. Everything below is what the store does without it.
@@ -134,7 +134,7 @@ begin
       jsonb_build_object('op','eq','args', jsonb_build_array(
         jsonb_build_object('field', v_f_w), jsonb_build_object('field', v_f_h))),
       jsonb_build_object('merge_field', v_mf)))), null);
-  insert into zz_w1_rule_apply_red.landed values
+  insert into harbor_dental_red_ledger.landed values
     ('RED 1', 'a Rule now reads the merge field that resolves through it - the circle is stored, saved from the seat through custom.record_update',
      v_r_all, jsonb_build_object(
        'rule', custom.read_record(v_org, v_r_all, true) ->> 'name',
@@ -143,8 +143,8 @@ begin
 
   -- ── RED 2: two Rules working each other's answers out, both saved BY A PERSON. ────
   v_t2 := custom.table_declare(v_org, jsonb_build_object(
-    'name','W1-RULE-APPLY red cycle','slug','zz_w1_rule_apply_red_cycle','type','entity',
-    'label_singular','Cycle','label_plural','Cycles','title_field','a','display','page',
+    'name','Account Balances','slug','account_balances','type','entity',
+    'label_singular','Account Balance','label_plural','Account Balances','title_field','a','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','a'), jsonb_build_object('name','b')),
@@ -166,7 +166,7 @@ begin
     jsonb_build_object('name','B from A','kind','expression','scope_table_id', v_t2,
       'uses', jsonb_build_array('compute'), 'applies_to_types','[]'::jsonb, 'target_field_id', v_f2,
       'expr', jsonb_build_object('op','concat','args', jsonb_build_array(jsonb_build_object('field', v_f1)))));
-  insert into zz_w1_rule_apply_red.landed values
+  insert into harbor_dental_red_ledger.landed values
     ('RED 2', 'both halves of a Rule <-> Rule circle are stored, and neither save was refused',
      v_id, jsonb_build_object('rules', jsonb_build_array('A from B', 'B from A'), 'table', v_t2));
 
@@ -177,7 +177,7 @@ begin
       'expr', jsonb_build_object('op','eq','args', jsonb_build_array(
         jsonb_build_object('parent_field', jsonb_build_object('parent_field', v_f_kind)),
         jsonb_build_object('const','square')))));
-  insert into zz_w1_rule_apply_red.landed values
+  insert into harbor_dental_red_ledger.landed values
     ('RED 3', 'a Rule reading TWO ancestor levels is stored, saved from the seat', v_id, null);
 
   v_id := custom.record_write(v_org, custom.rule_kernel_id(),
@@ -186,7 +186,7 @@ begin
       'expr', jsonb_build_object('op','eq','args', jsonb_build_array(
         jsonb_build_object('parent_field', v_f_kind, 'levels', 2),
         jsonb_build_object('const','square')))));
-  insert into zz_w1_rule_apply_red.landed values
+  insert into harbor_dental_red_ledger.landed values
     ('RED 4', 'a Rule asking for two levels by number is stored, saved from the seat', v_id, null);
 
   v_id := custom.record_write(v_org, custom.rule_kernel_id(),
@@ -195,7 +195,7 @@ begin
       'expr', jsonb_build_object('op','eq','args', jsonb_build_array(
         jsonb_build_object('grandparent_field', v_f_kind),
         jsonb_build_object('const','square')))));
-  insert into zz_w1_rule_apply_red.landed values
+  insert into harbor_dental_red_ledger.landed values
     ('RED 5', 'a grandparent_field Rule is stored, saved from the seat', v_id, null);
 
   -- ── RED 6: WHAT THE REMOVAL DOES NOT TAKE DOWN — THE ACCESS WALL. ────────────────
@@ -222,7 +222,7 @@ begin
   if v_n < 1 then
     raise exception 'RED 6: the member who was refused the Rule cannot read a single record either';
   end if;
-  insert into zz_w1_rule_apply_red.landed values
+  insert into harbor_dental_red_ledger.landed values
     ('RED 6', 'the ACCESS wall is untouched: test@test.com is still refused the same write, and still reads what she may',
      null, jsonb_build_object('refusal', v_msg, 'records_she_reads', v_n));
   perform set_config('request.jwt.claims', c_admin_j, true);
@@ -234,11 +234,11 @@ declare
   l record;
   v_n integer;
 begin
-  select count(*) into v_n from zz_w1_rule_apply_red.landed;
+  select count(*) into v_n from harbor_dental_red_ledger.landed;
   if v_n <> 6 then
     raise exception 'THE RED TWIN PROVED NOTHING: % of the 6 clauses were recorded.', v_n;
   end if;
-  for l in select * from zz_w1_rule_apply_red.landed order by red loop
+  for l in select * from harbor_dental_red_ledger.landed order by red loop
     raise notice '% — % (%)%', l.red, l.what, l.row_id,
       case when l.detail is null then '' else ' ' || l.detail::text end;
   end loop;

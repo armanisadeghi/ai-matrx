@@ -38,7 +38,7 @@ const SHORTCUT_ID = "b0dd8020-4961-40ab-90bb-e0511c815d04"; // the walked row
 // What the global read says about it — correct.
 const asGlobal: Row = {
   id: SHORTCUT_ID,
-  label: "ZZ-WALK6C-SHORTCUT",
+  label: "HANDS-HOPE-DONOR-INTAKE-SHORTCUT",
   scopeType: "system",
   scopeName: "System",
 };
@@ -47,7 +47,7 @@ const asGlobal: Row = {
 // storage trigger stamped a creator onto a global write.
 const asPersonal: Row = {
   id: SHORTCUT_ID,
-  label: "ZZ-WALK6C-SHORTCUT",
+  label: "HANDS-HOPE-DONOR-INTAKE-SHORTCUT",
   scopeType: "user",
   scopeName: "admin@admin.com",
 };

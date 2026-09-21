@@ -114,7 +114,7 @@ begin
 
   v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Dispatch desk'));
   v_acct := custom.table_declare(v_org, jsonb_build_object(
-    'name','Carrier','slug','zz_wp3_carrier_' || lower(p_half) || substr(md5(random()::text),1,6),'type','entity',
+    'name','Carrier','slug','carriers_' || lower(p_half) || substr(md5(random()::text),1,6),'type','entity',
     'label_singular','Carrier','label_plural','Carriers','title_field','title','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
@@ -130,7 +130,7 @@ begin
   end loop;
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','Shipment','slug','zz_wp3_shipment_' || lower(p_half) || substr(md5(random()::text),1,6),'type','entity',
+    'name','Shipment','slug','shipments_' || lower(p_half) || substr(md5(random()::text),1,6),'type','entity',
     'label_singular','Shipment','label_plural','Shipments','title_field','reference','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',

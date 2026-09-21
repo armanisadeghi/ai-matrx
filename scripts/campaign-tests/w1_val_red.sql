@@ -77,7 +77,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W1-VAL RED', 'zz-w1-val-red-' || substr(v_org::text, 1, 8), 'ZVR', c_admin);
+  values (v_org, 'Ridgeline Physical Therapy', 'ridgeline-physical-therapy-red-' || substr(v_org::text, 1, 8), 'RPT', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -85,7 +85,7 @@ begin
   values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_val_red');
   -- A Home has no client door of its own.
   insert into custom.record (organization_id, table_id, data)
-  values (v_org, null, jsonb_build_object('name', 'W1-VAL RED HQ'))
+  values (v_org, null, jsonb_build_object('name', 'Ridgeline Physical Therapy — Clinic'))
   returning id into v_home;
 
   -- ════════════════════════════════════════════════════════════════════════════
@@ -109,8 +109,8 @@ begin
 
   -- THE FIXTURE, identical to the GREEN suite's, built through the doors.
   v_person := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'W1-VAL Person (red)', 'slug', 'zz_wvr_person', 'type', 'entity',
-    'label_singular', 'Person', 'label_plural', 'People',
+    'name', 'Patients', 'slug', 'patients', 'type', 'entity',
+    'label_singular', 'Patient', 'label_plural', 'Patients',
     'title_field', 'full_name', 'display', 'page', 'weight', 'light',
     'ordered', false, 'row_order', 'sorted', 'default_sort', '[]'::jsonb,
     'agent_writable', true, 'retention_days', 365,

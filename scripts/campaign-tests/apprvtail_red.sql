@@ -63,8 +63,8 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ APPROVAL-TAIL Red ' || substr(v_org::text, 1, 8),
-          'zz-apprvtail-red-' || substr(v_org::text, 1, 8), 'ZAT', c_admin);
+  values (v_org, 'Cascade Electronics Recovery — Tacoma Yard ' || substr(v_org::text, 1, 8),
+          'cascade-electronics-tacoma-' || substr(v_org::text, 1, 8), 'CET', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)

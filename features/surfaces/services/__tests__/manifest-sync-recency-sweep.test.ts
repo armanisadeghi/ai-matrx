@@ -6,7 +6,7 @@
  * `docs/handoffs/canonical-stream-and-surface-writeback.md` and the
  * `includeRecent` option on `ApplyManifestSyncOptions`.
  *
- * Uses a fixture surface (`zz_fixture/probe`, never a real manifest) with two
+ * Uses a fixture surface (`cascade-electronics/pickup-intake`, never a real manifest) with two
  * DB-only `ui_surface_value` rows — one written a minute ago, one written 48
  * hours ago — to prove:
  *   1. A default sweep (`includeRecent` unset) deletes the OLD row and SKIPS
@@ -31,11 +31,11 @@ jest.mock("@/features/surfaces/config/namespace-registry", () => ({
   listRegisteredNamespaces: () => [],
 }));
 
-const TEST_SURFACE = "zz_fixture/probe";
+const TEST_SURFACE = "cascade-electronics/pickup-intake";
 
 const testManifest = {
   surfaceName: TEST_SURFACE,
-  label: "ZZ Fixture Probe",
+  label: "Cascade Electronics Pickup Intake",
   readiness: "stub",
   values: [],
   groups: [],
@@ -54,7 +54,7 @@ import { applyManifestSync } from "../manifest-sync.service";
 const NOW = Date.now();
 const RECENT_ROW = {
   surface_name: TEST_SURFACE,
-  name: "zz_fixture_recent_value",
+  name: "cascade_electronics_recent_pickup",
   updated_at: new Date(NOW - 60_000).toISOString(), // 1 minute ago
   label: "Recent",
   description: null,
@@ -67,7 +67,7 @@ const RECENT_ROW = {
 };
 const OLD_ROW = {
   surface_name: TEST_SURFACE,
-  name: "zz_fixture_old_value",
+  name: "cascade_electronics_old_pickup",
   updated_at: new Date(NOW - 48 * 3_600_000).toISOString(), // 48 hours ago
   label: "Old",
   description: null,

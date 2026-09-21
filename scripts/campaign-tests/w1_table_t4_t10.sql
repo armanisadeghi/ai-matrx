@@ -106,7 +106,7 @@ begin
 
   -- A SEAT IS A PERSON, and a person reaches an organization only through a membership.
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W1-TABLE', 'zz-w1-table-' || substr(v_org::text, 1, 8), 'ZWT', c_admin);
+  values (v_org, 'Rincon Plumbing Co', 'rincon-plumbing-' || substr(v_org::text, 1, 8), 'RPC', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -149,7 +149,7 @@ begin
   -- ════════════════════════════════════════════════════════════════════════════
 
   v_color := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'Colour', 'slug', 'zz_wt_color',
+    'name', 'Colour', 'slug', 'colours',
     'label_singular', 'Colour', 'label_plural', 'Colours',
     'type', 'entity', 'display', 'list', 'ordered', false,
     'weight', 'light', 'retention_days', 30,
@@ -181,7 +181,7 @@ begin
   -- name — so the pointer here is the id itself, and it is read back through the door that
   -- resolves a record's targets, `custom.relation_targets`.
   v_paint_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'Paint', 'slug', 'zz_wt_paint',
+    'name', 'Paint', 'slug', 'paints',
     'label_singular', 'Paint', 'label_plural', 'Paints',
     'type', 'entity', 'display', 'list', 'ordered', false,
     'weight', 'light', 'retention_days', 30,
@@ -255,7 +255,7 @@ begin
   -- ════════════════════════════════════════════════════════════════════════════
 
   v_project := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'Project', 'slug', 'zz_wt_project',
+    'name', 'Project', 'slug', 'projects',
     'label_singular', 'Project', 'label_plural', 'Projects',
     'type', 'entity', 'display', 'page', 'ordered', false,
     'weight', 'light', 'retention_days', 30,
@@ -270,7 +270,7 @@ begin
   -- Risk is DECLARED ONCE, at the organization: its declared Home is the organization
   -- record itself (REC-1's exactly one Home), and X and Y are additional Homes (REC-3).
   v_risk := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'Risk', 'slug', 'zz_wt_risk',
+    'name', 'Risk', 'slug', 'risks',
     'label_singular', 'Risk', 'label_plural', 'Risks',
     'type', 'entity', 'display', 'list', 'ordered', false,
     'weight', 'light', 'retention_days', 30,
@@ -284,7 +284,7 @@ begin
 
   -- Y's own Table, Home Y and nowhere else.
   v_incident := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'Incident', 'slug', 'zz_wt_incident',
+    'name', 'Incident', 'slug', 'incidents',
     'label_singular', 'Incident', 'label_plural', 'Incidents',
     'type', 'entity', 'display', 'list', 'ordered', false,
     'weight', 'light', 'retention_days', 30,
@@ -364,9 +364,9 @@ begin
 
   -- REC-11: a `detail` Table inherits only - its records cannot be Homes.
   v_note_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'Risk note', 'slug', 'zz_wt_risk_note',
+    'name', 'Risk note', 'slug', 'risk_notes',
     'label_singular', 'Note', 'label_plural', 'Notes',
-    'type', 'detail', 'parent_token', 'zz_wt_risk',
+    'type', 'detail', 'parent_token', 'risks',
     'display', 'list', 'ordered', false,
     'weight', 'light', 'retention_days', 30,
     'default_sort', '[]'::jsonb, 'row_order', 'sorted', 'agent_writable', true,
@@ -499,7 +499,7 @@ begin
   -- ════════════════════════════════════════════════════════════════════════════
   begin
     perform custom.table_declare(v_org, jsonb_build_object(
-      'name', 'Untitled', 'slug', 'zz_wt_untitled',
+      'name', 'Untitled', 'slug', 'untitled',
       'label_singular', 'U', 'label_plural', 'Us',
       'type', 'entity', 'display', 'list', 'ordered', false,
       'weight', 'light', 'retention_days', 30,
@@ -519,7 +519,7 @@ begin
   -- the store on main tells the person the floor AND the number they asked for.
   begin
     perform custom.table_declare(v_org, jsonb_build_object(
-      'name', 'Shortlived', 'slug', 'zz_wt_shortlived',
+      'name', 'Shortlived', 'slug', 'shortlived',
       'label_singular', 'S', 'label_plural', 'Ss',
       'type', 'entity', 'display', 'list', 'ordered', false,
       'weight', 'light', 'retention_days', 10,

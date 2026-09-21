@@ -40,7 +40,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W4-AGG Red', 'zz-w4-agg-red-' || substr(v_org::text, 1, 8), 'ZAD', c_admin);
+  values (v_org, 'Meridian Software', 'meridian-software-' || substr(v_org::text, 1, 8), 'MSW', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -56,7 +56,7 @@ begin
   end if;
 
   v_deal := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'ZZ A Deal', 'slug', 'zz_a_deal', 'type', 'entity', 'display', 'list',
+    'name', 'Deals', 'slug', 'deals', 'type', 'entity', 'display', 'list',
     'label_singular', 'Deal', 'label_plural', 'Deals', 'ordered', false, 'weight', 'light',
     'retention_days', 365, 'row_order', 'sorted', 'agent_writable', true,
     'parent_id', v_home::text, 'title_field', 'title', 'default_sort', '[]'::jsonb,
@@ -77,13 +77,13 @@ begin
   perform custom.record_write(v_org, v_deal, '{"title":"D6","status":"open","amount":"700"}'::jsonb);
 
   insert into platform.saved_view (name, surface_key, organization_id, definition, visibility)
-  values ('ZZ A Open deals', 'custom/records', v_org,
+  values ('Open deals', 'custom/records', v_org,
           jsonb_build_object('table_id', v_deal, 'filters', jsonb_build_object('status', 'open')),
           'internal'::platform.visibility)
   returning id into v_open;
 
   insert into platform.saved_view (name, surface_key, organization_id, definition, visibility)
-  values ('ZZ A Everything', 'custom/records', v_org,
+  values ('All deals', 'custom/records', v_org,
           jsonb_build_object('table_id', v_deal, 'filters', '{}'::jsonb),
           'internal'::platform.visibility)
   returning id into v_all;
@@ -93,7 +93,7 @@ begin
   -- are Rule records of the same kind differing in two keys — and both are made through the
   -- ONE write door, onto the Rule kernel, which is how a person makes a Rule.
   perform custom.record_write(v_org, custom.rule_kernel_id(), jsonb_build_object(
-    'kind','predicate','name','ZZ A Now','sort',10,
+    'kind','predicate','name','Notify on close','sort',10,
     'uses', jsonb_build_array('membership'),
     'expr', jsonb_build_object('op','const','args', jsonb_build_array(true)),
     'message','this deal counts','applies_to_types','[]'::jsonb,
@@ -102,7 +102,7 @@ begin
       'saved_view_id', v_open, 'cadence','immediate','channel','in_app',
       'recipient_user_id', c_admin, 'event_key','records.changed')));
   perform custom.record_write(v_org, custom.rule_kernel_id(), jsonb_build_object(
-    'kind','predicate','name','ZZ A Monday','sort',20,
+    'kind','predicate','name','Monday pipeline digest','sort',20,
     'uses', jsonb_build_array('membership'),
     'expr', jsonb_build_object('op','const','args', jsonb_build_array(true)),
     'message','this deal counts','applies_to_types','[]'::jsonb,

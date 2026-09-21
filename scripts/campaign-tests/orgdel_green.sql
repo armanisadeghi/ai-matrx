@@ -75,14 +75,14 @@ begin
   perform set_config('app.actor_system', 'campaign-test/orgdel_green', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
 
-  v_nameA := 'ZZ ORG-DELETE Green A ' || substr(v_orgA::text, 1, 8);
-  v_nameB := 'ZZ ORG-DELETE Green B ' || substr(v_orgB::text, 1, 8);
+  v_nameA := 'Ironclad Mobile Mechanic — Ironclad Yard ' || substr(v_orgA::text, 1, 8);
+  v_nameB := 'Ironclad Mobile Mechanic — Brackenfield Yard ' || substr(v_orgB::text, 1, 8);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by) values
-    (v_orgA, v_nameA, 'zz-orgdel-a-' || substr(v_orgA::text, 1, 8), 'ZOA', c_admin),
-    (v_orgB, v_nameB, 'zz-orgdel-b-' || substr(v_orgB::text, 1, 8), 'ZOB', c_admin),
-    (v_orgC, 'ZZ ORG-DELETE Green C ' || substr(v_orgC::text, 1, 8),
-             'zz-orgdel-c-' || substr(v_orgC::text, 1, 8), 'ZOC', c_admin);
+    (v_orgA, v_nameA, 'ironclad-mobile-ironclad-' || substr(v_orgA::text, 1, 8), 'IMI', c_admin),
+    (v_orgB, v_nameB, 'ironclad-mobile-brackenfield-' || substr(v_orgB::text, 1, 8), 'IMB', c_admin),
+    (v_orgC, 'Ironclad Mobile Mechanic — Westgate Yard ' || substr(v_orgC::text, 1, 8),
+             'ironclad-mobile-westgate-' || substr(v_orgC::text, 1, 8), 'IMW', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_orgA, 'organization', v_orgA, c_admin, 'owner',  'active'),
     (v_orgA, 'organization', v_orgA, c_dana,  'member', 'active'),
@@ -122,8 +122,8 @@ begin
 
   -- ── Two organizations with one Table and two records each, all through the doors.
   v_tblA := custom.table_declare(v_orgA, jsonb_build_object(
-    'name','ZZ OD Job','slug','zz_od_job_a','type','entity',
-    'label_singular','Job','label_plural','Jobs','title_field','jname','display','page',
+    'name','Service Calls','slug','service_calls','type','entity',
+    'label_singular','Service Call','label_plural','Service Calls','title_field','jname','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','jname')),
@@ -134,8 +134,8 @@ begin
   perform custom.record_write(v_orgA, v_tblA, jsonb_build_object('jname','Gutter clean'));
 
   v_tblB := custom.table_declare(v_orgB, jsonb_build_object(
-    'name','ZZ OD Job','slug','zz_od_job_b','type','entity',
-    'label_singular','Job','label_plural','Jobs','title_field','jname','display','page',
+    'name','Service Calls','slug','service_calls','type','entity',
+    'label_singular','Service Call','label_plural','Service Calls','title_field','jname','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','jname')),

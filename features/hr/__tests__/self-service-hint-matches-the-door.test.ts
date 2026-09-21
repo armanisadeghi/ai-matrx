@@ -90,6 +90,6 @@ describe("the self-service hint agrees with the door", () => {
   });
 
   it("fails closed for an unknown pair through the resolver", () => {
-    expect(resolveSelfServicePolicy("hr_employee", "zzz_not_a_column")).toBe("hr_only");
+    expect(resolveSelfServicePolicy("hr_employee", "not_a_declared_column")).toBe("hr_only");
   });
 });

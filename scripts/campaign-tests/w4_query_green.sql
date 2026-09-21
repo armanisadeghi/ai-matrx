@@ -101,7 +101,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W4-QUERY Green', 'zz-w4query-green-' || substr(v_org::text, 1, 8), 'ZWQ', c_admin);
+  values (v_org, 'Ironclad Mobile Mechanic', 'ironclad-mobile-mechanic-' || substr(v_org::text, 1, 8), 'IMM', c_admin);
   -- A seat is a PERSON, and a person reaches an organization only through a membership.
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
@@ -136,14 +136,14 @@ begin
 
   -- THE TABLES AND THEIR COLUMNS, declared through the doors a person reaches.
   v_tjob := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Q Job','slug','zz_q_job','type','entity','display','list',
+    'name','Service Calls','slug','service_calls','type','entity','display','list',
     'label_singular','Job','label_plural','Jobs','ordered',false,'weight','light',
     'retention_days',365,'row_order','sorted','agent_writable',true,
     'parent_id', v_home::text,'title_field','title','default_sort','[]'::jsonb,
     'fields', jsonb_build_array(jsonb_build_object('name','title'),
                                 jsonb_build_object('name','amount'))));
   v_tclient := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Q Client','slug','zz_q_client','type','entity','display','list',
+    'name','Customers','slug','customers','type','entity','display','list',
     'label_singular','Client','label_plural','Clients','ordered',false,'weight','light',
     'retention_days',365,'row_order','sorted','agent_writable',true,
     'parent_id', v_home::text,'title_field','title','default_sort','[]'::jsonb,
@@ -156,7 +156,7 @@ begin
   -- lives on a Table of its own so PART 2's and PART 3's row arithmetic over the jobs is
   -- untouched by it.
   v_trate := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Q Rate','slug','zz_q_rate','type','entity','display','list',
+    'name','Labor Rates','slug','labor_rates','type','entity','display','list',
     'label_singular','Rate','label_plural','Rates','ordered',false,'weight','light',
     'retention_days',365,'row_order','sorted','agent_writable',true,
     'parent_id', v_home::text,'title_field','title','default_sort','[]'::jsonb,

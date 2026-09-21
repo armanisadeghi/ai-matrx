@@ -43,9 +43,9 @@ declare
   v_txt   text;
 begin
   insert into iam.organizations (id, name, slug, abbreviation)
-  values (v_org, 'ZZ W1ORG Red', 'zz-w1org-red', 'ZZR');
+  values (v_org, 'Cascade Electronics Recovery', 'cascade-electronics-recovery-red', 'CER');
   insert into platform.custom_entity_definition (id, slug, name, name_plural, organization_id)
-  values (gen_random_uuid(), 'zz-red-thing', 'ZZ Red Thing', 'ZZ Red Things', v_org)
+  values (gen_random_uuid(), 'pickups', 'Pickup', 'Pickups', v_org)
   returning id into v_defn;
 
   -- ===================================================================== RED 1: the shape guard

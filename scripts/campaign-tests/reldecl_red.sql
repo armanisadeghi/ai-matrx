@@ -30,7 +30,7 @@ begin;
 -- ════════════════════════════════════════════════════════════════════════════════════════
 -- THE FIXTURE, built as the connected role (a person cannot make their own organization).
 -- ════════════════════════════════════════════════════════════════════════════════════════
-create temporary table zz_reldecl_red (k text primary key, v uuid) on commit drop;
+create temporary table greenline_fixture (k text primary key, v uuid) on commit drop;
 
 do $f$
 declare
@@ -43,7 +43,7 @@ begin
   perform set_config('app.actor_system', 'campaign-test/reldecl_red', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ RELDECL Red', 'zz-reldecl-red-' || substr(v_org::text, 1, 8), 'ZRR', c_admin);
+  values (v_org, 'Greenline Landscaping Crew', 'greenline-landscaping-' || substr(v_org::text, 1, 8), 'GLC', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -53,14 +53,14 @@ begin
   values (v_org, null, jsonb_build_object('name','Home')) returning id into v_home;
 
   v_client := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Client','slug','zz_reldecl_red_client','type','entity','label_singular','Client',
+    'name','Clients','slug','clients','type','entity','label_singular','Client',
     'label_plural','Clients','title_field','cname','display','page','weight','light',
     'ordered',false,'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,
     'retention_days',365,'fields', jsonb_build_array(jsonb_build_object('name','cname')),
     'parent_id', v_home::text));
   perform custom.field_declare(v_org, v_client, jsonb_build_object('label','Name','key','cname','type','text'));
   v_job := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Job','slug','zz_reldecl_red_job','type','entity','label_singular','Job',
+    'name','Jobs','slug','jobs','type','entity','label_singular','Job',
     'label_plural','Jobs','title_field','jname','display','page','weight','light',
     'ordered',false,'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,
     'retention_days',365,'fields', jsonb_build_array(jsonb_build_object('name','jname')),
@@ -73,7 +73,7 @@ begin
   v_a1 := custom.record_write(v_org, v_job, jsonb_build_object(
     'jname','Roof','crew', jsonb_build_array(v_b1::text)));
 
-  insert into zz_reldecl_red (k, v) values
+  insert into greenline_fixture (k, v) values
     ('org', v_org), ('job', v_job), ('client', v_client),
     ('f_many', v_f_many), ('b1', v_b1), ('a1', v_a1);
 end $f$;
@@ -87,12 +87,12 @@ end $f$;
 
 do $t$
 declare
-  v_org    uuid := (select v from zz_reldecl_red where k = 'org');
-  v_job    uuid := (select v from zz_reldecl_red where k = 'job');
-  v_client uuid := (select v from zz_reldecl_red where k = 'client');
-  v_f_many uuid := (select v from zz_reldecl_red where k = 'f_many');
-  v_b1     uuid := (select v from zz_reldecl_red where k = 'b1');
-  v_a1     uuid := (select v from zz_reldecl_red where k = 'a1');
+  v_org    uuid := (select v from greenline_fixture where k = 'org');
+  v_job    uuid := (select v from greenline_fixture where k = 'job');
+  v_client uuid := (select v from greenline_fixture where k = 'client');
+  v_f_many uuid := (select v from greenline_fixture where k = 'f_many');
+  v_b1     uuid := (select v from greenline_fixture where k = 'b1');
+  v_a1     uuid := (select v from greenline_fixture where k = 'a1');
   v_boss   text := current_user;
   v_caught text;
   v_red    integer := 0;

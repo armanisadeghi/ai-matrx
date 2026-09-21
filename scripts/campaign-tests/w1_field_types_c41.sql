@@ -355,16 +355,16 @@ begin
   for v_case in
     select * from (values
       ('a name nobody ships',
-       '{"key":"zz_c41_bad_name","label":"Bad name","parity_type":"barcode"}'::jsonb,
+       '{"key":"cedar_permit_code","label":"Bad name","parity_type":"barcode"}'::jsonb,
        'There is no field type called "barcode"'),
       ('a lookup with nothing to read through',
-       '{"key":"zz_c41_blind","label":"Blind lookup","parity_type":"lookup","pick":"full_name"}'::jsonb,
+       '{"key":"cedar_contractor_contact","label":"Blind lookup","parity_type":"lookup","pick":"full_name"}'::jsonb,
        'which relation it reads through'),
       ('a rollup along a single relation',
-       '{"key":"zz_c41_single","label":"Single rollup","parity_type":"rollup","via":"owner","of":"full_name","agg":"count"}'::jsonb,
+       '{"key":"cedar_contractor_job_count","label":"Single rollup","parity_type":"rollup","via":"owner","of":"full_name","agg":"count"}'::jsonb,
        'points at one thing at a time'),
       ('an attachment that would cascade',
-       '{"key":"zz_c41_casc","label":"Cascading photo","parity_type":"attachment","on_target_delete":"cascade"}'::jsonb,
+       '{"key":"cedar_site_photo","label":"Cascading photo","parity_type":"attachment","on_target_delete":"cascade"}'::jsonb,
        'deleting the file deletes the record')
     ) as t(what, spec, expect)
   loop
@@ -385,21 +385,21 @@ begin
 
   -- A currency that says it is a plain number gets its unit: it cannot be a currency in
   -- name only.
-  v_id := custom.field_declare(v_org, v_tbl, '{"key":"zz_c41_cur","label":"Declared currency","parity_type":"currency","config":{"kind":"number"}}'::jsonb);
+  v_id := custom.field_declare(v_org, v_tbl, '{"key":"cedar_quote_amount","label":"Declared currency","parity_type":"currency","config":{"kind":"number"}}'::jsonb);
   v_doc := custom.read_record(v_org, v_id, true);
   if coalesce(v_doc ->> 'unit','') = '' or (v_doc ->> 'format') <> 'currency' then
     raise exception 'J FAILED: a currency landed with no unit or no format: %', v_doc;
   end if;
   -- A rollup that asks to be stamped at write time is made read-time: a stored total is
   -- stale the moment one of the things it adds up changes.
-  v_id := custom.field_declare(v_org, v_tbl, '{"key":"zz_c41_roll","label":"Declared rollup","parity_type":"rollup","via":"lines","of":"amount","agg":"sum","compute_on":"write"}'::jsonb);
+  v_id := custom.field_declare(v_org, v_tbl, '{"key":"cedar_purchases_total","label":"Declared rollup","parity_type":"rollup","via":"lines","of":"amount","agg":"sum","compute_on":"write"}'::jsonb);
   v_doc := custom.read_record(v_org, v_id, true);
   if (v_doc ->> 'compute_on') <> 'read' then
     raise exception 'J FAILED: a rollup landed stamped at % time', v_doc ->> 'compute_on';
   end if;
   -- A url gets its pattern Rule: a format is how to SHOW it, and only a Rule makes it
   -- enforceable (FLD-3 / FLD-11).
-  v_id := custom.field_declare(v_org, v_tbl, '{"key":"zz_c41_url","label":"Declared url","parity_type":"url"}'::jsonb);
+  v_id := custom.field_declare(v_org, v_tbl, '{"key":"cedar_vendor_website","label":"Declared url","parity_type":"url"}'::jsonb);
   v_doc := custom.read_record(v_org, v_id, true);
   if not exists (select 1 from jsonb_array_elements(coalesce(v_doc -> 'rules','[]'::jsonb)) r
                   where r ->> 'kind' = 'pattern') then

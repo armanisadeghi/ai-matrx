@@ -110,7 +110,7 @@ begin
   -- PART 1 — ONE JOB, FOUR WAYS OF CHANGING ITS PRICE.
   -- ══════════════════════════════════════════════════════════════════════════
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ HS Job','slug','zz_hs_job','type','entity',
+    'name','Maintenance Jobs','slug','maintenance_jobs','type','entity',
     'label_singular','Job','label_plural','Jobs','title_field','title','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',

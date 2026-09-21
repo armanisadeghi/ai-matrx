@@ -104,8 +104,8 @@ function render(
         holder={EMPTY_HOLDER}
         onHolderChange={() => undefined}
         job={{
-          mandateKey: "zzz.walk_r6",
-          label: "ZZZ WALKR6",
+          mandateKey: "wraithmoor_museum.exhibit_walk",
+          label: "Wraithmoor Museum Exhibit Walk",
           outputKind: "",
           offeredCount: 0,
           offerSourceLine: "",
@@ -139,7 +139,7 @@ describe("standing on a rung ABOVE the job's own default", () => {
     act(() => edit!.click());
     expect(onRungChange).toHaveBeenCalledWith("system", null);
     /**
-     * 🚨 THIS LINE USED TO READ `expect(text).not.toContain("zzz.walk_r6")`,
+     * 🚨 THIS LINE USED TO READ `expect(text).not.toContain("wraithmoor_museum.exhibit_walk")`,
      * and it was WRONG — overturned 2026-09-09. `96e45f3aa2` deleted the bar's
      * JOB cell and added that assertion in the same commit, pinning a deletion
      * rather than a rule: the bar went on ACCEPTING `job.label`,
@@ -152,8 +152,8 @@ describe("standing on a rung ABOVE the job's own default", () => {
      * standing in for a name is the defect; an identifier beside its name is
      * the record.
      */
-    expect(text).toContain("zzz.walk_r6");
-    expect(text.indexOf("ZZZ WALKR6")).toBeLessThan(text.indexOf("zzz.walk_r6"));
+    expect(text).toContain("wraithmoor_museum.exhibit_walk");
+    expect(text.indexOf("Wraithmoor Museum Exhibit Walk")).toBeLessThan(text.indexOf("wraithmoor_museum.exhibit_walk"));
   });
 
   it("says nobody holds it when nobody does — and does not call that unread", () => {

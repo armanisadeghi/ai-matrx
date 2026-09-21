@@ -99,7 +99,8 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ TABLE-DELETE Green', 'zz-tabledelete-green-' || substr(v_org::text, 1, 8), 'ZTG', c_admin);
+  values (v_org, 'Signal & Scale Podcast — Production Desk',
+          'signal-scale-production-desk-' || substr(v_org::text, 1, 8), 'SSP', c_admin);
   -- A seat is a PERSON, and a person reaches an organization only through a membership.
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
@@ -116,7 +117,7 @@ begin
   -- A Home record is made by the onboarding path, not by a person's browser, and no client
   -- door covers it. It is a fixture, and it is written before the seat is taken.
   insert into custom.record (organization_id, table_id, data)
-  values (v_org, null, jsonb_build_object('name', 'Home')) returning id into v_home;
+  values (v_org, null, jsonb_build_object('name', 'Signal & Scale Podcast — Show Home')) returning id into v_home;
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 0 — THE SEAT. Everything below this line runs as a signed-in person.
@@ -141,8 +142,8 @@ begin
   --    one Rule scoped to it, and one saved view whose subject is it. EVERY Field is written
   --    through `custom.field_declare`, which is the only way a person has.
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ TD Person','slug','zz_td_person','type','entity',
-    'label_singular','Person','label_plural','People','title_field','pname','display','page',
+    'name','Guest','slug','guests','type','entity',
+    'label_singular','Guest','label_plural','Guests','title_field','pname','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','pname'),
@@ -175,7 +176,7 @@ begin
   perform set_config('role', 'authenticated', true);
 
   v_views := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ TD Saved views','slug','zz_td_saved_views','type','entity',
+    'name','Saved view','slug','saved_views','type','entity',
     'label_singular','Saved view','label_plural','Saved views','title_field','name',
     'display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,'on_delete','cascade',
@@ -184,10 +185,10 @@ begin
                                 jsonb_build_object('name','layout')),
     'parent_id', v_home::text));
   v_view := custom.record_write(v_org, v_views, jsonb_build_object(
-    'name','By score','subject', v_tbl::text, 'layout','kanban'));
+    'name','Guests by score','subject', v_tbl::text, 'layout','kanban'));
 
-  v_r1 := custom.record_write(v_org, v_tbl, jsonb_build_object('pname','Ana','score',3));
-  v_r2 := custom.record_write(v_org, v_tbl, jsonb_build_object('pname','Bo','score',4));
+  v_r1 := custom.record_write(v_org, v_tbl, jsonb_build_object('pname','Priya Nathaniel','score',3));
+  v_r2 := custom.record_write(v_org, v_tbl, jsonb_build_object('pname','Dorian Cassell','score',4));
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 1a — THE DOOR TAKES THE WHOLE TABLE.
@@ -227,8 +228,8 @@ begin
   -- PART 1b — ONE OPERATION, AND UNDO PUTS THE WHOLE SET BACK.
   -- ════════════════════════════════════════════════════════════════════════════
   v_tbl2 := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ TD Invoice','slug','zz_td_invoice','type','entity',
-    'label_singular','Invoice','label_plural','Invoices','title_field','title','display','page',
+    'name','Sponsor invoice','slug','sponsor_invoices','type','entity',
+    'label_singular','Sponsor invoice','label_plural','Sponsor invoices','title_field','title','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','title'),
@@ -238,7 +239,7 @@ begin
     'key','title','label','Title','plain','text','sort',10));
   v_f2b := custom.field_declare(v_org, v_tbl2, jsonb_build_object(
     'key','amount','label','Amount','plain','number','sort',20));
-  v_r2a := custom.record_write(v_org, v_tbl2, jsonb_build_object('title','One','amount',10));
+  v_r2a := custom.record_write(v_org, v_tbl2, jsonb_build_object('title','Hearthline Cloud Backups, March','amount',10));
 
   v_res := custom.migrate_delete(v_org, v_tbl2, 'green 1b');
   if coalesce((v_res ->> 'cascaded')::integer, 0) < 3 then
@@ -268,8 +269,8 @@ begin
   -- PART 1c — A TABLE WHOSE FIELD SOMETHING OUTSIDE READS IS REFUSED, BY NAME.
   -- ════════════════════════════════════════════════════════════════════════════
   v_tblA := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ TD Rates','slug','zz_td_rates','type','entity',
-    'label_singular','Rate','label_plural','Rates','title_field','base','display','page',
+    'name','Sponsor rate','slug','sponsor_rates','type','entity',
+    'label_singular','Sponsor rate','label_plural','Sponsor rates','title_field','base','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','base')),
@@ -278,8 +279,8 @@ begin
     'key','base','label','Base rate','plain','number','sort',10));
 
   v_tblB := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ TD Quotes','slug','zz_td_quotes','type','entity',
-    'label_singular','Quote','label_plural','Quotes','title_field','quoted','display','page',
+    'name','Sponsor quote','slug','sponsor_quotes','type','entity',
+    'label_singular','Sponsor quote','label_plural','Sponsor quotes','title_field','quoted','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','quoted')),
@@ -328,8 +329,8 @@ begin
   -- PART 1e — A FIELD LEFT STRANDED BY AN OLDER DELETE CAN BE DELETED AT LAST.
   -- ════════════════════════════════════════════════════════════════════════════
   v_tbl5 := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ TD Orphans','slug','zz_td_orphans','type','entity',
-    'label_singular','Orphan','label_plural','Orphans','title_field','label','display','page',
+    'name','Edit task','slug','edit_tasks','type','entity',
+    'label_singular','Edit task','label_plural','Edit tasks','title_field','label','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','label')),
@@ -415,7 +416,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform custom.share_grant(v_org, v_r2a, 'user', c_dana, 'viewer'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
-  if (custom.read_record(v_org, v_r2a, true) ->> 'title') <> 'One' then
+  if (custom.read_record(v_org, v_r2a, true) ->> 'title') <> 'Hearthline Cloud Backups, March' then
     raise exception '2c: the record shared with test@test.com at viewer does not read back for her';
   end if;
   if not custom.query_can_see(v_org, v_r2a, 'viewer') then

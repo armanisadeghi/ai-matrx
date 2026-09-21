@@ -93,8 +93,8 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by) values
-    (v_org,   'ZZ W1-REL C12',   'zz-w1-rel-c12-'   || substr(v_org::text,1,8),   'ZRC', c_admin),
-    (v_other, 'ZZ W1-REL Other', 'zz-w1-rel-other-' || substr(v_other::text,1,8), 'ZRO', c_admin);
+    (v_org,   'Hands & Hope Alliance', 'hands-hope-alliance-' || substr(v_org::text,1,8), 'HHA', c_admin),
+    (v_other, 'Hands & Hope Alliance — Westside Chapter', 'hands-hope-westside-' || substr(v_other::text,1,8), 'HHW', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -102,7 +102,7 @@ begin
   values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_rel_c12');
 
   insert into custom.record (organization_id, table_id, data)
-  values (v_org, null, jsonb_build_object('name','W1-REL Home')) returning id into v_home;
+  values (v_org, null, jsonb_build_object('name','Hands & Hope Alliance — Main Office')) returning id into v_home;
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 0 — THE SEAT.
@@ -127,13 +127,13 @@ begin
   raise notice 'PART 0 PASSED — the seat is `authenticated`, the ladder sees a client, custom.record is not readable from it, and the relation guard is on.';
 
   -- The seven Tables and their records, through the doors a person has.
-  t_project := custom.table_declare(v_org, jsonb_build_object('name','ZZ Project','slug','zz_rel_project','type','entity','display','list','label_singular','ZZ Project','label_plural','ZZ Projects','ordered',true,'weight','light','retention_days',365,'row_order','manual','agent_writable',true,'parent_id',v_home::text,'title_field','title','default_sort',jsonb_build_array(jsonb_build_object('field','title','direction','asc')),'fields',jsonb_build_array(jsonb_build_object('name','title'))));
-  t_person  := custom.table_declare(v_org, jsonb_build_object('name','ZZ Person','slug','zz_rel_person','type','entity','display','list','label_singular','ZZ Person','label_plural','ZZ Persons','ordered',true,'weight','light','retention_days',365,'row_order','manual','agent_writable',true,'parent_id',v_home::text,'title_field','title','default_sort',jsonb_build_array(jsonb_build_object('field','title','direction','asc')),'fields',jsonb_build_array(jsonb_build_object('name','title'))));
-  t_class   := custom.table_declare(v_org, jsonb_build_object('name','ZZ Class','slug','zz_rel_class','type','entity','display','list','label_singular','ZZ Class','label_plural','ZZ Classs','ordered',true,'weight','light','retention_days',365,'row_order','manual','agent_writable',true,'parent_id',v_home::text,'title_field','title','default_sort',jsonb_build_array(jsonb_build_object('field','title','direction','asc')),'fields',jsonb_build_array(jsonb_build_object('name','title'))));
-  t_note    := custom.table_declare(v_org, jsonb_build_object('name','ZZ Note','slug','zz_rel_note','type','entity','display','list','label_singular','ZZ Note','label_plural','ZZ Notes','ordered',true,'weight','light','retention_days',365,'row_order','manual','agent_writable',true,'parent_id',v_home::text,'title_field','title','default_sort',jsonb_build_array(jsonb_build_object('field','title','direction','asc')),'fields',jsonb_build_array(jsonb_build_object('name','title'))));
-  t_tag     := custom.table_declare(v_org, jsonb_build_object('name','ZZ Tag','slug','zz_rel_tag','type','entity','display','list','label_singular','ZZ Tag','label_plural','ZZ Tags','ordered',true,'weight','light','retention_days',365,'row_order','manual','agent_writable',true,'parent_id',v_home::text,'title_field','title','default_sort',jsonb_build_array(jsonb_build_object('field','title','direction','asc')),'fields',jsonb_build_array(jsonb_build_object('name','title'))));
-  t_widget  := custom.table_declare(v_org, jsonb_build_object('name','ZZ Widget','slug','zz_rel_widget','type','entity','display','list','label_singular','ZZ Widget','label_plural','ZZ Widgets','ordered',true,'weight','light','retention_days',365,'row_order','manual','agent_writable',true,'parent_id',v_home::text,'title_field','title','default_sort',jsonb_build_array(jsonb_build_object('field','title','direction','asc')),'fields',jsonb_build_array(jsonb_build_object('name','title'))));
-  t_serial  := custom.table_declare(v_org, jsonb_build_object('name','ZZ Serial','slug','zz_rel_serial','type','entity','display','list','label_singular','ZZ Serial','label_plural','ZZ Serials','ordered',true,'weight','light','retention_days',365,'row_order','manual','agent_writable',true,'parent_id',v_home::text,'title_field','title','default_sort',jsonb_build_array(jsonb_build_object('field','title','direction','asc')),'fields',jsonb_build_array(jsonb_build_object('name','title'))));
+  t_project := custom.table_declare(v_org, jsonb_build_object('name','Campaigns','slug','campaigns','type','entity','display','list','label_singular','Campaign','label_plural','Campaigns','ordered',true,'weight','light','retention_days',365,'row_order','manual','agent_writable',true,'parent_id',v_home::text,'title_field','title','default_sort',jsonb_build_array(jsonb_build_object('field','title','direction','asc')),'fields',jsonb_build_array(jsonb_build_object('name','title'))));
+  t_person  := custom.table_declare(v_org, jsonb_build_object('name','Donors','slug','donors','type','entity','display','list','label_singular','Donor','label_plural','Donors','ordered',true,'weight','light','retention_days',365,'row_order','manual','agent_writable',true,'parent_id',v_home::text,'title_field','title','default_sort',jsonb_build_array(jsonb_build_object('field','title','direction','asc')),'fields',jsonb_build_array(jsonb_build_object('name','title'))));
+  t_class   := custom.table_declare(v_org, jsonb_build_object('name','Pledges','slug','pledges','type','entity','display','list','label_singular','Pledge','label_plural','Pledges','ordered',true,'weight','light','retention_days',365,'row_order','manual','agent_writable',true,'parent_id',v_home::text,'title_field','title','default_sort',jsonb_build_array(jsonb_build_object('field','title','direction','asc')),'fields',jsonb_build_array(jsonb_build_object('name','title'))));
+  t_note    := custom.table_declare(v_org, jsonb_build_object('name','Gift Notes','slug','gift_notes','type','entity','display','list','label_singular','Gift Note','label_plural','Gift Notes','ordered',true,'weight','light','retention_days',365,'row_order','manual','agent_writable',true,'parent_id',v_home::text,'title_field','title','default_sort',jsonb_build_array(jsonb_build_object('field','title','direction','asc')),'fields',jsonb_build_array(jsonb_build_object('name','title'))));
+  t_tag     := custom.table_declare(v_org, jsonb_build_object('name','Appeal Codes','slug','appeal_codes','type','entity','display','list','label_singular','Appeal Code','label_plural','Appeal Codes','ordered',true,'weight','light','retention_days',365,'row_order','manual','agent_writable',true,'parent_id',v_home::text,'title_field','title','default_sort',jsonb_build_array(jsonb_build_object('field','title','direction','asc')),'fields',jsonb_build_array(jsonb_build_object('name','title'))));
+  t_widget  := custom.table_declare(v_org, jsonb_build_object('name','Fundraising Events','slug','fundraising_events','type','entity','display','list','label_singular','Fundraising Event','label_plural','Fundraising Events','ordered',true,'weight','light','retention_days',365,'row_order','manual','agent_writable',true,'parent_id',v_home::text,'title_field','title','default_sort',jsonb_build_array(jsonb_build_object('field','title','direction','asc')),'fields',jsonb_build_array(jsonb_build_object('name','title'))));
+  t_serial  := custom.table_declare(v_org, jsonb_build_object('name','Gift Receipts','slug','gift_receipts','type','entity','display','list','label_singular','Gift Receipt','label_plural','Gift Receipts','ordered',true,'weight','light','retention_days',365,'row_order','manual','agent_writable',true,'parent_id',v_home::text,'title_field','title','default_sort',jsonb_build_array(jsonb_build_object('field','title','direction','asc')),'fields',jsonb_build_array(jsonb_build_object('name','title'))));
   perform custom.field_declare(v_org, t_project, jsonb_build_object('key','title','label','Title','plain','text','sort',10));
   perform custom.field_declare(v_org, t_person,  jsonb_build_object('key','title','label','Title','plain','text','sort',10));
   perform custom.field_declare(v_org, t_class,   jsonb_build_object('key','title','label','Title','plain','text','sort',10));
@@ -142,15 +142,15 @@ begin
   perform custom.field_declare(v_org, t_widget,  jsonb_build_object('key','title','label','Title','plain','text','sort',10));
   perform custom.field_declare(v_org, t_serial,  jsonb_build_object('key','title','label','Title','plain','text','sort',10));
 
-  r_a      := custom.record_write(v_org, t_project, '{"title":"Project A"}'::jsonb);
-  r_b      := custom.record_write(v_org, t_person,  '{"title":"Person B"}'::jsonb);
-  r_c      := custom.record_write(v_org, t_class,   '{"title":"Class C"}'::jsonb);
-  r_note   := custom.record_write(v_org, t_note,    '{"title":"The note"}'::jsonb);
-  r_tag    := custom.record_write(v_org, t_tag,     '{"title":"Tag T"}'::jsonb);
-  r_widget := custom.record_write(v_org, t_widget,  '{"title":"Widget W"}'::jsonb);
-  r_ser    := custom.record_write(v_org, t_serial,  '{"title":"Serial 1"}'::jsonb);
-  r_d      := custom.record_write(v_org, t_person,  '{"title":"Person D"}'::jsonb);
-  r_cb     := custom.record_write(v_org, t_project, '{"title":"Company B"}'::jsonb);
+  r_a      := custom.record_write(v_org, t_project, '{"title":"Winter Coat Drive 2026"}'::jsonb);
+  r_b      := custom.record_write(v_org, t_person,  '{"title":"Linda Reyes"}'::jsonb);
+  r_c      := custom.record_write(v_org, t_class,   '{"title":"PLG-3001"}'::jsonb);
+  r_note   := custom.record_write(v_org, t_note,    '{"title":"Thank-you call note"}'::jsonb);
+  r_tag    := custom.record_write(v_org, t_tag,     '{"title":"Year-End Appeal"}'::jsonb);
+  r_widget := custom.record_write(v_org, t_widget,  '{"title":"Spring Benefit Dinner"}'::jsonb);
+  r_ser    := custom.record_write(v_org, t_serial,  '{"title":"RCPT-1001"}'::jsonb);
+  r_d      := custom.record_write(v_org, t_person,  '{"title":"Grace Novak"}'::jsonb);
+  r_cb     := custom.record_write(v_org, t_project, '{"title":"Annual Gala 2026"}'::jsonb);
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 0b — THE FINDING, ASSERTED. The relation doors are granted to a signed-in person and
@@ -233,8 +233,8 @@ begin
   raise notice 'PASS REL-9 / C-12a — the reverse end answers from the one stored row.';
 
   -- ── 3. REL-14 : the label is hydrated at read, so renaming the target renames the chip ──
-  perform custom.record_update(v_org, r_a, '{"title":"Project A, renamed"}'::jsonb, null);
-  if (select label from platform.relations_from(v_org, r_note) where target_id = r_a) <> 'Project A, renamed' then
+  perform custom.record_update(v_org, r_a, '{"title":"Winter Coat Drive 2026, renamed"}'::jsonb, null);
+  if (select label from platform.relations_from(v_org, r_note) where target_id = r_a) <> 'Winter Coat Drive 2026, renamed' then
     raise exception 'FAIL REL-14: the label did not follow the target, so something stored it';
   end if;
   raise notice 'PASS REL-14 — the label followed the target, because nothing stored it.';
@@ -248,7 +248,7 @@ begin
   if v_caught is null then
     raise exception 'FAIL REL-8: a target outside the declared list was accepted';
   end if;
-  if v_caught not like '%ZZ Project%' or v_caught not like '%ZZ Person%' or v_caught not like '%ZZ Class%' then
+  if v_caught not like '%Campaign%' or v_caught not like '%Donor%' or v_caught not like '%Pledge%' then
     raise exception 'FAIL REL-8: the refusal does not name the tables it may point at: %', v_caught;
   end if;
   raise notice 'PASS REL-8 — a table outside the list is refused, naming the three it may point at.';
@@ -272,7 +272,7 @@ begin
   if v_caught is null then
     raise exception 'FAIL REL-7: a second target was accepted on an at-most-one relation';
   end if;
-  if v_caught not like '%Person B%' then
+  if v_caught not like '%Linda Reyes%' then
     raise exception 'FAIL REL-7: the refusal does not name the one already there: %', v_caught;
   end if;
   raise notice 'PASS REL-7 — at most one, and the refusal names the one already there.';
@@ -346,9 +346,9 @@ begin
           'manual','{}'::jsonb,'internal','include','[]'::jsonb,'[]'::jsonb,'[]'::jsonb,true,false,false,10)
   returning id into f_filed;
   perform platform.relation_set(v_org, r_note, 'as_filed', jsonb_build_array(r_b));
-  perform custom.record_update(v_org, r_b, '{"title":"Person B, married name"}'::jsonb, null);
-  if (select snapshot -> 'values' ->> 'title' from platform.relations_from(v_org, r_note) where role = 'as_filed') <> 'Person B'
-     or (select label from platform.relations_from(v_org, r_note) where role = 'as_filed') <> 'Person B, married name' then
+  perform custom.record_update(v_org, r_b, '{"title":"Linda Reyes-Okoye"}'::jsonb, null);
+  if (select snapshot -> 'values' ->> 'title' from platform.relations_from(v_org, r_note) where role = 'as_filed') <> 'Linda Reyes'
+     or (select label from platform.relations_from(v_org, r_note) where role = 'as_filed') <> 'Linda Reyes-Okoye' then
     raise exception 'FAIL REL-3: the snapshot did not freeze while the live label moved';
   end if;
   if (select snapshot from platform.relations_from(v_org, r_note) where role = 'as_filed') ?| array['version','row_version_id','as_of'] then
@@ -394,7 +394,7 @@ begin
   if v_caught is null then
     raise exception 'FAIL T7 restrict: the delete was not refused';
   end if;
-  if v_caught not like '%The note%' then
+  if v_caught not like '%Thank-you call note%' then
     raise exception 'FAIL T7 restrict: the refusal does not name what is in the way: %', v_caught;
   end if;
   update custom.record set data = jsonb_set(data, '{on_target_delete}', '"set_null"') where organization_id = v_org and id = f_owner;

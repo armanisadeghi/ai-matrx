@@ -116,7 +116,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W4-IO Green', 'zz-w4-io-green-' || substr(v_org::text, 1, 8), 'ZIG', c_admin);
+  values (v_org, 'Blue Ridge Recycling', 'blue-ridge-recycling-' || substr(v_org::text, 1, 8), 'BRR', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -150,7 +150,7 @@ begin
   -- into custom.record with `data_class = 'field'`, which needs a table privilege no signed-in
   -- person holds — so it could mint a Field the door itself would never have produced.
   v_tlead := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'ZZ IO Lead', 'slug', 'zz_io_lead', 'type', 'entity', 'display', 'list',
+    'name', 'Leads', 'slug', 'leads', 'type', 'entity', 'display', 'list',
     'label_singular', 'Lead', 'label_plural', 'Leads', 'ordered', false, 'weight', 'light',
     'retention_days', 365, 'row_order', 'sorted', 'agent_writable', true,
     'parent_id', v_home::text, 'title_field', 'name', 'default_sort', '[]'::jsonb,
@@ -200,14 +200,14 @@ begin
          count(*),
          (array_agg(d.changed_field_ids) filter (where d.operation = 'updated'))[1]
     into v_created, v_updated, v_total, v_changed
-    from custom.io_outbox_drain(v_org, 'zz-io-part1-probe', 1000) d
+    from custom.io_outbox_drain(v_org, 'route-planner', 1000) d
    where d.record_id = v_rec;
 
   -- Put the queue back exactly as it was, so PART 2 asks the drain its own question rather than
   -- inheriting an empty queue. Releasing a consumer's claims is declared server_only: a client
   -- has no consumer name and no way to know one died. It asserts nothing.
   perform set_config('role', v_boss, true);
-  perform custom.io_outbox_release(v_org, 'zz-io-part1-probe', interval '-1 second');
+  perform custom.io_outbox_release(v_org, 'route-planner', interval '-1 second');
   perform set_config('role', 'authenticated', true);
 
   if v_created <> 1 then
@@ -287,14 +287,14 @@ begin
   -- ════════════════════════════════════════════════════════════════════════════
 
   select count(*) into v_first
-    from custom.io_outbox_drain(v_org, 'zz-consumer-a', 100);
+    from custom.io_outbox_drain(v_org, 'billing-sync', 100);
   if v_first < 2 then
     raise exception 'CUT-N-2 FAIL: PART 1 left at least two events and the first drain took %', v_first;
   end if;
   -- THE SECOND DRAIN TAKES NOTHING. A consumer that handed a claimed row out twice would
   -- process every event twice, which is the failure the whole pattern exists to prevent.
   select count(*) into v_second
-    from custom.io_outbox_drain(v_org, 'zz-consumer-b', 100);
+    from custom.io_outbox_drain(v_org, 'customer-portal-sync', 100);
   if v_second <> 0 then
     raise exception 'CUT-N-2 FAIL: a second consumer drained % already-claimed row(s)', v_second;
   end if;
@@ -306,13 +306,13 @@ begin
   -- consumer name to release and no way to know one died — so it steps out, and the clause it
   -- serves is asserted back in the seat.
   perform set_config('role', v_boss, true);
-  select custom.io_outbox_release(v_org, 'zz-consumer-a', interval '-1 second') into v_back;
+  select custom.io_outbox_release(v_org, 'billing-sync', interval '-1 second') into v_back;
   perform set_config('role', 'authenticated', true);
   if v_back <> v_first then
     raise exception 'CUT-N-2 FAIL: % rows were claimed and releasing returned %', v_first, v_back;
   end if;
   select count(*) into v_third
-    from custom.io_outbox_drain(v_org, 'zz-consumer-b', 100);
+    from custom.io_outbox_drain(v_org, 'customer-portal-sync', 100);
   if v_third <> v_first then
     raise exception 'CUT-N-2 FAIL: after the release the queue should hold the same % rows, and the drain took %', v_first, v_third;
   end if;
@@ -591,7 +591,7 @@ begin
   if v_after <= v_revs then
     raise exception 'DOOR-16 FAIL: the restore rewrote the record silently — history still shows % versions', v_after;
   end if;
-  if not exists (select 1 from custom.io_outbox_drain(v_org, 'zz-consumer-part6', 1000) d
+  if not exists (select 1 from custom.io_outbox_drain(v_org, 'landfill-weight-ticket-sync', 1000) d
                   where d.record_id = v_rec and d.operation = 'updated') then
     raise exception 'DOOR-16 FAIL: the restore raised no change event, so no automation can know it happened';
   end if;

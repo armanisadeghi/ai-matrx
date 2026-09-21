@@ -67,21 +67,21 @@ set local lock_timeout = '60s';
 -- `custom.record` at all, so the trigger it is about would never fire for a person. There is no
 -- client door for "connect as another role", so this role is created here, used for exactly two
 -- statements inside block 2, and rolled back with everything else.
-create role zz_v1store_green nologin bypassrls;
-grant usage on schema custom to zz_v1store_green;
-grant select, insert, update, delete on custom.record to zz_v1store_green;
+create role ttj_retention_lane nologin bypassrls;
+grant usage on schema custom to ttj_retention_lane;
+grant select, insert, update, delete on custom.record to ttj_retention_lane;
 -- `platform.knob_resolve` is SECURITY INVOKER: a role that cannot SEE the knob rows reads the
 -- switch as CLOSED (that is `custom.store_is_open`'s documented trap, and it is correct — a
 -- switch this writer cannot read is closed, never open). So this probe is given exactly the
 -- reads `authenticated` has and nothing else; otherwise block 2 would prove the OFF switch a
 -- second time instead of proving REC-23.
-grant usage on schema platform to zz_v1store_green;
+grant usage on schema platform to ttj_retention_lane;
 grant select on platform.feature_knob, platform.knob_override,
-                platform.knob_scope_kind, platform.knob_rung_lock to zz_v1store_green;
-grant execute on function custom.assert_store_door(uuid, text) to zz_v1store_green;
-grant execute on function custom.caller_role() to zz_v1store_green;
-grant execute on function custom.store_is_open(uuid) to zz_v1store_green;
-do $g$ begin execute format('grant zz_v1store_green to %I', current_user); end $g$;
+                platform.knob_scope_kind, platform.knob_rung_lock to ttj_retention_lane;
+grant execute on function custom.assert_store_door(uuid, text) to ttj_retention_lane;
+grant execute on function custom.caller_role() to ttj_retention_lane;
+grant execute on function custom.store_is_open(uuid) to ttj_retention_lane;
+do $g$ begin execute format('grant ttj_retention_lane to %I', current_user); end $g$;
 
 do $t$
 declare
@@ -119,8 +119,8 @@ begin
   -- TWO disposable organizations, because a wall needs two sides. admin@admin.com owns both,
   -- so nothing below is refused for want of access — every refusal is the WALL.
   insert into iam.organizations (id, name, slug, abbreviation, created_by) values
-    (v_org_a, 'ZZ V1STORE Green A', 'zz-v1store-green-a-' || substr(v_org_a::text,1,8), 'ZGA', c_admin),
-    (v_org_b, 'ZZ V1STORE Green B', 'zz-v1store-green-b-' || substr(v_org_b::text,1,8), 'ZGB', c_admin);
+    (v_org_a, 'Trailhead & Torch Journeys — Moab Desk', 'trailhead-torch-moab-' || substr(v_org_a::text,1,8), 'TTM', c_admin),
+    (v_org_b, 'Trailhead & Torch Journeys — Bar Harbor Desk', 'trailhead-torch-bar-harbor-' || substr(v_org_b::text,1,8), 'TTB', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org_a, 'organization', v_org_a, c_admin, 'owner',  'active'),
     (v_org_b, 'organization', v_org_b, c_admin, 'owner',  'active'),
@@ -159,7 +159,7 @@ begin
   -- belongs to no organization: REC-27's shared vocabulary is the wall's one named exemption,
   -- and if it were not, not one of these declarations would land.
   v_table_a := custom.table_declare(v_org_a, jsonb_build_object(
-    'type','entity','name','Order','slug','zz_v1store_green_a_order',
+    'type','entity','name','Order','slug','trip_orders',
     'label_singular','Order','label_plural','Orders','display','page','ordered',false,
     'weight','light','retention_days',30,'default_sort','[]'::jsonb,'row_order','sorted',
     'agent_writable',true,'title_field','name','parent_id', v_home_a::text,
@@ -167,7 +167,7 @@ begin
   perform custom.field_declare(v_org_a, v_table_a, jsonb_build_object('key','name','label','Name','plain','text','sort',10));
 
   v_table_b := custom.table_declare(v_org_b, jsonb_build_object(
-    'type','entity','name','Order','slug','zz_v1store_green_b_order',
+    'type','entity','name','Order','slug','trip_orders',
     'label_singular','Order','label_plural','Orders','display','page','ordered',false,
     'weight','light','retention_days',30,'default_sort','[]'::jsonb,'row_order','sorted',
     'agent_writable',true,'title_field','name','parent_id', v_home_b::text,
@@ -177,7 +177,7 @@ begin
   -- A list Table of organization B, for 1c's positive control: a list field takes its choices
   -- from a Table that shows its records as a LIST, so the control has to be one.
   v_list_b := custom.table_declare(v_org_b, jsonb_build_object(
-    'type','entity','name','Supplier','slug','zz_v1store_green_b_supplier',
+    'type','entity','name','Supplier','slug','outfitters',
     'label_singular','Supplier','label_plural','Suppliers','display','list','ordered',false,
     'weight','light','retention_days',30,'default_sort','[]'::jsonb,'row_order','sorted',
     'agent_writable',true,'title_field','name','parent_id', v_home_b::text,
@@ -294,7 +294,7 @@ begin
   --        seat and assert nothing about what a person may do.
   perform set_config('role', v_boss, true);
   set local lock_timeout = '60s';
-  set local role zz_v1store_green;
+  set local role ttj_retention_lane;
   v_caught := null;
   begin
     delete from custom.record where organization_id = v_org_b and id = v_rec_b;

@@ -79,7 +79,7 @@ declare
 begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W4-QUERY Red', 'zz-w4-query-red-' || substr(v_org::text, 1, 8), 'ZWQ', c_admin);
+  values (v_org, 'Ironclad Mobile Mechanic', 'ironclad-mobile-mechanic-' || substr(v_org::text, 1, 8), 'IMM', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -112,13 +112,13 @@ begin
   raise notice 'PART 0 PASSED — the seat is `authenticated`, the ladder sees a client, and custom.record is not readable from it.';
 
   v_tcli := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ R Client','slug','zz_r_client','type','entity','display','list',
+    'name','Customers','slug','customers','type','entity','display','list',
     'label_singular','Client','label_plural','Clients','ordered',false,'weight','light',
     'retention_days',365,'row_order','sorted','agent_writable',true,'parent_id',v_home::text,
     'title_field','title','default_sort','[]'::jsonb,
     'fields', jsonb_build_array(jsonb_build_object('name','title'))));
   v_tjob := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ R Job','slug','zz_r_job','type','entity','display','list',
+    'name','Service Calls','slug','service_calls','type','entity','display','list',
     'label_singular','Job','label_plural','Jobs','ordered',false,'weight','light',
     'retention_days',365,'row_order','sorted','agent_writable',true,'parent_id',v_home::text,
     'title_field','title','default_sort','[]'::jsonb,

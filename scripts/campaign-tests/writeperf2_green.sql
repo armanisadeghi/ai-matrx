@@ -92,7 +92,7 @@ begin
   -- COUNTED BY NAME, NOT BY TOTAL (amended by lane WRITE-PERF-3, 2026-09-21). This clause used
   -- to assert that `custom.record` carried exactly fourteen AFTER-STATEMENT triggers in total,
   -- and it turned red the moment WRITE-PERF-3 added three of its own
-  -- (`zz_memo_clear_i/_u/_d`, which empty the transaction memo). A total was never what this
+  -- (`zz_memo_clear_i/_u/_d`, which empty the transaction memo). A total was never what this  -- matrx-real-data:allow zz_memo_clear_* is a live trigger name, an ordering device, not data
   -- lane meant: it meant ITS OWN fourteen, each over a transition table. Naming them is
   -- STRONGER than counting them — it now also fails if one of the fourteen is silently replaced
   -- by something else with the same name count.
@@ -100,16 +100,16 @@ begin
    where t.tgrelid='custom.record'::regclass and not t.tgisinternal
      and (t.tgtype & 2) = 0 and (t.tgtype & 1) = 0
      and t.tgname in ('io_record_changed_s_i','io_record_changed_s_u','io_record_changed_s_d',
-                      'zz_ckl_watch_s_i','zz_ckl_watch_s_u',
-                      'zz_w2_containment_association_s_i','zz_w2_containment_association_s_u',
-                      'zz_w2a_relation_association_s_i','zz_w2a_relation_association_s_u',
+                      'zz_ckl_watch_s_i','zz_ckl_watch_s_u',  -- matrx-real-data:allow live trigger names on custom.record and platform.associations, ordering devices created by applied migrations, not fixture data
+                      'zz_w2_containment_association_s_i','zz_w2_containment_association_s_u',  -- matrx-real-data:allow live trigger names on custom.record and platform.associations, ordering devices created by applied migrations, not fixture data
+                      'zz_w2a_relation_association_s_i','zz_w2a_relation_association_s_u',  -- matrx-real-data:allow live trigger names on custom.record and platform.associations, ordering devices created by applied migrations, not fixture data
                       'zzz_history_capture_s_i','zzz_history_capture_s_u','zzz_history_capture_s_d',  -- matrx-real-data:allow the live history-capture trigger names on custom.record, created by an applied migration, not fixture data
                       '_gc_assoc_softdelete_s','_gc_assoc_harddelete_s');
   if n <> 14 then
     raise exception '1c: % of this lane''s 14 named AFTER-STATEMENT triggers on custom.record are present', n;
   end if;
   -- and every one of them names a transition table, or it is not reading the statement at all
-  -- Also by name, and for the same reason as 1c: WRITE-PERF-3's `zz_memo_clear_i` reads a
+  -- Also by name, and for the same reason as 1c: WRITE-PERF-3's `zz_memo_clear_i` reads a  -- matrx-real-data:allow zz_memo_clear_* is a live trigger name, an ordering device, not data
   -- transition table too, and counting every statement trigger that does would make this clause
   -- go red every time somebody adds a correct one.
   select count(*) into n from pg_trigger t
@@ -117,9 +117,9 @@ begin
      and (t.tgtype & 2) = 0 and (t.tgtype & 1) = 0
      and (t.tgoldtable is not null or t.tgnewtable is not null)
      and t.tgname in ('io_record_changed_s_i','io_record_changed_s_u','io_record_changed_s_d',
-                      'zz_ckl_watch_s_i','zz_ckl_watch_s_u',
-                      'zz_w2_containment_association_s_i','zz_w2_containment_association_s_u',
-                      'zz_w2a_relation_association_s_i','zz_w2a_relation_association_s_u',
+                      'zz_ckl_watch_s_i','zz_ckl_watch_s_u',  -- matrx-real-data:allow live trigger names on custom.record and platform.associations, ordering devices created by applied migrations, not fixture data
+                      'zz_w2_containment_association_s_i','zz_w2_containment_association_s_u',  -- matrx-real-data:allow live trigger names on custom.record and platform.associations, ordering devices created by applied migrations, not fixture data
+                      'zz_w2a_relation_association_s_i','zz_w2a_relation_association_s_u',  -- matrx-real-data:allow live trigger names on custom.record and platform.associations, ordering devices created by applied migrations, not fixture data
                       'zzz_history_capture_s_i','zzz_history_capture_s_u','zzz_history_capture_s_d',  -- matrx-real-data:allow the live history-capture trigger names on custom.record, created by an applied migration, not fixture data
                       '_gc_assoc_softdelete_s','_gc_assoc_harddelete_s');
   if n <> 14 then

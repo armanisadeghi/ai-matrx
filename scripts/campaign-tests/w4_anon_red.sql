@@ -52,7 +52,7 @@ declare
 begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ W4-ANON Red', 'zz-w4-anon-red-' || substr(v_org::text, 1, 8), 'ZAR', c_admin);
+  values (v_org, 'Trailhead & Torch Journeys', 'trailhead-torch-journeys-' || substr(v_org::text, 1, 8), 'TTJ', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -92,7 +92,7 @@ declare
   v_t   uuid;
 begin
   v_t := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'ZZ RED Anon', 'slug', 'zz_red_anon', 'type', 'entity', 'display', 'list',
+    'name', 'Trip Enquiries', 'slug', 'trip_enquiries', 'type', 'entity', 'display', 'list',
     'label_singular', 'E', 'label_plural', 'Es', 'ordered', false, 'weight', 'light',
     'retention_days', 365, 'row_order', 'sorted', 'agent_writable', true,
     'parent_id', current_setting('zz.home'), 'title_field', 'name', 'default_sort', '[]'::jsonb,
@@ -109,7 +109,7 @@ select set_config('role', current_setting('zz.boss'), true);
 insert into custom.anon_form (organization_id, table_id, slug, title, exposed_field_keys,
                               required_field_keys, rate_limit_per_window, rate_limit_window)
 values (current_setting('zz.org')::uuid, current_setting('zz.tenq')::uuid,
-        'zz-red-anon', 'Contact', '["name"]'::jsonb, '[]'::jsonb, 100, interval '1 hour')
+        'plan-my-trip', 'Plan my trip', '["name"]'::jsonb, '[]'::jsonb, 100, interval '1 hour')
 returning set_config('zz.form', id::text, true) as form_id;
 select set_config('role', 'authenticated', true);
 
@@ -265,7 +265,7 @@ begin
   -- server, with no principal — the anonymous caller.
   for v_i in 1 .. 3 loop
     v_ids := v_ids || custom.anon_write(current_setting('zz.secret'), 'https://example.test',
-                                        '{"name":"Offline"}'::jsonb, 'zz-red-key');
+                                        '{"name":"Offline"}'::jsonb, 'trailhead-website-capture');
   end loop;
   if array_length(array(select distinct unnest(v_ids)), 1) <> 1 then
     raise exception 'RED TWIN CONTROL FAILED (break 4): three replays of one id returned % distinct ids on the INTACT door',
@@ -284,7 +284,7 @@ begin
   select count(*) into v_rows
     from custom.anon_submissions(current_setting('zz.org')::uuid,
                                  current_setting('zz.tenq')::uuid, null, 200, 0) s
-   where s.client_key = 'zz-red-key';
+   where s.client_key = 'trailhead-website-capture';
   if v_rows <> 1 then
     raise exception 'RED TWIN CONTROL FAILED (break 4): three replays of one id are % row(s) on the triage door with the unique index in place', v_rows;
   end if;
@@ -304,7 +304,7 @@ begin
                                         client_key, state)
     values (current_setting('zz.org')::uuid, current_setting('zz.form')::uuid,
             current_setting('zz.tenq')::uuid, 'anonymous', '{"name":"Offline"}'::jsonb,
-            'zz-red-key-2', 'quarantined');
+            'partner-portal-key', 'quarantined');
   end loop;
 end $b4_broken$;
 
@@ -316,7 +316,7 @@ begin
   select count(*) into v_rows
     from custom.anon_submissions(current_setting('zz.org')::uuid,
                                  current_setting('zz.tenq')::uuid, null, 200, 0) s
-   where s.client_key = 'zz-red-key-2';
+   where s.client_key = 'partner-portal-key';
   if v_rows <> 3 then
     raise exception 'RED TWIN UNDETECTED (break 4): without the unique index the same key still produced % row(s)', v_rows;
   end if;

@@ -184,7 +184,7 @@ begin
   -- later, Color gains hex and shade_of Fields and becomes display: page. Every record still
   -- relates to the same Red. Nothing migrates.
   v_color := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Color','slug','zz_w1f_color','label_singular','Color','label_plural','Colors',
+    'name','Birchwood Paint Color','slug','birchwood_paint_colors','label_singular','Color','label_plural','Colors',
     'type','entity','display','list','ordered',true,'weight','light','retention_days',365,
     'default_sort','[]'::jsonb,'row_order','manual','agent_writable',true,
     'fields', jsonb_build_array(jsonb_build_object('name','name')),
@@ -195,7 +195,7 @@ begin
   -- A Paint table whose `shade` field is a LIST over Color. FLD-6: it was a Table from the
   -- first write, so there is nothing to convert later.
   v_paint := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Paint','slug','zz_w1f_paint','label_singular','Paint','label_plural','Paints',
+    'name','Birchwood Paint','slug','birchwood_paints','label_singular','Paint','label_plural','Paints',
     'type','entity','display','page','ordered',false,'weight','light','retention_days',365,
     'default_sort','[]'::jsonb,'row_order','sorted','agent_writable',true,
     'fields', jsonb_build_array(jsonb_build_object('name','name'), jsonb_build_object('name','shade')),
@@ -256,7 +256,7 @@ begin
   -- Shape is one Table with a type field. A Circle shows Radius; a Rectangle shows Width and
   -- Height; a Square rejects Width <> Height.
   v_shape := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Shape','slug','zz_w1f_shape','label_singular','Shape','label_plural','Shapes',
+    'name','Birchwood Tile Shape','slug','birchwood_tile_shapes','label_singular','Shape','label_plural','Shapes',
     'type','entity','display','page','ordered',false,'weight','light','retention_days',365,
     'default_sort','[]'::jsonb,'row_order','sorted','agent_writable',true,
     'type_field','kind',
@@ -361,7 +361,7 @@ begin
   -- D. EVERY BEHAVIOUR AND EVERY MODIFIER WRITES AND READS BACK (FLD-1, FLD-2)
   -- ══════════════════════════════════════════════════════════════════════════
   v_kitchen := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Kitchen Sink','slug','zz_w1f_kitchen','label_singular','Row','label_plural','Rows',
+    'name','Birchwood Kitchen Sink','slug','birchwood_kitchen_sinks','label_singular','Row','label_plural','Rows',
     'type','entity','display','page','ordered',false,'weight','light','retention_days',365,
     'default_sort','[]'::jsonb,'row_order','sorted','agent_writable',true,
     'fields', jsonb_build_array(jsonb_build_object('name','name')),
@@ -673,7 +673,7 @@ begin
   if v_n <> 1 then raise exception 'REC-51: crm.party is not in the custom_fields set'; end if;
   insert into custom.record (organization_id, table_id, data_class, data)
   values (v_org, custom.field_kernel_id(), 'field', jsonb_build_object(
-    'table_token','party','key','zz_loyalty_tier','label','ZZ Loyalty tier','type','list',
+    'table_token','party','key','birchwood_contractor_trade','label','Birchwood contractor trade','type','list',
     'multi',false,'dated',false,'rules','[]'::jsonb,
     'config', jsonb_build_object('options_table_id', v_src_tbl::text),
     'required',false,'sort',10,'source','manual','source_config','{}'::jsonb,
@@ -690,26 +690,26 @@ begin
   -- INSERT and on the UPDATE, and a VALID option lands beside it (rule 14).
   begin
     insert into crm.party (party_kind, display_name, organization_id, custom_fields)
-    values ('person', 'ZZ W1-FIELD refused', v_org, '{"zz_loyalty_tier":"not-an-option"}'::jsonb);
+    values ('person', 'Emeka Osayande', v_org, '{"birchwood_contractor_trade":"not-an-option"}'::jsonb);
     raise exception 'REC-51 ON: an invalid custom_fields payload was stored with the store switched on';
   exception when check_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'ZZ Loyalty tier was given a choice that is not one of its choices' then
+    if v_msg <> 'Birchwood contractor trade was given a choice that is not one of its choices' then
       raise exception 'REC-51 ON insert: the refusal said "%"', v_msg;
     end if;
   end;
   insert into crm.party (party_kind, display_name, organization_id, custom_fields)
-  values ('person', 'ZZ W1-FIELD disposable', v_org, jsonb_build_object('zz_loyalty_tier', v_o_record::text))
+  values ('person', 'Bianca Moretti', v_org, jsonb_build_object('birchwood_contractor_trade', v_o_record::text))
     returning id into v_party;
   select count(*) into v_n from crm.party
-   where id = v_party and custom_fields ->> 'zz_loyalty_tier' = v_o_record::text;
+   where id = v_party and custom_fields ->> 'birchwood_contractor_trade' = v_o_record::text;
   if v_n <> 1 then raise exception 'REC-51 ON: a VALID option was refused'; end if;
   begin
-    update crm.party set custom_fields = '{"zz_loyalty_tier":"still-not-an-option"}'::jsonb where id = v_party;
+    update crm.party set custom_fields = '{"birchwood_contractor_trade":"still-not-an-option"}'::jsonb where id = v_party;
     raise exception 'REC-51 ON: an invalid custom_fields payload was stored by an UPDATE';
   exception when check_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'ZZ Loyalty tier was given a choice that is not one of its choices' then
+    if v_msg <> 'Birchwood contractor trade was given a choice that is not one of its choices' then
       raise exception 'REC-51 ON update: the refusal said "%"', v_msg;
     end if;
   end;
@@ -723,10 +723,10 @@ begin
   end if;
   perform set_config('role', v_boss, true);
   insert into crm.party (party_kind, display_name, organization_id, custom_fields)
-  values ('person', 'ZZ W1-FIELD off', v_org, '{"zz_loyalty_tier":"not-an-option"}'::jsonb)
+  values ('person', 'Sam Delacroix', v_org, '{"birchwood_contractor_trade":"not-an-option"}'::jsonb)
     returning id into v_party;
   select count(*) into v_n from crm.party
-   where id = v_party and custom_fields ->> 'zz_loyalty_tier' = 'not-an-option';
+   where id = v_party and custom_fields ->> 'birchwood_contractor_trade' = 'not-an-option';
   if v_n <> 1 then raise exception 'REC-51 OFF: the write did not land while the store is off'; end if;
   perform set_config('role', 'authenticated', true);
   v_j := platform.unified_data_store_set(v_org, true, c_admin, 'w1_field_t4_t8 H on again');
@@ -737,13 +737,13 @@ begin
 
   -- and the validator itself, called directly, refuses that payload by the field's own name,
   -- with a valid option as its positive control.
-  perform custom.validate_custom_fields('party', v_org, jsonb_build_object('zz_loyalty_tier', v_o_record::text));
+  perform custom.validate_custom_fields('party', v_org, jsonb_build_object('birchwood_contractor_trade', v_o_record::text));
   begin
-    perform custom.validate_custom_fields('party', v_org, '{"zz_loyalty_tier":"not-an-option"}'::jsonb);
+    perform custom.validate_custom_fields('party', v_org, '{"birchwood_contractor_trade":"not-an-option"}'::jsonb);
     raise exception 'REC-51: the custom_fields validator accepted a non-option';
   exception when check_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'ZZ Loyalty tier was given a choice that is not one of its choices' then
+    if v_msg <> 'Birchwood contractor trade was given a choice that is not one of its choices' then
       raise exception 'REC-51 custom_fields: the refusal said "%"', v_msg;
     end if;
   end;
