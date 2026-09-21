@@ -357,12 +357,12 @@ values (
     'sms_locked', true,
     'templates', jsonb_build_object(
       'in_app', jsonb_build_object(
-        'body', '{{invite.inviter}} shared {{invite.table}} in {{invite.organization}} with you. You can {{invite.means}}.'),
+        'body', '{{invite.inviter}} shared {{invite.table}} in {{invite.organization}} with you. You {{invite.means}}.'),
       'email', jsonb_build_object(
         'subject', '{{invite.inviter}} shared {{invite.table}} with you',
         'body',
           '{{invite.inviter}} gave you access to {{invite.table}} in {{invite.organization}}.' || E'\n\n' ||
-          'You can {{invite.means}}.' || E'\n\n' ||
+          'You {{invite.means}}.' || E'\n\n' ||
           'Open it here:' || E'\n' ||
           '{{link.deep}}' || E'\n\n' ||
           'This link was sent to {{invite.email}} and only works when you are signed in with that address. ' ||
