@@ -36,6 +36,13 @@ const arg = (name, fallback) => (argv.includes(name) ? argv[argv.indexOf(name) +
 const PORT = arg("--port", "3000");
 const HOST = arg("--host", "stagerules2.localhost");
 const OUT = arg("--out", resolve(ROOT, "tmp/stagerules2-shots"));
+/**
+ * Which of the four sections to take, so a lane can re-shoot one without re-driving the
+ * others. Every section still checks what is on the page and still stops with a sentence —
+ * this selects what runs, it never relaxes what is asserted.
+ */
+const ONLY = (arg("--only", "1,2,3,4") || "").split(",").map((x) => x.trim());
+const want = (n) => ONLY.includes(String(n));
 const ORIGIN = `http://${HOST}:${PORT}`;
 
 const ORG = "1a7fefc6-77e1-4c48-826f-003b1a2e17fd";
@@ -117,14 +124,17 @@ async function dragCardTo(page, cardText, stageLabel) {
 async function openTheBoard(page) {
   await page.goto(`${ORIGIN}${TABLE_URL}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   await page.waitForTimeout(9000);
+  // The view bar arrives after the table does; clicking before it is there silently does
+  // nothing and every shot after it is of the grid.
   const kanban = page.getByRole("button", { name: "Kanban", exact: true }).first();
-  if (await kanban.count()) {
-    await kanban.click({ timeout: 20000 }).catch(() => {});
-    await page.waitForTimeout(3000);
-  }
+  await kanban.waitFor({ state: "visible", timeout: 90000 }).catch(() => {});
+  if (!(await kanban.count())) stop("the view bar never offered Kanban");
+  await kanban.click({ timeout: 30000 }).catch((e) => note("kanban click", String(e).slice(0, 120)));
+  await page.waitForTimeout(4000);
   // "Group by" is a SELECT, and it opens on `status` — the old ungoverned column this table
   // had before it was a pipeline. A picture of that is a picture of no rules at all.
   const groupBy = page.locator("select").filter({ hasText: "Quote stage" }).first();
+  await groupBy.waitFor({ state: "visible", timeout: 90000 }).catch(() => {});
   if (await groupBy.count()) {
     await groupBy.selectOption({ label: "Quote stage" }).catch((e) => note("group by", String(e).slice(0, 120)));
     await page.waitForTimeout(9000);
@@ -173,6 +183,7 @@ async function main() {
   note("organization", ORG_SLUG);
 
   // ══ 1 — THE EDITOR, with both of her rules ══════════════════════════════════════════
+  if (want(1)) {
   await page.goto(`${ORIGIN}${TABLE_URL}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   await page.waitForTimeout(9000);
   const settings = page.getByRole("button", { name: "Settings", exact: true }).first();
@@ -235,13 +246,26 @@ async function main() {
     .textContent()
     .catch(() => null);
   note("the demand it cannot draw is said as", inWords ?? "(NOT SAID — it is drawn as an empty picker)");
+  // The shell's own assist toast sits over the bottom-right corner, which is where the live
+  // count is. Scroll the rail so the count clears it — pressing the toast's own Close was
+  // tried and the selector matched the panel's Close instead, which shut the screen and
+  // produced a blank picture. Moving the content is the safe way past a fixed overlay.
+  await page
+    .locator('[data-testid="stage-rule-preview"]')
+    .first()
+    .scrollIntoViewIfNeeded()
+    .catch(() => {});
+  await page.waitForTimeout(1500);
   if (!inWords) {
     await shot(page, "x-demand-drawn-as-an-empty-picker");
     stop("the demand this builder cannot draw is still rendered as an empty picker — this app predates records-ui 0.56.0");
   }
   await shot(page, "1b-the-5000-rule-open-with-its-live-count");
 
+  }
+
   // ══ 2 — THE REFUSED DRAG, and its sentence ═════════════════════════════════════════
+  if (want(2)) {
   await openTheBoard(page);
   await shot(page, "2a-the-quotes-board");
   const dragged = await dragCardTo(page, THE_BID, "Approved");
@@ -257,7 +281,10 @@ async function main() {
   await shot(page, "2b-refused-with-the-sentence");
   if (!refusal) stop("the drag was not refused on screen");
 
+  }
+
   // ══ 3 — THE CARD THAT IS WAITING FOR SOMEBODY ══════════════════════════════════════
+  if (want(3)) {
   // Her second rule: anything over $10,000 needs sign-off before it is marked Paid. It does
   // not turn the card away — it asks — and FILING IS HER DECISION, so the button is pressed.
   // The card is the basement, which is in Approved and is the one she is about to pay; the
@@ -294,7 +321,10 @@ async function main() {
   note("after a reload it still says", waitingAfter ?? "(nothing — the badge did not survive)");
   await shot(page, "3c-waiting-to-move-to-paid-after-a-reload");
 
+  }
+
   // ══ 4 — WARN MODE, AND BACK ════════════════════════════════════════════════════════
+  if (want(4)) {
   try {
     note("organization switch", `custom/stage_rule_enforcement = ${knob("warn")}`);
     await openTheBoard(page);
@@ -320,6 +350,7 @@ async function main() {
 
   await openTheBoard(page);
   await shot(page, "4b-and-back-to-stopping-you");
+  }
 
   writeFileSync(resolve(OUT, "stage-rules-walk.txt"), notes.join("\n") + "\n");
   await browser.close();
