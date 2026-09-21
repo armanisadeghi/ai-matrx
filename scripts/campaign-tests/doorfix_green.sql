@@ -107,20 +107,22 @@ begin
                                 jsonb_build_object('name', 'phone')),
     'parent_id', v_home::text));
 
-  insert into custom.record (organization_id, table_id, data_class, data) values
-    (v_org, custom.field_kernel_id(), 'field', jsonb_build_object(
-      'key','pname','label','Name','type','text','sort',10,'required',false,'multi',false,
-      'dated',false,'source','manual','config','{}'::jsonb,'rules','[]'::jsonb,
-      'depends_on','[]'::jsonb,'sensitivity','internal','source_config','{}'::jsonb,
-      'context_policy','include','applies_to_types','[]'::jsonb,'entity_definition_id',v_tbl))
-    returning id into v_f_name;
-  insert into custom.record (organization_id, table_id, data_class, data) values
-    (v_org, custom.field_kernel_id(), 'field', jsonb_build_object(
-      'key','phone','label','Phone','type','text','sort',20,'required',false,'multi',false,
-      'dated',false,'source','manual','config','{}'::jsonb,'rules','[]'::jsonb,
-      'depends_on','[]'::jsonb,'sensitivity','internal','source_config','{}'::jsonb,
-      'context_policy','include','applies_to_types','[]'::jsonb,'entity_definition_id',v_tbl))
-    returning id into v_f_phone;
+  -- 🚨 THE TWO COLUMNS ARE DECLARED THROUGH THE DOOR (lane RED-SUITES-2, 2026-09-21). They
+  -- used to be INSERTed straight into `custom.record` as the connected role — a privilege no
+  -- person has, and the exact habit SEAT-SUITES named: "The old suites never saw it because
+  -- they INSERTed the Field rows straight into custom.record as the role that owns the table."
+  -- Two things came of it here. The hand-written document is not the shape
+  -- `custom._field_document_for` produces (it carries `type` and neither `plain` nor
+  -- `parity_type`), so PART 3's conversion rebuilt it into a number column and the validator
+  -- then refused the values the conversion had just written: "phone takes words, and it was
+  -- given a number". And since LIMITS-FIX `custom.table_declare` MATERIALISES the columns a
+  -- table's spec names, these INSERTs were adding a SECOND Field row claiming the same key —
+  -- the two-Fields-one-column hazard RED-SUITES left behind. `custom.field_declare` fills in
+  -- the row the table door already made, which is the documented two-step build.
+  v_f_name  := custom.field_declare(v_org, v_tbl, jsonb_build_object(
+    'key','pname','label','Name','plain','text','sort',10));
+  v_f_phone := custom.field_declare(v_org, v_tbl, jsonb_build_object(
+    'key','phone','label','Phone','plain','text','sort',20));
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 0 — THE SEAT. Everything below this line runs as a signed-in person.
@@ -330,9 +332,23 @@ begin
   v_ann := custom.record_write(v_org, v_tbl, jsonb_build_object('pname','Ann','phone','abc'));
   v_a   := custom.record_write(v_org, v_tbl, jsonb_build_object('pname','Bo','phone','12'));
 
+  -- 🚨 THE CONVERSIONS GO THROUGH THE DOOR NOW (lane RED-SUITES-2, 2026-09-21). PART 3 used to
+  -- drive every type change with `custom.record_update` ON THE FIELD ROW, carrying the store's
+  -- own internal keys (`{"type":"range","config":{"kind":"number"}}`). Lane STORE-T's file
+  -- `storet_the_field_door_carries_out_the_change.sql` names that exact pattern as the reason
+  -- T12 went unnoticed: "DOOR-FIX's suite fired it by calling custom.record_update on the FIELD
+  -- ROW with the store's own internal keys — as the superuser. The door a person and an agent
+  -- actually reach is custom.field_update", and it built that door.
+  --
+  -- The patch route is now not merely off-door, it is BROKEN — `data || p_patch` sets `type`
+  -- and `config` and leaves the rest of the field document saying the old thing, so the
+  -- conversion trigger converts the values and the validator then refuses the document it just
+  -- produced: "phone takes words, and it was given a number". `custom.field_update` rebuilds
+  -- the whole document through `custom._field_document_for`, which is why it is the door.
+  --
+  -- Same clauses, same records, same assertions — asked through the door a person has.
   -- 3a. text -> number: "12" CONVERTS to the number 12.
-  perform custom.record_update(v_org, v_f_phone,
-    jsonb_build_object('type','range','config', jsonb_build_object('kind','number')));
+  perform custom.field_update(v_org, v_f_phone, jsonb_build_object('plain','number'));
   v_doc := custom.read_record(v_org, v_a, true) -> 'phone';
   if v_doc is distinct from '12'::jsonb then
     raise exception '3a: text -> number did not convert "12"; the value is now %', coalesce(v_doc::text,'absent');
@@ -357,14 +373,13 @@ begin
   end if;
 
   -- 3d. number -> text, and text -> date, both ways round, on real records.
-  perform custom.record_update(v_org, v_f_phone, jsonb_build_object('type','text','config','{}'::jsonb));
+  perform custom.field_update(v_org, v_f_phone, jsonb_build_object('plain','text'));
   v_doc := custom.read_record(v_org, v_a, true) -> 'phone';
   if v_doc is distinct from '"12"'::jsonb then
     raise exception '3d: number -> text did not convert 12 back to "12"; it is now %', coalesce(v_doc::text,'absent');
   end if;
   perform custom.record_update(v_org, v_a, jsonb_build_object('phone','2026-03-01'));
-  perform custom.record_update(v_org, v_f_phone,
-    jsonb_build_object('type','range','config', jsonb_build_object('kind','date')));
+  perform custom.field_update(v_org, v_f_phone, jsonb_build_object('parity_type','datetime','kind','date'));
   v_doc := custom.read_record(v_org, v_a, true) -> 'phone';
   if v_doc is distinct from '"2026-03-01"'::jsonb then
     raise exception '3d: text -> date did not keep the date; it is now %', coalesce(v_doc::text,'absent');
@@ -401,8 +416,14 @@ begin
   if v_caught is null then
     raise exception '4a: a record was written into an organization whose store is switched off';
   end if;
-  if v_caught not ilike '%switched off%' then
-    raise exception '4a: the refusal does not say the store is switched off: %', v_caught;
+  -- 🚨 RE-PINNED (lane RED-SUITES-2, 2026-09-21), the same move RED-SUITES made on
+  -- `v1_fixes_green` 1b and this lane made on `w1_val_apply_door` B/C, for the same landing:
+  -- `limitsfix_a_new_organization_has_the_store_on.sql` rewrote `custom.assert_store_door` —
+  -- the ONE body every write door reaches — from "switched off", which named a knob and a role
+  -- and nothing a person could act on, to a sentence that says whose organization it is about
+  -- with a hint saying where the switch lives. The door is exactly as closed.
+  if v_caught not ilike '%has not turned the record store on%' then
+    raise exception '4a: the refusal does not say this organization has not turned the record store on: %', v_caught;
   end if;
 
   -- 4a. THE SECOND INPUT WITH A DIFFERENT EXPECTED ANSWER: the same call, the same person,
