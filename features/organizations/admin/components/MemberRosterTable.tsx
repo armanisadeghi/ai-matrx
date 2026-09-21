@@ -9,13 +9,9 @@ import { useRouter } from "next/navigation";
 import { ChevronRight, ShieldCheck, UserCog } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { OrgAdminMember } from "../types";
 // THE package initials formatter (`@ai-matrx/kit/format`, census H1
@@ -26,11 +22,7 @@ import type { OrgAdminMember } from "../types";
 // now shows one letter instead of two. Recorded as intentional per the
 // package's documented, once-made display decision.
 import { getInitials } from "@ai-matrx/kit/format";
-import {
-  activityBucket,
-  formatMcents,
-  formatRelativeTime,
-} from "../utils";
+import { activityBucket, formatMcents, formatRelativeTime } from "../utils";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
@@ -121,6 +113,119 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
       router.push(`/organizations/${orgSlug}/admin/users/${userId}`),
     );
 
+  const columns = useMemo<MatrxColumnDef<OrgAdminMember>[]>(
+    () => [
+      {
+        id: "member",
+        header: "Member",
+        accessorFn: (member) => member.displayName ?? member.email ?? "",
+        sortable: false,
+        cell: (member) => (
+          <div className="flex items-center gap-2.5">
+            <Avatar className="h-7 w-7">
+              {member.avatarUrl && (
+                <AvatarImage src={member.avatarUrl} alt="" />
+              )}
+              <AvatarFallback className="text-[10px]">
+                {initials(member.displayName, member.email)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-medium text-foreground">
+                {member.displayName || member.email || "Unknown user"}
+              </div>
+              {member.displayName && member.email && (
+                <div className="truncate text-xs text-muted-foreground">
+                  {member.email}
+                </div>
+              )}
+            </div>
+          </div>
+        ),
+      },
+      {
+        accessorKey: "role",
+        header: "Role",
+        sortable: false,
+        cell: (member) => (
+          <Badge
+            variant={ROLE_BADGE[member.role] ?? "outline"}
+            className="gap-1 capitalize"
+          >
+            {member.role === "owner" && <ShieldCheck className="h-3 w-3" />}
+            {member.role}
+          </Badge>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        accessorFn: (member) => member.status,
+        sortable: false,
+        cell: (member) =>
+          member.status === "suspended" ? (
+            <Badge variant="destructive">Suspended</Badge>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+              <ActivityDot member={member} />
+              Active
+            </span>
+          ),
+      },
+      {
+        id: "last-active",
+        header: "Last active",
+        accessorFn: (member) => member.lastOrgActivityAt ?? "",
+        sortable: false,
+        cell: (member) => (
+          <span className="text-sm text-muted-foreground">
+            {formatRelativeTime(member.lastOrgActivityAt)}
+          </span>
+        ),
+      },
+      {
+        id: "files",
+        header: "Files (org)",
+        accessorFn: (member) => member.orgFilesCount,
+        sortable: false,
+        cell: (member) => (
+          <span className="text-sm text-muted-foreground">
+            <span className="text-foreground">{member.orgFilesCount}</span>{" "}
+            <span className="text-xs">
+              ({formatFileSize(member.orgBytesUsed)})
+            </span>
+          </span>
+        ),
+      },
+      {
+        id: "spend",
+        header: "Spend 24h",
+        accessorFn: (member) => member.cost24hMcents,
+        sortable: false,
+        cell: (member) => (
+          <span className="text-sm text-muted-foreground">
+            {formatMcents(member.cost24hMcents)}
+          </span>
+        ),
+      },
+      {
+        id: "tier",
+        header: "Tier",
+        accessorFn: (member) => member.memberLevel ?? "",
+        sortable: false,
+        cell: (member) =>
+          member.memberLevel ? (
+            <Badge variant="info" className="capitalize">
+              {member.memberLevel}
+            </Badge>
+          ) : (
+            <span className="text-xs text-muted-foreground">Standard</span>
+          ),
+      },
+    ],
+    [],
+  );
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -198,142 +303,43 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
         )}
       </div>
 
-      <div className="rounded-lg border border-border">
-        <Table wrapperClassName="phone-stack">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Member</TableHead>
-              <TableHead className="w-[90px]">Role</TableHead>
-              <TableHead className="w-[110px]">Status</TableHead>
-              <TableHead className="w-[120px]">Last active</TableHead>
-              <TableHead className="w-[140px]">Files (org)</TableHead>
-              <TableHead className="w-[100px]">Spend 24h</TableHead>
-              <TableHead className="w-[90px]">Tier</TableHead>
-              <TableHead className="w-[44px]" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 && (
-              <TableRow>
-                <TableCell
-                  colSpan={8}
-                  className="py-10 text-center text-sm text-muted-foreground"
-                >
-                  {query ? "No members match your search." : "No members yet."}
-                </TableCell>
-              </TableRow>
-            )}
-            {rows.map((m) => (
-              <TableRow
-                key={m.userId}
-                onClick={() => go(m.userId)}
-                className="group/row cursor-pointer"
-              >
-                <TableCell data-phone="lead">
-                  <div className="flex items-center gap-2.5">
-                    <Avatar className="h-7 w-7">
-                      {m.avatarUrl && <AvatarImage src={m.avatarUrl} alt="" />}
-                      <AvatarFallback className="text-[10px]">
-                        {initials(m.displayName, m.email)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-medium text-foreground">
-                        {m.displayName || m.email || "Unknown user"}
-                      </div>
-                      {m.displayName && m.email && (
-                        <div className="truncate text-xs text-muted-foreground">
-                          {m.email}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell data-phone="inline">
-                  <Badge
-                    variant={ROLE_BADGE[m.role] ?? "outline"}
-                    className="gap-1 capitalize"
-                  >
-                    {m.role === "owner" && <ShieldCheck className="h-3 w-3" />}
-                    {m.role}
-                  </Badge>
-                </TableCell>
-                <TableCell data-label="Status" data-phone="inline">
-                  {m.status === "suspended" ? (
-                    <Badge variant="destructive">Suspended</Badge>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <ActivityDot member={m} />
-                      Active
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell
-                  data-label="Last active"
-                  data-phone="inline"
-                  className="text-sm text-muted-foreground"
-                >
-                  {formatRelativeTime(m.lastOrgActivityAt)}
-                </TableCell>
-                <TableCell
-                  data-label="Files (org)"
-                  data-phone="inline"
-                  className="text-sm text-muted-foreground"
-                >
-                  <span className="text-foreground">{m.orgFilesCount}</span>{" "}
-                  <span className="text-xs">
-                    ({formatFileSize(m.orgBytesUsed)})
-                  </span>
-                </TableCell>
-                <TableCell
-                  data-label="Spend 24h"
-                  data-phone="inline"
-                  className="text-sm text-muted-foreground"
-                >
-                  {formatMcents(m.cost24hMcents)}
-                </TableCell>
-                <TableCell
-                  data-label="Tier"
-                  data-phone="inline"
-                  className="text-sm"
-                >
-                  {m.memberLevel ? (
-                    <Badge variant="info" className="capitalize">
-                      {m.memberLevel}
-                    </Badge>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">
-                      Standard
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell data-phone="actions">
-                  <div className="flex items-center justify-end gap-1 text-muted-foreground">
-                    {/* The row navigates on click — CopyButtons stops
-                        propagation so copying never opens the member. */}
-                    <CopyButtons
-                      size="xs"
-                      label={m.displayName || m.email || "Member"}
-                      className="lg:opacity-0 lg:group-hover/row:opacity-100 lg:focus-within:opacity-100 transition-opacity"
-                      human={() => rosterMemberSummary(m)}
-                      json={() => rosterMemberRow(m)}
-                      agent={() =>
-                        buildRosterMemberPayload({
-                          member: m,
-                          orgSlug,
-                          totalMembers: members.length,
-                        })
-                      }
-                    />
-                    <UserCog className="h-4 w-4" />
-                    <ChevronRight className="h-4 w-4" />
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      {/* Search, domain sorting, and all-members export remain roster-owned. Generic inspector/window/copy are intentionally disabled because row navigation and row copy have richer member semantics. */}
+      <MatrxDataTable<OrgAdminMember>
+        tableId="organizations/admin/member-roster"
+        data={rows}
+        columns={columns}
+        getRowId={(member) => member.userId}
+        density="condensed"
+        copy={false}
+        detail={{ enabled: false }}
+        window={{ enabled: false }}
+        hidePagination
+        pageSize={0}
+        coverage={{ noun: "member", answeredBy: "client" }}
+        onRowOpen={(member) => go(member.userId)}
+        emptyState={{
+          title: query ? "No members match your search." : "No members yet.",
+        }}
+        rowActions={(member) => (
+          <div className="flex items-center justify-end gap-1 text-muted-foreground">
+            <CopyButtons
+              size="xs"
+              label={member.displayName || member.email || "Member"}
+              human={() => rosterMemberSummary(member)}
+              json={() => rosterMemberRow(member)}
+              agent={() =>
+                buildRosterMemberPayload({
+                  member,
+                  orgSlug,
+                  totalMembers: members.length,
+                })
+              }
+            />
+            <UserCog className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4" />
+          </div>
+        )}
+      />
     </div>
   );
 }
