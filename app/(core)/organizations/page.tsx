@@ -615,7 +615,6 @@ export default function OrganizationsPage() {
                   count={archivedOrganizations.length}
                   open={showArchived}
                   onOpenChange={setShowArchived}
-                  label="organizations"
                 >
                   <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                     {archivedOrganizations.map((org) => (

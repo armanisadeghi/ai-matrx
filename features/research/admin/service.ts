@@ -104,11 +104,14 @@ export async function updateTemplate(
 }
 
 export async function deleteTemplate(id: string): Promise<void> {
+  // Soft delete, never a hard one (owner ruling 2026-09-20; db-rules §8):
+  // `fetchTemplates` and `fetchTemplateById` both filter `deleted_at`.
   const { error } = await supabase
     .schema("research")
     .from("rs_template")
-    .delete()
-    .eq("id", id);
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id)
+    .is("deleted_at", null);
 
   if (error) throw new Error(`Failed to delete template: ${error.message}`);
 }

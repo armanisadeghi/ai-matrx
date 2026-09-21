@@ -954,11 +954,16 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
       const supabase = createClient();
 
       if (type === "block") {
+        // Soft delete, never a hard one (owner ruling 2026-09-20; db-rules
+        // §8): `skill.render_definition` carries `deleted_at` and both of its
+        // readers — `fetchRenderDefinitions` and the kind-content-block
+        // service — already filter it.
         const { error } = await supabase
           .schema("skill")
           .from("render_definition")
-          .delete()
-          .eq("id", item.id);
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("id", item.id)
+          .is("deleted_at", null);
 
         if (error) throw error;
 

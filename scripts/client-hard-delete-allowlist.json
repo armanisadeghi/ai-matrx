@@ -6,222 +6,143 @@
     {
       "file": "components/admin/ContentBlocksManager.tsx",
       "table": "platform.categories",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the platform lane."
-    },
-    {
-      "file": "components/admin/ContentBlocksManager.tsx",
-      "table": "skill.render_definition",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the skill lane."
-    },
-    {
-      "file": "components/markdown-studio/user-samples-service.ts",
-      "table": "users.user_markdown_samples",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the users lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (c) NEEDS A LANE — platform. fetchRenderBlockCategories (dimension='shortcut') does not filter deleted_at, so a soft-deleted category would keep showing."
     },
     {
       "file": "features/agent-apps/services/auto-create-draft.ts",
       "table": "app.definition_version",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the app lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. pruneEmptyCodeSnapshot drops the EMPTY placeholder version the pre-draft flow creates and renumbers the real one to 1; it was never a version a person saw, and a deleted_at placeholder would keep occupying its version number."
     },
     {
       "file": "features/agent-comparison/service/comparisonSetsService.ts",
       "table": "agent.cmp_comparison_entries",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the agent lane."
-    },
-    {
-      "file": "features/agent-comparison/service/comparisonSetsService.ts",
-      "table": "agent.cmp_comparison_sets",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the agent lane."
-    },
-    {
-      "file": "features/agent-connections/redux/skl/thunks.ts",
-      "table": "skill.render_definition",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the skill lane."
-    },
-    {
-      "file": "features/agent-context/redux/organizationsSlice.ts",
-      "table": "workspace.projects",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workspace lane."
-    },
-    {
-      "file": "features/agent-context/redux/projectsSlice.ts",
-      "table": "workspace.projects",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workspace lane."
-    },
-    {
-      "file": "features/agent-context/service/hierarchyService.ts",
-      "table": "workspace.projects",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workspace lane."
-    },
-    {
-      "file": "features/agents/redux/agent-apps/thunks.ts",
-      "table": "app.definition",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the app lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. replaceEntries wipes and re-inserts the whole entry list on every save (its own comment says so); a child row is never a record a person manages."
     },
     {
       "file": "features/agents/ui-first-tools/service/agent-plan.service.ts",
       "table": "chat.agent_plan",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the chat lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. clearPlan resets an agent's working state; the readers key on status/updated_at and no person manages these rows as records."
     },
     {
       "file": "features/agents/ui-first-tools/service/agent-task.service.ts",
       "table": "chat.agent_task",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the chat lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (c) NEEDS A LANE — chat. listTasks is the only reader and it does not filter deleted_at, so a soft delete would leave removed and cleared tasks on screen. The reader must be fixed with the write."
     },
     {
       "file": "features/agents/ui-first-tools/service/user-todo.service.ts",
       "table": "chat.user_todo",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the chat lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (c) NEEDS A LANE — chat. Same defect as chat.agent_task: listUserTodos does not filter deleted_at."
     },
     {
       "file": "features/ai-models/service.ts",
       "table": "ai.model_definition",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the ai lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (c) NEEDS A LANE — ai. fetchAll, the admin catalog list, does not filter deleted_at, although the same file already soft-deletes ai.setting beside it."
     },
     {
       "file": "features/audio/services/audioChunkJournal.ts",
       "table": "transcripts.studio_recording_chunks",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the transcripts lane."
-    },
-    {
-      "file": "features/canvas/services/canvasItemsService.ts",
-      "table": "canvas.canvas_items",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the canvas lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. Documented in place: ephemeral per-chunk crash-recovery staging, removed the moment the durable full-audio upload lands."
     },
     {
       "file": "features/data-tables/document-service.ts",
       "table": "workbench.udt_documents",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workbench lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. discardFailedDocument rolls back a document this very flow created and failed to populate; the user-initiated deleteDocument already soft-deletes."
     },
     {
       "file": "features/data-tables/workbook-service.ts",
       "table": "workbench.udt_workbooks",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workbench lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. Same documented rollback-of-a-just-created-row pattern as udt_documents."
     },
     {
       "file": "features/education/study/service/planService.ts",
       "table": "education.study_plan_block",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the education lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. Documented: regeneratePlan hard-deletes the old child rows, which are cheap, regenerable and versioned by trigger."
     },
     {
       "file": "features/education/study/service/planService.ts",
       "table": "education.study_plan_day",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the education lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. Same regeneratePlan child-row rebuild as study_plan_block."
     },
     {
       "file": "features/files/virtual-sources/adapters/code-files.ts",
       "table": "code.code_files",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the code lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. Behind an explicit `hard` flag; the same function soft-deletes when it is false — the retention action the owner's ruling allows."
     },
     {
       "file": "features/files/virtual-sources/adapters/notes.ts",
       "table": "workbench.notes",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workbench lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. Same `hard`-flag path as code-files.ts, reached from deleteAny."
     },
     {
       "file": "features/marketing/change-tracking/data.ts",
       "table": "seo.change_set",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the seo lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. A catch-block rollback of a change_set whose children failed to write in the same function."
     },
     {
       "file": "features/memory/service/memoryService.ts",
       "table": "users.user_memory",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the users lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. UNIQUE(created_by, path) and upsertMemory relies on onConflict for idempotent re-creation; the natural-key slot must be freed. Same shape as the note_folders worked example."
     },
     {
       "file": "features/message-templates/services/message-templates-service.ts",
       "table": "agent.message_template",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the agent lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (c) NEEDS A LANE — agent. fetchMessageTemplates, the only list reader, does not filter deleted_at anywhere in the file."
     },
     {
       "file": "features/notes/service/notesService.ts",
       "table": "workbench.note_folders",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workbench lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE, documented in place. A folder is a (created_by, name)-unique registry row notes reference by string; a deleted_at row would hold the slot invisibly and block a same-name recreate."
     },
     {
       "file": "features/notes/service/notesService.ts",
       "table": "workbench.notes",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workbench lane."
-    },
-    {
-      "file": "features/podcasts/service.ts",
-      "table": "podcast.pc_episodes",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the podcast lane."
-    },
-    {
-      "file": "features/podcasts/service.ts",
-      "table": "podcast.pc_shows",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the podcast lane."
-    },
-    {
-      "file": "features/podcasts/studio/runs/service.ts",
-      "table": "podcast.pc_studio_runs",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the podcast lane."
-    },
-    {
-      "file": "features/projects/service.ts",
-      "table": "workspace.projects",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workspace lane."
-    },
-    {
-      "file": "features/research/admin/service.ts",
-      "table": "research.rs_template",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the research lane."
-    },
-    {
-      "file": "features/research/components/landing/TopicList.tsx",
-      "table": "research.rs_topic",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the research lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. permanentlyDeleteNote and emptyTrash both act only on already soft-deleted notes (emptyTrash filters deleted_at IS NOT NULL) — the retention action the owner's ruling allows."
     },
     {
       "file": "features/research/service.ts",
       "table": "research.rs_keyword",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the research lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (c) NEEDS A LANE — research. The keyword list reader has no deleted_at filter at all."
     },
     {
       "file": "features/research/service.ts",
       "table": "research.rs_tag",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the research lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (c) NEEDS A LANE — research. getTags and three other rs_tag selects never filter deleted_at."
     },
     {
       "file": "features/surfaces/services/manifest-sync.service.ts",
       "table": "ui.ui_surface_agent_pref",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the ui lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. A cascaded child of the super-admin drift-repair tool removing a stale DB-only mirror row, not a person-facing record."
     },
     {
       "file": "features/surfaces/services/surface-config.service.ts",
       "table": "ui.ui_surface_agent_pref",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the ui lane."
-    },
-    {
-      "file": "features/tasks/services/projectService.ts",
-      "table": "workspace.projects",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workspace lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. deleteRolePref is de-selection of a per-surface agent-role pick, not content."
     },
     {
       "file": "features/tool-call-visualization/admin/McpToolsManager.tsx",
       "table": "tool.definition",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the tool lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (c) NEEDS A LANE — tool. Its own confirm dialog names the problem: the delete cascades through tool.binding, tool.definition_version and tool.ui and orphans cx_tool_call.tool_name, which has no FK. A one-line switch cannot fix the cascade."
     },
     {
       "file": "features/transcript-studio/service/studioService.ts",
       "table": "transcripts.studio_recording_segments",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the transcripts lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (c) NEEDS A LANE — transcripts. The segment list readers filter detached_at, never deleted_at, so a soft delete would leave 'deleted' recordings in every list."
     },
     {
       "file": "features/transcripts/service/transcriptsService.ts",
       "table": "transcripts.transcripts",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the transcripts lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. permanentlyDeleteTranscript is the named retention action on a row deleteTranscript already tombstoned."
     },
     {
       "file": "hooks/canvas/useCanvasLike.ts",
       "table": "canvas.canvas_likes",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the canvas lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (b) LEGITIMATE. A like/unlike toggle — de-selection of a junction row."
     },
     {
       "file": "lib/services/agent-apps-admin-service.ts",
       "table": "platform.categories",
-      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the platform lane."
+      "note": "CLASSIFIED 2026-09-20 (lane ORG-ARCHIVE): (c) NEEDS A LANE — platform. fetchAgentAppCategories (dimension='app') does not filter deleted_at. Same reader gap as the ContentBlocksManager entry."
     }
-  ]
+  ],
+  "classification": "2026-09-20, lane ORG-ARCHIVE, after the owner's soft-delete ruling. Every entry left here carries its classification in its note: (b) a legitimate hard delete WITH the reason, or (c) a real defect whose fix is bigger than one line, with the owner lane named — in every (c) case the LIST READER does not filter deleted_at, so the write and the read must be fixed together or the row vanishes from the screen and keeps existing. Class (a) — a one-line switch to deleted_at — was DONE in that lane and removed from this census: workspace.projects (5 paths), app.definition, skill.render_definition (2), users.user_markdown_samples, agent.cmp_comparison_sets, canvas.canvas_items, podcast.pc_shows / pc_episodes / pc_studio_runs, research.rs_template and research.rs_topic. scheduler.sch_trigger was class (c) and was also fixed in that lane (aidream packages/matrx-scheduler: soft delete plus every reader filtered); it never appeared in this frontend census because that delete lives on the server."
 }

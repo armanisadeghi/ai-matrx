@@ -7,6 +7,7 @@ import {
   createSelector,
   PayloadAction,
 } from "@reduxjs/toolkit";
+import { archiveOrganization as archiveOrganizationDoor } from "@/features/organizations/service/organizationArchive";
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -118,22 +119,25 @@ export const updateOrg = createAsyncThunk(
   },
 );
 
-export const deleteOrg = createAsyncThunk(
-  "organizations/delete",
-  async (orgId: string) => {
-    // Delete projects, then the org. Membership rows (iam.memberships) are
-    // removed by an ON DELETE CASCADE on memberships.organization_id (pending
-    // DB follow-up) — there is no client grant / public hard-delete RPC for them.
-    await workspaceDb(supabase)
-      .from("projects")
-      .delete()
-      .eq("organization_id", orgId);
-    const { error } = await supabase
-      .schema("iam").from("organizations")
-      .delete()
-      .eq("id", orgId);
-    if (error) throw error;
-    return orgId;
+/**
+ * AN ORGANIZATION IS ARCHIVED, NEVER DELETED (owner ruling 2026-09-20).
+ *
+ * This thunk used to hard-delete every project in the organization and then the
+ * organization row. It could not succeed — 717 foreign keys point at
+ * `iam.organizations` — but it destroyed the projects on the way to failing.
+ * Archiving closes the organization for everyone in ONE place (`iam.my_orgs()`)
+ * and touches not one row inside it; `iam.organization_archive` wants the
+ * organization's name typed back, so `confirmName` is the person's own typing.
+ */
+export const archiveOrg = createAsyncThunk(
+  "organizations/archive",
+  async (params: { orgId: string; confirmName: string; reason?: string }) => {
+    await archiveOrganizationDoor(
+      params.orgId,
+      params.confirmName,
+      params.reason ?? null,
+    );
+    return params.orgId;
   },
 );
 
@@ -215,7 +219,7 @@ const organizationsSlice = createSlice({
           changes: action.payload.patch,
         });
       })
-      .addCase(deleteOrg.fulfilled, (state, action) => {
+      .addCase(archiveOrg.fulfilled, (state, action) => {
         orgsAdapter.removeOne(state, action.payload);
         delete state.meta[action.payload];
       });

@@ -196,16 +196,22 @@ export async function updateProject(
   }
 }
 
+/**
+ * Move a project to the trash — the canonical soft delete (db-rules §8).
+ * Hard `DELETE` until 2026-09-20; see `features/tasks/services/projectService.ts`
+ * for the whole story. Every reader of `workspace.projects` filters `deleted_at`.
+ */
 export async function deleteProject(
   projectId: string,
 ): Promise<OperationResult> {
   try {
     const { error } = await workspaceDb(supabase)
       .from("projects")
-      .delete()
-      .eq("id", projectId);
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", projectId)
+      .is("deleted_at", null);
     if (error) throw pgErrorToError(error);
-    return { success: true, message: "Project deleted successfully" };
+    return { success: true, message: "Project moved to the trash" };
   } catch (error: unknown) {
     const msg =
       error instanceof Error ? error.message : "Failed to delete project";

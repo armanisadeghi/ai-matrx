@@ -188,10 +188,13 @@ export const updateProjectThunk = createAsyncThunk(
 export const deleteProjectThunk = createAsyncThunk(
   "projects/delete",
   async (projectId: string) => {
+    // Soft delete, never a hard one: `workspace.projects` is a registered
+    // entity with `deleted_at` and every reader filters it (db-rules §8).
     const { error } = await workspaceDb(supabase)
       .from("projects")
-      .delete()
-      .eq("id", projectId);
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", projectId)
+      .is("deleted_at", null);
     if (error) throw error;
     return projectId;
   },

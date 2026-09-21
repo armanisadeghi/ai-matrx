@@ -90,10 +90,14 @@ export const studioRunsService = {
   },
 
   async deleteRun(id: string): Promise<void> {
+    // Soft delete, never a hard one (owner ruling 2026-09-20; db-rules §8):
+    // a studio run is the durable record of one podcast generation and can be
+    // reopened, and both of its readers filter `deleted_at`.
     const { error } = await supabase
       .schema("podcast").from("pc_studio_runs")
-      .delete()
-      .eq("id", id);
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .is("deleted_at", null);
     if (error) throw error;
   },
 };

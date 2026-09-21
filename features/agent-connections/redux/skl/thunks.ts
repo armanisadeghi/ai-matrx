@@ -188,11 +188,14 @@ export const updateRenderDefinition = createAsyncThunk(
 export const deleteRenderDefinition = createAsyncThunk(
   "skl/deleteRenderDefinition",
   async (args: { id: string }, { dispatch }) => {
+    // Soft delete, never a hard one (owner ruling 2026-09-20; db-rules §8):
+    // `fetchRenderDefinitions` already filters `deleted_at`.
     const { error } = await supabase
       .schema("skill")
       .from("render_definition")
-      .delete()
-      .eq("id", args.id);
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", args.id)
+      .is("deleted_at", null);
     if (error) throw error;
     dispatch(sklActions.renderDefinitionRemoved(args.id));
     return args.id;

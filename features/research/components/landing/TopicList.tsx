@@ -452,10 +452,13 @@ export default function TopicList() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
+      // Soft delete, never a hard one (owner ruling 2026-09-20; db-rules
+      // §8): the readers of `research.rs_topic` filter `deleted_at`.
       const { error } = await supabase
         .schema("research").from("rs_topic")
-        .delete()
-        .eq("id", deleteTarget.id);
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", deleteTarget.id)
+        .is("deleted_at", null);
       if (error) throw error;
       toast.success("Topic deleted.");
       refresh();

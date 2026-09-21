@@ -222,14 +222,21 @@ export async function updateProject(
 }
 
 /**
- * Delete a project
+ * Move a project to the trash — the canonical soft delete (db-rules §8).
+ *
+ * 🚨 This was a hard `DELETE` until 2026-09-20 (lane ORG-ARCHIVE, the owner's
+ * soft-delete ruling). `workspace.projects` is a registered entity carrying
+ * `deleted_at` and EVERY reader in this repo already filters it, so the hard
+ * delete destroyed a person's project — and its tasks with it — while deleting
+ * a task beside it on the same screen was recoverable. Same class as DD-119.
  */
 export async function deleteProject(projectId: string): Promise<boolean> {
   try {
     const { error } = await workspaceDb(supabase)
       .from("projects")
-      .delete()
-      .eq("id", projectId);
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", projectId)
+      .is("deleted_at", null);
 
     if (error) {
       console.error("Error deleting project:", error);

@@ -110,10 +110,15 @@ export async function loadComparisonSet(
 }
 
 export async function deleteComparisonSet(setId: string): Promise<void> {
+  // Soft delete, never a hard one (owner ruling 2026-09-20; db-rules §8):
+  // `listComparisonSets` and `loadComparisonSet` both filter `deleted_at`.
+  // The set's ENTRIES stay a hard wipe-and-reinsert on every save — they are
+  // never a record a person manages on their own.
   const { error } = await supabase()
     .schema("agent").from("cmp_comparison_sets")
-    .delete()
-    .eq("id", setId);
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", setId)
+    .is("deleted_at", null);
   if (error) throw error;
 }
 

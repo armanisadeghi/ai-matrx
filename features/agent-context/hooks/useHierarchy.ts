@@ -324,7 +324,18 @@ export function useDeleteEntity() {
         case "project":
           return hierarchyService.deleteProject(id);
         case "organization":
-          return hierarchyService.deleteOrganization(id);
+          // AN ORGANIZATION IS ARCHIVED, NEVER DELETED (owner ruling
+          // 2026-09-20), and archiving has ONE confirmation surface: the
+          // Danger Zone on the organization's own settings page, which says
+          // what archiving does and does not do and wants the name typed back.
+          // A generic tree "delete" cannot collect that, so it refuses in
+          // words rather than pretending — and it is never reachable anyway,
+          // because nothing renders a delete action for an organization node.
+          throw new Error(
+            "An organization is archived, not deleted. Open its settings page " +
+              "and use Archive organization — nothing inside it is lost and an " +
+              "owner can restore it at any time.",
+          );
         default:
           throw new Error(`Delete not supported for: ${type}`);
       }

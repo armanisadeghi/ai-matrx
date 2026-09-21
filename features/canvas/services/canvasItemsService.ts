@@ -375,11 +375,15 @@ export const canvasItemsService = {
   async delete(id: string): Promise<{ error: any }> {
     try {
       const userId = requireUserId();
+      // Soft delete, never a hard one (owner ruling 2026-09-20; db-rules
+      // §8): every reader of `canvas.canvas_items` in this file already
+      // filters `deleted_at`.
       const { error } = await supabase
         .schema("canvas").from("canvas_items")
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", id)
-        .eq("user_id", userId);
+        .eq("user_id", userId)
+        .is("deleted_at", null);
 
       return { error };
     } catch (error) {
@@ -417,11 +421,13 @@ export const canvasItemsService = {
   async batchDelete(ids: string[]): Promise<{ error: any }> {
     try {
       const userId = requireUserId();
+      // Soft delete, never a hard one — same rule as `delete` above.
       const { error } = await supabase
         .schema("canvas").from("canvas_items")
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .in("id", ids)
-        .eq("user_id", userId);
+        .eq("user_id", userId)
+        .is("deleted_at", null);
 
       return { error };
     } catch (error) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { archiveOrganization as archiveOrganizationDoor } from "@/features/organizations/service/organizationArchive";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId, getUserEmail } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
@@ -514,31 +515,36 @@ export const hierarchyService = {
     if (error) throw error;
   },
 
+  // Soft delete, same rule as a task: `workspace.projects` is a registered
+  // entity with `deleted_at` and every reader filters it (db-rules §8).
   async deleteProject(id: string): Promise<void> {
     const { error } = await workspaceDb(supabase)
       .from("projects")
-      .delete()
-      .eq("id", id);
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .is("deleted_at", null);
     if (error) throw error;
   },
 
-  async deleteOrganization(id: string): Promise<void> {
-    const { error: projErr } = await workspaceDb(supabase)
-      .from("projects")
-      .delete()
-      .eq("organization_id", id);
-    if (projErr) throw projErr;
-
-    // Membership rows live in iam.memberships (no client grant; no public
-    // hard-delete RPC). They must be removed by an ON DELETE CASCADE on
-    // memberships.organization_id — pending DB follow-up. Until that lands this
-    // delete will fail loudly on the FK rather than silently orphan rows.
-    const { error } = await supabase
-      .schema("iam")
-      .from("organizations")
-      .delete()
-      .eq("id", id);
-    if (error) throw error;
+  /**
+   * AN ORGANIZATION IS ARCHIVED, NEVER DELETED (owner ruling 2026-09-20).
+   *
+   * This used to hard-delete every project in the organization and then the
+   * organization row itself — a delete that could not actually succeed (717
+   * foreign keys point at `iam.organizations`) and that would have destroyed
+   * every project on the way to failing. Archiving closes the organization for
+   * everyone in one place (`iam.my_orgs()`) and touches not one row inside it.
+   *
+   * `confirmName` is the organization's own name, typed back by the person —
+   * the door refuses anything else, so this can never run from a stray call.
+   */
+  async archiveOrganization(
+    id: string,
+    confirmName: string,
+    reason: string | null = null,
+  ): Promise<string> {
+    const outcome = await archiveOrganizationDoor(id, confirmName, reason);
+    return outcome.sentence;
   },
 
   // ─── RPC-based tree fetchers ────────────────────────────────────────

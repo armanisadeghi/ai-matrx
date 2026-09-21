@@ -108,23 +108,33 @@ async function main() {
 
   // 1 — THE LIST HIDES IT. The archived organization must not be among the cards.
   await page.goto(`${ORIGIN}/organizations`, { waitUntil: "domcontentloaded", timeout: 180000 });
-  await page.waitForTimeout(6000);
+  await page.waitForTimeout(8000);
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.waitForTimeout(1500);
   const bodyHidden = await page.evaluate(() => document.body.innerText);
-  const disclosure = await page
-    .locator("text=/Archived \\(\\d+\\)/")
-    .first()
-    .textContent()
-    .catch(() => null);
+  // The control is @ai-matrx/design-system's ArchivedDisclosure and it reads
+  // "Archived (N)" — the platform's own word, never a per-surface noun. Read it
+  // out of the DOM rather than guessing at its text.
+  const disclosure = await page.evaluate(() => {
+    const btn = [...document.querySelectorAll("button")].find((b) =>
+      /^Archived \(\d+\)$/.test((b.textContent || "").trim()),
+    );
+    return btn ? btn.textContent.trim() : null;
+  });
   console.log(`[1] archived organization named in the default list: ${bodyHidden.includes(ORG_NAME)}`);
   console.log(`[1] archive disclosure on the page: ${JSON.stringify(disclosure)}`);
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.waitForTimeout(1200);
   await shot(page, "1-organizations-list-hides-archived");
 
   // 2 — ONE CLICK REVEALS IT, with its Archived badge.
   if (disclosure) {
-    await page.locator("text=/Archived \\(\\d+\\)/").first().click();
+    await clickByText(page, disclosure.trim());
     await page.waitForTimeout(2500);
     const revealed = await page.evaluate(() => document.body.innerText);
     console.log(`[2] revealed after one click: ${revealed.includes(ORG_NAME)}`);
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.waitForTimeout(1500);
     await shot(page, "2-organizations-list-reveals-archived");
   }
 

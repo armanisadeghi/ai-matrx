@@ -167,8 +167,14 @@ export const podcastService = {
       }));
   },
 
+  // Soft delete, never a hard one (owner ruling 2026-09-20; db-rules §8):
+  // every reader of `podcast.pc_shows` filters `deleted_at`.
   async removeShow(id: string): Promise<void> {
-    const { error } = await supabase.schema("podcast").from("pc_shows").delete().eq("id", id);
+    const { error } = await supabase
+      .schema("podcast").from("pc_shows")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .is("deleted_at", null);
     if (error) throw error;
   },
 
@@ -332,8 +338,13 @@ export const podcastService = {
     };
   },
 
+  // Soft delete, never a hard one — same rule as removeShow.
   async removeEpisode(id: string): Promise<void> {
-    const { error } = await supabase.schema("podcast").from("pc_episodes").delete().eq("id", id);
+    const { error } = await supabase
+      .schema("podcast").from("pc_episodes")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .is("deleted_at", null);
     if (error) throw error;
   },
 

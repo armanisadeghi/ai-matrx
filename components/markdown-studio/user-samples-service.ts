@@ -67,9 +67,12 @@ export async function updateUserSample(
 }
 
 export async function deleteUserSample(id: string): Promise<void> {
+  // Soft delete, never a hard one (owner ruling 2026-09-20; db-rules §8):
+  // the sole reader `listUserSamples` above filters `deleted_at`.
   const { error } = await supabase
     .schema("users").from("user_markdown_samples")
-    .delete()
-    .eq("id", id);
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id)
+    .is("deleted_at", null);
   if (error) throw error;
 }

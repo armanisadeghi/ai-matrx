@@ -200,7 +200,6 @@ export function OrganizationList() {
         count={archivedOrganizations.length}
         open={showArchived}
         onOpenChange={setShowArchived}
-        label="organizations"
       >
         <div className="space-y-3">
           {archivedOrganizations.map((org) => (

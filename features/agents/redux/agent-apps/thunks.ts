@@ -350,12 +350,18 @@ export const deleteApp = createAsyncThunk<void, string, ThunkApi>(
     const userId = userData?.user?.id;
     if (!userId) throw new Error("Not authenticated");
 
+    // Soft delete, never a hard one (owner ruling 2026-09-20). `app.definition`
+    // is a registered entity carrying `deleted_at` and every reader of it in
+    // this repo already filters it, so destroying the row took the person's app
+    // AND its whole version history with it while the dialog above promised
+    // nothing of the kind. Same class as DD-119.
     const { error } = await supabase
       .schema("app")
       .from("definition")
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq("id", appId)
-      .eq("created_by", userId);
+      .eq("created_by", userId)
+      .is("deleted_at", null);
 
     if (error) {
       dispatch(
