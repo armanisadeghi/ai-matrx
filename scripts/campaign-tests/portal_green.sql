@@ -251,7 +251,7 @@ begin
 
   -- ══ PART 5 — BRUNO, THE SAME DOORS, HIS OWN TEN ══════════════════════════════════
   perform set_config('request.jwt.claims', j_bru, true);
-  select count(*) into v_n from custom.read_records(v_org, v_jobs, true, 200, 0);
+  select count(*) into v_n from custom.read_records(v_org, v_jobs, false, 200, 0);
   select count(*) into v_m from custom.read_records(v_org, v_invoices, true, 200, 0);
   if v_n <> 10 or v_m <> 3 then raise exception '5a: Bruno got % jobs and % invoices, expected 10 and 3', v_n, v_m; end if;
   if exists (select 1 from custom.read_records(v_org, v_jobs, true, 200, 0) r where (r.document ->> 'title') like 'Ada%') then
