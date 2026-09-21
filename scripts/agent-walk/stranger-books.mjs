@@ -27,6 +27,8 @@ import { chromium } from "playwright";
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { fillByLabel } from "./fill-by-label.mjs";
+
 const HOST = process.env.WALK_HOST ?? "agent-builds.localhost";
 const PORT = process.env.WALK_PORT ?? "3001";
 const ORIGIN = `http://${HOST}:${PORT}`;
@@ -96,45 +98,17 @@ try {
   await page.waitForTimeout(3500);
   note.heldText = (await page.evaluate(() => document.body.innerText)).slice(0, 400);
 
-  // Fill each question by the label it shows.
-  const filled = [];
-  for (const [label, value] of Object.entries(CUSTOMER)) {
-    const box = page
-      .locator(
-        `input[name="${label}"], input[aria-label="${label}"], input[placeholder="${label}"]`,
-      )
-      .first();
-    if (await box.isVisible().catch(() => false)) {
-      await box.fill(value);
-      filled.push(label);
-      continue;
-    }
-    // Fall back to the field that follows the label's own text.
-    const ok = await page.evaluate(
-      ({ label: l, value: v }) => {
-        const labels = Array.from(document.querySelectorAll("label, span, div")).filter(
-          (n) => (n.textContent || "").trim() === l,
-        );
-        for (const node of labels) {
-          const scope = node.closest("div") ?? document.body;
-          const input = scope.querySelector("input, textarea, select");
-          if (input) {
-            const setter = Object.getOwnPropertyDescriptor(
-              window.HTMLInputElement.prototype,
-              "value",
-            )?.set;
-            setter?.call(input, v);
-            input.dispatchEvent(new Event("input", { bubbles: true }));
-            input.dispatchEvent(new Event("change", { bubbles: true }));
-            return true;
-          }
-        }
-        return false;
-      },
-      { label, value },
-    );
-    if (ok) filled.push(label);
-  }
+  // FILL EACH QUESTION BY THE WORDS PRINTED ABOVE ITS BOX — through the ONE
+  // filler, which refuses to pass when two questions land in one box.
+  //
+  // 🚨 WHAT WAS HERE BEFORE, and what it did (2026-09-21). The fallback took
+  // the label's text node, climbed `node.closest("div")` — which on this page
+  // goes PAST the <label> to the container holding every question — and took
+  // `scope.querySelector("input")`, i.e. the first input on the page, seven
+  // times. The booking landed with the LICENCE PLATE in `customer_name` and no
+  // phone, email or vehicle at all, and it was reported as a pass with a note.
+  const { filled, readBack } = await fillByLabel(page, CUSTOMER);
+  note.fieldsReadBack = readBack;
   note.fieldsFilled = filled;
   await page.waitForTimeout(800);
   await shot(page, "stranger-books-02-before-booking");
