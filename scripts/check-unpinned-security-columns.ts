@@ -180,6 +180,28 @@ export interface PolicyFacts {
    */
   readonly usingExpr: string | null;
   readonly columns: readonly string[];
+  /**
+   * 🚨 A COLUMN THE CLIENT CANNOT WRITE IS NOT AN UNPINNED COLUMN. (SECURITY-SWEEP, 2026-09-21)
+   *
+   * The first version of this guard asked only "is this table client-writable?" and then
+   * judged EVERY column on it. That is not the question. `iam.apply_table_grants` issues a
+   * COLUMN-level grant whenever `platform.entity_types.client_excluded_columns` is declared,
+   * so the platform's own way of saying "a client may never write this secret" is to withhold
+   * the column from the grant — and that is exactly how `esign.signing_key.secret_key`,
+   * `hr.kiosk_device.device_secret_hash`, `hr.kiosk_session.session_token_hash`,
+   * `hr.provider_binding.credential_ref` and `users.integration_connections.credential_item_id`
+   * are already closed on this database. All five were in the 233-row baseline as open holes.
+   *
+   * Two things were wrong with that. It over-reported five genuinely closed credential columns
+   * — and, far worse, it meant that CLOSING one of the remaining holes the platform's own way
+   * would not shrink the baseline, so the ratchet could not see a fix. A guard that cannot see
+   * the fix is a guard that argues against making it.
+   *
+   * So the census now asks `has_column_privilege(role, col, 'INSERT'/'UPDATE')` per column,
+   * per command, and only a column the client may genuinely set is judged. When absent (unit
+   * fixtures), every column in `columns` is treated as writable.
+   */
+  readonly writableColumns?: readonly string[];
 }
 
 /** What Postgres will actually apply to the NEW row. See `usingExpr`. */
@@ -260,7 +282,13 @@ export function findingsFor(policy: PolicyFacts): Finding[] {
     withCheckIsNull: check === null,
     policyPinsSomeIdentity: pinsSomeIdentity(check, policy.columns),
   };
+  // See `PolicyFacts.writableColumns`. `pinsSomeIdentity` above deliberately still reads the
+  // WHOLE column list: whether a policy is in the business of pinning identity is a fact about
+  // the policy, not about which columns happen to carry a grant.
+  const writable =
+    policy.writableColumns === undefined ? null : new Set(policy.writableColumns);
   for (const column of policy.columns) {
+    if (writable !== null && !writable.has(column)) continue;
     const severity = classify(column, ctx);
     if (severity === null) continue;
     if (isPinned(check, column)) continue;
@@ -321,7 +349,21 @@ select w.schema_name,
        pg_get_expr(p.polqual, p.polrelid)          as using_expr,
        (select coalesce(array_agg(a.attname::text order by a.attnum), '{}'::text[])
           from pg_attribute a
-         where a.attrelid = w.relid and a.attnum > 0 and not a.attisdropped) as columns
+         where a.attrelid = w.relid and a.attnum > 0 and not a.attisdropped) as columns,
+       -- A COLUMN THE CLIENT CANNOT WRITE IS NOT AN UNPINNED COLUMN (SECURITY-SWEEP 2026-09-21).
+       -- Asked per column AND per command, because a column grant is per privilege:
+       -- 'a' -> INSERT, 'w' -> UPDATE, '*' -> either. This is the same has_*_privilege family
+       -- the client_writable CTE uses, so the two halves of the census cannot disagree.
+       (select coalesce(array_agg(a.attname::text order by a.attnum), '{}'::text[])
+          from pg_attribute a
+         where a.attrelid = w.relid and a.attnum > 0 and not a.attisdropped
+           and exists (
+             select 1 from unnest($1::text[]) as r(role)
+              where (p.polcmd in ('a','*')
+                       and has_column_privilege(r.role, w.relid, a.attname, 'INSERT'))
+                 or (p.polcmd in ('w','*')
+                       and has_column_privilege(r.role, w.relid, a.attname, 'UPDATE'))
+           )) as writable_columns
   from client_writable w
   join pg_policy p on p.polrelid = w.relid
  where p.polpermissive = true
@@ -398,6 +440,32 @@ function selfTest(): number {
   say(
     !red.some((f) => f.column === "created_by") && !red.some((f) => f.column === "organization_id"),
     "`created_by` and `organization_id`, which that policy DOES pin, are not reported",
+  );
+
+  // THE SECOND WAY A DOOR IS REMOVED: the column is withheld from the client grant.
+  // `iam.apply_table_grants` does exactly this whenever `platform.entity_types
+  // .client_excluded_columns` names a column, and it is how the platform already closes
+  // `esign.signing_key.secret_key` and four more. A guard that still called those holes could
+  // not see a fix when one was made — so both halves are asserted here on the same bytes.
+  // RED half: with the secret still granted, it IS reported.
+  say(
+    findingsFor({ ...PRE_FIX_API_KEYS, writableColumns: PRE_FIX_API_KEYS.columns })
+      .some((f) => f.column === "secret_hash" && f.severity === "critical"),
+    "a credential column the client MAY write is still CRITICAL when the grant is table-wide",
+  );
+  // GREEN half: withhold that one column from the grant and the finding is gone — and only
+  // that one, so the rule cannot be mistaken for "withholding anything clears the table".
+  const grantWithheld = findingsFor({
+    ...PRE_FIX_API_KEYS,
+    writableColumns: PRE_FIX_API_KEYS.columns.filter((c) => c !== "secret_hash"),
+  });
+  say(
+    !grantWithheld.some((f) => f.column === "secret_hash"),
+    "the same column withheld from the client grant (client_excluded_columns) is NOT a finding",
+  );
+  say(
+    grantWithheld.some((f) => f.column === "service_user_id" && f.severity === "critical"),
+    "…and withholding one column does not clear the others: service_user_id is still CRITICAL",
   );
 
   // GREEN — the shape it has today: a restrictive refusal means the census never yields the
@@ -509,6 +577,7 @@ async function main(): Promise<number> {
           withCheck: r.with_check,
           usingExpr: r.using_expr,
           columns: r.columns ?? [],
+          writableColumns: r.writable_columns ?? [],
         }),
       );
     }
