@@ -1,15 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { useAiTasks } from "@/features/ai-runs/hooks/useAiTasks";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/ui/spinner";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -18,11 +10,14 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { RefreshCw } from "lucide-react";
 import { format } from "date-fns";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import type { AiTask } from "@/features/ai-runs/types/aiRunTypes";
 
 const PAGE_LOCATION = "AI Matrx Admin — AI Tasks (/administration/ai/ai-tasks)";
 
 export default function AiTasksPage() {
-  const { tasks, isLoading, error, total, refresh } = useAiTasks({
+  const { tasks, isLoading, error, total, hasMore, loadMore, refresh } = useAiTasks({
     limit: 50,
     order_by: "created_at",
     order_direction: "desc",
@@ -53,6 +48,22 @@ export default function AiTasksPage() {
         return "secondary";
     }
   };
+
+  const columns = useMemo<MatrxColumnDef<AiTask>[]>(() => [
+    {
+      id: "id",
+      accessorKey: "id",
+      header: "ID",
+      filter: false,
+      width: 110,
+      cell: (task) => <EntityRef token="task" id={task.id} name={task.id} showIcon={false}>{task.id.slice(0, 8)}...</EntityRef>,
+    },
+    { id: "name", accessorKey: "task_name", header: "Name", width: 220, cell: (task) => <span className="font-medium">{task.task_name || "-"}</span> },
+    { id: "description", accessorKey: "response_text", header: "Description", width: 360, mobileHidden: true, cell: (task) => <span className="block truncate text-sm text-muted-foreground">{task.response_text ? `${task.response_text.slice(0, 100)}...` : "-"}</span> },
+    { id: "status", accessorKey: "status", header: "Status", filter: "select", width: 130, cell: (task) => <Badge variant={getStatusBadgeVariant(task.status)}>{task.status}</Badge> },
+    { id: "created", accessorKey: "created_at", header: "Created at", filter: "date", width: 180, mobileHidden: true, cell: (task) => formatDate(task.created_at) },
+    { id: "updated", accessorKey: "updated_at", header: "Updated at", filter: "date", width: 180, mobileHidden: true, cell: (task) => formatDate(task.updated_at) },
+  ], []);
 
   return (
     <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden bg-textured">
@@ -121,95 +132,20 @@ export default function AiTasksPage() {
               </AlertDescription>
             </Alert>
           ) : (
-            <div className="border rounded-lg overflow-hidden bg-card">
-              <Table wrapperClassName="phone-stack">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[100px]">ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created At</TableHead>
-                    <TableHead>Updated At</TableHead>
-                    <TableHead className="w-8" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {tasks.map((task) => (
-                    <TableRow key={task.id}>
-                      <TableCell
-                        className="font-mono text-xs"
-                        data-label="ID"
-                        data-phone="inline"
-                      >
-                        <EntityRef
-                          token="task"
-                          id={task.id}
-                          name={task.id}
-                          showIcon={false}
-                        >
-                          {task.id.slice(0, 8)}...
-                        </EntityRef>
-                      </TableCell>
-                      <TableCell className="font-medium" data-phone="lead">
-                        {task.task_name || "-"}
-                      </TableCell>
-                      <TableCell className="max-w-md" data-label="Description">
-                        <div className="truncate text-sm text-muted-foreground">
-                          {task.response_text
-                            ? task.response_text.slice(0, 100) + "..."
-                            : "-"}
-                        </div>
-                      </TableCell>
-                      <TableCell data-phone="inline">
-                        <Badge variant={getStatusBadgeVariant(task.status)}>
-                          {task.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell
-                        className="text-sm text-muted-foreground"
-                        data-label="Created At"
-                        data-phone="inline"
-                      >
-                        {formatDate(task.created_at)}
-                      </TableCell>
-                      <TableCell
-                        className="text-sm text-muted-foreground"
-                        data-label="Updated At"
-                        data-phone="inline"
-                      >
-                        {formatDate(task.updated_at)}
-                      </TableCell>
-                      <TableCell className="text-right" data-phone="actions">
-                        <CopyButtons
-                          size="icon"
-                          label={`Task ${task.id.slice(0, 8)}`}
-                          human={() =>
-                            [
-                              `ID: ${task.id}`,
-                              `Name: ${task.task_name || "—"}`,
-                              `Status: ${task.status}`,
-                              `Created: ${formatDate(task.created_at)}`,
-                              `Updated: ${formatDate(task.updated_at)}`,
-                            ].join("\n")
-                          }
-                          agent={() => ({
-                            kind: "ai-task",
-                            location: PAGE_LOCATION,
-                            description: "A single AI task row.",
-                            data: task,
-                            attributes: {
-                              id: task.id,
-                              status: task.status,
-                            },
-                          })}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <>
+              {/* The source exposes a precise total and offset loader. Arman requested
+                  canonical adoption; keep the source-owned window honest and loadable. */}
+              <MatrxDataTable
+                data={tasks}
+                columns={columns}
+                getRowId={(task) => task.id}
+                hidePagination
+                viewTabs={false}
+                coverage={{ total, matched: total, answeredBy: "source", noun: "task" }}
+                toolbar={{ title: "AI tasks", search: false, actions: hasMore ? <Button variant="outline" size="sm" onClick={() => void loadMore()} disabled={isLoading}>Load more</Button> : undefined }}
+                rowActions={(task) => <CopyButtons size="icon" label={`Task ${task.id.slice(0, 8)}`} human={() => [`ID: ${task.id}`, `Name: ${task.task_name || "—"}`, `Status: ${task.status}`, `Created: ${formatDate(task.created_at)}`, `Updated: ${formatDate(task.updated_at)}`].join("\n")} agent={() => ({ kind: "ai-task", location: PAGE_LOCATION, description: "A single AI task row.", data: task, attributes: { id: task.id, status: task.status } })} />}
+              />
+            </>
           )}
 
           {isLoading && tasks.length > 0 && (
