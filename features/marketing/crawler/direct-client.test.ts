@@ -81,6 +81,7 @@ describe("direct marketing crawler transport", () => {
       deleted_at: null,
       version: 1,
       metadata: {},
+      custom_fields: {},
       site_id: "site-1",
       session_id: "session-1",
       sequence: 42,

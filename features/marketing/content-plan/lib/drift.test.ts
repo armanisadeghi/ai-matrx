@@ -8,6 +8,7 @@ const node = (overrides: Partial<PlanNodeRow> = {}): PlanNodeRow => ({
   cluster_label: null,
   created_at: "2026-08-13T00:00:00Z",
   created_by: null,
+  custom_fields: {},
   deleted_at: null,
   depth: 0,
   id: "node-home",

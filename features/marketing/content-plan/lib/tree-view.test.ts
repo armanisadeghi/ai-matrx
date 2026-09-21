@@ -17,6 +17,7 @@ function planNode(
     cluster_label: null,
     created_at: "2026-08-11T00:00:00.000Z",
     created_by: null,
+    custom_fields: {},
     deleted_at: null,
     depth: 0,
     id,

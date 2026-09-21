@@ -22,6 +22,7 @@ function artifact(
     content: content as PlanNodeArtifactRow["content"],
     created_at: createdAt,
     created_by: null,
+    custom_fields: {},
     deleted_at: null,
     id: `${kind}-${createdAt}`,
     kind,

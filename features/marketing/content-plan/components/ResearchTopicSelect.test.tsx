@@ -84,6 +84,7 @@ function topic(id: string, name: string): ResearchTopic {
     consecutive_refresh_failures: 0,
     created_at: STAMP,
     created_by: USER,
+    custom_fields: {},
     default_search_params: {},
     default_search_provider: "brave",
     deleted_at: null,

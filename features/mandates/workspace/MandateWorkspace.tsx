@@ -88,7 +88,8 @@ import {
 import { loadFailedFailure } from "../mandate-address";
 import { useMandate } from "../useMandate";
 import { MANDATE_WORKSPACE_SURFACE_NAME } from "@/features/surfaces/manifests/mandate-workspace.manifest";
-import { MandateAlchemy, MandateAlchemyCaptureProvider, buildMandateDefinitionCore, type MandateAlchemyCapture } from "./MandateAlchemy";
+import { normalizeTransferJson } from "@ai-matrx/alchemy/core";
+import { useMandateAlchemyTabCapture, MandateAlchemy, MandateAlchemyCaptureProvider, buildMandateDefinitionCore, type MandateAlchemyCapture } from "./MandateAlchemy";
 import type { ResolvedMandate } from "../service";
 import {
   ladderRowChangesHolder,
@@ -579,7 +580,7 @@ function OneMandateWorkspace({
             perspective={perspective}
             organizationName={perspective === "organization" && principal.kind === "org" ? nameOfOrg(principal.orgId) : null}
             buildTab={(tab): MandateAlchemyCapture => tab === "definition"
-              ? { status: "ready", savedOnly: true, data: { saved_definition: buildMandateDefinitionCore(data, perspective, perspective === "organization" && principal.kind === "org" ? nameOfOrg(principal.orgId) : null), omissions: ["Unsaved definition edits are not included."] } }
+              ? { status: "ready", savedOnly: true, data: { saved_definition: buildMandateDefinitionCore(data, perspective, perspective === "organization" && principal.kind === "org" ? nameOfOrg(principal.orgId) : null), pins: data.pins, pinned_context: data.pinnedContext } }
               : { status: "error", message: "This tab has not finished publishing its saved data." }}
           />
           </div>
@@ -916,6 +917,18 @@ function BindingSection({
 // only paints it, so there is no place left for a second opinion to grow.
 
 function FulfillmentSection({ resolution }: { resolution: FulfillmentView }) {
+  useMandateAlchemyTabCapture("holder", resolution.loading
+    ? { status: "loading" }
+    : { status: "ready", data: normalizeTransferJson({
+        holder: resolution.agent ? { id: resolution.agentId, name: resolution.agent.name, archived: resolution.agent.isArchived } : null,
+        source: resolution.rung,
+        explanation: resolution.sentence,
+        version: resolution.useLatest ? "Latest" : resolution.pinned,
+        refusal: resolution.refusal,
+        freshness: resolution.freshness,
+        drift: resolution.drift,
+        dropped_rungs: resolution.droppedRungs,
+      }) }, "effective_holder");
   const { copying, copyAndOpen } = useCopyMandateAgent();
   const {
     agent,
@@ -1059,6 +1072,21 @@ function LadderSection({
   nameOfOrg: (id: string) => string | null;
   activeOrganizationId: string | null;
 }) {
+  useMandateAlchemyTabCapture("holder", ladder.loading
+    ? { status: "loading" }
+    : { status: "ready", data: normalizeTransferJson({
+        error: ladder.error,
+        organization: activeOrganizationId ? nameOfOrg(activeOrganizationId) : null,
+        rows: ladder.error ? null : ladder.rows.map((row) => ({
+          ...ladderRowWords(row, row.rung === "org" && row.organization_id ? nameOfOrg(row.organization_id) : null),
+          holder_id: row.holder_id,
+          holder_name: row.holder_id ? agentsById[row.holder_id]?.name ?? null : null,
+          holder_type: row.holder_type,
+          version: row.holder_version_id,
+          enabled: row.is_enabled,
+          dropped_reason: row.dropped_reason ?? null,
+        })),
+      }) }, "configured_holders");
   if (ladder.loading) {
     return (
       <div className="flex items-center gap-2 px-1 py-2">

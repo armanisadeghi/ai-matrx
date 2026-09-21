@@ -13,6 +13,7 @@ const site: SiteListRow = {
   brand_id: "brand-1",
   created_at: "2026-08-01T00:00:00.000Z",
   created_by: "user-1",
+  custom_fields: {},
   deleted_at: null,
   description: "The example site",
   domain: "example.com",
