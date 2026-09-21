@@ -1,33 +1,36 @@
 // features/scopes/service/entityRows.ts
 //
-// THE GENERIC "CREATE A NEW ONE" NOW GOES THROUGH THE GENERIC DOOR.
+// THE GENERIC "CREATE A NEW ONE" — NOW OWNED BY THE PACKAGE, NOT BY THIS SEAM.
 //
-// `@ai-matrx/associations/core`'s `createEntityRowsService` writes the registered entity table
-// DIRECTLY — `dataSource.schema(info.schema).from(info.table).insert(...)` over PostgREST. That
-// was the one generic write path on the platform, and the doors-only ruling (VERIFIER-8 HIGH-3;
-// `platform` and `iam` are not client-writable) broke it silently for EVERY token whose table
-// those two schemas hold, one closure at a time, for forty-four tables before anybody looked.
-// The failure surfaces as a 42501 in a picker toast, which is exactly the kind of breakage a
-// release never notices.
+// HISTORY, because the shape of this file is the whole story. `@ai-matrx/associations`'s
+// `createEntityRowsService` used to write the registered entity's backing table DIRECTLY
+// (`dataSource.schema(info.schema).from(info.table).insert(...)`). That is the ONE generic
+// write path on the platform — one call site, the reference picker's "create a new one",
+// generic over every registry token — and the doors-only ruling (`platform` and `iam` are not
+// client-writable; every write goes through a named SECURITY DEFINER door) therefore broke it
+// SILENTLY for forty-four already-closed tables before anybody looked. The failure surfaces as
+// a `42501` in a picker toast, which no release notices.
 //
-// So the host binds these two names to `public.entity_row_create` / `public.entity_row_rename`
-// instead — one registry-driven SECURITY DEFINER door that resolves schema, table and title
-// column from `platform.entity_types` (the same registry the package's generated file is
-// emitted from), decides on the one ladder, and stamps `created_by` from `auth.uid()`. It also
-// refuses BY NAME two things the direct path attempted and failed at: a token that is access
-// machinery, and a token whose table has no `organization_id` column — which is
-// `iam.organizations`, where the direct path had been answering `42703 column organization_id
-// does not exist` for as long as the picker has passed an org. Creating an organization is
-// `public.org_create`.
+// DOORS-ONLY-3 bound these two names to `public.entity_row_create` / `public.entity_row_rename`
+// HERE, at the host, because the doors had to exist before the package could call them. That
+// was always meant to be temporary (THE SAME-SESSION LAW), and DOORS-ONLY-4 finished it: the
+// package itself now calls the two doors, its `AssociationsDataSource` port has lost the
+// `from`/`schema` table surfaces that existed only for the direct path, and its own suite
+// proves the door is called and that nothing is written when it refuses.
 //
-// THE PACKAGE SHOULD ADOPT THIS. `entityRows.ts` in `@ai-matrx/associations` is where this
-// belongs long-term (THE SAME-SESSION LAW); it is bound here because the door had to exist
-// before the package could call it, and a host seam is the honest place to cut over while the
-// package catches up. Until then the package's direct path is unused by this app.
+// So this file is a thin adapter over the one package store again — the shape every other
+// association operation in this app already has — rather than a second implementation of the
+// same two RPC calls drifting beside the package's.
+//
+// 🚨 ONE REAL DEFECT FIXED IN THE MOVE. The previous host binding sent
+// `p_organization_id: args.orgId ?? ""`, and `""` is not a uuid: with no organization the door
+// answered `22P02 invalid input syntax for type uuid` instead of its own sentence ("name the
+// organization this belongs to"). The package refuses the missing organization BEFORE the round
+// trip, with a sentence a person can act on.
 
 import type { CreateEntityRowArgs, EntityRowResult } from "@ai-matrx/associations/core";
 import type { EntityTypeToken } from "@ai-matrx/associations";
-import { supabase } from "@/utils/supabase/client";
+import { getAssociationsStore } from "@/features/scopes/host/associationsStore";
 
 export type { CreateEntityRowArgs, EntityRowResult } from "@ai-matrx/associations/core";
 
@@ -35,15 +38,7 @@ export async function createEntityRow(
   token: EntityTypeToken,
   args: CreateEntityRowArgs,
 ): Promise<EntityRowResult> {
-  const { data, error } = await supabase.rpc("entity_row_create", {
-    p_token: token,
-    p_title: args.title,
-    p_organization_id: args.orgId ?? "",
-  });
-  if (error) return { ok: false, error: error.message };
-  const row = data as { id?: string; title?: string } | null;
-  if (!row?.id) return { ok: false, error: "The door returned no record." };
-  return { ok: true, data: { id: row.id, title: row.title ?? args.title } };
+  return getAssociationsStore().entityRows.createEntityRow(token, args);
 }
 
 export async function renameEntityRow(
@@ -51,11 +46,5 @@ export async function renameEntityRow(
   id: string,
   title: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const { error } = await supabase.rpc("entity_row_rename", {
-    p_token: token,
-    p_id: id,
-    p_title: title,
-  });
-  if (error) return { ok: false, error: error.message };
-  return { ok: true };
+  return getAssociationsStore().entityRows.renameEntityRow(token, id, title);
 }

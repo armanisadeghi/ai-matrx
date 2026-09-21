@@ -90,8 +90,6 @@ export const associationsDataSource: AssociationsDataSource = {
       return res;
     });
   },
-  from: (table) => client.from(table),
-  schema: (name) => client.schema(name),
 };
 
 let store: AssociationsStore | null = null;
