@@ -64,6 +64,10 @@ import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import type { NormalizedCitation } from "@/features/agents/redux/execution-system/messages/message-citations";
 import { envelopeCacheFromEnvelopes } from "@ai-matrx/content-ir";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+import {
+  DECISION_ANSWERS_BLOCK_TYPE,
+  DECISION_ANSWERS_KIND,
+} from "@/features/content-ir/kinds/decision-answers";
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -92,6 +96,36 @@ const MEDIA_BLOCK_TYPES = new Set([
   "video_output",
   "file_output",
 ]);
+
+/**
+ * The typed message part a non-media render block commits, or null.
+ *
+ * A render block is normally either media (a part of its own) or markdown
+ * (folded into the surrounding text). A `decision_answers` block is neither:
+ * it IS the turn's content, a typed part with probabilities, and flattening it
+ * to text would throw away everything a comparison or a verdict reads. It
+ * carries the server's payload untouched — the same part the server persists —
+ * so the live record and the reloaded row say exactly the same thing.
+ */
+function typedPartFromRenderBlock(block: {
+  type: string;
+  data?: Record<string, unknown> | null;
+}): CxContentBlock | null {
+  if (block.type !== DECISION_ANSWERS_BLOCK_TYPE) return null;
+  const payload = block.data?.payload;
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return null;
+  }
+  // BOTH KEYS, ALWAYS: `__kind` is the kind marker and is data; `type` is how
+  // every message-part reader on the platform dispatches. The payload already
+  // carries both — they are restated so a producer that ever drops one cannot
+  // silently commit a part nothing recognises.
+  return {
+    ...(payload as Record<string, unknown>),
+    type: DECISION_ANSWERS_BLOCK_TYPE,
+    __kind: DECISION_ANSWERS_KIND,
+  } as unknown as CxContentBlock;
+}
 
 function renderBlockTypeToMediaKind(
   type: string,
@@ -261,6 +295,9 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
 
   let pendingText = "";
   const pendingMedia: CxMediaContent[] = [];
+  // Typed non-media parts (a decision turn's answers) found inside a text
+  // run, flushed in arrival order alongside the run's media.
+  const pendingTypedParts: CxContentBlock[] = [];
   // Complete content-ir envelopes carried by this text run's source render
   // blocks. Stamped on the flushed part as its IrEnvelopeCache so a reload
   // reuses them instead of re-parsing (content-ir Phase 5).
@@ -318,6 +355,10 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
       for (const m of pendingMedia) blocks.push(m);
       pendingMedia.length = 0;
     }
+    if (pendingTypedParts.length > 0) {
+      for (const p of pendingTypedParts) blocks.push(p);
+      pendingTypedParts.length = 0;
+    }
     pendingEnvelopes = [];
   };
 
@@ -362,6 +403,9 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
           if (MEDIA_BLOCK_TYPES.has(block.type)) {
             const mediaBlock = renderBlockToMediaBlock(block);
             if (mediaBlock) pendingMedia.push(mediaBlock);
+          } else {
+            const typedPart = typedPartFromRenderBlock(block);
+            if (typedPart) pendingTypedParts.push(typedPart);
           }
           // The run's raw text embeds this block's region source verbatim, so
           // its complete envelope is reusable on reload — collect it for the
@@ -387,6 +431,10 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
         if (MEDIA_BLOCK_TYPES.has(block.type)) {
           const mediaBlock = renderBlockToMediaBlock(block);
           if (mediaBlock) pendingMedia.push(mediaBlock);
+        } else if (typedPartFromRenderBlock(block)) {
+          pendingTypedParts.push(
+            typedPartFromRenderBlock(block) as CxContentBlock,
+          );
         } else {
           const reconstructed = reconstructBlockMarkdown({
             type: block.type,
@@ -431,6 +479,10 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
         // arrival order alongside surrounding text).
         const mediaBlock = renderBlockToMediaBlock(block);
         if (mediaBlock) pendingMedia.push(mediaBlock);
+      } else if (typedPartFromRenderBlock(block)) {
+        // A typed part keeps its exact spot in the turn.
+        flushPendingText();
+        blocks.push(typedPartFromRenderBlock(block) as CxContentBlock);
       } else if (typeof block.content === "string" && block.content.length > 0) {
         // Flush any preceding text so this typed block keeps its exact spot,
         // then emit it as its own part (same reconstruction Pass 2 uses).
@@ -524,6 +576,12 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
     if (MEDIA_BLOCK_TYPES.has(block.type)) {
       const mediaBlock = renderBlockToMediaBlock(block);
       if (mediaBlock) blocks.push(mediaBlock);
+    } else if (typedPartFromRenderBlock(block)) {
+      // A typed part (a decision turn's answers) is committed as itself. A
+      // block that is neither media nor text-carrying is dropped by the branch
+      // below — which is exactly how a decision reached the end of a live run
+      // and left the column empty.
+      blocks.push(typedPartFromRenderBlock(block) as CxContentBlock);
     } else if (typeof block.content === "string" && block.content.length > 0) {
       // DATA CONTRACT: the reconstructed markdown is pushed verbatim. We
       // only skip a completely empty reconstruction; no trim, no collapse.

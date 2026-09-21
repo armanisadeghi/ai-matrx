@@ -441,8 +441,8 @@ export interface AgentDefinitionMessage {
     // authors its questions HERE, in the message, because the state a decision
     // reasons over is the OTHER parts of the same message
     // (`common-docs/systems/agents/typed-messages/FEATURE.md`). Typed from the
-    // local contract until the generated `UserInputPart` union carries it —
-    // see the note at the top of `features/agents/decision-questions/types.ts`.
+    // generated `UserInputPart` union (re-exported by
+    // `features/agents/decision-questions/types.ts`), never a local copy.
     | DecisionQuestionsPart
   >;
 }

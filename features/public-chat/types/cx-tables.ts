@@ -8,6 +8,7 @@
 import type { Database } from "@/types/database.types";
 import type {
   AudioMediaPart,
+  DecisionAnswersPart,
   DocumentMediaPart,
   ImageMediaPart,
   VideoMediaPart,
@@ -159,6 +160,16 @@ export interface CxWebSearchContent {
 // R1) — inside a `CxTextContent`, so the model reads them natively and the UI
 // renders them by id. There is intentionally no `CxArtifactRefContent`.
 
+/**
+ * A decision turn's answers — the WHOLE content of that turn (a decision
+ * holder writes no prose at all).
+ *
+ * Not re-declared here: it is the server's own generated part contract, so a
+ * field the decision kind gains arrives with the next type generation instead
+ * of drifting into a second hand-written shape.
+ */
+export type CxDecisionAnswersContent = DecisionAnswersPart;
+
 /** Union of all content block types stored in cx_message.content */
 export type CxContentBlock =
   | CxTextContent
@@ -168,7 +179,8 @@ export type CxContentBlock =
   | CxToolResultContent
   | CxCodeExecContent
   | CxCodeResultContent
-  | CxWebSearchContent;
+  | CxWebSearchContent
+  | CxDecisionAnswersContent;
 
 /**
  * @deprecated Use CxContentBlock instead. Kept for backward compatibility.

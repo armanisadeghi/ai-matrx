@@ -532,6 +532,32 @@ export interface ConversationLabeledData {
   keywords?: string[];
 }
 
+export interface DecisionAnswerBlock {
+  __kind?: "decision_answer";
+  type: "noul" | "choice" | "score";
+  answer: boolean | number | string;
+  probability?: number | null;
+  probabilities?: Record<string, number> | null;
+  confidence: number;
+  legend?: Record<string, string> | null;
+}
+
+export interface DecisionUsageBlock {
+  input_tokens: number;
+  output_tokens: number;
+}
+
+export interface DecisionAnswersData {
+  type?: "decision_answers";
+  __kind: "decision_answers";
+  model: string;
+  method: "native" | "verbalized" | "verbalized_calibrated";
+  answers?: Record<string, DecisionAnswerBlock>;
+  unanswerable?: Record<string, string>;
+  usage: DecisionUsageBlock;
+  cost_usd: number;
+}
+
 export interface DictionaryPublishCompleteData {
   type?: "dictionary_publish_complete";
   status: string;
@@ -2173,6 +2199,7 @@ export type TypedDataPayload =
   | ContextPersistedData
   | ConversationIdData
   | ConversationLabeledData
+  | DecisionAnswersData
   | DictionaryPublishCompleteData
   | ExtractionIndexCompleteData
   | ExtractionIndexProgressData
@@ -3896,6 +3923,15 @@ export interface CategorizationResultRenderBlock {
   metadata?: Record<string, unknown>;
 }
 
+/** A decision turn's answers — registered kind `decision_answers`. The LIVE arrival of the same part the assistant message persists, so a runner or a battle column shows the decision as it lands instead of only after a reload. `content` is null: the frontend commits the payload as a real `decision_answers` message part (the same part the server persists), never as reconstructed markdown. */
+export interface DecisionAnswersRenderBlock {
+  type: "decision_answers";
+  /** Always null — a non-null content would leak into committed message parts. The payload lives on `data`. */
+  content: null;
+  data: DecisionAnswersData;
+  metadata?: Record<string, unknown>;
+}
+
 /** Questionnaire to display — alias of the registered `questionnaire` kind. */
 export interface DisplayQuestionnaireRenderBlock {
   type: "display_questionnaire";
@@ -4036,10 +4072,11 @@ export type ServerShapeRenderBlock =
   | SearchResultsRenderBlock
   | FetchResultsRenderBlock
   | CategorizationResultRenderBlock
+  | DecisionAnswersRenderBlock
   | DisplayQuestionnaireRenderBlock;
 
 export const SERVER_SHAPE_RENDER_BLOCK_TYPES = new Set<string>([
-  "search_results", "fetch_results", "categorization_result", "display_questionnaire",
+  "search_results", "fetch_results", "categorization_result", "decision_answers", "display_questionnaire",
 ]);
 
 /** Deliberately untyped catch-alls. */

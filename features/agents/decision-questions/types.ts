@@ -6,25 +6,39 @@
  * answer about the STATE, and the state is the OTHER parts of the same
  * message — never something this part carries.
  *
- * 🚨 TEMPORARY LOCAL TYPE. The server lane is adding `decision_questions` to
- * the OpenAPI `UserInputPart` union. WHEN `types/python-generated/api-types.ts`
- * carries it, delete `DecisionQuestionsPart` below and re-export
- * `Extract<UserInputPart, { __kind: "decision_questions" }>` from
- * `features/agents/types/message-types.ts` exactly like `TextBlock` does —
- * this file must never outlive the generated union.
+ * THE PART ITSELF IS THE SERVER'S. `DecisionQuestionsPart` below is
+ * `Extract<UserInputPart, { type: "decision_questions" }>` from the generated
+ * OpenAPI union, exactly like `TextBlock` — the local duplicate that stood
+ * here until the server lane landed the part in that union is gone, so a
+ * field the server adds arrives with the next `pnpm sync-types` instead of
+ * drifting. What stays local is the AUTHORING ergonomics the wire contract
+ * deliberately does not carry: the per-type criteria shapes (the generated
+ * `criteria` is the union of all three), the constructor, and the
+ * loose-record readers.
  */
+
+import type { UserInputPart } from "@/features/agents/types/request.types";
 
 /** `noul` is the platform's yes/no answer type (Yes/No in the UI). */
 export type DecisionQuestionType = "noul" | "choice" | "score";
 
-/** Yes/No clarifiers. Both optional — the instruction may stand alone. */
-export interface NoulCriteria {
-  true?: string | null;
-  false?: string | null;
-}
+/**
+ * Yes/No clarifiers. Both optional — the instruction may stand alone.
+ *
+ * A present key carries a real description: the server's contract is
+ * `criteria: dict[str, str]`, so a null value is REFUSED (422), not read as
+ * "no description". Omit the key instead.
+ */
+export type NoulCriteria = {
+  true?: string;
+  false?: string;
+  // A TYPE, never an interface: only a type alias carries the implicit index
+  // signature that makes it assignable to the wire's `dict[str, str]`, and an
+  // interface here forced every writer through a cast.
+};
 
-/** 2–255 named options, each with an optional description. */
-export type ChoiceCriteria = Record<string, string | null>;
+/** 2–255 named options, each with a description (the server requires one). */
+export type ChoiceCriteria = Record<string, string>;
 
 /** 2–10 ordered levels, lowest first. */
 export type ScoreCriteria = string[];
@@ -46,15 +60,17 @@ export interface DecisionQuestionSpec {
  * aidream's `reconstruct_content` reads `block.get("type", "text")` and its
  * `_content_type` reads `type` alone, so a part stored with only `__kind`
  * arrives at the provider layer as an empty TEXT block and the decision is
- * never found (`DecisionQuestionsMissing`). The server's own part model
- * (`matrx_ai/db/message_parts.py::DecisionQuestionsPart`) declares both, so
- * every writer here declares both too. Build one with `newDecisionQuestionsPart`.
+ * never found (`DecisionQuestionsMissing`). The generated part makes `__kind`
+ * optional because the server defaults it; every writer HERE declares both,
+ * which is what `newDecisionQuestionsPart` is for.
  */
-export interface DecisionQuestionsPart {
-  __kind: "decision_questions";
-  type: "decision_questions";
-  questions: DecisionQuestionSpec[];
-}
+export type DecisionQuestionsPart = Extract<
+  UserInputPart,
+  { type: "decision_questions" }
+>;
+
+/** One question exactly as the server declares it on the wire. */
+export type DecisionQuestionWire = DecisionQuestionsPart["questions"][number];
 
 export const DECISION_QUESTIONS_KIND = "decision_questions" as const;
 

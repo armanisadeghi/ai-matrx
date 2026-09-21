@@ -237,6 +237,7 @@ import { StreamProfiler } from "@/utils/stream-profiler";
 import { makePartialKindStalenessGate } from "@ai-matrx/content-ir/wire";
 import { prepareInboundRenderBlock } from "../utils/inbound-render-block";
 import { progressDataRenderBlock } from "@/features/content-ir/redux/progress-data-block";
+import { DECISION_ANSWERS_BLOCK_TYPE } from "@/features/content-ir/kinds/decision-answers";
 import { assembleMessageParts } from "../utils/assemble-cx-content-blocks";
 import { materializeMessageArtifacts } from "@/features/canvas/materialization/materializeMessageArtifacts";
 import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
@@ -1530,6 +1531,32 @@ export async function processStream({
           if (unified.kind === "image" && !isStreamingPartial) {
             dispatch(openOverlay({ overlayId: "imagePeekHost" }));
           }
+        } else if (dataType === DECISION_ANSWERS_BLOCK_TYPE) {
+          // A DECISION ARRIVES LIVE, exactly like an image or a TTS render.
+          // The server emits the same `decision_answers` payload it persists
+          // on the assistant message, and this block is byte-for-byte the one
+          // `normalizeContentBlocks` builds on reload — one renderer, one
+          // shape, whether the turn just ran or was loaded. Until 2026-09-21
+          // nothing was emitted at all, so an agent-battle column read its
+          // content parts, found none, and claimed the run "finished without
+          // writing an answer" over a paid, successful decision.
+          const blockId = `decision_answers_${totalEvents}`;
+          dataRenderBlockId = blockId;
+          dispatch(
+            upsertRenderBlock({
+              requestId,
+              block: {
+                blockId,
+                blockIndex: renderBlockEvents,
+                type: DECISION_ANSWERS_BLOCK_TYPE,
+                status: "complete",
+                content: null,
+                data: {
+                  payload: d as unknown as Record<string, unknown>,
+                },
+              },
+            }),
+          );
         } else {
           const blockType = [
             "audio_output",
