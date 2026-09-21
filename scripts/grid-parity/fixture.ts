@@ -216,6 +216,28 @@ async function fieldsOf(client: SupabaseClient, tableId: string): Promise<FieldR
   }));
 }
 
+/**
+ * The organization this fixture is built in. The RPC refuses an absent one and nothing
+ * here may invent one, so the script READS the admin identity's memberships and refuses
+ * loudly when there is not exactly one obvious answer — a fixture that silently lands in
+ * a different tenant than the last run is a comparison whose subject moved.
+ */
+async function fixtureOrganizationId(client: SupabaseClient): Promise<string> {
+  const envOrg = process.env.MATRX_FIXTURE_ORGANIZATION_ID;
+  if (envOrg) return envOrg;
+  // `mbr_for_user` is the canonical membership read the app itself uses
+  // (features/organizations/service/membershipsService.ts) — never a raw table select.
+  const { data, error } = await client.rpc("mbr_for_user", { p_container_type: "organization" });
+  if (error) throw new Error(`could not read the admin identity's memberships: ${error.message}`);
+  const rows = (Array.isArray(data) ? data : []) as Array<{ container_id?: string | null }>;
+  const ids = [...new Set(rows.map((r) => String(r.container_id)).filter((v) => v && v !== "null"))];
+  if (ids.length === 1) return ids[0]!;
+  throw new Error(
+    `the admin test identity has ${ids.length} organization membership(s), so this script cannot ` +
+      `choose one. Name it: MATRX_FIXTURE_ORGANIZATION_ID=<uuid> node …/fixture.ts`,
+  );
+}
+
 async function main(): Promise<void> {
   const rowsWanted = Number(
     process.argv.includes("--rows")
@@ -229,7 +251,14 @@ async function main(): Promise<void> {
   let tableId = await findTable(client);
 
   if (!tableId) {
+    // The create door takes an EXPLICIT organization since 2026-09-20 and refuses a
+    // NULL one with ORGANIZATION_REQUIRED (lane DATA-CREATE-FIX). A script has no
+    // organization picker, so it names the one membership the admin test identity is
+    // to build fixtures in, read from the live membership list — never defaulted,
+    // never the personal org by implication.
+    const organizationId = await fixtureOrganizationId(client);
     const { data, error } = await client.rpc("create_new_user_table_dynamic", {
+      p_organization_id: organizationId,
       p_table_name: FIXTURE_TABLE_NAME,
       p_description:
         "Fixed fixture for the /data grid before/after comparison. Safe to delete; the harness rebuilds it.",
