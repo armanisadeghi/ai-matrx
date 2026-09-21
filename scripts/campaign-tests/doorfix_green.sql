@@ -49,6 +49,7 @@ declare
   c_dana_j  constant text := '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}';
   v_org     uuid := gen_random_uuid();
   v_home    uuid;
+  v_notes   uuid;
   v_tbl     uuid;
   v_inv     uuid;
   v_f_name  uuid;
@@ -84,7 +85,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZ DOOR-FIX Green', 'zz-doorfix-green-' || substr(v_org::text, 1, 8), 'ZDG', c_admin);
+  values (v_org, 'Harbor Dental Group — Lakeside Office', 'harbor-dental-lakeside-' || substr(v_org::text, 1, 8), 'HDL', c_admin);
   -- A seat is a PERSON, and a person reaches an organization only through a membership.
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
@@ -98,8 +99,8 @@ begin
   values (v_org, null, jsonb_build_object('name', 'Home')) returning id into v_home;
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'ZZ Person', 'slug', 'zz_doorfix_person', 'type', 'entity',
-    'label_singular', 'Person', 'label_plural', 'People', 'title_field', 'pname',
+    'name', 'Patients', 'slug', 'patients', 'type', 'entity',
+    'label_singular', 'Patient', 'label_plural', 'Patients', 'title_field', 'pname',
     'display', 'page', 'weight', 'light', 'ordered', false, 'row_order', 'sorted',
     'default_sort', '[]'::jsonb, 'agent_writable', true, 'retention_days', 365,
     'fields', jsonb_build_array(jsonb_build_object('name', 'pname'),
@@ -179,8 +180,8 @@ begin
 
   -- 1d. A Field a formula reads is REFUSED BY THE DOOR, and the refusal NAMES the formula.
   v_inv := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Invoice','slug','zz_doorfix_invoice','type','entity',
-    'label_singular','Invoice','label_plural','Invoices','title_field','amount_usd',
+    'name','Statements','slug','statements','type','entity',
+    'label_singular','Statement','label_plural','Statements','title_field','amount_usd',
     'display','page','weight','light','ordered',false,'row_order','sorted',
     'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','amount_usd'),
@@ -229,7 +230,7 @@ begin
   if v_caught is null then
     raise exception '1f: the door deleted a Home that four tables live in. T7''s fourth clause.';
   end if;
-  if v_caught not ilike '%ZZ Person%' then
+  if v_caught not ilike '%Patients%' then
     raise exception '1f: the refusal does not name the tables living there: %', v_caught;
   end if;
 
@@ -242,8 +243,8 @@ begin
   values (v_org, null, jsonb_build_object('name','Home 2')) returning id into v_home2;
   perform set_config('role', 'authenticated', true);
   v_tbl2 := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ Cascader','slug','zz_doorfix_cascader','type','entity',
-    'label_singular','C','label_plural','Cs','title_field','pname','display','page',
+    'name','Chart Notes','slug','chart_notes','type','entity',
+    'label_singular','Chart Note','label_plural','Chart Notes','title_field','pname','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
     'fields', jsonb_build_array(jsonb_build_object('name','pname')),
@@ -291,6 +292,27 @@ begin
 
   -- 2b. A value on a key that is NOT a declared Field cannot carry an envelope (VAL-1), so it
   --     is kept in _retired with its reason rather than dropped in silence.
+  --
+  -- FIELD-TRUTH 2026-09-21: THE CLAUSE STANDS; ITS FIXTURE MOVED TO A TABLE WHERE THE SHAPE
+  -- IS STILL REACHABLE. This used to put `nickname` on a record of Patients, a table whose
+  -- Field rows ARE its columns — and `custom._undeclared_key_guard` refuses that now, which
+  -- is the guard working: *"Patient has no field called "nickname", so there is nowhere to
+  -- keep that value"*. A value nobody can see was the defect, not a feature to preserve.
+  -- What VAL-1 is about has not moved an inch: a DOCUMENT table (`columns: free_form`) — a
+  -- clinic's free-text intake notes, whose shape is the author's and not a column list —
+  -- can still carry a key no Field declares, and a merge of two of them must keep the
+  -- loser's value with its reason rather than drop it in silence. That is asked here.
+  v_notes := custom.table_declare(v_org, jsonb_build_object(
+    'name','Intake Notes','slug','intake_notes','type','entity',
+    'label_singular','Intake Note','label_plural','Intake Notes','title_field','pname',
+    'display','page','weight','light','ordered',false,'row_order','sorted',
+    'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
+    'columns','free_form',
+    'fields', jsonb_build_array(jsonb_build_object('name','pname')),
+    'parent_id', v_home::text));
+  perform custom.field_declare(v_org, v_notes, jsonb_build_object('key','pname','label','Patient','type','text'));
+  v_a := custom.record_write(v_org, v_notes, jsonb_build_object('pname','Chen'));
+  v_b := custom.record_write(v_org, v_notes, jsonb_build_object('pname','Chen'));
   perform custom.record_update(v_org, v_a, jsonb_build_object('nickname','Chenny'));
   perform custom.record_update(v_org, v_b, jsonb_build_object('nickname','Chen-Chen'));
   v_res := custom.migrate_merge(v_org, v_a, v_b, 'green 2b');
