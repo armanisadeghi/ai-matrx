@@ -52,6 +52,14 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/chat/voice", surface: "matrx-user/chat-voice" },
   { prefix: "/chat/a/", surface: "matrx-user/chat" },
   { prefix: "/chat", surface: "matrx-user/chat" },
+  // The in-app door onto a person's staff. It mounts the SAME chat room as
+  // `/chat`, and that room opts out of launch-time surface adoption
+  // (`runtime: { surfaceName: null }`), so this row is the ONLY thing that puts
+  // `client.surface` on the wire for a staff turn. Without it the Holder
+  // resolves against `matrx-user/chat` — or nothing — and answers a person at
+  // their desk with the brevity it uses for a text message. The live
+  // `ui.ui_surface` row carries the words that say otherwise.
+  { prefix: "/staff", surface: "matrx-user/staff" },
   { prefix: "/code-editor", surface: "matrx-user/code-editor" },
   { prefix: "/code", surface: "matrx-user/code-editor" },
   { prefix: "/smart-code-editor", surface: "matrx-user/smart-code-editor" },

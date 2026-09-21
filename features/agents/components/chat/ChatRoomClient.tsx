@@ -91,6 +91,7 @@ import {
   selectWorkingDocEntry,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
+import type { SourceFeature } from "@/types/python-generated/source-attribution";
 
 interface ChatRoomClientProps {
   agentId: string;
@@ -170,12 +171,25 @@ interface ChatRoomClientProps {
    * interview (census W1, 2026-09-15).
    */
   conversationMaterialization?: "existing" | "reserved";
+  /**
+   * The product feature these turns are attributed to — `source_feature` on
+   * the wire. Defaults to `"chat"`, which is what every room on `/chat` is.
+   *
+   * A room that is NOT the chat route passes its own: `/staff` is
+   * `"personal-staff"`. The value is an aidream allow-list
+   * (`aidream/services/conversation_context/source_attribution.py`), and an
+   * UNREGISTERED slug is refused outright by `AgentStartRequest` — so a new
+   * one is registered there first and only then passed here.
+   */
+  sourceFeature?: SourceFeature;
 }
 
 const defaultConversationHref = (conversationId: string) =>
   `/chat/${conversationId}`;
 
-const SOURCE_FEATURE = "chat";
+/** The default attribution for a room on `/chat`. A room elsewhere passes
+ *  its own through the `sourceFeature` prop — see its docstring. */
+const SOURCE_FEATURE: SourceFeature = "chat";
 const CHAT_INITIAL_MESSAGE_LIMIT = 12;
 
 /**
@@ -203,6 +217,7 @@ export function ChatRoomClient({
   variablesPanelStyle,
   sandboxBinding = null,
   conversationMaterialization = "existing",
+  sourceFeature = SOURCE_FEATURE,
 }: ChatRoomClientProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -287,7 +302,7 @@ export function ChatRoomClient({
   // and owns the conversationId.
   const { conversationId: liveConversationId } = useAgentLauncher(agentId, {
     surfaceKey,
-    sourceFeature: SOURCE_FEATURE,
+    sourceFeature,
     // Mandate-driven room: the run goes through the server's mandate door.
     ...(mandateKey ? { mandateKey } : {}),
     ready: !isInitializing && isFreshRoute,
