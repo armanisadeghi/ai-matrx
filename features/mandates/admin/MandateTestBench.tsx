@@ -1,5 +1,8 @@
 "use client";
 
+import { normalizeTransferJson } from "@ai-matrx/kit/content-transfer";
+import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
+
 /**
  * Owner bench for mandates — "is this change going to break the agent?"
  *
@@ -632,6 +635,7 @@ export function MandateTestBench({
   const store = useAppStore();
   const [exemplars, setExemplars] = useState<MandateExemplarRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exemplarReadError, setExemplarReadError] = useState<string | null>(null);
   const [defaultAgentId, setDefaultAgentId] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<CandidateDraft[]>(() =>
     presetLatestCandidate ? [latestCandidate()] : [],
@@ -658,10 +662,11 @@ export function MandateTestBench({
 
   function loadExemplars() {
     return fetchMandateExemplars(mandate.id)
-      .then(setExemplars)
-      .catch((error: unknown) =>
-        toast.error(`Failed to load test cases: ${describeError(error)}`),
-      )
+      .then((rows) => { setExemplars(rows); setExemplarReadError(null); })
+      .catch((error: unknown) => {
+        setExemplarReadError(describeError(error));
+        toast.error(`Failed to load test cases: ${describeError(error)}`);
+      })
       .finally(() => setLoading(false));
   }
 
@@ -962,6 +967,17 @@ export function MandateTestBench({
       toast.error(`Failed to remove test case: ${describeError(error)}`);
     }
   }
+
+  useMandateAlchemyTabCapture("test", loading
+    ? { status: "loading" }
+    : { status: "ready", data: normalizeTransferJson({
+        test_cases: exemplarReadError ? null : exemplars,
+        test_case_read_error: exemplarReadError,
+        candidates,
+        running,
+        results: batch,
+        unsaved_test_case: adding ? { label: newLabel, variables: newVariables, human_input: newUserInput } : null,
+      }) }, "comparison");
 
   return (
     <div className="min-w-0 space-y-6">

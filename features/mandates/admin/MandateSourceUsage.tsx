@@ -1,5 +1,8 @@
 "use client";
 
+import { normalizeTransferJson } from "@ai-matrx/kit/content-transfer";
+import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
+
 /**
  * SOURCE & USAGE — Defined in / Used by, one copyable location per row.
  *
@@ -143,6 +146,15 @@ export function MandateSourceUsage({
   const usedBy = report?.used_by ?? [];
   const usesFallbackDeclaration =
     report !== null && definedIn.length === 0 && fallback.declaration !== null;
+
+  useMandateAlchemyTabCapture("source", loading || !organizationId && !organizationUnanswered
+    ? { status: "loading" }
+    : { status: "ready", data: normalizeTransferJson({
+        mandate_key: mandateKey,
+        report,
+        error: error ?? (organizationUnanswered ? "Organization context is unavailable; references have not been read." : null),
+        fallback_declaration: usesFallbackDeclaration ? fallback : null,
+      }) }, "references");
 
   return (
     <div className="min-w-0 space-y-4">

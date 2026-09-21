@@ -1,5 +1,8 @@
 "use client";
 
+import { normalizeTransferJson } from "@ai-matrx/kit/content-transfer";
+import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
+
 /**
  * Mandate workbench drawer — the panel that opens when a mandate row is clicked.
  *
@@ -1774,6 +1777,25 @@ export function MandateDetailView({
   const verdictsLoading =
     row.codeTruth?.resolution === "code_declaration_found" &&
     liveVerdictState === null;
+
+  useMandateAlchemyTabCapture("diagnostics", verdictsLoading
+    ? { status: "loading" }
+    : { status: "ready", data: normalizeTransferJson({
+        health: row.health,
+        code_report: row.codeTruth,
+        code_report_status: row.codeTruth ? "Read" : "Unavailable",
+        variable_flow: liveVerdictState,
+        provision_key: row.provisionKey,
+        code_contract_check: row.provisionKey ? "Not applicable: provision inputs are checked through holder matching" : row.codeTruth?.drift ?? "Not yet evaluated",
+      }) }, "diagnostics");
+  useMandateAlchemyTabCapture("permissions", {
+    status: "ready", data: normalizeTransferJson({
+      mandate_context_gate_closed: row.contextGateClosed,
+      holder_context_gate_closed: row.holderContextClosed,
+      effective_context_gate_closed: row.contextClosedEffective,
+      required_context_policies: row.requiredContextPolicyKeys,
+    }),
+  }, "context_gate");
 
   if (section) {
     return (
