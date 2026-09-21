@@ -455,6 +455,12 @@ export function parseFeedbackUserMessageJson(
     return null;
   }
   if (typeof o.sender_type !== "string") return null;
+  // `custom_fields` is a NOT NULL jsonb column and every RPC that feeds this
+  // parser returns `row_to_json(<the whole row>)`, so a payload without it is
+  // not a `feedback_user_messages` row — reject it like any other bad field
+  // rather than inventing a value.
+  if (!("custom_fields" in o)) return null;
+  const customFields: Json = o.custom_fields;
   if (!Array.isArray(o.image_file_ids)) return null;
   const imageFileIds: string[] = [];
   for (const x of o.image_file_ids) {
@@ -485,6 +491,7 @@ export function parseFeedbackUserMessageJson(
       feedback_id: o.feedback_id,
       content: o.content,
       created_at: o.created_at,
+      custom_fields: customFields,
       email_sent: o.email_sent,
       sender_name: senderName,
       sender_type: o.sender_type,

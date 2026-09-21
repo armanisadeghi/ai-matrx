@@ -83,6 +83,7 @@ function noteRow(id: string, label: string) {
     content_hash: null,
     created_at: STAMP,
     created_by: USER,
+    custom_fields: {},
     deleted_at: null,
     file_path: null,
     folder_id: null,

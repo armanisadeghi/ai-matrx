@@ -51,7 +51,7 @@ async function main() {
   });
 
   const home = await store.personKernelId();
-  if (!home.ok) { limit("personKernelId", home.data as unknown as string ?? JSON.stringify(home), "a home kernel id"); throw new Error("no home kernel"); }
+  if (!home.ok) { limit("personKernelId", home.error.message, "a home kernel id"); throw new Error("no home kernel"); }
   const homeRec = await store.recordWrite({ table_id: home.data, data: { name: "The Offside Rule home" } });
   if (!homeRec.ok) { limit("home record write", JSON.stringify(homeRec), "a home record to parent the table under"); throw new Error("no home record"); }
   const homeId = homeRec.data;

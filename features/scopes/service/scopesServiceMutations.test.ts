@@ -106,6 +106,7 @@ const scopeTypeRow = {
   color: "blue",
   created_at: STAMP,
   created_by: SIGNED_IN_USER,
+  custom_fields: {},
   default_variable_keys: ["client_name"],
   deleted_at: null,
   description: "Companies we serve",
@@ -127,6 +128,7 @@ const scopeTypeRow = {
 const scopeRow = {
   created_at: STAMP,
   created_by: SIGNED_IN_USER,
+  custom_fields: {},
   deleted_at: null,
   description: "Enterprise account",
   id: SCOPE_ID,
@@ -151,6 +153,7 @@ const contextItemRow = {
   created_at: STAMP,
   created_by: SIGNED_IN_USER,
   custom_component: null,
+  custom_fields: {},
   deleted_at: null,
   depends_on: [],
   description: "",
