@@ -1,0 +1,5 @@
+-- chair-step: removes the declare-time check that a choice-list Status can hold the words
+-- "booked" and "cancelled". Removing it does NOT make such a page work — the refusal simply
+-- moves back to custom.booking_confirm, where a visitor meets it after her slot is already
+-- held. Re-apply the booking_declare body from
+-- `migrations/campaign/booking_a_booking_is_a_record_with_a_held_slot.sql` to restore it.

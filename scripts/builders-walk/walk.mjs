@@ -127,25 +127,64 @@ async function useOrganization(page, target) {
 
   // The picker is whatever is on screen: the inline notice when nothing is
   // chosen, the avatar menu when something wrong is. Both render the same rows.
-  const visibleRow = () => page.locator(`button:visible:has-text("${target.slug}")`).first();
-  if ((await visibleRow().count()) === 0) {
+  //
+  // 🚨 THE SLUG IS A SUFFIX, NOT A SUBSTRING. Three organizations are called
+  // "Ironclad Mobile Mechanic" and their slugs are `ironclad-mobile-mechanic`,
+  // `ironclad-mobile-mechanic-719980a1` and `ironclad-mobile-mechanic-9ffd844b`.
+  // Playwright's `has-text` is a substring match, so asking for the first row
+  // containing the slug picked a DIFFERENT organization — which is crew F's own
+  // duplicate-organization hazard, hit by a script this time instead of a person.
+  // The row is matched on its slug EXACTLY.
+  const clickBySlug = async () => {
+    // AND THE SAME LIST IS IN THE DOM TWICE — the inline notice's and the
+    // avatar popover's, the second rendered but hidden. Counting over all of
+    // them landed on the hidden copy's row and every click timed out against an
+    // invisible button, so only the VISIBLE rows are counted.
+    const index = await page.evaluate(({ slug, name }) => {
+      const rows = Array.from(document.querySelectorAll("button[role=option]")).filter(
+        (b) => b.getClientRects().length > 0,
+      );
+      const spansOf = (b) =>
+        Array.from(b.querySelectorAll("span")).map((s) => (s.textContent || "").trim());
+      const bySlug = rows.findIndex((b) => spansOf(b).includes(slug));
+      if (bySlug >= 0) return bySlug;
+      // THE PICKER DRAWS THE SLUG ONLY WHERE IT IS NEEDED — on rows whose NAME
+      // another row also carries. "Rincon Plumbing Co" is unique (its branches
+      // are separately named), so it has no slug on screen and matching on the
+      // slug alone found nothing. Fall back to the name, and only when exactly
+      // ONE row carries it: an ambiguous name must still fail loudly rather
+      // than walk into the wrong organization.
+      // Picking the FIRST exact-name row is safe even when the list holds more
+      // than one copy of it, because `onTarget()` below re-opens THIS TABLE and
+      // a table id belongs to exactly one organization: landing in the wrong one
+      // fails there, loudly, instead of the walk quietly reporting somebody
+      // else's data. The slug match above is still preferred wherever the
+      // picker draws one.
+      return rows.findIndex((b) => spansOf(b).includes(name));
+    }, { slug: target.slug, name: target.orgName });
+    if (index < 0) return false;
+    const row = page.locator("button[role=option]:visible").nth(index);
+    await row.scrollIntoViewIfNeeded({ timeout: 30000 });
+    await row.click({ timeout: 60000 });
+    await page.waitForTimeout(6000);
+    return true;
+  };
+
+  if (!(await clickBySlug())) {
     for (const opener of [
       page.getByRole("button", { name: /Choose org/i }).first(),
       page.getByRole("button", { name: /admin@admin\.com/i }).first(),
-      page.locator('[aria-label*="organization" i]').first(),
     ]) {
       if (await opener.isVisible().catch(() => false)) {
         await opener.click();
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(2500);
         break;
       }
     }
+    if (!(await clickBySlug())) {
+      throw new Error(`the organization picker offered no single row for ${target.orgName} (${target.slug})`);
+    }
   }
-  const row = visibleRow();
-  await row.waitFor({ state: "visible", timeout: 60000 });
-  await row.scrollIntoViewIfNeeded({ timeout: 30000 });
-  await row.click({ timeout: 60000 });
-  await page.waitForTimeout(6000);
 
   if (!(await onTarget())) {
     throw new Error(`could not get into ${target.orgName} (${target.slug})`);

@@ -1,0 +1,4 @@
+-- chair-step: restores custom.agg_record_name to the body whose fallback could return the
+-- store's own `_values` envelope as a record's NAME, which is how a 50-pledge donor summary
+-- came out as 6,000 characters of raw JSON. Re-apply the agg_record_name body from
+-- `migrations/campaign/digests_the_cadence_the_quiet_hours_and_the_real_digest.sql`.
