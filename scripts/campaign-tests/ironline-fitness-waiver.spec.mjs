@@ -33,19 +33,96 @@ mkdirSync(OUT, { recursive: true });
 const ROUTE = `/data-v2/${fixture.tableId}`;
 
 /** `pnpm dev-login` mints this session's own host and a single-use nonce, and prints the URL. */
-function loginUrl(next) {
+async function loginUrl(next) {
   const printed = execSync(`pnpm -s dev-login ${JSON.stringify(next)}`, { cwd: ROOT, encoding: "utf8" });
   const line = printed.split("\n").find((l) => l.includes("OPEN"));
   if (!line) throw new Error(`dev-login printed no URL:\n${printed}`);
-  return line.slice(line.indexOf("http")).trim();
+  const url = new URL(line.slice(line.indexOf("http")).trim());
+  // THE ONE DEV SERVER MOVES. `pnpm preview:start` is machine-wide and another agent may
+  // have restarted it on a different port since `dev-login` cached one; a spec that trusted
+  // the printed port died on ERR_CONNECTION_REFUSED and looked like a product failure.
+  for (const port of [url.port, "3001", "3000"]) {
+    const probe = new URL(url);
+    probe.port = port;
+    const reachable = await fetch(`${probe.origin}/api/whoami`, { redirect: "manual" })
+      .then(() => true)
+      .catch(() => false);
+    if (reachable) {
+      probe.search = url.search;
+      return probe.toString();
+    }
+  }
+  throw new Error(`no dev server answered on ${url.hostname} — start it with \`pnpm preview:start\``);
+}
+
+/**
+ * PUT THE ROSTER BACK THE WAY THE GYM KEEPS IT, before the browser asserts anything.
+ *
+ * MEASURED, and it is the trap this file exists to avoid: the first run clicked Grace's
+ * unanswered box to `true` and left it there, so the SECOND run clicked a box that was
+ * already ticked, correctly unticked it, and then failed its own assertion that a click
+ * makes a tick. The test was wrong and the product was right. A test that passes only on a
+ * virgin fixture will lie the next time somebody runs it.
+ *
+ * Two answers to that: this re-seeds the six members through the store's own write door
+ * before every run, and clauses 3 and 4 assert the value FLIPS rather than that it lands on
+ * a fixed word — true whichever way the box started.
+ */
+const ROSTER = {
+  "Priya Raghunathan": true,
+  "Marcus Oyelaran": true,
+  "Dana Whitfield": false,
+  "Tomas Ferreira": false,
+  // Nobody has asked these two. `null` is how the write door is told to hold no answer.
+  "Grace Lindqvist": null,
+  "Andre Boateng": null,
+};
+
+async function reseedTheRoster() {
+  const { config } = await import("dotenv");
+  config({ path: resolve(ROOT, ".env.local"), override: true });
+  const { createClient } = await import("@supabase/supabase-js");
+  const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
+  const signedIn = await sb.auth.signInWithPassword({
+    email: process.env.AI_ADMIN_USERNAME, password: process.env.AI_ADMIN_PASSWORD,
+  });
+  if (signedIn.error) throw new Error(`reseed sign-in failed: ${signedIn.error.message}`);
+  const { data, error } = await sb.schema("custom").rpc("read_records", {
+    p_organization_id: fixture.orgId, p_table_id: fixture.tableId,
+    p_by_id: false, p_limit: 50, p_offset: 0,
+  });
+  if (error) throw new Error(`reseed could not read the roster: ${error.code} ${error.message}`);
+  let changed = 0;
+  for (const row of data) {
+    const want = ROSTER[row.document?.member];
+    if (want === undefined) continue;
+    const held = row.document?.waiver_signed ?? null;
+    if (held === want) continue;
+    // THE MAIN DATABASE IS SHARED WITH EVERY OTHER LANE, and a write can lose a race with
+    // somebody else's migration taking a lock (57014 / 55P03). That is contention, not the
+    // store misbehaving, so a timeout is retried rather than reported as a failed fixture.
+    let put = null;
+    for (let attempt = 1; attempt <= 5; attempt += 1) {
+      put = await sb.schema("custom").rpc("record_update", {
+        p_organization_id: fixture.orgId, p_record_id: row.id, p_patch: { waiver_signed: want },
+      });
+      if (!put.error || !/timeout|lock/i.test(put.error.message)) break;
+      console.log(`  ${row.document?.member}: ${put.error.message} — retry ${attempt}/5`);
+      await new Promise((r) => setTimeout(r, 4000 * attempt));
+    }
+    if (put.error) throw new Error(`reseed could not set ${row.document?.member}: ${put.error.message}`);
+    changed += 1;
+  }
+  console.log(`the roster is back to 2 signed, 2 unsigned, 2 never asked (${changed} put back)`);
 }
 
 const fail = (why) => { console.error(`\nFAILED — ${why}`); process.exitCode = 1; };
 
 async function main() {
+  await reseedTheRoster();
   const browser = await chromium.launch({ headless: true });
   const page = await (await browser.newContext({ viewport: { width: 1500, height: 950 } })).newPage();
-  const url = loginUrl(ROUTE);
+  const url = await loginUrl(ROUTE);
   const origin = new URL(url).origin;
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120000 });
 
@@ -167,43 +244,50 @@ async function main() {
 
   console.log("\n— 3. clicking answers it —");
   const grace = waiverBox("Grace Lindqvist");
+  const graceBefore = (await cellOf("Grace Lindqvist")).checked;
   await grace.scrollIntoViewIfNeeded();
   await grace.click();
-  await page.waitForTimeout(6000);
-  const graceAfter = await cellOf("Grace Lindqvist");
-  console.log(`  Grace Lindqvist after a click: ${JSON.stringify(graceAfter)}`);
-  if (graceAfter.checked !== "true") fail("clicking the tick box did not answer it");
+  await page.waitForTimeout(7000);
+  const graceAfter = (await cellOf("Grace Lindqvist")).checked;
+  console.log(`  Grace Lindqvist: ${graceBefore} -> ${graceAfter}`);
+  if (graceAfter === graceBefore) fail("clicking the tick box did not answer it");
 
   console.log("\n— 4. Space toggles it from the keyboard —");
   const tomas = waiverBox("Tomas Ferreira");
+  const tomasBefore = (await cellOf("Tomas Ferreira")).checked;
   await tomas.scrollIntoViewIfNeeded();
   await tomas.focus();
   await page.keyboard.press("Space");
-  await page.waitForTimeout(6000);
-  const tomasAfter = await cellOf("Tomas Ferreira");
-  console.log(`  Tomas Ferreira after Space: ${JSON.stringify(tomasAfter)}`);
-  if (tomasAfter.checked !== "true") fail("Space did not toggle the tick box");
+  await page.waitForTimeout(7000);
+  const tomasAfter = (await cellOf("Tomas Ferreira")).checked;
+  console.log(`  Tomas Ferreira: ${tomasBefore} -> ${tomasAfter}`);
+  if (tomasAfter === tomasBefore) fail("Space did not toggle the tick box");
 
   await page.screenshot({ path: resolve(OUT, "ironline-waiver-2-after-answering.png"), fullPage: false });
 
   /**
-   * — 5. AND THE STORE AGREES. A screen showing a tick is not a tick that was saved: the
-   * grid writes optimistically, so asserting only the screen would pass for a write the
-   * store refused. This re-reads the two members through the SAME read door the page uses,
-   * in a fresh request, and insists on real booleans.
+   * — 5. AND THE STORE KEPT THEM. The grid writes optimistically, so a screen showing a
+   * tick is not a tick that was saved: asserting only the screen would pass for a write the
+   * store refused and quietly rolled back. A full page reload throws every optimistic value
+   * away, so what is on screen afterwards is what the store holds.
    */
-  console.log("\n— 5. the store agrees —");
-  let agreed = null;
-  for (let i = 0; i < 12 && !agreed; i += 1) {
-    await page.waitForTimeout(5000);
+  console.log("\n— 5. the store kept them —");
+  let agreed = false;
+  for (let i = 0; i < 8 && !agreed; i += 1) {
     await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
     await page.waitForTimeout(9000);
-    const after = { grace: await cellOf("Grace Lindqvist"), tomas: await cellOf("Tomas Ferreira") };
-    console.log(`  reload ${i + 1}: Grace ${after.grace.checked} / Tomas ${after.tomas.checked}`);
-    if (after.grace.checked === "true" && after.tomas.checked === "true") agreed = after;
+    const g = (await cellOf("Grace Lindqvist")).checked;
+    const t = (await cellOf("Tomas Ferreira")).checked;
+    console.log(`  reload ${i + 1}: Grace ${g} / Tomas ${t}`);
+    if (g === undefined || t === undefined) continue;    // still loading
+    agreed = g === graceAfter && t === tomasAfter;
+    if (!agreed) {
+      fail(`the store kept Grace ${g} and Tomas ${t}, and the screen had just shown ${graceAfter} and ${tomasAfter}`);
+      break;
+    }
   }
-  if (!agreed) fail("the screen showed the ticks but they were gone after a reload — the store did not keep them");
-  else console.log("  both answers survived a full page reload — the store kept them");
+  if (agreed) console.log("  both answers survived a full page reload — the store kept them");
+  else if (!process.exitCode) fail("the roster never finished loading after a reload");
 
   await browser.close();
   console.log(`\nshots in ${OUT}`);
