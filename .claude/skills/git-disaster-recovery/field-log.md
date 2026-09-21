@@ -27,6 +27,14 @@ is shrink the dirty set, and owners are step 4 for whatever is left.
 
 | When | Repo | What we thought | What was true | Folded into SKILL.md? |
 |---|---|---|---|---|
+| 2026-09-21 | aidream | An intake worktree is mine for the run | Several lanes ran this skill on one repo at once and one deleted another's intake mid-verification. When other lanes are cleaning, land through git plumbing (merge-tree, commit-tree, push) which needs no worktree | Step 3 |
+| 2026-09-21 | aidream | `"$C:refs/heads/main"` is a safe refspec | zsh mangled it even quoted. Build the refspec into a variable with printf, or run the landing in bash | Step 3 |
+| 2026-09-21 | aidream, frontend | One git command reports the truth | With a dozen writers the index lock is contended for minutes; every checkout, pull and merge needs a retry loop or it reports a false failure | Step 7 |
+| 2026-09-21 | common-docs | A dirty file that looks newer is newer | A lane swept a stale staged index into main and rewound 227 paths; another restored it. Compare every blob to a fresh origin/main, never to local HEAD | Step 2 |
+| 2026-09-21 | common-docs | `merge --ff-only` refuses on files identical to the target | They are "modified" relative to a stale HEAD. Restore exactly those paths from origin/main first; that is the guard-safe fast-forward | Step 7 |
+| 2026-09-21 | matrx-local | A lane's guard registration is complete when it commits | Three shape-lane detectors landed without the census their strict guard demands and halted the release. Write the missing census, never weaken the guard | Step 6 |
+| 2026-09-21 | matrx-sandbox | Every remote branch besides main is a leftover | `deploy/hosted` is a CI-written deploy target the hosted server polls. Read the deploy workflow before deleting a remote branch | Step 3 |
+| 2026-09-21 | aidream | A registration commit only adds | One lane's MCP registration hunk also deleted another lane's tool registration. Extract the lane's own lines, never the whole hunk | Step 3 |
 | 2026-09-21 | matrx-frontend | The install gate protecting the dev preview was a safeguard | It refused `pnpm sync-types` and the release loop while a preview ran; changed to warn-and-proceed with strict mode opt-in, self-test 10/10 both ways | Step 7 |
 | 2026-09-21 | matrx-frontend | Synced at 15:00 means synced | By 18:50 the shared folder was 62 behind with a stale conflicted index entry from someone's aborted merge; every pull refused. Resolve stray unmerged entries with GitHub's version, then the loop | Step 7 |
 | 2026-09-20 | matrx-frontend (afternoon) | A clean folder stays clean | A 5-hour usage pause at 13:00 stranded 81 dirty files from paused Claude sessions; Codex and Cursor lanes kept writing. Committed the hour-old ones in six clusters; Vercel built them green | Step 7 |

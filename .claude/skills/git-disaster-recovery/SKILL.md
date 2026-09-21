@@ -47,11 +47,14 @@ Companions, read only when pointed:
 - Never leave a local worktree or a local branch behind. Arman, 2026-09-20:
   "there is no reason for ever having a worktree. Updates should always be
   made to the single source of truth that is pushed live every 30 minutes."
-  An intake worktree lives for the minutes one landing takes, then it is
-  removed. Remote branches are tolerated; local ones are forbidden.
+  There is no intake-worktree exception either: land with git plumbing
+  (`merge-tree --write-tree`, `commit-tree`, push the commit to main) or by
+  pathspec commits in the shared checkout. The `unify-main` skill has the
+  exact recipe. Remote branches are tolerated; local ones are forbidden.
 - Never commit the dirty shared tree as one blob.
 - Never merge onto the dirty shared checkout or reset it "to make room".
-  Landing happens in one short-lived intake worktree from current `origin/main`.
+  Landing happens with plumbing against current `origin/main`, never by
+  touching another lane's files.
 - Never delete unique **product** GitHub does not have. Older copies, files
   GitHub already rewrote, trees that would unwind later `main`, and scratch
   are junk. Delete those.
@@ -85,8 +88,10 @@ If a script goes silent for a minute, kill it and count by hand. If
 `git cherry HEAD origin/main` hangs, kill it; the direction that finds unique
 local work is `git cherry origin/main HEAD`.
 
-Open one intake worktree from current `origin/main`. All landing goes
-through it. Refresh it from `origin/main` before every land.
+All landing goes to `origin/main` by plumbing: `git merge-tree --write-tree
+origin/main <ref>`, `git commit-tree`, push the commit to main; a single
+file lands through a temporary index built from `origin/main`. Re-fetch
+before every land. No worktree, ever.
 
 Then run the same count in **every sibling repo** under the workspace, and
 list every registered worktree, every local branch, every remote branch
@@ -110,11 +115,11 @@ path gets exactly one fate, decided against `origin/main`, not local `main`:
 |---|---|---|
 | Drop | Content matches `origin/main`, or is an older version of what GitHub has, or restores something GitHub deleted | `git checkout origin/main -- path` or delete the untracked file. Not a review item. |
 | Drop | Junk: `.wt/`, lockfile-only, generated stamps, scratch, review notes, agent residue | Delete. |
-| Land now | Skill, doc, comment, lesson, coverage-only test, or a whole new file GitHub never had and that nothing on GitHub supersedes | Copy the whole file into intake, commit, push. Do it in batches this hour. |
+| Land now | Skill, doc, comment, lesson, coverage-only test, or a whole new file GitHub never had and that nothing on GitHub supersedes | Commit the whole file to main by pathspec, push. Do it in batches this hour. |
 | Land now | Migration whose bytes are already in the applied ledger, or whose objects already exist live | Land it. It is inconsequential. |
 | Land now | Migration not yet applied, no collision with any other migration on GitHub or in the pile, no regression of a live object | Land it. Do not question what it changes. |
 | Hold | Migration that collides (same number, same object written twice) or would regress a live object | Name it in one line with a recommendation. |
-| Hold | Unique product hunk in a file GitHub also changed, and the two change the same behavior | Commit it to a named branch off the intake tip. It goes to step 4. |
+| Hold | Unique product hunk in a file GitHub also changed, and the two change the same behavior | Keep the file where it is; it goes to step 4 with the three facts. |
 
 "Exists on GitHub and differs" is not unique. Prove a unique hunk or drop
 the file. Several dirty blobs in past piles were exact earlier GitHub
@@ -144,15 +149,15 @@ Mechanics:
   under a newer namesake tip; merging it can delete an enormous amount of
   later work. Extract the unique commit or hunk, never merge the ancestor.
 - Unique commits that exist only on stale local `main` are cherry-picked in
-  order onto the intake tip, not merged as objects.
-- One leftover at a time onto intake, then push. Re-probe `merge-tree`
+  order onto `origin/main` in git's database, not merged as objects.
+- One leftover at a time onto `origin/main`, then push. Re-probe `merge-tree`
   against the new tip after every push.
 - Mechanical git conflicts (two imports, two changelog lines, two ledger IDs)
   are keep-both, with the later filing taking the next free ID.
 - After the work is reachable from `origin/main`, delete the branch, the PR,
   and the worktree. Re-cherry immediately before each delete.
-- A worktree whose commit is on `origin/main` is a delete, unless it is the
-  intake you are using. A hollow tree (thousands of ` D`) is not product; if
+- A worktree whose commit is on `origin/main` is a delete, unless another
+  session is landing from it this minute. A hollow tree (thousands of ` D`) is not product; if
   `worktree remove --force` hangs, skip it and keep going.
 - A stash is dropped only when every file in it is on GitHub. A mixed stash
   has its unique lines landed first.
@@ -278,7 +283,7 @@ paths nobody owns. Do not let that pile grow back. Every 30 minutes:
   minutes with no writer are cut-off work: commit them in coherent clusters
   with explicit paths and plain messages, pull, push. Files touched in the
   last few minutes belong to a live writer: leave them.
-- Type-check GitHub main in an intake worktree after every batch. A blind
+- Type-check GitHub main after every batch (a temporary export of origin/main is fine; a worktree is not). A blind
   batch that breaks the build is undone the same hour, one file at a time,
   never by reverting the batch.
 - Remove every worktree that is not the release script's own, landing its
@@ -326,7 +331,7 @@ done. A parked cluster is not done.
 | "A git conflict is a real conflict" | A real conflict is one behavior written twice, two ways. |
 | "The inventory script will finish eventually" | Kill it after a minute. Count with plain git. |
 | "Cherry said plus, so this leftover is newer" | A plus on an old branch is often a stale ancestor. Merging it unwinds main. |
-| "It is on origin/main, delete the worktree" | Unless it is the live intake. |
+| "It is on origin/main, delete the worktree" | Yes. Delete it. |
 | "The hung worktree blocks the repo" | Skip it. Finish the rest. |
 | "The first release shipped, so we are done" | Done is the 30-minute loop running again. |
 | "I'll write a wave report" | Arman wants: folder state in one sentence, named branches, one-line conflicts, paste-ready owner lines. |

@@ -1,4 +1,7 @@
 "use client";
+
+import { normalizeTransferJson } from "@ai-matrx/kit/content-transfer";
+import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
 import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 import { useEffect, useRef, useState } from "react";
@@ -410,6 +413,24 @@ export function TryItNowPanel({
       inputsChanged = true;
     }
   }
+
+  useMandateAlchemyTabCapture("test", {
+    status: "ready",
+    data: normalizeTransferJson({
+      mode: testMode,
+      context: testContext,
+      holder: effectiveHolder ?? holderOfMandate(mandate),
+      input_surface: surfaceState,
+      current_inputs: values,
+      human_input: userInput,
+      running,
+      result: completed,
+      failure,
+      inputs_changed_since_run: inputsChanged,
+      sample_error: sampleError,
+      unsaved_changes: { test_case_label: saveLabel, inputs: values, human_input: userInput },
+    }),
+  }, "run_once");
 
   const inputColumns = [
     { key: "format", label: "Format" },

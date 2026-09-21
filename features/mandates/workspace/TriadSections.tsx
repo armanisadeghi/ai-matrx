@@ -1,5 +1,8 @@
 "use client";
 
+import { normalizeTransferJson } from "@ai-matrx/alchemy/core";
+import { useMandateAlchemyTabCapture } from "./MandateAlchemy";
+
 // features/mandates/workspace/TriadSections.tsx
 //
 // THE TRIAD — the mandate page's spine, in the mandate's own order:
@@ -84,6 +87,7 @@ import { DefinitionEditHelp } from "./DefinitionEditHelp";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toastFailure } from "@/lib/failure/toastFailure";
+import { outputConstraintsOf } from "./definition-output";
 
 /** Plain words for H/V/A — never the letter alone. */
 export function GroundingBadge({ grounding }: { grounding: string | null }) {
@@ -135,6 +139,13 @@ export function TriadInputSection({
   // probe), so an unbound automation key never reaches this run.
   const convert = useHeadlessAgentJson();
   const [converting, setConverting] = useState(false);
+  useMandateAlchemyTabCapture("definition", {
+    status: "ready", data: normalizeTransferJson({
+      editing, saving, current_inputs: editing ? draft : draftInputs,
+      unsaved_changes: editing && JSON.stringify(draft) !== JSON.stringify(draftInputs),
+    }),
+  }, "input_editor");
+
 
   const save = async () => {
     setSaving(true);
@@ -426,6 +437,15 @@ export function TriadGoalSection({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(goal ?? "");
   const [saving, setSaving] = useState(false);
+  useMandateAlchemyTabCapture("definition", {
+    status: "ready", data: normalizeTransferJson({
+      goal: editing ? draft : goal,
+      authority: grounding,
+      editing, saving,
+      unsaved_changes: editing && draft !== (goal ?? ""),
+    }),
+  }, "goal_editor");
+
   /**
    * 🚨 THE GOAL WRITER IS A CONVERSATION, NOT A STRING (Arman, 2026-09-08).
    *
@@ -805,13 +825,4 @@ export function TriadOutputSection({
       </ConfigurationTable>
     </Section>
   );
-}
-
-function outputConstraintsOf(
-  mandate: MandateWorkspaceData["mandate"],
-): string | null {
-  const metadata = (mandate as { metadata?: unknown }).metadata;
-  if (typeof metadata !== "object" || metadata === null) return null;
-  const value = (metadata as Record<string, unknown>).output_constraints;
-  return typeof value === "string" && value.trim() ? value.trim() : null;
 }

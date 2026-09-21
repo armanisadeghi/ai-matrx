@@ -10,6 +10,10 @@
 >
 > **Picking this up cold?** `/Users/armanisadeghi/code/common-docs/projects/credential-sharing-browser-login/HANDOFF.md` — vision, gap analysis, cross-repo architecture, next steps, and landmines. Start there.
 
+The backup dialog displays per-record alias conflicts with a rename/remove-alias
+remedy and confirms that existing credentials were unchanged. Retry retains the
+same restore run, so already completed records replay without duplication.
+
 ONE definition-driven vault for both principals — personal and organization — covering env values, API keys, logins, tokens, service accounts, and multi-field credential bundles. A **credential item** (`users.credential_items`) owns one or more encrypted **fields** (`users.user_secrets`); non-secret **definitions and provider presets** come from Remote Catalogs (`public.catalog_entries`, kind `credential_definition`, app `matrx`, 120+ active).
 
 Items may also own multiple encrypted **protected files**

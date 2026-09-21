@@ -148,7 +148,7 @@ function fullRow(overrides: Partial<Note> = {}): Note {
     metadata: {}, visibility: "personal", position: 0, project_id: null, task_id: null,
     created_at: "2026-09-14T05:55:17.534Z", created_by: "user-1",
     updated_at: "2026-09-14T05:55:17.534Z", updated_by: "user-1", deleted_at: null,
-    content_hash: null, file_path: null, last_device_id: null, sync_version: 1,
+    content_hash: null, file_path: null, last_device_id: null, custom_fields: {}, sync_version: 1,
     ...overrides,
   };
   for (const key of NOTE_ROW_KEYS) if (!(key in row)) throw new Error(`fixture lacks ${key}`);

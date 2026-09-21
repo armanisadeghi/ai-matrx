@@ -1,0 +1,34 @@
+import { chromium } from "playwright";
+const EMAIL = process.env.AI_ADMIN_USERNAME;
+const PASSWORD = process.env.AI_ADMIN_PASSWORD;
+const ORIGIN = "https://aimatrx.com";
+const OUT = "/private/tmp/claude-501/-Users-armanisadeghi-code/4aca9d01-f3c0-4271-be17-2f948446dfb3/scratchpad/f-shots";
+async function main() {
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
+  const page = await context.newPage();
+  page.setDefaultTimeout(45000);
+  await page.goto(`${ORIGIN}/login`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(1200);
+  await page.fill('input[type="email"], input[name="email"]', EMAIL);
+  await page.fill('input[type="password"], input[name="password"]', PASSWORD);
+  await page.click('button[type="submit"]');
+  await page.waitForTimeout(3500);
+  await page.goto(`${ORIGIN}/dashboard`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(3000);
+  const dismissBtn = page.getByRole("button", { name: "Dismiss for today" });
+  if (await dismissBtn.count()) await dismissBtn.click({ force: true }).catch(() => {});
+  await page.waitForTimeout(800);
+  const row = page.locator('text="Ironline Fitness"').last();
+  await row.scrollIntoViewIfNeeded().catch(() => {});
+  await page.waitForTimeout(500);
+  await row.click({ timeout: 20000 });
+  await page.waitForTimeout(3000);
+  await page.goto(`${ORIGIN}/data-v2/60df8b1e-d63a-482d-9600-22469c93263c?record=caadbc70-2f6b-4fcf-98b1-30e2a22a85ac`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(4000);
+  await page.screenshot({ path: `${OUT}/member_approval.png` });
+  const text = await page.evaluate(() => document.body.innerText);
+  console.log(text.slice(0, 2000));
+  await browser.close();
+}
+main().catch(e=>{console.error(e);process.exit(1);});

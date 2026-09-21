@@ -256,7 +256,8 @@ export function ActionRunner({
     case "one_time_code":
       return shell(
         <p className="rounded-md border border-border bg-card p-3 text-sm">
-          {render.message}
+          Typed one-time codes are not available yet. Your agent can use a stored
+          authenticator seed instead, and it will say so the next time it asks.
         </p>,
       );
   }

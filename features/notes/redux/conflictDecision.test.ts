@@ -25,7 +25,7 @@ function row(overrides: Partial<Note> = {}): Note {
     custom_fields: {},
     id: ID, label: "Original", content: "base", folder_name: "Draft", folder_id: null,
     tags: [], metadata: { source: "test" }, organization_id: ORG, project_id: null,
-    task_id: null, deleted_at: null, visibility: "personal", version: 4, sync_version: 0,
+    task_id: null, deleted_at: null, visibility: "personal", version: 4, custom_fields: {}, sync_version: 0,
     content_hash: null, file_path: null, last_device_id: null, position: 0,
     created_at: "2026-09-12T00:00:00.000Z", updated_at: "2026-09-12T00:00:00.000Z",
     created_by: "user-1", updated_by: "user-1", ...overrides,

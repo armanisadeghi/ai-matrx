@@ -229,6 +229,7 @@ export function rulebookRow(id: string, name: string): RulebookRow {
     assurance_level: null,
     created_at: "2026-09-16T20:00:00.000Z",
     created_by: USER_ID,
+    custom_fields: {},
     deleted_at: null,
     description: `How I decide what to do about ${name}.`,
     id,

@@ -575,6 +575,9 @@ export function createBlankNoteRecordFromPartial(
     folder_id: partial.folder_id ?? null,
     tags: partial.tags ?? null,
     metadata: partial.metadata ?? null,
+    // `custom_fields` is NOT NULL on `workbench.notes` with a `'{}'` default —
+    // a locally minted record mirrors that default, never a null the column
+    // cannot hold.
     custom_fields: partial.custom_fields ?? {},
     _editorMode: status === "full" ? getPersistedEditorMode(partial.metadata) : null,
     _editorModeSource: status === "full" ? "persisted" : "uninitialized",

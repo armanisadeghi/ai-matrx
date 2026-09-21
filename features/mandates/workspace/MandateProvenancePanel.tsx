@@ -1,5 +1,8 @@
 "use client";
 
+import { normalizeTransferJson } from "@ai-matrx/alchemy/core";
+import { useMandateAlchemyTabCapture } from "./MandateAlchemy";
+
 // features/mandates/workspace/MandateProvenancePanel.tsx
 //
 // PROVENANCE & USAGE, on the Mandate's own page, at every rung.
@@ -62,6 +65,13 @@ export function MandateProvenancePanel({
   mandateKey: string;
 }) {
   const { report, loading, error } = useMandateProvenance(mandateKey);
+  useMandateAlchemyTabCapture("definition", loading && !report && !error
+    ? { status: "loading" }
+    : { status: "ready", data: normalizeTransferJson({
+        report: error ? null : report,
+        error: error ?? (!report ? "The server returned no provenance report." : null),
+      }) }, "provenance");
+
 
   if (loading && !report && !error) {
     return (

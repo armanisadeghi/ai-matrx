@@ -1335,6 +1335,24 @@ export interface MandateOutcomeJudgedRunOffer {
   prior_output_excerpts?: string[];
 }
 
+/** Offered shape of provision `mandates.holder_draft_brief` (kind `mandates.holder_draft_brief.offer`). */
+export interface MandatesHolderDraftBriefOffer {
+  __kind?: "mandates.holder_draft_brief.offer";
+  mandate_key: string;
+  mandate_label: string;
+  feature: string;
+  goal: string;
+  description?: string;
+  offered_values: unknown;
+  input_kind?: string;
+  output_kind?: string;
+  required_output_keys?: string[];
+  accepts_user_input: string;
+  pins?: unknown;
+  owner_scope: string;
+  current_holder?: unknown;
+}
+
 /** Offered shape of provision `marketing.image_prompt` (kind `marketing.image_prompt.offer`). */
 export interface MarketingImagePromptOffer {
   __kind?: "marketing.image_prompt.offer";
@@ -3307,6 +3325,7 @@ export interface ProvisionOffers {
   "knowledge.section_qa": KnowledgeSectionQaOffer;
   "mandate_outcome.goal_text": MandateOutcomeGoalTextOffer;
   "mandate_outcome.judged_run": MandateOutcomeJudgedRunOffer;
+  "mandates.holder_draft_brief": MandatesHolderDraftBriefOffer;
   "marketing.image_prompt": MarketingImagePromptOffer;
   "marketing.local_endowment": MarketingLocalEndowmentOffer;
   "marketing.page_image": MarketingPageImageOffer;
@@ -3568,6 +3587,7 @@ export const PROVISION_OFFER_KINDS = {
   "knowledge.section_qa": "knowledge.section_qa.offer",
   "mandate_outcome.goal_text": "mandate_outcome.goal_text.offer",
   "mandate_outcome.judged_run": "mandate_outcome.judged_run.offer",
+  "mandates.holder_draft_brief": "mandates.holder_draft_brief.offer",
   "marketing.image_prompt": "marketing.image_prompt.offer",
   "marketing.local_endowment": "marketing.local_endowment.offer",
   "marketing.page_image": "marketing.page_image.offer",
