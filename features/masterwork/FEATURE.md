@@ -476,6 +476,27 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- 2026-09-21 — Claude (Opus): **A shortened rule id still reads as the rule, and
+  "Rule id:" is never a label an Expert sees** (jobs-bar cold-walk-19, defect B).
+  The walk's finished deliverable printed nine raw hyphenated ids inside 11,630
+  characters of otherwise flawless English. The run's stored payload
+  (`workflow.run` 3a3bb7b5-…) settles the root cause: the provider WAS mounted
+  and the index WAS live — ten citations in the same document resolved — and the
+  nine that reached her raw are ones the Chief SHORTENED at segment boundaries
+  (`no-stain-attic-check` for `no-stain-attic-check-looks-for-rust-and-frost-no`),
+  three marked with its own ellipsis. `ruleCitations.ts` now also indexes every
+  segment-boundary PREFIX of three or more segments, under the ambiguity rule
+  that already governed exact handles: a prefix two rules share is dropped, not
+  resolved to either, and a two-segment prefix is never consulted because
+  `low-slope`, `tear-off` and `whole-roof` are ordinary English in that same
+  document. The model's truncation mark goes with the shortening it undoes;
+  `Rule id:` / `Rule ids:` become `Rule:` / `Rules:`; and a slug standing in a
+  comma-run whose other members are PROVEN citations, which we cannot prove
+  names any rule, reaches her as the words it already said rather than as a
+  slug. Guard on the real payload:
+  `__tests__/a-shortened-rule-id-still-reads-as-the-rule.test.tsx` +
+  `__tests__/fixtures/cold-walk-19-ruling.json`, proven failing four ways.
+
 - 2026-09-21 — Claude (Opus): **A document a Rulebook learns from says so, and
   offers the way back** (jobs-bar cold-walk-18). "Add more → New document"
   opens a full word processor in a NEW TAB, and the Expert landed on

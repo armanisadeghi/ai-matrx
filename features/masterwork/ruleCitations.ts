@@ -28,6 +28,49 @@
  * minting run could equally have produced). A key two rules would both answer
  * to is dropped from the index entirely rather than resolved to either.
  *
+ * ## 🚨 WALK 19, DEFECT B — THE AGENT ABBREVIATES, AND THAT IS NOT FUZZY
+ *
+ * Walk 19's deliverable resolved ten citations perfectly and printed nine raw,
+ * and the run's stored payload (`workflow.run` 3a3bb7b5-…, Rulebook
+ * d4eeb99e-…) says exactly why. The Chief did not quote the 48-character
+ * handles for those nine — it SHORTENED them, at segment boundaries, and
+ * marked three of the shortenings with its own ellipsis:
+ *
+ *   `within-two-points…`      → `within-two-points-flashing-repair-not-a-roof`
+ *   `no-stain-attic-check`    → `no-stain-attic-check-looks-for-rust-and-frost-no`
+ *   `chimney-within-six-feet` → `chimney-within-six-feet-of-the-stain-photograph`
+ *
+ * Every one of them is a SEGMENT-BOUNDARY PREFIX of exactly ONE rule in the
+ * Rulebook on screen. That is not a fuzzy match and resolving it is not a
+ * guess: no other rule in this Rulebook could be meant, and the ambiguity rule
+ * above still applies — a prefix two rules share is dropped, never resolved to
+ * either. The floor is three segments, because a two-segment prefix
+ * (`low-slope`, `tear-off`) is ordinary hyphenated English that happens to open
+ * a rule id, and mangling a real sentence is the worse failure.
+ *
+ * Two smaller shapes ride with it, both out of the same payload:
+ *
+ *   · **The truncation mark.** `within-two-points…` carries the model's own
+ *     ellipsis. When the handle resolves, that ellipsis was the mark of the
+ *     shortening we just undid, so it goes with it.
+ *   · **The label.** The same section twice wrote `Rule id:` / `Rule ids:`.
+ *     "id" is the machine's word for it; a person reads `Rule:` / `Rules:`.
+ *     The sentence is otherwise untouched.
+ *
+ * ### The residue, and why it is words rather than a guess
+ *
+ * One of the nine — `daylight-at-penetration` for
+ * `daylight-at-a-penetration-is-a-flashing-job` — is not a prefix at all: the
+ * model dropped an interior word. We will NOT claim it names that rule. But it
+ * stands in a comma-run whose other members we just PROVED are citations, and a
+ * slug is never what an Expert should read, so it is written out as the words
+ * it already said — hyphens become spaces, nothing else changes. Same
+ * resolution `machineIdentifierWords` performs on a field name, under the same
+ * rule: never invent, never drop, never prettify. Outside such a run nothing
+ * happens, so ordinary hyphenated English ("twenty-seven-year roof",
+ * "Hold-the-slot, sign-today, beat-the-price-increase" — all three in this same
+ * document) is untouched.
+ *
  ## THE MACHINE WORDS GO TOO
  *
  * Walk 13 also caught `not_applicable` printed with its underscore in the same
@@ -73,11 +116,26 @@ import { ruleAnchorId } from "./components/detail/RuleRelations";
 /** The length `kebabRuleId` cuts a minted id to. Named once, never retyped. */
 export const RULE_ID_MINT_LENGTH = 48;
 
+/**
+ * The fewest segments a SHORTENED handle must carry to be looked up at all.
+ * Two is ordinary hyphenated English (`low-slope`, `tear-off`, `whole-roof` —
+ * all three occur as prose in the walk-19 ruling AND open a stored rule id),
+ * so a two-segment prefix is never consulted. A two-segment id still resolves
+ * on the nose, through `byHandle`.
+ */
+export const RULE_PREFIX_FLOOR_SEGMENTS = 3;
+
 export interface RuleCitationIndex {
   /** The Rulebook whose screen the links open. */
   rulebookId: string;
   /** Citable handle → the rule it names. Ambiguous handles are absent. */
   byHandle: ReadonlyMap<string, RulebookRule>;
+  /**
+   * A segment-boundary PREFIX of exactly one stored id → that rule. Consulted
+   * only after `byHandle` misses, so a whole id always beats a prefix, and a
+   * prefix two rules share is absent exactly as an ambiguous handle is.
+   */
+  byPrefix: ReadonlyMap<string, RulebookRule>;
 }
 
 /**
@@ -89,7 +147,9 @@ export function buildRuleCitationIndex(
   rules: readonly RulebookRule[],
 ): RuleCitationIndex {
   const byHandle = new Map<string, RulebookRule>();
+  const byPrefix = new Map<string, RulebookRule>();
   const ambiguous = new Set<string>();
+  const ambiguousPrefix = new Set<string>();
   const claim = (handle: string, rule: RulebookRule) => {
     if (handle === "" || ambiguous.has(handle)) return;
     const held = byHandle.get(handle);
@@ -100,12 +160,45 @@ export function buildRuleCitationIndex(
     }
     byHandle.set(handle, rule);
   };
+  const claimPrefix = (handle: string, rule: RulebookRule) => {
+    if (ambiguousPrefix.has(handle)) return;
+    const held = byPrefix.get(handle);
+    if (held && held.id !== rule.id) {
+      byPrefix.delete(handle);
+      ambiguousPrefix.add(handle);
+      return;
+    }
+    byPrefix.set(handle, rule);
+  };
   for (const rule of rules) {
     if (typeof rule?.id !== "string" || rule.id === "") continue;
     claim(rule.id, rule);
     claim(rule.id.slice(0, RULE_ID_MINT_LENGTH), rule);
   }
-  return { rulebookId, byHandle };
+  // Prefixes are claimed in a SECOND pass so that an id which is itself the
+  // prefix of a longer id keeps its own exact meaning above.
+  for (const rule of rules) {
+    if (typeof rule?.id !== "string" || rule.id === "") continue;
+    const segments = rule.id.split("-");
+    for (let n = RULE_PREFIX_FLOOR_SEGMENTS; n < segments.length; n += 1) {
+      claimPrefix(segments.slice(0, n).join("-"), rule);
+    }
+  }
+  // A whole id is never overridden by its own life as somebody's prefix.
+  for (const handle of byHandle.keys()) byPrefix.delete(handle);
+  return { rulebookId, byHandle, byPrefix };
+}
+
+/**
+ * The rule a citable token names, or null. Exact first, then the proven-unique
+ * segment prefix. Never a guess: both maps drop anything two rules answer to.
+ */
+export function ruleForHandle(
+  index: RuleCitationIndex | null,
+  token: string,
+): RulebookRule | null {
+  if (!index) return null;
+  return index.byHandle.get(token) ?? index.byPrefix.get(token) ?? null;
 }
 
 /**
@@ -221,19 +314,127 @@ const asLink: CiteRender = (rule, rulebookId) =>
 
 const asName: CiteRender = (rule) => rule.name;
 
+/**
+ * The model's own mark that it shortened the handle it was quoting. Consumed
+ * with the shortening when the handle resolves; left alone when it does not.
+ */
+const TRUNCATION_MARK = /^(?:…|\.\.\.)/;
+
+/**
+ * What separates two members of ONE citation list. Nothing else groups: a gap
+ * carrying words, bold marks or a dash ends the run, so a rule id followed by
+ * a sentence cannot drag the next hyphenated English word in with it.
+ */
+const RUN_SEPARATOR = /^\s*(?:,|,?\s+(?:and|or))\s*$/;
+
+/**
+ * The label a machine puts in front of a handle. Once the handle is the rule's
+ * name, "id" is a word about our storage, in a document about a roof.
+ */
+const RULE_ID_LABEL = /\bRule(s)?\s+ids?\s*:/gi;
+
+/** `Rule id:` → `Rule:`, `Rule ids:` → `Rules:`. Nothing else moves. */
+function plainRuleIdLabel(text: string): string {
+  return text.replace(RULE_ID_LABEL, (whole, plural?: string) => {
+    const many = Boolean(plural) || /ids\s*:/i.test(whole);
+    const head = whole.slice(0, 1) === "r" ? "rule" : "Rule";
+    return `${head}${many ? "s" : ""}:`;
+  });
+}
+
+/** One citable token found in prose, with the span it occupied. */
+interface Citation {
+  token: string;
+  start: number;
+  /** End of the token itself, before any truncation mark. */
+  end: number;
+  /** End of the truncation mark, when the model wrote one. */
+  markEnd: number;
+  rule: RulebookRule | null;
+}
+
+function findCitations(
+  prose: string,
+  index: RuleCitationIndex | null,
+): Citation[] {
+  const found: Citation[] = [];
+  HANDLE.lastIndex = 0;
+  for (
+    let match = HANDLE.exec(prose);
+    match !== null;
+    match = HANDLE.exec(prose)
+  ) {
+    const end = match.index + match[0].length;
+    const mark = TRUNCATION_MARK.exec(prose.slice(end));
+    found.push({
+      token: match[0],
+      start: match.index,
+      end,
+      markEnd: end + (mark ? mark[0].length : 0),
+      rule: ruleForHandle(index, match[0]),
+    });
+  }
+  return found;
+}
+
+/**
+ * Which citations sit in a run that PROVED itself a citation list — at least
+ * one member resolved to a rule in the Rulebook on screen.
+ */
+function provenRuns(prose: string, found: readonly Citation[]): boolean[] {
+  const proven = new Array<boolean>(found.length).fill(false);
+  let runStart = 0;
+  const close = (endExclusive: number) => {
+    let any = false;
+    for (let i = runStart; i < endExclusive; i += 1) if (found[i].rule) any = true;
+    if (any) for (let i = runStart; i < endExclusive; i += 1) proven[i] = true;
+  };
+  for (let i = 1; i < found.length; i += 1) {
+    const gap = prose.slice(found[i - 1].markEnd, found[i].start);
+    if (!RUN_SEPARATOR.test(gap)) {
+      close(i);
+      runStart = i;
+    }
+  }
+  close(found.length);
+  return proven;
+}
+
 function resolveInProse(
   prose: string,
   index: RuleCitationIndex | null,
   render: CiteRender,
 ): string {
-  const cited =
-    index && index.byHandle.size > 0
-      ? prose.replace(HANDLE, (token) => {
-          const rule = index.byHandle.get(token);
-          return rule ? render(rule, index.rulebookId) : token;
-        })
-      : prose;
-  return plainDeclaredTokens(cited);
+  const usable =
+    index && (index.byHandle.size > 0 || index.byPrefix.size > 0)
+      ? index
+      : null;
+  if (!usable) return plainDeclaredTokens(plainRuleIdLabel(prose));
+
+  const found = findCitations(prose, usable);
+  const proven = provenRuns(prose, found);
+  let out = "";
+  let cursor = 0;
+  found.forEach((citation, i) => {
+    out += prose.slice(cursor, citation.start);
+    if (citation.rule) {
+      // The mark of the shortening goes with the shortening.
+      out += render(citation.rule, usable.rulebookId);
+      cursor = citation.markEnd;
+      return;
+    }
+    if (proven[i]) {
+      // Proven to stand in a citation list, but not proven to BE any one rule:
+      // it reaches the Expert as the words it already said, never as a link
+      // and never as somebody else's rule name.
+      out += citation.token.replace(/-/g, " ");
+      cursor = citation.end;
+      return;
+    }
+    out += citation.token;
+    cursor = citation.end;
+  });
+  return plainDeclaredTokens(plainRuleIdLabel(out + prose.slice(cursor)));
 }
 
 /**
@@ -273,8 +474,7 @@ function resolveDocument(
     const inner = inlineCode ? construct.slice(1, -1).trim() : null;
     // A span that names a rule is that rule — decided FIRST, so a citation is
     // never mistaken for a field name.
-    const rule =
-      inner !== null && index ? index.byHandle.get(inner) : undefined;
+    const rule = inner !== null ? ruleForHandle(index, inner) : null;
     // Otherwise: a span that is nothing but one of OUR field names becomes the
     // words it stood for. Anything else — real code, a path, a fence — is
     // handed back byte-for-byte.
