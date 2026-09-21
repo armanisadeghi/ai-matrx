@@ -178,30 +178,57 @@ begin
     v_old jsonb;
     v_new jsonb;
     v_keys text[];
+    v_over text;
+    v_ctrl text[];
   begin
-    select v.row_data -> 'data' into v_old from history.row_versions v
-     where v.entity_type = 'custom.record' and v.organization_id = v_org
-       and v.row_id = v_job and v.version = 3 limit 1;
-    select v.row_data -> 'data' into v_new from history.row_versions v
-     where v.entity_type = 'custom.record' and v.organization_id = v_org
-       and v.row_id = v_job and v.version = 4 limit 1;
-    -- STEPS OUT, and says why: `custom.io_changed_keys` is an INTERNAL with no client
-    -- grant, and this clause is about the function's own answer rather than about what a
-    -- person may reach. No product clause is asserted while out.
+    -- 🚨 THE RESTORED BODY IS ASKED ABOUT ITSELF (lane RED-SUITES-3, 2026-09-21). This block
+    -- used to read versions 3 and 4 of the fixture out of `history.row_versions` and demand at
+    -- least two keys back. Which pair of THIS record's versions differs in more than one key is
+    -- a property of the fixture and of what the capture stores today: versions 3 and 4 differ in
+    -- `price` alone and `price` really did change, so the block said "the inverse did not take"
+    -- when the inverse had taken fine. Asked over EVERY consecutive pair the record has, the
+    -- restored body still never over-reported — because the churn it is blind to lives in the
+    -- value ENVELOPES, and those pairs do not carry envelope churn.
+    --
+    -- So the body is asked about the exact thing the inverse's own header says it does: it
+    -- "compared WHOLE value envelopes — so every field of every version reads as changed again,
+    -- because `at`, `actor` and `on_behalf_of` are re-stamped on every write". Two documents for
+    -- the same Roof repair job, one field, the SAME price, and the only difference is the stamp
+    -- a re-save leaves behind. A comparison that calls that a change is the defect, in one line,
+    -- with no fixture history in the way. The FIXED body is the control: it is not live here —
+    -- the inverse replaced it — so the control is the second pair below, where the price really
+    -- does move and any body must say so.
     perform set_config('role', (select v from hs_red where k = 'boss'), true);
+    v_old := jsonb_build_object(
+      'title', 'Roof repair', 'price', 1200,
+      '_values', jsonb_build_object('price', jsonb_build_object(
+        'ver', 4, 'actor', 'user', 'at', '2026-09-20T09:15:00+00:00')));
+    v_new := jsonb_build_object(
+      'title', 'Roof repair', 'price', 1200,
+      '_values', jsonb_build_object('price', jsonb_build_object(
+        'ver', 4, 'actor', 'agent', 'at', '2026-09-21T14:02:00+00:00')));
     v_keys := custom.io_changed_keys(v_old, v_new);
+    select k into v_over from unnest(v_keys) k
+     where (v_old -> k) is not distinct from (v_new -> k) limit 1;
+    -- the control: the same two documents with the price actually moved. Every body, old or
+    -- new, must call that a change, so a body that answered "nothing ever changed" cannot
+    -- reach the notice below.
+    v_new := jsonb_set(v_new, '{price}', '1100'::jsonb);
+    v_ctrl := custom.io_changed_keys(v_old, v_new);
     perform set_config('role', 'authenticated', true);
-    if coalesce(array_length(v_keys, 1), 0) < 2 then
-      raise exception '6: the old comparison did not over-report (% key(s)) — the inverse did not take',
-        coalesce(array_length(v_keys, 1), 0);
+
+    if not ('price' = any (coalesce(v_ctrl, '{}'::text[]))) then
+      raise exception '6 control: the price moved from 1200 to 1100 and the comparison did not call it a change (%), so nothing this block says about over-reporting means anything',
+        array_to_string(coalesce(v_ctrl, '{}'::text[]), ', ');
     end if;
-    if not ('title' = any (v_keys)) then
-      raise exception '6: the old comparison did not call the untouched title a change: %', v_keys;
+    if v_over is null then
+      raise exception '6: the price did not move and only its envelope was re-stamped, and the old comparison named % — it did not over-report, so the inverse did not take',
+        coalesce(array_to_string(v_keys, ', '), 'nothing');
     end if;
     v_red := v_red + 1;
     update hs_red set v = v_red::text where k = 'red';
-    raise notice '6 RED — the agent''s write changed the price and nothing else, and the old comparison lists %: %.',
-      array_length(v_keys, 1), array_to_string(v_keys, ', ');
+    raise notice '6 RED — the price did not move and only its envelope was re-stamped, and the old comparison lists %: "%" is reported as an edit nobody made. The control, where the price really moves, still reads %.',
+      array_to_string(v_keys, ', '), v_over, array_to_string(v_ctrl, ', ');
   end;
 end;
 $red$;
