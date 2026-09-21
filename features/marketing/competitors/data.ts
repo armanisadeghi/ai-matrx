@@ -35,11 +35,14 @@ export type CompetitorRunRow = Pick<
   | "result"
   | "site_id"
   | "created_at"
+  | "target_ref"
+  | "attempt_count"
+  | "reported_cost"
 >;
 
 const COMPETITOR_RUN_COLUMNS =
   "id, provider, operation, status, trigger, requested_at, started_at, completed_at, " +
-  "request_id, error, result, site_id, created_at";
+  "request_id, error, result, site_id, created_at, target_ref, attempt_count, reported_cost";
 type WebSiteRow = Database["web"]["Tables"]["site"]["Row"];
 type WebBrandRow = Database["web"]["Tables"]["brand"]["Row"];
 export type CompetitorSite = Pick<
@@ -219,7 +222,8 @@ export async function loadCompetitorWorkspace(siteId: string): Promise<{
       .eq("provider", "aidream")
       .eq("operation", "competitors.opportunity_autopsy")
       .order("created_at", { ascending: false })
-      .limit(25),
+      .limit(25)
+      .returns<CompetitorRunRow[]>(),
   ]);
   return {
     competitors: requireData(competitors.data, competitors.error),

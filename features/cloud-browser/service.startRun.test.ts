@@ -86,7 +86,16 @@ function queryFor(table: string) {
       return Promise.resolve(result()).then(resolve);
     },
   };
-  for (const method of ["select", "eq", "in", "is", "order", "limit", "gt"]) {
+  for (const method of [
+    "select",
+    "eq",
+    "in",
+    "is",
+    "order",
+    "limit",
+    "gt",
+    "returns",
+  ]) {
     q[method] = () => q;
   }
   q.maybeSingle = async () => ({

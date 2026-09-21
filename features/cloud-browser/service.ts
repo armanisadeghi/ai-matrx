@@ -848,7 +848,8 @@ export async function loadSnapshot(
         .from("account_binding")
         .select(ACCOUNT_BINDING_COLUMNS)
         .eq("profile_id", selected.id)
-        .is("deleted_at", null),
+        .is("deleted_at", null)
+        .returns<BindingRow[]>(),
       supabase
         .schema("browser")
         .from("run")

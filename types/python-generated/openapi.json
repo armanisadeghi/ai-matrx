@@ -896,7 +896,7 @@
           "Action Requests"
         ],
         "summary": "Complete Action Request",
-        "description": "Complete from the link, or from the signed-in page. One path, two doors.",
+        "description": "Complete from the link, or from the signed-in page. One path, two doors.\n\n🚨 ``submitted_at`` IS STAMPED HERE, on the first line, and it is the only\nhonest place for it. A one-time code is worth relaying for one TOTP step\nafter the person pressed send; measuring that from anywhere further in would\nquietly hand the relay the time we spent getting there, and the clock a\nCLIENT sent would be a clock a client could set.",
         "operationId": "complete_action_request_action_requests_complete_post",
         "requestBody": {
           "content": {
@@ -15078,7 +15078,7 @@
           "Authenticator"
         ],
         "summary": "Enroll",
-        "description": "Route 1/2 (paste): store the setup key or otpauth URI as a sealed seed.\n\nEnrolling a seed mints every future code for the account, so it is the most\nprivileged act in the system — D-15 item 1 gates it on a fresh sign-in.\n``enforce_recent_auth_max_age`` is the NEVER-permissive primitive (the\nlaunch-cap wrapper ``enforce_recent_auth`` returns immediately while its env\nvar is unset, which is how this gate was inert in production). The service\nasserts the same window again from the ambient context — two independent\nlayers, neither of them a caller-supplied flag.",
+        "description": "Route 1/2 (paste): store the setup key or otpauth URI as a sealed seed.\n\nEnrolling a seed mints every future code for the account, so it is the most\nprivileged act in the system — D-15 item 1 gates it on a fresh sign-in.\n``enforce_recent_auth_max_age`` is the ONE never-permissive primitive —\nthe vault's reveal wrapper ``enforce_recent_auth`` now goes through it too\n(until 2026-09-21 that wrapper returned immediately while an env var was\nunset, which is how this gate was inert in production). The service\nasserts the same window again from the ambient context — two independent\nlayers, neither of them a caller-supplied flag.",
         "operationId": "enroll_authenticator_enroll_post",
         "parameters": [
           {
@@ -87175,6 +87175,106 @@
         }
       }
     },
+    "/communications/internal/test-handset-inbox": {
+      "get": {
+        "tags": [
+          "Test Handset Inbox (internal)"
+        ],
+        "summary": "Read what a loopback test handset received",
+        "operationId": "read_test_handset_inbox_communications_internal_test_handset_inbox_get",
+        "parameters": [
+          {
+            "name": "to_number",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "One handset. Omit to read every handset.",
+              "title": "To Number"
+            },
+            "description": "One handset. Omit to read every handset."
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only messages received strictly after this instant.",
+              "title": "Since"
+            },
+            "description": "Only messages received strictly after this instant."
+          },
+          {
+            "name": "contains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only messages whose body contains this text.",
+              "title": "Contains"
+            },
+            "description": "Only messages whose body contains this text."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestHandsetInboxResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/podcast/cast-preview": {
       "get": {
         "tags": [
@@ -140360,6 +140460,11 @@
             "type": "string",
             "title": "Segment Id"
           },
+          "source_key": {
+            "type": "string",
+            "title": "Source Key",
+            "default": ""
+          },
           "lane": {
             "type": "string",
             "title": "Lane"
@@ -170719,6 +170824,16 @@
             "type": "boolean",
             "title": "Found",
             "default": false
+          },
+          "present": {
+            "type": "boolean",
+            "title": "Present",
+            "default": false
+          },
+          "readiness": {
+            "type": "string",
+            "title": "Readiness",
+            "default": "absent"
           },
           "text": {
             "anyOf": [
@@ -272169,6 +272284,92 @@
         "title": "TerraformRegistryPublicModuleVersion",
         "description": "Safe bounded projection of one public Terraform module version."
       },
+      "TestHandsetInboxResponse": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/TestHandsetMessage"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "handsets": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Handsets",
+            "description": "Every number this door can read, straight from the database."
+          }
+        },
+        "type": "object",
+        "required": [
+          "messages",
+          "handsets"
+        ],
+        "title": "TestHandsetInboxResponse"
+      },
+      "TestHandsetMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "provider_message_sid": {
+            "type": "string",
+            "title": "Provider Message Sid"
+          },
+          "direction": {
+            "type": "string",
+            "title": "Direction"
+          },
+          "from_number": {
+            "type": "string",
+            "title": "From Number"
+          },
+          "to_number": {
+            "type": "string",
+            "title": "To Number"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "num_media": {
+            "type": "integer",
+            "title": "Num Media",
+            "default": 0
+          },
+          "received_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Received At"
+          },
+          "webhook_path": {
+            "type": "string",
+            "title": "Webhook Path"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "provider_message_sid",
+          "direction",
+          "from_number",
+          "to_number",
+          "received_at",
+          "webhook_path"
+        ],
+        "title": "TestHandsetMessage",
+        "description": "One message a test handset received."
+      },
       "TestNodeRequest": {
         "properties": {
           "inputs": {
@@ -292255,6 +292456,17 @@
           "retryable": {
             "type": "boolean",
             "title": "Retryable"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage"
           },
           "retry_after_ms": {
             "anyOf": [

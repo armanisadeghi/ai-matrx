@@ -108,8 +108,10 @@ export async function claimTask(
     .rpc("sch_run_claim", {
       p_task_id: opts.task.id,
       p_surface: opts.surface,
-      p_trigger_id: opts.triggerId ?? null,
-      p_queue: opts.queue ?? null,
+      ...(opts.triggerId == null
+        ? {}
+        : { p_trigger_id: opts.triggerId }),
+      ...(opts.queue == null ? {} : { p_queue: opts.queue }),
       p_lease_seconds: opts.leaseSeconds ?? DEFAULT_LEASE_SECONDS,
     })
     .single();

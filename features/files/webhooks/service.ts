@@ -72,9 +72,9 @@ export async function createWebhook(
     .rpc("webhook_create", {
       p_target_url: input.target_url,
       p_organization_id: organizationId,
-      p_description: input.description ?? null,
-      p_event_types: input.event_types ?? null,
-      p_resource_types: input.resource_types ?? null,
+      p_description: input.description ?? undefined,
+      p_event_types: input.event_types ?? undefined,
+      p_resource_types: input.resource_types ?? undefined,
     })
     .single()
     .returns<Webhook>();

@@ -73,13 +73,13 @@ describe("scheduler claim organization provenance", () => {
     expect(rpc).toHaveBeenCalledWith("sch_run_claim", {
       p_task_id: TASK_ID,
       p_surface: "web",
-      p_trigger_id: null,
-      p_queue: null,
       p_lease_seconds: 600,
     });
     const args = rpc.mock.calls[0][1] as Record<string, unknown>;
     expect(args).not.toHaveProperty("claim_token");
     expect(args).not.toHaveProperty("p_organization_id");
     expect(args).not.toHaveProperty("p_user_id");
+    expect(args).not.toHaveProperty("p_trigger_id");
+    expect(args).not.toHaveProperty("p_queue");
   });
 });

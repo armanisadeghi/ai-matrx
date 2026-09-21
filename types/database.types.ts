@@ -18057,6 +18057,24 @@ export type Database = {
           to_number: string
         }[]
       }
+      claim_reconcilable_sms_outbound_attempts: {
+        Args: {
+          p_lease_seconds?: number
+          p_limit?: number
+          p_worker_id: string
+        }
+        Returns: {
+          attempt_count: number
+          body: string
+          created_at: string
+          from_number: string
+          outbound_message_id: string
+          provider: string
+          provider_account_id: string
+          to_number: string
+          twilio_sid: string
+        }[]
+      }
       claim_recoverable_sms_command_turns: {
         Args: {
           p_lease_seconds?: number
@@ -18784,6 +18802,19 @@ export type Database = {
         }
         Returns: Json
       }
+      reconcile_sms_outbound_attempt: {
+        Args: {
+          p_error_code?: string
+          p_error_message?: string
+          p_outbound_message_id: string
+          p_outcome: string
+          p_provider_message_id?: string
+          p_retry_after_seconds?: number
+          p_status?: string
+          p_worker_id: string
+        }
+        Returns: boolean
+      }
       record_channel_readiness: {
         Args: { p_channel: string; p_configured: boolean; p_detail?: string }
         Returns: undefined
@@ -18896,6 +18927,10 @@ export type Database = {
           refusal: string
           resolved_timezone: string
         }[]
+      }
+      sms_reply_part_wait_seconds: {
+        Args: { p_organization_id: string }
+        Returns: number
       }
       stamp_notification_render: {
         Args: {
@@ -30190,6 +30225,7 @@ export type Database = {
         Returns: boolean
       }
       is_user_visible_path: { Args: { p_file_path: string }; Returns: boolean }
+      is_user_visible_paths: { Args: { p_paths: string[] }; Returns: Json }
       min_tombstone_retention_days: { Args: never; Returns: number }
       webhook_create: {
         Args: {
@@ -67318,6 +67354,33 @@ export type Database = {
           },
         ]
       }
+      provision_base_contract_pending: {
+        Row: {
+          attached_at: string | null
+          deferred_at: string
+          detail: Json
+          relation: string
+          token: string | null
+          validated_at: string | null
+        }
+        Insert: {
+          attached_at?: string | null
+          deferred_at?: string
+          detail?: Json
+          relation: string
+          token?: string | null
+          validated_at?: string | null
+        }
+        Update: {
+          attached_at?: string | null
+          deferred_at?: string
+          detail?: Json
+          relation?: string
+          token?: string | null
+          validated_at?: string | null
+        }
+        Relationships: []
+      }
       provision_generate_target: {
         Row: {
           orm_target: boolean
@@ -67474,6 +67537,7 @@ export type Database = {
           applied_role: string | null
           applied_via: string
           artifacts_status: string
+          batch_id: string | null
           origin: string
           owner_org_id: string | null
           projection_path: string | null
@@ -67492,6 +67556,7 @@ export type Database = {
           applied_role?: string | null
           applied_via: string
           artifacts_status?: string
+          batch_id?: string | null
           origin?: string
           owner_org_id?: string | null
           projection_path?: string | null
@@ -67510,6 +67575,7 @@ export type Database = {
           applied_role?: string | null
           applied_via?: string
           artifacts_status?: string
+          batch_id?: string | null
           origin?: string
           owner_org_id?: string | null
           projection_path?: string | null
@@ -70753,7 +70819,35 @@ export type Database = {
         Args: { p_arg_checks: Json; p_args: string; p_function: string }
         Returns: Json[]
       }
+      provision_attach_base_contract: {
+        Args: { p_relation: string }
+        Returns: Json
+      }
       provision_base_columns: { Args: never; Returns: string[] }
+      provision_base_contract_outstanding: {
+        Args: never
+        Returns: {
+          age_seconds: number
+          detail: string
+          relation: string
+          state: string
+        }[]
+      }
+      provision_batch: {
+        Args: {
+          p_applied_via?: string
+          p_lane?: string
+          p_org_id?: string
+          p_spec: Json
+        }
+        Returns: Json
+      }
+      provision_batch_context: { Args: never; Returns: Json }
+      provision_batch_defer: {
+        Args: { p_item: Json; p_kind: string }
+        Returns: undefined
+      }
+      provision_batch_token_rel: { Args: { p_token: string }; Returns: string }
       provision_check_vocabulary: {
         Args: { p_conname: string; p_relation: unknown }
         Returns: string[]
@@ -70762,6 +70856,7 @@ export type Database = {
         Args: { p_default: Json; p_type: string }
         Returns: boolean
       }
+      provision_defer_base_fks: { Args: never; Returns: boolean }
       provision_finding: {
         Args: {
           p_field_path?: string
@@ -70835,10 +70930,23 @@ export type Database = {
         Args: { p_org_id?: string; p_spec: Json }
         Returns: Json
       }
+      provision_run_claim: { Args: { p_purpose?: string }; Returns: Json }
       provision_selfcheck: { Args: { p_deep?: boolean }; Returns: Json }
       provision_spec_grandfather_count: { Args: never; Returns: number }
       provision_spec_grandfather_seed: { Args: never; Returns: number }
+      provision_type_declared: {
+        Args: { p_spec: Json; p_type: string }
+        Returns: boolean
+      }
       provision_validate: {
+        Args: { p_lane?: string; p_org_id?: string; p_spec: Json }
+        Returns: Json
+      }
+      provision_validate_base_contract: {
+        Args: { p_relation: string }
+        Returns: Json
+      }
+      provision_validate_batch: {
         Args: { p_lane?: string; p_org_id?: string; p_spec: Json }
         Returns: Json
       }
@@ -70858,6 +70966,7 @@ export type Database = {
           status: string
         }[]
       }
+      provisioning_lock_budget_ms: { Args: never; Returns: number }
       purpose_for_unit: {
         Args: { p_position?: number; p_unit_id: string; p_unit_type: string }
         Returns: {

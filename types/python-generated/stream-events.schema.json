@@ -3392,6 +3392,176 @@
     "title": "MediaBlockData",
     "type": "object"
   },
+  "DecisionAnswersData": {
+    "$defs": {
+      "DecisionAnswerBlock": {
+        "additionalProperties": false,
+        "description": "ONE answer inside a ``decision_answers`` part, on the wire.\n\nTHE MIRROR, not a second contract. The shape is owned by the\n``decision_answer`` kind (``matrx_ai.decisions.kinds.DecisionAnswer``);\nmatrx-connect cannot import matrx-ai (the package graph runs the other\nway), so the wire twin lives here exactly as ``UnifiedMediaBlock`` is the\nwire twin of a media reference. Drift is caught by a matrx-ai test that\nvalidates the kind's own ``to_part()`` dump against this model — the one\nplace both halves are importable.",
+        "properties": {
+          "__kind": {
+            "const": "decision_answer",
+            "default": "decision_answer",
+            "title": "Kind",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "noul",
+              "choice",
+              "score"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "answer": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Answer"
+          },
+          "probability": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Probability"
+          },
+          "probabilities": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Probabilities"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "legend": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Legend"
+          }
+        },
+        "required": [
+          "type",
+          "answer",
+          "confidence"
+        ],
+        "title": "DecisionAnswerBlock",
+        "type": "object"
+      },
+      "DecisionUsageBlock": {
+        "additionalProperties": false,
+        "description": "What the decision call consumed. Zero is a real value, never a stand-in.",
+        "properties": {
+          "input_tokens": {
+            "title": "Input Tokens",
+            "type": "integer"
+          },
+          "output_tokens": {
+            "title": "Output Tokens",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "input_tokens",
+          "output_tokens"
+        ],
+        "title": "DecisionUsageBlock",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "A decision turn's answers, LIVE — the ``decision_answers`` part on the wire.\n\nA decision model is a model in the agent system exactly like an image or a\nTTS model, and those reach a runner or a battle column live as a typed\n``data`` event (``media_block``). Decisions did not: the answers existed\nonly on the persisted ``chat.message`` row, so a battle column said \"this\nrun finished without writing an answer\" until the page was reloaded\n(2026-09-21). This is that missing event, carrying the identical payload\nthe part carries, so the live record and the reloaded one agree.\n\nEmitted by both decision routes — the native holder (TypeSafe System One)\nand a text model's verbalized answer — from ONE place:\n``matrx_ai.decisions.emit.emit_decision_answers``.",
+    "properties": {
+      "type": {
+        "const": "decision_answers",
+        "default": "decision_answers",
+        "title": "Type",
+        "type": "string"
+      },
+      "__kind": {
+        "const": "decision_answers",
+        "default": "decision_answers",
+        "title": "Kind",
+        "type": "string"
+      },
+      "model": {
+        "title": "Model",
+        "type": "string"
+      },
+      "method": {
+        "enum": [
+          "native",
+          "verbalized",
+          "verbalized_calibrated"
+        ],
+        "title": "Method",
+        "type": "string"
+      },
+      "answers": {
+        "additionalProperties": {
+          "$ref": "#/$defs/DecisionAnswerBlock"
+        },
+        "title": "Answers",
+        "type": "object"
+      },
+      "unanswerable": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "title": "Unanswerable",
+        "type": "object"
+      },
+      "usage": {
+        "$ref": "#/$defs/DecisionUsageBlock"
+      },
+      "cost_usd": {
+        "title": "Cost Usd",
+        "type": "number"
+      }
+    },
+    "required": [
+      "model",
+      "method",
+      "usage",
+      "cost_usd"
+    ],
+    "title": "DecisionAnswersData",
+    "type": "object"
+  },
   "ConversationLabeledData": {
     "additionalProperties": false,
     "properties": {

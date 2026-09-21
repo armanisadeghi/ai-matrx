@@ -573,6 +573,12 @@ export interface paths {
         /**
          * Complete Action Request
          * @description Complete from the link, or from the signed-in page. One path, two doors.
+         *
+         *     🚨 ``submitted_at`` IS STAMPED HERE, on the first line, and it is the only
+         *     honest place for it. A one-time code is worth relaying for one TOTP step
+         *     after the person pressed send; measuring that from anywhere further in would
+         *     quietly hand the relay the time we spent getting there, and the clock a
+         *     CLIENT sent would be a clock a client could set.
          */
         post: operations["complete_action_request_action_requests_complete_post"];
         delete?: never;
@@ -5812,9 +5818,10 @@ export interface paths {
          *
          *     Enrolling a seed mints every future code for the account, so it is the most
          *     privileged act in the system — D-15 item 1 gates it on a fresh sign-in.
-         *     ``enforce_recent_auth_max_age`` is the NEVER-permissive primitive (the
-         *     launch-cap wrapper ``enforce_recent_auth`` returns immediately while its env
-         *     var is unset, which is how this gate was inert in production). The service
+         *     ``enforce_recent_auth_max_age`` is the ONE never-permissive primitive —
+         *     the vault's reveal wrapper ``enforce_recent_auth`` now goes through it too
+         *     (until 2026-09-21 that wrapper returned immediately while an env var was
+         *     unset, which is how this gate was inert in production). The service
          *     asserts the same window again from the ambient context — two independent
          *     layers, neither of them a caller-supplied flag.
          */
@@ -39018,6 +39025,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/communications/internal/test-handset-inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read what a loopback test handset received */
+        get: operations["read_test_handset_inbox_communications_internal_test_handset_inbox_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/podcast/cast-preview": {
         parameters: {
             query?: never;
@@ -61350,6 +61374,11 @@ export interface components {
             label: string;
             /** Segment Id */
             segment_id: string;
+            /**
+             * Source Key
+             * @default
+             */
+            source_key?: string;
             /** Lane */
             lane: string;
             /** Lane Label */
@@ -74496,6 +74525,16 @@ export interface components {
              * @default false
              */
             found?: boolean;
+            /**
+             * Present
+             * @default false
+             */
+            present?: boolean;
+            /**
+             * Readiness
+             * @default absent
+             */
+            readiness?: string;
             /** Text */
             text?: string | null;
             /** Inner Html */
@@ -120113,6 +120152,46 @@ export interface components {
             /** Provider Page */
             provider_page: string;
         };
+        /** TestHandsetInboxResponse */
+        TestHandsetInboxResponse: {
+            /** Messages */
+            messages: components["schemas"]["TestHandsetMessage"][];
+            /**
+             * Handsets
+             * @description Every number this door can read, straight from the database.
+             */
+            handsets: string[];
+        };
+        /**
+         * TestHandsetMessage
+         * @description One message a test handset received.
+         */
+        TestHandsetMessage: {
+            /** Id */
+            id: string;
+            /** Provider Message Sid */
+            provider_message_sid: string;
+            /** Direction */
+            direction: string;
+            /** From Number */
+            from_number: string;
+            /** To Number */
+            to_number: string;
+            /** Body */
+            body?: string | null;
+            /**
+             * Num Media
+             * @default 0
+             */
+            num_media?: number;
+            /**
+             * Received At
+             * Format: date-time
+             */
+            received_at: string;
+            /** Webhook Path */
+            webhook_path: string;
+        };
         /** TestNodeRequest */
         TestNodeRequest: {
             /**
@@ -128958,6 +129037,8 @@ export interface components {
             message: string;
             /** Retryable */
             retryable: boolean;
+            /** Stage */
+            stage?: string | null;
             /** Retry After Ms */
             retry_after_ms?: number | null;
             /** Current Fencing Revision */
@@ -194261,6 +194342,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DrainResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_test_handset_inbox_communications_internal_test_handset_inbox_get: {
+        parameters: {
+            query?: {
+                /** @description One handset. Omit to read every handset. */
+                to_number?: string | null;
+                /** @description Only messages received strictly after this instant. */
+                since?: string | null;
+                /** @description Only messages whose body contains this text. */
+                contains?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestHandsetInboxResponse"];
                 };
             };
             /** @description Validation Error */
