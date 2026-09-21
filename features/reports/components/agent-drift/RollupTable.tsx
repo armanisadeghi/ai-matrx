@@ -10,7 +10,8 @@
 import { DriftSeverityBadge } from "@/features/agents/components/usages/DriftSeverityBadge";
 import { DRIFT_SEVERITY_ORDER } from "@/features/agents/components/usages/severity";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import type {
   AgentDriftReportAdminRow,
   AgentDriftReportRow,
@@ -36,47 +37,7 @@ interface RollupTableProps {
   summary?: RollupSummary;
 }
 
-function Th({
-  label,
-  sortKey,
-  active,
-  desc,
-  onSort,
-  align = "left",
-}: {
-  label: string;
-  sortKey?: ReportSortKey;
-  active?: boolean;
-  desc?: boolean;
-  onSort?: (k: ReportSortKey) => void;
-  align?: "left" | "right";
-}) {
-  return (
-    <th
-      className={cn(
-        "px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground",
-        align === "right" ? "text-right" : "text-left",
-        sortKey && "cursor-pointer select-none hover:text-foreground",
-      )}
-      onClick={sortKey && onSort ? () => onSort(sortKey) : undefined}
-    >
-      <span
-        className={cn(
-          "inline-flex items-center gap-0.5",
-          align === "right" && "flex-row-reverse",
-        )}
-      >
-        {label}
-        {active &&
-          (desc ? (
-            <ChevronDown className="h-3 w-3" />
-          ) : (
-            <ChevronUp className="h-3 w-3" />
-          ))}
-      </span>
-    </th>
-  );
-}
+type CanonicalRollupRow = { agentId: string; agentName: string; currentVersion: number; usages: number; breaking: number; silent: number; stale: number; affectedUsers?: number };
 
 export function RollupTable({
   mode,
@@ -84,8 +45,8 @@ export function RollupTable({
   adminRows,
   selectedAgentId,
   onSelect,
-  sort,
-  onSort,
+  sort: _sort,
+  onSort: _onSort,
   summary,
 }: RollupTableProps) {
   const isAdmin = mode === "admin";
@@ -106,6 +67,17 @@ export function RollupTable({
     );
   }
 
+  const canonicalRows: CanonicalRollupRow[] = isAdmin
+    ? adminRows.map((r) => ({ agentId: r.agentId, agentName: r.agentName, currentVersion: r.currentVersion, usages: r.usageCount, breaking: r.breaking, silent: r.silent, stale: r.stalePins, affectedUsers: r.affectedUsers }))
+    : rows.map((r) => ({ agentId: r.agentId, agentName: r.agentName, currentVersion: r.currentVersion, usages: r.myUsageCount, breaking: r.myBreaking, silent: r.mySilent, stale: r.myStalePins }));
+  const columns: MatrxColumnDef<CanonicalRollupRow>[] = [
+    { id: 'agent', header: 'Agent', accessorFn: (row) => `${row.agentName} ${row.agentId}`, width: 260, cell: (row) => <div><div className="font-medium">{row.agentName}</div><div className="text-[11px] text-muted-foreground">v{row.currentVersion} active</div></div> },
+    { id: 'usages', header: 'Usages', accessorKey: 'usages', filter: 'number', width: 100, cell: (row) => <span className="tabular-nums">{row.usages}</span> },
+    { id: 'breaking', header: 'Breaking', accessorKey: 'breaking', filter: 'number', width: 100, cell: (row) => row.breaking ? <DriftSeverityBadge severity="breaking" size="sm" count={row.breaking} iconOnly /> : <span className="text-muted-foreground/40">—</span> },
+    { id: 'silent', header: 'Silent', accessorKey: 'silent', filter: 'number', width: 90, cell: (row) => row.silent ? <DriftSeverityBadge severity="silent_breaking" size="sm" count={row.silent} iconOnly /> : <span className="text-muted-foreground/40">—</span> },
+    { id: 'stale', header: 'Stale', accessorKey: 'stale', filter: 'number', width: 80, cell: (row) => <span className="tabular-nums">{row.stale || '—'}</span> },
+    ...(isAdmin ? [{ id: 'users', header: 'Users', accessorKey: 'affectedUsers' as const, filter: 'number' as const, width: 80, cell: (row: CanonicalRollupRow) => <span className="tabular-nums">{row.affectedUsers ?? '—'}</span> }] : []),
+  ];
   return (
     <>
       {summary ? (
@@ -115,84 +87,7 @@ export function RollupTable({
           className="px-3 py-1.5"
         />
       ) : null}
-      <table className={cn("border-collapse text-sm", MOBILE_TABLE_FROZEN)}>
-        <thead className="sticky top-0 z-10 border-b border-border bg-card">
-          <tr>
-            <Th
-              label="Agent"
-              sortKey="agentName"
-              active={sort.key === "agentName"}
-              desc={sort.desc}
-              onSort={onSort}
-            />
-            <Th
-              label="Usages"
-              sortKey="totalUsages"
-              active={sort.key === "totalUsages"}
-              desc={sort.desc}
-              onSort={onSort}
-              align="right"
-            />
-            <Th
-              label="Breaking"
-              sortKey="breaking"
-              active={sort.key === "breaking"}
-              desc={sort.desc}
-              onSort={onSort}
-              align="right"
-            />
-            <Th
-              label="Silent"
-              sortKey="silent"
-              active={sort.key === "silent"}
-              desc={sort.desc}
-              onSort={onSort}
-              align="right"
-            />
-            <Th
-              label="Stale"
-              sortKey="stalePins"
-              active={sort.key === "stalePins"}
-              desc={sort.desc}
-              onSort={onSort}
-              align="right"
-            />
-            {isAdmin && <Th label="Users" align="right" />}
-          </tr>
-        </thead>
-        <tbody>
-          {isAdmin
-            ? adminRows.map((r) => (
-                <Row
-                  key={r.agentId}
-                  agentId={r.agentId}
-                  name={r.agentName}
-                  version={r.currentVersion}
-                  usages={r.usageCount}
-                  breaking={r.breaking}
-                  silent={r.silent}
-                  stale={r.stalePins}
-                  extra={r.affectedUsers}
-                  selected={selectedAgentId === r.agentId}
-                  onSelect={onSelect}
-                />
-              ))
-            : rows.map((r) => (
-                <Row
-                  key={r.agentId}
-                  agentId={r.agentId}
-                  name={r.agentName}
-                  version={r.currentVersion}
-                  usages={r.myUsageCount}
-                  breaking={r.myBreaking}
-                  silent={r.mySilent}
-                  stale={r.myStalePins}
-                  selected={selectedAgentId === r.agentId}
-                  onSelect={onSelect}
-                />
-              ))}
-        </tbody>
-      </table>
+      <MatrxDataTable urlState={{ id: `agent-drift-${mode}` }} data={canonicalRows} columns={columns} getRowId={(row) => row.agentId} pageSize={50} onRowClick={(row) => onSelect(row.agentId)} rowClassName={(row) => row.agentId === selectedAgentId ? 'bg-accent' : undefined} toolbar={{ search: true, searchPlaceholder: 'Search agents…' }} detail={{ enabled: false }} />
     </>
   );
 }
