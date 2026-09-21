@@ -317,7 +317,6 @@ export const OWNER_CONVERSATION_ROW = {
   "exclude_from_kg": false,
   "conversation_type": "standard",
   "created_by": "87a6e699-3622-4869-8843-d0867456c0dd",
-  "custom_fields": {},
   "updated_by": null,
   "version": 6,
   "visibility": "personal",
@@ -326,7 +325,8 @@ export const OWNER_CONVERSATION_ROW = {
   // was captured, `not null default '{}'`. A pre-column row therefore reads back
   // as the empty array: no launch variable on this conversation is recorded as
   // host-wired, which is exactly what the live row answers today.
-  "host_value_names": []
+  "host_value_names": [],
+  "custom_fields": {}
 } satisfies Database["chat"]["Tables"]["conversation"]["Row"];
 
 export const FLASHCARD_MESSAGE_ROW = {
@@ -371,8 +371,8 @@ export const FLASHCARD_MESSAGE_ROW = {
   "voice": null,
   "organization_id": "f9cb3e35-2a65-4f2a-8525-088d6551071c",
   "created_by": "87a6e699-3622-4869-8843-d0867456c0dd",
-  "custom_fields": {},
   "updated_by": null,
   "updated_at": "2026-09-15T00:43:42.357208+00:00",
   "version": 1,
+  "custom_fields": {}
 } satisfies Database["chat"]["Tables"]["message"]["Row"];

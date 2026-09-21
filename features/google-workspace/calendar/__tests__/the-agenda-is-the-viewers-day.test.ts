@@ -29,7 +29,6 @@ const ORG = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
 
 function event(overrides: Partial<CalendarEventRow> & { id: string }): CalendarEventRow {
   return {
-    custom_fields: {},
     all_day: false,
     attendees: { __kind: CALENDAR_EVENT_ATTENDEES_KIND, attendees: [] },
     calendar_id: "primary",
@@ -56,6 +55,7 @@ function event(overrides: Partial<CalendarEventRow> & { id: string }): CalendarE
     version: 1,
     visibility: "personal",
     ...overrides,
+    custom_fields: overrides.custom_fields ?? {},
   };
 }
 

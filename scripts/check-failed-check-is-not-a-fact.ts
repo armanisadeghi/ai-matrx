@@ -36,6 +36,7 @@ import { readFileSync, writeFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 
@@ -168,13 +169,13 @@ if (process.argv.includes("--self-test")) {
       "[FAIL] SELF-TEST: the guard did NOT go red on the exact bytes that shipped the defect. " +
         "A guard that cannot be shown failing proves nothing.",
     );
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log(
     `[ OK ] SELF-TEST: the shipped bytes are refused (${findings.length} finding(s)), ` +
       "so this guard is known to be able to fail.",
   );
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 function mkdirp(p: string): void {
@@ -189,7 +190,7 @@ if (findings.length > 0) {
     `\n${findings.length} place(s) turn a failed read into a fact about somebody's organization. ` +
       "A failed check is \"could not check — retry\", never a claim.",
   );
-  process.exit(1);
+  exitAfterDrain(1);
 }
 console.log(
   `A failed check is never rendered as a fact. ` +

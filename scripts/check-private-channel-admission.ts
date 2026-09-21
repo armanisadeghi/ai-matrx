@@ -54,6 +54,7 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 import { loadDbEnvFrom } from "./lib/direct-db-env";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WORKSPACE = resolve(ROOT, "..");
@@ -532,13 +533,13 @@ function selfTest(): never {
       `${TAG.fail}the guard PASSED with a private channel planted on the unregistered prefix ` +
         "`nobody:owns:this`. It cannot fail, so it is not a guard.",
     );
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log(
     `${TAG.ok}RED when it should be: a planted private channel on an unregistered prefix ` +
       `made the guard exit ${status}. ${C.dim}(${relative(ROOT, file)})${C.reset}`,
   );
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 /* ─────────────────────────────────── main ─────────────────────────────────── */
@@ -564,7 +565,7 @@ function main(): void {
         "registry it did not see: a private channel whose prefix is unregistered joins nothing, " +
         "forever, and looks healthy while it does it.",
     );
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log(
     `${TAG.info}registry: ${registry.length} prefix(es) — ${registry.join(", ") || "(none)"}`,
@@ -578,7 +579,7 @@ function main(): void {
           `  ${relative(WORKSPACE, s.file)}:${s.line}  ${C.dim}${s.how}${C.reset}`,
       );
     }
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
   const unresolved = sites.filter((s) => s.prefix === null);
@@ -615,13 +616,13 @@ function main(): void {
       `${TAG.ok}all ${sites.length} private channel declaration(s) name a topic prefix that a ` +
         `schema has registered an admission function for.`,
     );
-    process.exit(0);
+    exitAfterDrain(0);
   }
   console.log(
     `${TAG.fail}${bad} of ${sites.length} private channel declaration(s) would be refused at ` +
       `the join.`,
   );
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 main();

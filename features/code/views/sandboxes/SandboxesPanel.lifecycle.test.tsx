@@ -92,11 +92,6 @@ const instance = {
   created_at: "2026-01-01T00:00:00.000Z",
   updated_at: "2026-01-01T00:00:00.000Z",
   config: {},
-  boot_kind: null,
-  boot_phase_seconds: null,
-  boot_seconds: null,
-  custom_fields: {},
-  ready_at: null,
   cold_path: null,
   container_id: null,
   created_by: null,
@@ -120,6 +115,11 @@ const instance = {
   updated_by: null,
   user_id: "33333333-3333-4333-8333-333333333333",
   version: 1,
+  boot_kind: null,
+  boot_phase_seconds: null,
+  boot_seconds: null,
+  custom_fields: {},
+  ready_at: null,
 } satisfies SandboxInstance;
 
 function response(payload: unknown, status = 200) {

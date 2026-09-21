@@ -177,7 +177,10 @@ export function manifestRows({ manifestPath, extras = true } = {}) {
 export function judge(row, code, output) {
   const text = plain(output);
   const lines = text.split("\n").map((l) => l.trimEnd()).filter((l) => l.trim());
-  const screams = lines.filter((l) => SCREAM.test(l));
+  // A passing self-test quotes the failure token it just proved ("UNMEASURED",
+  // "[FAIL]"). That line is the proof, not a finding. A real scream on any
+  // other line, and a self-test that does not say PASS, still counts.
+  const screams = lines.filter((l) => SCREAM.test(l) && !/\[self-test\]\s+PASS\b/.test(l));
   if (code === 0 && screams.length === 0) return null;
   const first = screams[0] ?? lines.at(-1) ?? (code === null ? "no output" : `exit ${code}`);
   const title = oneLine(`${row.label}: ${first}`);

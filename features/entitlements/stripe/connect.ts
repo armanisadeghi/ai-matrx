@@ -191,7 +191,7 @@ export interface PendingPurchaseInput {
   buyerUserId: string;
   classId: string;
   creatorUserId: string;
-  organizationId: string;
+  organizationId: string | null;
   stripeCheckoutSessionId: string;
   stripeAccountId: string;
   amountTotal: number;
@@ -204,6 +204,9 @@ export interface PendingPurchaseInput {
 export async function recordPendingPurchase(
   input: PendingPurchaseInput,
 ): Promise<void> {
+  if (input.organizationId === null) {
+    throw new Error("This purchase has no organization, so it was not recorded.");
+  }
   const admin = createAdminClient();
   await admin
     .schema("billing")

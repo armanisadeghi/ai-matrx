@@ -90,10 +90,20 @@ export async function updateWebhook(
   if (patch.target_url !== undefined && !/^https:\/\//i.test(patch.target_url)) {
     throw new Error("Webhook URL must start with https://");
   }
+  if (patch.organization_id === null) {
+    throw new Error(
+      "A webhook stays filed in an organization. Choose one; it cannot be cleared.",
+    );
+  }
+  const { organization_id: organizationId, ...rest } = patch;
   const supabase = createClient();
   const { data, error } = await filesDb(supabase)
     .from("webhooks")
-    .update({ ...patch, updated_at: new Date().toISOString() })
+    .update({
+      ...rest,
+      ...(organizationId !== undefined ? { organization_id: organizationId } : {}),
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", id)
     .select("*")
     .single()

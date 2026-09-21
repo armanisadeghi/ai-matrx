@@ -11,7 +11,6 @@ jest.mock("@/utils/supabase/client", () => ({
 }));
 
 const ROW: GitHubResourceRow = {
-  custom_fields: {},
   id: "resource-id",
   connection_id: "connection-id",
   resource_type: "github_repository",
@@ -22,6 +21,7 @@ const ROW: GitHubResourceRow = {
   created_at: "2026-08-15T00:00:00Z",
   updated_at: "2026-08-15T00:00:00Z",
   deleted_at: null,
+  custom_fields: {},
   metadata: {
     html_url: "https://github.com/octo/private-repo",
     clone_url: "https://github.com/octo/private-repo.git",

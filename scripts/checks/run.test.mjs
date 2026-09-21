@@ -111,6 +111,18 @@ test("the table sorts errors first", () => {
   assert.match(lines[2], /^WARNING/);
 });
 
+test("a passing self-test that quotes the failure token is not a finding", () => {
+  const row = { label: "Unbounded reads self-test" };
+  const passed = [
+    "[self-test] PASS  two hops in ONE file: no finding, and an UNMEASURED line naming the second hop",
+    "[self-test] PASS — the rule REPORTS AS UNMEASURED the two hops it cannot follow",
+  ].join("\n");
+  assert.equal(judge(row, 0, passed), null);
+  const real = judge(row, 0, "[UNMEASURED] 84 complete-list decision(s) this sweep could NOT judge\n");
+  assert.ok(real);
+  assert.equal(real.count, 1);
+});
+
 test("--list prints every row and runs nothing", () => {
   const dir = mkdtempSync(join(tmpdir(), "release-checks-"));
   const manifest = join(dir, "rows.txt");

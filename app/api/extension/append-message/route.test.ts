@@ -51,7 +51,6 @@ const conversationRow = {
   conversation_type: "chat",
   created_at: "2026-08-08T17:00:00.000Z",
   created_by: BEARER_USER,
-  custom_fields: {},
   deleted_at: null,
   description: null,
   exclude_from_kg: false,
@@ -89,6 +88,7 @@ const conversationRow = {
   variables: {},
   version: 1,
   visibility: "personal",
+  custom_fields: {},
 } satisfies CxConversation;
 
 const storedMessageRow = {
@@ -99,7 +99,6 @@ const storedMessageRow = {
   conversation_id: CONVERSATION_ID,
   created_at: "2026-08-08T18:00:00.000Z",
   created_by: BEARER_USER,
-  custom_fields: {},
   deleted_at: null,
   error: null,
   id: "33333333-3333-4333-8333-333333333333",
@@ -119,6 +118,7 @@ const storedMessageRow = {
   user_content: null,
   version: 1,
   voice: null,
+  custom_fields: {},
 } satisfies CxMessage;
 
 // ---------------------------------------------------------------------------

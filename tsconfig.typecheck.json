@@ -34,7 +34,8 @@
     ".coldwalk*",
     "out",
     "utils/schema/schemaUtils.ts",
-    "next-env.d.ts"
+    "next-env.d.ts",
+    "**/__self_test_planted*"
 
     // (transitional) + features/applet were excluded 2026-06-28 to green a build. Measured
     // 2026-07-18 (D63): together they hid ZERO errors while removing 485 shipped files from

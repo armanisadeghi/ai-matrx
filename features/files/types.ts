@@ -162,10 +162,9 @@ export type CloudFileReadRow = NonNullable<
 >;
 export type CloudFileVersionReadRow = Omit<
   FilesTables["file_versions"]["Row"],
-  // eslint-disable-next-line no-restricted-syntax -- same sanctioned subtraction for file_versions
-  // `custom_fields` joined the table 2026-09-20 with NO `authenticated` column
-  // grant (measured on the live DB: 10 granted columns, not 11), so it is not
-  // in FILE_VERSIONS_TABLE_COLUMNS and naming it would 403 every version read.
+  // storage_uri is server-only (grant revoked). custom_fields is not granted
+  // to the client either — selecting it 403s the whole version read. A column
+  // the select list does not name is not part of the row the client reads.
   "storage_uri" | "custom_fields"
 >;
 

@@ -32,7 +32,6 @@ const TOKYO = "Asia/Tokyo";
 
 function event(overrides: Partial<CalendarEventRow> & { id: string }): CalendarEventRow {
   return {
-    custom_fields: {},
     all_day: false,
     attendees: { __kind: CALENDAR_EVENT_ATTENDEES_KIND, attendees: [] },
     calendar_id: "primary",
@@ -59,6 +58,7 @@ function event(overrides: Partial<CalendarEventRow> & { id: string }): CalendarE
     version: 1,
     visibility: "personal",
     ...overrides,
+    custom_fields: overrides.custom_fields ?? {},
   };
 }
 
