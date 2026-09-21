@@ -803,6 +803,14 @@ else
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts"
         # See the strict lane above for why this class is a shipped-code hazard.
         "Unified-data campaign entry points are registered and gated|pnpm check:campaign-entry-points"
+        # In BOTH lists on purpose: the release's own after-phase runner takes its rows
+        # from `--list`, which is this (non-strict) branch, so a gate that lived only in the
+        # strict list would never run on a release at all. An inverse puts a DEFECT back; it
+        # may not take the ground out from under the platform — seven instances in one
+        # session (RED-SUITES-3, 2026-09-21), four of them destructive to every write to
+        # custom.record. Static, no credential, ratcheted.
+        "Inverses leave the ground standing|pnpm check:inverses-leave-the-ground-standing"
+        "…and that guard can still fail|pnpm check:inverses-leave-the-ground-standing:self-test"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts"
         # Blocking in --strict (see the strict list above); loud and exit-0 here,
         # like every other gate in the advisory list.
