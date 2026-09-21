@@ -2,7 +2,11 @@ import {
   MAX_COLUMN_WIDTH_PX,
   MIN_COLUMN_WIDTH_PX,
   clampColumnWidth,
+  effectiveLayoutMode,
+  effectiveRowDensity,
   parseColumnWidths,
+  parseLayoutChoice,
+  parseRowDensityChoice,
   parseLayoutMode,
   parseRowDensity,
   parseTableViewParams,
@@ -43,7 +47,18 @@ describe("layout mode + density + freeze in the URL", () => {
 
     const plain = parseTableViewParams(new URLSearchParams(""), DEFAULTS);
     const plainPatch = tableViewParamPatch(plain, DEFAULTS);
-    expect(plain.layout).toBe("auto");
+    expect(plain.layout).toBe("default");
+    expect(plain.density).toBe("default");
+    // An EXPLICIT auto / normal is a real choice and rides the URL — it is how
+    // someone picks Automatic inside an organization whose default is Scroll.
+    const explicit = parseTableViewParams(new URLSearchParams("lay=auto&den=normal"), DEFAULTS);
+    expect(explicit.layout).toBe("auto");
+    expect(tableViewParamPatch(explicit, DEFAULTS).lay).toBe("auto");
+    expect(tableViewParamPatch(explicit, DEFAULTS).den).toBe("normal");
+    expect(effectiveLayoutMode("default", "scroll")).toBe("scroll");
+    expect(effectiveLayoutMode("auto", "scroll")).toBe("auto");
+    expect(effectiveRowDensity("default", "compact")).toBe("compact");
+    expect(effectiveRowDensity("normal", "compact")).toBe("normal");
     expect(plainPatch.lay).toBeNull();
     expect(plainPatch.w).toBeNull();
     expect(plainPatch.den).toBeNull();
@@ -53,6 +68,8 @@ describe("layout mode + density + freeze in the URL", () => {
   it("refuses nonsense rather than guessing", () => {
     expect(parseLayoutMode("sideways")).toBe("auto");
     expect(parseRowDensity("huge")).toBe("normal");
+    expect(parseLayoutChoice("sideways")).toBe("default");
+    expect(parseRowDensityChoice("huge")).toBe("default");
     expect(parseColumnWidths("a:4,b:99999,c:abc,noColon,:12,d:150")).toEqual({ d: 150 });
     expect(clampColumnWidth(1)).toBe(MIN_COLUMN_WIDTH_PX);
     expect(clampColumnWidth(10 ** 6)).toBe(MAX_COLUMN_WIDTH_PX);
@@ -91,9 +108,9 @@ describe("layout in a saved view", () => {
 
     // A definition saved before layout existed.
     const legacy = parseSavedViewDefinition({ search: "", hidden: ["x"], order: [] });
-    expect(legacy.layout).toBe("auto");
+    expect(legacy.layout).toBe("default");
     expect(legacy.widths).toEqual({});
-    expect(legacy.density).toBe("normal");
+    expect(legacy.density).toBe("default");
     expect(legacy.freezeFirst).toBe(false);
     expect(legacy.wrap).toBe(false);
     const wrapped = parseTableViewParams(new URLSearchParams("wrap=1"), DEFAULTS);

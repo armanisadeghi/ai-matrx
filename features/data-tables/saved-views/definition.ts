@@ -30,10 +30,10 @@ import {
   type TableViewState,
   clampColumnWidth,
   isColumnWidthMap,
-  parseLayoutMode,
-  parseRowDensity,
-  type TableLayoutMode,
-  type TableRowDensity,
+  parseLayoutChoice,
+  parseRowDensityChoice,
+  type TableLayoutChoice,
+  type TableRowDensityChoice,
 } from "../table-view-url";
 
 /** Every data-table saved view belongs to this surface. */
@@ -51,9 +51,9 @@ export type SavedViewDefinition = {
   hidden: string[];
   order: string[];
   /** Layout overrides. All optional in stored JSON: a v1 view without them means "platform default". */
-  layout: TableLayoutMode;
+  layout: TableLayoutChoice;
   widths: Record<string, number>;
-  density: TableRowDensity;
+  density: TableRowDensityChoice;
   freezeFirst: boolean;
   wrap: boolean;
 };
@@ -71,9 +71,9 @@ export function emptySavedViewDefinition(): SavedViewDefinition {
     pageSize: null,
     hidden: [],
     order: [],
-    layout: "auto",
+    layout: "default",
     widths: {},
-    density: "normal",
+    density: "default",
     freezeFirst: false,
     wrap: false,
   };
@@ -159,13 +159,13 @@ export function parseSavedViewDefinition(raw: unknown): SavedViewDefinition {
   }
   if (isStringArray(v.hidden)) out.hidden = v.hidden;
   if (isStringArray(v.order)) out.order = v.order;
-  if (typeof v.layout === "string") out.layout = parseLayoutMode(v.layout);
+  if (typeof v.layout === "string") out.layout = parseLayoutChoice(v.layout);
   if (isColumnWidthMap(v.widths)) {
     out.widths = Object.fromEntries(
       Object.entries(v.widths).map(([k, px]) => [k, clampColumnWidth(px)]),
     );
   }
-  if (typeof v.density === "string") out.density = parseRowDensity(v.density);
+  if (typeof v.density === "string") out.density = parseRowDensityChoice(v.density);
   if (typeof v.freezeFirst === "boolean") out.freezeFirst = v.freezeFirst;
   if (typeof v.wrap === "boolean") out.wrap = v.wrap;
 
@@ -181,9 +181,9 @@ export function definitionIsEmpty(d: SavedViewDefinition): boolean {
     d.pageSize === null &&
     d.hidden.length === 0 &&
     d.order.length === 0 &&
-    d.layout === "auto" &&
+    d.layout === "default" &&
     Object.keys(d.widths).length === 0 &&
-    d.density === "normal" &&
+    d.density === "default" &&
     !d.freezeFirst &&
     !d.wrap
   );
@@ -225,9 +225,11 @@ export function describeDefinition(
   if (d.order.length > 0) parts.push("reordered");
   if (d.layout === "fit") parts.push("fit to width");
   else if (d.layout === "scroll") parts.push("natural widths");
+  else if (d.layout === "auto") parts.push("automatic widths");
   if (Object.keys(d.widths).length > 0) parts.push("column widths");
   if (d.density === "compact") parts.push("compact rows");
   else if (d.density === "tall") parts.push("tall rows");
+  else if (d.density === "normal") parts.push("normal rows");
   if (d.freezeFirst) parts.push("first column frozen");
   if (d.wrap) parts.push("text wrapped");
   return parts.length > 0 ? parts.join(" · ") : "Everything, unsorted";

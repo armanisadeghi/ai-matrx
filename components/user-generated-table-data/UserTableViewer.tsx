@@ -67,9 +67,12 @@ import { useSavedViews } from "@/features/data-tables/saved-views/useSavedViews"
 import { SavedViewBar } from "@/features/data-tables/saved-views/SavedViewBar";
 import {
   clampColumnWidth,
+  effectiveLayoutMode,
+  effectiveRowDensity,
   resolveTableLayout,
   resolveViewColumns,
 } from "@/features/data-tables/table-view-url";
+import { useTableLayoutDefaults } from "@/features/data-tables/hooks/useTableLayoutDefaults";
 import { ColumnViewMenu } from "@/features/data-tables/components/ColumnViewMenu";
 import {
   useTableRealtime,
@@ -366,12 +369,6 @@ interface UserTableViewerProps {
 
 const DATA_TABLES_SURFACE_NAME = "matrx-user/data-tables" as const;
 
-/**
- * Up to this many visible columns the desktop grid shares the width evenly
- * (`table-fixed`); beyond it every column keeps its natural width and the
- * grid scrolls sideways. Eight 150px columns fill a 1280px viewport.
- */
-const FIXED_LAYOUT_MAX_COLUMNS = 8;
 
 /** Shared with the saved-view codec so "default page size" means one thing. */
 const SAVED_VIEW_DEFAULTS = { pageSize: 20 } as const;
@@ -618,6 +615,9 @@ const UserTableViewer = ({
     fetchCurrentUser();
   }, []);
 
+  // The ORGANIZATION's layout defaults for this table (three knobs); a person's
+  // own Layout choice overrides them, and `default` in the view means "theirs".
+  const layoutDefaults = useTableLayoutDefaults(tableInfo?.organization_id ?? null);
   const [systemOrgId, setSystemOrgId] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -2341,10 +2341,12 @@ const UserTableViewer = ({
     hidden: hiddenColumns,
     order: columnOrder,
   });
+  const chosenLayoutMode = effectiveLayoutMode(layoutMode, layoutDefaults.layout);
+  const chosenRowDensity = effectiveRowDensity(rowDensity, layoutDefaults.rowHeight);
   const effectiveLayout = resolveTableLayout(
-    layoutMode,
+    chosenLayoutMode,
     viewFields.length,
-    FIXED_LAYOUT_MAX_COLUMNS,
+    layoutDefaults.fitMaxColumns,
   );
   const firstViewFieldName = viewFields[0]?.field_name ?? null;
 
@@ -3574,11 +3576,25 @@ const UserTableViewer = ({
                 onOrderChange={setColumnOrder}
               />
               <TableLayoutMenu
-                layoutMode={layoutMode}
-                autoResolvesTo={resolveTableLayout("auto", viewFields.length, FIXED_LAYOUT_MAX_COLUMNS)}
-                onLayoutModeChange={setLayoutMode}
-                rowDensity={rowDensity}
-                onRowDensityChange={setRowDensity}
+                layoutMode={chosenLayoutMode}
+                autoResolvesTo={resolveTableLayout("auto", viewFields.length, layoutDefaults.fitMaxColumns)}
+                fitMaxColumns={layoutDefaults.fitMaxColumns}
+                // Picking the organization's own default clears the personal override,
+                // so the view stays "not customized" and follows the org if it changes.
+                onLayoutModeChange={(next) =>
+                  setLayoutMode(next === layoutDefaults.layout ? "default" : next)
+                }
+                rowDensity={chosenRowDensity}
+                onRowDensityChange={(next) =>
+                  setRowDensity(next === layoutDefaults.rowHeight ? "default" : next)
+                }
+                isCustomized={
+                  layoutMode !== "default" ||
+                  rowDensity !== "default" ||
+                  freezeFirstColumn ||
+                  wrapText ||
+                  Object.keys(columnWidths).length > 0
+                }
                 freezeFirstColumn={freezeFirstColumn}
                 onFreezeFirstColumnChange={setFreezeFirstColumn}
           wrapText={wrapText}
@@ -3701,11 +3717,25 @@ const UserTableViewer = ({
           onOrderChange={setColumnOrder}
         />
         <TableLayoutMenu
-          layoutMode={layoutMode}
-          autoResolvesTo={resolveTableLayout("auto", viewFields.length, FIXED_LAYOUT_MAX_COLUMNS)}
-          onLayoutModeChange={setLayoutMode}
-          rowDensity={rowDensity}
-          onRowDensityChange={setRowDensity}
+          layoutMode={chosenLayoutMode}
+          autoResolvesTo={resolveTableLayout("auto", viewFields.length, layoutDefaults.fitMaxColumns)}
+          fitMaxColumns={layoutDefaults.fitMaxColumns}
+          // Picking the organization's own default clears the personal override,
+          // so the view stays "not customized" and follows the org if it changes.
+          onLayoutModeChange={(next) =>
+            setLayoutMode(next === layoutDefaults.layout ? "default" : next)
+          }
+          rowDensity={chosenRowDensity}
+          onRowDensityChange={(next) =>
+            setRowDensity(next === layoutDefaults.rowHeight ? "default" : next)
+          }
+          isCustomized={
+            layoutMode !== "default" ||
+            rowDensity !== "default" ||
+            freezeFirstColumn ||
+            wrapText ||
+            Object.keys(columnWidths).length > 0
+          }
           freezeFirstColumn={freezeFirstColumn}
           onFreezeFirstColumnChange={setFreezeFirstColumn}
           wrapText={wrapText}
@@ -3859,8 +3889,8 @@ const UserTableViewer = ({
           // horizontally, exactly as it already does on a phone.
           className={cn(
             // Row height is a per-view choice (Layout menu).
-            rowDensity === "compact" && "[&_td]:!py-1 [&_th]:!py-1",
-            rowDensity === "tall" && "[&_td]:!py-5",
+            chosenRowDensity === "compact" && "[&_td]:!py-1 [&_th]:!py-1",
+            chosenRowDensity === "tall" && "[&_td]:!py-5",
             // `w-max min-w-full`: natural column widths, but NEVER narrower
             // than the panel. Until 2026-09-20 this was `w-auto min-w-max`,
             // so a table that crossed FIXED_LAYOUT_MAX_COLUMNS (showing a
@@ -3869,7 +3899,8 @@ const UserTableViewer = ({
             // only half loaded" (Arman, Coding Accounts, nine columns).
             "w-max min-w-full table-auto",
             // `effectiveLayout` = the user's Layout choice, else the platform
-            // default over FIXED_LAYOUT_MAX_COLUMNS (table-view-url.ts).
+            // organization's default (useTableLayoutDefaults), resolved over its
+            // fit-max-columns knob (table-view-url.ts).
             effectiveLayout === "fit" && "md:w-full md:min-w-full md:table-fixed",
           )}
         >

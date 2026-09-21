@@ -41,8 +41,8 @@ import {
   TABLE_VIEW_TEXT_KEYS,
   clampColumnWidth,
   type SortDirection,
-  type TableLayoutMode,
-  type TableRowDensity,
+  type TableLayoutChoice,
+  type TableRowDensityChoice,
   type TableViewState,
 } from "../table-view-url";
 
@@ -68,14 +68,14 @@ export type TableViewUrlState = {
   /** Convenience: flip one column's visibility. */
   toggleColumn: (fieldName: string) => void;
   /** Layout: how the grid uses horizontal space (`auto` = platform default). */
-  layoutMode: TableLayoutMode;
-  setLayoutMode: (value: TableLayoutMode) => void;
+  layoutMode: TableLayoutChoice;
+  setLayoutMode: (value: TableLayoutChoice) => void;
   /** Dragged column widths (px) by field name. */
   columnWidths: Record<string, number>;
   setColumnWidth: (fieldName: string, px: number | null) => void;
   clearColumnWidths: () => void;
-  rowDensity: TableRowDensity;
-  setRowDensity: (value: TableRowDensity) => void;
+  rowDensity: TableRowDensityChoice;
+  setRowDensity: (value: TableRowDensityChoice) => void;
   freezeFirstColumn: boolean;
   setFreezeFirstColumn: (value: boolean) => void;
   wrapText: boolean;
@@ -180,7 +180,7 @@ export function useTableViewUrlState(options: {
     ),
     layoutMode: state.layout,
     setLayoutMode: useCallback(
-      (layout: TableLayoutMode) => patchState({ layout }),
+      (layout: TableLayoutChoice) => patchState({ layout }),
       [patchState],
     ),
     columnWidths: state.widths,
@@ -200,7 +200,7 @@ export function useTableViewUrlState(options: {
     ),
     rowDensity: state.density,
     setRowDensity: useCallback(
-      (density: TableRowDensity) => patchState({ density }),
+      (density: TableRowDensityChoice) => patchState({ density }),
       [patchState],
     ),
     freezeFirstColumn: state.freezeFirst,
@@ -228,9 +228,9 @@ export function useTableViewUrlState(options: {
       state.pageSize !== defaults.pageSize ||
       state.hidden.length > 0 ||
       state.order.length > 0 ||
-      state.layout !== "auto" ||
+      state.layout !== "default" ||
       Object.keys(state.widths).length > 0 ||
-      state.density !== "normal" ||
+      state.density !== "default" ||
       state.freezeFirst ||
       state.wrap ||
       Object.keys(state.filters).length > 0,

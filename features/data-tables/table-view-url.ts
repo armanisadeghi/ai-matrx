@@ -50,15 +50,18 @@ export type TableViewState = {
    */
   order: string[];
   /**
-   * How the grid uses horizontal space in THIS view. `auto` is the platform
-   * default (share the width up to eight columns, natural widths + sideways
-   * scroll past that); `fit` and `scroll` are the user's override of it.
+   * How the grid uses horizontal space in THIS view. `default` = the person
+   * has not chosen: the ORGANIZATION's default applies (knob
+   * `extensibility.user_tables.default_layout`, itself auto | fit | scroll).
+   * Anything else is the person's own override — including an explicit `auto`,
+   * which is how someone picks Automatic inside an organization whose default
+   * is something else.
    */
-  layout: TableLayoutMode;
+  layout: TableLayoutChoice;
   /** Per-column widths in px the user dragged, keyed by field name. */
   widths: Record<string, number>;
-  /** Row height. */
-  density: TableRowDensity;
+  /** Row height; `default` = the organization's default row height. */
+  density: TableRowDensityChoice;
   /** Keep the first column on screen while scrolling sideways. */
   freezeFirst: boolean;
   /** Show whole cell text on as many lines as it needs, instead of one line ending in "…". */
@@ -67,6 +70,9 @@ export type TableViewState = {
 
 export type TableLayoutMode = "auto" | "fit" | "scroll";
 export type TableRowDensity = "compact" | "normal" | "tall";
+/** A view's choice: a concrete value, or `default` = "whatever my organization set". */
+export type TableLayoutChoice = TableLayoutMode | "default";
+export type TableRowDensityChoice = TableRowDensity | "default";
 export const TABLE_LAYOUT_MODES: readonly TableLayoutMode[] = ["auto", "fit", "scroll"];
 export const TABLE_ROW_DENSITIES: readonly TableRowDensity[] = ["compact", "normal", "tall"];
 /** Dragged widths are clamped here: narrower hides the header menu, wider is a mistake. */
@@ -183,9 +189,9 @@ export function parseTableViewParams(
     pageSize: readPositiveInt("ps", defaults.pageSize),
     hidden: parseFieldNameList(params.get("hide")),
     order: parseFieldNameList(params.get("ord")),
-    layout: parseLayoutMode(params.get("lay")),
+    layout: parseLayoutChoice(params.get("lay")),
     widths: parseColumnWidths(params.get("w")),
-    density: parseRowDensity(params.get("den")),
+    density: parseRowDensityChoice(params.get("den")),
     freezeFirst: params.get("frz") === "1",
     wrap: params.get("wrap") === "1",
   };
@@ -237,9 +243,9 @@ export function tableViewParamPatch(
     ps: state.pageSize === defaults.pageSize ? null : String(state.pageSize),
     hide: state.hidden.length > 0 ? state.hidden.join(",") : null,
     ord: state.order.length > 0 ? state.order.join(",") : null,
-    lay: state.layout === "auto" ? null : state.layout,
+    lay: state.layout === "default" ? null : state.layout,
     w: serializeColumnWidths(state.widths),
-    den: state.density === "normal" ? null : state.density,
+    den: state.density === "default" ? null : state.density,
     frz: state.freezeFirst ? "1" : null,
     wrap: state.wrap ? "1" : null,
   };
@@ -303,12 +309,22 @@ export function sameTableView(a: TableViewState, b: TableViewState): boolean {
 
 // ─── layout: mode, widths, density, freeze ──────────────────────────────────
 
+/** A concrete layout mode (used for the ORGANIZATION default, which is never `default`). */
 export function parseLayoutMode(raw: string | null): TableLayoutMode {
   return raw === "fit" || raw === "scroll" ? raw : "auto";
 }
 
 export function parseRowDensity(raw: string | null): TableRowDensity {
   return raw === "compact" || raw === "tall" ? raw : "normal";
+}
+
+/** A VIEW's layout: absent or unknown = `default` (the organization decides). */
+export function parseLayoutChoice(raw: string | null | undefined): TableLayoutChoice {
+  return raw === "auto" || raw === "fit" || raw === "scroll" ? raw : "default";
+}
+
+export function parseRowDensityChoice(raw: string | null | undefined): TableRowDensityChoice {
+  return raw === "compact" || raw === "normal" || raw === "tall" ? raw : "default";
 }
 
 export function clampColumnWidth(px: number): number {
@@ -368,4 +384,19 @@ export function resolveTableLayout(
 ): "fit" | "scroll" {
   if (mode !== "auto") return mode;
   return visibleColumnCount <= fitMaxColumns ? "fit" : "scroll";
+}
+
+/** The person's choice if they made one, else the organization's default. */
+export function effectiveLayoutMode(
+  choice: TableLayoutChoice,
+  organizationDefault: TableLayoutMode,
+): TableLayoutMode {
+  return choice === "default" ? organizationDefault : choice;
+}
+
+export function effectiveRowDensity(
+  choice: TableRowDensityChoice,
+  organizationDefault: TableRowDensity,
+): TableRowDensity {
+  return choice === "default" ? organizationDefault : choice;
 }

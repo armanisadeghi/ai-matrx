@@ -25,6 +25,10 @@ type Props = {
   layoutMode: TableLayoutMode;
   /** What `auto` currently resolves to, so the menu can say it. */
   autoResolvesTo: "fit" | "scroll";
+  /** The organization's "fit up to N columns" setting, so the hint says the real number. */
+  fitMaxColumns: number;
+  /** True when the person has overridden anything (drives the dot). */
+  isCustomized: boolean;
   onLayoutModeChange: (next: TableLayoutMode) => void;
   rowDensity: TableRowDensity;
   onRowDensityChange: (next: TableRowDensity) => void;
@@ -39,7 +43,7 @@ type Props = {
 };
 
 const LAYOUTS: { id: TableLayoutMode; label: string; hint: string }[] = [
-  { id: "auto", label: "Automatic", hint: "Fit up to eight columns, then scroll" },
+  { id: "auto", label: "Automatic", hint: "Fit while there are few columns, then scroll" },
   { id: "fit", label: "Fit to width", hint: "Share the width; nothing scrolls sideways" },
   { id: "scroll", label: "Natural widths", hint: "Each column its own width; scroll sideways" },
 ];
@@ -93,6 +97,8 @@ function Segmented<T extends string>({
 export function TableLayoutMenu({
   layoutMode,
   autoResolvesTo,
+  fitMaxColumns,
+  isCustomized,
   onLayoutModeChange,
   rowDensity,
   onRowDensityChange,
@@ -104,12 +110,7 @@ export function TableLayoutMenu({
   onResetColumnWidths,
   className,
 }: Props) {
-  const customized =
-    layoutMode !== "auto" ||
-    rowDensity !== "normal" ||
-    freezeFirstColumn ||
-    wrapText ||
-    customWidthCount > 0;
+  const customized = isCustomized;
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -138,7 +139,7 @@ export function TableLayoutMenu({
           />
           <p className="text-[11px] leading-snug text-muted-foreground">
             {layoutMode === "auto"
-              ? `Right now: ${autoResolvesTo === "fit" ? "fitting the width" : "natural widths, scrolling sideways"}.`
+              ? `Fits up to ${fitMaxColumns} columns, then scrolls. Right now: ${autoResolvesTo === "fit" ? "fitting the width" : "natural widths, scrolling sideways"}.`
               : LAYOUTS.find((l) => l.id === layoutMode)?.hint}{" "}
             Drag a column's right edge to set its width; double-click the edge to reset it.
           </p>
