@@ -362,6 +362,13 @@ if $STRICT; then
         # no creds or no aidream checkout prints LIVE PULL FAILED (a marker
         # run_gate knows) and exits 2 as UNMEASURED, never a quiet green.
         "Subscribed tables in supabase_realtime|pnpm check:realtime-publication"
+        # THE OTHER SILENT REALTIME DEATH. A `private: true` channel is authorized by
+        # RLS on realtime.messages, which dispatches by topic PREFIX to
+        # platform.realtime_topic_prefix; an unregistered prefix is refused at every
+        # join, forever, behind a screen that looks healthy. The scheduler's channel
+        # was in that state from the day it was written until 2026-09-21. Same
+        # credential gate and same UNMEASURED rule as the publication census.
+        "Private channel topic prefixes are registered|pnpm check:private-channel-admission"
         # The kind loading-component slug list lives in the frontend (compiled
         # in, so the skeleton paints with zero latency) and is mirrored by
         # aidream's kind_create. A slug on one side only is invisible until a
@@ -794,6 +801,13 @@ else
         # no creds or no aidream checkout prints LIVE PULL FAILED (a marker
         # run_gate knows) and exits 2 as UNMEASURED, never a quiet green.
         "Subscribed tables in supabase_realtime|pnpm check:realtime-publication"
+        # THE OTHER SILENT REALTIME DEATH. A `private: true` channel is authorized by
+        # RLS on realtime.messages, which dispatches by topic PREFIX to
+        # platform.realtime_topic_prefix; an unregistered prefix is refused at every
+        # join, forever, behind a screen that looks healthy. The scheduler's channel
+        # was in that state from the day it was written until 2026-09-21. Same
+        # credential gate and same UNMEASURED rule as the publication census.
+        "Private channel topic prefixes are registered|pnpm check:private-channel-admission"
         "Kind loading-slug twin (aidream)|pnpm exec tsx scripts/check-loading-slug-twin.ts"
         # CONTENT IR / KINDS — the two halves of the kinds program's frontend
         # gate (KINDS_EVERYWHERE_PLAN.md §6.4). The surface export regenerates
