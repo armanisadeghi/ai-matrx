@@ -464,6 +464,31 @@ const UserTableViewer = ({
   // Drag a header's right edge. The width is painted straight onto the header
   // during the drag (no re-render per pixel) and committed to the view state
   // on mouse-up, so the URL and a saved view carry it.
+  // ─── Column reorder by dragging a header (per-view `order`) ───────────────
+  // The Sheets / Airtable gesture: drag a header sideways and drop it where
+  // it should go. Writes the same view-state `order` the Columns picker does
+  // (resolveViewColumns keeps ordering logic in one place), so it is a
+  // personal, saveable arrangement — never a change to the table itself.
+  const [headerDrag, setHeaderDrag] = useState<{
+    from: string;
+    over: string | null;
+    side: "left" | "right";
+  } | null>(null);
+  const dropColumn = (from: string, over: string, side: "left" | "right") => {
+    if (from === over) return;
+    const names = resolveViewColumns(fields, { hidden: [], order: columnOrder }).map(
+      (f) => f.field_name,
+    );
+    const fromIndex = names.indexOf(from);
+    if (fromIndex < 0) return;
+    names.splice(fromIndex, 1);
+    let toIndex = names.indexOf(over);
+    if (toIndex < 0) return;
+    if (side === "right") toIndex += 1;
+    names.splice(toIndex, 0, from);
+    setColumnOrder(names);
+  };
+
   const resizeDrag = useRef<{
     fieldName: string;
     startX: number;
@@ -3962,12 +3987,44 @@ const UserTableViewer = ({
                       grid.refocusGrid();
                     }}
                     title={`Click to select the ${field.display_name} column`}
+                    // Drag to reorder (desktop). The resize handle cancels
+                    // its own mousedown, so a drag can only start from the
+                    // header body; a header being renamed is not draggable.
+                    draggable={!isMobile && renamingField !== field.field_name}
+                    onDragStart={(e) => {
+                      e.dataTransfer.effectAllowed = "move";
+                      e.dataTransfer.setData("text/plain", field.field_name);
+                      setHeaderDrag({ from: field.field_name, over: null, side: "left" });
+                    }}
+                    onDragOver={(e) => {
+                      if (!headerDrag) return;
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const side = e.clientX < rect.left + rect.width / 2 ? "left" : "right";
+                      if (headerDrag.over !== field.field_name || headerDrag.side !== side) {
+                        setHeaderDrag({ ...headerDrag, over: field.field_name, side });
+                      }
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (headerDrag) dropColumn(headerDrag.from, field.field_name, headerDrag.side);
+                      setHeaderDrag(null);
+                    }}
+                    onDragEnd={() => setHeaderDrag(null)}
                     style={columnWidthStyle(field.field_name)}
                     className={cn(
                       "sticky top-0 z-20 max-w-[70vw] border-b border-gray-200 bg-gray-100 py-1.5 font-semibold text-gray-700 transition-colors hover:bg-gray-200/70 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/70 md:max-w-none",
                       // The 150px floor is the platform's; a dragged width
                       // replaces it (that is what dragging narrower means).
                       !columnWidths[field.field_name] && "md:min-w-[150px]",
+                      // Drop indicator while a header is being dragged over.
+                      headerDrag?.over === field.field_name &&
+                        headerDrag.from !== field.field_name &&
+                        (headerDrag.side === "left"
+                          ? "shadow-[inset_3px_0_0_theme(colors.primary.DEFAULT)]"
+                          : "shadow-[inset_-3px_0_0_theme(colors.primary.DEFAULT)]"),
+                      headerDrag?.from === field.field_name && "opacity-50",
                       // Frozen first column: sits right of the 2.5rem
                       // checkbox column and above scrolling neighbours.
                       freezeFirstColumn &&
