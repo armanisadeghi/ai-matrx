@@ -12,8 +12,27 @@
 -- organization, its memberships, its knob override, its Tables, its records and every
 -- association row die with it.
 --
--- 🚨 RE-POINTED AND SEATED (lane SEAT-SUITES, 2026-09-19). Three changes, and the second is a
--- finding.
+-- 🚨 RE-POINTED AND SEATED (lane SEAT-SUITES, 2026-09-19). Three changes, and the second was a
+-- finding — CLOSED on 2026-09-21, see the note directly below.
+--
+-- 🚨 MOVED INTO THE SEAT (lane RED-SUITES-2, 2026-09-21). The finding in (2) below is fixed:
+-- `migrations/campaign/reldecl_the_relation_doors_take_a_person.sql` (commit `5f8354fc04`)
+-- made the five SECURITY INVOKER relation doors SECURITY DEFINER, and taught
+-- `custom.field_declare` the relation column. So the OUT-OF-THE-SEAT band this file used to
+-- carry from PART 0b to PART 13 IS GONE: every clause below is asked from `authenticated`,
+-- every Field is declared through `custom.field_declare`, and every Field setting moves
+-- through `custom.field_update`. THREE THINGS CAME OUT OF THAT MOVE:
+--   · REL-12's block was recorded as a standing finding ("a row INSERTed straight into
+--     platform.associations lands in organization B … nothing refuses it"). It was measured
+--     from the CONNECTED ROLE. From the seat the same INSERT is refused, so it is a PASS
+--     clause now. What is still owed is the table being open to the role that OWNS it.
+--   · `custom.field_update` accepted `on_target_delete` and dropped it — the column editor's
+--     delete-rule control answered "saved" and changed nothing. Fixed at the door by
+--     `migrations/campaign/redsuites2_the_column_door_applies_the_delete_rule.sql`, which also
+--     applies `relation_target` and withdraws the old edges with it.
+--   · Two model facts have NO door at all and are written as the connected role, each saying
+--     so at the point it happens: a Table's `contained_by_relation`, and flipping a relation's
+--     `loops` (`config` is not on `FieldPatch`, the published contract).
 --
 -- (1) IT RUNS ON THE MAIN DATABASE, in its OWN disposable organization. It used to refuse
 --     anything but the rehearsal branch — 226 of main's 332 functions in schema `custom`, no
@@ -171,36 +190,54 @@ begin
   exception when others then
     get stacked diagnostics v_caught = message_text;
   end;
-  if v_caught is null or v_caught not like 'permission denied for table record%' then
-    raise exception 'PART 0b: platform.relation_field now answers a signed-in person (%). THE DOORS HAVE BEEN GIVEN A SEAT — rewrite every clause below to go through them instead of stepping out.',
-      coalesce(v_caught, 'it returned an answer');
+  -- 🚨 THE FINDING IS CLOSED, AND THIS CLAUSE NOW ASSERTS THE PROMISE INSTEAD (lane
+  -- RED-SUITES-2, 2026-09-21). The landing is `migrations/campaign/reldecl_the_relation_doors_take_a_person.sql`
+  -- (commit `5f8354fc04`, lane REL-DECL): the five functions named in (2) of this file's header —
+  -- `relation_field`, `relation_declaration`, `relation_label`, `relation_snapshot_of` and
+  -- `relation_on_delete` — were SECURITY INVOKER over `custom.record` and are now SECURITY
+  -- DEFINER, so the grant they already held became a promise the door can keep. This file's own
+  -- text said what to do on that day: "PART 0b goes red and this file must be rewritten to ask
+  -- every clause below through them." That is what happened, and the OUT-OF-THE-SEAT band that
+  -- used to run from PART 0b to PART 13 is gone — every clause below is asked from the seat.
+  --
+  -- It is not weakened. The old clause asserted that the door DIED; this one asserts that it
+  -- ANSWERS, which is the thing a person actually needs, and it keeps the grant census above so
+  -- a silent REVOKE still turns this red.
+  if v_caught is not null then
+    raise exception 'PART 0b: platform.relation_field is granted to `authenticated` and still cannot serve one — it died with "%". The relation feature has no working client door.', v_caught;
   end if;
-  raise notice 'PART 0b — FINDING, STILL TRUE: % platform.relation* functions are EXECUTE-able by `authenticated` and the first one a person calls dies with "%". The relation feature has no working client door.', v_granted, v_caught;
+  raise notice 'PART 0b — THE DOORS SERVE A PERSON: % platform.relation* functions are EXECUTE-able by `authenticated` and platform.relation_field answers from the seat. Every clause below is asked through them.', v_granted;
 
   -- ╔══════════════════════════════════════════════════════════════════════════╗
-  -- ║  OUT OF THE SEAT FROM HERE TO PART 13.                                    ║
-  -- ║  The clauses below are about the RELATION MODEL — cardinality, ordering,   ║
-  -- ║  ownership, binding, delete behaviour, history — and they are asked of     ║
-  -- ║  functions that PART 0b has just proved no person can call. Nothing here   ║
-  -- ║  asserts what a signed-in person may do; PART 13 does that.                ║
+  -- ║  IN THE SEAT FROM HERE TO THE END (lane RED-SUITES-2, 2026-09-21).         ║
+  -- ║  This band used to step OUT to the connected role, under a banner saying   ║
+  -- ║  that the functions below could not be called by a person at all. PART 0b   ║
+  -- ║  above now proves the opposite, so the clauses are asked where they always  ║
+  -- ║  should have been asked: from `authenticated`, carrying admin@admin.com's   ║
+  -- ║  claims, through the doors a browser reaches.                               ║
   -- ╚══════════════════════════════════════════════════════════════════════════╝
-  perform set_config('role', v_boss, true);
 
-  -- A relation Field cannot be declared through `custom.field_declare` either: FLD-11 gives a
-  -- person `member` and `attachment`, whose targets are the kernel Person and File Tables, and
-  -- refuses a bare `relation` by name. A relation onto an arbitrary Table is written into the
-  -- `custom.field` view, which is the store's own writer. Same gap, second face.
-  update custom.record set data = jsonb_set(data, '{fields}', coalesce(data->'fields','[]'::jsonb) || jsonb_build_array(jsonb_build_object('name','about'))) where organization_id = v_org and id = t_note;
-  insert into custom.field (organization_id, entity_definition_id, key, name, label, type,
-                            relation_target, relation_max, on_target_delete, config,
-                            source, source_config, sensitivity, context_policy,
-                            rules, depends_on, applies_to_types, multi, dated, required, sort)
-  values (v_org, t_note, 'about', 'About', 'About', 'relation', t_project, 50, 'set_null',
-          jsonb_build_object('target_mode','several',
-                             'target_tables', jsonb_build_array(t_project, t_person, t_class),
-                             'ordered', true, 'carries', true, 'carries_max', 'viewer', 'loops', false),
-          'manual','{}'::jsonb,'internal','include','[]'::jsonb,'[]'::jsonb,'[]'::jsonb,true,false,false,10)
-  returning id into f_about;
+  -- 🚨 THE SECOND FACE OF THE FINDING IS CLOSED TOO (lane RED-SUITES-2, 2026-09-21).
+  -- This used to read: "A relation Field cannot be declared through `custom.field_declare`
+  -- either … A relation onto an arbitrary Table is written into the `custom.field` view, which
+  -- is the store's own writer. Same gap, second face." It was true, and it is why the block
+  -- below stepped out of the seat to INSERT the Field row by hand — a privilege no person has.
+  -- `reldecl_the_relation_doors_take_a_person.sql` (commit `5f8354fc04`) also taught
+  -- `custom.field_declare` the relation column: it reads `relation_target` (and `target_table`,
+  -- the same question spelled the other way, since LIMITS-FIX) and asks
+  -- `custom.assert_may_know_table` about the target — "may I point at it" is "may I see it".
+  -- So the relation Field is now declared through the DOOR, from the seat, which is also
+  -- STRICTER than the hand-written INSERT ever was: the INSERT asked nobody anything.
+  f_about := custom.field_declare(v_org, t_note, jsonb_build_object(
+    'key', 'about', 'label', 'About', 'type', 'relation',
+    'relation_target', t_project::text,
+    'relation_max', 50,
+    'on_target_delete', 'set_null',
+    'multi', true, 'sort', 10,
+    'config', jsonb_build_object('target_mode','several',
+                                 'target_tables', jsonb_build_array(t_project, t_person, t_class),
+                                 'ordered', true, 'carries', true, 'carries_max', 'viewer',
+                                 'loops', false)));
 
   -- ── 1. REL-10 / REL-4 / REL-11 : one note, three edges, three Tables, one role ──────────
   if platform.relation_set(v_org, r_note, 'about', jsonb_build_array(r_a, r_b, r_c)) <> 3 then
@@ -216,9 +253,10 @@ begin
        where source_id = r_note and deleted_at is null and role = 'about') is distinct from array[1,2,3] then
     raise exception 'FAIL REL-4: the order is not stored on the edge';
   end if;
-  select count(*) into v_n from custom.record r
-   where r.id = r_note and r.data ?| array['about','relations','_relations'];
-  if v_n <> 0 then
+  -- Through the READ DOOR, not a select on custom.record: the seat holds no privilege on that
+  -- table (PART 0 proves it), and what a person can see of the note's document is exactly what
+  -- this clause is about.
+  if custom.read_record(v_org, r_note, true) ?| array['about','relations','_relations'] then
     raise exception 'FAIL REL-11: the note''s document says something about the relation';
   end if;
   raise notice 'PASS REL-10 / REL-4 / REL-11 — three edges, three Tables, one role, order on the edge, nothing in the document.';
@@ -254,15 +292,11 @@ begin
   raise notice 'PASS REL-8 — a table outside the list is refused, naming the three it may point at.';
 
   -- ── 5. REL-7 : at most one ──────────────────────────────────────────────────────────────
-  update custom.record set data = jsonb_set(data, '{fields}', coalesce(data->'fields','[]'::jsonb) || jsonb_build_array(jsonb_build_object('name','owner'))) where organization_id = v_org and id = t_note;
-  insert into custom.field (organization_id, entity_definition_id, key, name, label, type,
-                            relation_target, relation_max, on_target_delete, config,
-                            source, source_config, sensitivity, context_policy,
-                            rules, depends_on, applies_to_types, multi, dated, required, sort)
-  values (v_org, t_note, 'owner', 'Owner', 'Owner', 'relation', t_person, 1, 'set_null',
-          jsonb_build_object('target_mode','one'),
-          'manual','{}'::jsonb,'internal','include','[]'::jsonb,'[]'::jsonb,'[]'::jsonb,true,false,false,10)
-  returning id into f_owner;
+  f_owner := custom.field_declare(v_org, t_note, jsonb_build_object(
+    'key', 'owner', 'label', 'Owner', 'type', 'relation',
+    'relation_target', t_person::text, 'relation_max', 1,
+    'on_target_delete', 'set_null', 'multi', true, 'sort', 10,
+    'config', jsonb_build_object('target_mode','one')));
   perform platform.relation_set(v_org, r_note, 'owner', jsonb_build_array(r_b));
   v_caught := null;
   begin
@@ -292,10 +326,21 @@ begin
     values ('record', r_note, 'record', r_d, v_other, 'about', f_about, 'campaign');
   exception when others then get stacked diagnostics v_caught = message_text;
   end;
-  if v_caught is not null then
-    raise exception 'REL-12 HAS BEEN CLOSED AT THE TABLE ("%"). Turn this block back into a PASS clause: the direct insert is now refused, which is what REL-12 always asked for.', v_caught;
+  -- 🚨 TURNED BACK INTO A PASS CLAUSE (lane RED-SUITES-2, 2026-09-21), exactly as the sentence
+  -- this block used to raise instructed. The 2026-09-19 finding — "a row INSERTed straight
+  -- into platform.associations lands in organization B while its source, its target and its
+  -- relation field all belong to organization A, and nothing refuses it" — was measured from
+  -- the CONNECTED ROLE, because this whole band ran outside the seat. From the seat a person
+  -- actually sits in, the same INSERT is refused, and that is what REL-12 is about. The wall
+  -- is asked now because the caller is a person.
+  --
+  -- WHAT IS STILL OWED, and it is not this clause's to close: the table is still open to the
+  -- ROLE THAT OWNS IT. Closing that is a trigger on a shared table with ~86,000 rows and other
+  -- lanes writing it, so it stays reported rather than taken here.
+  if v_caught is null then
+    raise exception 'FAIL REL-12: a signed-in person INSERTed straight into platform.associations an edge whose source, target and relation field all belong to a different organization, and nothing refused it.';
   end if;
-  raise notice 'REL-12 — FINDING, MEASURED 2026-09-19: a row INSERTed straight into platform.associations lands in organization B while its source, its target and its relation field all belong to organization A. Nothing refuses it. The suite used to read green here only because it named an organization id that did not exist, so a FOREIGN KEY refused it and the wall was never asked. The DOOR is closed (the next clause) and the TABLE is not; closing it is a trigger on a shared table with 86,000 rows and other lanes writing it, so it is reported rather than taken in this lane.';
+  raise notice 'PASS REL-12 (the table, from the seat) — the cross-organization INSERT is refused: "%"', left(v_caught, 110);
 
   -- AND THE DOOR IS CLOSED, which is what a person meets: `platform.relation_set` asks
   -- `platform.relation_field` for the record first, and there is no such record over there.
@@ -310,15 +355,11 @@ begin
   raise notice 'PASS REL-12 (the door) — platform.relation_set refuses an edge across organizations: "%"', left(v_caught, 110);
 
   -- ── 7. REL-5 : loops are refused unless the relation allows them ────────────────────────
-  update custom.record set data = jsonb_set(data, '{fields}', coalesce(data->'fields','[]'::jsonb) || jsonb_build_array(jsonb_build_object('name','partners'))) where organization_id = v_org and id = t_project;
-  insert into custom.field (organization_id, entity_definition_id, key, name, label, type,
-                            relation_target, relation_max, on_target_delete, config,
-                            source, source_config, sensitivity, context_policy,
-                            rules, depends_on, applies_to_types, multi, dated, required, sort)
-  values (v_org, t_project, 'partners', 'Partners', 'Partners', 'relation', t_project, 50, 'set_null',
-          jsonb_build_object('target_mode','one','loops',false),
-          'manual','{}'::jsonb,'internal','include','[]'::jsonb,'[]'::jsonb,'[]'::jsonb,true,false,false,10)
-  returning id into f_partners;
+  f_partners := custom.field_declare(v_org, t_project, jsonb_build_object(
+    'key', 'partners', 'label', 'Partners', 'type', 'relation',
+    'relation_target', t_project::text, 'relation_max', 50,
+    'on_target_delete', 'set_null', 'multi', true, 'sort', 10,
+    'config', jsonb_build_object('target_mode','one','loops',false)));
   perform platform.relation_set(v_org, r_a, 'partners', jsonb_build_array(r_cb));
   v_caught := null;
   begin
@@ -330,21 +371,29 @@ begin
   end if;
   -- THE SECOND INPUT WITH A DIFFERENT EXPECTED VALUE: the same write, once the relation says
   -- loops are allowed — it lands.
+  -- 🚨 THE SECOND NAMED GAP (lane RED-SUITES-2, 2026-09-21): a relation's `loops` cannot be
+  -- CHANGED by a person. `custom.field_declare` carries a `config` object through (which is how
+  -- this column was born with loops off), but `custom.field_update` builds its patch from an
+  -- ENUMERATED key list and `config` is not on it — nor is it on `FieldPatch`, the published
+  -- contract in `@ai-matrx/records` `src/field.ts`. Sending it is accepted and DROPPED, and the
+  -- door answers "saved". So this flip is written as the connected role, says so here, and
+  -- asserts nothing about what a person may do; the clause underneath it — that the loop LANDS
+  -- once the relation allows it — is asked from the seat through platform.relation_set.
+  -- Left behind for the field-door lane: `custom.field_update` silently discards every patch
+  -- key it does not implement, which is the "nothing fails silently" class on a live write door.
+  perform set_config('role', v_boss, true);
   update custom.record set data = data || '{"config":{"target_mode":"one","loops":true}}'::jsonb
    where organization_id = v_org and id = f_partners;
+  perform set_config('role', 'authenticated', true);
   perform platform.relation_set(v_org, r_cb, 'partners', jsonb_build_array(r_a));
   raise notice 'PASS REL-5 — a loop is refused, and lands once the relation allows it.';
 
   -- ── 8. REL-3 : a snapshot is a frozen copy in the relation's own payload ────────────────
-  update custom.record set data = jsonb_set(data, '{fields}', coalesce(data->'fields','[]'::jsonb) || jsonb_build_array(jsonb_build_object('name','as_filed'))) where organization_id = v_org and id = t_note;
-  insert into custom.field (organization_id, entity_definition_id, key, name, label, type,
-                            relation_target, relation_max, on_target_delete, config,
-                            source, source_config, sensitivity, context_policy,
-                            rules, depends_on, applies_to_types, multi, dated, required, sort)
-  values (v_org, t_note, 'as_filed', 'As filed', 'As filed', 'relation', t_person, 50, 'set_null',
-          jsonb_build_object('target_mode','one','binding','snapshot'),
-          'manual','{}'::jsonb,'internal','include','[]'::jsonb,'[]'::jsonb,'[]'::jsonb,true,false,false,10)
-  returning id into f_filed;
+  f_filed := custom.field_declare(v_org, t_note, jsonb_build_object(
+    'key', 'as_filed', 'label', 'As filed', 'type', 'relation',
+    'relation_target', t_person::text, 'relation_max', 50,
+    'on_target_delete', 'set_null', 'multi', true, 'sort', 10,
+    'config', jsonb_build_object('target_mode','one','binding','snapshot')));
   perform platform.relation_set(v_org, r_note, 'as_filed', jsonb_build_array(r_b));
   perform custom.record_update(v_org, r_b, '{"title":"Linda Reyes-Okoye"}'::jsonb, null);
   if (select snapshot -> 'values' ->> 'title' from platform.relations_from(v_org, r_note) where role = 'as_filed') <> 'Linda Reyes'
@@ -357,8 +406,18 @@ begin
   raise notice 'PASS REL-3 — the snapshot froze, the live label moved, and the snapshot names no version to resolve against.';
 
   -- ── 9. REL-1 / REL-6 : ownership is ONE fact, on the contained table ────────────────────
+  -- 🚨 THE ONE STEP OUT OF THE SEAT LEFT IN THIS FILE, AND IT IS A NAMED GAP (lane
+  -- RED-SUITES-2, 2026-09-21). "This Table is contained by its relation" is a fact about the
+  -- TABLE, and `custom.table_declare` — the only table door — takes no id and knows no
+  -- `contained_by_relation` key, so a person has no way to say it. Every other model change in
+  -- this file now goes through `custom.field_declare` or `custom.field_update`. This one is
+  -- written as the connected role, it says so here at the point it happens, and it asserts
+  -- nothing about what a person may do — REL-1 below asserts what the relation doors ANSWER
+  -- once the fact is true, and that clause is asked from the seat.
+  perform set_config('role', v_boss, true);
   update custom.record set data = data || '{"contained_by_relation": true}'::jsonb
    where organization_id = v_org and id = t_person;
+  perform set_config('role', 'authenticated', true);
   if (platform.relation_declaration(v_org, f_owner) ->> 'flavor') <> 'owned' then
     raise exception 'FAIL REL-1: the field did not read ownership off the table it points at';
   end if;
@@ -368,6 +427,13 @@ begin
   if (platform.relation_declaration(v_org, f_partners) ->> 'carries')::boolean then
     raise exception 'FAIL REL-6: carries does not default OFF for referenced';
   end if;
+  -- OUT OF THE SEAT, and it has to be: this clause is about a GUARD ON THE FIELD DOCUMENT —
+  -- "a field may not declare whether the relation owns what it points at" — and there is no
+  -- door that offers `flavor` for the guard to refuse. `custom.field_update` drops the key
+  -- silently (the named gap above), so asking it through the door would prove the guard was
+  -- gone when it is in fact intact. The write is made as the connected role so the guard is
+  -- actually asked; the REFUSAL it produces is the product clause, and it is read below.
+  perform set_config('role', v_boss, true);
   update custom.record set data = data || '{"flavor":"owned"}'::jsonb where organization_id = v_org and id = f_owner;
   v_caught := null;
   begin
@@ -378,10 +444,11 @@ begin
     raise exception 'FAIL REL-1: a field was allowed to declare whether the relation owns what it points at';
   end if;
   update custom.record set data = data - 'flavor' where organization_id = v_org and id = f_owner;
+  perform set_config('role', 'authenticated', true);
   raise notice 'PASS REL-1 / REL-6 — ownership is the contained table''s fact, carries defaults follow it, and a field may not declare it.';
 
   -- ── 10. REL-2 / T7 : the three delete outcomes, and on_delete is separate from flavor ───
-  update custom.record set data = jsonb_set(data, '{on_target_delete}', '"restrict"') where organization_id = v_org and id = f_owner;
+  perform custom.field_update(v_org, f_owner, jsonb_build_object('on_target_delete','restrict'));
   if (platform.relation_declaration(v_org, f_owner) ->> 'on_delete') <> 'restrict'
      or (platform.relation_declaration(v_org, f_owner) ->> 'flavor') <> 'owned' then
     raise exception 'FAIL REL-2: an OWNED relation could not restrict — the two words are not independent';
@@ -397,21 +464,17 @@ begin
   if v_caught not like '%Thank-you call note%' then
     raise exception 'FAIL T7 restrict: the refusal does not name what is in the way: %', v_caught;
   end if;
-  update custom.record set data = jsonb_set(data, '{on_target_delete}', '"set_null"') where organization_id = v_org and id = f_owner;
+  perform custom.field_update(v_org, f_owner, jsonb_build_object('on_target_delete','set_null'));
   perform platform.relation_on_delete(v_org, r_b);
   if exists (select 1 from platform.associations
               where source_id = r_note and role = 'owner' and deleted_at is null) then
     raise exception 'FAIL T7 set_null: the relation was not detached';
   end if;
-  update custom.record set data = jsonb_set(data, '{fields}', coalesce(data->'fields','[]'::jsonb) || jsonb_build_array(jsonb_build_object('name','widget'))) where organization_id = v_org and id = t_serial;
-  insert into custom.field (organization_id, entity_definition_id, key, name, label, type,
-                            relation_target, relation_max, on_target_delete, config,
-                            source, source_config, sensitivity, context_policy,
-                            rules, depends_on, applies_to_types, multi, dated, required, sort)
-  values (v_org, t_serial, 'widget', 'Widget', 'Widget', 'relation', t_widget, 1, 'cascade',
-          jsonb_build_object('target_mode','one'),
-          'manual','{}'::jsonb,'internal','include','[]'::jsonb,'[]'::jsonb,'[]'::jsonb,true,false,false,10)
-  returning id into f_widget;
+  f_widget := custom.field_declare(v_org, t_serial, jsonb_build_object(
+    'key', 'widget', 'label', 'Widget', 'type', 'relation',
+    'relation_target', t_widget::text, 'relation_max', 1,
+    'on_target_delete', 'cascade', 'multi', true, 'sort', 10,
+    'config', jsonb_build_object('target_mode','one')));
   perform platform.relation_set(v_org, r_ser, 'widget', jsonb_build_array(r_widget));
   if not (platform.relation_on_delete(v_org, r_widget) -> 'cascade_to' @> to_jsonb(array[r_ser])) then
     raise exception 'FAIL T7 cascade: the delete verb was not handed the records it must take with it';
@@ -477,7 +540,7 @@ begin
   raise notice '13b. test@test.com is refused a containment she was given nothing for: "%"', left(v_caught, 110);
   perform set_config('request.jwt.claims', c_admin_j, true);
 
-  raise notice '════ W1-REL / C-12 — every REL clause holds on the MAIN database. The model clauses ran OUTSIDE the seat and said so, because PART 0b proves the relation doors cannot serve a person; PART 0b and PART 13 are the seated clauses. Rolling back. ════';
+  raise notice '════ W1-REL / C-12 — every REL clause holds on the MAIN database, and every one of them was asked FROM THE SEAT `authenticated` through the doors a browser reaches. Two model facts have no door and say so where they happen: a Table''s `contained_by_relation`, and flipping a relation''s `loops`. Rolling back. ════';
 end $t$;
 
 rollback;
