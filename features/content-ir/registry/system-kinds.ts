@@ -59,6 +59,7 @@ import { MERMAID_DIAGRAM_KIND_DEFINITION } from "../kinds/mermaid-diagram";
 import { SCRAPER_PAGE_KIND_DEFINITIONS } from "../kinds/scraper-page";
 import { TASK_LIST_KIND_DEFINITIONS } from "../kinds/task-list";
 import { MAP_TOPIC_PROPOSAL_KIND_DEFINITIONS } from "../kinds/map-topic-proposal";
+import { DECISION_ANSWERS_KIND_DEFINITIONS } from "../kinds/decision-answers";
 import { LIST_CHANGE_PROPOSAL_KIND_DEFINITIONS } from "../kinds/list-change-proposal";
 import { RESOURCE_COLLECTION_KIND_DEFINITIONS } from "../kinds/resource-collection";
 import { PROGRESS_TRACKER_KIND_DEFINITIONS } from "../kinds/progress-tracker";
@@ -121,6 +122,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // Topical map: the tree the map author proposes (Lane G, R12). One compiled
   // component, `MapTopicProposalBlock`, over the shared `TopicTree`.
   ...MAP_TOPIC_PROPOSAL_KIND_DEFINITIONS,
+  ...DECISION_ANSWERS_KIND_DEFINITIONS,
   ...LIST_CHANGE_PROPOSAL_KIND_DEFINITIONS,
   ...RESOURCE_COLLECTION_KIND_DEFINITIONS,
   ...PROGRESS_TRACKER_KIND_DEFINITIONS,

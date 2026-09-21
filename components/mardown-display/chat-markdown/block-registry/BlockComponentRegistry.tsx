@@ -18,6 +18,7 @@ import StructuredPlanBlock from "../../blocks/plan/StructuredPlanBlock";
 import FlashcardsBlock from "../../blocks/flashcards/FlashcardsBlock";
 import VideoPromptOptionsBlock from "../../blocks/video-prompt-options/VideoPromptOptionsBlock";
 import MapTopicProposalBlock from "../../blocks/map-topic-proposal/MapTopicProposalBlock";
+import DecisionAnswersBlock from "../../blocks/decision-answers/DecisionAnswersBlock";
 import ListChangeProposalBlock from "../../blocks/list-change-proposal/ListChangeProposalBlock";
 import KeywordResearchBlock from "../../blocks/keyword-research/KeywordResearchBlock";
 import KeywordClassificationBatchBlock from "../../blocks/keyword-research/KeywordClassificationBatchBlock";
@@ -371,6 +372,13 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <MapTopicProposalBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  DecisionAnswersBlock: (
+    props: React.ComponentProps<typeof DecisionAnswersBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <DecisionAnswersBlock {...props} />
     </LazyBlockWrapper>
   ),
   ListChangeProposalBlock: (

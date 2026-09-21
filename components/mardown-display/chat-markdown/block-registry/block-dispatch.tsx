@@ -436,6 +436,7 @@ export type FeSynthesizedBlockType =
   | "media_block"
   | "video_prompt_options"
   | "map_topic_proposal"
+  | "decision_answers"
   | "list_change_proposal"
   | "keyword_research"
   | "keyword_classification_batch"
@@ -612,6 +613,7 @@ export type ShapeBlockType =
   | "item_presentation"
   | "video_prompt_options"
   | "map_topic_proposal"
+  | "decision_answers"
   | "list_change_proposal"
   | "keyword_research"
   | "keyword_classification_batch"
@@ -1724,6 +1726,24 @@ const SHAPE_BLOCK_DISPATCH = {
   // block renders THE ONE proposal component (`MapTopicProposalView`) over the
   // shared `TopicTree`; a complete block with no serverData falls through to
   // readable JSON (never hidden).
+  // Kind-routed (`decision_answers`) — the typed answers a decision holder
+  // returns. Complete-only: a half-streamed distribution draws bars that do
+  // not sum and a top answer that moves while it arrives.
+  decision_answers: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.DecisionAnswersBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return renderJsonFallback(block, index);
+  },
+
   map_topic_proposal: ({ block, index }) => {
     if (block.serverData) {
       return (
