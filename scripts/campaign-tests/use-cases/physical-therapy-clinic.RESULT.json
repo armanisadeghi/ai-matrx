@@ -1,0 +1,24 @@
+{
+  "use_case": "physical-therapy-clinic",
+  "organization": {
+    "id": "0fec03d8-afe5-4ea0-bf14-d0ab18e4a536",
+    "slug": "physical-therapy-clinic",
+    "name": "Ridgeline Physical Therapy (test fixture)",
+    "settings": {
+      "test_fixture": true
+    }
+  },
+  "tables": {
+    "patients": "5a4077da-bd6b-4f34-982c-93bcc36b2210",
+    "appointments": "f9d61a79-0780-4cd2-9b58-3e2a25042714",
+    "treatment_plans": "106587fc-3b10-413e-bdd9-ff9a05891e72",
+    "exercises_prescribed": "09ac14a1-497b-405f-82cd-afc60aedd870"
+  },
+  "rows_written": {
+    "patients": 10,
+    "appointments": 17,
+    "treatment_plans": 8,
+    "exercises_prescribed": 14
+  },
+  "limitations": []
+}

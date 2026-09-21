@@ -1,0 +1,73 @@
+{
+  "use_case": "home-renovation",
+  "one_sentence": "A homeowner tracks a whole-house renovation room by room, the contractor quotes they collected for each room, and every purchase made against the project budget.",
+  "organization_name": "Birchwood Ave Renovation (test fixture)",
+  "settings_tag": { "test_fixture": true },
+  "tables": {
+    "rooms": {
+      "fields": ["room_name", "project_scope", "target_start", "target_end", "status", "budget"],
+      "field_types": { "room_name": "text", "project_scope": "long_text", "target_start": "date", "target_end": "date", "status": "choice", "budget": "currency" },
+      "choices": { "status": ["Planning", "Quoting", "In Progress", "Complete", "On Hold"] },
+      "rows": [
+        {"room_name": "Kitchen", "project_scope": "Full gut renovation: new cabinets, quartz counters, relocate island, new appliances.", "target_start": "2026-04-01", "target_end": "2026-06-15", "status": "Complete", "budget": 48000.00},
+        {"room_name": "Primary Bathroom", "project_scope": "Replace tub with walk-in shower, new vanity, heated tile floor.", "target_start": "2026-06-20", "target_end": "2026-08-01", "status": "In Progress", "budget": 22500.00},
+        {"room_name": "Basement", "project_scope": "Finish unfinished basement into family room and home office, add egress window.", "target_start": "2026-08-10", "target_end": "2026-11-15", "status": "Quoting", "budget": 61000.00},
+        {"room_name": "Guest Bathroom", "project_scope": "Cosmetic refresh: new vanity, paint, light fixtures.", "target_start": "2026-09-01", "target_end": "2026-09-20", "status": "Planning", "budget": 6500.00},
+        {"room_name": "Backyard Deck", "project_scope": "Tear off old wood deck, build composite deck with pergola.", "target_start": "2026-05-01", "target_end": "2026-06-01", "status": "Complete", "budget": 18000.00},
+        {"room_name": "Garage", "project_scope": "Epoxy floor, built-in storage, new insulated door.", "target_start": "2026-10-01", "target_end": "2026-10-20", "status": "On Hold", "budget": 9500.00}
+      ]
+    },
+    "contractors": {
+      "fields": ["company_name", "trade", "contact_name", "phone", "email", "license_number", "insured"],
+      "field_types": { "company_name": "text", "trade": "choice", "contact_name": "text", "phone": "text", "email": "text", "license_number": "text", "insured": "boolean" },
+      "choices": { "trade": ["General Contractor", "Plumbing", "Electrical", "Flooring", "Painting", "HVAC", "Carpentry"] },
+      "rows": [
+        {"company_name": "Ferro & Sons Construction", "trade": "General Contractor", "contact_name": "Dominic Ferro", "phone": "555-330-1001", "email": "dominic@ferroandsons.example.test", "license_number": "GC-88213-OH", "insured": true},
+        {"company_name": "Redline Plumbing Co.", "trade": "Plumbing", "contact_name": "Tanya Iversen", "phone": "555-330-1002", "email": "tanya@redlineplumbing.example.test", "license_number": "PL-44029-OH", "insured": true},
+        {"company_name": "Voltway Electric", "trade": "Electrical", "contact_name": "Emeka Osayande", "phone": "555-330-1003", "email": "emeka@voltway.example.test", "license_number": "EL-90117-OH", "insured": true},
+        {"company_name": "Hearthstone Flooring", "trade": "Flooring", "contact_name": "Bianca Moretti", "phone": "555-330-1004", "email": "bianca@hearthstoneflooring.example.test", "license_number": "FL-22850-OH", "insured": true},
+        {"company_name": "Clearcoat Painting", "trade": "Painting", "contact_name": "Sam Delacroix", "phone": "555-330-1005", "email": "sam@clearcoatpaint.example.test", "license_number": "PT-10442-OH", "insured": false},
+        {"company_name": "Northgate HVAC", "trade": "HVAC", "contact_name": "Renata Kowalczyk", "phone": "555-330-1006", "email": "renata@northgatehvac.example.test", "license_number": "HV-77302-OH", "insured": true},
+        {"company_name": "Millbrook Carpentry", "trade": "Carpentry", "contact_name": "Julius Wexford", "phone": "555-330-1007", "email": "julius@millbrookcarpentry.example.test", "license_number": "CP-55671-OH", "insured": true}
+      ]
+    },
+    "quotes": {
+      "fields": ["room", "contractor", "quote_amount", "quote_date", "status", "valid_until"],
+      "field_types": { "room": "relation:rooms", "contractor": "relation:contractors", "quote_amount": "currency", "quote_date": "date", "status": "choice", "valid_until": "date" },
+      "choices": { "status": ["Pending", "Accepted", "Rejected", "Expired"] },
+      "rows": [
+        {"room": "Kitchen", "contractor": "Ferro & Sons Construction", "quote_amount": 46500.00, "quote_date": "2026-02-14", "status": "Accepted", "valid_until": "2026-03-14"},
+        {"room": "Kitchen", "contractor": "Redline Plumbing Co.", "quote_amount": 3200.00, "quote_date": "2026-02-20", "status": "Accepted", "valid_until": "2026-03-20"},
+        {"room": "Kitchen", "contractor": "Voltway Electric", "quote_amount": 2800.00, "quote_date": "2026-02-20", "status": "Accepted", "valid_until": "2026-03-20"},
+        {"room": "Primary Bathroom", "contractor": "Ferro & Sons Construction", "quote_amount": 21000.00, "quote_date": "2026-05-10", "status": "Accepted", "valid_until": "2026-06-10"},
+        {"room": "Primary Bathroom", "contractor": "Redline Plumbing Co.", "quote_amount": 4100.00, "quote_date": "2026-05-11", "status": "Accepted", "valid_until": "2026-06-11"},
+        {"room": "Basement", "contractor": "Ferro & Sons Construction", "quote_amount": 58000.00, "quote_date": "2026-07-20", "status": "Pending", "valid_until": "2026-08-20"},
+        {"room": "Basement", "contractor": "Millbrook Carpentry", "quote_amount": 12500.00, "quote_date": "2026-07-22", "status": "Pending", "valid_until": "2026-08-22"},
+        {"room": "Basement", "contractor": "Northgate HVAC", "quote_amount": 6800.00, "quote_date": "2026-07-25", "status": "Pending", "valid_until": "2026-08-25"},
+        {"room": "Guest Bathroom", "contractor": "Hearthstone Flooring", "quote_amount": 1800.00, "quote_date": "2026-07-28", "status": "Pending", "valid_until": "2026-08-28"},
+        {"room": "Backyard Deck", "contractor": "Millbrook Carpentry", "quote_amount": 17200.00, "quote_date": "2026-03-05", "status": "Accepted", "valid_until": "2026-04-05"},
+        {"room": "Backyard Deck", "contractor": "Ferro & Sons Construction", "quote_amount": 19800.00, "quote_date": "2026-03-02", "status": "Rejected", "valid_until": "2026-04-02"},
+        {"room": "Garage", "contractor": "Clearcoat Painting", "quote_amount": 2100.00, "quote_date": "2026-01-15", "status": "Expired", "valid_until": "2026-02-15"}
+      ]
+    },
+    "purchases": {
+      "fields": ["room", "item_description", "vendor", "purchase_date", "amount", "category", "receipt_number"],
+      "field_types": { "room": "relation:rooms", "item_description": "text", "vendor": "text", "purchase_date": "date", "amount": "currency", "category": "choice", "receipt_number": "text" },
+      "choices": { "category": ["Materials", "Fixtures", "Labor", "Permits", "Appliances", "Design/Design Fees"] },
+      "rows": [
+        {"room": "Kitchen", "item_description": "Custom shaker cabinets, painted 'Alabaster'", "vendor": "Millbrook Cabinetry Supply", "purchase_date": "2026-04-05", "amount": 14200.00, "category": "Materials", "receipt_number": "RCT-10021"},
+        {"room": "Kitchen", "item_description": "Quartz countertop, 'Calacatta Gold' 42 sq ft", "vendor": "Stone Depot", "purchase_date": "2026-04-18", "amount": 5900.00, "category": "Materials", "receipt_number": "RCT-10022"},
+        {"room": "Kitchen", "item_description": "Range, refrigerator, dishwasher package", "vendor": "Coldstream Appliance Center", "purchase_date": "2026-04-22", "amount": 8700.00, "category": "Appliances", "receipt_number": "RCT-10023"},
+        {"room": "Kitchen", "item_description": "Building permit — kitchen remodel", "vendor": "City of Fairmont Permits Office", "purchase_date": "2026-03-28", "amount": 450.00, "category": "Permits", "receipt_number": "RCT-10024"},
+        {"room": "Kitchen", "item_description": "Ferro & Sons — final labor invoice", "vendor": "Ferro & Sons Construction", "purchase_date": "2026-06-15", "amount": 15800.00, "category": "Labor", "receipt_number": "RCT-10025"},
+        {"room": "Primary Bathroom", "item_description": "Walk-in shower kit with frameless glass", "vendor": "Stone Depot", "purchase_date": "2026-06-25", "amount": 4300.00, "category": "Fixtures", "receipt_number": "RCT-10026"},
+        {"room": "Primary Bathroom", "item_description": "Heated floor mat system, 45 sq ft", "vendor": "WarmFloor Direct", "purchase_date": "2026-06-28", "amount": 1650.00, "category": "Materials", "receipt_number": "RCT-10027"},
+        {"room": "Primary Bathroom", "item_description": "Floating double vanity, 60 inch", "vendor": "Millbrook Cabinetry Supply", "purchase_date": "2026-07-02", "amount": 2200.00, "category": "Fixtures", "receipt_number": "RCT-10028"},
+        {"room": "Backyard Deck", "item_description": "Composite decking, 600 sq ft, 'Weathered Teak'", "vendor": "Deckmaster Supply", "purchase_date": "2026-05-05", "amount": 8900.00, "category": "Materials", "receipt_number": "RCT-10029"},
+        {"room": "Backyard Deck", "item_description": "Cedar pergola kit, 12x14", "vendor": "Deckmaster Supply", "purchase_date": "2026-05-08", "amount": 3200.00, "category": "Materials", "receipt_number": "RCT-10030"},
+        {"room": "Backyard Deck", "item_description": "Millbrook Carpentry — labor and install", "vendor": "Millbrook Carpentry", "purchase_date": "2026-06-01", "amount": 4900.00, "category": "Labor", "receipt_number": "RCT-10031"},
+        {"room": "Guest Bathroom", "item_description": "Design consultation — fixture layout", "vendor": "Bianca Moretti Interiors", "purchase_date": "2026-07-30", "amount": 350.00, "category": "Design/Design Fees", "receipt_number": "RCT-10032"}
+      ]
+    }
+  }
+}

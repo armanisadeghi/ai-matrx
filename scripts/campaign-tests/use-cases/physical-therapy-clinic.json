@@ -1,0 +1,85 @@
+{
+  "use_case": "physical-therapy-clinic",
+  "one_sentence": "A solo outpatient physical therapist tracks her patients, schedules their visits, and manages the treatment plans and home-exercise prescriptions assigned at each stage of care.",
+  "organization_name": "Ridgeline Physical Therapy (test fixture)",
+  "settings_tag": { "test_fixture": true },
+  "tables": {
+    "patients": {
+      "fields": ["full_name", "date_of_birth", "phone", "email", "referring_physician", "primary_diagnosis", "insurance_provider", "intake_date", "status"],
+      "field_types": { "full_name": "text", "date_of_birth": "date", "phone": "text", "email": "text", "referring_physician": "text", "primary_diagnosis": "text", "insurance_provider": "choice", "intake_date": "date", "status": "choice" },
+      "choices": { "insurance_provider": ["Aetna", "Blue Cross Blue Shield", "UnitedHealthcare", "Cigna", "Medicare", "Self-pay"], "status": ["Active", "Discharged", "On Hold", "Referred Out"] },
+      "rows": [
+        {"full_name": "Nora Castellan", "date_of_birth": "1978-03-14", "phone": "555-201-3341", "email": "nora.castellan@example-mail.test", "referring_physician": "Dr. Amina Reyes", "primary_diagnosis": "Rotator cuff tendinopathy, right shoulder", "insurance_provider": "Aetna", "intake_date": "2026-06-02", "status": "Active"},
+        {"full_name": "Devon Ashworth", "date_of_birth": "1991-11-02", "phone": "555-201-3342", "email": "devon.ashworth@example-mail.test", "referring_physician": "Dr. Marcus Feld", "primary_diagnosis": "ACL reconstruction, post-op (6 weeks)", "insurance_provider": "Blue Cross Blue Shield", "intake_date": "2026-06-05", "status": "Active"},
+        {"full_name": "Priya Vantana", "date_of_birth": "1965-07-22", "phone": "555-201-3343", "email": "priya.vantana@example-mail.test", "referring_physician": "Dr. Amina Reyes", "primary_diagnosis": "Chronic low back pain, L4-L5 disc bulge", "insurance_provider": "Medicare", "intake_date": "2026-05-19", "status": "Active"},
+        {"full_name": "Isaiah Broome", "date_of_birth": "2002-01-30", "phone": "555-201-3344", "email": "isaiah.broome@example-mail.test", "referring_physician": "Dr. Lena Ostrowski", "primary_diagnosis": "Grade II ankle sprain, left", "insurance_provider": "UnitedHealthcare", "intake_date": "2026-07-01", "status": "Discharged"},
+        {"full_name": "Marguerite Solano", "date_of_birth": "1954-09-08", "phone": "555-201-3345", "email": "marguerite.solano@example-mail.test", "referring_physician": "Dr. Marcus Feld", "primary_diagnosis": "Total knee replacement, post-op (3 weeks)", "insurance_provider": "Medicare", "intake_date": "2026-06-20", "status": "Active"},
+        {"full_name": "Tobias Reinholt", "date_of_birth": "1988-04-17", "phone": "555-201-3346", "email": "tobias.reinholt@example-mail.test", "referring_physician": "Dr. Lena Ostrowski", "primary_diagnosis": "Cervical radiculopathy, C6", "insurance_provider": "Cigna", "intake_date": "2026-07-10", "status": "Active"},
+        {"full_name": "Odalys Fenmore", "date_of_birth": "1997-12-25", "phone": "555-201-3347", "email": "odalys.fenmore@example-mail.test", "referring_physician": "Dr. Amina Reyes", "primary_diagnosis": "Patellofemoral pain syndrome, bilateral", "insurance_provider": "Self-pay", "intake_date": "2026-07-15", "status": "On Hold"},
+        {"full_name": "Wendell Okafor", "date_of_birth": "1972-02-11", "phone": "555-201-3348", "email": "wendell.okafor@example-mail.test", "referring_physician": "Dr. Marcus Feld", "primary_diagnosis": "Plantar fasciitis, right heel", "insurance_provider": "Aetna", "intake_date": "2026-06-28", "status": "Active"},
+        {"full_name": "Camille Duprez", "date_of_birth": "1983-06-04", "phone": "555-201-3349", "email": "camille.duprez@example-mail.test", "referring_physician": "Dr. Lena Ostrowski", "primary_diagnosis": "Lumbar spinal stenosis", "insurance_provider": "Blue Cross Blue Shield", "intake_date": "2026-05-30", "status": "Active"},
+        {"full_name": "Griffin Alderete", "date_of_birth": "1995-10-19", "phone": "555-201-3350", "email": "griffin.alderete@example-mail.test", "referring_physician": "Dr. Amina Reyes", "primary_diagnosis": "Achilles tendinopathy, left", "insurance_provider": "UnitedHealthcare", "intake_date": "2026-07-18", "status": "Referred Out"}
+      ]
+    },
+    "appointments": {
+      "fields": ["patient", "appointment_date", "appointment_time", "visit_type", "therapist_name", "duration_minutes", "status", "notes"],
+      "field_types": { "patient": "relation:patients", "appointment_date": "date", "appointment_time": "text", "visit_type": "choice", "therapist_name": "text", "duration_minutes": "number", "status": "choice", "notes": "long_text" },
+      "choices": { "visit_type": ["Initial Evaluation", "Follow-up", "Re-evaluation", "Discharge Visit"], "status": ["Scheduled", "Completed", "No-show", "Cancelled"] },
+      "rows": [
+        {"patient": "Nora Castellan", "appointment_date": "2026-06-02", "appointment_time": "09:00", "visit_type": "Initial Evaluation", "therapist_name": "Dr. Sasha Lindqvist, DPT", "duration_minutes": 60, "status": "Completed", "notes": "AROM shoulder flexion limited to 110 deg, pain 6/10 with overhead reach."},
+        {"patient": "Nora Castellan", "appointment_date": "2026-06-09", "appointment_time": "09:00", "visit_type": "Follow-up", "therapist_name": "Dr. Sasha Lindqvist, DPT", "duration_minutes": 45, "status": "Completed", "notes": "Progressing isometrics, pain down to 4/10."},
+        {"patient": "Nora Castellan", "appointment_date": "2026-06-16", "appointment_time": "09:00", "visit_type": "Follow-up", "therapist_name": "Dr. Sasha Lindqvist, DPT", "duration_minutes": 45, "status": "Scheduled", "notes": ""},
+        {"patient": "Devon Ashworth", "appointment_date": "2026-06-05", "appointment_time": "13:00", "visit_type": "Initial Evaluation", "therapist_name": "Dr. Sasha Lindqvist, DPT", "duration_minutes": 60, "status": "Completed", "notes": "Quad lag present, effusion mild. Cleared for closed-chain work."},
+        {"patient": "Devon Ashworth", "appointment_date": "2026-06-12", "appointment_time": "13:00", "visit_type": "Follow-up", "therapist_name": "Dr. Sasha Lindqvist, DPT", "duration_minutes": 45, "status": "Completed", "notes": "Quad lag resolving, full passive extension achieved."},
+        {"patient": "Devon Ashworth", "appointment_date": "2026-06-19", "appointment_time": "13:00", "visit_type": "Follow-up", "therapist_name": "Dr. Sasha Lindqvist, DPT", "duration_minutes": 45, "status": "No-show", "notes": "Patient did not call."},
+        {"patient": "Priya Vantana", "appointment_date": "2026-05-19", "appointment_time": "10:30", "visit_type": "Initial Evaluation", "therapist_name": "Dr. Marcus Reid, DPT", "duration_minutes": 60, "status": "Completed", "notes": "Positive slump test on right, centralization with extension."},
+        {"patient": "Priya Vantana", "appointment_date": "2026-06-02", "appointment_time": "10:30", "visit_type": "Follow-up", "therapist_name": "Dr. Marcus Reid, DPT", "duration_minutes": 45, "status": "Completed", "notes": "Symptoms centralizing, tolerating prone press-ups."},
+        {"patient": "Isaiah Broome", "appointment_date": "2026-07-01", "appointment_time": "15:00", "visit_type": "Initial Evaluation", "therapist_name": "Dr. Marcus Reid, DPT", "duration_minutes": 60, "status": "Completed", "notes": "Grade II sprain, moderate swelling, weight-bearing as tolerated."},
+        {"patient": "Isaiah Broome", "appointment_date": "2026-07-22", "appointment_time": "15:00", "visit_type": "Discharge Visit", "therapist_name": "Dr. Marcus Reid, DPT", "duration_minutes": 30, "status": "Completed", "notes": "Full ROM restored, single-leg balance 30s, discharged to home program."},
+        {"patient": "Marguerite Solano", "appointment_date": "2026-06-20", "appointment_time": "11:00", "visit_type": "Initial Evaluation", "therapist_name": "Dr. Sasha Lindqvist, DPT", "duration_minutes": 60, "status": "Completed", "notes": "Knee flexion 85 deg, using front-wheel walker."},
+        {"patient": "Marguerite Solano", "appointment_date": "2026-06-27", "appointment_time": "11:00", "visit_type": "Follow-up", "therapist_name": "Dr. Sasha Lindqvist, DPT", "duration_minutes": 45, "status": "Completed", "notes": "Flexion improved to 100 deg."},
+        {"patient": "Marguerite Solano", "appointment_date": "2026-07-04", "appointment_time": "11:00", "visit_type": "Follow-up", "therapist_name": "Dr. Sasha Lindqvist, DPT", "duration_minutes": 45, "status": "Scheduled", "notes": ""},
+        {"patient": "Tobias Reinholt", "appointment_date": "2026-07-10", "appointment_time": "08:00", "visit_type": "Initial Evaluation", "therapist_name": "Dr. Marcus Reid, DPT", "duration_minutes": 60, "status": "Completed", "notes": "Positive Spurling's test right, numbness in C6 dermatome."},
+        {"patient": "Wendell Okafor", "appointment_date": "2026-06-28", "appointment_time": "16:00", "visit_type": "Initial Evaluation", "therapist_name": "Dr. Sasha Lindqvist, DPT", "duration_minutes": 60, "status": "Completed", "notes": "Point tenderness at medial calcaneal tubercle, worse first step in AM."},
+        {"patient": "Camille Duprez", "appointment_date": "2026-05-30", "appointment_time": "09:30", "visit_type": "Initial Evaluation", "therapist_name": "Dr. Marcus Reid, DPT", "duration_minutes": 60, "status": "Completed", "notes": "Symptoms improve with flexion-biased posture, neurogenic claudication at 2 blocks."},
+        {"patient": "Griffin Alderete", "appointment_date": "2026-07-18", "appointment_time": "14:00", "visit_type": "Initial Evaluation", "therapist_name": "Dr. Marcus Reid, DPT", "duration_minutes": 60, "status": "Completed", "notes": "Referred to orthopedic surgeon for imaging before continuing PT."}
+      ]
+    },
+    "treatment_plans": {
+      "fields": ["patient", "diagnosis", "goal", "start_date", "target_date", "status"],
+      "field_types": { "patient": "relation:patients", "diagnosis": "text", "goal": "long_text", "start_date": "date", "target_date": "date", "status": "choice" },
+      "choices": { "status": ["Active", "Met", "Modified", "Discontinued"] },
+      "rows": [
+        {"patient": "Nora Castellan", "diagnosis": "Rotator cuff tendinopathy, right shoulder", "goal": "Restore pain-free overhead reach to 160 deg flexion within 6 weeks.", "start_date": "2026-06-02", "target_date": "2026-07-14", "status": "Active"},
+        {"patient": "Devon Ashworth", "diagnosis": "ACL reconstruction, post-op", "goal": "Return to single-leg squat and stair descent without compensation by week 12.", "start_date": "2026-06-05", "target_date": "2026-08-28", "status": "Active"},
+        {"patient": "Priya Vantana", "diagnosis": "Chronic low back pain, L4-L5 disc bulge", "goal": "Centralize symptoms and tolerate 30-minute walk without radiating pain.", "start_date": "2026-05-19", "target_date": "2026-07-19", "status": "Active"},
+        {"patient": "Isaiah Broome", "diagnosis": "Grade II ankle sprain, left", "goal": "Full weight-bearing, return to recreational basketball.", "start_date": "2026-07-01", "target_date": "2026-07-22", "status": "Met"},
+        {"patient": "Marguerite Solano", "diagnosis": "Total knee replacement, post-op", "goal": "Achieve 110 deg flexion and walk without assistive device by week 8.", "start_date": "2026-06-20", "target_date": "2026-08-15", "status": "Active"},
+        {"patient": "Tobias Reinholt", "diagnosis": "Cervical radiculopathy, C6", "goal": "Resolve numbness, restore full cervical rotation.", "start_date": "2026-07-10", "target_date": "2026-08-21", "status": "Active"},
+        {"patient": "Wendell Okafor", "diagnosis": "Plantar fasciitis, right heel", "goal": "Pain-free first step in the morning, return to daily 3-mile walk.", "start_date": "2026-06-28", "target_date": "2026-08-09", "status": "Active"},
+        {"patient": "Camille Duprez", "diagnosis": "Lumbar spinal stenosis", "goal": "Increase walking tolerance to 6 blocks without claudication.", "start_date": "2026-05-30", "target_date": "2026-08-01", "status": "Active"}
+      ]
+    },
+    "exercises_prescribed": {
+      "fields": ["treatment_plan", "exercise_name", "sets", "reps", "frequency_per_week", "progression_notes"],
+      "field_types": { "treatment_plan": "relation:treatment_plans", "exercise_name": "choice", "sets": "number", "reps": "number", "frequency_per_week": "number", "progression_notes": "long_text" },
+      "choices": { "exercise_name": ["Pendulum Exercise", "Scapular Retraction", "Straight Leg Raise", "Quadriceps Sets", "Heel Slides", "Terminal Knee Extension", "Prone Press-ups (McKenzie)", "Cat-Camel Stretch", "Clamshells", "Bridging", "Standing Hip Abduction", "Wall Sits", "Calf Raises", "Hamstring Curls", "Ankle Pumps", "Chin Tucks"] },
+      "rows": [
+        {"treatment_plan": "Nora Castellan", "exercise_name": "Pendulum Exercise", "sets": 3, "reps": 15, "frequency_per_week": 7, "progression_notes": "Started week 1, pain-free arc, add light weight at week 3."},
+        {"treatment_plan": "Nora Castellan", "exercise_name": "Scapular Retraction", "sets": 3, "reps": 12, "frequency_per_week": 5, "progression_notes": "Using resistance band, increase band tension at week 4."},
+        {"treatment_plan": "Devon Ashworth", "exercise_name": "Quadriceps Sets", "sets": 3, "reps": 10, "frequency_per_week": 7, "progression_notes": "Hold 5 seconds, progressing to straight leg raise next visit."},
+        {"treatment_plan": "Devon Ashworth", "exercise_name": "Straight Leg Raise", "sets": 3, "reps": 10, "frequency_per_week": 6, "progression_notes": "No lag observed, add ankle weight 2lb."},
+        {"treatment_plan": "Devon Ashworth", "exercise_name": "Terminal Knee Extension", "sets": 3, "reps": 12, "frequency_per_week": 5, "progression_notes": "Using resistance band anchored behind knee."},
+        {"treatment_plan": "Priya Vantana", "exercise_name": "Prone Press-ups (McKenzie)", "sets": 2, "reps": 10, "frequency_per_week": 6, "progression_notes": "Symptoms centralizing, hold end range 2 seconds."},
+        {"treatment_plan": "Priya Vantana", "exercise_name": "Cat-Camel Stretch", "sets": 2, "reps": 10, "frequency_per_week": 7, "progression_notes": "Morning stiffness reduced."},
+        {"treatment_plan": "Isaiah Broome", "exercise_name": "Ankle Pumps", "sets": 3, "reps": 20, "frequency_per_week": 7, "progression_notes": "Early edema control, progressed to standing balance week 2."},
+        {"treatment_plan": "Marguerite Solano", "exercise_name": "Heel Slides", "sets": 3, "reps": 10, "frequency_per_week": 7, "progression_notes": "Flexion improving 5 deg/week."},
+        {"treatment_plan": "Marguerite Solano", "exercise_name": "Quadriceps Sets", "sets": 4, "reps": 10, "frequency_per_week": 7, "progression_notes": "Hold 5 seconds, no extensor lag."},
+        {"treatment_plan": "Tobias Reinholt", "exercise_name": "Chin Tucks", "sets": 3, "reps": 10, "frequency_per_week": 6, "progression_notes": "Reduces referred symptoms into arm during session."},
+        {"treatment_plan": "Wendell Okafor", "exercise_name": "Calf Raises", "sets": 3, "reps": 15, "frequency_per_week": 5, "progression_notes": "Eccentric emphasis, 3-second lower."},
+        {"treatment_plan": "Camille Duprez", "exercise_name": "Bridging", "sets": 3, "reps": 12, "frequency_per_week": 5, "progression_notes": "Flexion-biased, tolerating well."},
+        {"treatment_plan": "Camille Duprez", "exercise_name": "Standing Hip Abduction", "sets": 3, "reps": 12, "frequency_per_week": 5, "progression_notes": "Added ankle weight this week."}
+      ]
+    }
+  }
+}
