@@ -43,6 +43,19 @@ begin
   perform set_config('app.actor_system', 'campaign-test/reldisp_red', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
 
+  -- ══ PART 0 — TAKE THE SEAT ════════════════════════════════════════════════════════════
+  -- The DDL above had to run as the owner; everything ASSERTED below is asserted from the
+  -- seat a person actually sits in, because a suite running as the role that owns
+  -- custom.record walks through the organization wall on its first line and proves nothing.
+  -- R5 and R6 step to the store's own lane DELIBERATELY and say so, because the two things
+  -- they measure are a non-door helper and a server_only function that no seat may call —
+  -- which is itself half of what R6 proves.
+  perform set_config('role', 'authenticated', true);
+  if current_user <> 'authenticated' then
+    raise exception '0: this suite did not take the seat — current_user is %', current_user;
+  end if;
+  raise notice '0 — the seat is authenticated; every clause below is judged from it.';
+
   -- ══ R1 / R2 / R3 — the three functions are simply not there ═══════════════════════════
   if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
               where n.nspname = 'custom' and p.proname = 'relation_words') then
@@ -70,15 +83,36 @@ begin
             jsonb_build_object('display',
               jsonb_build_object('columns', jsonb_build_array('customer_name', 'city'),
                                  'separator', ' — ')));
-  select f.data -> 'display' into v_doc from custom.record f
-   where f.organization_id = v_org and f.id = v_f_cust;
+  -- read back through the door a screen reads through, not out of the table
+  select f.document -> 'display' into v_doc
+    from custom.read_records(v_org, custom.field_kernel_id(), false, 500, 0) f
+   where f.id = v_f_cust;
   if v_doc is not null then
     raise exception 'R4 is not red: the old field_update stored a display spec (%)', v_doc::text;
   end if;
   v_red := v_red + 1;
   raise notice 'R4 RED — custom.field_update took the display spec, returned the field id, said nothing, and the column holds no display key at all.';
 
+  -- ══ R6 — FROM THE SEAT THERE IS NO DOOR THAT RETURNS A RELATION'S WORDS AT ALL ════════
+  -- This is the sharpest statement of the defect: on the old bytes a screen could not ask
+  -- the store what a relation cell says. `relation_words` does not exist (R1) and
+  -- `record_words` is server_only, so the browser had to resolve labels itself — which is
+  -- exactly why three separate copies of that resolution grew in records-ui, and why none
+  -- of them could ever have shown two columns joined.
+  begin
+    perform custom.record_words(v_org, '00000000-0000-0000-0000-000000000000'::uuid);
+    raise exception 'R6 is not red: the seat could call custom.record_words';
+  exception
+    when insufficient_privilege then null;
+    when undefined_function then null;
+  end;
+  v_red := v_red + 1;
+  raise notice 'R6 RED — from the seat there is NO door that returns a relation''s words: relation_words does not exist and record_words refuses.';
+
   -- ══ R5 — THE CREATE DOOR DROPS IT ON THE FLOOR TOO ════════════════════════════════════
+  -- Stepping to the store's own lane on purpose: `custom._field_document_for` is the shape
+  -- builder behind `field_declare`, not a door any seat may call.
+  perform set_config('role', 'postgres', true);
   v_doc := custom._field_document_for(v_org, v_jobs,
              jsonb_build_object('type', 'relation', 'name', 'Customer on this job',
                                 'relation_target', 'efb51c4f-ad00-41d0-9651-a5af7cbf89da',
@@ -92,23 +126,31 @@ begin
   v_red := v_red + 1;
   raise notice 'R5 RED — the create door built the relation and silently dropped the display spec: %', v_doc::text;
 
-  -- ══ R6 — ONE COLUMN, AND NO WAY TO ASK FOR ANOTHER ════════════════════════════════════
+  -- ══ R6b — AND WHAT THE STORE ITSELF COULD ONLY EVER ANSWER: ONE COLUMN ════════════════
+  -- Still on the store's lane. `custom.record_words` on the old bytes takes a record id, a
+  -- noun, and nothing else: there is no argument, no key and no door that could make it
+  -- read the town as well as the name.
   select nullif(x.data ->> 'customer', '')::uuid into v_cust
     from custom.record x
    where x.organization_id = v_org and x.table_id = v_jobs and x.deleted_at is null
      and nullif(x.data ->> 'customer', '') is not null
    limit 1;
-  if custom.record_words(v_org, v_cust) <> 'Maria Chen'
-     and position(' — ' in custom.record_words(v_org, v_cust)) > 0 then
-    raise exception 'R6 is not red: the old resolver joined two columns';
+  if position(' — ' in custom.record_words(v_org, v_cust)) > 0 then
+    raise exception 'R6b is not red: the old resolver joined two columns';
+  end if;
+  if (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'custom' and p.proname = 'record_words'
+         and pg_get_function_identity_arguments(p.oid) like '%jsonb%') > 0 then
+    raise exception 'R6b is not red: the old record_words takes a spec argument';
   end if;
   v_red := v_red + 1;
-  raise notice 'R6 RED — the chip reads "%" and there is no door, no key and no argument that could make it read the town as well.',
+  raise notice 'R6b RED — the chip reads "%" and record_words has no argument that could make it read the town as well.',
     custom.record_words(v_org, v_cust);
+  perform set_config('role', 'authenticated', true);
 
   raise notice '';
-  raise notice '% of 6 BLOCKS ARE RED on the real inverse bytes', v_red;
-  if v_red <> 6 then
+  raise notice '% of 7 BLOCKS ARE RED on the real inverse bytes', v_red;
+  if v_red <> 7 then
     raise exception 'the red twin did not go red in every block';
   end if;
 end
