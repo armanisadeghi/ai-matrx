@@ -301,6 +301,17 @@ const MACHINE_SHAPES: readonly RegExp[] = [
   /\b[A-Za-z_][\w.]*\.[A-Za-z_]\w*\(\s*(?:\.\.\.|\w+\s*=)/,
   // An ORM or driver banner title.
   /Matrx ORM\s*\||\[ERROR in [^\]]*\]/,
+  // 🚨 WALK 19, DEFECT C — a machine identifier with a value bolted to it.
+  // `/acquisition` printed "cloud_sync read returned empty for
+  // cld_file_id=3c38fee2-…" in the column where every other row speaks
+  // English. It is sentence-SHAPED machine text: no SQL, no placeholders, no
+  // banner, so every shape above answered "no" and the cell rendered it. Two
+  // underscore-joined segments minimum AND a value must follow, so "x = 1" and
+  // ordinary prose cannot match.
+  /\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\s*=\s*\S/,
+  // A raw row identifier standing in a sentence. A person has no use for a
+  // uuid; when one is present the string is a developer's note.
+  /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i,
 ];
 
 /**
