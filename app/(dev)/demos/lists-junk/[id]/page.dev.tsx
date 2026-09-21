@@ -2,6 +2,8 @@ import { cache } from "react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import type { UserListWithItems } from "@/features/user-lists/types";
 import { ListDetailClient } from "@/features/user-lists/components/ListDetailClient";
 import { ActiveListRegistrar } from "@/features/user-lists/components/ActiveListRegistrar";
@@ -16,7 +18,7 @@ const getListWithItems = cache(
       const supabase = await createClient();
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await getClaimsUser(supabase);
       if (!user) return null;
 
       const { data, error } = await supabase.rpc("get_user_list_with_items", {
@@ -45,13 +47,10 @@ export async function generateMetadata({
 
 export default async function ListDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const [list, supabase] = await Promise.all([
+  const [list, { user }] = await Promise.all([
     getListWithItems(id),
-    createClient(),
+    getServerAuth(),
   ]);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   if (!list) notFound();
 

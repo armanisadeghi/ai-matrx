@@ -40,6 +40,7 @@ import type {
   WriterFilter,
 } from "./types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 /** The share/association token this table's rows are addressed by. */
 export const KIND_INSTANCE_TOKEN = "content_ir_kind_instance";
 
@@ -79,7 +80,12 @@ function safeSearchTerm(search: string): string {
 }
 
 async function currentUserId(): Promise<string> {
-  const { data } = await supabase.auth.getUser();
+  const { data, error } = await getClaimsUser(supabase);
+  // Could-not-verify is transient and retryable; signed-out is settled.
+  if (error)
+    throw new Error(
+      `We could not verify your sign-in just now (${error.message}). Try again.`,
+    );
   const id = data.user?.id;
   if (!id) throw new Error("Not signed in — no records can be listed.");
   return id;

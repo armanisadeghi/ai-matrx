@@ -10,10 +10,10 @@ const mockQuery = {
 };
 jest.mock("@/utils/supabase/server", () => ({
   createClient: async () => ({
-    auth: {
+    auth: jest.requireActual("@/test-utils/supabase-auth").withClaims({
       getUser: async () => ({ data: { user: { id: "owner" } }, error: null }),
       getSession: async () => ({ data: { session: { access_token: "user-jwt" } } }),
-    },
+    }),
     from: () => mockQuery,
   }),
 }));

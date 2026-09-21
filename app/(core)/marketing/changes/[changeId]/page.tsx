@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { resolveLegacySiteAddress } from "@/features/marketing/lib/shim-resolve-server";
 import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -20,9 +21,18 @@ export default async function MarketingChangeShortLink({
   const { changeId } = await params;
   if (!UUID_RE.test(changeId)) notFound();
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, authUnavailable } = await getServerAuth();
+  if (!user && authUnavailable) {
+    console.warn(
+      "[marketing/changes/[changeId]] identity could not be verified — showing the retry notice, NOT redirecting to /login.",
+    );
+    return (
+      <div className="p-4 text-sm text-muted-foreground">
+        We could not verify who you are on this request, so this page is not
+        loading. You have not been signed out — reload in a moment.
+      </div>
+    );
+  }
   if (!user) redirect(`/login?next=/marketing/changes/${changeId}`);
   const changeResponse = await supabase
     .schema("seo")

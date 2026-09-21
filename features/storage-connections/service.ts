@@ -1,6 +1,7 @@
 import { readConnectionStatus } from "@/features/connectors/connection-status";
 import { apiPost, buildPath } from "@/lib/api/typed-client";
 import { createClient } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { operationFailed } from "@/utils/errors";
 import type {
   StorageAuthorizationStart,
@@ -51,11 +52,19 @@ export async function listStorageConnections(
   signal?: AbortSignal,
 ): Promise<StorageConnection[]> {
   const supabase = createClient();
+  // Identity from the access token's locally verified claims.
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const userId = session?.user?.id;
-  if (!session?.access_token || !userId) {
+    data: { user },
+    error: authError,
+  } = await getClaimsUser(supabase);
+  if (authError) {
+    throw new Error(
+      "Your identity could not be verified just now, so your file connections were not loaded. Try again in a moment.",
+      { cause: authError },
+    );
+  }
+  const userId = user?.id;
+  if (!userId) {
     throw new Error("Sign in to load your file connections.");
   }
 

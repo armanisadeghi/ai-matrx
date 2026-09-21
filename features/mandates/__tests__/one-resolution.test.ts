@@ -175,9 +175,11 @@ function makeChain(table: string) {
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     schema: () => ({ from: (table: string) => makeChain(table) }),
-    auth: {
+    // `resolveMandate` reads the caller from locally verified claims
+    // (getClaimsUser → auth.getClaims), so the fake answers that door.
+    auth: withClaims({
       getUser: async () => ({ data: { user: { id: USER_ID } }, error: null }),
-    },
+    }),
   }),
 }));
 
@@ -187,6 +189,7 @@ import {
   resolveMandate,
 } from "../service";
 import { mandateOrgSwitchCacheMiddleware } from "../redux/org-switch-cache-middleware";
+import { withClaims } from "@/test-utils/supabase-auth";
 
 async function rejectedError(promise: Promise<unknown>): Promise<Error> {
   try {

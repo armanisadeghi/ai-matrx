@@ -1,5 +1,6 @@
 import React from "react";
 import { createClient } from "@/utils/supabase/server";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import AppLink from "@/components/navigation/AppLink";
 import { Plus, ListFilter } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ async function getLists(): Promise<UserList[]> {
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (!user) return [];
 
     const { data, error } = await supabase.rpc("get_user_lists_summary", {

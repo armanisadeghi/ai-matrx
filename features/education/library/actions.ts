@@ -12,6 +12,7 @@ import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { operationFailed } from "@/utils/errors";
 import type { DeckSuggestionRow } from "./types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 // ─── Certified tier (super-admin) ─────────────────────────────────────────────
 export async function certifyDeckAction(
   resourceId: string,
@@ -56,7 +57,12 @@ export async function listOwnerSuggestionsAction(): Promise<DeckSuggestionRow[]>
   const sb = await createClient();
   const {
     data: { user },
-  } = await sb.auth.getUser();
+    error: authError,
+  } = await getClaimsUser(sb);
+  // SIGNED OUT is an answer; a verification failure is not. Only the first
+  // deserves "not authenticated".
+  if (authError)
+    throw operationFailed("verify your sign-in", authError);
   if (!user) throw new Error("Not authenticated");
   const { data, error } = await sb
     .schema("education")

@@ -43,6 +43,7 @@ import type {
   TelemetrySnapshot,
 } from "./types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 type ProfileRow = Database["browser"]["Tables"]["profile"]["Row"];
 type RunRow = Database["browser"]["Tables"]["run"]["Row"];
 type EventRow = Database["browser"]["Tables"]["action_event"]["Row"];
@@ -572,7 +573,7 @@ function mapBinding(row: BindingRow): AccountBinding {
   };
 }
 async function userId(): Promise<string> {
-  const { data, error } = await supabase.auth.getUser();
+  const { data, error } = await getClaimsUser(supabase);
   if (error || !data.user)
     throw error ?? new Error("Sign in to use Cloud Browser.");
   return data.user.id;

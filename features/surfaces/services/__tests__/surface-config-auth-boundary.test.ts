@@ -26,12 +26,15 @@ function query(data: unknown[]) {
 }
 
 const client = {
-  auth: {
+  // The service reads the caller from locally verified claims (getClaimsUser →
+  // auth.getClaims); withClaims derives that door from this same fake getUser,
+  // so the call-count assertions below still see one identity read.
+  auth: withClaims({
     getUser: jest.fn(async () => ({
       data: { user: userId ? { id: userId } : null },
       error: null,
     })),
-  },
+  }),
   schema: (schema: string) => ({
     from: (table: string) => {
       if (schema === "ui" && table === "ui_surface_agent_role") {
@@ -58,6 +61,7 @@ const client = {
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => client }));
 
 import { fetchSurfaceConfigBundle } from "../surface-config.service";
+import { withClaims } from "@/test-utils/supabase-auth";
 
 beforeEach(() => {
   userId = null;

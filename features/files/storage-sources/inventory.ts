@@ -3,6 +3,7 @@ import { listMicrosoftConnections } from "@/features/microsoft-integration/servi
 import { listStorageConnections } from "@/features/storage-connections/service";
 import type { StorageBrowseProvider } from "@/features/files/storage-sources/types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 export interface StoragePickerAccount {
   id: string;
   provider: StorageBrowseProvider;
@@ -24,10 +25,13 @@ export async function loadStoragePickerAccounts(
   signal?: AbortSignal,
 ): Promise<StoragePickerAccount[]> {
   const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.access_token || !session.user?.id) {
+  // The token string still comes from `getSession()`; the IDENTITY comes from
+  // that token's locally verified claims.
+  const [{ data: sessionData }, { data: claims }] = await Promise.all([
+    supabase.auth.getSession(),
+    getClaimsUser(supabase),
+  ]);
+  if (!sessionData.session?.access_token || !claims.user?.id) {
     throw new Error("Sign in again to load your file connections.");
   }
 

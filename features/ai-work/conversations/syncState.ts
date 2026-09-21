@@ -24,6 +24,7 @@ import {
 } from "@/features/ai-work/lib/codingSessionPresentation";
 import type { Json } from "@/types/database.types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 /**
  * How stale a delivery can be before it stops meaning "sync is working".
  *
@@ -127,7 +128,7 @@ export async function readSyncState(): Promise<SyncStateSnapshot> {
   const {
     data: { user },
     error: authError,
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
   if (authError) throw operationFailed("verify your sign-in", authError);
   if (!user) throw new Error("Sign in to see your sync state.");
 

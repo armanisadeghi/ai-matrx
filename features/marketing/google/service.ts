@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { BackendApiError, parseHttpError } from "@/lib/api/errors";
 import type { Database } from "@/types/database.types";
 import type {
@@ -417,10 +418,24 @@ export async function postGoogleBackend(
     data: { session },
   } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Sign in to manage Google.");
-  if (expectedUserId && session.user.id !== expectedUserId) {
-    throw new Error(
-      "Your AI Matrx session changed while Google authorization was open. No Google access was saved; try again from the original session.",
+  if (expectedUserId) {
+    // WHO the bearer token names is decided by its own VERIFIED claims, never
+    // by `session.user`, which is whatever the cookie deserialized to.
+    const { data: claims, error: claimsError } = await getClaimsUser(
+      supabase,
+      session.access_token,
     );
+    if (claimsError) {
+      throw new Error(
+        "Your AI Matrx identity could not be verified just now. No Google access was saved; try again in a moment.",
+        { cause: claimsError },
+      );
+    }
+    if (claims.user?.id !== expectedUserId) {
+      throw new Error(
+        "Your AI Matrx session changed while Google authorization was open. No Google access was saved; try again from the original session.",
+      );
+    }
   }
   const response = await fetch(`${backendBase()}${path}`, {
     method: "POST",

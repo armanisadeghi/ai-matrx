@@ -47,6 +47,7 @@ import { callApi } from "@/lib/api/call-api";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast, recordToast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 
 import { blindAnonLabel, shuffleIds } from "@/features/agent-comparison/shared/blind";
 import { WorkflowRunBoard } from "@/features/workflow-runtime/components/WorkflowRunBoard";
@@ -506,7 +507,7 @@ function ComparisonView({
   const pickWinner = async (arm: ComparisonArm) => {
     setSavingVerdict(true);
     try {
-      const { data } = await supabase.auth.getUser();
+      const { data } = await getClaimsUser(supabase);
       await saveVerdict({
         comparisonId: row.id,
         winnerLabel: arm.label,

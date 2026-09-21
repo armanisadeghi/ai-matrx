@@ -14,6 +14,7 @@ import {
 } from "@/features/content-ir/registry/schema-source-kind-tables";
 import type { Json } from "@/types/database.types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 export interface ShapeDetail {
   id: string;
   kind: string;
@@ -74,7 +75,7 @@ export async function getShapeDetail(
         .eq("kind", kindSlug)
         .is("deleted_at", null)
         .maybeSingle(),
-      supabase.auth.getUser(),
+      getClaimsUser(supabase),
     ],
   );
   if (error) {

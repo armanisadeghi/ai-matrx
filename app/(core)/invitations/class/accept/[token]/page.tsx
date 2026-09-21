@@ -20,6 +20,7 @@ import { invitationsService } from "@/features/organizations/service/invitations
 import type { Invitation } from "@/features/organizations/service/invitationsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
@@ -41,8 +42,20 @@ export default function AcceptClassInvitationPage() {
       const acceptPath = `/invitations/class/accept/${token}`;
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+        error: authError,
+      } = await getClaimsUser(supabase);
       if (cancelled) return;
+
+      // A verification failure is NOT "no account" — sending them to sign-up
+      // would ask a signed-in student to make a second account.
+      if (!user && authError) {
+        console.warn("[invitations/class/accept] identity could not be verified — showing the retry notice, not sign-up.");
+        setError(
+          "We could not verify who you are right now — the sign-in service did not answer. You have not been signed out; reload this page in a moment.",
+        );
+        setLoading(false);
+        return;
+      }
 
       if (!user) {
         // Sign-up, not login: a student invited by email usually has no

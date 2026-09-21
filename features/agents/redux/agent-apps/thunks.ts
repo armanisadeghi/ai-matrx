@@ -29,6 +29,7 @@ import type { AgentApp } from "./types";
 import { agentAppActions } from "./slice";
 import { agentAppPublicationPatch } from "@/features/agent-apps/lib/publication";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 interface ThunkApi {
   dispatch: AppDispatch;
   state: RootState;
@@ -346,7 +347,12 @@ export const createApp = createAsyncThunk<
 export const deleteApp = createAsyncThunk<void, string, ThunkApi>(
   "agentApp/delete",
   async (appId, { dispatch }) => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData, error: authError } = await getClaimsUser(supabase);
+    // An unverifiable token is a transient failure, not a signed-out person.
+    if (authError)
+      throw new Error(
+        `We could not verify your sign-in just now (${authError.message}). Try again.`,
+      );
     const userId = userData?.user?.id;
     if (!userId) throw new Error("Not authenticated");
 

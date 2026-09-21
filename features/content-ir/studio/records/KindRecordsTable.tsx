@@ -87,6 +87,7 @@ import {
   useChildKindEdges,
 } from "./RelatedRecordsPanel";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 interface Props {
   kind: string;
   label: string;
@@ -180,7 +181,7 @@ export default function KindRecordsTable({
 
   useEffect(() => {
     let cancelled = false;
-    void supabase.auth.getUser().then(({ data }) => {
+    void getClaimsUser(supabase).then(({ data }) => {
       if (!cancelled) setViewerId(data.user?.id ?? null);
     });
     return () => {

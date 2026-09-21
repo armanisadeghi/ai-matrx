@@ -56,6 +56,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { isJsonObject } from "@/types/json";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
@@ -433,7 +434,7 @@ export async function resolveMandate(
   // `mandate.definition` is authenticated-only. Establish identity before a
   // protected read or cache lookup so hydration/session drift cannot emit an
   // anonymous PostgREST request or reuse another caller's resolved binding.
-  const { data: auth, error: authError } = await supabase.auth.getUser();
+  const { data: auth, error: authError } = await getClaimsUser(supabase);
   const userId = auth.user?.id;
   if (authError || !userId) {
     throw new Error("mandate resolution requires an authenticated session");

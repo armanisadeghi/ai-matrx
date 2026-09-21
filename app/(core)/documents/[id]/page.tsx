@@ -8,6 +8,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -106,7 +107,7 @@ export default function DocumentPage({
       commitDocument(res.data);
       setRenameDraft(res.data.document_name);
 
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData } = await getClaimsUser(supabase);
       const userId = userData?.user?.id ?? null;
       setCurrentUserId(userId);
 

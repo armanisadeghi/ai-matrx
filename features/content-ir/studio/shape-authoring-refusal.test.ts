@@ -15,6 +15,7 @@
  * drift apart.
  */
 import { saveKindComponentCode } from "@/features/content-ir/studio/kind-component-code-service";
+import { withClaims } from "@/test-utils/supabase-auth";
 
 const DB_MESSAGE =
   "Only AI Matrx staff can write shape component code right now. Custom shape " +
@@ -43,9 +44,9 @@ function clientRefusing(error: unknown) {
   }
   chain.maybeSingle = () => Promise.resolve({ data: null, error });
   return {
-    auth: {
+    auth: withClaims({
       getUser: async () => ({ data: { user: { id: "user-1" } }, error: null }),
-    },
+    }),
     schema: () => ({ from: () => chain }),
   } as never;
 }

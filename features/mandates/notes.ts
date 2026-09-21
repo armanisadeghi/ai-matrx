@@ -23,6 +23,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { operationFailed } from "@/utils/errors";
 import { readAllRows } from "@ai-matrx/data/db";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
@@ -207,7 +208,14 @@ export async function createMandateNote(
   const supabase = createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+    error: authError,
+  } = await getClaimsUser(supabase);
+  if (authError) {
+    throw new Error(
+      "Your identity could not be verified just now, so the note was not saved. Try again in a moment.",
+      { cause: authError },
+    );
+  }
   if (!user) throw new Error("Sign in to leave a note.");
 
   // EXPLICIT org on every write — the database never chooses one.

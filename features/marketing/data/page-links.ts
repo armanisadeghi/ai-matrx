@@ -26,6 +26,7 @@ import type {
   BacklinkSnapshotRow,
 } from "@/features/marketing/data/backlinks-types";
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import {
   authenticatedWebDb,
   requireAuthenticatedSupabaseSession,
@@ -1206,7 +1207,7 @@ export async function setLinkGapReviewStatus(
 ): Promise<number> {
   if (!linkGapDomainIds.length) return 0;
   const db = await seoDb();
-  const auth = await supabase.auth.getUser();
+  const auth = await getClaimsUser(supabase);
   if (auth.error) throw auth.error;
   const userId = auth.data.user?.id;
   if (!userId) throw new Error("Sign in again before reviewing prospects.");

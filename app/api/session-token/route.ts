@@ -111,7 +111,9 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // Validate the cookie's JWT signature locally before trusting it.
+    // Validate the cookie's JWT signature locally before trusting it. These
+    // verified claims are also where the caller's id comes from — never
+    // `getSession().user`, which is whatever the cookie says.
     const { data: claims } = await supabase.auth.getClaims();
     if (!claims?.claims) {
       return NextResponse.json(
@@ -135,7 +137,7 @@ export async function GET(req: NextRequest) {
         access_token: session.access_token,
         token_type: "bearer",
         expires_at: session.expires_at ?? null,
-        user_id: session.user?.id ?? null,
+        user_id: typeof claims.claims.sub === "string" ? claims.claims.sub : null,
       },
       { status: 200, headers },
     );

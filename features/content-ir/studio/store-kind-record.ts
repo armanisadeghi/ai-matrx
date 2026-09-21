@@ -55,6 +55,7 @@ import type { Json } from "@/types/database.types";
 import { saveKindInstance, type SaveKindInstanceResult } from "./instance-service";
 import { notifyKindRecordsChanged } from "@/features/content-ir/records/record-change-bus";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 /** The association contract the server writes when a chat turn emits a kind. */
 export const PRODUCED_BY_LABEL = "produced_by";
 export const MESSAGE_SOURCE_TYPE = "message";
@@ -213,7 +214,7 @@ async function writeProducedByEdge(args: {
   organizationId: string | null;
 }): Promise<string | null> {
   try {
-    const { data: auth } = await supabase.auth.getUser();
+    const { data: auth } = await getClaimsUser(supabase);
     const userId = auth.user?.id ?? null;
     const { error } = await supabase
       .schema("platform")

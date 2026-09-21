@@ -46,11 +46,13 @@ jest.mock("@/lib/organizations/personalOrg", () => ({
 
 jest.mock("@/utils/supabase/client", () => ({
   supabase: {
-    auth: {
+    // The caller is read from locally verified claims (getClaimsUser →
+    // auth.getClaims); withClaims derives that door from the same fake user.
+    auth: jest.requireActual("@/test-utils/supabase-auth").withClaims({
       getUser: async () => ({
         data: { user: state.userId ? { id: state.userId } : null },
       }),
-    },
+    }),
     schema: () => ({ from: (name: string) => table(name) }),
   },
 }));

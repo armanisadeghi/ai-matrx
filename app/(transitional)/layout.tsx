@@ -10,6 +10,7 @@
 //   - (ssr)     — LiteStoreProvider + glass shell (SSR experiment routes)
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { Providers } from "@/app/Providers";
 import { mapUserData } from "@/utils/userDataMapper";
 import {
@@ -43,17 +44,30 @@ export default async function AuthenticatedLayout({
   const viewport = headersList.get("viewport-width") || "0";
   const isMobile = Number(viewport) < 768;
 
-  // getUser() validates the session server-side (network call to Supabase Auth)
-  // This is appropriate in a layout since it runs once per page load, not per navigation
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Identity comes from the access token's claims, verified LOCALLY against the
+  // project JWKS — no auth-server round trip on a page render, and the whole
+  // tree shares one resolve per request.
+  const { user, authUnavailable } = await getServerAuth();
 
   // Proxy already handles redirecting unauthenticated users to login
   // This is a safety check in case proxy is bypassed somehow — and it must
   // carry the destination too, or a bypassed proxy silently costs the user
   // their place.
   if (!user) {
+    // 🚨 An auth authority we could not REACH is not a signed-out person. The
+    // proxy passes these through; so does this layout, or a network blink
+    // becomes a logout mid-session.
+    if (authUnavailable) {
+      console.warn(
+        "[(transitional)/layout] identity could not be verified — rendering the retry shell, NOT redirecting to /login.",
+      );
+      return (
+        <div className="p-4 text-sm text-muted-foreground">
+          We could not verify who you are on this request, so this page is not
+          loading. You have not been signed out — reload in a moment.
+        </div>
+      );
+    }
     const headersList = await headers();
     const destination = captureAuthDestination(
       headersList.get("x-pathname"),

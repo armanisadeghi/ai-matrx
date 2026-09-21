@@ -2,6 +2,7 @@ import React from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import type { UserListWithItems } from "@/features/user-lists/types";
 import { ListDetailClient } from "@/features/user-lists/components/ListDetailClient";
 
@@ -17,7 +18,7 @@ async function getListDetail(listId: string): Promise<{
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     const [rpcResult, ownerResult] = await Promise.all([
       supabase.rpc("get_user_list_with_items", { p_list_id: listId }),

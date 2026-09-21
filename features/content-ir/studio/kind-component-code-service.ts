@@ -14,6 +14,7 @@ import { guardedUpdate } from "@ai-matrx/data/db";
 import { operationFailed } from "@/utils/errors";
 import { componentSourceGate } from "@/features/agent-apps/utils/component-source-gate";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 export type KindComponentCodeClient = SupabaseClient<Database>;
 
 export interface KindComponentCodeRecord {
@@ -200,12 +201,14 @@ export async function saveKindComponentCode(
   });
   if (refusal) throw new Error(refusal);
 
-  const { data: authData, error: authError } = await client.auth.getUser();
+  const { data: authData, error: authError } = await getClaimsUser(client);
   if (authError) {
     throw operationFailed("verify who is editing this component", authError);
   }
   if (!authData.user)
     throw new Error("You must be signed in to save component code.");
+  // Bound once: the narrowing above does not survive into the closures below.
+  const editorId = authData.user.id;
 
   try {
     const result = await guardedUpdate<KindComponentCodeRow>({
@@ -216,7 +219,7 @@ export async function saveKindComponentCode(
           .from("kind_component")
           .update({
             component_source: args.componentSource,
-            updated_by: authData.user.id,
+            updated_by: editorId,
             version: nextVersion,
           })
           .eq("id", args.component.id)

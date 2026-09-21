@@ -21,6 +21,7 @@ import {
   type OutreachLane,
 } from "./types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 /**
  * Ask the ONE authority whether this recipient may be sent to right now.
  *
@@ -162,7 +163,7 @@ export async function acceptOutreachPolicy(params: {
   acceptedText: string;
 }): Promise<void> {
   const supabase = createClient();
-  const { data: userData, error: userError } = await supabase.auth.getUser();
+  const { data: userData, error: userError } = await getClaimsUser(supabase);
   if (userError || !userData.user) {
     throw new Error("You must be signed in to accept the sending rules.");
   }

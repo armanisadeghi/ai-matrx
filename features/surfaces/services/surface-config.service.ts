@@ -23,6 +23,7 @@ import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandat
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { isJsonObject } from "@/types/json";
 import type { Database } from "@/types/database.types";
 import { fetchMandatePins } from "@/features/mandates/service";
@@ -340,7 +341,7 @@ export async function fetchSurfaceConfigBundle(
   // public surface config, but cannot and need not resolve an executable
   // Holder. This also prevents session-hydration gaps from reaching PostgREST
   // as anon and reporting a permission failure.
-  const { data: auth, error: authError } = await client.auth.getUser();
+  const { data: auth, error: authError } = await getClaimsUser(client);
   const uid = authError ? null : (auth.user?.id ?? null);
   // Prime the memoized system organization id alongside the rows, so the
   // synchronous `tierOf` above can tell a platform-owned row from an ordinary

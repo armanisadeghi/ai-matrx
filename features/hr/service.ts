@@ -25,6 +25,7 @@
 // `{kind:"failed"}` with a sentence, never a bare Postgres code (§2 error state).
 
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { readAllRows } from "@ai-matrx/data/db";
 import {
   HR_SEPARATION_REASON_DIMENSION,
@@ -110,17 +111,22 @@ export async function validateHrBrowserSession(): Promise<HrResult<true>> {
     return denied("no_authenticated_session", "Sign in again to open HR.");
   }
 
+  // The token is verified LOCALLY against the project JWKS. `getClaimsUser`
+  // draws the distinction this door has always needed: a confirmed signed-out
+  // caller (`user` null, `error` null) is DENIED, while a token we could not
+  // verify is a transient FAILURE — never a sentence that says "sign in again"
+  // over an outage.
   const {
     data: { user },
     error,
-  } = await supabase.auth.getUser();
-
-  if (error?.name === "AuthSessionMissingError" || !user) {
-    return denied("no_authenticated_session", "Sign in again to open HR.");
-  }
+  } = await getClaimsUser(supabase);
 
   if (error) {
     return failed("Your HR session could not be validated.", error.name);
+  }
+
+  if (!user) {
+    return denied("no_authenticated_session", "Sign in again to open HR.");
   }
 
   return { ok: true, data: true };

@@ -29,6 +29,7 @@ import { getDocument } from "@/features/data-tables/document-service";
 import { isServiceFailure, type DocumentRow } from "@/features/data-tables/types";
 import { cn } from "@/lib/utils";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 // Univer hard-depends on `window` / `document`, and it is a heavy chunk — keep
 // it out of the canvas base bundle until a document pane actually opens.
 const DocumentEditor = dynamic(
@@ -107,7 +108,7 @@ export function DocumentCanvasBody({
     }
     setRow(res.data);
 
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getClaimsUser(supabase);
     const userId = userData?.user?.id ?? null;
     if (userId && userId === res.data.user_id) {
       setCanEdit(true);

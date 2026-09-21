@@ -14,6 +14,7 @@ import {
   LEGACY_AUTH_COOKIE_NAME,
   supabaseNext,
 } from "@/utils/supabase/authCookie";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { extractErrorMessage } from "@/utils/errors";
 import { safeForwardedHost } from "@/utils/auth/safe-redirect";
 import {
@@ -177,7 +178,7 @@ export async function GET(request: Request) {
       // browser sent last, a coin flip between the session and anonymous.
       // That is the split-jar outage class, and this door was the last one
       // still blind to it: the code exchange and the "already signed in"
-      // `getUser()` recovery below both read the jar.
+      // claims recovery below both read the jar.
       //
       // We feed the RAW header through `cookieStore.getAll` rather than the
       // door's `cookieHeader` option on purpose: `cookieHeader` REPLACES the
@@ -308,9 +309,11 @@ export async function GET(request: Request) {
 
         // The browser may still hold a perfectly valid session (a re-used
         // callback link, a second tab racing the first). Sending that user to
-        // /login with an error is a lie — they are signed in. Verify against
-        // the auth server, never the cookie alone.
-        const { data: existing } = await supabase.auth.getUser();
+        // /login with an error is a lie — they are signed in. VERIFY the token
+        // (locally, against the project JWKS) — never trust the cookie alone,
+        // and never spend an auth-server round trip on a request that is
+        // already in its failure path.
+        const { data: existing } = await getClaimsUser(supabase);
         if (existing.user) {
           console.log(
             `[${timestamp}] Auth callback - exchange failed but a valid session exists; continuing to destination`,

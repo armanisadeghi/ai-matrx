@@ -39,6 +39,7 @@ import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { asJsonObject } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 type DraftStatus =
   "generating" | "verifying" | "ready" | "failed" | "published";
 
@@ -86,7 +87,7 @@ export function ExamContentPipeline() {
       const {
         data: { user },
         error,
-      } = await supabase.auth.getUser();
+      } = await getClaimsUser(supabase);
       if (cancelled) return;
       if (error || !user) {
         setSourceError(error?.message ?? "Sign in to load grounded sources.");

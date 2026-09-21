@@ -1,11 +1,22 @@
 import { validateHrBrowserSession } from "../../service";
 import { supabase } from "@/utils/supabase/client";
-import { AuthSessionMissingError } from "@supabase/auth-js";
+import { AuthError, AuthSessionMissingError } from "@supabase/auth-js";
 import type { Session, User } from "@supabase/supabase-js";
 
-jest.mock("@/utils/supabase/client", () => ({
-  supabase: { auth: { getSession: jest.fn(), getUser: jest.fn() } },
-}));
+// `validateHrBrowserSession` resolves identity with `getClaimsUser`, which calls
+// `auth.getClaims()`. `withClaims` derives that door from the SAME fake
+// `getUser` this suite already drives, so one fake user answers both and they
+// can never disagree.
+jest.mock("@/utils/supabase/client", () => {
+  const { withClaims } = jest.requireActual<
+    typeof import("@/test-utils/supabase-auth")
+  >("@/test-utils/supabase-auth");
+  return {
+    supabase: {
+      auth: withClaims({ getSession: jest.fn(), getUser: jest.fn() }),
+    },
+  };
+});
 
 const getSession = jest.mocked(supabase.auth.getSession);
 const getUser = jest.mocked(supabase.auth.getUser);
@@ -66,7 +77,24 @@ describe("validateHrBrowserSession", () => {
     });
   });
 
-  it("opens the HR context boundary only for a server-validated user", async () => {
+  it("reports a FAILURE, never \"sign in again\", when the token could not be verified", async () => {
+    getSession.mockResolvedValue({
+      data: { session: session("valid") },
+      error: null,
+    });
+    // Not an AuthSessionMissingError: the verification could not run at all.
+    getUser.mockResolvedValue({
+      data: { user: null },
+      error: new AuthError("JWKS fetch failed", 503, "unexpected_failure"),
+    });
+
+    await expect(validateHrBrowserSession()).resolves.toMatchObject({
+      ok: false,
+      kind: "failed",
+    });
+  });
+
+  it("opens the HR context boundary only for a locally verified user", async () => {
     getSession.mockResolvedValue({
       data: { session: session("valid") },
       error: null,

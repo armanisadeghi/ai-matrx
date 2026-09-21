@@ -12,6 +12,7 @@ import { createClient } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
 import type { CreatorProfileMine, FeaturedItem, CreatorLink } from "./types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 /**
  * The handle RPCs are the ONE place a DB message is written FOR the user:
  * `creator_normalize_handle` / `creator_claim_handle` raise authored sentences
@@ -237,7 +238,7 @@ export interface OwnedPublicResource {
  */
 export async function listMyPublicResources(): Promise<OwnedPublicResource[]> {
   const sb = createClient();
-  const { data: userRes } = await sb.auth.getUser();
+  const { data: userRes } = await getClaimsUser(sb);
   const uid = userRes.user?.id;
   if (!uid) return [];
 

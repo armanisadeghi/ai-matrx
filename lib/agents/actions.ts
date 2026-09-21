@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { redirect } from "next/navigation";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
@@ -96,7 +97,7 @@ export async function createAgentFromSeed(
   const {
     data: { user },
     error: authError,
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
 
   if (authError || !user) {
     redirect(await currentRequestLoginHref("/agents/new"));
@@ -138,7 +139,7 @@ export async function createSystemAgentFromSeed(
   const {
     data: { user },
     error: authError,
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
 
   if (authError || !user) {
     redirect(

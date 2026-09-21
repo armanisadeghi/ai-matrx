@@ -19,6 +19,7 @@ import { createClient } from "@/utils/supabase/client";
 import { startClassCheckout } from "@/features/education/classes/service";
 import type { ClassAccessMode } from "../types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 interface EnrollButtonProps {
   classId: string;
   title: string;
@@ -54,7 +55,13 @@ export function EnrollButton({ classId, title, accessMode, price, handle }: Enro
     setBusy(true);
     try {
       const sb = createClient();
-      const { data: userRes } = await sb.auth.getUser();
+      const { data: userRes, error: authError } = await getClaimsUser(sb);
+      // Never bounce a signed-in person to /sign-up because verification
+      // blinked — that is a transient failure, not a guest.
+      if (authError) {
+        toast.error("We could not verify your sign-in just now. Try again.");
+        return;
+      }
       if (!userRes.user) {
         // Acquisition loop: send the visitor to sign up, return here after.
         startTransition(() =>

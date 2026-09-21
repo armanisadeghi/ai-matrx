@@ -148,6 +148,7 @@ import type {
   FileIdentityHint,
 } from "@/features/files/types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 type ThunkApi = { dispatch: AppDispatch; state: StateWithCloudFiles };
 
 // ---------------------------------------------------------------------------
@@ -551,7 +552,7 @@ export const loadFolderContents = createAsyncThunk<
   // shared conversation, so a raw table enumeration here leaks those rows into
   // the global Files UI. Refresh through the discoverability-gated tree RPC —
   // one canonical list contract for roots and nested folders alike.
-  const { data, error } = await supabase.auth.getUser();
+  const { data, error } = await getClaimsUser(supabase);
   if (error) throw error;
   if (!data.user?.id)
     throw new Error("Cannot load folder contents without a user");

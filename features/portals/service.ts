@@ -39,6 +39,7 @@ import { cache } from "react";
 
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 
 /**
  * THE STORE'S SCHEMA IS NOT IN `types/database.types.ts`, AND THAT IS CORRECT —
@@ -208,7 +209,7 @@ export interface PortalMembership {
  */
 export const portalViewer = cache(async (): Promise<{ id: string; email: string | null } | null> => {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
+  const { data } = await getClaimsUser(supabase);
   const user = data?.user;
   if (!user || user.is_anonymous) return null;
   return { id: user.id, email: user.email ?? null };

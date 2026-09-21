@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { createClient } from '@/utils/supabase/client';
 import { Clock, RefreshCw, CheckCircle, AlertCircle, Info } from 'lucide-react';
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 /**
  * TokenStatusDebug
  * 
@@ -28,7 +29,7 @@ export default function TokenStatusDebug() {
   const loadStatus = async () => {
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getClaimsUser(supabase);
 
       if (!user) {
         setStatus({ isActive: false });

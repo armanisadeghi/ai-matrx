@@ -12,6 +12,7 @@ import {
 import type { Scope } from "../../types";
 import type { SklRenderDefinition } from "./types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 // NOTE — May 2026: skill-definition + category thunks moved to
 // `features/skills/redux/skillsThunks.ts` (Supabase direct + Python
 // admin endpoints). Render-blocks + resources stay here until they
@@ -68,7 +69,7 @@ async function stampScopeForWrite<T extends ScopeStampInput>(
   payload: T,
   args: ScopedQueryArgs,
 ): Promise<T & { organization_id: string }> {
-  const { data: userData } = await supabase.auth.getUser();
+  const { data: userData } = await getClaimsUser(supabase);
   const userId = userData?.user?.id ?? null;
   const stamped: T & { organization_id: string } = {
     ...payload,
@@ -108,7 +109,7 @@ export const fetchRenderDefinitions = createAsyncThunk(
   async (args: ScopedQueryArgs, { dispatch }) => {
     dispatch(sklActions.renderDefinitionsLoading());
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData } = await getClaimsUser(supabase);
       const userId = userData?.user?.id ?? null;
       let query = supabase
         .schema("skill")
@@ -209,7 +210,7 @@ export const fetchRenderBlockCategories = createAsyncThunk(
   async (args: ScopedQueryArgs, { dispatch }) => {
     dispatch(sklActions.renderBlockCategoriesLoading());
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData } = await getClaimsUser(supabase);
       const userId = userData?.user?.id ?? null;
       let query = supabase
         .schema("platform")

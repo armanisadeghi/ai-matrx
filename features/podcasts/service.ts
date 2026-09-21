@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import type { Json } from "@/types/database.types";
 import { asJsonObject, mergeJsonColumn } from "@ai-matrx/data/db";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -261,7 +262,7 @@ export const podcastService = {
   ): Promise<PcEpisode> {
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     const { data, error } = await supabase
       .schema("podcast").from("pc_episodes")

@@ -28,6 +28,7 @@ import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 export interface HandoffChannelPreferences {
   /** Opt-in. `users.user_email_preferences.browser_handoff_notifications`. */
   email: boolean;
@@ -48,7 +49,7 @@ export const NO_HANDOFF_CHANNELS: HandoffChannelPreferences = {
 };
 
 async function currentUserId(): Promise<string | null> {
-  const { data } = await supabase.auth.getUser();
+  const { data } = await getClaimsUser(supabase);
   return data.user?.id ?? null;
 }
 

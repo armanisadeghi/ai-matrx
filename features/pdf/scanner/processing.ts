@@ -11,6 +11,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { docprocDb } from "@/utils/supabase/docprocDb";
 
 export interface ProcessingStatus {
@@ -111,8 +112,18 @@ export interface RecentScans {
 export async function fetchRecentScans(limit = 12): Promise<RecentScans> {
   // "Recent scans" means MY scans — the org-member RLS policy would
   // otherwise surface teammates' org-stamped scans in the personal list.
-  const { data: sessionData } = await supabase.auth.getSession();
-  const uid = sessionData.session?.user.id;
+  // Identity from the access token's locally verified claims.
+  const {
+    data: { user },
+    error: authError,
+  } = await getClaimsUser(supabase);
+  if (authError) {
+    throw new Error(
+      "Your identity could not be verified just now, so your recent scans were not loaded. Try again in a moment.",
+      { cause: authError },
+    );
+  }
+  const uid = user?.id;
   if (!uid) return { active: [], archived: [] };
 
   const { data, error } = await docprocDb(supabase)

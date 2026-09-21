@@ -40,6 +40,7 @@ import { validateStructuralLeg } from "@ai-matrx/content-ir";
 import { deriveInstanceTitle } from "./instance-title";
 import type { Json } from "@/types/database.types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -174,7 +175,13 @@ export async function saveKindInstance(
       "No active organization — cannot save the instance. Select an organization and retry.",
     );
   }
-  const { data: auth } = await supabase.auth.getUser();
+  const { data: auth, error: authError } = await getClaimsUser(supabase);
+  // Could-not-verify is transient and retryable; signed-out is settled.
+  if (authError) {
+    throw new Error(
+      `We could not verify your sign-in just now (${authError.message}). Try again.`,
+    );
+  }
   const userId = auth.user?.id;
   if (!userId) {
     throw new Error("Not signed in — cannot save the instance.");
@@ -253,7 +260,11 @@ export async function listKindInstances(
   archiveFilter: ArchiveFilterValue = DEFAULT_ARCHIVE_FILTER,
   scope?: ListScopeWord,
 ): Promise<KindInstanceListEntry[]> {
-  const { data: auth } = await supabase.auth.getUser();
+  const { data: auth, error: authError } = await getClaimsUser(supabase);
+  if (authError)
+    throw new Error(
+      `We could not verify your sign-in just now (${authError.message}). Try again.`,
+    );
   const userId = auth.user?.id;
   if (!userId) throw new Error("Not signed in — cannot list instances.");
 
@@ -314,7 +325,11 @@ async function instanceKindSlug(instanceId: string): Promise<string> {
 }
 
 async function currentUserId(): Promise<string> {
-  const { data: auth } = await supabase.auth.getUser();
+  const { data: auth, error: authError } = await getClaimsUser(supabase);
+  if (authError)
+    throw new Error(
+      `We could not verify your sign-in just now (${authError.message}). Try again.`,
+    );
   const userId = auth.user?.id;
   if (!userId) throw new Error("Not signed in.");
   return userId;

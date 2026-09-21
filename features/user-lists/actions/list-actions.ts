@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { TablesUpdate } from "@/types/database.types";
 import { organizationRequired } from "@/lib/organizations/organizationRequiredServerError";
 import { createClient } from "@/utils/supabase/server";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import type { CreateListItemInput } from "../types";
 
 // ─── Create ────────────────────────────────────────────────────────────────────
@@ -19,7 +20,14 @@ export async function createListAction(formData: {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+    error: authError,
+  } = await getClaimsUser(supabase);
+  if (authError) {
+    throw new Error(
+      "Your identity could not be verified just now, so nothing was saved. Try again in a moment.",
+      { cause: authError },
+    );
+  }
   if (!user) throw new Error("Not authenticated");
   // The screen already waited for the three organization states. A request that
   // still names none is the kernel refusal — memberships attached, no sentence
@@ -60,7 +68,14 @@ export async function updateListAction(formData: {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+    error: authError,
+  } = await getClaimsUser(supabase);
+  if (authError) {
+    throw new Error(
+      "Your identity could not be verified just now, so nothing was saved. Try again in a moment.",
+      { cause: authError },
+    );
+  }
   if (!user) throw new Error("Not authenticated");
 
   const { data, error } = await supabase.rpc("update_user_list", {
@@ -84,7 +99,14 @@ export async function deleteListAction(listId: string) {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+    error: authError,
+  } = await getClaimsUser(supabase);
+  if (authError) {
+    throw new Error(
+      "Your identity could not be verified just now, so nothing was saved. Try again in a moment.",
+      { cause: authError },
+    );
+  }
   if (!user) throw new Error("Not authenticated");
 
   const { error } = await supabase
@@ -111,7 +133,14 @@ export async function addItemAction(params: {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+    error: authError,
+  } = await getClaimsUser(supabase);
+  if (authError) {
+    throw new Error(
+      "Your identity could not be verified just now, so nothing was saved. Try again in a moment.",
+      { cause: authError },
+    );
+  }
   if (!user) throw new Error("Not authenticated");
 
   // An item lives in its LIST's tenant — never in whatever organization the
@@ -166,7 +195,14 @@ export async function updateItemAction(params: {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+    error: authError,
+  } = await getClaimsUser(supabase);
+  if (authError) {
+    throw new Error(
+      "Your identity could not be verified just now, so nothing was saved. Try again in a moment.",
+      { cause: authError },
+    );
+  }
   if (!user) throw new Error("Not authenticated");
 
   const patch: TablesUpdate<{ schema: "workbench" }, "udt_structured_list_items"> = {
@@ -202,7 +238,14 @@ export async function deleteItemAction(itemId: string, listId: string) {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+    error: authError,
+  } = await getClaimsUser(supabase);
+  if (authError) {
+    throw new Error(
+      "Your identity could not be verified just now, so nothing was saved. Try again in a moment.",
+      { cause: authError },
+    );
+  }
   if (!user) throw new Error("Not authenticated");
 
   const { error } = await supabase

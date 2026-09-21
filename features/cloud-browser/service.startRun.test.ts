@@ -105,7 +105,7 @@ jest.mock("@/utils/supabase/client", () => ({
     schema: () => ({
       from: (table: string) => queryFor(table),
     }),
-    auth: {
+    auth: jest.requireActual("@/test-utils/supabase-auth").withClaims({
       getUser: jest.fn(async () => ({
         data: { user: { id: "user-1" } },
         error: null,
@@ -114,7 +114,7 @@ jest.mock("@/utils/supabase/client", () => ({
         data: { session: { access_token: "t" } },
         error: null,
       })),
-    },
+    }),
   },
 }));
 

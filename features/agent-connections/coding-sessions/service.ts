@@ -4,6 +4,7 @@ import { operationFailed } from "@/utils/errors";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 export const CODING_SESSION_PAGE_SIZE = 100;
 
 const CODING_SESSION_SELECT = `
@@ -127,7 +128,7 @@ export async function fetchCodingSessions(opts?: {
   const {
     data: { user },
     error: authError,
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
   if (authError) throw operationFailed("verify your sign-in", authError);
   if (!user) throw new Error("Sign in to view your coding sessions.");
 
@@ -196,7 +197,7 @@ export async function fetchCodingSessionBindings(
   const {
     data: { user },
     error: authError,
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
   if (authError) throw operationFailed("verify your sign-in", authError);
   if (!user) throw new Error("Sign in to inspect coding-session bindings.");
 

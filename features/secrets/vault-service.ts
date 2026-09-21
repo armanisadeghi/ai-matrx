@@ -13,6 +13,7 @@
  * (`service.ts` / `organization-service.ts`).
  */
 import { createClient } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { makeAssertData } from "@/utils/errors";
 import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 import {
@@ -196,13 +197,15 @@ async function authHeaders(
     data: { session },
   } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Not signed in");
-  // Verify the exact bearer token that will be sent. Calling getUser() without
+  // Verify the exact bearer token that will be sent. Resolving identity without
   // that token races a session replacement and can bind one user's identity to
-  // another user's Authorization header.
+  // another user's Authorization header. The verification is LOCAL (WebCrypto
+  // against the project JWKS) — as trusted as the auth-server round trip was,
+  // with no network call.
   const {
     data: { user },
     error: userError,
-  } = await supabase.auth.getUser(session.access_token);
+  } = await getClaimsUser(supabase, session.access_token);
   if (userError || !user) throw new Error("Not signed in");
   // Imports reread request context after final auth await; ordinary transport
   // keeps its existing fail-before-auth behavior.
@@ -235,7 +238,7 @@ export async function getVaultExportActor(): Promise<VaultVerifiedExportActor> {
   const {
     data: { user },
     error,
-  } = await supabase.auth.getUser(session.access_token);
+  } = await getClaimsUser(supabase, session.access_token);
   if (error || !user || !user.email) throw new Error("Not signed in");
   return {
     userId: user.id,
@@ -641,7 +644,7 @@ export async function getVaultImportActor(): Promise<VaultExpectedActor> {
   const {
     data: { user },
     error,
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
   if (error || !user) throw new Error("Not signed in");
   const organizationId = requireOrganizationContext(requireSelectedOrgId());
   return { userId: user.id, organizationId };
@@ -1035,7 +1038,7 @@ export async function fetchVaultItems(
   const {
     data: { user },
     error: userError,
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
   if (userError || !user) throw new Error("Not signed in");
 
   let sharedItemIds: string[] | null = null;

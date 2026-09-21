@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Lightbulb } from "lucide-react";
-import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { OwnerSuggestionInbox } from "@/features/education/library/components/OwnerSuggestionInbox";
 import { eduHref } from "@/features/education/constants";
 
@@ -17,11 +17,21 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function SuggestionInboxPage() {
-  const sb = await createClient();
-  const {
-    data: { user },
-  } = await sb.auth.getUser();
-  if (!user) redirect(`/login?redirectTo=${encodeURIComponent(eduHref("library", "suggestions"))}`);
+  const { user, authUnavailable } = await getServerAuth();
+  if (!user) {
+    // Could-not-verify is not signed-out — never bounce a signed-in owner to
+    // /login over an auth-authority blink.
+    if (authUnavailable) {
+      console.warn("[/education/library/suggestions] identity could not be verified — showing the retry notice, not redirecting.");
+      return (
+        <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 py-8 text-sm text-muted-foreground">
+          We could not verify who you are on this request, so your suggestion
+          inbox is not loading. You have not been signed out — reload in a moment.
+        </div>
+      );
+    }
+    redirect(`/login?redirectTo=${encodeURIComponent(eduHref("library", "suggestions"))}`);
+  }
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 py-8">

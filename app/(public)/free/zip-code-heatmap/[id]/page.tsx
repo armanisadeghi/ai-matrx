@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/utils/supabase/client';
+import { getClaimsUser } from '@/utils/supabase/claimsUser';
 import { recordUnavailable, recordUnavailableMessage } from '@/lib/records/recordUnavailable';
 import ZipCodeMap from "../components/ZipCodeMap";
 import ColorLegend from "../components/ColorLegend";
@@ -87,7 +88,15 @@ export default function SharedHeatmapPage() {
       if (data.visibility !== "public") {
         const {
           data: { user },
-        } = await supabase.auth.getUser();
+          error: authError,
+        } = await getClaimsUser(supabase);
+        // "Sign in" is a claim about them; when we could not verify the token
+        // at all, say which one this is instead of accusing them of being out.
+        if (!user && authError) {
+          console.warn('[free/zip-code-heatmap/[id]] identity could not be verified — showing the retry notice, not a sign-in prompt.');
+          setError('We could not verify who you are right now. You have not been signed out — reload in a moment.');
+          return;
+        }
         if (!user) {
           setError('Sign in to open this heatmap.');
           return;

@@ -24,6 +24,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { extractErrorMessage, makeAssertData } from "@/utils/errors";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
@@ -271,7 +272,9 @@ export async function createGeoArea(
   const resolvedOrganizationId = await ensureOrgId(organizationId);
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+    error: authError,
+  } = await getClaimsUser(supabase);
+  if (authError) throw authError;
   if (!user) throw new Error("Not authenticated");
   const response = await (await seoDb())
     .from("site_geo_area")

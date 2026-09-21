@@ -43,6 +43,7 @@ import {
 } from "@/utils/permissions/access-core";
 import type { Json } from "@/types/database.types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 export type WorkingDocumentKind = "working" | "scratch";
 
 export interface CxWorkingDocumentRow {
@@ -243,10 +244,12 @@ export async function commitWorkingDocumentContent(
 export type DocumentListScope = "mine" | "shared";
 
 async function currentUserId(): Promise<string | null> {
+  // Identity comes from the access token's LOCALLY verified claims, never from
+  // `getSession()`, which believes whatever the cookie says.
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session?.user?.id ?? null;
+    data: { user },
+  } = await getClaimsUser(supabase);
+  return user?.id ?? null;
 }
 
 // Grant rows may carry any registered spelling of the type (the permissions

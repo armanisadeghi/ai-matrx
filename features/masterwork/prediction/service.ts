@@ -14,6 +14,7 @@
 // only part that goes to the server.
 
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { operationFailed } from "@/utils/errors";
 import { parseRulebook, type Rulebook, type RulebookRow } from "../types";
@@ -134,7 +135,7 @@ export async function appendPrediction(
   rulebookId: string,
   input: NewPrediction,
 ): Promise<LedgerWriteResult & { entry?: PredictionEntry }> {
-  const createdBy = (await supabase.auth.getUser()).data.user?.id ?? "";
+  const createdBy = (await getClaimsUser(supabase)).data.user?.id ?? "";
   const entry: PredictionEntry = {
     id:
       typeof crypto !== "undefined" && "randomUUID" in crypto

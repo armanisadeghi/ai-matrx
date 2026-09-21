@@ -10,6 +10,7 @@ import React, {
 } from "react";
 import { GOOGLE_IDENTITY_SCOPES } from "@/lib/googleScopes";
 import { createClient } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import type {
   GooglePickerNamespace,
   GooglePlatformApi,
@@ -577,7 +578,14 @@ export default function GoogleAPIProvider({
       const supabase = createClient();
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+        error: authError,
+      } = await getClaimsUser(supabase);
+      if (authError) {
+        throw new Error(
+          "Your identity could not be verified just now, so Google was not connected. Try again in a moment.",
+          { cause: authError },
+        );
+      }
       if (!user) throw new Error("Sign in before connecting Google.");
       const response = await fetch("/api/google/oauth/redirect-state", {
         method: "POST",

@@ -9,7 +9,7 @@
 import { redirect } from "next/navigation";
 
 import { TopicalMapStartDoor } from "@/features/marketing/seo/topical-map/door/TopicalMapStartDoor";
-import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 
 export default async function TopicalMapStartPage({
   searchParams,
@@ -17,10 +17,18 @@ export default async function TopicalMapStartPage({
   searchParams: Promise<{ research?: string; source?: string }>;
 }) {
   const params = await searchParams;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, authUnavailable } = await getServerAuth();
+  if (!user && authUnavailable) {
+    console.warn(
+      "[marketing/topical-maps/start] identity could not be verified — showing the retry notice, NOT redirecting to /login.",
+    );
+    return (
+      <div className="p-4 text-sm text-muted-foreground">
+        We could not verify who you are on this request, so this page is not
+        loading. You have not been signed out — reload in a moment.
+      </div>
+    );
+  }
   if (!user) {
     const query = new URLSearchParams();
     if (params.research) query.set("research", params.research);

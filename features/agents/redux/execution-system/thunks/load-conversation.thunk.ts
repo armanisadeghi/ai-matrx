@@ -79,6 +79,7 @@ import {
   type CxRequestRow,
 } from "./conversation-bundle";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 // =============================================================================
 // Thunk
 // =============================================================================
@@ -182,7 +183,7 @@ export const loadConversation = createAsyncThunk<
     // not hydrated when the thunk fires.
     let authedUserId: string | null = null;
     try {
-      const { data: authData } = await supabase.auth.getUser();
+      const { data: authData } = await getClaimsUser(supabase);
       authedUserId = authData?.user?.id ?? null;
 
       console.log(
@@ -192,7 +193,7 @@ export const loadConversation = createAsyncThunk<
       );
     } catch (authErr) {
       console.warn(
-        "[loadConversation] auth.getUser() threw:",
+        "[loadConversation] identity claims read threw:",
         describeSupabaseError(authErr),
       );
     }

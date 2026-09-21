@@ -15,6 +15,7 @@ import { stripNullish } from "@/utils/supabase/payload";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 type AgentInsert = Database["agent"]["Tables"]["definition"]["Insert"];
 
 export interface AgentBuilderConfig {
@@ -144,7 +145,7 @@ export async function createAgentFromBuilder(
     // back as an empty object ({}), which produced the mystery
     // "Agent insert error: {}" in production. Resolve the current user
     // first and stamp it on the payload.
-    const { data: authData, error: authError } = await supabase.auth.getUser();
+    const { data: authData, error: authError } = await getClaimsUser(supabase);
     if (authError || !authData.user?.id) {
       const msg =
         authError?.message ?? "You must be signed in to create an agent.";

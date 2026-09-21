@@ -4,6 +4,8 @@ import { ListChecks } from "lucide-react";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import type { UserListWithItems } from "@/features/user-lists/types";
 import { ListDetailClient } from "@/features/user-lists/components/ListDetailClient";
 
@@ -25,7 +27,7 @@ const loadList = cache(
       const supabase = await createClient();
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await getClaimsUser(supabase);
       if (!user) return null;
       const { data, error } = await supabase.rpc("get_user_list_with_items", {
         p_list_id: listId,
@@ -75,10 +77,24 @@ export async function generateMetadata({
 
 export default async function ListDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const [list, supabase] = await Promise.all([loadList(id), createClient()]);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [list, { user, authUnavailable }] = await Promise.all([
+    loadList(id),
+    getServerAuth(),
+  ]);
+
+  if (!user && authUnavailable) {
+    // Could-not-verify is not signed-out. "Sign in to view this picklist" to
+    // a person who IS signed in is a lie; say which one this is.
+    console.warn(
+      `[/lists/${id}] identity could not be verified — showing the retry notice, not the sign-in gate.`,
+    );
+    return (
+      <div className="p-4 text-sm text-muted-foreground">
+        We could not verify who you are on this request, so this picklist is not
+        loading. You have not been signed out — reload in a moment.
+      </div>
+    );
+  }
 
   if (!user) {
     // Guests: the owner-scoped RPC always returns null without a session, so

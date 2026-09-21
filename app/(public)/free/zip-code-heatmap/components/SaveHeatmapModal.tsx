@@ -16,6 +16,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { supabase } from '@/utils/supabase/client';
+import { getClaimsUser } from '@/utils/supabase/claimsUser';
 import { useLoginHref } from '@/hooks/auth/useLoginHref';
 import { ensureOrgId } from '@/lib/organizations/personalOrg';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -57,8 +58,15 @@ export default function SaveHeatmapModal({
   useEffect(() => {
     if (!isOpen) return;
     let cancelled = false;
-    void supabase.auth.getUser().then(({ data }) => {
-      if (!cancelled) setIsSignedIn(Boolean(data.user?.id));
+    void getClaimsUser(supabase).then(({ data, error }) => {
+      if (cancelled) return;
+      // `null` stays `null` when we could not VERIFY — the dialog keeps holding
+      // its Save button back rather than telling a signed-in person they are out.
+      if (!data.user && error) {
+        console.warn('[SaveHeatmapModal] identity could not be verified — leaving the signed-in state unresolved.');
+        return;
+      }
+      setIsSignedIn(Boolean(data.user?.id));
     });
     return () => {
       cancelled = true;
@@ -83,7 +91,14 @@ export default function SaveHeatmapModal({
       // Get current user
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+        error: authError,
+      } = await getClaimsUser(supabase);
+
+      if (!user?.id && authError) {
+        console.warn('[SaveHeatmapModal] identity could not be verified on save — saying so rather than claiming no account.');
+        setError('We could not verify who you are right now, so the save did not run. You have not been signed out — try again in a moment.');
+        return;
+      }
 
       if (!user?.id) {
         // This used to try the insert anyway, for a signed-out visitor, and the

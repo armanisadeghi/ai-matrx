@@ -23,6 +23,7 @@ import type { Database, Json } from "@/types/database.types";
 import { readAllRows } from "@ai-matrx/data/db";
 import { operationFailed } from "@/utils/errors";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 export type KindIncidentClient = SupabaseClient<Database>;
 
 /** Which failure a row records. Open-ended: a new producer must SHOW UP. */
@@ -184,7 +185,7 @@ export async function resolveKindIncident(
   if (!note) {
     throw new Error("Say what was done — a resolution without a note is a guess.");
   }
-  const { data: authData, error: authError } = await client.auth.getUser();
+  const { data: authData, error: authError } = await getClaimsUser(client);
   if (authError) {
     throw operationFailed("verify who is resolving this incident", authError);
   }

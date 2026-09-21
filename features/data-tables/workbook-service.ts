@@ -23,6 +23,7 @@ import type {
   WorkbookSnapshotOrigin,
 } from "./types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 // ─── workbooks ────────────────────────────────────────────────────────────────
 
 export type CreateWorkbookArgs = {
@@ -63,7 +64,7 @@ export async function createWorkbook(
     };
   }
 
-  const { data: userData, error: userErr } = await supabase.auth.getUser();
+  const { data: userData, error: userErr } = await getClaimsUser(supabase);
   if (userErr || !userData?.user) {
     return {
       success: false,
@@ -247,7 +248,7 @@ export type SaveSnapshotArgs = {
 export async function saveSnapshot(
   args: SaveSnapshotArgs,
 ): Promise<ServiceResult<WorkbookSnapshot>> {
-  const { data: userData } = await supabase.auth.getUser();
+  const { data: userData } = await getClaimsUser(supabase);
   const { data, error } = await supabase
     .schema("workbench")
     .from("udt_workbook_snapshots")

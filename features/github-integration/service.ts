@@ -1,6 +1,7 @@
 import { readAllRows } from "@ai-matrx/data/db";
 import { isJsonObject } from "@/types/json";
 import { createClient } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { startOAuthPopup } from "@/utils/oauth-popup";
 import type {
   GitHubAccount,
@@ -157,14 +158,22 @@ export function githubAccountFromConnection(
 
 export async function loadGitHubConnectionInventory(): Promise<GitHubConnectionInventory> {
   const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
   // `users.integration_connections` grants no access to `anon`. This direct
   // service can also be called outside its hook, so make the last auth check
   // immediately before constructing the PostgREST query.
-  const userId = session?.user?.id;
-  if (!session?.access_token || !userId) return EMPTY_INVENTORY;
+  //
+  // Identity comes from the access token's LOCALLY VERIFIED claims, never from
+  // `getSession().user` (which believes whatever the cookie says) and never
+  // from `auth.getUser()` (an auth-server round trip per call).
+  const {
+    data: { user },
+    error: authError,
+  } = await getClaimsUser(supabase);
+  if (authError) {
+    throw operationFailed("load your GitHub connection", authError);
+  }
+  const userId = user?.id;
+  if (!userId) return EMPTY_INVENTORY;
 
   const connectionResult = await supabase
     .schema("users")

@@ -31,6 +31,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import type { Database, Json } from "@/types/database.types";
 import {
   Permission,
@@ -354,7 +355,7 @@ export async function shareWithUser(
       };
 
     // Fire-and-forget notifications — failure doesn't affect the grant.
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    void getClaimsUser(supabase).then(({ data: { user } }) => {
       if (!user) return;
       const resourceLabel = getResourceTypeLabel(resourceType);
 
@@ -841,7 +842,7 @@ export async function resolveResourceOwnership(
         .select(ownerColumn)
         .eq(entry.idColumn, resourceId)
         .maybeSingle<Record<string, string | null>>(),
-      supabase.auth.getUser(),
+      getClaimsUser(supabase),
     ]);
 
     if (rowError) {
@@ -949,7 +950,7 @@ export async function getSharedWithMe(
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (userError || !user) return [];
 
     let query = supabase
@@ -985,7 +986,7 @@ export async function checkPermission(
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (userError || !user)
       return { hasAccess: false, isOwner: false, reason: "Not authenticated" };
 

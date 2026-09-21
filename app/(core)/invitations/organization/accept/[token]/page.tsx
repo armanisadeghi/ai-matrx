@@ -29,6 +29,7 @@ import type {
 } from "@/features/organizations/types";
 import { generateOrganizationAbbreviation } from "@/features/organizations/types";
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { invitationSignUpHref } from "@/utils/auth/invitation-links";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { fileIdToMediaRef } from "@/features/files/redux/converters";
@@ -63,7 +64,18 @@ export default function AcceptInvitationPage() {
     try {
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+        error: authError,
+      } = await getClaimsUser(supabase);
+
+      // A verification failure is NOT "no account" — sending them to sign-up
+      // would ask a signed-in invitee to make a second account.
+      if (!user && authError) {
+        console.warn("[invitations/organization/accept] identity could not be verified — showing the retry notice, not sign-up.");
+        setError(
+          "We could not verify who you are right now — the sign-in service did not answer. You have not been signed out; reload this page in a moment.",
+        );
+        return;
+      }
 
       if (!user) {
         // An invitee usually has NO account yet — bouncing them to /login was

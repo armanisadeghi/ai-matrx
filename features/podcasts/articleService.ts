@@ -7,6 +7,7 @@
 // tier, one row per (episode_id, kind), upsert-on-regenerate.
 
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { PcArticle, PcArticleKind } from "./types";
 
@@ -72,7 +73,7 @@ export const articleService = {
   ): Promise<PcArticle> {
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     const { data, error } = await supabase
       .schema("podcast").from("pc_articles")
       .upsert(

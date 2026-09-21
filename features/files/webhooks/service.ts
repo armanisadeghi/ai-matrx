@@ -15,6 +15,7 @@ import type {
   WebhookDelivery,
 } from "./types";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 // 🚨 THE SIGNING SECRET IS MINTED WHERE IT IS VERIFIED — not here. (SECURITY-SWEEP, 2026-09-21.)
 // This file used to carry `generateWebhookSecret()`: 24 bytes of `crypto.getRandomValues` in
 // the page, POSTed straight into `files.webhooks.secret` at create and at rotate. The
@@ -51,7 +52,7 @@ export async function createWebhook(
   const {
     data: { user },
     error: userErr,
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
   if (userErr || !user) throw new Error("You must be signed in to create a webhook.");
 
   // 🚨 A WEBHOOK IS FILED IN AN ORGANIZATION, ALWAYS.

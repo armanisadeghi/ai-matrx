@@ -51,6 +51,7 @@ import {
   type ChannelSpec,
 } from "@ai-matrx/realtime";
 
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 /**
  * Matrx Local's per-user bridge channel (its engine subscribes to this).
  * The topic string is the PEER's contract — see the file header.
@@ -270,7 +271,14 @@ export async function callMatrxLocal<T>(
   const supabase = createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+    error: authError,
+  } = await getClaimsUser(supabase);
+  // A token we could not VERIFY is not a signed-out person — say "try again",
+  // never "sign in".
+  if (authError)
+    throw new Error(
+      `We could not verify your sign-in just now (${authError.message}). Try again.`,
+    );
   if (!user) throw new Error("Sign in to reach your Matrx Local app.");
 
   const requestId = crypto.randomUUID();
