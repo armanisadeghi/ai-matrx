@@ -38,15 +38,24 @@ describe("scheduler claim organization provenance", () => {
     expect(schedulerDb).not.toHaveBeenCalled();
   });
 
-  it("copies the persisted task organization into the run insert", async () => {
+  /**
+   * 🚨 THIS ASSERTION CHANGED ON 2026-09-21 (SECURITY-SWEEP) AND IT GOT STRONGER.
+   * It used to check that the client COPIED the task's organization into a direct INSERT —
+   * an insert that also carried a `claim_token` the browser minted with `crypto.randomUUID()`.
+   * Holding a run's claim token IS holding the run (`completeRun`, `failRun` and
+   * `markRunRunning` all gate their UPDATE on it), so a client that chose the token could
+   * write one it already knew onto somebody else's run. The claim now goes through
+   * `scheduler.sch_run_claim`, which mints the token and reads `organization_id`, `user_id`,
+   * `due_at` and `queue` off the PERSISTED task — so the right assertion is that the client
+   * sends NONE of them.
+   */
+  it("claims through the door and sends no organization, no user and no token", async () => {
     const single = jest.fn().mockResolvedValue({
       data: { id: "44444444-4444-4444-8444-444444444444" },
       error: null,
     });
-    const select = jest.fn().mockReturnValue({ single });
-    const insert = jest.fn().mockReturnValue({ select });
-    const from = jest.fn().mockReturnValue({ insert });
-    const schema = jest.fn().mockReturnValue({ from });
+    const rpc = jest.fn().mockReturnValue({ single });
+    const schema = jest.fn().mockReturnValue({ rpc });
     jest.mocked(schedulerDb).mockReturnValue({ schema } as never);
 
     await claimTask(testClient(), {
@@ -58,14 +67,19 @@ describe("scheduler claim organization provenance", () => {
       },
       surface: "web",
       instanceId: "instance-1",
+      leaseSeconds: 600,
     });
 
-    expect(insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        task_id: TASK_ID,
-        user_id: USER_ID,
-        organization_id: ORGANIZATION_ID,
-      }),
-    );
+    expect(rpc).toHaveBeenCalledWith("sch_run_claim", {
+      p_task_id: TASK_ID,
+      p_surface: "web",
+      p_trigger_id: null,
+      p_queue: null,
+      p_lease_seconds: 600,
+    });
+    const args = rpc.mock.calls[0][1] as Record<string, unknown>;
+    expect(args).not.toHaveProperty("claim_token");
+    expect(args).not.toHaveProperty("p_organization_id");
+    expect(args).not.toHaveProperty("p_user_id");
   });
 });

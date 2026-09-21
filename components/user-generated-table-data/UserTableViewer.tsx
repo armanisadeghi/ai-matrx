@@ -80,7 +80,11 @@ import {
 import { useTableLayoutDefaults } from "@/features/data-tables/hooks/useTableLayoutDefaults";
 import { ColumnSummaryCell } from "@/features/data-tables/components/ColumnSummaryCell";
 import { computeColumnSummary } from "@/features/data-tables/column-summaries";
-import { isRowLabelField } from "@/features/data-tables/row-label";
+import {
+  effectiveRowLabel,
+  isRowLabelField,
+  rowLabelText,
+} from "@/features/data-tables/row-label";
 import { setTableRowLabel } from "@/features/data-tables/service";
 import { KeyRound } from "lucide-react";
 import { ColumnViewMenu } from "@/features/data-tables/components/ColumnViewMenu";
@@ -3226,11 +3230,16 @@ const UserTableViewer = ({
       row: menuRow
         ? {
             id: menuRow.id,
+            // The table's ROW LABEL names the row here too (row-label.ts);
+            // only a row with an empty label falls back to its first filled cell.
             label:
-              viewFields
-                .map((f) => cellClipboardText(menuRow.data?.[f.field_name]).trim())
-                .find(Boolean)
-                ?.slice(0, 40) ?? "row",
+              (
+                rowLabelText(menuRow, fields, effectiveRowLabel(tableInfo?.metadata, fields)).text ||
+                viewFields
+                  .map((f) => cellClipboardText(menuRow.data?.[f.field_name]).trim())
+                  .find(Boolean) ||
+                "row"
+              ).slice(0, 40),
             highlight: tableStyle.rows?.[menuRow.id] ?? null,
           }
         : null,

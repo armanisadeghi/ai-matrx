@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 
 interface DeleteRowModalProps {
   rowId: string | null;
+  /** What the row is called (the table's row label) — so the question names what is being deleted. */
+  rowLabel?: string;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
@@ -21,6 +23,7 @@ interface DeleteRowModalProps {
 
 export default function DeleteRowModal({
   rowId,
+  rowLabel,
   isOpen,
   onClose,
   onSuccess,
@@ -70,10 +73,11 @@ export default function DeleteRowModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Delete Row</DialogTitle>
+          <DialogTitle>{rowLabel ? `Delete "${rowLabel}"?` : "Delete Row"}</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete this row? This action cannot be
-            undone.
+            {rowLabel
+              ? `The row "${rowLabel}" will be deleted. This action cannot be undone.`
+              : "Are you sure you want to delete this row? This action cannot be undone."}
           </DialogDescription>
         </DialogHeader>
 

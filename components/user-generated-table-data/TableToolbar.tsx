@@ -1,5 +1,6 @@
 "use client";
 
+import { effectiveRowLabel, rowLabelText } from "@/features/data-tables/row-label";
 import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AddColumnModal from "./AddColumnModal";
@@ -518,6 +519,15 @@ export default function TableToolbar({
           />
           <DeleteRowModal
             rowId={selectedRowId}
+            rowLabel={
+              selectedRowData
+                ? rowLabelText(
+                    { data: selectedRowData },
+                    fields,
+                    effectiveRowLabel((tableInfo as { metadata?: unknown } | null)?.metadata, fields),
+                  ).text || undefined
+                : undefined
+            }
             isOpen={showDeleteModal}
             onClose={() => setShowDeleteModal(false)}
             onSuccess={onDeleteSuccess}

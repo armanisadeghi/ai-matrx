@@ -29,7 +29,6 @@ import type {
   Json,
   OutputRef,
   RunStatus,
-  SchRunInsert,
   SchRunRow,
   SchTaskRow,
 } from "./types";
@@ -38,19 +37,14 @@ import type {
 const DEFAULT_LEASE_SECONDS = 600;
 
 /**
- * Every transition into an executing state carries this protocol marker.
- * `scheduler.sch_run` enforces it with two CHECK constraints:
- *   sch_run_claim_protocol_chk            (status in claimed|running ⇒ marker = '2')
- *   sch_run_claim_protocol_by_claimed_at_chk (claimed_at not null ⇒ marker = '2')
- * so a stale client generation is physically unable to claim work after the
- * contract changes.
- *
- * MUST stay in lockstep with matrx_scheduler/queries.py::CLAIM_PROTOCOL —
- * bumping one without the other silently rejects every claim from the other
- * side (which is exactly what happened here: this constant was missing
- * entirely, so every claim through this client failed the CHECK).
+ * 🚨 THE CLAIM PROTOCOL MARKER NOW LIVES IN THE DOOR. (SECURITY-SWEEP, 2026-09-21.)
+ * `scheduler.sch_run_claim` writes `metadata.claim_protocol = 2` itself, so the constant that
+ * used to live here — and had to stay in lockstep with `matrx_scheduler/queries.py::CLAIM_PROTOCOL`
+ * by hand, and once went missing entirely, silently failing every claim against the two CHECK
+ * constraints — is no longer a thing two languages can disagree about. The constraints
+ * `sch_run_claim_protocol_chk` and `sch_run_claim_protocol_by_claimed_at_chk` are unchanged and
+ * still refuse any claim without it.
  */
-const CLAIM_PROTOCOL = 2;
 
 const OrganizationIdSchema = z.string().uuid();
 
@@ -76,12 +70,25 @@ export interface ClaimTaskOptions {
 }
 
 /**
- * Atomic claim: INSERT into sch_run with status='claimed'. The partial
- * unique index sch_run_unique_active_per_task fires for the loser of
- * any race, which we catch and re-throw as TaskClaimRaceError.
+ * Atomic claim THROUGH THE DOOR: `scheduler.sch_run_claim` mints the lease token and inserts
+ * the run. The partial unique index `sch_run_unique_active_per_task` still decides the race
+ * and the door lets the `23505` propagate, so `isClaimRaceLoss` classifies it exactly as
+ * before.
  *
- * Returns the freshly-created sch_run row (including the generated id +
- * the claim_token the caller will need for subsequent updates).
+ * 🚨 THE TOKEN IS NOT MINTED HERE ANY MORE. This function used to call `crypto.randomUUID()`
+ * in the page and INSERT the result — and holding a run's claim token IS holding the run
+ * (`completeRun`, `failRun` and `markRunRunning` all gate their UPDATE on it), so a client
+ * that chose the token could write one it already knew onto somebody else's run and then
+ * finish, fail or re-point their scheduled work. A trigger on `scheduler.sch_run` now refuses
+ * any client INSERT that carries a token at all.
+ *
+ * The task is still read here for its organization, because the caller already has the row
+ * and the refusal reads better locally; the DOOR re-reads the task and is the authority —
+ * it takes `organization_id`, `user_id`, `due_at` and `queue` from the persisted task, so a
+ * client cannot file a run in an organization the task does not belong to.
+ *
+ * Returns the freshly-created sch_run row (including the claim_token the caller will need for
+ * subsequent updates).
  */
 export async function claimTask(
   supabase: SupabaseClient,
@@ -96,31 +103,15 @@ export async function claimTask(
     );
   }
 
-  const claimToken = crypto.randomUUID();
-  const now = new Date();
-  const lease = opts.leaseSeconds ?? DEFAULT_LEASE_SECONDS;
-  const expires = new Date(now.getTime() + lease * 1000);
-
-  const row: SchRunInsert = {
-    task_id: opts.task.id,
-    trigger_id: opts.triggerId ?? null,
-    user_id: opts.task.user_id,
-    organization_id: organizationId.data,
-    status: "claimed" satisfies RunStatus,
-    surface: opts.surface,
-    queue: opts.queue ?? null,
-    due_at: opts.task.next_due_at ?? now.toISOString(),
-    claimed_at: now.toISOString(),
-    claim_token: claimToken,
-    claim_expires_at: expires.toISOString(),
-    metadata: { claim_protocol: CLAIM_PROTOCOL } as Json,
-  };
-
   const { data, error } = await schedulerDb(supabase)
     .schema("scheduler")
-    .from("sch_run")
-    .insert(row)
-    .select()
+    .rpc("sch_run_claim", {
+      p_task_id: opts.task.id,
+      p_surface: opts.surface,
+      p_trigger_id: opts.triggerId ?? null,
+      p_queue: opts.queue ?? null,
+      p_lease_seconds: opts.leaseSeconds ?? DEFAULT_LEASE_SECONDS,
+    })
     .single();
 
   if (error) {

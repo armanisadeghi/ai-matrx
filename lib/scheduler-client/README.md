@@ -109,3 +109,26 @@ pnpm tsc --noEmit 2>&1 | grep "lib/scheduler-client"
 ```
 
 The first real consumer (matrx-extend's vendored copy or matrx-frontend's `features/scheduling/` once it's consolidated) will exercise the runtime paths against a Supabase test project.
+
+## 2026-09-21 — the claim token is minted by the door (SECURITY-SWEEP)
+
+`claimTask` no longer mints `claim_token` with `crypto.randomUUID()` and INSERTs it. Holding a
+run's claim token IS holding the run — `completeRun`, `failRun` and `markRunRunning` all gate
+their UPDATE on it — so a client that chose the token could write one it already knew onto
+somebody else's run and then finish, fail or re-point their scheduled work.
+
+Claims go through **`scheduler.sch_run_claim`** (SECURITY DEFINER): it mints the token, takes
+`organization_id`, `user_id`, `due_at` and `queue` from the **persisted task**, writes
+`metadata.claim_protocol = 2` itself, and lets `sch_run_unique_active_per_task` propagate its
+`23505` so `isClaimRaceLoss` still classifies the race. A trigger on `scheduler.sch_run`
+(`sch_run_claim_token_is_minted`, SECURITY INVOKER on purpose) refuses any client INSERT
+carrying a token and any client UPDATE that sets or swaps one — while still allowing a client
+to CLEAR it, which is how a run finishes, and to leave it untouched, which is what
+`markRunRunning` does.
+
+`CLAIM_PROTOCOL` is gone from this file: the door writes the marker, so it can no longer drift
+out of lockstep with `matrx_scheduler/queries.py::CLAIM_PROTOCOL` — which it once did,
+silently failing every claim against the two CHECK constraints.
+
+The matrx-extend mirror (`matrx-extend/src/lib/scheduler-client/claim.ts`) moved in the same
+push, along with its second claim implementation in `src/lib/agenda/queries.ts::claimRun`.
