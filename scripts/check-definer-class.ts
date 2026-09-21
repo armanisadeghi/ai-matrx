@@ -57,10 +57,13 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { armScratchSignals, registeredScratchPlan, teardownScratch } from "./lib/scratch-teardown";
+import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import type { Client } from "pg";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+/** Kept as an alias: the verdict is the exit code in BOTH modes now. */
 const STRICT = process.argv.includes("--strict");
+void STRICT;
 const SELF_TEST = process.argv.includes("--self-test");
 
 /**
@@ -77,44 +80,20 @@ function loadBaseline(): Baseline | null {
 
 const C = { b: "\x1b[1m", d: "\x1b[2m", r: "\x1b[31m", g: "\x1b[32m", y: "\x1b[33m", x: "\x1b[0m" };
 
-function loadEnv(): { url: string; key: string } | null {
-  let url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-  let key = process.env.SUPABASE_SECRET_KEY ?? "";
-  if (!url || !key) {
-    for (const f of [".env.local", ".env.production.local", ".env.production", ".env"]) {
-      const p = resolve(ROOT, f);
-      if (!existsSync(p)) continue;
-      for (const line of readFileSync(p, "utf8").split("\n")) {
-        const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.+?)\s*$/);
-        if (!m) continue;
-        const v = (m[2] ?? "").replace(/^['"]|['"]$/g, "");
-        if (!url && m[1] === "NEXT_PUBLIC_SUPABASE_URL") url = v;
-        if (!key && m[1] === "SUPABASE_SECRET_KEY") key = v;
-      }
-      if (url && key) break;
-    }
-  }
-  if (!url || !key) return null;
-  return { url: url.replace(/\/$/, ""), key };
-}
-
-async function door(env: { url: string; key: string }, sql: string): Promise<Array<Record<string, unknown>>> {
-  const res = await fetch(`${env.url}/rest/v1/rpc/execute_admin_query`, {
-    method: "POST",
-    headers: {
-      apikey: env.key, Authorization: `Bearer ${env.key}`,
-      "Content-Type": "application/json", "Content-Profile": "public", "Accept-Profile": "public",
-    },
-    body: JSON.stringify({ query: sql }),
-  });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`${res.status}: ${text.slice(0, 400)}`);
-  const payload = JSON.parse(text) as unknown;
-  if (Array.isArray(payload)) return payload as Array<Record<string, unknown>>;
-  if (payload && typeof payload === "object" && Array.isArray((payload as { result?: unknown[] }).result)) {
-    return (payload as { result: Array<Record<string, unknown>> }).result;
-  }
-  return [];
+/**
+ * 🚨 THE DIRECT CONNECTION, NOT THE POSTGREST ADMIN DOOR (GUARD-STAMPS, 2026-09-21).
+ *
+ * This guard used to read through `public.execute_admin_query`, which dies at a hard ~8.2 s no
+ * SQL can lift (db-rules / DD-151). The moment the census started consulting
+ * `platform.definer_body_decides_access` — a call-graph walk, ~11 s across the surface — every
+ * run came back `57014 canceling statement due to statement timeout` and the guard reported
+ * itself UNMEASURED. A guard that cannot finish measuring is not a strict guard, it is an
+ * absent one. `scripts/lib/direct-db.ts` is this repo's one sanctioned direct transport, it
+ * announces where its credentials came from, and `statement_timeout` is real and settable.
+ */
+async function door(db: Client, sql: string): Promise<Array<Record<string, unknown>>> {
+  const res = await db.query(sql);
+  return res.rows as Array<Record<string, unknown>>;
 }
 
 type Row = {
@@ -122,6 +101,10 @@ type Row = {
   is_trigger: boolean; writes_identity: boolean; reads_classed: boolean; asks_the_gate: boolean;
   narrows_to_caller: boolean; asks_an_admin: boolean; org_scoped: boolean;
   classed_tokens: string; declared: boolean; exempt_reason: string | null;
+  /** An explicit anon rule in platform.client_callable_door (purpose >= 40 chars, CHECK-enforced). */
+  anon_rule_declared: boolean;
+  /** platform.definer_body_decides_access — the transitive call-graph oracle DD-223 already trusts. */
+  asks_the_ladder: boolean;
 };
 
 /**
@@ -132,19 +115,21 @@ type Row = {
  * identity column without asking anybody is the finding.
  */
 export function isUnguardedRewrite(
-  r: Pick<Row, "writes_identity" | "asks_the_gate" | "is_trigger" | "exempt_reason">,
+  r: Pick<Row, "writes_identity" | "asks_the_gate" | "is_trigger" | "exempt_reason" | "asks_the_ladder">,
 ): boolean {
-  return r.writes_identity === true && r.asks_the_gate !== true
+  return r.writes_identity === true && r.asks_the_gate !== true && r.asks_the_ladder !== true
     && r.is_trigger !== true && !r.exempt_reason;
 }
 
 /** A reader nobody can explain: no gate, no own-row predicate, no admin check, no org predicate. */
 export function isUnexplainedReader(
   r: Pick<Row, "reads_classed" | "asks_the_gate" | "is_trigger" | "narrows_to_caller"
-              | "asks_an_admin" | "org_scoped" | "exempt_reason">,
+              | "asks_an_admin" | "org_scoped" | "exempt_reason"
+              | "anon_rule_declared" | "asks_the_ladder">,
 ): boolean {
   return r.reads_classed === true && r.is_trigger !== true && r.asks_the_gate !== true
     && r.narrows_to_caller !== true && r.asks_an_admin !== true && r.org_scoped !== true
+    && r.anon_rule_declared !== true && r.asks_the_ladder !== true
     && !r.exempt_reason;
 }
 
@@ -152,7 +137,8 @@ const CENSUS_SQL = `
 with c as (select * from iam.definer_class_census),
  u as (select * from c
         where not is_trigger and exempt_reason is null and not asks_the_gate
-          and reads_classed and not narrows_to_caller and not asks_an_admin and not org_scoped)
+          and reads_classed and not narrows_to_caller and not asks_an_admin and not org_scoped
+          and not anon_rule_declared and not asks_the_ladder)
 select json_build_object(
   'total',        (select count(*) from c),
   'doors',        (select count(*) from c where not is_trigger),
@@ -171,8 +157,8 @@ select json_build_object(
                       'classed_tokens', x.classed_tokens,
                       'declared', x.declared) order by x.schema_name, x.function_name), '[]'::json)
                     from c x
-                   where x.writes_identity and not x.asks_the_gate and not x.is_trigger
-                     and x.exempt_reason is null),
+                   where x.writes_identity and not x.asks_the_gate and not x.asks_the_ladder
+                     and not x.is_trigger and x.exempt_reason is null),
   'anon_readers', (select coalesce(json_agg(json_build_object(
                       'schema_name', u.schema_name, 'function_name', u.function_name,
                       'classed_tokens', u.classed_tokens, 'declared', u.declared)
@@ -183,17 +169,20 @@ select json_build_object(
                              from u group by schema_name) s)
 ) as j`;
 
-async function selfTest(env: { url: string; key: string }): Promise<number> {
+async function selfTest(db: Client): Promise<number> {
   console.log(`${C.b}SELF-TEST${C.x} ${C.d}(the rule, and the view that feeds it)${C.x}`);
   let bad = 0;
   type W = Pick<Row, "writes_identity" | "asks_the_gate" | "is_trigger" | "exempt_reason">;
-  const base: W = { writes_identity: true, asks_the_gate: false, is_trigger: false, exempt_reason: null };
+  const base: W = { writes_identity: true, asks_the_gate: false, is_trigger: false,
+                    exempt_reason: null, asks_the_ladder: false };
   const cases: Array<[string, W, boolean]> = [
     ["RED   — rewrites an identity column and asks nobody", base, true],
     ["GREEN — rewrites one but asks the gate or the door", { ...base, asks_the_gate: true }, false],
     ["GREEN — asks nobody but rewrites nothing", { ...base, writes_identity: false }, false],
     ["GREEN — a trigger function is not a client door", { ...base, is_trigger: true }, false],
     ["GREEN — a written exemption is an answer", { ...base, exempt_reason: "a real sentence" }, false],
+    ["GREEN — it decides through the ladder, via a helper the census cannot see inline",
+      { ...base, asks_the_ladder: true }, false],
   ];
   for (const [label, row, expect] of cases) {
     if (isUnguardedRewrite(row) === expect) console.log(`  ${C.g}✓${C.x} ${label}`);
@@ -203,67 +192,85 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
                     | "asks_an_admin" | "org_scoped" | "exempt_reason">;
   const rbase: R = { reads_classed: true, asks_the_gate: false, is_trigger: false,
                      narrows_to_caller: false, asks_an_admin: false, org_scoped: false,
-                     exempt_reason: null };
+                     exempt_reason: null, anon_rule_declared: false, asks_the_ladder: false };
   const rcases: Array<[string, R, boolean]> = [
     ["RED   — reads a classed table and explains itself to nobody", rbase, true],
     ["GREEN — it narrows to the caller's own rows", { ...rbase, narrows_to_caller: true }, false],
     ["GREEN — it asks whether the caller is an administrator", { ...rbase, asks_an_admin: true }, false],
     ["GREEN — it narrows to the caller's organizations", { ...rbase, org_scoped: true }, false],
     ["GREEN — it asks the class gate", { ...rbase, asks_the_gate: true }, false],
+    ["GREEN — it decides through the ladder (platform.definer_body_decides_access)",
+      { ...rbase, asks_the_ladder: true }, false],
+    ["GREEN — it is an anon door with an explicit anon rule in the door registry",
+      { ...rbase, anon_rule_declared: true }, false],
   ];
   for (const [label, row, expect] of rcases) {
     if (isUnexplainedReader(row) === expect) console.log(`  ${C.g}✓${C.x} ${label}`);
     else { console.log(`  ${C.r}✗${C.x} ${label}`); bad++; }
   }
 
-  // And the same two states built for real, so the VIEW that feeds the rule is proven too.
+  // ── And the same two states built for real, so the VIEW that feeds the rule is proven too. ──
+  //
+  // 🚨 THE PLANT MUST NEVER COMMIT (GUARD-STAMPS, 2026-09-21). The probe IS the defect this
+  // guard exists for — a client-callable SECURITY DEFINER function that rewrites an identity
+  // column and decides nothing — and the live `provision_shape_guard` event trigger now refuses
+  // exactly that shape AT COMMIT: `SECURITY DEFINER function …zz_probe() reached COMMIT with no
+  // access decision declared`. The previous version created the scratch schema statement by
+  // statement over the autocommitting PostgREST door, so every CREATE was its own transaction and
+  // the guard killed the run inside the teardown it could no longer reach — leaving a
+  // `zz_definer_class_selftest_*` schema behind each time.
+  //
+  // So the whole plant now lives in ONE transaction that is rolled back. The DDL guard and the
+  // deferred `door_body_must_decide` constraint both fire at COMMIT, which never arrives; the
+  // census sees the objects because it is the same session; and there is nothing to tear down,
+  // which is the only teardown that cannot itself fail. Peer lanes' guards are unaffected: no
+  // object of theirs is touched and no lock is held beyond this transaction.
   const schema = `zz_definer_class_selftest_${Date.now().toString(36)}`;
-  const scratch = registeredScratchPlan({
-    owner: "check:definer-class --self-test", run: (sql) => door(env, sql), schema,
-    extraRows: [{
-      what: `platform.client_callable_door rows for ${schema}`,
-      deleteSql: `delete from platform.client_callable_door where schema_name = '${schema}'`,
-      countSql: `select count(*)::int as n from platform.client_callable_door where schema_name = '${schema}'`,
-    }],
-  });
-  const disarm = armScratchSignals(scratch);
+  await db.query("begin");
   try {
-    await door(env, `create schema ${schema}`);
-    await door(env, `create table ${schema}.t (id uuid primary key default gen_random_uuid(), organization_id uuid)`);
-    await door(env, `create function ${schema}.zz_probe() returns void language plpgsql security definer as $f$
+    await db.query(`create schema ${schema}`);
+    await db.query(`create table ${schema}.t (id uuid primary key default gen_random_uuid(), organization_id uuid)`);
+    await db.query(`create function ${schema}.zz_probe() returns void language plpgsql security definer as $f$
                      begin update ${schema}.t set organization_id = gen_random_uuid(); end $f$`);
-    await door(env, `grant usage on schema ${schema} to authenticated`);
+    await db.query(`grant usage on schema ${schema} to authenticated`);
     // 🚨 THE DECLARATION FIRST, OR THERE IS NOTHING TO MEASURE. `enforce_definer_client_grants`
     // (db-rules §6d-4) revokes a client EXECUTE on an UNDECLARED SECURITY DEFINER function at
     // `ddl_command_end`, silently. The first version of this self-test granted and then found the
     // census empty — not because the census was blind, but because the door had already been shut
     // behind it. Declaring the probe is what makes the RED half a measurement of THIS guard rather
     // than an accidental re-measurement of that one.
-    await door(env, `insert into platform.client_callable_door(schema_name, function_name, identity_args, declared_by, reason)
+    await db.query(`insert into platform.client_callable_door(schema_name, function_name, identity_args, declared_by, reason)
                      values ('${schema}', 'zz_probe', '', 'check:definer-class --self-test',
-                             'Throwaway probe built and dropped by the self-test in the same run.')`);
-    await door(env, `grant execute on function ${schema}.zz_probe() to authenticated`);
-    const red = await door(env, `select count(*)::int n from iam.definer_class_census
-                                  where schema_name = '${schema}' and writes_identity and not asks_the_gate`);
+                             'Throwaway probe built and rolled back by the self-test in the same transaction.')`);
+    await db.query(`grant execute on function ${schema}.zz_probe() to authenticated`);
+    const red = await door(db, `select count(*)::int n from iam.definer_class_census
+                                  where schema_name = '${schema}' and writes_identity
+                                    and not asks_the_gate and not asks_the_ladder`);
     if (Number((red[0] as { n?: number })?.n ?? 0) !== 1) {
       console.log(`  ${C.r}✗${C.x} RED  — the view did not see the unguarded rewrite it was just handed`); bad++;
     } else {
       console.log(`  ${C.g}✓${C.x} RED  — the view sees a client-callable definer that rewrites an identity column`);
     }
-    await door(env, `create or replace function ${schema}.zz_probe() returns void language plpgsql security definer as $f$
+    await db.query(`create or replace function ${schema}.zz_probe() returns void language plpgsql security definer as $f$
                      begin perform iam.assert_class_allows('note','rewrite_owner',null);
                            update ${schema}.t set organization_id = gen_random_uuid(); end $f$`);
-    const green = await door(env, `select count(*)::int n from iam.definer_class_census
-                                    where schema_name = '${schema}' and writes_identity and not asks_the_gate`);
+    const green = await door(db, `select count(*)::int n from iam.definer_class_census
+                                    where schema_name = '${schema}' and writes_identity
+                                      and not asks_the_gate and not asks_the_ladder`);
     if (Number((green[0] as { n?: number })?.n ?? 0) !== 0) {
       console.log(`  ${C.r}✗${C.x} GREEN — the view still flags it after it started asking the gate`); bad++;
     } else {
       console.log(`  ${C.g}✓${C.x} GREEN — it stops being flagged the moment it asks the gate`);
     }
   } finally {
-    // Never silent (DC-027 #8): every step attempted, every object probed, leftovers named with the remedy.
-    disarm();
-    if (!(await teardownScratch(scratch)).ok) bad++;
+    await db.query("rollback");
+  }
+  // The rollback is the teardown, and this proves it happened (DC-027 #8: never silent).
+  const left = await door(db, `select count(*)::int n from pg_namespace where nspname = '${schema}'`);
+  if (Number((left[0] as { n?: number })?.n ?? 0) !== 0) {
+    console.log(`  ${C.r}✗${C.x} the rolled-back plant left schema ${schema} behind — drop it by hand`); bad++;
+  } else {
+    console.log(`  ${C.g}✓${C.x} nothing left behind: the plant existed only inside the rolled-back transaction`);
   }
 
   console.log(bad === 0 ? `${C.g}✓${C.x} ${C.b}the guard fails when it should and passes when it should${C.x}`
@@ -273,24 +280,29 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
 
 async function main(): Promise<number> {
   console.log(`${C.b}THE DEFINER CLASS GUARD${C.x} ${C.d}(DD-137c / VISIBILITY-BY-CLASS §3.4 — borrowed rights do not decide what a class means)${C.x}`);
-  const env = loadEnv();
-  if (!env) {
-    console.log(`  ${C.r}✗${C.x} UNMEASURED — no NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SECRET_KEY. This is a FAILURE, not a pass.`);
-    return STRICT ? 1 : 0;
+  const env = loadDbEnv();
+  if ("missing" in env) {
+    console.log(`  ${C.r}✗${C.x} UNMEASURED — no direct database credentials (${env.missing.join(", ")}). This is a FAILURE, not a pass.`);
+    return 1;
   }
-  if (SELF_TEST) return selfTest(env);
+  console.log(`  ${C.d}${env.host}/${env.database} (credentials from ${env.from})${C.x}`);
+  const db = await connectDirect(env, "check-definer-class");
+  try {
+  // The call-graph walk needs more than the server default; 11 s measured, 120 s is headroom.
+  await db.query("set statement_timeout = '120s'");
+  if (SELF_TEST) return await selfTest(db);
 
   let rows: Array<Record<string, unknown>>;
   try {
-    rows = await door(env, CENSUS_SQL);
+    rows = await door(db, CENSUS_SQL);
   } catch (e) {
     console.log(`  ${C.r}✗${C.x} UNMEASURED — the census query failed: ${String(e)}`);
-    return STRICT ? 1 : 0;
+    return 1;
   }
   const j = (rows[0] as { j?: Record<string, unknown> })?.j;
   if (!j) {
     console.log(`  ${C.r}✗${C.x} UNMEASURED — the census returned nothing`);
-    return STRICT ? 1 : 0;
+    return 1;
   }
 
   const total = Number(j.total ?? 0);
@@ -356,7 +368,16 @@ async function main(): Promise<number> {
     console.log(`${C.g}✓${C.x} ${C.b}no definer function decides an identity rewrite on its own, and the reader distance is not growing${C.x}`);
     return 0;
   }
-  return STRICT ? 1 : 0;
+  // 🚨 THE VERDICT IS THE EXIT CODE (GUARD-STAMPS, 2026-09-21). This used to `return STRICT ? 1 : 0`,
+  // so the default invocation printed `✗ ... has RISEN: 183 -> 246` and then exited 0. Every CI
+  // job, every release gate and every operator reading `$?` was told the surface was fine while
+  // the guard's own screen said it was not. A guard whose printed finding does not reach its exit
+  // code is a guard nobody is obeying. `--strict` is kept as an alias so no caller breaks, and the
+  // only thing it still changes is UNMEASURED, which is a failure in both modes anyway.
+  return 1;
+  } finally {
+    await db.end();
+  }
 }
 
 // `process.exit()` discards anything still in the stdout pipe; a guard that cannot be trusted to
