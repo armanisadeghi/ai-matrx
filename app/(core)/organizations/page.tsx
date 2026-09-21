@@ -34,7 +34,7 @@ import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@ai-matrx/design-system";
+import { ArchivedDisclosure, Skeleton } from "@ai-matrx/design-system";
 import { ProInput } from "@/components/official/ProInput";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { CreateOrgModal } from "@/features/organizations/components/CreateOrgModal";
@@ -200,6 +200,15 @@ function OrgCard({
                 <RoleIcon className="h-3 w-3" />
                 {meta.label}
               </Badge>
+              {org.archivedAt && (
+                <Badge
+                  data-testid="organization-archived-badge"
+                  variant="outline"
+                  className="text-[10px] gap-1 border-amber-300 text-amber-800 dark:border-amber-800 dark:text-amber-200"
+                >
+                  Archived
+                </Badge>
+              )}
               <EntityRef
                 token="organization"
                 id={org.id}
@@ -374,7 +383,24 @@ function OrganizationsLoadingState() {
 }
 
 export default function OrganizationsPage() {
-  const { organizations, loading, error, refresh } = useUserOrganizations();
+  // THE ARCHIVED-ITEMS LAW (Arman, 2026-09-09). This page asks for "all" so it
+  // can offer the reveal itself, then hides the archived organizations behind
+  // ArchivedDisclosure — closed by default, one click to open. `organizations`
+  // below stays the LIVE list, so the stats, the search, the KPIs, the copy and
+  // the surface runtime are unchanged. An archived organization is CLOSED, not
+  // deleted: nobody can reach anything inside it, nothing bound to it runs, and
+  // an owner can restore it from its own settings page at any time.
+  const {
+    organizations: allOrganizations,
+    loading,
+    error,
+    refresh,
+  } = useUserOrganizations("all");
+  const [showArchived, setShowArchived] = React.useState(false);
+  const organizations = allOrganizations.filter((o) => !o.archivedAt);
+  const archivedOrganizations = allOrganizations.filter((o) =>
+    Boolean(o.archivedAt),
+  );
   const suggestions = useScopeSuggestions();
   const [createOpen, setCreateOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
@@ -585,6 +611,23 @@ export default function OrganizationsPage() {
                     ))}
                   </div>
                 </div>
+                <ArchivedDisclosure
+                  count={archivedOrganizations.length}
+                  open={showArchived}
+                  onOpenChange={setShowArchived}
+                  label="organizations"
+                >
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {archivedOrganizations.map((org) => (
+                      <OrgCard
+                        key={org.id}
+                        org={org}
+                        suggestions={suggestions}
+                        kpis={kpis}
+                      />
+                    ))}
+                  </div>
+                </ArchivedDisclosure>
               </>
             )}
           </div>
