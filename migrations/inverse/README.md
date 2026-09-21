@@ -47,3 +47,37 @@ counts the rows using `detail` first and raises if any exist — narrowing the C
 live rows would make the table reject its own contents.
 `custom_campaign_build_lock_down.sql` raises while any lock row is held, because dropping
 the table does not release the lock, it erases the record of who holds it.
+
+## 🚨 AN INVERSE PUTS A DEFECT BACK. IT MAY NOT TAKE THE GROUND OUT FROM UNDER THE PLATFORM.
+
+An inverse file is a SNAPSHOT of the world on the day it was written, and this directory is
+invisible to every sweep in both repos — so the platform keeps moving underneath it. Seven
+instances of that, measured in one session (RED-SUITES-3, 2026-09-21): an inverse that dropped
+`custom.record_relation_edges` while the STATEMENT-level triggers that had replaced its
+row-level pair were still attached and still calling it, so the next insert into `custom.record`
+exploded before the red twin beside it asked a single question; one that left NINETEEN triggers
+over a dropped `custom.assert_store_door` — the whole record store; one that left forty-two;
+one that dropped a body no trigger has run since the statement-level pair took over, so it was
+INERT and its twin proved nothing; and three that demolished the `platform.memo_*` store, two
+`history.row_versions` columns and two `iam` access-kernel functions that LATER migrations had
+adopted.
+
+**`pnpm check:inverses-leave-the-ground-standing` now refuses all four**, statically in the
+release gate and — with `:live` — against `pg_trigger` and `pg_proc` on the real database. Before
+you write or change a file here, read the header of
+[`../../scripts/check-inverses-leave-the-ground-standing.ts`](../../scripts/check-inverses-leave-the-ground-standing.ts):
+
+1. **The triggers come off BEFORE their functions.** A dropped function under an attached
+   trigger is not a defect put back — it is a broken table. Where the set can move again,
+   derive it from the live catalogue instead of listing it, and raise when nothing is left to
+   take away. `storerel_a_relation_edge_names_its_field_down.sql` is the worked example.
+2. **Do not call what a sibling inverse in your family drops** — or say in the file which of the
+   two is meant to run, and in what order.
+3. **A body you restore must be one something actually runs.** A restored body no trigger calls
+   is a no-op that lies, and the red twin beside it passes with the defect never put back.
+4. **An object a LATER migration adopted is not yours to remove.** Restore the defect and leave
+   the infrastructure standing — neuter the behaviour instead of demolishing the ground.
+
+A file that has looked at a clause and genuinely handled it says so in its own bytes,
+`-- ground-standing-ok: <clauses>`, with the sentence that explains why beside it. That is not an
+excuse list and there is no excuse list: the guard's counts are a ratchet that may only go down.
