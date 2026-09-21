@@ -42,6 +42,8 @@ import type { ScopeType } from "@/features/agent-context/redux/scope/types";
 import type { ContextItem } from "@/features/scope-system/redux/contextItemsSlice";
 import type { ScopeContextRow } from "@/features/scope-system/redux/scopeValuesSlice";
 import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 interface OrgHomeScopeSectionProps {
   scopeType: ScopeType;
@@ -79,6 +81,11 @@ export function OrgHomeScopeSection({
   const color = resolveColor(scopeType);
   const columns = items.slice(0, MAX_COLUMNS);
   const overflowCount = Math.max(0, items.length - MAX_COLUMNS);
+  const tableColumns: MatrxColumnDef<(typeof scopes)[number]>[] = [
+    { id: "name", header: "Name", accessorKey: "name", width: 180, cell: (scope) => <Link href={`/organizations/${orgSlugOrId}/scopes/${scopeType.id}/${scope.id}`} className={`font-semibold hover:underline ${color.fg}`}>{scope.name}</Link> },
+    ...columns.map((item) => ({ id: item.id, header: item.display_name, accessorFn: () => item.display_name, width: 180, sortable: false, cell: (scope: (typeof scopes)[number]) => <ScopeValueCell scopeId={scope.id} itemId={item.id} /> })),
+    ...(overflowCount > 0 ? [{ id: 'more-context-items', header: `+${overflowCount} more`, accessorFn: () => overflowCount, sortable: false, cell: () => <span className="text-muted-foreground">…</span> }] : []),
+  ];
 
   return (
     <Card className="relative overflow-hidden p-6">
@@ -185,55 +192,7 @@ export function OrgHomeScopeSection({
 
       {scopes.length > 0 && (
         <>
-          <div className="overflow-x-auto -mx-2">
-            <Table className="table-fixed w-full">
-              <colgroup>
-                <col className="w-[160px]" />
-                {columns.map((col) => (
-                  <col key={col.id} className="w-[180px]" />
-                ))}
-                {overflowCount > 0 && <col className="w-[80px]" />}
-              </colgroup>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="px-2 whitespace-nowrap">Name</TableHead>
-                  {columns.map((col) => (
-                    <TableHead
-                      key={col.id}
-                      className="px-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-0"
-                    >
-                      <span className="block truncate" title={col.display_name}>
-                        {col.display_name}
-                      </span>
-                    </TableHead>
-                  ))}
-                  {overflowCount > 0 && (
-                    <TableHead className="px-2 text-muted-foreground whitespace-nowrap">
-                      +{overflowCount} more
-                    </TableHead>
-                  )}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {scopes.map((scope) => (
-                  <ScopeRow
-                    key={scope.id}
-                    scopeId={scope.id}
-                    scopeName={scope.name}
-                    href={`/organizations/${orgSlugOrId}/scopes/${scopeType.id}/${scope.id}`}
-                    nameColorClass={color.fg}
-                    columns={columns}
-                    overflowCount={overflowCount}
-                    onClick={() =>
-                      router.push(
-                        `/organizations/${orgSlugOrId}/scopes/${scopeType.id}/${scope.id}`,
-                      )
-                    }
-                  />
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <MatrxDataTable urlState={{ id: `org-home-scopes-${scopeType.id}` }} data={scopes} columns={tableColumns} getRowId={(scope) => scope.id} pageSize={50} onRowOpen={(scope) => router.push(`/organizations/${orgSlugOrId}/scopes/${scopeType.id}/${scope.id}`)} toolbar={{ search: true, searchPlaceholder: `Search ${scopeType.label_plural.toLowerCase()}…` }} detail={{ enabled: false }} />
           {!adding && (
             <div className="mt-3">
               <Button
@@ -377,6 +336,14 @@ interface ScopeRowProps {
   columns: { id: string; display_name: string }[];
   overflowCount: number;
   onClick: () => void;
+}
+
+function ScopeValueCell({ scopeId, itemId }: { scopeId: string; itemId: string }) {
+  const rows = useAppSelector((state) => selectValuesByScope(state, scopeId));
+  if (!rows) return <Loader2 className="h-3 w-3 animate-spin" />;
+  const value = rows.find((row) => row.item_id === itemId);
+  const display = value ? renderValue(value) : "";
+  return <TooltipProvider delayDuration={400}><Tooltip><TooltipTrigger asChild><span className="block truncate cursor-help">{display || "—"}</span></TooltipTrigger>{display && <TooltipContent side="top" className="max-w-sm"><p className="text-xs whitespace-pre-wrap break-words">{display}</p></TooltipContent>}</Tooltip></TooltipProvider>;
 }
 
 function ScopeRow({

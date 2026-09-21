@@ -95,7 +95,14 @@ try {
   if (!chosen) throw new Error("no free slot was offered");
   note.slotChosen = chosen;
   await page.locator("button[data-walk-slot]").first().click();
-  await page.waitForTimeout(3500);
+  // WAIT FOR THE THING, NOT FOR A NUMBER OF MILLISECONDS. A fixed 3.5s wait
+  // raced the hold: on 2026-09-21 the page still read "Holding…" when the
+  // filler ran, and a filler that cannot find a box is the only reason anybody
+  // noticed. The details form IS the signal that the slot is held.
+  await page
+    .getByRole("button", { name: /^Book it$/ })
+    .first()
+    .waitFor({ state: "visible", timeout: 45000 });
   note.heldText = (await page.evaluate(() => document.body.innerText)).slice(0, 400);
 
   // FILL EACH QUESTION BY THE WORDS PRINTED ABOVE ITS BOX — through the ONE
