@@ -81,18 +81,6 @@ export interface ClassifiedExposure extends LiveExposure {
  * it — the exposure classifier below is the read path.
  */
 export const PUBLIC_EXPOSURE_ALLOWED: ReadonlyArray<PublicExposure> = [
-  // — Pricing and plan catalogue, rendered on the public marketing pages —
-  { relation: "billing.product", policy: "product_read", cmd: "SELECT", why: "app/(public)/pricing renders the Premium product name + description; loadEducationPricing.ts reads it server-side with no cookie, so as `anon` (measured 2026-09-14, DD-230)" },
-  { relation: "billing.price", policy: "price_read", cmd: "SELECT", why: "the same loader's second query — the Premium amount, currency and interval on app/(public)/pricing (measured 2026-09-14, DD-230)" },
-  { relation: "billing.capability_limit", policy: "capability_limit_read", cmd: "SELECT", why: "the Free-tier headline caps on app/(public)/pricing — the one billing catalogue read a signed-out visitor really makes, measured live 2026-09-14 (DD-230)" },
-
-  // — Reference/catalogue data with no personal content —
-  { relation: "platform.feature_knob", policy: "feature_knob_read", cmd: "SELECT", why: "client feature gating has to resolve before sign-in — TRUE, and measured: 194 anonymous 200s in 24 h, every one select=feature,key,value, which is now the whole bound (DD-230)" },
-  { relation: "public.app_config", policy: "app_config_public_read", cmd: "SELECT", why: "client bootstrap config (min supported version); read before auth by design" },
-
-  // — Public tool / UI catalogues the shell needs before auth —
-  { relation: "ui.ui_surface_agent_role", policy: "ui_surface_agent_role_read", cmd: "SELECT", why: "fetchSurfaceConfigBundle reads it deliberately as a guest — a genuine guest still receives the public surface config — bounded to the ten columns it selects plus surface_name (DD-230)" },
-
   // — Deliberately public product surfaces —
   { relation: "extend.wbx_recipe", policy: "pub_read", cmd: "SELECT", why: "browser-automation recipe catalogue; no credentials — discloses which sites/routes we automate, accepted. DD-173 (B-103): the hand-written `wbx_recipe_read_all` (USING true) was superseded by the generated system-variant lane, which publishes only rows whose `visibility` is `public` — derived from `is_active`, so a retired recipe leaves the open web by the flag that already means that." },
 
@@ -1140,11 +1128,9 @@ export const PUBLIC_WRITE_POLICIES_OF_RECORD: ReadonlyArray<PublicWritePolicyOfR
   { relation: "extend.wbx_guidance", policy: "wbx_guidance_owner_update", cmd: "w", reason: "Row owner. Predicate: is_platform_admin() or created_by = auth.uid()." },
   { relation: "files.analysis", policy: "file_analysis_insert", cmd: "a", reason: "File-analysis owner. Predicate: is_platform_admin() or owner_id = auth.uid()." },
   { relation: "files.analysis", policy: "file_analysis_update", cmd: "w", reason: "File-analysis owner. Predicate: is_platform_admin() or owner_id = auth.uid()." },
-  { relation: "files.analysis_result", policy: "file_analysis_result_insert", cmd: "a", reason: "Owner of the parent file. Predicate: is_platform_admin() or files.files.created_by = auth.uid()." },
   { relation: "files.webhooks", policy: "cld_webhooks_owner_all", cmd: "*", reason: "Webhook owner. Predicate: is_platform_admin() or owner_id = auth.uid()." },
   { relation: "pdf.pdf_redaction_key_escrow", policy: "pdf_redaction_key_escrow_insert", cmd: "a", reason: "Escrow owner. Predicate: is_platform_admin() or owner_id = auth.uid()." },
   { relation: "pdf.pdf_redaction_key_escrow", policy: "pdf_redaction_key_escrow_update", cmd: "w", reason: "Escrow owner. Predicate: is_platform_admin() or owner_id = auth.uid()." },
-  { relation: "rag.data_store_members", policy: "data_store_members_via_store_all", cmd: "*", reason: "Creator or org member of the parent data store. Predicate: is_platform_admin() or data_stores.created_by = auth.uid() or is_member_of_organization(...)." },
   { relation: "platform.org_context_ledger", policy: "platform_admin_only", cmd: "*", reason: "Platform-operator organization context audit. USING and WITH CHECK both require is_platform_admin(), which rejects a NULL auth.uid(); anon also holds no write grant." },
   { relation: "users.feedback_comments", policy: "Users can comment on own feedback", cmd: "a", reason: "Author of the parent feedback row. Predicate: is_platform_admin() or feedback_id in (the caller own user_feedback)." },
   { relation: "users.user_analysis_preferences", policy: "user_analysis_preferences_delete", cmd: "d", reason: "The user themselves. Predicate: is_platform_admin() or user_id = auth.uid()." },

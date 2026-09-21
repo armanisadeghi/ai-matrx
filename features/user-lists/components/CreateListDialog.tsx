@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { createListAction } from "../actions/list-actions";
 import { useToastManager } from "@/hooks/useToastManager";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 
 interface CreateListDialogProps {
@@ -45,10 +46,8 @@ function CreateListForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    if (!organizationId || organizationState !== "ready") {
-      toast.error("Choose an organization before creating a list. A list has to live in one.");
-      return;
-    }
+    // resolving / unavailable are not a refusal. The notice below says which.
+    if (organizationState !== "ready" || !organizationId) return;
     const organization_id = organizationId;
     startTransition(async () => {
       try {
@@ -69,6 +68,7 @@ function CreateListForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-0.5">
+      <OrganizationContextNotice state={organizationState} what="Creating a list" />
       <div className="space-y-1.5">
         <Label htmlFor="list-name" className="text-sm font-medium">
           List name <span className="text-destructive">*</span>
@@ -131,7 +131,7 @@ function CreateListForm({
         <Button
           type="submit"
           className="flex-1"
-          disabled={isPending || !name.trim()}
+          disabled={isPending || !name.trim() || organizationState !== "ready"}
         >
           {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
           Create List

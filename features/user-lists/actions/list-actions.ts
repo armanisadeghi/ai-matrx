@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { TablesUpdate } from "@/types/database.types";
+import { organizationRequired } from "@/lib/organizations/organizationRequiredServerError";
 import { createClient } from "@/utils/supabase/server";
 import type { CreateListItemInput } from "../types";
 
@@ -20,9 +21,13 @@ export async function createListAction(formData: {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
+  // The screen already waited for the three organization states. A request that
+  // still names none is the kernel refusal — memberships attached, no sentence
+  // that claims boot has settled.
   if (!formData.organization_id) {
-    throw new Error(
-      "Choose an organization before creating a list. A list has to live in one.",
+    await organizationRequired(
+      supabase,
+      "create_user_list was called with an empty organization id.",
     );
   }
 
