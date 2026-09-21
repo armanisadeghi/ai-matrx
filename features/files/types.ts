@@ -163,7 +163,10 @@ export type CloudFileReadRow = NonNullable<
 export type CloudFileVersionReadRow = Omit<
   FilesTables["file_versions"]["Row"],
   // eslint-disable-next-line no-restricted-syntax -- same sanctioned subtraction for file_versions
-  "storage_uri"
+  // `custom_fields` joined the table 2026-09-20 with NO `authenticated` column
+  // grant (measured on the live DB: 10 granted columns, not 11), so it is not
+  // in FILE_VERSIONS_TABLE_COLUMNS and naming it would 403 every version read.
+  "storage_uri" | "custom_fields"
 >;
 
 export type CloudFolderRow = FilesTables["folders"]["Row"];
