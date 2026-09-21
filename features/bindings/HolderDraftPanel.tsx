@@ -40,7 +40,14 @@ export interface HolderDraftPanelProps {
   owner: AgentOwner | null;
   /** Called with the created agent; the host sets the holder and opens the editor. */
   onCreated: (agentId: string) => void;
-  disabled?: boolean;
+  /**
+   * The PERMISSION refusal for this rung, in the host's words — the person may
+   * not write this answer, so an agent created here could never be bound.
+   * `null` when they may. Never derived from a transient busy flag: an earlier
+   * version printed "you can read this but not change it" during every save,
+   * which was a lie, and never printed it for the case it was written for.
+   */
+  refusal?: string | null;
 }
 
 export function HolderDraftPanel({
@@ -49,33 +56,31 @@ export function HolderDraftPanel({
   holder,
   owner,
   onCreated,
-  disabled = false,
+  refusal = null,
 }: HolderDraftPanelProps) {
   const openEditor = useOpenAgentContentWindow();
 
+  if (refusal) {
+    return (
+      <p
+        data-testid="holder-draft-refused"
+        className="rounded-md border border-border bg-muted/40 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground"
+      >
+        {refusal}
+      </p>
+    );
+  }
   if (!owner) {
     return (
       <p
         data-testid="holder-draft-no-owner"
         className="rounded-md border border-border bg-muted/40 px-3 py-2 text-[12px] text-muted-foreground"
       >
-        Choose the organization this answer is for first — a new agent has to
-        belong to someone before it can be drafted.
+        Pick the organization this answer is for on the Holder tab first — a
+        new agent has to belong to someone before it can be drafted.
       </p>
     );
   }
-  if (disabled) {
-    return (
-      <p
-        data-testid="holder-draft-disabled"
-        className="rounded-md border border-border bg-muted/40 px-3 py-2 text-[12px] text-muted-foreground"
-      >
-        You can read this answer but not change it, so there is nothing to
-        create an agent for here.
-      </p>
-    );
-  }
-
   const variables = buildHolderDraftBrief({ data, offeredValues, holder, owner });
   const ownerLine =
     owner.kind === "system"

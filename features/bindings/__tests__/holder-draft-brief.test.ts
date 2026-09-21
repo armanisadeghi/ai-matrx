@@ -14,6 +14,8 @@
  *      the agent as "the answer is nothing".
  */
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   buildHolderDraftBrief,
   holderDraftOwnerOf,
@@ -171,5 +173,82 @@ describe("the brief handed to the drafting job", () => {
       agent_id: "agent-1",
     });
     expect(brief.owner_scope).toBe("organization");
+  });
+});
+
+/**
+ * ── THE BRIEF AND THE DECLARATION CANNOT DRIFT ───────────────────────────────
+ *
+ * The module header claims the two stay in step. A hand-written list of
+ * expected keys does not enforce that — so this reads aidream's declaration
+ * itself and diffs it both ways.
+ *
+ * RED as first written: the declaration offered `input_kind`, which
+ * `mandate.definition` has no column for, so this side could never send it —
+ * a value promised to the Holder that would never arrive.
+ *
+ * The declaration lives in the sibling aidream checkout. When it is not
+ * present the test SKIPS OUT LOUD rather than passing quietly: a guard that
+ * silently measures nothing is the thing it is guarding against.
+ */
+describe("the brief matches the declared provision", () => {
+  const DECLARATION = join(
+    __dirname,
+    "../../../../aidream/aidream/services/mandates/holder_draft_mandates.py",
+  );
+
+  function declaredOfferedNames(): string[] | null {
+    let source: string;
+    try {
+      source = readFileSync(DECLARATION, "utf8");
+    } catch {
+      return null;
+    }
+    // Only the values block — the mandate's own `required_output_keys` below
+    // it are not offered values.
+    const block = source.slice(
+      source.indexOf("values=["),
+      source.indexOf("MANDATE_HOLDER_DRAFT_MANDATE"),
+    );
+    return [...block.matchAll(/offered\(\s*"([a-z_]+)"/g)].map((m) => m[1]);
+  }
+
+  const declared = declaredOfferedNames();
+
+  it("reaches aidream's declaration (a guard that measures nothing is not a guard)", () => {
+    if (declared === null) {
+      throw new Error(
+        `Cannot read ${DECLARATION} — the sibling aidream checkout is missing, ` +
+          "so this guard is UNMEASURED, which is not a pass.",
+      );
+    }
+    expect(declared.length).toBeGreaterThan(5);
+  });
+
+  it("sends no key the provision does not declare", () => {
+    if (declared === null) return;
+    const brief = buildHolderDraftBrief({
+      data: workspaceData(),
+      offeredValues: [offered("description")],
+      holder: { ...NO_HOLDER, agentId: "agent-1" },
+      owner: { kind: "system" },
+    });
+    expect(
+      Object.keys(brief).filter((key) => !declared.includes(key)),
+    ).toEqual([]);
+  });
+
+  it("declares no value this side can never fill", () => {
+    if (declared === null) return;
+    // The richest possible brief — every optional value present. Anything
+    // declared and still absent here is undeliverable by construction.
+    const brief = buildHolderDraftBrief({
+      data: workspaceData({ description: "A one-line description." }),
+      offeredValues: [offered("description")],
+      holder: { ...NO_HOLDER, agentId: "agent-1" },
+      owner: { kind: "system" },
+    });
+    const pinned = { ...brief, pins: { model: "x" } };
+    expect(declared.filter((name) => !(name in pinned))).toEqual([]);
   });
 });

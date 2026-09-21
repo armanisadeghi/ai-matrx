@@ -218,8 +218,17 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
   const shortcutReady = mandateMode
     ? holderDraft.mandate !== null
     : generatorShortcut !== null;
+  // 🚨 `organizationPending` MEANS WAIT, NOT REPAIR (the F4 class `useMandate`
+  // documents against). The hook sets `error` AND `organizationPending`
+  // together on a cold navigation, so reading `error` alone told the person
+  // the drafting job needed a Holder assigned — and handed them the
+  // administrator's door — while the truth was that their workspace had not
+  // finished hydrating. That state is the LOADING state here.
+  const holderDraftWaiting = mandateMode && holderDraft.organizationPending;
   const generatorLoadError = mandateMode
-    ? holderDraft.error
+    ? holderDraftWaiting
+      ? null
+      : holderDraft.error
     : shortcutLoadError;
 
   useEffect(() => {
@@ -564,7 +573,9 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
           {!shortcutReady && !generatorLoadError && (
             <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50 border border-border text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Loading generator configuration…
+              {holderDraftWaiting
+                ? "Waiting for your workspace to finish loading…"
+                : "Loading generator configuration…"}
             </div>
           )}
           {generatorLoadError && (

@@ -1688,20 +1688,53 @@ function BindingDraft({
   }, [draftMap, holderInputs.targets]);
 
   const disabled = busy || rebindChecking;
+  const [createAgentEverOpened, setCreateAgentEverOpened] = useState(false);
+  if (activeSection === "create-agent" && !createAgentEverOpened) {
+    // An adjustment during render, not an effect: it depends only on the prop
+    // already in hand, and an effect would paint the tab empty once first.
+    setCreateAgentEverOpened(true);
+  }
 
   // ── THE "+ AGENT" DOOR ──────────────────────────────────────────────────────
+  //
   // Whose agent the door creates follows the rung in the controls — the same
   // rule the picker's list enforces (`holderDraftOwnerOf`). A created agent
   // lands in the holder controls as Latest, unsaved, and the person is brought
   // back to them to review and press the one Save.
+  //
+  // 🚨 THE ORGANIZATION IS THE ONE THAT RUNG ANSWERS FOR, never the one the
+  // person happens to have selected. On the job's OWN default that is the
+  // mandate's HOME (`default-holder-rung.ts` says so in as many words); only
+  // the org rung's answer is the rung selector's organization. Passing
+  // `organizationId` on both meant a job homed in org B, read while org A was
+  // picked on the org rung, drafted an agent owned by A — which cannot hold
+  // B's floor, so the generation was spent and Save 409'd.
   const draftOwner = holderDraftOwnerOf({
     rung,
-    organizationId,
+    organizationId: onDefaultHolderRung ? homeOrganizationId : organizationId,
     systemHomed: Boolean(defaultHolderOffer?.systemHomed),
   });
-  const onCreateAgent = onRequestSection
-    ? () => onRequestSection("create-agent")
-    : null;
+  /**
+   * 🚨 NO DOOR WHERE THE ANSWER IS NOT THIS PERSON'S TO WRITE. The door spends
+   * a model run and creates a real agent row, so offering it to someone whose
+   * Save is already refused for a PERMISSION reason burns money and litters
+   * the catalogue with an agent they can never bind. Only the permission
+   * refusals are read here — "choose an agent first" and the mapping problems
+   * are reasons to USE this door, not to hide it.
+   */
+  const createAgentRefusal: string | null = writesForEveryone
+    ? canBindGlobal
+      ? null
+      : "The system answer is a super-admin decision, so an agent created here could not be bound. Ask a super admin, or set your own answer instead."
+    : rung === "org" && !canBindThisOrg
+      ? `Deciding for everyone in ${organizations.find((o) => o.id === organizationId)?.name ?? "this organization"} takes an owner or admin of it, and you are ${selectedOrgRole ? `a ${selectedOrgRole}` : "not a member"} there — an agent created here could not be bound. Ask an owner, or set your own answer instead.`
+      : writingDefinitionDefault && !defaultHolderOffer.offered
+        ? defaultHolderOffer.refusal
+        : null;
+  const onCreateAgent =
+    onRequestSection && !createAgentRefusal
+      ? () => onRequestSection("create-agent")
+      : null;
 
   // ── THE AI MAP (P11/P12) — the SAME tab the surface bind panel uses ───────
   //
@@ -1831,24 +1864,31 @@ function BindingDraft({
 
   return (
     <div className="space-y-3">
-      {activeSection === "create-agent" ? (
-        <HolderDraftPanel
-          data={data}
-          offeredValues={offeredValues}
-          holder={holder}
-          owner={draftOwner}
-          disabled={disabled}
-          onCreated={(agentId) => {
-            setHolder({
-              kind: "agent",
-              agentId,
-              agentVersionId: null,
-              useLatest: true,
-              workflowId: null,
-            });
-            onRequestSection?.("holder");
-          }}
-        />
+      {/* 🚨 HIDDEN, NEVER UNMOUNTED. The generator holds a live run and a
+          finished draft in local state; unmounting it when the person steps
+          over to Holder to check something threw away a generation they had
+          already paid for, with no warning. Mounted only once the tab has been
+          opened, so a workspace nobody asked stays cheap. */}
+      {createAgentEverOpened ? (
+        <div className={activeSection === "create-agent" ? undefined : "hidden"}>
+          <HolderDraftPanel
+            data={data}
+            offeredValues={offeredValues}
+            holder={holder}
+            owner={draftOwner}
+            refusal={createAgentRefusal}
+            onCreated={(agentId) => {
+              setHolder({
+                kind: "agent",
+                agentId,
+                agentVersionId: null,
+                useLatest: true,
+                workflowId: null,
+              });
+              onRequestSection?.("holder");
+            }}
+          />
+        </div>
       ) : null}
       <div
         className={
