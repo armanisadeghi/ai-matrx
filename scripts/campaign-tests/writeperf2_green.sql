@@ -103,7 +103,7 @@ begin
                       'zz_ckl_watch_s_i','zz_ckl_watch_s_u',
                       'zz_w2_containment_association_s_i','zz_w2_containment_association_s_u',
                       'zz_w2a_relation_association_s_i','zz_w2a_relation_association_s_u',
-                      'zzz_history_capture_s_i','zzz_history_capture_s_u','zzz_history_capture_s_d',
+                      'zzz_history_capture_s_i','zzz_history_capture_s_u','zzz_history_capture_s_d',  -- matrx-real-data:allow the live history-capture trigger names on custom.record, created by an applied migration, not fixture data
                       '_gc_assoc_softdelete_s','_gc_assoc_harddelete_s');
   if n <> 14 then
     raise exception '1c: % of this lane''s 14 named AFTER-STATEMENT triggers on custom.record are present', n;
@@ -120,7 +120,7 @@ begin
                       'zz_ckl_watch_s_i','zz_ckl_watch_s_u',
                       'zz_w2_containment_association_s_i','zz_w2_containment_association_s_u',
                       'zz_w2a_relation_association_s_i','zz_w2a_relation_association_s_u',
-                      'zzz_history_capture_s_i','zzz_history_capture_s_u','zzz_history_capture_s_d',
+                      'zzz_history_capture_s_i','zzz_history_capture_s_u','zzz_history_capture_s_d',  -- matrx-real-data:allow the live history-capture trigger names on custom.record, created by an applied migration, not fixture data
                       '_gc_assoc_softdelete_s','_gc_assoc_harddelete_s');
   if n <> 14 then
     raise exception '1d: only % of the 14 statement triggers name a transition table', n;
