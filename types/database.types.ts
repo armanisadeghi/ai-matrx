@@ -17740,6 +17740,75 @@ export type Database = {
           },
         ]
       }
+      test_handset_inbox: {
+        Row: {
+          body: string | null
+          created_at: string
+          created_by: string | null
+          direction: string
+          from_number: string
+          id: string
+          metadata: Json
+          num_media: number
+          num_segments: number | null
+          organization_id: string
+          provider: string
+          provider_account_sid: string | null
+          provider_message_sid: string
+          raw_payload: Json
+          received_at: string
+          to_number: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          webhook_path: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          from_number: string
+          id?: string
+          metadata?: Json
+          num_media?: number
+          num_segments?: number | null
+          organization_id: string
+          provider?: string
+          provider_account_sid?: string | null
+          provider_message_sid: string
+          raw_payload?: Json
+          received_at?: string
+          to_number: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          webhook_path: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          from_number?: string
+          id?: string
+          metadata?: Json
+          num_media?: number
+          num_segments?: number | null
+          organization_id?: string
+          provider?: string
+          provider_account_sid?: string | null
+          provider_message_sid?: string
+          raw_payload?: Json
+          received_at?: string
+          to_number?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          webhook_path?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
