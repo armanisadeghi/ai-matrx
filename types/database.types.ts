@@ -70221,6 +70221,15 @@ export type Database = {
         }
         Returns: string
       }
+      definer_guard_birth_notice: {
+        Args: {
+          p_identity_args: string
+          p_name: string
+          p_schema: string
+          p_signature: string
+        }
+        Returns: string
+      }
       definer_guard_revoke_notice: {
         Args: {
           p_identity_args: string
@@ -70622,6 +70631,10 @@ export type Database = {
       }
       lifecycle_user_notice: { Args: { p_user_id?: string }; Returns: Json }
       lifecycle_vault_read: { Args: { p_name: string }; Returns: string }
+      link_carries_its_organization: {
+        Args: { p_link: string; p_organization_id: string }
+        Returns: string
+      }
       list_my_presentable_assists: {
         Args: { p_limit?: number }
         Returns: {
@@ -70779,6 +70792,7 @@ export type Database = {
         }[]
       }
       normalize_identity_args: { Args: { p_args: string }; Returns: string }
+      notice_link_trigger_is_attached: { Args: never; Returns: boolean }
       org_context_bleed_report: {
         Args: never
         Returns: {
@@ -70786,6 +70800,13 @@ export type Database = {
           newest: string
           parent: string
           relation: string
+        }[]
+      }
+      organization_free_link_prefixes: {
+        Args: never
+        Returns: {
+          prefix: string
+          reason: string
         }[]
       }
       orgs_tightening: { Args: { p_token: string }; Returns: string[] }

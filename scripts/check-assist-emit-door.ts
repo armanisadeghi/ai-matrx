@@ -14,6 +14,8 @@ interface DoorRow {
   force_rls: boolean;
   authenticated_can_execute: boolean;
   refusal_policy_present: boolean;
+  organization_access_is_checked: boolean;
+  refresh_is_organization_scoped: boolean;
 }
 
 export function findings(row: DoorRow): string[] {
@@ -29,7 +31,11 @@ export function findings(row: DoorRow): string[] {
   if (!row.authenticated_can_execute)
     out.push("authenticated callers cannot execute emit_pending_assist");
   if (!row.refusal_policy_present)
-    out.push("the restrictive direct client INSERT refusal is absent from platform.assists");
+    out.push("the direct client INSERT refusal is absent, does not apply to authenticated, or does not use WITH CHECK (false)");
+  if (!row.organization_access_is_checked)
+    out.push("the SECURITY DEFINER door does not re-state iam.has_org_access(p_organization_id)");
+  if (!row.refresh_is_organization_scoped)
+    out.push("the dedupe refresh can update a caller row outside p_organization_id");
   return out;
 }
 
@@ -42,9 +48,24 @@ async function main(): Promise<number> {
       force_rls: false,
       authenticated_can_execute: true,
       refusal_policy_present: true,
+      organization_access_is_checked: true,
+      refresh_is_organization_scoped: true,
     };
-    const red = { ...green, security_definer: false };
-    if (findings(red).length !== 1 || findings(green).length !== 0) {
+    const mutations: Array<keyof DoorRow> = [
+      "security_definer",
+      "search_path_locked",
+      "same_owner_as_assists",
+      "force_rls",
+      "authenticated_can_execute",
+      "refusal_policy_present",
+      "organization_access_is_checked",
+      "refresh_is_organization_scoped",
+    ];
+    const everyMutationIsRed = mutations.every((key) => {
+      const mutated = { ...green, [key]: key === "force_rls" };
+      return findings(mutated).length === 1;
+    });
+    if (!everyMutationIsRed || findings(green).length !== 0) {
       console.error("check-assist-emit-door self-test failed");
       return 1;
     }
@@ -74,7 +95,11 @@ async function main(): Promise<number> {
             and policy.policyname = 'assists_client_insert_refused'
             and policy.cmd = 'INSERT'
             and policy.permissive = 'RESTRICTIVE'
+            and 'authenticated' = any(policy.roles)
+            and btrim(coalesce(policy.with_check, '')) = 'false'
         ) as refusal_policy_present
+        , position('iam.has_org_access(p_organization_id)' in p.prosrc) > 0 as organization_access_is_checked
+        , position('AND organization_id = p_organization_id' in p.prosrc) > 0 as refresh_is_organization_scoped
       from pg_proc p
       join pg_class c on c.oid = 'platform.assists'::regclass
       where p.oid = 'platform.emit_pending_assist(uuid,text,text,text,text,jsonb,text,text,uuid,text,timestamptz,smallint,jsonb,real,text)'::regprocedure
