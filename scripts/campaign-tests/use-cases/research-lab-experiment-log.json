@@ -3,22 +3,22 @@
   "organization_name": "Kessler Lab for Applied Microbial Ecology",
   "tables": {
     "researchers": [
-      {"name": "Dr. Anneliese Kessler", "role": "Principal Investigator", "email": "kessler@example.edu", "orcid": "https://orcid.org/0000-0002-0001-1111"},
-      {"name": "Dr. Femi Adegoke", "role": "Postdoctoral Researcher", "email": "adegoke@example.edu", "orcid": "https://orcid.org/0000-0002-0002-2222"},
-      {"name": "Marisela Huerta", "role": "PhD Candidate", "email": "huerta@example.edu", "orcid": "https://orcid.org/0000-0002-0003-3333"},
-      {"name": "Callum Ferris", "role": "PhD Candidate", "email": "ferris@example.edu", "orcid": "https://orcid.org/0000-0002-0004-4444"},
-      {"name": "Yuki Tanabe", "role": "Lab Manager", "email": "tanabe@example.edu", "orcid": "https://orcid.org/0000-0002-0005-5555"},
-      {"name": "Sanjay Bhalla", "role": "Master's Student", "email": "bhalla@example.edu", "orcid": "https://orcid.org/0000-0002-0006-6666"},
-      {"name": "Odalys Reyes", "role": "Undergraduate Researcher", "email": "reyes@example.edu", "orcid": "https://orcid.org/0000-0002-0007-7777"},
-      {"name": "Thaddeus Mbeki-Owens", "role": "Visiting Scholar", "email": "mbeki-owens@example.edu", "orcid": "https://orcid.org/0000-0002-0008-8888"}
+      {"name": "Dr. Anneliese Kessler", "role": "Principal Investigator", "email": "kessler@fennimore.edu", "orcid": "https://orcid.org/0000-0002-0001-1111"},
+      {"name": "Dr. Femi Adegoke", "role": "Postdoctoral Researcher", "email": "adegoke@fennimore.edu", "orcid": "https://orcid.org/0000-0002-0002-2222"},
+      {"name": "Marisela Huerta", "role": "PhD Candidate", "email": "huerta@fennimore.edu", "orcid": "https://orcid.org/0000-0002-0003-3333"},
+      {"name": "Callum Ferris", "role": "PhD Candidate", "email": "ferris@fennimore.edu", "orcid": "https://orcid.org/0000-0002-0004-4444"},
+      {"name": "Yuki Tanabe", "role": "Lab Manager", "email": "tanabe@fennimore.edu", "orcid": "https://orcid.org/0000-0002-0005-5555"},
+      {"name": "Sanjay Bhalla", "role": "Master's Student", "email": "bhalla@fennimore.edu", "orcid": "https://orcid.org/0000-0002-0006-6666"},
+      {"name": "Odalys Reyes", "role": "Undergraduate Researcher", "email": "reyes@fennimore.edu", "orcid": "https://orcid.org/0000-0002-0007-7777"},
+      {"name": "Thaddeus Mbeki-Owens", "role": "Visiting Scholar", "email": "mbeki-owens@fennimore.edu", "orcid": "https://orcid.org/0000-0002-0008-8888"}
     ],
     "protocols": [
-      {"name": "Soil Sample DNA Extraction v3", "summary": "Bead-beating lysis followed by silica-column purification, tuned for high-humic-acid soils that otherwise inhibit downstream PCR. Includes a secondary wash step added after v2 showed inconsistent 260/230 ratios.", "version": "3", "doc_url": "https://protocols.kesslerlab.example.edu/dna-extraction-v3"},
-      {"name": "16S rRNA Amplicon Sequencing Prep", "summary": "Two-step PCR targeting the V4 region with dual-index barcoding, pooled and normalized before submission to the sequencing core.", "version": "2", "doc_url": "https://protocols.kesslerlab.example.edu/16s-amplicon-v2"},
-      {"name": "Anaerobic Chamber Culturing", "summary": "Standard operating procedure for maintaining the Coy chamber's atmosphere and streaking anaerobic isolates without oxygen exposure exceeding thirty seconds.", "version": "1", "doc_url": "https://protocols.kesslerlab.example.edu/anaerobic-culturing-v1"},
-      {"name": "Metagenome Shotgun Library Prep", "summary": "Tagmentation-based library prep for shotgun metagenomics, with a size-selection step to exclude fragments under 300bp.", "version": "2", "doc_url": "https://protocols.kesslerlab.example.edu/shotgun-prep-v2"},
-      {"name": "qPCR Gene Copy Quantification", "summary": "Standard curve method for absolute quantification of functional gene copies, run in technical triplicate against a plasmid standard.", "version": "4", "doc_url": "https://protocols.kesslerlab.example.edu/qpcr-quant-v4"},
-      {"name": "Field Sampling: Riparian Transect", "summary": "Sampling procedure for the creek-side transect sites, including GPS logging, depth-stratified cores, and cold-chain handling to the lab within four hours.", "version": "1", "doc_url": "https://protocols.kesslerlab.example.edu/riparian-transect-v1"}
+      {"name": "Soil Sample DNA Extraction v3", "summary": "Bead-beating lysis followed by silica-column purification, tuned for high-humic-acid soils that otherwise inhibit downstream PCR. Includes a secondary wash step added after v2 showed inconsistent 260/230 ratios.", "version": "3", "doc_url": "https://protocols.kesslerlab.fennimore.edu/dna-extraction-v3"},
+      {"name": "16S rRNA Amplicon Sequencing Prep", "summary": "Two-step PCR targeting the V4 region with dual-index barcoding, pooled and normalized before submission to the sequencing core.", "version": "2", "doc_url": "https://protocols.kesslerlab.fennimore.edu/16s-amplicon-v2"},
+      {"name": "Anaerobic Chamber Culturing", "summary": "Standard operating procedure for maintaining the Coy chamber's atmosphere and streaking anaerobic isolates without oxygen exposure exceeding thirty seconds.", "version": "1", "doc_url": "https://protocols.kesslerlab.fennimore.edu/anaerobic-culturing-v1"},
+      {"name": "Metagenome Shotgun Library Prep", "summary": "Tagmentation-based library prep for shotgun metagenomics, with a size-selection step to exclude fragments under 300bp.", "version": "2", "doc_url": "https://protocols.kesslerlab.fennimore.edu/shotgun-prep-v2"},
+      {"name": "qPCR Gene Copy Quantification", "summary": "Standard curve method for absolute quantification of functional gene copies, run in technical triplicate against a plasmid standard.", "version": "4", "doc_url": "https://protocols.kesslerlab.fennimore.edu/qpcr-quant-v4"},
+      {"name": "Field Sampling: Riparian Transect", "summary": "Sampling procedure for the creek-side transect sites, including GPS logging, depth-stratified cores, and cold-chain handling to the lab within four hours.", "version": "1", "doc_url": "https://protocols.kesslerlab.fennimore.edu/riparian-transect-v1"}
     ],
     "experiments": [
       {"title": "Nitrogen amendment effect on riparian soil microbial diversity", "researcher": "Marisela Huerta", "protocol": "Field Sampling: Riparian Transect", "hypothesis": "Elevated nitrogen loading from adjacent agricultural runoff reduces alpha diversity in riparian soil communities relative to unamended control plots.", "start_date": "2026-03-03", "end_date": "2026-05-15", "status": "Complete", "notes": "Diversity dropped as predicted at the two highest-nitrogen sites but not at the moderate site; writing this up as a threshold effect rather than a linear one."},

@@ -56,21 +56,21 @@
         {
           "client_name": "Angela Corwin",
           "phone": "555-0420",
-          "email": "angelacorwin@example-mail.test",
+          "email": "angelacorwin@greenlinelandscaping.com",
           "property_address": "200 Hollow Rd, Greenline",
           "service_frequency": "Weekly"
         },
         {
           "client_name": "Thomas Ekwueme",
           "phone": "555-0421",
-          "email": "thomasekwueme@example-mail.test",
+          "email": "thomasekwueme@greenlinelandscaping.com",
           "property_address": "205 Fescue Ln, Northfield",
           "service_frequency": "Biweekly"
         },
         {
           "client_name": "Rachel Gable",
           "phone": "555-0422",
-          "email": "rachelgable@example-mail.test",
+          "email": "rachelgable@greenlinelandscaping.com",
           "property_address": "210 Meadow Ct, Bellmont",
           "service_frequency": "Monthly"
         }
@@ -129,7 +129,7 @@
           "hourly_rate": 28
         },
         {
-          "name": "Dana Whitfield",
+          "name": "Marisol Fenwick",
           "role": "Crew Lead",
           "phone": "555-0502",
           "hire_date": "2022-06-15",
@@ -420,154 +420,154 @@
       {
         "client_name": "Angela Corwin",
         "phone": "555-0420",
-        "email": "angelacorwin@example-mail.test",
+        "email": "angelacorwin@greenlinelandscaping.com",
         "property_address": "200 Hollow Rd, Greenline",
         "service_frequency": "Weekly"
       },
       {
         "client_name": "Thomas Ekwueme",
         "phone": "555-0421",
-        "email": "thomasekwueme@example-mail.test",
+        "email": "thomasekwueme@greenlinelandscaping.com",
         "property_address": "205 Fescue Ln, Northfield",
         "service_frequency": "Biweekly"
       },
       {
         "client_name": "Rachel Gable",
         "phone": "555-0422",
-        "email": "rachelgable@example-mail.test",
+        "email": "rachelgable@greenlinelandscaping.com",
         "property_address": "210 Meadow Ct, Bellmont",
         "service_frequency": "Monthly"
       },
       {
         "client_name": "Eric Iversen",
         "phone": "555-0423",
-        "email": "ericiversen@example-mail.test",
+        "email": "ericiversen@greenlinelandscaping.com",
         "property_address": "215 Orchard Ave, Cresthaven",
         "service_frequency": "One-time"
       },
       {
         "client_name": "Monica Kessler",
         "phone": "555-0424",
-        "email": "monicakessler@example-mail.test",
+        "email": "monicakessler@greenlinelandscaping.com",
         "property_address": "220 Trailhead Dr, Greenline",
         "service_frequency": "Weekly"
       },
       {
         "client_name": "Paul Moreno",
         "phone": "555-0425",
-        "email": "paulmoreno@example-mail.test",
+        "email": "paulmoreno@greenlinelandscaping.com",
         "property_address": "225 Sycamore St, Northfield",
         "service_frequency": "Biweekly"
       },
       {
         "client_name": "Denise Corwin",
         "phone": "555-0426",
-        "email": "denisecorwin@example-mail.test",
+        "email": "denisecorwin@greenlinelandscaping.com",
         "property_address": "230 Vineyard Way, Bellmont",
         "service_frequency": "Monthly"
       },
       {
         "client_name": "Jason Ekwueme",
         "phone": "555-0427",
-        "email": "jasonekwueme@example-mail.test",
+        "email": "jasonekwueme@greenlinelandscaping.com",
         "property_address": "235 Pinehurst Rd, Cresthaven",
         "service_frequency": "One-time"
       },
       {
         "client_name": "Lauren Gable",
         "phone": "555-0428",
-        "email": "laurengable@example-mail.test",
+        "email": "laurengable@greenlinelandscaping.com",
         "property_address": "240 Hollow Rd, Greenline",
         "service_frequency": "Weekly"
       },
       {
         "client_name": "Craig Iversen",
         "phone": "555-0429",
-        "email": "craigiversen@example-mail.test",
+        "email": "craigiversen@greenlinelandscaping.com",
         "property_address": "245 Fescue Ln, Northfield",
         "service_frequency": "Biweekly"
       },
       {
         "client_name": "Vanessa Kessler",
         "phone": "555-0430",
-        "email": "vanessakessler@example-mail.test",
+        "email": "vanessakessler@greenlinelandscaping.com",
         "property_address": "250 Meadow Ct, Bellmont",
         "service_frequency": "Monthly"
       },
       {
         "client_name": "Todd Moreno",
         "phone": "555-0431",
-        "email": "toddmoreno@example-mail.test",
+        "email": "toddmoreno@greenlinelandscaping.com",
         "property_address": "255 Orchard Ave, Cresthaven",
         "service_frequency": "One-time"
       },
       {
         "client_name": "Yolanda Corwin",
         "phone": "555-0432",
-        "email": "yolandacorwin@example-mail.test",
+        "email": "yolandacorwin@greenlinelandscaping.com",
         "property_address": "260 Trailhead Dr, Greenline",
         "service_frequency": "Weekly"
       },
       {
         "client_name": "Peter Ekwueme",
         "phone": "555-0433",
-        "email": "peterekwueme@example-mail.test",
+        "email": "peterekwueme@greenlinelandscaping.com",
         "property_address": "265 Sycamore St, Northfield",
         "service_frequency": "Biweekly"
       },
       {
         "client_name": "Angela Gable",
         "phone": "555-0434",
-        "email": "angelagable@example-mail.test",
+        "email": "angelagable@greenlinelandscaping.com",
         "property_address": "270 Vineyard Way, Bellmont",
         "service_frequency": "Monthly"
       },
       {
         "client_name": "Thomas Iversen",
         "phone": "555-0435",
-        "email": "thomasiversen@example-mail.test",
+        "email": "thomasiversen@greenlinelandscaping.com",
         "property_address": "275 Pinehurst Rd, Cresthaven",
         "service_frequency": "One-time"
       },
       {
         "client_name": "Rachel Kessler",
         "phone": "555-0436",
-        "email": "rachelkessler@example-mail.test",
+        "email": "rachelkessler@greenlinelandscaping.com",
         "property_address": "280 Hollow Rd, Greenline",
         "service_frequency": "Weekly"
       },
       {
         "client_name": "Eric Moreno",
         "phone": "555-0437",
-        "email": "ericmoreno@example-mail.test",
+        "email": "ericmoreno@greenlinelandscaping.com",
         "property_address": "285 Fescue Ln, Northfield",
         "service_frequency": "Biweekly"
       },
       {
         "client_name": "Monica Corwin",
         "phone": "555-0438",
-        "email": "monicacorwin@example-mail.test",
+        "email": "monicacorwin@greenlinelandscaping.com",
         "property_address": "290 Meadow Ct, Bellmont",
         "service_frequency": "Monthly"
       },
       {
         "client_name": "Paul Ekwueme",
         "phone": "555-0439",
-        "email": "paulekwueme@example-mail.test",
+        "email": "paulekwueme@greenlinelandscaping.com",
         "property_address": "295 Orchard Ave, Cresthaven",
         "service_frequency": "One-time"
       },
       {
         "client_name": "Denise Gable",
         "phone": "555-0440",
-        "email": "denisegable@example-mail.test",
+        "email": "denisegable@greenlinelandscaping.com",
         "property_address": "300 Trailhead Dr, Greenline",
         "service_frequency": "Weekly"
       },
       {
         "client_name": "Jason Iversen",
         "phone": "555-0441",
-        "email": "jasoniversen@example-mail.test",
+        "email": "jasoniversen@greenlinelandscaping.com",
         "property_address": "305 Sycamore St, Northfield",
         "service_frequency": "Biweekly"
       }
@@ -581,7 +581,7 @@
         "hourly_rate": 28
       },
       {
-        "name": "Dana Whitfield",
+        "name": "Marisol Fenwick",
         "role": "Crew Lead",
         "phone": "555-0502",
         "hire_date": "2022-06-15",

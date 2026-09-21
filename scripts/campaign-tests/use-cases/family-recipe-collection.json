@@ -1,7 +1,7 @@
 {
   "use_case": "family-recipe-collection",
   "one_sentence": "A household keeps its recipe collection, each recipe's ingredients, and the running weekly shopping list generated from the recipes it plans to cook, in one place instead of scattered notes and screenshots.",
-  "organization_name": "The Alvarado-Chen Kitchen (test fixture)",
+  "organization_name": "The Alvarado-Chen Kitchen",
   "settings_tag": { "test_fixture": true },
   "tables": {
     "recipes": {

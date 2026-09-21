@@ -47,14 +47,14 @@ async function main() {
 
   // ---- dataset ---------------------------------------------------------
   const sites = [
-    { site_name: "Meridian Logistics Park", address: "4501 Freight Way, Rialto, CA", contact_email: "ops@meridianlog.example", contact_phone: "+19095550142" },
-    { site_name: "Cascade School District Admin", address: "220 NE 6th Ave, Portland, OR", contact_email: "facilities@cascadesd.example", contact_phone: "+15035550118" },
-    { site_name: "Brightline Medical Center", address: "88 Wellness Blvd, Tempe, AZ", contact_email: "itasset@brightlinemed.example", contact_phone: "+14805550199" },
-    { site_name: "Hawthorne Credit Union HQ", address: "12 Bank St, Hartford, CT", contact_email: "facilities@hawthornecu.example", contact_phone: "+18605550171" },
-    { site_name: "Redwood Data Center 3", address: "900 Server Row, San Jose, CA", contact_email: "decom@redwooddc.example", contact_phone: "+14085550133" },
-    { site_name: "Aster County Sheriff's Office", address: "1 Justice Plaza, Aster, TX", contact_email: "it@astercounty.example", contact_phone: "+18325550187" },
-    { site_name: "Union Textile Manufacturing", address: "77 Mill Rd, Greenville, SC", contact_email: "plant.it@uniontextile.example", contact_phone: "+18645550122" },
-    { site_name: "Overlook Senior Living", address: "300 Ridge Ct, Boise, ID", contact_email: "admin@overlookliving.example", contact_phone: "+12085550164" },
+    { site_name: "Meridian Logistics Park", address: "4501 Freight Way, Rialto, CA", contact_email: "ops@meridianlog.com", contact_phone: "+19095550142" },
+    { site_name: "Cascade School District Admin", address: "220 NE 6th Ave, Portland, OR", contact_email: "facilities@cascadesd.gov", contact_phone: "+15035550118" },
+    { site_name: "Brightline Medical Center", address: "88 Wellness Blvd, Tempe, AZ", contact_email: "itasset@brightlinemed.com", contact_phone: "+14805550199" },
+    { site_name: "Hawthorne Credit Union HQ", address: "12 Bank St, Hartford, CT", contact_email: "facilities@hawthornecu.com", contact_phone: "+18605550171" },
+    { site_name: "Redwood Data Center 3", address: "900 Server Row, San Jose, CA", contact_email: "decom@redwooddc.com", contact_phone: "+14085550133" },
+    { site_name: "Aster County Sheriff's Office", address: "1 Justice Plaza, Aster, TX", contact_email: "it@astercounty.gov", contact_phone: "+18325550187" },
+    { site_name: "Union Textile Manufacturing", address: "77 Mill Rd, Greenville, SC", contact_email: "plant.it@uniontextile.com", contact_phone: "+18645550122" },
+    { site_name: "Overlook Senior Living", address: "300 Ridge Ct, Boise, ID", contact_email: "admin@overlookliving.com", contact_phone: "+12085550164" },
   ];
 
   const materials = ["CRT Glass", "Circuit Boards", "Aluminum", "Steel", "Plastics", "Batteries", "Copper Wire"];
