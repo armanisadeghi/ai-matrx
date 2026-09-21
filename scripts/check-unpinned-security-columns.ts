@@ -92,6 +92,11 @@ function readBaseline(): Set<string> {
 
 const CLIENT_ROLES = ["authenticated", "anon"] as const;
 
+/** Catalog identifiers only — they come from `pg_attribute`, never from a caller. */
+function quoteIdent(name: string): string {
+  return `"${name.replace(/"/g, '""')}"`;
+}
+
 /**
  * A SECRET. Its value IS the credential, so an unpinned one lets the client choose what the
  * server will later accept — `iam.api_keys.secret_hash` exactly. Always CRITICAL.
@@ -117,9 +122,36 @@ const SECRET_COLUMN = [
  * `platform.entity_types.token`, `target_token`, `subject_token`, `entity_token` are registry
  * identifiers — the same word the Data Doctrine uses for an entity's name. Matching them as
  * credentials produced 48 false CRITICALs on the first live run, which is exactly how a guard
- * gets muted. These are matched BEFORE `SECRET_COLUMN` and fall through to the identity/state
- * rules on their own merits. `claim_token`, `webhook_secret`, `refresh_claim_token` and
- * `domain_verification_token` are NOT here: those really are secrets.
+ * gets muted. `claim_token`, `webhook_secret`, `refresh_claim_token` and
+ * `domain_verification_token` are NOT vocabulary: those really are secrets.
+ *
+ * 🚨 A BARE `token` IS THE ONE NAME THAT CANNOT BE TAKEN ON TRUST, AND IT HID THE SHARPEST
+ * COLUMN IN THE DATABASE. (SECURITY-SWEEP, 2026-09-21.) This list used to carry a bare
+ * `/^token$/i`, which exempted EVERY column literally named `token` — including
+ * **`platform.share_links.token`, the share link's bearer credential**: the string in
+ * `/s/<token>` that grants whatever `permission_level` the same row names, on a table any
+ * signed-in person may INSERT. The guard dutifully reported that row's `short_token` — whose
+ * own column comment says it is "a URL alias ONLY — carries no authorization" — and stayed
+ * silent about the credential two columns away. `iam.invitations.token` and
+ * `crm.unsubscribe_token.token` were hidden by the same line.
+ *
+ * The QUALIFIED names stay: `entity_token`, `target_token`, `subject_token`,
+ * `reference_target_token` and `container_token` say in the name which registry they point
+ * into, and the live census agrees (`hr.access_audit.target_token`, 2,131 rows, all entity
+ * tokens). A bare `token` says nothing, so it must PROVE itself, per column:
+ *   1. a FOREIGN KEY to `platform.entity_types(token)`; or
+ *   2. the table is non-empty and every non-null value resolves to a live
+ *      `platform.entity_types.token`; or
+ *   3. **a value REPEATS across rows.** A bearer credential is never shared between two rows
+ *      — that is what makes it a credential. A vocabulary token is shared by definition:
+ *      `content_ir.kind_surface.token` holds "flashcards" twice and "mermaid" beside it,
+ *      while `platform.share_links.token` is 366 distinct 64-character strings and
+ *      `iam.invitations.token` 33 distinct uuids. This is the discriminator that does not
+ *      depend on which registry a token points into, and it is asked of the data.
+ * A table with no rows proves nothing and stays a finding. UNPROVEN IS NOT EXEMPT.
+ *
+ * `credential_reference_kind` stays by name: it is a KIND ("oauth", "api_key"), it references
+ * no registry, and no evidence rule would ever clear it.
  */
 const VOCABULARY_NOT_A_SECRET = [
   /^entity_token$/i,
@@ -127,7 +159,6 @@ const VOCABULARY_NOT_A_SECRET = [
   /^subject_token$/i,
   /^reference_target_token$/i,
   /^container_token$/i,
-  /^token$/i,
   /^credential_reference_kind$/i,
 ];
 
@@ -202,6 +233,12 @@ export interface PolicyFacts {
    * fixtures), every column in `columns` is treated as writable.
    */
   readonly writableColumns?: readonly string[];
+  /**
+   * Columns PROVEN to hold a `platform.entity_types` vocabulary token rather than a
+   * credential — by a foreign key to `platform.entity_types(token)`, or because every value
+   * in the column resolves to one. See `VOCABULARY_NOT_A_SECRET`. Unproven is not exempt.
+   */
+  readonly vocabularyColumns?: readonly string[];
 }
 
 /** What Postgres will actually apply to the NEW row. See `usingExpr`. */
@@ -233,8 +270,8 @@ export interface Finding {
  * needs a human's eye, but it is usually gated by `is_platform_admin()` or
  * `iam.has_access(...)` and failing on it would bury case 1 and 2 under hundreds of rows.
  */
-export function classify(column: string, ctx: PinContext): Severity | null {
-  const vocabulary = VOCABULARY_NOT_A_SECRET.some((re) => re.test(column));
+export function classify(column: string, ctx: PinContext, provenVocabulary = false): Severity | null {
+  const vocabulary = provenVocabulary || VOCABULARY_NOT_A_SECRET.some((re) => re.test(column));
   if (!vocabulary && SECRET_COLUMN.some((re) => re.test(column))) return "critical";
   if (IDENTITY_COLUMN.some((re) => re.test(column))) {
     if (ctx.withCheckIsNull) return "critical";
@@ -287,9 +324,10 @@ export function findingsFor(policy: PolicyFacts): Finding[] {
   // the policy, not about which columns happen to carry a grant.
   const writable =
     policy.writableColumns === undefined ? null : new Set(policy.writableColumns);
+  const vocabulary = new Set(policy.vocabularyColumns ?? []);
   for (const column of policy.columns) {
     if (writable !== null && !writable.has(column)) continue;
-    const severity = classify(column, ctx);
+    const severity = classify(column, ctx, vocabulary.has(column));
     if (severity === null) continue;
     if (isPinned(check, column)) continue;
     out.push({
@@ -363,7 +401,21 @@ select w.schema_name,
                        and has_column_privilege(r.role, w.relid, a.attname, 'INSERT'))
                  or (p.polcmd in ('w','*')
                        and has_column_privilege(r.role, w.relid, a.attname, 'UPDATE'))
-           )) as writable_columns
+           )) as writable_columns,
+       -- VOCABULARY PROVEN FROM THE CATALOG: a column whose foreign key points at
+       -- platform.entity_types(token) holds a registry identifier, not a bearer secret.
+       -- The value-level proof (every value resolves to a live token) is asked separately,
+       -- per candidate column, because it has to read the table.
+       (select coalesce(array_agg(distinct a2.attname::text), '{}'::text[])
+          from pg_constraint fk
+          join lateral unnest(fk.conkey) as k(attnum) on true
+          join pg_attribute a2 on a2.attrelid = fk.conrelid and a2.attnum = k.attnum
+         where fk.conrelid = w.relid and fk.contype = 'f'
+           and fk.confrelid = 'platform.entity_types'::regclass
+           and exists (
+             select 1 from unnest(fk.confkey) as ck(attnum)
+             join pg_attribute a3 on a3.attrelid = fk.confrelid and a3.attnum = ck.attnum
+            where a3.attname = 'token')) as fk_vocabulary_columns
   from client_writable w
   join pg_policy p on p.polrelid = w.relid
  where p.polpermissive = true
@@ -375,9 +427,21 @@ select w.schema_name,
         where r.oid = any(p.polroles) and r.rolname = any($1::text[])
      )
    )
+   -- WHAT COUNTS AS CLOSED, per command. A restrictive with-check-false for the same command
+   -- closes it; a restrictive ALL closes everything. And an ALL policy is closed when BOTH
+   -- write commands are separately refused -- the shape this lane's own
+   -- share_links_client_insert_refused / _update_refused pair takes. Without this the guard
+   -- went on reporting iam.invitations.token under platform_admin_all minutes after the write
+   -- had been refused at the row level and proven refused over HTTP. A guard that cannot see
+   -- a fix is the defect this lane opened with.
    and not exists (
      select 1 from closed cl
       where cl.relid = w.relid and (cl.polcmd = p.polcmd or cl.polcmd = '*')
+   )
+   and not (
+     p.polcmd = '*'
+     and exists (select 1 from closed cl where cl.relid = w.relid and cl.polcmd = 'a')
+     and exists (select 1 from closed cl where cl.relid = w.relid and cl.polcmd = 'w')
    )
  order by w.schema_name, w.table_name, p.polname
 `;
@@ -566,6 +630,41 @@ async function main(): Promise<number> {
       return 1;
     }
 
+    // THE VALUE-LEVEL VOCABULARY PROOF. A catalog foreign key answers most of it; the rest
+    // is answered by the data, once per (table, column), and only for the columns that would
+    // otherwise be judged as credentials. A table with no rows proves nothing and stays a
+    // finding — UNPROVEN IS NOT EXEMPT.
+    const BARE_TOKEN = /^token$/i;
+    const proven = new Map<string, Set<string>>();
+    const asked = new Set<string>();
+    for (const r of rows) {
+      const rel = `${r.schema_name}.${r.table_name}`;
+      const fkVocab = new Set<string>(r.fk_vocabulary_columns ?? []);
+      const writable = new Set<string>(r.writable_columns ?? []);
+      const set = proven.get(rel) ?? new Set<string>(fkVocab);
+      for (const c of fkVocab) set.add(c);
+      proven.set(rel, set);
+      for (const column of (r.columns ?? []) as string[]) {
+        if (!BARE_TOKEN.test(column)) continue;
+        if (!writable.has(column) || set.has(column)) continue;
+        const key = `${rel}.${column}`;
+        if (asked.has(key)) continue;
+        asked.add(key);
+        const col = quoteIdent(column);
+        const qualified = `${quoteIdent(r.schema_name)}.${quoteIdent(r.table_name)}`;
+        const { rows: answer } = await client.query(
+          "select (count(*) > 0 and count(*) filter (where t." + col + " is not null " +
+            "and not exists (select 1 from platform.entity_types et where et.token = t." + col +
+            "::text)) = 0) as resolves_to_registry, " +
+            "(count(t." + col + ") > count(distinct t." + col + ")) as value_repeats " +
+            "from " + qualified + " t",
+        );
+        if (answer[0]?.resolves_to_registry === true || answer[0]?.value_repeats === true) {
+          set.add(column);
+        }
+      }
+    }
+
     const findings: Finding[] = [];
     for (const r of rows) {
       findings.push(
@@ -578,6 +677,7 @@ async function main(): Promise<number> {
           usingExpr: r.using_expr,
           columns: r.columns ?? [],
           writableColumns: r.writable_columns ?? [],
+          vocabularyColumns: [...(proven.get(`${r.schema_name}.${r.table_name}`) ?? [])],
         }),
       );
     }
