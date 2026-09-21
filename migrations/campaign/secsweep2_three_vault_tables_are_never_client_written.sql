@@ -33,6 +33,20 @@
 -- THE CENSUS was a read of the files above, not a .from() count -- a .from() count is a signal,
 -- never a proof (SECURITY-SWEEP was bitten by one).
 --
+-- THE THREE ARE NOT EQUALLY OPEN TODAY, and the difference is worth writing down because it
+-- changes which one is urgent. Read from pg_policy before this file was written:
+--   * browser.authenticator_window has NO restrictive policy at all -- ANY signed-in member may
+--     INSERT, naming any credential_item_id. That is the live hole, and it is the one
+--     SECURITY-SWEEP walked past.
+--   * users.credential_attachments and users.user_secret_grants already carry
+--     `platform_admin_insert_only` / `platform_admin_update_only` (restrictive,
+--     `is_platform_admin()`), so a plain member is already refused. They are closed here anyway:
+--     an `is_platform_admin()` arm gates WHO may write, and says nothing about WHICH credential
+--     they may name, so a platform admin's browser can still write the authorization record for
+--     somebody else's vault item. Closing a class means removing the door, never leaving a safe
+--     path beside an unsafe one -- the rule SECURITY-KEYS closed iam.api_keys with. The
+--     server-side path these admins actually use is unaffected (service_role bypasses RLS).
+--
 -- So this removes a second path no code walks, exactly as iam.api_keys did. RESTRICTIVE policies
 -- AND with the permissive ones, so no permissive policy -- present or future, generated or
 -- hand-written -- can re-open the write, and their bespoke names are deliberately NOT in
