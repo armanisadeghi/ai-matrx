@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1217,
+  "routeCount": 1226,
   "routes": [
     {
       "pattern": "/",
@@ -1594,6 +1594,16 @@
       "source": "app/auth/desktop-handoff/page.tsx"
     },
     {
+      "pattern": "/b/[bookingId]",
+      "status": "live",
+      "source": "app/(link)/b/[bookingId]/page.tsx"
+    },
+    {
+      "pattern": "/b/manage/[ref]",
+      "status": "live",
+      "source": "app/(link)/b/manage/[ref]/page.tsx"
+    },
+    {
       "pattern": "/c/[handle]",
       "status": "live",
       "source": "app/(public)/c/[handle]/page.tsx"
@@ -1617,6 +1627,11 @@
       "pattern": "/canvas/shared/[token]",
       "status": "live",
       "source": "app/(public)/canvas/shared/[token]/page.tsx"
+    },
+    {
+      "pattern": "/capture/[sheetId]",
+      "status": "live",
+      "source": "app/(link)/capture/[sheetId]/page.tsx"
     },
     {
       "pattern": "/capture/needs-you",
@@ -1947,6 +1962,11 @@
       "pattern": "/crm/sending-identities/[identityId]",
       "status": "live",
       "source": "app/(core)/crm/sending-identities/[identityId]/page.tsx"
+    },
+    {
+      "pattern": "/d/[renderId]",
+      "status": "live",
+      "source": "app/(core)/d/[renderId]/page.tsx"
     },
     {
       "pattern": "/dashboard",
@@ -2457,6 +2477,16 @@
       "pattern": "/education/study-aids/[slug]",
       "status": "live",
       "source": "app/(core)/education/study-aids/[slug]/page.tsx"
+    },
+    {
+      "pattern": "/education/study-guides",
+      "status": "live",
+      "source": "app/(core)/education/study-guides/page.tsx"
+    },
+    {
+      "pattern": "/education/study-guides/[id]",
+      "status": "live",
+      "source": "app/(core)/education/study-guides/[id]/page.tsx"
     },
     {
       "pattern": "/education/subjects",
@@ -5186,6 +5216,11 @@
       "source": "app/(core)/projects/new/page.tsx"
     },
     {
+      "pattern": "/q/[token]",
+      "status": "live",
+      "source": "app/(link)/q/[token]/page.tsx"
+    },
+    {
       "pattern": "/r/[token]",
       "status": "live",
       "source": "app/(public)/r/[token]/page.tsx"
@@ -5726,6 +5761,11 @@
       "source": "app/(auth-pages)/sign-up/page.tsx"
     },
     {
+      "pattern": "/sign/[token]",
+      "status": "live",
+      "source": "app/(link)/sign/[token]/page.tsx"
+    },
+    {
       "pattern": "/sms",
       "status": "live",
       "source": "app/(public)/sms/page.tsx"
@@ -5774,6 +5814,11 @@
       "pattern": "/the-landscape",
       "status": "live",
       "source": "app/(public)/the-landscape/page.tsx"
+    },
+    {
+      "pattern": "/toast-copy-check",
+      "status": "live",
+      "source": "app/(auth-pages)/toast-copy-check/page.tsx"
     },
     {
       "pattern": "/tool-call-visualization/admin",
