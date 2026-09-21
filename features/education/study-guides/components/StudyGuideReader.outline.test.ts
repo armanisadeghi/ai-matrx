@@ -1,4 +1,4 @@
-import { visibleOutlineItems } from "../outline";
+import { initialOutlineExpansion, toggleOutlineSection, visibleOutlineItems } from "../outline";
 import type { NoteOutlineItem } from "@/features/notes/utils/noteOutline";
 
 const outline: NoteOutlineItem[] = [
@@ -14,5 +14,18 @@ describe("visibleOutlineItems", () => {
       "Unit one",
       "Unit two",
     ]);
+  });
+});
+
+ describe("major outline accordion", () => {
+  it("opens only the first root initially and switches roots without losing nested state", () => {
+    const initial = initialOutlineExpansion(outline);
+    expect(initial).toEqual({ 0: true, 3: false });
+    const nested = toggleOutlineSection(outline, initial, 1);
+    const switched = toggleOutlineSection(outline, nested, 3);
+    expect(switched).toEqual({ 0: false, 1: false, 3: true });
+    expect(visibleOutlineItems(outline, switched).map((item) => item.headingIndex)).toEqual([0, 3]);
+    expect(toggleOutlineSection(outline, switched, 3)[3]).toBe(false);
+    expect(toggleOutlineSection(outline, switched, 0)).toEqual({ 0: true, 1: false, 3: false });
   });
 });
