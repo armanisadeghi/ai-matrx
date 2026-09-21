@@ -39,6 +39,8 @@ export interface DataTableScopeField {
   format?: string;
   /** Resolved options for a choice column, already narrowed by any binding. */
   choices?: string[];
+  /** Value → label, only for options whose label differs from the value (a person column). */
+  choiceLabels?: Record<string, string>;
   /**
    * The column's raw `validation_rules` jsonb, straight off the field row.
    * Parsed and put into plain English here rather than by the viewer, so the
@@ -155,6 +157,9 @@ export function buildDataTablesScope(
       // column" and from "its pick list has not loaded yet".
       ...(f.format ? { format: f.format } : {}),
       ...(f.choices && f.choices.length > 0 ? { choices: f.choices } : {}),
+      ...(f.choiceLabels && Object.keys(f.choiceLabels).length > 0
+        ? { choice_labels: f.choiceLabels }
+        : {}),
       ...(validation.length > 0 ? { validation } : {}),
     };
   });

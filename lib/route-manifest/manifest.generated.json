@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1226,
+  "routeCount": 1228,
   "routes": [
     {
       "pattern": "/",
@@ -3201,6 +3201,11 @@
       "source": "app/(core)/invitations/project/accept/[token]/page.tsx"
     },
     {
+      "pattern": "/invitations/table/accept/[token]",
+      "status": "live",
+      "source": "app/(core)/invitations/table/accept/[token]/page.tsx"
+    },
+    {
       "pattern": "/kiosk",
       "status": "live",
       "source": "app/(kiosk)/kiosk/page.tsx"
@@ -5769,6 +5774,11 @@
       "pattern": "/sms",
       "status": "live",
       "source": "app/(public)/sms/page.tsx"
+    },
+    {
+      "pattern": "/staff",
+      "status": "live",
+      "source": "app/(core)/staff/page.tsx"
     },
     {
       "pattern": "/suggestions",

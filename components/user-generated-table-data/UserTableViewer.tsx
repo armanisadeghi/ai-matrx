@@ -3092,7 +3092,19 @@ const UserTableViewer = ({
       is_required: field.is_required,
       ...(isDefault ? {} : { format: declared.id }),
       ...(resolvedChoices && resolvedChoices.length > 0
-        ? { choices: resolvedChoices.map((c) => c.value) }
+        ? {
+            choices: resolvedChoices.map((c) => c.value),
+            // Only the labels that differ (a Person column: ids → names).
+            ...(resolvedChoices.some((c) => c.label && c.label !== c.value)
+              ? {
+                  choiceLabels: Object.fromEntries(
+                    resolvedChoices
+                      .filter((c) => c.label && c.label !== c.value)
+                      .map((c) => [c.value, c.label as string]),
+                  ),
+                }
+              : {}),
+          }
         : {}),
     };
   });
@@ -4151,6 +4163,15 @@ const UserTableViewer = ({
                           isReadOnly
                             ? undefined
                             : () => startColumnRename(field.field_name)
+                        }
+                        // A choice column's stored values may differ from what
+                        // people read (a Person column stores user ids) — the
+                        // filter list shows the label, filters by the value.
+                        labelForValue={
+                          choiceMap.get(field.field_name)?.choices.some((c) => c.label && c.label !== c.value)
+                            ? (value) =>
+                                choiceMap.get(field.field_name)?.choices.find((c) => c.value === value)?.label ?? value
+                            : undefined
                         }
                         // The same three doors the right-click Column section
                         // has — a column is managed from its own header too.

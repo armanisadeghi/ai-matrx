@@ -244,6 +244,27 @@ jobs:
         # "control" is a comment — and asserts all three are reported, while a
         # service layer, a single-record read and a reasoned exemption are not.
         run: pnpm check:archived-items-law:self-test
+      - name: A ROUTE ADDED WITHOUT A MANIFEST ENTRY IS A LINK THE SPINE REWRITES
+        # `aidream/services/notifications/link_honesty.py` asks the route
+        # manifest whether a deep link can answer before it puts one in an
+        # email, an in-app notice or a text. A route with no entry is `unbuilt`:
+        # the link is silently rewritten to its nearest live ancestor, and the
+        # SMS leg is refused outright as deep_link_not_live. Measured
+        # 2026-09-21: `platform.route_manifest` was EIGHT DAYS stale and 63
+        # routes — the table-invitation accept page, `/notifications` (the deep
+        # link every agent digest declares), the whole `/data-v2/**` store,
+        # `/approvals`, `/decisions` — were being rewritten with nothing red
+        # anywhere. This script existed and ran in NO job and NO gate.
+        # This is the DB-FREE half (app/ vs the checked-in lockfile) so it runs
+        # on every push with no secret and can never report UNMEASURED; the half
+        # that reads `platform.route_manifest` itself is
+        # `pnpm check:route-manifest:live`, in run-release-gates.sh, where the
+        # five direct-Postgres variables exist. Fix for a red here:
+        # `pnpm route-manifest:generate`, then `pnpm route-manifest:sync` on the
+        # deploy. (MANIFEST-SEAT)
+        run: pnpm check:route-manifest:strict
+      - name: the route-manifest live gate's comparison can still fail (self-test)
+        run: pnpm check:route-manifest:live:self-test
       - name: A SIGN-OUT ENDS ONLY THE DEVICE THAT ASKED — every signOut( names a literal scope
         # supabase-js `signOut()` defaults to scope "global": it deletes EVERY
         # session the account holds, including the OAuth-client session Claude

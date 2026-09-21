@@ -109,6 +109,26 @@ if $STRICT; then
         "Sign-out scope (a bare signOut() logs the account out of every device)|pnpm check:signout-scope"
         "Service-role writes to provenance-governed tables (the DB refuses them with 23514)|pnpm check:admin-client-governed-writes"
         "Hidden failure announcements (an error only a screen reader can perceive is a dead button)|pnpm check:hidden-alerts"
+        # THE ROUTE MANIFEST THE SPINE ACTUALLY READS. `platform.route_manifest`
+        # is what aidream/services/notifications/link_honesty.py asks before it
+        # puts a deep link in an email, an in-app notice or a text — and it is
+        # written by ONE command a human has to remember, `pnpm route-manifest:sync`,
+        # which runs nowhere automatically. On 2026-09-21 it was measured EIGHT
+        # DAYS stale: 63 routes built since 13 September had no row, among them
+        # the table-invitation accept page, `/notifications` (the deep link every
+        # agent digest declares), the whole `/data-v2/**` store, `/approvals` and
+        # `/decisions`. A route with no row is `unbuilt`, so for eight days every
+        # link to one of them was silently rewritten to an ancestor on email and
+        # in-app and refused outright on SMS. Nothing was red, because
+        # `check:route-manifest` guards only the LOCKFILE — which was fine.
+        # This gate walks app/ → lockfile → database in one pass and names every
+        # route on either side of the break with the command that closes it.
+        # An unreachable database exits 2 as UNMEASURED, never a quiet green.
+        # Proven failing-then-passing: `pnpm check:route-manifest:live:self-test`
+        # (3 planted REDs, one per finding shape, no database), and live on
+        # 2026-09-21 by adding a throwaway route under app/ — red naming it,
+        # green once it was gone. (MANIFEST-SEAT)
+        "Route manifest is registered where the notification spine reads it|pnpm check:route-manifest:live"
         # THE UNIFIED-DATA CAMPAIGN SWITCH MUST COVER SOMETHING. The campaign's
         # code ships continuously — any lane's `release*:` commit builds the
         # whole pushed range — so campaign code must be inert until
@@ -624,6 +644,11 @@ else
     # Non-strict variants still print the full loud report; they exit 0.
     declare -a GATES=(
         "Hidden failure announcements (an error only a screen reader can perceive is a dead button)|pnpm check:hidden-alerts"
+        # See the strict list above for why this exists. It is in BOTH lists on
+        # purpose: the release's own after-phase runner takes its rows from
+        # `--list`, which is this (non-strict) branch, so a gate that lived only
+        # in the strict list would never run on a release at all. (MANIFEST-SEAT)
+        "Route manifest is registered where the notification spine reads it|pnpm check:route-manifest:live"
         "Notes: a failed + is announced (the shared draft control and the real surfaces)|npx jest features/notes/hooks/useDraftInitializationControl.test.tsx features/notes/redux/draftInitialization.control.integration.test.tsx --silent"
         # EVERY FILE PARSES — the cheapest gate here (~4s over 14,716 files)
         # and the only one whose finding is not an opinion. On 2026-09-07 the
