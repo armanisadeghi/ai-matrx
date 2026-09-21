@@ -1,0 +1,9 @@
+-- chair-step: restores custom.form_declare to the body that made NO accept Rule, so a
+-- hand-built form goes back to holding every answer for a person forever. It does NOT
+-- delete the accept Rules already made, and it does NOT unset quarantine_rule_id on the
+-- forms that now carry one — those are real Rules over real forms and deleting them would
+-- break forms that are currently working. This is a revert of the DEFAULT, not of its
+-- effects. Run it only to undo the 2026-09-21 change itself.
+--
+-- The previous body is `migrations/campaign/forms_a_form_is_a_view_on_a_table.sql`;
+-- re-apply that file's `create function custom.form_declare(...)` statement to restore it.
