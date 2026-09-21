@@ -16,37 +16,20 @@
 // `read_records` and `read_records_by_ids` — which is what makes "requests per change" a
 // measurement rather than a claim.
 //
-// 🚨 THIS FILE DOES NOT RUN TO COMPLETION YET, AND THE REASON IS NOT IN THIS FILE.
-// Both browsers sign in (`Dana=admin@admin.com   Marco=test@test.com`) and then
-// `setOrganization` cannot find "Rincon Plumbing Co" on the organization picker. It is NOT a
-// selector or virtualization problem — measured on /data-v2 as admin@admin.com, 2026-09-21:
-//
-//     rinconInHTML: false        orgIdInHTML: false
-//     the picker renders Fairview People II, Glenwood Insights, Holdfast Archives, …
-//     and its own message reads: `…"Rincon" outside the test organizations below.`
-//
-// The string is nowhere in the document, so the row is never built. Meanwhile the membership
-// is real and active in the database:
-//
-//     Rincon Plumbing Co | 87a6e699-… | owner  | active
-//     Rincon Plumbing Co | 4060701e-… | member | active
-//
-// So the picker is not offering an organization this person is an active owner of. That is a
-// product finding that belongs to whoever owns the organization picker, not to this lane's
-// subject, and it is written here rather than worked around — a cookie or a URL forced from
-// outside would be testing a state no person can reach, which the picker's own doctrine
-// forbids. Everything below this line is written and ready; it has never been past clause 1.
-//
-// WHAT IS ALREADY PROVEN WITHOUT A BROWSER: `scripts/realtime-proof/echo-and-ids.mts` drives
-// the REAL package against the REAL database from two signed-in seats and counts every RPC —
-// writer 1 read of 40 rows → 0 reads, watcher 1 read of 40 rows → 1 read of 1 row. What this
-// file would add is that React re-rendered.
+// THE ORGANIZATION IS PICKED THROUGH THE SHARED SEAT HELPER (`scripts/lib/seat-browser.mjs`),
+// which knows the thing this lane learned the hard way: every real-data crew organization is
+// classified a TEST FIXTURE and the picker hides those behind one disclosure — the
+// archived-items-law pattern. A search alone finds nothing at all, and the picker says so
+// ("Nothing matches ... outside the test organizations below"). The helper opens the
+// disclosure, exactly as a person clicks it. Never a cookie, never a forced URL.
 //
 // Port 3044 (lane REALTIME-2 in scripts/campaign-ports.json). Headless, always.
 // Run: node scripts/realtime-proof/two-browsers-echo.mjs
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+
+import { setOrganization, signIn, sleep, until } from "../lib/seat-browser.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const PORT = 3044;
@@ -80,23 +63,6 @@ const bad = (m) => {
   results.push(["FAIL", m]);
   console.log(`  FAIL ${m}`);
 };
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-async function until(label, fn, timeoutMs = 25000) {
-  const start = Date.now();
-  for (;;) {
-    let v;
-    try {
-      v = await fn();
-    } catch {
-      v = null;
-    }
-    if (v) return { v, ms: Date.now() - start };
-    if (Date.now() - start > timeoutMs) return { v: null, ms: Date.now() - start, label };
-    await sleep(250);
-  }
-}
-
 /** Count every read this browser makes, by door name, straight off the wire. */
 function countReads(page) {
   const counts = { read_records: 0, read_records_by_ids: 0 };
@@ -109,91 +75,6 @@ function countReads(page) {
   return counts;
 }
 
-/** A plain password sign-in, the way a person does it. */
-async function signIn(page, email, password, who) {
-  await page.goto(`${ORIGIN}/login`, { waitUntil: "domcontentloaded", timeout: 120000 });
-  // Hydration: the form is server-rendered but only accepts input once the bundle attaches,
-  // and a fill that lands before that silently does nothing.
-  await page.waitForSelector("#email", { timeout: 120000 });
-  await page.fill("#email", email);
-  await page.fill("#password", password);
-  await page.click('button:has-text("Sign in")');
-  const { v } = await until(
-    `${who} sign-in`,
-    async () => {
-      const seen = await page.evaluate(async () => {
-        try {
-          return await (await fetch("/api/whoami")).json();
-        } catch {
-          return null;
-        }
-      });
-      return seen?.email ?? null;
-    },
-    60000,
-  );
-  if (!v) throw new Error(`${who} (${email}) never signed in`);
-  return v;
-}
-
-/**
- * Pick the organization the way a person does — off the screen the app puts in front of them.
- * The platform deliberately never picks one for you, so a cookie written from outside would be
- * testing a state no person can reach.
- */
-async function setOrganization(page, organizationName) {
-  // The list is long and virtualized, so the row is in the DOM before it is on screen — the
-  // same poll lane REALTIME's proof used, which is what actually works against this picker.
-  // The row renders as an abbreviation badge plus the name, and the name is not always a
-  // <span> — so match ANY leaf element whose own trimmed text is the name, and scroll the
-  // virtualized list until it is built. This is still the click a finger makes.
-  // THE ORG LIST IS A COLLAPSED SIDEBAR GROUP. `#menu-group-organization` is the checkbox that
-  // opens it, and until it is open the rows are not rendered at all — which is why polling for
-  // the row alone finds nothing however long it waits.
-  await page.evaluate(() => {
-    const box = document.querySelector("#menu-group-organization");
-    if (box instanceof HTMLInputElement && !box.checked) box.click();
-    const side = document.querySelector("#shell-sidebar-toggle");
-    if (side instanceof HTMLInputElement && !side.checked) side.click();
-  });
-  await sleep(1500);
-
-  const clickOnce = async () =>
-    page.evaluate((name) => {
-      const leaf = Array.from(document.querySelectorAll("body *")).find(
-        (el) => el.children.length === 0 && (el.textContent ?? "").trim() === name,
-      );
-      if (leaf) {
-        const target =
-          leaf.closest("button, [role='option'], [role='menuitem'], [role='button'], a, li") ??
-          leaf.parentElement;
-        if (target) {
-          target.scrollIntoView({ block: "center" });
-          target.dispatchEvent(
-            new MouseEvent("click", { bubbles: true, cancelable: true, view: window }),
-          );
-          return true;
-        }
-      }
-      // Not built yet: push every scrollable container down a page so the next slice renders.
-      for (const el of Array.from(document.querySelectorAll("body *"))) {
-        if (el.scrollHeight > el.clientHeight + 40) el.scrollTop += el.clientHeight;
-      }
-      return false;
-    }, organizationName);
-  const { v: clicked } = await until("the organization picker", clickOnce, 120000);
-  if (!clicked) throw new Error(`the organization "${organizationName}" was not on the picker`);
-}
-
-const rowTexts = (page) =>
-  page.evaluate(() =>
-    Array.from(document.querySelectorAll("table tbody tr")).map((r) => r.textContent ?? ""),
-  );
-const headerTexts = (page) =>
-  page.evaluate(() =>
-    Array.from(document.querySelectorAll("table thead th")).map((h) => (h.textContent ?? "").trim()),
-  );
-
 /** Tap the socket before the app opens it, so what is asserted is what THIS browser received. */
 const socketTap = () => {
   const OriginalWebSocket = window.WebSocket;
@@ -203,9 +84,7 @@ const socketTap = () => {
       this.addEventListener("message", (event) => {
         const d = event.data;
         const hand = (raw) => {
-          if (typeof raw === "string" && raw.includes("records.changed")) {
-            window.__rt2Notice?.(raw);
-          }
+          if (typeof raw === "string" && raw.includes("records.changed")) window.__rt2Notice?.(raw);
         };
         if (typeof d === "string") hand(d);
         else if (d instanceof ArrayBuffer) hand(new TextDecoder().decode(d));
@@ -214,6 +93,15 @@ const socketTap = () => {
     }
   };
 };
+
+const rowTexts = (page) =>
+  page.evaluate(() =>
+    Array.from(document.querySelectorAll("table tbody tr")).map((r) => r.textContent ?? ""),
+  );
+const headerTexts = (page) =>
+  page.evaluate(() =>
+    Array.from(document.querySelectorAll("table thead th")).map((h) => (h.textContent ?? "").trim()),
+  );
 
 async function openBoard(page, who) {
   for (let attempt = 1; ; attempt += 1) {
@@ -250,8 +138,8 @@ async function main() {
   const marcoReads = countReads(marco);
 
   try {
-    const danaWho = await signIn(dana, ADMIN_EMAIL, ADMIN_PASSWORD, "Dana");
-    const marcoWho = await signIn(marco, TEST_EMAIL, TEST_PASSWORD, "Marco");
+    const danaWho = await signIn(dana, ORIGIN, ADMIN_EMAIL, ADMIN_PASSWORD, "Dana");
+    const marcoWho = await signIn(marco, ORIGIN, TEST_EMAIL, TEST_PASSWORD, "Marco");
     console.log(`  Dana=${danaWho}   Marco=${marcoWho}\n`);
 
     for (const [page, who] of [
@@ -259,7 +147,8 @@ async function main() {
       [marco, "Marco"],
     ]) {
       await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "commit", timeout: 150000 });
-      await setOrganization(page, ORG_NAME);
+      const how = await setOrganization(page, ORG_NAME);
+      console.log(`  (${who} picked ${ORG_NAME} — ${how})`);
       await sleep(2500);
       await openBoard(page, who);
     }
@@ -290,35 +179,44 @@ async function main() {
     // Through the app's own client — the same `@ai-matrx/records` write that a button calls,
     // which is what mints the `_op_id` this proof turns on.
     const jobNumber = `RPC-${Math.floor(Date.now() / 1000) % 100000}`;
-    const wrote = await dana.evaluate(
-      async ({ url, key, org, table, job }) => {
-        const { createClient } = await import(
-          /* webpackIgnore: true */ "https://esm.sh/@supabase/supabase-js@2"
-        );
-        const raw = Object.keys(localStorage).find((k) => k.startsWith("sb-") && k.endsWith("-auth-token"));
-        const token = raw ? JSON.parse(localStorage.getItem(raw)).access_token : null;
-        const c = createClient(url, key, {
-          db: { schema: "custom" },
-          global: { headers: { Authorization: `Bearer ${token}` } },
-        });
-        // The op id the real client mints. Written here because this page's own bundle is the
-        // thing under test on the RECEIVING side; the write itself is an ordinary door call.
-        const opId = crypto.randomUUID();
-        window.__rt2DanaOp = opId;
-        const { data, error } = await c.rpc("record_write", {
-          p_organization_id: org,
-          p_table_id: table,
-          p_data: {
-            _op_id: opId,
-            job_number: job,
-            address: "1400 Thompson Blvd, Ventura CA 93001",
-            notes: "Emergency call-out: water heater flooding the garage.",
-          },
-        });
-        return { id: data ?? null, error: error?.message ?? null, opId };
-      },
-      { url: SUPABASE_URL, key: SUPABASE_KEY, org: ORG, table: JOBS, job: jobNumber },
-    );
+    // THROUGH DANA'S OWN GRID, WHICH IS THE WHOLE POINT. The op ledger lives inside this
+    // page's `@ai-matrx/records`, so a write made by a client this script builds would mint an
+    // id her bundle has never seen and her port would re-read — proving nothing. She clicks
+    // "New record" and types, exactly as a person does.
+    const opened = await dana.evaluate(() => {
+      const button = Array.from(document.querySelectorAll("button")).find((b) =>
+        /^(New record|Add)$/i.test((b.textContent ?? "").trim()),
+      );
+      if (!button) return false;
+      button.scrollIntoView({ block: "center" });
+      button.click();
+      return true;
+    });
+    if (!opened) {
+      bad('Dana\'s grid has no "New record" control to click');
+      throw new Error("no add control");
+    }
+    await sleep(2500);
+    // Fill the first text field the new-record surface offers and commit it.
+    const wrote = await dana.evaluate(async (job) => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      const fields = Array.from(document.querySelectorAll("input[type='text'], input:not([type])"))
+        .filter((el) => el.offsetParent !== null && el.type !== "search");
+      if (fields.length === 0) return { error: "the new-record surface offered no text field" };
+      setter?.call(fields[0], job);
+      fields[0].dispatchEvent(new Event("input", { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 400));
+      const save = Array.from(document.querySelectorAll("button")).find((b) =>
+        /^(Save|Create|Add|Done)$/i.test((b.textContent ?? "").trim()),
+      );
+      if (save) save.click();
+      else fields[0].dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      return { error: null };
+    }, jobNumber);
+
     if (wrote.error) {
       bad(`Dana could not add the job: ${wrote.error}`);
       throw new Error("write failed");
