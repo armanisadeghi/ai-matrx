@@ -48,12 +48,30 @@
  *           re-open it, and nothing would say so.
  *   door    a function a client role can EXECUTE writes the table and holds no row in
  *           `platform.client_callable_door`. That is arm 3 above.
- *   stamp   a DECLARED door that writes the table does not derive the stamp from the
- *           caller — its body never mentions `auth.uid()`. A door that takes the actor as
- *           an argument is arm 3 wearing a declaration.
+ *   stamper the table's OWN stamping trigger — the mechanism that makes the exemption below
+ *           honest. `platform._stamp_actor()` runs BEFORE INSERT OR UPDATE FOR EACH ROW and
+ *           sets the stamp from `auth.uid()` (or the server-side `app.user_id` GUC, which no
+ *           client-callable function anywhere sets — measured 2026-09-21, zero
+ *           `set_config('app.user_id'…)` in any body). It is verified by VALUE, never by
+ *           name: row-level, BEFORE INSERT, ENABLED, and a body that assigns
+ *           `NEW.<stamp_column>` from `auth.uid()`. A table whose doors lean on it and
+ *           whose trigger is missing or disabled is a finding, and every door that leaned
+ *           on it becomes a `stamp` finding in the same run.
+ *   stamp   a DECLARED door that writes the table and cannot be deriving the stamp from the
+ *           caller. TWO honest ways to stamp, and the guard checks which one is in force:
+ *             a. the door's own body reaches `auth.uid()` — it stamps for itself; or
+ *             b. the table carries a verified `stamper` AND the door's body never ASSIGNS
+ *                the stamp column, so the trigger's value is the only one that can land.
+ *                `_stamp_actor` is `NEW.created_by := coalesce(NEW.created_by, uid)`: a
+ *                value the door supplies WINS. So "never assigns it" is not a courtesy —
+ *                it is the whole of the exemption, and it is read off the body, not off a
+ *                name allowlist and not off a declaration anybody can write.
+ *           A door that assigns the stamp column from an argument it never checked is arm 3
+ *           wearing a declaration, and it still fails.
  *   probe   the live proof, as a real signed-in caller (test@test.com, `role authenticated`
- *           with that user's JWT claims): a direct INSERT, and a direct call of every
- *           undeclared writer, must both come back `42501` — refused at the privilege
+ *           with that user's JWT claims): a WELL-FORMED direct INSERT — built from the
+ *           table's OWN declared stamp column, so it parses on every registered table —
+ *           and a direct call of every undeclared writer, must both come back `42501` — refused at the privilege
  *           check, before any row logic. A refusal for any OTHER reason is reported as a
  *           finding, not a pass: "not found" means the caller got PAST the privilege check
  *           and was stopped by an accident of the data. Every probe runs inside a
@@ -274,6 +292,12 @@ async function writers(db: Client, t: Registered): Promise<WriterRow[]> {
        join pg_namespace n on n.oid = p.pronamespace
       where p.prokind = 'f'
         and p.prolang in (select oid from pg_language where lanname in ('plpgsql','sql'))
+        -- A pg_temp_N function belongs to ONE other backend's session and dies with it.
+        -- has_function_privilege('authenticated', ...) says true (temp functions are
+        -- EXECUTE-to-PUBLIC by birth), but no other session can even resolve the name, so
+        -- it is a peer suite's scratch object and never a door anybody can reach.
+        and n.nspname not like 'pg\\_temp%'
+        and n.nspname not like 'pg\\_toast%'
       order by 2`,
     [[...CLIENT_ROLES]],
   );
@@ -310,9 +334,109 @@ async function writers(db: Client, t: Registered): Promise<WriterRow[]> {
   );
 }
 
-/** arms `door` and `stamp`. */
-function doorAndStampArms(t: Registered, ws: WriterRow[]): Finding[] {
+interface Stamper {
+  /** The trigger that derives the stamp from the caller, or null if there is none. */
+  trigger: string | null;
+  fn: string | null;
+  /** Everything a leaning door needs to be true, each measured, never assumed. */
+  rowLevel: boolean;
+  beforeInsert: boolean;
+  enabled: boolean;
+  derivesFromCaller: boolean;
+}
+
+/**
+ * arm `stamper` — is there a table-level mechanism a door may honestly lean on?
+ *
+ * Read by VALUE. The trigger's NAME is not evidence: a trigger called `_stamp_actor`
+ * that COPIES an argument is the hole this guard exists for. What counts is a
+ * row-level, BEFORE INSERT, ENABLED trigger whose function assigns `NEW.<stamp_column>`
+ * AND reaches `auth.uid()` in the same body.
+ */
+async function stamperFor(db: Client, t: Registered): Promise<{ s: Stamper; findings: Finding[] }> {
   const rel = `${t.schema_name}.${t.table_name}`;
+  const { rows } = await db.query<{
+    tgname: string;
+    fn: string;
+    src: string;
+    tgtype: number;
+    tgenabled: string;
+  }>(
+    `select tg.tgname, pr.oid::regprocedure::text as fn, pr.prosrc as src,
+            tg.tgtype::int as tgtype, tg.tgenabled::text as tgenabled
+       from pg_trigger tg join pg_proc pr on pr.oid = tg.tgfoid
+      where tg.tgrelid = $1::regclass and not tg.tgisinternal`,
+    [rel],
+  );
+  const assigns = new RegExp(`\\bnew\\.${t.stamp_column}\\s*:=`, "i");
+  const fromCaller = /auth\.uid\s*\(\s*\)/i;
+  const empty: Stamper = {
+    trigger: null,
+    fn: null,
+    rowLevel: false,
+    beforeInsert: false,
+    enabled: false,
+    derivesFromCaller: false,
+  };
+
+  // Every candidate: a trigger whose body actually assigns this table's stamp column.
+  const candidates = rows.filter((r) => assigns.test(r.src));
+  if (candidates.length === 0) return { s: empty, findings: [] };
+
+  let best: Stamper = empty;
+  const findings: Finding[] = [];
+  for (const r of candidates) {
+    const s: Stamper = {
+      trigger: r.tgname,
+      fn: r.fn,
+      rowLevel: (r.tgtype & 1) === 1,
+      beforeInsert: (r.tgtype & 2) === 2 && (r.tgtype & 4) === 4,
+      enabled: r.tgenabled === "O" || r.tgenabled === "A",
+      derivesFromCaller: fromCaller.test(r.src),
+    };
+    const sound = s.rowLevel && s.beforeInsert && s.enabled && s.derivesFromCaller;
+    if (sound) return { s, findings: [] };
+    if (best.trigger === null) best = s;
+  }
+  // A candidate exists and none of them is sound — say exactly which promise it breaks,
+  // because every door leaning on it is about to be reported too.
+  const broken: string[] = [];
+  if (!best.rowLevel) broken.push("it is a STATEMENT trigger, so it never sees a row to stamp");
+  if (!best.beforeInsert) broken.push("it is not BEFORE INSERT, so the row is already written when it runs");
+  if (!best.enabled) broken.push("it is DISABLED");
+  if (!best.derivesFromCaller)
+    broken.push(`its body never reaches auth.uid(), so ${t.stamp_column} is whatever it was handed`);
+  findings.push({
+    arm: "stamper",
+    target: `${rel} → ${best.trigger} (${best.fn})`,
+    detail:
+      `the only trigger that assigns ${t.stamp_column} cannot be deriving it from the caller: ` +
+      broken.join("; ") +
+      `. Every door on this table that does not stamp for itself is now unstamped.`,
+  });
+  return { s: empty, findings };
+}
+
+/** Does this body put a value of its OWN into the stamp column? Then the trigger loses. */
+function bodyAssignsStamp(t: Registered, src: string): boolean {
+  const stamp = t.stamp_column;
+  // `update … set created_by = …`, `new.created_by := …`, `v.created_by = …`
+  if (new RegExp(`\\b${stamp}\\s*(?::=|=[^=])`, "i").test(src)) return true;
+  // `insert into <rel> (…, created_by, …)` — the column list of a write to THIS table.
+  const qualified = `(?:${t.schema_name}\\.)?${t.table_name}`;
+  const lists = src.matchAll(
+    new RegExp(`insert\\s+into\\s+(?:only\\s+)?${qualified}\\s*\\(([^)]*)\\)`, "gi"),
+  );
+  for (const m of lists) {
+    if (new RegExp(`(?:^|[,\\s])${stamp}(?:$|[,\\s])`, "i").test(m[1] ?? "")) return true;
+  }
+  return false;
+}
+
+/** arms `door` and `stamp`. */
+function doorAndStampArms(t: Registered, ws: WriterRow[], s: Stamper): Finding[] {
+  const rel = `${t.schema_name}.${t.table_name}`;
+  const leanable = s.rowLevel && s.beforeInsert && s.enabled && s.derivesFromCaller;
   const out: Finding[] = [];
   for (const w of ws) {
     if (!w.has_door) {
@@ -325,13 +449,18 @@ function doorAndStampArms(t: Registered, ws: WriterRow[]): Finding[] {
       });
       continue;
     }
-    if (!w.stamps) {
-      out.push({
-        arm: "stamp",
-        target: w.sig,
-        detail: `declared door writing ${rel} whose body never mentions auth.uid() — it cannot be deriving ${t.stamp_column} from the caller`,
-      });
-    }
+    if (w.stamps) continue; // (a) the door stamps for itself.
+    if (leanable && !bodyAssignsStamp(t, w.src)) continue; // (b) the trigger stamps, unopposed.
+    out.push({
+      arm: "stamp",
+      target: w.sig,
+      detail: leanable
+        ? `declared door writing ${rel} that ASSIGNS ${t.stamp_column} itself and never mentions auth.uid() — ` +
+          `${s.trigger} only fills ${t.stamp_column} when it is left null, so the value this door supplies WINS ` +
+          `and the row names whoever the caller named`
+        : `declared door writing ${rel} whose body never mentions auth.uid(), and ${rel} has no trigger that ` +
+          `derives ${t.stamp_column} from the caller — so nothing on this path stamps it`,
+    });
   }
   return out;
 }
@@ -364,9 +493,13 @@ async function probeArm(db: Client, t: Registered, ws: WriterRow[]): Promise<Fin
 
   const attempts: { what: string; sql: string; args: unknown[] }[] = [
     {
+      // Built from the table's OWN declared stamp column. The first version of this probe
+      // carried `context_item_values`' column list on every table, so five of the six
+      // answered `42703 column does not exist` — a PARSE error, which fires BEFORE the
+      // privilege check, and the guard reported "the caller got past the door" about a
+      // caller who had never been asked. A statement that cannot parse measures nothing.
       what: `a direct INSERT into ${rel}`,
-      sql: `insert into ${rel} (context_item_id, scope_id, value_text, authored_by)
-            values ($1::uuid, $1::uuid, 'dd248 probe', $1::uuid)`,
+      sql: `insert into ${rel} (${t.stamp_column}) values ($1::uuid)`,
       args: [uid],
     },
     ...ws
@@ -436,9 +569,11 @@ async function census(db: Client): Promise<{ findings: Finding[]; tables: number
     }
     const ws = await writers(db, t);
     writerCount += ws.length;
+    const { s, findings: stamperFindings } = await stamperFor(db, t);
     findings.push(...(await grantArm(db, t)));
     findings.push(...(await generatorArm(db, t)));
-    findings.push(...doorAndStampArms(t, ws));
+    findings.push(...stamperFindings);
+    findings.push(...doorAndStampArms(t, ws, s));
     findings.push(...(await probeArm(db, t, ws)));
   }
   return { findings, tables: tables.length, writers: writerCount };
@@ -548,6 +683,53 @@ async function main(): Promise<number> {
       }
       console.log(
         `${OK} the generator's read-only grant is CAUSED by the register: removing the row grants INSERT back.`,
+      );
+
+      // ── The `stamper` / `stamp` arms. ──
+      // 84 of this guard's 88 findings on 2026-09-21 were doors on `custom.record` reported
+      // as unstamped because their bodies never say `auth.uid()`. They never do, and they
+      // never should: `platform._stamp_actor` stamps the row at the TABLE, so every door on
+      // it inherits the caller. The exemption is only honest while that trigger is really
+      // there and really derives from the caller — so prove the guard's silence is CAUSED by
+      // the trigger: turn it off and every leaning door must be reported in the same breath.
+      // The window is one ALTER plus two in-memory arms, bounded by lock_timeout so this
+      // never becomes a write freeze on the live record store.
+      const rec: Registered = {
+        schema_name: "custom",
+        table_name: "record",
+        stamp_column: "created_by",
+        rls_variant: "entity",
+        declared_by: "self-test",
+      };
+      const recWriters = await writers(db, rec);
+      const before = await stamperFor(db, rec);
+      if (!before.s.derivesFromCaller || !before.s.enabled) {
+        console.log(
+          `${FAIL} self-test: custom.record carries no live stamping trigger to switch off, so the ` +
+            `'stamper' arm has nothing to prove against.`,
+        );
+        return 1;
+      }
+      const leaning = recWriters.filter(
+        (w) => w.has_door && !w.stamps && !bodyAssignsStamp(rec, w.src),
+      ).length;
+      await db.query(`set local lock_timeout = '2s'`);
+      await db.query(`alter table custom.record disable trigger ${before.s.trigger}`);
+      const after = await stamperFor(db, rec);
+      const nowRed = doorAndStampArms(rec, recWriters, after.s).filter((f) => f.arm === "stamp");
+      await db.query(`alter table custom.record enable trigger ${before.s.trigger}`);
+      await db.query(`set local lock_timeout = default`);
+      if (after.findings.length === 0 || nowRed.length < leaning) {
+        console.log(
+          `${FAIL} self-test: with ${before.s.trigger} DISABLED the guard reported ` +
+            `${after.findings.length} stamper finding(s) and ${nowRed.length} of ${leaning} leaning door(s). ` +
+            `The exemption is not caused by the trigger, so the 'stamp' arm is measuring nothing.`,
+        );
+        return 1;
+      }
+      console.log(
+        `${OK} the stamp exemption is CAUSED by ${before.s.trigger}: disabling it turns ${leaning} silent ` +
+          `door(s) into ${nowRed.length} 'stamp' finding(s) plus the 'stamper' finding itself.`,
       );
     } finally {
       OUTER_TX = false;
