@@ -126,6 +126,23 @@ export interface ExpertDictation {
 }
 
 /**
+ * One turn of a contributed CONVERSATION, already classified by the server.
+ *
+ * 🚨 NO ROLE TOKEN EVER REACHES THIS SHAPE (sixteenth cold walk, 2026-09-21,
+ * defect B: "Your words" printed `user:` five times and `assistant:` eight
+ * times, on the one screen whose entire purpose is showing an Expert their own
+ * words). `voice` is the classification; `speaker` is a real human name or
+ * nothing at all. The reader renders the voice — it never prints the plumbing.
+ */
+export interface ExpertContributionTurn {
+  /** `person` — the Expert · `machine` — ours · `named` — a named human. */
+  voice: "person" | "machine" | "named";
+  text: string;
+  /** A real name when the lane knew one. Never "user", never "assistant". */
+  speaker?: string | null;
+}
+
+/**
  * One thing the Expert contributed. The unit of THE RECORD and of the corpus
  * handed to any auditing agent.
  */
@@ -153,6 +170,20 @@ export interface ExpertContribution {
   title?: string | null;
   /** The Expert's words (or the file's name, for an upload with no text). */
   text: string;
+  /**
+   * Characters of the EXPERT's OWN words in this piece. Equal to `text.length`
+   * for anything single-voiced; SMALLER for a conversation, because our
+   * interviewer's turns are not something she said. Every "N words" line about
+   * the Expert derives from this and never from `text.length` (cold walk 16,
+   * defect B: 1,550 words shown against the 595 she typed).
+   */
+  expertChars: number;
+  /**
+   * Present only when this piece IS a conversation. A surface that has these
+   * renders each turn for what it is — her words as her words, ours visibly as
+   * the question it was — instead of printing a flattened both-sides blob.
+   */
+  turns?: ExpertContributionTurn[];
   /** True when this piece was longer than one pass reads. Shown, never implied. */
   truncated?: boolean;
   /** True when a cleaned-up version of the words is what is being shown. */
@@ -207,8 +238,15 @@ export interface ExpertCorpus {
   rulebookId: string;
   interviews: RulebookInterview[];
   contributions: ExpertContribution[];
-  /** Total characters the Expert contributed across every contribution. */
+  /** Total characters in the corpus — its SIZE, ours included. Not a count of
+   * what the Expert said: see `expertChars`, which is. */
   totalChars: number;
+  /**
+   * 🚨 THE NUMBER EVERY "N words" LINE ABOUT THE EXPERT USES. Our interviewer's
+   * turns are excluded, so it reconciles with the interview summary's own
+   * "4 things you said · 475 words" (cold walk 16, defect B).
+   */
+  expertChars: number;
   /** How many contributions came from each Approach. */
   laneCounts: Record<string, number>;
   /** What could not be read — see `ExpertCorpusLimit`. Never hide these. */
@@ -890,6 +928,9 @@ function attachDictations(
         laneLabel: "said in an interview",
         title: row.title,
         text,
+        // Spoken by her, into a microphone, with nobody else on the recording:
+        // all of it is hers.
+        expertChars: text.length,
         when: row.created_at,
         conversationId: origin?.conversationId,
         fileId: row.audio_file_path,
@@ -915,6 +956,12 @@ function attachDictations(
 // =============================================================================
 
 /** The wire shape of `GET /masterworks/{rulebook_id}/corpus`. */
+interface CorpusTurnWire {
+  voice: string;
+  text: string;
+  speaker: string | null;
+}
+
 interface CorpusSegmentWire {
   label: string;
   segment_id: string;
@@ -923,6 +970,8 @@ interface CorpusSegmentWire {
   kind: string;
   text: string;
   chars: number;
+  expert_chars: number;
+  turns: CorpusTurnWire[] | null;
   title: string | null;
   when: string | null;
   truncated: boolean;
@@ -955,6 +1004,7 @@ interface ExpertCorpusWire {
   limits: ExpertCorpusLimit[];
   lane_counts: Record<string, number>;
   total_chars: number;
+  expert_chars: number;
   hidden_conversation_count: number;
   can_read_material: boolean;
 }
@@ -967,6 +1017,15 @@ interface ExpertCorpusWire {
  */
 const NO_TIMESTAMP = "";
 
+/** One classified turn, straight across. The server owns the classification —
+ * a second opinion here would be exactly the drift the one-assembly rule
+ * exists to prevent. */
+function turnFrom(turn: CorpusTurnWire): ExpertContributionTurn {
+  const voice =
+    turn.voice === "machine" || turn.voice === "named" ? turn.voice : "person";
+  return { voice, text: turn.text, speaker: turn.speaker ?? null };
+}
+
 function contributionFrom(segment: CorpusSegmentWire): ExpertContribution {
   return {
     id: segment.segment_id,
@@ -975,6 +1034,14 @@ function contributionFrom(segment: CorpusSegmentWire): ExpertContribution {
     laneLabel: segment.lane_label,
     title: segment.title,
     text: segment.text,
+    // The server's own count of HER characters. A server that predates the
+    // field sends nothing rather than a wrong number, and the whole piece is
+    // then hers — which is what it was before conversations were a segment.
+    expertChars:
+      typeof segment.expert_chars === "number"
+        ? segment.expert_chars
+        : segment.text.length,
+    turns: (segment.turns ?? []).map(turnFrom),
     when: segment.when ?? NO_TIMESTAMP,
     truncated: segment.truncated,
     cleaned: segment.cleaned,
@@ -1065,6 +1132,10 @@ export async function getExpertCorpus(
     interviews,
     contributions,
     totalChars: contributions.reduce((sum, c) => sum + c.text.length, 0),
+    // 🚨 HERS, NOT THE CORPUS'S SIZE. Summed from the contributions actually
+    // being shown — including the dictation-attached ones the client adds —
+    // so the header can never disagree with the body under it.
+    expertChars: contributions.reduce((sum, c) => sum + c.expertChars, 0),
     laneCounts: wire.lane_counts,
     limits: wire.limits,
     hiddenInterviewCount: wire.hidden_conversation_count,

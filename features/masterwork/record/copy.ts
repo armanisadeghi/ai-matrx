@@ -52,7 +52,7 @@ export function corpusHuman(
     `Everything I've said about: ${rulebookName}`,
     `${corpus.contributions.length} contributions across ${corpus.interviews.length} interview${
       corpus.interviews.length === 1 ? "" : "s"
-    } · ${corpus.totalChars.toLocaleString()} characters`,
+    } · ${corpus.expertChars.toLocaleString()} characters in my own words (${corpus.totalChars.toLocaleString()} in the whole record)`,
     lanes ? `Ways of contributing: ${lanes}` : "",
     // THE HONEST HOLE travels with the copy. A pasted document read as "this
     // is everything the Expert said" is exactly how a partial record becomes a
@@ -108,6 +108,10 @@ export function corpusAgentPayload(
       contributions: corpus.contributions.length,
       interviews: corpus.interviews.length,
       total_chars: corpus.totalChars,
+      // What the EXPERT said, with our interviewer's turns excluded. An agent
+      // reasoning about "how much has she told us" must never read the corpus
+      // size for it (cold walk 16, defect B).
+      expert_chars: corpus.expertChars,
       lanes: Object.keys(corpus.laneCounts).join(","),
       known_gaps: corpus.limits.length,
       recordings: corpus.contributions.reduce(
