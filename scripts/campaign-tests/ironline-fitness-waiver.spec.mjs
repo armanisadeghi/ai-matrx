@@ -71,7 +71,7 @@ async function loginUrl(next) {
 const ROSTER = {
   "Priya Raghunathan": true,
   "Marcus Oyelaran": true,
-  "Dana Whitfield": false,
+  "Rosalind Achebe": false,
   "Tomas Ferreira": false,
   // Nobody has asked these two. `null` is how the write door is told to hold no answer.
   "Grace Lindqvist": null,
@@ -230,13 +230,13 @@ async function main() {
 
   console.log("\n— 1 & 2. what the grid draws —");
   const drawn = {};
-  for (const m of ["Priya Raghunathan", "Dana Whitfield", "Grace Lindqvist"]) {
+  for (const m of ["Priya Raghunathan", "Rosalind Achebe", "Grace Lindqvist"]) {
     drawn[m] = await cellOf(m);
     console.log(`  ${m.padEnd(20)} ${JSON.stringify(drawn[m])}`);
   }
   if (!Object.values(drawn).every((d) => d.isRealCheckbox)) fail("the Waiver signed column is not drawn as real checkboxes");
   if (drawn["Priya Raghunathan"].checked !== "true") fail("a signed waiver is not drawn as ticked");
-  if (drawn["Dana Whitfield"].checked !== "false") fail("an unsigned waiver is not drawn as unticked");
+  if (drawn["Rosalind Achebe"].checked !== "false") fail("an unsigned waiver is not drawn as unticked");
   if (!/nobody has answered/i.test(drawn["Grace Lindqvist"].title || "") || !drawn["Grace Lindqvist"].cellText.includes("—")) {
     fail("a member nobody has asked is drawn exactly like one who said no — the third state is invisible");
   }
