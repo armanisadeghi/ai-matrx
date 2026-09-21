@@ -48,7 +48,7 @@ import {
   serverRefusal,
   type ServerRefusal,
 } from "@/lib/progress/failureSentence";
-import { wordCount } from "./format";
+import { tallyContributions, wordCount } from "./format";
 import { getRulebook } from "../service";
 import type { Rulebook } from "../types";
 import { getExpertCorpus, type ExpertContribution, type ExpertCorpus } from "./service";
@@ -94,6 +94,23 @@ function KindIcon({ kind }: { kind: ExpertContribution["kind"] }) {
   return <FileText className="h-3.5 w-3.5 text-primary" aria-hidden />;
 }
 
+/**
+ * WHICH ELEMENT, IF ANY, PREVIEWS THIS CONTRIBUTION'S FILE — the one decision,
+ * in one place (seventeenth cold walk, 2026-09-21, defect B).
+ *
+ * A piece is on this screen because a lane read TEXT out of it, and that text
+ * is already rendered above. So the only file here with anything to preview is
+ * a recording: you can play it, and you cannot play a permit note.
+ *
+ * `null` means NO SLOT AT ALL — not an empty box, not a placeholder, not a
+ * broken tile. `InlineMediaRef` with no usable mime infers `<img>`, which is
+ * how five markdown and CSV sources each rendered a red "Image failed to load"
+ * panel with a raw 404 URL printed under it on the Expert's own screen.
+ */
+function previewAs(c: ExpertContribution): "audio" | null {
+  return c.kind === "recording" ? "audio" : null;
+}
+
 function ContributionCard({
   contribution,
   rulebookName,
@@ -102,6 +119,7 @@ function ContributionCard({
   rulebookName: string;
 }) {
   const c = contribution;
+  const preview = previewAs(c);
   return (
     <li className="rounded-lg border border-border bg-card p-3 sm:p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -216,22 +234,49 @@ function ContributionCard({
                   a parent with auto height renders the player at 0px — audible
                   to no one. */}
               <div className="h-[54px] w-full">
-                <InlineMediaRef ref={d.fileId} as="audio" size="fill" />
+                <InlineMediaRef
+                  ref={d.fileId}
+                  as="audio"
+                  size="fill"
+                  errorFallback="icon"
+                />
               </div>
             </div>
           ))}
         </div>
       ) : null}
 
-      {/* The audio / the file itself — canonical renderer, never a raw tag. */}
+      {/* The file itself — canonical renderer, never a raw tag.
+
+          🚨 A SOURCE WITHOUT A PREVIEW GETS NO PREVIEW SLOT (seventeenth cold
+          walk, 2026-09-21, defect B). This rendered a preview for EVERY piece
+          carrying a file id. Every piece here carries one by construction —
+          a segment exists only because a lane read TEXT out of that file — so
+          a markdown note and a CSV each got an <img> (`InlineMediaRef` infers
+          the element and falls back to an image with no usable mime), which
+          404'd, and the media kit's error panel then printed the raw URL of
+          the miss at the Expert: five red "Image failed to load" boxes with
+          five bare UUID addresses under her own documents.
+
+          `previewAs` is the whole decision, in one place: an audio file is
+          the one thing on this screen that has a preview. Everything else is
+          text we already rendered above, and its door is the button. */}
       {c.fileId ? (
         <div className="mt-3 space-y-2">
-          {/* Same height rule as the dictation player below: `size="fill"` is
-              `h-full`, so the parent must state a height or the media renders
-              at 0px. */}
-          <div className="h-64 w-full">
-            <InlineMediaRef ref={c.fileId} size="fill" fit="contain" />
-          </div>
+          {preview ? (
+            /* Same height rule as the dictation player: `size="fill"` is
+               `h-full`, so the parent must state a height or the media
+               renders at 0px. `errorFallback="icon"` because a failure is
+               told with an icon — never with the address it failed on. */
+            <div className="h-[54px] w-full">
+              <InlineMediaRef
+                ref={c.fileId}
+                as={preview}
+                size="fill"
+                errorFallback="icon"
+              />
+            </div>
+          ) : null}
           <Button asChild size="sm" variant="outline" className="h-9">
             <Link
               href={`/files/f/${c.fileId}`}
@@ -320,10 +365,19 @@ export function ExpertRecordPage({
   // interviewer's own eight turns were in the number. `expertChars` excludes
   // them and `wordCount` is the same helper `N things you said · M words`
   // uses, so the two lines can no longer disagree.
-  const words = useMemo(
-    () => (corpus ? wordCount(corpus.expertChars) : "0 words"),
+  // 🚨 AND WHAT THOSE THINGS WERE (seventeenth cold walk, defect A). The line
+  // read "11 things you contributed · 1 interview · 3.4k words" for four
+  // interview turns and three documents. The duplication is dead upstream —
+  // one source is read once now — and the count says what it counted, from the
+  // ONE tally, so an Expert can check it against the screen under it.
+  const tally = useMemo(
+    () =>
+      corpus
+        ? tallyContributions(corpus.contributions)
+        : { total: 0, byKind: "", expertChars: 0 },
     [corpus],
   );
+  const words = useMemo(() => wordCount(tally.expertChars), [tally]);
 
   if (refusal) {
     return (
@@ -386,10 +440,9 @@ export function ExpertRecordPage({
               oldest first, nothing left out.
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
-              {corpus.contributions.length} thing
-              {corpus.contributions.length === 1 ? "" : "s"} you contributed ·{" "}
-              {corpus.interviews.length} interview
-              {corpus.interviews.length === 1 ? "" : "s"} · {words}
+              {tally.total} thing{tally.total === 1 ? "" : "s"} you contributed
+              {tally.byKind ? ` · ${tally.byKind}` : ""} · {words} in your own
+              words
             </p>
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">

@@ -61,6 +61,7 @@ import { SittingResumed } from "../sitting/SittingResumed";
 import { benchFacts, duration, money } from "./benchFacts";
 import {
   BENCH_RUN_PATH,
+  modelName,
   parseBenchArm,
   parseBenchVerdict,
   type BenchArmWire,
@@ -550,21 +551,29 @@ export function RunTheBench({
                 {/* 🚨 MODELS BY THE NAMES THEY ARE SOLD UNDER (cold walk 16,
                     defect D: `claude-opus-5 · claude-opus-5 ·
                     claude-sonnet-4-5` at a non-technical Expert). The names
-                    come from the AI catalog, through the server; when it does
-                    not know a ref the raw one is shown rather than a prettier
-                    name nobody can check. */}
+                    come from the AI catalog, through the server.
+
+                    🚨 AND THE RAW REF IS NEVER THE FALLBACK (cold walk 17,
+                    defect C). Two arms read "Claude Opus 5" and the third
+                    still read `claude-sonnet-4-5`, because that row is
+                    DEPRECATED — the catalog's routing map surrenders a
+                    deprecated name slot, naming went through routing, the
+                    server sent null, and this `??` printed the plumbing. The
+                    catalog now names deprecated rows and `model_name_for_person`
+                    never returns null, so `modelName` is a last-ditch guard
+                    against an older server, not a display decision. */}
                 <p>
                   The judge:{" "}
                   <span className="text-foreground">
-                    {form.judge_model_name ?? form.judge_model}
+                    {modelName(form.judge_model_name)}
                   </span>
                   {" · "}The best model money can buy, three ways:{" "}
                   <span className="text-foreground">
-                    {form.frontier_model_name ?? form.frontier_model}
+                    {modelName(form.frontier_model_name)}
                   </span>
                   {" · "}The cheap one:{" "}
                   <span className="text-foreground">
-                    {form.cheap_model_name ?? form.cheap_model}
+                    {modelName(form.cheap_model_name)}
                   </span>
                 </p>
                 <p className="mt-0.5">

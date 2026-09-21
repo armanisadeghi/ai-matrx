@@ -150,6 +150,19 @@ export interface ExpertContribution {
   /** Stable id — the server's `segment_id` (message id, or a lane-scoped key). */
   id: string;
   /**
+   * WHICH SOURCE this piece is of — the platform's one source identity
+   * (`sourceIdentity.ts` / aidream `source_identity.py`): `file:<id>`,
+   * `interview:<conversation_id>`, `url:<url>`, `entity:<token>:<id>`.
+   *
+   * 🚨 It is how two surfaces listing one Rulebook's material agree, and its
+   * absence is what let "Your words" print every upload twice — once as "from
+   * a file you uploaded" (the file lane) and once as "from something you
+   * handed over" (the same upload's kept row) — and count both (seventeenth
+   * cold walk, defect A). The server now shows ONE reading per source; this is
+   * the identity that decided which.
+   */
+  sourceKey: string;
+  /**
    * What it physically is, as the server classified it: `message` ·
    * `chat_turn` · `web_page` · `document` · `recording`, or — for something
    * handed over through the dump lane — that row's own entity token (`note`,
@@ -923,6 +936,9 @@ function attachDictations(
       // cannot see, because there is no text row for it to read.
       unmatched.push({
         id: `transcript:${row.id}`,
+        // Its own source — a recording no message carries is nothing else's
+        // second reading, and the file it lives in is its identity.
+        sourceKey: `file:${row.audio_file_path}`,
         kind: "recording",
         lane: "interview",
         laneLabel: "said in an interview",
@@ -965,6 +981,7 @@ interface CorpusTurnWire {
 interface CorpusSegmentWire {
   label: string;
   segment_id: string;
+  source_key?: string | null;
   lane: string;
   lane_label: string;
   kind: string;
@@ -1029,6 +1046,7 @@ function turnFrom(turn: CorpusTurnWire): ExpertContributionTurn {
 function contributionFrom(segment: CorpusSegmentWire): ExpertContribution {
   return {
     id: segment.segment_id,
+    sourceKey: segment.source_key ?? "",
     kind: segment.kind,
     lane: segment.lane,
     laneLabel: segment.lane_label,

@@ -35,6 +35,90 @@ export function wordCount(chars: number): string {
 }
 
 // =============================================================================
+// WHAT SHE CONTRIBUTED, BY KIND
+// =============================================================================
+
+/**
+ * A contribution, reduced to the two facts a tally needs. Structural on
+ * purpose: `service.ts` imports this module, so this module cannot import its
+ * `ExpertContribution` back.
+ */
+export interface TallyableContribution {
+  kind: string;
+  lane: string;
+  expertChars: number;
+}
+
+/** Her word for a piece of this kind, singular and plural. */
+function nounFor(kind: string, lane: string): [string, string] {
+  switch (kind) {
+    case "message":
+      return lane === "interview"
+        ? ["interview turn", "interview turns"]
+        : ["thing you said", "things you said"];
+    case "chat_turn":
+      return ["imported chat", "imported chats"];
+    case "document":
+      return ["document", "documents"];
+    case "web_page":
+      return ["page", "pages"];
+    case "recording":
+      return ["recording", "recordings"];
+    case "note":
+      return ["note", "notes"];
+    default:
+      return ["resource", "resources"];
+  }
+}
+
+export interface ContributionTally {
+  /** How many things she contributed, each counted ONCE. */
+  total: number;
+  /** "4 interview turns and 3 documents" — empty string when nothing is here. */
+  byKind: string;
+  /** Characters of HER words across those things. Never ours. */
+  expertChars: number;
+}
+
+/**
+ * THE ONE TALLY behind "Your words"' header.
+ *
+ * 🚨 THE HEADER THIS CLOSES (seventeenth cold walk, 2026-09-21, defect A). It
+ * read "11 things you contributed · 1 interview · 3.4k words" for four
+ * interview turns and three documents, while the product's own interview
+ * screen said "4 things you said · 479 words" two clicks away. Three faults,
+ * all now upstream of this function: every upload was listed twice under two
+ * names, the whole interview was listed again beside her turns, and the totals
+ * summed all of it. The server now shows ONE reading per source, so `total`
+ * here is the honest count of things — and this says WHAT they were, because
+ * "11 things" told an Expert nothing about what she had actually given.
+ *
+ * The words number is `expertChars` through the same `wordCount` helper the
+ * interview summary uses, so the two lines can never disagree again.
+ */
+export function tallyContributions(
+  contributions: readonly TallyableContribution[],
+): ContributionTally {
+  const counts = new Map<string, { nouns: [string, string]; n: number }>();
+  let expertChars = 0;
+  for (const c of contributions) {
+    expertChars += c.expertChars;
+    const nouns = nounFor(c.kind, c.lane);
+    const entry = counts.get(nouns[0]);
+    if (entry) entry.n += 1;
+    else counts.set(nouns[0], { nouns, n: 1 });
+  }
+  const parts = [...counts.values()]
+    .sort((a, b) => b.n - a.n || a.nouns[0].localeCompare(b.nouns[0]))
+    .map(({ nouns, n }) => `${n} ${n === 1 ? nouns[0] : nouns[1]}`);
+  const byKind =
+    parts.length <= 1
+      ? (parts[0] ?? "")
+      : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+  return { total: contributions.length, byKind, expertChars };
+}
+
+// =============================================================================
 // WHAT THE EXPERT ACTUALLY SAID
 // =============================================================================
 

@@ -83,9 +83,14 @@ export interface BenchRunFormWire {
    * 🚨 THE NAMES A PERSON READS — "Claude Opus 5", not `claude-opus-5`
    * (sixteenth cold walk, 2026-09-21, defect D: three raw model ids on the
    * screen of a residential HVAC contractor). They come from the AI catalog's
-   * `common_name`, and they are NULL when the catalog does not know the ref —
-   * the screen then shows the raw one rather than a prettier name nobody can
-   * check against anything.
+   * `common_name`, through the server's `model_name_for_person`, which never
+   * returns null and never returns a routing ref: a ref the catalog cannot
+   * name arrives as a plain description instead.
+   *
+   * Still typed nullable because an older server can still send null, and
+   * `modelName` below is what every arm renders through — never `?? <the raw
+   * id>`, which is exactly how the deprecated `claude-sonnet-4-5` reached an
+   * Expert's screen (seventeenth cold walk, defect C).
    */
   judge_model_name: string | null;
   frontier_model_name: string | null;
@@ -181,6 +186,23 @@ export interface BenchVerdictWire {
  * `useDurableRun` turns a null here into a loud "incomplete result" rather
  * than a screen that quietly shows nothing.
  */
+/**
+ * What a person is told when no arm name arrived. Mirrors the server's
+ * `ai_catalog_manager.UNNAMED_MODEL` word for word, so the two halves of the
+ * same sentence can never read differently.
+ */
+export const UNNAMED_MODEL = "a model our catalog has no name for yet";
+
+/**
+ * THE ONE RENDERING of an arm's model name. A routing ref is never shown to a
+ * person — not as a fallback, not "temporarily", not because it is all we have
+ * (seventeenth cold walk, defect C).
+ */
+export function modelName(name: string | null | undefined): string {
+  const given = (name ?? "").trim();
+  return given || UNNAMED_MODEL;
+}
+
 export function parseBenchVerdict(raw: unknown): BenchVerdictWire | null {
   if (!raw || typeof raw !== "object") return null;
   const d = raw as Record<string, unknown>;
