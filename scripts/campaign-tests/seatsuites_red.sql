@@ -432,6 +432,13 @@ begin
   end if;
   raise notice 'RED 8 IS RED with the inverse in place: the field door said yes to `unique` and changed nothing.';
   -- RED 7
+  -- 🚨 THE COLUMN IS DECLARED FIRST (lane RED-SUITES-3, 2026-09-21). These two writes used to
+  -- put `nickname` into a table that never declared it, and the undeclared-key guard landed
+  -- since: `custom._undeclared_key_guard` refuses with "Quiz team has no field called
+  -- "nickname", so there is nowhere to keep that value." — so this block died before the
+  -- merge it exists to test. Nothing here was ever about an undeclared key; the column is
+  -- declared through the same door a person uses, and RED 7 asks its own question again.
+  perform custom.field_declare(v_org,v_tbl,jsonb_build_object('key','nickname','label','Nickname','plain','text'));
   v_a := custom.record_write(v_org,v_tbl,jsonb_build_object('pname','The Golden Goal','nickname','Goldies'));
   v_b := custom.record_write(v_org,v_tbl,jsonb_build_object('pname','The Golden Goal','nickname','The Goal'));
   perform custom.migrate_merge(v_org,v_a,v_b,'inv 7');

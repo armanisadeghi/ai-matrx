@@ -168,14 +168,27 @@ begin
   exception when others then
     get stacked diagnostics v_caught = message_text, v_state = returned_sqlstate;
   end;
+  -- 🚨 THE FINDING THIS CLAUSE RECORDED IS CLOSED (lane RED-SUITES-3, 2026-09-21).
+  -- It used to require `42501 permission denied for table record` — a signed-in person could
+  -- not reach `platform.relation_set` AT ALL — and it said, in its own words, that "the day
+  -- platform.relation_set becomes reachable, this clause goes RED". That day has come. The
+  -- door now answers a person and refuses for a REAL reason, by the field's own name:
+  --     23503  this record's table has no field called "about"
+  -- which is a door deciding, not a wall. So the clause asserts THAT: the refusal is about the
+  -- column, it names the column, and it is not a permission refusal — measured in both
+  -- directions, so a door that closed again fails here instead of passing quietly.
   if v_caught is null then
-    raise exception 'RED 0: `platform.relation_set` now answers a signed-in person. The relations door exists — move RED 1 and RED 2 into the seat and delete this clause.';
+    raise exception 'RED 0: `platform.relation_set` accepted a relation over a field this table never declared. The undeclared-field refusal is what the rest of this file stands on.';
   end if;
-  if v_state <> '42501' or v_caught not like '%permission denied%' then
-    raise exception 'RED 0: the relations door refused a person with % "%", and the measured refusal is 42501 permission denied for table record. Something changed; re-measure before trusting anything below.',
+  if v_state = '42501' or v_caught like '%permission denied%' then
+    raise exception 'RED 0: the relations door has gone back to refusing a signed-in person outright (% "%"). It answered a person on 2026-09-21; a wall here is a regression, not a finding.',
       v_state, v_caught;
   end if;
-  raise notice 'RED 0 — MEASURED: a signed-in person calling platform.relation_set is refused % "%". The relation contract below is unreachable from a person''s seat, so RED 1 and RED 2 run as the connected role and prove only what the triggers do.', v_state, v_caught;
+  if v_state <> '23503' or v_caught not like '%about%' then
+    raise exception 'RED 0: the relations door refused a person with % "%", and the measured refusal is 23503 naming the column "about". Something changed; re-measure before trusting anything below.',
+      v_state, v_caught;
+  end if;
+  raise notice 'RED 0 — MEASURED: `platform.relation_set` ANSWERS a signed-in person now and refuses an undeclared column by its own name (% "%"). The 42501 wall this clause was written to record is gone. RED 1 and RED 2 below still run as the connected role and prove only what the triggers do — moving them into the seat is the work this closure opens up, and it belongs to the relations lane.', v_state, v_caught;
 
   -- The relation FIELDS, as the connected role, for the same reason.
   perform set_config('role', v_boss, true);
@@ -301,7 +314,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   raise notice 'RED 3 — seated: the owner adds a column and it lands, test@test.com is refused the same call ("%"), and she reads the record shared with her. The three drops touched the relation contract and not the access ladder.', left(v_caught, 80);
 
-  raise notice '=== W1-REL RED — the three triggers were shown failing, on the main database; and RED 0 is the finding this lane hands back: the relations door platform.relation_set cannot be reached by a signed-in person at all. Rolling back. ===';
+  raise notice '=== W1-REL RED — the three triggers were shown failing, on the main database; and RED 0''s finding is CLOSED: platform.relation_set answers a signed-in person now and refuses an undeclared column by its own name. What it hands back instead is that RED 1 and RED 2 still run as the connected role and should be moved into the seat. Rolling back. ===';
 end $red$;
 
 rollback;
