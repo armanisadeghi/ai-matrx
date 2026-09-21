@@ -55,6 +55,7 @@ export type SavedViewDefinition = {
   widths: Record<string, number>;
   density: TableRowDensity;
   freezeFirst: boolean;
+  wrap: boolean;
 };
 
 function isStringArray(v: unknown): v is string[] {
@@ -74,6 +75,7 @@ export function emptySavedViewDefinition(): SavedViewDefinition {
     widths: {},
     density: "normal",
     freezeFirst: false,
+    wrap: false,
   };
 }
 
@@ -100,6 +102,7 @@ export function definitionFromViewState(
     widths: { ...state.widths },
     density: state.density,
     freezeFirst: state.freezeFirst,
+    wrap: state.wrap,
   };
 }
 
@@ -125,6 +128,7 @@ export function viewStateFromDefinition(
     widths: definition.widths,
     density: definition.density,
     freezeFirst: definition.freezeFirst,
+    wrap: definition.wrap,
   };
 }
 
@@ -163,6 +167,7 @@ export function parseSavedViewDefinition(raw: unknown): SavedViewDefinition {
   }
   if (typeof v.density === "string") out.density = parseRowDensity(v.density);
   if (typeof v.freezeFirst === "boolean") out.freezeFirst = v.freezeFirst;
+  if (typeof v.wrap === "boolean") out.wrap = v.wrap;
 
   return out;
 }
@@ -179,7 +184,8 @@ export function definitionIsEmpty(d: SavedViewDefinition): boolean {
     d.layout === "auto" &&
     Object.keys(d.widths).length === 0 &&
     d.density === "normal" &&
-    !d.freezeFirst
+    !d.freezeFirst &&
+    !d.wrap
   );
 }
 
@@ -223,5 +229,6 @@ export function describeDefinition(
   if (d.density === "compact") parts.push("compact rows");
   else if (d.density === "tall") parts.push("tall rows");
   if (d.freezeFirst) parts.push("first column frozen");
+  if (d.wrap) parts.push("text wrapped");
   return parts.length > 0 ? parts.join(" · ") : "Everything, unsorted";
 }

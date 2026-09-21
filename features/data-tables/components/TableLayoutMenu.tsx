@@ -11,7 +11,7 @@
  * Champion: Airtable's row-height + field-width controls, Sheets' freeze.
  */
 
-import { LayoutPanelTop, Rows3, Snowflake, Undo2 } from "lucide-react";
+import { LayoutPanelTop, Rows3, Snowflake, Undo2, WrapText } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,8 @@ type Props = {
   onRowDensityChange: (next: TableRowDensity) => void;
   freezeFirstColumn: boolean;
   onFreezeFirstColumnChange: (next: boolean) => void;
+  wrapText: boolean;
+  onWrapTextChange: (next: boolean) => void;
   /** How many columns carry a dragged width; 0 hides the reset. */
   customWidthCount: number;
   onResetColumnWidths: () => void;
@@ -96,6 +98,8 @@ export function TableLayoutMenu({
   onRowDensityChange,
   freezeFirstColumn,
   onFreezeFirstColumnChange,
+  wrapText,
+  onWrapTextChange,
   customWidthCount,
   onResetColumnWidths,
   className,
@@ -104,6 +108,7 @@ export function TableLayoutMenu({
     layoutMode !== "auto" ||
     rowDensity !== "normal" ||
     freezeFirstColumn ||
+    wrapText ||
     customWidthCount > 0;
   return (
     <Popover>
@@ -173,6 +178,18 @@ export function TableLayoutMenu({
             id="freeze-first-column"
             checked={freezeFirstColumn}
             onCheckedChange={onFreezeFirstColumnChange}
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <Label htmlFor="wrap-cell-text" className="flex items-center gap-1.5 text-xs">
+            <WrapText className="h-3.5 w-3.5" />
+            Wrap text
+          </Label>
+          <Switch
+            id="wrap-cell-text"
+            checked={wrapText}
+            onCheckedChange={onWrapTextChange}
           />
         </div>
 

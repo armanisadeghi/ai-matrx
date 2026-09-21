@@ -95,6 +95,11 @@ describe("layout in a saved view", () => {
     expect(legacy.widths).toEqual({});
     expect(legacy.density).toBe("normal");
     expect(legacy.freezeFirst).toBe(false);
+    expect(legacy.wrap).toBe(false);
+    const wrapped = parseTableViewParams(new URLSearchParams("wrap=1"), DEFAULTS);
+    expect(wrapped.wrap).toBe(true);
+    expect(tableViewParamPatch(wrapped, DEFAULTS).wrap).toBe("1");
+    expect(describeDefinition(definitionFromViewState(wrapped, DEFAULTS), (n) => n)).toContain("text wrapped");
     // ...and a stored width outside the clamp is clamped, never trusted.
     expect(parseSavedViewDefinition({ widths: { a: 5 } }).widths).toEqual({ a: MIN_COLUMN_WIDTH_PX });
   });
