@@ -1,4 +1,5 @@
 import type { Database } from "@/types/database.types";
+import type { RulebookSourcesRead } from "./browse/sourceSummary";
 
 /**
  * Rulebooks — the versioned, citable capture of one Expert's judgment.
@@ -1097,7 +1098,20 @@ export interface RulebookListRow {
   name: string;
   slug: string;
   description: string;
+  /**
+   * The BIBLIOGRAPHIC blob — who wrote the book this Rulebook was imported
+   * from. Only the book-import lane fills it; a Rulebook built by talking,
+   * dumping or uploading has `{}`. It is NOT the answer to "what was this
+   * built from" (cold walk 16, defect F): see `sources` below.
+   */
   source: RulebookSource;
+  /**
+   * What this Rulebook was actually built from — its kept raw material,
+   * counted and named ("1 interview · 5 documents"). Read alongside the page
+   * in `fetchRulebookPage`, so it never has a loading state of its own; a read
+   * that failed arrives as `unavailable` and the cell says so out loud.
+   */
+  sources: RulebookSourcesRead;
   version: number;
   status: RulebookStatus;
   visibility: RulebookVisibility;

@@ -15,6 +15,11 @@ import type {
   RulebookSource,
   RulebookStatus,
 } from "../types";
+import {
+  summarizeSources,
+  type RulebookSourcesRead,
+  type SourceTallyRow,
+} from "./sourceSummary";
 
 /**
  * Entity-list service for /masterwork — plain PostgREST over
@@ -170,20 +175,71 @@ function applyFilters<Q extends RulebookFilterable>(
       }
     } else if (f.kind === "text" && f.value.trim()) {
       const v = f.value.trim().replaceAll("%", "\\%");
+      // No `author` branch: the SOURCE column stopped reading the
+      // bibliographic blob (cold walk 16, defect F) and offers no text filter,
+      // so a predicate here would be a door no column opens.
       if (id === "name") q = q.ilike("name", `%${v}%`);
-      else if (id === "author") q = q.ilike("source->>author", `%${v}%`);
     }
   }
   return q;
 }
 
-function toListRow(row: Record<string, unknown>): RulebookListRow {
+/**
+ * 🚨 THE COLUMN CALLED SOURCE READS THE SOURCES (cold walk 16, defect F;
+ * walk 15's I; walk 14's E — three walks, unchanged).
+ *
+ * `/masterwork/all` printed `—` under SOURCE on every row, including a
+ * Rulebook built forty minutes earlier from an interview and five files,
+ * because the cell rendered `rulebook.source.author` — a bibliographic field
+ * only the book-import lane fills. The material was never missing; the list
+ * had simply never asked `platform.masterwork_source` anything.
+ *
+ * ONE read for the whole page, alongside the page itself, so the column has no
+ * loading state of its own and no N+1 per row.
+ *
+ * `count: "exact"` over the same predicate is what makes truncation KNOWABLE:
+ * when the server holds more rows than the cap returns, every tally on the
+ * page is a floor, is marked `partial`, and the cell prints "N+ sources"
+ * rather than a breakdown it cannot stand behind. A failed read is
+ * `unavailable` and is SAID on screen — it never blanks the page, because the
+ * Rulebooks themselves loaded fine.
+ */
+export const SOURCE_SUMMARY_SCAN_CAP = 2000;
+
+async function readSourceSummaries(
+  rulebookIds: string[],
+): Promise<Map<string, RulebookSourcesRead>> {
+  if (rulebookIds.length === 0) return new Map();
+  const { data, count, error } = await supabase
+    .schema("platform")
+    .from("masterwork_source")
+    .select("rulebook_id,approach_key,medium", { count: "exact" })
+    .in("rulebook_id", rulebookIds)
+    .is("deleted_at", null)
+    .order("rulebook_id", { ascending: true })
+    .range(0, SOURCE_SUMMARY_SCAN_CAP - 1);
+  if (error) {
+    return new Map(
+      rulebookIds.map((id) => [id, { state: "unavailable" } as const]),
+    );
+  }
+  const rows = (data ?? []) as SourceTallyRow[];
+  return summarizeSources(rulebookIds, rows, {
+    partial: (count ?? rows.length) > rows.length,
+  });
+}
+
+function toListRow(
+  row: Record<string, unknown>,
+  sources: RulebookSourcesRead,
+): RulebookListRow {
   return {
     id: String(row.id),
     name: String(row.name),
     slug: String(row.slug),
     description: String(row.description ?? ""),
     source: (row.source ?? {}) as RulebookSource,
+    sources,
     version: Number(row.version),
     status: row.status as RulebookStatus,
     visibility: row.visibility as RulebookListRow["visibility"],
@@ -215,8 +271,12 @@ export async function fetchRulebookPage(
     .order("id", { ascending: true })
     .range(from, from + sort.pageSize - 1);
   if (error) throw new Error(`${error.message} (${error.code})`);
+  const page = (data ?? []) as unknown as Record<string, unknown>[];
+  const sources = await readSourceSummaries(page.map((r) => String(r.id)));
   return {
-    rows: (data ?? []).map((r) => toListRow(r as unknown as Record<string, unknown>)),
+    rows: page.map((r) =>
+      toListRow(r, sources.get(String(r.id)) ?? { state: "unavailable" }),
+    ),
     total: count ?? 0,
   };
 }

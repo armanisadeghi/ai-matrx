@@ -184,9 +184,18 @@ describe("the surfaces that show a deliverable publish the rules", () => {
   // through a completely dead click. What the address actually opens is
   // guarded by rendering the real page at it:
   // `features/masterwork/encore/__tests__/the-run-address-opens-the-deliverable.test.tsx`.
+  //
+  // 🚨 UPDATED BY COLD WALK 16, defect A. The address stopped being a literal
+  // each surface typed for itself — that is exactly how the Rulebook's own
+  // Masterworks page kept the engine console while Encore was already right —
+  // so this leg now asserts the ONE helper is what spells it. That the helper
+  // produces this address, and that no Masterwork surface spells the engine's
+  // instead, is
+  // `features/masterwork/__tests__/masterwork-surfaces-open-in-the-product.test.tsx`.
   it("the Encore row opens the Encore detail, never the developer run page", () => {
     const text = source("features/masterwork/encore/EncoreRunPage.tsx");
-    expect(text).toContain("/masterwork/encore/${masterworkId}?run=${run.id}");
+    expect(text).toContain("masterworkRunHref(masterworkId, run.id)");
+    expect(text).toContain('from "../masterworkDoors"');
     expect(text).not.toContain("/workflows/runs/");
   });
 });

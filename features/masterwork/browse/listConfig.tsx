@@ -28,7 +28,10 @@ export const rulebookListConfig: EntityListConfig<RulebookListRow> = {
     fetchFacets: fetchRulebookFacets,
   },
   columns: RULEBOOK_COLUMNS,
-  prefsVersion: 1,
+  // Bumped to 2 when the SOURCE column stopped being `author` (cold walk 16,
+  // defect F). A stored pref naming the retired column would hide the one that
+  // replaced it.
+  prefsVersion: 2,
   getRowId: (row) => row.id,
   getRowName: (row) => row.name,
   door: { token: "rulebook" },

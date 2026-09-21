@@ -12,6 +12,7 @@ import {
   STATUS_LABELS,
   type RulebookListRow,
 } from "../types";
+import { formatSourceSummary } from "./sourceSummary";
 
 void SEVERITY_LABELS;
 
@@ -40,6 +41,40 @@ function statusBadge(status: RulebookListRow["status"]) {
   );
 }
 
+/**
+ * What this Rulebook was built from, in one line.
+ *
+ * Three honest states and no fourth: the kept material named and counted; the
+ * imported book's author when that is genuinely all this row has; and "we
+ * couldn't read this" when the tally read failed — which is NOT the same fact
+ * as "there is nothing here" and must never be drawn as the same dash (law 4).
+ */
+function SourceCell({ row }: { row: RulebookListRow }) {
+  const summary = formatSourceSummary(row.sources);
+  if (summary) {
+    return <span className="truncate text-sm">{summary}</span>;
+  }
+  if (row.sources.state === "unavailable") {
+    return (
+      <span
+        className="truncate text-xs text-muted-foreground"
+        title="We couldn't read what this Rulebook was built from. The Rulebook itself is fine — reload the list to ask again."
+      >
+        Couldn&apos;t read this
+      </span>
+    );
+  }
+  if (row.source.author) {
+    return (
+      <span className="truncate text-sm">
+        {row.source.author}
+        {row.source.year ? <Muted> · {String(row.source.year)}</Muted> : null}
+      </span>
+    );
+  }
+  return <Muted>Nothing yet</Muted>;
+}
+
 export const RULEBOOK_COLUMNS: EntityColumnSpec<RulebookListRow>[] = [
   {
     id: "name",
@@ -63,25 +98,31 @@ export const RULEBOOK_COLUMNS: EntityColumnSpec<RulebookListRow>[] = [
     },
   },
   {
-    id: "author",
+    // 🚨 THE COLUMN CALLED SOURCE NAMES WHAT THIS WAS BUILT FROM (cold walk 16,
+    // defect F — recorded unchanged by walks 14, 15 and 16).
+    //
+    // It used to be `id: "author"` and render `source.author`, a bibliographic
+    // field only the book-import lane fills. So a Rulebook built from an
+    // interview and five files — the way the product actually teaches people
+    // to build one — printed `—` under a column headed SOURCE, and every row
+    // on the page did too. The kept raw material now answers it, and the
+    // book's author survives as the fallback for the rows that have one.
+    //
+    // Not sortable and not filterable, deliberately: the tally is computed in
+    // the browser over the loaded page, so a sort or a filter would order or
+    // narrow ONE page while the header implied it had done so over the set —
+    // the lie a column header cannot tell (same reason as the kept-sources
+    // rule-count column).
+    id: "sources",
     label: "Source",
     column: {
-      id: "author",
-      accessorFn: (row) => row.source.author ?? "",
+      id: "sources",
+      accessorFn: (row) =>
+        formatSourceSummary(row.sources) ?? row.source.author ?? "",
       header: "Source",
-      filter: "text",
+      filter: false,
       sortable: false,
-      cell: (row) =>
-        row.source.author ? (
-          <span className="truncate text-sm">
-            {row.source.author}
-            {row.source.year ? (
-              <Muted> · {String(row.source.year)}</Muted>
-            ) : null}
-          </span>
-        ) : (
-          <Muted>—</Muted>
-        ),
+      cell: (row) => <SourceCell row={row} />,
     },
   },
   {
