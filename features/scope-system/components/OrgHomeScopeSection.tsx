@@ -84,6 +84,7 @@ export function OrgHomeScopeSection({
   const tableColumns: MatrxColumnDef<(typeof scopes)[number]>[] = [
     { id: "name", header: "Name", accessorKey: "name", width: 180, cell: (scope) => <Link href={`/organizations/${orgSlugOrId}/scopes/${scopeType.id}/${scope.id}`} className={`font-semibold hover:underline ${color.fg}`}>{scope.name}</Link> },
     ...columns.map((item) => ({ id: item.id, header: item.display_name, accessorFn: () => item.display_name, width: 180, sortable: false, cell: (scope: (typeof scopes)[number]) => <ScopeValueCell scopeId={scope.id} itemId={item.id} /> })),
+    ...(overflowCount > 0 ? [{ id: 'more-context-items', header: `+${overflowCount} more`, accessorFn: () => overflowCount, sortable: false, cell: () => <span className="text-muted-foreground">…</span> }] : []),
   ];
 
   return (
@@ -341,7 +342,8 @@ function ScopeValueCell({ scopeId, itemId }: { scopeId: string; itemId: string }
   const rows = useAppSelector((state) => selectValuesByScope(state, scopeId));
   if (!rows) return <Loader2 className="h-3 w-3 animate-spin" />;
   const value = rows.find((row) => row.item_id === itemId);
-  return <span className="block truncate" title={value ? renderValue(value) : undefined}>{value ? renderValue(value) || "—" : "—"}</span>;
+  const display = value ? renderValue(value) : "";
+  return <TooltipProvider delayDuration={400}><Tooltip><TooltipTrigger asChild><span className="block truncate cursor-help">{display || "—"}</span></TooltipTrigger>{display && <TooltipContent side="top" className="max-w-sm"><p className="text-xs whitespace-pre-wrap break-words">{display}</p></TooltipContent>}</Tooltip></TooltipProvider>;
 }
 
 function ScopeRow({
