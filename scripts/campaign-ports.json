@@ -28,7 +28,7 @@
   ],
   "portRange": {
     "min": 3001,
-    "max": 3038
+    "max": 3040
   },
   "reserved": [
     {
@@ -75,7 +75,8 @@
     "GRID-THREE": 3035,
     "SCREENS-2": 3036,
     "LIMITS-FIX-UI": 3038,
-    "STAGE-RULES-2": 3039
+    "STAGE-RULES-2": 3039,
+    "PEEK-SHARE": 3040
   },
   "noDevServer": {
     "W6-DOCS": "Proves its contract through the document pipeline, not a browser.",
