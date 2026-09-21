@@ -259,26 +259,89 @@ begin
   -- second kind — it calls `custom.io_export` and formats the answer — and stating the rule
   -- that way is exact rather than lenient: a door that reaches the predicate through NOTHING
   -- still fails.
+  -- 🚨 RED-SUITES 2026-09-21 — A DOOR IS SOMETHING A CALLER CALLS, AND A TRIGGER FUNCTION IS
+  -- NOT ONE. This census named `custom.io_outbox_broadcast_stmt` on main. That function
+  -- RETURNS `trigger`: it is reached by the `custom.io_outbox` trigger's OID at fire time and
+  -- by nothing else — Postgres refuses a direct call outright ("trigger functions can only be
+  -- called as triggers") — and the outbox row it reacts to was already written by a door that
+  -- read `custom.assert_store_door`. Asking it to read the store door again is asking the
+  -- wrong question about the right rule.
+  --
+  -- AND THE EXCLUSION IS NOT A HOLE, BECAUSE THE SECOND CLAUSE BELOW CLOSES IT: a
+  -- trigger-returning io_* function must still name a switch of its own. `io_outbox_broadcast_stmt`
+  -- reads `platform/realtime_broadcast_enabled` — the same expression its RLS policy uses, so
+  -- the two cannot drift — and a future one that reads nothing at all fails here by name.
   if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
               where n.nspname = 'custom' and p.proname like 'io\_%'
                 and p.prosecdef
+                and pg_get_function_result(p.oid) <> 'trigger'
                 and p.prosrc !~ 'assert_store_door'
                 and p.prosrc !~ 'custom\.io_') then
     raise exception 'DOOR FAIL: these io_* doors reach custom.assert_store_door neither directly nor through another io_ door: %',
       (select string_agg(p.proname, ', ') from pg_proc p join pg_namespace n on n.oid = p.pronamespace
         where n.nspname = 'custom' and p.proname like 'io\_%' and p.prosecdef
+          and pg_get_function_result(p.oid) <> 'trigger'
           and p.prosrc !~ 'assert_store_door' and p.prosrc !~ 'custom\.io_');
   end if;
-  -- …and the delegating one is named, so "it delegates" is a fact about a known function
-  -- rather than a hole anybody can walk through later.
-  if (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-       where n.nspname = 'custom' and p.proname like 'io\_%' and p.prosecdef
-         and p.prosrc !~ 'assert_store_door') > 1 then
-    raise exception 'DOOR FAIL: more than one io_ door now delegates its predicate read: %',
+  -- THE OTHER HALF: every trigger-returning io_* body names a switch — the store door, another
+  -- io_ door, or a knob read of its own. A trigger bound to a live table that reads no switch
+  -- at all is the class `guardUnreadBy` exists for, and this is that check for this lane.
+  if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'custom' and p.proname like 'io\_%'
+                and pg_get_function_result(p.oid) = 'trigger'
+                and p.prosrc !~ 'assert_store_door'
+                and p.prosrc !~ 'custom\.io_'
+                and p.prosrc !~ 'knob_resolve|store_is_open') then
+    raise exception 'DOOR FAIL: these io_* TRIGGER functions read no switch at all: %',
       (select string_agg(p.proname, ', ') from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-        where n.nspname = 'custom' and p.proname like 'io\_%' and p.prosecdef
-          and p.prosrc !~ 'assert_store_door');
+        where n.nspname = 'custom' and p.proname like 'io\_%'
+          and pg_get_function_result(p.oid) = 'trigger'
+          and p.prosrc !~ 'assert_store_door' and p.prosrc !~ 'custom\.io_'
+          and p.prosrc !~ 'knob_resolve|store_is_open');
   end if;
+  -- 🚨 RED-SUITES 2026-09-21 — THE RULE IS "REACHES ITS OWN GUARD", NOT "ONLY ONE MAY
+  -- DELEGATE". This clause used to allow exactly ONE io_ door to reach the predicate through
+  -- another, because when it was written exactly one did (`custom.io_export_csv` → `io_export`).
+  -- LIMITS-FIX then shipped the CSV import surface and four more arrived —
+  -- `io_import_plan`, `io_import_report`, `io_imports`, `io_infer_column` — and the count fired
+  -- although every one of them is guarded. A COUNT was never the rule; it was a snapshot of the
+  -- day the rule was written, and a snapshot fails on the day somebody builds something.
+  --
+  -- SO IT ASKS THE REAL QUESTION, SPLIT THE WAY THE DOORS ACTUALLY SPLIT, and it is STRICTER
+  -- than the count was — the count would have passed a fifth door that read nothing at all:
+  --   · a door that CHANGES things (VOLATILE) reads `custom.assert_store_door`, itself or
+  --     through a named io_ door whose own body reads it. That is the write predicate and
+  --     there is no other way to reach it.
+  --   · a door that only READS (STABLE) reads the client ladder — `assert_client_may_reach`,
+  --     plus `assert_may_know_table` wherever it takes a table. `assert_store_door` is the
+  --     sentence "this organization is not taking writes", and a read door has no business
+  --     saying it.
+  declare
+    v_unguarded text;
+  begin
+    select string_agg(p.proname, ', ' order by p.proname) into v_unguarded
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'custom' and p.proname like 'io\_%' and p.prosecdef
+       and pg_get_function_result(p.oid) <> 'trigger'
+       and p.provolatile <> 's'
+       and p.prosrc !~ 'assert_store_door'
+       and not exists (select 1 from pg_proc q join pg_namespace m on m.oid = q.pronamespace
+                        where m.nspname = 'custom' and q.proname like 'io\_%'
+                          and q.prosrc ~ 'assert_store_door'
+                          and p.prosrc ~ ('custom\.' || q.proname || '\s*\('));
+    if v_unguarded is not null then
+      raise exception 'DOOR FAIL: these io_* doors CHANGE things and reach custom.assert_store_door neither directly nor through a named io_ door that does: %', v_unguarded;
+    end if;
+    select string_agg(p.proname, ', ' order by p.proname) into v_unguarded
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'custom' and p.proname like 'io\_%' and p.prosecdef
+       and pg_get_function_result(p.oid) <> 'trigger'
+       and p.provolatile = 's'
+       and p.prosrc !~ 'assert_client_may_reach';
+    if v_unguarded is not null then
+      raise exception 'DOOR FAIL: these io_* READ doors never ask the client ladder: %', v_unguarded;
+    end if;
+  end;
 
   raise notice 'PART 1 PASS: one event per change inside the same transaction, read through the drain door; the Fields that moved are named and the ones that did not are not; a no-op touch raises nothing; and the ONLY publisher is the outbox';
 
@@ -453,15 +516,32 @@ begin
     raise exception 'DOOR-14 FAIL: after accepting, the next import still did not write lead_score onto the record. second run: %', v_second_run;
   end if;
 
-  -- AND THE FIELD IS TYPED, not merely named: the same import carrying the string "60" is
-  -- refused by the store. Without this a proposal that minted a label would pass everything above.
+  -- AND THE FIELD IS TYPED, NOT MERELY NAMED. Without this clause a proposal that minted a
+  -- label would pass everything above.
+  --
+  -- 🚨 RED-SUITES 2026-09-21 — THE PROOF IS WHAT LANDS, NOT A REFUSAL, and the old wording had
+  -- the product backwards. This clause used to demand that an import carrying the string "60"
+  -- be REFUSED. But EVERY value in a spreadsheet is a string — that is what a CSV is — so a
+  -- number column that refuses "60" is a number column nobody can ever import into, and the
+  -- import door is right to convert it. Demanding the refusal would have made the typed
+  -- column useless the moment somebody used it for its purpose.
+  -- So the clause asks the question the refusal was standing in for: does the stored value
+  -- come back as a NUMBER? A label would keep the text it was handed; a typed Field converts
+  -- it, and `jsonb_typeof` is what tells the two apart. It is still a clause that can fail —
+  -- take the type out of the accepted Field and the value comes back as a string.
   if (select (r ->> 'rows_written')::int
         from custom.io_import_rows(v_org, v_run,
-               jsonb_build_array(jsonb_build_object('name','Tony','lead_score','60'))) r) <> 0 then
-    raise exception 'DOOR-14 FAIL: the accepted Field accepted a string into a number column, so it is a label and not a type';
+               jsonb_build_array(jsonb_build_object('name','Tony','lead_score','60'))) r) <> 1 then
+    raise exception 'DOOR-14 FAIL: an import carrying lead_score as the text "60" wrote no row — a number column that refuses a spreadsheet''s own spelling of a number can never be imported into';
+  end if;
+  if (select jsonb_typeof(rr.document -> 'lead_score') from custom.read_records(v_org, v_tlead, false, 500, 0) rr
+       where rr.document ->> 'name' = 'Tony') is distinct from 'number' then
+    raise exception 'DOOR-14 FAIL: the text "60" was stored as %, so the accepted Field is a label and not a type',
+      coalesce((select jsonb_typeof(rr.document -> 'lead_score') from custom.read_records(v_org, v_tlead, false, 500, 0) rr
+                 where rr.document ->> 'name' = 'Tony'), 'nothing at all');
   end if;
 
-  raise notice 'PART 4 PASS: an unknown column landed 2 rows AND became a proposal typed "number"; accepting it minted a Field the Table''s own column list names; the next import wrote 60 into it instead of proposing it again, and the same import carrying "60" as text was refused — so the accepted Field is typed, not merely named';
+  raise notice 'PART 4 PASS: an unknown column landed 2 rows AND became a proposal typed "number"; accepting it minted a Field the Table''s own column list names; the next import wrote 60 into it instead of proposing it again, and a spreadsheet''s text "60" came back out of the store as a NUMBER — so the accepted Field is typed, not merely named';
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 5 — DOOR-15: a comment at the commenter level, with its refusals
