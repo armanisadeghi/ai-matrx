@@ -18,6 +18,7 @@
  */
 import process from "node:process";
 import { connectDirect, DB_VARS, loadDbEnv } from "./lib/direct-db";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const DOOR =
   "platform.emit_pending_assist(uuid,text,text,text,text,jsonb,text,text,uuid,text,timestamptz,smallint,jsonb,real,text)";
@@ -241,9 +242,9 @@ END;`,
 }
 
 main().then(
-  (code) => process.exit(code),
+  (code) => exitAfterDrain(code),
   (error: unknown) => {
     console.error("check-assist-emit-door failed unexpectedly:", error);
-    process.exit(2);
+    exitAfterDrain(2);
   },
 );

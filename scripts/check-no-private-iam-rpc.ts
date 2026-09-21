@@ -9,6 +9,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import process from "node:process";
 import ts from "typescript";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(new URL(".", import.meta.url).pathname, "..");
 const SCAN_DIRS = [
@@ -120,7 +121,7 @@ async function submitFeedback() {
     findings[2].line !== 4
   ) {
     console.error("[check:no-private-iam-rpc] SELF-TEST FAILED — planted authorization bypass was not found.");
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log("[check:no-private-iam-rpc] self-test passed.");
 }
@@ -148,7 +149,7 @@ if (process.argv.includes("--self-test")) {
   if (findings.length > 0) {
     console.error("[check:no-private-iam-rpc] Caller-bound feedback authorization was bypassed:");
     for (const finding of findings) console.error(`  ${finding}`);
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log("[check:no-private-iam-rpc] OK — web feedback writes preserve caller-bound authorization.");
 }

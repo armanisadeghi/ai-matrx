@@ -49,6 +49,7 @@
 
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, resolve, relative } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(__dirname, "..");
 const AIDREAM = process.env.AIDREAM_DIR ?? resolve(ROOT, "..", "aidream");
@@ -238,7 +239,7 @@ if (selfTest) {
   }).some((f) => f.file === "planted/GoodSurface.tsx");
   console.log(`${clean ? "[FAIL]" : "[ OK ]"} self-test: a surface using the primitive is not flagged`);
   if (clean) failures += 1;
-  process.exit(failures === 0 ? 0 : 1);
+  exitAfterDrain(failures === 0 ? 0 : 1);
 } else {
-  process.exit(report(scan()));
+  exitAfterDrain(report(scan()));
 }
