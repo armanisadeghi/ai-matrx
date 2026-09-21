@@ -24,7 +24,7 @@
  *   node scripts/agent-walk/close.mjs [--only form|booking|refusal]
  */
 import { chromium } from "playwright";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { signIn } from "../lib/seat-browser.mjs";
 
@@ -451,7 +451,14 @@ async function proofRefusal(browser) {
     } else {
       await page.keyboard.press("Enter");
     }
-    await page.waitForTimeout(20000);
+    // WAIT FOR THE ANSWER, NOT THE CLOCK. The point of this proof is the SENTENCE the product
+    // gives someone who lacks the right, and a fixed 20s caught the run mid-"Reasoning…" — a
+    // screenshot of a spinner is not a refusal. Poll until the run stops thinking.
+    for (let i = 0; i < 60; i += 1) {
+      await page.waitForTimeout(5000);
+      const body = await text(page);
+      if (!/Reasoning…|Thinking…|Ready to run/.test(body)) break;
+    }
   }
   record.afterAskingText = await text(page);
   record.screenshots.push(await shot(page, "close-refusal-06-answer"));
@@ -469,6 +476,13 @@ async function proofRefusal(browser) {
   record.screenshots.push(await shot(page, "close-refusal-07-rail-after"));
   record.railUnchanged = record.railTextBefore === record.railTextAfter;
   record.outcome = "the viewer pressed Ask an agent and asked for a form";
+  // THE PRODUCT'S OWN SENTENCE, quoted rather than summarized — this is the evidence.
+  record.refusalInWords =
+    (record.railTextAfter.match(/[^\n]*needs the admin level[^\n]*/) ?? [null])[0] ??
+    (record.afterAskingText.match(/[^\n]*(cannot|can’t|can't|not allowed|do not have|don’t have|permission|admin level)[^\n]*/) ??
+      [null])[0];
+  record.formsStillNoneAfter = /Forms\nnone yet/.test(record.railTextAfter);
+  record.pass = Boolean(record.refusalInWords) && record.railUnchanged;
   record.databaseCheckOwed =
     "A row check for any form created on this table is still owed — this proof reports the rail before and after.";
   await context.close();
@@ -496,7 +510,19 @@ for (const [key, fn] of steps) {
 }
 await browser.close();
 
+// 🚨 A `--only` RUN MUST NOT ERASE THE OTHER TWO PROOFS. The first version rewrote the file
+// from scratch, so re-running one proof silently deleted the evidence for the other two — and
+// the owner reads this file.
 const file = resolve(OUT, "close-walk-results.json");
+if (only) {
+  try {
+    const previous = JSON.parse(readFileSync(file, "utf8"));
+    results.proofs = { ...previous.proofs, ...results.proofs };
+    results.previousRunAt = previous.ranAt;
+  } catch {
+    /* no earlier run to keep */
+  }
+}
 writeFileSync(file, `${JSON.stringify(results, null, 2)}\n`);
 console.log(`\n[close] results → ${file}`);
 for (const [key, proof] of Object.entries(results.proofs)) {
