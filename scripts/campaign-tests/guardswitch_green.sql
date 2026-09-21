@@ -600,10 +600,18 @@ begin
   --      PART 3 and it is asked exactly as a person's screen asks it.
   --      THE RECORD IS FOUND THROUGH `custom.read_records`, not by reading `custom.record` —
   --      which this seat cannot do at all.
-  select r2.id into v_tbl from custom.read_records(v_a, custom.table_kernel_id(), true, 200, 0) r2
+  -- 🚨 RED-SUITES 2026-09-21 — `p_by_id => false`, BECAUSE THIS CLAUSE LOOKS A RECORD UP BY ITS
+  -- COLUMN NAME. `custom.read_records`' third argument is `p_by_id`, and `true` asks for a
+  -- document keyed by FIELD ID. Both lines passed `true` and then read `document ->> 'slug'` /
+  -- `->> 'title'`, which worked only because neither key had a Field record behind it. Lane
+  -- FIELD-TRUTH's ruling changed that on purpose — an undeclared key a record carries BECOMES a
+  -- real Field (`limitsfix_backfill_declared_fields.sql`; 310 declared names rebuilt across 103
+  -- Tables) — so `title` now has a Field and the by-id document comes back keyed
+  -- `de798d51-…`. The door was right both times; the clause was asking the wrong question.
+  select r2.id into v_tbl from custom.read_records(v_a, custom.table_kernel_id(), false, 200, 0) r2
    where r2.document ->> 'slug' = 'gs_case' limit 1;
   if v_tbl is null then raise exception '3e FAILED — the fixture table is not in the list this person reads.'; end if;
-  select r2.id into v_rec from custom.read_records(v_a, v_tbl, true, 200, 0) r2
+  select r2.id into v_rec from custom.read_records(v_a, v_tbl, false, 200, 0) r2
    where r2.document ->> 'title' = 'GS Case 1' limit 1;
   if v_rec is null then raise exception '3e FAILED — the fixture record is gone.'; end if;
 
@@ -675,7 +683,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform custom.share_grant(v_a, v_rec, 'user', v_dana, 'viewer'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
-  if (custom.read_record(v_a, v_rec, true) ->> 'title') <> 'GS Case 1' then
+  if (custom.read_record(v_a, v_rec, false) ->> 'title') <> 'GS Case 1' then   -- by NAME, see 3e
     raise exception '4c FAILED — the record shared with test@test.com at viewer does not read back for her.'; end if;
   if not custom.store_is_open(v_a) then
     raise exception '4c FAILED — a member of this organization cannot read the switch that governs every door she uses.'; end if;

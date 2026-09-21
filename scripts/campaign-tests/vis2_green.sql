@@ -95,6 +95,7 @@ declare
   v_hq_b    constant uuid := '2f5e0000-0000-4a00-8a00-000000000501';
   v_fld_rel constant uuid := '2f5e0000-0000-4a00-8a00-000000000701';
   v_fld_sev constant uuid := '2f5e0000-0000-4a00-8a00-000000000801';
+  v_fld_new uuid;
   v_tbl uuid; v_btbl uuid;
 begin
   insert into custom.record (id, organization_id, table_id, data_class, data, created_by)
@@ -138,14 +139,40 @@ begin
   values (v_rec_b, v_b, v_btbl, 'record', jsonb_build_object('name', 'Fairmont Office Supply'), v_admin);
 
   -- Part 4's Field: an ordinary text field, retyped later through the ordinary write door.
-  insert into custom.field (id, organization_id, entity_definition_id, key, name, label, type,
-                            relation_target, relation_max, on_target_delete, config,
-                            source, source_config, sensitivity, context_policy,
-                            rules, depends_on, applies_to_types, multi, dated, required, sort)
-  values (v_fld_sev, v_a, v_tbl_a, 'severity', 'Severity', 'Severity', 'text',
-          null, null, null, '{}'::jsonb,
-          'manual', '{}'::jsonb, 'internal', 'include',
-          '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, false, false, false, 10);
+  --
+  -- 🚨 RED-SUITES 2026-09-21 — THE TABLE'S OWN DOOR ALREADY MADE THIS FIELD, SO THIS TAKES IT
+  -- OVER INSTEAD OF MAKING A SECOND ONE. Lane LIMITS-FIX ruled that a field name
+  -- `custom.table_declare` writes into a Table's document gets a real Field record behind it
+  -- (`limitsfix_backfill_declared_fields.sql`: 310 declared names on 103 Tables that had none,
+  -- rebuilt through `custom._field_document_for`, the builder both doors share). The
+  -- `'severity'` in the `fields` array above is therefore a Field the moment the Table exists,
+  -- and this INSERT was adding a SECOND Field claiming the same column. PART 4 then retyped one
+  -- of the two and the record refused the converted value against the other, still `text`:
+  --     severity takes words, and it was given a number   HINT: FLD-1: text.
+  -- The fixed id is still needed (the pooler gives this suite no session state to carry one in),
+  -- so the door's Field is RE-POINTED to it — the same move, for the same reason, that the Table
+  -- above makes eight lines up.
+  --
+  -- LEFT BEHIND, ON PURPOSE AND WRITTEN DOWN: the store ACCEPTED two Fields claiming one column
+  -- on one Table. That is the one-source-of-truth hole LIMITS-FIX has open as its item 1, and
+  -- closing it is a door change in that lane, not a suite change here. Recorded in
+  -- PROGRESS-RED-SUITES.md.
+  select f.id into v_fld_new
+    from custom.record f
+   where f.organization_id = v_a
+     and f.table_id = custom.field_kernel_id()
+     and (f.data ->> 'entity_definition_id')::uuid = v_tbl_a
+     and f.data ->> 'key' = 'severity'
+   order by f.created_at limit 1;
+  if v_fld_new is null then
+    raise exception 'FIXTURE FAILED — custom.table_declare named `severity` in the Table document and made no Field for it.';
+  end if;
+  if v_fld_new is distinct from v_fld_sev then
+    update custom.record set id = v_fld_sev where organization_id = v_a and id = v_fld_new;
+  end if;
+  update custom.record
+     set data = data || jsonb_build_object('label', 'Severity', 'sort', 10)
+   where organization_id = v_a and id = v_fld_sev;
 
   -- THE RELATION Part 2 pushes across the wall: declared on A's Table, pointing at anything.
   update custom.record
