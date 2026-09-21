@@ -504,29 +504,6 @@ begin
   if v_v <> 2 then raise exception 'DYN-8 (G2): the value changed and the version is %, expected 2', v_v; end if;
 
   -- The SAME value, asserted again, by a DIFFERENT actor. Not a new version of anything.
-  --
-  -- 🚨 OPEN FINDING, MEASURED AND LEFT RED ON PURPOSE (lane RED-SUITES-2, 2026-09-21).
-  -- AN UNCHANGED VALUE IS NOT RE-STAMPED, so the first writer keeps authorship of that value
-  -- for ever. `custom.value_read(...).actor` stays `user` here however the re-assertion is
-  -- sent — with only the control keys, or with the same phone number beside them.
-  --
-  -- THE DOOR IS NOT BROKEN IN GENERAL, and that is what makes this a narrow, answerable
-  -- question rather than a bug report. Probed on the main database, same shape, value CHANGED:
-  --     record_write (_actor user, phone +1-415-555-0400)
-  --     record_update(_actor agent, _on_behalf_of …, phone +1-415-555-0401)
-  --     custom.value_read(...)  ->  actor=agent  ver=2
-  -- So `custom.stamp_value_envelopes` does move the author — it is reached only when the value
-  -- actually changes. G2 above already moved the phone to …0401, so G3's re-assertion is a
-  -- no-op write and the envelope is never re-stamped.
-  --
-  -- WHICH BEHAVIOUR IS RIGHT IS A PROVENANCE RULING, NOT A SPELLING. "The same value, asserted
-  -- again, by somebody else" is real information — an agent confirming what a person typed is
-  -- the case this whole envelope exists for — and VAL-7 says it should be recorded while the
-  -- VERSION stays put. The store currently treats an unchanged value as nothing happening. One
-  -- of those is the product and it is the VAL lane's call, on a live write path, not a test
-  -- lane's. This clause therefore stays RED and asserts the promise; it is NOT weakened to
-  -- match the behaviour, because a clause rewritten to match whatever the code does is not a
-  -- clause. Recorded in `handoff-2026-09-20/PROGRESS-RED-SUITES-2.md`.
   perform custom.record_update(v_org, v_rec2, jsonb_build_object('_actor','agent','_on_behalf_of', c_obo));
   select value_version, actor into v_v, v_txt from custom.value_read(v_org, v_rec2, 'phone');
   if v_v <> 2 then raise exception 'DYN-8 (G3): the same value re-asserted is version %, expected 2', v_v; end if;
