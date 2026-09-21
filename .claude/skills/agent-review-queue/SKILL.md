@@ -221,7 +221,7 @@ insert into agent.review_queue (title, url, instructions, source, repo_slug, dom
 select
   'Short human title of the thing',
   '/demos/my-new-thing',            -- app PATH, not absolute URL (works on localhost + prod); absolute only for external targets
-  'What to click, what to look for, and what feedback you need. 2-6 sentences. Be specific — he tests exactly what you say.',
+  E'## What to review\n\n1. What to click.\n2. What to look for.\n\n## Feedback wanted\n\nThe specific decision or observation you need. Keep the whole message to 2-6 short sentences.',
   'ai-matrx',                       -- legacy source label; use origin for ownership
   'matrx-frontend',                 -- REQUIRED — platform.repo.slug, GitHub-verified
   (select id from platform.taxonomy_node where slug = '<domain-slug>' and level = 'domain'),   -- REQUIRED
@@ -251,6 +251,19 @@ select
 Confirm the returned row has a durable conversation before dispatching review. If absent,
 inspect and repair the existing queue conversation-creation path; do not invent a conversation
 schema or leave the row permanently ineligible.
+
+### Write the review thread as Markdown, never a blob
+
+The review conversation is a human-facing document, not an audit-log payload. Every
+instruction, finding, handoff, and decision message uses readable Markdown:
+
+- Start substantial messages with a short `##` heading.
+- Put sequential steps and findings in numbered or bulleted lists, one idea per line.
+- Use blank lines between sections; use `**labels**` for the outcome, blocker, or requested feedback.
+- Keep automated state events terse, but never cram a multi-step test or a repair result into one paragraph.
+
+The messaging surface renders this Markdown safely. Existing messages retain the exact text
+their author wrote; do not rewrite an audit trail to manufacture formatting.
 
 Allowed values are defined and runtime-validated in `features/admin/agent-review/triage.ts`:
 
