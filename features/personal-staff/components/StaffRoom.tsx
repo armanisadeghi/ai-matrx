@@ -24,7 +24,7 @@
  * banner, never a repeated toast.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { CircleAlert, HardDrive } from "lucide-react";
 import Link from "next/link";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -167,16 +167,19 @@ function StaffThreadRoom({
   seedAgentId: string | null;
 }) {
   const { agent_id: agentId, agent_name: agentName } = thread;
-  // Tell the header who actually answers. Published during render (not in an
-  // effect) so it never paints the SSR system-rung name for a frame after the
-  // real Holder is known — the same reasoning, and the same `useRef` guard, as
-  // the Redux hydrator pattern in the ssr-zero-layout-shift skill.
-  const publishedRef = useRef<string | null>(null);
-  if (publishedRef.current !== `${agentId}|${agentName ?? ""}`) {
-    publishedRef.current = `${agentId}|${agentName ?? ""}`;
+  // Tell the header who actually answers.
+  //
+  // IN AN EFFECT, NOT DURING RENDER. Publishing during render was the obvious
+  // way to avoid a one-frame flash, and it is wrong: the store notifies the
+  // header's `useSyncExternalStore` synchronously, so React logged "Cannot
+  // update a component while rendering a different component" on every open
+  // (caught on localhost, 2026-09-20). There is no flash to avoid anyway — the
+  // header's first paint is the SSR-resolved system-rung Holder, a REAL name,
+  // and this only replaces it when the door resolved a different rung.
+  useEffect(() => {
     publishResolvedStaffHolder({ agentId, agentName });
-  }
-  useEffect(() => clearResolvedStaffHolder, []);
+    return clearResolvedStaffHolder;
+  }, [agentId, agentName]);
 
   // THE BOX IS NOT SEEDED FROM HERE. `bind_staff_sandbox` already bound it
   // server-side, and the door returns only the instance id — not the proxy
@@ -211,7 +214,16 @@ function StaffThreadRoom({
  */
 function StaffSandboxNote({ note }: { note: string }) {
   return (
-    <div className="flex shrink-0 items-start gap-2 border-b border-border bg-muted/40 px-4 py-2">
+    // 🚨 `pt-[var(--shell-header-h)]` IS NOT DECORATION. `.shell-main` is pulled
+    // up behind the transparent header, so a page's own FIRST row draws inside
+    // the header band — where `.shell-header-inject` sits on top of it and
+    // swallows every click. Measured on localhost before this line: the note
+    // painted at y=9 with a 44px header and `elementFromPoint` on "Start a
+    // sandbox" returned the header, not the link. It looked fine and did
+    // nothing. The offset is on the NOTE only: the conversation column below
+    // reserves its own, and putting it on the body would push the whole room
+    // down by a header's height.
+    <div className="flex shrink-0 items-start gap-2 border-b border-border bg-muted/40 px-4 py-2 pt-[calc(var(--shell-header-h)+0.5rem)]">
       <HardDrive
         aria-hidden
         className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
