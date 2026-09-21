@@ -2076,6 +2076,9 @@ async function runProbeCore(
   try {
     await db.query(`select set_config('request.jwt.claims', $1, true)`, [claims]);
     await db.query(`set local statement_timeout = ${CALL_TIMEOUT_MS}`);
+    // POOL-SAT-2: the write counters as they stand BEFORE the door is called, so the
+    // candidate list below is this call's delta and not a neighbour's backlog.
+    const writesBefore = await xactWriteCounters(db);
     await db.query("set local role authenticated");
     await db.query("savepoint probe");
     try {
@@ -2110,7 +2113,7 @@ async function runProbeCore(
     // its rows are gone and the xid confirmation reports nothing — which is the
     // truth: a door that raises leaves nothing behind.
     await db.query("reset role");
-    const wrote = await writesCrossingTheBoundary(db, caller, catalog);
+    const wrote = await writesCrossingTheBoundary(db, caller, catalog, writesBefore);
     shared.push(...wrote.sharedVocabulary);
     await db.query("set local role authenticated");
 
@@ -2673,17 +2676,66 @@ async function rowsVisibleToTheCaller(
   }
 }
 
+/**
+ * 🚨 POOL-SAT-2. THE CANDIDATE LIST IS A DELTA ACROSS THE PROBE, NEVER A CUMULATIVE READING.
+ *
+ * `pg_stat_xact_user_tables` was read cumulatively, so every table with a
+ * non-zero counter became a candidate — and through Supavisor transaction
+ * pooling those counters carry a NEIGHBOUR's numbers (the hazard this file
+ * already documents in its header). The neighbours are the platform's hottest
+ * write tables, and confirming one costs a FULL SEQUENTIAL SCAN, because the
+ * xid test reads `xmin`, which no index can carry.
+ *
+ * Measured on the main database over the window opened 2026-09-11 17:49 UTC:
+ *
+ *     ops.api_request_log        census   24,883 calls   54,657s   ROWS RETURNED: 0
+ *     chat.coding_session_entry  census    9,893 calls   28,570s   ROWS RETURNED: 0
+ *
+ * 18.6% of ALL backend time on the database, spent scanning 1.4 GB and 12 GB of
+ * log table to disprove a candidate that was never this call's write — each scan
+ * holding a pooled connection for 2.2-2.9 s. `rows = 0` on every single call is
+ * the proof: not one of those censuses ever found anything.
+ *
+ * The fix is the primitive, not an index (nothing can index `xmin`) and not a
+ * maintained aggregate (no rollup can answer "where did MY in-flight rows
+ * land"): take the counters immediately BEFORE the call and again after, and
+ * treat as candidates only the tables whose counters MOVED across the call.
+ *
+ * THE GUARANTEE IS UNCHANGED AND IT IS ONE-SIDED: a row this call writes always
+ * moves that table's counter inside the window, so the table is always a
+ * candidate. The delta can only ever REMOVE a table this call did not write to.
+ * A neighbour writing DURING the probe window still produces a candidate, and
+ * the xid confirmation below still disproves it row by row — correctness rests
+ * where it always did, on the row's own transaction status.
+ */
+type XactWrites = Map<string, number>;
+
+async function xactWriteCounters(db: pg.Client): Promise<XactWrites> {
+  const rows = (
+    await db.query(`
+      select schemaname as sch, relname as tab, n_tup_ins + n_tup_upd + n_tup_del as w
+      from pg_stat_xact_user_tables
+      where n_tup_ins + n_tup_upd + n_tup_del > 0`)
+  ).rows as { sch: string; tab: string; w: string }[];
+  return new Map(rows.map((r) => [`${r.sch}.${r.tab}`, Number(r.w)]));
+}
+
 async function writesCrossingTheBoundary(
   db: pg.Client,
   caller: Principal,
   catalog: Catalog,
+  before: XactWrites,
 ): Promise<WriteVerdict> {
   const touched = (
-    await db.query(`
+    (
+      await db.query(`
       select schemaname as sch, relname as tab, n_tup_ins as ins, n_tup_upd as upd, n_tup_del as del
       from pg_stat_xact_user_tables
       where n_tup_ins + n_tup_upd + n_tup_del > 0`)
-  ).rows as { sch: string; tab: string; ins: string; upd: string; del: string }[];
+    ).rows as { sch: string; tab: string; ins: string; upd: string; del: string }[]
+  ).filter(
+    (t) => Number(t.ins) + Number(t.upd) + Number(t.del) > (before.get(`${t.sch}.${t.tab}`) ?? 0),
+  );
   const crossed: string[] = [];
   const unjudged: string[] = [];
   const sharedVocabulary: string[] = [];
