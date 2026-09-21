@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatCount, formatPercent } from "@ai-matrx/kit/format";
+import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 
 type RangePreset = "today" | "yesterday" | "last-12-hours" | "custom";
 
@@ -162,88 +163,30 @@ function UsageTable({
   onSelect?: (row: CodexUsageRow) => void;
   selected?: (row: CodexUsageRow) => boolean;
 }) {
+  const columns: MatrxColumnDef<CodexUsageRow>[] = [
+    { id: "name", header: "Name", accessorFn: (row) => labelFor(row, "Unnamed activity"), cell: (usage) => {
+      const name = labelFor(usage, "Unnamed activity");
+      return <div className="min-w-0">{onSelect ? <button type="button" onClick={() => onSelect(usage)} className="max-w-full truncate text-left font-medium text-primary hover:underline">{name}</button> : usage.href ? <a href={usage.href} className="inline-flex max-w-full items-center gap-1 font-medium text-primary hover:underline"><span className="truncate">{name}</span><ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden /></a> : <span className="block truncate font-medium">{name}</span>}{usage.project && usage.project !== name ? <span className="mt-0.5 block truncate text-xs text-muted-foreground">{usage.project}</span> : null}</div>;
+    } },
+    { accessorKey: "model", header: "Model", cell: (row) => row.model ?? "—" },
+    { accessorKey: "effort", header: "Effort", cell: (row) => row.effort ?? "—" },
+    { accessorKey: "response_count", header: "Responses", cell: (row) => metric(row.response_count), className: "text-right tabular-nums" },
+    { accessorKey: "estimated_standard_credits", header: "Estimated standard credits", cell: (row) => estimatedCredits(row.estimated_standard_credits), className: "text-right tabular-nums" },
+  ];
   return (
     <section className="min-w-0 rounded-lg border bg-card">
-      <header className="flex min-h-12 items-center justify-between gap-3 border-b px-4">
-        <h2 className="text-sm font-semibold">{title}</h2>
-        <Badge variant="outline" className="tabular-nums">
-          {metric(rows.length)}
-        </Badge>
-      </header>
-      {rows.length === 0 ? (
-        <p className="p-4 text-sm text-muted-foreground">{empty}</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="bg-muted/40 text-xs text-muted-foreground">
-              <tr>
-                <th className="px-4 py-2 font-medium">Name</th>
-                <th className="px-4 py-2 font-medium">Model</th>
-                <th className="px-4 py-2 font-medium">Effort</th>
-                <th className="px-4 py-2 text-right font-medium">Responses</th>
-                <th className="px-4 py-2 text-right font-medium">
-                  Estimated standard credits
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {rows.map((row, index) => {
-                const name = labelFor(row, "Unnamed activity");
-                return (
-                  <tr
-                    key={`${row.task_id ?? row.conversation_id ?? row.id ?? row.label ?? index}-${row.model ?? ""}-${row.effort ?? ""}`}
-                    className={selected?.(row) ? "bg-primary/5" : undefined}
-                  >
-                    <td className="max-w-[24rem] px-4 py-3">
-                      {onSelect ? (
-                        <button
-                          type="button"
-                          onClick={() => onSelect(row)}
-                          className="max-w-full truncate text-left font-medium text-primary hover:underline"
-                        >
-                          {name}
-                        </button>
-                      ) : row.href ? (
-                        <a
-                          href={row.href}
-                          className="inline-flex max-w-full items-center gap-1 font-medium text-primary hover:underline"
-                        >
-                          <span className="truncate">{name}</span>
-                          <ExternalLink
-                            className="h-3.5 w-3.5 shrink-0"
-                            aria-hidden
-                          />
-                        </a>
-                      ) : (
-                        <span className="block truncate font-medium">
-                          {name}
-                        </span>
-                      )}
-                      {row.project && row.project !== name ? (
-                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                          {row.project}
-                        </span>
-                      ) : null}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {row.model ?? "—"}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {row.effort ?? "—"}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      {metric(row.response_count)}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      {estimatedCredits(row.estimated_standard_credits)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <MatrxDataTable<CodexUsageRow>
+        tableId={`admin/codex-usage/${title.toLowerCase().replaceAll(" ", "-")}`}
+        data={rows}
+        columns={columns}
+        getRowId={(row) => `${row.task_id ?? row.conversation_id ?? row.id ?? row.label ?? labelFor(row, "Unnamed activity")}-${row.model ?? ""}-${row.effort ?? ""}`}
+        density="condensed"
+        copy={false}
+        detail={{ enabled: false }}
+        rowClassName={(row) => selected?.(row) ? "bg-primary/5" : undefined}
+        emptyState={{ title: empty }}
+        toolbar={{ title, search: true }}
+      />
     </section>
   );
 }
