@@ -25,6 +25,7 @@ import {
   PencilLine,
   Trash2,
   X,
+  Zap,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,10 @@ type Props = {
   /** Set one column across the selection, recording undo for each cell. */
   onSetColumn: (fieldName: string, value: string) => Promise<void>;
   onFillDown: (fieldName: string) => Promise<void>;
+  /** The table's row actions (row-actions.ts); the control is absent when there are none. */
+  rowActions?: readonly { id: string; name: string; description: string }[];
+  /** Run one row action over every selected row, in ONE transaction. */
+  onRunAction?: (actionId: string) => Promise<void>;
 };
 
 export function BulkRowActions({
@@ -86,6 +91,8 @@ export function BulkRowActions({
   onRunOps,
   onSetColumn,
   onFillDown,
+  rowActions,
+  onRunAction,
 }: Props) {
   const [busy, setBusy] = useState(false);
   const [setColumnField, setSetColumnField] = useState<string>("");
@@ -303,6 +310,40 @@ export function BulkRowActions({
               </Button>
             </PopoverContent>
           </Popover>
+
+          {/* Run action — the table's own buttons (row-actions.ts) over the
+              whole selection, one transaction. Absent when the table has none. */}
+          {rowActions && rowActions.length > 0 && onRunAction && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1.5 px-2 text-xs"
+                  disabled={busy}
+                  title={`Run one of this table's actions on ${count} ${noun}`}
+                >
+                  <Zap className="h-3.5 w-3.5" />
+                  Run action
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-72 space-y-1 p-2">
+                {rowActions.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    className="flex w-full flex-col items-start rounded-md px-2 py-1.5 text-left hover:bg-muted"
+                    disabled={busy}
+                    onClick={() => void run(() => onRunAction(a.id))}
+                  >
+                    <span className="text-sm font-medium">{a.name}</span>
+                    <span className="text-xs text-muted-foreground">{a.description}</span>
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
+          )}
 
           <Button
             type="button"

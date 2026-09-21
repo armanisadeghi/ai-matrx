@@ -52,6 +52,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RowLabelPicker } from "@/features/data-tables/components/RowLabelPicker";
+import { RowActionsEditor } from "@/features/data-tables/components/RowActionsEditor";
 import { Badge } from "@/components/ui/badge";
 import {
   GripVertical,
@@ -117,6 +118,8 @@ interface TableConfigModalProps {
   onSuccess: () => void;
   /** One loaded row, so the row-label picker can show an example. */
   sampleRow?: { data: Record<string, unknown> } | null;
+  /** The rows on screen — the Actions tab previews an action against a real row. */
+  rows?: readonly { id: string; data: Record<string, unknown> }[];
   /**
    * Open the add-column form. The place columns are MANAGED must be able to
    * add one. Omitted on mounts that cannot add a column.
@@ -143,6 +146,7 @@ export default function TableConfigModal({
   fields: initialFields,
   onAddColumn,
   sampleRow,
+  rows,
   onSuccess,
 }: TableConfigModalProps) {
   const [loading, setLoading] = useState(false);
@@ -764,9 +768,10 @@ export default function TableConfigModal({
         </DialogHeader>
 
         <Tabs defaultValue="fields" className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <TabsList className="mx-3 mt-2 grid shrink-0 w-auto grid-cols-2 sm:mx-4">
+          <TabsList className="mx-3 mt-2 grid shrink-0 w-auto grid-cols-3 sm:mx-4">
             <TabsTrigger value="fields">Fields & Order</TabsTrigger>
             <TabsTrigger value="table">Table Settings</TabsTrigger>
+            <TabsTrigger value="actions">Actions</TabsTrigger>
           </TabsList>
 
           <TabsContent value="fields" className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -1142,6 +1147,29 @@ export default function TableConfigModal({
                     else delete metadata.row_label;
                     return { ...prev, metadata };
                   });
+                  onSuccess();
+                }}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="actions" className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-5">
+              {/* Row actions — saved immediately (a table property), so they are
+                  deliberately outside this dialog's Save / Cancel. */}
+              <RowActionsEditor
+                tableId={tableId}
+                metadata={tableInfo.metadata}
+                fields={fields}
+                rows={rows ?? (sampleRow ? [{ id: "sample", ...sampleRow }] : [])}
+                onSaved={(next) => {
+                  setTableInfo((prev) => ({
+                    ...prev,
+                    metadata: {
+                      ...((prev.metadata as Record<string, unknown> | null | undefined) ?? {}),
+                      row_actions: next,
+                    },
+                  }));
                   onSuccess();
                 }}
               />

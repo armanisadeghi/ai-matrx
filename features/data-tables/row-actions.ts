@@ -76,6 +76,7 @@ export type RowAction = {
 export type RowActionField = ComputedColumnField & {
   display_name: string;
   data_type: string;
+  field_order?: number;
 };
 
 export const MAX_ROW_ACTIONS = 24;

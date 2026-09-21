@@ -54,6 +54,7 @@ import {
   Scissors,
   Settings2,
   Trash2,
+  Zap,
 } from "lucide-react";
 
 import type {
@@ -339,7 +340,11 @@ export function buildGridRowMenuSection(opts: {
     reference: (rowId: string) => void;
     remove: (rowId: string) => void;
     highlight: (rowId: string, color: StyleColor | null) => void;
+    /** Run one of the table's row actions (row-actions.ts) on this row. */
+    runAction?: (rowId: string, actionId: string) => void;
   };
+  /** The table's row actions; the submenu is absent when there are none. */
+  actions?: readonly { id: string; name: string; description: string }[];
   unavailable?: AvailabilityMap;
 }): ContextMenuExtraSection {
   const { row, readOnly, on } = opts;
@@ -396,6 +401,26 @@ export function buildGridRowMenuSection(opts: {
       current: row?.highlight,
       onPick: (color) => id && on.highlight(id, color),
     }),
+    // The table's own buttons, one click from the row: the same list the
+    // Actions cell and the selection bar show.
+    ...(opts.actions && opts.actions.length > 0
+      ? [
+          {
+            kind: "submenu" as const,
+            id: "grid-row-run-action",
+            label: "Run action",
+            icon: Zap,
+            children: opts.actions.map((a) => ({
+              kind: "item" as const,
+              id: `grid-row-run-action-${a.id}`,
+              label: a.name,
+              hint: a.description.length > 48 ? `${a.description.slice(0, 45)}…` : a.description,
+              icon: Zap,
+              onSelect: () => id && on.runAction?.(id, a.id),
+            })),
+          },
+        ]
+      : []),
     {
       kind: "item",
       id: "grid-row-delete",
@@ -423,6 +448,7 @@ export function buildGridRowMenuSection(opts: {
       "grid-row-history": noRow,
       "grid-row-reference": noRow,
       "grid-row-highlight": writeGate,
+      "grid-row-run-action": writeGate,
       "grid-row-delete": writeGate,
       ...opts.unavailable,
     },

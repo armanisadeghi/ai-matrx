@@ -87,6 +87,24 @@ import {
 } from "@/features/data-tables/row-label";
 import { setTableRowLabel } from "@/features/data-tables/service";
 import { KeyRound } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
+import {
+  agentActionMessage,
+  buildRowActionOps,
+  describeRowAction,
+  readRowActions,
+} from "@/features/data-tables/row-actions";
+import { rowActionButtonClass } from "@/features/data-tables/components/RowActionsEditor";
 import { ColumnViewMenu } from "@/features/data-tables/components/ColumnViewMenu";
 import {
   useTableRealtime,
@@ -2393,6 +2411,22 @@ const UserTableViewer = ({
     readOnly: isReadOnly,
   });
 
+  // ─── Row actions (row-actions.ts): the table's own one-click buttons ─────
+  const rowActions = React.useMemo(
+    () => readRowActions(tableInfo?.metadata),
+    [tableInfo?.metadata],
+  );
+  const rowActionMenuItems = React.useMemo(
+    () =>
+      rowActions.map((a) => ({
+        id: a.id,
+        name: a.name,
+        description: describeRowAction(a, fields),
+      })),
+    [rowActions, fields],
+  );
+  const { launchMandate } = useAgentLauncher();
+
   // An undo stack must never outlive its table: restoring a value into a table
   // the user has navigated away from would be a write they never asked for.
   useEffect(() => {
@@ -2602,6 +2636,121 @@ const UserTableViewer = ({
       }
     },
     [cellUndo, fields, patchLocalCell, runBulkOps, tableId],
+  );
+
+  /**
+   * Run ONE row action over the given rows. An `update` action compiles to one
+   * merge op per row and lands as ONE transaction; every changed cell is then
+   * patched in place and recorded on the undo stack, so Cmd-Z walks a "New
+   * Week" back cell by cell. A row the action cannot be compiled for (a blank
+   * date under DATEADD, a deleted column) stops the whole run before anything
+   * is written and says which row. An `agent` action opens the platform's
+   * agent panel with the row and the table surface's tools.
+   */
+  const runRowAction = useCallback(
+    async (actionId: string, rowIds: readonly string[]) => {
+      const action = rowActions.find((a) => a.id === actionId);
+      if (!action) return;
+      const rows = orderSelectedRows(displayRows, rowIds).map((r) => ({
+        id: r.id,
+        data: r.data ?? {},
+      }));
+      if (rows.length === 0) return;
+      if (action.kind === "agent") {
+        const row = rows[0];
+        const label = rowLabelText(row, fields, effectiveRowLabel(tableInfo?.metadata, fields)).text;
+        const launchOptions: ManagedAgentOptions = {
+          surfaceKey: `data-table-row-action:${tableId}:${row.id}`,
+          sourceFeature: "chat",
+          config: {
+            displayMode: "flexible-panel",
+            autoRun: true,
+            allowChat: true,
+            showPreExecutionGate: false,
+          },
+          runtime: {
+            userInput: agentActionMessage({
+              action,
+              tableName: tableInfo?.table_name ?? "table",
+              rowLabel: label,
+              row,
+              fields,
+            }),
+            surfaceName: "matrx-user/data-tables",
+          },
+        };
+        try {
+          await launchMandate(MANDATE_KEYS.chat__default_new_chat, launchOptions);
+        } catch (e) {
+          toast({
+            title: `Could not start "${action.name}"`,
+            description: e instanceof Error ? e.message : "The agent could not be started.",
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+      if (isReadOnly) {
+        showReadOnlyToast();
+        return;
+      }
+      if (action.confirm) {
+        const ok = await confirmDialog({
+          title: `Run "${action.name}" on ${rows.length} row${rows.length === 1 ? "" : "s"}?`,
+          description: describeRowAction(action, fields),
+          confirmLabel: `Run "${action.name}"`,
+        });
+        if (!ok) return;
+      }
+      const built = buildRowActionOps(action, rows, fields);
+      if (!built.ok) {
+        const failing = displayRows.find((r) => r.id === built.rowId);
+        const name = failing
+          ? rowLabelText(failing, fields, effectiveRowLabel(tableInfo?.metadata, fields)).text || "one row"
+          : "one row";
+        toast({
+          title: `"${action.name}" was not run`,
+          description: `${name}: ${built.error} Nothing was changed.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      const priorByRow = new Map(rows.map((r) => [r.id, { ...(r.data ?? {}) }] as const));
+      const landed = await runBulkOps(
+        built.ops,
+        `${action.name}: ${rows.length} row${rows.length === 1 ? "" : "s"} updated`,
+        false,
+      );
+      if (!landed) return;
+      for (const [rowId, patch] of built.patches) {
+        const prior = priorByRow.get(rowId) ?? {};
+        for (const [fieldName, value] of Object.entries(patch)) {
+          patchLocalCell(rowId, fieldName, value);
+          cellUndo.record({
+            tableId,
+            rowId,
+            fieldName,
+            fieldDisplayName: fields.find((f) => f.field_name === fieldName)?.display_name ?? fieldName,
+            priorValue: prior[fieldName] ?? null,
+            nextValue: value,
+          });
+        }
+      }
+    },
+    [
+      cellUndo,
+      displayRows,
+      fields,
+      isReadOnly,
+      launchMandate,
+      patchLocalCell,
+      rowActions,
+      runBulkOps,
+      showReadOnlyToast,
+      tableId,
+      tableInfo?.metadata,
+      tableInfo?.table_name,
+    ],
   );
 
   /**
@@ -3272,7 +3421,9 @@ const UserTableViewer = ({
           setShowReferenceModal(true);
         },
         remove: (rowId) => handleDeleteRow(rowId),
+        runAction: (rowId, actionId) => void runRowAction(actionId, [rowId]),
       },
+      actions: rowActionMenuItems,
     });
   const gridColumnSection = buildGridColumnMenuSection({
       primary: gridMenuTargetKind === "column",
@@ -3469,6 +3620,7 @@ const UserTableViewer = ({
         }}
         setShowAddRowModal={setShowAddRowModal}
         sampleRow={displayRows[0] ?? null}
+        rows={displayRows}
         addColumnInsertAtOrder={pendingColumnInsert?.order}
         onColumnAdded={async () => {
           const insert = pendingColumnInsert;
@@ -3903,6 +4055,8 @@ const UserTableViewer = ({
         onRunOps={runBulkOps}
         onSetColumn={handleBulkSetColumn}
         onFillDown={handleFillDown}
+        rowActions={rowActionMenuItems}
+        onRunAction={(actionId) => runRowAction(actionId, selectedRowIds)}
       />
 
       {/* Table colors — color-by a column + rules (table-style.ts). */}
@@ -4754,6 +4908,57 @@ const UserTableViewer = ({
                   })}
                   <TableCell className="text-center">
                     <div className="flex justify-center space-x-1">
+                      {/* The table's own one-click buttons (row-actions.ts).
+                          One action renders as its tinted chip so it is ONE
+                          click; more collapse into a menu. Absent when the
+                          table has none. */}
+                      {rowActions.length === 1 ? (
+                        <button
+                          type="button"
+                          className={cn(
+                            "inline-flex h-7 max-w-[96px] items-center gap-1 truncate rounded-md border px-2 text-xs font-medium transition-opacity hover:opacity-80",
+                            rowActionButtonClass(rowActions[0].color),
+                          )}
+                          title={describeRowAction(rowActions[0], fields)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void runRowAction(rowActions[0].id, [row.id]);
+                          }}
+                        >
+                          <Zap className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{rowActions[0].name}</span>
+                        </button>
+                      ) : rowActions.length > 1 ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => e.stopPropagation()}
+                              title="Run an action on this row"
+                            >
+                              <Zap className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-64" onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenuLabel className="text-xs text-muted-foreground">Run on this row</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {rowActions.map((a) => (
+                              <DropdownMenuItem
+                                key={a.id}
+                                className="flex flex-col items-start gap-0.5"
+                                onSelect={() => void runRowAction(a.id, [row.id])}
+                              >
+                                <span className="flex items-center gap-1.5 text-sm font-medium">
+                                  <span className={cn("h-2.5 w-2.5 rounded-full border", rowActionButtonClass(a.color))} />
+                                  {a.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground">{describeRowAction(a, fields)}</span>
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : null}
                       <Button
                         variant="ghost"
                         size="icon"
