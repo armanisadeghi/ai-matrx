@@ -96,6 +96,14 @@ Every read and write goes through the `public.org_admin_*` RPC family; each RPC 
 
 ## Change Log
 
+- **2026-09-21** — The member roster now uses `MatrxDataTable` for its shared
+  grid affordances. The organization-scoped advanced search, five domain sort
+  choices, all-members copy/export envelope, row copy, and member-detail
+  navigation remain roster-owned. Generic detail/window/table-copy are
+  deliberately disabled so they cannot compete with that richer domain path;
+  the externally selected sort remains authoritative (`sortable: false` on the
+  rendered columns) and all loaded members remain visible (`pageSize={0}`).
+
 - **2026-09-12** — Closed the unaudited bulk ownership-transfer lane (DD-140). Client execution of `org_admin_reassign_member_resources` is revoked, member removal refuses reassignment, and the org-admin UI is now explicit that resources keep their existing owner.
 - **2026-08-24** — Added the canonical advanced member picker to the roster and resource-reassignment flow. Search remains bounded to the current organization, and every governance mutation still runs through the existing audited `org_admin_*` RPC family.
 - **2026-08-15** — claude: **Governance surfaces carry Copy / Copy-for-AI / export (agent-copy rollout).** New `copy.ts` builds the payloads; human summaries reuse the tables' own `formatBytes` / `formatMcents` / `formatRelativeTime`, so a copied roster reads in the units on screen rather than raw bytes and mcents. `MemberRosterTable` gained a list pair + `ExportMenu` (JSON + CSV) + a per-row `xs` pair (the row navigates to member detail, so `CopyButtons`' `stopPropagation` keeps copying from opening the member); `OrgAdminAuditTable` gained a list pair + `ExportMenu` + a per-entry pair carrying the RENDERED action label rather than the raw slug. Copy/export always cover ALL members and ALL audit entries; when the roster's search or sort is active the envelope names it and still carries the full set — an admin acting on a governance roster must never be handed a silently truncated one. `pnpm type-check` clean.

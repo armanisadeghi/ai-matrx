@@ -111,6 +111,15 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-09-21 — **Admin podcast editor tables use the canonical shared table.**
+  `components/admin/PodcastsTable.tsx` renders the Shows and Episodes tabs
+  through `MatrxDataTable` while retaining their editor-owned filtered search,
+  view copy/export, refresh/new controls, selected-row state, public-link copy,
+  edit navigation, and confirmed deletion. The generic inspector, window, and
+  table copy are deliberately disabled: each would duplicate a richer existing
+  podcast action or surface. Both tabs still expose the complete loaded client
+  result (`pageSize={0}`) as the legacy editor did.
+
 - 2026-09-17 — **Chapter saves cannot publish unreachable seek targets silently.** The shared `podcastService.saveEpisodeChapters` boundary now reads the browser's exact audio metadata duration, uses it for normalization and disclosure, records only its nearest positive whole-second value in the `duration_seconds` `int4` column, and normalizes stale generated offsets into strictly increasing playable timestamps while preserving `00:00` and pacing. It refuses unknown, nonpositive, malformed, nonincreasing, or impossible lists. The generator and `episode_chapters` write target both disclose an adjustment with the exact measured duration and a review-before-publish remedy; a previous surface-written list stays visible through a failed regeneration, and their rendered final list becomes the saved list only after success. The live streaming window may still show raw agent output.
 
 - 2026-09-17 — **Run Truth inspector keys on the durable run id the moment it is known.** Live defect: on an in-place run (create → run page, no reload) the panel showed `status: —`, empty request/result and "No stage records" beside "Nothing is hidden", and Refresh re-ran the same null query, because the durable `agent_run` id arrived on the stream's `podcast_run` event into a ref only while the panel read `detail?.run_id` (null until a reload). `useStudioRun` now exposes `agentRunId` as render state (every ref write goes through `adoptBackendRunId`); the inspector resolves prop → `pc_studio_runs.backend_run_id` → URL id, refetches an open panel whenever the id or episode it was loaded for changes, and says "not assigned yet" / "no durable record" instead of rendering empty records. The surface scope's `backend_run_id` uses the same id. Guard: `studio/components/RunTruthInspector.test.tsx`. The same run's duplicated "Post-processing the content" step was a server stage-key mismatch (started `post_prep`, finished `post_prep_<option>`), fixed in aidream's podcast generator.
