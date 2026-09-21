@@ -507,7 +507,25 @@ begin
   perform custom.record_update(v_org, v_rec2, jsonb_build_object('_actor','agent','_on_behalf_of', c_obo));
   select value_version, actor into v_v, v_txt from custom.value_read(v_org, v_rec2, 'phone');
   if v_v <> 2 then raise exception 'DYN-8 (G3): the same value re-asserted is version %, expected 2', v_v; end if;
-  if v_txt <> 'agent' then raise exception 'VAL-7 (G3): the re-assertion''s author is %, expected agent', v_txt; end if;
+  -- 🚨 CHAIR RULING, 2026-09-21 (lane RED-SUITES-3 carries it into the file). This clause used
+  -- to demand that the re-assertion move authorship to the agent, and that was the WRONG
+  -- promise. Authorship belongs to whoever SET the value. Re-saving a value that is already
+  -- what it was is not a change, so it has nothing to author and must not rewrite who set it —
+  -- the version stays 2 and so does the author. Git and Notion both answer this way: a commit
+  -- that changes nothing does not take the blame line, and re-typing a word you already typed
+  -- does not move "edited by". The door is not broken in general — probed with the value
+  -- CHANGED, `custom.value_read(...)` answers actor=agent ver=2 — and the second half of this
+  -- block, two lines down, is that probe standing beside this one.
+  if v_txt <> 'user' then
+    raise exception 'VAL-7 (G3): the value did not change, so the first writer keeps authorship — and the author reads %', v_txt;
+  end if;
+  -- The other direction, so the clause above cannot pass by the author simply never moving:
+  -- the SAME agent, asserting a DIFFERENT value, DOES take authorship and DOES move the version.
+  perform custom.record_update(v_org, v_rec2, jsonb_build_object('_actor','agent','_on_behalf_of', c_obo, 'phone','+1-415-555-0402'));
+  select value_version, actor into v_v, v_txt from custom.value_read(v_org, v_rec2, 'phone');
+  if v_v <> 3 or v_txt <> 'agent' then
+    raise exception 'VAL-7 (G3 control): the agent changed the value and it reads author % at version %, expected agent at 3', v_txt, v_v;
+  end if;
 
   -- EVERY value read carries one. Not one endpoint — the read.
   if exists (select 1 from custom.record_values_versioned(v_org, v_rec2) where value_version is null) then
@@ -516,7 +534,7 @@ begin
   if (select count(*) from custom.record_values_versioned(v_org, v_rec2)) < 2 then
     raise exception 'DYN-8: the versioned read returned fewer values than the record holds';
   end if;
-  raise notice 'G. DYN-8 — version 1, then 2 on a change, then still 2 on a re-assertion by another actor; every value read carries one.';
+  raise notice 'G. DYN-8 / VAL-7 — version 1, then 2 on a change, then still 2 and still the first writer''s name on a re-assertion of the same value by another actor, then 3 in the agent''s name when the agent actually changes it; every value read carries a version.';
 
   -- ══════════════════════════════════════════════════════════════════════════
   -- H. THE ENVELOPE CHECK CONSTRAINT — this lane's production clause. A catalogue
