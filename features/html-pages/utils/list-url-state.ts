@@ -6,7 +6,14 @@
 
 export type HtmlPagesViewMode = "table" | "grid";
 export type HtmlPagesSortField =
-  "meta_title" | "updated_at" | "created_at" | "is_indexable";
+  | "meta_title"
+  | "meta_description"
+  | "meta_keywords"
+  | "id"
+  | "url"
+  | "updated_at"
+  | "created_at"
+  | "is_indexable";
 export type HtmlPagesSortDir = "asc" | "desc";
 
 export interface HtmlPagesListState {
@@ -29,6 +36,10 @@ const RET_KEY = "html-pages:list-ret";
 
 const SORT_FIELDS = new Set<HtmlPagesSortField>([
   "meta_title",
+  "meta_description",
+  "meta_keywords",
+  "id",
+  "url",
   "updated_at",
   "created_at",
   "is_indexable",
