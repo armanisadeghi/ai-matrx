@@ -140,6 +140,28 @@ export default function UnifiedDataTableRoute({
         surfaceKey: `data-v2:${ask.tableId}`,
         // The declared source feature for the unified data tables surface.
         sourceFeature: "udt",
+        /**
+         * 🚨 A LAUNCH WITH NO DISPLAY MODE OPENS NOTHING. Measured headless on
+         * 2026-09-21 (lane AGENT-BUILDS): pressing "Ask an agent" on Ironline
+         * Fitness's `classes` table dispatched this launch and the screen did
+         * not change — no window, no composer, no dialog, nothing in
+         * `[role=dialog]` three, nine and nineteen seconds later. The execution
+         * was created in Redux and had no surface, so the person could never
+         * say the sentence the agent exists to answer, and the button was a
+         * dead control wearing a live label.
+         *
+         * `displayMode: "floating-chat"` is what every other mandate launcher
+         * that expects a conversation passes (the dictionary assistant is the
+         * worked example). `autoRun: false` because the person has not said
+         * anything yet — the suggestion is a prompt to THEM, not an
+         * instruction to the agent; `allowChat: true` because their sentence,
+         * and the agent's one clarifying question, are the whole interaction.
+         */
+        config: {
+          displayMode: "floating-chat",
+          autoRun: false,
+          allowChat: true,
+        },
         runtime: {
           context: {
             records_table_id: ask.tableId,

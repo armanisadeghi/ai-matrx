@@ -29,7 +29,11 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ROOT = process.cwd();
-const HOST = "builders.localhost";
+// One host per LANE, not per script: cookies are per host, so a second lane
+// driving these same helpers on `builders.localhost` would evict this lane's
+// dev-login and then verify a session it did not create. `WALK_HOST` lets the
+// agent walks (lane AGENT-BUILDS) run beside these without touching them.
+const HOST = process.env.WALK_HOST ?? "builders.localhost";
 // The machine-wide managed preview (`pnpm preview:start`), on its own host so
 // this lane's cookie jar is its own and no other agent's dev-login is evicted.
 const PORT = process.env.WALK_PORT ?? "3001";
@@ -223,6 +227,42 @@ async function useOrganization(page, target) {
   // containing the slug picked a DIFFERENT organization — which is crew F's own
   // duplicate-organization hazard, hit by a script this time instead of a person.
   // The row is matched on its slug EXACTLY.
+  // SEARCH FIRST, THE WAY A PERSON DOES. The picker renders a capped window of
+  // the memberships (78 rows on 2026-09-21) behind a "Search organizations"
+  // box, and this admin is in far more than that — so Rincon Plumbing Co was
+  // simply not in the DOM and the walk reported "the picker offered no single
+  // row", which reads like a product defect and is not one. Typing the name is
+  // the affordance the picker provides for exactly this.
+  const searchFor = async (needle) => {
+    // THE SAME PICKER IS IN THE DOM TWICE (the inline notice's and the avatar
+    // popover's), so `.first()` reached the hidden copy and every fill timed
+    // out. Only the visible one is the one on screen.
+    const box = page.locator("input[data-slot=organization-picker-search]:visible").first();
+    if (!(await box.isVisible().catch(() => false))) return false;
+    await box.fill(needle);
+    await page.waitForTimeout(2500);
+    return true;
+  };
+
+  // 🚨 THE FOUR WALK ORGANIZATIONS ARE TEST ORGANIZATIONS, AND THE PICKER
+  // HIDES THOSE BY DEFAULT. `OrganizationPicker` splits its rows into `listed`
+  // and `fixtures` and puts the fixtures behind an `ArchivedDisclosure` —
+  // "Test organizations (N)". So the 78 rows in the DOM were every NON-test
+  // organization this admin belongs to, Rincon Plumbing Co was simply not
+  // rendered, and the walk reported "the picker offered no single row", which
+  // reads like a product defect and is not one: it is the archived-items law
+  // working exactly as written.
+  const revealFixtures = async () => {
+    const toggle = page
+      .locator("button:visible", { hasText: /^Test organizations \(\d+\)$/ })
+      .first();
+    if (!(await toggle.isVisible().catch(() => false))) return false;
+    if ((await toggle.getAttribute("aria-expanded")) === "true") return true;
+    await toggle.click({ timeout: 30000 });
+    await page.waitForTimeout(2000);
+    return true;
+  };
+
   const clickBySlug = async () => {
     // AND THE SAME LIST IS IN THE DOM TWICE — the inline notice's and the
     // avatar popover's, the second rendered but hidden. Counting over all of
@@ -234,8 +274,15 @@ async function useOrganization(page, target) {
       );
       const spansOf = (b) =>
         Array.from(b.querySelectorAll("span")).map((s) => (s.textContent || "").trim());
-      const bySlug = rows.findIndex((b) => spansOf(b).includes(slug));
-      if (bySlug >= 0) return bySlug;
+      const stamp = (b) => {
+        document
+          .querySelectorAll("[data-walk-target]")
+          .forEach((e) => e.removeAttribute("data-walk-target"));
+        b.setAttribute("data-walk-target", "1");
+        return 1;
+      };
+      const bySlug = rows.find((b) => spansOf(b).includes(slug));
+      if (bySlug) return stamp(bySlug);
       // THE PICKER DRAWS THE SLUG ONLY WHERE IT IS NEEDED — on rows whose NAME
       // another row also carries. "Rincon Plumbing Co" is unique (its branches
       // are separately named), so it has no slug on screen and matching on the
@@ -248,16 +295,28 @@ async function useOrganization(page, target) {
       // fails there, loudly, instead of the walk quietly reporting somebody
       // else's data. The slug match above is still preferred wherever the
       // picker draws one.
-      return rows.findIndex((b) => spansOf(b).includes(name));
+      const chosen = rows[rows.findIndex((b) => spansOf(b).includes(name))];
+      // 🚨 STAMP THE ELEMENT, DO NOT COUNT IT. An index computed here and then
+      // spent as `locator(":visible").nth(i)` is two different visibility
+      // definitions (`getClientRects()` vs Playwright's) over a list that is in
+      // the DOM twice — so the right row was found and a DIFFERENT row, or
+      // none, was clicked. Marking the exact element removes the translation.
+      document
+        .querySelectorAll("[data-walk-target]")
+        .forEach((e) => e.removeAttribute("data-walk-target"));
+      if (chosen) chosen.setAttribute("data-walk-target", "1");
+      return chosen ? 1 : -1;
     }, { slug: target.slug, name: target.orgName });
     if (index < 0) return false;
-    const row = page.locator("button[role=option]:visible").nth(index);
+    const row = page.locator("button[role=option][data-walk-target]").first();
     await row.scrollIntoViewIfNeeded({ timeout: 30000 });
     await row.click({ timeout: 60000 });
     await page.waitForTimeout(6000);
     return true;
   };
 
+  await searchFor(target.orgName);
+  await revealFixtures();
   if (!(await clickBySlug())) {
     for (const opener of [
       page.getByRole("button", { name: /Choose org/i }).first(),
@@ -269,6 +328,8 @@ async function useOrganization(page, target) {
         break;
       }
     }
+    await searchFor(target.orgName);
+    await revealFixtures();
     if (!(await clickBySlug())) {
       throw new Error(`the organization picker offered no single row for ${target.orgName} (${target.slug})`);
     }
