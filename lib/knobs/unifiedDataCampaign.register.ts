@@ -597,6 +597,21 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         kind: "door_gated",
         why: "Where an outside person's invitation link lands. The caller is not in the organization and has no knob to resolve against, so it names no organization at all: custom.table_share_outside_accept matches the token to a pending invitation addressed to this signed-in person, and reads the switch inside itself for the organization that invitation belongs to.",
     },
+    // ── PORTAL-BIND (21 September): a portal invitation is an invitation, on the
+    //    ONE invitation primitive. Both files reach the store only through
+    //    public.portal_share_peek and custom.portal_invite_accept.
+    {
+        id: "portal-invite-service",
+        file: "features/portals/portalInviteService.ts",
+        kind: "door_gated",
+        why: "The client half of PORTAL-BIND. Two thin calls: public.portal_share_peek (what the link offers, off the token alone, to somebody who may have no account) and custom.portal_invite_accept (the ONE door that turns a portal invitation into access). It names no organization and decides nothing — the accept matches the token to a pending invitation addressed to this signed-in person and reads custom/external_principal_enabled and custom.assert_store_door inside itself, for the organization the PORTAL belongs to, which is the only correct one since the caller has no organization to resolve a knob against.",
+    },
+    {
+        id: "portal-invite-accept-page",
+        file: "app/(core)/invitations/portal/accept/[token]/page.tsx",
+        kind: "door_gated",
+        why: "Where an invited client's portal link lands. The caller is not in the organization and has no knob to resolve against, so the page names none: it draws only what public.portal_share_peek answered and the accept is custom.portal_invite_accept, which reads the switch inside itself for the organization that invitation belongs to. It reaches the store only through features/portals/portalInviteService.ts.",
+    },
     {
         id: "client-portal-service",
         file: "features/portals/service.ts",
