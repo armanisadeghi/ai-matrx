@@ -60,16 +60,35 @@ const ASKS = {
     rail: /^Bookings$/,
     say: "let customers book a service call",
   },
+  // 🚨 THE PORTAL ASK CANNOT BE REACHED IN RINCON PLUMBING CO, AND THAT IS A PRODUCT
+  // DEFECT, NOT A MISSING FIXTURE. Measured on main 2026-09-21 (lane AGENT-BUILDS-2):
+  // the Portals rail is ORGANIZATION-scoped while every sibling rail on the same
+  // screen — Forms, Bookings — is TABLE-scoped. `PortalsPanel` calls
+  // `client.portals()`, which takes no table at all (`custom.portals(p_organization_id)`,
+  // versus `custom.forms(p_organization_id, p_table_id)`), and decides emptiness from
+  // `portals.length`. So standing on Rincon's `Parts` table — eight rows of copper pipe
+  // and wax rings — the rail reads "Portals 10" and lists ten cards titled "Your jobs
+  // and invoices", which belong to the `Jobs` table. The empty state never renders, so
+  // `BuildOrAsk` never renders, so the agent half is unreachable on EVERY table in any
+  // organization that already has one portal. The package documents this as deliberate
+  // ("a portal belongs to the organization, and hiding the others would answer a
+  // question nobody asked", `records-ui/src/PortalsPanel.tsx`), which makes it a design
+  // ruling to overturn rather than a bug to patch quietly — it is written up for the
+  // owner instead of changed here.
+  //
+  // So the portal ask runs where it is still REACHABLE, on the same product question
+  // and a real business: Ironclad Mobile Mechanic (0 portals) sells visits, and its
+  // owner wants a customer to see her own service calls without phoning him.
   portal: {
-    org: "6069a466-1445-42df-a64e-cf37ecdc1b99",
-    orgName: "Rincon Plumbing Co",
-    slug: "rincon-plumbing-co",
+    org: "0a751390-558e-4775-ba0e-3891bdf82d45",
+    orgName: "Ironclad Mobile Mechanic",
+    slug: "ironclad-mobile-mechanic",
     tables: [
-      { id: "af3bfff6-a255-41e5-9ac2-879d53816163", name: "Jobs" },
-      { id: "b3893755-a8e8-4aa5-9680-6bf7d32669eb", name: "Invoices" },
+      { id: "215e2e75-d04e-4c8a-b208-5be46488b18d", name: "Service Calls" },
+      { id: "ffbddf5c-e5d8-417c-b82b-eff823f55fc4", name: "Invoices" },
     ],
     rail: /^Portals$/,
-    say: "give my customers a portal to see their own jobs",
+    say: "give my customers a portal to see their own service calls",
   },
   digest: {
     org: "488fcc2f-22ee-49eb-9ec4-1b870591164a",
