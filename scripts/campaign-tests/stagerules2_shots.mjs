@@ -26,7 +26,7 @@ const HOST = arg("--host", "stagerules2.localhost");
 const OUT = arg("--out", resolve(ROOT, "tmp/stagerules2-shots"));
 const ORIGIN = `http://${HOST}:${PORT}`;
 
-const ORG_NAME = "Birchwood Ave Renovation";
+const ORG_SLUG = "home-renovation";
 const QUOTES = "0e108f31-5078-48ec-9a15-b492baa414ba";
 const TABLE_URL = `/data-v2/${QUOTES}`;
 
@@ -67,57 +67,72 @@ async function main() {
   }
   note("signed in as", who.email);
 
-  // The organization picker on the /data-v2 empty state, chosen the way a person does.
-  await page.waitForTimeout(3000);
-  const orgOption = page.getByRole("option", { name: new RegExp(ORG_NAME, "i") }).first();
-  if (await orgOption.count()) {
-    await orgOption.click({ timeout: 15000, force: true }).catch(() => {});
-    await page.waitForTimeout(2500);
-    note("organization", ORG_NAME);
+  // THE ORGANIZATION, PICKED BY ITS SLUG AND NOT BY ITS NAME. There are TWO organizations
+  // called "Birchwood Avenue Renovation" on this account — a fixture crew made a second one
+  // — and clicking the wrong one gives a screenshot of somebody else's empty board that
+  // looks exactly like a working one. The slug is the only thing that tells them apart.
+  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.waitForTimeout(5000);
+  // The row is a `button[role=option]`; its accessible name runs the abbreviation, the name
+  // and the slug together ("BARBirchwood Avenue Renovationhome-renovation"). Clicking the
+  // slug's own <span> does nothing, which is how the first run of this walk ended up
+  // photographing the picker.
+  const slugRow = page.getByRole("option").filter({ hasText: ORG_SLUG }).last();
+  if (await slugRow.count()) {
+    await slugRow.scrollIntoViewIfNeeded().catch(() => {});
+    await slugRow.click({ timeout: 20000 }).catch((e) => note("org click", String(e).slice(0, 120)));
+    await page.waitForTimeout(6000);
   } else {
-    note("organization picker", "no option on screen — assuming the session already holds one");
+    note("org row", `no button[role=option] carrying ${ORG_SLUG}`);
+  }
+  const stillAsking = await page.evaluate(() => document.body.innerText.includes("No organization selected"));
+  note("organization chosen", stillAsking ? "NO — the picker is still on screen" : `yes (${ORG_SLUG})`);
+  if (stillAsking) {
+    await shot(page, "0-org-picker-would-not-take");
+    throw new Error("the organization picker would not take a click — every shot after this would be of the picker");
   }
 
-  // ── 1. THE EDITOR, with the $5,000 rule open in it ──────────────────────────────────
+  // ── 1. THE SETTINGS RAIL ────────────────────────────────────────────────────────────
+  // "Settings" is a TOOLBAR button on the table page, not a nav item — a loose
+  // /settings/i match picks up the left rail's own gear and photographs the wrong screen.
   await page.goto(`${ORIGIN}${TABLE_URL}`, { waitUntil: "domcontentloaded", timeout: 180000 });
-  await page.waitForTimeout(6000);
-  const settings = page.getByRole("button", { name: /settings/i }).first();
+  await page.waitForTimeout(8000);
+  const settings = page.getByRole("button", { name: /^Settings$/ }).first();
   if (await settings.count()) {
-    await settings.click({ timeout: 15000 }).catch(() => {});
-    await page.waitForTimeout(3500);
+    await settings.click({ timeout: 20000 }).catch((e) => note("settings click", String(e).slice(0, 120)));
+    await page.waitForTimeout(5000);
+  } else {
+    note("settings", "no toolbar button called Settings");
   }
-  const heading = page.getByText("Rules for entering", { exact: false }).first();
-  if (await heading.count()) {
-    await heading.scrollIntoViewIfNeeded().catch(() => {});
-    await page.waitForTimeout(600);
-    note("the section is on screen", await page.evaluate(() => document.body.innerText.includes("Rules for entering") ? "yes" : "no"));
+  const hasSection = await page.evaluate(() => document.body.innerText.includes("Rules for entering"));
+  note("the section is on screen", hasSection ? "yes" : "NO — this bundle predates records-ui 0.50.0");
+  if (hasSection) {
     const edit = page.getByRole("button", { name: /^Edit$/ }).last();
     if (await edit.count()) {
-      await edit.click({ timeout: 15000 }).catch(() => {});
-      await page.waitForTimeout(4000);
+      await edit.click({ timeout: 20000 }).catch(() => {});
+      await page.waitForTimeout(5000);
     }
-    const preview = await page
-      .locator('[data-testid="stage-rule-preview"]')
-      .first()
-      .textContent()
-      .catch(() => null);
+    const preview = await page.locator('[data-testid="stage-rule-preview"]').first().textContent().catch(() => null);
     note("the live preview says", preview ?? "(nothing on screen)");
     await shot(page, "1-the-editor-with-the-5000-rule");
   } else {
-    note("the section", "NOT FOUND on the settings rail — shot taken anyway so the miss is visible");
     await shot(page, "1-settings-rail-without-the-section");
   }
 
-  // ── 2. THE BOARD, and the refusal ───────────────────────────────────────────────────
+  // ── 2. THE BOARD, AND THE REFUSAL ───────────────────────────────────────────────────
+  // The board is a VIEW, not a toolbar button — a /board|kanban/i match hits "Dashboards".
   await page.goto(`${ORIGIN}${TABLE_URL}`, { waitUntil: "domcontentloaded", timeout: 180000 });
-  await page.waitForTimeout(6000);
-  const board = page.getByRole("button", { name: /board|kanban/i }).first();
-  if (await board.count()) {
-    await board.click({ timeout: 15000 }).catch(() => {});
-    await page.waitForTimeout(5000);
+  await page.waitForTimeout(8000);
+  const kanban = page.getByRole("button", { name: /kanban|board/i }).filter({ hasNotText: /dashboard/i }).first();
+  if (await kanban.count()) {
+    await kanban.click({ timeout: 20000 }).catch(() => {});
+    await page.waitForTimeout(6000);
+  } else {
+    note("board view", "no saved board view on this table — the toolbar offers New view");
   }
-  await shot(page, "2-the-quotes-board");
-  note("board text", (await page.evaluate(() => document.body.innerText.slice(0, 400))).replace(/\s+/g, " "));
+  await shot(page, "2-the-quotes-table");
+  const body = (await page.evaluate(() => document.body.innerText)).replace(/\s+/g, " ");
+  note("what the screen says", body.slice(0, 500));
 
   writeFileSync(resolve(OUT, "stage-rules-walk.txt"), notes.join("\n") + "\n");
   await browser.close();
