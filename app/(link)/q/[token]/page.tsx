@@ -80,6 +80,23 @@ export default async function ActionRequestPage({
   const accessToken = await sessionAccessToken();
   const request = await openActionRequest(token, accessToken);
 
+  // OUR SIDE COULD NOT ANSWER. The link is fine and we say so, with the one
+  // thing worth doing. NEVER the "no longer active" sentence, and never a
+  // thrown error — a throw here is Next's error boundary, i.e. an HTTP 500 on
+  // a page somebody opened from a text message (production, 2026-09-21).
+  if (request.state === "unreachable") {
+    return (
+      <OneSentence>
+        {request.message}
+        <div className="mt-8 flex flex-col gap-3">
+          <Button asChild variant="outline" className="w-full">
+            <Link href={`/q/${token}`}>Try again</Link>
+          </Button>
+        </div>
+      </OneSentence>
+    );
+  }
+
   // A RE-TAP AFTER SUCCESS. No actions at all: there is nothing left to do, and
   // a button here would invite somebody to undo an answer their agent already
   // acted on.

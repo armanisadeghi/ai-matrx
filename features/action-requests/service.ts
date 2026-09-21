@@ -192,11 +192,29 @@ export interface ActionRequestUnavailable {
   message: string;
 }
 
+/**
+ * OUR SIDE COULD NOT ANSWER. Deliberately NOT folded into `unavailable`: that
+ * sentence tells the person their link is dead, and on 2026-09-21 it would have
+ * been a lie — every signed-in tap of `/q/<token>` was refused by aidream's
+ * organization gate (`400 organization_required`) on a link that was perfectly
+ * good. A person who is told their link expired re-mints a new one and meets
+ * the identical refusal, forever.
+ *
+ * 🚨 AND IT IS NOT A THROW. A throw here is Next's error boundary, which is an
+ * HTTP **500** on a page somebody opened from a text message. The state is
+ * carried instead, so the screen says one honest sentence with something to do.
+ */
+export interface ActionRequestUnreachable {
+  state: "unreachable";
+  message: string;
+}
+
 export type ActionRequestOpen =
   | ActionRequestReady
   | ActionRequestDone
   | ActionRequestWrongPerson
-  | ActionRequestUnavailable;
+  | ActionRequestUnavailable
+  | ActionRequestUnreachable;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPLETE
@@ -278,12 +296,14 @@ export async function openActionRequest(
     cache: "no-store",
   });
   if (!response.ok) {
-    // NOTHING FAILS SILENTLY. A server that refused is not a dead link, and
-    // saying "this link is no longer active" here would tell the person their
-    // link is wrong when it is ours that is.
-    throw new Error(
-      `POST ${ENDPOINTS.actionRequests.open} answered ${response.status}: ${await safeBody(response)}`,
+    // NOTHING FAILS SILENTLY — and nothing 500s either. The server console gets
+    // the whole refusal; the person gets one sentence and a way to try again.
+    // A throw here renders Next's error boundary with a 500 status, which is
+    // what a person tapping a link from a text actually met on 2026-09-21.
+    console.error(
+      `[/q] POST ${ENDPOINTS.actionRequests.open} answered ${response.status}: ${await safeBody(response)}`,
     );
+    return { state: "unreachable", message: UNREACHABLE_SENTENCE };
   }
   return (await response.json()) as ActionRequestOpen;
 }
@@ -376,6 +396,13 @@ async function refusalFrom(response: Response): Promise<ActionRequestRefusal> {
     remedy: body?.remedy ?? null,
   };
 }
+
+/**
+ * The one sentence for "our side could not answer". It says the link is FINE,
+ * because it is: the failure is ours. Never "this link is no longer active".
+ */
+export const UNREACHABLE_SENTENCE =
+  "We could not reach your agent just now. Your link is still good — try again in a moment.";
 
 /** The one sentence for a refusal that arrived without one of its own. */
 const GENERIC_REFUSAL =
