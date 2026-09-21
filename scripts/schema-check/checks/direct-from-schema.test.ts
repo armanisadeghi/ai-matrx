@@ -56,4 +56,22 @@ describe("direct-from-schema", () => {
       }),
     ]);
   });
+
+  it("does not inherit a schema from a doc comment that only mentions a call", () => {
+    const findings = checkDirectFromSchema(
+      context(
+        [
+          "/**",
+          " * Reach files through `client.schema('files')`.",
+          " * never a plain `.from('permissions')` select.",
+          " */",
+          "export function filesDb(client) {",
+          '  return client.schema("files");',
+          "}",
+        ].join("\n"),
+      ),
+    );
+
+    expect(findings).toEqual([]);
+  });
 });

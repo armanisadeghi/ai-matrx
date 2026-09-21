@@ -146,6 +146,11 @@ again.
 
 ## Change Log
 
+- **2026-09-21** — A comment or blank line between `.schema()` and `.from()` no longer
+  splits the chain. `chainStartOf` walks through those gaps, so a call already
+  repointed to the new schema (the schedule roster's `scheduler.sch_task`) is not
+  reported as a bare public `.from()`. Guard: `dead-relations.test.ts` ("still sees
+  an explicit schema when a comment or blank line sits in the chain").
 - **2026-09-15** — Finished the one-snapshot-source class (DC-027 #8): `check:schema --refresh` whose
   pull fails now exits 1 in red with cause + remedy and runs no check (it warned and checked the
   committed snapshot, exit 0); `SnapshotProvenance` is `"rpc"` only and the dead

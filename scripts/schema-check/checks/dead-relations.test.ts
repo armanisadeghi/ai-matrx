@@ -73,6 +73,60 @@ describe("dead-relations", () => {
     ]);
   });
 
+  it("still sees an explicit schema when a comment or blank line sits in the chain", () => {
+    const commented = checkDeadRelations(
+      context(
+        [
+          "schedulerDb(supabase)",
+          '  .schema("workbench")',
+          "  // owner policy lives on the row",
+          '  .from("notes")',
+          '  .select("*")',
+        ].join("\n"),
+      ),
+    );
+    const blank = checkDeadRelations(
+      context(
+        [
+          "schedulerDb(supabase)",
+          '  .schema("workbench")',
+          "",
+          '  .from("notes")',
+        ].join("\n"),
+      ),
+    );
+    const block = checkDeadRelations(
+      context(
+        [
+          "schedulerDb(supabase)",
+          '  .schema("workbench")',
+          "  /* roster is the signed-in user */",
+          '  .from("notes")',
+        ].join("\n"),
+      ),
+    );
+    const bareUnderAComment = checkDeadRelations(
+      context(
+        [
+          "// moved to workbench",
+          'supabase.from("notes").select("*")',
+        ].join("\n"),
+      ),
+    );
+
+    expect(commented).toEqual([]);
+    expect(blank).toEqual([]);
+    expect(block).toEqual([]);
+    expect(bareUnderAComment).toEqual([
+      expect.objectContaining({
+        location: "features/masterwork/service.ts:2",
+        message: expect.stringContaining(
+          "[bare .from/.table (resolves to old schema)]",
+        ),
+      }),
+    ]);
+  });
+
   it("keeps the former registry ordering when source references occur out of order", () => {
     const ctx = context(
       [

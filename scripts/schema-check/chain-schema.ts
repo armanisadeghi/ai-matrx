@@ -51,10 +51,38 @@ export function buildClientSchemas(content: string, binders: Map<string, string>
   return clientSchemas;
 }
 
-/** Walks up from line `i` while preceding lines are chained (`.foo(...)`), to the chain's start. */
+/**
+ * A blank line or a comment sitting between method calls. It does not end the
+ * chain: `.schema("scheduler")` then a `//` note then `.from("sch_task")` is
+ * still one chain. Treating the comment as the chain head hid the schema and
+ * reported a correctly repointed call as a bare public `.from()`.
+ */
+function isChainGap(trimmed: string): boolean {
+  return (
+    trimmed === "" ||
+    trimmed.startsWith("//") ||
+    trimmed.startsWith("/*") ||
+    trimmed.startsWith("*") ||
+    trimmed === "*/"
+  );
+}
+
+/**
+ * Walks up from line `i` to the head of its method chain.
+ *
+ * A blank line or a comment between calls does not end the chain:
+ * `.schema("scheduler")`, then a `//` note, then `.from("sch_task")` is one
+ * chain. Those gaps are skipped only while walking up from a line that itself
+ * continues the chain (it starts with `.`). A `.from()` mentioned inside a
+ * doc comment is not a call, so that line is not a continuation and must not
+ * inherit a `.schema()` written earlier in the same comment.
+ */
 export function chainStartOf(lines: string[], i: number): number {
   let chainStart = i;
-  while (chainStart > 0 && lines[chainStart].trim().startsWith(".")) chainStart--;
+  while (chainStart > 0 && lines[chainStart].trim().startsWith(".")) {
+    chainStart--;
+    while (chainStart > 0 && isChainGap(lines[chainStart].trim())) chainStart--;
+  }
   return chainStart;
 }
 
