@@ -62,6 +62,11 @@
  * `TryMasterworkBox` and with the run permalink itself.
  */
 
+import {
+  isMachineIdentifier,
+  machineIdentifierWords,
+} from "@/lib/progress/failureSentence";
+
 import type { RulebookRule } from "./types";
 import { ruleAnchorId } from "./components/detail/RuleRelations";
 
@@ -143,6 +148,71 @@ const DECLARED_TOKEN_WORDS: Readonly<Record<string, string>> = {
 
 const DECLARED_TOKEN = /\b(?:not_applicable)\b/g;
 
+/**
+ * 🚨 A FIELD NAME IS NOT A WORD (walk 18, defect D)
+ *
+ * The walk's finished deliverable — 12,642 characters of otherwise flawless
+ * English, the document an Expert hands a customer or a new hire — carried
+ * exactly one machine token, verbatim:
+ *
+ *   Editor's `violations_not_fixed: []` — OVERRULED as premature.
+ *
+ * It is the same shape as `not_applicable` above and has the same owner. The
+ * key comes out of a schema WE declared and handed the model
+ * (`aidream/services/masterworks/build.py`, the Editor's output shape); the
+ * model quoted what it was given, which is the correct behaviour for an agent
+ * citing its own input; and the READING side is where it becomes words. A
+ * closed list was the right answer for one enum value and the wrong one for a
+ * schema that grows — so the rule is now the SHAPE, shared with
+ * `lib/progress/failureSentence.ts` so there is one definition of what an
+ * identifier looks like, and it resolves rather than invents: underscores
+ * become spaces, an empty collection becomes "none", nothing else changes.
+ *
+ * It never reaches a code fence (PROTECTED wins over everything) and never
+ * reaches a rule citation (a span that resolves to a rule is rendered as that
+ * rule BEFORE this runs).
+ */
+
+/** How an empty collection reads once it is no longer JSON. */
+const EMPTY_COLLECTION_WORD = "none";
+
+/**
+ * A whole inline-code span that is nothing but a machine field: the key, and
+ * optionally the value the model quoted with it (`violations_not_fixed: []`,
+ * `word_count_after: 96`). Two segments are enough HERE — the backticks are a
+ * delimiter the person can see, so there is no risk of mangling prose — and
+ * the value must be a literal, so a real code span (`x = compute(y)`, a SQL
+ * statement, a file path) is left exactly as the model wrote it.
+ */
+const FIELD_SPAN =
+  /^([a-z][a-z0-9]*(?:_[a-z0-9]+)+)(?:\s*[:=]\s*(\[\]|\{\}|null|true|false|-?\d+(?:\.\d+)?|"[^"]*"|'[^']*'))?$/;
+
+/**
+ * The words an inline-code span of ours was standing for, or null when the
+ * span is real code and must not be touched.
+ */
+function fieldSpanWords(inner: string): string | null {
+  const match = FIELD_SPAN.exec(inner.trim());
+  if (!match) return null;
+  const [, key, literal] = match;
+  if (!isMachineIdentifier(key, { minSegments: 2 })) return null;
+  const words = machineIdentifierWords(key);
+  if (literal === undefined) return words;
+  const value =
+    literal === "[]" || literal === "{}"
+      ? EMPTY_COLLECTION_WORD
+      : literal.replace(/^["']|["']$/g, "");
+  return `${words}: ${value}`;
+}
+
+/**
+ * A bare identifier standing loose in prose. The floor is three segments —
+ * the same rule `personSentence` applies, for the same reason: with no
+ * delimiter around it, a two-segment token occurs in ordinary technical
+ * English and a false positive mangles a real sentence.
+ */
+const BARE_FIELD = /\b[a-z][a-z0-9]*(?:_[a-z0-9]+){2,}\b/g;
+
 /** How a resolved rule is written out. */
 type CiteRender = (rule: RulebookRule, rulebookId: string) => string;
 
@@ -153,28 +223,31 @@ const asName: CiteRender = (rule) => rule.name;
 
 function resolveInProse(
   prose: string,
-  index: RuleCitationIndex,
+  index: RuleCitationIndex | null,
   render: CiteRender,
 ): string {
-  return prose
-    .replace(HANDLE, (token) => {
-      const rule = index.byHandle.get(token);
-      return rule ? render(rule, index.rulebookId) : token;
-    })
-    .replace(DECLARED_TOKEN, (token) => DECLARED_TOKEN_WORDS[token] ?? token);
+  const cited =
+    index && index.byHandle.size > 0
+      ? prose.replace(HANDLE, (token) => {
+          const rule = index.byHandle.get(token);
+          return rule ? render(rule, index.rulebookId) : token;
+        })
+      : prose;
+  return plainDeclaredTokens(cited);
 }
 
 /**
  * A declared machine token printed at a person becomes the words we meant.
- * Runs even with no Rulebook in hand: it needs no rules, only the enum we
+ * Runs even with no Rulebook in hand: it needs no rules, only the shapes we
  * ourselves declared, so `not_applicable` is never a reason to see an
- * underscore.
+ * underscore — and neither is `violations_not_fixed`.
  */
 export function plainDeclaredTokens(text: string): string {
-  return text.replace(
-    DECLARED_TOKEN,
-    (token) => DECLARED_TOKEN_WORDS[token] ?? token,
-  );
+  return text
+    .replace(DECLARED_TOKEN, (token) => DECLARED_TOKEN_WORDS[token] ?? token)
+    .replace(BARE_FIELD, (token) =>
+      isMachineIdentifier(token) ? machineIdentifierWords(token) : token,
+    );
 }
 
 function resolveDocument(
@@ -183,7 +256,6 @@ function resolveDocument(
   render: CiteRender,
 ): string {
   if (markdown === "") return markdown;
-  if (!index || index.byHandle.size === 0) return plainDeclaredTokens(markdown);
   let out = "";
   let cursor = 0;
   PROTECTED.lastIndex = 0;
@@ -198,10 +270,19 @@ function resolveDocument(
       construct.startsWith("`") &&
       !construct.startsWith("```") &&
       construct.endsWith("`");
-    const rule = inlineCode
-      ? index.byHandle.get(construct.slice(1, -1).trim())
-      : undefined;
-    out += rule ? render(rule, index.rulebookId) : construct;
+    const inner = inlineCode ? construct.slice(1, -1).trim() : null;
+    // A span that names a rule is that rule — decided FIRST, so a citation is
+    // never mistaken for a field name.
+    const rule =
+      inner !== null && index ? index.byHandle.get(inner) : undefined;
+    // Otherwise: a span that is nothing but one of OUR field names becomes the
+    // words it stood for. Anything else — real code, a path, a fence — is
+    // handed back byte-for-byte.
+    if (rule && index) {
+      out += render(rule, index.rulebookId);
+    } else {
+      out += (inner === null ? null : fieldSpanWords(inner)) ?? construct;
+    }
     cursor = match.index + construct.length;
   }
   return out + resolveInProse(markdown.slice(cursor), index, render);

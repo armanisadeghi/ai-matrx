@@ -25,9 +25,28 @@
  *
  * The markdown itself is rendered by the platform primitive (`MarkdownStream`)
  * — this component owns no parser and no second renderer.
+ *
+ * ## Walk 18, D14's sibling: a field name is not a word either
+ *
+ * The walk's deliverable — 12,642 characters of otherwise flawless English —
+ * printed `violations_not_fixed: []` at a residential plumber. Two halves, and
+ * this component owns both ends of them:
+ *
+ *   · IN THE PROSE, where that one actually was: `linkRuleCitations` now
+ *     resolves a machine field name the same way it resolves a rule id and
+ *     `not_applicable` — the words it stood for, never inside a code fence.
+ *   · IN THE STRUCTURE: a `masterwork_result` carrying a field beyond the
+ *     three this kind declares used to be dropped here without a trace, which
+ *     is law 4 broken quietly and a raw key waiting to happen the moment
+ *     somebody renders it. Extra fields now render under their own name IN
+ *     WORDS, with an empty list reading as a sentence rather than as `[]`.
  */
 
 import MarkdownStream from "@/components/MarkdownStream";
+import {
+  collectExtras,
+  plainFieldLabel,
+} from "@/features/content-ir/kinds/kind-markdown-utils";
 import type { MasterworkResultData } from "@/features/content-ir/kinds/masterwork-result";
 import { linkRuleCitations } from "@/features/masterwork/ruleCitations";
 import { useRuleCitationIndex } from "@/features/masterwork/rules-context/MasterworkRulesContext";
@@ -52,6 +71,34 @@ function readData(serverData: unknown): MasterworkResultData | null {
   } as MasterworkResultData;
 }
 
+/** The keys this component renders itself; everything else is an extra. */
+const DECLARED_FIELDS = ["deliverable", "approach", "ruling"];
+
+/**
+ * One structured extra, as a sentence rather than as a literal.
+ *
+ * An empty list is the case the walk caught — it says nothing was left, and
+ * says it in words. A list with things in it reads as those things. Anything
+ * structural falls back to what it is, because a shape we do not know is still
+ * better shown than silently dropped.
+ */
+function plainFieldValue(value: unknown): string {
+  if (value === null || value === undefined) return "None";
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "None";
+    if (value.every((item) => typeof item !== "object" || item === null)) {
+      return value.map(String).join(", ");
+    }
+    return `${value.length} item${value.length === 1 ? "" : "s"}`;
+  }
+  if (typeof value === "object") {
+    const keys = Object.keys(value as Record<string, unknown>);
+    if (keys.length === 0) return "None";
+    return keys.map(plainFieldLabel).join(", ");
+  }
+  return String(value);
+}
+
 export function MasterworkResultBlock({
   serverData,
 }: MasterworkResultBlockProps) {
@@ -59,6 +106,7 @@ export function MasterworkResultBlock({
   const result = readData(serverData);
   if (!result) return null;
   const cite = (markdown: string) => linkRuleCitations(markdown, index);
+  const extras = Object.entries(collectExtras(result, DECLARED_FIELDS));
 
   return (
     <div className="space-y-4" data-masterwork-result="block">
@@ -84,6 +132,24 @@ export function MasterworkResultBlock({
         <div data-masterwork-result="ruling">
           <MarkdownStream content={cite(result.ruling)} />
         </div>
+      ) : null}
+
+      {extras.length > 0 ? (
+        <dl
+          className="grid gap-x-4 gap-y-1 text-xs sm:grid-cols-[auto_1fr]"
+          data-masterwork-result="extras"
+        >
+          {extras.map(([key, value]) => (
+            <div key={key} className="contents">
+              <dt className="font-medium text-foreground">
+                {plainFieldLabel(key)}
+              </dt>
+              <dd className="text-muted-foreground">
+                {plainFieldValue(value)}
+              </dd>
+            </div>
+          ))}
+        </dl>
       ) : null}
     </div>
   );

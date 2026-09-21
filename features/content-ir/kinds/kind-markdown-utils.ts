@@ -98,6 +98,33 @@ export function collectExtras(
   return extras;
 }
 
+/**
+ * A field's own name, as words — `violations_not_fixed` → "Violations not
+ * fixed", `wordCountAfter` → "Word count after".
+ *
+ * 🚨 WALK 18, DEFECT D. The finished Masterwork deliverable an Expert hands a
+ * customer carried `violations_not_fixed: []` — a key out of a schema we
+ * declared, printed at a person. A label is the one place a field name is
+ * GUARANTEED to reach a reader, so the resolution lives here, beside the
+ * extras plumbing, for every RENDERER that puts a structured field on a
+ * screen: underscores and camel humps become spaces, the first letter is
+ * capitalised, and nothing else changes.
+ *
+ * Deliberately NOT applied inside {@link extrasList}. That list is the
+ * markdown/EXPORT leg (`features/canvas/export/exportArtifactMarkdown.ts`
+ * writes a file somebody — or something — reads back), and a key spelled as
+ * prose cannot be read back as a key. A screen resolves; a file keeps the key.
+ */
+export function plainFieldLabel(key: string): string {
+  const words = key
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .toLowerCase();
+  if (!words) return key;
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 /** Render extras as a key: value bullet list (no heading). Null when empty. */
 export function extrasList(extras: Record<string, unknown>): string | null {
   const entries = Object.entries(extras);

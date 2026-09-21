@@ -749,3 +749,57 @@ export function personSentence(
   const cleaned = text !== original;
   return cleaned ? { text, cleaned, detail: original } : { text, cleaned };
 }
+
+// =============================================================================
+// 🚨 AND A FIELD NAME IS NEVER PROSE EITHER (walk 18, defect D)
+// =============================================================================
+//
+// The eighteenth cold walk's finished deliverable — 12,642 characters of
+// otherwise flawless English, the document an Expert hands a customer or a new
+// hire — contained exactly one machine token:
+//
+//   Editor's `violations_not_fixed: []` — OVERRULED as premature.
+//
+// Same class as the knob key above, one seam further out: a key out of a
+// schema WE declared and handed the model (`aidream/services/masterworks/
+// build.py`, the Editor's output shape), quoted back by the model — which is
+// correct behaviour for an agent citing what it was given — and printed raw
+// because nothing on the reading side turned it into words.
+//
+// `personSentence` answers a knob key with "this setting", which is right for
+// a sentence ABOUT a setting and wrong for a field name being quoted inside
+// somebody's ruling. So the SHAPE is shared from here (one definition of what
+// an identifier looks like, never a second regex) and the WORDS are the
+// caller's: `features/masterwork/ruleCitations.ts` renders them in prose.
+
+/**
+ * Is this token a machine identifier — an underscore-joined lowercase key, as
+ * a schema field or a settings row writes one?
+ *
+ * `minSegments` is the caller's call, and the difference is about DELIMITERS,
+ * not about taste. Running loose in prose the floor is 3 (the
+ * {@link personSentence} rule: `word_count` shapes occur in ordinary technical
+ * English and a false positive mangles a real sentence). Inside a delimiter a
+ * person can see — a whole inline-code span, a JSON key — 2 is safe, because
+ * the delimiter already said "this is a machine thing".
+ */
+export function isMachineIdentifier(
+  token: string | null | undefined,
+  { minSegments = 3 }: { minSegments?: number } = {},
+): boolean {
+  const value = (token ?? "").trim();
+  if (value === "") return false;
+  const segments = `(?:_[a-z0-9]+){${minSegments - 1},}`;
+  return new RegExp(`^[a-z][a-z0-9]*${segments}$`).test(value);
+}
+
+/**
+ * The words a machine identifier was always standing for:
+ * `violations_not_fixed` → `violations not fixed`.
+ *
+ * A resolution, never an invention — the underscores become spaces and
+ * nothing else changes, so no reader is told something the token did not say.
+ */
+export function machineIdentifierWords(token: string): string {
+  return token.replace(/_/g, " ");
+}
