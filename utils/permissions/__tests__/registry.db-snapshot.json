@@ -22,12 +22,122 @@
     "is_active": true
   },
   {
+    "resource_type": "agent_mandate_note",
+    "table_name": "mandate_note",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Agent Mandate Note",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "agent_prompt_remediation",
+    "table_name": "prompt_remediation",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Agent Prompt Remediation",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "agent_run",
     "table_name": "agent_run",
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Agent Run",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "agent_shortcut",
+    "table_name": "shortcut",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Agent Shortcut",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "agent_template",
+    "table_name": "template",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Agent Template",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "anon_form",
+    "table_name": "anon_form",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Anon Form",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "anon_hit",
+    "table_name": "anon_hit",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Anon Hit",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "anon_inbound",
+    "table_name": "anon_inbound",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Anon Inbound",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "anon_replay",
+    "table_name": "anon_replay",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Anon Replay",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "anon_submission",
+    "table_name": "anon_submission",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Anon Submission",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "anon_token",
+    "table_name": "anon_token",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Anon Token",
     "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
@@ -44,6 +154,39 @@
     "is_active": true
   },
   {
+    "resource_type": "app_instance",
+    "table_name": "app_instances",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "App Instance",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "app_setting",
+    "table_name": "app_settings",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "App Setting",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "app_sync_status",
+    "table_name": "app_sync_status",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "App Sync Status",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "assessment",
     "table_name": "assessment",
     "id_column": "id",
@@ -51,6 +194,39 @@
     "is_public_column": null,
     "display_label": "Assessment",
     "url_path_template": "/education/quizzes/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "assessment_result",
+    "table_name": "assessment_result",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Assessment Result",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "assignment_session",
+    "table_name": "session",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Assignment Session",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "assist",
+    "table_name": "assists",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Assist",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -66,6 +242,17 @@
     "is_active": false
   },
   {
+    "resource_type": "billing_spend_guardrail",
+    "table_name": "spend_guardrail",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Billing Spend Guardrail",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "browser_profile",
     "table_name": "profile",
     "id_column": "id",
@@ -77,12 +264,67 @@
     "is_active": true
   },
   {
+    "resource_type": "calendar_event",
+    "table_name": "calendar_event",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Calendar Event",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "canvas_item",
     "table_name": "canvas_items",
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Canvas Item",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "canvas_score",
+    "table_name": "canvas_scores",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Canvas Score",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "canvas_view",
+    "table_name": "canvas_views",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Canvas View",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "category",
+    "table_name": "categories",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Category",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "cmp_feedback",
+    "table_name": "cmp_response_feedback",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Cmp Feedback",
     "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
@@ -121,6 +363,94 @@
     "is_active": true
   },
   {
+    "resource_type": "comment",
+    "table_name": "comments",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Comment",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "commerce_certified_printer",
+    "table_name": "certified_printer",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Commerce Certified Printer",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "commerce_cloud_sync_connection",
+    "table_name": "cloud_sync_connection",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Commerce Cloud Sync Connection",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "commerce_intake_batch",
+    "table_name": "intake_batch",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Commerce Intake Batch",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "commerce_label_batch",
+    "table_name": "label_batch",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Commerce Label Batch",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "commerce_marketplace_account",
+    "table_name": "marketplace_account",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Commerce Marketplace Account",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "commerce_print_order",
+    "table_name": "print_order",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Commerce Print Order",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "commerce_product",
+    "table_name": "product",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Commerce Product",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "comparison_set",
     "table_name": "cmp_comparison_sets",
     "id_column": "id",
@@ -128,6 +458,28 @@
     "is_public_column": null,
     "display_label": "Comparison Set",
     "url_path_template": "/agents/compare?set={id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "contact_medium",
+    "table_name": "contact_medium",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Contact Medium",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "contact_submission",
+    "table_name": "contact_submissions",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Contact Submission",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -154,6 +506,17 @@
     "is_active": true
   },
   {
+    "resource_type": "context_item_suggestion",
+    "table_name": "context_item_suggestions",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Context Item Suggestion",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "conversation",
     "table_name": "conversation",
     "id_column": "id",
@@ -161,6 +524,17 @@
     "is_public_column": null,
     "display_label": "Conversation",
     "url_path_template": "/chat/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "crm_blocklist_entry",
+    "table_name": "blocklist_entry",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Crm Blocklist Entry",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -176,6 +550,17 @@
     "is_active": true
   },
   {
+    "resource_type": "crm_enrichment_call",
+    "table_name": "enrichment_call",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Crm Enrichment Call",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "crm_outreach_list",
     "table_name": "outreach_list",
     "id_column": "id",
@@ -183,6 +568,28 @@
     "is_public_column": null,
     "display_label": "Outreach List",
     "url_path_template": "/crm/outreach-lists/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "crm_registry_ingest_run",
+    "table_name": "registry_ingest_run",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Crm Registry Ingest Run",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "crm_saved_view",
+    "table_name": "saved_view",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Crm Saved View",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -198,6 +605,17 @@
     "is_active": true
   },
   {
+    "resource_type": "crm_sending_policy",
+    "table_name": "sending_policy",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Crm Sending Policy",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "custom_entity_definition",
     "table_name": "custom_entity_definition",
     "id_column": "id",
@@ -209,12 +627,45 @@
     "is_active": true
   },
   {
+    "resource_type": "custom_field_definition",
+    "table_name": "custom_field_definition",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Custom Field Definition",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "custom_record",
     "table_name": "custom_record",
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Custom Record",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "cx_agent_memory",
+    "table_name": "agent_memory",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Cx Agent Memory",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "cx_user_request",
+    "table_name": "user_request",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Cx User Request",
     "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
@@ -242,6 +693,39 @@
     "is_active": true
   },
   {
+    "resource_type": "derive_run",
+    "table_name": "derive_runs",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Derive Run",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "dict_entry",
+    "table_name": "dict_entries",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Dict Entry",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "dict_setting",
+    "table_name": "dict_settings",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Dict Setting",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "dm_conversation",
     "table_name": "dm_conversations",
     "id_column": "id",
@@ -249,6 +733,39 @@
     "is_public_column": null,
     "display_label": "Direct Conversation",
     "url_path_template": "/messages/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "doc_render",
+    "table_name": "doc_render",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Doc Render",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "doc_signature",
+    "table_name": "doc_signature",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Doc Signature",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "egress_device",
+    "table_name": "egress_device",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Egress Device",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -270,6 +787,39 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Signature envelope",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "esign_provider_binding",
+    "table_name": "provider_binding",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Esign Provider Binding",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "external_link",
+    "table_name": "external_link",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "External Link",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "external_source",
+    "table_name": "external_source",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "External Source",
     "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
@@ -385,6 +935,17 @@
     "is_active": false
   },
   {
+    "resource_type": "flexible_data",
+    "table_name": "flexible_data",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Flexible Data",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "folder",
     "table_name": "folders",
     "id_column": "id",
@@ -396,12 +957,56 @@
     "is_active": true
   },
   {
+    "resource_type": "game_badge",
+    "table_name": "game_badge",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Game Badge",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "game_result",
+    "table_name": "game_result",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Game Result",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "game_room",
+    "table_name": "game_room",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Game Room",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "global_request",
     "table_name": "global_request",
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Runtime Request",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "google_document",
+    "table_name": "google_document",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Google Document",
     "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
@@ -418,6 +1023,28 @@
     "is_active": true
   },
   {
+    "resource_type": "guided_checklist_run",
+    "table_name": "guided_checklist_run",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Guided Checklist Run",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "heatmap_save",
+    "table_name": "heatmap_saves",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Heatmap Save",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "hindsight_enrollment",
     "table_name": "enrollment",
     "id_column": "id",
@@ -425,6 +1052,28 @@
     "is_public_column": null,
     "display_label": "Hindsight Enrollment",
     "url_path_template": "/administration/agents/hindsight?enrollment={id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hindsight_regression_case",
+    "table_name": "regression_case",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hindsight Regression Case",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hindsight_replay_step",
+    "table_name": "replay_step",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hindsight Replay Step",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -440,12 +1089,34 @@
     "is_active": true
   },
   {
+    "resource_type": "hr_alert_routing_rule",
+    "table_name": "alert_routing_rule",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Alert Routing Rule",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "hr_asset",
     "table_name": "asset",
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Asset",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_auto_close_rule",
+    "table_name": "auto_close_rule",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Auto Close Rule",
     "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
@@ -468,6 +1139,17 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Candidate",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_careers_portal",
+    "table_name": "careers_portal",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Careers Portal",
     "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
@@ -512,6 +1194,50 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Course",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_crew",
+    "table_name": "crew",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Crew",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_deduction_code",
+    "table_name": "deduction_code",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Deduction Code",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_department",
+    "table_name": "department",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Department",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_earning_code",
+    "table_name": "earning_code",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Earning Code",
     "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
@@ -572,6 +1298,17 @@
     "is_active": true
   },
   {
+    "resource_type": "hr_holiday_calendar",
+    "table_name": "holiday_calendar",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Holiday Calendar",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "hr_i9",
     "table_name": "i9",
     "id_column": "id",
@@ -589,6 +1326,39 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Interview",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_interview_kit",
+    "table_name": "interview_kit",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Interview Kit",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_job_title",
+    "table_name": "job_title",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Job Title",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_jurisdiction_rule_org_decision",
+    "table_name": "jurisdiction_rule_org_decision",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Jurisdiction Rule Org Decision",
     "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
@@ -616,6 +1386,17 @@
     "is_active": true
   },
   {
+    "resource_type": "hr_location",
+    "table_name": "location",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Location",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "hr_offer",
     "table_name": "offer",
     "id_column": "id",
@@ -624,6 +1405,61 @@
     "display_label": "Offer",
     "url_path_template": "/hr",
     "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_overtime_alert_rule",
+    "table_name": "overtime_alert_rule",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Overtime Alert Rule",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_pay_group",
+    "table_name": "pay_group",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Pay Group",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_posting",
+    "table_name": "posting",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Posting",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_provider_binding",
+    "table_name": "provider_binding",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Provider Binding",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_recalculation_batch",
+    "table_name": "recalculation_batch",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Recalculation Batch",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
     "is_active": true
   },
   {
@@ -671,6 +1507,39 @@
     "is_active": true
   },
   {
+    "resource_type": "hr_schedule",
+    "table_name": "schedule",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Schedule",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_schedule_guidance",
+    "table_name": "schedule_guidance",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Schedule Guidance",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_schedule_template",
+    "table_name": "schedule_template",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Schedule Template",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "hr_separation",
     "table_name": "separation",
     "id_column": "id",
@@ -715,6 +1584,17 @@
     "is_active": true
   },
   {
+    "resource_type": "hr_workflow_definition",
+    "table_name": "workflow_definition",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Hr Workflow Definition",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "hr_workflow_instance",
     "table_name": "workflow_instance",
     "id_column": "id",
@@ -722,6 +1602,17 @@
     "is_public_column": null,
     "display_label": "HR approval request",
     "url_path_template": "/hr/tasks/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "iam_api_key",
+    "table_name": "api_keys",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Iam Api Key",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -748,6 +1639,138 @@
     "is_active": true
   },
   {
+    "resource_type": "invitation_code",
+    "table_name": "invitation_codes",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Invitation Code",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "invitation_request",
+    "table_name": "invitation_requests",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Invitation Request",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "io_comment",
+    "table_name": "io_comment",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Io Comment",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "io_import",
+    "table_name": "io_import",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Io Import",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "io_outbox",
+    "table_name": "io_outbox",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Io Outbox",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "item_mastery",
+    "table_name": "item_mastery",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Item Mastery",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "kg_alert",
+    "table_name": "kg_alerts",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Kg Alert",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "kg_sweep_queue",
+    "table_name": "kg_sweep_queue",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Kg Sweep Queue",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "kg_sweep_run",
+    "table_name": "kg_sweep_run",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Kg Sweep Run",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "kg_sweep_state",
+    "table_name": "kg_sweep_state",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Kg Sweep State",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "kg_value_match",
+    "table_name": "kg_value_matches",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Kg Value Match",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "league_membership",
+    "table_name": "league_membership",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "League Membership",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "learn_doc",
     "table_name": "learn_doc",
     "id_column": "id",
@@ -755,6 +1778,39 @@
     "is_public_column": null,
     "display_label": "Study Guide",
     "url_path_template": "/education/learn/{slug}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "library_doc",
+    "table_name": "library_docs",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Library Doc",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "mandate_binding",
+    "table_name": "binding",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Mandate Binding",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "mandate_treatment",
+    "table_name": "treatment",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Mandate Treatment",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -770,6 +1826,61 @@
     "is_active": true
   },
   {
+    "resource_type": "media_catalog_setting",
+    "table_name": "catalog_setting",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Media Catalog Setting",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "media_source_library",
+    "table_name": "source_library",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Media Source Library",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "meet_call_invite",
+    "table_name": "meet_call_invites",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Meet Call Invite",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "meet_meeting",
+    "table_name": "meet_meetings",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Meet Meeting",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "merge_field_provenance",
+    "table_name": "merge_field_provenance",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Merge Field Provenance",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "message_template",
     "table_name": "message_template",
     "id_column": "id",
@@ -777,6 +1888,17 @@
     "is_public_column": null,
     "display_label": "Message Template",
     "url_path_template": "/chat/message-templates/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "ner_shadow",
+    "table_name": "ner_canonicalizer_shadow",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Ner Shadow",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -803,6 +1925,127 @@
     "is_active": true
   },
   {
+    "resource_type": "notification",
+    "table_name": "notification",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Notification",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "notification_event_override",
+    "table_name": "notification_event_override",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Notification Event Override",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "notification_event_type",
+    "table_name": "notification_event_type",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Notification Event Type",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "notification_preference",
+    "table_name": "notification_preference",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Notification Preference",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "ops_proof_check",
+    "table_name": "proof_check",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Ops Proof Check",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "ops_proof_scenario",
+    "table_name": "proof_scenario",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Ops Proof Scenario",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "org_member_control",
+    "table_name": "org_member_controls",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Org Member Control",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "organization",
+    "table_name": "organizations",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Organization",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "output_feedback",
+    "table_name": "output_feedback",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Output Feedback",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "page_extraction_job",
+    "table_name": "page_extraction_jobs",
+    "id_column": "id",
+    "owner_column": "owner_id",
+    "is_public_column": null,
+    "display_label": "Page Extraction Job",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "page_extraction_page_run",
+    "table_name": "page_extraction_page_runs",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Page Extraction Page Run",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "party",
     "table_name": "party",
     "id_column": "id",
@@ -810,6 +2053,50 @@
     "is_public_column": null,
     "display_label": "Entity",
     "url_path_template": "/crm/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "pc_article",
+    "table_name": "pc_articles",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Pc Article",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "pc_episode",
+    "table_name": "pc_episodes",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Pc Episode",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "pc_show",
+    "table_name": "pc_shows",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Pc Show",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "pc_studio_run",
+    "table_name": "pc_studio_runs",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Pc Studio Run",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -825,6 +2112,17 @@
     "is_active": true
   },
   {
+    "resource_type": "plan_entity",
+    "table_name": "entity",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Plan Entity",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "plan_node",
     "table_name": "node",
     "id_column": "id",
@@ -836,12 +2134,89 @@
     "is_active": true
   },
   {
+    "resource_type": "plan_profile",
+    "table_name": "profile",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Plan Profile",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "platform_action_request",
+    "table_name": "action_request",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Platform Action Request",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "platform_outcome_event",
+    "table_name": "outcome_event",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Platform Outcome Event",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "platform_saved_view",
+    "table_name": "saved_view",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Platform Saved View",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "platform_share_link",
+    "table_name": "share_links",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Platform Share Link",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "podcast_race",
+    "table_name": "pc_race",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Podcast Race",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "processed_document",
     "table_name": "processed_documents",
     "id_column": "id",
     "owner_column": "owner_id",
     "is_public_column": null,
     "display_label": "Processed document",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "product_capture_item",
+    "table_name": "product_capture_item",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Product Capture Item",
     "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
@@ -880,6 +2255,17 @@
     "is_active": false
   },
   {
+    "resource_type": "purpose",
+    "table_name": "purpose",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Purpose",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "quiz_session",
     "table_name": "quiz_sessions",
     "id_column": "id",
@@ -911,6 +2297,17 @@
     "url_path_template": "/files/{id}",
     "rls_uses_has_permission": false,
     "is_active": false
+  },
+  {
+    "resource_type": "research_context_bundle",
+    "table_name": "rs_context_bundle",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Research Context Bundle",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
   },
   {
     "resource_type": "research_template",
@@ -1001,6 +2398,17 @@
     "is_active": false
   },
   {
+    "resource_type": "scope_suggestion",
+    "table_name": "scope_suggestions",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Scope Suggestion",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "seo_change_set",
     "table_name": "change_set",
     "id_column": "id",
@@ -1023,6 +2431,28 @@
     "is_active": true
   },
   {
+    "resource_type": "seo_engine_schedule",
+    "table_name": "engine_schedule",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Seo Engine Schedule",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "seo_gsc_dig_rule",
+    "table_name": "gsc_dig_rule",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Seo Gsc Dig Rule",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "seo_keyword",
     "table_name": "keyword",
     "id_column": "id",
@@ -1034,6 +2464,17 @@
     "is_active": true
   },
   {
+    "resource_type": "seo_keyword_class_rule",
+    "table_name": "keyword_class_rule",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Seo Keyword Class Rule",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "seo_rank_target",
     "table_name": "rank_target",
     "id_column": "id",
@@ -1041,6 +2482,28 @@
     "is_public_column": null,
     "display_label": "SEO Rank Target",
     "url_path_template": "/marketing/ranks?target={id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "seo_source_request",
+    "table_name": "source_request",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Seo Source Request",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "seo_story_angle",
+    "table_name": "story_angle",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Seo Story Angle",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -1078,6 +2541,28 @@
     "is_active": true
   },
   {
+    "resource_type": "skill_render_definition",
+    "table_name": "render_definition",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Skill Render Definition",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "sms_consent",
+    "table_name": "sms_consent",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Sms Consent",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "sms_conversation",
     "table_name": "sms_conversations",
     "id_column": "id",
@@ -1085,6 +2570,39 @@
     "is_public_column": null,
     "display_label": "SMS Conversation",
     "url_path_template": "/sms?conversation={id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "sms_notification",
+    "table_name": "sms_notifications",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Sms Notification",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "sms_notification_preference",
+    "table_name": "sms_notification_preferences",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Sms Notification Preference",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "sms_phone_number",
+    "table_name": "sms_phone_numbers",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Sms Phone Number",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -1100,6 +2618,28 @@
     "is_active": true
   },
   {
+    "resource_type": "studio_recording_chunks",
+    "table_name": "studio_recording_chunks",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Studio Recording Chunks",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "studio_run",
+    "table_name": "studio_runs",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Studio Run",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "studio_session",
     "table_name": "studio_sessions",
     "id_column": "id",
@@ -1111,6 +2651,28 @@
     "is_active": true
   },
   {
+    "resource_type": "study_attempt",
+    "table_name": "study_attempt",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Study Attempt",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "study_goal",
+    "table_name": "study_goal",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Study Goal",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "study_media",
     "table_name": "study_media",
     "id_column": "id",
@@ -1118,6 +2680,50 @@
     "is_public_column": null,
     "display_label": "Study Media",
     "url_path_template": "/education/media/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "study_plan",
+    "table_name": "study_plan",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Study Plan",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "study_plan_block",
+    "table_name": "study_plan_block",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Study Plan Block",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "study_plan_day",
+    "table_name": "study_plan_day",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Study Plan Day",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "study_session",
+    "table_name": "study_session",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Study Session",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -1155,6 +2761,17 @@
     "is_active": true
   },
   {
+    "resource_type": "udt_dataset_template",
+    "table_name": "udt_dataset_templates",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Udt Dataset Template",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "udt_document",
     "table_name": "udt_documents",
     "id_column": "id",
@@ -1162,6 +2779,39 @@
     "is_public_column": null,
     "display_label": "Document",
     "url_path_template": "/documents/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "ui_surface_agent_pref",
+    "table_name": "ui_surface_agent_pref",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Ui Surface Agent Pref",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "ui_surface_config",
+    "table_name": "ui_surface_config",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Ui Surface Config",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "user_achievement",
+    "table_name": "user_achievements",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "User Achievement",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -1177,12 +2827,89 @@
     "is_active": true
   },
   {
+    "resource_type": "user_bookmark",
+    "table_name": "user_bookmarks",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "User Bookmark",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "user_email_preference",
+    "table_name": "user_email_preferences",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "User Email Preference",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "user_feedback",
     "table_name": "user_feedback",
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Feedback item",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "user_markdown_sample",
+    "table_name": "user_markdown_samples",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "User Markdown Sample",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "user_memory",
+    "table_name": "user_memory",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "User Memory",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "user_profile",
+    "table_name": "profiles",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "User Profile",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "user_stat",
+    "table_name": "user_stats",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "User Stat",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "user_surface_state",
+    "table_name": "user_surface_state",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "User Surface State",
     "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
@@ -1195,6 +2922,72 @@
     "is_public_column": null,
     "display_label": "War Room",
     "url_path_template": "/war-room/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "wbx_capture",
+    "table_name": "wbx_capture",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Wbx Capture",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "wbx_demo",
+    "table_name": "wbx_demo",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Wbx Demo",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "wbx_highlight",
+    "table_name": "wbx_highlight",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Wbx Highlight",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "wbx_pattern",
+    "table_name": "wbx_pattern",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Wbx Pattern",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "wbx_screenshot",
+    "table_name": "wbx_screenshot",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Wbx Screenshot",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "wbx_seo_audit",
+    "table_name": "wbx_seo_audit",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Wbx Seo Audit",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -1276,6 +3069,17 @@
     "is_active": true
   },
   {
+    "resource_type": "web_youtube_video",
+    "table_name": "youtube_video",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Web Youtube Video",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "wf_node_data_slot",
     "table_name": "node_data_slot",
     "id_column": "id",
@@ -1305,6 +3109,17 @@
     "is_public_column": null,
     "display_label": "Workflow",
     "url_path_template": "/workflows/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "workflow_comparison",
+    "table_name": "comparison",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Workflow Comparison",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
