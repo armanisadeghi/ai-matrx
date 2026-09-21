@@ -41,7 +41,7 @@ const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY as string;
 const MEMBERS: Array<Record<string, unknown>> = [
   { member: "Priya Raghunathan", membership_tier: "Platform", joined: "2026-01-14", monthly_dues: 89, waiver_signed: true, fob_issued: true },
   { member: "Marcus Oyelaran", membership_tier: "Platform", joined: "2025-11-02", monthly_dues: 89, waiver_signed: true, fob_issued: true },
-  { member: "Dana Whitfield", membership_tier: "Open gym", joined: "2026-03-09", monthly_dues: 49, waiver_signed: false, fob_issued: false },
+  { member: "Rosalind Achebe", membership_tier: "Open gym", joined: "2026-03-09", monthly_dues: 49, waiver_signed: false, fob_issued: false },
   { member: "Tomas Ferreira", membership_tier: "Platform", joined: "2026-08-21", monthly_dues: 89, waiver_signed: false, fob_issued: false },
   // NOBODY HAS ASKED THESE TWO YET. The key is simply absent from the document — it is
   // not `false`, and the front desk's whole question is which members these are.
