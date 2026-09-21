@@ -43,8 +43,8 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZZ HISTORY-SCREENS red',
-          'zzz-hs-red-' || replace(v_org::text,'-',''), 'ZHR', c_admin);
+  values (v_org, 'Cobblestone Bakery & Cafe Red',
+          'cobblestone-bakery-red-' || replace(v_org::text,'-',''), 'CBR', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
          (v_org, 'organization', v_org, c_dana,  'member', 'active');
@@ -200,7 +200,7 @@ begin
     end if;
     v_red := v_red + 1;
     update hs_red set v = v_red::text where k = 'red';
-    raise notice '6 RED — the agent's write changed the price and nothing else, and the old comparison lists %: %.',
+    raise notice '6 RED — the agent''s write changed the price and nothing else, and the old comparison lists %: %.',
       array_length(v_keys, 1), array_to_string(v_keys, ', ');
   end;
 end;
