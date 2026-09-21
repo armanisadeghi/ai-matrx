@@ -18054,6 +18054,16 @@ export type Database = {
         }
         Returns: string
       }
+      enqueue_sms_staff_message: {
+        Args: {
+          p_bodies: string[]
+          p_idempotency_prefix: string
+          p_in_reply_to_message_id?: string
+          p_reason: string
+          p_sms_conversation_id: string
+        }
+        Returns: string[]
+      }
       fail_voice_recording_custody_work: {
         Args: {
           p_canonical_file_id?: string
