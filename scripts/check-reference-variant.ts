@@ -36,6 +36,7 @@
  */
 import { loadDbEnv, connectDirect } from "./lib/direct-db";
 import type pg from "pg";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ESC = String.fromCharCode(27);
 const C = {
@@ -343,4 +344,4 @@ async function main(): Promise<number> {
   return 1;
 }
 
-main().then((c) => process.exit(c)).catch((e) => { console.error(e); process.exit(2); });
+main().then((c) => exitAfterDrain(c)).catch((e) => { console.error(e); exitAfterDrain(2); });
