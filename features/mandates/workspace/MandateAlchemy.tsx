@@ -121,7 +121,12 @@ export function MandateAlchemy({
     if (parts.length === 0) return buildTab(tab);
     const blocked = parts.find((capture) => capture.status !== "ready");
     if (blocked) return blocked;
-    return { status: "ready", savedOnly: parts.every((capture) => capture.savedOnly === true), data: Object.fromEntries(parts.map((capture, index) => [`part_${index + 1}`, (capture as Extract<MandateAlchemyCapture, { status: "ready" }>).data])) };
+    // `find` narrows `blocked`, never the array, so re-filter with a predicate:
+    // that is what lets `savedOnly` and `data` be read without a cast.
+    const ready = parts.filter(
+      (capture): capture is Extract<MandateAlchemyCapture, { status: "ready" }> => capture.status === "ready",
+    );
+    return { status: "ready", savedOnly: ready.every((capture) => capture.savedOnly === true), data: Object.fromEntries(ready.map((capture, index) => [`part_${index + 1}`, capture.data])) };
   };
   const current = () => {
     const captured = captureTab(activeTab);
