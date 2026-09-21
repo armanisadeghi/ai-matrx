@@ -1,0 +1,5 @@
+-- chair-step: restores custom.agg_record_name to the body that never consults the Table's own
+-- title_field and falls back to left(id::text, 8) — so every digest row for a Table named by
+-- anything else reads as eight hex characters, and as a full uuid when that column is a
+-- relation. Re-apply the agg_record_name body from
+-- `migrations/campaign/builders_a_summary_is_not_raw_json.sql` to restore it.
