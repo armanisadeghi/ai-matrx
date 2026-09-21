@@ -11,6 +11,7 @@ import { supabase } from "@/utils/supabase/client";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { DocumentRulebookNotice } from "@/features/masterwork/components/DocumentRulebookNotice";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
 import {
@@ -298,20 +299,31 @@ export default function DocumentPage({
           body takes header clearance instead of scrolling behind the glass —
           without it that row (and Save / History) sits under the shell header
           and collides with the avatar. */}
-      <div className="h-full w-full overflow-hidden pt-[var(--shell-header-h)]">
-        {permsResolved && doc ? (
-          <DocumentEditor
-            documentId={id}
-            documentName={doc.document_name}
-            editable={canEdit}
-            collab
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-muted-foreground">
-            <Loader2 className="size-4 animate-spin mr-2" />
-            Loading document…
-          </div>
-        )}
+      <div className="flex h-full w-full flex-col overflow-hidden pt-[var(--shell-header-h)]">
+        {/* WHAT IS THIS AND WHERE DOES WHAT I TYPE GO. A document reached from
+            a Rulebook's "Add more" opens in a NEW TAB on a word processor with
+            no context and no Back; the row says what the writing is for and
+            offers the way home. It renders itself away when the document
+            belongs to no Rulebook, so the ordinary visitor sees nothing. */}
+        <DocumentRulebookNotice
+          documentId={doc ? id : null}
+          className="mx-2 mt-2 shrink-0"
+        />
+        <div className="min-h-0 flex-1">
+          {permsResolved && doc ? (
+            <DocumentEditor
+              documentId={id}
+              documentName={doc.document_name}
+              editable={canEdit}
+              collab
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-muted-foreground">
+              <Loader2 className="size-4 animate-spin mr-2" />
+              Loading document…
+            </div>
+          )}
+        </div>
       </div>
     </SurfaceRuntimeProvider>
   );

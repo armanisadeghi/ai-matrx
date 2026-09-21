@@ -44,6 +44,7 @@ import { toast } from "@/components/ui/use-toast";
 import { defaultDocumentPageStyle } from "../document-page-style";
 import { useDocumentRealtime } from "../hooks/useDocumentRealtime";
 import { useUniverDarkModeSync } from "../hooks/useUniverDarkModeSync";
+import { useUniverDocSurfaceTheme } from "../hooks/useUniverDocSurfaceTheme";
 import { sanitizeUniverDocSnapshot } from "../utils/sanitizeUniverDocSnapshot";
 import { isSnapshotMutation } from "../utils/isSnapshotMutation";
 import { disposeUniverInstance } from "../utils/disposeUniverInstance";
@@ -99,6 +100,13 @@ export default function DocumentEditor({
   const [bootState, setBootState] = useState<
     "booting" | "ready" | "load_error"
   >("booting");
+  /**
+   * Univer's UNIT id for the open document — the snapshot's own `id`, which is
+   * NOT `documentId` (a new document gets a fresh uuid; a loaded one keeps the
+   * id its snapshot was stored with). The theme sync addresses the render by
+   * unit, so it needs this rather than the row id.
+   */
+  const [unitId, setUnitId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -130,7 +138,19 @@ export default function DocumentEditor({
   }, [themeMode]);
 
   // Keep Univer's dark mode in lockstep with the app theme (Facade API).
+  // This reaches Univer's CHROME only — see the hook's header.
   useUniverDarkModeSync(apiRef, bootState === "ready");
+
+  // …and the page itself, which Univer paints from hardcoded LIGHT constants
+  // no theme ever reaches. Without this the document renders as a page in the
+  // wrong theme inside a frame in the wrong theme (cold walk 18: a black sheet
+  // in a white frame, in a dark app). Every Matrx surface that shows a cloud
+  // document mounts THIS component, so they all inherit the fix.
+  useUniverDocSurfaceTheme(
+    univerRef,
+    unitId ?? "",
+    bootState === "ready" && unitId !== null,
+  );
 
   const onRemoteSnapshot = useCallback(
     (evt: { snapshotId: string; createdBy: string | null }) => {
@@ -237,6 +257,15 @@ export default function DocumentEditor({
           createUniverDoc?: (data: Partial<IDocumentData>) => unknown;
         };
         fb.createUniverDoc?.(initial);
+        // Read the unit back off the facade rather than trusting `initial.id`:
+        // `sanitizeUniverDocSnapshot` may repair a snapshot, and Univer is the
+        // authority on what it actually mounted.
+        const activeDoc = (
+          apiRef.current as unknown as {
+            getActiveDocument?: () => { getId?: () => string } | null;
+          }
+        ).getActiveDocument?.();
+        setUnitId(activeDoc?.getId?.() ?? initial.id ?? null);
         setBootState("ready");
 
         // Command stream → debounced autosave. Registered for the lifetime of
@@ -273,6 +302,9 @@ export default function DocumentEditor({
 
     return () => {
       cancelled = true;
+      // The unit belongs to the instance being torn down — never let the next
+      // document's theme sync address the previous document's render.
+      setUnitId(null);
       // LEAVING THE PAGE IS NOT A REASON TO LOSE THE LAST SENTENCE. A
       // client-side route change (clicking Back) fires no `pagehide`, so the
       // 2.5s debounce window's keystrokes used to die here. `performSave`
