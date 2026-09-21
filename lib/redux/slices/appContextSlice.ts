@@ -52,6 +52,7 @@ import { activeOrgCookie } from "@/lib/organizations/activeOrgCookie";
 import { selectOrgBootstrapFailure } from "@/lib/organizations/orgBootstrapFailure";
 import { selectShouldPromptForOrganization } from "@/lib/organizations/shouldPromptForOrganization";
 import { markOrgBootstrapResolved } from "@/lib/organizations/orgBootstrapGate";
+import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import {
   REHYDRATE_ACTION_TYPE,
   type RehydrateAction,
@@ -656,9 +657,27 @@ export const appContextPolicy = definePolicy<AppContextState>({
       const { resolveActiveOrgContext } = await import(
         "@/lib/organizations/resolveActiveOrgContext"
       );
+      // 🚨 THE LINK'S OWN ORGANIZATION RIDES INTO THE RESOLVER (2026-09-21).
+      // A notification deep link now carries `?org=<uuid>`; without this the
+      // person arriving cold from an email or a text landed on "Select an
+      // organization first" instead of the thing the link named. It is passed
+      // as an INPUT to the one resolver rather than applied afterwards, so the
+      // membership check and the whole rung order stay in one place. It is not
+      // a default: absent, malformed, or naming an organization they do not
+      // belong to, it changes nothing and says so.
+      const {
+        readLinkOrganizationFromLocation,
+        readSwitchWhenALinkAsks,
+        readSignedInAs,
+        announceLinkOrganizationDecision,
+      } = await import("@/lib/organizations/linkOrganizationSession");
       let resolved: Awaited<ReturnType<typeof resolveActiveOrgContext>>;
       try {
-        resolved = await resolveActiveOrgContext(identity.userId);
+        resolved = await resolveActiveOrgContext(identity.userId, {
+          linkOrganizationId: readLinkOrganizationFromLocation(),
+          switchWhenALinkAsks: readSwitchWhenALinkAsks(),
+          signedInAs: readSignedInAs(),
+        });
       } catch (error) {
         // The membership read threw — `getUserOrganizations` fails closed, and
         // this is the `TypeError: Failed to fetch` path from the seat.
@@ -678,7 +697,14 @@ export const appContextPolicy = definePolicy<AppContextState>({
           orgBootstrapFailure: null,
         } satisfies Partial<AppContextState>);
       }
-      const { unreadableReason, ...context } = resolved;
+      const { unreadableReason, link, ...context } = resolved;
+      // Law 4: a move is announced and a refusal is said in words. Fired and
+      // not awaited — the boot answer must not wait on a toast module.
+      void announceLinkOrganizationDecision(link, (organizationId, organizationName) => {
+        getStoreSingleton()?.dispatch(
+          setOrganization({ id: organizationId, name: organizationName }),
+        );
+      });
       // A DEGRADED resolve is unreadable too: the resolver reached its last
       // rung only because `current_personal_org_id()` failed, so "none of your
       // thirteen organizations is selected" is a guess, not a reading.

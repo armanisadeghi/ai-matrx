@@ -222,6 +222,10 @@ export const defaultUserPreferences: UserPreferences = {
   // sync with the in-slice defaults at userPreferencesSlice.ts.
   organization: {
     defaultOrganizationId: null,
+    // Default ON: a link that names an organization is obeyed. The defect this
+    // answers is a notification deep link landing a person on "Select an
+    // organization first" instead of the thing the link named.
+    switchWhenALinkAsks: true,
   },
   // null = no scratchpad yet; the first open/type creates + activates one.
   scratchpad: {

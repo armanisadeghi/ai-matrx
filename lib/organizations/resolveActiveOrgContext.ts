@@ -32,7 +32,18 @@
 // organization, and the action resumes with it. Refusing is no longer a dead
 // end, so boot no longer has to guess to avoid one.
 //
-// THE TWO RUNGS THAT REMAIN, and why each is not a substitution:
+// THE RUNGS THAT REMAIN, and why each is not a substitution:
+//  -1. THE LINK'S OWN ORGANIZATION — `?org=<uuid>` on the URL that brought the
+//      person here (`lib/organizations/linkOrganization.ts`), added 2026-09-21
+//      because a notification deep link landed people on "Select an
+//      organization first" instead of the thing the link named. It sits ABOVE
+//      the remembered choice because it is the NEWER and more specific fact:
+//      the cookie says "where you were last", the link says "where THIS thing
+//      lives". It is NOT a default and it is not a guess — it is stated with
+//      the navigation, it is honoured only against the live membership list,
+//      it substitutes NOTHING when absent, malformed, or not theirs, and a
+//      real move is always announced. All four properties are argued at length
+//      in that module's header and pinned by its tests.
 //   0. this device's REMEMBERED CHOICE — the shared apex cookie
 //      (`lib/organizations/activeOrgCookie.ts`), identity-keyed, written only
 //      when the person themselves selected an organization on this browser
@@ -56,12 +67,24 @@ import {
   primePersonalOrgId,
 } from "@/lib/organizations/personalOrg";
 import { activeOrgCookie } from "@/lib/organizations/activeOrgCookie";
+import {
+  decideLinkOrganization,
+  readLinkOrganizationParam,
+  type LinkOrganizationDecision,
+} from "@/lib/organizations/linkOrganization";
 
 /** The org subset of appContext this resolver produces. */
 export interface ResolvedOrgContext {
   organization_id: string | null;
   organization_name: string | null;
   personal_organization_id: string | null;
+  /**
+   * What the link's `?org=` meant, when a link said anything. Present so the
+   * caller can SAY it — a refused link and an announced switch both have to
+   * reach the person in words (law 4), and this resolver is pure. Undefined
+   * when no link named an organization.
+   */
+  link?: LinkOrganizationDecision;
   /**
    * 🚨 WHY A NULL SELECTION MAY NOT BE AN ANSWER (R37, 2026-09-18).
    *
@@ -91,8 +114,25 @@ export interface ResolvedOrgContext {
  * downstream `ensureOrgId(undefined)` callsites resolve with zero round-trips.
  * Returns null only when the user has no orgs at all AND no personal org.
  */
+export interface ResolveActiveOrgContextOptions {
+  /**
+   * The raw `?org=` value from the URL that brought the person here, or the
+   * whole query string / `URLSearchParams` to read it out of. Omit it and this
+   * resolver behaves exactly as it did before the rung existed.
+   */
+  linkOrganizationId?: string | URLSearchParams | null;
+  /**
+   * The knob `userPreferences.organization.switchOnLinkPrompt` — "switch
+   * organization when a link asks". DEFAULT ON.
+   */
+  switchWhenALinkAsks?: boolean;
+  /** The account they are signed in as, for the refusal sentence. */
+  signedInAs?: string | null;
+}
+
 export async function resolveActiveOrgContext(
   userId: string,
+  options: ResolveActiveOrgContextOptions = {},
 ): Promise<ResolvedOrgContext | null> {
   // Authoritative personal org id (auto-provisioned at signup). Falls back to
   // the org-list heuristic only if the RPC is unavailable. This is IDENTITY
@@ -160,6 +200,13 @@ export async function resolveActiveOrgContext(
   const resolvedPersonalId = personalOrgId ?? ownedPersonalOrg?.id ?? null;
   primePersonalOrgId(resolvedPersonalId);
 
+  // THE LADDER BELOW THE LINK, computed first. The link's decision needs to
+  // know where the person WOULD be working, because the difference between "we
+  // moved you" (announce it) and "you were already there" (say nothing) is
+  // exactly that comparison. So rungs 0 and c run first and the link rung is
+  // applied on top; nothing about their behaviour changes when no link speaks.
+  let laddered: { id: string; name: string } | null = null;
+
   // 0. THIS DEVICE'S REMEMBERED CHOICE (the shared apex cookie) — if still a
   //    membership. It restores an organization the person themselves selected
   //    on this browser; a stale one is dropped so it cannot shadow rung c.
@@ -167,22 +214,65 @@ export async function resolveActiveOrgContext(
   if (storedOrgId) {
     const match = orgs.find((o) => o.id === storedOrgId);
     if (match) {
-      return {
-        organization_id: match.id,
-        organization_name: match.name,
-        personal_organization_id: resolvedPersonalId,
-      };
+      laddered = { id: match.id, name: match.name };
+    } else {
+      activeOrgCookie.clear();
     }
-    activeOrgCookie.clear();
   }
 
   // c. Exactly ONE membership → that org. Auto-selecting the only option is
   //    not choosing for anybody; there is nothing to choose.
-  if (orgs.length === 1) {
+  if (!laddered && orgs.length === 1) {
+    laddered = { id: orgs[0].id, name: orgs[0].name };
+  }
+
+  // -1. THE LINK'S OWN ORGANIZATION. Decided in one pure place so every branch
+  //     — honoured, already-current, offered, refused — is the same one the
+  //     seat-level tests exercise. `decideLinkOrganization` checks it against
+  //     `orgs`, which is the LIVE membership list: a link can open an
+  //     organization, never grant one.
+  const linkParam =
+    typeof options.linkOrganizationId === "string"
+      ? options.linkOrganizationId.includes("=")
+        ? readLinkOrganizationParam(options.linkOrganizationId)
+        : ({ kind: "named", organizationId: options.linkOrganizationId } as const)
+      : readLinkOrganizationParam(options.linkOrganizationId ?? null);
+  // A bare id that is not a uuid must still be judged, not trusted.
+  const param =
+    linkParam.kind === "named" &&
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      linkParam.organizationId,
+    )
+      ? ({ kind: "malformed", raw: linkParam.organizationId } as const)
+      : linkParam;
+
+  const link = decideLinkOrganization({
+    param,
+    memberships: orgs.map((o) => ({ id: o.id, name: o.name })),
+    currentOrganizationId: laddered?.id ?? null,
+    currentOrganizationName: laddered?.name ?? null,
+    switchWhenALinkAsks: options.switchWhenALinkAsks,
+    signedInAs: options.signedInAs,
+  });
+
+  if (link.kind === "honoured") {
     return {
-      organization_id: orgs[0].id,
-      organization_name: orgs[0].name,
+      organization_id: link.organizationId,
+      organization_name: link.organizationName,
       personal_organization_id: resolvedPersonalId,
+      link,
+    };
+  }
+
+  // Every other link outcome changes NOTHING about the selection — refused,
+  // offered, and already-current all leave the ladder's own answer standing.
+  // That is rule 3 of the module header: the link substitutes nothing.
+  if (laddered) {
+    return {
+      organization_id: laddered.id,
+      organization_name: laddered.name,
+      personal_organization_id: resolvedPersonalId,
+      ...(link.kind === "no-link" ? {} : { link }),
     };
   }
 
@@ -194,6 +284,7 @@ export async function resolveActiveOrgContext(
     organization_id: null,
     organization_name: null,
     personal_organization_id: resolvedPersonalId,
+    ...(link.kind === "no-link" ? {} : { link }),
     // A real answer, read from a real membership list: they belong to several
     // organizations and have not said which one this device is working in.
     // Never "unreadable" — that would hide the one question only they can

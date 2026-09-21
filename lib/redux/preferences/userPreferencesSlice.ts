@@ -499,6 +499,27 @@ export interface OrganizationPreferences {
    * features/organizations/hooks/useDefaultOrganization.
    */
   defaultOrganizationId: string | null;
+
+  /**
+   * "Switch organization when a link asks" — DEFAULT ON.
+   *
+   * Every deep link the platform emits carries `?org=<uuid>` naming the
+   * organization the destination is filed under
+   * (`lib/organizations/linkOrganization.ts`). With this on, following such a
+   * link puts this session in that organization so the thing the link names
+   * actually renders; the move is announced whenever it changes the
+   * organization the person was working in. With it off, a link that would
+   * MOVE them says so in words and offers the switch as an explicit click
+   * instead.
+   *
+   * 🚨 It never governs a link's organization when the person is working in
+   * NO organization: there is no switch to refuse there, and the alternative
+   * is the "Select an organization first" dead end this whole rung exists to
+   * end. And it is not a default-organization preference — nothing reads it to
+   * CHOOSE an organization; it only decides whether a link that already named
+   * one is obeyed.
+   */
+  switchWhenALinkAsks: boolean;
 }
 
 export type ThinkingMode = "none" | "simple" | "deep";
@@ -1156,6 +1177,8 @@ export const initializeUserPreferencesState = (
     organization: {
       // null = no default chosen → header reminder nudges the user.
       defaultOrganizationId: null,
+      // Default ON: a link that names an organization is obeyed.
+      switchWhenALinkAsks: true,
     },
     scratchpad: {
       // null = no scratchpad yet; the first open/type creates + activates one.
