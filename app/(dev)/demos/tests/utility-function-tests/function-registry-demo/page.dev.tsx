@@ -131,8 +131,8 @@ export default function AppletDemoPage() {
         parameters: {
           tableId: '{{step2.tableId}}',
           data: {
-            customer_name: 'John Doe',
-            email: 'john.doe@example.com',
+            customer_name: 'Marisol Fontaine',
+            email: 'marisol.fontaine@ironlinefitness.com',
             age: 32,
             is_active: true
           }
@@ -176,7 +176,7 @@ export default function AppletDemoPage() {
         title: 'Validate Email',
         description: 'Check if an email address is valid',
         parameters: {
-          email: 'user@example.com'
+          email: 'jordan.ramirez@ironlinefitness.com'
         }
       },
       {

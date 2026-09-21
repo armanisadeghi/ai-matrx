@@ -396,7 +396,7 @@ export default function SettingsPrimitivesDemoPage() {
             <SettingsLink
               label="Open documentation"
               description="Read the user guide in a new tab."
-              href="https://docs.example.com"
+              href="https://docs.aimatrx.com"
             />
             <SettingsLink
               label="View billing"

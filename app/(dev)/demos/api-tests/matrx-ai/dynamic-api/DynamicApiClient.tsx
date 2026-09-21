@@ -250,10 +250,10 @@ function schemaToExampleBody(
     const obj: Record<string, unknown> = {};
     for (const [key, val] of Object.entries(props)) {
       if (!required.includes(key)) continue;
-      if (val.type === "string") obj[key] = val.example ?? "";
+      if (val.type === "string") obj[key] = val.example ?? ""; // matrx-real-data:allow OpenAPI schema `.example` property access, not a domain
       else if (val.type === "integer" || val.type === "number")
-        obj[key] = val.example ?? 0;
-      else if (val.type === "boolean") obj[key] = val.example ?? false;
+        obj[key] = val.example ?? 0; // matrx-real-data:allow OpenAPI schema `.example` property access, not a domain
+      else if (val.type === "boolean") obj[key] = val.example ?? false; // matrx-real-data:allow OpenAPI schema `.example` property access, not a domain
       else if (val.type === "array") obj[key] = [];
       else if (val.type === "object") obj[key] = {};
       else obj[key] = null;

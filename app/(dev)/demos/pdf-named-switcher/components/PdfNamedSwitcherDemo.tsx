@@ -95,7 +95,7 @@ const STRESS_NAMES = [
   "FINAL_final_v3 (2) — client copy REVISED (use this one).pdf",
   "scan_20260716_093412_HP_LaserJet_M404dn_dept-7_ACCOUNTS.pdf",
   "a.pdf",
-  "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod.pdf",
+  "Fairhaven Steelworks Q3 2026 Safety Compliance Audit Report Final Draft for Review.pdf",
 ];
 
 export function PdfNamedSwitcherDemo() {

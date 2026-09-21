@@ -10,15 +10,15 @@ describe("feedback screenshot references", () => {
     expect(
       getFeedbackScreenshotRefs({
         image_file_ids: [fileId],
-        image_urls: ["https://legacy.example/screenshot.png", fileId],
+        image_urls: ["https://cdn-legacy.aimatrx.com/screenshot.png", fileId],
       }),
-    ).toEqual([fileId, "https://legacy.example/screenshot.png"]);
+    ).toEqual([fileId, "https://cdn-legacy.aimatrx.com/screenshot.png"]);
   });
 
   it("opens IDs through the canonical file viewer and leaves legacy URLs intact", () => {
     expect(feedbackScreenshotHref(fileId)).toBe(`/files/f/${fileId}`);
-    expect(feedbackScreenshotHref("https://legacy.example/screenshot.png")).toBe(
-      "https://legacy.example/screenshot.png",
+    expect(feedbackScreenshotHref("https://cdn-legacy.aimatrx.com/screenshot.png")).toBe(
+      "https://cdn-legacy.aimatrx.com/screenshot.png",
     );
   });
 });

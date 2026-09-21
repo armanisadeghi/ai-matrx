@@ -28,7 +28,7 @@ test("nothing but the fetch and the push can stop a release", () => {
   for (const message of fails) {
     assert.match(
       message,
-      /Cannot reach GitHub|private release worktree|Could not read the version|Could not write version|Could not create the release commit|Lost the push race|Cannot push to GitHub/,
+      /Cannot reach GitHub|assemble the release commit|Could not read the version|Could not write version|Could not assemble the release commit|Lost the push race|Cannot push to GitHub/,
       `a fail() before the push that is not GitHub or the worktree: ${message}`,
     );
   }
@@ -57,7 +57,7 @@ test("after the push nothing fails: the ERR trap is cleared and errexit is off",
 
 test("a failed migration, a conflicting local commit and a lost tag are findings, never stops", () => {
   assert.match(beforePush, /ship_finding "ERROR" "Migrations" "A pending migration failed to apply/);
-  assert.match(beforePush, /ship_finding "ERROR" "Git" "Local commits conflict with/);
+  assert.match(code, /ship_finding "ERROR" "Git" "Local commits conflict with/);
   assert.match(afterPush, /ship_finding "ERROR" "Git" "Tag \$NEW_TAG did not reach/);
 });
 
@@ -65,25 +65,18 @@ test("a lost push race is retried on the new main, up to five times; a network b
   assert.match(code, /SHIP_PUSH_ATTEMPTS=5/);
   assert.match(beforePush, /SHIP_RACES=\$\(\(SHIP_RACES \+ 1\)\)/);
   assert.match(beforePush, /SHIP_BLIPS=\$\(\(SHIP_BLIPS \+ 1\)\)/);
-  assert.match(beforePush, /reset --hard "\$REMOTE\/\$BRANCH"\n\s*ship_merge_local/);
 });
 
-test("the release commit is built in the private worktree of origin/main, never in this checkout", () => {
-  assert.match(code, /SHIP_WT="\$REPO_ROOT\/\.wt\/release"/);
-  assert.match(code, /git worktree add --detach "\$SHIP_WT" "\$REMOTE\/\$BRANCH"/);
-  assert.match(beforePush, /git -C "\$SHIP_WT" -c core\.hooksPath=\/dev\/null commit -q -m "\$RELEASE_COMMIT_MSG" -- "\$VERSION_FILE"/);
-  // This checkout only ever fast-forwards, and only after the push.
-  assert.doesNotMatch(beforePush, /git merge --ff-only/);
-  assert.match(afterPush, /git merge --ff-only "\$REMOTE\/\$BRANCH"/);
-});
-
-test("nothing is ever stashed, reset or rebased in the shared checkout", () => {
+test("the release commit is assembled with git plumbing on origin/main — no worktree, no branch, no stash", () => {
+  assert.match(code, /git merge-tree --write-tree "\$SHIP_BASE" "\$SHIP_LOCAL_HEAD"/);
+  assert.match(code, /git commit-tree "\$tree" "\$\{SHIP_PARENTS\[@\]\}" -m "\$RELEASE_COMMIT_MSG"/);
+  assert.doesNotMatch(code, /git worktree add/);
   assert.doesNotMatch(code, /git stash/);
-  assert.doesNotMatch(code, /\bgit rebase\b/);
-  assert.doesNotMatch(code, /^\s*git reset --hard/m); // only ever `git -C "$SHIP_WT" reset --hard`
-  for (const m of code.matchAll(/git (?:-C "[^"]+" )?reset --hard/g)) {
-    assert.match(m[0], /-C "\$SHIP_WT"/, `a reset outside the private worktree: ${m[0]}`);
-  }
+  assert.doesNotMatch(code, /git checkout -b/);
+});
+
+test("nothing in the release path resets any working folder", () => {
+  assert.doesNotMatch(code, /git (-C "[^"]*" )?reset --hard/);
 });
 
 test("the clean run prints exactly the ship line; INFO never prints", () => {

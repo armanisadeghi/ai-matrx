@@ -79,6 +79,7 @@ check "the local commit shipped"                 'git cat-file -e origin/main:mi
 check "the foreign mid-release push survived"    'git cat-file -e origin/main:race.txt 2>/dev/null'
 check "uncommitted work was never touched"       'grep -q "uncommitted work" shared.txt'
 check "the script never stashes"                 '! grep -qE "stash (push|pop)" scripts/release.sh'
+check "no worktree or branch was created"        '[[ $(git worktree list | wc -l) -eq 1 && $(git branch | wc -l) -eq 1 ]]'
 check "nothing was stashed"                      '[[ -z "$(git stash list)" ]]'
 check "the checkout was fast-forwarded to the release" '[[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]]'
 check "clean run prints one line"                '[[ $(grep -c . "$SANDBOX/out") -le 2 ]]'

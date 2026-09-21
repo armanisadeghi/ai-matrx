@@ -73,7 +73,7 @@ const FIXTURES: Array<{ label: string; value: unknown }> = [
   {
     label: "markdown text",
     value:
-      "## Summary\n\nThe analysis found **three** key themes:\n\n- Cost efficiency\n- Latency\n- Reliability\n\nSee [the report](https://example.com) for details.\n\n```ts\nconst x = 1;\n```",
+      "## Summary\n\nThe analysis found **three** key themes:\n\n- Cost efficiency\n- Latency\n- Reliability\n\nSee [the report](https://blueridgerecycling.com/reports/q3-cost-analysis) for details.\n\n```ts\nconst x = 1;\n```",
   },
   {
     label: "plain text (long)",
@@ -138,8 +138,8 @@ const FIXTURES: Array<{ label: string; value: unknown }> = [
       row_count: 2,
       columns: ["id", "name", "email"],
       rows: [
-        { id: 1, name: "Ada Lovelace", email: "ada@example.com" },
-        { id: 2, name: "Alan Turing", email: "alan@example.com" },
+        { id: 1, name: "Ada Lovelace", email: "ada.lovelace@signalandscalepodcast.com" },
+        { id: 2, name: "Alan Turing", email: "alan.turing@signalandscalepodcast.com" },
       ],
       duration_ms: 14,
     },
@@ -149,12 +149,12 @@ const FIXTURES: Array<{ label: string; value: unknown }> = [
     value: {
       action: "create",
       file_id: "b7f3c2a1-4d5e-4a6b-8c9d-0e1f2a3b4c5d",
-      url: "https://cdn.example.com/files/quarterly-report.docx",
+      url: "https://cdn.blueridgerecycling.com/files/quarterly-report.docx",
       signed_url:
-        "https://s3.example.com/owner/quarterly-report.docx?X-Amz-Signature=abc&Expires=123",
+        "https://blueridge-recycling-files.s3.us-east-1.amazonaws.com/owner/quarterly-report.docx?X-Amz-Signature=abc&Expires=123",
       download_url:
         "https://server.app.matrxserver.com/files/b7f3c2a1/download",
-      cdn_url: "https://cdn.example.com/files/quarterly-report.docx",
+      cdn_url: "https://cdn.blueridgerecycling.com/files/quarterly-report.docx",
       mime_type:
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       visibility: "personal",
@@ -248,7 +248,7 @@ const CTX_ENTRIES: ToolLifecycleEntry[] = [
       type: "text",
       label: "Patient Summary",
       content:
-        "## History\n\nPatient presents with **acute** chest pain, onset 2 hours ago. No prior cardiac history.\n\n- BP 148/92\n- HR 104\n- O2 sat 96%\n\nSee the [intake note](https://example.com) for the full timeline.",
+        "## History\n\nPatient presents with **acute** chest pain, onset 2 hours ago. No prior cardiac history.\n\n- BP 148/92\n- HR 104\n- O2 sat 96%\n\nSee the [intake note](https://meridianurgentcare.com/patients/intake-notes) for the full timeline.",
       total_chars: 214,
     },
   }),
@@ -264,7 +264,7 @@ const CTX_ENTRIES: ToolLifecycleEntry[] = [
       content: [
         {
           id: "C-1042",
-          client: "Acme Corp",
+          client: "Ridgeline Manufacturing",
           stage: "Discovery",
           days_open: 31,
         },
@@ -297,7 +297,7 @@ const CTX_ENTRIES: ToolLifecycleEntry[] = [
             type: "org",
             label: "Organization Profile",
             content:
-              "Acme Corp — enterprise legal services. 240 employees. Primary contact: Jane Doe (GC).",
+              "Whitmore & Chen LLP — enterprise legal services. 240 employees. Primary contact: Miriam Castellanos (GC).",
             total_chars: 84,
           },
         },
@@ -469,9 +469,9 @@ const SQL_ENTRIES: ToolLifecycleEntry[] = [
     },
     result: {
       rows: [
-        { id: 1, name: "Ada Lovelace", email: "ada@example.com" },
-        { id: 2, name: "Alan Turing", email: "alan@example.com" },
-        { id: 3, name: "Grace Hopper", email: "grace@example.com" },
+        { id: 1, name: "Ada Lovelace", email: "ada.lovelace@signalandscalepodcast.com" },
+        { id: 2, name: "Alan Turing", email: "alan.turing@signalandscalepodcast.com" },
+        { id: 3, name: "Grace Hopper", email: "grace.hopper@signalandscalepodcast.com" },
       ],
     },
   }),
@@ -577,7 +577,7 @@ const STATE_ENTRIES: ToolLifecycleEntry[] = [
     toolName: "running_tool_demo",
     displayName: "Running Tool (demo)",
     status: "progress",
-    latestMessage: "Reading https://example.com/article",
+    latestMessage: "Reading https://signalandscalepodcast.com/blog/season-4-recap",
     result: null,
   }),
   entry({
