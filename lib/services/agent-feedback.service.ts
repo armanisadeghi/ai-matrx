@@ -5,6 +5,14 @@
 
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+// 🚨 A REPORT IS NOT LOST BECAUSE THE DATABASE WAS BUSY FOR A MOMENT.
+// Every call in this file goes through `withTransientRetry`. On 2026-09-20 a
+// real-data crew lost the same limitation report twice to a single `57014`
+// (statement timeout) while resolving the CONSTANT agent service account — a
+// lookup that measures 0.738 ms against 742 rows on an index. The query was
+// never the problem; treating a retryable server condition as fatal was. See
+// `lib/db/transientRetry.ts` for the codes and the three rules.
+import { describeTransient, withTransientRetry } from "@/lib/db/transientRetry";
 import type {
   UserFeedback,
   FeedbackComment,
@@ -81,20 +89,27 @@ async function resolveAgentUserId(
   // `users.profiles` is 1:1 with `auth.users`, so a profile row proves the id
   // satisfies the feedback FK. (`auth.users` itself is not PostgREST-readable.)
   if (agentId) {
-    const { data: real } = await supabase
-      .schema("users")
-      .from("profiles")
-      .select("id")
-      .eq("id", agentId)
-      .maybeSingle();
+    const { data: real } = await withTransientRetry(
+      `users.profiles lookup for agent id ${agentId}`,
+      () =>
+        supabase
+          .schema("users")
+          .from("profiles")
+          .select("id")
+          .eq("id", agentId)
+          .maybeSingle(),
+    );
     if (real?.id) return { userId: real.id, substituted: false };
   }
 
   if (!cachedAgentUserId) {
     // The canonical email→user resolver (same RPC the sharing UI uses).
-    const { data, error } = await supabase.rpc("lookup_user_by_email", {
-      lookup_email: AGENT_SERVICE_ACCOUNT_EMAIL,
-    });
+    const lookupLabel = `public.lookup_user_by_email(${AGENT_SERVICE_ACCOUNT_EMAIL})`;
+    const { data, error } = await withTransientRetry(lookupLabel, () =>
+      supabase.rpc("lookup_user_by_email", {
+        lookup_email: AGENT_SERVICE_ACCOUNT_EMAIL,
+      }),
+    );
     const accountId = data?.[0]?.user_id;
     if (error || !accountId) {
       // Name WHICH lookup failed and HOW. "was not found" used to swallow the
@@ -107,12 +122,15 @@ async function resolveAgentUserId(
         : "no agent id was supplied";
       // access-errors: ok — developer/agent-facing MCP-surface error; the canonical definer resolver on the service-role client answered, so the outcome is verified, not guessed
       const why = error
-        ? `and the canonical lookup public.lookup_user_by_email(${AGENT_SERVICE_ACCOUNT_EMAIL}) failed: ` +
+        ? `and the canonical lookup ${lookupLabel} failed: ` +
           `${error.message}${error.code ? ` [${error.code}]` : ""}` +
           (error.code === "42501"
             ? " — a 42501 here is the RPC refusing THE SERVER, not a missing account: " +
               "the admin client has no auth.uid(), so the gate needs `and not iam.is_trusted_backend()`"
-            : "")
+            : "") +
+          // The caller is an agent. Telling it only WHAT broke makes it stop;
+          // telling it the condition clears makes it ask again and keep its work.
+          describeTransient(error, 3)
         : `and the canonical lookup public.lookup_user_by_email returned no row for the agent service account ${AGENT_SERVICE_ACCOUNT_EMAIL}`;
       throw new Error(`agent feedback cannot be attributed: ${who}, ${why}`);
     }
@@ -154,42 +172,61 @@ export async function submitFeedback(
   try {
     const supabase = createAdminClient();
     const { userId, substituted } = await resolveAgentUserId(supabase, agentId);
+    // Resolved BEFORE the insert rather than inline in the row literal, so the
+    // system-org read is retried on its own terms and a failure here names
+    // itself instead of arriving as a mystery inside `.insert(...)`.
+    const systemOrgId = await withTransientRetry(
+      "iam.system_orgs lookup for the platform organization",
+      () => resolveSystemOrgId(supabase),
+    );
 
-    const { data, error } = await supabase
-      .schema("users")
-      .from("user_feedback")
-      .insert({
-        // External agents have no personal org (no Supabase session); their
-        // feedback homes to the global system org.
-        // org-fallback-deliberate: an EXTERNAL agent has no Supabase session and no
-        //   organization at all — the platform is the only tenant that can hold its
-        //   feedback
-        organization_id: await resolveSystemOrgId(supabase),
-        user_id: userId,
-        metadata: agentId
-          ? {
-              agent_id: agentId,
-              attributed_to_service_account: substituted,
-            }
-          : { submitted_via: "agent_feedback_api" },
-        username: agentName || "External agent",
-        feedback_type: input.feedback_type,
-        // route is NOT NULL with no DB default; "" is the deliberate
-        // sentinel for "no route supplied" (route is optional at the API/MCP
-        // boundary — general feedback with no specific location).
-        // MATRX-EXCEPTION: honest default for a NOT NULL column, not a boundary failure
-        route: input.route ? input.route : "",
-        description: input.description,
-        status: "new",
-        priority: input.priority ?? "medium",
-        image_file_ids: input.image_file_ids
-          ? validateFeedbackScreenshotFileIds(input.image_file_ids)
-          : [],
-      })
-      .select()
-      .single();
+    const { data, error } = await withTransientRetry(
+      "users.user_feedback insert (the agent's report itself)",
+      () =>
+        supabase
+          .schema("users")
+          .from("user_feedback")
+          .insert({
+            // External agents have no personal org (no Supabase session); their
+            // feedback homes to the global system org.
+            // org-fallback-deliberate: an EXTERNAL agent has no Supabase session and no
+            //   organization at all — the platform is the only tenant that can hold its
+            //   feedback
+            organization_id: systemOrgId,
+            user_id: userId,
+            metadata: agentId
+              ? {
+                  agent_id: agentId,
+                  attributed_to_service_account: substituted,
+                }
+              : { submitted_via: "agent_feedback_api" },
+            username: agentName || "External agent",
+            feedback_type: input.feedback_type,
+            // route is NOT NULL with no DB default; "" is the deliberate
+            // sentinel for "no route supplied" (route is optional at the API/MCP
+            // boundary — general feedback with no specific location).
+            // MATRX-EXCEPTION: honest default for a NOT NULL column, not a boundary failure
+            route: input.route ? input.route : "",
+            description: input.description,
+            status: "new",
+            priority: input.priority ?? "medium",
+            image_file_ids: input.image_file_ids
+              ? validateFeedbackScreenshotFileIds(input.image_file_ids)
+              : [],
+          })
+          .select()
+          .single(),
+      // It CREATES the report row: only conditions that provably wrote nothing
+      // are retried, so a dropped connection can never file the same bug twice.
+      { repeatable: false },
+    );
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      // The report is the caller's WORK. If the database was merely busy, the
+      // refusal says so and says to ask again, so an agent does not read a
+      // cleared-in-a-second condition as "the feedback system is broken".
+      return { success: false, error: error.message + describeTransient(error, 3) };
+    }
     if (data === null) {
       return { success: false, error: "submitFeedback returned no row" };
     }
@@ -210,14 +247,23 @@ export async function getFeedbackItem(
   try {
     const supabase = createAdminClient();
 
-    const { data, error } = await supabase
-      .schema("users")
-      .from("user_feedback")
-      .select("*")
-      .eq("id", feedbackId)
-      .single();
+    // A READ is idempotent, so every retryable condition is retried — including
+    // the dropped connection a CREATE refuses. Asking for the same rows twice
+    // cannot produce two of anything.
+    const { data, error } = await withTransientRetry(
+      `users.user_feedback read of ${feedbackId}`,
+      () =>
+        supabase
+          .schema("users")
+          .from("user_feedback")
+          .select("*")
+          .eq("id", feedbackId)
+          .single(),
+    );
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      return { success: false, error: error.message + describeTransient(error, 3) };
+    }
     if (data === null) {
       // access-errors: ok — service-role (admin) client read, so RLS cannot hide the row; zero rows is a verified absence, and the string goes to the agent MCP surface, not a user screen
       return { success: false, error: "Feedback item not found" };
@@ -240,22 +286,40 @@ export async function listFeedbackItems(
     const supabase = createAdminClient();
     const requestedLimit = Math.min(Math.max(input.limit ?? 50, 1), 100);
     const fetchLimit = input.query ? 500 : requestedLimit;
-    let request = supabase
-      .schema("users")
-      .from("user_feedback")
-      .select("*")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(fetchLimit);
+    // 🚨 THE QUERY IS BUILT INSIDE THE THUNK, not outside it. A PostgREST
+    // builder is a one-shot thenable; handing the SAME instance to a retry
+    // would re-await a settled promise instead of asking the database again,
+    // so the retry would be a no-op that looks like one.
+    const buildRequest = () => {
+      let request = supabase
+        .schema("users")
+        .from("user_feedback")
+        .select("*")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(fetchLimit);
 
-    if (input.status) request = request.eq("status", input.status);
-    if (input.priority) request = request.eq("priority", input.priority);
-    if (input.feedback_type) {
-      request = request.eq("feedback_type", input.feedback_type);
+      if (input.status) request = request.eq("status", input.status);
+      if (input.priority) request = request.eq("priority", input.priority);
+      if (input.feedback_type) {
+        request = request.eq("feedback_type", input.feedback_type);
+      }
+      return request;
+    };
+
+    // The list is bounded in SQL (`created_at DESC` on
+    // `idx_user_feedback_created_at`, capped at 500) so it is never the slow
+    // statement — but it dies on the SAME transient cancellation the report
+    // path just learned to survive, and a search that returns "canceling
+    // statement due to statement timeout" reads to an agent as "the tracker is
+    // broken". Same remedy, same sentence.
+    const { data, error } = await withTransientRetry(
+      "users.user_feedback list/search",
+      () => buildRequest(),
+    );
+    if (error) {
+      return { success: false, error: error.message + describeTransient(error, 3) };
     }
-
-    const { data, error } = await request;
-    if (error) return { success: false, error: error.message };
 
     let items = mapUserFeedbackRows(data ?? []);
     if (input.query) {
@@ -317,15 +381,25 @@ export async function updateFeedbackItem(
       patch.resolved_at ??= new Date().toISOString();
     }
 
-    const { data, error } = await supabase
-      .schema("users")
-      .from("user_feedback")
-      .update(patch)
-      .eq("id", feedbackId)
-      .select()
-      .single();
+    // `patch` is fully resolved before this line (including `resolved_at`), so
+    // applying it twice to the same id is byte-identical to applying it once.
+    // That is what makes the default `repeatable` right here and wrong on the
+    // insert above.
+    const { data, error } = await withTransientRetry(
+      `users.user_feedback update of ${feedbackId}`,
+      () =>
+        supabase
+          .schema("users")
+          .from("user_feedback")
+          .update(patch)
+          .eq("id", feedbackId)
+          .select()
+          .single(),
+    );
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      return { success: false, error: error.message + describeTransient(error, 3) };
+    }
     if (data === null) {
       return { success: false, error: "updateFeedbackItem returned no row" };
     }
@@ -346,11 +420,17 @@ export async function getTriageBatch(
   try {
     const supabase = createAdminClient();
 
-    const { data, error } = await supabase.rpc("get_triage_batch", {
-      p_batch_size: batchSize,
-    });
+    // `public.get_triage_batch` is a read (VOLATILE for its ordering, but it
+    // writes nothing — verified against the main database), so a cancelled
+    // batch can simply be asked for again.
+    const { data, error } = await withTransientRetry(
+      `public.get_triage_batch(${batchSize})`,
+      () => supabase.rpc("get_triage_batch", { p_batch_size: batchSize }),
+    );
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      return { success: false, error: error.message + describeTransient(error, 3) };
+    }
     if (data === null) {
       return { success: false, error: "get_triage_batch returned no data" };
     }
@@ -371,9 +451,14 @@ export async function getWorkQueue(): Promise<ServiceResult<UserFeedback[]>> {
   try {
     const supabase = createAdminClient();
 
-    const { data, error } = await supabase.rpc("get_agent_work_queue");
+    const { data, error } = await withTransientRetry(
+      "public.get_agent_work_queue()",
+      () => supabase.rpc("get_agent_work_queue"),
+    );
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      return { success: false, error: error.message + describeTransient(error, 3) };
+    }
     return { success: true, data: mapUserFeedbackRows(data ?? []) };
   } catch (err: unknown) {
     const message =
@@ -389,11 +474,14 @@ export async function getComments(
   try {
     const supabase = createAdminClient();
 
-    const { data, error } = await supabase.rpc("get_feedback_comments", {
-      p_feedback_id: feedbackId,
-    });
+    const { data, error } = await withTransientRetry(
+      `public.get_feedback_comments(${feedbackId})`,
+      () => supabase.rpc("get_feedback_comments", { p_feedback_id: feedbackId }),
+    );
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      return { success: false, error: error.message + describeTransient(error, 3) };
+    }
     return { success: true, data: mapFeedbackCommentRows(data ?? []) };
   } catch (err: unknown) {
     const message =
@@ -407,16 +495,26 @@ export async function getReworkItems(): Promise<ServiceResult<UserFeedback[]>> {
   try {
     const supabase = createAdminClient();
 
-    const { data, error } = await supabase
-      .schema("users")
-      .from("user_feedback")
-      .select("*")
-      .eq("admin_decision", "approved")
-      .eq("status", "in_progress")
-      .in("testing_result", ["fail", "partial"])
-      .order("work_priority", { ascending: true, nullsFirst: false });
+    const { data, error } = await withTransientRetry(
+      "users.user_feedback rework queue",
+      () =>
+        supabase
+          .schema("users")
+          .from("user_feedback")
+          .select("*")
+          .eq("admin_decision", "approved")
+          .eq("status", "in_progress")
+          .in("testing_result", ["fail", "partial"])
+          .order("work_priority", { ascending: true, nullsFirst: false })
+          // BOUNDED. `idx_user_feedback_work_queue` serves the predicate, but
+          // an unbounded read grows without limit as the tracker does; a rework
+          // queue nobody could work through in one sitting is not a queue.
+          .limit(200),
+    );
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      return { success: false, error: error.message + describeTransient(error, 3) };
+    }
     return { success: true, data: mapUserFeedbackRows(data ?? []) };
   } catch (err: unknown) {
     const message =
@@ -436,18 +534,24 @@ export async function triageItem(
     const supabase = createAdminClient();
 
     // Always pass p_category_id to resolve the PostgreSQL function overload ambiguity
-    const { data, error } = await supabase.rpc("triage_feedback_item", {
-      p_id: feedbackId,
-      p_ai_solution_proposal: triage.ai_solution_proposal,
-      p_ai_suggested_priority: triage.ai_suggested_priority,
-      p_ai_complexity: triage.ai_complexity,
-      p_ai_estimated_files: triage.ai_estimated_files,
-      p_autonomy_score: triage.autonomy_score,
-      p_ai_assessment: triage.ai_assessment,
-      p_category_id: triage.category_id,
-    });
+    const { data, error } = await withTransientRetry(
+      `public.triage_feedback_item(${feedbackId})`,
+      () =>
+        supabase.rpc("triage_feedback_item", {
+          p_id: feedbackId,
+          p_ai_solution_proposal: triage.ai_solution_proposal,
+          p_ai_suggested_priority: triage.ai_suggested_priority,
+          p_ai_complexity: triage.ai_complexity,
+          p_ai_estimated_files: triage.ai_estimated_files,
+          p_autonomy_score: triage.autonomy_score,
+          p_ai_assessment: triage.ai_assessment,
+          p_category_id: triage.category_id,
+        }),
+    );
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      return { success: false, error: error.message + describeTransient(error, 3) };
+    }
     if (data === null) {
       return { success: false, error: "triage_feedback_item returned no row" };
     }
@@ -469,14 +573,22 @@ export async function addComment(
   try {
     const supabase = createAdminClient();
 
-    const { data, error } = await supabase.rpc("add_feedback_comment", {
-      p_feedback_id: feedbackId,
-      p_author_type: authorType,
-      p_author_name: authorName,
-      p_content: content,
-    });
+    const { data, error } = await withTransientRetry(
+      `public.add_feedback_comment(${feedbackId})`,
+      () =>
+        supabase.rpc("add_feedback_comment", {
+          p_feedback_id: feedbackId,
+          p_author_type: authorType,
+          p_author_name: authorName,
+          p_content: content,
+        }),
+      // It CREATES a comment row; a blind retry is how one remark becomes two.
+      { repeatable: false },
+    );
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      return { success: false, error: error.message + describeTransient(error, 3) };
+    }
     if (data === null) {
       return { success: false, error: "add_feedback_comment returned no row" };
     }
@@ -498,14 +610,20 @@ export async function resolveWithTesting(
   try {
     const supabase = createAdminClient();
 
-    const { data, error } = await supabase.rpc("resolve_with_testing", {
-      p_id: feedbackId,
-      p_resolution_notes: resolutionNotes,
-      p_testing_instructions: testingInstructions,
-      p_testing_url: testingUrl,
-    });
+    const { data, error } = await withTransientRetry(
+      `public.resolve_with_testing(${feedbackId})`,
+      () =>
+        supabase.rpc("resolve_with_testing", {
+          p_id: feedbackId,
+          p_resolution_notes: resolutionNotes,
+          p_testing_instructions: testingInstructions,
+          p_testing_url: testingUrl,
+        }),
+    );
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      return { success: false, error: error.message + describeTransient(error, 3) };
+    }
     if (data === null) {
       return { success: false, error: "resolve_with_testing returned no row" };
     }
@@ -529,14 +647,20 @@ export async function setAdminDecision(
   try {
     const supabase = createAdminClient();
 
-    const { data, error } = await supabase.rpc("set_admin_decision", {
-      p_id: feedbackId,
-      p_decision: decision,
-      p_direction: direction,
-      p_work_priority: workPriority,
-    });
+    const { data, error } = await withTransientRetry(
+      `public.set_admin_decision(${feedbackId})`,
+      () =>
+        supabase.rpc("set_admin_decision", {
+          p_id: feedbackId,
+          p_decision: decision,
+          p_direction: direction,
+          p_work_priority: workPriority,
+        }),
+    );
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      return { success: false, error: error.message + describeTransient(error, 3) };
+    }
     if (data === null) {
       return { success: false, error: "set_admin_decision returned no row" };
     }
