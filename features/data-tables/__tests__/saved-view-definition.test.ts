@@ -21,6 +21,10 @@ const viewState = (over: Partial<TableViewState> = {}): TableViewState => ({
   pageSize: 20,
   hidden: [],
   order: [],
+  layout: "auto",
+  widths: {},
+  density: "normal",
+  freezeFirst: false,
   ...over,
 });
 
@@ -50,6 +54,10 @@ describe("definitionFromViewState", () => {
       pageSize: 50,
       hidden: ["notes"],
       order: ["capital", "country"],
+      layout: "auto",
+      widths: {},
+      density: "normal",
+      freezeFirst: false,
     });
   });
 

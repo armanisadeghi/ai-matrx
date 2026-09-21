@@ -23,6 +23,10 @@ const baseState = (over: Partial<TableViewState> = {}): TableViewState => ({
   pageSize: 20,
   hidden: [],
   order: [],
+  layout: "auto",
+  widths: {},
+  density: "normal",
+  freezeFirst: false,
   ...over,
 });
 
@@ -74,6 +78,10 @@ describe("parseTableViewParams", () => {
       pageSize: 50,
       hidden: [],
       order: [],
+      layout: "auto",
+      widths: {},
+      density: "normal",
+      freezeFirst: false,
     });
   });
 
@@ -110,6 +118,10 @@ describe("tableViewParamPatch", () => {
       ps: null,
       hide: null,
       ord: null,
+      lay: null,
+      w: null,
+      den: null,
+      frz: null,
     });
   });
 

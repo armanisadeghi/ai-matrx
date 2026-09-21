@@ -50,7 +50,7 @@ module — do not make it seven.
 Text: `text` `long_text` `markdown` `email` `url` `phone` `color`
 Numbers: `number` `decimal` `currency` `percent` `duration` `integer` `rating` `file_size`
 Choice: `boolean` `choice` `multi_choice`
-Dates: `date` `datetime` `relative_time`
+Dates: `date` `datetime` `time` `relative_time`
 Structured: `json` `array` `tags` `formula`
 
 Each declares a `base` storage type and optional `alsoAccepts`. The picker only
@@ -223,6 +223,8 @@ No migration is ever required — a format is data in a JSONB column, and an
 unknown format id degrades to the plain storage type by design.
 
 ## Change log
+
+- `2026-09-20` — **`time`: a time of day with no date** (opening hours, a shift start). Base `string`, stored 24-hour `HH:MM[:SS]` so lexical sort is chronological; `parse` accepts "2:30 pm", "2pm", "14:30", "09:05:07" and hands a non-time back unchanged for validation to name; `format` shows the locale's clock (`timeSeconds` option adds seconds). Editor kind `time` is owned by `FormatAwareInput` (`<input type="time">`) and handled in `EditableCell`. Tests: `__tests__/time-format.test.ts`. Arman 2026-09-20: "We don't even support time right now."
 
 - **2026-09-14** — Added `formula`: a column computed on read from the other
   columns of its own row (Arman approved). The language lives in

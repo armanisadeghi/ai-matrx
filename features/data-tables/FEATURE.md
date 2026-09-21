@@ -718,7 +718,7 @@ empty grid looks broken and offers nothing to click to recover.
 ### Saved views
 
 A saved view is **the URL made durable** — the same state the query string
-already carries (search, sort, filters, columns, order, page size) under a name
+already carries (search, sort, filters, columns, order, page size, layout: fit/scroll, dragged column widths, row height, frozen first column) under a name
 you can return to. Applying a view writes the URL through the same setters a
 click uses, so the address bar still describes what is on screen and the link is
 still shareable. **A view is a shortcut to a URL, never a second source of
@@ -1021,6 +1021,9 @@ page). Rule model, editor and strict-mode trigger: § Validation rules (below, b
 validations build).
 
 ## Change log
+
+- `2026-09-20` — **Layout is part of the view: fit-to-width vs natural widths, dragged column widths, row height, frozen first column; and the `time` format.** Arman: "make the column widths adjustable … an option in the UI to make your table full width or to have it scroll … we do some things by default but allow the user to override it." Model (`table-view-url.ts`): `layout: auto | fit | scroll` (`auto` = the platform default over `FIXED_LAYOUT_MAX_COLUMNS`; `resolveTableLayout`), `widths: Record<field, px>` (clamped 60–1200, `parseColumnWidths`/`serializeColumnWidths`, URL `w=budget:220,notes:96`), `density: compact | normal | tall`, `freezeFirst`. All four ride the URL (`lay`, `w`, `den`, `frz`), the saved-view definition (a pre-layout definition opens with defaults; a stored width is clamped, never trusted), `isViewCustomized`, and `describeDefinition`. UI: the **Layout** menu beside Columns (`components/TableLayoutMenu.tsx`), a drag handle on every header's right edge (paints the width during the drag, commits on mouse-up; double-click resets; not on mobile), and a dragged width replaces the 150px floor. Freeze pins the first visible column at `left-10` beside the checkbox column. `time` format: see `lib/field-formats/FEATURE.md`. Tests: `__tests__/table-layout-state.test.ts` + the two view-state suites. NOT verified live at commit time (the machine-wide preview slot was held by another checkout for most of the day); a verifier is on the preceding commit and this one is next.
+
 
 - `2026-09-20` — **The grid fills its panel at any column count; add-row and add-column live everywhere columns and rows are managed.** (1) Layout: past `FIXED_LAYOUT_MAX_COLUMNS` the table was `w-auto min-w-max`, so showing a ninth column snapped the grid from full width to content width and left the right of the screen blank (Arman: "only loads part of the UI", Coding Accounts, nine columns). Now `w-max min-w-full`: natural widths, never narrower than the panel. (2) THE DOORS CENSUS — every place a user manages rows/columns offers the add: toolbar (+ Column, + Row — existing), right-click (Add row, Insert column left/right — existing), the "+" at the end of the header row (add column at end — new), the "Add row" line under the last row and "Add the first row" in the empty state (new), the column header menu (Insert column left / right, Hide column — new; was sort/filter/rename/settings/remove only), Table settings → Fields & Order ("Add column", replaced by "Save or cancel your changes to add a column" while edits are unsaved, because adding reloads the list — new), and the Columns view picker ("Add a column to the table…" — new). All are absent on read-only tables. `tsc` clean, data-tables tests green. NOT verified live at commit time: the machine-wide preview slot was held by another checkout.
 

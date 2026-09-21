@@ -52,6 +52,43 @@ function toText(value: unknown): string | null {
   return null;
 }
 
+/**
+ * Read a time of day from "HH:MM", "HH:MM:SS", "H:MM am/pm", "2pm", or a
+ * Date/ISO string (its local time). `null` when it is not a time.
+ */
+function parseTimeOfDay(
+  value: unknown,
+): { h: number; m: number; s: number } | null {
+  if (value instanceof Date) {
+    return { h: value.getHours(), m: value.getMinutes(), s: value.getSeconds() };
+  }
+  if (typeof value !== "string") return null;
+  const text = value.trim();
+  if (!text) return null;
+  const m = /^(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?\s*([aApP]\.?[mM]\.?)?$/.exec(text);
+  if (m) {
+    let h = Number(m[1]);
+    const min = m[2] ? Number(m[2]) : 0;
+    const sec = m[3] ? Number(m[3]) : 0;
+    const ampm = m[4]?.toLowerCase().replace(/\./g, "");
+    if (ampm) {
+      if (h < 1 || h > 12) return null;
+      if (ampm === "pm" && h !== 12) h += 12;
+      if (ampm === "am" && h === 12) h = 0;
+    }
+    if (h > 23 || min > 59 || sec > 59) return null;
+    return { h, m: min, s: sec };
+  }
+  // An ISO timestamp — keep its local time of day.
+  if (/\d{4}-\d{2}-\d{2}T/.test(text)) {
+    const d = new Date(text);
+    if (!Number.isNaN(d.getTime())) {
+      return { h: d.getHours(), m: d.getMinutes(), s: d.getSeconds() };
+    }
+  }
+  return null;
+}
+
 function toDate(value: unknown): Date | null {
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
   if (typeof value === "number") {
@@ -463,6 +500,41 @@ const DEFS: FieldFormatDef[] = [
       });
     },
     parse: (raw) => (raw === "" || raw == null ? null : String(raw)),
+  },
+  {
+    // A TIME OF DAY with no date: opening hours, a shift start, a meeting slot.
+    // Stored as the string the <input type="time"> gives ("HH:MM" or
+    // "HH:MM:SS"), shown in the viewer's locale ("2:30 PM" / "14:30"). The
+    // storage type stays `string`; sorting is lexical on the 24-hour form,
+    // which is chronological — the one reason the stored form is 24-hour.
+    id: "time",
+    label: "Time",
+    description: "Time of day, without a date",
+    group: "Dates",
+    base: "string",
+    editor: "time",
+    optionKeys: ["timeSeconds"],
+    format: (v, o) => {
+      const parts = parseTimeOfDay(v);
+      if (!parts) return null;
+      const d = new Date(2000, 0, 1, parts.h, parts.m, parts.s);
+      return d.toLocaleTimeString(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+        ...(o.timeSeconds ? { second: "2-digit" } : {}),
+      });
+    },
+    // Normalise to the 24-hour "HH:MM[:SS]" form; a value that is not a time
+    // is handed back unchanged so the validation layer can refuse it by name.
+    parse: (raw) => {
+      if (raw == null || raw === "") return null;
+      const parts = parseTimeOfDay(raw);
+      if (!parts) return raw;
+      const two = (n: number) => String(n).padStart(2, "0");
+      return parts.s > 0
+        ? `${two(parts.h)}:${two(parts.m)}:${two(parts.s)}`
+        : `${two(parts.h)}:${two(parts.m)}`;
+    },
   },
   {
     id: "relative_time",

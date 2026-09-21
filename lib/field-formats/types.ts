@@ -59,6 +59,8 @@ export type FieldFormatId =
   // temporal
   | "date"
   | "datetime"
+  // time of day, no date — a string like "14:30" or "14:30:00"
+  | "time"
   | "relative_time"
   // structured
   | "json"
@@ -151,6 +153,8 @@ export type FieldFormatOptions = {
   useGrouping?: boolean;
   /** `date` / `datetime` — Intl date style. Default "medium". */
   dateStyle?: "short" | "medium" | "long";
+  /** `time` — also show seconds. */
+  timeSeconds?: boolean;
   /** Text shown after the value (e.g. "kg", "req/s"). */
   suffix?: string;
   /** Text shown before the value. */
@@ -222,6 +226,7 @@ export type FieldEditorKind =
   | "checkbox"
   | "date"
   | "datetime"
+  | "time"
   | "email"
   | "url"
   | "tel"

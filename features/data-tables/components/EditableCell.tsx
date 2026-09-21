@@ -530,6 +530,25 @@ export function EditableCell({
     );
   }
 
+  if (editorKind === "time") {
+    // Stored as 24-hour "HH:MM[:SS]" — exactly what this input reads/writes.
+    return (
+      <Input
+        ref={inputRef as React.RefObject<HTMLInputElement>}
+        type="time"
+        step={format?.options?.timeSeconds ? 1 : 60}
+        value={typeof draft === "string" ? draft : ""}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={handleKey}
+        onBlur={() => void commitEdit()}
+        onClick={(e) => e.stopPropagation()}
+        disabled={saving}
+        className={cn(editorClass, "h-auto")}
+        style={editorStyle}
+      />
+    );
+  }
+
   if (dataType === "date") {
     return (
       <Input

@@ -28,6 +28,12 @@ import {
   isColumnFilterMap,
   type SortDirection,
   type TableViewState,
+  clampColumnWidth,
+  isColumnWidthMap,
+  parseLayoutMode,
+  parseRowDensity,
+  type TableLayoutMode,
+  type TableRowDensity,
 } from "../table-view-url";
 
 /** Every data-table saved view belongs to this surface. */
@@ -44,6 +50,11 @@ export type SavedViewDefinition = {
   pageSize: number | null;
   hidden: string[];
   order: string[];
+  /** Layout overrides. All optional in stored JSON: a v1 view without them means "platform default". */
+  layout: TableLayoutMode;
+  widths: Record<string, number>;
+  density: TableRowDensity;
+  freezeFirst: boolean;
 };
 
 function isStringArray(v: unknown): v is string[] {
@@ -59,6 +70,10 @@ export function emptySavedViewDefinition(): SavedViewDefinition {
     pageSize: null,
     hidden: [],
     order: [],
+    layout: "auto",
+    widths: {},
+    density: "normal",
+    freezeFirst: false,
   };
 }
 
@@ -81,6 +96,10 @@ export function definitionFromViewState(
     pageSize: state.pageSize === defaults.pageSize ? null : state.pageSize,
     hidden: [...state.hidden],
     order: [...state.order],
+    layout: state.layout,
+    widths: { ...state.widths },
+    density: state.density,
+    freezeFirst: state.freezeFirst,
   };
 }
 
@@ -102,6 +121,10 @@ export function viewStateFromDefinition(
     pageSize: definition.pageSize ?? defaults.pageSize,
     hidden: definition.hidden,
     order: definition.order,
+    layout: definition.layout,
+    widths: definition.widths,
+    density: definition.density,
+    freezeFirst: definition.freezeFirst,
   };
 }
 
@@ -132,6 +155,14 @@ export function parseSavedViewDefinition(raw: unknown): SavedViewDefinition {
   }
   if (isStringArray(v.hidden)) out.hidden = v.hidden;
   if (isStringArray(v.order)) out.order = v.order;
+  if (typeof v.layout === "string") out.layout = parseLayoutMode(v.layout);
+  if (isColumnWidthMap(v.widths)) {
+    out.widths = Object.fromEntries(
+      Object.entries(v.widths).map(([k, px]) => [k, clampColumnWidth(px)]),
+    );
+  }
+  if (typeof v.density === "string") out.density = parseRowDensity(v.density);
+  if (typeof v.freezeFirst === "boolean") out.freezeFirst = v.freezeFirst;
 
   return out;
 }
@@ -144,7 +175,11 @@ export function definitionIsEmpty(d: SavedViewDefinition): boolean {
     Object.keys(d.filters).length === 0 &&
     d.pageSize === null &&
     d.hidden.length === 0 &&
-    d.order.length === 0
+    d.order.length === 0 &&
+    d.layout === "auto" &&
+    Object.keys(d.widths).length === 0 &&
+    d.density === "normal" &&
+    !d.freezeFirst
   );
 }
 
@@ -182,5 +217,11 @@ export function describeDefinition(
   if (d.hidden.length === 1) parts.push("1 column hidden");
   else if (d.hidden.length > 1) parts.push(`${d.hidden.length} columns hidden`);
   if (d.order.length > 0) parts.push("reordered");
+  if (d.layout === "fit") parts.push("fit to width");
+  else if (d.layout === "scroll") parts.push("natural widths");
+  if (Object.keys(d.widths).length > 0) parts.push("column widths");
+  if (d.density === "compact") parts.push("compact rows");
+  else if (d.density === "tall") parts.push("tall rows");
+  if (d.freezeFirst) parts.push("first column frozen");
   return parts.length > 0 ? parts.join(" · ") : "Everything, unsorted";
 }
