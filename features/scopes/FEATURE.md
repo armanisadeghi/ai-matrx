@@ -332,6 +332,30 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-09-21 — **A deleted scope type leaves the page, its parts follow it down, and
+  the archive is a door (F6).** Three defects in one: `getScopeTree` read
+  `context.scope_types` and `context.scopes` with NO `deleted_at` filter (the
+  sibling `projects` read had one), so a type deleted from its own page came back
+  as a card with an "Open" door after a full reload; `context.scope_types` was
+  never registered with the platform soft-delete cascade, so
+  `public.delete_scope_type` hand-wrote child updates and flipped
+  `context_items.is_active` — a different column with a different meaning —
+  leaving live rows under a removed parent; and the page had no archive control at
+  all. Now: the tree filters `deleted_at` (as do every context-item read,
+  `getScopeDetail` and `fetchScopeDisplays`); `migrations/scope_types_soft_delete_cascade_and_restore.sql`
+  rules on all 13 inbound FKs of `scope_types`/`scopes` (cascade for parts and
+  machine rows about the thing, keep for other features' rows), backfills the
+  orphans, and strips the hand-cascade out of `delete_scope_type`; a new
+  `public.restore_scope_type` clears the parent's `deleted_at`, which restores
+  exactly what that removal took (shared-timestamp match); and `ScopesManager`
+  carries `ArchivedDisclosure` from `@ai-matrx/design-system` — "Archived (N)",
+  closed by default, each row restorable with the consequence named.
+  `migrations/delete_context_item_sets_deleted_at.sql` closes the same
+  wrong-column class on the per-item delete. Guard: `pnpm check:archived-items-law`
+  now judges declared soft-delete-as-archive entities (`SOFT_DELETE_IS_THE_ARCHIVE`)
+  on `deleted_at` under rule 3 — its self-test is RED on the exact pre-fix
+  `getScopeTree` read. Report:
+  `common-docs/projects/every-picker-takes-new-input/recon/f6-archived-scope-types.md`.
 - 2026-09-18 — **Conversation scope stamping waits for the conversation row.** A
   first-turn UUID is announced before the server's atomic turn commit makes
   `chat.conversation` readable. `syncConversationScopes` previously called the

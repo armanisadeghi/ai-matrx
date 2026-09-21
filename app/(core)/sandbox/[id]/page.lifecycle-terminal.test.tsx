@@ -46,7 +46,7 @@ const orgB = "44444444-4444-4444-8444-444444444444";
 const unrelatedRow = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 
 const instance = (id: string, name: string): SandboxInstance => ({
-  boot_kind: null, boot_phase_seconds: null, boot_seconds: null, custom_fields: {}, ready_at: null, id, sandbox_id: id, name, status: "ready", created_at: "2026-01-01T00:00:00.000Z", updated_at: "2026-01-01T00:00:00.000Z", config: {}, cold_path: null, container_id: null, created_by: null, deleted_at: null, expires_at: "2026-01-01T01:00:00.000Z", hot_path: null, labels: null, last_heartbeat_at: null, metadata: {}, organization_id: orgA, persistence_volume: null, project_id: null, proxy_url: null, stop_reason: null, stopped_at: null, task_id: null, template: null, template_version: null, tier: "ec2", ttl_seconds: 3600, updated_by: null, user_id: actorA, version: 1,
+  id, sandbox_id: id, name, status: "ready", created_at: "2026-01-01T00:00:00.000Z", updated_at: "2026-01-01T00:00:00.000Z", config: {}, boot_kind: null, boot_phase_seconds: null, boot_seconds: null, custom_fields: {}, ready_at: null, cold_path: null, container_id: null, created_by: null, deleted_at: null, expires_at: "2026-01-01T01:00:00.000Z", hot_path: null, labels: null, last_heartbeat_at: null, metadata: {}, organization_id: orgA, persistence_volume: null, project_id: null, proxy_url: null, stop_reason: null, stopped_at: null, task_id: null, template: null, template_version: null, tier: "ec2", ttl_seconds: 3600, updated_by: null, user_id: actorA, version: 1,
 });
 const ok = (value: SandboxInstance) => ({ ok: true, status: 200, json: async () => ({ instance: value }) }) as Response;
 const missing = () => ({ ok: false, status: 404, json: async () => ({}) }) as Response;

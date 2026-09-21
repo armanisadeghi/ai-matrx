@@ -23,6 +23,8 @@ import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { createClient } from "@/utils/supabase/client";
 
 import type { VaultItem } from "../types";
@@ -157,6 +159,7 @@ export function VaultBackupDialog({
   onRestored: () => void | Promise<void>;
 }) {
   const organizationId = useAppSelector(selectOrganizationId);
+  const { organizationState } = useOrganizationRequired();
   const [mode, setMode] = useState<"download" | "restore">("download");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [downloadPreview, setDownloadPreview] =
@@ -513,6 +516,28 @@ export function VaultBackupDialog({
     setOmissionsAccepted(false);
   };
   const retryable = (restoreResult?.retryable_failure ?? 0) > 0;
+
+  if (organizationState !== "ready") {
+    return (
+      <Credenza
+        open={open}
+        onOpenChange={(next) => (next ? onOpenChange(true) : close())}
+      >
+        <CredenzaContent className="max-h-[92dvh] overflow-hidden md:max-w-3xl">
+          <CredenzaHeader>
+            <CredenzaTitle>Encrypted Vault backup</CredenzaTitle>
+          </CredenzaHeader>
+          <CredenzaBody className="overflow-y-auto px-4 pb-6 md:px-0">
+            <OrganizationContextNotice
+              state={organizationState}
+              what="Vault backups"
+              compact
+            />
+          </CredenzaBody>
+        </CredenzaContent>
+      </Credenza>
+    );
+  }
 
   return (
     <Credenza

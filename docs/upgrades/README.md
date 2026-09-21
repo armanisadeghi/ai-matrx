@@ -4,9 +4,9 @@
 > Every bump, every decision, every rule Arman set, and every research handoff lives here.
 > Update this file in the **same change** as any dependency work. Stale rows here = mixed-up pushes.
 
-**Owner:** Arman (he pushes to `main`; the agent prepares each step and hands it back ready).
+**Owner:** The assigned frontend engineering lane commits and pushes its verified scope under the current `CLAUDE.md` completion policy. June ownership and phase rows below are historical.
 **Started:** 2026-06-29
-**Status:** Phase A in progress.
+**Status:** September 21 compatible refresh in progress. See §5 for the current compatibility campaign. Older phase rows do not describe today's installed versions.
 
 ---
 
@@ -135,6 +135,74 @@ all `@radix-ui/react-*` to latest 1.x/2.x within current major.
 
 ## 5. Major-version queue (priority order, per Arman)
 
+### September 21 compatibility campaign
+
+**Current evidence:** `pnpm outdated --format json` reports patch/minor drift,
+major migrations, and three deprecated direct packages. The pre-change
+`pnpm type-check` reports 16 diagnostics in eight files, including missing
+`@ai-matrx/records` exports used by concurrent booking/typed-answer work.
+This is the pre-change baseline, not a claim of a clean type check.
+
+**Installation admission:** `scripts/agent-harness/install-gate.cjs` implements
+the September 21 ruling that a live preview warns rather than refusing a primary
+script. `MATRX_STRICT_INSTALL_GATE=1` opts into refusal. Relinking can still stop
+the preview; recheck its status afterward and recover through `pnpm preview:start`
+when necessary. Do not stop another session preemptively or bypass an opted-in
+strict gate. Concurrent installs remain serialized.
+
+**Approved next batch:** update the following explicit allowlist within each
+installed major, inspect the resulting lockfile, and preserve foreign manifest
+script edits. No blanket `--latest` operation. Exact registry versions must be
+refreshed at execution time.
+
+- SDK/tooling: `@ai-sdk/google`, `ai`, `@anthropic-ai/sdk`, `openai`, `resend`,
+  `@babel/parser`, `jest`, `jest-environment-jsdom`, `tsx`, `typescript-eslint`,
+  `eslint`, `jsdom`, `autoprefixer`.
+- UI/data: `@codemirror/state`, `@codemirror/view`, `@tanstack/react-virtual`,
+  `@tanstack/react-query`, `@tanstack/react-query-devtools`, `emoji-picker-react`,
+  `react-dropzone`, `zod`, `@tabler/icons-react`, `konva`, `react-konva`,
+  `lucide-react`, `motion`, `react-resizable-panels`, `tailwind-merge`.
+- Utilities: `cron-parser`, `cronstrue`, `@upstash/ratelimit`, `@upstash/redis`,
+  `@zip.js/zip.js`, `onnxruntime-web`, `unicode-regex`, `web-vitals`.
+- Coordinated patch families: `@ricky0123/vad-react` 0.0.36→0.0.37 and
+  `@ricky0123/vad-web` 0.0.30→0.0.31; `@univerjs/core` 0.25.1→0.25.2 only
+  after confirming compatibility with installed Univer presets.
+- `@ai-matrx/records` 0.44.1→0.46.0: upstream 0.45 adds the missing
+  `coerceTypedAnswer`, `coerceTypedAnswers`, and `fieldKindFor` exports; 0.46 adds
+  portal-table lookup. Read the package changelog before adoption.
+
+**Cleanup in the same verified batch:** replace the seven templates' deprecated
+`@react-email/components` imports with `react-email` 6.9.5, move that existing
+package from dev to runtime dependencies, remove unused deprecated
+`@react-email/tailwind`, and remove the deprecated `@types/uuid` stub because
+installed `uuid` 14 supplies its own declarations. Keep the supported
+`@react-email/render` dependency. Align `@types/node` 22.20.2 to the latest
+Node 24 line (24.13.6 at inventory), matching `engines.node: 24.x`; local Node
+26.7.0 does not change the deployment target.
+
+The following are separate compatibility targets, not safe version-only bumps:
+
+| Target at inventory | Concrete boundary to migrate and verify |
+|---|---|
+| `@babel/core` 7.29.7→8.0.6; `@babel/types` 7.29.8→8.0.6 | Installed `ts-jest` 29.4.12 peers Babel core `<8`; coordinate the transformer graph before upgrading. Exercise `scripts/check-registry-repaint.ts` and `features/content-ir/sandbox/migrate-viewport-breakpoints.ts`. |
+| `@cartesia/cartesia-js` 2.2.9→4.2.0 | `lib/cartesia/connection.ts` and TTS hooks import removed/deep wrapper paths; migrate voice creation and streaming APIs while preserving audio bundle isolation. |
+| `@tsparticles/engine`, `@tsparticles/react`, `@tsparticles/slim` 3.x→4.4.0 | Upgrade together; React v4 peers the exact engine version. Migrate `components/ui/sparkles.tsx` initialization/options and verify rendering in localhost. |
+| `mcp-handler` 1.1.0→2.2.0 | v2 peers `@modelcontextprotocol/server ^2`; `app/api/mcp/[transport]/route.ts` uses SDK 1.30 auth types and handler signatures. Migrate authentication and transport together with refusal/positive controls. |
+| `mermaid` 11.17.2→12.0.0; `@mermaid-js/layout-elk` 0.2.3→1.0.0 | ELK 1 peers Mermaid 12. Verify layout registration, strict rendering, export, and the SVG ID assumptions in `components/mermaid/visual/svg-id-map.ts`. |
+| `react-day-picker` 9.14.0→10.0.1 | Migrate custom calendar class/component keys and selection handlers in both canonical date-picker wrappers; verify date/range interaction. |
+| `react-pdf` 10.5.0→11.0.0 | Adopt its matching `pdfjs-dist` worker through `scripts/copy-pdfjs-worker.ts`; verify actual multi-page PDF rendering in `features/pdf/components/viewer/PdfDocumentRenderer.tsx`. React 19 peer requirements are already met. |
+| `unsplash-js` 7.0.20→8.0.1 | Migrate renamed API groups and deep `dist/methods/*/types` consumers; verify `/api/unsplash` and the image-picker callers. |
+| `dotenv` 17.4.2→18.0.1 | Check the scripts' `config({ quiet: true })` and namespace imports against the new API; preserve secret redaction and environment precedence. |
+| `@ai-matrx/messaging` 0.12.3→0.12.4 | Upstream changes user-visible Markdown rendering. Adopt with a real messaging surface check for formatting and raw-HTML safety, separately from this version-only batch. |
+
+Acceptance for the compatible batch: frozen-lockfile consistency, comparison with
+the pre-change type diagnostics, existing email/panel checks, real template
+HTML/plain-text rendering without sending messages, and independent Sol review.
+Any changed UI behavior additionally needs the owning localhost interaction
+check. Scope commits to this work; preserve other agents' dirty files and index.
+
+### Earlier campaign history
+
 **September 8 integration sweep:** registry refresh advances compatible dependencies and
 removes stale React/type override patches. The compiler reproduced consumer breaks in
 Cartesia 4 (removed wrapper imports/voice creation), Unsplash 8 (renamed API groups),
@@ -250,6 +318,7 @@ Per-package deep-dives produced by research agents. Each doc must contain: exact
 
 | Date | Change | By |
 |------|--------|-----|
+| 2026-09-21 | Recorded the compatible update allowlist, deprecated-package cleanup, Node 24 typing decision, and exact remaining migration boundaries. Corrected the obsolete live-preview refusal claim against the current install gate. | integration maintainer |
 | 2026-09-08 | Refreshed registry dependencies, removed React override patch freezes, and repaired tooltip/Markdown/calendar consumers. Breaking SDK migrations remain explicitly tracked in §5; deployment acceptance is not claimed. | integration maintainer |
 | 2026-07-01 | **Type doctrine consolidated → `type-safety` Claude skill** (`.claude/skills/type-safety/` = SKILL.md doctrine + supabase-patterns.md); cursor skills `type-fixing-agent`/`supabase-type-safety` deleted; all pointers repointed. Doctrine core: real fixes change code + data, escalation-with-decision-brief over silencing, trace to the terminal consumer. | agent + Arman |
 | 2026-07-01 | **Wave 5 status:** 1347 → 7 errors; all 7 = CustomTool/`JsonSchemaProperty` drift in `AgentToolsManager.tsx` (deep fix, queued). **Ratchet extended to 14 categories** (adds `value!` 641, `?? {}` 619, `\|\| {}` 101, `\|\| []` 460, `?? ""` 2071, `\|\| ""` 896 — total visible debt 7,753); baseline re-frozen (down-only; `Record<string, any>` kept red at 238 vs 240). **New track:** `TYPE-DEBT-TRIAGE.md` — human-in-the-loop pipeline (inventory → decision briefs → Arman decides → fix waves). | agent |

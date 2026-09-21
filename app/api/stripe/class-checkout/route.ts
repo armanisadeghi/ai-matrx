@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
       buyerUserId: user.id,
       classId: scope.id,
       creatorUserId: ownerId,
-      organizationId: scope.organization_id,
+      organizationId: scope.organization_id ?? null,
       stripeCheckoutSessionId: session.id,
       stripeAccountId: connect.stripeAccountId,
       amountTotal: priceCents,

@@ -51,7 +51,9 @@
  * `last_sign_in_at`, `factors` or `*_confirmed_at` must keep `getUser()` — the
  * JWT has none of them. That is why `utils/supabase/getServerAuth.ts`, the six
  * layouts feeding `utils/userDataMapper.ts`, and `hooks/usePublicAuthSync.ts`
- * still call it. The full contract:
+ * still call it. That was true until 2026-09-21; every one of them now reads
+ * `getServerAuth()` (claims) and the four fields arrive on the client through
+ * `fetchAuthUserRecord`, the ONE allow-listed door. The full contract:
  * `common-docs/systems/platform/proxy-identity/FEATURE.md`.
  *
  * Guard: `pnpm check:proxy-auth-hot-path` (+ `:self-test`).
@@ -64,94 +66,26 @@
 
 import { NextRequest } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import {
-  AuthError,
-  AuthSessionMissingError,
-  createClient as createSupabaseClient,
-  type JwtPayload,
-  type SupabaseClient,
-  type UserAppMetadata,
-  type UserMetadata,
-} from "@supabase/supabase-js";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { requireEnv } from "@/utils/supabase/env";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
+
+// The verification primitive itself lives in `utils/supabase/claimsUser.ts`
+// (client-safe: no `next/headers`). Re-exported here so every existing
+// `@/utils/supabase/resolveUser` import keeps working unchanged.
+export {
+  getClaimsUser,
+  isSignedOutError,
+  userFromClaims,
+  type ApiClaimsUser,
+  type ClaimsCapableClient,
+} from "@/utils/supabase/claimsUser";
 
 const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL);
 const supabasePublishableKey = requireEnv(
   "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
 );
-
-/**
- * The verified caller, built from the access token's claims.
- *
- * Every field here IS a JWT claim. `id` is `sub`, restated under the name every
- * call site already reads. `app_metadata` / `user_metadata` are defaulted to
- * `{}` so a reader never has to null-check what `getUser()` always handed it.
- */
-export interface ApiClaimsUser extends JwtPayload {
-  /** The `sub` claim — the user id. */
-  id: string;
-  app_metadata: UserAppMetadata;
-  user_metadata: UserMetadata;
-}
-
-/** Any Supabase client — the only thing this door needs is `auth.getClaims`. */
-export type ClaimsCapableClient = { auth: Pick<SupabaseClient["auth"], "getClaims"> };
-
-/**
- * `client.auth.getUser()` without the auth-server round trip.
- *
- * Returns the SAME envelope `getUser()` does — `{ data: { user }, error }` —
- * with ONE deliberate distinction the round trip never drew:
- *
- *  - CONFIRMED SIGNED OUT (no session, no token) → `{ user: null, error: null }`.
- *    That is a settled fact, and a route is entitled to say "sign in again"
- *    rather than "try again later".
- *  - COULD NOT VERIFY (auth server / JWKS unreachable, a malformed or
- *    badly-signed token, any other verification failure, or a token that
- *    verified but carries no `sub`) → the `error` is kept, so a retry branch
- *    still fires.
- *
- * Every call site in `app/api` gates on `if (error || !user)`, so both answers
- * refuse exactly as before; only a site that branches on `error` FIRST — to
- * offer a retry — can now tell the two apart.
- *
- * Pass `jwt` when the token is in hand (a Bearer header) rather than a cookie.
- */
-export async function getClaimsUser(
-  client: ClaimsCapableClient,
-  jwt?: string,
-): Promise<{ data: { user: ApiClaimsUser | null }; error: AuthError | null }> {
-  const { data, error } = await client.auth.getClaims(jwt);
-  // supabase-js reports "there is no session here" as AuthSessionMissingError.
-  // That is an answer, not an outage.
-  if (error) {
-    if (isSignedOutError(error)) return { data: { user: null }, error: null };
-    return { data: { user: null }, error };
-  }
-
-  // No claims at all: getClaims() ran, found no token to verify, and said so.
-  if (!data?.claims) return { data: { user: null }, error: null };
-
-  const user = userFromClaims(data.claims);
-  // A token that VERIFIED but carries no subject is malformed, not signed out.
-  if (!user) {
-    return {
-      data: { user: null },
-      error: new AuthError("Verified token carries no `sub` claim", 401, "bad_jwt"),
-    };
-  }
-  return { data: { user }, error: null };
-}
-
-/** Is this `getClaims()` error the settled fact "nobody is signed in"? */
-function isSignedOutError(error: AuthError): boolean {
-  return (
-    error instanceof AuthSessionMissingError ||
-    error.name === "AuthSessionMissingError" ||
-    error.code === "session_not_found"
-  );
-}
 
 export async function resolveUser(request: NextRequest) {
   const authHeader = request.headers.get("Authorization");
@@ -169,15 +103,4 @@ export async function resolveUser(request: NextRequest) {
   const supabase = await createClient();
   const { data } = await getClaimsUser(supabase);
   return { user: data.user };
-}
-
-/** The verified claims as a `{ id, ... }` user, or `null` when there are none. */
-function userFromClaims(claims: JwtPayload | undefined): ApiClaimsUser | null {
-  if (!claims || typeof claims.sub !== "string") return null;
-  return {
-    ...claims,
-    id: claims.sub,
-    app_metadata: claims.app_metadata ?? {},
-    user_metadata: claims.user_metadata ?? {},
-  };
 }

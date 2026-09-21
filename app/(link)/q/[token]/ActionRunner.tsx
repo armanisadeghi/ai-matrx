@@ -32,6 +32,7 @@ import type {
   ActionRequestRefusal,
   ConfirmDetailsRender,
   CredentialRender,
+  OneTimeCodeRender,
   PickTimeRender,
 } from "@/features/action-requests/service";
 
@@ -97,6 +98,19 @@ export function ActionRunner({
         }
         if (body.state === "done") {
           setDone({ message: body.message ?? "Got it.", next: body.next ?? null });
+          return;
+        }
+        // A ONE-TIME CODE THAT EXPIRED ON THE WAY IN IS NOT AN ERROR AND NOT AN
+        // ENDING. The same link is still live — the server released its claim
+        // rather than burning it — so the page says what happened, in the
+        // server's words, and leaves the box empty and ready. Never "that was
+        // rejected": their code was right when they read it.
+        if (body.state === "retry") {
+          setRefusal({
+            code: "code_expired",
+            message: body.message ?? UNREACHED,
+            remedy: body.next ?? null,
+          });
           return;
         }
         // `unavailable` and `wrong_person` are answers too, and each carries its
@@ -250,15 +264,9 @@ export function ActionRunner({
         </p>,
       );
 
-    // aidream refuses to CREATE this kind, naming the reason, so a live request
-    // of this form should not exist. If one ever does, it says so rather than
-    // drawing a box for a code that would be rejected thirty seconds later.
     case "one_time_code":
       return shell(
-        <p className="rounded-md border border-border bg-card p-3 text-sm">
-          Typed one-time codes are not available yet. Your agent can use a stored
-          authenticator seed instead, and it will say so the next time it asks.
-        </p>,
+        <OneTimeCode render={render} busy={busy} onSubmit={submit} />,
       );
   }
 }
@@ -511,6 +519,84 @@ function Credential({
           })
         }
       >
+        {render.submit_label}
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * THE CODE BOX. The one form on this page whose value is worthless a minute
+ * from now, and that shapes every decision in it.
+ *
+ * - **The site is named, server-derived.** Same rule as the credential form: a
+ *   page that cannot name what it is answering for is a phishing page.
+ * - **One field, numeric, autofocused, `one-time-code` autocomplete** — so iOS
+ *   and Android offer the code from the notification instead of making somebody
+ *   switch apps and come back to an expired window.
+ * - **The box empties on every send.** The code is spent whether it worked or
+ *   not; leaving it there invites a second tap that types nothing.
+ * - **No "resend" and no "new link" here.** The link is not what expired — the
+ *   code is. The server keeps this same link live and the footnote says to send
+ *   the next one.
+ */
+function OneTimeCode({
+  render,
+  busy,
+  onSubmit,
+}: {
+  render: OneTimeCodeRender;
+  busy: boolean;
+  onSubmit: (answer: Answer) => void | Promise<void>;
+}) {
+  const [code, setCode] = useState("");
+  // Digits only, and the length the providers use. Stripping the spaces a
+  // person's copy-paste brings along is not tidiness: "483 920" typed into a
+  // provider's box is a rejected code and a spent attempt.
+  const cleaned = code.replace(/\D/g, "").slice(0, 10);
+  const ready = cleaned.length >= 4 && !busy;
+
+  const send = () => {
+    if (!ready) return;
+    setCode("");
+    void onSubmit({ field_values: { code: cleaned }, origin: render.origin });
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* SERVER-DERIVED, ALWAYS. This is the site the browser is actually
+          sitting on, not a name anything typed. */}
+      <p className="rounded-md border border-border bg-card p-3 text-sm">
+        {render.origin}
+      </p>
+
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium" htmlFor="q-one-time-code">
+          Verification code
+        </label>
+        <Input
+          id="q-one-time-code"
+          className="text-center font-mono text-2xl tracking-[0.3em]"
+          // `text` with a numeric mode rather than `type="number"`: a number
+          // input drops leading zeros and grows spinners nobody wants on a code.
+          type="text"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          autoFocus
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          maxLength={12}
+          placeholder="000000"
+          value={code}
+          onChange={(event) => setCode(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") send();
+          }}
+        />
+      </div>
+
+      <Button className="w-full" disabled={!ready} onClick={send}>
         {render.submit_label}
       </Button>
     </div>

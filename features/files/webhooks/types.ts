@@ -77,12 +77,7 @@ export interface UpdateWebhookInput {
   target_url?: string;
   description?: string | null;
   is_active?: boolean;
-  /**
-   * `files.webhooks.organization_id` is NOT NULL, so a move can only name
-   * another organization — it can never blank the column. Omit to leave the
-   * webhook where it is.
-   */
-  organization_id?: string;
+  organization_id?: string | null;
   event_types?: string[] | null;
   resource_types?: string[] | null;
 }

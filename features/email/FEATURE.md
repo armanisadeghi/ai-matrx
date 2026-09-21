@@ -7,7 +7,7 @@ There are **two independent paths** with **separate Resend credentials**.
 
 ## Path 1 — Application email (this repo)
 
-- **Sender:** `lib/email/client.ts` → Resend API (`resend` package).
+- **Sender:** `lib/email/client.ts` → Resend API (`resend` package). Application templates in `lib/email/templates/` use the supported `react-email` runtime package; the deprecated `@react-email/components` and `@react-email/tailwind` packages are not used.
 - **Credentials:** `RESEND_API_KEY` in app env (Vercel/Doppler). Uses the app's
   existing Resend keys (e.g. `RealSingles Production`, `Onboarding`). **Not** the
   Supabase SMTP key.
@@ -76,6 +76,11 @@ Reset-password email template must use `{{ .ConfirmationURL }}` (not `{{ .SiteUR
 | `utils/email/emailService.ts`                 | Client-side fetch wrapper → `/api/email/send`               |
 
 ## Change Log
+
+- **2026-09-21** — Replaced deprecated `@react-email/components` imports in all
+  application templates with `react-email`. `react-email` is now a runtime
+  dependency; the unused deprecated component, Tailwind, and UUID stub-type
+  packages were removed.
 
 - **2026-09-11** — DD-091 fix round 1: `emailErrorMessage`
   (`lib/email/error-message.ts`, re-exported by `lib/email/client.ts`) is now

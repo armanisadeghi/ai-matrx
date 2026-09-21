@@ -648,6 +648,30 @@ export interface CrmSaveContactSelectionOffer {
   origin: string;
 }
 
+/** Offered shape of provision `data.build_or_ask` (kind `data.build_or_ask.offer`). */
+export interface DataBuildOrAskOffer {
+  __kind?: "data.build_or_ask.offer";
+  records_table_id?: string;
+  records_wanted?: string;
+  records_suggested_wording?: string;
+  table_name?: string;
+  table_fields?: unknown;
+  table_field_summary?: string;
+  existing_builders?: unknown;
+  existing_builders_count?: string;
+  member_roster?: unknown;
+  asker_level?: string;
+  change_approval_setting?: string;
+  organization_timezone?: string;
+  page_route?: string;
+  module_slug?: string;
+  section_slug?: string;
+  surface_name?: string;
+  surface_scope?: unknown;
+  selection?: string;
+  organization_id?: string;
+}
+
 /** Offered shape of provision `dictionary.workspace` (kind `dictionary.workspace.offer`). */
 export interface DictionaryWorkspaceOffer {
   __kind?: "dictionary.workspace.offer";
@@ -3275,6 +3299,7 @@ export interface ProvisionOffers {
   "crm.outreach_reply_drafter": CrmOutreachReplyDrafterOffer;
   "crm.party_kind_judgment": CrmPartyKindJudgmentOffer;
   "crm.save_contact_selection": CrmSaveContactSelectionOffer;
+  "data.build_or_ask": DataBuildOrAskOffer;
   "dictionary.workspace": DictionaryWorkspaceOffer;
   "distillation.case_narrative": DistillationCaseNarrativeOffer;
   "distillation.timeline_window": DistillationTimelineWindowOffer;
@@ -3537,6 +3562,7 @@ export const PROVISION_OFFER_KINDS = {
   "crm.outreach_reply_drafter": "crm.outreach_reply_drafter.offer",
   "crm.party_kind_judgment": "crm.party_kind_judgment.offer",
   "crm.save_contact_selection": "crm.save_contact_selection.offer",
+  "data.build_or_ask": "data.build_or_ask.offer",
   "dictionary.workspace": "dictionary.workspace.offer",
   "distillation.case_narrative": "distillation.case_narrative.offer",
   "distillation.timeline_window": "distillation.timeline_window.offer",

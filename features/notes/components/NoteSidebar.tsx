@@ -337,11 +337,17 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
       setSharedOpen(true);
     } else if (groupBy === "folder" || groupBy === "default") {
       const note = allNotesRef.current.find((n) => n.id === activeTabId);
-      const folderName = note?.folder_name || "Uncategorized";
+      // Folder rows are keyed by their organization-qualified identity, not
+      // their display name. Using a name here made the effect look successful
+      // while leaving the actual folder collapsed (and leaked across same-name
+      // folders in different organizations).
+      const folderKey = note
+        ? noteFolderIdentityKey(note)
+        : "pending:unassigned:Uncategorized";
       setExpandedFolders((prev) => {
-        if (prev.has(folderName)) return prev;
+        if (prev.has(folderKey)) return prev;
         const next = new Set(prev);
-        next.add(folderName);
+        next.add(folderKey);
         return next;
       });
     }
@@ -394,13 +400,6 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   }, [searchQuery]);
 
   // ── Derived data ───────────────────────────────────────────────────
-  // Folder list MUST come from the same note set as the counts
-  // (`contextFiltered`). Building it from `allNotes` left empty folders
-  // (count 0) for notes that the org filter had already excluded.
-  const folders = useMemo(() => {
-    return Array.from(new Set(contextFiltered.map(noteFolderIdentityKey)));
-  }, [contextFiltered]);
-
   // Filter notes by search (operates on context-filtered set). Titles, tags,
   // ids and the 240-char preview match locally; the BODY is matched by the
   // database (`useNoteContentSearch`) because list rows no longer carry it.
@@ -417,6 +416,25 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
         bodySearch.ids.has(n.id),
     );
   }, [contextFiltered, searchQuery, bodySearch.ids]);
+
+  // An open note belongs both in Recent and in its actual folder. Context
+  // filters remain useful for everything else, but may not hide the selected
+  // note's location in the tree. An explicit search remains authoritative.
+  const folderVisibleNotes = useMemo(() => {
+    if (searchQuery || !activeTabId) return filteredNotes;
+    const activeNote = allNotes.find((note) => note.id === activeTabId);
+    if (!activeNote || filteredNotes.some((note) => note.id === activeNote.id)) {
+      return filteredNotes;
+    }
+    return [activeNote, ...filteredNotes];
+  }, [activeTabId, allNotes, filteredNotes, searchQuery]);
+
+  // Folder list and grouped rows must come from the same collection. That
+  // includes the active note above, so its actual folder is rendered even
+  // when the current organizational or scope filter would otherwise omit it.
+  const folders = useMemo(() => {
+    return Array.from(new Set(folderVisibleNotes.map(noteFolderIdentityKey)));
+  }, [folderVisibleNotes]);
 
   // Sort function
   const sortNotes = useCallback(
@@ -462,7 +480,11 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
       return map;
     }
 
-    for (const n of filteredNotes) {
+    const notesForGroups =
+      groupBy === "folder" || groupBy === "default"
+        ? folderVisibleNotes
+        : filteredNotes;
+    for (const n of notesForGroups) {
       let key: string;
       switch (groupBy) {
         case "organization":
@@ -493,7 +515,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
     }
 
     return map;
-  }, [filteredNotes, groupBy, sortNotes]);
+  }, [filteredNotes, folderVisibleNotes, groupBy, sortNotes]);
 
   // Recent notes for "default" mode, always by updated_at desc (independent of
   // the user's sort field/order, which applies to folder groups). Fully sorted
@@ -503,21 +525,12 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   // still filters normally — an explicit query must remain authoritative.
   const recentSorted = useMemo(() => {
     if (groupBy !== "default") return [] as NoteRecord[];
-    const activeNote = activeTabId
-      ? allNotes.find((note) => note.id === activeTabId)
-      : undefined;
-    const candidates =
-      !searchQuery &&
-      activeNote &&
-      !filteredNotes.some((note) => note.id === activeNote.id)
-        ? [activeNote, ...filteredNotes]
-        : filteredNotes;
-    return [...candidates].sort((a, b) => {
+    return [...folderVisibleNotes].sort((a, b) => {
       if (a.id === activeTabId) return -1;
       if (b.id === activeTabId) return 1;
       return (b.updated_at ?? "").localeCompare(a.updated_at ?? "");
     });
-  }, [groupBy, filteredNotes, activeTabId, allNotes, searchQuery]);
+  }, [groupBy, folderVisibleNotes, activeTabId]);
 
   // Get group labels for display
   function getGroupLabel(key: string): string {

@@ -81128,6 +81128,7 @@ export type Database = {
         Args: { p_note_id: string; p_version_number: number }
         Returns: boolean
       }
+      restore_scope_type: { Args: { p_type_id: string }; Returns: Json }
       restore_version: {
         Args: { p_entity_id: string; p_entity_type: string; p_version: number }
         Returns: number

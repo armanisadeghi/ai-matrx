@@ -118,6 +118,18 @@ const EXPECTED: ReadonlyArray<{ name: string; why: string }> = [
     name: "close_new_functions_to_anon",
     why: "DD-202 — closes every new SECURITY INVOKER function in a PostgREST-exposed schema to PUBLIC and anon at creation, because PostgreSQL's hard-wired default makes one callable by a signed-out visitor from the moment it exists and no ALTER DEFAULT PRIVILEGES can take that back",
   },
+  {
+    name: "door_follows_its_function",
+    why: "records a deferred debt when dropping a function or procedure would orphan a declared client door",
+  },
+  {
+    name: "platform_reopen_declared_doors",
+    why: "reconciles every closed schema's grants after function and grant DDL",
+  },
+  {
+    name: "provision_shape_guard",
+    why: "blocks unprovisioned entity shapes and records unsettled FK, tenancy, and function-door debts",
+  },
 ];
 
 const C = {

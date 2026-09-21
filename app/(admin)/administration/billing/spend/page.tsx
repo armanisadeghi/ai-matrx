@@ -15,6 +15,7 @@
 import { ShieldAlert } from "lucide-react";
 
 import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { SpendDashboard } from "@/features/admin/spend/SpendDashboard";
 
@@ -28,9 +29,30 @@ export const metadata = {
 
 export default async function PlatformSpendPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, authUnavailable } = await getServerAuth();
+
+  // Could-not-verify is NOT "you are not a Super Admin". Say which one it is,
+  // so a network blink never accuses an admin of lacking a level they have.
+  if (!user && authUnavailable) {
+    console.warn(
+      "[administration/billing/spend] identity could not be verified — showing the retry notice, not a permission refusal.",
+    );
+    return (
+      <div className="p-4">
+        <div className="flex max-w-xl items-start gap-3 rounded-md border border-amber-500/50 bg-amber-500/10 p-4">
+          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden />
+          <div className="text-sm text-amber-700 dark:text-amber-400">
+            <div className="font-medium">We could not verify who you are.</div>
+            <p className="mt-1 text-xs">
+              The sign-in authority did not answer this request, so this page
+              cannot check your admin level. You have not been signed out —
+              reload in a moment.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const allowed = user ? await checkIsSuperAdmin(supabase, user.id) : false;
 

@@ -18,6 +18,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { mapUserData } from "@/utils/userDataMapper";
 import {
   getAdminStatus,
@@ -42,11 +43,35 @@ export default async function AdminLayout({
   const pathname = headersList.get("x-pathname") || "/administration";
   const sidebarExpanded = await readSidebarExpandedCookie();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, authUnavailable } = await getServerAuth();
 
   if (!user) {
+    // 🚨 An auth authority we could not REACH is not a signed-out admin. The
+    // proxy passes these requests through rather than bouncing them, and so
+    // does this layout: a login redirect here would throw a signed-in admin
+    // out mid-session over a network blink, and the destination capture would
+    // rewrite where they were going. Say what happened instead.
+    if (authUnavailable) {
+      console.warn(
+        `[(admin)/layout] identity could not be verified for ${pathname} — rendering the retry shell, NOT redirecting to /login.`,
+      );
+      const guestUserData = mapUserData(null, undefined, false);
+      return (
+        <AppShell
+          initialReduxState={{ user: guestUserData }}
+          userData={guestUserData}
+          isAuthenticated={false}
+          pathname={pathname}
+          sidebarExpanded={sidebarExpanded}
+        >
+          <div className="p-4 text-sm text-muted-foreground">
+            We could not verify who you are on this request, so administration
+            is not showing its data. You have not been signed out — reload in a
+            moment.
+          </div>
+        </AppShell>
+      );
+    }
     // Preserve the intended destination through the login round-trip.
     const searchParams = headersList.get("x-search-params") || "";
     const fullPath = searchParams ? `${pathname}${searchParams}` : pathname;
