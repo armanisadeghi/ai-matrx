@@ -216,3 +216,118 @@ describe("the separator is the ruling, not a preference", () => {
     expect(MULTI_SOURCE_JOINER).toBe("\n\n");
   });
 });
+
+// ── EVERY OFFERED KIND × EVERY CHANNEL, AND EVERY REFUSAL IS PERFORMABLE ─────
+//
+// 2026-09-20, Arman on `/administration/mandates/feedback.item_triage_decision`:
+// he mapped "Similar Open Items" (kind json, optional, lazy) onto a prompt
+// variable with When missing = Skip and got "Mapping issue 1 — Invalid".
+//
+// Two separate defects, both fixed here at the class:
+//   · The screen never said WHY (the sentence lived in a hover popover) — the
+//     BindingMiddle half of that fix.
+//   · The sentence, once read, ended "deliver it as context, never as a blob
+//     variable" — an instruction nobody on that screen can carry out. The
+//     delivery channel is DERIVED from whether the holder input is a prompt
+//     variable or a context slot; there is no control to flip. A refusal whose
+//     remedy cannot be performed is a dead end wearing a helpful sentence.
+//
+// This matrix is the guard: every kind the platform can offer, against both
+// channels, asserting the verdict AND that a refusal names a real exit.
+describe("every offered kind, on both channels, refuses performably", () => {
+  const ALL_KINDS = [
+    "text",
+    "string",
+    "markdown",
+    "number",
+    "integer",
+    "boolean",
+    "string_list",
+    "file",
+    "file_list",
+    "json",
+    "crm_contact", // a registered content_ir kind — structured
+  ] as const;
+  const VARIABLE_OK = new Set([
+    "text",
+    "string",
+    "markdown",
+    "number",
+    "integer",
+    "boolean",
+    "file",
+    "file_list",
+  ]);
+
+  const offerOf = (kind: string) => ({
+    values: [
+      { name: "value", kind, guaranteed: true, lazy: false, description: "" },
+    ],
+  });
+
+  it.each(ALL_KINDS)("%s is judged the same way on both channels", (kind) => {
+    const onVariable = consumptionMapProblems(offerOf(kind), {
+      slot: [{ mapType: "offered_value", target: "value", deliver: "variable" }],
+    });
+    const onContext = consumptionMapProblems(offerOf(kind), {
+      slot: [{ mapType: "offered_value", target: "value", deliver: "context" }],
+    });
+    // A context slot takes anything the platform can offer — that is the
+    // channel structured values exist for.
+    expect(onContext).toEqual([]);
+    if (VARIABLE_OK.has(kind)) {
+      expect(onVariable).toEqual([]);
+      return;
+    }
+    expect(onVariable).toHaveLength(1);
+    const sentence = onVariable[0];
+    // Names the value, the reason, and an exit the reader can actually take.
+    expect(sentence).toContain("“Value”");
+    expect(sentence).toContain("no text form");
+    expect(sentence).toContain("Feed this input a value that is text instead");
+    expect(sentence).toContain("context slot");
+    // 🚨 The dead-end wording is gone and must not come back: nothing on the
+    // binding screen can "deliver it as context" on a prompt variable.
+    expect(sentence).not.toContain("blob variable");
+    expect(sentence).not.toMatch(/deliver it as context/i);
+  });
+
+  it("an optional value with Skip is NOT a mapping issue, whatever its kind", () => {
+    // Arman's exact case: json + guaranteed:false + lazy + when_absent skip,
+    // landing on a CONTEXT slot, is a complete and correct mapping.
+    expect(
+      consumptionMapProblems(
+        {
+          values: [
+            {
+              name: "similar_open_items",
+              kind: "json",
+              guaranteed: false,
+              lazy: true,
+              description: "",
+            },
+          ],
+        },
+        {
+          similar_open_items: [
+            {
+              mapType: "offered_value",
+              target: "similar_open_items",
+              deliver: "context",
+              when_absent: "skip",
+            },
+          ],
+        },
+      ),
+    ).toEqual([]);
+  });
+
+  it("names the workflow, not 'the agent', when the holder is a workflow", () => {
+    const [sentence] = consumptionMapProblems(
+      offerOf("json"),
+      { slot: [{ mapType: "offered_value", target: "value", deliver: "variable" }] },
+      { holderKind: "workflow" },
+    );
+    expect(sentence).toContain("give the workflow a context slot");
+  });
+});
