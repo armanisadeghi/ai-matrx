@@ -1,76 +1,10 @@
--- lane: ARGS-RULED
+-- INVERSE of migrations/campaign/argsruled_the_comment_refusal_comes_first.sql.
+-- It puts the organization derivation back BELOW the convenience read, where the mismatch case
+-- dies inside custom.read_record instead of naming the organization the record belongs to.
 --
--- chair-step: it REPLACES the live body of a client door (custom.io_comment_write), which the
---   additive allow-list judges by name. It also CREATES one new internal function and runs one
---   idempotent repair UPDATE over custom.io_comment. Nothing is dropped, nothing is revoked. The
---   inverse is migrations/inverse/argsruled_a_comment_is_filed_where_its_record_lives_down.sql.
---
--- based-on: custom.io_comment_write(uuid, uuid, text, jsonb, uuid) b255478004d027196f6d83b181d2ab83f1be89dbc6ac3646252df62173fa07a4
---
--- ARGS-RULED — A COMMENT IS FILED WHERE ITS RECORD LIVES.
---
--- `custom.io_comment_write(p_organization_id, p_record_id, …)` decided the caller against the
--- RECORD — `custom.has_visibility(v_user, 'record', p_record_id, 'commenter')`, which is the one
--- ladder and is right — and then wrote `p_organization_id` onto the comment row. Those two facts
--- were never compared. The record's organization is a property OF THE RECORD; the argument is
--- whatever the caller typed. A person who had been shared a record across an organization wall
--- could therefore file a comment under the organization they happen to be in, about a record
--- living in another one — and then every org-scoped reader of `custom.io_comment`
--- (`custom.io_comments`, `custom.io_comment_resolve`, the count on the record's own screen)
--- would disagree about whether that conversation exists at all.
---
--- It is not an access leak — the record ladder decides, and it decided correctly — which is
--- exactly why no access guard was ever going to find it. It is a DATA-INTEGRITY defect, named by
--- this lane while reading `p_organization_id` on the nine doors whose only "check" on it is
--- `custom.assert_store_door` (a PRODUCT SWITCH and the store-owner role, and no membership).
---
--- WHAT THIS FILE DOES.
---   * `custom._organization_of_record(p_record_id)` — ONE place that answers "which organization
---     does this record live in", by id, with no organization argument to disagree with. Internal:
---     no client grant, no door row, and it is the only new reading path this file adds.
---   * `custom.io_comment_write` DERIVES the organization and refuses BY NAME when the argument
---     disagrees, saying which organization the record actually belongs to so the caller can act.
---   * A record that is not there at all now answers 23503 instead of being commented on. That
---     branch existed and was DEAD — `if false then raise …` — since the day the read door was
---     allowed to decline.
---   * THE CENSUS, AND THE REPAIR. 36 comments live on this database on 2026-09-21 and **none is
---     mis-filed**: `select count(*) from custom.io_comment c join custom.record r on r.id =
---     c.record_id where r.organization_id is distinct from c.organization_id` = 0. The repair
---     below is therefore a no-op today, and it is here anyway so the file is the whole fix — if
---     a row is mis-filed between this being written and being applied, it is re-filed where its
---     record lives. ONE comment (c2580ff6-431b-4468-889b-18968c0eee63) points at a record id that
---     is in no partition of `custom.record` at all; it is left exactly as it is — there is no
---     record to derive an organization from, and nothing important is deleted here.
+-- chair-step: it replaces a live client-door body.
 
 set lock_timeout = '4s';
-
-create or replace function custom._organization_of_record(p_record_id uuid)
- returns uuid
- language sql
- stable security definer
- set search_path to 'pg_catalog'
-as $function$
-  -- WHICH ORGANIZATION DOES THIS RECORD LIVE IN. By id and by nothing else, so there is no second
-  -- argument that could disagree with the answer. It is INTERNAL: no client grant and no
-  -- platform.client_callable_door row, because it makes no access decision and is not one — it is
-  -- the derivation the doors above it use before they decide anything.
-  select r.organization_id from custom.record r where r.id = p_record_id limit 1
-$function$;
-
-revoke all on function custom._organization_of_record(uuid) from public;
-
--- DD-223: the shape guard refuses a new SECURITY DEFINER body at COMMIT unless somebody has said
--- IN DATA who may call it. This one is not a door and must never become one.
-insert into platform.client_callable_door
-  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
-   non_client_lane, signed_in_callers, anonymous_callers)
-values
-  ('custom', '_organization_of_record', 'p_record_id uuid', array['uuid'::regtype]::oid[],
-   'p_record_id: NOT an access decision and never one. This function answers which organization a record lives in, by id and by nothing else, so that the doors above it can DERIVE the organization instead of taking it from the caller. It returns exactly one uuid and no content of any kind; a record that is not there answers NULL, which is what an invented id answers. Every caller asks the ladder for itself, before or after, and this changes nothing about that.',
-   'argsruled_a_comment_is_filed_where_its_record_lives.sql',
-   'server_only: no client role holds EXECUTE on it (it is revoked from PUBLIC on creation and granted to nobody), and it exists only so custom.io_comment_write and its siblings can derive a record''s organization rather than accept it as an argument. A client that could call it would learn one uuid it already had to know a record id to ask about.',
-   false, false)
-on conflict do nothing;
 
 CREATE OR REPLACE FUNCTION custom.io_comment_write(p_organization_id uuid, p_record_id uuid, p_body text, p_anchor jsonb DEFAULT '{}'::jsonb, p_parent_comment_id uuid DEFAULT NULL::uuid)
  RETURNS uuid
@@ -167,12 +101,4 @@ begin
   return v_id;
 end;
 $function$
-
 ;
-
--- THE REPAIR. Idempotent, and 0 rows on 2026-09-21.
-update custom.io_comment c
-   set organization_id = r.organization_id
-  from custom.record r
- where r.id = c.record_id
-   and c.organization_id is distinct from r.organization_id;
