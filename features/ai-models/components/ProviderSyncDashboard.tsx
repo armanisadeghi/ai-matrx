@@ -66,6 +66,7 @@ import {
   MOBILE_TABLE_FROZEN,
 } from "@/components/official/mobile-table/mobileTable";
 import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
+import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -883,7 +884,7 @@ function ExcludeButton({
   );
 }
 
-// ─── Comparison table (real <table> for alignment) ────────────────────────
+// ─── Provider comparison grid ─────────────────────────────────────────────
 
 function SortableTH({
   sortKey,
@@ -979,6 +980,22 @@ function ComparisonTable({
     arr.sort((a, b) => compareComparisons(a, b, sortKey, sortDir));
     return arr;
   }, [comparisons, sortKey, sortDir]);
+  const columns = useMemo<MatrxColumnDef<ModelComparison>[]>(
+    () => [
+      { id: "display_name", header: "Display name", accessorFn: (comparison) => comparison.display_name, cell: (comparison) => <span className="block max-w-[160px] truncate font-medium" title={comparison.display_name}>{comparison.display_name}</span> },
+      { id: "id", header: "Model ID", accessorFn: (comparison) => comparison.id, cell: (comparison) => <span className="block max-w-[200px] truncate font-mono text-[10px] text-muted-foreground" title={comparison.id}>{comparison.id}</span> },
+      { id: "context", header: "Context", accessorFn: (comparison) => comparison.providerEntry?.max_input_tokens ?? comparison.localEntry?.context_window ?? null, align: "right", cell: (comparison) => formatNum(comparison.providerEntry?.max_input_tokens ?? comparison.localEntry?.context_window) },
+      { id: "max_out", header: "Max out", accessorFn: (comparison) => comparison.providerEntry?.max_tokens ?? comparison.localEntry?.max_tokens ?? null, align: "right", cell: (comparison) => formatNum(comparison.providerEntry?.max_tokens ?? comparison.localEntry?.max_tokens) },
+      { id: "released", header: "Released", accessorFn: (comparison) => comparison.providerEntry?.created_at ?? "", cell: (comparison) => formatDate(comparison.providerEntry?.created_at) },
+      { id: "our_name", header: "Our name", accessorFn: (comparison) => comparison.localEntry?.common_name ?? "", cell: (comparison) => comparison.localEntry?.common_name ?? "—" },
+      { id: "price", header: "Price", accessorFn: (comparison) => comparison.pricing.ours?.input ?? null, cell: (comparison) => <PriceCell pricing={comparison.pricing} /> },
+      { id: "verified", header: "Price checked", accessorFn: (comparison) => comparison.pricing.verified_at ?? "", cell: (comparison) => <PriceVerifiedCell pricing={comparison.pricing} /> },
+      { id: "primary", header: "Primary", accessorFn: (comparison) => Boolean(comparison.localEntry?.is_primary), cell: (comparison) => comparison.localEntry?.is_primary ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : "—" },
+      { id: "deprecated", header: "Deprecated", accessorFn: (comparison) => Boolean(comparison.localEntry?.is_deprecated), cell: (comparison) => comparison.localEntry?.is_deprecated ? <span className="font-medium text-amber-500">yes</span> : "—" },
+      { id: "status", header: "Status", accessorFn: (comparison) => comparison.status, filter: "select", cell: (comparison) => <StatusBadge status={comparison.status} cutoff={cutoff} /> },
+    ],
+    [cutoff],
+  );
 
   if (comparisons.length === 0) {
     return (
@@ -990,7 +1007,24 @@ function ComparisonTable({
 
   return (
     <div className="border-t overflow-x-auto">
-      <table className={cn("text-xs border-collapse", MOBILE_TABLE_FROZEN)}>
+      <MatrxDataTable<ModelComparison>
+        tableId={`ai-models/provider-sync/${providerName ?? "provider"}`}
+        data={comparisons}
+        columns={columns}
+        getRowId={(comparison) => comparison.id}
+        density="condensed"
+        pageSize={0}
+        hidePagination
+        coverage={{ noun: "provider model", answeredBy: "client" }}
+        copy={false}
+        detail={{ enabled: false }}
+        window={{ enabled: false }}
+        selectedId={selectedId}
+        onRowOpen={(comparison) => onSelect(comparison.id === selectedId ? null : comparison)}
+        rowClassName={(comparison) => `${STATUS_LEFT[comparison.status]} ${comparison.id === selectedId ? STATUS_BG_SEL[comparison.status] : STATUS_BG[comparison.status]}`}
+        rowActions={(comparison) => <div className="flex items-center gap-1"><ProviderSyncRowCopyForAiButton comparison={comparison} providerName={providerName} />{comparison.status === "matched" && comparison.localEntry && <OpenDetailButton onClick={() => onOpenModel(comparison.localEntry!.id)} />}{comparison.status === "missing_local" && <Button size="sm" variant="ghost" className="h-5 px-1.5 text-[10px]" onClick={() => onAddMissing(comparison)}><Plus className="h-2.5 w-2.5" />Add</Button>}{comparison.status !== "extra_local" && <ExcludeButton comparison={comparison} onToggle={onToggleExclusion} busy={policyBusy} />}</div>}
+      />
+      {false && (<div className={cn("text-xs border-collapse", MOBILE_TABLE_FROZEN)}>
         <thead>
           <tr className="border-b">
             <SortableTH
@@ -1194,7 +1228,7 @@ function ComparisonTable({
             );
           })}
         </tbody>
-      </table>
+      </div>)}
     </div>
   );
 }

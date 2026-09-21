@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useTransition } from "react";
+import React, { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -61,6 +61,7 @@ import {
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 
 const ARTIFACT_ICONS: Record<ArtifactType, React.FC<{ className?: string }>> = {
   html_page: Globe,
@@ -438,6 +439,24 @@ export function CmsArtifactList() {
   };
 
   const isLoading = fetchStatus === "loading";
+  const columns = useMemo<MatrxColumnDef<CxArtifactRecord>[]>(
+    () => [
+      {
+        id: "name",
+        header: "Name",
+        accessorFn: (artifact) => artifact.title?.trim() || "Untitled",
+        cell: (artifact) => {
+          const Icon = ARTIFACT_ICONS[artifact.artifactType] ?? FileText;
+          const title = artifact.title?.trim() || "Untitled";
+          return <div className="flex min-w-0 items-start gap-2.5"><Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden /><div className="min-w-0"><span className="block font-medium leading-snug">{title}</span>{artifact.description && <span className="block truncate text-xs text-muted-foreground">{artifact.description}</span>}</div></div>;
+        },
+      },
+      { id: "kind", header: "Kind", accessorFn: (artifact) => ARTIFACT_TYPE_LABELS[artifact.artifactType] ?? artifact.artifactType, mobileHidden: true },
+      { id: "updated", header: "Updated", accessorFn: (artifact) => artifact.updatedAt, filter: "date", mobileHidden: true, cell: (artifact) => <time dateTime={artifact.updatedAt} title={new Date(artifact.updatedAt).toLocaleString()}>{formatUpdatedAt(artifact.updatedAt)}</time> },
+      { id: "status", header: "Status", accessorFn: (artifact) => artifact.status, filter: "select", mobileHidden: true, cell: (artifact) => artifact.status === "published" ? "—" : <span className={statusTone(artifact.status)}>{ARTIFACT_STATUS_LABELS[artifact.status]}</span> },
+    ],
+    [],
+  );
   const statusButtonLabel =
     filters.status === "all"
       ? "Active"
@@ -573,35 +592,23 @@ export function CmsArtifactList() {
           )}
         </div>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-xs font-medium text-muted-foreground">
-              <th className="px-2 py-1.5 text-left font-medium">Name</th>
-              <th className="hidden px-3 py-1.5 text-left font-medium md:table-cell">
-                Kind
-              </th>
-              <th className="hidden px-3 py-1.5 text-left font-medium sm:table-cell">
-                Updated
-              </th>
-              <th className="w-10" />
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((artifact) => (
-              <ArtifactRow
-                key={artifact.id}
-                artifact={artifact}
-                isNavigating={navigatingId === artifact.id}
-                isAnyNavigating={navigatingId !== null}
-                onOpen={handleOpen}
-                onNavigate={handleNavigate}
-                onDelete={handleDelete}
-                onArchive={handleArchive}
-                onOpenEditor={handleOpenEditor}
-              />
-            ))}
-          </tbody>
-        </table>
+        <MatrxDataTable<CxArtifactRecord>
+          tableId="artifacts/content-library"
+          data={filtered}
+          columns={columns}
+          getRowId={(artifact) => artifact.id}
+          isLoading={isLoading}
+          density="condensed"
+          pageSize={0}
+          hidePagination
+          coverage={{ noun: "artifact", answeredBy: "client" }}
+          copy={false}
+          detail={{ enabled: false }}
+          window={{ enabled: false }}
+          getRowHref={(artifact) => `/artifacts/${artifact.id}`}
+          onRowOpen={handleOpen}
+          rowActions={(artifact) => <div className="flex items-center gap-0.5"><Button variant="ghost" size="icon" className="size-7" onClick={() => handleNavigate(artifact.id)} title="Open full page"><FileText className="size-3.5" /></Button>{artifact.externalUrl && <a href={artifact.externalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex size-7 items-center justify-center text-muted-foreground" title="View live"><ExternalLink className="size-3.5" /></a>}<Button variant="ghost" size="icon" className="size-7" onClick={() => handleArchive(artifact)} title="Archive"><ArchiveIcon className="size-3.5" /></Button><Button variant="ghost" size="icon" className="size-7 text-destructive" onClick={() => handleDelete(artifact)} title="Delete"><Trash2 className="size-3.5" /></Button></div>}
+        />
       )}
 
       {filtered.length > 0 && (

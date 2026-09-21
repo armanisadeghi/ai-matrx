@@ -49,6 +49,7 @@ import { toast } from "@/lib/toast";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
 import { cn } from "@/lib/utils";
 import { MOBILE_TABLE_FROZEN } from "@/components/official/mobile-table/mobileTable";
+import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 
 interface DeprecatedModelsAuditProps {
   allModels: AiModel[];
@@ -509,6 +510,19 @@ export default function DeprecatedModelsAudit({
   const dryRunAgentIds = Array.from(
     new Set(dryRunScopes.flatMap((scope) => scope.agentIds)),
   );
+  const auditColumns = useMemo<MatrxColumnDef<DeprecatedEntry>[]>(
+    () => [
+      { id: "model", header: "Deprecated model", accessorFn: (entry) => entry.model.common_name || entry.model.name, cell: (entry) => <div><span className="block font-medium">{entry.model.common_name || entry.model.name}</span><span className="font-mono text-[10px] text-muted-foreground">{entry.model.name}</span></div> },
+      { id: "provider", header: "Provider", accessorFn: (entry) => entry.model.maker ?? "", cell: (entry) => entry.model.maker ?? "—" },
+      { id: "prompts", header: "Prompts", accessorFn: (entry) => entry.usage?.prompts.length ?? 0, align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant="outline">{entry.usage?.prompts.length ?? 0}</Badge> },
+      { id: "builtins", header: "Builtins", accessorFn: (entry) => entry.usage?.promptBuiltins.length ?? 0, align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant="outline">{entry.usage?.promptBuiltins.length ?? 0}</Badge> },
+      { id: "agents", header: "Agents", accessorFn: (entry) => entry.usage?.agents.length ?? 0, align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant="outline">{entry.usage?.agents.length ?? 0}</Badge> },
+      { id: "templates", header: "Templates", accessorFn: (entry) => entry.usage?.agentTemplates.length ?? 0, align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant="outline">{entry.usage?.agentTemplates.length ?? 0}</Badge> },
+      { id: "total", header: "Total", accessorFn: totalUsage, align: "center", cell: (entry) => entry.loading ? <RefreshCcw className="mx-auto h-3 w-3 animate-spin text-muted-foreground" /> : <Badge variant={totalUsage(entry) > 0 ? "default" : "outline"}>{totalUsage(entry)}</Badge> },
+      { id: "replacement", header: "Replace with", accessorFn: (entry) => entry.replacementId, sortable: false, filter: false, cell: (entry) => totalUsage(entry) === 0 && !entry.loading ? <span className="text-xs italic text-muted-foreground">No active usage</span> : <ModelListDropdown value={entry.replacementId || undefined} onValueChange={(replacementId) => updateEntry(entry.model.id, { replacementId })} inputModalities={[]} allowedModelIds={activeModels.filter((candidate) => hasCompatibleDecisionInteraction(entry.model.capabilities, candidate.capabilities)).map((candidate) => candidate.id)} catalogVariant="admin" selectionPurpose="admin" placeholder="Select replacement..." className="h-7 w-full max-w-[240px] justify-between text-xs" disabled={entry.replacing} /> },
+    ],
+    [activeModels, entries],
+  );
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -691,8 +705,22 @@ export default function DeprecatedModelsAudit({
               Clear filters
             </Button>
           </div>
-        ) : (
-          <table className={cn("text-xs border-collapse", MOBILE_TABLE_FROZEN)}>
+        ) : (<>
+          <MatrxDataTable<DeprecatedEntry>
+            tableId="ai-models/deprecated-audit"
+            data={visibleEntries}
+            columns={auditColumns}
+            getRowId={(entry) => entry.model.id}
+            density="condensed"
+            pageSize={0}
+            hidePagination
+            coverage={{ noun: "deprecated model", answeredBy: "client" }}
+            copy={false}
+            detail={{ enabled: false }}
+            window={{ enabled: false }}
+            rowActions={(entry) => totalUsage(entry) > 0 && <div className="flex items-center gap-1"><Button variant="outline" size="sm" className="h-6 px-2 text-[11px]" disabled={!entry.replacementId || entry.replacing || entry.loading} onClick={() => handleOpenSettingsReview(entry)}><Settings className="h-3 w-3" />Review</Button><Button size="sm" className="h-6 px-2 text-[11px]" disabled={!entry.replacementId || entry.replacing || entry.loading} onClick={() => handleQuickReplace(entry)}>{entry.replacing ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowRightLeft className="h-3 w-3" />}Quick</Button></div>}
+          />
+          {false && (<div className={cn("text-xs border-collapse", MOBILE_TABLE_FROZEN)}>
             <thead className="sticky top-0 z-10 bg-card border-b">
               <tr className="h-8">
                 <Th
@@ -969,8 +997,7 @@ export default function DeprecatedModelsAudit({
                 );
               })}
             </tbody>
-          </table>
-        )}
+          </div>)}</>)}
       </div>
 
       {/* ── Bulk replace confirm ────────────────────────────────────────── */}
