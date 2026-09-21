@@ -33,8 +33,8 @@ declare
   v_id       uuid;
 begin
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'ZZZ PORTAL All Green Recycling - safe to delete',
-          'zzz-portal-' || left(v_org::text, 8), 'ZPA', c_admin);
+  values (v_org, 'Ridgeline Physical Therapy - safe to delete',
+          'ridgeline-pt-' || left(v_org::text, 8), 'RPT', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status, created_by)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active', c_admin);
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note, updated_by)
@@ -44,7 +44,7 @@ begin
   perform set_config('app.actor_system', 'campaign/PORTAL/fixture', true);
 
   v_home := custom.record_write(v_org, custom.organization_kernel_id(),
-              jsonb_build_object('name', 'All Green Recycling', 'description', 'the proof''s home', '_actor', 'user'));
+              jsonb_build_object('name', 'Ridgeline Physical Therapy', 'description', 'the proof''s home', '_actor', 'user'));
 
   -- ── the three Tables ────────────────────────────────────────────────────────────
   v_clients := custom.table_declare(v_org, jsonb_build_object(
@@ -89,9 +89,9 @@ begin
       'relation_target', v_clients));
 
   -- ── three clients ───────────────────────────────────────────────────────────────
-  v_ada := custom.record_write(v_org, v_clients, jsonb_build_object('name', 'Ada Brook Cafes', 'contact_email', 'ada.client@zzz-portal-proof.test', '_actor', 'user'));
-  v_bru := custom.record_write(v_org, v_clients, jsonb_build_object('name', 'Bruno Vance Builders', 'contact_email', 'bruno.client@zzz-portal-proof.test', '_actor', 'user'));
-  v_cle := custom.record_write(v_org, v_clients, jsonb_build_object('name', 'Cleo Marsh Clinics', 'contact_email', 'cleo.client@zzz-portal-proof.test', '_actor', 'user'));
+  v_ada := custom.record_write(v_org, v_clients, jsonb_build_object('name', 'Ada Brook Cafes', 'contact_email', 'ada.client@ridgelinept.test', '_actor', 'user'));
+  v_bru := custom.record_write(v_org, v_clients, jsonb_build_object('name', 'Bruno Vance Builders', 'contact_email', 'bruno.client@ridgelinept.test', '_actor', 'user'));
+  v_cle := custom.record_write(v_org, v_clients, jsonb_build_object('name', 'Cleo Marsh Clinics', 'contact_email', 'cleo.client@ridgelinept.test', '_actor', 'user'));
 
   -- ── 30 jobs, ten each; 9 invoices, three each ───────────────────────────────────
   for v_i in 1..30 loop
@@ -119,7 +119,7 @@ begin
   end loop;
 
   -- ── the portal ──────────────────────────────────────────────────────────────────
-  v_portal := custom.portal_declare(v_org, 'All Green client portal', v_clients,
+  v_portal := custom.portal_declare(v_org, 'Ridgeline Physical Therapy client portal', v_clients,
     jsonb_build_array(
       jsonb_build_object('table_id', v_jobs, 'names_via', 'client',
         'visible_fields', jsonb_build_array('title','stage','scheduled_for','client_notes'),
@@ -129,9 +129,9 @@ begin
         'visible_fields', jsonb_build_array('number','total','status'),
         'editable_fields', '[]'::jsonb, 'comments', false)));
 
-  v_p_ada := (custom.portal_invite(v_org, v_portal, v_ada, 'ada.client@zzz-portal-proof.test', c_ada) ->> 'principal_id')::uuid;
-  v_p_bru := (custom.portal_invite(v_org, v_portal, v_bru, 'bruno.client@zzz-portal-proof.test', c_bruno) ->> 'principal_id')::uuid;
-  v_p_cle := (custom.portal_invite(v_org, v_portal, v_cle, 'cleo.client@zzz-portal-proof.test', c_cleo) ->> 'principal_id')::uuid;
+  v_p_ada := (custom.portal_invite(v_org, v_portal, v_ada, 'ada.client@ridgelinept.test', c_ada) ->> 'principal_id')::uuid;
+  v_p_bru := (custom.portal_invite(v_org, v_portal, v_bru, 'bruno.client@ridgelinept.test', c_bruno) ->> 'principal_id')::uuid;
+  v_p_cle := (custom.portal_invite(v_org, v_portal, v_cle, 'cleo.client@ridgelinept.test', c_cleo) ->> 'principal_id')::uuid;
 
   
   perform set_config('app.actor_system', 'campaign/PORTAL/seatproof', true);

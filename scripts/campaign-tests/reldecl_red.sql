@@ -69,7 +69,7 @@ begin
   v_f_many := custom.field_declare(v_org, v_job, jsonb_build_object(
     'label','Crew','type','relation','relation_target', v_client::text,
     'multi', true, 'relation_max', 10, 'on_target_delete','set_null'));
-  v_b1 := custom.record_write(v_org, v_client, jsonb_build_object('cname','Acme'));
+  v_b1 := custom.record_write(v_org, v_client, jsonb_build_object('cname','Sutherland & Voss LLP'));
   v_a1 := custom.record_write(v_org, v_job, jsonb_build_object(
     'jname','Roof','crew', jsonb_build_array(v_b1::text)));
 

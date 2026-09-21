@@ -39,7 +39,7 @@ declare
   v_i       integer;
 begin
   insert into iam.organizations (id, name, slug, created_by)
-  values (v_org, 'ZZZ DIGESTS red ' || left(v_org::text, 8), 'zzz-digests-red-' || left(v_org::text, 8), c_admin);
+  values (v_org, 'Fairhaven Steelworks red ' || left(v_org::text, 8), 'fairhaven-steelworks-red-' || left(v_org::text, 8), c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status, created_by)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active', c_admin);
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note, updated_by)
@@ -87,7 +87,7 @@ begin
       'schedule', 'monday 08:00', 'channel', 'in_app',
       'quiet_hours', jsonb_build_object('start', '22:00', 'end', '07:00', 'tz', 'America/Chicago')));
   v_lead1 := custom.record_write(v_org, v_table,
-               jsonb_build_object('name', 'Dana Whitfield', 'stage', 'new', 'phone', '555-0101', '_actor', 'user'));
+               jsonb_build_object('name', 'Marcus Feldman', 'stage', 'new', 'phone', '555-0101', '_actor', 'user'));
   v_mark := clock_timestamp();
   perform custom.record_update(v_org, v_lead1, jsonb_build_object('phone', '555-0999'), null);
 

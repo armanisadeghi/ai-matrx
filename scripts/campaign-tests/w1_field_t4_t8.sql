@@ -649,11 +649,11 @@ begin
   end;
   begin
     perform custom.record_write(v_org, v_mf_kern,
-      '{"key":"zzz","source":"record","semantic_type":"value","modifiers":["urgent"]}'::jsonb);
+      '{"key":"appointment_reminder","source":"record","semantic_type":"value","modifiers":["urgent"]}'::jsonb);
     raise exception 'DYN-2: an invented modifier was stored';
   exception when check_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg <> 'zzz behaves as urgent, and that is not one of the ways a merge field can behave' then
+    if v_msg <> 'appointment_reminder behaves as urgent, and that is not one of the ways a merge field can behave' then
       raise exception 'DYN-2 modifier: the refusal said "%"', v_msg;
     end if;
   end;

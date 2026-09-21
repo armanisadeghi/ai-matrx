@@ -167,10 +167,10 @@ begin
       coalesce(v_caught, 'it was ACCEPTED'); end if;
 
   -- 2d. A relation at a RECORD instead of a Table.
-  v_b1 := custom.record_write(v_org, v_client, jsonb_build_object('cname','Acme'));
-  v_b2 := custom.record_write(v_org, v_client, jsonb_build_object('cname','Globex'));
-  v_b3 := custom.record_write(v_org, v_client, jsonb_build_object('cname','Initech'));
-  v_b4 := custom.record_write(v_org, v_client, jsonb_build_object('cname','Umbrella'));
+  v_b1 := custom.record_write(v_org, v_client, jsonb_build_object('cname','Beacon Hill Medical Group'));
+  v_b2 := custom.record_write(v_org, v_client, jsonb_build_object('cname','Cobalt Financial Partners'));
+  v_b3 := custom.record_write(v_org, v_client, jsonb_build_object('cname','Dorchester County Clerk'));
+  v_b4 := custom.record_write(v_org, v_client, jsonb_build_object('cname','Evergreen Title Company'));
   v_caught := null;
   begin
     perform custom.field_declare(v_org, v_job, jsonb_build_object(
@@ -217,12 +217,12 @@ begin
   -- 3c. And every chip carries the TARGET'S OWN TITLE, hydrated at read (REL-14).
   select string_agg(f.label, ', ' order by f.label) into v_t
     from platform.relations_from(v_org, v_a1) f where f.role = 'crew';
-  if v_t is distinct from 'Acme, Globex' then
-    raise exception '3c: the crew chips read "%", not "Acme, Globex"', coalesce(v_t,'<null>'); end if;
+  if v_t is distinct from 'Beacon Hill Medical Group, Cobalt Financial Partners' then
+    raise exception '3c: the crew chips read "%", not "Beacon Hill Medical Group, Cobalt Financial Partners"', coalesce(v_t,'<null>'); end if;
 
   -- 3d. THE REVERSE SIDE ON B (REL-9). It is a where clause, not a second Field.
   select count(*) into v_n from platform.relations_to(v_org, v_b1);
-  if v_n <> 2 then raise exception '3d: the reverse side of Acme shows % relations, not 2', v_n; end if;
+  if v_n <> 2 then raise exception '3d: the reverse side of Beacon Hill Medical Group shows % relations, not 2', v_n; end if;
   select string_agg(distinct t.label, ', ') into v_t from platform.relations_to(v_org, v_b1) t;
   if v_t is distinct from 'Roof' then
     raise exception '3d: the reverse side names "%", not Roof', coalesce(v_t,'<null>'); end if;
@@ -348,7 +348,7 @@ begin
   if v_t is distinct from platform.relation_withheld_label() then
     raise exception '6b: the chip for a record she may not open reads "%", not the withheld sentence',
       coalesce(v_t, '<null>'); end if;
-  if v_t like '%Initech%' then
+  if v_t like '%Dorchester County Clerk%' then
     raise exception '6b: the withheld chip is wearing the target''s title'; end if;
 
   -- 6c. AND THE SAME DOOR STILL TELLS THE TRUTH ABOUT WHAT SHE DOES HOLD, so 6b is not a door
@@ -357,8 +357,8 @@ begin
   perform custom.share_grant(v_org, v_b3, 'user', c_dana, 'viewer'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
   v_t := platform.relation_label(v_org, 'record', v_b3);
-  if v_t is distinct from 'Initech' then
-    raise exception '6c: after it was shared with her the chip reads "%", not Initech', coalesce(v_t,'<null>'); end if;
+  if v_t is distinct from 'Dorchester County Clerk' then
+    raise exception '6c: after it was shared with her the chip reads "%", not Dorchester County Clerk', coalesce(v_t,'<null>'); end if;
   raise notice 'PART 6 PASSED (6a-6c) — a member who was shared nothing is refused the relations of a record she does not hold, a relation INTO a record she may not see reads the withheld sentence and never its title, and the same door names it the moment it is shared with her.';
 
   raise notice 'ALL PARTS PASSED (1a-1d, 2a-2e, 3a-3h, 4a-4c, 5a-5d, 6a-6c) — every clause from the seat `authenticated`, through the doors a signed-in person reaches.';

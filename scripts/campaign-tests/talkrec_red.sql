@@ -443,7 +443,7 @@ begin
   perform custom.field_declare(v_org, v_cust, jsonb_build_object(
     'label','Tax ID','key','ssn','plain','text','sensitivity','confidential'));
   v_acme := custom.record_write(v_org, v_cust, jsonb_build_object(
-    'name','Acme Industrial','stage','Prospect','ssn','123-45-6789','parent_id',v_home::text));
+    'name','Fairmont Property Group','stage','Prospect','ssn','123-45-6789','parent_id',v_home::text));
   v_beta := custom.record_write(v_org, v_cust, jsonb_build_object(
     'name','Beta Works','stage','Won','parent_id',v_home::text));
   perform custom.record_update(v_org, v_acme, jsonb_build_object('stage','Won'));

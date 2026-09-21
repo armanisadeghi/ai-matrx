@@ -54,7 +54,7 @@ declare
 begin
   -- ── fixtures, as the connected role (a seat is a PERSON; these make one) ───────
   insert into iam.organizations (id, name, slug, created_by)
-  values (v_org, 'ZZZ DIGESTS suite ' || left(v_org::text, 8), 'zzz-digests-' || left(v_org::text, 8), c_admin);
+  values (v_org, 'Fairhaven Steelworks suite ' || left(v_org::text, 8), 'fairhaven-steelworks-' || left(v_org::text, 8), c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status, created_by)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active', c_admin),
          (v_org, 'organization', v_org, c_dana, 'member', 'active', c_admin);
@@ -217,7 +217,7 @@ begin
   raise notice 'PART 4 PASSED — instant + weekly written, and the door answers quiet hours and the next Monday 08:00 America/Chicago';
 
   -- ══ PART 5 — three leads, and INSTANT MEANS ENTERING ═════════════════════════
-  v_lead1 := custom.record_write(v_org, v_table, jsonb_build_object('name', 'Dana Whitfield', 'stage', 'new', 'phone', '555-0101', '_actor', 'user'));
+  v_lead1 := custom.record_write(v_org, v_table, jsonb_build_object('name', 'Renee Castillo', 'stage', 'new', 'phone', '555-0101', '_actor', 'user'));
   v_lead2 := custom.record_write(v_org, v_table, jsonb_build_object('name', 'Marcus Reyes', 'stage', 'new', 'phone', '555-0102', '_actor', 'user'));
   v_won   := custom.record_write(v_org, v_table, jsonb_build_object('name', 'Priya Raman', 'stage', 'won', 'phone', '555-0103', '_actor', 'user'));
   v_mark := clock_timestamp();
@@ -252,7 +252,7 @@ begin
     raise exception '6b: % leads arrived, not 2 — %', v_digest -> 'counts' ->> 'entered', v_digest ->> 'body';
   end if;
   -- IT NAMES THEM. "2 records changed" is a number; a summary somebody acts on says who.
-  if v_digest ->> 'body' not like '%Dana Whitfield%' or v_digest ->> 'body' not like '%Marcus Reyes%' then
+  if v_digest ->> 'body' not like '%Renee Castillo%' or v_digest ->> 'body' not like '%Marcus Reyes%' then
     raise exception '6c: the summary counted the leads without naming them: %', v_digest ->> 'body';
   end if;
   if (v_digest -> 'counts' ->> 'in_view')::int <> 2 then
@@ -266,7 +266,7 @@ begin
   -- AND WHEN ONE LEAVES — but only against a watermark she was INSIDE. A departure is
   -- a statement about two moments, so the first summary has to have been sent before
   -- the second one can say anything left: with no previous summary the window opens a
-  -- week ago, Dana did not exist then, and "she left" would be a claim about a record
+  -- week ago, Renee did not exist then, and "she left" would be a claim about a record
   -- the reader was never told about. That is the correct answer and the suite proves
   -- it rather than working around it.
   if (v_digest -> 'counts' ->> 'left')::int <> 0 then
@@ -302,8 +302,8 @@ begin
   -- outbox row this suite wrote and every window it can ask for carry the same
   -- instant. No arrangement of this file can put a change on one side of a watermark
   -- and a state on the other. It is proven instead by the live run recorded in
-  -- v5/BUILD-LOG.md, on the main database, in separate transactions: after Dana's
-  -- stage moved to `won` the summary read *"1 left the view: Dana Whitfield. 1 in the
+  -- v5/BUILD-LOG.md, on the main database, in separate transactions: after Renee's
+  -- stage moved to `won` the summary read *"1 left the view: Renee Castillo. 1 in the
   -- view now."*
   --
   -- WHAT IS ASSERTED HERE IS THE DECISION THAT LINE RESTS ON, and it is the exact

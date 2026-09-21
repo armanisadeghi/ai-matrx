@@ -41,7 +41,7 @@ declare
   v_row     record;
 begin
   insert into iam.organizations (id, name, slug, created_by)
-  values (v_org, 'ZZZ DOORSTWO red ' || left(v_org::text, 8), 'zzz-doorstwo-red-' || left(v_org::text, 8), c_admin);
+  values (v_org, 'The Alvarado-Chen Kitchen red ' || left(v_org::text, 8), 'alvarado-chen-kitchen-red-' || left(v_org::text, 8), c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status, created_by)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active', c_admin),
          (v_org, 'organization', v_org, c_dana, 'member', 'active', c_admin);
@@ -66,7 +66,7 @@ begin
       'fields', jsonb_build_array(jsonb_build_object('name', 'client')),
       'parent_id', v_home));
   v_f_name := custom.field_declare(v_org, v_table, jsonb_build_object('label', 'client', 'key', 'client', 'type', 'text', 'required', true));
-  v_rec := custom.record_write(v_org, v_table, jsonb_build_object('client', 'Acme Recycling', '_actor', 'user'));
+  v_rec := custom.record_write(v_org, v_table, jsonb_build_object('client', 'Marchetti Events Group', '_actor', 'user'));
   v_tmpl := custom.doc_template_save(v_org, v_table, 'Proposal',
               'Dear {{field:' || v_f_name || '}}.', null);
   v_render := custom.doc_render_document(v_org, v_tmpl, v_rec);
@@ -140,7 +140,7 @@ begin
     raise exception 'RED 2 did not reproduce: the real door let a stranger read the document';
   exception when insufficient_privilege or no_data_found then null;
   end;
-  if custom.zz_red_doc_renders(v_org, v_rec) not like '%Acme Recycling%' then
+  if custom.zz_red_doc_renders(v_org, v_rec) not like '%Marchetti Events Group%' then
     raise exception 'RED 2 is not a proof: without the wall she still got nothing, so something else was refusing';
   end if;
   v_reds := v_reds + 1;

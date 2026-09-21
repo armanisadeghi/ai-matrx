@@ -52,7 +52,7 @@ declare
   i int; v_id uuid;
 begin
   insert into iam.organizations (name, slug, abbreviation, created_by)
-  values ('ZZZ WRITEPERF PARITY ' || p_half, p_slug, 'ZWP', c_admin) returning id into v_org;
+  values ('Ironline Fitness Parity ' || p_half, p_slug, 'ZWP', c_admin) returning id into v_org;
   insert into iam.memberships (organization_id, user_id, role, status, container_type, container_id)
   values (v_org, c_admin, 'owner', 'active', 'organization', v_org),
          (v_org, c_dana,  'member','active', 'organization', v_org);
@@ -69,7 +69,7 @@ begin
 
   v_home := custom.record_write(v_org, custom.person_kernel_id(), jsonb_build_object('name','Parity Home'));
   v_acct := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WP Account','slug','zz_wp_acct_' || lower(p_half),'type','entity',
+    'name','Membership Accounts','slug','membership_accounts_' || lower(p_half),'type','entity',
     'label_singular','Account','label_plural','Accounts','title_field','title','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
@@ -80,12 +80,12 @@ begin
   end loop;
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
-    'name','ZZ WP Deal','slug','zz_wp_deal_' || lower(p_half),'type','entity',
-    'label_singular','Deal','label_plural','Deals','title_field','deal','display','page',
+    'name','Class Packages','slug','class_packages_' || lower(p_half),'type','entity',
+    'label_singular','Package','label_plural','Packages','title_field','package','display','page',
     'weight','light','ordered',false,'row_order','sorted','default_sort','[]'::jsonb,
     'agent_writable',true,'retention_days',365,'on_delete','cascade',
-    'fields', jsonb_build_array(jsonb_build_object('name','deal')), 'parent_id', v_home::text));
-  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Deal','key','deal','type','text'));
+    'fields', jsonb_build_array(jsonb_build_object('name','package')), 'parent_id', v_home::text));
+  perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Package','key','package','type','text'));
   perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Amount','key','amount','type','currency','unit','USD'));
   perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Closes','key','closes','type','datetime'));
   perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Stage','key','stage','type','select','options', jsonb_build_array('Open','Won','Lost')));
@@ -97,7 +97,7 @@ begin
   -- row that leaves the optional columns out entirely.
   for i in 1..200 loop
     v_id := custom.record_write(v_org, v_tbl, jsonb_strip_nulls(jsonb_build_object(
-      'deal',   'Deal ' || i,
+      'package',   'Package ' || i,
       'amount', round((i * 12.37 + 100)::numeric, 2),
       'closes', to_char(date '2026-01-01' + ((i % 360) || ' days')::interval, 'YYYY-MM-DD'),
       'stage',  (array['Open','Won','Lost'])[1 + (i % 3)],
@@ -144,7 +144,7 @@ end;
 $$;
 
 \echo '=== HALF A: the bodies this lane landed ==='
-select pg_temp.build('A', 'zzz-wp-parity-a-' || substr(md5(random()::text),1,8));
+select pg_temp.build('A', 'ironline-fitness-parity-a-' || substr(md5(random()::text),1,8));
 
 \echo '=== restoring the bodies the store had before this lane, from the real inverses ==='
 \i migrations/inverse/writeperf_the_memo_reader_plans_once_too_down.sql
@@ -155,7 +155,7 @@ select pg_temp.build('A', 'zzz-wp-parity-a-' || substr(md5(random()::text),1,8))
 \i migrations/inverse/writeperf_the_page_census_names_only_the_silent_down.sql
 
 \echo '=== HALF B: the bodies the store had before ==='
-select pg_temp.build('B', 'zzz-wp-parity-b-' || substr(md5(random()::text),1,8));
+select pg_temp.build('B', 'ironline-fitness-parity-b-' || substr(md5(random()::text),1,8));
 
 \echo '=== PARITY ==='
 select kind,
