@@ -12,9 +12,24 @@
 -- disappears with it.
 --
 -- ══════════════════════════════════════════════════════════════════════════════════════
--- 🚨 WHAT TAKING THE SEAT FOUND, AND IT IS THE HEADLINE OF THIS FILE:
---     NOT ONE VERB OF THE WORK LAYER CAN BE CALLED BY A SIGNED-IN PERSON.
+-- 🚨 THE HEADLINE OF THIS FILE, AND IT HAS BEEN TURNED OVER (lane RED-SUITES-2, 2026-09-21):
+--     EVERY VERB OF THE WORK LAYER CAN NOW BE CALLED BY A SIGNED-IN PERSON.
 -- ══════════════════════════════════════════════════════════════════════════════════════
+-- What this file used to say — "NOT ONE VERB OF THE WORK LAYER CAN BE CALLED BY A SIGNED-IN
+-- PERSON" — is kept below as the measurement it was, because it is what the fix was built
+-- from. `migrations/campaign/workdoors_the_work_layer_gets_its_doors.sql` (commit `bc1104cef6`,
+-- lane WORK-DOORS) records the same 2026-09-20 census in its own header and closes it: the
+-- verbs are SECURITY DEFINER, they hold EXECUTE for `authenticated`, they carry their rows in
+-- `platform.client_callable_door`, and each one decides FIRST on the one ladder. PART 0b is now
+-- the mirror image of the census it used to be — and it is STRICTER, because "zero of
+-- everything" is satisfied by a layer nobody has touched while the new clauses are satisfied
+-- only when the grant, the register row and the access question agree on every verb, one by
+-- one. Every OPERATOR band is gone; what steps out is named where it happens and is only ever
+-- a read of the database's own shape (`custom.promoted_fields`, `custom.work_slot_index_name`,
+-- `platform.client_callable_door`), a verification read of `custom.record`, or a fixture write
+-- no verb exists for (ageing a hold past its expiry).
+--
+-- THE MEASUREMENT IT WAS BUILT FROM, kept verbatim:
 -- Measured on the main database on 2026-09-19 (lane ORG-DELETE) and asserted as a census in
 -- PART 0b below. All nineteen `custom.work_*` functions plus `custom._work_shape_guard`:
 --   · are SECURITY INVOKER and read and write `custom.record` as the caller;
@@ -91,6 +106,9 @@ declare
   v_person  uuid;
   v_rec     uuid;
   v_rec2    uuid;
+  v_doc      jsonb;
+  v_ip_name  text;
+  v_hint     text;
   v_ns      uuid;
   v_ip      uuid;
   v_done    uuid;
@@ -153,50 +171,70 @@ begin
   raise notice 'PART 0 PASSED — the seat is `authenticated`, the ladder sees a client, and custom.record refuses a direct read.';
 
   -- ════════════════════════════════════════════════════════════════════════════
-  -- PART 0b — THE FINDING, AS A CENSUS, FROM THE SEAT. The work layer has no
-  --           client door at all. Every line of this part is a measurement, and
-  --           the day somebody BUILDS the door every line of it turns red — which
-  --           is the point: this file must then be rewritten to run PARTS 1-4
-  --           from the seat rather than beside it.
+  -- PART 0b — THE DOORS, AS A CENSUS, FROM THE SEAT.
   -- ════════════════════════════════════════════════════════════════════════════
-  -- (a) NOT ONE OF THEM HOLDS AN EXECUTE GRANT for a signed-in person. The catalogue is
-  --     readable from the seat, so this is asked from it.
+  -- 🚨 REWRITTEN (lane RED-SUITES-2, 2026-09-21). This part used to assert a FINDING — that
+  -- not one verb of the work layer could be called by a signed-in person — and it said, in its
+  -- own words, "the day somebody BUILDS the door every line of it turns red, which is the
+  -- point: this file must then be rewritten to run PARTS 1-4 from the seat rather than beside
+  -- it." Somebody built the door: `migrations/campaign/workdoors_the_work_layer_gets_its_doors.sql`
+  -- (commit `bc1104cef6`, lane WORK-DOORS), whose own header records the same 2026-09-20
+  -- measurement this part was written from. So the census is now the mirror image of what it
+  -- was, and every OPERATOR band below is gone.
+  --
+  -- IT IS STRICTER THAN THE OLD ONE, not weaker. "Zero of everything" is satisfied by a layer
+  -- nobody has touched. These three clauses are satisfied only by a layer where the grant, the
+  -- register row and the access question agree with each other on EVERY verb, one by one.
+  --
+  -- (a) A GRANT AND A DECLARED DOOR ARE THE SAME FACT. Neither may exist without the other:
+  --     a grant with no register row is an undeclared client door, and a register row with no
+  --     grant is a promise the store does not keep.
+  --     OUT OF THE SEAT for this one query, exactly as the old (c) clause was and for the same
+  --     reason: `platform.client_callable_door` is the platform's own register and holds no
+  --     client grant. It is a fact about the register, not about what a person may do, and it
+  --     asserts nothing about a person while out. (b) and (c) below are back in the seat.
+  perform set_config('role', v_boss, true);
   select array_agg(p.proname order by p.proname) into v_doors
     from pg_proc p
    where p.pronamespace = 'custom'::regnamespace
      and (p.proname like 'work\_%' or p.proname = '_work_shape_guard')
-     and has_function_privilege('authenticated', p.oid, 'EXECUTE');
+     and has_function_privilege('authenticated', p.oid, 'EXECUTE')
+        <> exists (select 1 from platform.client_callable_door d
+                    where d.schema_name = 'custom' and d.function_name = p.proname);
+  perform set_config('role', 'authenticated', true);
   if coalesce(array_length(v_doors, 1), 0) <> 0 then
-    raise exception '0b (a): the work layer has grown a client grant since this was measured (%). This file assumes it has none, and every OPERATOR banner below is now wrong: rewrite those parts to run from the seat.',
+    raise exception '0b (a): these work verbs hold a client grant without a declared door, or a declared door without the grant: %',
                     array_to_string(v_doors, ', ');
   end if;
+  select count(*) into v_n
+    from pg_proc p
+   where p.pronamespace = 'custom'::regnamespace and p.proname like 'work\_%'
+     and has_function_privilege('authenticated', p.oid, 'EXECUTE');
+  if v_n = 0 then
+    raise exception '0b (a): not one custom.work_* verb holds EXECUTE for `authenticated`. The doors WORK-DOORS built have been revoked, and every clause below is about a layer a person cannot reach.';
+  end if;
 
-  -- (b) NOT ONE OF THEM ASKS THE LADDER WHO IS CALLING.
+  -- (b) EVERY VERB THAT IS ABOUT SOMEBODY'S RECORDS ASKS THE LADDER WHO IS CALLING. A verb
+  --     that takes an organization is about that organization's rows, so it asks; a verb that
+  --     takes none is VOCABULARY — the list of states, the list of relation kinds — and has
+  --     nothing to ask about. The two are separated by the signature, never by a hand-kept
+  --     list, so a new verb cannot be quietly exempted.
   select array_agg(p.proname order by p.proname) into v_doors
     from pg_proc p
    where p.pronamespace = 'custom'::regnamespace
      and p.proname like 'work\_%'
-     and p.prosrc ~ 'assert_client_may_(reach|open|change)';
+     and has_function_privilege('authenticated', p.oid, 'EXECUTE')
+     and pg_get_function_identity_arguments(p.oid) like '%organization_id uuid%'
+     and p.prosrc !~ 'assert_client_may_(reach|open|change)';
   if coalesce(array_length(v_doors, 1), 0) <> 0 then
-    raise exception '0b (b): a work verb has grown an access question (%). See (a).', array_to_string(v_doors, ', ');
+    raise exception '0b (b): these work verbs take an organization and never ask the ladder who is calling: %',
+                    array_to_string(v_doors, ', ');
   end if;
 
-  -- (c) NOT ONE OF THEM CARRIES A ROW in platform.client_callable_door — so the store does
-  --     not say it is a client door, and does not say why it is server-only either. That
-  --     silence is the defect: it is the difference between "not built yet" and "decided".
-  --     OUT OF THE SEAT: `platform.client_callable_door` is the platform's own register and
-  --     holds no client grant. This is a fact about the register, not about what a person may
-  --     do, and it asserts nothing while out.
-  perform set_config('role', v_boss, true);
-  select count(*) into v_n from platform.client_callable_door
-   where schema_name = 'custom' and (function_name like 'work\_%' or function_name = '_work_shape_guard');
-  if v_n <> 0 then
-    raise exception '0b (c): the work layer has grown % row(s) in platform.client_callable_door. See (a).', v_n;
-  end if;
-  perform set_config('role', 'authenticated', true);
-
-  -- (d) AND THE SEAT ACTUALLY MEETS THE WALL, on the four verbs PARTS 1-4 are about, so this
-  --     census is not a catalogue query that happens to agree with itself.
+  -- (c) AND THE SEAT IS ACTUALLY ANSWERED, on the four verbs PARTS 1-4 are about, so this
+  --     census is not a catalogue query that happens to agree with itself. A refusal here is
+  --     allowed to be a PRODUCT refusal (there is no such record, that slot is taken); what it
+  --     may never be again is 42501, the wall this part was originally written about.
   foreach v_msg in array array[
       format('select custom.work_take_assignment(%L::uuid, %L::uuid)', v_org, v_org),
       format('select count(*) from custom.work_whose_turn(%L::uuid, %L::uuid)', v_org, v_org),
@@ -205,15 +243,21 @@ begin
   loop
     begin
       execute v_msg;
-      raise exception '0b (d): a signed-in person was answered by `%`. See (a).', v_msg;
     exception
-      when insufficient_privilege then null;   -- 42501 permission denied for function
-      when others then
-        get stacked diagnostics v_st = returned_sqlstate;
-        raise exception '0b (d): `%` refused the seat with % rather than 42501, so the wall is not the missing grant this census is about.', v_msg, v_st;
+      when insufficient_privilege then
+        -- 42501 is TWO different answers and only one of them is the wall this clause is
+        -- about: Postgres says `permission denied for function …` when the grant is missing,
+        -- and `custom.assert_client_may_reach` raises the SAME sqlstate with a sentence a
+        -- person can read when the answer is "you are not in that organization". The second
+        -- is the door working. Matching on the sqlstate alone would call a working door broken.
+        get stacked diagnostics v_st = message_text;
+        if v_st like 'permission denied for function%' then
+          raise exception '0b (c): `%` answered a signed-in person with "%" — the door is granted and still cannot serve one.', v_msg, v_st;
+        end if;
+      when others then null;   -- a product refusal is a door doing its job
     end;
   end loop;
-  raise notice 'PART 0b — THE FINDING, MEASURED FROM THE SEAT: 0 of the 20 custom.work_* functions hold EXECUTE for `authenticated`, 0 ask the ladder who is calling, 0 carry a row in platform.client_callable_door, and all four entry verbs answer a signed-in person with 42501. REC-69, REC-70 and REC-71 are unreachable from a browser.';
+  raise notice 'PART 0b — THE DOORS, MEASURED FROM THE SEAT: every custom.work_* verb holding EXECUTE for `authenticated` carries its row in platform.client_callable_door and asks the ladder whenever it is about an organization''s rows, and none of the four entry verbs meets a 42501 wall. REC-69, REC-70 and REC-71 are reachable from a browser.';
   raise notice '';
 
   -- ════════════════════════════════════════════════════════════════════════════════════
@@ -230,11 +274,9 @@ begin
   perform custom.field_declare(v_org, v_table, jsonb_build_object(
     'key','title','label','Title','plain','text','sort',10));
 
-  -- ── OPERATOR, because no person can call these ───────────────────────────────────────
-  -- `custom.work_has_assignment` and `custom.work_take_assignment` hold no EXECUTE grant for
-  -- `authenticated` (PART 0b). Nothing asserted between here and the banner that ends this
-  -- block is a statement about what a signed-in person may do.
-  perform set_config('role', v_boss, true);
+  -- IN THE SEAT (lane RED-SUITES-2, 2026-09-21). `custom.work_has_assignment` and
+  -- `custom.work_take_assignment` are client doors now — PART 0b measures it — so every clause
+  -- below is a statement about what a signed-in person may do.
 
   if custom.work_has_assignment(v_org, v_table) then
     raise exception 'PART 1 — a Table that has taken nothing reports that it holds the assignment fields';
@@ -249,7 +291,7 @@ begin
   if not custom.work_has_assignment(v_org, v_table) then
     raise exception 'PART 1 — the fields were created and the Table does not report holding them';
   end if;
-  raise notice 'PART 1 (OPERATOR) —   take: % field(s), % state(s), declared on the Table as %',
+  raise notice 'PART 1 —   take: % field(s), % state(s), declared on the Table as %',
                v_take ->> 'fields_created', v_take ->> 'states_created', v_take -> 'declared_on_table';
 
   -- IDEMPOTENT, and it is a positive control for the count above rather than an absence:
@@ -259,29 +301,40 @@ begin
      or (v_again ->> 'fields_created')::int <> 0 or (v_again ->> 'states_created')::int <> 0 then
     raise exception 'PART 1 — taking twice wrote something: %', v_again;
   end if;
-  raise notice 'PART 1 (OPERATOR) —   taking twice: taken=%, fields_created=%, states_created=%',
+  raise notice 'PART 1 —   taking twice: taken=%, fields_created=%, states_created=%',
                v_again ->> 'taken', v_again ->> 'fields_created', v_again ->> 'states_created';
 
+  -- THROUGH THE READ DOOR, not a select on custom.record: the seat holds no privilege on that
+  -- table (PART 0 proves it), and `custom.applicable_fields` is what a screen listing this
+  -- Table's columns actually calls.
   select count(*) into v_n
-    from custom.record f
-   where f.organization_id = v_org and f.table_id = custom.field_kernel_id()
-     and nullif(f.data ->> 'entity_definition_id','')::uuid = v_table
-     and f.data ->> 'key' in ('assignee','due_date','status')
-     and coalesce((f.data ->> 'promoted')::boolean,false);
+    from custom.applicable_fields(v_org, v_table, null) af
+   where af.data ->> 'key' in ('assignee','due_date','status')
+     and coalesce((af.data ->> 'promoted')::boolean, false);
   if v_n <> 3 then
     raise exception 'PART 1 — % of the three assignment Fields are in the store as promoted Fields', v_n;
   end if;
+  -- ── OUT OF THE SEAT for two reads that have no client door, and only these two ────────
+  -- `custom.promoted_fields` names the INDEX the store builds for a column — a fact about the
+  -- database's own shape, not about anything a person sees — and holds no EXECUTE grant for
+  -- `authenticated`. Reading the state rows out of `custom.record` is the same: the state
+  -- Table's rows are read through `custom.read_records` on a screen, but what is wanted here
+  -- is three ids to drive the clauses below, which is fixture work. Neither asserts a product
+  -- clause; the assertion right underneath, that a PERSON sees these four columns, is asked
+  -- through `custom.applicable_fields` from the seat.
+  perform set_config('role', v_boss, true);
   for v_fn in select p.field_key, p.parity_type, p.is_unique, p.indexable, p.index_name
                 from custom.promoted_fields(v_org, v_table) p loop
-    raise notice 'PART 1 (OPERATOR) —   promoted Field % is a %, indexable=%, index %',
+    raise notice 'PART 1 (operator read) —   promoted Field % is a %, indexable=%, index %',
                  v_fn.field_key, v_fn.parity_type, v_fn.indexable, v_fn.index_name;
   end loop;
 
+  v_ip_name := 'In progress';
   select id into v_ns   from custom.record where organization_id=v_org and table_id=v_states and data->>'name'='Not started';
   select id into v_ip   from custom.record where organization_id=v_org and table_id=v_states and data->>'name'='In progress';
   select id into v_done from custom.record where organization_id=v_org and table_id=v_states and data->>'name'='Done';
-
   perform set_config('role', 'authenticated', true);
+
   -- ── back in the seat ─────────────────────────────────────────────────────────────────
 
   -- THE THREE FIELDS ARE ORDINARY FIELDS — and that is a claim about what a PERSON sees, so
@@ -314,8 +367,17 @@ begin
   -- refused, naming both states; a status that is not a status at all is refused too.
   perform custom.record_update(v_org, v_rec,
     jsonb_build_object('_actor','user','status', v_ip::text));
-  if (custom.read_record(v_org, v_rec, true) -> 'status') #>> '{}' <> v_ip::text then
-    raise exception 'PART 1 — an allowed move did not land';
+  -- 🚨 RE-PINNED (lane RED-SUITES-2, 2026-09-21). This clause used to compare the read-back
+  -- against the state record's ID. From the seat the read door does not answer an id: lane
+  -- CHOICE-VALUE's ruling is that a choice reads back as THE STORED WORD, with its id, key,
+  -- label and retirement under `_choices` — `choiceval_green` asserts exactly that and is
+  -- green. The old clause was only ever right because this block ran beside the seat. Both
+  -- faces are asserted now, which is stricter than the id alone: the word a person reads, AND
+  -- the id underneath it, have to be the state that was moved to.
+  v_doc := custom.read_record(v_org, v_rec, true);
+  if (v_doc ->> 'status') is distinct from v_ip_name
+     or (v_doc -> '_choices' -> 'status' ->> 'id') is distinct from v_ip::text then
+    raise exception 'PART 1 — an allowed move did not land. The read door says: %', v_doc;
   end if;
   raise notice 'PART 1 —   allowed move (from the seat): Not started -> In progress landed.';
 
@@ -346,11 +408,10 @@ begin
 
   -- ── OPERATOR again: "whose turn is it" is the one query C-44 names, and no person can ask
   --    it. Everything it reports below is about records a person DID write, from the seat.
-  perform set_config('role', v_boss, true);
   v_turn := 0;
   for v_row in select * from custom.work_whose_turn(v_org, v_table) loop
     v_turn := v_turn + 1;
-    raise notice 'PART 1 (OPERATOR) —   WHOSE TURN: "%" -> % (%, status %)', v_row.title, v_row.turn, v_row.state, v_row.status;
+    raise notice 'PART 1 —   WHOSE TURN: "%" -> % (%, status %)', v_row.title, v_row.turn, v_row.state, v_row.status;
   end loop;
   if v_turn <> 2 then
     raise exception 'PART 1 — "whose turn is it" returned % open row(s) and two are open', v_turn;
@@ -365,9 +426,8 @@ begin
      or (select turn from custom.work_whose_turn(v_org, v_table, true) where title = 'Already shipped') <> 'nobody' then
     raise exception 'PART 1 — the one query named the wrong person, or the wrong state, for at least one row';
   end if;
-  perform set_config('role', 'authenticated', true);
 
-  raise notice 'PART 1 PASS — REC-69: the three kernel Fields are ordinary Fields a person is told about, taking them twice writes nothing, and one query answers whose turn it is (operator only).';
+  raise notice 'PART 1 PASS — REC-69: the three kernel Fields are ordinary Fields a person is told about, taking them twice writes nothing, and one query answers whose turn it is — every clause from the seat `authenticated`.';
   raise notice '';
 
   -- ════════════════════════════════════════════════════════════════════════════════════
@@ -378,7 +438,6 @@ begin
   -- for `authenticated` (PART 0b), so a person cannot declare a checklist or run one, and the
   -- containment this part counts has no client door that lists a graph either. Nothing between
   -- here and PART 2's banner is a statement about what a signed-in person may do.
-  perform set_config('role', v_boss, true);
 
   v_tpl := custom.work_template_declare(v_org, 'Client onboarding', jsonb_build_object(
     'nodes', jsonb_build_array(
@@ -394,7 +453,7 @@ begin
     raise exception 'PART 2 — the instantiation made % record(s) and % relation(s), and the template says three and two',
                     v_inst ->> 'records_created', v_inst ->> 'relations_created';
   end if;
-  raise notice 'PART 2 (OPERATOR) —   instantiated: % records, % relations, log row %',
+  raise notice 'PART 2 —   instantiated: % records, % relations, log row %',
                v_inst ->> 'records_created', v_inst ->> 'relations_created', v_inst ->> 'instantiation_id';
 
   -- THE IDS DIFFER FROM THE TEMPLATE'S AND THE SHAPE MATCHES (C-44's own words), and the
@@ -409,8 +468,15 @@ begin
                     custom.work_template_shape(v_org, v_tpl),
                     custom.work_instantiation_shape(v_org, (v_inst ->> 'instantiation_id')::uuid);
   end if;
-  raise notice 'PART 2 (OPERATOR) —   shape matches, ids differ: %', custom.work_template_shape(v_org, v_tpl);
+  raise notice 'PART 2 —   shape matches, ids differ: %', custom.work_template_shape(v_org, v_tpl);
 
+  -- ── OUT OF THE SEAT for the VERIFICATION READS of this part, and nothing else ─────────
+  -- Every DOOR CALL in this part is made from the seat; what steps out here is the reading
+  -- back of the store's own rows to check what the door did — containment parents, relation
+  -- rows, the instantiation log, and the row counts either side of a failed graph. The seat
+  -- holds no privilege on `custom.record` (PART 0 proves it) and these are not questions a
+  -- person asks on a screen. They assert nothing about what a person may do.
+  perform set_config('role', v_boss, true);
   -- THE RELATIONS ARE REAL CONTAINMENT, read back from the store rather than from the report.
   select count(*) into v_n
     from custom.record r
@@ -438,7 +504,9 @@ begin
      or nullif(v_log ->> 'actor','') is null or nullif(v_log ->> 'at','') is null then
     raise exception 'PART 2 — the logged act does not say what it did: %', v_log;
   end if;
-  raise notice 'PART 2 (OPERATOR) —   logged: template "%", actor %, at %, % records, % relations',
+  perform set_config('role', 'authenticated', true);
+
+  raise notice 'PART 2 —   logged: template "%", actor %, at %, % records, % relations',
                v_log ->> 'template', v_log ->> 'actor', v_log ->> 'at',
                jsonb_array_length(v_log -> 'records'), jsonb_array_length(v_log -> 'relations');
 
@@ -454,7 +522,7 @@ begin
     if v_msg not like '%W1-REL%' then
       raise exception 'PART 2 — the referenced relation was refused without naming who owns it: %', v_msg;
     end if;
-    raise notice 'PART 2 (OPERATOR) —   referenced relation REFUSED: %', v_msg;
+    raise notice 'PART 2 —   referenced relation REFUSED: %', v_msg;
   end;
 
   -- A GRAPH THAT FAILS PART-WAY. The third node is missing a Field the Table requires, so the
@@ -462,10 +530,12 @@ begin
   -- SUBTRANSACTION, which is the weaker half of the proof and says so: the real one is
   -- `w3_work_parallel.sh`, which runs the same template in AUTOCOMMIT and counts the rows
   -- from a session that never saw the failed statement.
+  perform set_config('role', v_boss, true);
   update custom.record set data = data || jsonb_build_object('required', true)
    where organization_id = v_org and table_id = custom.field_kernel_id()
      and nullif(data ->> 'entity_definition_id','')::uuid = v_table and data ->> 'key' = 'status';
   select count(*) into v_n from custom.record where organization_id = v_org and table_id = v_table;
+  perform set_config('role', 'authenticated', true);
   declare v_before bigint := v_n;
   begin
     begin
@@ -478,18 +548,19 @@ begin
       raise exception 'PART 2 — a graph whose third record is illegal was instantiated anyway';
     exception when check_violation then
       get stacked diagnostics v_msg = message_text;
-      raise notice 'PART 2 (OPERATOR) —   mid-graph refusal: %', v_msg;
+      raise notice 'PART 2 —   mid-graph refusal: %', v_msg;
     end;
+    perform set_config('role', v_boss, true);
     select count(*) into v_n from custom.record where organization_id = v_org and table_id = v_table;
+    perform set_config('role', 'authenticated', true);
     if v_n <> v_before then
       raise exception 'PART 2 — the failed graph left % row(s) behind (% before, % after)',
                       v_n - v_before, v_before, v_n;
     end if;
-    raise notice 'PART 2 (OPERATOR) —   rows in the Table before the failed graph: %, after: % - zero survived.', v_before, v_n;
+    raise notice 'PART 2 —   rows in the Table before the failed graph: %, after: % - zero survived.', v_before, v_n;
   end;
-  perform set_config('role', 'authenticated', true);
 
-  raise notice 'PART 2 PASS — REC-70: one statement makes the whole graph, its relations and its log, and a failure part-way leaves nothing. OPERATOR ONLY: no person can declare or run a template.';
+  raise notice 'PART 2 PASS — REC-70: one statement makes the whole graph, its relations and its log, and a failure part-way leaves nothing — asked from the seat `authenticated`, through the doors WORK-DOORS built.';
   raise notice '';
 
   -- ════════════════════════════════════════════════════════════════════════════════════
@@ -499,26 +570,43 @@ begin
   -- STRAIGHT AT THE STORE, past the verb, are the ones a defect would actually reach a person
   -- through — a rule enforced only inside `custom.work_slot_hold` is a safe path beside an
   -- unsafe one — and those are asked FROM THE SEAT through `custom.record_write`.
-  perform set_config('role', v_boss, true);
 
   -- THE FIRST PROOF, and it is B1's mechanism rather than the retired `field_index_guard`
   -- knob: with this organization's store switched OFF the slot Table cannot be declared,
   -- because no index can be built to decide a double-booking. Switched back on is the
   -- positive control, two statements later.
-  update platform.knob_override set value = 'false'::jsonb
-   where feature = 'custom' and key = 'system_enabled' and scope_id = v_org;
+  -- THROUGH THE SWITCH DOOR (lane RED-SUITES-2, 2026-09-21), not an UPDATE on the knob table:
+  -- `platform.unified_data_store_set` is what the switch screen calls, and the seat holds no
+  -- privilege on `platform.knob_override`. Throwing the switch the way a person throws it is
+  -- also the only way to be sure the thing being measured below is the switch a person has.
+  if coalesce((platform.unified_data_store_set(v_org, false, c_admin, 'w3_work_c44') ->> 'switched_on')::boolean, true) is not false then
+    raise exception 'the switch door said it turned the store off and it reads on';
+  end if;
   begin
     perform custom.work_slots_declare(v_org, 'Repair Bays', 'repair_bays', v_home);
     raise exception 'PART 3 — slots were declared while this organization''s store was switched off';
-  exception when sqlstate '0A000' then
-    get stacked diagnostics v_msg = message_text;
-    if v_msg not like '%double-booking%' then
-      raise exception 'PART 3 — the refusal has to say what cannot be decided, and it said: %', v_msg;
+  -- 🚨 RE-PINNED (lane RED-SUITES-2, 2026-09-21). This clause used to demand `0A000` and the
+  -- word "double-booking" — the refusal `custom.work_slots_declare` raised for itself when it
+  -- was an operator-only verb. WORK-DOORS made it a client door, and its header states the
+  -- rule it applied to all of them: "every write verb keeps `custom.assert_store_door` as its
+  -- first statement, so the OFF switch still closes it." So the switch is now answered by the
+  -- ONE body every write door reaches, BEFORE the verb gets as far as reasoning about indexes,
+  -- and the sentence a person meets says whose organization it is and where the switch lives.
+  -- That is the better refusal and it is the one asserted. What the clause is about is
+  -- unchanged: with the store off, a person cannot declare slots.
+  exception when insufficient_privilege or sqlstate '0A000' then
+    get stacked diagnostics v_msg = message_text, v_hint = pg_exception_hint;
+    if v_msg not ilike '%has not turned the record store on%' and v_msg not like '%double-booking%' then
+      raise exception 'PART 3 — the refusal has to name the switch or what cannot be decided, and it said: %', v_msg;
     end if;
-    raise notice 'PART 3 (OPERATOR) —   with this organization''s store switched off, declaring slots is REFUSED: %', v_msg;
+    if v_msg not like '%custom.work_slots_declare%' and v_msg not like '%double-booking%' then
+      raise exception 'PART 3 — the refusal does not name the door it was refused at: %', v_msg;
+    end if;
+    raise notice 'PART 3 —   with this organization''s store switched off, declaring slots is REFUSED: % (remedy: %)', v_msg, left(coalesce(v_hint,'<none>'), 90);
   end;
-  update platform.knob_override set value = 'true'::jsonb
-   where feature = 'custom' and key = 'system_enabled' and scope_id = v_org;
+  if not coalesce((platform.unified_data_store_set(v_org, true, c_admin, 'w3_work_c44') ->> 'switched_on')::boolean, false) then
+    raise exception 'the switch door said it turned the store on and it reads off';
+  end if;
 
   v_slots  := custom.work_slots_declare(v_org, 'Repair Bays', 'repair_bays', v_home);
   v_stable := (v_slots ->> 'table_id')::uuid;
@@ -526,14 +614,21 @@ begin
   if not (v_slots ->> 'unique')::boolean then
     raise exception 'PART 3 — the slot key was promoted without UNIQUE, so nothing decides a double-booking';
   end if;
+  -- OUT OF THE SEAT for one helper with no client door: `custom.work_slot_index_name` spells
+  -- the name of the INDEX the store builds — a fact about the database's own shape, which is
+  -- why WORK-DOORS granted the verbs and not this. It asserts nothing about what a person may
+  -- do; the clause it supports (the slot key is promoted UNIQUE, so something really does
+  -- decide a double-booking) is asked of the verb's own answer, from the seat, above.
+  perform set_config('role', v_boss, true);
   if v_idx is distinct from custom.work_slot_index_name(v_stable) then
     raise exception 'PART 3 — the name a caller can read ahead of time (%) is not the index that was built (%)',
                     custom.work_slot_index_name(v_stable), v_idx;
   end if;
-  raise notice 'PART 3 (OPERATOR) —   slot table %, decided by %', v_stable, v_idx;
+  perform set_config('role', 'authenticated', true);
+  raise notice 'PART 3 —   slot table %, decided by %', v_stable, v_idx;
 
   v_hold := custom.work_slot_hold(v_org, v_stable, '2026-10-01T09:00', 'alice', interval '10 minutes');
-  raise notice 'PART 3 (OPERATOR) —   hold taken: % until %', v_hold ->> 'holder', v_hold ->> 'expires_at';
+  raise notice 'PART 3 —   hold taken: % until %', v_hold ->> 'holder', v_hold ->> 'expires_at';
 
   begin
     perform custom.work_slot_hold(v_org, v_stable, '2026-10-01T09:00', 'bob', interval '10 minutes');
@@ -543,7 +638,7 @@ begin
     if position(v_idx in v_msg) = 0 then
       raise exception 'PART 3 — the second hold was refused, but not by the index''s own name. It read: %', v_msg;
     end if;
-    raise notice 'PART 3 (OPERATOR) —   second hold REFUSED: %', v_msg;
+    raise notice 'PART 3 —   second hold REFUSED: %', v_msg;
   end;
 
   -- A DIFFERENT SLOT IS THE POSITIVE CONTROL: the index refuses a collision, not a booking.
@@ -552,14 +647,20 @@ begin
   if v_n <> 2 then
     raise exception 'PART 3 — % hold(s) are live and two slots were booked', v_n;
   end if;
-  raise notice 'PART 3 (OPERATOR) —   a different slot booked fine: % live hold(s).', v_n;
+  raise notice 'PART 3 —   a different slot booked fine: % live hold(s).', v_n;
 
   -- THE EXPIRY FREES THE SLOT. The hold is aged past its own expiry and the same slot is
   -- taken again by somebody else - through the verb, so the sweep is the one that runs.
+  -- OUT OF THE SEAT for one fixture write with no door: ageing a hold past its own expiry is
+  -- something only the clock can do, and there is no verb for "pretend ten minutes passed".
+  -- The RETAKE underneath it goes through `custom.work_slot_hold` from the seat, which is the
+  -- clause: the sweep that frees the slot is the door's own.
+  perform set_config('role', v_boss, true);
   update custom.record
      set data = data || jsonb_build_object('expires_at',
                  to_char((now() - interval '1 minute') at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
    where organization_id = v_org and id = (v_hold ->> 'hold_id')::uuid;
+  perform set_config('role', 'authenticated', true);
   v_h2 := custom.work_slot_hold(v_org, v_stable, '2026-10-01T09:00', 'carol', interval '10 minutes');
   if (v_h2 ->> 'expired_swept')::int < 1 then
     raise exception 'PART 3 — the slot was retaken without any expired hold being let go: %', v_h2;
@@ -567,7 +668,7 @@ begin
   if (select holder from custom.work_slot_holds(v_org, v_stable) where slot_key = '2026-10-01T09:00') <> 'carol' then
     raise exception 'PART 3 — the expired slot was retaken and the store still says somebody else holds it';
   end if;
-  raise notice 'PART 3 (OPERATOR) —   after expiry the same slot was retaken by % (% expired hold swept).',
+  raise notice 'PART 3 —   after expiry the same slot was retaken by % (% expired hold swept).',
                v_h2 ->> 'holder', v_h2 ->> 'expired_swept';
 
   -- A HOLD THAT HAS ALREADY RUN OUT, refused by the verb.
@@ -576,7 +677,7 @@ begin
     raise exception 'PART 3 — a hold that had already expired was accepted';
   exception when invalid_parameter_value then
     get stacked diagnostics v_msg = message_text;
-    raise notice 'PART 3 (OPERATOR) —   hold already expired REFUSED by the verb: %', v_msg;
+    raise notice 'PART 3 —   hold already expired REFUSED by the verb: %', v_msg;
   end;
 
   -- RELEASE frees it, and it says so rather than answering silently.
@@ -587,9 +688,8 @@ begin
     raise exception 'PART 3 — releasing the same hold twice reported a second release';
   end if;
   perform custom.work_slot_hold(v_org, v_stable, '2026-10-01T09:00', 'dave', interval '10 minutes');
-  raise notice 'PART 3 (OPERATOR) —   released, then retaken by dave.';
+  raise notice 'PART 3 —   released, then retaken by dave.';
 
-  perform set_config('role', 'authenticated', true);
   -- ── back in the seat, for the two shapes that must be refused PAST the verb ───────────
   -- A rule enforced only inside `custom.work_slot_hold` is a safe path beside an unsafe one.
   -- `custom.validate_values` accepts any parseable date, so a hold with no expiry and a hold
@@ -647,10 +747,13 @@ begin
   -- that role for real, holds the write door, and is refused by this lane's own trigger the
   -- moment the organization's store is switched off. The POSITIVE CONTROL is the same write
   -- by the same seat with the switch back on.
-  perform set_config('role', v_boss, true);
-  update platform.knob_override set value = 'false'::jsonb
-   where feature = 'custom' and key = 'system_enabled' and scope_id = v_org;
-  perform set_config('role', 'authenticated', true);
+  -- THROUGH THE SWITCH DOOR (lane RED-SUITES-2, 2026-09-21), not an UPDATE on the knob table:
+  -- `platform.unified_data_store_set` is what the switch screen calls, and the seat holds no
+  -- privilege on `platform.knob_override`. Throwing the switch the way a person throws it is
+  -- also the only way to be sure the thing being measured below is the switch a person has.
+  if coalesce((platform.unified_data_store_set(v_org, false, c_admin, 'w3_work_c44') ->> 'switched_on')::boolean, true) is not false then
+    raise exception 'the switch door said it turned the store off and it reads on';
+  end if;
   begin
     perform custom.record_write(v_org, v_stable, jsonb_build_object(
       '_actor','user','slot_key','bay-shut','holder','probe',
@@ -660,10 +763,9 @@ begin
     get stacked diagnostics v_msg = message_text;
     raise notice 'PART 4 —   a signed-in person writing into a switched-off store: %', v_msg;
   end;
-  perform set_config('role', v_boss, true);
-  update platform.knob_override set value = 'true'::jsonb
-   where feature = 'custom' and key = 'system_enabled' and scope_id = v_org;
-  perform set_config('role', 'authenticated', true);
+  if not coalesce((platform.unified_data_store_set(v_org, true, c_admin, 'w3_work_c44') ->> 'switched_on')::boolean, false) then
+    raise exception 'the switch door said it turned the store on and it reads off';
+  end if;
   if custom.record_write(v_org, v_stable, jsonb_build_object(
        '_actor','user','slot_key','bay-open','holder','probe',
        'expires_at', to_char((now()+interval '1 hour') at time zone 'utc','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))) is null then
