@@ -11,7 +11,7 @@ export async function generateMetadata({
     titlePrefix: "Edit",
     title: shortId,
     description: "Edit a scheduled task.",
-    letter: "SDE",
+    letter: "SE",
   });
 }
 

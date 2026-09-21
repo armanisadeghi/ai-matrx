@@ -4,7 +4,7 @@ import { createRouteMetadata } from "@/utils/route-metadata";
 export const metadata = createRouteMetadata("/workflows/all", {
   title: "Workflows",
   description: "Every workflow you can run, design, and watch work",
-  letter: "WFA",
+  letter: "WA",
 });
 
 export default function WorkflowsListLayout({

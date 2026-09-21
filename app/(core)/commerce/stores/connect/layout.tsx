@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/commerce/stores/connect", {
   title: "Connect a Store",
   description:
     "Onboarding: configure the pipeline, connect an eBay store, capture the first items.",
-  letter: "CSC",
+  letter: "SC",
 });
 
 export default function CommerceStoreConnectLayout({

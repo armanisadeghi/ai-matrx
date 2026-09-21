@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/agents", {
   titlePrefix: "Request Mod",
   title: "Battle",
   description: "Battle-test request modification strategies.",
-  letter: "BTR",
+  letter: "BR",
 });
 
 export default function BattleRequestModLayout({

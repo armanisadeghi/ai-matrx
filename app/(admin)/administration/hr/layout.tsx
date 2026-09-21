@@ -18,7 +18,7 @@ export const metadata = createRouteMetadata("/administration", {
   title: "HR & Employment Law",
   description:
     "The platform jurisdiction rule library: rule classes, statutory rules, promotion and demotion, and the JUR-SEED verification board",
-  letter: "AHR",
+  letter: "HR",
 });
 
 export default function HrAdminLayout({

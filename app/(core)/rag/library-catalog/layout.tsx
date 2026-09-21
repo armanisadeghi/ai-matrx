@@ -5,7 +5,7 @@ export const metadata = createRouteMetadata("/knowledge/library-catalog", {
   title: "Knowledge",
   description:
     "Discover shared knowledge libraries and see what your organization is entitled to.",
-  letter: "RLC",
+  letter: "LC",
 });
 
 export default function RagLibraryCatalogLayout({

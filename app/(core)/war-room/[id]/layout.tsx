@@ -34,7 +34,7 @@ export async function generateMetadata({
   return createDynamicRouteMetadata("/war-room", {
     title,
     description,
-    letter: "WRD",
+    letter: "WD",
   });
 }
 

@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/administration", {
   titlePrefix: "Podcasts",
   title: "Admin",
   description: "Podcast content management and publishing tools",
-  letter: "APO",
+  letter: "PO",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/administration", {
   title: "Agents",
   description:
     "Manage agent definitions, tools, skills, and execution surfaces.",
-  letter: "ADA",
+  letter: "AG",
   canonicalPath: "/administration/agents",
 });
 

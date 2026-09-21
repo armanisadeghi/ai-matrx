@@ -7,7 +7,7 @@ export const metadata = createRouteMetadata("/agents", {
   titlePrefix: "Shortcuts",
   title: "Agents",
   description: "Manage your personal agent shortcuts",
-  letter: "ASH",
+  letter: "SX",
 });
 
 export default async function UserAgentShortcutsLayout({

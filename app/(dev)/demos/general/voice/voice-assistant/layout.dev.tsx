@@ -5,7 +5,7 @@ export const metadata = createRouteMetadata("/demo", {
   title: "Demo",
   description:
     "Voice assistant demo — speech, playback, and conversational UI patterns",
-  letter: "VAS",
+  letter: "VA",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

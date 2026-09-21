@@ -8,7 +8,7 @@ export const metadata = createRouteMetadata("/administration", {
   title: "Scheduling",
   description:
     "System-wide view of scheduled tasks, runs, scanner health, and templates",
-  letter: "ASE",
+  letter: "SD",
 });
 
 export default function SchedulingAdminLayout({

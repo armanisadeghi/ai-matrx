@@ -3,7 +3,7 @@ import { createRouteMetadata } from "@/utils/route-metadata";
 export const metadata = createRouteMetadata("/chat", {
   title: "Message Templates",
   description: "Create and manage reusable messages for chat and agents.",
-  letter: "CMT",
+  letter: "MT",
 });
 
 export default function MessageTemplatesLayout({

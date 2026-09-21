@@ -6,7 +6,7 @@ export const metadata = createRouteMetadata("/demos/scopes", {
   titlePrefix: "Scopes",
   title: "Demos",
   description: "Scope and context assignment demos",
-  letter: "DSC",
+  letter: "SO",
 });
 
 export default function ScopesDemosLayout({

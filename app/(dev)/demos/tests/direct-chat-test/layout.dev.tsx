@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "Direct Chat",
   title: "Tests",
   description: "Direct chat connection and streaming tests",
-  letter: "DCT",
+  letter: "DC",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

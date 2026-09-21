@@ -85,8 +85,13 @@ export function createRouteMetadata(
     title?: string;
     titlePrefix?: string;
     description?: string;
-    /** Favicon badge text (1–2 chars). Required for demo/tests/admin routes. */
+    /** Favicon badge text — 1–2 chars, NEVER 3 (a third glyph is a smear at 16px). */
     letter?: string;
+    /**
+     * A single emoji rendered INSTEAD of `letter`, for a page that does not
+     * reduce to two readable characters (Launchpad is 🚀). Sparingly.
+     */
+    emoji?: string;
     /** SEO keywords for this route. */
     keywords?: string[];
     /** Self-referential canonical path, e.g. "/education/subjects". Resolves
@@ -102,6 +107,7 @@ export function createRouteMetadata(
     titlePrefix,
     description,
     letter,
+    emoji,
     keywords,
     canonicalPath,
     socialCard,
@@ -173,7 +179,7 @@ export function createRouteMetadata(
     ...additionalMetadata,
   };
 
-  return generateFaviconMetadata(pathname, mergedMetadata, letter);
+  return generateFaviconMetadata(pathname, mergedMetadata, letter, emoji);
 }
 
 /**
@@ -211,8 +217,13 @@ export function createDynamicRouteMetadata(
     title: string;
     titlePrefix?: string;
     description?: string;
-    /** Favicon badge text (1–2 chars). Required for demo/tests/admin routes. */
+    /** Favicon badge text — 1–2 chars, NEVER 3 (a third glyph is a smear at 16px). */
     letter?: string;
+    /**
+     * A single emoji rendered INSTEAD of `letter`, for a page that does not
+     * reduce to two readable characters (Launchpad is 🚀). Sparingly.
+     */
+    emoji?: string;
     ogImage?: string;
     /** Optional treatment for the shared social-card renderer. */
     socialCard?: RouteSocialCardOptions;
@@ -235,6 +246,7 @@ export function createDynamicRouteMetadata(
     titlePrefix,
     description,
     letter,
+    emoji,
     ogImage,
     socialCard,
     keywords,
@@ -271,6 +283,7 @@ export function createDynamicRouteMetadata(
       },
     },
     letter,
+    emoji,
   );
 }
 
@@ -278,6 +291,10 @@ export function createDynamicRouteMetadata(
  * Quick helper — only sets the favicon for a route, no other metadata changes.
  * Pass `letter` to set the badge text (required for demo/tests/admin routes).
  */
-export function getRouteFavicon(pathname: string, letter?: string): Metadata {
-  return generateFaviconMetadata(pathname, undefined, letter);
+export function getRouteFavicon(
+  pathname: string,
+  letter?: string,
+  emoji?: string,
+): Metadata {
+  return generateFaviconMetadata(pathname, undefined, letter, emoji);
 }

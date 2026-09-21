@@ -6,7 +6,7 @@ export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "Color converter",
   title: "Tests",
   description: "Tailwind color conversion utilities",
-  letter: "CVT",
+  letter: "CV",
 });
 
 export default function ColorConverterLayout({

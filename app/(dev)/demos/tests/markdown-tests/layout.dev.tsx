@@ -6,7 +6,7 @@ export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "Markdown",
   title: "Tests",
   description: "Markdown rendering and editor tests",
-  letter: "MDT",
+  letter: "MK",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

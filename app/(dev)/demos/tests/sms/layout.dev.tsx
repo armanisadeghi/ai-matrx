@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "SMS",
   title: "Tests",
   description: "SMS messaging integration tests",
-  letter: "SMD",
+  letter: "SM",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

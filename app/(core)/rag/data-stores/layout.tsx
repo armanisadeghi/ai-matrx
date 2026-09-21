@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/knowledge/data-stores", {
   titlePrefix: "Data Stores",
   title: "Knowledge",
   description: "Create and manage vector data stores for Knowledge retrieval.",
-  letter: "RDS",
+  letter: "DS",
 });
 
 export default function RagDataStoresLayout({

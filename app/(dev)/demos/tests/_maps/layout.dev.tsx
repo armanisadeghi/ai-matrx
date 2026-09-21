@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "Maps",
   title: "Tests",
   description: "Map component and geolocation tests",
-  letter: "MPD",
+  letter: "MP",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

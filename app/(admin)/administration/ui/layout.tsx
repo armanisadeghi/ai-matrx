@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/administration", {
   title: "UI",
   description:
     "Inspect official components, surfaces, experiments, and UI system tools.",
-  letter: "AUI",
+  letter: "UI",
   canonicalPath: "/administration/ui",
 });
 

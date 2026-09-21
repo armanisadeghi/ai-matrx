@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/invitations", {
   titlePrefix: "Accept",
   title: "Project Invite",
   description: "Accept a project invitation.",
-  letter: "IPA",
+  letter: "PA",
 });
 
 export default function ProjectInvitationLayout({

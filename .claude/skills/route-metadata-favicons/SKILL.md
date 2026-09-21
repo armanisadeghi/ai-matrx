@@ -42,7 +42,7 @@ Three route trees have a **fixed color** in `utils/favicon-utils.ts`. The color 
 | ----------------------------------------------- | --------------------- | --------------- | --------------------------------------------------- |
 | `/demo`, `/demos`, `/component-demo`, `/p/demo` | `#ca8a04` warm yellow | path-derived    | Every demo route MUST pass its own unique `letter`  |
 | `/tests`, `/beta`, `/experimental`              | `#65a30d` lime green  | path-derived    | Every test route MUST pass its own unique `letter`  |
-| `/administration`, `/admin`                     | `#111827` near-black  | path-derived    | Every admin route MUST pass its own unique `letter` |
+| `/administration`, `/admin`                     | `#111827` near-black  | path-derived    | Reuse the mirrored feature's `letter`; admin-only pages get a clean 2-char code |
 
 **The point:** 20 yellow tabs in one browser window must each show a different 2-char badge so you can tell them apart. The color tells you "this is a demo tab" and the letter tells you _which_ demo.
 
@@ -59,6 +59,57 @@ Three route trees have a **fixed color** in `utils/favicon-utils.ts`. The color 
 
 ## Favicon Design Rules for Primary Routes
 
+### 🚨 THE TWO HARD RULES (Arman, 2026-09-18 / 2026-09-21)
+
+**1. A badge is NEVER more than 2 characters.** At 16px a third glyph makes the
+tile an unreadable smear. 1 char is fine when a route is alone in its space; 3 is
+never fine. 132 three-character codes existed on 2026-09-21 and all of them were
+collapsed. `pnpm check:favicon-letters` fails on any letter over two characters.
+
+**2. Uniqueness is PER COLOUR, not global.** *"Since the color is what sets them
+apart."* `/administration/agents` wears the **same** `AG` as `/agents` — in
+near-black instead of rose. An admin page that mirrors a real feature **reuses
+that feature's exact code**; it never gets an `A`-for-Admin prefix, because the
+black tile already says admin. Two routes only collide when they resolve to the
+SAME colour and neither is an ancestor of the other.
+
+Rule 2 is what makes rule 1 possible. A rigid "every page in this family starts
+with the family's letter" scheme runs out of room past ~26 sub-pages — so drop
+that constraint. The colour carries the family; the two letters only need to be a
+distinct, roughly mnemonic code for that page *within its colour*. `/agents` uses
+`AG`, `AB`, `AH`, `AP`, `LA`, `SH`, `SU`, `WI`, `CP`, `BT`, `BM`, `BR`, `BS`,
+`BP`, `TL`, `BU`, `BV`, `NB`, `NC`, `NI`, `NT`, `NG`, `NM`, `SX` — no shared first
+letter, no collisions, every one readable.
+
+### The emoji escape hatch
+
+`FaviconConfig` carries `emoji?: string`, and every helper threads it
+(`createRouteMetadata({ emoji })`, `createDynamicRouteMetadata`,
+`getRouteFavicon(path, letter, emoji)`, `generateFaviconMetadata(path, meta,
+letter, emoji)`). An emoji **replaces** the letters entirely and is exempt from
+the 2-character cap.
+
+Use it for the handful of pages that do not reduce to two readable characters —
+**Launchpad is the worked example**: "LP" says nothing, "UL" said less, and a
+rocket says it instantly.
+
+```typescript
+// constants/favicon-route-data.ts
+{ href: "/launchpad", favicon: { color: CORE_HUB_COLOR, emoji: "🚀" } },
+```
+
+```typescript
+// app/(admin)/administration/launchpad/page.tsx — same rocket, admin's black tile
+export const metadata = createRouteMetadata("/administration", {
+  titlePrefix: "Launchpad",
+  title: "Administration",
+  emoji: "🚀",
+});
+```
+
+It is an escape hatch, not the new default. Two letters are the norm; reach for an
+emoji when they genuinely read as nothing. `/dashboard` stays `Db` — that reads fine.
+
 ### 2-Letter Format (Required for routes with 7+ subroutes)
 
 All primary routes use 2-letter favicon codes. The pattern:
@@ -71,8 +122,8 @@ All primary routes use 2-letter favicon codes. The pattern:
 
 | Route                       | Letter | Hex Color | Notes                              |
 | --------------------------- | ------ | --------- | ---------------------------------- |
-| `/launchpad`                | `LP`   | `#f97316` | Core-hub orange (`CORE_HUB_COLOR`) |
-| `/dashboard`                | `H`    | `#f97316` | Core-hub orange (`CORE_HUB_COLOR`) |
+| `/launchpad`                | 🚀     | `#f97316` | Core-hub orange — emoji, not letters |
+| `/dashboard`                | `Db`   | `#f97316` | Core-hub orange (`CORE_HUB_COLOR`) |
 | `/agents`                   | `AG`   | `#f43f5e` | Rose red (`AGENTS_COLOR`)          |
 | `/agents/[id]/build`        | `AB`   | `#f43f5e` | Agent Builder — inherits the family |
 | `/agent-apps`               | `AA`   | `#059669` | Dark emerald                       |
@@ -96,7 +147,7 @@ All primary routes use 2-letter favicon codes. The pattern:
 | `/settings`                 | `ST`   | `#475569` | Slate-600                          |
 | `/demo/*`                   | `De`   | `#ca8a04` | **System override**                |
 | `/tests/*`                  | `Tx`   | `#65a30d` | **System override**                |
-| `/administration/*`         | `Ad`   | `#111827` | **System override**                |
+| `/administration/*`         | (twin) | `#111827` | **System override** — reuses the mirrored feature's code |
 
 The registry (`constants/favicon-route-data.ts`) is the authority — this table is
 the shape of it, not a copy of all ~200 entries. Read the file before adding one.
@@ -298,7 +349,9 @@ See `.claude/skills/route-discovery-system/SKILL.md` for full `RouteIndexPage` u
 
 ```
 - [ ] favicon entry added to favicon-route-data.ts with a UNIQUE color (or a family constant)
-- [ ] letter is 2 chars (3 for a deep settings/tuning tab), not already used by another route
+- [ ] letter is 1–2 chars — NEVER 3 — and free within that route's COLOUR family
+- [ ] an admin page that mirrors a real feature reuses that feature's exact code
+- [ ] a page that will not reduce to 2 readable characters uses `emoji` instead
 - [ ] `pnpm check:favicon-letters` is green
 - [ ] color confirmed not already in the table above
 - [ ] top-level layout exports createRouteMetadata("/my-route", { title, description })
@@ -354,5 +407,8 @@ export const metadata = createCustomFaviconMetadata(
 | 1-char letter on a high-traffic route                   | Use 2-char — more visually distinct at 16px                                       |
 | Same first letter with ambiguous second                 | `Pb` vs `Pa` works; `Pb` vs `Pc` is risky — pick visually distinct shapes         |
 | Thinking the system letter fallback is acceptable       | The path-derived fallback is a safety net only — always pass an explicit `letter` |
-| Guessing that your new letter is free                   | Run `pnpm check:favicon-letters` — it fails when two unrelated routes share a badge |
+| A 3-character code (`BTU`, `ADA`, `WRL`)                | Two characters, or an `emoji`. There is no third option — the guard fails the run  |
+| `AD`/`A…` prefixing an admin page to mark it as admin   | Reuse the real feature's code; the near-black tile already says admin              |
+| Making a letter globally unique across all ~400 routes  | Only same-COLOUR routes can collide — a core tab and an admin tab are two tiles    |
+| Guessing that your new letter is free                   | Run `pnpm check:favicon-letters` — it judges length and same-colour collisions     |
 | Repeating a family hex instead of its constant          | Import `DOCS_COLOR` / `SHEETS_COLOR` / … from `constants/favicon-route-data.ts`   |

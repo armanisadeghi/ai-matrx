@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/administration", {
   title: "Compute",
   description:
     "Inspect compute services, sandboxes, resilience, and server logs.",
-  letter: "CPT",
+  letter: "CP",
   canonicalPath: "/administration/compute",
 });
 

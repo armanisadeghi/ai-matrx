@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/commerce/drafts", {
   title: "Drafts Review",
   description:
     "Gate 2 — keyboard-driven review of AI listing drafts with evidence and confidence gating.",
-  letter: "CDR",
+  letter: "DR",
 });
 
 export default function CommerceDraftsLayout({

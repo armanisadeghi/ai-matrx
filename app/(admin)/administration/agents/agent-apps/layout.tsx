@@ -6,7 +6,7 @@ export const metadata = createRouteMetadata("/administration", {
   title: "Agent Apps",
   description:
     "Manage public agent-backed apps: feature, verify, moderate, rate-limit",
-  letter: "ADP",
+  letter: "AA",
 });
 
 export default function AgentAppsAdminLayout({

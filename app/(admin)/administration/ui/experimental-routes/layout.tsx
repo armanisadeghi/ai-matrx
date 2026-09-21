@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/administration", {
   titlePrefix: "Experimental",
   title: "Admin",
   description: "Experimental and preview feature routes",
-  letter: "EXR",
+  letter: "ER",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

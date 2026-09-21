@@ -16,7 +16,7 @@ export const metadata = createRouteMetadata("/administration", {
   title: "Users & Access",
   description:
     "Accounts, organizations, memberships, preferences, admin privileges, invitations, entitlements, usage, and email",
-  letter: "AUS",
+  letter: "US",
 });
 
 export default function UsersAdminLayout({

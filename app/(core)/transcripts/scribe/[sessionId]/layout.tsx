@@ -31,7 +31,7 @@ export async function generateMetadata({
     titlePrefix: "Scribe",
     title,
     description: `Voice capture and assistant workspace for ${title}.`,
-    letter: "TSS",
+    letter: "SS",
   });
 }
 

@@ -5,7 +5,7 @@ export const metadata = createRouteMetadata("/administration", {
   title: "Agent Skills",
   description:
     "Curate every skill on the platform — system, public, and user-owned. Promote, edit, soft-delete, ingest, and organize.",
-  letter: "ASK",
+  letter: "SK",
 });
 
 export default function SkillsAdminLayout({

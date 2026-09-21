@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/podcast", {
   titlePrefix: "Show",
   title: "Podcasts",
   description: "Podcast show studio workspace.",
-  letter: "PSS",
+  letter: "SW",
 });
 
 export default function PodcastStudioShowLayout({

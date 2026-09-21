@@ -247,7 +247,10 @@ function generateSVGFaviconArchivo(config: FaviconConfig): string {
 function generateSVGFaviconLegacy(config: FaviconConfig): string {
   const { color, letter, emoji } = config;
   const displayText = emoji || letter || "M";
-  const len = displayText.length;
+  // Count GLYPHS, not UTF-16 units: a single emoji like 🚀 is a surrogate pair,
+  // so `.length` reads 2 and it used to be typeset at the cramped two-letter
+  // size with the two-letter negative tracking.
+  const len = [...displayText].length;
 
   const fontSize = len === 1 ? "46" : len === 2 ? "34" : "26";
   const yPosition = len === 1 ? "55" : len === 2 ? "53" : "52";
@@ -350,18 +353,30 @@ export function getFaviconConfigByPath(
  * @param additionalMetadata - Other metadata to merge (title, description, OG, etc.)
  * @param letterOverride - Explicit 1–2 char badge text. Required for any route inside
  *   a system color family (demo / tests / admin). Without it, a generic fallback letter
- *   is used — always override it.
+ *   is used — always override it. NEVER three characters: at 16px a third glyph makes
+ *   the badge an unreadable smear.
+ * @param emojiOverride - A single emoji to render INSTEAD of the letters, for a page
+ *   that does not reduce to two readable characters (Launchpad is 🚀). Wins over
+ *   `letterOverride`. Use it sparingly — the letters are the default.
  */
 export function generateFaviconMetadata(
   pathname: string,
   additionalMetadata?: Partial<Metadata>,
   letterOverride?: string,
+  emojiOverride?: string,
 ): Metadata {
   let config = getFaviconConfigByPath(pathname);
 
   // Apply the letter override — keeps the resolved color but replaces the letter.
   if (config && letterOverride) {
     config = { ...config, letter: letterOverride };
+  }
+
+  // An emoji badge REPLACES the letter entirely (the renderer reads
+  // `emoji || letter`). It is the escape hatch for the handful of pages that do
+  // not reduce to two readable characters — never a third character.
+  if (config && emojiOverride) {
+    config = { ...config, emoji: emojiOverride };
   }
 
   if (!config) {

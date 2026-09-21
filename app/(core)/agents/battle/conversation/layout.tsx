@@ -5,7 +5,7 @@ export const metadata = createRouteMetadata("/agents", {
   title: "Battle",
   description:
     "Fork one existing conversation into independent side-by-side continuations.",
-  letter: "BTC",
+  letter: "BC",
 });
 
 export default function BattleConversationLayout({

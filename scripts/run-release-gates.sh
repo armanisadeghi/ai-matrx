@@ -122,14 +122,6 @@ if $STRICT; then
         # any NEW one fails, and a baseline entry that stops existing fails too.
         "Unpinned identity/credential columns on client-writable tables|pnpm check:unpinned-security-columns"
         "…and that guard can still fail|pnpm check:unpinned-security-columns:self-test"
-        # 🚨 VERIFIER-8 HIGH-3: `platform` and `iam` are served to `authenticated` as
-        # WRITABLE REST surfaces. The chair ruled they are not client-writable at all —
-        # every write goes through a SECURITY DEFINER door that decides through the one
-        # ladder; reads stay under RLS. Shrink-only baseline, target zero: a NEW entry is
-        # a table somebody granted, and a DISAPPEARED entry is a closure the baseline has
-        # not been told about. Both fail, so the file can never rot into a permission slip.
-        "platform/iam carry no client write grant or permissive write policy|pnpm check:doors-only-schemas"
-        "…and that guard can still fail|pnpm check:doors-only-schemas:self-test"
         # THE ROUTE MANIFEST THE SPINE ACTUALLY READS. `platform.route_manifest`
         # is what aidream/services/notifications/link_honesty.py asks before it
         # puts a deep link in an email, an in-app notice or a text — and it is
@@ -686,14 +678,6 @@ else
         # any NEW one fails, and a baseline entry that stops existing fails too.
         "Unpinned identity/credential columns on client-writable tables|pnpm check:unpinned-security-columns"
         "…and that guard can still fail|pnpm check:unpinned-security-columns:self-test"
-        # 🚨 VERIFIER-8 HIGH-3: `platform` and `iam` are served to `authenticated` as
-        # WRITABLE REST surfaces. The chair ruled they are not client-writable at all —
-        # every write goes through a SECURITY DEFINER door that decides through the one
-        # ladder; reads stay under RLS. Shrink-only baseline, target zero: a NEW entry is
-        # a table somebody granted, and a DISAPPEARED entry is a closure the baseline has
-        # not been told about. Both fail, so the file can never rot into a permission slip.
-        "platform/iam carry no client write grant or permissive write policy|pnpm check:doors-only-schemas"
-        "…and that guard can still fail|pnpm check:doors-only-schemas:self-test"
         # See the strict list above for why this exists. It is in BOTH lists on
         # purpose: the release's own after-phase runner takes its rows from
         # `--list`, which is this (non-strict) branch, so a gate that lived only

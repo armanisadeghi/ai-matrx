@@ -15,7 +15,7 @@ export async function generateMetadata({
     titlePrefix: "Code",
     title: name,
     description: `Edit code for ${name}`,
-    letter: "APC",
+    letter: "CO",
   });
 }
 

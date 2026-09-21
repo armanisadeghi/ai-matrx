@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/administration", {
   titlePrefix: "Utils",
   title: "Admin",
   description: "Administrative utility tools and helpers",
-  letter: "UTU",
+  letter: "UU",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

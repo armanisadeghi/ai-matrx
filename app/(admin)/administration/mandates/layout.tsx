@@ -5,7 +5,7 @@ import { createRouteMetadata } from "@/utils/route-metadata";
 export const metadata = createRouteMetadata("/administration", {
   title: "Mandates",
   description: "Manage platform mandate definitions, pins, and bindings",
-  letter: "AMD",
+  letter: "MA",
 });
 
 export default function AdminMandatesLayout({

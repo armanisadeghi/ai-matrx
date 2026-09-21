@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/administration", {
   title: "Scopes & Context",
   description:
     "Inspect and manage the context and scope systems used across the platform.",
-  letter: "ASX",
+  letter: "SC",
   canonicalPath: "/administration/scopes-context",
 });
 

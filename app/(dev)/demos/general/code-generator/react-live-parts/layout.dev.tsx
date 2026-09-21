@@ -5,7 +5,7 @@ export const metadata = createRouteMetadata("/demo", {
   title: "Demo",
   description:
     "Composable React Live demo with split panels and partial previews",
-  letter: "RLP",
+  letter: "RP",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

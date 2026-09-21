@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/agents", {
   titlePrefix: "Tuning",
   title: "Battle",
   description: "Battle-test agent tuning parameters.",
-  letter: "BTU",
+  letter: "BU",
 });
 
 export default function BattleTuningLayout({

@@ -6,7 +6,8 @@ export const metadata = createRouteMetadata("/administration", {
   title: "Administration",
   description:
     "An always-open launch surface for every AI Matrx administration destination.",
-  letter: "ALP",
+  // Same rocket as /launchpad — the near-black admin tile is what says "admin".
+  emoji: "🚀",
   canonicalPath: "/administration/launchpad",
 });
 

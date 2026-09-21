@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/demo", {
   titlePrefix: "React Live",
   title: "Demo",
   description: "Live React code preview and execution playground",
-  letter: "RLV",
+  letter: "RL",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

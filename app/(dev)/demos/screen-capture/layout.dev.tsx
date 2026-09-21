@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/demo", {
   titlePrefix: "Screen Capture",
   title: "Demo",
   description: "SSR screen capture demo",
-  letter: "SCP",
+  letter: "SN",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

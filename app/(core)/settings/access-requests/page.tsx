@@ -10,7 +10,7 @@ export const metadata = createRouteMetadata("/settings/access-requests", {
   title: "Settings",
   description:
     "Answer people asking to open something you own, and track the access you've asked for.",
-  letter: "ACR",
+  letter: "AQ",
 });
 
 /**

@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/demo", {
   titlePrefix: "Services",
   title: "Demo",
   description: "Service layer and callback pattern demos",
-  letter: "DSV",
+  letter: "SV",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

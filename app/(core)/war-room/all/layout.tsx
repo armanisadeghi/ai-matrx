@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/war-room", {
   titlePrefix: "Sessions",
   title: "War Room",
   description: "Browse and open your War Room sessions.",
-  letter: "WRL",
+  letter: "WL",
 });
 
 export default function WarRoomAllLayout({
