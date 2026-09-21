@@ -170,6 +170,92 @@ export class QueryBuilder implements PromiseLike<{ data: unknown; error: null }>
   }
 }
 
+/**
+ * THE RULEBOOK DOORS, faked with the behaviour the LIVE ones have.
+ *
+ * `platform` is not a client-writable schema (chair ruling, VERIFIER-8 HIGH-3), so the real
+ * services no longer send an UPDATE to `platform.rulebook` at all — they call
+ * `public.rulebook_save`, `rulebook_meta_set`, `rulebook_archive`,
+ * `rulebook_tension_settle` and `rulebook_create`. A wire that still served the table would
+ * be serving a path the app cannot take.
+ *
+ * Two behaviours are modelled deliberately, because the guards that use this wire are about
+ * exactly them:
+ *
+ *   the CAS  — `p_expected_version` is checked here, and a miss answers NULL, not an error,
+ *              which is what makes a conflict retry a conflict and not a silent success;
+ *   the MERGE — `p_metadata_patch` is merged into `metadata` at the top level, never
+ *              replacing the column. A fake that replaced it would pass a service that had
+ *              kept its read-modify-write, which is the defect the door exists to remove.
+ *
+ * Door calls are recorded in `updates` alongside table statements, with the row id in the
+ * filters, so every existing "which row did this write address" assertion keeps its meaning.
+ */
+export function resolveDoor(fn: string, args: Record<string, unknown>) {
+  const id = (args.p_rulebook_id ?? args.p_id) as string | undefined;
+  updates.push({
+    schema: "public",
+    table: fn,
+    op: "update",
+    filters: [
+      { column: "id", value: id },
+      ...(args.p_expected_version === undefined
+        ? []
+        : [{ column: "version", value: args.p_expected_version }]),
+    ],
+    payload: args,
+  });
+  const row = typeof id === "string" ? rulebookRows.get(id) : undefined;
+  if (!row || row.deleted_at) return { data: null, error: null };
+  if (
+    args.p_expected_version !== undefined &&
+    args.p_expected_version !== row.version
+  ) {
+    return { data: null, error: null };
+  }
+  const patch = args.p_metadata_patch as Record<string, unknown> | undefined;
+  const next = {
+    ...row,
+    ...(args.p_rules === undefined ? {} : { rules: args.p_rules }),
+    ...(args.p_sections === undefined ? {} : { sections: args.p_sections }),
+    ...(args.p_name === undefined ? {} : { name: args.p_name }),
+    ...(args.p_status === undefined ? {} : { status: args.p_status }),
+    ...(args.p_source === undefined ? {} : { source: args.p_source }),
+    ...(fn === "rulebook_archive"
+      ? { deleted_at: new Date().toISOString() }
+      : {}),
+    // THE MERGE, not a replacement.
+    ...(patch === undefined
+      ? {}
+      : {
+          metadata: {
+            ...((row.metadata ?? {}) as Record<string, unknown>),
+            ...patch,
+          },
+        }),
+    version: row.version + 1,
+  } as RulebookRow;
+  rulebookRows.set(next.id, next);
+  return { data: next, error: null };
+}
+
+class DoorCall implements PromiseLike<{ data: unknown; error: null }> {
+  constructor(
+    private fn: string,
+    private args: Record<string, unknown>,
+  ) {}
+  then<TResult1 = { data: unknown; error: null }, TResult2 = never>(
+    onfulfilled?:
+      | ((value: { data: unknown; error: null }) => TResult1 | PromiseLike<TResult1>)
+      | null,
+    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
+  ): PromiseLike<TResult1 | TResult2> {
+    return Promise.resolve()
+      .then(() => resolveDoor(this.fn, this.args))
+      .then(onfulfilled, onrejected);
+  }
+}
+
 /** The supabase-js surface the real services call, and nothing else. */
 export const supabaseWire = {
   supabase: {
@@ -177,6 +263,7 @@ export const supabaseWire = {
       from: (table: string) => new QueryBuilder(schema, table),
     }),
     from: (table: string) => new QueryBuilder("public", table),
+    rpc: (fn: string, args: Record<string, unknown>) => new DoorCall(fn, args),
   },
 };
 

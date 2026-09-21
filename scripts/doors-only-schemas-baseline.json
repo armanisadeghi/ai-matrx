@@ -128,9 +128,6 @@
   "platform.repo|DELETE|authenticated|residual",
   "platform.repo|INSERT|authenticated|residual",
   "platform.repo|UPDATE|authenticated|residual",
-  "platform.rulebook|DELETE|authenticated|open",
-  "platform.rulebook|INSERT|authenticated|open",
-  "platform.rulebook|UPDATE|authenticated|open",
   "platform.schemas|DELETE|authenticated|residual",
   "platform.schemas|INSERT|authenticated|residual",
   "platform.schemas|UPDATE|authenticated|residual"

@@ -17,6 +17,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { guardedUpdate } from "@ai-matrx/data/db";
+import { doorCas } from "@/lib/db/door-cas";
 import { callApi } from "@/lib/api/call-api";
 import type { AppStore } from "@/lib/redux/store";
 import { operationFailed } from "@/utils/errors";
@@ -77,27 +78,25 @@ export async function mutatePlan(
     if (!data) return { status: "not_found" };
 
     const row = data as RulebookRow;
-    const baseMeta =
-      row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
-        ? (row.metadata as Record<string, unknown>)
-        : {};
     const next = transform(readCapturePlan(row.metadata));
-    const metadata = {
-      ...baseMeta,
-      capture_plan: { ...next, schema: CAPTURE_PLAN_SCHEMA },
-    };
-
     const result = await guardedUpdate<RulebookRow>({
       expectedVersion: row.version,
       // No `nextVersion` in the patch — see the header.
+      // THE DOOR, and it removes the read-modify-write this block was built on:
+      // only the ONE metadata key this feature owns is sent, and `rulebook_save`
+      // MERGES it, so a sibling key written between the read above and this write
+      // can no longer be lost. The CAS is unchanged — it lives inside the door now,
+      // and answers NULL on a miss exactly as guardedUpdate already reads.
       applyUpdate: ({ expectedVersion }) =>
-        rulebookTable()
-          .update({ metadata } as never)
-          .eq("id", rulebookId)
-          .eq("version", expectedVersion)
-          .is("deleted_at", null)
-          .select("*")
-          .maybeSingle(),
+        doorCas<RulebookRow>(
+          supabase.rpc("rulebook_save", {
+            p_rulebook_id: rulebookId,
+            p_expected_version: expectedVersion,
+            p_metadata_patch: {
+              capture_plan: { ...next, schema: CAPTURE_PLAN_SCHEMA },
+            } as never,
+          }),
+        ),
       fetchCurrent: () =>
         rulebookTable()
           .select("*")

@@ -1,5 +1,6 @@
 import { supabase } from "@/utils/supabase/client";
 import { guardedUpdate } from "@ai-matrx/data/db";
+import { doorCas } from "@/lib/db/door-cas";
 import { operationFailed } from "@/utils/errors";
 import { readAgentRunOutput } from "@/features/workflow-runtime/agent-run-output";
 import { presentedPreview } from "@/features/workflow-runtime/run-result/presented-result";
@@ -101,35 +102,43 @@ export async function createDraftRulebook(
   // Slug is globally unique among live rows; suffix on collision.
   let slug = base;
   for (let attempt = 0; attempt < 5; attempt++) {
-    const { data, error } = await rulebookTable()
-      .insert({
-        name: input.name,
-        slug,
-        description: input.description,
-        source: input.source as never,
-        sections: { G: { label: "General" } } as never,
-        rules: [] as never,
-        status: "draft",
-        organization_id: input.organizationId,
-        visibility: visibilityFromWhoRunsIt(input.intake?.who_runs_it),
-        ...(input.intake
-          ? { metadata: { intake: input.intake } as never }
-          : {}),
-      })
-      .select("*")
-      .single();
-    if (!error) {
-      const created = parseRulebook(data as RulebookRow);
+    // THE DOOR, not the base table. `platform` is not a client-writable schema
+    // (chair ruling, VERIFIER-8 HIGH-3): `rulebook_create` stamps `created_by`
+    // from auth.uid(), decides on the organization through the one ladder, and
+    // cannot be asked for a `status`, a rule or a `source_*` column at all — a
+    // Rulebook is born draft and empty by construction rather than by us
+    // remembering to say so.
+    const { data, error } = await supabase.rpc("rulebook_create", {
+      p_organization_id: input.organizationId,
+      p_name: input.name,
+      p_slug: slug,
+      p_description: input.description,
+      p_source: input.source as never,
+      p_sections: { G: { label: "General" } } as never,
+      p_visibility: visibilityFromWhoRunsIt(input.intake?.who_runs_it),
+      ...(input.intake
+        ? { p_metadata: { intake: input.intake } as never }
+        : {}),
+    });
+    if (!error && data) {
+      const created = parseRulebook(data as unknown as RulebookRow);
       // Running from minute one: the Understudy exists the moment the
       // Rulebook does — zero rules, pure improvisation on the intake.
       pokeUnderstudy(created.id);
       return created;
     }
-    if (error.code === "23505") {
+    if (error?.code === "23505") {
       slug = `${base}-${Math.random().toString(36).slice(2, 6)}`;
       continue;
     }
-    throw operationFailed("create that Rulebook", error);
+    if (error) throw operationFailed("create that Rulebook", error);
+    // No error and no row. `rulebook_create` raises rather than returning NULL, so
+    // this is unreachable today — and it is written out rather than swallowed,
+    // because a door that silently starts answering NULL would otherwise surface
+    // as a Rulebook that never appeared with no message at all.
+    throw new Error(
+      "The Rulebook was not created and the database gave no reason. Nothing was saved — try again.",
+    );
   }
   throw new Error("Could not create the Rulebook: slug collision persisted.");
 }
@@ -160,14 +169,10 @@ export async function saveRules(opts: {
    */
   metadata?: Record<string, unknown>;
 }): Promise<Rulebook> {
-  // `version` is supplied by guardedUpdate's `nextVersion` below — the CAS
-  // helper owns the bump, and platform._touch_row re-derives it server-side.
+  // `version` is written by NOBODY here: platform._touch_rulebook owns it, and
+  // deliberately carries it forward when nothing an Expert or a reader can see
+  // moved. The door does the compare-and-swap.
   const rulebookId = opts.base.id;
-  const patch: Record<string, unknown> = {
-    rules: opts.rules,
-  };
-  if (opts.sections) patch.sections = opts.sections;
-  if (opts.metadata) patch.metadata = opts.metadata;
   const touches: RulebookWriteTouches = {
     rules: true,
     sections: opts.sections !== undefined,
@@ -175,13 +180,22 @@ export async function saveRules(opts: {
   };
   const result = await guardedUpdate<RulebookRow & { version: number }>({
     expectedVersion: opts.base.version,
-    applyUpdate: ({ expectedVersion, nextVersion }) =>
-      rulebookTable()
-        .update({ ...patch, version: nextVersion } as never)
-        .eq("id", rulebookId)
-        .eq("version", expectedVersion)
-        .select("*")
-        .maybeSingle(),
+    // THE DOOR, and the CAS now lives inside it: `rulebook_save` filters on
+    // `version` itself and answers NULL on a miss, which is exactly the shape
+    // guardedUpdate already reads — so the phantom-conflict `rebase` below is
+    // untouched. `nextVersion` is deliberately NOT passed: platform._touch_rulebook
+    // owns that column and carries it FORWARD for a background-only write, and the
+    // client supplying it too was a second author for one column.
+    applyUpdate: ({ expectedVersion }) =>
+      doorCas<RulebookRow & { version: number }>(
+        supabase.rpc("rulebook_save", {
+          p_rulebook_id: rulebookId,
+          p_expected_version: expectedVersion,
+          p_rules: opts.rules as never,
+          ...(opts.sections ? { p_sections: opts.sections as never } : {}),
+          ...(opts.metadata ? { p_metadata_patch: opts.metadata as never } : {}),
+        }),
+      ),
     fetchCurrent: () =>
       rulebookTable().select("*").eq("id", rulebookId).maybeSingle(),
     // 🚨 WALL W12. Our OWN save wakes the server's Coherence Partner, which
@@ -264,13 +278,30 @@ export async function updateRulebookMeta(opts: {
     visibility: RulebookRow["visibility"];
   }>;
 }): Promise<Rulebook> {
-  const { data, error } = await rulebookTable()
-    .update(opts.patch as never)
-    .eq("id", opts.rulebookId)
-    .select("*")
-    .single();
+  // THE DOOR. The old call passed the caller's whole patch object straight into
+  // an UPDATE, so any key it happened to carry was written; `rulebook_meta_set`
+  // takes exactly these five facts and can reach nothing else on the row.
+  const { data, error } = await supabase.rpc("rulebook_meta_set", {
+    p_rulebook_id: opts.rulebookId,
+    ...(opts.patch.name === undefined ? {} : { p_name: opts.patch.name }),
+    ...(opts.patch.description === undefined
+      ? {}
+      : { p_description: opts.patch.description, p_set_description: true }),
+    ...(opts.patch.source === undefined
+      ? {}
+      : { p_source: opts.patch.source as never }),
+    ...(opts.patch.status === undefined ? {} : { p_status: opts.patch.status }),
+    ...(opts.patch.visibility === undefined
+      ? {}
+      : { p_visibility: opts.patch.visibility }),
+  });
   if (error) throw operationFailed("save that change to the Rulebook", error);
-  return parseRulebook(data as RulebookRow);
+  if (!data) {
+    throw new Error(
+      "That Rulebook is no longer available. Reload to see the current list.",
+    );
+  }
+  return parseRulebook(data as unknown as RulebookRow);
 }
 
 export type DumpUrlWriteResult =
@@ -289,13 +320,6 @@ export type DumpUrlWriteResult =
  * fresh Rulebook instead of silently clobbering it.
  */
 const DUMP_URL_CAS_RETRIES = 3;
-
-/** The `metadata` column as a plain object (tolerant read). */
-function metadataObject(metadata: unknown): Record<string, unknown> {
-  return metadata && typeof metadata === "object" && !Array.isArray(metadata)
-    ? (metadata as Record<string, unknown>)
-    : {};
-}
 
 export async function writeDumpUrlSources(opts: {
   rulebook: Rulebook;
@@ -320,21 +344,27 @@ export async function writeDumpUrlSources(opts: {
   let lastCurrent: Rulebook | null = null;
 
   for (let attempt = 0; attempt < DUMP_URL_CAS_RETRIES; attempt++) {
-    const metadata = { ...metadataObject(base.metadata), dump_url_sources: desired };
+    // No read-modify-write of the whole column any more: the door merges, so
+    // this loop sends only the key it owns.
     // Metadata-only: CAS-guard on the RULES version, never bump it — `version`
     // is what a built Masterwork drifts against, and bumping it here made a
     // freshly built Masterwork read "needs rebuild" the moment a link was
     // attached (2026-09-10, v44 → v45 with identical rules).
     const result = await guardedUpdate<RulebookRow>({
       expectedVersion: base.version,
+      // THE DOOR, which also removes the read-modify-write this loop was built
+      // around: only the ONE key this feature owns is sent, and `rulebook_save`
+      // MERGES it, so a sibling metadata key written between our read and our
+      // write can no longer be lost. The rebase loop below stays, because the
+      // CAS on the RULES version is still what a concurrent Scout save moves.
       applyUpdate: ({ expectedVersion }) =>
-        rulebookTable()
-          .update({ metadata } as never)
-          .eq("id", base.id)
-          .eq("version", expectedVersion)
-          .is("deleted_at", null)
-          .select("*")
-          .maybeSingle(),
+        doorCas<RulebookRow>(
+          supabase.rpc("rulebook_save", {
+            p_rulebook_id: base.id,
+            p_expected_version: expectedVersion,
+            p_metadata_patch: { dump_url_sources: desired } as never,
+          }),
+        ),
       fetchCurrent: () =>
         rulebookTable()
           .select("*")
@@ -385,10 +415,17 @@ export async function writeDumpUrlSources(opts: {
 }
 
 export async function softDeleteRulebook(rulebookId: string): Promise<void> {
-  const { error } = await rulebookTable()
-    .update({ deleted_at: new Date().toISOString() } as never)
-    .eq("id", rulebookId);
+  // THE ARCHIVE DOOR, at std_delete's ADMIN rung — not a `deleted_at` key inside
+  // an edit patch, which anybody at the editor rung could reach.
+  const { data, error } = await supabase.rpc("rulebook_archive", {
+    p_rulebook_id: rulebookId,
+  });
   if (error) throw operationFailed("delete that Rulebook", error);
+  if (!data) {
+    throw new Error(
+      "That Rulebook is already gone. Reload to see the current list.",
+    );
+  }
 }
 
 /** One recorded state of a Rulebook (history.row_versions, via the gated RPC). */

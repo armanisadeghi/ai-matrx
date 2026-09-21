@@ -72,8 +72,49 @@ function table() {
   return api;
 }
 
+
+/**
+ * THE `rulebook_save` DOOR, faked with the behaviour the LIVE one has.
+ *
+ * `platform` is not a client-writable schema (chair ruling, VERIFIER-8 HIGH-3), so the service
+ * under test no longer sends an UPDATE to `platform.rulebook` — it calls `public.rulebook_save`,
+ * which carries the compare-and-swap INSIDE the database and answers NULL on a miss. That is the
+ * same three-state answer this fixture always modelled; only the transport moved.
+ *
+ * Two behaviours are modelled on purpose, because this guard is about exactly them:
+ * the CAS (`p_expected_version`, a miss is NULL and not an error — a conflict retry must stay a
+ * conflict) and the MERGE (`p_metadata_patch` merges into `metadata` at the top level, never
+ * replacing the column; a fake that replaced it would pass a service that had kept its
+ * read-modify-write, which is the defect the door exists to remove).
+ */
+function door(fn: string, args: Record<string, unknown>) {
+  const id = args.p_rulebook_id as string;
+  if (id !== row.id) return { data: null, error: null };
+  if (args.p_expected_version !== row.version) {
+    // CAS miss: the door returns NULL, not an error.
+    return { data: null, error: null };
+  }
+  const patch = args.p_metadata_patch as Record<string, unknown> | undefined;
+  row = {
+    ...row,
+    ...(args.p_rules === undefined ? {} : { rules: args.p_rules as unknown[] }),
+    ...(args.p_sections === undefined
+      ? {}
+      : { sections: args.p_sections as Record<string, unknown> }),
+    ...(patch === undefined
+      ? {}
+      : { metadata: { ...(row.metadata ?? {}), ...patch } }),
+    // The client sends no `version`: the row's own touch trigger owns it.
+    version: row.version + 1,
+  } as Row;
+  return { data: { ...row }, error: null };
+}
+
 jest.mock("@/utils/supabase/client", () => ({
-  supabase: { schema: () => ({ from: () => table() }) },
+  supabase: {
+    schema: () => ({ from: () => table() }),
+    rpc: (fn: string, args: Record<string, unknown>) => Promise.resolve(door(fn, args)),
+  },
 }));
 
 import { saveRules } from "../service";
