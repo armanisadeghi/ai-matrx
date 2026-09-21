@@ -35,16 +35,30 @@
 --     contract below — REL-5, REL-7, REL-8, REL-13, REL-16 — is unreachable from a person's
 --     seat today, and this twin CANNOT ask it seated.
 --
--- That is not small enough for this lane to fix by hand: making `platform.relation_set`
--- SECURITY DEFINER means giving it the store's own three assertions
--- (`custom.assert_store_door`, `assert_client_may_reach`, `assert_client_may_change`) and
--- changing a shared `platform` function other code already calls. It is REPORTED, and RED 0
--- asserts the refusal by its SQLSTATE and its words, so this file goes RED the day the door is
--- built — which is the day RED 1 and RED 2 move into the seat.
+-- 🚨 THAT DAY CAME, AND RED 1 AND RED 2 HAVE MOVED INTO THE SEAT (lane INVERSE-GUARD,
+-- 2026-09-21). `platform.relation_set` is SECURITY DEFINER now, with `SET search_path` and the
+-- store's own assertions inside it (`custom.assert_client_may_change` at editor on the source,
+-- `custom.assert_client_may_open` at viewer plus `custom.assert_may_know_table` on every
+-- target, behind `platform.assert_relations_door`). RED 0 measures that: a person is ANSWERED
+-- and refused by the field's own name, `23503`, not walled off with `42501`. So every clause
+-- below that asserts anything is asked from the `authenticated` seat, and each one re-proves
+-- the seat immediately before it asserts.
 --
--- Until then RED 1 and RED 2 run as the connected role and SAY SO. They prove what the three
--- triggers do; they prove nothing about what a person may do, and they claim nothing else.
--- RED 3 is the one clause this file CAN ask seated, and it is asked as a second real person.
+-- WHAT IS STILL DONE AS THE CONNECTED ROLE, and why each is a PLANT and never an assertion:
+--   * the two `custom.field` rows of type `relation` — `custom.field_declare` offers a person
+--     `member` and `attachment` and refuses the word `relation` by name, so a relation column
+--     cannot be declared from a person's seat at all. That is the second half of RED 0's
+--     original finding and it is still open.
+--   * `drop trigger … on platform.associations` — DDL on a table a person does not own. A red
+--     twin's whole method is to REMOVE the thing under test; removing it is the plant, and no
+--     person is ever supposed to be able to do it. The moment each drop is done the file sits
+--     back down, and every question after it is asked as a signed-in person through the door.
+-- RED 2's edit is a person's edit too: `platform.relation_set` upserts, so calling it a second
+-- time with a target it already holds is an UPDATE on `platform.associations` made BY THE DOOR
+-- — which is how a person moves an edge. `authenticated` holds no UPDATE privilege on that
+-- table and the client policies refuse it outright, so the raw `update` this clause used to
+-- run was itself only ever reachable from the owner's seat.
+-- RED 3 is asked seated as a second real person.
 
 \set ON_ERROR_STOP on
 \timing off
@@ -188,9 +202,12 @@ begin
     raise exception 'RED 0: the relations door refused a person with % "%", and the measured refusal is 23503 naming the column "about". Something changed; re-measure before trusting anything below.',
       v_state, v_caught;
   end if;
-  raise notice 'RED 0 — MEASURED: `platform.relation_set` ANSWERS a signed-in person now and refuses an undeclared column by its own name (% "%"). The 42501 wall this clause was written to record is gone. RED 1 and RED 2 below still run as the connected role and prove only what the triggers do — moving them into the seat is the work this closure opens up, and it belongs to the relations lane.', v_state, v_caught;
+  raise notice 'RED 0 — MEASURED: `platform.relation_set` ANSWERS a signed-in person now and refuses an undeclared column by its own name (% "%"). The 42501 wall this clause was written to record is gone, so RED 1 and RED 2 below ask their questions from this same seat.', v_state, v_caught;
 
-  -- The relation FIELDS, as the connected role, for the same reason.
+  -- ------------------------------------------------------------------ PLANT, not a clause.
+  -- The relation FIELDS go in as the connected role because `custom.field_declare` refuses the
+  -- word `relation` to a person by name — the open half of RED 0's finding. Nothing is
+  -- asserted while out of the seat.
   perform set_config('role', v_boss, true);
 
   update custom.record
@@ -201,8 +218,12 @@ begin
                             relation_target, relation_max, on_target_delete, config,
                             source, source_config, sensitivity, context_policy,
                             rules, depends_on, applies_to_types, multi, dated, required, sort)
+  -- `ordered` is true so that the ORDER of the targets is a real, writable column on the edge
+  -- (`platform.associations.position`, which `relation_declaration` gates on exactly this key).
+  -- RED 2 needs one edit a person can make that actually CHANGES a column, and reordering the
+  -- things a record points at is that edit.
   values (v_org, v_note_t, 'about', 'About', 'About', 'relation', v_proj_t, 50, 'set_null',
-          jsonb_build_object('target_mode','one','loops',false),
+          jsonb_build_object('target_mode','one','loops',false,'ordered',true),
           'manual','{}'::jsonb,'internal','include',
           '[]'::jsonb,'[]'::jsonb,'[]'::jsonb,true,false,false,10);
 
@@ -223,8 +244,15 @@ begin
           '[]'::jsonb,'[]'::jsonb,'[]'::jsonb,true,false,false,10);
 
   -- ==================================================================== RED 1: the contract goes
-  -- OUT OF THE SEAT, because RED 0 measured that a person cannot reach this door at all.
+  -- THE PLANT (connected role, DDL a person can never do): take the contract trigger away.
   drop trigger trg_associations_zzz_relation_contract on platform.associations;
+
+  -- BACK INTO THE SEAT before a single question is asked. Everything from here to the end of
+  -- RED 1 is a signed-in person calling the door she actually has and reading what she may see.
+  perform set_config('role', 'authenticated', true);
+  if current_user <> 'authenticated' then
+    raise exception 'RED 1: this clause did not take the seat — current_user is %', current_user;
+  end if;
 
   -- (a) a Table the field never named
   perform platform.relation_set(v_org, v_note, 'about', jsonb_build_array(v_tag));
@@ -251,16 +279,55 @@ begin
     raise exception 'RED 1c IS NOT RED: a self-relation was still refused';
   end if;
 
-  raise notice 'RED 1 — contract trigger dropped: a relation lands on a Table its field never named, a "one" relation holds % targets, and a record points at itself. REL-8, REL-7 and REL-5 were that one trigger.', v_n + 2;
+  -- (d) THE SEAT IS LOAD-BEARING, and this is what makes (a)-(c) mean something. Dropping the
+  -- contract trigger took away the CONTRACT; it must not have taken away the WALL. The same
+  -- door, the same call, as a second real person who holds nothing on this record, is refused —
+  -- so what (a)-(c) walked through was the missing trigger and not an open door.
+  perform set_config('request.jwt.claims', c_dana_j, true);
+  v_caught := null;
+  begin
+    perform platform.relation_set(v_org, v_note, 'about', jsonb_build_array(v_b));
+  exception when others then v_caught := sqlerrm;
+  end;
+  perform set_config('request.jwt.claims', c_admin_j, true);
+  if v_caught is null then
+    raise exception 'RED 1d: with the contract trigger dropped, test@test.com — who holds nothing on this record — could set a relation on it. Then RED 1a-c proved nothing about a person, because the door was open to anyone.';
+  end if;
+
+  raise notice 'RED 1 — SEATED as `%`, contract trigger dropped: a relation lands on a Table its field never named, a "one" relation holds % targets, and a record points at itself. REL-8, REL-7 and REL-5 were that one trigger — and the wall is still up, because the same call as test@test.com was refused ("%").', current_user, v_n + 2, left(v_caught, 70);
 
   -- ===================================================================== RED 2: the versions go
+  -- SEATED THROUGHOUT except for the two DDL plants. The edit is a person's edit: the door
+  -- upserts, so asking for a target it already holds is an UPDATE on `platform.associations`
+  -- performed BY `platform.relation_set` — the only way a person moves one of these edges.
+  -- `authenticated` holds no UPDATE privilege on that table and `associations_client_update_refused`
+  -- refuses it anyway, so the raw `update` this clause used to run was the owner's seat, not hers.
+  if current_user <> 'authenticated' then
+    raise exception 'RED 2: this clause did not take the seat — current_user is %', current_user;
+  end if;
   select a.id into v_edge from platform.associations a
    where a.source_id = v_note and a.role = 'about' and a.target_id = v_a limit 1;
-  -- THE CONTROL FIRST, WITH THE TRIGGERS STILL THERE: one edit, and the version moves and a
-  -- history row is filed. Without it the comparison below is vacuous — an edge whose version
-  -- is null before and after would "stay the same" with or without a trigger, which is
-  -- exactly the hole this twin had when it ran on the branch.
-  update platform.associations set label = 'control_moved_it' where id = v_edge;
+  if v_edge is null then
+    raise exception 'RED 2 setup: the seat cannot even SEE the edge it is about to measure, so nothing below means anything';
+  end if;
+  -- THE CONTROL FIRST, WITH THE TRIGGERS STILL THERE: one edit through the doors, and the
+  -- version moves and a history row is filed. Without it the comparison below is vacuous — an
+  -- edge whose version is null before and after would "stay the same" with or without a
+  -- trigger, which is exactly the hole this twin had when it ran on the branch.
+  --
+  -- The edit is a REORDER: the field is `ordered`, the record already points at both Campaigns,
+  -- and asking for them in the other order moves `position` on this edge from 1 to 2. Two
+  -- shapes were tried first and are written down so nobody repeats them:
+  --   * a bare second `relation_set` with the SAME target writes back byte-identical values,
+  --     and `platform._version_capture` returns early when an UPDATE changes nothing but
+  --     `version` and `updated_at` — it would file nothing, and the control would fail for a
+  --     reason that has nothing to do with the trigger being present.
+  --   * `relation_unset` then `relation_set` dies inside the door with `ON CONFLICT DO UPDATE
+  --     command cannot affect row a second time` — `trg_associations_revive_tombstone` already
+  --     revives the soft-deleted edge in that same INSERT, so the upsert then tries to touch
+  --     the row twice. That is a real defect in re-linking a target you just unlinked; it is
+  --     NOT this twin's to fix, and it is recorded here rather than worked around silently.
+  perform platform.relation_set(v_org, v_note, 'about', jsonb_build_array(v_b, v_a));
   select a.version into v_ver from platform.associations a where a.id = v_edge;
   select count(*) into v_n from history.row_versions v
    where v.row_id = v_edge and v.organization_id = v_org and v.operation = 'UPDATE';
@@ -271,10 +338,20 @@ begin
     raise exception 'RED 2 setup: no history row was filed for an edited edge with trg_associations_zzz_version_capture in place';
   end if;
 
+  -- THE PLANT (connected role, DDL a person can never do), then straight back into the seat.
+  perform set_config('role', v_boss, true);
   drop trigger trg_associations_zzz_touch_row on platform.associations;
   drop trigger trg_associations_zzz_version_capture on platform.associations;
+  perform set_config('role', 'authenticated', true);
+  if current_user <> 'authenticated' then
+    raise exception 'RED 2: the seat was not retaken after the trigger drops — current_user is %', current_user;
+  end if;
 
-  update platform.associations set label = 'red_moved_it' where id = v_edge;
+  -- The same shape of edit again, back the other way: `position` really moves, 2 -> 1.
+  perform platform.relation_set(v_org, v_note, 'about', jsonb_build_array(v_a, v_b));
+  if (select position from platform.associations where id = v_edge) <> 1 then
+    raise exception 'RED 2 setup: the second reorder did not move this edge''s position, so "the version never moves" would pass on a row nothing wrote to';
+  end if;
 
   if (select version from platform.associations where id = v_edge) is distinct from v_ver then
     raise exception 'RED 2a IS NOT RED: the version moved with both version triggers dropped, so something else is writing it';
@@ -284,7 +361,7 @@ begin
   if v_n2 <> v_n then
     raise exception 'RED 2b IS NOT RED: % more history row(s) were filed for an edge nobody is capturing', v_n2 - v_n;
   end if;
-  raise notice 'RED 2 — with both version triggers in place one edit moved the version to % and filed % history row(s); with them dropped a second edit moved neither. REL-16 and REL-13 are those two triggers.', v_ver, v_n;
+  raise notice 'RED 2 — SEATED as `%`: with both version triggers in place one edit through the door moved the version to % and filed % history row(s); with them dropped a second edit through the same door moved neither. REL-16 and REL-13 are those two triggers.', current_user, v_ver, v_n;
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- RED 3 — THE ONE CLAUSE THIS FILE CAN ASK SEATED, and it is asked as a second real
@@ -314,7 +391,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   raise notice 'RED 3 — seated: the owner adds a column and it lands, test@test.com is refused the same call ("%"), and she reads the record shared with her. The three drops touched the relation contract and not the access ladder.', left(v_caught, 80);
 
-  raise notice '=== W1-REL RED — the three triggers were shown failing, on the main database; and RED 0''s finding is CLOSED: platform.relation_set answers a signed-in person now and refuses an undeclared column by its own name. What it hands back instead is that RED 1 and RED 2 still run as the connected role and should be moved into the seat. Rolling back. ===';
+  raise notice '=== W1-REL RED — the three triggers were shown failing, on the main database, FROM THE `authenticated` SEAT: every clause here is a signed-in person calling platform.relation_set and reading what RLS lets her read, and the only things done as the connected role are the two plants no person can do (a `relation` field, which custom.field_declare still refuses by name, and the trigger drops themselves). RED 0''s finding is CLOSED and RED 1/RED 2 have moved into the seat it opened. Rolling back. ===';
 end $red$;
 
 rollback;
