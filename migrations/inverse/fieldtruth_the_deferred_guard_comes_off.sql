@@ -1,0 +1,38 @@
+-- chair-step: it DROPs the deferred constraint trigger this same lane added ninety minutes ago
+--
+-- FIELD-TRUTH — A DEFERRED CONSTRAINT TRIGGER ON `custom.record` BLOCKS EVERY CREATE INDEX.
+--
+-- WHAT I BROKE, and it is worse than the thing it was guarding. `zzzz_b_claimed_column` was
+-- DEFERRABLE INITIALLY DEFERRED so that `custom.table_declare` and `custom.field_declare`
+-- could keep writing their two halves in two statements. Postgres queues a pending event for
+-- every row such a trigger sees, and **`CREATE INDEX` refuses to run while its table has
+-- pending trigger events**. `custom.promote_field` creates a real index — that is what a
+-- promoted or unique column IS — so any transaction that wrote to `custom.record` and then
+-- promoted a column died with:
+--
+--     cannot CREATE INDEX "record_p03" because it has pending trigger events
+--
+-- Found by this lane's own product suite at `custom.work_slots_declare`, which declares a
+-- slots Table, its three columns, and then promotes `slot_key` to a unique index in one
+-- transaction. It is not a test-only shape: `custom.field_declare` with `promoted` or
+-- `unique`, `custom.promote_field` itself, and every booking page that reserves a slot take
+-- that path. Measured on the main database: exactly ONE deferrable trigger exists on
+-- `custom.record` and it is this one.
+--
+-- WHY NOT A WORKAROUND. `SET CONSTRAINTS ALL IMMEDIATE` before each `CREATE INDEX` would
+-- clear the queue and work. It would also be a landmine: every future door that creates an
+-- index would have to remember it, and a safe path sitting beside an unsafe one is not a
+-- fix. The trigger comes off.
+--
+-- WHAT KEEPS THE RULE. Crew E's actual path — `custom.record_update` on a Table row's
+-- `fields` array, naming a key with no Field record — is asked inside that door, at the end
+-- of the call, where both halves have either met or they have not. That is
+-- `fieldtruth_a_table_claims_no_column_at_its_own_door.sql`, which is applied FIRST, so the
+-- rule is never unenforced between the two files.
+--
+-- INVERSE: re-create the trigger exactly as `fieldtruth_a_table_cannot_claim_a_column_it_never_defined.sql`
+-- and `fieldtruth_the_deferred_guard_reads_as_the_store.sql` left it — but do not, without
+-- also solving the CREATE INDEX problem, because that is the outage this file ends.
+
+DROP TRIGGER IF EXISTS zzzz_b_claimed_column ON custom.record;
+DROP FUNCTION IF EXISTS custom._claimed_column_guard();

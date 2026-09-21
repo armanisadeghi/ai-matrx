@@ -73,7 +73,8 @@ begin
       'default_sort', jsonb_build_array(jsonb_build_object('field', 'name', 'direction', 'asc')),
       'agent_writable', true, 'label_singular', 'Lead', 'label_plural', 'Leads',
       'title_field', 'name',
-      'fields', jsonb_build_array(jsonb_build_object('name', 'name'), jsonb_build_object('name', 'stage')),
+      'fields', jsonb_build_array(jsonb_build_object('name', 'name'), jsonb_build_object('name', 'stage'),
+                                  jsonb_build_object('name', 'phone')),
       'parent_id', v_home));
   perform custom.field_declare(v_org, v_table, jsonb_build_object('label', 'name', 'key', 'name', 'type', 'text', 'required', true));
   perform custom.field_declare(v_org, v_table, jsonb_build_object('label', 'stage', 'key', 'stage', 'type', 'text'));

@@ -115,10 +115,17 @@ begin
       'default_sort', jsonb_build_array(jsonb_build_object('field', 'name', 'direction', 'asc')),
       'agent_writable', true, 'label_singular', 'Lead', 'label_plural', 'Leads',
       'title_field', 'name',
-      'fields', jsonb_build_array(jsonb_build_object('name', 'name'), jsonb_build_object('name', 'stage')),
+      'fields', jsonb_build_array(jsonb_build_object('name', 'name'), jsonb_build_object('name', 'stage'),
+                                  jsonb_build_object('name', 'phone')),
       'parent_id', v_home));
   v_f_name  := custom.field_declare(v_org, v_table, jsonb_build_object('label', 'name', 'key', 'name', 'type', 'text', 'required', true));
   v_f_stage := custom.field_declare(v_org, v_table, jsonb_build_object('label', 'stage', 'key', 'stage', 'type', 'text'));
+  -- PHONE IS DECLARED BECAUSE THIS SUITE WRITES IT (FIELD-TRUTH, 2026-09-21). Every lead
+  -- below carries a phone number and PART 5 edits one, and `custom._undeclared_key_guard`
+  -- refuses a value for a key no Field declares — a value with no column is a value nobody
+  -- will ever see, which is the whole point of the digest. The refusal is correct; the
+  -- fixture was writing an undeclared column.
+  perform custom.field_declare(v_org, v_table, jsonb_build_object('label', 'phone', 'key', 'phone', 'type', 'text'));
   raise notice 'PART 1 PASSED — table %', v_table;
 
   -- ══ PART 2 — custom.views and custom.view_declare ═════════════════════════════
