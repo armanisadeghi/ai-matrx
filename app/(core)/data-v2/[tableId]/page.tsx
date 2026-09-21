@@ -23,6 +23,7 @@ import { useOrganizationRequired } from "@/features/organizations/useOrganizatio
 import { getOrganizationMembers } from "@/features/organizations/service";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { createClient } from "@/utils/supabase/client";
+import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
@@ -97,6 +98,11 @@ export default function UnifiedDataTableRoute({
               dataSource: recordsDataSource(createClient()),
               actor: personActor(userId),
               organizationId: organizationId!,
+              // LIVE UPDATES. The grid's "Not live: this host bound no realtime port" banner
+              // was naming exactly this seam. The port joins the private topic the database
+              // broadcasts a NOTICE on and re-reads through the read door; `undefined` when
+              // the store's switch is off, and the honest banner comes back.
+              realtime: createRecordsRealtimePort(organizationId!),
             }}
             host={{
               Link,
