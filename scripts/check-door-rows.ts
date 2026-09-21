@@ -116,7 +116,9 @@
  *    status before it is reported.
  *
  * Exit codes: 0 clean (or findings without --strict) · 1 findings/UNMEASURED
- * credentials with --strict · 2 script error.
+ * credentials with --strict · 2 script error · 3 the run did not finish because
+ * the database was busy — NEITHER a finding NOR a clean bill, re-run it quiet
+ * (RED-SUITES 2026-09-21; `--budget-ms=N`, 0 disables the gate's own deadline).
  */
 
 import { exitAfterDrain } from "./lib/exit-after-drain";
@@ -176,6 +178,23 @@ const TABLE_OUT = flag("table");
 const JSON_OUT = flag("json");
 const CALL_TIMEOUT_MS = Number(flag("timeout") ?? "6000") || 6000;
 const POOL = Math.max(1, Number(flag("pool") ?? "6") || 6);
+/**
+ * THE GATE'S OWN WALL CLOCK (RED-SUITES 2026-09-21). Whoever runs this gate has one too, and
+ * theirs kills the process — which turns a partial run into whatever the last line printed.
+ * This one stops probing FIRST, on purpose, and says what it did not reach. Default 25
+ * minutes: the wide lane is ~10 on a quiet database and this leaves room for a busy one
+ * without ever handing the caller's killer the last word. `--budget-ms=0` disables it.
+ */
+const BUDGET_MS = (() => {
+  const raw = flag("budget-ms");
+  if (raw === undefined) return 25 * 60_000;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : 25 * 60_000;
+})();
+/** SQLSTATEs that mean "another session held it", never "this door is wrong". */
+const CONTENTION_SQLSTATES = new Set(["55P03", "57014", "40P01", "40001"]);
+/** "25-minute" / "1500ms" — a budget under a minute must not print as "0-minute". */
+const BUDGET_WORD = BUDGET_MS >= 60_000 ? `${Math.round(BUDGET_MS / 60_000)}-minute` : `${BUDGET_MS}ms`;
 
 // ─── credentials ─────────────────────────────────────────────────────────────
 
@@ -300,7 +319,22 @@ interface Door {
  */
 const BOOLEAN_ONLY = (door: Door): boolean => /^(setof\s+)?boolean$/i.test(door.retType.trim());
 
-type Verdict = "PASS" | "FAIL" | "UNMEASURED";
+/**
+ * 🚨 RED-SUITES 2026-09-21 — `NOT_MEASURED_CONTENTION` IS THE THIRD ANSWER, AND IT IS NOT
+ * `UNMEASURED`.
+ *
+ * VERIFIER-8 Part D ran `check:door-rows:wide` against the live database while a dozen
+ * campaign lanes were writing it. The gate printed
+ *     [FAIL] A door that returns a row its caller cannot read is DD-191's class
+ * and then DIED on the harness's own wall clock, having reached ~384 of 472 doors. Both
+ * readings of that run are lies: "it failed" (it never finished judging) and "88 UNMEASURED"
+ * (those doors were not unmeasurABLE — nobody got to them, or their probe was killed by
+ * another lane's lock). `UNMEASURED` means "this gate has no oracle for this door" — a
+ * permanent fact about the door that a person has to answer. Contention means "ask again on a
+ * quiet database" — a fact about the MINUTE, which answers itself. Filing the second under the
+ * first makes a re-runnable nothing look like a standing debt, and 88 of them look like 88.
+ */
+type Verdict = "PASS" | "FAIL" | "UNMEASURED" | "NOT_MEASURED_CONTENTION";
 
 interface Probe {
   caller: string;
@@ -460,6 +494,9 @@ async function main(): Promise<number> {
     const results: DoorResult[] = new Array(doors.length);
     let next = 0;
     let done = 0;
+    // RED-SUITES 2026-09-21: the gate's own deadline. See BUDGET_MS.
+    const deadline = BUDGET_MS > 0 ? Date.now() + BUDGET_MS : Infinity;
+    let ranOutOfTime = false;
     const worker = async (w: number): Promise<void> => {
       const c = w === 0 ? db : newClient(env);
       if (w !== 0) await c.connect();
@@ -469,6 +506,20 @@ async function main(): Promise<number> {
         for (;;) {
           const i = next++;
           if (i >= doors.length) return;
+          if (Date.now() >= deadline) {
+            // NOT a failure and NOT a pass: nobody asked this door anything.
+            ranOutOfTime = true;
+            results[i] = {
+              door: doors[i],
+              verdict: "NOT_MEASURED_CONTENTION",
+              why: `the gate's ${BUDGET_WORD} budget ran out before this door was reached`,
+              leaked: [],
+              probes: [],
+              shared: [],
+            };
+            done++;
+            continue;
+          }
           const t0 = Date.now();
           results[i] = await measureDoor(c, cq, cast, catalog, doors[i]);
           done++;
@@ -483,6 +534,10 @@ async function main(): Promise<number> {
       }
     };
     await Promise.all(Array.from({ length: Math.min(POOL, doors.length) }, (_, w) => worker(w)));
+    if (ranOutOfTime)
+      console.log(
+        `${TAG.warn}the gate stopped probing on its own ${BUDGET_WORD} budget. The doors it did not reach are reported as [NOT MEASURED — contention], never as findings.`,
+      );
 
     return report(results, structural);
   } finally {
@@ -1954,6 +2009,7 @@ async function measureDoor(
   const shared: string[] = [];
   let anyMeasured = false;
   const unmeasuredWhy: string[] = [];
+  const contendedWhy: string[] = [];
 
   const discriminators = doorNeedsDiscriminator(door) ? DISCRIMINATOR_VOCAB : [null];
 
@@ -1988,6 +2044,12 @@ async function measureDoor(
     if (discriminator) probe.probe.caller = `${caller.label} [${discriminator}]`;
     if (benign) probe.probe.outcome = `${probe.probe.outcome} [benign args]`;
     for (const w of probe.shared) if (!shared.includes(w)) shared.push(w);
+    if (probe.verdict === "NOT_MEASURED_CONTENTION") {
+      // RED-SUITES 2026-09-21: it is recorded and the door is NOT judged on it.
+      contendedWhy.push(`${caller.label}: ${probe.why}`);
+      probes.push(probe.probe);
+      continue;
+    }
     if (probe.verdict === "UNMEASURED") {
       unmeasuredWhy.push(`${caller.label}: ${probe.why}`);
       // Only keep the noise when nothing else was learned about this door.
@@ -2002,6 +2064,18 @@ async function measureDoor(
 
   if (leaked.length) {
     return { door, verdict: "FAIL", why: "returned or minted rows the caller cannot read", leaked, probes, shared };
+  }
+  if (!anyMeasured && contendedWhy.length) {
+    // RED-SUITES 2026-09-21: nothing was learned AND the database was busy. The honest
+    // answer is "ask again", not "this door has no oracle" and certainly not "clean".
+    return {
+      door,
+      verdict: "NOT_MEASURED_CONTENTION",
+      why: contendedWhy[0]!,
+      leaked: [],
+      probes,
+      shared,
+    };
   }
   if (!anyMeasured) {
     // 🚨 DD-209. A DECLARED REASON RIDES THE FINDING. When a door row carries a
@@ -2487,6 +2561,20 @@ async function runProbeCore(
       await db.query(TX_ROLLBACK());
     } catch {
       /* the connection will be reset by the next begin */
+    }
+    // 🚨 RED-SUITES 2026-09-21 — ANOTHER LANE'S LOCK IS NOT THIS DOOR'S PROBLEM.
+    // A lock timeout, a statement timeout, a deadlock or a serialization failure
+    // says the database was busy, not that this door has no oracle. Calling that
+    // UNMEASURED puts a re-runnable nothing into the standing-debt column and
+    // leaves it there; it gets its own word so a busy run reads as a busy run.
+    const code = (e as { code?: string }).code ?? "";
+    if (CONTENTION_SQLSTATES.has(code)) {
+      return {
+        verdict: "NOT_MEASURED_CONTENTION",
+        why: `${code}: another session held what this probe needed — re-run on a quiet database`,
+        leaked: [],
+        probe: { caller: caller.label, args: filled.sql, outcome: "CONTENTION", detail: `${code} ${(e as Error).message.slice(0, 140)}` },
+      };
     }
     return {
       verdict: "UNMEASURED",
@@ -3500,6 +3588,7 @@ function report(results: DoorResult[], structural: Structural): number {
     );
   const fails = results.filter((r) => r.verdict === "FAIL" && !byDesignFor(r));
   const unmeasured = results.filter((r) => r.verdict === "UNMEASURED");
+  const contended = results.filter((r) => r.verdict === "NOT_MEASURED_CONTENTION");
   const passes = results.filter((r) => r.verdict === "PASS");
 
   console.log("");
@@ -3510,6 +3599,14 @@ function report(results: DoorResult[], structural: Structural): number {
   if (unmeasured.length) {
     console.log(`${TAG.warn}UNMEASURED (${unmeasured.length}) — named, never counted as a pass:`);
     for (const r of unmeasured) console.log(`       ${r.door.schema}.${r.door.fn} — ${r.why}`);
+  }
+  if (contended.length) {
+    console.log("");
+    console.log(
+      `${TAG.warn}[NOT MEASURED — contention] (${contended.length}) — the database was busy, so these doors were not judged at all. ` +
+        `This is NOT a finding and NOT a pass: it is a run to do again on a quiet database. Nothing here is owed to anybody.`,
+    );
+    for (const r of contended) console.log(`       ${r.door.schema}.${r.door.fn} — ${r.why}`);
   }
   if (structural.unresolved.length || structural.notCallable.length) {
     console.log("");
@@ -3559,7 +3656,7 @@ function report(results: DoorResult[], structural: Structural): number {
 
   console.log("");
   console.log(
-    `${fails.length || stale.length ? TAG.fail : TAG.ok}${passes.length} PASS · ${fails.length} FAIL · ${allowed.length} ALLOWED BY DESIGN · ${unmeasured.length} UNMEASURED (of ${results.length} declared signed-in doors)`,
+    `${fails.length || stale.length ? TAG.fail : contended.length ? TAG.warn : TAG.ok}${passes.length} PASS · ${fails.length} FAIL · ${allowed.length} ALLOWED BY DESIGN · ${unmeasured.length} UNMEASURED · ${contended.length} [NOT MEASURED — contention] (of ${results.length} declared signed-in doors)`,
   );
 
   if (TABLE_OUT) {
@@ -3607,6 +3704,19 @@ function report(results: DoorResult[], structural: Structural): number {
     return STRICT ? 1 : 0;
   }
   if (stale.length) return STRICT ? 1 : 0;
+  // 🚨 RED-SUITES 2026-09-21 — EXIT 3: THE RUN DID NOT HAPPEN.
+  //
+  // There are three answers, not two, and only two exit codes were being used for them.
+  // Exit 0 here would say "every declared door was judged and none leaks", which is a lie
+  // the moment one door was skipped for a lock; exit 1 would say "this gate found something",
+  // which is the false red VERIFIER-8 read off a killed run. Exit 3 says what happened: no
+  // finding, and no clean bill either — run it again when the database is quiet.
+  if (contended.length) {
+    console.log(
+      `${TAG.warn}${contended.length} door(s) were not measured because the database was busy, so this run is NOT a clean bill. Re-run it on a quiet database (exit 3 — neither a finding nor a pass).`,
+    );
+    return 3;
+  }
   return 0;
 }
 
