@@ -27,23 +27,27 @@
 // is nothing to check here and deliberately no second opinion: a browser that is not admitted
 // never joins, and one that is joins to notices it could have read the long way anyway.
 //
-// 🚨 ECHO SUPPRESSION, AND THE HONEST GAP IN IT. The manager's envelope carries a client id
-// and the database's notice does not, so `wire: {mode:"raw"}` with `acceptEchoFromSelf: true`
-// is the package's way of SAYING SO in code rather than pretending. The writer therefore
-// hears its own write back. What stops that being the freeze class the realtime doctrine
-// guards against is that the notice is already one per STATEMENT (a fifty-row paste is one
-// message, not fifty), the handler does no work of its own, and the re-read is debounced —
-// so an echo costs one extra read of a page that was being re-read anyway, never an O(n) loop
-// and never a conflict flag. Carrying a real op id would mean the write doors accepting one,
-// which is a change to the doors and not to this file.
+// ECHO SUPPRESSION, BY OP ID — the gap this file used to declare honestly is closed.
+// Until 2026-09-21 the notice had no way of saying WHICH browser's write caused it, so this
+// spec carried `acceptEchoFromSelf: true` and a paragraph admitting the writer heard its own
+// write back. It does not any more. Every write through `@ai-matrx/records` mints a uuid and
+// sends it as the platform envelope key `_op_id`; the store lifts that key out before its
+// undeclared-key guard and before storage — it is NEVER written onto the record — and returns
+// it in the notice as `op_id`; `isOwnOp` recognises it here. A notice this browser caused now
+// costs nothing at all: not a read, not a render.
+//
+// AND THE IDS ARE USED AS IDS. `sink.records(ids)` hands the package the exact records that
+// moved and `useRecords` re-reads THOSE through `custom.read_records_by_ids` — the same
+// ladder, the same masking, the same page ceiling — instead of the whole page. Only
+// `record_ids: null` (the store saying it cannot name them: a reconnect, a tab wake, or more
+// ids than it will list) costs a page.
 
 import {
   defineChannelNamespace,
   subscribeToRealtimeManager,
   type ChannelSpec,
 } from "@ai-matrx/realtime";
-import { tableShapeChanged } from "@ai-matrx/records/react";
-import type { RecordsRealtimePort } from "@ai-matrx/records";
+import { isOwnOp, type RecordsRealtimePort, type Uuid } from "@ai-matrx/records";
 
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 
@@ -68,6 +72,12 @@ interface StoreNotice {
   table_id?: string;
   kind?: "record" | "field" | "table";
   op?: "created" | "updated" | "deleted";
+  /**
+   * The client operation that caused this change, when the writer declared one as `_op_id`.
+   * Null for a server-side write, an agent tool, or any caller that sends none — all of which
+   * are changes this browser has not seen and must read.
+   */
+  op_id?: string | null;
   /** `null` MEANS "re-read the page" — above the cap the database stops listing ids. */
   record_ids?: string[] | null;
   fields_changed?: boolean;
@@ -85,22 +95,22 @@ interface StoreNotice {
  */
 export function createRecordsRealtimePort(organizationId: string): RecordsRealtimePort {
   return {
-    subscribeRecords({ table_id }, onChange) {
+    subscribeRecords({ table_id }, sink) {
       let timer: ReturnType<typeof setTimeout> | null = null;
       let pending = new Set<string>();
       let reReadWholePage = false;
 
       const flush = () => {
         timer = null;
-        const ids = pending;
+        const ids = [...pending] as Uuid[];
         const wholePage = reReadWholePage;
         pending = new Set();
         reReadWholePage = false;
-        // `useRecords` re-reads its whole page on any nudge, so one call is one read whether
-        // we name one id or forty. The ids are passed through anyway: a future consumer that
-        // can re-read a subset should not have to change this file to get them.
-        if (wholePage || ids.size === 0) onChange(table_id);
-        else for (const id of ids) onChange(id);
+        // THE IDS ARE USED AS IDS NOW. `null` is reserved for the one thing it means — the
+        // store could not name them, or the socket was away — and costs a whole page. A nudge
+        // that names three records re-reads three records.
+        if (wholePage) sink.records(null);
+        else if (ids.length > 0) sink.records(ids);
       };
 
       const nudge = () => {
@@ -114,20 +124,26 @@ export function createRecordsRealtimePort(organizationId: string): RecordsRealti
         // `private` means here — the package awaits `setAuth()` before subscribing, which is
         // the step whose absence makes a channel look healthy and deliver nothing forever.
         private: true,
-        // The sender is Postgres, so there is no Matrx envelope to unwrap. See the header for
-        // why `acceptEchoFromSelf` is the honest declaration rather than a shrug.
-        wire: { mode: "raw", acceptEchoFromSelf: true },
+        // The sender is Postgres, so there is no Matrx envelope to unwrap — and echo
+        // suppression is NOT delegated to the manager, because it cannot recognise a
+        // database's notice as ours. It is done below, by the op id the write door carried.
+        wire: { mode: "raw" },
         broadcast: [
           {
             event: "records.changed",
             onMessage: (message) => {
               const notice = (message.data ?? {}) as StoreNotice;
+
+              // OUR OWN WRITE, ALREADY APPLIED — dropped before anything else. The writer's
+              // own column change has already ticked the package's shape revision, and its
+              // own row change already came back from the door it wrote through.
+              if (isOwnOp(notice.op_id)) return;
+
               if (notice.kind === "field" || notice.kind === "table") {
                 // A COLUMN IS NOT A ROW. Re-reading the rows would redraw the same table
-                // without the new column in it, which is the defect the shape-revision
-                // mechanism was built for on 2026-09-21 — this just makes it travel between
-                // browsers as well as between panels of one.
-                tableShapeChanged(table_id);
+                // without the new column in it. The PORT says so through the contract now; it
+                // no longer reaches around it into the package's react entry point.
+                sink.shape();
               }
               if (notice.kind === "field") return;
               if (notice.record_ids == null) reReadWholePage = true;
