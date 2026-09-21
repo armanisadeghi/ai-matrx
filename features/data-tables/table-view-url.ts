@@ -21,6 +21,11 @@
  */
 
 import {
+  parseColumnSummaries,
+  serializeColumnSummaries,
+  type ColumnSummaryMap,
+} from "./column-summaries";
+import {
   isActiveFilter,
   type ColumnFilter,
   type ColumnFilterMap,
@@ -66,6 +71,8 @@ export type TableViewState = {
   freezeFirst: boolean;
   /** Show whole cell text on as many lines as it needs, instead of one line ending in "…". */
   wrap: boolean;
+  /** Summary-bar choice per column (sum / avg / count …), keyed by field name. */
+  summaries: ColumnSummaryMap;
 };
 
 export type TableLayoutMode = "auto" | "fit" | "scroll";
@@ -85,7 +92,7 @@ export type TableViewDefaults = {
 
 /** Query-string keys this module owns. Nothing else may write them. */
 export const TABLE_VIEW_PARAM_KEYS = [
-  "q", "sort", "f", "p", "ps", "hide", "ord", "lay", "w", "den", "frz", "wrap",
+  "q", "sort", "f", "p", "ps", "hide", "ord", "lay", "w", "den", "frz", "wrap", "agg",
 ] as const;
 
 /**
@@ -194,6 +201,7 @@ export function parseTableViewParams(
     density: parseRowDensityChoice(params.get("den")),
     freezeFirst: params.get("frz") === "1",
     wrap: params.get("wrap") === "1",
+    summaries: parseColumnSummaries(params.get("agg")),
   };
 }
 
@@ -248,6 +256,7 @@ export function tableViewParamPatch(
     den: state.density === "default" ? null : state.density,
     frz: state.freezeFirst ? "1" : null,
     wrap: state.wrap ? "1" : null,
+    agg: serializeColumnSummaries(state.summaries),
   };
 }
 
@@ -301,6 +310,7 @@ export function sameTableView(a: TableViewState, b: TableViewState): boolean {
     a.density === b.density &&
     a.freezeFirst === b.freezeFirst &&
     a.wrap === b.wrap &&
+    serializeColumnSummaries(a.summaries) === serializeColumnSummaries(b.summaries) &&
     serializeColumnWidths(a.widths) === serializeColumnWidths(b.widths) &&
     JSON.stringify(activeFiltersOnly(a.filters)) ===
       JSON.stringify(activeFiltersOnly(b.filters))

@@ -22,6 +22,7 @@
  * discipline `crm.saved_view` and `ListViewPrefs.version` already use.
  */
 
+import { isColumnSummaryMap, type ColumnSummaryMap } from "../column-summaries";
 import type { ColumnFilterMap } from "../column-filters";
 import {
   activeFiltersOnly,
@@ -56,6 +57,7 @@ export type SavedViewDefinition = {
   density: TableRowDensityChoice;
   freezeFirst: boolean;
   wrap: boolean;
+  summaries: ColumnSummaryMap;
 };
 
 function isStringArray(v: unknown): v is string[] {
@@ -76,6 +78,7 @@ export function emptySavedViewDefinition(): SavedViewDefinition {
     density: "default",
     freezeFirst: false,
     wrap: false,
+    summaries: {},
   };
 }
 
@@ -103,6 +106,7 @@ export function definitionFromViewState(
     density: state.density,
     freezeFirst: state.freezeFirst,
     wrap: state.wrap,
+    summaries: { ...state.summaries },
   };
 }
 
@@ -129,6 +133,7 @@ export function viewStateFromDefinition(
     density: definition.density,
     freezeFirst: definition.freezeFirst,
     wrap: definition.wrap,
+    summaries: definition.summaries,
   };
 }
 
@@ -168,6 +173,7 @@ export function parseSavedViewDefinition(raw: unknown): SavedViewDefinition {
   if (typeof v.density === "string") out.density = parseRowDensityChoice(v.density);
   if (typeof v.freezeFirst === "boolean") out.freezeFirst = v.freezeFirst;
   if (typeof v.wrap === "boolean") out.wrap = v.wrap;
+  if (isColumnSummaryMap(v.summaries)) out.summaries = v.summaries;
 
   return out;
 }
@@ -185,7 +191,8 @@ export function definitionIsEmpty(d: SavedViewDefinition): boolean {
     Object.keys(d.widths).length === 0 &&
     d.density === "default" &&
     !d.freezeFirst &&
-    !d.wrap
+    !d.wrap &&
+    Object.keys(d.summaries).length === 0
   );
 }
 
@@ -232,5 +239,6 @@ export function describeDefinition(
   else if (d.density === "normal") parts.push("normal rows");
   if (d.freezeFirst) parts.push("first column frozen");
   if (d.wrap) parts.push("text wrapped");
+  if (Object.keys(d.summaries).length > 0) parts.push("summary bar");
   return parts.length > 0 ? parts.join(" · ") : "Everything, unsorted";
 }

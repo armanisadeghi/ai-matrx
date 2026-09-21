@@ -26,6 +26,7 @@ const viewState = (over: Partial<TableViewState> = {}): TableViewState => ({
   density: "default",
   freezeFirst: false,
   wrap: false,
+  summaries: {},
   ...over,
 });
 
@@ -60,6 +61,7 @@ describe("definitionFromViewState", () => {
       density: "default",
       freezeFirst: false,
       wrap: false,
+      summaries: {},
     });
   });
 

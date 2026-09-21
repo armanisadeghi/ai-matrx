@@ -34,6 +34,7 @@ import { useCallback, useMemo } from "react";
 import { useMirroredUrlState } from "@ai-matrx/kit/url-state";
 
 import type { ColumnFilterMap } from "../column-filters";
+import type { ColumnSummaryKind, ColumnSummaryMap } from "../column-summaries";
 import {
   parseTableViewParams,
   sameTableView,
@@ -80,6 +81,9 @@ export type TableViewUrlState = {
   setFreezeFirstColumn: (value: boolean) => void;
   wrapText: boolean;
   setWrapText: (value: boolean) => void;
+  /** Summary-bar choice per column; `null` clears one. */
+  columnSummaries: ColumnSummaryMap;
+  setColumnSummary: (fieldName: string, kind: ColumnSummaryKind | null) => void;
   /** The whole view as one object — what a saved view stores. */
   viewState: TableViewState;
   /** Apply a whole view at once (a saved view being opened). */
@@ -213,6 +217,17 @@ export function useTableViewUrlState(options: {
       (wrap: boolean) => patchState({ wrap }),
       [patchState],
     ),
+    columnSummaries: state.summaries,
+    setColumnSummary: useCallback(
+      (fieldName: string, kind: ColumnSummaryKind | null) =>
+        patchWhole((prev) => {
+          const summaries = { ...prev.summaries };
+          if (kind === null) delete summaries[fieldName];
+          else summaries[fieldName] = kind;
+          return { ...prev, summaries };
+        }),
+      [patchWhole],
+    ),
     viewState: state,
     applyViewState: useCallback(
       (next: TableViewState) => patchWhole(next),
@@ -233,6 +248,7 @@ export function useTableViewUrlState(options: {
       state.density !== "default" ||
       state.freezeFirst ||
       state.wrap ||
+      Object.keys(state.summaries).length > 0 ||
       Object.keys(state.filters).length > 0,
   };
 }

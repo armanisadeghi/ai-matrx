@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Table,
   TableBody,
+  TableFooter,
   TableCell,
   TableHead,
   TableHeader,
@@ -73,6 +74,8 @@ import {
   resolveViewColumns,
 } from "@/features/data-tables/table-view-url";
 import { useTableLayoutDefaults } from "@/features/data-tables/hooks/useTableLayoutDefaults";
+import { ColumnSummaryCell } from "@/features/data-tables/components/ColumnSummaryCell";
+import { computeColumnSummary } from "@/features/data-tables/column-summaries";
 import { ColumnViewMenu } from "@/features/data-tables/components/ColumnViewMenu";
 import {
   useTableRealtime,
@@ -454,6 +457,8 @@ const UserTableViewer = ({
     setFreezeFirstColumn,
     wrapText,
     setWrapText,
+    columnSummaries,
+    setColumnSummary,
     viewState,
     applyViewState,
     resetView,
@@ -4748,6 +4753,54 @@ const UserTableViewer = ({
               </TableRow>
             )}
           </TableBody>
+          {/* Summary bar (Airtable's; Sheets' status-bar aggregates). Per-view
+              choice per column, computed over the rows the browser holds; when
+              that is only a page of the table the cell says so. Hidden on
+              mobile — the row of "Summarize" affordances is desktop furniture. */}
+          {!isMobile && displayRows.length > 0 && (
+            <TableFooter className="sticky bottom-0 z-10 bg-gray-50 dark:bg-gray-900">
+              <TableRow className="hover:bg-transparent">
+                <TableCell className="sticky left-0 z-10 w-10 bg-inherit px-2 md:px-3" />
+                {viewFields.map((field) => {
+                  const kind = columnSummaries[field.field_name] ?? null;
+                  const summaryRows = withComputedColumns(fullDatasetCache ?? displayRows, fields).rows;
+                  const partial = summaryRows.length < effectiveTotalCount;
+                  return (
+                    <TableCell
+                      key={field.id}
+                      style={columnWidthStyle(field.field_name)}
+                      className={cn(
+                        "max-w-[70vw] px-1 py-0.5 md:max-w-0",
+                        freezeFirstColumn &&
+                          field.field_name === firstViewFieldName &&
+                          "sticky left-10 z-10 bg-inherit",
+                      )}
+                    >
+                      <ColumnSummaryCell
+                        displayName={field.display_name}
+                        dataType={field.data_type}
+                        kind={kind}
+                        result={
+                          kind
+                            ? computeColumnSummary(
+                                summaryRows,
+                                field.field_name,
+                                kind,
+                                field.data_type,
+                                resolveFieldFormat(field.data_type, field.metadata),
+                              )
+                            : null
+                        }
+                        partial={partial}
+                        onChange={(next) => setColumnSummary(field.field_name, next)}
+                      />
+                    </TableCell>
+                  );
+                })}
+                <TableCell className="w-[140px]" />
+              </TableRow>
+            </TableFooter>
+          )}
         </Table>
       </div>
       </NonEditableContextMenu>

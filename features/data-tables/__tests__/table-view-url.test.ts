@@ -28,6 +28,7 @@ const baseState = (over: Partial<TableViewState> = {}): TableViewState => ({
   density: "default",
   freezeFirst: false,
   wrap: false,
+  summaries: {},
   ...over,
 });
 
@@ -84,6 +85,7 @@ describe("parseTableViewParams", () => {
       density: "default",
       freezeFirst: false,
       wrap: false,
+      summaries: {},
     });
   });
 
@@ -125,6 +127,7 @@ describe("tableViewParamPatch", () => {
       den: null,
       frz: null,
       wrap: null,
+      agg: null,
     });
   });
 
