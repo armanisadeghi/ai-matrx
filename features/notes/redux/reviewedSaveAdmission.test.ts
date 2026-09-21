@@ -27,6 +27,29 @@ function query(result: unknown) {
   value.select.mockReturnValue(value); value.eq.mockReturnValue(value); value.is.mockReturnValue(value); value.update.mockReturnValue(value); value.insert.mockReturnValue(value); value.single.mockResolvedValue(result); value.maybeSingle.mockResolvedValue(result);
   return value;
 }
+/**
+ * THE PRE-WRITE READ IS GONE on the saveNote path (the reviewed snapshot drains
+ * through the same queue): the thunk hands `persistNoteUpdate` the acknowledged
+ * organization AND context links, so the service no longer SELECTs the stored
+ * row — nor its associations — before writing it. Each case sequences ONLY the
+ * calls the new path makes; a returning pre-write read spills one call past the
+ * end of that sequence onto `preWriteRead`, and `noPreWriteRead()` fails on it.
+ */
+function savePath(...chains: Array<ReturnType<typeof query>>) {
+  // An extra read must FAIL the way an exhausted mock used to, or a drain loop
+  // would keep finding a readable row and never stop.
+  const preWriteRead = query({ data: null, error: { message: "unexpected extra supabase call — the saveNote path makes no pre-write read" } });
+  const from = jest.fn();
+  for (const chain of chains) from.mockReturnValueOnce(chain);
+  from.mockReturnValue(preWriteRead);
+  schema.mockReturnValue({ from });
+  return {
+    from,
+    preWriteRead,
+    noPreWriteRead: () => expect(preWriteRead.select).not.toHaveBeenCalled(),
+  };
+}
+
 function reducer(state: RootState | undefined, action: { type: string }): RootState {
   const next = createSlimRootReducer()(state, action);
   if (action.type === "test/seed-user") return { ...next, userAuth: { ...next.userAuth, id: USER } };
@@ -123,13 +146,14 @@ describe("reviewed Notes save admission", () => {
     let resume: (() => void) | undefined;
     const auth = new Promise<void>((resolve) => { resume = resolve; });
     getSession.mockImplementationOnce(async () => { await auth; return { data: { session: { user: { id: USER } } }, error: null }; });
-    const read = query({ data: note(), error: null }); const written = query({ data: note({ tags: ["reviewed"], version: 8 }), error: null });
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(read).mockReturnValueOnce(written) });
+    const written = query({ data: note({ tags: ["reviewed"], version: 8 }), error: null });
+    const path = savePath(written);
     const observation = store.dispatch(saveReviewedNoteSnapshot({ permit: capture.permit, currentSource: source }));
     source.displayedPhysicalSnapshot.tags?.push("unreviewed");
     if (!resume) throw new Error("Expected auth gate"); resume();
     await expect(observation.result).resolves.toMatchObject({ status: "physical-saved", attemptedFields: { physical: { tags: ["reviewed"] } }, receipt: { note: { tags: ["reviewed"] } } });
     expect(written.update.mock.calls[0][0]).toMatchObject({ tags: ["reviewed"] });
+    path.noPreWriteRead();
   });
 
   it("refuses extra dirt added after capture even when the caller retains the old source", async () => {
@@ -165,13 +189,14 @@ describe("reviewed Notes save admission", () => {
     let finish: ((value: unknown) => void) | undefined;
     let entered: (() => void) | undefined;
     const entering = new Promise<void>((resolve) => { entered = resolve; });
-    const existing = query({ data: note(), error: null }); const updated = query(undefined);
+    const updated = query(undefined);
     updated.maybeSingle.mockImplementation(() => new Promise((resolve) => { finish = resolve; entered?.(); }));
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(updated) });
+    const path = savePath(updated);
     const drain = store.dispatch(saveNote(ID)); await entering;
     await expect(store.dispatch(saveReviewedNoteSnapshot({ permit, currentSource: source })).result).resolves.toMatchObject({ status: "refused", reason: "queue-busy" });
     if (!finish) throw new Error("transport did not start"); finish({ data: note({ content: "reviewed", version: 8 }), error: null });
     await expect(drain.unwrap()).resolves.toBeUndefined(); expect(updated.update).toHaveBeenCalledTimes(1);
+    path.noPreWriteRead();
   });
 
   it("requires a fresh capture to retry an unacknowledged failed attempt", async () => {
@@ -184,20 +209,19 @@ describe("reviewed Notes save admission", () => {
     expect(await store.dispatch(saveReviewedNoteSnapshot({ permit, currentSource: source })).result).toBe(first);
     expect(schema).toHaveBeenCalledTimes(calls);
     const retry = captured(store);
-    const existing = query({ data: note(), error: null }); const updated = query({ data: note({ content: "reviewed", version: 8 }), error: null });
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(updated) });
+    const updated = query({ data: note({ content: "reviewed", version: 8 }), error: null });
+    const path = savePath(updated);
     await expect(store.dispatch(saveReviewedNoteSnapshot({ permit: retry.permit, currentSource: retry.source })).result).resolves.toMatchObject({ status: "physical-saved", receipt: { note: { version: 8 } } });
     expect(updated.update).toHaveBeenCalledTimes(1);
+    path.noPreWriteRead();
   });
 
   it("captures before pending re-entry and binds each observer to its exact attempt", async () => {
     const store = storeWithNote(); store.dispatch(setNoteField({ id: ID, field: "content", value: "first" }));
     const first = captured(store); const unrelated = captured(store);
-    const existing = query({ data: note(), error: null });
     const saved = query({ data: note({ content: "first", version: 8 }), error: null });
-    const reread = query({ data: note({ content: "first", version: 8 }), error: null });
     const replay = query({ data: note({ content: "later", version: 9 }), error: null });
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(saved).mockReturnValueOnce(reread).mockReturnValueOnce(replay) });
+    const path = savePath(saved, replay);
     const reentries: NoteSaveObservation[] = [];
     const unsubscribe = store.subscribe(() => {
       unsubscribe();
@@ -218,13 +242,14 @@ describe("reviewed Notes save admission", () => {
     expect(saved.update.mock.calls[0][0]).toMatchObject({ content: "first" });
     expect(replay.update.mock.calls[0][0]).toMatchObject({ content: "later" });
     expect(store.getState().notes.notes[ID]).toMatchObject({ content: "later", version: 9, _dirty: false });
+    path.noPreWriteRead();
   });
 
   it("rebases a reviewed mine choice before capturing the next successful CAS", async () => {
     const store = storeWithNote(); store.dispatch(setNoteField({ id: ID, field: "content", value: "mine" }));
-    const prior = query({ data: note(), error: null }); const missed = query({ data: null, error: null });
+    const missed = query({ data: null, error: null });
     const remote = note({ content: "theirs", version: 8 }); const winner = query({ data: remote, error: null });
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(prior).mockReturnValueOnce(missed).mockReturnValueOnce(winner) });
+    const conflictPath = savePath(missed, winner);
     const first = captured(store);
     await expect(store.dispatch(saveReviewedNoteSnapshot({ permit: first.permit, currentSource: first.source })).result).resolves.toMatchObject({ status: "refused", reason: "conflict" });
     store.dispatch(captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
@@ -234,10 +259,12 @@ describe("reviewed Notes save admission", () => {
     const next = captured(store);
     expect(next.source.editBase.version).toBe(8);
     expect(next.source.acknowledgedPhysicalSnapshot.content).toBe("theirs");
-    const read = query({ data: remote, error: null }); const written = query({ data: note({ content: "mine", version: 9 }), error: null });
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(read).mockReturnValueOnce(written) });
+    const written = query({ data: note({ content: "mine", version: 9 }), error: null });
+    const path = savePath(written);
     await expect(store.dispatch(saveReviewedNoteSnapshot({ permit: next.permit, currentSource: next.source })).result).resolves.toMatchObject({ status: "physical-saved", receipt: { note: { content: "mine", version: 9 } } });
     expect(written.update).toHaveBeenCalledTimes(1);
     expect(written.eq).toHaveBeenCalledWith("version", 8);
+    conflictPath.noPreWriteRead();
+    path.noPreWriteRead();
   });
 });

@@ -68,6 +68,29 @@ function query(result: unknown) {
   return chain;
 }
 
+/**
+ * THE PRE-WRITE READ IS GONE on the saveNote path. The thunk hands
+ * `persistNoteUpdate` both the acknowledged organization and the acknowledged
+ * context links, so the service no longer SELECTs the stored row — nor its
+ * associations — before writing it. Each case sequences ONLY the calls the new
+ * path makes; a returning pre-write read would spill one call past the end of
+ * that sequence onto `preWriteRead`, and `noPreWriteRead()` fails on it.
+ */
+function savePath(...chains: Array<ReturnType<typeof query>>) {
+  // An extra read must FAIL the way an exhausted mock used to, or a drain loop
+  // would keep finding a readable row and never stop.
+  const preWriteRead = query({ data: null, error: { message: "unexpected extra supabase call — the saveNote path makes no pre-write read" } });
+  const from = jest.fn();
+  for (const chain of chains) from.mockReturnValueOnce(chain);
+  from.mockReturnValue(preWriteRead);
+  schema.mockReturnValue({ from });
+  return {
+    from,
+    preWriteRead,
+    noPreWriteRead: () => expect(preWriteRead.select).not.toHaveBeenCalled(),
+  };
+}
+
 function createNotesTestRootReducer(userId: () => string) {
   const slimRootReducer = createSlimRootReducer();
   return (state: RootState | undefined, action: UnknownAction): RootState => {
@@ -230,16 +253,17 @@ describe("saveNote receipt integration", () => {
   });
 
   it("accepts a paired folder display name while persisting only its admitted ID", async () => {
-    const existing = query({ data: note(), error: null });
     const folder = query({ data: { id: FOLDER_ID, name: "Archive" }, error: null });
     const updated = query({ data: note({ folder_id: FOLDER_ID, folder_name: "Authoritative Archive", version: 8 }), error: null });
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(folder).mockReturnValueOnce(updated) });
+    const path = savePath(folder, updated);
     const store = storeWithNote();
     store.dispatch(setNoteFields({ id: NOTE_ID, updates: { folder_id: FOLDER_ID, folder_name: "Archive" } }));
 
     const action = await store.dispatch(saveNote(NOTE_ID));
 
     expect(saveNote.fulfilled.match(action)).toBe(true);
+    path.noPreWriteRead();
+    expect(path.from).toHaveBeenCalledTimes(2);
     expect(updated.update).toHaveBeenCalledWith({ folder_id: FOLDER_ID, folder_name: "Archive", version: 8 });
     expect(store.getState().notes.notes[NOTE_ID].folder_name).toBe("Authoritative Archive");
     expect(store.getState().notes.notes[NOTE_ID]._dirtyFields.size).toBe(0);
@@ -256,19 +280,17 @@ describe("saveNote receipt integration", () => {
   });
 
   it("stores the full guarded-update CAS row before rejecting and releases its queue", async () => {
-    const existing = query({ data: note(), error: null });
     const missedCas = query({ data: null, error: null });
     const winner = query({ data: note({ content: "remote winner", version: 8, updated_at: "2026-09-12T00:01:00.000Z" }), error: null });
-    schema.mockReturnValue({ from: jest.fn()
-      .mockReturnValueOnce(existing)
-      .mockReturnValueOnce(missedCas)
-      .mockReturnValueOnce(winner) });
+    const path = savePath(missedCas, winner);
     const store = storeWithNote();
     store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "local draft" }));
 
     const action = await store.dispatch(saveNote(NOTE_ID));
 
     expect(saveNote.rejected.match(action)).toBe(true);
+    path.noPreWriteRead();
+    expect(path.from).toHaveBeenCalledTimes(2);
     const record = store.getState().notes.notes[NOTE_ID];
     expect(record._conflictDecision).toMatchObject({
       expectedVersion: 7,
@@ -288,22 +310,18 @@ describe("saveNote receipt integration", () => {
     // The live case: the desktop sync wrote file_path onto the row (version 8)
     // while the browser still held version 7. The user's edit is against a base
     // whose edited fields the server still holds byte-for-byte.
-    const existing = query({ data: note(), error: null });
     const missedCas = query({ data: null, error: null });
     const bumpedByDesktop = query({ data: note({ version: 8, file_path: "/Notes/x.md", last_device_id: "dev-1", updated_at: "2026-09-12T00:00:01.000Z" }), error: null });
     const landed = query({ data: note({ content: "local draft", version: 9, file_path: "/Notes/x.md", last_device_id: "dev-1", updated_at: "2026-09-12T00:00:02.000Z" }), error: null });
-    const from = jest.fn()
-      .mockReturnValueOnce(existing)
-      .mockReturnValueOnce(missedCas)
-      .mockReturnValueOnce(bumpedByDesktop)
-      .mockReturnValueOnce(landed);
-    schema.mockReturnValue({ from });
+    const path = savePath(missedCas, bumpedByDesktop, landed);
     const store = storeWithNote();
     store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "local draft" }));
 
     const action = await store.dispatch(saveNote(NOTE_ID));
 
     expect(saveNote.fulfilled.match(action)).toBe(true);
+    path.noPreWriteRead();
+    expect(path.from).toHaveBeenCalledTimes(3);
     // The retry CAS'd on the number the row actually held.
     expect(landed.eq).toHaveBeenCalledWith("version", 8);
     const record = store.getState().notes.notes[NOTE_ID];
@@ -316,16 +334,16 @@ describe("saveNote receipt integration", () => {
   });
 
   it("still reports a real conflict when the server's edited fields moved, with no retry", async () => {
-    const existing = query({ data: note(), error: null });
     const missedCas = query({ data: null, error: null });
     const winner = query({ data: note({ content: "remote winner", version: 8 }), error: null });
-    const from = jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(missedCas).mockReturnValueOnce(winner);
-    schema.mockReturnValue({ from });
+    const path = savePath(missedCas, winner);
     const store = storeWithNote();
     store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "local draft" }));
     const action = await store.dispatch(saveNote(NOTE_ID));
     expect(saveNote.rejected.match(action)).toBe(true);
-    expect(from).toHaveBeenCalledTimes(3);
+    // The CAS and its one conflict read — the pre-write read is no longer made.
+    path.noPreWriteRead();
+    expect(path.from).toHaveBeenCalledTimes(2);
     expect(store.getState().notes.notes[NOTE_ID]._conflictDecision?.currentVersion).toBe(8);
   });
 
@@ -334,11 +352,10 @@ describe("saveNote receipt integration", () => {
     const folder = query({ data: { id: FOLDER_ID, name: "Draft" }, error: null });
     const inserted = query({ data: note({ id: generatedId, content: "typed", label: "New Note", folder_id: FOLDER_ID, folder_name: "Draft", version: 1 }), error: null });
     // Second save: the desktop sync stamped file_path (version 2) in between.
-    const existing = query({ data: note({ id: generatedId, content: "typed", label: "New Note", folder_id: FOLDER_ID, folder_name: "Draft", version: 2, file_path: "/Notes/Draft/n.md" }), error: null });
     const missedCas = query({ data: null, error: null });
     const current = query({ data: note({ id: generatedId, content: "typed", label: "New Note", folder_id: FOLDER_ID, folder_name: "Draft", version: 2, file_path: "/Notes/Draft/n.md" }), error: null });
     const landed = query({ data: note({ id: generatedId, content: "typed more", label: "New Note", folder_id: FOLDER_ID, folder_name: "Draft", version: 3, file_path: "/Notes/Draft/n.md" }), error: null });
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(folder).mockReturnValueOnce(inserted).mockReturnValueOnce(existing).mockReturnValueOnce(missedCas).mockReturnValueOnce(current).mockReturnValueOnce(landed) });
+    const path = savePath(folder, inserted, missedCas, current, landed);
     const store = storeWithNote();
     store.dispatch(createAutogeneratedNote({ id: generatedId, userId: "user-1", folder: { id: FOLDER_ID, name: "Draft", organizationId: ORG }, organizationId: ORG, instanceId: "main" }));
     store.dispatch(setNoteField({ id: generatedId, field: "content", value: "typed" }));
@@ -351,6 +368,9 @@ describe("saveNote receipt integration", () => {
     store.dispatch(setNoteField({ id: generatedId, field: "content", value: "typed more" }));
     const second = await store.dispatch(saveNote(generatedId));
     expect(saveNote.fulfilled.match(second)).toBe(true);
+    // Folder admission + insert, then the CAS, its conflict read and the retry.
+    path.noPreWriteRead();
+    expect(path.from).toHaveBeenCalledTimes(5);
     expect(landed.eq).toHaveBeenCalledWith("version", 2);
     const after = store.getState().notes.notes[generatedId];
     expect(after._conflictDecision).toBeNull();
@@ -359,9 +379,8 @@ describe("saveNote receipt integration", () => {
   });
 
   it("does not advance a context-only readback over a physical edit typed while edges settle", async () => {
-    const existing = query({ data: note({ version: 8, updated_at: "2026-09-12T01:00:00.000Z" }), error: null });
     const unchanged = query({ data: note({ version: 8, updated_at: "2026-09-12T01:00:00.000Z" }), error: null });
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(unchanged) });
+    const path = savePath(unchanged);
     let release: ((value: { ok: true; data: null }) => void) | undefined;
     let started: (() => void) | undefined;
     const startedPromise = new Promise<void>((resolve) => { started = resolve; });
@@ -370,6 +389,12 @@ describe("saveNote receipt integration", () => {
     store.dispatch(setNoteField({ id: NOTE_ID, field: "project_id", value: PROJECT_ID }));
     const pending = store.dispatch(saveNote(NOTE_ID));
     await startedPromise;
+    // The context-only readback has already run and the edge write is in
+    // flight: everything this save reads has been read, and the pre-write read
+    // was not one of it. (Asserted here, not after `pending`, because the
+    // typed edit below makes the queue drain a second, replayed save.)
+    path.noPreWriteRead();
+    expect(path.from).toHaveBeenCalledTimes(1);
     store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "later physical edit" }));
     release?.({ ok: true, data: null });
     await pending;
@@ -380,9 +405,8 @@ describe("saveNote receipt integration", () => {
   });
 
   it("keeps newer physical dirt through a partial context receipt", async () => {
-    const existing = query({ data: note({ version: 8, updated_at: "2026-09-12T01:00:00.000Z" }), error: null });
     const unchanged = query({ data: note({ version: 8, updated_at: "2026-09-12T01:00:00.000Z" }), error: null });
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(unchanged) });
+    const path = savePath(unchanged);
     let release: ((value: { ok: true; data: null }) => void) | undefined;
     let started: (() => void) | undefined;
     const startedPromise = new Promise<void>((resolve) => { started = resolve; });
@@ -401,12 +425,12 @@ describe("saveNote receipt integration", () => {
     expect(record).toMatchObject({ version: 7, content: "later physical edit", project_id: PROJECT_ID, task_id: TASK_ID });
     expect(record._dirtyFields).toEqual(new Set(["content", "task_id"]));
     expect(record._saving).toBe(false);
+    path.noPreWriteRead();
   });
 
   it("refuses partial receipt settlement after its session changes", async () => {
-    const existing = query({ data: note({ version: 8 }), error: null });
     const unchanged = query({ data: note({ version: 8 }), error: null });
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(unchanged) });
+    const path = savePath(unchanged);
     let release: ((value: { ok: false; error: { message: string } }) => void) | undefined;
     let started: (() => void) | undefined;
     const startedPromise = new Promise<void>((resolve) => { started = resolve; });
@@ -422,12 +446,12 @@ describe("saveNote receipt integration", () => {
     expect(store.getState().notes.notes[NOTE_ID]._dirty).toBe(true);
     expect(store.getState().notes.notes[NOTE_ID]._saving).toBe(false);
     expect(store.getState().notes._savingNoteIds).not.toContain(NOTE_ID);
+    path.noPreWriteRead();
   });
 
   it("retains partial-save dirt and clears busy state when both session and Redux identity change", async () => {
-    const existing = query({ data: note({ version: 8 }), error: null });
     const unchanged = query({ data: note({ version: 8 }), error: null });
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(unchanged) });
+    const path = savePath(unchanged);
     let release: ((value: { ok: false; error: { message: string } }) => void) | undefined;
     let started: (() => void) | undefined;
     const startedPromise = new Promise<void>((resolve) => { started = resolve; });
@@ -445,12 +469,12 @@ describe("saveNote receipt integration", () => {
     expect(saveNote.rejected.match(action)).toBe(true);
     expect(store.getState().notes.notes[NOTE_ID]).toMatchObject({ _dirty: true, _saving: false, project_id: PROJECT_ID });
     expect(store.getState().notes._savingNoteIds).not.toContain(NOTE_ID);
+    path.noPreWriteRead();
   });
 
   it("does not regress a clean newer remote base after an unchanged receipt", async () => {
-    const existing = query({ data: note({ version: 8, updated_at: "2026-09-12T01:00:00.000Z" }), error: null });
     const unchanged = query({ data: note({ version: 8, updated_at: "2026-09-12T01:00:00.000Z" }), error: null });
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(unchanged) });
+    const path = savePath(unchanged);
     let release: ((value: { ok: true; data: null }) => void) | undefined;
     let started: (() => void) | undefined;
     const startedPromise = new Promise<void>((resolve) => { started = resolve; });
@@ -464,13 +488,13 @@ describe("saveNote receipt integration", () => {
     await pending;
 
     expect(store.getState().notes.notes[NOTE_ID]).toMatchObject({ version: 9, updated_at: "2026-09-12T02:00:00.000Z" });
+    path.noPreWriteRead();
   });
 
   it("joins a subscriber reentry while the inner thunk is still dispatching pending", async () => {
-    const existing = query({ data: note(), error: null });
     let release: ((value: { data: Note; error: null }) => void) | undefined;
     const updated = query(new Promise((resolve) => { release = resolve; }));
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(updated) });
+    const path = savePath(updated);
     let subscriberSave: unknown;
     let reenterSave: (() => unknown) | undefined;
     const store = storeWithNote({
@@ -487,14 +511,13 @@ describe("saveNote receipt integration", () => {
     release?.({ data: note({ content: "queued", version: 8 }), error: null });
     await first;
     expect(updated.update).toHaveBeenCalledTimes(1);
+    path.noPreWriteRead();
   });
 
   it("drains an edit made by a fulfilled subscriber before releasing its queue entry", async () => {
-    const firstExisting = query({ data: note(), error: null });
     const firstUpdate = query({ data: note({ content: "first", version: 8 }), error: null });
-    const secondExisting = query({ data: note({ content: "first", version: 8 }), error: null });
     const secondUpdate = query({ data: note({ content: "second", version: 9 }), error: null });
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(firstExisting).mockReturnValueOnce(firstUpdate).mockReturnValueOnce(secondExisting).mockReturnValueOnce(secondUpdate) });
+    const path = savePath(firstUpdate, secondUpdate);
     let edited = false;
     let applySecondEdit: (() => unknown) | undefined;
     const store = storeWithNote({
@@ -512,6 +535,7 @@ describe("saveNote receipt integration", () => {
     await store.dispatch(saveNote(NOTE_ID));
     expect(firstUpdate.update.mock.calls.length + secondUpdate.update.mock.calls.length).toBe(2);
     expect(store.getState().notes.notes[NOTE_ID]._dirty).toBe(false);
+    path.noPreWriteRead();
   });
 
   it("keeps queues isolated for two configured stores holding the same note ID", async () => {
@@ -528,10 +552,9 @@ describe("saveNote receipt integration", () => {
   });
 
   it("refuses stale settlement after authentication changes before the response", async () => {
-    const existing = query({ data: note(), error: null });
     let release: ((value: { data: Note; error: null }) => void) | undefined;
     const updated = query(new Promise((resolve) => { release = resolve; }));
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(updated) });
+    const path = savePath(updated);
     const store = storeWithNote();
     store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "local" }));
     const pending = store.dispatch(saveNote(NOTE_ID));
@@ -540,12 +563,12 @@ describe("saveNote receipt integration", () => {
     const action = await pending;
     expect(saveNote.rejected.match(action)).toBe(true);
     expect(store.getState().notes.notes[NOTE_ID]._dirty).toBe(true);
+    path.noPreWriteRead();
   });
 
   it("refuses a fulfilled-subscriber user switch before the next drain mutation", async () => {
-    const existing = query({ data: note(), error: null });
     const updated = query({ data: note({ content: "first", version: 8 }), error: null });
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(updated) });
+    const path = savePath(updated);
     let userId = "user-1";
     let editLater: (() => unknown) | undefined;
     let switched = false;
@@ -568,6 +591,7 @@ describe("saveNote receipt integration", () => {
     expect(saveNote.rejected.match(action)).toBe(true);
     expect(updated.update).toHaveBeenCalledTimes(1);
     expect(store.getState().notes.notes[NOTE_ID]).toMatchObject({ content: "later", _dirty: true, _saving: false });
+    path.noPreWriteRead();
   });
 
   it("retains an autogenerated draft after a precommit insert failure and retries its stable ID", async () => {
@@ -653,10 +677,9 @@ describe("saveNote receipt integration", () => {
 
   it("uses the configured autosave middleware and joins a timer save to an in-flight manual save", async () => {
     jest.useFakeTimers();
-    const existing = query({ data: note(), error: null });
     let release: ((value: { data: Note; error: null }) => void) | undefined;
     const updated = query(new Promise((resolve) => { release = resolve; }));
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(updated) });
+    const path = savePath(updated);
     const store = storeWithNote({ autoSave: true });
     store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "manual and timer" }));
 
@@ -668,15 +691,14 @@ describe("saveNote receipt integration", () => {
     expect(updated.update).toHaveBeenCalledTimes(1);
     expect(store.getState().notes.notes[NOTE_ID]).toMatchObject({ _dirty: false, _saving: false });
     jest.useRealTimers();
+    path.noPreWriteRead();
   });
 
   it("keeps configured autosave timers isolated across two stores with the same note ID", async () => {
     jest.useFakeTimers();
-    const firstExisting = query({ data: note(), error: null });
     const firstUpdated = query({ data: note({ content: "one", version: 8 }), error: null });
-    const secondExisting = query({ data: note(), error: null });
     const secondUpdated = query({ data: note({ content: "two", version: 8 }), error: null });
-    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(firstExisting).mockReturnValueOnce(firstUpdated).mockReturnValueOnce(secondExisting).mockReturnValueOnce(secondUpdated) });
+    const path = savePath(firstUpdated, secondUpdated);
     const firstStore = storeWithNote({ autoSave: true });
     const secondStore = storeWithNote({ autoSave: true });
     firstStore.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "one" }));
@@ -689,6 +711,7 @@ describe("saveNote receipt integration", () => {
     expect(firstStore.getState().notes.notes[NOTE_ID]._dirty).toBe(false);
     expect(secondStore.getState().notes.notes[NOTE_ID]._dirty).toBe(false);
     jest.useRealTimers();
+    path.noPreWriteRead();
   });
 
   it("does not schedule a save loop when configured autosave observes a clean note", async () => {

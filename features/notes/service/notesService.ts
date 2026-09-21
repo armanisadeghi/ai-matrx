@@ -1,6 +1,7 @@
 // features/notes/service/notesService.ts
 
 import { supabase } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { operationFailed } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
@@ -231,8 +232,9 @@ export async function assertInitiatingNotesUser(expectedUserId: string): Promise
   if (requireUserId() !== expectedUserId) {
     throw new Error("Your sign-in changed before this draft could be initialized.");
   }
-  const { data, error } = await supabase.auth.getSession();
-  if (error || data.session?.user.id !== expectedUserId) {
+  // Verified claims, not the cookie's deserialized `session.user`.
+  const { data, error } = await getClaimsUser(supabase);
+  if (error || data.user?.id !== expectedUserId) {
     throw new Error("Your sign-in changed before this draft could be initialized.");
   }
 }
@@ -461,26 +463,37 @@ export async function persistNoteUpdate(
   }
 
   // Existing-resource mutations bind to the resource's organization, never the
-  // mutable organization picker. Read it before resolving a requested folder.
-  const { data: existing, error: existingError } = await supabase
-    .schema("workbench")
-    .from("notes")
-    .select("*")
-    .eq("id", id)
-    .is("deleted_at", null)
-    .maybeSingle();
-  if (existingError || !existing) throw existingError ?? operationFailed("save this note — it may already be gone");
-  const organizationId = requireOrganizationContext(existing.organization_id);
-  if (
-    options?.expectedOrganizationId !== undefined &&
-    options.expectedOrganizationId !== organizationId
-  ) {
-    throw new Error("This note belongs to a different organization than the editor snapshot. Reload the note before saving.");
+  // mutable organization picker. A caller that already holds the acknowledged
+  // organization AND the acknowledged context links (the Redux save path)
+  // skips the two reads that only existed to learn them — measured 2026-09-21:
+  // a folder change from the picker was SIX sequential round trips and 2.6 s,
+  // and every autosave paid these two. A caller without them reads, as before.
+  let organizationId: string;
+  let priorStoredNote: NoteContextLinks;
+  if (options?.expectedOrganizationId !== undefined && options.priorContextLinks !== undefined) {
+    organizationId = requireOrganizationContext(options.expectedOrganizationId);
+    priorStoredNote = options.priorContextLinks;
+  } else {
+    const { data: existing, error: existingError } = await supabase
+      .schema("workbench")
+      .from("notes")
+      .select("*")
+      .eq("id", id)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (existingError || !existing) throw existingError ?? operationFailed("save this note — it may already be gone");
+    organizationId = requireOrganizationContext(existing.organization_id);
+    if (
+      options?.expectedOrganizationId !== undefined &&
+      options.expectedOrganizationId !== organizationId
+    ) {
+      throw new Error("This note belongs to a different organization than the editor snapshot. Reload the note before saving.");
+    }
+    // Retain the canonical association projection before any write. It lets a
+    // partial context settlement return the acknowledged row without pretending
+    // the note write rolled back when a later association read cannot hydrate.
+    [priorStoredNote] = await hydrateNoteContextLinks([existing]);
   }
-  // Retain the canonical association projection before any write. It lets a
-  // partial context settlement return the acknowledged row without pretending
-  // the note write rolled back when a later association read cannot hydrate.
-  const [priorStoredNote] = await hydrateNoteContextLinks([existing]);
   const normalizedUpdates: NoteUpdate & Partial<NoteContextLinks> = { ...updates };
   if (updates.folder_id !== undefined && updates.folder_id !== null) {
     const { data: folder, error: folderError } = await supabase
