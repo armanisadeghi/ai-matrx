@@ -1,3 +1,12 @@
+-- 🚨 ONE BODY IS LEFT STANDING, ON PURPOSE (lane INVERSE-GUARD, 2026-09-21).
+-- `custom.work_state_id` was ADOPTED after this inverse was written: `custom._checklist_finished`
+-- (checklists_a_checklist_is_a_template_of_work.sql) calls it, and that body is reached from the
+-- LIVE checklist triggers on `custom.record` — `zz_ckl_step_guard`, `zz_ckl_watch`,
+-- `zz_ckl_watch_s_i` and `zz_ckl_watch_s_u`. Dropping it left four triggers over a function that
+-- was gone: every write to the record store would have died before the red twin asked anything.
+-- It stays standing; everything else this file does — the restored pre-CHOICE-VAL bodies — still
+-- puts the defect back.
+--
 -- chair-step: the inverse of migrations/campaign/choiceval_a_state_is_a_word_too.sql. It puts back
 --   the five work bodies that cast a record's stored status straight to uuid, and drops
 --   custom.work_state_id. After this runs, a work table whose status column holds the option's own
@@ -379,4 +388,4 @@ $function$
 
 ;
 
-drop function if exists custom.work_state_id(uuid, uuid, text);
+-- LEFT STANDING (lane INVERSE-GUARD, 2026-09-21): drop function if exists custom.work_state_id(uuid, uuid, text);

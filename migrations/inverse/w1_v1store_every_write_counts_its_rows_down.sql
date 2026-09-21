@@ -1,3 +1,13 @@
+-- 🚨 THE SIBLING IS A DIFFERENT LANE, NOT A LATER STEP (lane INVERSE-GUARD, 2026-09-21).
+-- The store bodies this file restores CALL `custom.table_kernel_id`, `custom.assert_store_door`
+-- and `custom.field_kernel_id`, which `w1_table_table_home_containment_down.sql` takes away. The
+-- two share only the `w1_` filename prefix that the guard reads as a family: TABLE-HOME-CONTAINMENT
+-- and V1-STORE are separate lanes with separate red twins, each applied ALONE inside its own
+-- transaction and rolled back. Run this one ALONE. If both are ever wanted in the same
+-- transaction, the containment inverse must run LAST and must take these store bodies with it —
+-- `assert_store_door` is the one body every write door in the record store reaches.
+-- ground-standing-ok: b  — the sibling is named above, the order is stated, and this file is run alone.
+--
 -- chair-step: the inverse of V1-STORE-FIXES finding 3 - it puts three live function bodies
 -- back to the ones that did not count their rows, which is a live-body replacement and
 -- therefore never an unattended step. Header-less on purpose (§4.9): a file naming production

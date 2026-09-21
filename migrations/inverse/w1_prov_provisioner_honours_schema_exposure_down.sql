@@ -1,3 +1,12 @@
+-- 🚨 `platform.schema_client_exposure` STAYS STANDING AND IS EMPTIED (lane INVERSE-GUARD, 2026-09-21).
+-- It was ADOPTED after this inverse was written: `platform._reopen_declared_doors_after_revoke_impl`
+-- (boot_lane_component_rls_and_event_trigger_execution.sql) reads it on the live path, so dropping
+-- the table would have made the boot lane raise 42P01 on its next revoke.
+--   THE TABLE STAYS AND IS EMPTIED INSTEAD, which restores the defect exactly: with no row in it
+-- no schema is declared client-exposed, so the provisioner honours nothing — and the two readers
+-- this lane created, `platform.schema_exposure_violations` and `platform.schema_is_client_exposed`,
+-- still go.
+--
 -- chair-step: THE INVERSE of `migrations/campaign/w1_prov_provisioner_honours_schema_exposure.sql`. It restores three live bodies — platform.provision, iam.apply_table_grants and iam._apply_rls_unchecked — to the definitions that file was written against, and drops the registry and its two read functions. A restore of a live body is the same class of act as the change it undoes, so it travels the same loud route and prints all three bodies first.
 -- based-on: iam.apply_table_grants(text, text, text) 03ca4f83ea564861ca4ea76b5e479e6138cbab2cc5476b7aea3666b7aee27a05
 -- based-on: iam._apply_rls_unchecked(text, text, text, text) fb1680547f8a619d7bb9e7c075360d1bd73c73d269de2c51cd8cd1085d7363d7
@@ -22,7 +31,8 @@ set statement_timeout = '600s';
 
 drop function if exists platform.schema_exposure_violations(text);
 drop function if exists platform.schema_is_client_exposed(text);
-drop table if exists platform.schema_client_exposure;
+-- LEFT STANDING (lane INVERSE-GUARD, 2026-09-21): drop table if exists platform.schema_client_exposure;
+delete from platform.schema_client_exposure;   -- the table stays; every row this lane wrote goes, which is the defect put back.
 
 CREATE OR REPLACE FUNCTION iam.apply_table_grants(p_schema text, p_table text, p_variant text DEFAULT 'entity'::text)
  RETURNS void

@@ -1,8 +1,17 @@
+-- 🚨 `custom.visible_predicate_sql` IS LEFT STANDING, ON PURPOSE (lane INVERSE-GUARD, 2026-09-21).
+-- It was ADOPTED after this inverse was written: `custom.work_whose_turn`
+-- (choiceval_a_state_is_a_word_too.sql) calls it, and that body is on the live path. Dropping it
+-- would have broken a door outside this lane to restore a defect inside it.
+--   THE DEFECT IS STILL RESTORED IN FULL: the list doors below are put back to their pre-READ-PERF
+-- bodies, which walk the per-row ladder and never ask for a predicate, and the READ-PERF
+-- `platform.client_callable_door` rows are deleted. The helper stands unused, which is exactly
+-- what "the list doors do not filter inside their own query" means.
+--
 -- READ-PERF file 2, the inverse: the predicate helper dropped and the three list doors put
 -- back to the id-list join they carried before this lane.
 
 delete from platform.client_callable_door where schema_name='custom' and declared_by like '%readperf_the_list_doors_filter_inside_their_own_query%';
-drop function if exists custom.visible_predicate_sql(uuid, uuid, uuid, public.permission_level, text);
+-- LEFT STANDING (lane INVERSE-GUARD, 2026-09-21): drop function if exists custom.visible_predicate_sql(uuid, uuid, uuid, public.permission_level, text);
 
 CREATE OR REPLACE FUNCTION custom.agg_sql(p_organization_id uuid, p_table_id uuid, p_group_by jsonb DEFAULT '[]'::jsonb, p_measures jsonb DEFAULT '[]'::jsonb, p_bucket jsonb DEFAULT NULL::jsonb, p_filter jsonb DEFAULT '{}'::jsonb, p_limit integer DEFAULT 200, p_required text DEFAULT 'viewer'::text)
  RETURNS text

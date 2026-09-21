@@ -1,3 +1,12 @@
+-- 🚨 WHICH DOOR-FIX INVERSE IS MEANT TO RUN, AND IN WHAT ORDER (lane INVERSE-GUARD, 2026-09-21).
+-- The two door bodies this file restores CALL `custom.delete_rule`, which the SIBLING inverse
+-- `doorfix_the_delete_door_consults_the_one_delete_rule_down.sql` takes away. The two are
+-- ALTERNATIVES, not a sequence: each DOOR-FIX red twin opens its own transaction, applies exactly
+-- ONE of the two inverses, asks its questions and ends in ROLLBACK. Run this one ALONE. If both
+-- defects are ever wanted in the same transaction, the delete-rule inverse must run LAST and must
+-- take these two doors back out with it, because the one delete rule is what it exists to remove.
+-- ground-standing-ok: b  — the sibling is named above, the order is stated, and this file is run alone.
+--
 -- chair-step: DOOR-FIX 5's inverse — the two functions without their access prologue. Running
 -- it puts `pnpm check:store-doors-decide` back to red, which is the point of an inverse.
 

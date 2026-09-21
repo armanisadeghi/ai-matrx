@@ -1,3 +1,11 @@
+-- 🚨 `custom.cross_organization_links_open` IS LEFT STANDING, ON PURPOSE (lane INVERSE-GUARD, 2026-09-21).
+-- It was ADOPTED after this inverse was written: `custom.share_grant`
+-- (portal_the_wall_has_a_door_for_the_client_it_named.sql) calls it, and that body is on the live
+-- path. Dropping it would have broken the portal lane's share door to restore a VIS-2 defect.
+--   THE DEFECT IS STILL RESTORED: the two card doors go back, their
+-- `platform.client_callable_door` rows are deleted and the VIS-2 knob row is removed — with the
+-- knob gone the switch reads its default again, which is what this inverse exists to put back.
+--
 -- VIS-2 (2 of 3) — THE INVERSE. The two wall bodies exactly as they stood at
 -- 5c8c8e509ac6526a7636fac72cb736ac368978bcde164786535d0b2024a4cbe0 and
 -- 9f3e0d31eb4f841baba3e2aa58b5856012f525095a6354c728ac5645f092ec06 — restored FIRST, because
@@ -203,7 +211,7 @@ delete from platform.client_callable_door
 
 drop function if exists custom.relation_target_card(uuid, uuid, text);
 drop function if exists custom.record_card(uuid, uuid, uuid);
-drop function if exists custom.cross_organization_links_open(uuid, uuid);
+-- LEFT STANDING (lane INVERSE-GUARD, 2026-09-21): drop function if exists custom.cross_organization_links_open(uuid, uuid);
 
 delete from platform.feature_knob
  where feature = 'custom' and key = 'cross_organization_links';
