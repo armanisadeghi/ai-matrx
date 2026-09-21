@@ -1,6 +1,21 @@
 -- INVERSE of migrations/campaign/orgdel_a_deletion_event_asks_nobody_for_permission.sql
--- (lane ORG-DELETE). It puts the unconditional call back, so the retention purge dies on
+-- (lane ORG-DELETE). It puts the unconditional reader call back, so the retention purge dies on
 -- custom.assert_may_know_table for every record whose Table was retired first.
+--
+-- 🚨 RE-POINTED TO THE LIVE BODY (lane RED-SUITES-3, 2026-09-21). This file restored
+-- `custom.io_record_changed()` — the ROW-level trigger function — and
+-- `writeperf2_the_after_triggers_fire_once_per_statement.sql` replaced it with the
+-- STATEMENT-level trio `custom.io_record_changed_stmt_delete` / `_stmt_insert` / `_stmt_update`
+-- over `io_record_changed_s_d` / `_s_i` / `_s_u`. NO trigger calls the row-level body any more,
+-- so this file restored a defect into a function nothing runs: `custom.migrate_purge` succeeded,
+-- and `orgdel_red.sql` RED 5 reported "RED 5 IS GREEN — the purge cleared a retired Table's
+-- records with the inverse applied" about a defect it had not managed to restore.
+--
+-- The row-level body is still rewritten below, because a database that still carries the older
+-- shape must invert the same way. What actually bites now is the block after it, which puts the
+-- reader call back into the DELETE path that is live — derived from that body's own bytes, and
+-- refusing by name if the sentence it replaces is not there.
+
 create or replace function custom.io_record_changed()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -66,3 +81,30 @@ begin
   return null;
 end;
 $function$;
+
+
+-- ── THE LIVE DELETE PATH: the reader call, back where the purge will hit it ────────────────
+do $orgdel_down$
+declare
+  v_def  text;
+  v_fixed constant text :=
+    '         -- On a delete `v_keys` is empty by construction, so the answer is `[]` whatever the' || E'\n' ||
+    '         -- join would have done — and asking anyway made a deletion event depend on the caller' || E'\n' ||
+    '         -- still being allowed to READ the Table.' || E'\n' ||
+    '         ''[]''::jsonb,';
+  v_broken constant text :=
+    '         -- RESTORED BY THE INVERSE: the deletion event asks the reader''s question again.' || E'\n' ||
+    '         custom.io_changed_field_ids(o.organization_id, o.table_id, ''{}''::jsonb, ''{}''::jsonb),';
+begin
+  select pg_get_functiondef(p.oid) into v_def
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'custom' and p.proname = 'io_record_changed_stmt_delete';
+  if v_def is null then
+    raise exception 'orgdel inverse: custom.io_record_changed_stmt_delete does not exist, so the live delete path cannot be taken back';
+  end if;
+  if position(v_fixed in v_def) = 0 then
+    raise exception 'orgdel inverse: the live custom.io_record_changed_stmt_delete no longer carries the sentence ORG-DELETE put there, so this inverse would restore nothing. Re-derive it from the live body.';
+  end if;
+  execute replace(v_def, v_fixed, v_broken);
+end
+$orgdel_down$;

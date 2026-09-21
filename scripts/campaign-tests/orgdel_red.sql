@@ -259,4 +259,6 @@ end;
 $r$;
 rollback;
 
-\echo '5 of 5 blocks are RED (the defect they assert is gone).'
+-- Wording corrected by lane RED-SUITES-3, 2026-09-21: this twin PASSES when all five flip, and
+-- a block that flipped is a defect PUT BACK by its own inverse, not one that is gone.
+\echo '5 of 5 blocks are RED — every defect ORG-DELETE closed was put back by its own inverse and observed.'
