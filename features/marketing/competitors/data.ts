@@ -12,8 +12,33 @@ import type { CompetitorRuling } from "./groundTruth";
 export type CompetitorRow = Database["seo"]["Tables"]["competitor"]["Row"];
 export type CompetitorOpportunityRow =
   Database["seo"]["Tables"]["competitor_opportunity"]["Row"];
-export type CompetitorRunRow =
-  Database["seo"]["Tables"]["collection_run"]["Row"];
+/**
+ * 🚨 NOT `Row` and NOT `select("*")`. (SECURITY-SWEEP, 2026-09-21.)
+ * `seo.collection_run.credential_reference_id` names WHICH STORED CREDENTIAL a run spends, and
+ * it is on its way out of the client grant — a column a client may never set, and a screen
+ * never needs it to render. A `select("*")` here would become a 42501 the moment that lands,
+ * so this reads the columns the workspace actually uses and says which ones they are.
+ */
+export type CompetitorRunRow = Pick<
+  Database["seo"]["Tables"]["collection_run"]["Row"],
+  | "id"
+  | "provider"
+  | "operation"
+  | "status"
+  | "trigger"
+  | "requested_at"
+  | "started_at"
+  | "completed_at"
+  | "request_id"
+  | "error"
+  | "result"
+  | "site_id"
+  | "created_at"
+>;
+
+const COMPETITOR_RUN_COLUMNS =
+  "id, provider, operation, status, trigger, requested_at, started_at, completed_at, " +
+  "request_id, error, result, site_id, created_at";
 type WebSiteRow = Database["web"]["Tables"]["site"]["Row"];
 type WebBrandRow = Database["web"]["Tables"]["brand"]["Row"];
 export type CompetitorSite = Pick<
@@ -176,7 +201,7 @@ export async function loadCompetitorWorkspace(siteId: string): Promise<{
     supabase
       .schema("seo")
       .from("collection_run")
-      .select("*")
+      .select(COMPETITOR_RUN_COLUMNS)
       .eq("site_id", siteId)
       .eq("provider", "aidream")
       .eq("operation", "competitors.opportunity_autopsy")
