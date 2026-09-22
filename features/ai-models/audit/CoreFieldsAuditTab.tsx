@@ -1,31 +1,31 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
-import { Save, Loader2, CheckCircle2, SaveAll } from "lucide-react";
+import { CheckCircle2, Loader2, Save, SaveAll } from "lucide-react";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
 import { aiModelService } from "../service";
 import type { AiModel } from "../types";
 import type { ModelAuditResult } from "./auditTypes";
-import {
-  AuditTableShell,
-  Th,
-  StatusBadge,
-  IssueList,
-  ProviderBadge,
-} from "./AuditTableShell";
+import { IssueList, ProviderBadge, StatusBadge } from "./AuditTableShell";
 import ModelDetailSheet, { OpenDetailButton } from "./ModelDetailSheet";
 
 interface CoreFieldsAuditTabProps {
   results: ModelAuditResult[];
   allModels: AiModel[];
   onModelUpdated: (id: string, patch: Partial<AiModel>) => void;
+  onRefresh: () => Promise<void>;
 }
 
 export default function CoreFieldsAuditTab({
   results,
   allModels,
   onModelUpdated,
+  onRefresh,
 }: CoreFieldsAuditTabProps) {
   const [editValues, setEditValues] = useState<
     Record<string, Partial<AiModel>>
@@ -37,53 +37,58 @@ export default function CoreFieldsAuditTab({
   const [savingAll, setSavingAll] = useState(false);
   const [detailModelId, setDetailModelId] = useState<string | null>(null);
 
-  const coreResults = results.map((r) => ({
-    ...r,
-    issues: r.issues.filter((i) => i.category === "core_fields"),
-    pass: r.categoryPass.core_fields,
+  const coreResults = results.map((result) => ({
+    ...result,
+    issues: result.issues.filter((issue) => issue.category === "core_fields"),
+    pass: result.categoryPass.core_fields,
   }));
-
-  const failingResults = coreResults.filter((r) => !r.pass);
-  const passingResults = coreResults.filter((r) => r.pass);
+  const failingResults = coreResults.filter((result) => !result.pass);
+  const passingResults = coreResults.filter((result) => result.pass);
   const displayResults = showPassingModels ? coreResults : failingResults;
-
   const dirtyIds = Object.keys(editValues).filter(
-    (id) => Object.keys(editValues[id]).length > 0,
+    (id) => Object.keys(editValues[id] ?? {}).length > 0,
   );
-
   const getVal = (model: AiModel, field: keyof AiModel) =>
     editValues[model.id]?.[field] !== undefined
       ? String(editValues[model.id][field] ?? "")
       : String(model[field] ?? "");
-
-  const setVal = (modelId: string, field: keyof AiModel, value: string) =>
-    setEditValues((prev) => ({
-      ...prev,
-      [modelId]: { ...(prev[modelId] ?? {}), [field]: value },
-    }));
-
+  const setVal = (model: AiModel, field: keyof AiModel, value: string) =>
+    setEditValues((previous) => {
+      const next = { ...previous };
+      const edits = { ...(next[model.id] ?? {}) };
+      if (value === String(model[field] ?? "")) {
+        delete edits[field];
+      } else {
+        edits[field] = value;
+      }
+      if (Object.keys(edits).length === 0) {
+        delete next[model.id];
+      } else {
+        next[model.id] = edits;
+      }
+      return next;
+    });
   const buildPatch = (
     edits: Partial<AiModel>,
   ): Partial<Omit<AiModel, "id">> => {
     const patch: Partial<Omit<AiModel, "id">> = {};
     if (edits.common_name !== undefined)
-      patch.common_name = (edits.common_name as string).trim() || null;
+      patch.common_name = String(edits.common_name).trim() || null;
     if (edits.context_window !== undefined) {
-      const v = parseInt(edits.context_window as unknown as string);
-      patch.context_window = isNaN(v) ? null : v;
+      const value = Number.parseInt(String(edits.context_window), 10);
+      patch.context_window = Number.isNaN(value) ? null : value;
     }
     if (edits.max_tokens !== undefined) {
-      const v = parseInt(edits.max_tokens as unknown as string);
-      patch.max_tokens = isNaN(v) ? null : v;
+      const value = Number.parseInt(String(edits.max_tokens), 10);
+      patch.max_tokens = Number.isNaN(value) ? null : value;
     }
     return patch;
   };
-
   const saveSingle = async (model: AiModel) => {
     const edits = editValues[model.id];
     if (!edits || Object.keys(edits).length === 0) return;
-    setSavingIds((prev) => new Set([...prev, model.id]));
-    setErrors((prev) => ({ ...prev, [model.id]: "" }));
+    setSavingIds((previous) => new Set([...previous, model.id]));
+    setErrors((previous) => ({ ...previous, [model.id]: "" }));
     try {
       const patch = buildPatch(edits);
       await Promise.all(
@@ -96,198 +101,240 @@ export default function CoreFieldsAuditTab({
         ),
       );
       onModelUpdated(model.id, patch);
-      setSavedIds((prev) => new Set([...prev, model.id]));
-      setEditValues((prev) => {
-        const n = { ...prev };
-        delete n[model.id];
-        return n;
+      setSavedIds((previous) => new Set([...previous, model.id]));
+      setEditValues((previous) => {
+        const next = { ...previous };
+        delete next[model.id];
+        return next;
       });
-    } catch (err) {
-      setErrors((prev) => ({
-        ...prev,
-        [model.id]: err instanceof Error ? err.message : "Save failed",
+    } catch (error) {
+      setErrors((previous) => ({
+        ...previous,
+        [model.id]: error instanceof Error ? error.message : "Save failed",
       }));
     } finally {
-      setSavingIds((prev) => {
-        const s = new Set(prev);
-        s.delete(model.id);
-        return s;
+      setSavingIds((previous) => {
+        const next = new Set(previous);
+        next.delete(model.id);
+        return next;
       });
     }
   };
-
   const handleSaveAll = async () => {
     if (dirtyIds.length === 0) return;
     setSavingAll(true);
     await Promise.all(
       dirtyIds.map((id) => {
-        const model = results.find((r) => r.model.id === id)?.model;
+        const model = results.find((result) => result.model.id === id)?.model;
         return model ? saveSingle(model) : Promise.resolve();
       }),
     );
     setSavingAll(false);
   };
-
+  const columns: MatrxColumnDef<ModelAuditResult>[] = [
+    {
+      id: "model_id",
+      accessorFn: (r) => r.model.id,
+      header: "Model ID",
+      hidden: true,
+    },
+    {
+      id: "model_name",
+      accessorFn: (r) => r.model.name,
+      header: "API name",
+      cell: (r) => (
+        <span className="font-mono text-xs text-muted-foreground">
+          {r.model.name}
+        </span>
+      ),
+      frozen: true,
+      width: 220,
+    },
+    {
+      id: "common_name",
+      accessorFn: (r) => r.model.common_name ?? "",
+      header: "Common name",
+      width: 180,
+      cell: (r) => (
+        <Input
+          value={getVal(r.model, "common_name")}
+          onChange={(event) =>
+            setVal(r.model, "common_name", event.target.value)
+          }
+          className={`h-7 text-xs ${!r.model.common_name && !editValues[r.model.id]?.common_name ? "border-destructive/50" : ""}`}
+          placeholder="Common name…"
+        />
+      ),
+    },
+    {
+      id: "provider",
+      accessorFn: (r) => r.model.maker ?? "",
+      header: "Provider",
+      cell: (r) => <ProviderBadge provider={r.model.maker} />,
+      filter: "select",
+      width: 130,
+    },
+    {
+      id: "context_window",
+      accessorFn: (r) => r.model.context_window,
+      header: "Context",
+      filter: "number",
+      width: 130,
+      cell: (r) => (
+        <Input
+          type="number"
+          value={getVal(r.model, "context_window")}
+          onChange={(event) =>
+            setVal(r.model, "context_window", event.target.value)
+          }
+          className="h-7 font-mono text-xs"
+          placeholder="128000"
+        />
+      ),
+    },
+    {
+      id: "max_tokens",
+      accessorFn: (r) => r.model.max_tokens,
+      header: "Max tokens",
+      filter: "number",
+      width: 130,
+      cell: (r) => (
+        <Input
+          type="number"
+          value={getVal(r.model, "max_tokens")}
+          onChange={(event) =>
+            setVal(r.model, "max_tokens", event.target.value)
+          }
+          className="h-7 font-mono text-xs"
+          placeholder="4096"
+        />
+      ),
+    },
+    {
+      id: "status",
+      accessorFn: (r) => (r.pass ? "pass" : "fail"),
+      header: "Status",
+      filter: "select",
+      filterOptions: [
+        { value: "pass", label: "Pass" },
+        { value: "fail", label: "Fail" },
+      ],
+      width: 110,
+      cell: (r) =>
+        savedIds.has(r.model.id) ? (
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Saved
+          </span>
+        ) : (
+          <StatusBadge pass={r.pass} />
+        ),
+    },
+    {
+      id: "issues",
+      accessorFn: (r) => r.issues.map((issue) => issue.message).join(" "),
+      header: "Issues",
+      cell: (r) => (
+        <>
+          <IssueList issues={r.issues} />
+          {errors[r.model.id] && (
+            <span className="text-[10px] text-destructive">
+              {errors[r.model.id]}
+            </span>
+          )}
+        </>
+      ),
+      width: 280,
+    },
+  ];
   return (
     <>
-      <div className="flex flex-col h-full min-h-0">
-        <div className="flex items-center gap-3 px-3 py-2 border-b shrink-0 bg-muted/20">
-          <span className="text-xs text-muted-foreground">
-            <span className="font-medium text-destructive">
-              {failingResults.length} failing
-            </span>
-            {" · "}
-            <span className="font-medium text-green-600">
-              {passingResults.length} passing
-            </span>
-          </span>
-          <div className="flex-1" />
-          {dirtyIds.length > 1 && (
-            <Button
-              size="sm"
-              className="h-6 px-2 text-[11px] gap-1"
-              onClick={handleSaveAll}
-              disabled={savingAll}
-            >
-              {savingAll ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <SaveAll className="h-3 w-3" />
-              )}
-              Save All ({dirtyIds.length})
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-[11px]"
-            onClick={() => setShowPassingModels((v) => !v)}
-          >
-            {showPassingModels ? "Hide passing" : "Show all"}
-          </Button>
-        </div>
-
-        <AuditTableShell
-          isEmpty={displayResults.length === 0}
-          empty={
-            <div className="flex flex-col items-center gap-2">
-              <CheckCircle2 className="h-10 w-10 text-green-500 opacity-60" />
-              <p className="text-sm">All models pass core fields audit</p>
-            </div>
-          }
-          headers={
-            <>
-              <Th className="w-6" />
-              <Th>Model (API name)</Th>
-              <Th className="w-36">Common Name</Th>
-              <Th className="w-28">Maker</Th>
-              <Th className="w-24">Context</Th>
-              <Th className="w-24">Max Tokens</Th>
-              <Th className="w-16">Status</Th>
-              <Th className="w-36">Issues</Th>
-              <Th className="w-16 text-right">Save</Th>
-            </>
-          }
-        >
-          {displayResults.map((r, idx) => {
-            const { model } = r;
-            const isSaving = savingIds.has(model.id);
-            const wasSaved = savedIds.has(model.id);
-            const isDirty =
-              !!editValues[model.id] &&
-              Object.keys(editValues[model.id]).length > 0;
-
-            return (
-              <tr
-                key={model.id}
-                className={`border-b border-border ${idx % 2 === 0 ? "" : "bg-muted/20"}`}
-              >
-                <td className="px-1.5 py-1.5">
-                  <OpenDetailButton
-                    onClick={() => setDetailModelId(model.id)}
-                  />
-                </td>
-                <td className="px-3 py-1.5">
-                  <span className="text-xs font-mono text-muted-foreground">
-                    {model.name}
-                  </span>
-                </td>
-                <td className="px-3 py-1">
-                  <Input
-                    value={getVal(model, "common_name")}
-                    onChange={(e) =>
-                      setVal(model.id, "common_name", e.target.value)
-                    }
-                    className={`h-7 text-xs ${!model.common_name && !editValues[model.id]?.common_name ? "border-destructive/50" : ""}`}
-                    placeholder="Common name…"
-                  />
-                </td>
-                <td className="px-3 py-1">
-                  {/* Maker is derived from the provider_id FK (the free-text
-                      provider column is dropped) — read-only here; set the FK in
-                      the model detail form. */}
-                  <ProviderBadge provider={model.maker} />
-                </td>
-                <td className="px-3 py-1">
-                  <Input
-                    type="number"
-                    value={getVal(model, "context_window")}
-                    onChange={(e) =>
-                      setVal(model.id, "context_window", e.target.value)
-                    }
-                    className="h-7 text-xs font-mono"
-                    placeholder="128000"
-                  />
-                </td>
-                <td className="px-3 py-1">
-                  <Input
-                    type="number"
-                    value={getVal(model, "max_tokens")}
-                    onChange={(e) =>
-                      setVal(model.id, "max_tokens", e.target.value)
-                    }
-                    className="h-7 text-xs font-mono"
-                    placeholder="4096"
-                  />
-                </td>
-                <td className="px-3 py-1.5">
-                  {wasSaved ? (
-                    <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium">
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Saved
-                    </span>
+      <MatrxDataTable<ModelAuditResult>
+        tableId="ai-model-audit-core-fields"
+        viewTabs={false}
+        data={displayResults}
+        columns={columns}
+        getRowId={(r) => r.model.id}
+        defaultSort={{ id: "model_name", direction: "asc" }}
+        toolbar={{
+          title: "Core field audit",
+          searchPlaceholder: "Search core-field audit",
+          refresh: { onRefresh },
+          actions: (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>
+                <span className="font-medium text-destructive">
+                  {failingResults.length} failing
+                </span>{" "}
+                ·{" "}
+                <span className="font-medium text-green-600">
+                  {passingResults.length} passing
+                </span>
+              </span>
+              {dirtyIds.length > 1 && (
+                <Button
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs"
+                  onClick={handleSaveAll}
+                  disabled={savingAll}
+                >
+                  {savingAll ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (
-                    <StatusBadge pass={r.pass} />
+                    <SaveAll className="h-3 w-3" />
                   )}
-                </td>
-                <td className="px-3 py-1.5">
-                  <IssueList issues={r.issues} />
-                  {errors[model.id] && (
-                    <span className="text-destructive text-[10px]">
-                      {errors[model.id]}
-                    </span>
-                  )}
-                </td>
-                <td className="px-3 py-1.5 text-right">
-                  <Button
-                    size="sm"
-                    className="h-6 px-2 text-[11px] gap-1"
-                    disabled={isSaving || !isDirty}
-                    onClick={() => saveSingle(model)}
-                  >
-                    {isSaving ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Save className="h-3 w-3" />
-                    )}
-                    Save
-                  </Button>
-                </td>
-              </tr>
-            );
-          })}
-        </AuditTableShell>
-      </div>
-
+                  Save all ({dirtyIds.length})
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => setShowPassingModels((value) => !value)}
+              >
+                {showPassingModels ? "Hide passing" : "Show all"}
+              </Button>
+            </div>
+          ),
+        }}
+        emptyState={{
+          title: showPassingModels
+            ? "No models match this audit view"
+            : "All models pass core fields audit",
+          icon: <CheckCircle2 className="h-10 w-10 text-green-500" />,
+        }}
+        detail={{ enabled: false }}
+        copy={{
+          label: "AI model audit",
+          location: "AI Model Data Audit",
+          rowKind: "ai-model-audit",
+          listKind: "ai-model-audit-list",
+          humanRow: (result) => result.model.common_name ?? result.model.name,
+          agentRow: (result) => result.model,
+        }}
+        rowActions={(r) => {
+          const model = r.model;
+          const isDirty = Object.keys(editValues[model.id] ?? {}).length > 0;
+          return (
+            <div className="flex items-center gap-1">
+              <OpenDetailButton onClick={() => setDetailModelId(model.id)} />
+              <Button
+                size="sm"
+                className="h-7 gap-1 px-2 text-xs"
+                disabled={savingIds.has(model.id) || !isDirty}
+                onClick={() => void saveSingle(model)}
+              >
+                {savingIds.has(model.id) ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Save className="h-3 w-3" />
+                )}
+                Save
+              </Button>
+            </div>
+          );
+        }}
+      />
       <ModelDetailSheet
         modelId={detailModelId}
         allModels={allModels}

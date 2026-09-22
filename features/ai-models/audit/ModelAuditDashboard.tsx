@@ -219,6 +219,7 @@ export default function ModelAuditDashboard() {
                 allModels={auditModels}
                 onJumpToCategory={(cat) => setActiveTab(cat)}
                 onModelUpdated={handleModelUpdated}
+                onRefresh={loadModels}
               />
             )}
             {activeTab === "core_fields" && (
@@ -226,6 +227,7 @@ export default function ModelAuditDashboard() {
                 results={auditResults}
                 allModels={auditModels}
                 onModelUpdated={handleModelUpdated}
+                onRefresh={loadModels}
               />
             )}
             {activeTab === "capabilities" && (
@@ -233,6 +235,7 @@ export default function ModelAuditDashboard() {
                 results={auditResults}
                 allModels={auditModels}
                 onModelUpdated={handleModelUpdated}
+                onRefresh={loadModels}
               />
             )}
             {activeTab === "configurations" && (
