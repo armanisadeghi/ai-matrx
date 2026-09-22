@@ -50,7 +50,7 @@ begin
 
   if not (iam.has_org_access(p_organization_id)
           or (p_organization_id in (select organization_id from iam.system_orgs where global_readable)
-              and is_super_admin())) then
+              and public.is_super_admin())) then
     raise exception 'rulebook_create: % is not an organization you can start a Rulebook in.', p_organization_id
       using errcode = '42501';
   end if;

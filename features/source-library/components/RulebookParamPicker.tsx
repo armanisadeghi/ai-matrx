@@ -12,7 +12,7 @@
  * there is no second way to create one.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BookOpen, CircleAlert, Loader2, Plus } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -73,18 +73,27 @@ export function RulebookParamPicker({
         void load();
     }, [load]);
 
+    /** The id of the intent the open create box represents; see `create`. */
+    const createToken = useRef<string | null>(null);
+
     const create = useCallback(async () => {
         const name = newName.trim();
         if (!name || !organizationId) return;
         setCreating(true);
         setError(null);
         try {
+            // ONE INTENT, ONE RULEBOOK (cold walk 20, defect C). The open create
+            // box is the intent: pressing Create twice in it lands on one
+            // Rulebook, and the token is retired when the box closes.
+            if (!createToken.current) createToken.current = crypto.randomUUID();
             const rulebook = await createDraftRulebook({
                 name,
                 description: "",
                 source: {},
                 organizationId,
+                clientToken: createToken.current,
             });
+            createToken.current = null;
             setRulebooks((current) => [
                 { ...(rulebook as unknown as RulebookListRow) },
                 ...current,

@@ -27,7 +27,7 @@
 // complete-looking step 2 out of an unread cache or a missing draft. Cleared
 // on create.
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { nameFromSentence } from "@/lib/text/nameFromSentence";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
@@ -218,6 +218,16 @@ export interface NewRulebookDraftValues {
   goal: string;
   name: string;
   answers: Record<string, string>;
+  /**
+   * 🚨 ONE INTENT, ONE RULEBOOK (cold walk 20, defect C). The id of THIS
+   * decision to start a Rulebook, minted once and kept with the answers,
+   * because that is the lifetime it belongs to: pressing Start twice, coming
+   * back to a restored draft and pressing again, or reloading mid-flight are
+   * all the SAME intent and must all land on one Rulebook. `rulebook_create`
+   * enforces it with a unique index; an empty string means the draft predates
+   * this and the create mints one per call, as it used to.
+   */
+  startToken: string;
 }
 
 /**
@@ -260,6 +270,7 @@ export function restoreNewRulebookDraft(data: Record<string, unknown>): {
       goal: str(data.goal) ?? "",
       name: str(data.name) ?? "",
       answers,
+      startToken: str(data.start_token) ?? "",
     },
     rejectedKeys,
   };
@@ -439,6 +450,15 @@ export function NewRulebookFlow() {
   // the clock, and a promise that stops promising once it is overtaken.
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const saving = startedAt !== null;
+  // 🚨 ONE INTENT, ONE RULEBOOK (cold walk 20, defect C). Minted here, not in
+  // the service: a token minted per CALL is a different token on the second
+  // press and would dedupe nothing. It rides with the answers (see
+  // `NewRulebookDraftValues.startToken`) so it survives a reload and an
+  // abandoned-and-restored draft, and it is replaced the moment this intent
+  // ends — a finished Start, or "Start fresh".
+  const [startToken, setStartToken] = useState<string>(() =>
+    crypto.randomUUID(),
+  );
   /** The "On the way" cards are one collapsed line until the Expert opens it. */
   const [showComingSoon, setShowComingSoon] = useState(false);
 
@@ -495,8 +515,22 @@ export function NewRulebookFlow() {
       if (v.goal) setGoal((current) => current || v.goal);
       if (v.name) setName((current) => current || v.name);
       setAnswers(v.answers);
+      // The restored draft is the SAME intent she abandoned, so it keeps its
+      // token: coming back and pressing Start can no longer make a second
+      // Rulebook of the one she already started.
+      if (v.startToken) setStartToken(v.startToken);
     });
   }, [applyDraftOnce, restored]);
+
+  /** Every draft write carries the intent's id, so the token is saved by the
+   *  same keystroke that saves the answer it belongs to — never by a separate
+   *  effect that could run for somebody who typed nothing. */
+  const rememberDraft = useCallback(
+    (patch: Record<string, unknown>) => {
+      patchDraft({ ...patch, start_token: startToken });
+    },
+    [patchDraft, startToken],
+  );
 
   /** "Start fresh": the saved draft goes, and so does everything it put on
    *  screen — a notice that leaves the old words in the field is no notice. */
@@ -505,6 +539,9 @@ export function NewRulebookFlow() {
     setGoal("");
     setName("");
     setAnswers(defaultIntakeAnswers);
+    // A new intent, so a new id — otherwise "Start fresh" would be deduped
+    // against the Rulebook the abandoned draft had already made.
+    setStartToken(crypto.randomUUID());
   };
 
   // A registry that read cleanly but offers nothing startable is not an error
@@ -630,17 +667,32 @@ export function NewRulebookFlow() {
           benchmark: answers.benchmark,
           approach: approach.key,
         },
+        // ONE INTENT, ONE RULEBOOK. Pressing Start again — now, or after a
+        // reload, or on the draft she came back to — answers with THIS
+        // Rulebook instead of minting a second one with the same name.
+        clientToken: startToken,
       });
       clearDraft();
+      // The intent is spent. Anything she starts next is a different one.
+      setStartToken(crypto.randomUUID());
       // Route into the chosen Approach: the registry row's own intake_query
       // is appended to the Rulebook URL (e.g. the interview Approach carries
       // {"interview":"1"} so the Scout opens on arrival).
       const params = new URLSearchParams(approach.intakeQuery);
       const href = `/masterwork/${rulebook.id}${params.size > 0 ? `?${params.toString()}` : ""}`;
+      // 🚨 NOTHING FAILS SILENTLY, INCLUDING A PERMISSION (cold walk 20, C).
+      // Two Rulebooks may carry one name — Notion and Linear both allow it and
+      // we refuse nothing — but the walk ended with three rows reading
+      // "walk20-Zone Failure Verdict" and no word anywhere about how that
+      // happened. Allowing it is the ruling; saying it is the other half.
       recordToast.success(
         { type: "rulebook", id: rulebook.id, title: rulebook.name },
         `"${rulebook.name}" started`,
-        { description: approach.costTimeShape },
+        {
+          description: rulebook.nameAlreadyInUse
+            ? `You already have a Rulebook called "${rulebook.name}". This is a second one — rename either from its own page. ${approach.costTimeShape}`
+            : approach.costTimeShape,
+        },
       );
       startTransition(() => router.push(href));
     } catch (err) {
@@ -715,7 +767,7 @@ export function NewRulebookFlow() {
               value={goal}
               onChange={(e) => {
                 setGoal(e.target.value);
-                patchDraft({ goal: e.target.value });
+                rememberDraft({ goal: e.target.value });
               }}
               placeholder="e.g. An assistant that does keyword research exactly the way I do it"
               autoGrow
@@ -758,7 +810,7 @@ export function NewRulebookFlow() {
                   next = out.join(MULTI_SEP);
                 }
                 setAnswers((prev) => ({ ...prev, [q.key]: next }));
-                patchDraft({ [q.key]: next });
+                rememberDraft({ [q.key]: next });
               }}
             />
           ))}
@@ -774,7 +826,7 @@ export function NewRulebookFlow() {
               value={name}
               onChange={(e) => {
                 setName(e.target.value);
-                patchDraft({ name: e.target.value });
+                rememberDraft({ name: e.target.value });
               }}
               placeholder="e.g. Our SEO Keyword Method"
               auxiliaryControlsLabel="Rulebook name"
