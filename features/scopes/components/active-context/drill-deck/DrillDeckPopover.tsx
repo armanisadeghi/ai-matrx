@@ -74,6 +74,7 @@ export function DrillDeckPopover({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{triggerNode}</PopoverTrigger>
       <PopoverContent
+        /* sizing: fixed — fixed-shape drill-down browser sized by its own inner DrillDeck panel, not by content text */
         align={align}
         className={cn("w-auto max-w-[calc(100vw-2rem)] p-0", contentClassName)}
       >

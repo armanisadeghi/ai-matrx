@@ -610,6 +610,7 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
                   )}
                 </PopoverTrigger>
                 <PopoverContent
+                  /* sizing: fixed — fixed multi-mode menu (short action list vs. cleanup-agent panel), not a single content-sized value */
                   align="end"
                   side="bottom"
                   sideOffset={6}

@@ -43,6 +43,7 @@ export function QuickNoteSavePopover({
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
+        /* sizing: fixed — fixed note-editor box (own textarea and scroll region), not a single content-sized value */
         side={side}
         align={align}
         className={cn(
