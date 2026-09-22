@@ -317,8 +317,8 @@ const PrivacyPolicyPage = () => {
           messages sent from that record. This context may be sent to the model
           provider configured for that agent solely to answer your request. An
           on-demand Gmail search or message view is not automatically sent to an
-          agent. Other Workspace content you choose to give an agent may also
-          be sent for that request, as described in Section 3.1.
+          agent. Other Workspace content you choose to give an agent may also be
+          sent for that request, as described in Section 3.1.
         </p>
         <p>
           The use of information received from Google Workspace APIs will adhere
@@ -580,7 +580,11 @@ const PrivacyPolicyPage = () => {
             endpoints. Matched outreach replies saved as CRM interactions are
             retained until you request their deletion or delete your account;
             disconnecting Google stops future access but does not itself delete
-            those existing CRM interactions.
+            those existing CRM interactions. Deleting a CRM copy from the active
+            database does not immediately remove earlier backup copies. Our
+            whole-database backup copies expire after up to 365 days; the
+            point-in-time recovery window was about seven days when last checked
+            in September 2026.
           </li>
           <li>
             <strong>Amazon Selling Partner connection:</strong> encrypted
