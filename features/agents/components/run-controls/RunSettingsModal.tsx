@@ -25,7 +25,7 @@ export function RunSettingsModal({ conversationId }: RunSettingsModalProps) {
         </button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" className="w-72 p-3">
+      <PopoverContent sizing="content" align="end" className="p-3">
         <p className="text-xs font-medium text-muted-foreground mb-3">
           Test Run Settings
         </p>

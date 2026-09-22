@@ -580,10 +580,11 @@ export const ConversationSourceFilterTree: React.FC<
         )}
       </PopoverTrigger>
       <PopoverContent
+        sizing="content"
         align={align}
         side={side}
         sideOffset={6}
-        className="w-72 overflow-hidden p-0"
+        className="overflow-hidden p-0"
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-3 py-2">

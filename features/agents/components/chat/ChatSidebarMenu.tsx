@@ -212,10 +212,11 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
           </button>
         </PopoverTrigger>
         <PopoverContent
+          sizing="content"
           side="right"
           align="start"
           sideOffset={8}
-          className="w-80 overflow-hidden p-0"
+          className="overflow-hidden p-0"
         >
           <div className="flex h-[min(70dvh,560px)] flex-col">
             <ChatHistorySidebar

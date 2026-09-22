@@ -127,6 +127,7 @@ function PickerRow({
           </button>
         </PopoverTrigger>
         <PopoverContent
+          /* sizing: fixed — fixed-shape panel wider than the sizing="content" 28rem ceiling */
           align="end"
           className="w-[min(30rem,calc(100vw-2rem))] p-0"
         >

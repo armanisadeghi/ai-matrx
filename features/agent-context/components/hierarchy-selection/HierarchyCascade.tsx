@@ -389,7 +389,7 @@ function ScopeLevelCombobox({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[240px] p-0" align="start">
+        <PopoverContent sizing="content" className="p-0" align="start">
           <Command>
             <CommandInput
               placeholder={`Search ${scopeLevel.label.toLowerCase()}...`}
@@ -585,7 +585,7 @@ function LevelCombobox({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[240px] p-0" align="start">
+        <PopoverContent sizing="content" className="p-0" align="start">
           <Command value={activeValue} onValueChange={setActiveValue}>
             <CommandInput
               placeholder={`Search ${label.toLowerCase()}...`}

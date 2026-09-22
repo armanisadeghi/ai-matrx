@@ -136,7 +136,8 @@ function AgentResourcePickerAction({
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="z-[200] w-80 border-border p-0"
+        sizing="content"
+        className="z-[200] border-border p-0"
         align="end"
         side="bottom"
         sideOffset={6}

@@ -80,7 +80,7 @@ export function ConversationAttachmentsChip({
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-3">
+      <PopoverContent sizing="content" align="end" className="p-3">
         <div className="mb-2 text-sm font-semibold text-foreground">
           Attached to this chat
         </div>

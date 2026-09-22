@@ -740,7 +740,7 @@ function ContextPolicyStackTrigger({
           </span>
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="start">
+      <PopoverContent sizing="content" className="p-0" align="start">
         {policies.length > SEARCH_THRESHOLD && (
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-border/50">
             <Search className="w-3 h-3 text-muted-foreground shrink-0" />

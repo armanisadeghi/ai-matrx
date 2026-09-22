@@ -94,8 +94,9 @@ export function ToolSelectorPanel({
             </Button>
           </PopoverTrigger>
           <PopoverContent
+            sizing="content"
             align="end"
-            className="w-56 p-1 max-h-60 overflow-y-auto"
+            className="p-1 max-h-60 overflow-y-auto"
           >
             {unselectedTools.length === 0 ? (
               <p className="text-xs text-muted-foreground px-2 py-1.5">

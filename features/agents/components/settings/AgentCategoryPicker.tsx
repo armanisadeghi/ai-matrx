@@ -123,8 +123,9 @@ export function AgentCategoryPicker({
         </button>
       </PopoverTrigger>
       <PopoverContent
+        sizing="content"
         align="start"
-        className="w-[var(--radix-popover-trigger-width)] p-0"
+        className="p-0"
       >
         <Command>
           <CommandInput

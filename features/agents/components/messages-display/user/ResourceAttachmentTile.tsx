@@ -235,7 +235,7 @@ export function ResourceAttachmentTile({
           </span>
         </PopoverAnchor>
         {hasControls ? (
-          <PopoverContent side="top" align="end" sideOffset={6} className="w-52 p-1">
+          <PopoverContent sizing="content" side="top" align="end" sideOffset={6} className="p-1">
             <div className="px-2 py-1.5">
               <p className="truncate text-xs font-semibold text-foreground">
                 {title}
@@ -399,10 +399,11 @@ export function ResourceAttachmentTile({
 
       {hasControls ? (
         <PopoverContent
+          sizing="content"
           side="top"
           align="end"
           sideOffset={6}
-          className="w-52 p-1"
+          className="p-1"
         >
           <div className="px-2 py-1.5">
             <p className="truncate text-xs font-semibold text-foreground">

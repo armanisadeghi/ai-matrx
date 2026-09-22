@@ -43,8 +43,8 @@ export function VariableSelector({
                     <Braces className="w-3.5 h-3.5" />
                 </Button>
             </PopoverTrigger>
-            <PopoverContent 
-                className="min-w-56 max-w-[calc(100vw-2rem)] sm:max-w-md w-max p-2" 
+            <PopoverContent sizing="content" 
+                className="sm:max-w-md p-2" 
                 align="start"
             >
                 <div className="space-y-1 max-h-[400px] overflow-y-auto">

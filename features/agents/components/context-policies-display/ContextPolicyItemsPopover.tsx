@@ -83,10 +83,11 @@ export function ContextPolicyItemsPopover({
           />
         </PopoverTrigger>
         <PopoverContent
+          sizing="content"
           align="start"
           side="top"
           sideOffset={6}
-          className="w-80 max-w-[92vw] p-1.5"
+          className="p-1.5"
         >
           <p className="px-2 pb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
             Context items

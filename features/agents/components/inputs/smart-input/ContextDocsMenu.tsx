@@ -324,10 +324,11 @@ export function ContextDocsMenu({ conversationId }: ContextDocsMenuProps) {
       <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
 
       <PopoverContent
+        sizing="content"
         align="start"
         side="top"
         sideOffset={8}
-        className="w-[min(360px,calc(100vw-1rem))] p-0 border-border"
+        className="p-0 border-border"
         container={dialogContainer ?? undefined}
       >
         <div className="max-h-[min(70dvh,560px)] overflow-y-auto overscroll-contain">

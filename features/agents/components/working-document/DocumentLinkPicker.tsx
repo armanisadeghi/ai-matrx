@@ -309,7 +309,7 @@ export function DocumentLinkPicker({
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0" align={align} side={side}>
+      <PopoverContent sizing="content" className="p-0" align={align} side={side}>
         {body}
       </PopoverContent>
     </Popover>

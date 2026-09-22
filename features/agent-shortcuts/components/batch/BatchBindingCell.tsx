@@ -218,7 +218,7 @@ export function InlineBindingEditor({
             ) : null}
           </button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-48 p-1">
+        <PopoverContent /* sizing: fixed — fixed binding-mode enum */ align="start" className="w-48 p-1">
           {MODE_ORDER.map((m) => {
             const M = MODE_META[m];
             const active = m === mode;

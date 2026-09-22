@@ -241,7 +241,8 @@ export function AgentSettingMediaPicker({
         <Popover open={isOpen} onOpenChange={setIsOpen} modal={false}>
           <PopoverTrigger asChild>{trigger}</PopoverTrigger>
           <PopoverContent
-            className="w-80 p-0 border-border"
+            sizing="content"
+            className="p-0 border-border"
             align="start"
             side="top"
             sideOffset={8}

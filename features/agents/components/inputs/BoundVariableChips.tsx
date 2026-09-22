@@ -291,7 +291,8 @@ function BoundChip({
         )}
       </span>
       <PopoverContent
-        className="w-80 p-3 rounded-2xl"
+        sizing="content"
+        className="p-3 rounded-2xl"
         align="start"
         side="top"
         sideOffset={6}

@@ -110,7 +110,7 @@ export function AgentVersionCompact({
             Change
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-[280px] p-2">
+        <PopoverContent sizing="content" align="end" className="p-2">
           <div className="space-y-1">
             <button
               type="button"

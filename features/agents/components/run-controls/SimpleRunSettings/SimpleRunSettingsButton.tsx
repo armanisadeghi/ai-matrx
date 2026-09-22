@@ -92,6 +92,7 @@ export function SimpleRunSettingsButton({
         </button>
       </PopoverTrigger>
       <PopoverContent
+        /* sizing: fixed — content already decides its own width; no fixed box to remove */
         align="end"
         side="top"
         sideOffset={8}

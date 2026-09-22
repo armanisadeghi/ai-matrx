@@ -78,7 +78,7 @@ export function CategoryColorPicker({
             />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-3" align="start">
+        <PopoverContent /* sizing: fixed — content already decides its own width; no fixed box to remove */ className="w-auto p-3" align="start">
           <div className="space-y-3">
             <HexColorPicker
               color={fallbackColor}

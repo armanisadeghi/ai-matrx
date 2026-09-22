@@ -93,7 +93,7 @@ export function KindBindPicker({
           <ChevronDown className="h-3 w-3 ml-1 opacity-60" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-96 p-0" align="start">
+      <PopoverContent sizing="content" className="p-0" align="start">
         <Command>
           <CommandInput placeholder="Search kinds…" className="h-8 text-xs" />
           <CommandList className="max-h-72">

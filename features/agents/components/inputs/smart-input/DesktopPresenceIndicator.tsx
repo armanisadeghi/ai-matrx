@@ -91,10 +91,11 @@ export function DesktopPresenceIndicator({
         </button>
       </PopoverTrigger>
       <PopoverContent
+        sizing="content"
         side="top"
         align="start"
         sideOffset={8}
-        className="w-56 overflow-hidden p-1.5"
+        className="overflow-hidden p-1.5"
       >
         <div className="mb-1 border-b px-1.5 pb-1.5">
           <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">

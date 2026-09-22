@@ -317,10 +317,11 @@ export function DesktopFilterPanel({
         )}
       </PopoverTrigger>
       <PopoverContent
+        sizing="content"
         align="end"
         sideOffset={8}
         collisionPadding={16}
-        className="w-[360px] p-0 overflow-hidden flex flex-col"
+        className="p-0 overflow-hidden flex flex-col"
         style={{
           maxHeight:
             "var(--radix-popover-content-available-height, calc(100dvh - 120px))",
