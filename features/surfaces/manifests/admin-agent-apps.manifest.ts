@@ -540,11 +540,22 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "rate_limits_filters",
     label: "Rate limit filters",
     description:
-      "The active column filters: appName/identifier text filters, identifierType (user/ip/fingerprint), blocked tri-state (defaults to 'blocked'). Absent outside the rate-limits section.",
+      "The source-backed status selection: blocked, active, or all. The canonical table's local search, per-column filters, sort, and page are carried separately in rate_limits_table_query. Absent outside the rate-limits section.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 120,
     sortOrder: 620,
+    group: "rate_limits",
+  },
+  {
+    name: "rate_limits_table_query",
+    label: "Rate limit table query",
+    description:
+      "The canonical table's current local search, per-column filters, sort, and page state. It applies only to the loaded source slice, which is capped at 500 rows. Absent outside the rate-limits section.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 500,
+    sortOrder: 630,
     group: "rate_limits",
   },
 ];
@@ -932,11 +943,9 @@ export function createAdminAgentAppsScope(values: {
     ips: number;
   };
   rate_limits_filters?: {
-    appName: string;
-    identifier: string;
-    identifierType: "all" | "user" | "ip" | "fingerprint";
     blocked: "all" | "blocked" | "not-blocked";
   };
+  rate_limits_table_query?: Record<string, unknown>;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;
 }

@@ -1,52 +1,28 @@
 "use client";
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  useTransition,
-} from "react";
+import { useEffect, useEffectEvent, useState, useTransition } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
-import {
-  Archive,
-  ArrowUpDown,
-  Ban,
-  CheckCircle,
-  Clock,
-  Filter,
-  Loader2,
-  RefreshCw,
-  ShieldCheck,
-  Star,
-  X,
-} from "lucide-react";
+import { Ban, CheckCircle, Clock, Archive } from "lucide-react";
+import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
 import { Button } from "@/components/ui/button";
-import { formatCount, formatPercentFromFraction, formatUsd } from "@ai-matrx/kit/format";
-import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/use-toast";
-import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import {
+  formatCount,
+  formatPercentFromFraction,
+  formatUsd,
+} from "@ai-matrx/kit/format";
 import {
   fetchAgentAppsAdmin,
   updateAgentAppAdmin,
@@ -67,44 +43,12 @@ import {
 } from "@/features/agent-apps/components/AgentAppRef";
 import { pushAppHref } from "@/lib/deployment/navigate";
 
-type SortField =
-  | "name"
-  | "status"
-  | "category"
-  | "executions"
-  | "users"
-  | "success_rate"
-  | "cost"
-  | "updated_at";
-type SortDirection = "asc" | "desc";
-
-const SortIcon = ({
-  field,
-  activeField,
-  direction,
-}: {
-  field: SortField;
-  activeField: SortField;
-  direction: SortDirection;
-}) => {
-  if (activeField !== field) return null;
-  return direction === "asc" ? (
-    <ArrowUpDown className="h-3 w-3 inline ml-1" />
-  ) : (
-    <ArrowUpDown className="h-3 w-3 inline ml-1 rotate-180" />
-  );
+/** `fetchAgentAppsAdmin({limit: 1000})` has no total-count receipt. */
+export const AGENT_APPS_COVERAGE = {
+  noun: "agent app",
+  cap: 1000,
+  answeredBy: "client" as const,
 };
-
-interface ColumnFilters {
-  name: string;
-  slug: string;
-  mandateKey: string;
-  status: Set<string>;
-  category: Set<string>;
-  featured: "all" | "featured" | "not-featured";
-  verified: "all" | "verified" | "not-verified";
-  creator: string;
-}
 
 function getStatusBadge(status: string) {
   const map: Record<string, { cls: string; Icon: typeof Clock }> = {
@@ -122,220 +66,257 @@ function getStatusBadge(status: string) {
       Icon: Ban,
     },
   };
-  const cfg = map[status] ?? map.draft;
-  const Icon = cfg.Icon;
+  const config = map[status] ?? map.draft;
+  const Icon = config.Icon;
   return (
-    <Badge variant="outline" className={`${cfg.cls} text-xs`}>
-      <Icon className="w-3 h-3 mr-1" />
+    <Badge variant="outline" className={`${config.cls} text-xs`}>
+      <Icon className="mr-1 h-3 w-3" />
       {status}
     </Badge>
   );
 }
 
+export function agentAppSuccessPercent(value: number | null): number | null {
+  return value === null ? null : value * 100;
+}
+
+export const AGENT_APP_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
+  {
+    id: "name",
+    header: "Name",
+    accessorKey: "name",
+    filter: "text",
+    width: 220,
+    cell: (app) => (
+      <AgentAppRef appId={app.id} name={app.name} slug={app.slug} />
+    ),
+  },
+  {
+    id: "slug",
+    header: "Slug",
+    accessorKey: "slug",
+    filter: "text",
+    width: 150,
+    mobileHidden: true,
+    cell: (app) => (
+      <code
+        className="block truncate rounded bg-muted px-2 py-1 text-xs"
+        title={app.slug}
+      >
+        {app.slug}
+      </code>
+    ),
+  },
+  {
+    id: "mandate",
+    header: "Mandate",
+    accessorFn: (app) => app.mandate_key ?? "",
+    filter: "text",
+    width: 180,
+    mobileHidden: true,
+    cell: (app) =>
+      app.mandate_key ? (
+        <AppLink
+          href={`/mandates/${encodeURIComponent(app.mandate_key)}`}
+          className="block truncate font-mono text-xs text-muted-foreground hover:text-foreground hover:underline"
+          title="Open this app's mandate"
+        >
+          {app.mandate_key}
+        </AppLink>
+      ) : (
+        <span className="text-xs text-muted-foreground">—</span>
+      ),
+  },
+  {
+    id: "status",
+    header: "Status",
+    accessorKey: "status",
+    filter: "select",
+    filterOptions: ["draft", "published", "archived", "suspended"].map(
+      (value) => ({ value, label: value }),
+    ),
+    width: 140,
+    cell: (app) => getStatusBadge(app.status),
+  },
+  {
+    id: "category",
+    header: "Category",
+    accessorFn: (app) => app.category ?? "",
+    filter: "select",
+    width: 130,
+    mobileHidden: true,
+    cell: (app) =>
+      app.category ? (
+        <Badge variant="outline" className="text-xs">
+          {app.category}
+        </Badge>
+      ) : (
+        <span className="text-xs text-muted-foreground">—</span>
+      ),
+  },
+  {
+    id: "creator",
+    header: "Creator",
+    accessorFn: (app) => app.creator_email ?? "",
+    filter: "text",
+    width: 180,
+    mobileHidden: true,
+    cell: (app) => (
+      <span
+        className="block truncate text-sm text-muted-foreground"
+        title={app.creator_email}
+      >
+        {app.creator_email ?? "—"}
+      </span>
+    ),
+  },
+  {
+    id: "featured",
+    header: "Featured",
+    accessorKey: "is_featured",
+    filter: "boolean",
+    width: 110,
+    mobileHidden: true,
+  },
+  {
+    id: "verified",
+    header: "Verified",
+    accessorKey: "is_verified",
+    filter: "boolean",
+    width: 110,
+    mobileHidden: true,
+  },
+  {
+    id: "executions",
+    header: "Runs",
+    accessorFn: (app) => app.total_executions ?? 0,
+    filter: "number",
+    width: 100,
+    className: "text-right tabular-nums",
+    cell: (app) => (
+      <AppLink
+        href={agentAppExecutionsHref(app.id)}
+        title={`Open the runs and errors for ${app.name}`}
+        className="hover:text-primary hover:underline"
+      >
+        {formatCount(app.total_executions)}
+      </AppLink>
+    ),
+  },
+  {
+    id: "users",
+    header: "Users",
+    accessorFn: (app) => app.unique_users_count ?? 0,
+    filter: "number",
+    width: 80,
+    className: "text-right tabular-nums",
+    mobileHidden: true,
+    cell: (app) => formatCount(app.unique_users_count),
+  },
+  {
+    id: "success-rate",
+    header: "Success",
+    accessorFn: (app) => agentAppSuccessPercent(app.success_rate),
+    filter: "number",
+    width: 100,
+    className: "text-right tabular-nums",
+    mobileHidden: true,
+    cell: (app) => formatPercentFromFraction(app.success_rate),
+  },
+  {
+    id: "cost",
+    header: "Cost",
+    accessorFn: (app) => app.total_cost ?? 0,
+    filter: "number",
+    width: 90,
+    className: "text-right tabular-nums",
+    mobileHidden: true,
+    cell: (app) => formatUsd(app.total_cost, { digits: 4 }),
+  },
+  {
+    id: "updated",
+    header: "Updated",
+    accessorKey: "updated_at",
+    filter: "date",
+    width: 130,
+    mobileHidden: true,
+    cell: (app) => (
+      <time className="text-xs text-muted-foreground" dateTime={app.updated_at}>
+        {new Date(app.updated_at).toLocaleDateString()}
+      </time>
+    ),
+  },
+  {
+    id: "description",
+    header: "Description",
+    accessorFn: (app) => app.description ?? "",
+    filter: "text",
+    hidden: true,
+  },
+  {
+    id: "tags",
+    header: "Tags",
+    accessorFn: (app) => app.tags.join(" "),
+    filter: "text",
+    hidden: true,
+  },
+  {
+    id: "visibility",
+    header: "Visibility",
+    accessorKey: "visibility",
+    filter: "select",
+    hidden: true,
+  },
+];
+
 export default function AgentAppsAdminListPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [, startTransition] = useTransition();
-
   const [apps, setApps] = useState<AgentAppAdminView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortField, setSortField] = useState<SortField>("updated_at");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [viewApps, setViewApps] = useState<AgentAppAdminView[]>([]);
 
-  const [columnFilters, setColumnFilters] = useState<ColumnFilters>({
-    name: "",
-    slug: "",
-    mandateKey: "",
-    status: new Set<string>(),
-    category: new Set<string>(),
-    featured: "all",
-    verified: "all",
-    creator: "",
-  });
-
-  const uniqueValues = useMemo(() => {
-    const statuses = new Set<string>();
-    const categories = new Set<string>();
-    apps.forEach((a) => {
-      if (a.status) statuses.add(a.status);
-      if (a.category) categories.add(a.category);
-    });
-    return {
-      statuses: Array.from(statuses).sort(),
-      categories: Array.from(categories).sort(),
-    };
-  }, [apps]);
-
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = async () => {
+    const retainsRows = apps.length > 0;
     try {
+      if (retainsRows) setIsRefreshing(true);
+      else setLoading(true);
       const data = await fetchAgentAppsAdmin({ limit: 1000 });
       setApps(data);
-    } catch (err) {
-      toast({
-        title: "Error",
-        description:
-          err instanceof Error ? err.message : "Failed to load agent apps",
-        variant: "destructive",
-      });
+      setViewApps(data);
+      setLoadError(null);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to load agent apps";
+      setLoadError(message);
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
-  }, [toast]);
-
-  useEffect(() => {
+  };
+  const startLoad = useEffectEvent(() => {
     void load();
-  }, [load]);
+  });
+  useEffect(() => {
+    const timer = window.setTimeout(startLoad, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
-  const filteredAndSortedApps = useMemo(() => {
-    let filtered = [...apps];
-
-    if (columnFilters.name) {
-      const q = columnFilters.name.toLowerCase();
-      filtered = filtered.filter((a) => a.name?.toLowerCase().includes(q));
-    }
-    if (columnFilters.slug) {
-      const q = columnFilters.slug.toLowerCase();
-      filtered = filtered.filter((a) => a.slug?.toLowerCase().includes(q));
-    }
-    if (columnFilters.mandateKey) {
-      const q = columnFilters.mandateKey.toLowerCase();
-      filtered = filtered.filter((a) =>
-        a.mandate_key?.toLowerCase().includes(q),
-      );
-    }
-    if (columnFilters.status.size > 0) {
-      filtered = filtered.filter(
-        (a) => a.status && columnFilters.status.has(a.status),
-      );
-    }
-    if (columnFilters.category.size > 0) {
-      filtered = filtered.filter(
-        (a) => a.category && columnFilters.category.has(a.category),
-      );
-    }
-    if (columnFilters.featured === "featured") {
-      filtered = filtered.filter((a) => a.is_featured);
-    } else if (columnFilters.featured === "not-featured") {
-      filtered = filtered.filter((a) => !a.is_featured);
-    }
-    if (columnFilters.verified === "verified") {
-      filtered = filtered.filter((a) => a.is_verified);
-    } else if (columnFilters.verified === "not-verified") {
-      filtered = filtered.filter((a) => !a.is_verified);
-    }
-    if (columnFilters.creator) {
-      const q = columnFilters.creator.toLowerCase();
-      filtered = filtered.filter((a) =>
-        a.creator_email?.toLowerCase().includes(q),
-      );
-    }
-
-    filtered.sort((a, b) => {
-      let av: string | number, bv: string | number;
-      switch (sortField) {
-        case "name":
-          av = a.name?.toLowerCase() || "";
-          bv = b.name?.toLowerCase() || "";
-          break;
-        case "status":
-          av = a.status || "";
-          bv = b.status || "";
-          break;
-        case "category":
-          av = a.category || "";
-          bv = b.category || "";
-          break;
-        case "executions":
-          av = a.total_executions || 0;
-          bv = b.total_executions || 0;
-          break;
-        case "users":
-          av = a.unique_users_count || 0;
-          bv = b.unique_users_count || 0;
-          break;
-        case "success_rate":
-          av = (a.success_rate || 0) * 100;
-          bv = (b.success_rate || 0) * 100;
-          break;
-        case "cost":
-          av = a.total_cost || 0;
-          bv = b.total_cost || 0;
-          break;
-        case "updated_at":
-          av = new Date(a.updated_at).getTime();
-          bv = new Date(b.updated_at).getTime();
-          break;
-        default:
-          return 0;
-      }
-      if (av < bv) return sortDirection === "asc" ? -1 : 1;
-      if (av > bv) return sortDirection === "asc" ? 1 : -1;
-      return 0;
-    });
-    return filtered;
-  }, [apps, columnFilters, sortField, sortDirection]);
-
-  const stats = useMemo(() => {
-    const published = apps.filter((a) => a.status === "published").length;
-    const featured = apps.filter((a) => a.is_featured).length;
-    const verified = apps.filter((a) => a.is_verified).length;
-    return { total: apps.length, published, featured, verified };
-  }, [apps]);
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
+  const visibleApps = viewApps;
+  const stats = {
+    total: apps.length,
+    published: apps.filter((app) => app.status === "published").length,
+    featured: apps.filter((app) => app.is_featured).length,
+    verified: apps.filter((app) => app.is_verified).length,
   };
-
-  const updateTextFilter = (
-    field: "name" | "slug" | "mandateKey" | "creator",
-    value: string,
-  ) => setColumnFilters((p) => ({ ...p, [field]: value }));
-
-  const toggleSetFilter = <T extends string>(
-    field: "status" | "category",
-    value: T,
-  ) => {
-    setColumnFilters((p) => {
-      const next = new Set(p[field]);
-      if (next.has(value)) next.delete(value);
-      else next.add(value);
-      return { ...p, [field]: next };
-    });
-  };
-
-  const updateDropdownFilter = (
-    field: "featured" | "verified",
-    value: ColumnFilters["featured"] | ColumnFilters["verified"],
-  ) => setColumnFilters((p) => ({ ...p, [field]: value }));
-
-  const clearAllFilters = () =>
-    setColumnFilters({
-      name: "",
-      slug: "",
-      mandateKey: "",
-      status: new Set<string>(),
-      category: new Set<string>(),
-      featured: "all",
-      verified: "all",
-      creator: "",
-    });
-
-  const hasActiveFilters =
-    columnFilters.name ||
-    columnFilters.slug ||
-    columnFilters.mandateKey ||
-    columnFilters.status.size > 0 ||
-    columnFilters.category.size > 0 ||
-    columnFilters.featured !== "all" ||
-    columnFilters.verified !== "all" ||
-    columnFilters.creator;
-
+  const handleOpenEdit = (id: string) =>
+    startTransition(() =>
+      pushAppHref(router, `/administration/agents/agent-apps/edit/${id}`),
+    );
   const handleMutate = async (
     id: string,
     patch: Omit<UpdateAgentAppAdminInput, "id">,
@@ -344,63 +325,45 @@ export default function AgentAppsAdminListPage() {
     try {
       await updateAgentAppAdmin({ id, ...patch });
       await load();
-      toast({
-        title: "Updated",
-        description,
-      });
-    } catch (err) {
+      toast({ title: "Updated", description });
+    } catch (error) {
       toast({
         title: "Error",
         description:
-          err instanceof Error ? err.message : "Failed to update agent app",
+          error instanceof Error ? error.message : "Failed to update agent app",
         variant: "destructive",
       });
     }
   };
-
-  const handleOpenEdit = (id: string) => {
-    startTransition(() => {
-      pushAppHref(router, `/administration/agents/agent-apps/edit/${id}`);
-    });
-  };
-
-  if (loading && apps.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full w-full">
-        <MatrxMiniLoader />
-      </div>
-    );
-  }
-
   const getScope = () =>
     createAdminAgentAppsScope({
       admin_section: "apps",
       apps_list_total_count: apps.length,
-      apps_list_filtered_count: filteredAndSortedApps.length,
+      apps_list_filtered_count: visibleApps.length,
       apps_list_filters: {
-        name: columnFilters.name,
-        slug: columnFilters.slug,
-        status: Array.from(columnFilters.status),
-        category: Array.from(columnFilters.category),
-        featured: columnFilters.featured,
-        verified: columnFilters.verified,
-        creator: columnFilters.creator,
+        name: "",
+        slug: "",
+        status: [],
+        category: [],
+        featured: "all",
+        verified: "all",
+        creator: "",
       },
-      apps_list_sort: { field: sortField, direction: sortDirection },
-      apps_list_rows: filteredAndSortedApps.map((a) => ({
-        id: a.id,
-        name: a.name,
-        slug: a.slug,
-        status: a.status,
-        category: a.category,
-        creator_email: a.creator_email,
-        is_featured: a.is_featured,
-        is_verified: a.is_verified,
-        total_executions: a.total_executions,
-        unique_users_count: a.unique_users_count,
-        success_rate: a.success_rate,
-        total_cost: a.total_cost,
-        updated_at: a.updated_at,
+      apps_list_sort: { field: "updated", direction: "desc" },
+      apps_list_rows: visibleApps.map((app) => ({
+        id: app.id,
+        name: app.name,
+        slug: app.slug,
+        status: app.status,
+        category: app.category,
+        creator_email: app.creator_email,
+        is_featured: app.is_featured,
+        is_verified: app.is_verified,
+        total_executions: app.total_executions,
+        unique_users_count: app.unique_users_count,
+        success_rate: app.success_rate,
+        total_cost: app.total_cost,
+        updated_at: app.updated_at,
       })),
     });
 
@@ -409,674 +372,232 @@ export default function AgentAppsAdminListPage() {
       surfaceName={ADMIN_AGENT_APPS_SURFACE_NAME}
       getScope={getScope}
     >
-    <TooltipProvider>
-      <div className="flex flex-col h-full">
-        <div className="flex-shrink-0 p-4 border-b bg-card space-y-3">
-          <div className="flex items-center justify-end">
-            <div className="flex gap-2">
-              {hasActiveFilters && (
-                <Button
-                  onClick={clearAllFilters}
-                  variant="outline"
-                  size="sm"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Clear Filters
-                </Button>
-              )}
-              <Button onClick={() => void load()} variant="outline" size="sm">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-              {filteredAndSortedApps.length > 0 && (
+      <TooltipProvider>
+        <div
+          className="flex h-full min-h-0 flex-col"
+          aria-busy={loading || isRefreshing}
+        >
+          {loadError && (
+            <div
+              role="alert"
+              className="mb-2 flex shrink-0 items-center gap-2 text-sm text-red-600 dark:text-red-400"
+            >
+              Could not refresh agent apps: {loadError}
+              <button
+                type="button"
+                className="underline"
+                onClick={() => void load()}
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          <div className="grid shrink-0 grid-cols-4 gap-3 pb-3">
+            {[
+              [stats.total, "Total", ""],
+              [stats.published, "Published", "text-success"],
+              [stats.featured, "Featured", "text-warning"],
+              [stats.verified, "Verified", "text-primary"],
+            ].map(([value, label, color]) => (
+              <Card key={String(label)}>
+                <CardContent className="p-2">
+                  <div className={`text-2xl font-bold ${color}`}>{value}</div>
+                  <div className="text-xs text-muted-foreground">{label}</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="min-h-0 flex-1">
+            <MatrxDataTable<AgentAppAdminView>
+              tableId="admin-agent-apps"
+              urlState={{
+                id: "admin-agent-apps",
+                defaultSort: { id: "updated", direction: "desc" },
+              }}
+              data={apps}
+              columns={AGENT_APP_COLUMNS}
+              getRowId={(app) => app.id}
+              isLoading={loading}
+              isFetching={isRefreshing}
+              toolbar={{
+                title: "Agent Apps",
+                searchPlaceholder: "Search agent apps…",
+                refresh: { onRefresh: load },
+                actions:
+                  visibleApps.length > 0 ? (
+                    <CopyButtons
+                      size="icon"
+                      label={`Agent apps (${visibleApps.length})`}
+                      human={() => visibleApps.map(humanAgentApp).join("\n\n")}
+                      json={() => visibleApps}
+                      agent={() => ({
+                        kind: "agent-apps",
+                        location: "AI Matrx Admin — Agent Apps",
+                        description:
+                          "Every agent app currently shown in the admin table (this view).",
+                        data: visibleApps,
+                        attributes: {
+                          count: visibleApps.length,
+                          totalCount: apps.length,
+                        },
+                      })}
+                      aiVariants={[
+                        {
+                          id: "briefs",
+                          label: "This view briefs",
+                          hint: "One line per app currently shown",
+                          build: () => ({
+                            kind: "agent-apps-briefs",
+                            location: "AI Matrx Admin — Agent Apps",
+                            description:
+                              "One-line briefs for the apps currently shown.",
+                            data: visibleApps.map(appBrief),
+                            attributes: { count: visibleApps.length },
+                          }),
+                        },
+                      ]}
+                      aiCustom={{
+                        label: "Custom export…",
+                        hint: "Toggle only-filtered-view / include description",
+                        options: [
+                          {
+                            kind: "toggle",
+                            key: "onlyFiltered",
+                            label: "Only this view",
+                            hint: "Off = every loaded app (up to 1000)",
+                            default: true,
+                          },
+                          {
+                            kind: "toggle",
+                            key: "includeDescription",
+                            label: "Include description",
+                            hint: "Adds each app's full description text",
+                            default: false,
+                          },
+                        ],
+                        build: (options) => {
+                          const source = options.onlyFiltered
+                            ? visibleApps
+                            : apps;
+                          return {
+                            text: source
+                              .map((app) =>
+                                [
+                                  appBrief(app),
+                                  options.includeDescription && app.description
+                                    ? `  ${app.description}`
+                                    : null,
+                                ]
+                                  .filter(Boolean)
+                                  .join("\n"),
+                              )
+                              .join("\n\n"),
+                            meta: { apps: source.length },
+                          };
+                        },
+                        wrap: (text, options, meta) => ({
+                          kind: "agent-apps-custom-export",
+                          location: "AI Matrx Admin — Agent Apps",
+                          description:
+                            "Custom-groomed export of the admin agent-apps table.",
+                          data: text,
+                          attributes: {
+                            onlyFiltered: Boolean(options.onlyFiltered),
+                            includeDescription: Boolean(
+                              options.includeDescription,
+                            ),
+                            count: meta?.apps,
+                          },
+                        }),
+                      }}
+                      export={{
+                        items: [
+                          jsonExportItem(() => visibleApps, "JSON (this view)"),
+                          csvExportItem(
+                            () =>
+                              visibleApps as unknown as Array<
+                                Record<string, unknown>
+                              >,
+                            "CSV (this view)",
+                          ),
+                        ],
+                      }}
+                    />
+                  ) : undefined,
+              }}
+              onViewChange={setViewApps}
+              coverage={AGENT_APPS_COVERAGE}
+              detail={{ enabled: false }}
+              window={{ enabled: false }}
+              copy={false}
+              getRowHref={(app) =>
+                `/administration/agents/agent-apps/edit/${app.id}`
+              }
+              onRowOpen={(app) => handleOpenEdit(app.id)}
+              emptyState={{
+                title: loadError
+                  ? "Could not load agent apps."
+                  : "No agent apps found",
+              }}
+              rowActions={(app) => (
                 <>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <MoreHorizontalTapButton
+                        ariaLabel={`Actions for ${app.name}`}
+                        variant="transparent"
+                      />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onSelect={() => handleOpenEdit(app.id)}>
+                        Manage
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={() =>
+                          void handleMutate(
+                            app.id,
+                            { is_featured: !app.is_featured },
+                            `${app.name} ${!app.is_featured ? "featured" : "unfeatured"}`,
+                          )
+                        }
+                      >
+                        {app.is_featured
+                          ? "Remove from featured"
+                          : "Feature app"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={() =>
+                          void handleMutate(
+                            app.id,
+                            { is_verified: !app.is_verified },
+                            `${app.name} ${!app.is_verified ? "verified" : "unverified"}`,
+                          )
+                        }
+                      >
+                        {app.is_verified ? "Remove verification" : "Verify app"}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <CopyButtons
                     size="icon"
-                    label={`Agent apps (${filteredAndSortedApps.length})`}
-                    human={() =>
-                      filteredAndSortedApps.map(humanAgentApp).join("\n\n")
-                    }
-                    json={() => filteredAndSortedApps}
+                    label={app.name}
+                    human={() => humanAgentApp(app)}
+                    json={() => app}
                     agent={() => ({
-                      kind: "agent-apps",
+                      kind: "agent-app",
                       location: "AI Matrx Admin — Agent Apps",
-                      description:
-                        "Every agent app currently shown in the admin table (this view).",
-                      data: filteredAndSortedApps,
-                      attributes: {
-                        count: filteredAndSortedApps.length,
-                        totalCount: apps.length,
-                      },
+                      description: "A single agent-app admin row.",
+                      data: app,
+                      summary: humanAgentApp(app),
+                      attributes: { id: app.id, status: app.status },
                     })}
-                    aiVariants={[
-                      {
-                        id: "briefs",
-                        label: "This view briefs",
-                        hint: "One line per app currently shown",
-                        build: () => ({
-                          kind: "agent-apps-briefs",
-                          location: "AI Matrx Admin — Agent Apps",
-                          description: "One-line briefs for the apps currently shown.",
-                          data: filteredAndSortedApps.map(appBrief),
-                          attributes: { count: filteredAndSortedApps.length },
-                        }),
-                      },
-                    ]}
-                    aiCustom={{
-                      label: "Custom export…",
-                      hint: "Toggle only-filtered-view / include description",
-                      options: [
-                        {
-                          kind: "toggle",
-                          key: "onlyFiltered",
-                          label: "Only this view",
-                          hint: "Off = every app in the admin table (up to 1000)",
-                          default: true,
-                        },
-                        {
-                          kind: "toggle",
-                          key: "includeDescription",
-                          label: "Include description",
-                          hint: "Adds each app's full description text",
-                          default: false,
-                        },
-                      ],
-                      build: (opts) => {
-                        const source = opts.onlyFiltered
-                          ? filteredAndSortedApps
-                          : apps;
-                        const lines = source.map((a) => {
-                          const bits = [
-                            appBrief(a),
-                            opts.includeDescription && a.description
-                              ? `  ${a.description}`
-                              : null,
-                          ].filter(Boolean);
-                          return bits.join("\n");
-                        });
-                        return {
-                          text: lines.join("\n\n"),
-                          meta: { apps: source.length },
-                        };
-                      },
-                      wrap: (text, opts, meta) => ({
-                        kind: "agent-apps-custom-export",
-                        location: "AI Matrx Admin — Agent Apps",
-                        description: "Custom-groomed export of the admin agent-apps table.",
-                        data: text,
-                        attributes: {
-                          onlyFiltered: Boolean(opts.onlyFiltered),
-                          includeDescription: Boolean(opts.includeDescription),
-                          count: meta?.apps,
-                        },
-                      }),
-                    }}
-                    export={{
-                      items: [
-                        jsonExportItem(() => filteredAndSortedApps, "JSON (this view)"),
-                        csvExportItem(
-                          () =>
-                            filteredAndSortedApps as unknown as Array<
-                              Record<string, unknown>
-                            >,
-                          "CSV (this view)",
-                        ),
-                      ],
-                    }}
                   />
                 </>
               )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-4 gap-3">
-            <Card>
-              <CardContent className="p-2">
-                <div className="text-2xl font-bold">{stats.total}</div>
-                <div className="text-xs text-muted-foreground">Total</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-2">
-                <div className="text-2xl font-bold text-success">
-                  {stats.published}
-                </div>
-                <div className="text-xs text-muted-foreground">Published</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-2">
-                <div className="text-2xl font-bold text-warning">
-                  {stats.featured}
-                </div>
-                <div className="text-xs text-muted-foreground">Featured</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-2">
-                <div className="text-2xl font-bold text-primary">
-                  {stats.verified}
-                </div>
-                <div className="text-xs text-muted-foreground">Verified</div>
-              </CardContent>
-            </Card>
+            />
           </div>
         </div>
-
-        <ScrollArea className="flex-1">
-          <Table wrapperClassName="phone-stack">
-            <TableHeader className="sticky top-0 bg-background z-10">
-              <TableRow>
-                <TableHead className="min-w-[200px]">
-                  <div className="space-y-1">
-                    <div
-                      className="flex items-center gap-1 cursor-pointer hover:text-primary"
-                      onClick={() => handleSort("name")}
-                    >
-                      <span className="font-semibold">Name</span>
-                      <ArrowUpDown className="h-3 w-3" />
-                      <SortIcon
-                        field="name"
-                        activeField={sortField}
-                        direction={sortDirection}
-                      />
-                    </div>
-                    <Input
-                      placeholder="Filter..."
-                      value={columnFilters.name}
-                      onChange={(e) => updateTextFilter("name", e.target.value)}
-                      className="h-7 text-xs"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead className="min-w-[150px]">
-                  <div className="space-y-1">
-                    <span className="font-semibold">Slug</span>
-                    <Input
-                      placeholder="Filter..."
-                      value={columnFilters.slug}
-                      onChange={(e) => updateTextFilter("slug", e.target.value)}
-                      className="h-7 text-xs"
-                    />
-                  </div>
-                </TableHead>
-                {/*
-                  THE APP'S JOB (census #61). After 6.9 an app runs a mandate,
-                  and the mandate — not the app row — decides the holder. The
-                  key is read-only here and links to the mandate; the binding
-                  is edited on the app's own settings page.
-                */}
-                <TableHead className="min-w-[180px]">
-                  <div className="space-y-1">
-                    <span className="font-semibold">Mandate</span>
-                    <Input
-                      placeholder="Filter..."
-                      value={columnFilters.mandateKey}
-                      onChange={(e) =>
-                        updateTextFilter("mandateKey", e.target.value)
-                      }
-                      className="h-7 text-xs"
-                    />
-                  </div>
-                </TableHead>
-                <TableHead className="min-w-[140px]">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1">
-                      <span
-                        className="font-semibold cursor-pointer hover:text-primary"
-                        onClick={() => handleSort("status")}
-                      >
-                        Status
-                      </span>
-                      <ArrowUpDown
-                        className="h-3 w-3 cursor-pointer"
-                        onClick={() => handleSort("status")}
-                      />
-                      <SortIcon
-                        field="status"
-                        activeField={sortField}
-                        direction={sortDirection}
-                      />
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 w-full justify-between text-xs"
-                        >
-                          <span className="truncate">
-                            {columnFilters.status.size > 0
-                              ? `${columnFilters.status.size} selected`
-                              : "All"}
-                          </span>
-                          <Filter className="h-3 w-3 ml-1" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-48">
-                        <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {uniqueValues.statuses.map((s) => (
-                          <DropdownMenuCheckboxItem
-                            key={s}
-                            checked={columnFilters.status.has(s)}
-                            onCheckedChange={() => toggleSetFilter("status", s)}
-                            onSelect={(e) => e.preventDefault()}
-                          >
-                            {s}
-                          </DropdownMenuCheckboxItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableHead>
-                <TableHead className="min-w-[130px]">
-                  <div className="space-y-1">
-                    <span
-                      className="font-semibold cursor-pointer hover:text-primary"
-                      onClick={() => handleSort("category")}
-                    >
-                      Category
-                      <SortIcon
-                        field="category"
-                        activeField={sortField}
-                        direction={sortDirection}
-                      />
-                    </span>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 w-full justify-between text-xs"
-                        >
-                          <span className="truncate">
-                            {columnFilters.category.size > 0
-                              ? `${columnFilters.category.size} selected`
-                              : "All"}
-                          </span>
-                          <Filter className="h-3 w-3 ml-1" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-48">
-                        <DropdownMenuLabel>
-                          Filter by Category
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {uniqueValues.categories.map((c) => (
-                          <DropdownMenuCheckboxItem
-                            key={c}
-                            checked={columnFilters.category.has(c)}
-                            onCheckedChange={() =>
-                              toggleSetFilter("category", c)
-                            }
-                            onSelect={(e) => e.preventDefault()}
-                          >
-                            {c}
-                          </DropdownMenuCheckboxItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableHead>
-                <TableHead className="min-w-[180px]">
-                  <div className="space-y-1">
-                    <span className="font-semibold">Creator</span>
-                    <Input
-                      placeholder="Filter..."
-                      value={columnFilters.creator}
-                      onChange={(e) =>
-                        updateTextFilter("creator", e.target.value)
-                      }
-                      className="h-7 text-xs"
-                    />
-                  </div>
-                </TableHead>
-                <TableHead className="min-w-[110px]">
-                  <div className="space-y-1">
-                    <span className="font-semibold">Featured</span>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 w-full justify-between text-xs"
-                        >
-                          <span className="truncate">
-                            {columnFilters.featured === "all"
-                              ? "All"
-                              : columnFilters.featured === "featured"
-                                ? "Yes"
-                                : "No"}
-                          </span>
-                          <Filter className="h-3 w-3 ml-1" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-40">
-                        <DropdownMenuCheckboxItem
-                          checked={columnFilters.featured === "all"}
-                          onCheckedChange={() =>
-                            updateDropdownFilter("featured", "all")
-                          }
-                        >
-                          All
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          checked={columnFilters.featured === "featured"}
-                          onCheckedChange={() =>
-                            updateDropdownFilter("featured", "featured")
-                          }
-                        >
-                          Featured
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          checked={columnFilters.featured === "not-featured"}
-                          onCheckedChange={() =>
-                            updateDropdownFilter("featured", "not-featured")
-                          }
-                        >
-                          Not Featured
-                        </DropdownMenuCheckboxItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableHead>
-                <TableHead className="min-w-[110px]">
-                  <div className="space-y-1">
-                    <span className="font-semibold">Verified</span>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 w-full justify-between text-xs"
-                        >
-                          <span className="truncate">
-                            {columnFilters.verified === "all"
-                              ? "All"
-                              : columnFilters.verified === "verified"
-                                ? "Yes"
-                                : "No"}
-                          </span>
-                          <Filter className="h-3 w-3 ml-1" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-40">
-                        <DropdownMenuCheckboxItem
-                          checked={columnFilters.verified === "all"}
-                          onCheckedChange={() =>
-                            updateDropdownFilter("verified", "all")
-                          }
-                        >
-                          All
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          checked={columnFilters.verified === "verified"}
-                          onCheckedChange={() =>
-                            updateDropdownFilter("verified", "verified")
-                          }
-                        >
-                          Verified
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          checked={columnFilters.verified === "not-verified"}
-                          onCheckedChange={() =>
-                            updateDropdownFilter("verified", "not-verified")
-                          }
-                        >
-                          Not Verified
-                        </DropdownMenuCheckboxItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableHead>
-                <TableHead className="min-w-[100px] text-right">
-                  <span
-                    className="font-semibold cursor-pointer hover:text-primary"
-                    onClick={() => handleSort("executions")}
-                  >
-                    Runs
-                    <SortIcon
-                      field="executions"
-                      activeField={sortField}
-                      direction={sortDirection}
-                    />
-                  </span>
-                </TableHead>
-                <TableHead className="min-w-[80px] text-right">
-                  <span
-                    className="font-semibold cursor-pointer hover:text-primary"
-                    onClick={() => handleSort("users")}
-                  >
-                    Users
-                    <SortIcon
-                      field="users"
-                      activeField={sortField}
-                      direction={sortDirection}
-                    />
-                  </span>
-                </TableHead>
-                <TableHead className="min-w-[100px] text-right">
-                  <span
-                    className="font-semibold cursor-pointer hover:text-primary"
-                    onClick={() => handleSort("success_rate")}
-                  >
-                    Success
-                    <SortIcon
-                      field="success_rate"
-                      activeField={sortField}
-                      direction={sortDirection}
-                    />
-                  </span>
-                </TableHead>
-                <TableHead className="min-w-[90px] text-right">
-                  <span
-                    className="font-semibold cursor-pointer hover:text-primary"
-                    onClick={() => handleSort("cost")}
-                  >
-                    Cost
-                    <SortIcon
-                      field="cost"
-                      activeField={sortField}
-                      direction={sortDirection}
-                    />
-                  </span>
-                </TableHead>
-                <TableHead className="text-right min-w-[120px] pr-4">
-                  <span className="font-semibold">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSortedApps.map((app) => (
-                <TableRow
-                  key={app.id}
-                  className="cursor-pointer hover:bg-accent/40"
-                  onClick={() => handleOpenEdit(app.id)}
-                >
-                  <TableCell className="font-medium" data-phone="lead">
-                    {/*
-                      A real anchor, not just the row's onClick: cmd-click, a
-                      new tab, and a peek all have to work from the name — THE
-                      DOOR LAW. The row click still opens the editor in place.
-                    */}
-                    <AgentAppRef
-                      appId={app.id}
-                      name={app.name}
-                      slug={app.slug}
-                    />
-                  </TableCell>
-                  <TableCell data-label="Slug" data-phone="inline">
-                    <code className="text-xs bg-muted px-2 py-1 rounded">
-                      {app.slug}
-                    </code>
-                  </TableCell>
-                  <TableCell
-                    data-label="Mandate"
-                    data-phone="inline"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {app.mandate_key ? (
-                      <AppLink
-                        href={`/mandates/${encodeURIComponent(app.mandate_key)}`}
-                        className="font-mono text-xs text-muted-foreground hover:text-foreground hover:underline"
-                        title="Open this app's mandate"
-                      >
-                        {app.mandate_key}
-                      </AppLink>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell data-phone="inline">
-                    {getStatusBadge(app.status)}
-                  </TableCell>
-                  <TableCell data-label="Category" data-phone="inline">
-                    {app.category ? (
-                      <Badge variant="outline" className="text-xs">
-                        {app.category}
-                      </Badge>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell data-label="Creator" data-phone="inline">
-                    <span className="text-sm text-muted-foreground">
-                      {app.creator_email ?? "—"}
-                    </span>
-                  </TableCell>
-                  <TableCell data-label="Featured" data-phone="inline">
-                    <Button
-                      variant={app.is_featured ? "default" : "outline"}
-                      size="sm"
-                      className="h-7"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void handleMutate(
-                          app.id,
-                          { is_featured: !app.is_featured },
-                          `${app.name} ${
-                            !app.is_featured ? "featured" : "unfeatured"
-                          }`,
-                        );
-                      }}
-                    >
-                      <Star
-                        className={`w-3 h-3 mr-1 ${
-                          app.is_featured ? "fill-current" : ""
-                        }`}
-                      />
-                      {app.is_featured ? "Yes" : "No"}
-                    </Button>
-                  </TableCell>
-                  <TableCell data-label="Verified" data-phone="inline">
-                    <Button
-                      variant={app.is_verified ? "default" : "outline"}
-                      size="sm"
-                      className="h-7"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void handleMutate(
-                          app.id,
-                          { is_verified: !app.is_verified },
-                          `${app.name} ${
-                            !app.is_verified ? "verified" : "unverified"
-                          }`,
-                        );
-                      }}
-                    >
-                      <ShieldCheck className="w-3 h-3 mr-1" />
-                      {app.is_verified ? "Yes" : "No"}
-                    </Button>
-                  </TableCell>
-                  {/* A count is a door: the runs total reaches those runs. */}
-                  <TableCell
-                    className="text-right"
-                    data-label="Runs"
-                    data-phone="inline"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <AppLink
-                      href={agentAppExecutionsHref(app.id)}
-                      title={`Open the runs and errors for ${app.name}`}
-                      className="underline-offset-2 hover:text-primary hover:underline"
-                    >
-                      {formatCount(app.total_executions)}
-                    </AppLink>
-                  </TableCell>
-                  <TableCell
-                    className="text-right"
-                    data-label="Users"
-                    data-phone="inline"
-                  >
-                    {formatCount(app.unique_users_count)}
-                  </TableCell>
-                  <TableCell
-                    className="text-right"
-                    data-label="Success"
-                    data-phone="inline"
-                  >
-                    {formatPercentFromFraction(app.success_rate)}
-                  </TableCell>
-                  <TableCell
-                    className="text-right"
-                    data-label="Cost"
-                    data-phone="inline"
-                  >
-                    {formatUsd(app.total_cost, { digits: 4 })}
-                  </TableCell>
-                  <TableCell
-                    className="text-right"
-                    data-phone="actions"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7"
-                        onClick={() => handleOpenEdit(app.id)}
-                      >
-                        Manage
-                      </Button>
-                      <CopyButtons
-                        size="icon"
-                        label={app.name}
-                        human={() => humanAgentApp(app)}
-                        json={() => app}
-                        agent={() => ({
-                          kind: "agent-app",
-                          location: "AI Matrx Admin — Agent Apps",
-                          description: "A single agent-app admin row.",
-                          data: app,
-                          summary: humanAgentApp(app),
-                          attributes: { id: app.id, status: app.status },
-                        })}
-                      />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          {filteredAndSortedApps.length === 0 && !loading && (
-            <div className="text-center py-12">
-              <Ban className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No agent apps found</p>
-            </div>
-          )}
-
-          {loading && filteredAndSortedApps.length > 0 && (
-            <div className="flex items-center justify-center p-4 text-xs text-muted-foreground">
-              <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-              Refreshing…
-            </div>
-          )}
-        </ScrollArea>
-      </div>
-    </TooltipProvider>
+      </TooltipProvider>
     </SurfaceRuntimeProvider>
   );
 }

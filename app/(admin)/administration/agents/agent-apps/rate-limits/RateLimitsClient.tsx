@@ -1,61 +1,34 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@ai-matrx/design-system';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from '@/components/ui/dropdown-menu';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { Card, CardContent } from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
-import {
-  Search,
-  Shield,
-  ShieldOff,
-  ExternalLink,
-  User,
-  Globe,
-  RefreshCw,
-  Filter,
-  X,
-  ArrowUpDown,
-  Ban,
-} from 'lucide-react';
-import MatrxMiniLoader from '@/components/loaders/MatrxMiniLoader';
-import { confirm as confirmDialog } from '@/components/dialogs/confirm/ConfirmDialogHost';
-import {
-  fetchAgentAppRateLimits,
-  unblockAgentAppRateLimit,
-  AgentAppRateLimitRow,
-} from '@/lib/services/agent-apps-admin-service';
-import { CopyButtons } from '@/components/agent-copy/CopyButtons';
-import { jsonExportItem, csvExportItem } from '@/components/agent-copy/export';
-import { SurfaceRuntimeProvider } from '@/features/surfaces/runtime/SurfaceRuntimeContext';
+import { useCallback, useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
   createAdminAgentAppsScope,
-} from '@/features/surfaces/manifests/admin-agent-apps.manifest';
+} from "@/features/surfaces/manifests/admin-agent-apps.manifest";
+import {
+  fetchAgentAppRateLimits,
+  unblockAgentAppRateLimit,
+  type AgentAppRateLimitRow,
+} from "@/lib/services/agent-apps-admin-service";
+import { useToast } from "@/components/ui/use-toast";
+import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import { MatrxDataTable, type MatrxColumnDef, type MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table";
+import { ExternalLink, Globe, Shield, ShieldOff, User } from "lucide-react";
+
+const INITIAL_QUERY: MatrxDataTableQueryState = {
+  page: 1,
+  pageSize: 25,
+  search: "",
+  anyOf: "",
+  columnFilters: {},
+  sort: { id: "last_execution_at", direction: "desc" },
+};
 
 function humanRateLimit(limit: AgentAppRateLimitRow): string {
   const identifier = limit.user_id
@@ -64,9 +37,9 @@ function humanRateLimit(limit: AgentAppRateLimitRow): string {
       ? `IP: ${limit.ip_address}`
       : limit.fingerprint
         ? `Fingerprint: ${limit.fingerprint}`
-        : 'Unknown identifier';
+        : "Unknown identifier";
   return [
-    `${limit.app_name ?? limit.app_id} — ${limit.is_blocked ? 'Blocked' : 'Active'}`,
+    `${limit.app_name ?? limit.app_id} — ${limit.is_blocked ? "Blocked" : "Active"}`,
     identifier,
     `Executions: ${limit.execution_count}`,
     `First: ${new Date(limit.first_execution_at).toLocaleString()}`,
@@ -77,693 +50,239 @@ function humanRateLimit(limit: AgentAppRateLimitRow): string {
     limit.blocked_reason ? `Reason: ${limit.blocked_reason}` : null,
   ]
     .filter(Boolean)
-    .join('\n');
+    .join("\n");
 }
 
-type SortField = 'app_name' | 'execution_count' | 'first_execution_at' | 'last_execution_at' | 'window_start_at';
-type SortDirection = 'asc' | 'desc';
-
-interface ColumnFilters {
-  appName: string;
-  identifier: string;
-  identifierType: 'all' | 'user' | 'ip' | 'fingerprint';
-  blocked: 'all' | 'blocked' | 'not-blocked';
+function identifierKind(row: AgentAppRateLimitRow): "User" | "IP" | "Fingerprint" | "Unknown" {
+  if (row.user_id) return "User";
+  if (row.ip_address) return "IP";
+  if (row.fingerprint) return "Fingerprint";
+  return "Unknown";
 }
 
-/**
- * Hoisted to module scope: defining it inside RateLimitsClient made it a new
- * component type each render, remounting the whole table header.
- */
-const SortIcon = ({
-  field,
-  sortField,
-  sortDirection,
-}: {
-  field: SortField;
-  sortField: SortField;
-  sortDirection: SortDirection;
-}) => {
-  if (sortField !== field) return null;
-  return sortDirection === 'asc' ? (
-    <ArrowUpDown className="h-3 w-3 inline ml-1" />
-  ) : (
-    <ArrowUpDown className="h-3 w-3 inline ml-1 rotate-180" />
+function identifierValue(row: AgentAppRateLimitRow): string {
+  return row.user_id ?? row.ip_address ?? row.fingerprint ?? "";
+}
+
+function IdentifierCell({ row }: { row: AgentAppRateLimitRow }) {
+  const value = identifierValue(row);
+  const kind = identifierKind(row);
+  const Icon = kind === "User" ? User : kind === "IP" ? Globe : ShieldOff;
+  return (
+    <span className="flex min-w-0 items-center gap-2" title={value || undefined}>
+      <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <span className="min-w-0 truncate font-mono text-xs">{value || "Unknown"}</span>
+      <Badge variant="outline" className="shrink-0 text-xs">{kind}</Badge>
+    </span>
   );
-};
+}
 
 export function RateLimitsClient() {
+  const { toast } = useToast();
   const [rateLimits, setRateLimits] = useState<AgentAppRateLimitRow[]>([]);
+  const [visibleRows, setVisibleRows] = useState<AgentAppRateLimitRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [unblockingId, setUnblockingId] = useState<string | null>(null);
-  const [sortField, setSortField] = useState<SortField>('last_execution_at');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const { toast } = useToast();
-
-  // Column filters
-  const [columnFilters, setColumnFilters] = useState<ColumnFilters>({
-    appName: '',
-    identifier: '',
-    identifierType: 'all',
-    blocked: 'blocked',
-  });
+  const [blockedFilter, setBlockedFilter] = useState<"all" | "blocked" | "not-blocked">("blocked");
+  const [query, setQuery] = useState<MatrxDataTableQueryState>(INITIAL_QUERY);
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const blockedValue =
-        columnFilters.blocked === 'all' ? undefined : columnFilters.blocked === 'blocked';
-      const data = await fetchAgentAppRateLimits({
-        is_blocked: blockedValue,
-        limit: 500,
-      });
-      setRateLimits(data);
+      const isBlocked = blockedFilter === "all" ? undefined : blockedFilter === "blocked";
+      setRateLimits(await fetchAgentAppRateLimits({ is_blocked: isBlocked, limit: 500 }));
     } catch (error) {
-      console.error('Error loading rate limits:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load rate limits',
-        variant: 'destructive',
-      });
+      console.error("Error loading rate limits:", error);
+      toast({ title: "Error", description: "Failed to load rate limits", variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [columnFilters.blocked, toast]);
+  }, [blockedFilter, toast]);
 
   useEffect(() => {
-    loadData();
+    const timer = window.setTimeout(() => void loadData(), 0);
+    return () => window.clearTimeout(timer);
   }, [loadData]);
 
-  // Filter and sort rate limits
-  const filteredAndSortedRateLimits = useMemo(() => {
-    let filtered = [...rateLimits];
-
-    // App name filter
-    if (columnFilters.appName) {
-      const query = columnFilters.appName.toLowerCase();
-      filtered = filtered.filter(
-        (limit) =>
-          limit.app_name?.toLowerCase().includes(query) || limit.app_slug?.toLowerCase().includes(query)
-      );
-    }
-
-    // Identifier filter
-    if (columnFilters.identifier) {
-      const query = columnFilters.identifier.toLowerCase();
-      filtered = filtered.filter(
-        (limit) =>
-          limit.user_id?.toLowerCase().includes(query) ||
-          limit.ip_address?.toLowerCase().includes(query) ||
-          limit.fingerprint?.toLowerCase().includes(query)
-      );
-    }
-
-    // Identifier type filter
-    if (columnFilters.identifierType !== 'all') {
-      filtered = filtered.filter((limit) => {
-        switch (columnFilters.identifierType) {
-          case 'user':
-            return !!limit.user_id;
-          case 'ip':
-            return !!limit.ip_address && !limit.user_id;
-          case 'fingerprint':
-            return !!limit.fingerprint && !limit.user_id && !limit.ip_address;
-          default:
-            return true;
-        }
-      });
-    }
-
-    // Sort
-    filtered.sort((a, b) => {
-      let aVal: string | number, bVal: string | number;
-
-      switch (sortField) {
-        case 'app_name':
-          aVal = a.app_name?.toLowerCase() || '';
-          bVal = b.app_name?.toLowerCase() || '';
-          break;
-        case 'execution_count':
-          aVal = a.execution_count || 0;
-          bVal = b.execution_count || 0;
-          break;
-        case 'first_execution_at':
-          aVal = new Date(a.first_execution_at).getTime();
-          bVal = new Date(b.first_execution_at).getTime();
-          break;
-        case 'last_execution_at':
-          aVal = new Date(a.last_execution_at).getTime();
-          bVal = new Date(b.last_execution_at).getTime();
-          break;
-        case 'window_start_at':
-          aVal = new Date(a.window_start_at).getTime();
-          bVal = new Date(b.window_start_at).getTime();
-          break;
-        default:
-          return 0;
-      }
-
-      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-
-    return filtered;
-  }, [rateLimits, columnFilters, sortField, sortDirection]);
-
-  // Stats
-  const stats = useMemo(() => {
-    const blocked = rateLimits.filter((limit) => limit.is_blocked).length;
-    const active = rateLimits.filter((limit) => !limit.is_blocked).length;
-    const users = rateLimits.filter((limit) => limit.user_id).length;
-    const ips = rateLimits.filter((limit) => limit.ip_address && !limit.user_id).length;
-
-    return { total: rateLimits.length, blocked, active, users, ips };
-  }, [rateLimits]);
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  // Helper functions for filter management
-  const updateTextFilter = (field: 'appName' | 'identifier', value: string) => {
-    setColumnFilters((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const updateDropdownFilter = (
-    field: 'identifierType' | 'blocked',
-    value: ColumnFilters['identifierType'] | ColumnFilters['blocked'],
-  ) => {
-    setColumnFilters((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const clearAllFilters = () => {
-    setColumnFilters({
-      appName: '',
-      identifier: '',
-      identifierType: 'all',
-      blocked: 'blocked',
-    });
-  };
-
-  const hasActiveFilters =
-    columnFilters.appName ||
-    columnFilters.identifier ||
-    columnFilters.identifierType !== 'all' ||
-    columnFilters.blocked !== 'blocked';
-
   const handleUnblock = async (limit: AgentAppRateLimitRow) => {
-    if (unblockingId) return;
-    const ok = await confirmDialog({
-      title: 'Unblock rate limit',
-      description: `Unblock this ${limit.user_id ? 'user' : limit.ip_address ? 'IP' : 'fingerprint'}?`,
-      confirmLabel: 'Unblock',
+    const label = limit.user_id ? "user" : limit.ip_address ? "IP" : "fingerprint";
+    const confirmed = await confirmDialog({
+      title: "Unblock rate limit",
+      description: `Unblock this ${label}?`,
+      confirmLabel: "Unblock",
     });
-    if (!ok) return;
-
-    setUnblockingId(limit.id);
+    if (!confirmed) return;
     try {
+      setUnblockingId(limit.id);
       await unblockAgentAppRateLimit(limit.id);
-      loadData();
-      toast({
-        title: 'Success',
-        description: 'Rate limit unblocked successfully',
-        variant: 'success',
-      });
+      await loadData();
+      toast({ title: "Unblocked", description: "Rate limit unblocked successfully" });
     } catch (error) {
-      console.error('Error unblocking rate limit:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to unblock rate limit',
-        variant: 'destructive',
-      });
+      console.error("Error unblocking rate limit:", error);
+      toast({ title: "Error", description: "Failed to unblock rate limit", variant: "destructive" });
     } finally {
       setUnblockingId(null);
     }
   };
 
-  const getIdentifierDisplay = (limit: AgentAppRateLimitRow) => {
-    if (limit.user_id) {
-      return (
-        <div className="flex items-center gap-2">
-          <User className="w-4 h-4 text-purple-600" />
-          <span className="text-sm">{limit.user_id}</span>
-          <Badge variant="outline" className="text-xs">
-            User
-          </Badge>
-        </div>
-      );
-    } else if (limit.ip_address) {
-      return (
-        <div className="flex items-center gap-2">
-          <Globe className="w-4 h-4 text-blue-600" />
-          <span className="text-sm">{limit.ip_address}</span>
-          <Badge variant="outline" className="text-xs">
-            IP
-          </Badge>
-        </div>
-      );
-    } else if (limit.fingerprint) {
-      return (
-        <div className="flex items-center gap-2">
-          <Shield className="w-4 h-4 text-orange-600" />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="text-sm font-mono">{limit.fingerprint.substring(0, 12)}...</span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <code className="text-xs">{limit.fingerprint}</code>
-            </TooltipContent>
-          </Tooltip>
-          <Badge variant="outline" className="text-xs">
-            Fingerprint
-          </Badge>
-        </div>
-      );
-    }
-    return <span className="text-sm text-muted-foreground">Unknown</span>;
+  const stats = {
+    total: rateLimits.length,
+    blocked: rateLimits.filter((row) => row.is_blocked).length,
+    active: rateLimits.filter((row) => !row.is_blocked).length,
+    users: rateLimits.filter((row) => Boolean(row.user_id)).length,
+    ips: rateLimits.filter((row) => Boolean(row.ip_address) && !row.user_id).length,
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full w-full">
-        <MatrxMiniLoader />
-      </div>
-    );
+  const columns: MatrxColumnDef<AgentAppRateLimitRow>[] = [
+    {
+      id: "status",
+      header: "Status",
+      accessorFn: (row) => (row.is_blocked ? "Blocked" : "Active"),
+      filter: "select",
+      width: 110,
+      cell: (row) => row.is_blocked ? (
+        <Badge variant="destructive"><ShieldOff className="mr-1 h-3 w-3" />Blocked</Badge>
+      ) : (
+        <Badge variant="outline" className="border-green-600 text-green-600"><Shield className="mr-1 h-3 w-3" />Active</Badge>
+      ),
+    },
+    {
+      id: "app",
+      header: "App",
+      accessorFn: (row) => `${row.app_name ?? ""} ${row.app_slug ?? ""}`,
+      filter: "text",
+      width: 220,
+      frozen: true,
+      cell: (row) => (
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="truncate font-medium">{row.app_name ?? row.app_id}</span>
+          {row.app_slug ? (
+            <a href={`/p/${row.app_slug}`} target="_blank" rel="noopener noreferrer" aria-label={`View ${row.app_name ?? row.app_slug}`} className="shrink-0 text-blue-600 hover:text-blue-700 dark:text-blue-400">
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          ) : null}
+        </span>
+      ),
+    },
+    {
+      id: "identifier",
+      header: "Identifier",
+      accessorFn: identifierValue,
+      filter: "text",
+      width: 290,
+      cell: (row) => <IdentifierCell row={row} />,
+    },
+    {
+      id: "identifier_type",
+      header: "Identifier type",
+      accessorFn: identifierKind,
+      filter: "select",
+      hidden: true,
+      mobileHidden: true,
+    },
+    { accessorKey: "execution_count", header: "Executions", filter: "number", width: 120, align: "right", mobileHidden: true },
+    { accessorKey: "first_execution_at", header: "First execution", filter: "date", format: { id: "datetime" }, width: 180, mobileHidden: true },
+    { accessorKey: "last_execution_at", header: "Last execution", filter: "date", format: { id: "datetime" }, width: 180, mobileHidden: true },
+    { accessorKey: "window_start_at", header: "Window start", filter: "date", format: { id: "datetime" }, hidden: true, mobileHidden: true },
+  ];
+
+  if (loading && rateLimits.length === 0) {
+    return <div className="flex h-full w-full items-center justify-center"><MatrxMiniLoader /></div>;
   }
 
   return (
     <SurfaceRuntimeProvider
       surfaceName={ADMIN_AGENT_APPS_SURFACE_NAME}
-      getScope={() =>
-        createAdminAgentAppsScope({
-          admin_section: 'rate_limits',
-          // Mirror the grid: rows are what the admin actually sees after
-          // column filters; stats stay over the full fetch (the stat tiles).
-          rate_limits_rows: filteredAndSortedRateLimits.map((r) => ({
-            app_name: r.app_name ?? '',
-            app_slug: r.app_slug ?? '',
-            user_id: r.user_id ?? null,
-            ip_address: r.ip_address ?? null,
-            fingerprint: r.fingerprint ?? null,
-            is_blocked: r.is_blocked,
-            execution_count: r.execution_count,
-            first_execution_at: r.first_execution_at,
-            last_execution_at: r.last_execution_at,
-            blocked_until: r.blocked_until ?? null,
-            blocked_reason: r.blocked_reason ?? null,
-          })),
-          rate_limits_stats: stats,
-          rate_limits_filters: columnFilters,
-        })
-      }
+      getScope={() => createAdminAgentAppsScope({
+        admin_section: "rate_limits",
+        rate_limits_rows: visibleRows.map((row) => ({
+          app_name: row.app_name ?? "",
+          app_slug: row.app_slug ?? "",
+          user_id: row.user_id ?? null,
+          ip_address: row.ip_address ?? null,
+          fingerprint: row.fingerprint ?? null,
+          is_blocked: row.is_blocked,
+          execution_count: row.execution_count,
+          first_execution_at: row.first_execution_at,
+          last_execution_at: row.last_execution_at,
+          blocked_until: row.blocked_until ?? null,
+          blocked_reason: row.blocked_reason ?? null,
+        })),
+        rate_limits_stats: stats,
+        rate_limits_filters: { blocked: blockedFilter },
+        rate_limits_table_query: query as unknown as Record<string, unknown>,
+      })}
     >
-    <TooltipProvider>
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="flex-shrink-0 p-4 border-b bg-card space-y-4">
-          <div className="flex items-center justify-end">
-            <div className="flex gap-2">
-              {hasActiveFilters && (
-                <Button onClick={clearAllFilters} variant="outline" size="sm">
-                  <X className="h-4 w-4 mr-2" />
-                  Clear Filters
-                </Button>
-              )}
-              <Button onClick={() => loadData()} variant="outline" size="sm">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-              {filteredAndSortedRateLimits.length > 0 && (
-                <>
-                  <CopyButtons
-                    size="icon"
-                    label={`Rate limits (${filteredAndSortedRateLimits.length})`}
-                    human={() =>
-                      filteredAndSortedRateLimits.map(humanRateLimit).join('\n\n')
-                    }
-                    json={() => filteredAndSortedRateLimits}
-                    agent={() => ({
-                      kind: 'agent-app-rate-limits',
-                      location: 'AI Matrx Admin — Agent Apps — Rate Limits',
-                      description: 'Rate limit rows currently shown (filtered).',
-                      data: filteredAndSortedRateLimits,
-                      attributes: { count: filteredAndSortedRateLimits.length },
-                    })}
-                    export={{
-                      items: [
-                        jsonExportItem(
-                          () => filteredAndSortedRateLimits,
-                          'JSON (this view)',
-                        ),
-                        csvExportItem(
-                          () =>
-                            filteredAndSortedRateLimits as unknown as Array<
-                              Record<string, unknown>
-                            >,
-                          'CSV (this view)',
-                        ),
-                      ],
-                    }}
-                  />
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-2">
-                <div className="text-2xl font-bold">{stats.total}</div>
-                <div className="text-xs text-muted-foreground">Total Limits</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-2">
-                <div className="text-2xl font-bold text-red-600">{stats.blocked}</div>
-                <div className="text-xs text-muted-foreground">Blocked</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-2">
-                <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-                <div className="text-xs text-muted-foreground">Active</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-2">
-                <div className="text-2xl font-bold text-purple-600">{stats.users}</div>
-                <div className="text-xs text-muted-foreground">User Limits</div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Active Filters Display */}
-          {hasActiveFilters && (
-            <div className="flex flex-wrap gap-2 items-center text-xs">
-              <div className="flex items-center gap-1.5">
-                <span className="text-muted-foreground">Active filters:</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearAllFilters}
-                  className="h-5 w-5 p-0 hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-              {columnFilters.appName && <Badge variant="secondary">App: {columnFilters.appName}</Badge>}
-              {columnFilters.identifier && (
-                <Badge variant="secondary">Identifier: {columnFilters.identifier}</Badge>
-              )}
-              {columnFilters.identifierType !== 'all' && (
-                <Badge variant="secondary">Type: {columnFilters.identifierType}</Badge>
-              )}
-              {columnFilters.blocked !== 'blocked' && (
-                <Badge variant="secondary">Status: {columnFilters.blocked}</Badge>
-              )}
-            </div>
-          )}
+      <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {[
+            ["Total limits", stats.total, ""],
+            ["Blocked", stats.blocked, "text-destructive"],
+            ["Active", stats.active, "text-green-600"],
+            ["User limits", stats.users, "text-purple-600"],
+          ].map(([label, value, color]) => (
+            <Card key={label as string}><CardContent className="p-2"><div className={`text-2xl font-bold ${color}`}>{value as number}</div><div className="text-xs text-muted-foreground">{label as string}</div></CardContent></Card>
+          ))}
         </div>
-
-        {/* Table */}
-        <ScrollArea className="flex-1 pr-4">
-          <Table wrapperClassName="phone-stack">
-            <TableHeader className="sticky top-0 bg-background z-10">
-              <TableRow>
-                {/* Blocked Status Column */}
-                <TableHead className="min-w-[100px]">
-                  <div className="space-y-1">
-                    <span className="font-semibold">Status</span>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-7 w-full justify-between text-xs">
-                          <span className="truncate">
-                            {columnFilters.blocked === 'all'
-                              ? 'All'
-                              : columnFilters.blocked === 'blocked'
-                              ? 'Blocked'
-                              : 'Active'}
-                          </span>
-                          <Filter className="h-3 w-3 ml-1" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-40">
-                        <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuCheckboxItem
-                          checked={columnFilters.blocked === 'all'}
-                          onCheckedChange={() => updateDropdownFilter('blocked', 'all')}
-                        >
-                          All
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          checked={columnFilters.blocked === 'blocked'}
-                          onCheckedChange={() => updateDropdownFilter('blocked', 'blocked')}
-                        >
-                          Blocked Only
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          checked={columnFilters.blocked === 'not-blocked'}
-                          onCheckedChange={() => updateDropdownFilter('blocked', 'not-blocked')}
-                        >
-                          Active Only
-                        </DropdownMenuCheckboxItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableHead>
-
-                {/* App Name Column - Text filter + Sort */}
-                <TableHead className="min-w-[180px]">
-                  <div className="space-y-1">
-                    <div
-                      className="flex items-center gap-1 cursor-pointer hover:text-primary"
-                      onClick={() => handleSort('app_name')}
-                    >
-                      <span className="font-semibold">App</span>
-                      <ArrowUpDown className="h-3 w-3" />
-                      <SortIcon field="app_name" sortField={sortField} sortDirection={sortDirection} />
-                    </div>
-                    <Input
-                      placeholder="Filter..."
-                      value={columnFilters.appName}
-                      onChange={(e) => updateTextFilter('appName', e.target.value)}
-                      className="h-7 text-xs"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                </TableHead>
-
-                {/* Identifier Column - Text filter */}
-                <TableHead className="min-w-[280px]">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">Identifier</span>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-5 px-2">
-                            <Filter className="h-3 w-3" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-40">
-                          <DropdownMenuLabel>Filter by Type</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuCheckboxItem
-                            checked={columnFilters.identifierType === 'all'}
-                            onCheckedChange={() => updateDropdownFilter('identifierType', 'all')}
-                          >
-                            All Types
-                          </DropdownMenuCheckboxItem>
-                          <DropdownMenuCheckboxItem
-                            checked={columnFilters.identifierType === 'user'}
-                            onCheckedChange={() => updateDropdownFilter('identifierType', 'user')}
-                          >
-                            Users Only
-                          </DropdownMenuCheckboxItem>
-                          <DropdownMenuCheckboxItem
-                            checked={columnFilters.identifierType === 'ip'}
-                            onCheckedChange={() => updateDropdownFilter('identifierType', 'ip')}
-                          >
-                            IPs Only
-                          </DropdownMenuCheckboxItem>
-                          <DropdownMenuCheckboxItem
-                            checked={columnFilters.identifierType === 'fingerprint'}
-                            onCheckedChange={() => updateDropdownFilter('identifierType', 'fingerprint')}
-                          >
-                            Fingerprints Only
-                          </DropdownMenuCheckboxItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <Input
-                      placeholder="Filter..."
-                      value={columnFilters.identifier}
-                      onChange={(e) => updateTextFilter('identifier', e.target.value)}
-                      className="h-7 text-xs"
-                    />
-                  </div>
-                </TableHead>
-
-                {/* Execution Count Column - Sort */}
-                <TableHead className="min-w-[120px]">
-                  <div className="space-y-1">
-                    <div
-                      className="flex items-center gap-1 cursor-pointer hover:text-primary"
-                      onClick={() => handleSort('execution_count')}
-                    >
-                      <span className="font-semibold">Executions</span>
-                      <ArrowUpDown className="h-3 w-3" />
-                      <SortIcon field="execution_count" sortField={sortField} sortDirection={sortDirection} />
-                    </div>
-                    <div className="h-7" />
-                  </div>
-                </TableHead>
-
-                {/* First Execution Column - Sort */}
-                <TableHead className="min-w-[160px]">
-                  <div className="space-y-1">
-                    <div
-                      className="flex items-center gap-1 cursor-pointer hover:text-primary"
-                      onClick={() => handleSort('first_execution_at')}
-                    >
-                      <span className="font-semibold">First Execution</span>
-                      <ArrowUpDown className="h-3 w-3" />
-                      <SortIcon field="first_execution_at" sortField={sortField} sortDirection={sortDirection} />
-                    </div>
-                    <div className="h-7" />
-                  </div>
-                </TableHead>
-
-                {/* Last Execution Column - Sort */}
-                <TableHead className="min-w-[160px]">
-                  <div className="space-y-1">
-                    <div
-                      className="flex items-center gap-1 cursor-pointer hover:text-primary"
-                      onClick={() => handleSort('last_execution_at')}
-                    >
-                      <span className="font-semibold">Last Execution</span>
-                      <ArrowUpDown className="h-3 w-3" />
-                      <SortIcon field="last_execution_at" sortField={sortField} sortDirection={sortDirection} />
-                    </div>
-                    <div className="h-7" />
-                  </div>
-                </TableHead>
-
-                {/* Actions Column */}
-                <TableHead className="text-right min-w-[120px] pr-4">
-                  <div className="space-y-1">
-                    <span className="font-semibold">Actions</span>
-                    <div className="h-7" />
-                  </div>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSortedRateLimits.map((limit) => (
-                <TableRow key={limit.id}>
-                  <TableCell data-phone="inline">
-                    {limit.is_blocked ? (
-                      <Badge variant="destructive">
-                        <ShieldOff className="w-3 h-3 mr-1" />
-                        Blocked
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-green-600 border-green-600">
-                        <Shield className="w-3 h-3 mr-1" />
-                        Active
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell data-phone="lead">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{limit.app_name}</span>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <a
-                            href={`/p/${limit.app_slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        </TooltipTrigger>
-                        <TooltipContent>View app</TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </TableCell>
-                  <TableCell data-label="Identifier" data-phone="inline">
-                    {getIdentifierDisplay(limit)}
-                  </TableCell>
-                  <TableCell className="text-right" data-label="Executions" data-phone="inline">
-                    {limit.execution_count}
-                  </TableCell>
-                  <TableCell data-label="First Execution" data-phone="inline">
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(limit.first_execution_at).toLocaleString()}
-                    </span>
-                  </TableCell>
-                  <TableCell data-label="Last Execution" data-phone="inline">
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(limit.last_execution_at).toLocaleString()}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right" data-phone="actions">
-                    <div className="flex items-center justify-end gap-1">
-                      {limit.is_blocked ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" size="sm" onClick={() => handleUnblock(limit)} disabled={unblockingId !== null} className="h-7">
-                              <Shield className="w-3 h-3 mr-1" />
-                              Unblock
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {limit.blocked_until && (
-                              <div>Until: {new Date(limit.blocked_until).toLocaleString()}</div>
-                            )}
-                            {limit.blocked_reason && <div>Reason: {limit.blocked_reason}</div>}
-                          </TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">-</span>
-                      )}
-                      <CopyButtons
-                        size="icon"
-                        label={limit.app_name ?? limit.id}
-                        human={() => humanRateLimit(limit)}
-                        json={() => limit}
-                        agent={() => ({
-                          kind: 'agent-app-rate-limit',
-                          location: 'AI Matrx Admin — Agent Apps — Rate Limits',
-                          description: 'A single rate limit row.',
-                          data: limit,
-                          summary: humanRateLimit(limit),
-                          attributes: { id: limit.id, is_blocked: limit.is_blocked },
-                        })}
-                      />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          {filteredAndSortedRateLimits.length === 0 && (
-            <div className="text-center py-12">
-              <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No rate limits found</p>
-            </div>
-          )}
-        </ScrollArea>
+        <MatrxDataTable
+          tableId="administration/agents/agent-apps/rate-limits"
+          data={rateLimits}
+          columns={columns}
+          getRowId={(row) => row.id}
+          isLoading={loading && rateLimits.length === 0}
+          isFetching={loading && rateLimits.length > 0}
+          stickyHeader
+          pageSize={25}
+          localPagination={{ mode: "progressive" }}
+          query={{ mode: "controlled-local", state: query, onStateChange: setQuery }}
+          coverage={{ noun: "rate limit", cap: 500, answeredBy: "client" }}
+          toolbar={{
+            title: "Rate limits",
+            search: true,
+            searchPlaceholder: "Search apps and identifiers…",
+            facets: [{
+              type: "button-group",
+              id: "source-status",
+              label: "Source status",
+              value: blockedFilter,
+              defaultValue: "blocked",
+              options: [
+                { value: "blocked", label: "Blocked" },
+                { value: "not-blocked", label: "Active" },
+                { value: "all", label: "All" },
+              ],
+              onChange: (value) => setBlockedFilter(value as "all" | "blocked" | "not-blocked"),
+            }],
+            refresh: { onRefresh: loadData, label: "Refresh rate limits" },
+          }}
+          copy={{
+            label: "Rate limit",
+            listLabel: "Rate limits (this view)",
+            location: "AI Matrx Admin — Agent Apps — Rate Limits",
+            rowKind: "agent-app-rate-limit",
+            listKind: "agent-app-rate-limits",
+            rowDescription: "A single rate limit row.",
+            listDescription: "Rate limit rows currently shown after the canonical table filters.",
+            humanRow: humanRateLimit,
+            agentRow: (row) => row,
+            rowAttributes: (row) => ({ id: row.id, is_blocked: row.is_blocked }),
+            listAttributes: (visible) => ({ count: visible.length, source_cap: 500 }),
+            export: (visible) => ({ items: [
+              jsonExportItem(() => visible, "JSON (this view)"),
+              csvExportItem(() => visible as unknown as Array<Record<string, unknown>>, "CSV (this view)"),
+            ] }),
+          }}
+          rowActions={(row) => row.is_blocked ? (
+            <Button variant="outline" size="sm" onClick={() => void handleUnblock(row)} disabled={unblockingId !== null} title={row.blocked_reason ?? "Unblock this rate limit"}>
+              <Shield className="mr-1 h-3 w-3" />Unblock
+            </Button>
+          ) : null}
+          detail={{ enabled: false }}
+          window={{ enabled: false }}
+          emptyState={{ title: "No rate limits found", description: "Change the source status or clear a table filter to see other loaded limits." }}
+          onViewChange={setVisibleRows}
+        />
       </div>
-    </TooltipProvider>
     </SurfaceRuntimeProvider>
   );
 }
