@@ -290,7 +290,7 @@ on conflict do nothing;
 -- `security_invoker = true` because a view without it runs as its OWNER — `postgres`, which
 -- has BYPASSRLS — and would hand every caller every tenant's change feed whatever the base
 -- table's row-level security says. The shape guard refuses it by name, and it is right to.
-create view custom.record_outbox with (security_invoker = true) as
+create or replace view custom.record_outbox with (security_invoker = true) as
   select o.id,
          o.organization_id,
          o.record_id,

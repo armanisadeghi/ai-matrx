@@ -266,7 +266,7 @@ begin
   end if;
 
   -- RED 1: a dependant view refuses the retirement.
-  execute 'create view zz_w1_reg.zz_w1_reg_probe_v with (security_invoker = true) as select id from zz_w1_reg.zz_w1_reg_probe';
+  execute 'create or replace view zz_w1_reg.zz_w1_reg_probe_v with (security_invoker = true) as select id from zz_w1_reg.zz_w1_reg_probe';
   begin
     perform platform.retire_to_deprecated('zz_w1_reg', 'zz_w1_reg_probe');
     raise exception 'REC-55: a relation with a dependent view was retired anyway';

@@ -23,7 +23,7 @@
 -- is a view, a trigger, a function or one knob row.
 --
 -- THE NAME IS QUOTED, AND IT HAS TO BE. `table` is a fully reserved word in PostgreSQL:
--- `create view custom.table` is a syntax error even though the name is schema-qualified.
+-- `create or replace view custom.table` is a syntax error even though the name is schema-qualified.
 -- Every reference in this file and in its inverse is `custom."table"`.
 --
 -- WHAT EACH LAW BECOMES, IN THE ORDER THE CONTRACT STATES THEM
@@ -85,7 +85,7 @@
 -- would refuse.
 --
 -- IDEMPOTENCE, STATED HONESTLY RATHER THAN CLAIMED. §6b.2's additive allow-list admits
--- `CREATE VIEW` and `CREATE TRIGGER` and REFUSES `CREATE OR REPLACE VIEW`, `CREATE OR
+-- `create or replace view` and `CREATE TRIGGER` and REFUSES `CREATE OR REPLACE VIEW`, `CREATE OR
 -- REPLACE TRIGGER` and every `DO` block by name, and PostgreSQL has no `IF NOT EXISTS` for
 -- a view, a trigger or a function. So a second consecutive apply of these bytes is refused
 -- BY THE DATABASE (42P07 / 42710 / 42723) and changes nothing, exactly as `W1-STORE`'s and
@@ -504,7 +504,7 @@ create trigger custom_record_table_shape_guard
   for each row execute function custom._table_shape_guard();
 
 -- ── REC-1 / REC-66 / REC-N-17: the projection ──────────────────────────────────
-create view custom."table" with (security_invoker = true) as
+create or replace view custom."table" with (security_invoker = true) as
   select r.id,
          r.organization_id,
          coalesce(r.data ->> 'slug', lower(r.data ->> 'name'))              as slug,
@@ -537,7 +537,7 @@ comment on view custom."table" is
   'REC-1, REC-25, REC-66, REC-N-17. A PROJECTION over custom.record, never a second relation: a Table IS a Record, so its id is its record id and its base contract is custom.record''s own certified columns. REC-1''s `detail` and REC-66''s `type` are ONE stored property - `type` is stored, `detail` is derived - so no row can say both. security_invoker: every caller reads it under their own row-level security.';
 
 -- ── REC-3 / REC-14 / REC-26: where a Table appears ─────────────────────────────
-create view custom.home with (security_invoker = true) as
+create or replace view custom.home with (security_invoker = true) as
   select r.id                               as table_id,
          custom.containment_parent(r.data)  as home_record_id,
          r.organization_id,

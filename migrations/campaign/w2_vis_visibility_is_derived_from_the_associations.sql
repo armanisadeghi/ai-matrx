@@ -131,7 +131,7 @@ on conflict (role) do nothing;
 -- an edge declared by both at DIFFERENT levels stays as two rows, which the closure's
 -- `max(max_level)` then resolves to the more permissive — VIS-2, the union is the maximum.
 -- ---------------------------------------------------------------------------------------------
-create view custom.carrying_edges with (security_invoker = true) as
+create or replace view custom.carrying_edges with (security_invoker = true) as
   select ce.container_type, ce.container_id, ce.item_type, ce.item_id, ce.conveys_max
     from platform.containment_edges ce
   union

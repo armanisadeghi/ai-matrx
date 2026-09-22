@@ -105,7 +105,7 @@
 -- rule 4's fourth exception and nothing else: its body returns NEW untouched unless
 -- `custom/entity_custom_fields_guard` resolves true, which it does nowhere.
 --
--- IDEMPOTENCE, STATED HONESTLY. §6b.2's allow-list admits `CREATE VIEW`, `CREATE TRIGGER`
+-- IDEMPOTENCE, STATED HONESTLY. §6b.2's allow-list admits `create or replace view`, `CREATE TRIGGER`
 -- and `create or replace function` and refuses `CREATE OR REPLACE` of a view or a trigger, and
 -- PostgreSQL has no `IF NOT EXISTS` for any of the three. So a second consecutive apply of
 -- these bytes is refused BY THE DATABASE (42P07 / 42710 / 42723) and changes nothing,
@@ -854,7 +854,7 @@ create trigger custom_record_field_validation
 -- 8. FLD-8 / FLD-13 — the ONE definitions surface
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create view custom.field with (security_invoker = true) as
+create or replace view custom.field with (security_invoker = true) as
   select f.id,
          f.organization_id,
          (f.data ->> 'entity_definition_id')::uuid                       as entity_definition_id,
@@ -972,7 +972,7 @@ create trigger custom_field_definition_validation
 -- 9. DYN-1 / DYN-2 — the merge field surface
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create view custom.merge_field with (security_invoker = true) as
+create or replace view custom.merge_field with (security_invoker = true) as
   select m.id,
          m.organization_id,
          m.data ->> 'key'                                    as key,

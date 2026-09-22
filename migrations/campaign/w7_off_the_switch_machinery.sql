@@ -76,7 +76,7 @@ set statement_timeout = '2min';
 -- THE ORDER is switch-checklist 11.12's, which the book states plainly is the
 -- chair's proposal and not a ruling; the only fixed element is retirement last.
 
-create view campaign_watch.ramp_consumer with (security_invoker = true) as
+create or replace view campaign_watch.ramp_consumer with (security_invoker = true) as
 select *
   from (values
     ('grid', 'The data grid', 1, null::text, 'W6-GRID',
@@ -125,7 +125,7 @@ select *
 -- A VIEW for the same reason as the register: changing the exit date is a
 -- decision with a diff, not a field somebody edits.
 
-create view campaign_watch.dual_engine_exit with (security_invoker = true) as
+create or replace view campaign_watch.dual_engine_exit with (security_invoker = true) as
 select *
   from (values
     ('visibility',
