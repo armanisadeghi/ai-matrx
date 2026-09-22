@@ -155,18 +155,13 @@ export function useCartesia(
         }
         
         try {
-            // Create a silent source to "warm up" the AudioContext
-            // This is a workaround since the player doesn't expose the AudioContext directly
+            // Warm the AudioContext with a local silent source. Cartesia v4 rejects
+            // whitespace-only transcripts, so initialization must not call the provider.
             if (!silentSourceRef.current) {
-                // Create a tiny silent audio buffer
-                const silentResponse = await websocket.send({
-                    modelId: modelId,
-                    voice: toVoiceSpecifier(config.voice ?? {mode: "id", id: READING_VOICE_ID}),
-                    transcript: " ", // Just a space - minimal audio
-                    language,
-                });
-                
-                silentSourceRef.current = silentResponse.source;
+                const source = new CartesiaAudioSource(config.sampleRate ?? 44100);
+                source.push(new Uint8Array(128 * Float32Array.BYTES_PER_ELEMENT));
+                source.finish();
+                silentSourceRef.current = source;
             }
             
             // Play and immediately stop the silent source
@@ -182,7 +177,7 @@ export function useCartesia(
             setError(err instanceof Error ? err : new Error('Failed to initialize audio'));
             throw err;
         }
-    }, [websocket, isConnected, modelId, language, config.voice]);
+    }, [websocket, isConnected, config.sampleRate]);
 
     const updateConfigs = useCallback((newConfigs: Partial<UseCartesiaProps>) => {
         setConfig((prevConfig) => ({

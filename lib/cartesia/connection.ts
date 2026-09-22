@@ -138,6 +138,10 @@ class CartesiaV4Socket implements CartesiaTtsSocket {
   constructor(native: NativeSocket, options: ResolvedSocketOptions) {
     this.#native = native;
     this.#options = options;
+    // The SDK also emits its typed `error` channel after the global event.
+    // Bind it so a provider error does not become an unhandled rejection;
+    // the event handler below finishes the affected source and notifies callers.
+    native.on("error", () => {});
     native.on("event", (event) => {
       const contextId = "context_id" in event ? event.context_id : undefined;
       if (!contextId) {
