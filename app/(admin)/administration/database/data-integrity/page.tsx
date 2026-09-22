@@ -655,6 +655,7 @@ export default function DataIntegrityPage() {
           ]}
         >
           <MatrxDataTable
+          window={{ renderView: (row) => <CheckDetail row={row} />, renderEdit: false, defaultTab: "view" }}
             urlState={{ id: "data-integrity", selectedRow: false }}
             data={rows}
             columns={columns}

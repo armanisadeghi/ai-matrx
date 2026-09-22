@@ -143,9 +143,18 @@ const stages: Array<{
   },
   { key: "done", label: "Done", match: (r) => DONE.includes(r.status) },
 ];
-function getItemStage(row: UserFeedback): Exclude<Stage, "all"> {
+export function getItemStage(row: UserFeedback): Exclude<Stage, "all"> {
   const matched = stages.find((stage) => stage.match(row));
   return matched && matched.key !== "all" ? matched.key : "done";
+}
+
+export function firstPopulatedFeedbackStage(
+  rows: UserFeedback[],
+): Exclude<Stage, "all"> | null {
+  const matched = stages.find((stage) =>
+    rows.some((row) => getItemStage(row) === stage.key),
+  );
+  return matched && matched.key !== "all" ? matched.key : null;
 }
 const tabs: Record<Stage, string> = {
   untriaged: "submission",
@@ -298,8 +307,8 @@ export default function FeedbackTable() {
   useEffect(() => {
     if (initialStageSet.current || rows.length === 0) return;
     initialStageSet.current = true;
-    const firstNonEmpty = stages.find((item) => rows.some(item.match));
-    if (firstNonEmpty) setStage(firstNonEmpty.key);
+    const firstNonEmpty = firstPopulatedFeedbackStage(rows);
+    if (firstNonEmpty) setStage(firstNonEmpty);
   }, [rows]);
   const setLink = useCallback(
     (id: string | null) => {
@@ -929,6 +938,8 @@ export default function FeedbackTable() {
             )
           }
           getRowHref={(r) => feedbackHref(r.id)}
+          detail={{ enabled: false }}
+          window={{ enabled: false }}
           onRowOpen={open}
           selectedId={selected?.id}
           onSelectedIdChange={(id) => {

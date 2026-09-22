@@ -385,6 +385,7 @@ export function ReplaysTable({ replays }: { replays: Replay[] }) {
           search: true,
           searchPlaceholder: "Search outcomes, transcript IDs, and runs…",
         }}
+        window={{ renderView: (replay) => <ReplayDetail replay={replay} audience={audience} />, renderEdit: false, defaultTab: "view" }}
         detail={{
           title: (replay) => `Replay ${replayStatus(replay)}`,
           description: (replay) => fmtDate(replay.created_at),

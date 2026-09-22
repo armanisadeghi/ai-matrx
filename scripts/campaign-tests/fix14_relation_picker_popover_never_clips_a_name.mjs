@@ -56,45 +56,30 @@ async function walk(label, width, height, shot) {
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
 
-  await page.goto(`${ORIGIN}/?demo=grid`, { waitUntil: "domcontentloaded", timeout: 120000 });
-  await page.waitForSelector("tbody tr", { timeout: 120000 });
-  // The columns arrive after the rows do — the fields, the records and the relation
-  // words are three separate door calls against the live store, and a click fired
-  // before the last of them lands hits a skeleton.
-  await page.waitForFunction(
-    () => Array.from(document.querySelectorAll("thead th")).some((t) => /assignee/i.test(t.textContent ?? "")),
-    undefined,
-    { timeout: 120000 },
-  );
-  await sleep(6000);
-
-  // The Assignee column is this table's relation onto the kernel Person table. A click on
-  // the cell opens the cell EDITOR (Pick · Save · Cancel); the picker is behind Pick —
-  // the two steps FIX-13 had to write down because a walk kept missing them.
-  const headers = await page.$$eval("thead th", (ths) => ths.map((t) => (t.textContent ?? "").trim()));
-  const column = headers.findIndex((h) => /^assignee$/i.test(h));
-  if (column === -1) {
-    fail(`${label}: the demo table has no Assignee relation column (headers: ${headers.join(", ")})`);
-    await ctx.close();
-    return;
-  }
-  const cell = page.locator("tbody tr").first().locator("td").nth(column);
-  await cell.click();
-  await sleep(600);
-  const pick = page.getByRole("button", { name: /^Pick for /i }).first();
-  if ((await pick.count()) === 0) {
-    fail(`${label}: the cell editor offered no Pick control`);
-    await ctx.close();
-    return;
-  }
+  // THE SURFACE. `?demo=form` renders `RecordForm` over the demo table, and its
+  // "Related proposal" column is a PLAIN relation (no `parity: "member"`), so it reaches
+  // `RelationPicker` — the one generic picker — rather than `PersonPicker`. Until this
+  // lane the harness had no browser surface for it at all, which is why a clipped
+  // control could live for weeks behind a green jsdom suite that has no geometry.
+  await page.goto(`${ORIGIN}/?demo=form`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  const pick = page.getByRole("button", { name: "Pick for Related proposal" }).first();
+  await pick.waitFor({ state: "visible", timeout: 120000 });
+  await sleep(1500);
   await pick.click();
-  await sleep(900);
+  await sleep(1200);
 
   const search = page.getByPlaceholder("Search").first();
   await search.fill(LONG_NAME);
   await sleep(1200);
 
-  const offer = page.getByRole("button", { name: new RegExp(`^Create`) }).first();
+  // The offer lives INSIDE the popover and only appears once the target Table has been
+  // read ("Reading that table…" until then) — never the page's own plain "Create".
+  const offer = page.locator('[data-radix-popper-content-wrapper] button', { hasText: /^Create\s*[“"]/ }).first();
+  try {
+    await offer.waitFor({ state: "visible", timeout: 60000 });
+  } catch {
+    // fall through to the honest failure below
+  }
   if ((await offer.count()) === 0) {
     fail(`${label}: no Create offer appeared for a name that is not in that table`);
     await page.screenshot({ path: `${OUT}/${shot}` });
@@ -126,7 +111,7 @@ async function walk(label, width, height, shot) {
 
   // 1. The popover grew past the old fixed 16rem box (256px) — or, on a phone, is as wide
   //    as the viewport honestly allows.
-  const ceiling = Math.min(384, width - 32);
+  const ceiling = Math.min(448, width - 32);
   if (measured.popoverWidth > 256 || ceiling <= 256) ok(`${label}: popover is ${measured.popoverWidth}px (old fixed box was 256px, ceiling here is ${ceiling}px)`);
   else fail(`${label}: popover is still ${measured.popoverWidth}px — it did not grow past the old 256px box`);
 
