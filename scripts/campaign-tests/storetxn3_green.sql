@@ -164,10 +164,15 @@ begin
 
   v_parent := (v_graph ->> 'parent_id')::uuid;
   select array_agg(x) into v_kids from jsonb_array_elements_text(v_graph -> 'child_ids') x;
-  if (v_graph ->> 'children')::int <> 3 then
-    raise exception '1: the graph reports % children, not 3 — %', v_graph ->> 'children', v_graph; end if;
-  if (v_graph ->> 'relations')::int <> 3 then
-    raise exception '1: the graph reports % relations, not 3 — %', v_graph ->> 'relations', v_graph; end if;
+  -- `is distinct from` and not `<>`: a key the door does not return at all would make `<>`
+  -- answer NULL, and `if NULL then` is not taken — a clause that passes on a missing answer is
+  -- the shape that let a stale body read as green on the shared clone (measured 16:43Z today).
+  if (v_graph ->> 'children')::int is distinct from 3 then
+    raise exception '1: the graph reports % children, not 3 — %', coalesce(v_graph ->> 'children', '(no answer)'), v_graph; end if;
+  if (v_graph ->> 'relations')::int is distinct from 3 then
+    raise exception '1: the graph reports % relations, not 3 — %', coalesce(v_graph ->> 'relations', '(no answer)'), v_graph; end if;
+  if array_length(v_kids, 1) is distinct from 3 then
+    raise exception '1: the graph named % child ids — %', coalesce(array_length(v_kids, 1)::text, '(none)'), v_graph; end if;
   raise notice 'CLAUSE 1 PASS — one call, one parent (%) and three part lines.', v_parent;
 
   -- ══════════════════════════════════════════════════════════════════════════════════════
