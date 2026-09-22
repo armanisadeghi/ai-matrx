@@ -234,6 +234,17 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "apps_list",
   },
   {
+    name: "apps_list_table_query",
+    label: "Apps table query",
+    description:
+      "The canonical table's current global search, any-of query, per-column filters, sort, and pagination state. Absent outside the apps-list section.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 500,
+    sortOrder: 225,
+    group: "apps_list",
+  },
+  {
     name: "apps_list_rows",
     label: "Apps list: rows",
     description:
@@ -885,6 +896,7 @@ export function createAdminAgentAppsScope(values: {
   apps_list_filtered_count?: number;
   apps_list_filters?: AdminAgentAppsListFilters;
   apps_list_sort?: AdminAgentAppsListSort;
+  apps_list_table_query?: Record<string, unknown>;
   apps_list_rows?: AdminAgentAppsListRow[];
   // app detail
   selected_app_id?: string;
