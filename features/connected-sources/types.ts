@@ -7,6 +7,8 @@
  * component, exactly as the Library of Sources contract requires.
  */
 
+import type { components } from "@/types/python-generated/api-types";
+
 export interface ConnectedConnectionSummary {
   connection_id: string;
   account_email: string | null;
@@ -28,38 +30,18 @@ export interface ConnectedAdapterRow {
   unavailable_reason: string | null;
 }
 
-export interface ConnectedSourceRow {
-  id: string;
-  external_id: string;
-  adapter: string;
-  kind: string;
-  title: string;
-  subtitle: string | null;
-  url: string | null;
-  author: string | null;
-  created_at: string | null;
-  modified_at: string | null;
-  size_bytes: number | null;
-  duration_seconds: number | null;
-  container_id: string | null;
-  attributes: Record<string, unknown>;
-}
+export type ConnectedSourceRow = components["schemas"]["SourceRow"];
 
-export interface ConnectedBrowseResponse {
-  adapter: string;
-  connection_id: string;
-  sources: ConnectedSourceRow[];
-  /** What the provider handed over before the filter ran. */
-  scanned: number;
-  matched: number;
-  elapsed_seconds: number;
-  sources_per_second: number;
-  has_more: boolean;
-  offset: number;
-  /** Null when the walk did not reach the end of the provider. */
-  total: number | null;
-  summary: string;
-}
+/**
+ * ALIASED, NOT COPIED (check:generated-contracts, 2026-09-22). The local names
+ * carry the `Connected` prefix because a bare `SourceRow` says nothing in a
+ * feature that also has library sources; the SHAPE comes from the generated
+ * contract, so `scanned` is still what the provider handed over before the
+ * filter ran and `total` is still null when the walk did not reach the end of
+ * the provider — read those descriptions on the generated declaration, which
+ * carries connected_sources.py's own words. Regenerate with `pnpm sync-types`.
+ */
+export type ConnectedBrowseResponse = components["schemas"]["BrowseResponse"];
 
 export interface ConnectedBrowseRequest {
   adapter: string;

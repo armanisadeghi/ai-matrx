@@ -8,6 +8,8 @@
  * Canonical nouns only: Library, Source, Action. Nothing here coins a noun.
  */
 
+import type { components } from "@/types/python-generated/api-types";
+
 /**
  * Every adapter the running server declares (aidream `media_catalog/models.py`,
  * `AdapterKey`). This list was two behind on 2026-09-18 — `blog_feed` and
@@ -670,16 +672,32 @@ export interface ActionDeclaration {
     endpoint?: string | null;
 }
 
-export interface CreateJobRequest {
-    action: string;
-    selection: SelectionDescriptor;
-    estimate_token?: string | null;
-    parallelism?: number;
-    allow_paid?: boolean;
-    prefer_lane?: TranscriptLane;
-    params?: Record<string, unknown>;
-    name?: string;
-}
+/**
+ * Make named keys required and non-null on a shape we do not own. Used below to
+ * keep a CLIENT-SIDE narrowing without re-declaring a server contract.
+ */
+type Demanded<T, K extends keyof T> = Omit<T, K> & {
+    [P in K]-?: NonNullable<T[P]>;
+};
+
+/**
+ * THE BODY OF `POST …/jobs` — the server's own `StartJobBody`, narrowed, not
+ * re-typed (check:generated-contracts, 2026-09-22). This was eight hand-copied
+ * fields; the server has since made `estimate_token` nullable (five of the six
+ * Actions on the bar were being refused 422 by Pydantic before that), capped
+ * `name` at 200 characters and bounded `parallelism` to 1..32, and a mirror
+ * would have gone on type-checking through every one of those.
+ *
+ * The two `Demanded` keys are a deliberate client narrowing: Pydantic defaults
+ * `action` to null and `selection` to the empty Selection — which means THE
+ * WHOLE LIBRARY — so a caller that forgets either would silently start a job
+ * over everything. Requiring them here is stricter than the wire, never looser,
+ * and it is a constraint rather than a second set of fields.
+ */
+export type CreateJobRequest = Demanded<
+    components["schemas"]["StartJobBody"],
+    "action" | "selection"
+>;
 
 /** §9 — settings knobs, each carrying where its value came from. */
 export interface MediaSettingKnob {

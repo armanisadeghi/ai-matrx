@@ -91,13 +91,25 @@ function nullableString(body: Record<string, unknown>, key: string): string | nu
   return value;
 }
 
-function status(body: Record<string, unknown>): GoogleDocumentSyncStatus {
+/**
+ * A REFRESH RECEIPT CARRIES TWO WORDS, NOT THREE. The generated contract
+ * (`DocumentRecordResponse`) declares `sync_status: "available" | "unavailable"`.
+ * `detached` is terminal and is never a provider answer — it is what the person
+ * chose when they pressed "Keep as AI Matrx data", and a detached record never
+ * refreshes from Google again — so a refresh that answered `detached` is the
+ * server contradicting its own contract and is refused here like any other word
+ * this screen does not know.
+ *
+ * NOTHING FAILS SILENTLY: an unrecognised status is refused rather than
+ * rendered as "available", which would be the screen inventing good news about
+ * someone's document — and the word itself travels to the log, because "which
+ * status did the server send?" is the only question worth asking.
+ */
+function status(
+  body: Record<string, unknown>,
+): GoogleDocumentRecordResponse["sync_status"] {
   const value = body.sync_status;
-  if (!isGoogleDocumentSyncStatus(value)) {
-    // NOTHING FAILS SILENTLY: an unrecognised status word is refused rather than
-    // rendered as "available", which would be the screen inventing good news
-    // about someone's document — and the word itself travels to the log, because
-    // "which status did the server send?" is the only question worth asking.
+  if (!isGoogleDocumentSyncStatus(value) || value === "detached") {
     throw new GoogleWireContractError(
       `The Google refresh answered with a status this screen does not know (${String(value)}). Nothing about the document has changed here.`,
     );

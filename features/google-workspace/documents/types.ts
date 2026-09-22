@@ -22,6 +22,7 @@
  */
 
 import type { Database } from "@/types/database.types";
+import type { components } from "@/types/python-generated/api-types";
 
 export type GoogleDocumentRow =
   Database["workbench"]["Tables"]["google_document"]["Row"];
@@ -39,43 +40,22 @@ export type GoogleDocumentSyncStatus = "available" | "unavailable" | "detached";
 export type GoogleDocumentMimeKind = "document" | "spreadsheet" | "other";
 
 /**
- * Mirrors aidream `DocumentRecordResponse` (source named in the header above).
- * Every field is required there, so every field is required here.
+ * THE DAY THE HEADER PROMISED ARRIVED (check:generated-contracts, 2026-09-22).
+ * Both of these were hand-typed stand-ins because the google_sync routes were
+ * not yet in `types/python-generated/api-types.ts`. They are now, so the
+ * stand-ins are DELETED and the generated contracts imported, exactly as the
+ * header above says to do. The local names keep their `Google` prefix — a bare
+ * `DocumentRecordResponse` says nothing in a feature that also has library
+ * documents — but the SHAPE is the server's.
+ *
+ * Read one difference the stand-ins hid: a refresh response's `sync_status` is
+ * only `available | unavailable`. `detached` is terminal and is never a
+ * provider answer — it is what the person chose when they pressed "Keep as AI
+ * Matrx data" — so it appears on the detach/archive response and on the ROW,
+ * not on a refresh receipt.
  */
-/**
- * Mirrors aidream `SyncedRecordResponse` — what
- * `POST /google-sync/records/{table}/{id}/detach` and `.../archive` answer.
- * Hand-typed from the same source and for the same reason as the interface
- * below; deleted the day `pnpm sync-types` covers these routes.
- */
-export interface GoogleSyncedRecordResponse {
-  id: string;
-  /** The schema-qualified table, echoed from the server's DECLARED set. */
-  table: string;
-  entity_token: string;
-  organization_id: string;
-  label: string | null;
-  /** null on a table that carries no sync vocabulary (a Tag Manager snapshot). */
-  sync_status: GoogleDocumentSyncStatus | null;
-  sync_status_reason: string | null;
-  archived: boolean;
-  /** False when the server found the record already in that state. */
-  changed: boolean;
-}
+export type GoogleSyncedRecordResponse =
+  components["schemas"]["SyncedRecordResponse"];
 
-export interface GoogleDocumentRecordResponse {
-  id: string;
-  organization_id: string;
-  resource_id: string;
-  external_id: string;
-  title: string;
-  mime_kind: GoogleDocumentMimeKind;
-  external_url: string | null;
-  owner_email: string | null;
-  external_modified_at: string | null;
-  body_chars: number;
-  synced_at: string | null;
-  sync_status: GoogleDocumentSyncStatus;
-  sync_status_reason: string | null;
-  export_mime: string | null;
-}
+export type GoogleDocumentRecordResponse =
+  components["schemas"]["DocumentRecordResponse"];
