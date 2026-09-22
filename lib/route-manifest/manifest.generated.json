@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1228,
+  "routeCount": 1231,
   "routes": [
     {
       "pattern": "/",
@@ -97,6 +97,11 @@
       "pattern": "/administration/agents/hindsight",
       "status": "live",
       "source": "app/(admin)/administration/agents/hindsight/page.tsx"
+    },
+    {
+      "pattern": "/administration/agents/hindsight/recipes/[id]",
+      "status": "live",
+      "source": "app/(admin)/administration/agents/hindsight/recipes/[id]/page.tsx"
     },
     {
       "pattern": "/administration/agents/lookups",
@@ -977,6 +982,11 @@
       "pattern": "/administration/ui/experimental-routes",
       "status": "live",
       "source": "app/(admin)/administration/ui/experimental-routes/page.tsx"
+    },
+    {
+      "pattern": "/administration/ui/lite-window",
+      "status": "live",
+      "source": "app/(admin)/administration/ui/lite-window/page.tsx"
     },
     {
       "pattern": "/administration/ui/official-components",
@@ -3194,6 +3204,11 @@
       "pattern": "/invitations/organization/accept/[token]",
       "status": "live",
       "source": "app/(core)/invitations/organization/accept/[token]/page.tsx"
+    },
+    {
+      "pattern": "/invitations/portal/accept/[token]",
+      "status": "live",
+      "source": "app/(core)/invitations/portal/accept/[token]/page.tsx"
     },
     {
       "pattern": "/invitations/project/accept/[token]",
