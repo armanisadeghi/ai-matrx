@@ -1,18 +1,18 @@
 "use client";
 
 /**
- * DirectiveCatalogGrid — the "see everything in one place" matrix.
+ * DirectiveCatalogGrid — the live noun × verb matrix on MatrxDataTable.
  *
- * Dense, scannable table: rows = nouns (grouped by family), columns = the live
- * verbs. Each cell is a color-coded {@link StateCell}. Filterable by family, by
- * free-text noun/table search, and by "writable only" (any of create/update/
- * delete wired). Optimized for density — this is a power-user admin surface.
+ * Source-owned controls keep the existing search across the noun matrix and
+ * the separate Plane-2 action list. Plane-2 actions are not noun × verb rows,
+ * so merging them would misrepresent their shape and lose doc search.
  */
 
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
-
-import { cn } from "@/lib/utils";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
 import { Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -33,7 +33,6 @@ import {
   type NounDirectives,
 } from "@/features/directive-catalog/types";
 import type { DirectiveShapeSelection } from "@/features/directive-catalog/components/DirectiveShapePanel";
-import { MOBILE_TABLE_FROZEN_THROUGH_TABLET } from "@/components/official/mobile-table/mobileTable";
 
 const ALL_FAMILIES = "__all__";
 
@@ -54,167 +53,161 @@ export function DirectiveCatalogGrid({
   onToggleWritable: (noun: NounDirectives, enabled: boolean) => void;
   onInspect: (selection: DirectiveShapeSelection) => void;
 }) {
-  const verbs: DirectiveVerb[] = [...DIRECTIVE_VERBS];
-
   const [familyFilter, setFamilyFilter] = useState<string>(ALL_FAMILIES);
   const [query, setQuery] = useState("");
   const [writableOnly, setWritableOnly] = useState(false);
 
   const families = useMemo(() => {
     const set = new Set<string>();
-    for (const n of catalog.nouns) set.add(n.family);
+    for (const noun of catalog.nouns) set.add(noun.family);
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [catalog.nouns]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return catalog.nouns.filter((n) => {
-      if (familyFilter !== ALL_FAMILIES && n.family !== familyFilter)
+    const normalizedQuery = query.trim().toLowerCase();
+    return catalog.nouns.filter((noun) => {
+      if (familyFilter !== ALL_FAMILIES && noun.family !== familyFilter)
         return false;
-      if (writableOnly && !isWritable(n)) return false;
-      if (q) {
-        const hay = `${n.noun} ${n.table} ${n.family}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
+      if (writableOnly && !isWritable(noun)) return false;
+      return (
+        !normalizedQuery ||
+        `${noun.noun} ${noun.table} ${noun.family}`
+          .toLowerCase()
+          .includes(normalizedQuery)
+      );
     });
   }, [catalog.nouns, familyFilter, query, writableOnly]);
 
-  // Group filtered rows by family for the sectioned table.
-  const grouped = useMemo(() => {
-    const map = new Map<string, NounDirectives[]>();
-    for (const n of filtered) {
-      const arr = map.get(n.family) ?? [];
-      arr.push(n);
-      map.set(n.family, arr);
+  const columns = useMemo((): MatrxColumnDef<NounDirectives>[] => {
+    const matrixColumns: MatrxColumnDef<NounDirectives>[] = [
+      {
+        id: "noun",
+        accessorKey: "noun",
+        header: "Noun",
+        label: "Noun",
+        width: 180,
+        frozen: true,
+        cell: (noun) => <span className="font-medium">{noun.noun}</span>,
+      },
+      {
+        id: "table",
+        accessorKey: "table",
+        header: "Table",
+        label: "Table",
+        width: 220,
+        cell: (noun) => (
+          <span className="block truncate font-mono text-xs text-muted-foreground">
+            {noun.table}
+          </span>
+        ),
+      },
+      {
+        id: "family",
+        accessorKey: "family",
+        header: "Family",
+        label: "Family",
+        hidden: true,
+      },
+    ];
+    for (const verb of DIRECTIVE_VERBS) {
+      matrixColumns.push({
+        id: verb,
+        accessorKey: verb,
+        header: verb[0].toUpperCase() + verb.slice(1),
+        label: verb,
+        width: 80,
+        align: "center",
+        compact: true,
+        cell: (noun) => (
+          <DirectiveStateCell
+            noun={noun}
+            verb={verb}
+            busy={busyToggle === noun.noun}
+            onToggleWritable={onToggleWritable}
+            onInspect={onInspect}
+          />
+        ),
+      });
     }
-    return Array.from(map.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([family, rows]) => ({
-        family,
-        rows: rows.sort((a, b) => a.noun.localeCompare(b.noun)),
-      }));
-  }, [filtered]);
+    return matrixColumns;
+  }, [busyToggle, onInspect, onToggleWritable]);
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Filter bar + legend */}
-      <div className="grid grid-cols-2 items-center gap-2 border-b border-border bg-card px-3 py-2 sm:flex sm:flex-wrap">
-        <div className="relative col-span-2 w-full sm:w-auto">
-          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search noun / table…"
-            aria-label="Search directive nouns and tables"
-            className="h-11 w-full pl-7 text-base sm:w-56 lg:h-8 lg:text-sm"
-          />
-        </div>
-
-        <Select value={familyFilter} onValueChange={setFamilyFilter}>
-          <SelectTrigger
-            className="h-11 w-full text-base sm:w-56 lg:h-8 lg:text-sm"
-            aria-label="Filter directive nouns by family"
-          >
-            <SelectValue placeholder="All families" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_FAMILIES}>All families</SelectItem>
-            {families.map((f) => (
-              <SelectItem key={f} value={f}>
-                {f}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground lg:min-h-0">
-          <Checkbox
-            checked={writableOnly}
-            onCheckedChange={(checked) => setWritableOnly(checked === true)}
-            className="h-6 w-6 lg:h-4 lg:w-4"
-          />
-          Writable only
-        </label>
-
-        <div className="col-span-2 flex items-center justify-between gap-2 sm:contents">
-          <span className="text-xs text-muted-foreground">
-            {filtered.length} of {catalog.nouns.length} nouns
-          </span>
-
-          <div className="flex shrink-0 items-center gap-2 sm:ml-auto">
-            <StateBadge state="yes" />
-            <StateBadge state="planned" />
-            <StateBadge state="no" />
-          </div>
-        </div>
-      </div>
-
-      {/* The matrix */}
-      <div className="min-h-0 flex-1 overflow-auto">
-        <table
-          className={cn(
-            "border-collapse text-sm",
-            MOBILE_TABLE_FROZEN_THROUGH_TABLET,
-          )}
-        >
-          <thead className="sticky top-0 z-10 bg-card">
-            <tr className="border-b border-border text-left">
-              <th className="px-3 py-1.5 font-medium text-muted-foreground">
-                Noun
-              </th>
-              <th className="px-3 py-1.5 font-medium text-muted-foreground">
-                Table
-              </th>
-              {verbs.map((v) => (
-                <th
-                  key={v}
-                  className="w-20 px-2 py-1.5 text-center font-medium capitalize text-muted-foreground"
-                >
-                  {v}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {grouped.map(({ family, rows }) => (
-              <FamilyGroup
-                key={family}
-                family={family}
-                rows={rows}
-                verbs={verbs}
-                busyToggle={busyToggle}
-                onToggleWritable={onToggleWritable}
-                onInspect={onInspect}
+    <div className="flex h-full min-h-0 flex-col">
+      <MatrxDataTable<NounDirectives>
+        data={filtered}
+        columns={columns}
+        getRowId={(noun) => noun.noun}
+        defaultSort={{ id: "noun", direction: "asc" }}
+        pageSize={0}
+        hidePagination
+        detail={{ enabled: false }}
+        grouping={{
+          columnId: "family",
+          groupableColumnIds: ["family"],
+          order: "value-asc",
+          rowNoun: "noun",
+        }}
+        emptyState={{ title: "No nouns match the current filters." }}
+        toolbar={{
+          search: false,
+          leading: (
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search noun / table…"
+                aria-label="Search directive nouns and tables"
+                className="h-11 w-full text-base sm:w-56 lg:h-8 lg:text-sm"
               />
-            ))}
-            {filtered.length === 0 && (
-              <tr>
-                <td
-                  colSpan={verbs.length + 2}
-                  className="px-3 py-8 text-center text-muted-foreground"
+              <Select value={familyFilter} onValueChange={setFamilyFilter}>
+                <SelectTrigger
+                  className="h-11 w-full text-base sm:w-56 lg:h-8 lg:text-sm"
+                  aria-label="Filter directive nouns by family"
                 >
-                  No nouns match the current filters.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-
-        <CustomActionsSection
-          catalog={catalog}
-          query={query}
-          onInspect={onInspect}
-        />
-      </div>
+                  <SelectValue placeholder="All families" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_FAMILIES}>All families</SelectItem>
+                  {families.map((family) => (
+                    <SelectItem key={family} value={family}>
+                      {family}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground lg:min-h-0">
+                <Checkbox
+                  checked={writableOnly}
+                  onCheckedChange={(checked) =>
+                    setWritableOnly(checked === true)
+                  }
+                  className="h-6 w-6 lg:h-4 lg:w-4"
+                />
+                Writable only
+              </label>
+              <span className="text-xs text-muted-foreground">
+                {filtered.length} of {catalog.nouns.length} nouns
+              </span>
+              <div className="ml-auto flex items-center gap-2">
+                <StateBadge state="yes" />
+                <StateBadge state="planned" />
+                <StateBadge state="no" />
+              </div>
+            </div>
+          ),
+        }}
+        className="min-h-0 flex-1"
+      />
+      <CustomActionsSection
+        catalog={catalog}
+        query={query}
+        onInspect={onInspect}
+      />
     </div>
   );
 }
 
-/**
- * Plane-2 Custom Actions + deprecated legacy Directives — the half the noun × verb grid can't
- * represent. Fully server-derived (`catalog.actions`).
- */
 function CustomActionsSection({
   catalog,
   query,
@@ -225,98 +218,41 @@ function CustomActionsSection({
   onInspect: (selection: DirectiveShapeSelection) => void;
 }) {
   const customActions = catalog.actions ?? [];
-  const q = query.trim().toLowerCase();
-  const visible = q
+  const normalizedQuery = query.trim().toLowerCase();
+  const visible = normalizedQuery
     ? customActions.filter((entry) =>
-        `${entry.name} ${entry.doc ?? ""}`.toLowerCase().includes(q),
+        `${entry.name} ${entry.doc ?? ""}`
+          .toLowerCase()
+          .includes(normalizedQuery),
       )
     : customActions;
   if (visible.length === 0) return null;
+
   return (
-    <div className="border-t border-border">
+    <section className="border-t border-border" aria-label="Custom actions">
       <div className="bg-muted/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Custom Actions (Plane 2) &amp; legacy Directives
       </div>
-      <table
-        className={cn(
-          "border-collapse text-sm",
-          MOBILE_TABLE_FROZEN_THROUGH_TABLET,
-        )}
-      >
-        <tbody>
-          {visible.map((f) => (
-            <tr key={f.slug} className="border-b border-border/60">
-              <td className="w-64 font-mono text-xs font-medium text-foreground">
-                <button
-                  type="button"
-                  className="min-h-11 w-full px-3 py-2 text-left transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  onClick={() =>
-                    onInspect({ kind: "custom_action", customAction: f })
-                  }
-                  aria-label={`Inspect custom action ${f.name}`}
-                >
-                  {f.name}
-                </button>
-              </td>
-              <td className="px-3 py-2 text-xs text-muted-foreground">
-                {f.doc}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function FamilyGroup({
-  family,
-  rows,
-  verbs,
-  busyToggle,
-  onToggleWritable,
-  onInspect,
-}: {
-  family: string;
-  rows: NounDirectives[];
-  verbs: DirectiveVerb[];
-  busyToggle: string | null;
-  onToggleWritable: (noun: NounDirectives, enabled: boolean) => void;
-  onInspect: (selection: DirectiveShapeSelection) => void;
-}) {
-  return (
-    <>
-      <tr className="bg-muted/40">
-        <td
-          colSpan={verbs.length + 2}
-          className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-        >
-          {family}
-        </td>
-      </tr>
-      {rows.map((n) => (
-        <tr
-          key={n.noun}
-          className="border-b border-border/60 hover:bg-accent/40 transition-colors"
-        >
-          <td className="px-3 py-1 font-medium text-foreground">{n.noun}</td>
-          <td className="px-3 py-1 font-mono text-xs text-muted-foreground">
-            {n.table}
-          </td>
-          {verbs.map((v) => (
-            <td key={v} className="px-2 py-1">
-              <DirectiveStateCell
-                noun={n}
-                verb={v}
-                busy={busyToggle === n.noun}
-                onToggleWritable={onToggleWritable}
-                onInspect={onInspect}
-              />
-            </td>
-          ))}
-        </tr>
-      ))}
-    </>
+      <ul className="divide-y divide-border/60">
+        {visible.map((action) => (
+          <li key={action.slug} className="grid grid-cols-[16rem_1fr]">
+            <button
+              type="button"
+              className="min-h-11 px-3 py-2 text-left font-mono text-xs font-medium text-foreground transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              onClick={() =>
+                onInspect({ kind: "custom_action", customAction: action })
+              }
+              aria-label={`Inspect custom action ${action.name}`}
+            >
+              {action.name}
+            </button>
+            <span className="px-3 py-2 text-xs text-muted-foreground">
+              {action.doc}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
