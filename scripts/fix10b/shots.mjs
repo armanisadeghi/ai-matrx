@@ -43,6 +43,18 @@ await sleep(2500);
 await page.screenshot({ path: `${OUT}/fix10b-f2-f5-import-landed-and-worked-out-column.png`, fullPage: false });
 console.log("shot 1: the grid after the import");
 
+// THE WORKED-OUT COLUMN IS TO THE RIGHT. Scroll the grid itself, not the window.
+await page.evaluate(() => {
+  const scroller = Array.from(document.querySelectorAll("div")).find(
+    (el) => el.scrollWidth > el.clientWidth + 200 && el.querySelector("table"),
+  );
+  if (scroller) scroller.scrollLeft = scroller.scrollWidth;
+});
+await sleep(1500);
+const seesLabel = await page.evaluate(() => document.body.innerText.includes("TICKET LABEL"));
+console.log(`shot 2: the worked-out column is ${seesLabel ? "on screen" : "NOT on screen"}`);
+await page.screenshot({ path: `${OUT}/fix10b-f5-worked-out-column-shows-its-value.png` });
+
 const text = await page.evaluate(() => document.body.innerText.slice(0, 1500));
 console.log("---- what the screen says ----");
 console.log(text);
