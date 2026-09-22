@@ -33,11 +33,27 @@ drop trigger if exists zz_w2a_relation_association_s_i on custom.record;
 drop trigger if exists zz_w2a_relation_association_s_u on custom.record;
 drop trigger if exists zzzz_store_relation_edge_names_its_field on platform.associations;
 
+-- depends-on: custom.record_relation_edges(uuid,uuid,uuid,text,jsonb,timestamptz) — AND THAT IS
+--   WHY THIS FILE NO LONGER DROPS IT (lane CI-FIX-3, 2026-09-22).
+--   `oldtables_w0_the_two_halves_of_a_relation_can_never_disagree.sql` attached
+--   `zzzz_relation_halves_agree` to BOTH custom.record and platform.associations, and the body it
+--   runs — `custom._relation_halves_agree()` — reaches `custom.record_relation_edges`. So the
+--   helper stopped being STORE-REL's private object the moment W0 adopted it: taking it away here
+--   left two live triggers over a missing body, and the record store would have exploded on the
+--   next write with `function custom.record_relation_edges(...) does not exist` — the exact shape
+--   RED-SUITES-3 had to repair once already for the statement-level pair above.
+--   Detaching W0's triggers instead would have been worse: this inverse would silently carry off
+--   another lane's guard. So the object STANDS and the BEHAVIOUR is neutered, which is what this
+--   inverse was always for — the three bodies that CALL the helper go (the two statement-level
+--   writers, whose triggers came off four lines up, and the edge stamper), and the column goes
+--   back to NULL at the foot of the file. Nothing names the field any more;
+--   `platform.relation_delete_effects` sees exactly what it saw before STORE-REL 1, and W0's
+--   halves-agree guard keeps the body it calls. W0's own inverse removes the helper, in the file
+--   that owns it.
 drop function if exists custom._relation_associations();
 drop function if exists custom._relation_associations_stmt_insert();
 drop function if exists custom._relation_associations_stmt_update();
 drop function if exists custom._store_relation_edge_names_its_field();
-drop function if exists custom.record_relation_edges(uuid, uuid, uuid, text, jsonb, timestamptz);
 
 -- The column back to what it was on 2026-09-19: NULL on every row of the record store.
 -- An automated write names the system doing it (platform._stamp_actor_tier), and taking the
