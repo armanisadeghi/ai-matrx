@@ -27,6 +27,7 @@ import { useOrganizationRequired } from "@/features/organizations/useOrganizatio
 import { getOrganizationMembers } from "@/features/organizations/service";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { createClient } from "@/utils/supabase/client";
+import { useSharedTable } from "@/features/unified-data/hub/useSharedTable";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
@@ -119,11 +120,41 @@ export default function UnifiedDataTableRoute({
   );
   const userId = useAppSelector(selectUserId);
   const { organizationId, organizationState } = useOrganizationRequired();
+  /**
+   * THE ONE DATA SEAM, built once. It was built inline in `config` before,
+   * which made a new client on every render and gave this route no way to ask
+   * the store anything of its own.
+   */
+  const dataSource = useMemo(() => recordsDataSource(createClient()), []);
+  /**
+   * WHOSE TABLE THIS IS — `?org=`, the platform's own way of making a link name
+   * its organization (`platform.link_carries_its_organization`).
+   *
+   * 🚨 THE DEAD ROW THIS CLOSES (VERIFIER-14 item 2). The hub's "Shared with me"
+   * listing shows tables ANOTHER organization gave the person signed in, and
+   * every one of its rows opened here and hit "This table is not here. This
+   * table is not in the organization you are working in" — because this route
+   * mounted the store for whichever organization the person had picked, which
+   * by definition is not the one that owns a shared-in table. The address now
+   * says whose it is; `useSharedTable` asks the store's own door whether the
+   * share is real before a single byte is read as that organization; and the
+   * person's own organization selection is never touched.
+   */
+  const askedOrganizationId = searchParams.get("org");
+  const shared = useSharedTable(dataSource, tableId, askedOrganizationId, organizationId);
+  /** The organization this page reads as: the owner's when the share is real, else the person's own. */
+  const readingOrganizationId =
+    shared.state === "shared" ? shared.organizationId : organizationId;
   // ONE SWITCH: does THIS organization keep its data in the record store? Set
   // once, for everybody, on the unified data ramp screen. There is no second,
   // per-person switch any more (lane NAV-FIX, 19 September).
   const campaign = useUnifiedDataCampaign({
-    organizationId,
+    // The switch is asked of the organization whose store this page reads.
+    // `platform.unified_data_store_on` already admits somebody a table was
+    // shared with (its own body checks `custom.portal_admits` beside
+    // `iam.has_org_access`), so a shared table asks the OWNER's switch and gets
+    // a real answer rather than "you are not in that organization".
+    organizationId: readingOrganizationId,
     organizationState,
     storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
   });
@@ -138,6 +169,10 @@ export default function UnifiedDataTableRoute({
    * answers the question it already knows how to answer.
    */
   const members = useCallback(async () => {
+    // Somebody else's organization's roster is not this person's to read, and
+    // the package's own "no members" sentence is the honest answer on a shared
+    // table. Their own organization answers normally.
+    if (shared.state === "shared") return [];
     if (!organizationId) return [];
     const roster = await getOrganizationMembers(organizationId);
     return roster.map((member) => ({
@@ -146,7 +181,7 @@ export default function UnifiedDataTableRoute({
       email: member.user?.email ?? null,
       avatarUrl: member.user?.avatarUrl ?? null,
     }));
-  }, [organizationId]);
+  }, [organizationId, shared.state]);
 
   /**
    * A NUMBER ON THE CANVAS CLICKS THROUGH — `@ai-matrx/records-ui`'s
@@ -264,6 +299,22 @@ export default function UnifiedDataTableRoute({
       <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
         {organizationState !== "ready" ? (
           <OrganizationContextNotice state={organizationState} what="Data records" />
+        ) : shared.state === "checking" ? (
+          /* The address says this table belongs to another organization. Until
+             the store has said whether that share is real, nothing is mounted —
+             mounting the person's own organization meanwhile is exactly the
+             "This table is not here" flash this whole change removes. */
+          <p className="text-sm text-muted-foreground">
+            Checking whether this table was shared with you&hellip;
+          </p>
+        ) : shared.state === "not-shared" ? (
+          <div className="flex flex-col items-start gap-2 rounded-md border border-dashed p-6">
+            <p className="text-sm font-medium">This table was not shared with you</p>
+            <p className="max-w-prose text-xs text-muted-foreground">{shared.why}</p>
+            <Button size="sm" variant="outline" onClick={() => router.push("/data-v2")}>
+              Back to your tables
+            </Button>
+          </div>
         ) : campaign.state !== "on" ? (
           /* THE ONE NOTICE — resolving, could-not-check and off are three
              different things (lane SHARE-OUT, item 3). */
@@ -272,14 +323,14 @@ export default function UnifiedDataTableRoute({
           <RecordsMount
             letTheStoreDecideRights
             config={{
-              dataSource: recordsDataSource(createClient()),
+              dataSource,
               actor: personActor(userId),
-              organizationId: organizationId!,
+              organizationId: readingOrganizationId!,
               // LIVE UPDATES. The grid's "Not live: this host bound no realtime port" banner
               // was naming exactly this seam. The port joins the private topic the database
               // broadcasts a NOTICE on and re-reads through the read door; `undefined` when
               // the store's switch is off, and the honest banner comes back.
-              realtime: createRecordsRealtimePort(organizationId!),
+              realtime: createRecordsRealtimePort(readingOrganizationId!),
             }}
             host={{
               Link,
@@ -291,9 +342,19 @@ export default function UnifiedDataTableRoute({
               // AGT-N-9 / PRODUCTS row 11. The package builds the record SCOPE and
               // hands it here; this returns the platform's ONE chat column bound to
               // that record. Never a second chat (the canvas ruling).
-              chat: (ctx) => <RecordScopedChat ctx={ctx} organizationId={organizationId} />,
+              chat: (ctx) => <RecordScopedChat ctx={ctx} organizationId={readingOrganizationId} />,
             }}
           >
+            {/* WHOSE TABLE THIS IS, SAID OUT LOUD AND ONCE. A person reading
+                somebody else's table must never be left to work out why their
+                own organization's things are not around it. One row, the
+                organization's name, and what they hold. */}
+            {shared.state === "shared" ? (
+              <p className="mb-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                Shared with you by <span className="text-foreground">{shared.organizationName}</span>{" "}
+                &middot; {shared.levelLabel}. It stays in their organization; yours is unchanged.
+              </p>
+            ) : null}
             {/* A table this organization cannot see says so and offers the way
                 back — never the blank frame the 19 September verdict found. */}
             {/* `activeDashboardId` is a DECLARED prop of TablePage from
