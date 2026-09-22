@@ -324,7 +324,10 @@ if (fastMode) {
             {
                 stdio: 'inherit',
                 cwd: PROJECT_ROOT,
-                env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=16384' },
+                // This repository's full source graph exceeds Node's 16 GB
+                // default/previous cap during sync-types. Leave headroom on
+                // the build host so the required whole-repo check completes.
+                env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=32768' },
             },
         );
         console.log('\n  ✓ Type-check passed — all types are aligned.\n');
