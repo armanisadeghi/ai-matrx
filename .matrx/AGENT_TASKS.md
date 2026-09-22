@@ -25,11 +25,11 @@ _(none)_
 - Frontend `features/crm/service.ts:1746` calls `crm.erase_interaction(p_interaction_id)` for CRM interaction erasure.
 - Live East has no `crm.erase_interaction` function, no migration ledger row for `1031_an_erased_gmail_reply_leaves_only_a_tombstone.sql`, and no `client_callable_door` entry. The canonical migration exists at `/Users/armanisadeghi/code/aidream/db/migrations/1031_an_erased_gmail_reply_leaves_only_a_tombstone.sql`; its inverse drops the function.
 - Type generation removed the RPC from `types/database.types.ts`, and the sync typecheck now reports TS2345 at the `erase_interaction` call. No live database write was made.
-- A senior AI Dream delegate is repairing the migration's rejected apply declaration and obtaining independent review. East apply and verification remain outstanding; West is out of scope.
+- Senior AI Dream repair is pushed at `8cde872368a6aaac395a22bfa464be9fa0a5e770`; SQL bytes are unchanged, and independent review approved. The canonical runner rejected migration 1031 as `headerless-non-additive` because of its privilege `REVOKE`. East apply and verification remain outstanding; West is out of scope.
 
 **Next concrete step**
 
-After the reviewed migration is accepted by the AI Dream database release owner, apply it to East only; verify the function, callable-door registry, and ledger row; then rerun `pnpm sync-types:live` and frontend type health. Keep the typegen drop visible until live East contains the RPC.
+Database owner: rehearse migration 1031 and its inverse on the quarantined clone, then apply only this migration to East with `uv run python db/apply_migrations.py --target production --source aidream --only 1031_an_erased_gmail_reply_leaves_only_a_tombstone.sql --confirm-chair-step 1031_an_erased_gmail_reply_leaves_only_a_tombstone.sql`. Verify the function, callable-door registry, and ledger row; then rerun `pnpm sync-types:live` and frontend type health. Keep the typegen drop visible until live East contains the RPC.
 
 ### TASK-W1-ORG-CUTOVER: Repair rejected REC-61/REC-64 production migrations
 - **Status:** blocked (2026-09-22) — current production files are committed but must not be applied
