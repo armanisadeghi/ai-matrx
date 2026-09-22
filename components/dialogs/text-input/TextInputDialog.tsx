@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { isPointOnOpener } from "./opener-reclick";
 
 export interface TextInputDialogProps {
   open: boolean;
@@ -97,6 +98,38 @@ export function TextInputDialog({
   const isMobile = useIsMobile();
   const [value, setValue] = React.useState(defaultValue);
   const [error, setError] = React.useState<string | null>(null);
+
+  /**
+   * THE DEFECT THIS CLOSES (live on www.aimatrx.com, 2026-09-22). Every
+   * caller of this dialog opens it from a toolbar button that stays on
+   * screen, dimmed but perfectly readable, UNDER the dialog's own full-screen
+   * scrim. Clicking that button again is therefore an "interact outside" and
+   * DISMISSES the dialog. A person who does not notice the dialog and clicks
+   * the button again — the most natural thing in the world — closes it; an
+   * even number of clicks leaves the page looking untouched. That is exactly
+   * how the battle page's "Save as…" was reported dead: four clicks, no
+   * dialog, no toast, no overlay (verified click-by-click on the live site —
+   * click 2 closed it, click 3 reopened it).
+   *
+   * So the element that OPENED this dialog is never an outside click. It is
+   * remembered at open time (it is the focused element the instant before
+   * Radix moves focus into the dialog) and a pointer-down whose point lands
+   * on it is swallowed: the dialog stays open and focus returns to the field.
+   * Every other outside click still dismisses, as it should.
+   */
+  const openerRef = React.useRef<HTMLElement | null>(null);
+  const wasOpenRef = React.useRef(open);
+  if (open && !wasOpenRef.current) {
+    const active = typeof document !== "undefined" ? document.activeElement : null;
+    openerRef.current = active instanceof HTMLElement ? active : null;
+  }
+  wasOpenRef.current = open;
+
+  const pointIsOnOpener = React.useCallback(
+    (event: Event) =>
+      isPointOnOpener(openerRef.current, event as unknown as MouseEvent),
+    [],
+  );
 
   // Reset state on every open. Keeps the component pure — opening it
   // twice in a row doesn't keep stale text from the prior session.
@@ -215,7 +248,14 @@ export function TextInputDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        onPointerDownOutside={(event) => {
+          if (pointIsOnOpener(event.detail.originalEvent)) {
+            event.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description ? (

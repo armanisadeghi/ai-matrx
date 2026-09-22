@@ -134,6 +134,12 @@ export function BattleToolbar({
   };
 
   const handleSave = async () => {
+    // A control is absent or honest, never dead: the button used to be
+    // `disabled` with nothing to read when there was nothing to save.
+    if (columns.length === 0) {
+      toast.info("Add an agent column before saving a comparison.");
+      return;
+    }
     if (!activeSetId) {
       setSaveAsOpen(true);
       return;
@@ -325,7 +331,6 @@ export function BattleToolbar({
           variant="outline"
           onClick={handleSave}
           className="h-7"
-          disabled={columns.length === 0}
         >
           <Save className="w-3.5 h-3.5" />
           {activeSetId ? "Save" : "Save as..."}

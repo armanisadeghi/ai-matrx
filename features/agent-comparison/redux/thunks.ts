@@ -426,15 +426,23 @@ export const saveBattleAs = createAsyncThunk<
   const userId = selectUserId(state);
   if (!userId) throw new Error("Not signed in");
 
+  // A comparison set with no columns to compare is not a save, it is an empty
+  // row that later reports "Saved" over nothing — and the Decisions panel's
+  // verdict column would then key verdicts to a set that holds no agents.
+  // Refuse BEFORE creating the row, and say why.
+  const entries = buildPersistEntries(state.agentComparison.columns, state);
+  if (entries.length === 0) {
+    throw new Error(
+      "pick an agent in at least one column first — there is nothing to compare yet",
+    );
+  }
+
   const set = await createComparisonSet({
     name,
     userId,
     metadata: { mode: "open" },
   });
-  const entries = buildPersistEntries(state.agentComparison.columns, state);
-  if (entries.length > 0) {
-    await replaceEntries(set.id, entries);
-  }
+  await replaceEntries(set.id, entries);
   dispatch(setActiveSet({ id: set.id, name: set.name }));
   return { id: set.id, name: set.name };
 });
@@ -446,6 +454,13 @@ export const saveBattle = createAsyncThunk<void, void, ThunkApi>(
     const setId = state.agentComparison.activeSetId;
     if (!setId) throw new Error("No active comparison set");
     const entries = buildPersistEntries(state.agentComparison.columns, state);
+    if (entries.length === 0) {
+      // Saving an empty column list would WIPE the saved set's entries and
+      // report success. Refuse loudly instead.
+      throw new Error(
+        "pick an agent in at least one column first — saving now would empty this comparison",
+      );
+    }
     await replaceEntries(setId, entries);
   },
 );
