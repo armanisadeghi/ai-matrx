@@ -56,18 +56,32 @@ page.on("pageerror", (e) => errors.push(String(e)));
 
 const who = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME ?? "admin@admin.com", env.AI_ADMIN_PASSWORD);
 say.push(`seat: the app says ${who}`);
+// LET THE POST-SIGN-IN REDIRECT LAND FIRST. `signIn` returns as soon as
+// /api/whoami answers, which is BEFORE the app has finished routing away from
+// /login — and the organization picker's first `page.evaluate` then dies with
+// "Execution context was destroyed, most likely because of a navigation".
+await page.waitForLoadState("domcontentloaded");
+await sleep(6000);
 await setOrganization(page, "Rincon Plumbing Co");
 
 await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 120000 });
 await sleep(12000);
 
 // 1. A ticket that is in the grid right now — chosen from the screen, never invented.
-const ticket = await page.evaluate(() => {
-  // The grid virtualises its rows, so the ticket number is read off the page's
-  // own text rather than off a leaf element that may not exist as its own node.
-  const m = (document.body.textContent ?? "").match(/RPC-T1-\d+/);
-  return m ? m[0] : null;
-});
+// WAIT FOR THE GRID, DO NOT GUESS AT IT. This table holds 1,399 records and its
+// first paint is a skeleton; a fixed sleep read the page before a single row
+// existed and reported "nothing to archive" on a table full of tickets.
+const ticket = (await until(
+  "a dispatch ticket in the grid",
+  async () =>
+    await page.evaluate(() => {
+      // The grid virtualises its rows, so the ticket number is read off the
+      // page's own text rather than off a leaf element that may not exist.
+      const m = (document.body.textContent ?? "").match(/RPC-T1-\d+/);
+      return m ? m[0] : null;
+    }),
+  60000,
+)).v;
 if (!ticket) { fail("no RPC-T1-* ticket visible in the grid — nothing to archive"); }
 else ok(`the grid shows dispatch ticket ${ticket}`);
 await page.screenshot({ path: resolve(OUT, "fix10a-archived-grid-before.png") });
