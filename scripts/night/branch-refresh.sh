@@ -310,7 +310,15 @@ cleanup() {
   local rc=$?
   say "cleanup (exit $rc)"
   night_release_lock
-  night_self_destruct "$LABEL"
+  # 🚨 A SEED-ONLY RUN DOES NOT CONSUME THE ONE-SHOT. `night_self_destruct` unloads and deletes the
+  # plist the FULL refresh is armed with; a seed-only run is not that run and disarming it would
+  # silently cancel tonight's refresh. Measured: the 17:35Z seed-only run did exactly that, and the
+  # 01:05 one-shot had to be re-armed by hand.
+  if [ "$SEED_ONLY" = "1" ]; then
+    say "SEED-ONLY: the one-shot plist is left armed (this run is not the run it schedules)."
+  else
+    night_self_destruct "$LABEL"
+  fi
   say "─────────── BRANCH-REFRESH finished, exit $rc ───────────"
 }
 trap cleanup EXIT
@@ -533,10 +541,10 @@ fi
 # filtered by it exactly like the rest — until today they were copied whole, which carried
 # provision_spec's three customer rows onto the branch.
 typeset -A SEED_FILTER
-while IFS=$'\t' read -r ft fv; do SEED_FILTER[$ft]="$fv"; done < <(python3 -c '
+while IFS='|' read -r ft fv; do SEED_FILTER[$ft]="$fv"; done < <(python3 -c '
 import json, sys
 for t in json.load(open(sys.argv[1]))["tables"]:
-    print("%s\t%s" % (t["table"], t.get("filter_column") or ""))
+    print("%s|%s" % (t["table"], t.get("filter_column") or ""))
 ' "$SEED_LIST_JSON" 2>/dev/null)
 
 say "─── (2) curated seed: reading the reference tables ───"
@@ -584,7 +592,11 @@ fi
 OIDCOLS="$("$PSQL" "${SRC[@]}" -qAt -c "select n.nspname||'.'||c.relname||'.'||a.attname from pg_attribute a join pg_class c on c.oid=a.attrelid join pg_namespace n on n.oid=c.relnamespace where c.relkind='r' and a.attnum>0 and not a.attisdropped and format_type(a.atttypid,a.atttypmod) in ('oid','oid[]') and n.nspname||'.'||c.relname = any(array['${(j:',':)SEED_TABLES}'])" 2>/dev/null | grep -v 'client_callable_door.identity_argtypes')"
 [ -n "$OIDCOLS" ] && say "  🚨 other bare oid column(s) in the seed set, which this job does NOT translate: $(print -r -- "$OIDCOLS" | tr '\n' ' ')"
 
-# name<TAB>filter_column<TAB>truncate_first, for every table the file rules SEEDED. The five
+# name|filter_column|truncate_first, for every table the file rules SEEDED.
+# 🚨 NOT tab-separated. TAB is IFS *whitespace*, so `read -r a b c` COLLAPSES two of them and every
+# field after an empty one shifts left: a table with no organization key came out with col="1" and
+# the read became `where "1" is null`, which is `column "1" does not exist` — 50 of the 101 declared
+# tables silently NOT READ on the first live seed-only run (2026-09-22 17:35Z). `|` never collapses. The five
 # curated tables above are loaded in their own FK order, so they are dropped from this set rather
 # than read and loaded twice.
 typeset -a LOOKUP_OK LOOKUP_FILTER LOOKUP_TRUNC
@@ -595,14 +607,14 @@ d = json.load(open(sys.argv[1]))
 skip = set(sys.argv[2].split())
 for t in d["tables"]:
     if t.get("seed") and t["table"] not in skip:
-        print("%s\t%s\t%s" % (t["table"], t.get("filter_column") or "", "1" if t.get("truncate_first") else "0"))
+        print("%s|%s|%s" % (t["table"], t.get("filter_column") or "", "1" if t.get("truncate_first") else "0"))
 ' "$SEED_LIST_JSON" "${SEED_TABLES[*]}" 2>&1)"
 if print -r -- "$DECLARED" | grep -q 'Traceback'; then
   say "REFUSED: $SEED_LIST_JSON could not be read: $(print -r -- "$DECLARED" | tail -1). Nothing written anywhere."
   exit 78
 fi
 say "  tables the checked-in list declares SEEDED (beyond the curated ${#SEED_TABLES[@]}): $(print -r -- "$DECLARED" | grep -c . )"
-print -r -- "$DECLARED" | while IFS=$'\t' read -r t col trunc; do
+print -r -- "$DECLARED" | while IFS='|' read -r t col trunc; do
   [ -n "$t" ] || continue
   f="$WORK/lookup_${t//./_}.tsv"
   if [ -n "$col" ]; then SEL="select * from $t where \"$col\" is null or \"$col\" = '$SYSORG_ID'"
@@ -611,13 +623,13 @@ print -r -- "$DECLARED" | while IFS=$'\t' read -r t col trunc; do
   if [ -f "$f" ] && ! print -r -- "$o" | grep -qE 'ERROR|FATAL'; then
     n="$(wc -l < "$f" | tr -d ' ')"
     if [ "$n" = "0" ]; then say "    $t: 0 platform-owned rows on the source right now; not loaded"
-    else print -r -- "$t\t$col\t$trunc\t$n" >> "$WORK/lookups.read"; fi
+    else print -r -- "$t|$col|$trunc|$n" >> "$WORK/lookups.read"; fi
   else
     say "    $t: NOT READ — $(print -r -- "$o" | head -1)"
   fi
 done
 if [ -f "$WORK/lookups.read" ]; then
-  while IFS=$'\t' read -r t col trunc n; do
+  while IFS='|' read -r t col trunc n; do
     LOOKUP_OK+=("$t"); LOOKUP_FILTER[$t]="$col"; LOOKUP_TRUNC[$t]="$trunc"
   done < "$WORK/lookups.read"
 fi
@@ -912,11 +924,11 @@ fi
 # row is platform-owned. `platform.provision_spec` is the one of them that is not (16 of 19), and
 # truncating it would have destroyed the branch's own three rows for nothing.
 typeset -A CURATED_TRUNC
-while IFS=$'\t' read -r ct cv; do CURATED_TRUNC[$ct]="$cv"; done < <(python3 -c '
+while IFS='|' read -r ct cv; do CURATED_TRUNC[$ct]="$cv"; done < <(python3 -c '
 import json, sys
 d = json.load(open(sys.argv[1]))
 for t in d["tables"]:
-    print("%s\t%s" % (t["table"], "1" if t.get("truncate_first") else "0"))
+    print("%s|%s" % (t["table"], "1" if t.get("truncate_first") else "0"))
 ' "$SEED_LIST_JSON" 2>/dev/null)
 for t in "${SEED_OK[@]}"; do
   f="$WORK/seed_${t//./_}.tsv"
