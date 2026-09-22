@@ -711,7 +711,7 @@
     "@xterm/xterm": "^6.0.0",
     "@xyflow/react": "latest",
     "@zip.js/zip.js": "2.17.0",
-    "ai": "^7.0.108",
+    "ai": "^7.0.109",
     "ajv": "^8.20.0",
     "canvas": "latest",
     "class-variance-authority": "latest",

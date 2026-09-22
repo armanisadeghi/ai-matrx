@@ -124,7 +124,7 @@ do $t$
 declare
   c_admin uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
   v_boss text := current_user;
-  v_org uuid; v_home uuid; v_tbl uuid; i int; n int; v_red int := 0; v_ids uuid[];
+  v_org uuid; v_home uuid; v_tbl uuid; i int; n int; v_red int := 0; v_ids uuid[]; v_memo_left text;
 begin
   -- 1. THE CENSUS IS GONE ENTIRELY.
   if to_regprocedure('platform.memo_reach_unguarded()') is not null then
@@ -150,13 +150,33 @@ begin
   v_red := v_red + 1;
   raise notice 'RED 2  zero memo-clearing statement triggers anywhere, and the precise body is gone';
 
-  -- 3. BOTH STRUCTURE MEMOS ARE GONE AS FUNCTIONS.
-  if to_regprocedure('platform.memo_b_get(text)') is not null
-     or to_regprocedure('platform.memo_s_get(text)') is not null then
-    raise exception 'RED 3 FAILED: a structure memo reader survived its inverse';
+  -- 3. BOTH STRUCTURE MEMOS STOP BEING READ BY ANYTHING THIS LANE BUILT.
+  --
+  -- REPAIRED 2026-09-22 (WRITE-PERF-3's second run). This block used to assert that
+  -- `platform.memo_b_get` and `platform.memo_s_get` were GONE as functions. That stopped being
+  -- the right assertion the moment a LATER lane adopted the memo for readers of its own: both
+  -- inverses already detect exactly that and refuse to take the memo away, out loud --
+  --   "platform.memo_s_* is still called by custom.record_relation_edges - leaving the third
+  --    memo standing ... the memo a later lane built its statement-level triggers on is not
+  --    this file's to take away."
+  -- A twin that then fails is not catching a defect; it is disagreeing with its own inverse. So
+  -- it now asserts what the inverse actually promises: THIS lane's eight readers are gone (RED 4
+  -- and RED 5 below name every one of them and are unchanged), and a reader still standing is a
+  -- later lane's and is NAMED here rather than tolerated in silence.
+  select coalesce(string_agg(ns.nspname || '.' || p.proname, ', ' order by ns.nspname, p.proname), '')
+    into v_memo_left
+    from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
+   where not (ns.nspname = 'platform' and p.proname like 'memo%')
+     and (p.prosrc like '%memo_b_get%' or p.prosrc like '%memo_s_get%');
+  if to_regprocedure('platform.memo_b_get(text)') is null
+     and to_regprocedure('platform.memo_s_get(text)') is null then
+    raise notice 'RED 3  both structure memo readers are gone, and nothing is left calling them';
+  elsif v_memo_left = '' then
+    raise exception 'RED 3 FAILED: a structure memo reader survived its inverse and NOTHING calls it';
+  else
+    raise notice 'RED 3  this lane''s readers are gone; the memo stands only because a LATER lane reads it: %', v_memo_left;
   end if;
   v_red := v_red + 1;
-  raise notice 'RED 3  neither structure memo has a reader left';
 
   -- 4. THE THREE DOOR PREDICATES ASK THE LADDER AGAIN ON EVERY ROW.
   select count(*) into n from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
@@ -211,8 +231,13 @@ begin
   for i in 1..5 loop
     perform custom.record_write(v_org, v_tbl, jsonb_build_object('deal','Solo ' || i));
   end loop;
-  if coalesce(nullif(current_setting('mx_memo.b', true), ''), '') <> ''
-     or coalesce(nullif(current_setting('mx_memo.s', true), ''), '') <> '' then
+  -- REPAIRED 2026-09-22 with RED 3, for the same reason and with the same evidence: once a
+  -- LATER lane reads the memo (RED 3 names exactly which readers survived this lane's inverses),
+  -- the blob is SUPPOSED to fill on a write. What this clause has always been about is that
+  -- nothing THIS lane built fills it, and RED 4 and RED 5 prove that by name.
+  if v_memo_left = ''
+     and (coalesce(nullif(current_setting('mx_memo.b', true), ''), '') <> ''
+          or coalesce(nullif(current_setting('mx_memo.s', true), ''), '') <> '') then
     raise exception 'RED 6 FAILED: a structure memo filled up with no memo functions in the database';
   end if;
   perform set_config('role', v_boss, true);
