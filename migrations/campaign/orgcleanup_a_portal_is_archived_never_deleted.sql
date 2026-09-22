@@ -36,6 +36,9 @@
 --   migrations/inverse/orgcleanup_a_portal_is_archived_never_deleted_down.sql.
 -- additive: yes
 -- guard: custom/system_enabled
+-- based-on: custom.portals(uuid) c76f49c8ed495c7fd3b3d7d7bf78b4cfed5ee9b9860a06b39aafda5ee26f3060
+-- based-on: custom.portal_public(text) 2c8ec3b73c0a3519e16b613e09df16a18bde087bb0155d86b9e83e342ccd31d6
+-- based-on: custom.portal_invite_accept(text) 2375092894f3cbe1a318d8caa1953aa4fadb680b970ef1c3f6cec1984fbf8cdd
 
 -- ── 1. The columns ────────────────────────────────────────────────────────────────────────────
 alter table custom.portal
@@ -255,3 +258,204 @@ begin
     'portal_id', v_p.id, 'slug', v_p.slug, 'title', v_p.title, 'organization', v_o,
     'sign_in_method', v_p.sign_in_method, 'state', 'open');
 end $$;
+
+create or replace function custom.portal_invite_accept(p_token text)
+returns jsonb
+language plpgsql
+security definer
+set search_path to 'pg_catalog'
+as $$
+declare
+  v_inv  iam.invitations;
+  v_pp   custom.portal_principal;
+  v_p    custom.portal;
+  v_me   uuid := custom.query_principal();
+  v_mail text;
+  v_org  text;
+  v_bind jsonb;
+  v_sees text;
+begin
+  -- 🚨 THIS IS THE WHOLE POINT OF THE LANE: ONE DOOR, ONE DECISION, ONE TRANSACTION.
+  -- The invitation token proves the AUTHORITY — an admin of this portal's organization made
+  -- it, through `custom.portal_invite`, which asserted `admin` on the client Table before it
+  -- minted anything. From there the bind and the grant are performed AS THAT AUTHORITY. The
+  -- arriving person is never asked to hold a level they cannot hold, which is exactly what
+  -- made this flow impossible to finish before 2026-09-21.
+  if v_me is null then
+    raise exception 'Sign in first, and then this invitation opens the portal it was sent for.'
+      using errcode = '42501';
+  end if;
+  select lower(u.email) into v_mail from auth.users u where u.id = v_me;
+
+  select * into v_inv from iam.invitations i
+   where i.token = p_token
+     and i.target_type = 'portal_principal'
+     and i.deleted_at is null
+     and i.status = 'pending'
+     and (i.expires_at is null or i.expires_at > now())
+     and (i.invited_user_id = v_me or lower(i.email) = v_mail);
+  if not found then
+    -- ONE SENTENCE for a token that never existed, one that has been used, one that has run
+    -- out, one that was withdrawn and one addressed to somebody else. A link must not be
+    -- usable to learn that something is there.
+    raise exception 'This invitation cannot be used: it has been withdrawn, already used, run out, or was sent to a different email address than the one you are signed in with.'
+      using errcode = '02000',
+            hint = 'Ask whoever sent it to send a fresh one, to the address you sign in with.';
+  end if;
+
+  select * into v_pp from custom.portal_principal where id = v_inv.target_id;
+  if not found or not v_pp.is_active then
+    raise exception 'This invitation cannot be used: it has been withdrawn, already used, run out, or was sent to a different email address than the one you are signed in with.'
+      using errcode = '02000',
+            hint = 'Ask whoever sent it to send a fresh one, to the address you sign in with.';
+  end if;
+  select * into v_p from custom.portal where id = v_pp.portal_id;
+  select coalesce(nullif(btrim(o.name), ''), 'that organization') into v_org
+    from iam.organizations o where o.id = v_inv.organization_id;
+  v_sees := coalesce(nullif(btrim(v_inv.metadata ->> 'sees'), ''), 'the records that are yours');
+
+  -- ARCHIVED IS NOT CLOSED, AND THE PERSON HOLDING THE LINK IS TOLD WHICH. A closed portal is
+  -- one the organization shut and means to re-open; an archived one has been put away. Both
+  -- refuse, and neither leaves the arriving person staring at a dead page — the sentence says
+  -- what happened and who can undo it. (ORG-CLEANUP, 2026-09-22.)
+  if v_p.archived_at is not null then
+    raise exception '% has archived this portal, so this invitation cannot be used.', v_org
+      using errcode = '42501',
+            hint = 'Nothing of yours was lost. Ask whoever invited you — an owner or an administrator of that organization can restore the portal, and this link works again the moment they do.';
+  end if;
+
+  if not coalesce(v_p.is_active, false) then
+    raise exception '% has closed this portal, so this invitation cannot be used.', v_org
+      using errcode = '42501',
+            hint = 'Ask whoever invited you — an owner or an administrator of that organization can re-open it.';
+  end if;
+
+  -- THE LANE STILL HAS TO BE OPEN AT THIS MOMENT. An organization that closed its outside
+  -- door after sending an invitation has closed it, and the link says so instead of quietly
+  -- writing a grant that admits nobody. (`custom.portal_admits` reads the same knob, so a
+  -- grant written here while it is off would carry the person exactly nowhere.)
+  if not coalesce((platform.knob_resolve('custom', 'external_principal_enabled', v_inv.organization_id) #>> '{}')::boolean, false) then
+    raise exception '% has turned off sharing with people outside it, so this invitation cannot be used.', v_org
+      using errcode = '42501',
+            hint = 'Ask whoever invited you — an owner or an administrator of that organization can turn it back on.';
+  end if;
+
+  -- THE BIND AND THE GRANT, through the ONE bind door, in this transaction.
+  v_bind := custom.portal_principal_bind(v_inv.organization_id, v_pp.id, v_me);
+
+  update iam.invitations
+     set status = 'accepted', accepted_at = now(), invited_user_id = v_me,
+         updated_by = v_me, updated_at = now()
+   where id = v_inv.id;
+
+  return jsonb_build_object(
+    'accepted', true,
+    'organization_id', v_inv.organization_id,
+    'organization', v_org,
+    'portal_id', v_p.id,
+    'portal', v_p.title,
+    'slug', v_p.slug,
+    'principal_id', v_pp.id,
+    'client_record_id', v_pp.client_record_id,
+    'client', coalesce(nullif(btrim(v_inv.metadata ->> 'client'), ''), 'your records'),
+    'sees', v_sees,
+    'level', v_bind ->> 'level',
+    'say', format('%s is open to you. You will see %s — the records that are yours, and nothing else of %s.',
+                  coalesce(v_p.title, 'Your portal'), v_sees, v_org));
+end $$;
+
+-- ── 5. THE DOOR ROWS, DECLARED BEFORE THE GRANTS (DD-223) ─────────────────────────────────────
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, declared_by, reason,
+   signed_in_callers, anonymous_callers, identity_argtypes, argument_rules)
+values
+  ('custom', 'portal_archive',
+   'p_organization_id uuid, p_portal_id uuid, p_confirm_title text, p_reason text',
+   'ORG-CLEANUP / orgcleanup_a_portal_is_archived_never_deleted.sql',
+   'p_organization_id is the tenant, and custom.assert_client_may_reach refuses a caller who is '
+   'not in it (42501) before anything is read. p_portal_id is narrowed to that organization in '
+   'the same statement, so an id from another tenant answers "There is no such portal in this '
+   'organization." exactly as an invented one does. The decision is then made on the portal''s '
+   'own client Table: custom.assert_client_may_change at `admin`, which is the rung '
+   'custom.portal_declare demands to CREATE the portal — whoever may open one may put it away. '
+   'p_confirm_title and p_reason are the person''s own typing: the title is compared to the '
+   'portal''s stored title and never used to select a row, and the reason is stored as written.',
+   true, false, array[2950, 2950, 25, 25]::oid[],
+   jsonb_build_object(
+     'version', 1,
+     'declared_by', 'orgcleanup_a_portal_is_archived_never_deleted.sql',
+     'arguments', jsonb_build_object(
+       'p_organization_id', jsonb_build_object(
+         'type', 'uuid', 'position', 1, 'optional', false,
+         'entity', 'organization', 'access', 'member',
+         'check', 'custom.assert_client_may_reach(p_organization_id) — a non-member is refused 42501 before any read',
+         'null_rule', jsonb_build_object('sqlstate', '42501')),
+       'p_portal_id', jsonb_build_object(
+         'type', 'uuid', 'position', 2, 'optional', false,
+         'entity', 'portal', 'access', 'admin on the portal''s client Table',
+         'check', 'narrowed to p_organization_id in the lookup, then custom.assert_client_may_change(client_table_id, admin, table)',
+         'foreign', jsonb_build_object('same_as_invented', true, 'sqlstate', '02000'),
+         'null_rule', jsonb_build_object('sqlstate', '02000')),
+       'p_confirm_title', jsonb_build_object(
+         'type', 'text', 'position', 3, 'optional', false,
+         'check', 'compared to the portal''s stored title; never selects a row',
+         'null_rule', jsonb_build_object('sqlstate', '23514')),
+       'p_reason', jsonb_build_object(
+         'type', 'text', 'position', 4, 'optional', true, 'sql_default', 'NULL',
+         'check', 'free text, stored as written',
+         'null_rule', jsonb_build_object('means', 'no reason was typed'))))),
+  ('custom', 'portal_restore',
+   'p_organization_id uuid, p_portal_id uuid, p_confirm_title text',
+   'ORG-CLEANUP / orgcleanup_a_portal_is_archived_never_deleted.sql',
+   'The same three checks as custom.portal_archive, in the same order: membership, then the '
+   'portal narrowed to that organization, then `admin` on its client Table, then the title '
+   'typed back. Restoring changes no access anybody did not already have — it hands back '
+   'exactly the tables and principals the portal carried when it was archived.',
+   true, false, array[2950, 2950, 25]::oid[],
+   jsonb_build_object(
+     'version', 1,
+     'declared_by', 'orgcleanup_a_portal_is_archived_never_deleted.sql',
+     'arguments', jsonb_build_object(
+       'p_organization_id', jsonb_build_object(
+         'type', 'uuid', 'position', 1, 'optional', false,
+         'entity', 'organization', 'access', 'member',
+         'check', 'custom.assert_client_may_reach(p_organization_id)',
+         'null_rule', jsonb_build_object('sqlstate', '42501')),
+       'p_portal_id', jsonb_build_object(
+         'type', 'uuid', 'position', 2, 'optional', false,
+         'entity', 'portal', 'access', 'admin on the portal''s client Table',
+         'check', 'narrowed to p_organization_id, then custom.assert_client_may_change(client_table_id, admin, table)',
+         'foreign', jsonb_build_object('same_as_invented', true, 'sqlstate', '02000'),
+         'null_rule', jsonb_build_object('sqlstate', '02000')),
+       'p_confirm_title', jsonb_build_object(
+         'type', 'text', 'position', 3, 'optional', false,
+         'check', 'compared to the portal''s stored title; never selects a row',
+         'null_rule', jsonb_build_object('sqlstate', '23514'))))),
+  ('custom', 'list_portals',
+   'p_organization_id uuid, p_archived text',
+   'ORG-CLEANUP / orgcleanup_a_portal_is_archived_never_deleted.sql',
+   'Read-only, and the same narrowing custom.portals has always carried: a non-member is '
+   'refused 42501, and the rows are then narrowed to portals whose CLIENT Table the caller can '
+   'already open at viewer, so the list can never reveal a Table. p_archived is the platform '
+   'archive filter''s own three values — active (the default), archived, all — and a fourth '
+   'value is refused 22023 rather than silently treated as one of them.',
+   true, false, array[2950, 25]::oid[],
+   jsonb_build_object(
+     'version', 1,
+     'declared_by', 'orgcleanup_a_portal_is_archived_never_deleted.sql',
+     'arguments', jsonb_build_object(
+       'p_organization_id', jsonb_build_object(
+         'type', 'uuid', 'position', 1, 'optional', false,
+         'entity', 'organization', 'access', 'member',
+         'check', 'custom.assert_client_may_reach, then per-row custom.has_visibility on the client Table at viewer',
+         'null_rule', jsonb_build_object('sqlstate', '42501')),
+       'p_archived', jsonb_build_object(
+         'type', 'text', 'position', 2, 'optional', true, 'sql_default', '''active''',
+         'check', 'one of active | archived | all; anything else is 22023',
+         'null_rule', jsonb_build_object('means', 'active — the law''s default is to hide'))))))
+on conflict do nothing;
+
+-- ── 6. The grants ─────────────────────────────────────────────────────────────────────────────
+grant execute on function custom.portal_archive(uuid, uuid, text, text) to authenticated;
+grant execute on function custom.portal_restore(uuid, uuid, text) to authenticated;
+grant execute on function custom.list_portals(uuid, text) to authenticated;
