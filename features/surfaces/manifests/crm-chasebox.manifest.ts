@@ -24,24 +24,8 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
 } from "@/features/surfaces/types";
-import { isGmailDerivedInteraction } from "@/features/crm/inbox/attributes";
-import type { InteractionRow } from "@/features/crm/types";
 
 export const CRM_CHASEBOX_SURFACE_NAME = "matrx-user/crm-chasebox";
-
-export function isReplyThreadModelSafe(
-  interactions: InteractionRow[],
-  sourceInteractionId: string | null,
-): boolean {
-  if (!sourceInteractionId) return false;
-  const inboundEmails = interactions.filter(
-    (row) => row.direction === "inbound" && row.channel_code === "email",
-  );
-  return (
-    inboundEmails.some((row) => row.id === sourceInteractionId) &&
-    inboundEmails.every((row) => !isGmailDerivedInteraction(row))
-  );
-}
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -251,9 +235,7 @@ export function createCrmChaseboxScope(values: {
     grounded_on: string[];
     answering_label: string | null;
     thread_message_count: number | null;
-    replying_to_interaction_id: string | null;
   };
-  draft_reply_source_interactions?: InteractionRow[];
   draft_approved?: boolean;
 }): SurfaceScopePayload {
   const {
@@ -261,7 +243,6 @@ export function createCrmChaseboxScope(values: {
     draft_body,
     draft_personalization,
     draft_reply,
-    draft_reply_source_interactions,
     draft_approved,
     ...base
   } = values;
@@ -273,14 +254,11 @@ export function createCrmChaseboxScope(values: {
       (item) => item.queue !== "fresh_replies",
     ),
   };
-  const verifiedNonGmailReply = Boolean(
-    draft_reply &&
-      isReplyThreadModelSafe(
-        draft_reply_source_interactions ?? [],
-        draft_reply.replying_to_interaction_id,
-      ),
-  );
-  if (!draft_reply || verifiedNonGmailReply) {
+  // Reply text may depend on any historical message in its thread. The client
+  // sees only an RLS-filtered subset, so it cannot authorize model transfer.
+  // Keep human review intact and fail closed until the server returns an
+  // authoritative whole-thread decision over current and tombstoned rows.
+  if (!draft_reply) {
     safeScope.draft_subject = draft_subject;
     safeScope.draft_body = draft_body;
     safeScope.draft_personalization = draft_personalization;

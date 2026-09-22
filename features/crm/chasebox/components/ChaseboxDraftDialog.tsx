@@ -61,10 +61,7 @@ import {
   type OutreachDraftOutcome,
   type OutreachProblem,
 } from "@/features/crm/outreach-single-send/service";
-import {
-  fetchInteractionById,
-  fetchReplyThreadForDraft,
-} from "@/features/crm/inbox/service";
+import { fetchInteractionById } from "@/features/crm/inbox/service";
 import {
   INBOUND_LABEL_META,
   readOutreachDraftId,
@@ -99,9 +96,7 @@ export interface ReviewedDraft {
     grounded_on: string[];
     answering_label: string | null;
     thread_message_count: number | null;
-    replying_to_interaction_id: string | null;
   };
-  reply_source_interactions: InteractionRow[];
 }
 
 interface Props {
@@ -145,9 +140,6 @@ export function ChaseboxDraftDialog({
   const [personalization, setPersonalization] =
     useState<PersonalizationProvenance | null>(null);
   const [reply, setReply] = useState<ReplyProvenance | null>(null);
-  const [replySourceInteractions, setReplySourceInteractions] = useState<
-    InteractionRow[]
-  >([]);
   const [problem, setProblem] = useState<OutreachProblem | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [approvedAt, setApprovedAt] = useState<string | null>(null);
@@ -170,7 +162,6 @@ export function ChaseboxDraftDialog({
       setDraft(null);
       setPersonalization(null);
       setReply(null);
-      setReplySourceInteractions([]);
       setProblem(null);
       setLoadError(null);
       setApprovedAt(null);
@@ -178,7 +169,7 @@ export function ChaseboxDraftDialog({
       setEdits({});
       setRejectReason("");
       void fetchInteractionById(id)
-        .then(async (found) => {
+        .then((found) => {
           if (cancelled) return;
           if (!found) {
             setLoadError(
@@ -186,22 +177,10 @@ export function ChaseboxDraftDialog({
             );
             return;
           }
-          const parsedReply = readReplyProvenance(found.attributes);
-          let sourceInteractions: InteractionRow[] = [];
-          if (parsedReply) {
-            try {
-              sourceInteractions = await fetchReplyThreadForDraft(found);
-            } catch {
-              // Keep review available while the model-transfer scope fails closed.
-              sourceInteractions = [];
-            }
-          }
-          if (cancelled) return;
           setDraft(found);
           setApprovedAt(readOutreachSendAttributes(found.attributes).approvedAt);
           setPersonalization(readPersonalizationProvenance(found.attributes));
-          setReply(parsedReply);
-          setReplySourceInteractions(sourceInteractions);
+          setReply(readReplyProvenance(found.attributes));
           // Read means READ: this is the set "approve the rest" may act on, so
           // it only ever grows from a draft that actually rendered on screen.
           setReadDraftIds((current) =>
@@ -249,19 +228,10 @@ export function ChaseboxDraftDialog({
             grounded_on: reply.groundedOn,
             answering_label: reply.latestInboundLabel,
             thread_message_count: reply.threadMessageCount,
-            replying_to_interaction_id: reply.replyingToInteractionId,
           }
         : undefined,
-      reply_source_interactions: replySourceInteractions,
     });
-  }, [
-    draft,
-    approvedAt,
-    personalization,
-    reply,
-    replySourceInteractions,
-    onDraftLoaded,
-  ]);
+  }, [draft, approvedAt, personalization, reply, onDraftLoaded]);
 
   const draftId = draft ? readOutreachDraftId(draft.id, draft.attributes) : null;
   const resolved = row ? resolvedIds.includes(row.id) : false;

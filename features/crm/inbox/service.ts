@@ -152,21 +152,3 @@ export async function fetchInteractionById(
   if (error) throw pgError(error);
   return data;
 }
-
-/** Canonical interaction rows used to authorize one reply draft for AI context. */
-export async function fetchReplyThreadForDraft(
-  draft: InteractionRow,
-): Promise<InteractionRow[]> {
-  if (!draft.party_id || !draft.outreach_list_id) return [];
-  const { data, error } = await supabase
-    .schema("crm")
-    .from("interaction")
-    .select("*")
-    .eq("party_id", draft.party_id)
-    .eq("outreach_list_id", draft.outreach_list_id)
-    .eq("channel_code", "email")
-    .eq("status", "completed")
-    .is("deleted_at", null);
-  if (error) throw pgError(error);
-  return data ?? [];
-}
