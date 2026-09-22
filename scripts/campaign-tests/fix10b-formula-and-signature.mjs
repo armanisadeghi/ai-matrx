@@ -177,9 +177,14 @@ if (!signField.error) {
         signed.error ? `${signed.error.code}: ${signed.error.message}` : JSON.stringify(signed.data).slice(0, 180));
   signatureId = signed.data?.signature_id ?? signed.data?.id ?? (typeof signed.data === "string" ? signed.data : null);
   if (signatureId) {
-    const intact = await call("doc_signature_intact", { p_organization_id: ORG, p_signature_id: signatureId });
-    check(intact?.intact === true || intact?.holds === true,
-          "and the seal still holds when the store is asked", JSON.stringify(intact).slice(0, 220));
+    // THROUGH THE DOOR BUILT FOR A CLIENT. `custom.doc_signature_intact` is the internal half
+    // of this pair — invoker over a doors-only table — so a browser calling it gets
+    // `42501 permission denied for table doc_signature`. `doc_signature_read` is the definer
+    // door, and it answers the seal AND the verdict together (FIX-10B, 2026-09-22).
+    const sealed = await call("doc_signature_read", { p_organization_id: ORG, p_signature_id: signatureId });
+    check(sealed?.intact === true,
+          "and the screen can ask whether the seal still holds, and it does",
+          JSON.stringify(sealed?.verdict ?? sealed).slice(0, 220));
   }
 }
 
