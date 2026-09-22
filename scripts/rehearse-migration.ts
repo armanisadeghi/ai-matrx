@@ -68,9 +68,10 @@
  *   - WAITING is BOUNDED and NAMED: five attempts, 15 s apart, each printing who holds it and
  *     since when. After the bound it REFUSES - nothing measured, nothing applied - because an
  *     unbounded wait in an unattended run is a hang nobody sees.
- *   - RELEASING happens on EVERY exit path: the legs run inside a `finally`, and SIGINT/SIGTERM
- *     release before exiting. A lock leaked by a crashed rehearsal blocks every lane behind it
- *     until a human deletes the row, so the release is a trap, not a last line.
+ *   - RELEASING happens on EVERY exit path: lock acquisition AND the legs run inside one
+ *     `finally`, and SIGINT/SIGTERM release before exiting. A lock leaked by a crashed rehearsal
+ *     blocks every lane behind it until a human deletes the row, so the release is a trap, not a
+ *     last line.
  *   - A row already held by THIS lane is not taken and is never released here: it belongs to the
  *     apply that took it, and stealing it back at the end of a rehearsal is how a lane loses a
  *     lock it still believes it holds.
@@ -81,6 +82,7 @@ import { basename, dirname, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { connectDirect } from "./lib/direct-db";
+import { withBuildLockCleanup } from "./lib/build-lock-cleanup";
 import {
   cloneRefOverride,
   loadCloneDbEnv,
@@ -752,40 +754,40 @@ async function main(): Promise<number> {
   process.once("SIGINT", onSignal);
   process.once("SIGTERM", onSignal);
 
-  if (families.length === 0) {
-    console.log(
-      `${TAG.info}no build_lock family is named by either file (${lockFrom}) — nothing to take. ` +
-        `A measure pass on objects outside custom/platform/iam serialises against nobody.`,
-    );
-  } else {
-    console.log(
-      `${TAG.info}build_lock families needed: ${families.map((f) => `LOCK:${f}`).join(", ")} ` +
-        `${C.dim}(from ${lockFrom}) — taken on the clone as ${heldBy}, the same rows an apply ` +
-        `would take, so this measure pass is measuring this file and not another lane${C.reset}`,
-    );
-    const taken = await takeBuildLocks(
-      env,
-      families,
-      heldBy,
-      `db:rehearse rule 27 on ${basename(upPath)}`,
-      acquired,
-    );
-    if (taken.refusal) {
-      console.error(`${TAG.fail}${taken.refusal}`);
+  return await withBuildLockCleanup(
+    async () => {
+      if (families.length === 0) {
+        console.log(
+          `${TAG.info}no build_lock family is named by either file (${lockFrom}) — nothing to take. ` +
+            `A measure pass on objects outside custom/platform/iam serialises against nobody.`,
+        );
+      } else {
+        console.log(
+          `${TAG.info}build_lock families needed: ${families.map((f) => `LOCK:${f}`).join(", ")} ` +
+            `${C.dim}(from ${lockFrom}) — taken on the clone as ${heldBy}, the same rows an apply ` +
+            `would take, so this measure pass is measuring this file and not another lane${C.reset}`,
+        );
+        const taken = await takeBuildLocks(
+          env,
+          families,
+          heldBy,
+          `db:rehearse rule 27 on ${basename(upPath)}`,
+          acquired,
+        );
+        if (taken.refusal) {
+          console.error(`${TAG.fail}${taken.refusal}`);
+          return 1;
+        }
+      }
+
+      return await runLegs();
+    },
+    async () => {
       await releaseOnce();
       process.off("SIGINT", onSignal);
       process.off("SIGTERM", onSignal);
-      return 1;
-    }
-  }
-
-  try {
-    return await runLegs();
-  } finally {
-    await releaseOnce();
-    process.off("SIGINT", onSignal);
-    process.off("SIGTERM", onSignal);
-  }
+    },
+  );
 
   // ── rule 27's three legs, so the release above wraps every one of their exits ──
   async function runLegs(): Promise<number> {
