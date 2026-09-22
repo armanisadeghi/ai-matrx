@@ -109809,6 +109809,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _udt_display_spec: { Args: { p_raw: Json }; Returns: Json }
+      _udt_row_granted: { Args: { p_row_id: string }; Returns: boolean }
+      _udt_row_words: {
+        Args: {
+          p_display?: Json
+          p_hop?: number
+          p_organization_id: string
+          p_row_id: string
+        }
+        Returns: string
+      }
       note_folder_get_or_create: {
         Args: { p_name: string; p_organization_id: string }
         Returns: string
@@ -109819,6 +109830,17 @@ export type Database = {
           p_table_id: string
         }
         Returns: boolean
+      }
+      udt_row_words_many: {
+        Args: {
+          p_display: Json
+          p_organization_id: string
+          p_row_ids: string[]
+        }
+        Returns: {
+          row_id: string
+          words: string
+        }[]
       }
     }
     Enums: {
