@@ -3,10 +3,13 @@
 -- WHY IT IS ITS OWN FILE (SUITES-TIDY, 2026-09-22). It was clause 7 of
 -- `writeperf3b_guards_still_fire.sql`, the clause that keeps clause 6 from being vacuous: a
 -- write fills the declared-key and relation-field memos, and declaring a column empties them.
--- It reads the slots directly, and `platform.memo_k_get` DOES NOT EXIST on the main database —
--- it ships in `migrations/campaign/writeperf4_a_fact_about_the_table_is_read_once.sql`, and the
--- live `custom.undeclared_keys` reads no memo at all. Measured on the dev clone (production's
--- own data) 2026-09-22: `function platform.memo_k_get(text) does not exist`.
+-- It reads the slots directly, and `platform.memo_k_get` did not exist on the database this was
+-- measured against: the nightly dev clone, taken before lane WRITE-PERF-4 applied
+-- `migrations/campaign/writeperf4_a_fact_about_the_table_is_read_once.sql` to the MAIN database
+-- at 08:40 UTC on 2026-09-22. On the clone the answer was `function platform.memo_k_get(text)
+-- does not exist` and the live `custom.undeclared_keys` there read no memo at all; on main, since
+-- that apply, both memo readers exist and this file asserts rather than skips. That is exactly
+-- the point of declaring the dependency instead of hard-coding either answer.
 --
 -- One clause about an unshipped optimisation was taking a five-clause guard suite down with it.
 -- Here it DECLARES what it needs, so it asserts on a database that has the memo lane and SKIPS

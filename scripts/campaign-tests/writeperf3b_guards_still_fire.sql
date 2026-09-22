@@ -209,12 +209,12 @@ begin
 
   -- 7. MOVED OUT — SUITES-TIDY 2026-09-22.
   -- Clause 7 proved clause 6 is not vacuous by reading the memo slots directly
-  -- (`platform.memo_k_get` / `platform.memo_s_get`). `platform.memo_k_get` DOES NOT EXIST on
-  -- the main database: it ships in migrations/campaign/writeperf4_a_fact_about_the_table_is_
-  -- read_once.sql, and neither that file nor writeperf3b's own has been applied there — the
-  -- live `custom.undeclared_keys` reads no memo at all. Measured on the dev clone (production's
-  -- own data) 2026-09-22: `function platform.memo_k_get(text) does not exist`, which took this
-  -- whole suite down for one clause about an unshipped optimisation.
+  -- (`platform.memo_k_get` / `platform.memo_s_get`). Those did not exist on the database this
+  -- was measured against: the nightly dev clone, taken BEFORE lane WRITE-PERF-4 applied
+  -- migrations/campaign/writeperf4_a_fact_about_the_table_is_read_once.sql to the MAIN database
+  -- at 08:40 UTC on 2026-09-22. There the clause answered `function platform.memo_k_get(text)
+  -- does not exist` and took this whole suite down with it. A clause that depends on a lane
+  -- landing belongs behind a declaration, wherever that lane happens to be today.
   --
   -- It now lives in `writeperf3b_the_memo_is_filled_and_emptied.sql`, which DECLARES those two
   -- functions to the preamble and SKIPS by name — never as a pass — until the lane lands. The
