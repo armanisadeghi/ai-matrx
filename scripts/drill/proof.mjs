@@ -84,16 +84,24 @@ async function main() {
   if (barCount === 0) throw new Error("no bar to click — nothing was proved");
 
   // ── 2. THE CLICK ───────────────────────────────────────────────────────────
-  // The LAST bar, not the first: the chart orders by count descending, so the first
-  // is the biggest and the last is the smallest — and a drill that "worked" by
-  // opening the biggest group is the one least likely to notice it opened them all.
-  const pick = barCount - 1;
+  // NOT THE BIGGEST BAR. The chart orders by count descending, so the first bar is the
+  // largest group — and a drill that "worked" by opening the largest group is the one
+  // least likely to notice it actually opened the whole table. A small, NAMED group is
+  // the one that can tell the two apart, so this takes a middle bar and refuses a blank.
+  const pick = Math.min(2, barCount - 1);
   await bars.nth(pick).click({ force: true });
   await until("the address to carry the question", async () => page.url().includes("filter="), 30000);
   const url = new URL(page.url());
   const question = url.searchParams.get("filter");
   say(`the address carries the question: ${question}`);
   if (!question) throw new Error("the address has no ?filter= — the click threw the question away");
+  const asked = JSON.parse(question);
+  const [askedKey] = Object.keys(asked);
+  if (asked[askedKey] === null) {
+    throw new Error(
+      "the bar this proof clicked is the group nobody has filled in — a real proof needs a NAMED group",
+    );
+  }
 
   // ── 3. THE SENTENCE ────────────────────────────────────────────────────────
   const notice = await until(
@@ -107,17 +115,62 @@ async function main() {
   }
 
   await sleep(2500);
-  // ── 4. AND THE ROWS. Not "a table rendered" — how many, against what the number said.
-  const drawn = await until(
-    "the narrowed rows",
-    async () => {
-      const n = await page.evaluate(() => document.querySelectorAll("table tbody tr").length);
-      return n > 0 ? n : null;
-    },
-    60000,
-  );
-  say(`rows on screen after the click: ${drawn.v}`);
   await page.screenshot({ path: resolve(OUT, "drill-2-only-those-rows.png"), fullPage: false });
+
+  // ── 5. THE SAME QUESTION, IN THE GRID. The board and the grid each ask the store for
+  //      their own page, so a filter honoured by one and not the other is a layout button
+  //      that silently changes which records you are looking at. The grid is also where
+  //      rows are countable, so this is where the number is checked.
+  //
+  //      🚨 `table tbody tr` IS NOT A ROW. The loading skeleton satisfies it — this proof
+  //      counted six "rows" of a four-row answer on its first run, which is exactly the
+  //      trap `scripts/grid-parity/shots.mjs` wrote down. A row is a `tr[data-row-id]`,
+  //      and the count is taken only once it has stopped changing.
+  const settledRows = async (label) => {
+    const count = () => page.evaluate(() => document.querySelectorAll("table tbody tr[data-row-id]").length);
+    let last = -1;
+    for (let i = 0; i < 40; i += 1) {
+      await sleep(750);
+      const now = await count();
+      if (now > 0 && now === last) return now;
+      last = now;
+    }
+    throw new Error(`${label}: the grid never settled on a row count`);
+  };
+
+  url.searchParams.set("view", "grid");
+  await page.goto(url.toString(), { waitUntil: "domcontentloaded", timeout: 120000 });
+  const narrowed = await settledRows("narrowed");
+  const values = await page.evaluate(() =>
+    Array.from(document.querySelectorAll("table tbody tr[data-row-id]")).map(
+      (row) => (row.textContent ?? "").trim(),
+    ),
+  );
+  say(`${askedKey} = ${String(asked[askedKey])} — rows in the grid: ${narrowed}`);
+  await sleep(1000);
+  await page.screenshot({ path: resolve(OUT, "drill-3-the-grid-asks-the-same-question.png"), fullPage: false });
+
+  // EVERY ROW ON SCREEN IS ONE THE NUMBER COUNTED. A screen that narrowed to the wrong
+  // rows looks exactly like one that narrowed to the right ones.
+  const wrong = values.filter((text) => !text.includes(String(asked[askedKey])));
+  if (wrong.length > 0) {
+    throw new Error(
+      `${wrong.length} row(s) on screen do not carry ${askedKey} = ${String(asked[askedKey])}`,
+    );
+  }
+  say(`every one of the ${narrowed} rows carries ${askedKey} = ${String(asked[askedKey])}`);
+
+  // AND IT IS A SUBSET, NOT THE WHOLE TABLE WEARING A SENTENCE.
+  url.searchParams.delete("filter");
+  url.searchParams.delete("from");
+  await page.goto(url.toString(), { waitUntil: "domcontentloaded", timeout: 120000 });
+  const whole = await settledRows("unfiltered");
+  say(`the same grid with no question: ${whole} rows`);
+  if (!(narrowed < whole)) {
+    throw new Error(
+      `the narrowed grid showed ${narrowed} of ${whole} rows — it did not narrow anything, and the sentence on it says it did`,
+    );
+  }
 
   writeFileSync(resolve(OUT, "drill-what-was-proved.txt"), said.join("\n") + "\n");
   await browser.close();

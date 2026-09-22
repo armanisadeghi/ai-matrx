@@ -53,13 +53,11 @@ set local statement_timeout = '60s';
 set local lock_timeout = '10s';
 select set_config('app.actor_system', 'campaign-test/fix10bf5_green', true);
 
-delete from iam.permissions where resource_type = 'record'
-   and resource_id in (select id from custom.record where organization_id = :ORG);
-delete from platform.associations where organization_id = :ORG;
-delete from custom.record where organization_id = :ORG;
-delete from platform.knob_override where organization_id = :ORG;
-delete from iam.memberships where organization_id = :ORG;
-delete from iam.organizations where id = :ORG;
+-- NO PRE-DELETE SWEEP. The suite ends in ROLLBACK, so nothing it makes ever persists and
+-- there is nothing to clean up on the next run. The sweep other suites carry would DELETE from
+-- `iam.organizations`, which every org-scoped table references — on a database with other lanes
+-- working it waits behind their transactions and this suite died on `lock timeout` twice before
+-- the statement was removed. A guard that cannot run is not a guard.
 
 insert into iam.organizations (id, name, slug, abbreviation, created_by)
 values (:ORG, 'FIX-10B-F5 Green Throwaway', 'fix10bf5-green-throwaway', 'FFG', :ADMIN);
@@ -119,7 +117,7 @@ begin
   select custom.read_record(v_org, v_rec, true) -> 'document' ->> 'ticket_label' into v_seen;
   if v_seen is distinct from 'RPC-T1-7000 — 100 Ventura Ave, Ventura' then
     raise exception '1: a worked-out column built from two real columns by id reads % on the read door, and the dispatcher should see "RPC-T1-7000 — 100 Ventura Ave, Ventura"',
-                    custom.said(v_seen, 'nothing at all');
+                    coalesce(v_seen, 'nothing at all');
   end if;
   raise notice 'PART 1 PASSED — the column answers "%" on the read door', v_seen;
 
@@ -139,7 +137,7 @@ begin
       raise exception '2: it was refused, but not about this: %', v_msg;
     end if;
     if v_hint not like '%REC-17%' then
-      raise exception '2: the refusal does not say how to fix it: %', custom.said(v_hint, 'no hint at all');
+      raise exception '2: the refusal does not say how to fix it: %', coalesce(v_hint, 'no hint at all');
     end if;
   end;
   raise notice 'PART 2 PASSED — refused: %', v_msg;
@@ -184,7 +182,7 @@ begin
   -- and the column it tried to break still answers exactly what it answered in part 1.
   select custom.read_record(v_org, v_rec, true) -> 'document' ->> 'ticket_label' into v_seen;
   if v_seen is distinct from 'RPC-T1-7000 — 100 Ventura Ave, Ventura' then
-    raise exception '4: the refused retype left the column reading %', custom.said(v_seen, 'nothing');
+    raise exception '4: the refused retype left the column reading %', coalesce(v_seen, 'nothing');
   end if;
   raise notice 'PART 4 PASSED — the retype door refuses it too, and the column is untouched';
 
