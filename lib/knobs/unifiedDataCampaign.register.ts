@@ -222,6 +222,21 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
       "schema said out loud; there is no table read here.",
   },
   {
+    id: "data-hub-shared-table-context",
+    file: "features/unified-data/hub/useSharedTable.ts",
+    kind: "runtime",
+    why:
+      "Lane HUB-FIX — the door law for the hub's \"Shared with me\" listing. Every row there " +
+      "opened /data-v2/<table> and landed on \"This table is not here\", because the table " +
+      "belongs to ANOTHER organization by definition. The row now carries ?org= the way " +
+      "platform.link_carries_its_organization makes a notification link name its organization, " +
+      "and this hook reads it: it asks custom.table_share_outside_for_me — the store's own " +
+      "door, answering only for the person signed in — whether that share is real before the " +
+      "route mounts the store as that organization. It trusts no ?org= from an address and it " +
+      "never changes which organization the person is working in. Served only inside " +
+      "app/(core)/data-v2/[tableId], which is already behind UNIFIED_DATA_CAMPAIGN's switch.",
+  },
+  {
     id: "data-hub-organization-hub",
     file: "features/unified-data/hub/OrganizationHub.tsx",
     kind: "runtime",
