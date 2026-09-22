@@ -160,6 +160,18 @@ const TAG = {
 const ARGV = process.argv.slice(2);
 const STRICT = ARGV.includes("--strict");
 const SELF_TEST = ARGV.includes("--self-test");
+/**
+ * DIAGNOSTIC VERBOSITY IS A FLAG, NOT AN ENV VAR (check:settings-env-toggles,
+ * 2026-09-22). These two used to be read from the environment: identical bytes
+ * printing different things depending on which machine ran them, and a run
+ * nobody can reproduce from the command line that produced it. Exactly the
+ * conversion this repo already made for `MATRX_ALLOW_ARCHIVED_REGENERATOR ->
+ * --allow-archived`; the flag is in the command, so the command is the whole
+ * story. `--progress` names every door as it is measured instead of every 25th;
+ * `--debug` dumps the resolved ids and the raw probe rows.
+ */
+const PROGRESS = ARGV.includes("--progress");
+const DEBUG = ARGV.includes("--debug");
 const flag = (name: string): string | null => {
   const hit = ARGV.find((a) => a.startsWith(`--${name}=`));
   return hit ? hit.slice(name.length + 3) : null;
@@ -523,7 +535,7 @@ async function main(): Promise<number> {
           const t0 = Date.now();
           results[i] = await measureDoor(c, cq, cast, catalog, doors[i]);
           done++;
-          if (process.env.DD192_PROGRESS)
+          if (PROGRESS)
             console.log(
               `${TAG.info}${String(done).padStart(4)}/${doors.length} ${Date.now() - t0}ms ${results[i].verdict} ${doors[i].schema}.${doors[i].fn}`,
             );
@@ -2486,7 +2498,7 @@ async function runProbeCore(
 
     // … then ask, as the caller, whether RLS lets them read each one.
     await db.query("set local role authenticated");
-    if (process.env.DD192_DEBUG)
+    if (DEBUG)
       console.log("RESOLVED", JSON.stringify({ identityIds, referenceIds, resolved, callerOrgs: caller.orgIds }));
     const identitySet = new Set(identityIds);
     const leakedRows: string[] = [];
@@ -3050,7 +3062,7 @@ async function plantDd191Shape(
     await db.query(`grant execute on function public.dd192_selftest_inv_shape(text, uuid) to authenticated`);
 
     const r = await measureDoor(db, q, cast, catalog, door);
-    if (process.env.DD192_DEBUG) console.log(JSON.stringify(r.probes, null, 1));
+    if (DEBUG) console.log(JSON.stringify(r.probes, null, 1));
     caught = r.verdict === "FAIL";
     console.log(
       caught
@@ -3451,7 +3463,7 @@ async function selfTest(
       return 1;
     }
     const r1 = await measureDoor(db, q, cast, catalog, leakingDoor);
-    if (process.env.DD192_DEBUG) console.log(JSON.stringify(r1.probes, null, 2));
+    if (DEBUG) console.log(JSON.stringify(r1.probes, null, 2));
     failedTheLeak = r1.verdict === "FAIL";
     console.log(
       failedTheLeak
