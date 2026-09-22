@@ -1,7 +1,24 @@
 #!/bin/zsh
 # ─────────────────────────────────────────────────────────────────────────────
-# BRANCH-REFRESH — the nightly rebuild of the rehearsal branch from production's SCHEMA
-# and a small curated seed. NEVER from production's data.
+# BRANCH-REFRESH — the nightly rebuild of the rehearsal branch from the NIGHTLY DEV CLONE's
+# SCHEMA and a small curated seed. IT NEVER TOUCHES PRODUCTION, IN ANY MODE.
+#
+# 🚨 THE CHAIR RULING THIS FILE NOW IMPLEMENTS (2026-09-22, lane BRANCH-REFRESH-2)
+# --------------------------------------------------------------------------------
+# The two branch-refresh jobs were UNLOADED at ~00:10 PT on 2026-09-22 on Arman's word. They
+# write only the branch, but each took a ~7-minute `pg_dump --schema-only` of PRODUCTION, which
+# holds ACCESS SHARE on every table; after Sunday night's lock incident nothing of that class was
+# to run. THE REASON FOR THE PAUSE IS REMOVED BY CONSTRUCTION, NOT BY PERMISSION: the schema, the
+# curated seed and the runner ledger now come from the NIGHTLY DEV CLONE
+# (common-docs/operations/clone/CURRENT.md + CLONE-REF) — a physical copy of production refreshed
+# by the backup process, where a 7-minute ACCESS SHARE costs production exactly nothing.
+#
+# There is NO production code path left in this file. The only source it can ever ask for is
+# `night_assert_target clone`, and a production connection string handed to it in ANY variable,
+# in ANY mode, is refused before anything is read or written. That assertion is keyed on
+# (system_identifier, PROJECT REF) TOGETHER — a data clone is a physical restore and answers with
+# PRODUCTION's own system identifier, so the number alone could not tell them apart (the identity
+# trap, closed by lane CLONE-SUITES on 2026-09-22).
 #
 # WHY IT EXISTS (lane BRANCH-DRIFT, 2026-09-21, v5/BRANCH-DRIFT.md)
 # -----------------------------------------------------------------
@@ -19,25 +36,28 @@
 # hours-long ACCESS SHARE queue. The schema-only dump is 19 MB and 6m49s, measured.
 #
 # THE SHAPE OF THE BLAST RADIUS, stated plainly:
-#   · PRODUCTION IS READ AND NEVER WRITTEN. Every production statement in this file is a
-#     SELECT, a COPY … TO STDOUT or a pg_dump. There is no write path to production in any
-#     flag combination.
+#   · PRODUCTION IS NEVER CONTACTED AT ALL. Not read, not written, in no mode and under no
+#     variable. The source is the dev clone and the assertion refuses anything else.
+#   · THE CLONE IS READ AND NEVER WRITTEN. Every clone statement in this file is a SELECT, a
+#     COPY … TO STDOUT or a pg_dump.
 #   · THE BRANCH IS THE ONLY THING WRITTEN, and it is written DESTRUCTIVELY: the campaign
-#     schemas are dropped and recreated from production's dump. That is deliberate — the
+#     schemas are dropped and recreated from the clone's dump. That is deliberate — the
 #     branch is disposable by design, and a differential that hand-patches 1,400 objects a
 #     night is the thing W0-SYNC proved does not survive this rate of change.
-#   · THE WINDOW EXISTS FOR THE PRODUCTION READ, not for the branch write. A schema-only
-#     pg_dump takes ACCESS SHARE on every table; at 2 p.m. that queues any lane's
-#     ALTER TABLE for up to seven minutes and every reader behind it. At 2 a.m. it costs
-#     nothing. So the production half runs ONLY inside the window, under a
-#     --lock-wait-timeout and a session statement_timeout, and ABORTS at ten minutes.
+#   · THE WINDOW NOW EXISTS FOR THE DESTRUCTIVE BRANCH WRITE, not for the source read. The
+#     source read costs nothing now (it is a clone). What still must not happen at 2 p.m. is
+#     dropping 79 schemas out from under a lane that is mid-rehearsal on the branch. So the
+#     window guard STAYS, with a new reason, and there is still no switch that removes it.
+#   · The ten-minute dump cap stays as a sanity bound on a run that would otherwise sit on the
+#     lock for the whole night; an abort writes nothing anywhere.
 #
 # 🚨 THERE IS NO FORCE SWITCH. lib-night.sh's incident note says why: on 2026-09-21 a
 # NIGHT_SWEEP_FORCE=1 flag removed the window and applied a migration to the live database
 # at 17:19 Pacific. The only override here is NIGHT_REHEARSE=1, and it does NOT remove the
-# window — it removes PRODUCTION. In rehearsal the production read is replaced by a read of
-# the BRANCH'S OWN catalog, the drop set is narrowed to one probe schema this job creates
-# for itself, and the plist is left alone.
+# window — it removes the DESTRUCTION. A rehearsal reads the clone for real (that read is free
+# now, so a rehearsal finally exercises the true source), but it narrows the drop set to one
+# probe schema this job creates for itself, runs no identity purge, rewrites no ledger, rolls
+# the identity seed back, and leaves the plist alone.
 #
 # WHAT THIS JOB DOES NOT FIX, and it matters more than the drift: 94 of the 191 suites
 # carry their own "this file runs on the MAIN database only" guard and will refuse a
@@ -52,7 +72,10 @@ LOCK=branch-refresh
 HANDOFF=/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20
 LOG="$HANDOFF/night-branch-refresh.log"
 OPEN=0100 CLOSE=0330
-DUMP_CAP=600               # seconds: the production schema dump aborts at TEN MINUTES
+DUMP_CAP=900               # seconds: the clone schema dump aborts at FIFTEEN MINUTES
+                           # (was 600 against production, whose dump measured 409s. The clone runs on
+                           #  Large compute where production runs XL, so the same dump is slower; the
+                           #  cap is a sanity bound on a stuck run, and an abort still writes nothing.)
 USE_CASES=/Users/armanisadeghi/code/aidream/apps/shared/records/src/use-cases
 SUITES="$FRONTEND/scripts/campaign-tests"
 PROBE_SCHEMA=zz_branch_refresh_probe
@@ -121,28 +144,30 @@ BRANCH_DSN="$(night_branch_dsn)"
 if [ -z "$BRANCH_DSN" ]; then say "REFUSED: no SUPABASE_BRANCH_DATABASE_URL. Nothing attempted."; exit 78; fi
 night_assert_target branch "$BRANCH_DSN" || exit $?
 
-# The SOURCE is production on a live run and the BRANCH'S OWN CATALOG in a rehearsal.
-# A rehearsal does not read production at all — that is what makes "the window is not
-# enforced in rehearsal" safe.
+# ── THE SOURCE: THE NIGHTLY DEV CLONE, IN EVERY MODE ─────────────────────────
+# 🚨 There is ONE source and it is the clone. `night_assert_target clone` is the only target this
+# job ever asks of a source, so a production connection string handed to it — in CLONE_DATABASE_URL,
+# in CLONE-REF, or anywhere else — is REFUSED here, before the schema list is read and long before
+# anything is dropped. The refusal names what the server actually is. There is no `--target`, no
+# production branch of this `if`, and nothing to set that would create one.
+#
+# The clone is a physical restore of production's cluster and therefore answers with PRODUCTION's
+# `pg_control_system().system_identifier`. The assertion compares the system identifier AND the
+# project ref carried by the connection (`postgres.<ref>`), both read from the checked-in
+# CLONE-REF; an unreadable CLONE-REF is a refusal, never a fallback.
 typeset -a SRC
-if [ "$REHEARSE" = "1" ]; then
-  SRC=("$BRANCH_DSN")
-  SRC_NAME="the branch's own catalog (REHEARSAL — production is not touched)"
-  night_assert_target branch "${SRC[@]}" || exit $?
-else
-  U="$(grep -m1 '^SUPABASE_MATRIX_USER=' "$AIDREAM/.env" | cut -d= -f2- | tr -d '"')"
-  H="$(grep -m1 '^SUPABASE_MATRIX_HOST=' "$AIDREAM/.env" | cut -d= -f2- | tr -d '"')"
-  PT="$(grep -m1 '^SUPABASE_MATRIX_PORT=' "$AIDREAM/.env" | cut -d= -f2- | tr -d '"')"
-  N="$(grep -m1 '^SUPABASE_MATRIX_DATABASE_NAME=' "$AIDREAM/.env" | cut -d= -f2- | tr -d '"')"
-  export PGPASSWORD="$(grep -m1 '^SUPABASE_MATRIX_PASSWORD=' "$AIDREAM/.env" | cut -d= -f2- | tr -d '"')"
-  if [ -z "$H" ] || [ -z "$PGPASSWORD" ]; then
-    say "REFUSED: the five SUPABASE_MATRIX_* values are not all present. Nothing attempted."; exit 78
-  fi
-  SRC=(-h "$H" -p "$PT" -U "$U" -d "$N")
-  SRC_NAME="production (READ ONLY)"
-  night_assert_target production "${SRC[@]}" || exit $?
+SRC_DSN="$(night_clone_dsn)" || true
+if [ -z "${SRC_DSN:-}" ]; then
+  say "REFUSED: the dev clone's connection could not be assembled. Set CLONE_DATABASE_URL, or make"
+  say "  sure common-docs/operations/clone/CLONE-REF names a readable password_file."
+  say "  This job has NO other source — it does not fall back to production. Nothing attempted."
+  exit 78
 fi
+night_assert_target clone "$SRC_DSN" || exit $?
+SRC=("$SRC_DSN")
+SRC_NAME="the nightly dev clone (READ ONLY) — production is not contacted in any mode"
 say "source: $SRC_NAME"
+say "clone register: $(night_ref_key "$CLONE_REF_FILE" clone_name) · ref $(night_ref_key "$CLONE_REF_FILE" clone_ref) · promoted $(night_ref_key "$CLONE_REF_FILE" promoted)"
 
 cleanup() {
   local rc=$?
@@ -186,11 +211,12 @@ DUMP="$WORK/schema.sql"
 DUMP_START=$(date +%s)
 # 🚨 NOT --no-acl. The first cut carried it, and it strips EVERY GRANT from the dump — the
 # rehearsal's 16 MB file contained zero. Since step (3) DROPS these schemas, a grant-less dump
-# would have left the branch with no privileges at all: `EXECUTE on custom.table_declare to
-# authenticated` is what 39 suites skip on today, and a refresh that destroyed it would have
-# made the branch worse than the drift it was fixing. --no-owner stays (both databases connect
-# as `postgres`); the ACLs come across, which also levels the 25 EXECUTE grants BRANCH-DRIFT.md
-# measured the branch having and production not.
+# would have left the branch with no privileges at all: `EXECUTE on custom.record_write /
+# record_update / record_delete / table_declare to authenticated` is what SUITE-TARGET and
+# AIDREAM-RED measured the branch lacking (all four read `f` on the branch and `t` on the clone
+# on 2026-09-22), and a refresh that destroyed them would have made the branch worse than the
+# drift it was fixing. --no-owner stays (both databases connect as `postgres`); the ACLs come
+# across, and they are asserted BY NAME in step (4) rather than assumed.
 PGOPTIONS='-c statement_timeout=600000' timeout $DUMP_CAP "$PGDUMP" "${SRC[@]}" \
   --schema-only --no-owner --no-comments --quote-all-identifiers \
   --lock-wait-timeout=5000 "${DUMPARGS[@]}" -f "$DUMP" 2> "$WORK/dump.err"
@@ -198,12 +224,13 @@ DRC=$?
 DUMP_SECS=$(( $(date +%s) - DUMP_START ))
 if [ $DRC -eq 124 ]; then
   say "REFUSED: the schema dump exceeded the ${DUMP_CAP}s cap (${DUMP_SECS}s) and was aborted."
-  say "  Production was only ever READ; nothing was written anywhere. Nothing done."
+  say "  The clone was only ever READ; production was never contacted; nothing was written anywhere."
+  say "  Nothing done."
   exit 75
 fi
 if [ $DRC -ne 0 ] || [ ! -s "$DUMP" ]; then
   say "REFUSED: pg_dump failed after ${DUMP_SECS}s: $(head -3 "$WORK/dump.err" | tr '\n' ' ')"
-  say "  Production was only ever READ. Nothing done."; exit 78
+  say "  The clone was only ever READ; production was never contacted. Nothing done."; exit 78
 fi
 say "dump ok: ${DUMP_SECS}s · $(du -h "$DUMP" | cut -f1) · $(grep -c '^CREATE ' "$DUMP") CREATE · $(grep -c '^GRANT ' "$DUMP") GRANT statements"
 # A dump with no GRANTs would destroy every privilege on the branch. Refuse before the drop.
@@ -240,7 +267,8 @@ if print -r -- "$LOUT" | grep -qE 'ERROR|FATAL'; then
 else
   say "  public._schema_migrations: $(wc -l < "$LEDGER" | tr -d ' ') rows"
 fi
-unset PGPASSWORD   # production credentials are not needed again, in any mode
+# No PGPASSWORD is ever set by this job: the clone DSN carries its own password, and the
+# production credentials in aidream/.env are never read here at all.
 
 # ─────────────────────────────────────────────────────────────────────────────
 # (3) THE BRANCH APPLY — the only writes in this file.
@@ -287,7 +315,7 @@ if [ "$REHEARSE" = "1" ]; then
   say "  schemas still reference auth.users and the delete would cascade into them. On a live"
   say "  run it happens here, after the drop, with nothing left to cascade into."
 else
-  say "purging copied identities: the branch holds $("$PSQL" "$BRANCH_DSN" -qAt -c 'select count(*) from auth.users' 2>&1) auth.users rows, 527 of which BRANCH-DRIFT.md measured as identical to production's"
+  say "purging copied identities: the branch holds $("$PSQL" "$BRANCH_DSN" -qAt -c 'select count(*) from auth.users' 2>&1) auth.users rows, 527 of which BRANCH-DRIFT.md measured as identical to production's (copied by the 2026-09-16 transplant)"
   POUT="$("$PSQL" "$BRANCH_DSN" -v ON_ERROR_STOP=1 -qAt -c \
     "delete from auth.users where email is distinct from 'admin@admin.com' and email is distinct from 'test@test.com'" 2>&1)"
   if print -r -- "$POUT" | grep -qE 'ERROR|FATAL'; then say "  purge FAILED: $(print -r -- "$POUT" | head -1)"
@@ -423,21 +451,35 @@ DNUM="$(sed -nE 's/.*PRODUCTION HAS ([0-9]+) OBJECT.*/\1/p' "$WORK/drift.plain" 
 say "drift gate exit $DEXIT · production-only objects in the failing scope: ${DNUM:-0}"
 tail -25 "$WORK/drift.plain" | while read -r l; do say "  | $l"; done
 
-# SUITE-TARGET measured the two dependencies the campaign suites skip on most: EXECUTE on
-# custom.table_declare for `authenticated` (39 suites) and the knob row custom /
-# member_default_visibility (21). The refresh is supposed to bring both — the grant in the
-# dump's ACLs, the knob in the platform.feature_knob copy — so the job says out loud whether
-# it did, by name, instead of leaving it to be inferred from a suite count.
-say "─── (4) verification: the two dependencies SUITE-TARGET named ───"
-G="$("$PSQL" "$BRANCH_DSN" -qAt -c "select has_function_privilege('authenticated','custom.table_declare(text,text,jsonb)','EXECUTE')" 2>&1)"
-[ "$G" = "t" ] || G="$("$PSQL" "$BRANCH_DSN" -qAt -c "select bool_or(has_function_privilege('authenticated', p.oid, 'EXECUTE')) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='custom' and p.proname='table_declare'" 2>&1)"
-say "  exec:authenticated custom.table_declare  -> ${G:-(no answer)}   (39 suites skip without it)"
+# SUITE-TARGET and AIDREAM-RED measured what the branch lacks and the clone has. Measured on
+# 2026-09-22, before this refresh:
+#   · EXECUTE for `authenticated` on custom.record_write / record_update / record_delete /
+#     table_declare — all four `f` on the branch, all four `t` on the clone.
+#   · platform.feature_knob rows for feature `custom` — 32 on the branch, 48 on the clone.
+# Neither is seeded by hand: the grants ride the dump's ACLs and the knobs ride the verbatim
+# platform.feature_knob copy. So they are ASSERTED here, by name and by count, instead of being
+# inferred from a suite tally — a refresh that silently dropped one of them is the exact failure
+# the --no-acl defect would have produced.
+say "─── (4) verification: the grants and knobs the branch was measured to lack ───"
+typeset -a NEED_EXEC
+NEED_EXEC=(record_write record_update record_delete table_declare)
+GRANTS_OK=1
+for fn in "${NEED_EXEC[@]}"; do
+  g="$("$PSQL" "$BRANCH_DSN" -qAt -c "select coalesce(bool_or(has_function_privilege('authenticated', p.oid, 'EXECUTE')), false) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='custom' and p.proname='$fn'" 2>&1)"
+  say "  exec:authenticated custom.$fn -> ${g:-(no answer)}"
+  [ "$g" = "t" ] || GRANTS_OK=0
+done
+KC="$("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from platform.feature_knob where feature='custom'" 2>&1)"
+KS="$("$PSQL" "$SRC_DSN" -qAt -c "select count(*) from platform.feature_knob where feature='custom'" 2>&1)"
+say "  platform.feature_knob feature='custom' -> $KC row(s) on the branch, $KS on the clone (was 32 vs 48)"
 K="$("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from platform.feature_knob where feature='custom' and key='member_default_visibility'" 2>&1)"
 say "  row platform.feature_knob custom/member_default_visibility -> ${K:-(no answer)} row(s)   (21 suites skip without it)"
-if [ "$G" != "t" ] || [ "${K:-0}" = "0" ]; then
-  say "  🚨 one of the two is still absent AFTER the refresh — the refresh did not bring it."
-  say "     A missing grant means the dump's ACLs did not carry it; a missing knob row means"
-  say "     production does not hold it either and it needs its own seeded row."
+if [ "$GRANTS_OK" != "1" ] || [ "${KC:-0}" != "${KS:-x}" ]; then
+  say "  🚨 the refresh did not bring one of these across. A missing grant means the dump's ACLs"
+  say "     did not carry it; a knob count below the clone's means the feature_knob copy did not"
+  say "     land. Neither is fixed by seeding it by hand here — the source read is what to look at."
+else
+  say "  all four grants present and the knob count matches the clone."
 fi
 
 say "─── (4) verification: 14 suites in rehearsal mode against the branch ───"
