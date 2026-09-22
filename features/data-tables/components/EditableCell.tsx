@@ -548,12 +548,20 @@ export function EditableCell({
 
   if (editorKind === "time") {
     // Stored as 24-hour "HH:MM[:SS]" — exactly what this input reads/writes.
+    // A blank native time input leaves its AM/PM segment unset; typing only
+    // the hour and minute and tabbing away never produces a complete value,
+    // so the browser silently reports "" and the whole entry is lost. Seeding
+    // an empty cell's DISPLAYED value with a PM time means every untouched
+    // segment (AM/PM included) already holds a valid value, so editing just
+    // the hour/minute still commits a complete, PM-defaulted time. `draft`
+    // itself stays null until the user actually edits, so leaving the cell
+    // untouched still commits nothing.
     return (
       <Input
         ref={inputRef as React.RefObject<HTMLInputElement>}
         type="time"
         step={format?.options?.timeSeconds ? 1 : 60}
-        value={typeof draft === "string" ? draft : ""}
+        value={typeof draft === "string" && draft ? draft : "12:00"}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={handleKey}
         onBlur={() => void commitEdit()}

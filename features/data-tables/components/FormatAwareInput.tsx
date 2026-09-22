@@ -85,12 +85,20 @@ export function FormatAwareInput({
     case "time":
       // The stored form is 24-hour "HH:MM[:SS]" — exactly what this input
       // reads and writes, so no conversion sits between the two.
+      // A blank native time input leaves its AM/PM segment unset, so typing
+      // only the hour/minute and tabbing away never completes the value and
+      // the browser silently reports "" — the whole entry is lost. Seeding an
+      // empty field's DISPLAYED value with a PM time means every untouched
+      // segment (AM/PM included) already holds a valid value, so editing just
+      // the hour/minute still commits a complete, PM-defaulted time. The
+      // external `value` stays whatever it was until `commit` actually fires,
+      // so leaving the field untouched still saves nothing.
       return (
         <Input
           id={id}
           type="time"
           step={format?.options?.timeSeconds ? 1 : 60}
-          value={typeof value === "string" ? value : ""}
+          value={typeof value === "string" && value ? value : "12:00"}
           onChange={(e) => commit(e.target.value)}
         />
       );
