@@ -416,14 +416,16 @@ export function SuggestionsManager() {
               <Star className="h-3 w-3 text-amber-500" />
               {starredCount} starred
             </span>
-            <button
-              type="button"
-              onClick={refresh}
-              className="ml-auto inline-flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-accent hover:text-foreground transition-colors"
-            >
-              <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} />
-              Refresh
-            </button>
+            {isMobile ? (
+              <button
+                type="button"
+                onClick={refresh}
+                className="ml-auto inline-flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-accent hover:text-foreground transition-colors"
+              >
+                <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} />
+                Refresh
+              </button>
+            ) : null}
           </div>
 
           {/* Scroll body — heavy hitters lead; the table owns the vertical scroll so
