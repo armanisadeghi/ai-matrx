@@ -736,19 +736,9 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       + "getScriptSupabaseClient() (publishable key ⇒ `anon`). DD-230 (2026-09-14) replaced DD-186's "
       + "unevidenced census sentence, which contradicted the reader B-116 itself had named.",
   },
-  {
-    relation: "platform.feature_knob",
-    columns: [
-      "feature", "key", "value",
-    ],
-    why:
-      "lib/knobs/featureKnobs.ts — client feature gating has to resolve before sign-in, which is "
-      + "what this relation's PUBLIC_EXPOSURE_ALLOWED row says and it is true. MEASURED 2026-09-14: "
-      + "194 anon 200s in 24 h and EVERY ONE of them `select=feature,key,value`. DD-230 cut the bound "
-      + "from twenty-three columns to those three; min/max, allowed_values, set_by, basis, "
-      + "review_due, bound_value, overridable_by, taxonomy_node_id and the rest are the knob's "
-      + "governance, not its value.",
-  },
+  // platform.feature_knob left this register 2026-09-22 (DEAD-KEYS / chair): DD-230's "194 anon 200s"
+  // were CORS preflights; the one tokenless GET in 24 h was a hydration race. Its anon SELECT and
+  // feature_knob_read_anon were withdrawn by deadkeys_feature_knob_has_no_signed_out_reader.sql.
   {
     relation: "platform.v_feature_knob_overdue",
     columns: [

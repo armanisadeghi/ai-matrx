@@ -8,11 +8,12 @@
 // is assembled here, because a table opened from a portal or from an agent's
 // link must be the same screen.
 
-import { use, useCallback } from "react";
+import { use, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { RecordsMount, TablePage, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import type { AgentBuildAsk, OpenRecordsAsk, PageView } from "@ai-matrx/records-ui";
+import type { RecordFilter } from "@ai-matrx/records";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 
@@ -69,6 +70,38 @@ export default function UnifiedDataTableRoute({
   const activeGroupField = searchParams.get("group");
   /** The number they clicked, so the board can say where they came from. */
   const cameFrom = searchParams.get("from");
+  /**
+   * WHICH RECORDS THE NUMBER WAS COUNTED OVER — the store's one filter shape,
+   * carried in the address as JSON so the link can be bookmarked and sent.
+   *
+   * 🚨 THIS IS THE HALF THAT DID NOT EXIST YESTERDAY (lane DRILL, 2026-09-22).
+   * TAILS-6 wired the click and had to throw the filter away, because
+   * `custom.read_records` took no filter: the address kept only `group` and
+   * `from`, so a bar saying 27 opened all 41 records with a sentence
+   * apologising for it. `custom.read_records_matching` takes the filter now, so
+   * the address carries it and `TablePage` narrows the grid AND the board with
+   * it.
+   *
+   * A parameter that is not JSON, or is JSON that is not an object, is DROPPED
+   * rather than half-applied: a filter half-read is a screen quietly showing a
+   * different set of records than its own sentence claims. The board still says
+   * where the person came from, and the whole table is what they see — which is
+   * exactly the honest fallback, and it is the same one an old TAILS-6 link
+   * (which carries no `filter` at all) lands on.
+   */
+  const rawFilter = searchParams.get("filter");
+  const filter = useMemo<RecordFilter | null>(() => {
+    if (!rawFilter) return null;
+    try {
+      const parsed: unknown = JSON.parse(rawFilter);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+      const entries = Object.entries(parsed as Record<string, unknown>);
+      if (entries.length === 0) return null;
+      return Object.fromEntries(entries) as RecordFilter;
+    } catch {
+      return null;
+    }
+  }, [rawFilter]);
   const pathname = usePathname();
   /**
    * AND THE ADDRESS FOLLOWS THEM. Half a deep link is a link that works when
@@ -130,12 +163,15 @@ export default function UnifiedDataTableRoute({
    * leave it unbound, because the package cannot know where THIS app puts its
    * grid and deliberately refuses to guess an address.
    *
-   * 🚨 AND WHAT IT HONESTLY DOES. The record store has NO door that returns the
-   * rows behind an aggregate filter — `custom.read_records` takes no filter, and
-   * `custom.record_aggregate` answers groups and counts, never ids. So a click
-   * cannot promise a narrowed list without a new door. What it CAN do is open
-   * this table's board with its columns set to the field the chart grouped by,
-   * while `TablePage` says plainly that this is every record grouped that way.
+   * 🚨 AND WHAT IT NOW DOES, WHICH IS THE WHOLE THING (lane DRILL, 2026-09-22).
+   * Until hours ago the record store had no door that returned the rows behind
+   * an aggregate filter, so this callback kept the chart's grouping and threw
+   * its FILTER away: the click opened every record of the table, grouped the
+   * right way, with a sentence underneath admitting it. `custom.read_records_matching`
+   * takes that filter and evaluates it through the very same
+   * `custom.record_filter_sql` the number was counted with, so the address now
+   * carries the question too and the screen it opens holds exactly the records
+   * the number counted.
    */
   const onOpenRecordsFromANumber = useCallback(
     (ask: OpenRecordsAsk) => {
@@ -146,6 +182,12 @@ export default function UnifiedDataTableRoute({
       const field = groupable[groupable.length - 1];
       if (field) next.set("group", field);
       if (ask.label) next.set("from", ask.label);
+      // THE QUESTION ITSELF, not a summary of it. What goes in the address is
+      // the same object the chart handed `recordAggregate`, so the page can ask
+      // the store the identical question rather than reconstruct one.
+      if (ask.filter && Object.keys(ask.filter).length > 0) {
+        next.set("filter", JSON.stringify(ask.filter));
+      }
       router.push(`/data-v2/${ask.tableId}?${next.toString()}`);
     },
     [router],
@@ -269,6 +311,7 @@ export default function UnifiedDataTableRoute({
               activeView={activeView}
               activeGroupField={activeGroupField}
               cameFrom={cameFrom}
+              filter={filter}
               onViewChanged={onViewChanged}
             />
           </RecordsMount>
