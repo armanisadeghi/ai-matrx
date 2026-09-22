@@ -44,6 +44,36 @@
  * It refuses any target but `clone`, by name: the measure pass executes DDL and rolls
  * it back, which is a thing you do to a disposable copy of production and to nothing
  * else.
+ *
+ * -- THE CLONE IS SHARED, SO THE REHEARSAL TAKES THE SAME ROWS AN APPLY WOULD ------------
+ *
+ * ADDED 2026-09-22 (RUNNER-SAFETY), after measure passes kept dying at the 5 s `lock_timeout`
+ * with `55P03 canceling statement due to lock timeout` and no name attached to the cause. The
+ * clone is ONE database that every lane rehearses on, and the measure pass takes real ACCESS
+ * EXCLUSIVE locks on real objects for the length of its transaction. Two lanes rehearsing files
+ * that touch `custom.record` at the same moment is not a rare race - it is the ordinary case on
+ * a busy night - and the loser learns nothing except that something, somewhere, held something.
+ *
+ * 4.7 already says what to do about that, and says it for the APPLY: A LOCK IS A ROW, NOT AN
+ * ETIQUETTE. `campaign_watch.build_lock` is a table, one row per object family
+ * (`custom` | `platform` | `iam`), taken with `on conflict do nothing` so exactly one holder
+ * wins and nobody waits on the database itself. The table is on the clone too - it arrives with
+ * every restore of production. A rehearsal that measures lock behaviour on objects a lane is
+ * mid-apply on is measuring that lane, not the file. So the rehearsal takes THE SAME ROWS THE
+ * APPLY WOULD, ON THE CLONE, before the first measure pass:
+ *
+ *   - WHICH rows: the file's own `-- lock: custom,platform` header when it carries one;
+ *     otherwise every family whose schema the up or the inverse NAMES. A file that names none
+ *     takes none and says so.
+ *   - WAITING is BOUNDED and NAMED: five attempts, 15 s apart, each printing who holds it and
+ *     since when. After the bound it REFUSES - nothing measured, nothing applied - because an
+ *     unbounded wait in an unattended run is a hang nobody sees.
+ *   - RELEASING happens on EVERY exit path: the legs run inside a `finally`, and SIGINT/SIGTERM
+ *     release before exiting. A lock leaked by a crashed rehearsal blocks every lane behind it
+ *     until a human deletes the row, so the release is a trap, not a last line.
+ *   - A row already held by THIS lane is not taken and is never released here: it belongs to the
+ *     apply that took it, and stealing it back at the end of a rehearsal is how a lane loses a
+ *     lock it still believes it holds.
  */
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
@@ -59,7 +89,7 @@ import {
   readQuarantineFacts,
   stripCommentsQuoteAware,
   TargetRefusal,
-  topLevelStatements,
+  topLevelStatementsVerbatim,
   INVERSE_DIRNAME,
   CAMPAIGN_DIRNAME,
   CAMPAIGN_SOURCE,
@@ -165,7 +195,7 @@ async function measure(
     .slice(0, 10)}`;
   const worker = await connectDirect({ ...env }, "db:rehearse (measure)");
   const sampler = await connectDirect({ ...env }, "db:rehearse (pg_locks sampler)");
-  const statements = topLevelStatements(stripForStatements(sql));
+  const statements = topLevelStatementsVerbatim(stripForStatements(sql));
   const out: StatementMeasurement[] = [];
   let failedAt: number | null = null;
   const t0 = Date.now();
@@ -315,6 +345,213 @@ function printMeasurement(
   return { surprises };
 }
 
+// ── campaign_watch.build_lock, on the clone ────────────────────────────────────────────
+
+/**
+ * The three object families §4.7 names, and the only values `lock_name` ever holds.
+ * `custom` is the record store, `platform` the registry and associations, `iam` the access
+ * kernel — the three things every campaign file lands in.
+ */
+const LOCK_FAMILIES = ["custom", "platform", "iam"] as const;
+type LockFamily = (typeof LOCK_FAMILIES)[number];
+
+/** `-- lock: custom,platform` in the file's head — the file saying which rows it needs. */
+const LOCK_HEADER_RE = /^\s*--\s*lock\s*:\s*(.+?)\s*$/i;
+
+/**
+ * WHICH build_lock rows this rehearsal needs.
+ *
+ * The header wins when the file carries one, because a file's author knows something the
+ * relation scan cannot: a body built with `format()` names its schema at run time. Failing a
+ * header, the families are DERIVED from the schemas the up and the inverse name — the same
+ * generous `schema.relation` scan `relationsNamedBy` already does, narrowed to the three
+ * families. Over-collecting here costs a wait; under-collecting costs the measurement.
+ *
+ * A `-- lock:` header naming something that is not a family is a REFUSAL, not a shrug: the
+ * author asked for a lock that does not exist and the rehearsal would silently take none.
+ */
+export function locksNeededBy(
+  upSql: string,
+  downSql: string,
+): { families: LockFamily[]; from: string } {
+  for (const line of upSql.split("\n", 40)) {
+    const m = line.match(LOCK_HEADER_RE);
+    if (!m) continue;
+    const asked = m[1]!
+      .split(",")
+      .map((x) => x.trim().toLowerCase())
+      .filter(Boolean);
+    const bad = asked.filter((a) => !(LOCK_FAMILIES as readonly string[]).includes(a));
+    if (bad.length) {
+      throw new TargetRefusal(
+        `\`-- lock: ${m[1]}\` names something that is not a build_lock family: ${bad.join(", ")}.\n` +
+          `  The rows are one per object family: ${LOCK_FAMILIES.join(" | ")} (4.7). Refusing rather\n` +
+          `  than taking no lock at all because the header could not be read.`,
+      );
+    }
+    return { families: [...new Set(asked)] as LockFamily[], from: `the file's \`-- lock:\` header` };
+  }
+  const named = new Set<string>();
+  for (const rel of [...relationsNamedBy(upSql), ...relationsNamedBy(downSql)]) {
+    named.add(rel.split(".")[0]!);
+  }
+  const families = LOCK_FAMILIES.filter((f) => named.has(f));
+  return { families: [...families], from: `the schemas the up and the inverse name` };
+}
+
+interface HeldLock {
+  lockName: string;
+  heldBy: string;
+  takenAt: string;
+  note: string | null;
+}
+
+const LOCK_ATTEMPTS = 5;
+const LOCK_WAIT_MS = 15_000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/**
+ * Take every family this rehearsal needs, in a FIXED order (the `LOCK_FAMILIES` order), so two
+ * rehearsals that need the same two families can never take them in opposite orders and wait on
+ * each other. Returns the families this process actually acquired — the only ones it may ever
+ * release.
+ *
+ * Bounded: five attempts, 15 s apart, each naming the holder. A row already held by US is not
+ * an obstacle and is not acquired: the apply that took it still owns it.
+ */
+async function takeBuildLocks(
+  env: ReturnType<typeof loadCloneDbEnv>,
+  families: readonly LockFamily[],
+  heldBy: string,
+  note: string,
+  /**
+   * The caller's live list, appended to AS EACH ROW IS TAKEN — never returned at the end.
+   * Measured 2026-09-22: a Ctrl-C during the wait for the SECOND family killed the process
+   * with the FIRST family's row already in the table and the caller still holding an empty
+   * list, so the trap released nothing and the row was leaked. The trap is armed before the
+   * first insert and reads this array, so there is no window where a row is held by a process
+   * that does not know it holds it.
+   */
+  acquired: LockFamily[],
+): Promise<{ refusal: string | null }> {
+  const client = await connectDirect({ ...env }, "db:rehearse (build_lock)");
+  try {
+    for (const family of [...LOCK_FAMILIES].filter((f) => families.includes(f))) {
+      let got = false;
+      for (let attempt = 1; attempt <= LOCK_ATTEMPTS && !got; attempt += 1) {
+        const ins = await client.query<HeldLock>(
+          `insert into campaign_watch.build_lock (lock_name, held_by, note)
+           values ($1, $2, $3)
+           on conflict (lock_name) do nothing
+           returning lock_name as "lockName", held_by as "heldBy", taken_at::text as "takenAt", note`,
+          [family, heldBy, note],
+        );
+        if (ins.rows.length === 1) {
+          got = true;
+          acquired.push(family);
+          console.log(
+            `${TAG.ok}LOCK:${family} taken on the clone by ${C.bold}${heldBy}${C.reset} ` +
+              `${C.dim}(attempt ${attempt})${C.reset}`,
+          );
+          break;
+        }
+        const cur = await client.query<HeldLock>(
+          `select lock_name as "lockName", held_by as "heldBy", taken_at::text as "takenAt", note,
+                  (now() - taken_at)::text as held_for
+             from campaign_watch.build_lock where lock_name = $1`,
+          [family],
+        );
+        const row = cur.rows[0] as (HeldLock & { held_for?: string }) | undefined;
+        if (!row) continue; // released between the insert and the read — try again at once.
+        if (row.heldBy === heldBy) {
+          console.log(
+            `${TAG.ok}LOCK:${family} is ALREADY held by ${C.bold}${heldBy}${C.reset} ` +
+              `${C.dim}(since ${row.takenAt}) — this rehearsal did not take it and will not release ` +
+              `it; it belongs to the apply that did.${C.reset}`,
+          );
+          got = true;
+          break;
+        }
+        if (attempt === LOCK_ATTEMPTS) {
+          return {
+            refusal:
+              `LOCK:${family} on the clone is held by ${C.bold}${row.heldBy}${C.reset} since ` +
+              `${row.takenAt} (${row.held_for ?? "?"})${row.note ? ` — "${row.note}"` : ""}.\n` +
+              `  Waited ${LOCK_ATTEMPTS} x ${LOCK_WAIT_MS / 1000}s and it is still held, so NOTHING was ` +
+              `measured and nothing was applied.\n` +
+              `  A measure pass that runs while ${row.heldBy} is mid-apply on ${family} measures ` +
+              `${row.heldBy}, not this file — its statements would queue behind their locks and die at\n` +
+              `  the 5s lock_timeout with no name attached. Re-run when the row is gone:\n` +
+              `    select lock_name, held_by, taken_at, now() - taken_at as held_for\n` +
+              `      from campaign_watch.build_lock;`,
+          };
+        }
+        console.log(
+          `${TAG.warn}LOCK:${family} is held by ${C.bold}${row.heldBy}${C.reset} since ` +
+            `${row.takenAt}${row.note ? ` ("${row.note}")` : ""} — waiting ` +
+            `${LOCK_WAIT_MS / 1000}s (attempt ${attempt} of ${LOCK_ATTEMPTS})`,
+        );
+        await sleep(LOCK_WAIT_MS);
+      }
+    }
+    return { refusal: null };
+  } finally {
+    await client.end().catch(() => undefined);
+  }
+}
+
+/**
+ * Release exactly what this process took, and say so. `held_by` is in the WHERE clause, so a row
+ * somebody else now holds is never deleted; a row that returns nothing is announced LOUDLY with
+ * the SQL to look at, because a lock this process believes it released and did not is the next
+ * lane's mystery.
+ */
+async function releaseBuildLocks(
+  env: ReturnType<typeof loadCloneDbEnv>,
+  acquired: readonly LockFamily[],
+  heldBy: string,
+): Promise<void> {
+  if (acquired.length === 0) return;
+  let client;
+  try {
+    client = await connectDirect({ ...env }, "db:rehearse (build_lock release)");
+  } catch (err) {
+    console.error(
+      `${TAG.fail}COULD NOT CONNECT TO RELEASE ${acquired.map((f) => `LOCK:${f}`).join(", ")} on the ` +
+        `clone: ${err instanceof Error ? err.message : String(err)}\n` +
+        `  Those rows are still there and every lane that needs them is now waiting. Delete them:\n` +
+        `    delete from campaign_watch.build_lock where held_by = '${heldBy}';`,
+    );
+    return;
+  }
+  try {
+    for (const family of acquired) {
+      const out = await client
+        .query<{ heldBy: string }>(
+          `delete from campaign_watch.build_lock
+            where lock_name = $1 and held_by = $2 returning held_by as "heldBy"`,
+          [family, heldBy],
+        )
+        .catch((e: unknown) => ({ rows: [], err: e }) as { rows: never[]; err: unknown });
+      if (out.rows.length === 1) {
+        console.log(`${TAG.ok}LOCK:${family} released ${C.dim}(held_by ${heldBy})${C.reset}`);
+      } else {
+        console.error(
+          `${TAG.fail}LOCK:${family} did NOT release — no row matched (lock_name = '${family}' and ` +
+            `held_by = '${heldBy}').\n` +
+            `  Either somebody deleted it already or somebody else now holds it. Look, do not guess:\n` +
+            `    select * from campaign_watch.build_lock where lock_name = '${family}';`,
+        );
+      }
+    }
+  } finally {
+    await client.end().catch(() => undefined);
+  }
+}
+
 function guessInverse(upPath: string): string | null {
   const name = basename(upPath).replace(/\.sql$/i, "");
   const candidates = [
@@ -383,18 +620,21 @@ async function main(): Promise<number> {
   }
   const given = resolve(process.cwd(), positional[0]!);
   const alt = resolve(MIGRATIONS_DIR, positional[0]!);
-  const upPath = existsSync(given) ? given : existsSync(alt) ? alt : null;
-  if (!upPath) {
+  const resolvedUp = existsSync(given) ? given : existsSync(alt) ? alt : null;
+  if (!resolvedUp) {
     console.error(`${TAG.fail}No such file: ${positional[0]}`);
     return 1;
   }
+  // Re-bound as a plain string: the legs below run inside a nested function so the release
+  // trap can wrap them, and a null-narrowing does not follow a value into a closure.
+  const upPath: string = resolvedUp;
 
-  const inversePath = inverseArg
+  const resolvedInverse = inverseArg
     ? existsSync(resolve(process.cwd(), inverseArg))
       ? resolve(process.cwd(), inverseArg)
       : resolve(MIGRATIONS_DIR, inverseArg)
     : guessInverse(upPath);
-  if (!inversePath || !existsSync(inversePath)) {
+  if (!resolvedInverse || !existsSync(resolvedInverse)) {
     console.error(
       `${TAG.fail}${relative(ROOT, upPath)} has no inverse, and rule 27 IS the inverse.\n` +
         `  Looked for migrations/${INVERSE_DIRNAME}/<name>_down.sql and <name>.inverse.sql.\n` +
@@ -404,10 +644,13 @@ async function main(): Promise<number> {
     );
     return 1;
   }
+  const inversePath: string = resolvedInverse;
 
   // The clone's identity and its own connection - never SUPABASE_MATRIX_*.
-  let cloneRef;
-  let env;
+  // Typed explicitly: both are read from inside `runLegs` below, and an inferred `any`
+  // there would silently un-type the measure pass and the lock helpers.
+  let cloneRef: ReturnType<typeof loadCloneRef>;
+  let env: ReturnType<typeof loadCloneDbEnv>;
   try {
     cloneRef = loadCloneRef(ROOT, cloneRefOverride(argv));
     env = loadCloneDbEnv(ROOT, cloneRef);
@@ -473,6 +716,79 @@ async function main(): Promise<number> {
     return 1;
   }
 
+  // ── the build_lock rows, taken BEFORE the first measure pass ──────────────
+  let families;
+  let lockFrom: string;
+  try {
+    ({ families, from: lockFrom } = locksNeededBy(upSql, downSql));
+  } catch (err) {
+    console.error(`${TAG.fail}${err instanceof TargetRefusal ? err.message : String(err)}`);
+    return 1;
+  }
+  // The holder id. A lane's own id when it named one, so a row its APPLY already holds is
+  // recognised as its own rather than waited on; otherwise a name that says what this is and
+  // carries the pid, so two rehearsals of the same file are two holders and not one.
+  const upStem = basename(upPath).replace(/\.sql$/i, "");
+  const heldBy = lane ?? `db:rehearse:${upStem}:${process.pid}`;
+  // Appended to by takeBuildLocks as each row lands, and read by the trap below, which is
+  // armed BEFORE the first insert: a row taken by a process that dies waiting for the next
+  // one is still this process's row to release.
+  const acquired: LockFamily[] = [];
+  let releasing = false;
+  const releaseOnce = async () => {
+    if (releasing) return;
+    releasing = true;
+    await releaseBuildLocks(env, acquired, heldBy);
+  };
+  const onSignal = (sig: NodeJS.Signals) => {
+    void (async () => {
+      console.error(
+        `\n${TAG.warn}${sig} — releasing ${acquired.length} build_lock row(s) before exiting.`,
+      );
+      await releaseOnce();
+      process.exit(130);
+    })();
+  };
+  process.once("SIGINT", onSignal);
+  process.once("SIGTERM", onSignal);
+
+  if (families.length === 0) {
+    console.log(
+      `${TAG.info}no build_lock family is named by either file (${lockFrom}) — nothing to take. ` +
+        `A measure pass on objects outside custom/platform/iam serialises against nobody.`,
+    );
+  } else {
+    console.log(
+      `${TAG.info}build_lock families needed: ${families.map((f) => `LOCK:${f}`).join(", ")} ` +
+        `${C.dim}(from ${lockFrom}) — taken on the clone as ${heldBy}, the same rows an apply ` +
+        `would take, so this measure pass is measuring this file and not another lane${C.reset}`,
+    );
+    const taken = await takeBuildLocks(
+      env,
+      families,
+      heldBy,
+      `db:rehearse rule 27 on ${basename(upPath)}`,
+      acquired,
+    );
+    if (taken.refusal) {
+      console.error(`${TAG.fail}${taken.refusal}`);
+      await releaseOnce();
+      process.off("SIGINT", onSignal);
+      process.off("SIGTERM", onSignal);
+      return 1;
+    }
+  }
+
+  try {
+    return await runLegs();
+  } finally {
+    await releaseOnce();
+    process.off("SIGINT", onSignal);
+    process.off("SIGTERM", onSignal);
+  }
+
+  // ── rule 27's three legs, so the release above wraps every one of their exits ──
+  async function runLegs(): Promise<number> {
   // -- leg 1: the up ---------------------------------------------------------
   const m1 = await measure(env, "up", upSql, statementTimeout);
   const s1 = printMeasurement("MEASURE - up", upPath, m1, upNamed);
@@ -548,6 +864,7 @@ async function main(): Promise<number> {
       `restores production over them. That overwrite is expected.`,
   );
   return 0;
+  }
 }
 
 main().then(

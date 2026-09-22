@@ -47,5 +47,17 @@ Both runners refuse every other combination, by name:
 Ledgered by **basename** under the owning repo's source label, so a file that moves in
 here keeps the identity its rehearsal row already carries.
 
+## Rehearsing on the clone takes the SAME build_lock rows
+
+`pnpm db:rehearse <file> --target clone` (rule 27 in one command) takes the
+`campaign_watch.build_lock` rows **on the clone** that an apply of the same file would
+take, before its first measure pass, and releases them on every exit path including
+Ctrl-C. Which rows: the file's own `-- lock: custom,platform` header when it carries
+one, otherwise every family (`custom` | `platform` | `iam`) whose schema the up or the
+inverse names. A row somebody else holds is waited on five times, 15 s apart, naming the
+holder, and then REFUSED — nothing measured. Without it, two lanes rehearsing the same
+objects on the one shared clone kill each other's measure pass at the 5 s `lock_timeout`
+with no name attached to the cause.
+
 Guards: `scripts/__tests__/migration-target-refusals.test.ts`,
 `aidream/db/tests/test_campaign_dir_is_never_swept.py`.
