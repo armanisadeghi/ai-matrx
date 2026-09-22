@@ -16,11 +16,14 @@
  * "Takeda Property Management"; nobody on that board has ever known
  * `5f3c1d2a-…`.
  *
- * RED PROOF (pre-fix bytes: `relationChoices` not threaded into the modal, so
- * the column's format carried no resolved choices) — clauses 1, 2 and 4 fail:
- *   · the modal shows the raw record id where the customer's name belongs
- *   · the picker offers none of the names the grid's picker offers
- *   · an unresolvable id reads as a bare uuid instead of the amber identifier
+ * RED PROOF — recorded 2026-09-23 by restoring the pre-fix `EditRowModal.tsx`
+ * and `ChoiceInput.tsx` in place and putting them back in the same command.
+ * FOUR of the five clauses fail:
+ *   1. the Customer field reads `5f3c1d2a-7b41-4e88-9a02-1c6d3e5f7a90`
+ *   2. the picker says "No options declared yet. Type a value to use one."
+ *      instead of offering the two names the grid's picker offers
+ *   4. an unresolvable id reads as the bare uuid, not the amber identifier
+ *   5. and so does a page whose relation words never arrived
  *
  * Nothing about the rendering path is stubbed: this is the real
  * `EditRowModal` → real `FormatAwareInput` → real `ChoiceInput` → real
