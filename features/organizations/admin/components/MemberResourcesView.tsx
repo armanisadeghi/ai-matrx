@@ -3,6 +3,7 @@
 /** Read-only org-scoped resource inventory for one member. */
 import Link from "next/link";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { formatCount } from "@ai-matrx/kit/format";
 import { Card } from "@/components/ui/card";
 import {
   MatrxDataTable,
@@ -70,7 +71,7 @@ export function MemberResourcesView({ orgId, organization, userId }: Props) {
         <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading resources…
       </div>
     );
-  if (error || !member)
+  if (error && !member)
     return (
       <div className="p-4 md:p-6">
         <Card className="mx-auto max-w-lg border-destructive/30 bg-destructive/5 p-6 text-center text-sm text-destructive">
@@ -119,6 +120,17 @@ export function MemberResourcesView({ orgId, organization, userId }: Props) {
           {organization.name}. Personal-org resources are not shown and are
           never affected.
         </p>
+        {error && (
+          <div
+            role="alert"
+            className="flex shrink-0 items-center gap-2 text-sm text-destructive"
+          >
+            Could not refresh resources: {error}
+            <button type="button" className="underline" onClick={refresh}>
+              Retry
+            </button>
+          </div>
+        )}
         <div className="min-h-0 flex-1">
           <MatrxDataTable
             tableId="organizations-admin-member-resources"
@@ -137,11 +149,6 @@ export function MemberResourcesView({ orgId, organization, userId }: Props) {
               searchPlaceholder: "Search resource types or locations…",
               refresh: { onRefresh: async () => refresh() },
             }}
-            detail={{ enabled: false }}
-            window={{ enabled: false }}
-            copy={false}
-            pageSize={25}
-            localPagination={{ mode: "progressive" }}
             emptyState={{
               title:
                 "This member owns no org-scoped resources in this organization.",
