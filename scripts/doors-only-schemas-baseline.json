@@ -1,5 +1,1 @@
-[
-  "platform.categories|DELETE|authenticated|residual",
-  "platform.categories|INSERT|authenticated|residual",
-  "platform.categories|UPDATE|authenticated|residual"
-]
+[]
