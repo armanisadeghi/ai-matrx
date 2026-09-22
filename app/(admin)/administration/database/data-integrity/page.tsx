@@ -20,6 +20,11 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/lib/toast";
@@ -179,16 +184,41 @@ function fmt(v: unknown): string {
  * and not `as conversation_id`. Every uuid that resolves to no token still gets
  * short-form + copy, never a bare truncated cell.
  */
-function FindingsTable({ rows }: { rows: Record<string, unknown>[] }) {
+function FindingsTable({
+  rows,
+  total,
+}: {
+  rows: Record<string, unknown>[];
+  total: number;
+}) {
   const keys = Array.from(new Set(rows.flatMap((row) => Object.keys(row))));
-  const columns: MatrxColumnDef<Record<string, unknown>>[] = keys.map((key) => ({
-    id: key,
-    header: key.replaceAll("_", " "),
-    accessorFn: (row) => row[key],
-    cell: (row) => isUuidValue(row[key]) ? (
-      <MatrxUuidCell value={row[key]} label={key} token={tokenFromColumnName(key)} />
-    ) : fmt(row[key]),
-  }));
+  const columns: MatrxColumnDef<Record<string, unknown>>[] = keys.map(
+    (key) => ({
+      id: key,
+      header: key.replaceAll("_", " "),
+      width: 220,
+      accessorFn: (row) => row[key],
+      cell: (row) =>
+        isUuidValue(row[key]) ? (
+          <MatrxUuidCell
+            value={row[key]}
+            label={key}
+            token={tokenFromColumnName(key)}
+          />
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="block max-w-[28rem] truncate">
+                {fmt(row[key])}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-lg break-words">
+              {fmt(row[key])}
+            </TooltipContent>
+          </Tooltip>
+        ),
+    }),
+  );
 
   if (rows.length === 0) return null;
 
@@ -199,7 +229,7 @@ function FindingsTable({ rows }: { rows: Record<string, unknown>[] }) {
       columns={columns}
       getRowId={(row) => String(rows.indexOf(row))}
       toolbar={{ title: "Findings sample", search: true }}
-      coverage={{ noun: "sample finding", answeredBy: "client" }}
+      coverage={{ noun: "finding", total, answeredBy: "client" }}
       detail={{ enabled: false }}
     />
   );
@@ -263,7 +293,7 @@ function CheckDetail({ row }: { row: IntegrityRow }) {
       )}
       {r && r.sample.length > 0 && (
         <>
-          <FindingsTable rows={r.sample} />
+          <FindingsTable rows={r.sample} total={r.count} />
           {r.count > r.sample.length && (
             <p className="text-[11px] text-muted-foreground">
               Showing {r.sample.length} of {r.count} — re-run the CLI (`pnpm
@@ -503,7 +533,8 @@ export default function DataIntegrityPage() {
             className="truncate text-xs text-muted-foreground"
             title="Read-only — nothing here mutates data. Repo gates are strictly on-demand; use the per-row run button."
           >
-            Read-only — nothing here mutates data. Repo gates are strictly on-demand; use the per-row run button.
+            Read-only — nothing here mutates data. Repo gates are strictly
+            on-demand; use the per-row run button.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -623,68 +654,68 @@ export default function DataIntegrityPage() {
             },
           ]}
         >
-        <MatrxDataTable
-          urlState={{ id: "data-integrity", selectedRow: false }}
-          data={rows}
-          columns={columns}
-          getRowId={(r) => r.id}
-          selectedId={selectedId || null}
-          onSelectedIdChange={(id) => setSelectedId(id === null ? "" : id)}
-          isLoading={!checks && !error}
-          isFetching={runningAll}
-          pageSize={50}
-          emptyState={{
-            title: "No integrity checks registered",
-            description: "Checks live in lib/integrity.",
-          }}
-          toolbar={{ search: true, searchPlaceholder: "Search checks…" }}
-          rowActions={(r) => {
-            const running = runningId === r.id || runningAll;
-            const onDemand = rowStatus(r) === "on-demand";
-            return (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => void runOne(r.id)}
-                disabled={running}
-                title={onDemand ? "Run this gate now" : "Re-run this check"}
-              >
-                {running ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : onDemand ? (
-                  <Play className="h-3.5 w-3.5" />
-                ) : (
-                  <RefreshCw className="h-3.5 w-3.5" />
-                )}
-              </Button>
-            );
-          }}
-          copy={{
-            label: "Integrity check",
-            listLabel: "Integrity checks (this view)",
-            location: "/administration/database/data-integrity",
-            rowKind: "integrity-check",
-            listKind: "integrity-checks",
-            humanRow: checkRowContent,
-            rowAttributes: (r) => ({
-              id: r.id,
-              severity: r.severity,
-              status: rowStatus(r),
-              count: r.result?.count ?? null,
-            }),
-            listAttributes: (visible, all) => ({
-              visible: visible.length,
-              total: all.length,
-              generatedAt: report?.generatedAt ?? null,
-            }),
-          }}
-          detail={{
-            title: (r) => r.title,
-            description: (r) => <code className="text-[11px]">{r.id}</code>,
-            render: (r) => <CheckDetail row={r} />,
-          }}
-        />
+          <MatrxDataTable
+            urlState={{ id: "data-integrity", selectedRow: false }}
+            data={rows}
+            columns={columns}
+            getRowId={(r) => r.id}
+            selectedId={selectedId || null}
+            onSelectedIdChange={(id) => setSelectedId(id === null ? "" : id)}
+            isLoading={!checks && !error}
+            isFetching={runningAll}
+            pageSize={50}
+            emptyState={{
+              title: "No integrity checks registered",
+              description: "Checks live in lib/integrity.",
+            }}
+            toolbar={{ search: true, searchPlaceholder: "Search checks…" }}
+            rowActions={(r) => {
+              const running = runningId === r.id || runningAll;
+              const onDemand = rowStatus(r) === "on-demand";
+              return (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => void runOne(r.id)}
+                  disabled={running}
+                  title={onDemand ? "Run this gate now" : "Re-run this check"}
+                >
+                  {running ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : onDemand ? (
+                    <Play className="h-3.5 w-3.5" />
+                  ) : (
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              );
+            }}
+            copy={{
+              label: "Integrity check",
+              listLabel: "Integrity checks (this view)",
+              location: "/administration/database/data-integrity",
+              rowKind: "integrity-check",
+              listKind: "integrity-checks",
+              humanRow: checkRowContent,
+              rowAttributes: (r) => ({
+                id: r.id,
+                severity: r.severity,
+                status: rowStatus(r),
+                count: r.result?.count ?? null,
+              }),
+              listAttributes: (visible, all) => ({
+                visible: visible.length,
+                total: all.length,
+                generatedAt: report?.generatedAt ?? null,
+              }),
+            }}
+            detail={{
+              title: (r) => r.title,
+              description: (r) => <code className="text-[11px]">{r.id}</code>,
+              render: (r) => <CheckDetail row={r} />,
+            }}
+          />
         </NonEditableContextMenu>
       </div>
     </div>

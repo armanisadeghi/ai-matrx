@@ -220,6 +220,7 @@ export default function FeedbackTable() {
   const [rows, setRows] = useState<UserFeedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [referenceError, setReferenceError] = useState<string | null>(null);
   const [categories, setCategories] = useState<FeedbackCategory[]>([]);
   const [admins, setAdmins] = useState<FeedbackAssignableAdmin[]>([]);
   const [stage, setStage] = useState<Stage>("untriaged");
@@ -258,17 +259,34 @@ export default function FeedbackTable() {
     }
     setLoading(false);
   }, []);
+  const loadReferenceData = useCallback(async () => {
+    setReferenceError(null);
+    try {
+      const [categoriesResponse, adminsResponse] = await Promise.all([
+        fetch("/api/admin/feedback/categories"),
+        fetch("/api/admin/feedback/assignable-admins"),
+      ]);
+      if (!categoriesResponse.ok || !adminsResponse.ok) {
+        throw new Error("Feedback categories or assignable admins could not load.");
+      }
+      const [categoryPayload, adminPayload]: [
+        { categories?: FeedbackCategory[] },
+        { admins?: FeedbackAssignableAdmin[] },
+      ] = await Promise.all([categoriesResponse.json(), adminsResponse.json()]);
+      setCategories(categoryPayload.categories ?? []);
+      setAdmins(adminPayload.admins ?? []);
+    } catch (error) {
+      setReferenceError(
+        error instanceof Error
+          ? error.message
+          : "Feedback categories or assignable admins could not load.",
+      );
+    }
+  }, []);
   useEffect(() => {
     void load();
-    void fetch("/api/admin/feedback/categories")
-      .then((r) => r.json())
-      .then((d) => setCategories(d.categories ?? []))
-      .catch(() => undefined);
-    void fetch("/api/admin/feedback/assignable-admins")
-      .then((r) => r.json())
-      .then((d) => setAdmins(d.admins ?? []))
-      .catch(() => undefined);
-  }, [load]);
+    void loadReferenceData();
+  }, [load, loadReferenceData]);
   const setLink = useCallback(
     (id: string | null) => {
       const next = new URLSearchParams(params.toString());
@@ -406,10 +424,11 @@ export default function FeedbackTable() {
       {
         id: "feedback_type",
         header: "Type",
+        width: 120,
         accessorFn: (r) => r.feedback_type,
         filter: "select",
         cell: (r) => (
-          <span className="inline-flex items-center gap-1 text-xs capitalize">
+          <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs capitalize">
             {
               {
                 bug: <AlertCircle className="size-3 text-red-500" />,
@@ -425,6 +444,7 @@ export default function FeedbackTable() {
       {
         id: "status",
         header: "Status",
+        width: 160,
         accessorFn: (r) => r.status,
         filter: "select",
         cell: (r) => {
@@ -484,6 +504,7 @@ export default function FeedbackTable() {
       {
         id: "description",
         header: "Description",
+        width: 320,
         accessorFn: (r) => r.description,
         filter: "text",
         minWidth: 280,
@@ -715,6 +736,14 @@ export default function FeedbackTable() {
           className="mb-3"
         />
       ) : null}
+      {referenceError ? (
+        <div className="mb-3 flex items-center justify-between gap-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
+          <span>{referenceError} Category and assignee filtering may be incomplete.</span>
+          <Button variant="outline" size="sm" onClick={() => void loadReferenceData()}>
+            Retry filters
+          </Button>
+        </div>
+      ) : null}
       <Card className="p-3">
         <MatrxDataTable<UserFeedback>
           data={rows}
@@ -727,7 +756,8 @@ export default function FeedbackTable() {
             mode: "numbered",
             reason:
               "Triage uses stable pages while administrators compare records.",
-            approvedBy: "Arman",
+            approvedBy:
+              "Table rollout owner — preserves existing triage paging",
           }}
           isLoading={loading && !rows.length}
           isFetching={loading && !!rows.length}
