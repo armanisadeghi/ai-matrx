@@ -73851,18 +73851,32 @@ export type Database = {
         Returns: Json
       }
       _library_assert_admin: { Args: { p_actor: string }; Returns: undefined }
-      _library_audit: {
-        Args: {
-          p_action: string
-          p_actor: string
-          p_detail: Json
-          p_entity_id: string
-          p_entity_type: string
-          p_industry_id: string
-          p_org: string
-        }
-        Returns: undefined
-      }
+      _library_audit:
+        | {
+            Args: {
+              p_acting_org: string
+              p_action: string
+              p_actor: string
+              p_detail: Json
+              p_entity_id: string
+              p_entity_type: string
+              p_industry_id: string
+              p_target_org: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_action: string
+              p_actor: string
+              p_detail: Json
+              p_entity_id: string
+              p_entity_type: string
+              p_industry_id: string
+              p_org: string
+            }
+            Returns: undefined
+          }
       _library_entity_owner: {
         Args: { p_entity_id: string; p_entity_type: string }
         Returns: string
