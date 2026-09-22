@@ -3843,6 +3843,135 @@ const UserTableViewer = ({
           setShowTableConfigModal(show);
         }}
         configTab={tableConfigTab}
+        viewControls={
+          <>
+          <div className="flex shrink-0 items-center [&>div]:flex-nowrap">
+            <SavedViewBar
+              views={savedViews.views}
+              loading={savedViews.loading}
+              liveDefinition={savedViews.liveDefinition}
+              activeViewId={savedViews.activeViewId}
+              readOnly={isReadOnly}
+              displayNameFor={(fieldName) =>
+                fields.find((f) => f.field_name === fieldName)?.display_name ??
+                fieldName
+              }
+              onApply={savedViews.apply}
+              onClearActive={savedViews.clearActive}
+              onSaveNew={savedViews.saveNew}
+              onUpdate={savedViews.update}
+              onRename={savedViews.rename}
+              onSetDefault={savedViews.setDefault}
+              onDelete={savedViews.remove}
+            />
+          </div>
+
+          {/* Column visibility + order for THIS VIEW. Deliberately next to the
+              grid rather than inside Table Settings: Table Settings edits the
+              table for everyone, this edits only what you are looking at. */}
+          <div className="flex shrink-0 items-center gap-1">
+            <ColumnViewMenu
+              fields={fields.map((f) => ({
+                field_name: f.field_name,
+                display_name: f.display_name,
+                field_order: f.field_order,
+              }))}
+              hidden={hiddenColumns}
+              order={columnOrder}
+              onHiddenChange={setHiddenColumns}
+                    onAddColumn={
+                      isReadOnly
+                        ? undefined
+                        : () => {
+                            setPendingColumnInsert(null);
+                            setShowAddColumnModal(true);
+                          }
+                    }
+              onOrderChange={setColumnOrder}
+            />
+            <TableLayoutMenu
+              layoutMode={chosenLayoutMode}
+              autoResolvesTo={resolveTableLayout("auto", viewFields.length, layoutDefaults.fitMaxColumns)}
+              fitMaxColumns={layoutDefaults.fitMaxColumns}
+              // Picking the organization's own default clears the personal override,
+              // so the view stays "not customized" and follows the org if it changes.
+              onLayoutModeChange={(next) =>
+                setLayoutMode(next === layoutDefaults.layout ? "default" : next)
+              }
+              rowDensity={chosenRowDensity}
+              onRowDensityChange={(next) =>
+                setRowDensity(next === layoutDefaults.rowHeight ? "default" : next)
+              }
+              isCustomized={
+                layoutMode !== "default" ||
+                rowDensity !== "default" ||
+                freezeFirstColumn ||
+                wrapText ||
+                Object.keys(columnWidths).length > 0
+              }
+              freezeFirstColumn={freezeFirstColumn}
+              onFreezeFirstColumnChange={setFreezeFirstColumn}
+              wrapText={wrapText}
+              onWrapTextChange={setWrapText}
+              customWidthCount={Object.keys(columnWidths).length}
+              onResetColumnWidths={clearColumnWidths}
+            />
+            {isViewCustomized && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
+                onClick={() => {
+                  resetView();
+                  // The bar must stop claiming a view is active — otherwise it
+                  // highlights a chip whose settings are no longer on screen.
+                  savedViews.clearActive();
+                }}
+                title="Clear search, sort, filters and column choices"
+              >
+                Reset view
+              </Button>
+            )}
+          </div>
+
+          {/* Undo lives beside the grid, not only on Cmd-Z: a shortcut nobody can
+              see is not a safety net for a non-technical user. */}
+          {!isReadOnly && (cellUndo.canUndo || cellUndo.canRedo) && (
+            <div className="flex shrink-0 items-center gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1.5 px-2 text-xs"
+                disabled={!cellUndo.canUndo || cellUndo.busy}
+                onClick={() => void cellUndo.undo()}
+                title="Undo last cell change (⌘Z)"
+              >
+                <Undo2 className="h-3.5 w-3.5" />
+                Undo
+                {cellUndo.undoDepth > 1 && (
+                  <span className="tabular-nums text-muted-foreground">
+                    {cellUndo.undoDepth}
+                  </span>
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1.5 px-2 text-xs"
+                disabled={!cellUndo.canRedo || cellUndo.busy}
+                onClick={() => void cellUndo.redo()}
+                title="Redo (⇧⌘Z)"
+              >
+                <Redo2 className="h-3.5 w-3.5" />
+                Redo
+              </Button>
+            </div>
+          )}
+          </>
+        }
         setShowReferenceOverlay={setShowReferenceOverlay}
         setShowRowOrderingModal={setShowRowOrderingModal}
         setShowPasteRowsDialog={setShowPasteRowsDialog}
@@ -4100,138 +4229,6 @@ const UserTableViewer = ({
           </p>
         </div>
       )}
-
-      {/* ONE bar above the grid: saved views (left), Undo/Redo, then this
-          view's Columns + Layout (right). These were three stacked rows, which
-          on a wide screen was three mostly-empty bands of vertical space
-          between the toolbar and the data (Arman's screenshot, 2026-09-20). */}
-      <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1">
-      <div className="hidden min-w-0 flex-1 md:block">
-        <SavedViewBar
-          views={savedViews.views}
-          loading={savedViews.loading}
-          liveDefinition={savedViews.liveDefinition}
-          activeViewId={savedViews.activeViewId}
-          readOnly={isReadOnly}
-          displayNameFor={(fieldName) =>
-            fields.find((f) => f.field_name === fieldName)?.display_name ??
-            fieldName
-          }
-          onApply={savedViews.apply}
-          onClearActive={savedViews.clearActive}
-          onSaveNew={savedViews.saveNew}
-          onUpdate={savedViews.update}
-          onRename={savedViews.rename}
-          onSetDefault={savedViews.setDefault}
-          onDelete={savedViews.remove}
-        />
-      </div>
-
-      {/* Column visibility + order for THIS VIEW. Deliberately next to the
-          grid rather than inside Table Settings: Table Settings edits the
-          table for everyone, this edits only what you are looking at. */}
-      <div className="hidden shrink-0 items-center justify-end gap-1 md:order-last md:ml-auto md:flex">
-        <ColumnViewMenu
-          fields={fields.map((f) => ({
-            field_name: f.field_name,
-            display_name: f.display_name,
-            field_order: f.field_order,
-          }))}
-          hidden={hiddenColumns}
-          order={columnOrder}
-          onHiddenChange={setHiddenColumns}
-                onAddColumn={
-                  isReadOnly
-                    ? undefined
-                    : () => {
-                        setPendingColumnInsert(null);
-                        setShowAddColumnModal(true);
-                      }
-                }
-          onOrderChange={setColumnOrder}
-        />
-        <TableLayoutMenu
-          layoutMode={chosenLayoutMode}
-          autoResolvesTo={resolveTableLayout("auto", viewFields.length, layoutDefaults.fitMaxColumns)}
-          fitMaxColumns={layoutDefaults.fitMaxColumns}
-          // Picking the organization's own default clears the personal override,
-          // so the view stays "not customized" and follows the org if it changes.
-          onLayoutModeChange={(next) =>
-            setLayoutMode(next === layoutDefaults.layout ? "default" : next)
-          }
-          rowDensity={chosenRowDensity}
-          onRowDensityChange={(next) =>
-            setRowDensity(next === layoutDefaults.rowHeight ? "default" : next)
-          }
-          isCustomized={
-            layoutMode !== "default" ||
-            rowDensity !== "default" ||
-            freezeFirstColumn ||
-            wrapText ||
-            Object.keys(columnWidths).length > 0
-          }
-          freezeFirstColumn={freezeFirstColumn}
-          onFreezeFirstColumnChange={setFreezeFirstColumn}
-          wrapText={wrapText}
-          onWrapTextChange={setWrapText}
-          customWidthCount={Object.keys(columnWidths).length}
-          onResetColumnWidths={clearColumnWidths}
-        />
-        {isViewCustomized && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
-            onClick={() => {
-              resetView();
-              // The bar must stop claiming a view is active — otherwise it
-              // highlights a chip whose settings are no longer on screen.
-              savedViews.clearActive();
-            }}
-            title="Clear search, sort, filters and column choices"
-          >
-            Reset view
-          </Button>
-        )}
-      </div>
-
-      {/* Undo lives beside the grid, not only on Cmd-Z: a shortcut nobody can
-          see is not a safety net for a non-technical user. */}
-      {!isReadOnly && (cellUndo.canUndo || cellUndo.canRedo) && (
-        <div className="flex shrink-0 items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 px-2 text-xs"
-            disabled={!cellUndo.canUndo || cellUndo.busy}
-            onClick={() => void cellUndo.undo()}
-            title="Undo last cell change (⌘Z)"
-          >
-            <Undo2 className="h-3.5 w-3.5" />
-            Undo
-            {cellUndo.undoDepth > 1 && (
-              <span className="tabular-nums text-muted-foreground">
-                {cellUndo.undoDepth}
-              </span>
-            )}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 px-2 text-xs"
-            disabled={!cellUndo.canRedo || cellUndo.busy}
-            onClick={() => void cellUndo.redo()}
-            title="Redo (⇧⌘Z)"
-          >
-            <Redo2 className="h-3.5 w-3.5" />
-            Redo
-          </Button>
-        </div>
-      )}
-      </div>
 
       <BulkRowActions
         selectedRowIds={selectedRowIds}

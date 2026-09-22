@@ -145,6 +145,13 @@ interface TableToolbarProps {
 
   /** Optional trailing controls in the toolbar row (e.g. chat artifact revert). */
   toolbarTrailing?: React.ReactNode;
+  /**
+   * THIS VIEW's controls — saved views, undo/redo, columns, layout, reset —
+   * rendered in the toolbar row between the search and the table actions
+   * (Arman, 2026-09-22: they had their own full-width row above the grid).
+   * Desktop only; the mobile drawer carries `mobileViewControls`.
+   */
+  viewControls?: React.ReactNode;
   /** Shared direct Copy / Copy for AI controls for the current table view. */
   copyControls?: (onChooseReference: () => void) => React.ReactNode;
   /** Mobile-only view controls (sort, saved views, columns) hosted in the same drawer. */
@@ -212,6 +219,7 @@ export default function TableToolbar({
   disableRowOrdering,
   onRowOrderingSuccess,
   toolbarTrailing,
+  viewControls,
   copyControls,
   mobileViewControls,
 }: TableToolbarProps) {
@@ -251,9 +259,13 @@ export default function TableToolbar({
           into one drawer trigger so the row never overflows the viewport. */}
       <div
         data-surface-value="is_read_only"
-        className="mb-0 flex flex-col justify-between gap-0 md:mb-2 md:flex-row md:items-center md:gap-2"
+        // ONE ROW, ALWAYS. Below md the clusters collapse into the drawer; from
+        // md up the row is nowrap and scrolls sideways when a laptop or tablet
+        // runs out of width, so nothing ever wraps into a second line or
+        // pushes the grid down (Arman, 2026-09-22).
+        className="mb-0 flex flex-col justify-between gap-0 md:mb-2 md:flex-row md:flex-nowrap md:items-center md:gap-2 md:overflow-x-auto md:overflow-y-hidden md:[scrollbar-width:thin]"
       >
-        <div className="hidden md:flex items-center w-full md:w-auto gap-1">
+        <div className="hidden md:flex shrink-0 items-center w-full md:w-auto gap-1">
           {isReadOnly ? (
             // Read-only mode: show disabled-style buttons with view icon
             <div className="flex items-center gap-1.5 px-1 text-xs font-medium text-purple-600 dark:text-purple-400">
@@ -293,7 +305,7 @@ export default function TableToolbar({
           )}
         </div>
 
-        <div className="flex w-full items-center gap-1.5 md:flex-1 md:max-w-sm md:gap-2">
+        <div className="flex w-full items-center gap-1.5 md:min-w-[14rem] md:flex-1 md:max-w-sm md:gap-2">
           <form onSubmit={handleSearch} className="flex flex-1 gap-1">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -340,7 +352,13 @@ export default function TableToolbar({
           </Button>
         </div>
 
-        <div className="hidden md:flex items-center w-full md:w-auto justify-end gap-1">
+        {viewControls && (
+          <div className="hidden md:flex shrink-0 items-center gap-1 border-l border-border/60 pl-2">
+            {viewControls}
+          </div>
+        )}
+
+        <div className="hidden md:flex shrink-0 items-center w-full md:w-auto justify-end gap-1 md:ml-auto">
           {/* Row Ordering Controls - only show if not read-only */}
           {!isReadOnly && (
             <Button
