@@ -935,8 +935,21 @@ export function nonAdditiveReasonsDenyList(
 //    and `-- guard:`: the campaign's contract binds the campaign, and widening it to
 //    the whole repo buys nothing and breaks the world.
 
-/** One statement of a comment-stripped body, dollar-quote aware. */
-export function topLevelStatements(strippedSql: string): string[] {
+/**
+ * One statement of a comment-stripped body, dollar-quote aware, EXACTLY AS WRITTEN —
+ * every newline kept.
+ *
+ * 🚨 WHY THIS EXISTS SEPARATELY FROM `topLevelStatements` (lane STORE-TXN, 2026-09-22).
+ * `topLevelStatements` collapses every run of whitespace to one space, which is right for
+ * the thing it was written for: the allow-list reads each statement as a single line. It is
+ * WRONG for anything that EXECUTES the statements, because a `--` comment inside a
+ * `$function$` body then comments out everything after it — the whole rest of the function,
+ * now on the same line. `pnpm db:rehearse`'s measure pass executed the collapsed form, so a
+ * `create or replace function` whose body carries a line comment died on
+ * `syntax error at end of input` in the measure pass while the SAME file applied cleanly
+ * through `pnpm db:apply` and through psql. Anything that runs SQL uses THIS function.
+ */
+export function topLevelStatementsVerbatim(strippedSql: string): string[] {
   const out: string[] = [];
   let buf = "";
   let i = 0;
@@ -977,7 +990,15 @@ export function topLevelStatements(strippedSql: string): string[] {
     i += 1;
   }
   out.push(buf);
-  return out.map((t) => t.replace(/\s+/g, " ").trim()).filter(Boolean);
+  return out.map((t) => t.trim()).filter(Boolean);
+}
+
+/** The same statements, each collapsed to ONE LINE — for reading and judging, never for
+ * executing (see `topLevelStatementsVerbatim`). */
+export function topLevelStatements(strippedSql: string): string[] {
+  return topLevelStatementsVerbatim(strippedSql)
+    .map((t) => t.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
 }
 
 // ── POLICY-LOCK (2026-09-22) — A POLICY CHANGE NEVER RIDES INSIDE A LONG FILE ─────────────
