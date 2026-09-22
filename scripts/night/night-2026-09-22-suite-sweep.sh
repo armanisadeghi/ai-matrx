@@ -80,7 +80,7 @@ say "PGOPTIONS: $PGOPTIONS"
 cd "$FRONTEND" || exit 78
 TSV="${LOG%.log}.tsv"
 : > "$TSV"
-TOTAL=0 RAN=0 PASS=0 FAIL=0 SKIPPED=0
+TOTAL=0 RAN=0 PASS=0 FAIL=0 SKIPPED=0 SKIPPED_BY_SUITE=0
 typeset -a FILES NOTRUN
 FILES=("${(@f)$(ls "$SUITES"/*.sql | grep -v '/_')}")
 TOTAL=${#FILES[@]}
@@ -100,17 +100,27 @@ for f in "${FILES[@]}"; do
   if [ $rc -eq 124 ]; then
     verdict=TIMEOUT; sentence="killed at the ${PER_SUITE_CAP}s wall-clock cap"
   else
+    # A SUITE THAT SKIPS IS NOT A SUITE THAT PASSES. The campaign suites answer a missing
+    # dependency with `SKIPPED: … this is NOT a pass` and exit 0 without raising, so
+    # "no ERROR line means PASS" scores a skip as a pass — measured by lane BRANCH-REFRESH on
+    # 2026-09-21, where 9 of 14 "passes" were skips on a branch that still lacked the objects.
     line="$(grep -m1 -E 'ERROR:|FATAL:' "$out")"
+    skipline="$(grep -m1 -E '^SKIPPED:' "$out")"
     if [ -n "$line" ]; then verdict=FAIL; sentence="${line#psql:*: }"
+    elif [ -n "$skipline" ]; then verdict=SKIP; sentence="$skipline"
     else verdict=PASS; sentence=""; fi
   fi
-  [ "$verdict" = PASS ] && PASS=$((PASS+1)) || FAIL=$((FAIL+1))
+  case "$verdict" in
+    PASS) PASS=$((PASS+1)) ;;
+    SKIP) SKIPPED_BY_SUITE=$((SKIPPED_BY_SUITE+1)) ;;
+    *)    FAIL=$((FAIL+1)) ;;
+  esac
   printf '%s\t%s\t%ss\t%s\n' "$b" "$verdict" "$dur" "$(print -r -- "$sentence" | tr '\t\n' '  ' | cut -c1-260)" >> "$TSV"
   say "$(printf '%-52s %-8s %4ss  %s' "$b" "$verdict" "$dur" "$(print -r -- "$sentence" | cut -c1-110)")"
 done
 
 say "───────── SWEEP RESULT ─────────"
-say "found $TOTAL · ran $RAN · PASS $PASS · FAIL $FAIL · NOT-RUN (hard stop at $STOP_STARTING_AT PT) $SKIPPED"
+say "found $TOTAL · ran $RAN · PASS $PASS · SKIP $SKIPPED_BY_SUITE (the suite said its dependency is absent — NOT a pass) · FAIL $FAIL · NOT-RUN (hard stop at $STOP_STARTING_AT PT) $SKIPPED"
 if [ $SKIPPED -gt 0 ]; then
   say "NOT-RUN, by name:"
   for b in "${NOTRUN[@]}"; do say "  $b"; done
