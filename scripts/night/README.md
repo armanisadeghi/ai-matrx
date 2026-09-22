@@ -1,5 +1,13 @@
 # `scripts/night/` — unattended jobs that run inside the maintenance window
 
+> 🚨 **2026-09-21 (Claude Fable 5.1, release-automation session, on Arman's word):** the one-shot
+> `com.aimatrx.night-sweep.suite-sweep` for 2026-09-22 01:35 was **unloaded** and its plist renamed
+> `…plist.PAUSED-2026-09-21`. It runs ~190 suites serially against PRODUCTION, the class of Sunday
+> night's lock incident; Arman ruled that nothing of that kind runs tonight. The two branch-refresh
+> jobs were left loaded (branch-only writes). The way suites come back is against the nightly clone:
+> `common-docs/projects/database-workload-safety/DEV-CLONE-AND-BACKUP.md`. Re-arm only on Arman's word.
+
+
 A night job is a **one-shot**: it fires once, on a calendar time, from a launchd user agent, and
 deletes its own plist on the way out. It exists because the session that scheduled it will not be
 alive when it runs.
