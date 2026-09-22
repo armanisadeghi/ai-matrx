@@ -382,6 +382,7 @@ if $STRICT; then
         "Package logic re-grown outside its package|pnpm check:package-twins:strict"
         "A doc or skill teaches a hand-rolled recipe the package owns|pnpm check:docs-twins"
         "A node_modules symlink is tracked or not ignored (ELOOP on every pull)|pnpm check:dependency-dirs-untracked"
+        "A repo holds a second worktree or a local branch (Arman 2026-09-20: exactly one of each)|pnpm check:single-worktree"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
         # shortcut mappings / write twins, values a sync would delete out from
@@ -893,6 +894,7 @@ else
         "Package logic re-grown outside its package|pnpm check:package-twins:strict"
         "A doc or skill teaches a hand-rolled recipe the package owns|pnpm check:docs-twins"
         "A node_modules symlink is tracked or not ignored (ELOOP on every pull)|pnpm check:dependency-dirs-untracked"
+        "A repo holds a second worktree or a local branch (Arman 2026-09-20: exactly one of each)|pnpm check:single-worktree"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
         # shortcut mappings / write twins, values a sync would delete out from
