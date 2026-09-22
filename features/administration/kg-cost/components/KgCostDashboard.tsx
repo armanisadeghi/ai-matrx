@@ -43,6 +43,8 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import {
   Table,
   TableHeader,
@@ -294,84 +296,99 @@ function OrgLeaderboard({
   loading: boolean;
   onPick: (orgId: string) => void;
 }) {
-  if (loading) {
-    return (
-      <div className="space-y-2">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
-        ))}
-      </div>
-    );
-  }
-  if (orgs.length === 0) {
-    return (
-      <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-        No organization_preferences rows yet. Counters fill as auto-ingest cost
-        lands.
-      </div>
-    );
-  }
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Organization</TableHead>
-          <TableHead className="text-right">Used today</TableHead>
-          <TableHead className="text-right">Budget</TableHead>
-          <TableHead className="text-right">%</TableHead>
-          <TableHead>Last charge</TableHead>
-          <TableHead className="w-8"></TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {orgs.map((row) => (
-          <TableRow
-            key={row.organization_id}
-            className="cursor-pointer hover:bg-muted/50"
-            onClick={() => onPick(row.organization_id)}
-          >
-            <TableCell className="font-medium">
-              {/* The org was named and unreachable, and where the name hadn't
-                  resolved it printed a truncated id — unopenable AND unusable
-                  for copying.
+  const columns: MatrxColumnDef<OrgCostRow>[] = [
+    {
+      id: "organization",
+      header: "Organization",
+      accessorFn: (row) => row.organization_name ?? row.organization_id,
+      filter: "text",
+      width: 240,
+      cell: (row) => (
+        <EntityRef
+          token="organization"
+          id={row.organization_id}
+          name={row.organization_name ?? row.organization_id}
+          showIcon={false}
+          wrap
+          onOpen={() => onPick(row.organization_id)}
+          className="font-medium"
+        />
+      ),
+    },
+    {
+      accessorKey: "daily_auto_rag_cost_used_usd",
+      header: "Used today",
+      filter: "number",
+      align: "right",
+      width: 125,
+      cell: (row) => (
+        <span className="tabular-nums">
+          {fmtUsdShort(row.daily_auto_rag_cost_used_usd)}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "daily_auto_rag_budget_usd",
+      header: "Budget",
+      filter: "number",
+      align: "right",
+      width: 115,
+      cell: (row) => (
+        <span className="tabular-nums">
+          {fmtUsdShort(row.daily_auto_rag_budget_usd)}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "percent_used",
+      header: "% used",
+      filter: "number",
+      align: "right",
+      width: 95,
+      cell: (row) => (
+        <span className={`tabular-nums ${percentColorClass(row.percent_used)}`}>
+          {row.percent_used.toFixed(1)}%
+        </span>
+      ),
+    },
+    {
+      accessorKey: "last_charge_at",
+      header: "Last charge",
+      filter: "date",
+      width: 140,
+      cell: (row) => (
+        <span className="text-muted-foreground">
+          {fmtRelativeTime(row.last_charge_at)}
+        </span>
+      ),
+    },
+  ];
 
-                  `onOpen` is the load-bearing part: this row's click is an
-                  in-page DRILL-DOWN (`onPick`), not navigation, so handing the
-                  name a plain link would have quietly replaced this dashboard's
-                  primary interaction. Plain click still drills down; the doors
-                  arrive as additions — cmd/middle-click goes natively to the
-                  org, and the hover controls carry new tab and peek. */}
-              <EntityRef
-                token="organization"
-                id={row.organization_id}
-                name={row.organization_name ?? row.organization_id}
-                showIcon={false}
-                wrap
-                onOpen={() => onPick(row.organization_id)}
-                className="font-medium"
-              />
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              {fmtUsdShort(row.daily_auto_rag_cost_used_usd)}
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              {fmtUsdShort(row.daily_auto_rag_budget_usd)}
-            </TableCell>
-            <TableCell
-              className={`text-right tabular-nums ${percentColorClass(row.percent_used)}`}
-            >
-              {row.percent_used.toFixed(1)}%
-            </TableCell>
-            <TableCell className="text-muted-foreground">
-              {fmtRelativeTime(row.last_charge_at)}
-            </TableCell>
-            <TableCell>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+  return (
+    <MatrxDataTable
+      tableId="administration/kg-cost/organizations"
+      data={orgs}
+      columns={columns}
+      getRowId={(row) => row.organization_id}
+      isLoading={loading}
+      density="condensed"
+      stickyHeader
+      pageSize={0}
+      hidePagination
+      copy={false}
+      toolbar={{ search: true, searchPlaceholder: "Search organizations…" }}
+      detail={{ enabled: false }}
+      window={{ enabled: false }}
+      coverage={{ noun: "organization", answeredBy: "client" }}
+      onRowOpen={(row) => onPick(row.organization_id)}
+      rowActions={() => (
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      )}
+      emptyState={{
+        title: "No organization preferences yet",
+        description: "Counters fill as auto-ingest cost lands.",
+      }}
+    />
   );
 }
 
@@ -388,92 +405,113 @@ function PendingBatchesTable({
   loading: boolean;
   onPick: (batchRowId: string) => void;
 }) {
-  if (loading) {
-    return (
-      <div className="space-y-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
-        ))}
-      </div>
-    );
-  }
-  if (batches.length === 0) {
-    return (
-      <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-        No in-flight batches. (Pending submissions appear here within seconds of
-        a matrx-batch dispatch; completion lands within ~24h of the provider
-        SLA.)
-      </div>
-    );
-  }
+  const columns: MatrxColumnDef<BatchRow>[] = [
+    {
+      accessorKey: "custom_id",
+      header: "Custom ID",
+      filter: "text",
+      width: 250,
+      cell: (row) => (
+        <span className="font-mono text-xs" title={row.custom_id ?? undefined}>
+          {row.custom_id ?? "—"}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "provider",
+      header: "Provider",
+      filter: "select",
+      width: 125,
+      cell: (row) => (
+        <Badge variant="outline" className="font-mono">
+          {row.provider}
+        </Badge>
+      ),
+    },
+    {
+      id: "organization",
+      header: "Org",
+      accessorFn: (row) =>
+        row.organization_name ?? row.organization_id ?? "personal",
+      filter: "text",
+      width: 180,
+      cell: (row) =>
+        row.organization_id ? (
+          <EntityRef
+            token="organization"
+            id={row.organization_id}
+            name={row.organization_name ?? row.organization_id}
+            showIcon={false}
+            openInNewTab
+          />
+        ) : (
+          <span className="italic text-muted-foreground">personal</span>
+        ),
+    },
+    {
+      accessorKey: "submitted_at",
+      header: "Submitted",
+      filter: "date",
+      width: 140,
+      cell: (row) => (
+        <span className="text-muted-foreground">
+          {fmtRelativeTime(row.submitted_at)}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "poll_count",
+      header: "Polls",
+      filter: "number",
+      align: "right",
+      width: 80,
+      cell: (row) => <span className="tabular-nums">{row.poll_count}</span>,
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      filter: "select",
+      width: 125,
+      cell: (row) => <StatusBadge status={row.status} />,
+    },
+    {
+      accessorKey: "est_cost_usd",
+      header: "Est. cost",
+      filter: "number",
+      align: "right",
+      width: 110,
+      cell: (row) => (
+        <span className="tabular-nums">{fmtUsdShort(row.est_cost_usd)}</span>
+      ),
+    },
+  ];
+
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Custom ID</TableHead>
-          <TableHead>Provider</TableHead>
-          <TableHead>Org</TableHead>
-          <TableHead>Submitted</TableHead>
-          <TableHead className="text-right">Polls</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Est. cost</TableHead>
-          <TableHead className="w-8"></TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {batches.map((row) => (
-          <TableRow
-            key={row.id}
-            className="cursor-pointer hover:bg-muted/50"
-            onClick={() => onPick(row.id)}
-          >
-            <TableCell className="font-mono text-xs">
-              {(row.custom_id ?? "").length > 30
-                ? `${(row.custom_id ?? "").slice(0, 30)}…`
-                : (row.custom_id ?? "")}
-            </TableCell>
-            <TableCell>
-              <Badge variant="outline" className="font-mono">
-                {row.provider}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              {/* The org that owns the batch was named and unreachable. Unlike
-                  the org table above — whose row click is an in-page
-                  drill-down — this table's row has no org action at all, so
-                  the name is the only handle. `openInNewTab`: admin surface,
-                  `/organizations/{id}` is on the main host. */}
-              {row.organization_id ? (
-                <EntityRef
-                  token="organization"
-                  id={row.organization_id}
-                  name={row.organization_name ?? row.organization_id}
-                  showIcon={false}
-                  openInNewTab
-                />
-              ) : (
-                <span className="text-muted-foreground italic">personal</span>
-              )}
-            </TableCell>
-            <TableCell className="text-muted-foreground">
-              {fmtRelativeTime(row.submitted_at)}
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              {row.poll_count}
-            </TableCell>
-            <TableCell>
-              <StatusBadge status={row.status} />
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              {fmtUsdShort(row.est_cost_usd)}
-            </TableCell>
-            <TableCell>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <MatrxDataTable
+      tableId="administration/kg-cost/pending-batches"
+      data={batches}
+      columns={columns}
+      getRowId={(row) => row.id}
+      isLoading={loading}
+      density="condensed"
+      stickyHeader
+      pageSize={0}
+      hidePagination
+      copy={false}
+      toolbar={{ search: true, searchPlaceholder: "Search in-flight batches…" }}
+      detail={{ enabled: false }}
+      window={{ enabled: false }}
+      coverage={{ noun: "batch", answeredBy: "client" }}
+      onRowOpen={(row) => onPick(row.id)}
+      rowActions={() => (
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      )}
+      emptyState={{
+        title: "No in-flight batches",
+        description:
+          "Pending submissions appear here within seconds of dispatch; completion lands within the provider SLA.",
+      }}
+    />
   );
 }
 
@@ -1043,27 +1081,6 @@ function BatchDetailDialog({
 // Unit economics — per-run ledger (public.fn_kg_cost_unit_economics)
 // ---------------------------------------------------------------------------
 
-function StageSplit({
-  embed,
-  extract,
-  cleanup,
-  enrich,
-}: {
-  embed: number | string;
-  extract: number | string;
-  cleanup: number | string;
-  enrich: number | string;
-}) {
-  return (
-    <div className="flex flex-col gap-0.5 text-[11px] leading-tight text-muted-foreground tabular-nums">
-      <span>emb {fmtUsdShort(num(embed))}</span>
-      <span>ext {fmtUsdShort(num(extract))}</span>
-      <span>cln {fmtUsdShort(num(cleanup))}</span>
-      <span>enr {fmtUsdShort(num(enrich))}</span>
-    </div>
-  );
-}
-
 function BySourceKindTable({
   rows,
   loading,
@@ -1071,85 +1088,194 @@ function BySourceKindTable({
   rows: UnitEconomicsBySourceKindRow[];
   loading: boolean;
 }) {
-  if (loading) {
-    return (
-      <div className="space-y-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
-        ))}
-      </div>
-    );
-  }
-  if (rows.length === 0) {
-    return (
-      <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-        No ingest runs in this window.
-      </div>
-    );
-  }
+  const columns: MatrxColumnDef<UnitEconomicsBySourceKindRow>[] = [
+    {
+      accessorKey: "source_kind",
+      header: "Kind",
+      filter: "select",
+      width: 160,
+      frozen: true,
+      cell: (row) => (
+        <span className="font-mono text-xs">
+          {row.source_kind}
+          {num(row.stuck_running) > 0 && (
+            <Badge variant="destructive" className="ml-2 font-mono text-[10px]">
+              {num(row.stuck_running)} stuck
+            </Badge>
+          )}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "runs",
+      header: "Runs",
+      filter: "number",
+      align: "right",
+      width: 80,
+      cell: (row) => <span className="tabular-nums">{row.runs}</span>,
+    },
+    {
+      accessorKey: "successes",
+      header: "OK",
+      filter: "number",
+      align: "right",
+      width: 75,
+      cell: (row) => <span className="tabular-nums">{row.successes}</span>,
+    },
+    {
+      accessorKey: "errors",
+      header: "Errors",
+      filter: "number",
+      align: "right",
+      width: 80,
+      cell: (row) => <span className="tabular-nums">{row.errors}</span>,
+    },
+    {
+      accessorKey: "skips",
+      header: "Skipped",
+      filter: "number",
+      align: "right",
+      width: 85,
+      cell: (row) => <span className="tabular-nums">{row.skips}</span>,
+    },
+    {
+      accessorKey: "stuck_running",
+      header: "Stuck",
+      filter: "number",
+      align: "right",
+      width: 80,
+      cell: (row) => (
+        <span className="tabular-nums">{num(row.stuck_running)}</span>
+      ),
+    },
+    {
+      accessorKey: "p50_cost_usd",
+      header: "p50",
+      filter: "number",
+      align: "right",
+      width: 100,
+      cell: (row) => (
+        <span className="tabular-nums">
+          {fmtUsdShort(num(row.p50_cost_usd))}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "p90_cost_usd",
+      header: "p90",
+      filter: "number",
+      align: "right",
+      width: 100,
+      cell: (row) => (
+        <span className="tabular-nums">
+          {fmtUsdShort(num(row.p90_cost_usd))}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "max_cost_usd",
+      header: "Max",
+      filter: "number",
+      align: "right",
+      width: 100,
+      cell: (row) => (
+        <span className="tabular-nums">
+          {fmtUsdShort(num(row.max_cost_usd))}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "cost_per_1k_chars_usd",
+      header: "$ / 1k chars",
+      filter: "number",
+      align: "right",
+      width: 125,
+      cell: (row) => (
+        <span className="tabular-nums">
+          {fmtUsdShort(num(row.cost_per_1k_chars_usd))}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "embedding_cost_usd",
+      header: "Embedding",
+      filter: "number",
+      align: "right",
+      width: 110,
+      cell: (row) => (
+        <span className="tabular-nums">
+          {fmtUsdShort(num(row.embedding_cost_usd))}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "extraction_cost_usd",
+      header: "Extraction",
+      filter: "number",
+      align: "right",
+      width: 110,
+      cell: (row) => (
+        <span className="tabular-nums">
+          {fmtUsdShort(num(row.extraction_cost_usd))}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "cleanup_cost_usd",
+      header: "Cleanup",
+      filter: "number",
+      align: "right",
+      width: 105,
+      cell: (row) => (
+        <span className="tabular-nums">
+          {fmtUsdShort(num(row.cleanup_cost_usd))}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "enrichment_cost_usd",
+      header: "Enrichment",
+      filter: "number",
+      align: "right",
+      width: 110,
+      cell: (row) => (
+        <span className="tabular-nums">
+          {fmtUsdShort(num(row.enrichment_cost_usd))}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "cache_hit_pct",
+      header: "Cache hit %",
+      filter: "number",
+      align: "right",
+      width: 110,
+      cell: (row) => (
+        <span className="tabular-nums">
+          {num(row.cache_hit_pct).toFixed(1)}%
+        </span>
+      ),
+    },
+  ];
+
   return (
-    <div className="overflow-x-auto rounded-md border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Kind</TableHead>
-            <TableHead className="text-right">Runs (ok/err/skip)</TableHead>
-            <TableHead className="text-right">p50</TableHead>
-            <TableHead className="text-right">p90</TableHead>
-            <TableHead className="text-right">Max</TableHead>
-            <TableHead className="text-right">$ / 1k chars</TableHead>
-            <TableHead>Stage split</TableHead>
-            <TableHead className="text-right">Cache hit %</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((row) => (
-            <TableRow key={row.source_kind}>
-              <TableCell className="font-mono text-xs">
-                {row.source_kind}
-                {num(row.stuck_running) > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="ml-2 font-mono text-[10px]"
-                  >
-                    {num(row.stuck_running)} stuck
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell className="text-right tabular-nums text-xs">
-                {row.runs}{" "}
-                <span className="text-muted-foreground">
-                  ({row.successes}/{row.errors}/{row.skips})
-                </span>
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {fmtUsdShort(num(row.p50_cost_usd))}
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {fmtUsdShort(num(row.p90_cost_usd))}
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {fmtUsdShort(num(row.max_cost_usd))}
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {fmtUsdShort(num(row.cost_per_1k_chars_usd))}
-              </TableCell>
-              <TableCell>
-                <StageSplit
-                  embed={row.embedding_cost_usd}
-                  extract={row.extraction_cost_usd}
-                  cleanup={row.cleanup_cost_usd}
-                  enrich={row.enrichment_cost_usd}
-                />
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {num(row.cache_hit_pct).toFixed(1)}%
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <MatrxDataTable
+      tableId="administration/kg-cost/by-source-kind"
+      data={rows}
+      columns={columns}
+      getRowId={(row) => row.source_kind}
+      isLoading={loading}
+      density="condensed"
+      stickyHeader
+      pageSize={0}
+      hidePagination
+      copy={false}
+      toolbar={{ search: true, searchPlaceholder: "Search source kinds…" }}
+      detail={{ enabled: false }}
+      window={{ enabled: false }}
+      coverage={{ noun: "source kind", answeredBy: "client" }}
+      emptyState={{ title: "No ingest runs in this window" }}
+    />
   );
 }
 
@@ -1160,122 +1286,219 @@ function RecentRunsTable({
   rows: UnitEconomicsRecentRun[];
   loading: boolean;
 }) {
-  if (loading) {
-    return (
-      <div className="space-y-2">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
-        ))}
-      </div>
-    );
-  }
-  if (rows.length === 0) {
-    return (
-      <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-        No runs recorded yet.
-      </div>
-    );
-  }
+  const columns: MatrxColumnDef<UnitEconomicsRecentRun>[] = [
+    {
+      accessorKey: "started_at",
+      header: "Started",
+      filter: "date",
+      width: 145,
+      frozen: true,
+      cell: (row) => (
+        <span className="whitespace-nowrap text-xs text-muted-foreground">
+          {fmtCompactTime(row.started_at)}
+        </span>
+      ),
+    },
+    {
+      id: "source",
+      header: "Source",
+      accessorFn: (row) =>
+        row.source_id ? `${row.source_kind} ${row.source_id}` : row.source_kind,
+      filter: "text",
+      width: 260,
+      cell: (row) => (
+        <span className="font-mono text-xs">
+          {row.source_id ? (
+            <>
+              {row.source_kind}:{" "}
+              <EntityRef
+                token={row.source_kind}
+                id={row.source_id}
+                name={row.source_id}
+                showIcon={false}
+                openInNewTab
+                wrap
+              />
+            </>
+          ) : (
+            row.source_kind
+          )}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "triggered_by",
+      header: "Triggered by",
+      filter: "text",
+      width: 170,
+      cell: (row) => (
+        <span
+          className="block max-w-[10rem] truncate text-xs text-muted-foreground"
+          title={row.triggered_by ?? undefined}
+        >
+          {row.triggered_by ?? "—"}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      filter: "select",
+      width: 125,
+      cell: (row) => {
+        const stuck = isStuckRun(row);
+        return (
+          <div className="flex flex-col gap-0.5">
+            <Badge
+              variant={
+                row.status === "success"
+                  ? "outline"
+                  : row.status === "error"
+                    ? "destructive"
+                    : "secondary"
+              }
+              className="w-fit font-mono text-[10px]"
+            >
+              {row.status}
+            </Badge>
+            {stuck && (
+              <span className="text-[10px] font-semibold text-destructive">
+                stuck &gt; 10m
+              </span>
+            )}
+            {row.status === "skipped" && row.skip_reason && (
+              <span className="text-[10px] text-muted-foreground">
+                {row.skip_reason}
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "cost_is_exact",
+      header: "Exact cost",
+      filter: "boolean",
+      width: 100,
+      cell: (row) => (
+        <span className="text-xs text-muted-foreground">
+          {row.cost_is_exact ? "exact" : "inexact"}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "chunks_written",
+      header: "Chunks written",
+      filter: "number",
+      align: "right",
+      width: 125,
+      cell: (row) => (
+        <span className="tabular-nums text-xs">{num(row.chunks_written)}</span>
+      ),
+    },
+    {
+      accessorKey: "chunks_reused",
+      header: "Chunks reused",
+      filter: "number",
+      align: "right",
+      width: 120,
+      cell: (row) => (
+        <span className="tabular-nums text-xs">{num(row.chunks_reused)}</span>
+      ),
+    },
+    {
+      accessorKey: "embedding_cost_usd",
+      header: "Embedding",
+      filter: "number",
+      align: "right",
+      width: 110,
+      cell: (row) => (
+        <span className="tabular-nums">
+          {fmtUsdShort(num(row.embedding_cost_usd))}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "extraction_cost_usd",
+      header: "Extraction",
+      filter: "number",
+      align: "right",
+      width: 110,
+      cell: (row) => (
+        <span className="tabular-nums">
+          {fmtUsdShort(num(row.extraction_cost_usd))}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "cleanup_cost_usd",
+      header: "Cleanup",
+      filter: "number",
+      align: "right",
+      width: 105,
+      cell: (row) => (
+        <span className="tabular-nums">
+          {fmtUsdShort(num(row.cleanup_cost_usd))}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "enrichment_cost_usd",
+      header: "Enrichment",
+      filter: "number",
+      align: "right",
+      width: 110,
+      cell: (row) => (
+        <span className="tabular-nums">
+          {fmtUsdShort(num(row.enrichment_cost_usd))}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "total_cost_usd",
+      header: "Total",
+      filter: "number",
+      align: "right",
+      width: 105,
+      cell: (row) => (
+        <span className="font-medium tabular-nums">
+          {fmtUsdShort(num(row.total_cost_usd))}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "duration_ms",
+      header: "Duration",
+      filter: "number",
+      align: "right",
+      width: 100,
+      cell: (row) => (
+        <span className="tabular-nums text-xs text-muted-foreground">
+          {fmtDuration(row.duration_ms)}
+        </span>
+      ),
+    },
+  ];
+
   return (
-    <div className="overflow-x-auto rounded-md border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Started</TableHead>
-            <TableHead>Source</TableHead>
-            <TableHead>Triggered by</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Chunks (w/r)</TableHead>
-            <TableHead>Stage split</TableHead>
-            <TableHead className="text-right">Total</TableHead>
-            <TableHead className="text-right">Duration</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((row) => {
-            const stuck = isStuckRun(row);
-            return (
-              <TableRow
-                key={row.id}
-                className={stuck ? "bg-destructive/5" : undefined}
-              >
-                <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                  {fmtCompactTime(row.started_at)}
-                </TableCell>
-                <TableCell className="font-mono text-xs">
-                  {row.source_id ? (
-                    <>
-                      {row.source_kind}:{" "}
-                      <EntityRef
-                        token={row.source_kind}
-                        id={row.source_id}
-                        name={row.source_id}
-                        showIcon={false}
-                        openInNewTab
-                        wrap
-                      />
-                    </>
-                  ) : (
-                    row.source_kind
-                  )}
-                </TableCell>
-                <TableCell className="max-w-[10rem] truncate text-xs text-muted-foreground">
-                  {row.triggered_by ?? "—"}
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col gap-0.5">
-                    <Badge
-                      variant={
-                        row.status === "success"
-                          ? "outline"
-                          : row.status === "error"
-                            ? "destructive"
-                            : "secondary"
-                      }
-                      className="w-fit font-mono text-[10px]"
-                    >
-                      {row.status}
-                    </Badge>
-                    {stuck && (
-                      <span className="text-[10px] font-semibold text-destructive">
-                        stuck &gt; 10m
-                      </span>
-                    )}
-                    {row.status === "skipped" && row.skip_reason && (
-                      <span className="text-[10px] text-muted-foreground">
-                        {row.skip_reason}
-                      </span>
-                    )}
-                    {!row.cost_is_exact && (
-                      <span className="text-[10px] text-muted-foreground">
-                        inexact
-                      </span>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="text-right tabular-nums text-xs">
-                  {num(row.chunks_written)}/{num(row.chunks_reused)}
-                </TableCell>
-                <TableCell>
-                  <StageSplit
-                    embed={row.embedding_cost_usd}
-                    extract={row.extraction_cost_usd}
-                    cleanup={row.cleanup_cost_usd}
-                    enrich={row.enrichment_cost_usd}
-                  />
-                </TableCell>
-                <TableCell className="text-right tabular-nums font-medium">
-                  {fmtUsdShort(num(row.total_cost_usd))}
-                </TableCell>
-                <TableCell className="text-right tabular-nums text-xs text-muted-foreground">
-                  {fmtDuration(row.duration_ms)}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
+    <MatrxDataTable
+      tableId="administration/kg-cost/recent-runs"
+      data={rows}
+      columns={columns}
+      getRowId={(row) => row.id}
+      isLoading={loading}
+      density="condensed"
+      stickyHeader
+      pageSize={0}
+      hidePagination
+      copy={false}
+      toolbar={{ search: true, searchPlaceholder: "Search recent runs…" }}
+      detail={{ enabled: false }}
+      window={{ enabled: false }}
+      coverage={{ noun: "run", answeredBy: "client" }}
+      rowClassName={(row) => (isStuckRun(row) ? "bg-destructive/5" : undefined)}
+      emptyState={{ title: "No runs recorded yet" }}
+    />
   );
 }
 
