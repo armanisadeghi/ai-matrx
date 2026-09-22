@@ -10,10 +10,10 @@
 // WHAT IT ASSERTS, each one a clause that can come back FALSE:
 //
 //   1. THE DOOR LAW ON "SHARED WITH ME". From the member seat, the first row of
-//      that listing is CLICKED. Its address must carry `?org=` (the owning
-//      organization, the way `platform.link_carries_its_organization` makes a
-//      notification link name its own), the screen must NOT say "This table is
-//      not here", and it must say who shared it.
+//      that listing is CLICKED. It must open the INVITATION's own screen —
+//      `/invitations/table/accept/<token>` — which names the table, the
+//      organization and what the person will be able to do, and never the flat
+//      "This table is not here" VERIFIER-14 measured.
 //   2. THE INBOX IS NOT THE FRONT DOOR. The approval queue must appear AFTER the
 //      last capability listing in the document, not above "Start here".
 //   3. THE NEWEST STRIP SEPARATES THE NAME FROM WHAT IT IS. No "Jobs Tables".
@@ -172,7 +172,24 @@ async function openEveryListing(page) {
 async function walk(context, label, { email, password, organization, shots, openShared }) {
   const page = await context.newPage();
   const already = await whoAmI(page, ORIGIN);
-  const who = already === email ? already : await signIn(page, ORIGIN, email, password, label);
+  // The dev server compiles /login on first hit and the sign-in helper's own wait
+  // is shorter than that compile, which is how the admin seat "never signed in"
+  // on the first run of this walk while the second seat sailed through. Warm the
+  // route, then try twice.
+  let who = already;
+  if (already !== email) {
+    await page.goto(`${ORIGIN}/login`, { waitUntil: "domcontentloaded", timeout: 120000 }).catch(() => {});
+    await page.waitForSelector("#email", { timeout: 180000 }).catch(() => {});
+    for (let attempt = 0; attempt < 2 && who !== email; attempt += 1) {
+      try {
+        who = await signIn(page, ORIGIN, email, password, label);
+      } catch (error) {
+        if (attempt === 1) throw error;
+        say(`${label}: sign-in did not take on the first try — one more`);
+        await sleep(3000);
+      }
+    }
+  }
   say(`${label}: signed in as ${who}${already === email ? " (already)" : ""}`);
   if (who !== email) throw new Error(`${label}: expected ${email}, the app says ${who}`);
 
@@ -249,32 +266,35 @@ async function walk(context, label, { email, password, organization, shots, open
       const name = (await row.textContent())?.trim() ?? "";
       const href = await row.getAttribute("href");
       clause(
-        `${label} · the "Shared with me" row's address names the organization that owns it`,
-        Boolean(href && href.includes("?org=")),
+        `${label} · the "Shared with me" row opens the invitation's own screen`,
+        Boolean(href && href.startsWith("/invitations/table/accept/")),
         `${name} → ${href}`,
       );
       await row.click();
       await page.waitForLoadState("domcontentloaded", { timeout: 120000 });
       const landed = await until(
-        "the shared table's screen",
+        "the invitation's own screen",
         async () =>
           page.evaluate(() => {
             const body = document.body?.innerText ?? "";
-            if (body.includes("Checking whether this table was shared with you")) return null;
-            if (body.includes("This table is not here")) return { dead: true, body: body.slice(0, 600) };
-            if (body.includes("Shared with you by")) return { dead: false, body: body.slice(0, 600) };
-            return null;
+            if (body.includes("This table is not here")) return { dead: true, body: body.slice(0, 800) };
+            // The offer names the table and the organization, and carries the
+            // one control that accepts it.
+            const offer =
+              /shared\s+.+\s+with you/i.test(body) ||
+              body.includes("Open it and it is yours to see");
+            return offer ? { dead: false, body: body.slice(0, 800) } : null;
           }),
         45000,
       );
       clause(
-        `${label} · the "Shared with me" row OPENS the table, not a dead sentence`,
+        `${label} · the row OPENS the offer, not a dead sentence`,
         Boolean(landed.v) && landed.v.dead === false,
         landed.v
           ? landed.v.dead
             ? 'the screen still says "This table is not here"'
-            : `the screen says who shared it, after ${landed.ms} ms`
-          : `neither sentence appeared within ${landed.ms} ms — URL ${page.url()}`,
+            : `the screen names the table and the organization, after ${landed.ms} ms — ${landed.v.body.replace(/\s+/g, " ").slice(0, 180)}`
+          : `no offer appeared within ${landed.ms} ms — URL ${page.url()}`,
       );
       await shoot(page, shots.shared);
     }

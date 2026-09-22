@@ -190,7 +190,19 @@ export default function AcceptTableSharePage() {
         </div>
         <h2 className="mb-2 text-xl font-semibold">{opened.table} is open to you</h2>
         <p className="mb-6 text-sm text-muted-foreground">{opened.say}</p>
-        <Button onClick={() => router.push(`/data-v2/${opened.table_id}`)}>
+        {/* 🚨 THE LINK NAMES THE ORGANIZATION IT IS ABOUT (lane HUB-FIX). The
+            accept above dispatches `setOrganization` and this pushes in the same
+            gesture — a Redux write and a route change racing each other, and the
+            loser is a person landing on "This table is not here" seconds after
+            being told the table is open to them. The address carries the owning
+            organization the way `platform.link_carries_its_organization` makes
+            every notification link name its own, and the table route reads it,
+            so the screen cannot depend on which of the two won. */}
+        <Button
+          onClick={() =>
+            router.push(`/data-v2/${opened.table_id}?org=${opened.organization_id}`)
+          }
+        >
           Open {opened.table}
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
@@ -308,7 +320,15 @@ export default function AcceptTableSharePage() {
         </div>
         <h2 className="mb-2 text-xl font-semibold">{peek.table} is already yours to see</h2>
         <p className="mb-6 text-sm text-muted-foreground">{peek.say}</p>
-        <Button onClick={() => router.push(`/data-v2/${peek.table_id}`)}>
+        <Button
+          onClick={() =>
+            router.push(
+              peek.organization_id
+                ? `/data-v2/${peek.table_id}?org=${peek.organization_id}`
+                : `/data-v2/${peek.table_id}`,
+            )
+          }
+        >
           Open {peek.table}
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
