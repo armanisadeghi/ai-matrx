@@ -75,13 +75,7 @@ import { useNoteDelete } from "../hooks/useNoteDelete";
 import { cn } from "@/lib/utils";
 import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
 import { NoteContextStatusIcon } from "./NoteContextSection";
 import { MoveNoteDialog } from "./MoveNoteDialog";
 import { noteFolderReference, type FolderReference } from "../types";
@@ -374,6 +368,8 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   );
   const noteRecord = useAppSelector(selectNoteById(noteId));
   const noTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  // The "…" button opens the tab's universal v3 menu ON this element.
+  const tabRef = useRef<HTMLDivElement | null>(null);
   const buildSurfaceScope = useNotesSurfaceScope({
     instanceId,
     noteId,
@@ -397,14 +393,13 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
     return scope;
   }, [buildSurfaceScope, content]);
 
-  // Secondary actions — the single source for BOTH the "…" dropdown and the
-  // right-click menu's "Tab" section, so they never drift. Primary actions
-  // (copy content, share, context, mic) live inline on the tab.
+  // Secondary actions — the "Tab" section of the universal v3 menu, which
+  // both right-click and the "…" button open (one menu, so they never
+  // drift). Primary actions (copy content, share, context, mic) live inline
+  // on the tab.
   type TabMenuItem = {
     id: string;
     icon: LucideIcon;
-    /** Dropdown-only rich icon override (e.g. Database + ingested badge). */
-    iconNode?: React.ReactNode;
     label: string;
     fn: () => void;
     destructive?: boolean;
@@ -446,14 +441,6 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
     {
       id: "knowledge",
       icon: Database,
-      iconNode: (
-        <span className="relative inline-flex">
-          <Database className="w-3.5 h-3.5" />
-          {ingest.state === "ingested" && (
-            <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          )}
-        </span>
-      ),
       label:
         ingest.state === "ingested"
           ? "Knowledge base"
@@ -541,6 +528,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
         }}
       >
         <div
+          ref={tabRef}
           draggable
           onDragStart={(e) => {
             bumpTabInteraction();
@@ -628,33 +616,25 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
                 variant="icon-only"
                 size="sm"
               />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className={actionBtnClass} title="More actions">
-                    <MoreHorizontal />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-[190px]">
-                  {menuItems.map((item, i) =>
-                    item === null ? (
-                      <DropdownMenuSeparator key={`sep-${i}`} />
-                    ) : (
-                      <DropdownMenuItem
-                        key={item.id}
-                        onSelect={() => item.fn()}
-                        className={cn(
-                          "gap-2 text-xs",
-                          item.destructive &&
-                            "text-destructive focus:text-destructive",
-                        )}
-                      >
-                        {item.iconNode ?? <item.icon className="w-3.5 h-3.5" />}
-                        {item.label}
-                      </DropdownMenuItem>
-                    ),
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* The "…" opens the SAME universal v3 menu as right-click
+                  (openContextMenuForElement — the canonical overflow trigger,
+                  as in FileTreeNode / user-lists). It used to be a second,
+                  bespoke dropdown holding only the "Tab" items, so the
+                  content actions (Copy as / Export → Print / Convert …) that
+                  right-click already offered were invisible from the button
+                  — Arman could not find Print in Notes (2026-09-21). */}
+              <button
+                className={actionBtnClass}
+                title="More actions"
+                aria-haspopup="menu"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  bumpTabInteraction();
+                  openContextMenuForElement(tabRef.current);
+                }}
+              >
+                <MoreHorizontal />
+              </button>
             </div>
           )}
 

@@ -110,7 +110,12 @@ export interface MatrxSplitProps {
   actionsVariant?: RichDocumentActionsVariant;
   /** Action surface position. Defaults to "top-right". */
   actionsPosition?: RichDocumentActionsPosition;
-  /** Action surface visibility. Defaults to "hover-only". */
+  /**
+   * Action surface visibility. Defaults to "always": a hover-only ⋯ hid the
+   * entire toolkit (print, export, save…) from anyone who did not happen to
+   * mouse over the preview — Arman could not find Print in Notes
+   * (2026-09-21). The icon-only variant is one small button; it can stay.
+   */
   actionsBehavior?: RichDocumentActionsBehavior;
   /** Remote surface id — pairs with a <RichDocumentActionSurface/> elsewhere (e.g. a header). */
   actionsSurfaceId?: string;
@@ -192,7 +197,7 @@ export function MatrxSplit({
             actionsVariant ?? (actionsSurfaceId ? "remote" : "icon-only")
           }
           actionsPosition={actionsPosition ?? "top-right"}
-          actionsBehavior={actionsBehavior ?? "hover-only"}
+          actionsBehavior={actionsBehavior ?? "always"}
           actionsSurfaceId={actionsSurfaceId}
           actions={actionsExclude ? { exclude: actionsExclude } : undefined}
           enableContextMenu

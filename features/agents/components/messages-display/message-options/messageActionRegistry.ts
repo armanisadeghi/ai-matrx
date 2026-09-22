@@ -741,7 +741,9 @@ function actionsItems(ctx: MessageActionContext): MenuItem[] {
       key: "print",
       icon: Printer,
       iconColor: "text-slate-500 dark:text-slate-400",
-      label: "Print",
+      // Same wording as RichDocument / content-actions / MarkdownStudio —
+      // one action, one name on every surface.
+      label: "Print / Save PDF",
       action: () => {
         printMarkdownContent(turnText, "Message");
         onClose();
