@@ -234,6 +234,11 @@ if (Array.isArray(page) && page[0]) {
   }
   const IN_BATCH_REPEATS = [120, 180, 250];
   for (const at of IN_BATCH_REPEATS) followOn[at] = { ...followOn[at - 1] };
+  const planOut = await call("io_import_plan", { p_organization_id: ORG, p_table_id: tableId, p_columns: HEADERS.map((h) => ({ header: h, samples: [] })) });
+  const mapping = Object.fromEntries((planOut.columns ?? [])
+    .filter((c) => c.field_key)
+    .map((c) => [c.header, c.field_key]));
+  console.log(`  the wizard's plan maps ${Object.keys(mapping).length} of the file's ${HEADERS.length} headers`);
   const dupHash = createHash("sha256").update(`follow-on-${stamp}`).digest("hex");
   const dOpen = await call("io_import_begin", {
     p_organization_id: ORG, p_table_id: tableId, p_format: "csv",
@@ -246,7 +251,7 @@ if (Array.isArray(page) && page[0]) {
   for (let at = 0; at < followOn.length; at += BATCH) {
     const r = await timed("io_import_rows", {
       p_organization_id: ORG, p_import_id: dOpen.import_id,
-      p_rows: followOn.slice(at, at + BATCH), p_mapping: {},
+      p_rows: followOn.slice(at, at + BATCH), p_mapping: mapping,
     });
     dTimes.push(r.ms);
     if (r.err) { failures.push(`follow-on batch threw: ${r.err.message}`); continue; }
@@ -282,6 +287,9 @@ if (jobField) {
     p_file_hash: uHash, p_policy: { on_duplicate: "skip", unmapped: "ignore" },
     p_dedupe_key: null, p_file_bytes: 0, p_force: false,
   });
+  const uPlan = await call("io_import_plan", { p_organization_id: ORG, p_table_id: tableId, p_columns: HEADERS.map((h) => ({ header: h, samples: [] })) });
+  const uMap = Object.fromEntries((uPlan.columns ?? [])
+    .filter((c) => c.field_key).map((c) => [c.header, c.field_key]));
   const twin = {
     "Job Number": `RPC-SEP-99${stamp % 1000}`, Customer: "Priya Nakashima",
     "Service Address": "4120 Telegraph Rd, Ventura CA", "Service Type": "Backflow Test",
@@ -289,7 +297,7 @@ if (jobField) {
     Notes: "Annual test, city form due the same week.",
   };
   const u = await call("io_import_rows", {
-    p_organization_id: ORG, p_import_id: uOpen.import_id, p_rows: [twin, { ...twin }], p_mapping: {},
+    p_organization_id: ORG, p_import_id: uOpen.import_id, p_rows: [twin, { ...twin }], p_mapping: uMap,
   });
   const uReason = (u.outcomes ?? []).find((o) => o.outcome === "refused")?.reason ?? "";
   check(u.rows_written === 1 && u.rows_refused === 1,
