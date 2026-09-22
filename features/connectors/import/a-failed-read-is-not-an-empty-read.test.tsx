@@ -275,8 +275,13 @@ describe("a failed Google read never speaks as an empty one", () => {
     const choice = findButton("arman@armansadeghi.com");
     expect(findButton("titanium-succes-4898@pages.plusgoogle.com")).toBeTruthy();
 
-    // Refresh cannot silently re-run the same failing request.
-    expect(findButton("Refresh").disabled).toBe(true);
+    // Refresh cannot silently re-run the same failing request. The visible
+    // account-choice notice owns recovery, so the duplicate control is absent.
+    expect(
+      Array.from(container.querySelectorAll("button")).some((candidate) =>
+        (candidate.textContent ?? "").includes("Refresh"),
+      ),
+    ).toBe(false);
 
     // Pressing an account re-runs the read against it — ONCE, not twice.
     const readsBefore = mockSearch.mock.calls.length;
@@ -383,7 +388,11 @@ describe("a failed Google read never speaks as an empty one", () => {
     expect(text).not.toContain("This list has no tasks.");
     expect(text).not.toContain("Re-run with");
     expect(text).toContain(SEVERAL_ACCOUNTS_SENTENCE);
-    expect(findButton("Refresh").disabled).toBe(true);
+    expect(
+      Array.from(container.querySelectorAll("button")).some((candidate) =>
+        (candidate.textContent ?? "").includes("Refresh"),
+      ),
+    ).toBe(false);
     // Absent or honest, never dead: no Select/Import controls over a list
     // nobody read.
     expect(text).not.toContain("Select the 0 not here yet");
