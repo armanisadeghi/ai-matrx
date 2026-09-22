@@ -81,6 +81,38 @@ night_clone_dsn() {
   print -r -- "postgresql://${u}:${pw}@${h}:${p:-6543}/${d:-postgres}"
 }
 
+# ── a DSN that does not sit in the process table ─────────────────────────────
+# 🚨 A PASSWORD PASSED AS argv IS PUBLIC. `pg_dump "postgresql://user:pass@host/db"` prints the
+# whole DSN, password included, in `ps aux` for every process on the machine, for as long as the
+# dump runs — and a schema dump of this estate runs for TEN MINUTES. Measured 2026-09-22 while
+# watching the clone refresh: the clone's database password was plainly readable in `ps` output.
+# Sub-second psql calls have the same hole but a far smaller window; a long-lived pg_dump is the
+# one that matters, so it takes its connection APART.
+#
+# night_dsn_args <dsn> sets two GLOBALS and prints nothing: the array NIGHT_DSN_ARGS
+# (`-h … -p … -U … -d …`) and NIGHT_DSN_PASSWORD, which the caller exports as PGPASSWORD and
+# then clears. It deliberately does NOT print the args for `$(…)` capture — a command
+# substitution runs in a subshell, so the password it set would be lost with it (measured here
+# on the first cut, 2026-09-22). night_conn_ref still reads the project ref back from libpq, so
+# the target assertion works identically on the split form — proven below in this same session.
+night_dsn_args() {
+  local dsn="$1" rest userinfo hostpart user pass host port db
+  NIGHT_DSN_PASSWORD=""
+  typeset -ga NIGHT_DSN_ARGS; NIGHT_DSN_ARGS=()
+  rest="${dsn#*://}"
+  case "$rest" in
+    *@*) userinfo="${rest%%@*}"; hostpart="${rest#*@}" ;;
+    *)   userinfo=""; hostpart="$rest" ;;
+  esac
+  user="${userinfo%%:*}"; pass="${userinfo#*:}"; [ "$pass" = "$userinfo" ] && pass=""
+  db="${hostpart#*/}"; db="${db%%\?*}"; hostpart="${hostpart%%/*}"
+  host="${hostpart%%:*}"; port="${hostpart#*:}"; [ "$port" = "$host" ] && port=5432
+  [ -n "$host" ] && [ -n "$user" ] || return 1
+  NIGHT_DSN_PASSWORD="$pass"
+  NIGHT_DSN_ARGS=(-h "$host" -p "$port" -U "$user" -d "${db:-postgres}")
+  return 0
+}
+
 # night_assert_target branch|production|clone <psql args…>
 #
 # 🚨 A SYSTEM IDENTIFIER IS NOT AN IDENTITY. A Supabase DATA branch (`with_data: true`) is a

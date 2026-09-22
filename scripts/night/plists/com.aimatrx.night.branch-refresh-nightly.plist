@@ -8,7 +8,12 @@
     <string>/bin/zsh</string>
     <string>/Users/armanisadeghi/code/matrx-frontend/scripts/night/branch-refresh.sh</string>
   </array>
-  <!-- RECURRING: every night at 01:05 America/Los_Angeles, inside the 0100-0330 window
+  <!-- THE JOB THIS ARMS READS THE NIGHTLY DEV CLONE, NOT PRODUCTION (rewritten 2026-09-22,
+       lane BRANCH-REFRESH-2). The script has no production code path in any mode or variable;
+       its only source is `night_assert_target clone`, keyed on (system identifier, project ref)
+       together because a data clone answers with production's own system identifier.
+
+       RECURRING: every night at 01:05 America/Los_Angeles, inside the 0100-0330 window
        the script itself enforces. LOADED BUT DISABLED. It stays disabled until the
        one-shot's log shows a clean run; enabling it is one command:
          launchctl enable  gui/$(id -u)/com.aimatrx.night.branch-refresh-nightly

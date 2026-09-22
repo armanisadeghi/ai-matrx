@@ -72,10 +72,11 @@ LOCK=branch-refresh
 HANDOFF=/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20
 LOG="$HANDOFF/night-branch-refresh.log"
 OPEN=0100 CLOSE=0330
-DUMP_CAP=900               # seconds: the clone schema dump aborts at FIFTEEN MINUTES
-                           # (was 600 against production, whose dump measured 409s. The clone runs on
-                           #  Large compute where production runs XL, so the same dump is slower; the
-                           #  cap is a sanity bound on a stuck run, and an abort still writes nothing.)
+DUMP_CAP=600               # seconds: the clone schema dump aborts at TEN MINUTES.
+                           # MEASURED on the clone 2026-09-22: 354s · 20 MB · 20,878 CREATE ·
+                           # 9,961 GRANT statements. Production's own dump measured 409s. The clone
+                           # runs Large compute where production runs XL and is still FASTER, so the
+                           # cap keeps its 70% headroom and is not loosened. An abort writes nothing.
 USE_CASES=/Users/armanisadeghi/code/aidream/apps/shared/records/src/use-cases
 SUITES="$FRONTEND/scripts/campaign-tests"
 PROBE_SCHEMA=zz_branch_refresh_probe
@@ -217,7 +218,17 @@ DUMP_START=$(date +%s)
 # on 2026-09-22), and a refresh that destroyed them would have made the branch worse than the
 # drift it was fixing. --no-owner stays (both databases connect as `postgres`); the ACLs come
 # across, and they are asserted BY NAME in step (4) rather than assumed.
-PGOPTIONS='-c statement_timeout=600000' timeout $DUMP_CAP "$PGDUMP" "${SRC[@]}" \
+# 🚨 THE DUMP DOES NOT CARRY THE PASSWORD IN argv. A DSN handed to pg_dump is readable in
+# `ps aux` by every process on this machine for the whole ten minutes the dump runs — measured
+# on 2026-09-22, the clone's database password was sitting there in plain text. So the
+# connection is split into -h/-p/-U/-d and the password goes through PGPASSWORD, which the
+# process table does not show, and is unset again immediately afterwards.
+if ! night_dsn_args "$SRC_DSN" || [ ${#NIGHT_DSN_ARGS[@]} -lt 8 ]; then
+  say "REFUSED: the clone connection could not be split for the dump. Nothing done."; exit 78
+fi
+typeset -a DUMPCONN; DUMPCONN=("${NIGHT_DSN_ARGS[@]}")
+export PGPASSWORD="$NIGHT_DSN_PASSWORD"; NIGHT_DSN_PASSWORD=""
+PGOPTIONS='-c statement_timeout=600000' timeout $DUMP_CAP "$PGDUMP" "${DUMPCONN[@]}" \
   --schema-only --no-owner --no-comments --quote-all-identifiers \
   --lock-wait-timeout=5000 "${DUMPARGS[@]}" -f "$DUMP" 2> "$WORK/dump.err"
 DRC=$?
@@ -240,6 +251,7 @@ if [ "$(grep -c '^GRANT ' "$DUMP")" -eq 0 ]; then
   exit 78
 fi
 [ -s "$WORK/dump.err" ] && say "pg_dump stderr (first 3): $(head -3 "$WORK/dump.err" | tr '\n' ' ')"
+unset PGPASSWORD   # the dump is done; nothing after this point needs it
 
 # ─────────────────────────────────────────────────────────────────────────────
 # (2) THE CURATED SEED — read in the same window, from the same source.

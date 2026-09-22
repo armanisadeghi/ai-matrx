@@ -8,7 +8,14 @@
     <string>/bin/zsh</string>
     <string>/Users/armanisadeghi/code/matrx-frontend/scripts/night/branch-refresh.sh</string>
   </array>
-  <!-- ONE SHOT: a single calendar occurrence, 2026-09-23 01:05 America/Los_Angeles.
+  <!-- THE JOB THIS ARMS READS THE NIGHTLY DEV CLONE, NOT PRODUCTION (rewritten 2026-09-22,
+       lane BRANCH-REFRESH-2). Both branch-refresh jobs were unloaded at ~00:10 PT that day on
+       Arman's word because each took a ~7-minute `pg_dump --schema-only` of PRODUCTION. The
+       script now has no production code path at all: its only source is `night_assert_target
+       clone`, so "no production reads tonight" is honoured by construction, not by promise.
+       The branch is still the only thing written, and still only inside 0100-0330 Pacific.
+
+       ONE SHOT: a single calendar occurrence, 2026-09-23 01:05 America/Los_Angeles.
        The job deletes this plist on its way out (night_self_destruct), so it can never
        fire twice. RunAtLoad is false so bootstrapping it now does not run it now. -->
   <key>StartCalendarInterval</key>
