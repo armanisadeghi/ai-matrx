@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/client";
+import { withClaims } from "@/test-utils/supabase-auth";
 import {
   EMPTY_INVENTORY,
   githubRepositoryFromRow,
@@ -35,12 +36,12 @@ describe("GitHub repository inventory", () => {
   test("does not construct an authenticated-only table read without a live session", async () => {
     const from = jest.fn();
     jest.mocked(createClient).mockReturnValue({
-      auth: {
+      auth: withClaims({
         getSession: jest.fn().mockResolvedValue({
           data: { session: null },
           error: null,
         }),
-      },
+      }),
       schema: jest.fn(() => ({ from })),
     } as never);
 
@@ -69,12 +70,12 @@ describe("GitHub repository inventory", () => {
     select.mockReturnValue(query);
     const from = jest.fn(() => ({ select }));
     jest.mocked(createClient).mockReturnValue({
-      auth: {
+      auth: withClaims({
         getSession: jest.fn().mockResolvedValue({
           data: { session: { access_token: "test-token", user: { id: "current-user" } } },
           error: null,
         }),
-      },
+      }),
       schema: jest.fn(() => ({ from })),
     } as never);
 

@@ -1,3 +1,4 @@
+import { withClaims } from "@/test-utils/supabase-auth";
 import { requireMandateWorkspaceUser } from "../useMandateWorkspaceData";
 
 describe("mandate workspace authentication gate", () => {
@@ -8,7 +9,7 @@ describe("mandate workspace authentication gate", () => {
     });
 
     await expect(
-      requireMandateWorkspaceUser({ auth: { getUser } } as never),
+      requireMandateWorkspaceUser({ auth: withClaims({ getUser }) } as never),
     ).rejects.toThrow("Opening a mandate requires an authenticated session.");
     expect(getUser).toHaveBeenCalledTimes(1);
   });
@@ -20,7 +21,7 @@ describe("mandate workspace authentication gate", () => {
     });
 
     await expect(
-      requireMandateWorkspaceUser({ auth: { getUser } } as never),
+      requireMandateWorkspaceUser({ auth: withClaims({ getUser }) } as never),
     ).resolves.toBe("user-123");
   });
 });

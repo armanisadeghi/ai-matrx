@@ -1,10 +1,11 @@
+import { withClaims } from "@/test-utils/supabase-auth";
 const schema = jest.fn();
 const getSession = jest.fn();
 const listForSources = jest.fn();
 const setTargets = jest.fn();
 const invalidate = jest.fn();
 
-jest.mock("@/utils/supabase/client", () => ({ supabase: { schema, auth: { getSession } } }));
+jest.mock("@/utils/supabase/client", () => ({ supabase: { schema, auth: withClaims({ getSession }) } }));
 jest.mock("@/utils/auth/getUserId", () => ({ requireUserId: () => "user-1" }));
 jest.mock("@/features/scopes/service/associationsService", () => ({
   associationsService: { listForSources, setTargets },

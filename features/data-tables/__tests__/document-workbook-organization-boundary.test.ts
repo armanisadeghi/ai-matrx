@@ -1,3 +1,4 @@
+import { withClaims } from "@/test-utils/supabase-auth";
 const getUser = jest.fn();
 const single = jest.fn();
 const select = jest.fn(() => ({ single }));
@@ -6,7 +7,7 @@ const from = jest.fn(() => ({ insert }));
 const schema = jest.fn(() => ({ from }));
 
 jest.mock("@/utils/supabase/client", () => ({
-  supabase: { auth: { getUser }, schema },
+  supabase: { auth: withClaims({ getUser }), schema },
 }));
 
 import { createDocument } from "../document-service";

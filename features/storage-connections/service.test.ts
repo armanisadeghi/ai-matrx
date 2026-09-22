@@ -1,3 +1,4 @@
+import { withClaims } from "@/test-utils/supabase-auth";
 import {
   disconnectStorageConnection,
   listStorageConnections,
@@ -76,11 +77,11 @@ test("reads only this user’s Box and Dropbox rows under RLS", async () => {
   const from = jest.fn().mockReturnValue(chain);
   const schema = jest.fn().mockReturnValue({ from });
   mockCreateClient.mockReturnValue({
-    auth: {
+    auth: withClaims({
       getSession: jest.fn().mockResolvedValue({
         data: { session: { access_token: "present", user: { id: "user-1" } } },
       }),
-    },
+    }),
     schema,
   });
 
@@ -96,9 +97,9 @@ test("reads only this user’s Box and Dropbox rows under RLS", async () => {
 test("a missing or expired session is a load error, never a false empty list", async () => {
   const from = jest.fn();
   mockCreateClient.mockReturnValue({
-    auth: {
+    auth: withClaims({
       getSession: jest.fn().mockResolvedValue({ data: { session: null } }),
-    },
+    }),
     schema: jest.fn().mockReturnValue({ from }),
   });
 

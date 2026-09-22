@@ -1,3 +1,4 @@
+import { withClaims } from "@/test-utils/supabase-auth";
 
 const mockSchema = jest.fn();
 const mockGetSession = jest.fn();
@@ -10,7 +11,7 @@ let htmlPreviewProps: {
   htmlPreviewState: { currentMarkdown: string };
 } | null = null;
 
-jest.mock("@/utils/supabase/client", () => ({ supabase: { schema: mockSchema, auth: { getSession: mockGetSession } } }));
+jest.mock("@/utils/supabase/client", () => ({ supabase: { schema: mockSchema, auth: withClaims({ getSession: mockGetSession }) } }));
 jest.mock("@/utils/auth/getUserId", () => ({ requireUserId: () => "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" }));
 jest.mock("@/features/scopes/service/associationsService", () => ({ associationsService: { listForSources: mockListForSources, setTargets: mockSetTargets } }));
 jest.mock("@/features/scopes/host/associationsStore", () => ({ getAssociationsStore: () => ({ invalidate: mockInvalidate, services: { comments: new Proxy({}, { get: () => () => { throw new Error("unexpected comments transport"); } }), categories: new Proxy({}, { get: () => () => { throw new Error("unexpected categories transport"); } }) } }) }));

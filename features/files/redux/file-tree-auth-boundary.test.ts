@@ -1,3 +1,4 @@
+import { withClaims } from "@/test-utils/supabase-auth";
 import {
   hasMatchingFileTreeSession,
   runFileTreeSessionOperation,
@@ -5,7 +6,7 @@ import {
 import { supabase } from "@/utils/supabase/client";
 
 jest.mock("@/utils/supabase/client", () => ({
-  supabase: { auth: { getSession: jest.fn() } },
+  supabase: { auth: withClaims({ getSession: jest.fn() }) },
 }));
 
 const getSession = jest.mocked(supabase.auth.getSession);

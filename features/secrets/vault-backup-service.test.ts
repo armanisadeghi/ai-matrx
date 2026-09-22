@@ -1,3 +1,4 @@
+import { withClaims } from "@/test-utils/supabase-auth";
 import {
   MAX_BACKUP_UPLOAD_BYTES,
   previewVaultBackup,
@@ -27,7 +28,7 @@ jest.mock("@/lib/organizations/activeOrg", () => ({
   requireSelectedOrgId: () => selectedOrganization,
 }));
 jest.mock("@/utils/supabase/client", () => ({
-  createClient: () => ({ auth: { getSession, getUser } }),
+  createClient: () => ({ auth: withClaims({ getSession, getUser }) }),
 }));
 
 function response(body: unknown, status = 200): Response {

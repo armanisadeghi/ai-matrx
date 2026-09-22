@@ -1,3 +1,4 @@
+import { withClaims } from "@/test-utils/supabase-auth";
 import { readConnectionStatus } from "@/features/connectors/connection-status";
 import { loadStoragePickerAccounts } from "@/features/files/storage-sources/inventory";
 
@@ -6,7 +7,7 @@ const mockMicrosoft = jest.fn();
 const mockStorage = jest.fn();
 
 jest.mock("@/utils/supabase/client", () => ({
-  createClient: () => ({ auth: { getSession: mockGetSession } }),
+  createClient: () => ({ auth: withClaims({ getSession: mockGetSession }) }),
 }));
 jest.mock("@/features/microsoft-integration/service", () => ({
   listMicrosoftConnections: (...args: unknown[]) => mockMicrosoft(...args),
