@@ -26,6 +26,7 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'argsruled_relation_history_red_green.sql'
+\set requires 'row:iam.organizations:id in (\'235a6add-e8b5-43f9-883e-9dd0389c1759\',\'6069a466-1445-42df-a64e-cf37ecdc1b99\')'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
