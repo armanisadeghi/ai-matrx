@@ -29,7 +29,8 @@ import {
   selectAllRenderBlocks,
   selectToolLifecycleMap,
   selectLiveCitationMarkersByBlockId,
-  SPECIAL_RENDER_BLOCK_TYPES,
+  blockCarriesDataNotText,
+  blockHasSomethingToRender,
   type ContentSegment,
   type ContentSegmentDbTool,
   type UnifiedSlot,
@@ -104,23 +105,13 @@ export interface ChatMarkdownDisplayProps {
   applyLocalEdits?: boolean;
 }
 
-// Render-block types that carry their payload on `data` rather than
-// `content` — they must NOT be skipped when content is empty.
-const MEDIA_RENDER_BLOCK_TYPES = new Set([
-  "image_output",
-  "audio_output",
-  "video_output",
-]);
-
-// Data-event card blocks: same data-not-content shape as media, but kept in
-// a separate set because MEDIA_RENDER_BLOCK_TYPES also feeds media-specific
-// logic elsewhere. Their content is deliberately null so assembleMessageParts
-// Pass 2 never persists them into committed message parts.
-const DATA_CARD_RENDER_BLOCK_TYPES = new Set([
-  "value_store_stored",
-  "context_groomed",
-  "directive_receipt",
-]);
+// Blocks that carry their payload on `data` rather than on `content` are
+// recognised STRUCTURALLY (`blockCarriesDataNotText` /
+// `blockHasSomethingToRender`), never by an allowlist of type names. Three
+// such allowlists used to live here and in the selectors, and the kind that
+// was in none of them — `decision_answers`, a turn with no text at all —
+// rendered as an empty assistant turn over a paid run. See the predicate's
+// docs in active-requests.selectors.ts.
 
 const _EMPTY_SEGMENTS: ContentSegment[] = [];
 const _EMPTY_SLOTS: UnifiedSlot[] = [];
@@ -508,8 +499,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
         s.kind === "error" ||
         s.kind === "thinking" ||
         (s.kind === "render_block" &&
-          s.blockType !== undefined &&
-          SPECIAL_RENDER_BLOCK_TYPES.has(s.blockType)),
+          blockCarriesDataNotText(renderBlocksMap[s.blockId])),
     );
 
   const hasDbInterleavedSpecial = messageInterleavedContent.some(
@@ -707,7 +697,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
     // expensive splitContentIntoBlocksV2 entirely.
     if (hasReduxRenderBlocks && reduxRenderBlocks) {
       const clientBlocks: RenderBlock[] = reduxRenderBlocks
-        .filter((rb) => rb.content?.trim())
+        .filter(blockHasSomethingToRender)
         .map(renderBlockToContentBlock);
       return {
         blocks: expandTextBlocksInList(clientBlocks),
@@ -1080,14 +1070,10 @@ export const EnhancedChatMarkdownInternal: React.FC<
     if (slot.kind === "render_block") {
       let rb = renderBlocksMap[slot.blockId];
       if (!rb) return null;
-      // Media blocks (image_output / audio_output / video_output)
-      // carry their payload on `data`, not `content`. Don't drop
-      // them just because content is empty.
-      if (
-        !MEDIA_RENDER_BLOCK_TYPES.has(rb.type) &&
-        !DATA_CARD_RENDER_BLOCK_TYPES.has(rb.type) &&
-        !rb.content?.trim()
-      ) {
+      // Media, data cards and typed kind payloads (decision_answers …)
+      // carry their payload on `data`, not `content`. Drop a block only
+      // when it has NEITHER — never because its text happens to be empty.
+      if (!blockHasSomethingToRender(rb)) {
         return null;
       }
 

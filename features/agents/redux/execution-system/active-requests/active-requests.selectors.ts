@@ -828,19 +828,41 @@ export type UnifiedSlot =
   | { kind: "error"; seq: number; timelineIndex?: number };
 
 /**
- * Render-block types that need the unified-slot rendering path even when
- * there's no text run / tool / status to interleave them with. A pure-image
- * stream (no text_start, just a `data: image_output` event) emits a
- * standalone render_block slot — without this set, `hasUnifiedSpecial`
- * would mistake it for plain text content and skip the unified renderer.
+ * Does this render block carry its payload on `data` instead of on text?
  *
- * Re-exported so EnhancedChatMarkdown can share the canonical list.
+ * THE CLASS THIS CLOSES (2026-09-22). Three hand-maintained allowlists of
+ * "blocks whose content is legitimately empty" existed at once —
+ * `SPECIAL_RENDER_BLOCK_TYPES` here (image/audio/video), and
+ * `MEDIA_RENDER_BLOCK_TYPES` + `DATA_CARD_RENDER_BLOCK_TYPES` in
+ * EnhancedChatMarkdown — and a new data-carrying kind had to be added to all
+ * three or it was invisible on the live surface. `decision_answers` was in
+ * none of them: a decision turn writes NO text at all, so its one block was
+ * dropped by the `content?.trim()` filters, `hasUnifiedSpecial` stayed false,
+ * and a paid, successful run rendered an EMPTY assistant turn for minutes —
+ * while a reload, which goes through the persisted-parts path, drew it
+ * perfectly. The data cards (`value_store_stored`, `context_groomed`,
+ * `directive_receipt`) were half-broken the same way: visible only when
+ * something else in the turn happened to flip the unified path on.
+ *
+ * So the test is STRUCTURAL, never a list: a block that has a `data` payload
+ * and no text renders from that payload. A new kind is never invisible again
+ * because nobody remembered to edit a set.
  */
-export const SPECIAL_RENDER_BLOCK_TYPES = new Set<string>([
-  "image_output",
-  "audio_output",
-  "video_output",
-]);
+export function blockCarriesDataNotText(
+  block: { content?: string | null; data?: unknown } | undefined | null,
+): boolean {
+  if (!block) return false;
+  if (block.content?.trim()) return false;
+  return block.data != null;
+}
+
+/** A block worth rendering at all: it has text, or it has a data payload. */
+export function blockHasSomethingToRender(
+  block: { content?: string | null; data?: unknown } | undefined | null,
+): boolean {
+  if (!block) return false;
+  return Boolean(block.content?.trim()) || block.data != null;
+}
 
 const PHASE_LABELS: Record<string, string> = {
   connected: "Connected",
