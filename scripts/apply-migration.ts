@@ -125,6 +125,7 @@
  * Exit codes: 0 applied (or already applied, byte-identical) · 1 refusal or SQL
  * failure · 2 unexpected error / creds absent.
  */
+import { execFileSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import {
   existsSync,
@@ -2112,6 +2113,224 @@ function judgeOnly(paths: readonly string[]): number {
   return 0;
 }
 
+
+/* ───────────────────────── --amend-idempotent ──────────────────────────────
+ *
+ * A LEDGERED MIGRATION'S BYTES ARE FROZEN HISTORY. THIS AMENDS THE LEDGER, NEVER THE DATABASE.
+ *
+ * WHY IT EXISTS (lane INVERSE-GUARD, 2026-09-22, chair ruling on the 28). Rule 27 is
+ * `up -> inverse -> up`. An inverse may NOT drop a body a live trigger reaches or a later lane
+ * adopted — `pnpm check:inverses-leave-the-ground-standing` refuses that, and it is right to:
+ * dropping `custom.assert_store_door` under nineteen attached triggers breaks the store, it does
+ * not restore a defect. But an up-file that creates those bodies with a bare `CREATE FUNCTION`
+ * can then never be re-applied on top of what the inverse left, so rule 27 fails. Measured on
+ * the rehearsal branch: of the 84 inverses the ground-standing fixes touched, 28 fail exactly
+ * this way, and the SAME pairs pass with the pre-fix inverse bytes.
+ *
+ * The defect is the up-file's bare `CREATE FUNCTION`, and it is a CLASS across the campaign, not
+ * 28 instances. But the two obvious routes are both forbidden:
+ *   - editing the file quietly makes `pnpm check:migrations` report checksum drift forever, and
+ *     a ledger that disagrees with the tree is the thing this runner exists to prevent;
+ *   - `--reapply` EXECUTES the whole file again against the one live database, which for a
+ *     campaign up-file means re-running its DDL, its seeds and its guards. Not for a typo.
+ *
+ * So this is the missing primitive: it EXECUTES NOTHING. It proves the only thing that changed
+ * is idempotency, then moves the ledger's checksum to the new bytes and records what it did.
+ *
+ *   1. It finds the LEDGERED bytes by walking `git log` over that path and hashing each blob
+ *      until one matches the ledger's checksum. No match -> refuse. (The bytes that ran are the
+ *      only honest baseline; the current file is not evidence about itself.)
+ *   2. It proves the ONLY difference is `CREATE FUNCTION` -> `CREATE OR REPLACE FUNCTION` and
+ *      `CREATE TRIGGER` -> `CREATE OR REPLACE TRIGGER`: both sides are normalised and must come
+ *      out byte-identical. Any other difference -> refuse, with the first differing line.
+ *   3. It updates the ledger checksum and writes the OLD checksum and the word
+ *      `amend-idempotent` into `chair_step`, so the amendment is visible in the ledger forever.
+ *   4. `--amend-idempotent --self-test` proves the predicate RED then GREEN with no database.
+ */
+
+/** The one normalisation. Everything else about the bytes must be identical. */
+export function normaliseIdempotent(sql: string): string {
+  return sql
+    .replace(/\bcreate\s+function\b/gi, "create or replace function")
+    .replace(/\bcreate\s+trigger\b/gi, "create or replace trigger");
+}
+
+export interface AmendVerdict {
+  readonly ok: boolean;
+  /** Why not, with the first line that differs, when it is refused. */
+  readonly why?: string;
+  /** How many creates were made idempotent — zero is itself a refusal. */
+  readonly changed: number;
+}
+
+/** Step 2, as a pure function so the self-test can drive it without a database. */
+export function onlyIdempotencyDiffers(ledgered: string, current: string): AmendVerdict {
+  if (ledgered === current) {
+    return { ok: false, changed: 0, why: "the bytes are identical — there is nothing to amend." };
+  }
+  const a = normaliseIdempotent(ledgered);
+  const b = normaliseIdempotent(current);
+  if (a !== b) {
+    const al = a.split("\n");
+    const bl = b.split("\n");
+    let i = 0;
+    while (i < al.length && i < bl.length && al[i] === bl[i]) i++;
+    return {
+      ok: false,
+      changed: 0,
+      why:
+        `the bytes differ by more than idempotency. First difference at line ${i + 1}:\n` +
+        `    ledgered: ${(al[i] ?? "<end of file>").slice(0, 160)}\n` +
+        `    current:  ${(bl[i] ?? "<end of file>").slice(0, 160)}`,
+    };
+  }
+  const before = (ledgered.match(/\bcreate\s+function\b|\bcreate\s+trigger\b/gi) ?? []).length;
+  const after = (current.match(/\bcreate\s+function\b|\bcreate\s+trigger\b/gi) ?? []).length;
+  const changed = before - after;
+  if (changed <= 0) {
+    return { ok: false, changed: 0, why: "no bare CREATE FUNCTION/TRIGGER was made idempotent." };
+  }
+  return { ok: true, changed };
+}
+
+/** Step 1: the ledgered bytes, out of git history for that path. */
+function ledgeredBytesFromGit(path: string, wantChecksum: string): { bytes: string; commit: string } | null {
+  let shas: string[];
+  try {
+    shas = execFileSync("git", ["log", "--format=%H", "--", path], {
+      cwd: ROOT,
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+    })
+      .split("\n")
+      .filter(Boolean);
+  } catch {
+    return null;
+  }
+  for (const sha of shas) {
+    let bytes: string;
+    try {
+      bytes = execFileSync("git", ["show", `${sha}:${path}`], {
+        cwd: ROOT,
+        encoding: "utf8",
+        maxBuffer: 64 * 1024 * 1024,
+      });
+    } catch {
+      continue;
+    }
+    if (sha256(bytes) === wantChecksum) return { bytes, commit: sha };
+  }
+  return null;
+}
+
+/** Step 4: RED then GREEN, with no database and no fixture file on disk. */
+function amendSelfTest(): number {
+  const base =
+    "-- a lane\nset lock_timeout = '5s';\n" +
+    "create function custom.f(a uuid) returns int language sql as $$ select 1 $$;\n" +
+    "create trigger t after insert on custom.record execute function custom.f();\n";
+
+  // RED — a file that ALSO changes something else is refused.
+  const sneaky = normaliseIdempotent(base).replace("select 1", "select 2");
+  const red = onlyIdempotencyDiffers(base, sneaky);
+  if (red.ok) {
+    console.error(
+      `${TAG.fail}SELF-TEST FAILED — a file whose body ALSO changed was accepted. This mode would ` +
+        `then move a ledger checksum onto bytes the database never ran, which is the exact lie ` +
+        `the ledger exists to prevent.`,
+    );
+    return 1;
+  }
+  console.log(`${TAG.ok}self-test RED — a change beyond idempotency is refused: ${red.why?.split("\n")[0]}`);
+
+  // RED 2 — an unchanged file is refused (nothing to amend is not an amendment).
+  if (onlyIdempotencyDiffers(base, base).ok) {
+    console.error(`${TAG.fail}SELF-TEST FAILED — identical bytes were accepted as an amendment.`);
+    return 1;
+  }
+  console.log(`${TAG.ok}self-test RED — identical bytes are refused: there is nothing to amend.`);
+
+  // GREEN — only the two idempotency rewrites.
+  const good = onlyIdempotencyDiffers(base, normaliseIdempotent(base));
+  if (!good.ok || good.changed !== 2) {
+    console.error(
+      `${TAG.fail}SELF-TEST FAILED — the idempotency-only amendment was refused (${good.why ?? "no reason"}) ` +
+        `or counted ${good.changed} instead of 2.`,
+    );
+    return 1;
+  }
+  console.log(`${TAG.ok}self-test GREEN — CREATE FUNCTION and CREATE TRIGGER made idempotent, 2 creates, accepted.`);
+  return 0;
+}
+
+async function amendIdempotent(path: string, target: Target, statementTimeout: string): Promise<number> {
+  void statementTimeout;
+  const filename = basename(path);
+  if (!existsSync(path)) {
+    console.error(`${TAG.fail}${path} does not exist.`);
+    return 1;
+  }
+  const current = readFileSync(path, "utf8");
+  const rel = relative(ROOT, resolve(path));
+
+  const env = loadDbEnv();
+  if ("missing" in env) {
+    console.error(`${TAG.fail}missing ${env.missing.join(", ")} — cannot read the ledger.`);
+    return 1;
+  }
+  // The same host assertion every apply makes: amending a ledger on the wrong database would
+  // move a checksum that belongs to the other one.
+  assertConfiguredHostMatchesTarget(env, target, loadBranchRef(ROOT, undefined));
+  const client = await connectDirect(env, "db:apply --amend-idempotent");
+  try {
+    const row = await ledgerRow(client, filename);
+    if (!row) {
+      console.error(
+        `${TAG.fail}${filename} has no ledger row at --target ${target}. There is nothing to amend: ` +
+          `apply it normally.`,
+      );
+      return 1;
+    }
+    const found = ledgeredBytesFromGit(rel, row.checksum);
+    if (!found) {
+      console.error(
+        `${TAG.fail}REFUSED — no commit touching ${rel} carries bytes hashing to the ledgered ` +
+          `checksum ${row.checksum}. The bytes that ran are not in this history, so nothing here can ` +
+          `prove what changed. Do not amend; investigate.`,
+      );
+      return 1;
+    }
+    const verdict = onlyIdempotencyDiffers(found.bytes, current);
+    if (!verdict.ok) {
+      console.error(`${TAG.fail}REFUSED — ${verdict.why}`);
+      console.error(
+        `       ledgered bytes are ${found.commit.slice(0, 12)}:${rel} (applied ${row.applied_at}).\n` +
+          `       This mode amends a checksum and executes NOTHING, so it may only ever cover a change ` +
+          `the database cannot tell apart from what it already ran.`,
+      );
+      return 1;
+    }
+
+    const newChecksum = sha256(current);
+    const note = `amend-idempotent: was ${row.checksum} (${found.commit.slice(0, 12)}), ` +
+      `${verdict.changed} create(s) made idempotent, nothing executed`;
+    await client.query(`alter table public._schema_migrations add column if not exists chair_step text`);
+    await client.query(
+      `update public._schema_migrations set checksum = $1, chair_step = $2
+        where source = $3 and filename = $4`,
+      [newChecksum, note, SOURCE, filename],
+    );
+    console.log(
+      `${TAG.ok}${filename} — ledger amended at --target ${target}. ${verdict.changed} bare create(s) ` +
+        `are now idempotent; checksum ${row.checksum.slice(0, 12)} -> ${newChecksum.slice(0, 12)}. ` +
+        `NOTHING WAS EXECUTED, and the ledger row says so forever.`,
+    );
+    return 0;
+  } finally {
+    await client.end().catch(() => {});
+  }
+}
+
 async function main(): Promise<number> {
   const argv = process.argv.slice(2);
   const dryRun = argv.includes("--dry-run");
@@ -2151,6 +2370,20 @@ async function main(): Promise<number> {
       : [resolve(MIGRATIONS_DIR, JUDGMENT_CORPUS_DIRNAME)];
     return judgeOnly(paths);
   }
+  if (argv.includes("--amend-idempotent")) {
+    if (argv.includes("--self-test")) return amendSelfTest();
+    const i = argv.indexOf("--amend-idempotent");
+    const given = argv.slice(i + 1).find((a) => !a.startsWith("--"));
+    if (!given) {
+      console.error(
+        `${TAG.fail}--amend-idempotent needs a file: pnpm db:apply --amend-idempotent ` +
+          `migrations/campaign/<file>.sql --target production`,
+      );
+      return 1;
+    }
+    return amendIdempotent(resolve(ROOT, given), parseTargetFlag(argv), statementTimeout);
+  }
+
   if (argv.includes("--target-self-test")) return targetSelfTest(statementTimeout);
   if (argv.includes("--self-test")) return selfTest(statementTimeout);
 

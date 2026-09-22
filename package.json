@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2133",
+  "version": "0.4.2131",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
@@ -597,7 +597,8 @@
     "check:one-reference-builder": "tsx scripts/check-one-reference-builder.ts",
     "check:inverses-leave-the-ground-standing": "tsx scripts/check-inverses-leave-the-ground-standing.ts",
     "check:inverses-leave-the-ground-standing:self-test": "tsx scripts/check-inverses-leave-the-ground-standing.ts --self-test",
-    "check:inverses-leave-the-ground-standing:live": "tsx scripts/check-inverses-leave-the-ground-standing.ts --live"
+    "check:inverses-leave-the-ground-standing:live": "tsx scripts/check-inverses-leave-the-ground-standing.ts --live",
+    "check:amend-idempotent:self-test": "tsx scripts/apply-migration.ts --amend-idempotent --self-test"
   },
   "dependencies": {
     "@ai-matrx/agents": "latest",
