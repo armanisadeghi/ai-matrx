@@ -27,8 +27,9 @@
     "dev-login will evict the other."
   ],
   "portRange": {
+    "$comment": "Widened 3050 -> 3060 by lane FIX-14 (2026-09-22): all fifty of the original slots were allotted, so a new lane had no honest port left and the only alternatives were squatting on a finished lane's row or guessing — which is the exact failure this map exists to prevent.",
     "min": 3001,
-    "max": 3050
+    "max": 3060
   },
   "reserved": [
     {
@@ -86,7 +87,8 @@
     "TAILS-4": 3046,
     "LINKS-2": 3047,
     "DRILL": 3048,
-    "FIX-13": 3045
+    "FIX-13": 3045,
+    "FIX-14": 3052
   },
   "noDevServer": {
     "W6-DOCS": "Proves its contract through the document pipeline, not a browser.",
