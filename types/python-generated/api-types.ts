@@ -78685,6 +78685,11 @@ export interface components {
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
             initiation?: ("auto" | "user") | null;
+            /**
+             * Rulebook Id
+             * @description The Rulebook this preview is for. Send it and the knobs answer at that Rulebook's rung, exactly as the ingest run reads them.
+             */
+            rulebook_id?: string | null;
         };
         /** InboxPreviewResponse */
         InboxPreviewResponse: {
@@ -78702,6 +78707,11 @@ export interface components {
             skipped_files?: number;
             /** Notes */
             notes?: string[];
+            /**
+             * Own Replies Only
+             * @default true
+             */
+            own_replies_only?: boolean;
         };
         /** InboxThreadPreview */
         InboxThreadPreview: {
@@ -173510,7 +173520,10 @@ export interface operations {
     };
     inbox_connection_masterworks_inbox_connection_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description The Rulebook the caller is inside. Send it and `days_back_default` is the number the ingest run will actually use (that Rulebook's rung); omit it and the answer is the organization's. */
+                rulebook_id?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -173524,6 +173537,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InboxConnectionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

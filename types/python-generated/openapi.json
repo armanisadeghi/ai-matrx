@@ -54825,6 +54825,27 @@
         "summary": "Inbox Connection",
         "description": "SHADOW-THE-INBOX's connected door: is there a mailbox whose threads this\nperson's replies can actually be read from?\n\n`connected=false` is the ANSWER, never an error — the surface renders no\npicker at all (an absent control, not a dead one) and shows\n`how_to_connect`. Deterministic: no AI, no writes, no provider call.",
         "operationId": "inbox_connection_masterworks_inbox_connection_get",
+        "parameters": [
+          {
+            "name": "rulebook_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 32
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The Rulebook the caller is inside. Send it and `days_back_default` is the number the ingest run will actually use (that Rulebook's rung); omit it and the answer is the organization's.",
+              "title": "Rulebook Id"
+            },
+            "description": "The Rulebook the caller is inside. Send it and `days_back_default` is the number the ingest run will actually use (that Rulebook's rung); omit it and the answer is the organization's."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -54832,6 +54853,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InboxConnectionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -179375,6 +179406,19 @@
             ],
             "title": "Initiation",
             "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "rulebook_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rulebook Id",
+            "description": "The Rulebook this preview is for. Send it and the knobs answer at that Rulebook's rung, exactly as the ingest run reads them."
           }
         },
         "additionalProperties": false,
@@ -179407,6 +179451,11 @@
             },
             "type": "array",
             "title": "Notes"
+          },
+          "own_replies_only": {
+            "type": "boolean",
+            "title": "Own Replies Only",
+            "default": true
           }
         },
         "type": "object",
