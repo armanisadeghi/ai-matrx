@@ -196,6 +196,10 @@ if $STRICT; then
         # instances' own PRE-FIX bytes out of git and requires every one to go red.
         "Inverses leave the ground standing|pnpm check:inverses-leave-the-ground-standing"
         "…and that guard can still fail|pnpm check:inverses-leave-the-ground-standing:self-test"
+        # The ledger-amendment primitive executes NOTHING and moves a checksum, so the ONE
+        # thing that makes it safe is the proof that it refuses any change the database could
+        # tell apart from what it already ran. RED then GREEN, no database needed.
+        "Ledger amendment refuses anything but idempotency|pnpm check:amend-idempotent:self-test"
         "TypeScript type-check|pnpm type-check"
         "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts --strict"
         "Doc claims vs live config|pnpm exec tsx scripts/check-doc-claims.ts --strict"
@@ -811,6 +815,10 @@ else
         # custom.record. Static, no credential, ratcheted.
         "Inverses leave the ground standing|pnpm check:inverses-leave-the-ground-standing"
         "…and that guard can still fail|pnpm check:inverses-leave-the-ground-standing:self-test"
+        # The ledger-amendment primitive executes NOTHING and moves a checksum, so the ONE
+        # thing that makes it safe is the proof that it refuses any change the database could
+        # tell apart from what it already ran. RED then GREEN, no database needed.
+        "Ledger amendment refuses anything but idempotency|pnpm check:amend-idempotent:self-test"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts"
         # Blocking in --strict (see the strict list above); loud and exit-0 here,
         # like every other gate in the advisory list.
