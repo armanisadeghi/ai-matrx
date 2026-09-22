@@ -24,15 +24,27 @@ import { signIn, setOrganization, setOrganizationBySlug, sleep, until } from "..
 
 /** Who the APP says is signed in, asked before signing in again. */
 async function whoAmI(page, origin) {
-  await page.goto(`${origin}/dashboard`, { waitUntil: "domcontentloaded", timeout: 120000 });
-  return page.evaluate(async () => {
+  // /dashboard bounces a signed-out visitor, and the bounce destroys the
+  // execution context under an `evaluate` that started a moment earlier — which
+  // is exactly how the member seat's walk died on 2026-09-22. Try twice, and
+  // treat "nobody" as the answer rather than as an error.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const seen = await (await fetch("/api/whoami")).json();
-      return seen?.email ?? seen?.user?.email ?? null;
+      await page.goto(`${origin}/dashboard`, { waitUntil: "domcontentloaded", timeout: 120000 });
+      await page.waitForLoadState("load", { timeout: 60000 }).catch(() => {});
+      return await page.evaluate(async () => {
+        try {
+          const seen = await (await fetch("/api/whoami")).json();
+          return seen?.email ?? seen?.user?.email ?? null;
+        } catch {
+          return null;
+        }
+      });
     } catch {
-      return null;
+      await sleep(1500);
     }
-  });
+  }
+  return null;
 }
 
 const args = process.argv.slice(2);
@@ -107,6 +119,20 @@ async function shoot(page, name) {
   say(`  shot ${name}.png`);
 }
 
+/**
+ * One walk never kills the others. A seat that cannot be reached is a FINDING
+ * printed in the walk record, not an exception that throws away the three proofs
+ * that already worked — which is exactly what happened on the first run.
+ */
+async function tryWalk(context, label, options) {
+  try {
+    return await walk(context, label, options);
+  } catch (error) {
+    say(`${label}: WALK FAILED — ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`);
+    return null;
+  }
+}
+
 async function walk(context, label, { email, password, organization, slug, shots }) {
   const page = await context.newPage();
   // A context that is already this person stays signed in — re-running the login
@@ -159,21 +185,29 @@ async function walk(context, label, { email, password, organization, slug, shots
     await shoot(page, shots.lane);
   }
 
-  // THE ARCHIVE, one click where you already are.
-  const archived = await page.evaluate(() => {
-    const region = document.querySelector("[data-hub-archive]");
-    if (!region) return null;
-    const control = region.querySelector("button, summary");
-    if (!control) return null;
-    control.click();
-    return control.textContent?.trim() ?? "";
-  });
-  await sleep(1500);
-  if (archived) {
-    say(`${label}: archive control reads "${archived}"`);
-    await shoot(page, shots.archive);
-  } else {
+  // THE ARCHIVE, one click where you already are — and the click has to CHANGE
+  // something. The first run of this walk clicked through the DOM, reported the
+  // control's label and shot a page byte-identical to the one before it: a
+  // proof that proved the control exists and nothing about it working.
+  const control = page.locator("[data-hub-archive] button").first();
+  if ((await control.count()) === 0) {
     say(`${label}: NO archive control found — the archived-items law is not met on this screen`);
+  } else {
+    const before = (await control.textContent())?.trim() ?? "";
+    await control.scrollIntoViewIfNeeded();
+    await control.click();
+    await sleep(2000);
+    const after = (await control.textContent())?.trim() ?? "";
+    say(`${label}: archive control read "${before}", and after one click "${after}"`);
+    if (before === after) say(`${label}: THE ARCHIVE DID NOT OPEN — the label did not change`);
+    const rows = await page
+      .locator("[data-hub-archive] li")
+      .count()
+      .catch(() => 0);
+    say(`${label}: the open archive shows ${rows} row(s)`);
+    await control.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: resolve(OUT, `${shots.archive}.png`) });
+    say(`  shot ${shots.archive}.png`);
   }
 
   await page.close();
@@ -184,7 +218,7 @@ const browser = await chromium.launch({ headless: true });
 try {
   // THE ADMIN SEAT, on the plumber — the biggest real organization we have.
   const desktop = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
-  await walk(desktop, "admin@admin.com · Rincon Plumbing Co", {
+  await tryWalk(desktop, "admin@admin.com · Rincon Plumbing Co", {
     email: ADMIN,
     password: ADMIN_PASSWORD,
     organization: "Rincon Plumbing Co",
@@ -196,11 +230,10 @@ try {
   });
 
   // THE SAME SEAT, on an organization with NOTHING in it yet — the empty states.
-  await walk(desktop, "admin@admin.com · Ironline Fitness — Westport Studio", {
+  await tryWalk(desktop, "admin@admin.com · Glenwood Insights", {
     email: ADMIN,
     password: ADMIN_PASSWORD,
-    organization: "Ironline Fitness — Westport Studio",
-    slug: "ironline-fitness-westport-studio",
+    organization: "Glenwood Insights",
     shots: {
       desktop: "hub-admin-empty-desktop",
       lane: "hub-admin-empty-lane-my-organization",
@@ -211,7 +244,7 @@ try {
 
   // THE NON-ADMIN SEAT, on the same plumber — a plain member, not a superuser.
   const member = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
-  await walk(member, "test@test.com · Rincon Plumbing Co", {
+  await tryWalk(member, "test@test.com · Rincon Plumbing Co", {
     email: TEST,
     password: TEST_PASSWORD,
     organization: "Rincon Plumbing Co",
@@ -231,7 +264,7 @@ try {
     hasTouch: true,
     deviceScaleFactor: 2,
   });
-  await walk(phone, "admin@admin.com · Rincon Plumbing Co · phone", {
+  await tryWalk(phone, "admin@admin.com · Rincon Plumbing Co · phone", {
     email: ADMIN,
     password: ADMIN_PASSWORD,
     organization: "Rincon Plumbing Co",

@@ -62,7 +62,10 @@ function Row({ item }: { item: HubItem }) {
         >
           {item.title}
         </Link>
-        {item.tableName ? (
+        {/* NEVER THE SAME NAME TWICE ON ONE ROW. A Table and a board ARE their
+            table, so "Crew choices in Crew choices" is the row saying nothing
+            twice — measured on Rincon's 43 tables, 2026-09-22. */}
+        {item.tableName && item.tableId !== item.id ? (
           <span className="truncate text-xs text-muted-foreground">in {item.tableName}</span>
         ) : null}
         {item.facts.length ? (

@@ -132,10 +132,11 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
           tableId: table.id,
           tableName: table.name ?? null,
           lane: laneFor(table),
-          facts: [
-            plural(table.fields?.length ?? 0, "column"),
-            table.type ? String(table.type) : "",
-          ].filter(Boolean),
+          // A SCREEN NEVER PRINTS THE MACHINE'S WORD. `table.type` is the
+            // store's own token ("entity", "options", …) and it read as jargon on
+            // every row of Rincon's list; the column count is the fact a person
+            // actually uses, and the type is on the table's own screen.
+          facts: [plural(table.fields?.length ?? 0, "column")],
           href: `/data-v2/${table.id}`,
         })),
       };
