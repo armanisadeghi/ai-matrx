@@ -46,11 +46,14 @@ declare
 begin
   if current_setting('server_version_num')::int > 0
      and (select count(*) from pg_extension where extname = 'pg_net') > 0 then
-    raise exception
-      'ARM 1 REFUSED TO RUN: this is the MAIN database (pg_net present). Switching '
-      '`zz_w2a_relation_association_s_*` off takes ACCESS EXCLUSIVE on custom.record and its '
-      'sixteen partitions for the length of this transaction, which freezes every reader and '
-      'writer of the unified store. Run this twin on the dev clone or the rehearsal branch.';
+    -- NOT a pass and NOT a failure: this arm cannot be honestly run here, it says so, and arms
+    -- 2 and 3 — which take no such lock — carry on. Arm 1's proof is taken on the clone.
+    raise notice
+      'ARM 1 SKIPPED ON THE MAIN DATABASE — switching `zz_w2a_relation_association_s_*` off '
+      'takes ACCESS EXCLUSIVE on custom.record and its sixteen partitions for the length of the '
+      'transaction, freezing every reader and writer of the unified store. This arm is proved on '
+      'the dev clone; arms 2 and 3 run here.';
+    return;
   end if;
 
   -- The subject: a record with an EMPTY relation cell, so arm 1 can FILL it rather than take
