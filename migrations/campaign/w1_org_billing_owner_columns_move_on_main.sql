@@ -136,6 +136,22 @@ begin
   end if;
 end $$;
 
+-- 0b. STEP 1 MUST HAVE RUN. Without it `customer_user_id_fkey` and `connect_account_user_id_fkey`
+-- are still there, and PostgreSQL rewrites a constraint to FOLLOW a renamed column — so this file
+-- would succeed and leave `billing.customer.organization_id` carrying a FOREIGN KEY TO auth.users
+-- beside the new one to iam.organizations. Silently, confidently wrong. Measured on the clone
+-- 2026-09-22, by running this file when step 1 had failed its lock and been skipped. So it refuses.
+do $$
+begin
+  if exists (select 1 from pg_constraint
+              where conname in ('customer_user_id_fkey','connect_account_user_id_fkey',
+                                'subscription_user_id_fkey','subscription_user_or_org')) then
+    raise exception 'REC-62 step 2 reached the database before step 1: billing still holds a foreign key or CHECK on auth.users'
+      using errcode = 'check_violation',
+            hint = 'Run migrations/campaign/w1_org_billing_lets_go_of_auth_users_on_main.sql first, retrying it until it gets its lock on auth.users, and then run this file. A rename carries a constraint with it, so without step 1 organization_id would end up pointing at auth.users.';
+  end if;
+end $$;
+
 -- 1. billing.customer -------------------------------------------------------------------------
 alter table billing.customer rename column user_id to organization_id;
 alter table billing.customer
