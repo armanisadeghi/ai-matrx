@@ -1,6 +1,7 @@
 "use client";
 
 import { guardedUpdate } from "@ai-matrx/data/db";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import {
@@ -92,12 +93,51 @@ function technicalRecipe(recipe: ReviewRecipe) {
   };
 }
 
+function submitDescription(recipe: ReviewRecipe) {
+  switch (recipe.submit.kind) {
+    case "click":
+      return `Clicks ${recipe.submit.selector} after filling the form.`;
+    case "press_enter":
+      return `Presses Enter in ${recipe.submit.selector} after filling the form.`;
+    case "none":
+      return "Fills the form without submitting it.";
+  }
+}
+
+function signalDescription(
+  direction: "authenticated" | "challenged" | "rejected",
+  signal: ReviewRecipe["success_signals"][number],
+) {
+  const label = signal.label ? `${signal.label}: ` : "";
+  return `${label}${direction} when ${signal.kind.replaceAll("_", " ")} matches ${signal.value}.`;
+}
+
+function expectedResults(recipe: ReviewRecipe) {
+  return [
+    ...recipe.success_signals.map((signal) => ({
+      direction: "authenticated" as const,
+      signal,
+    })),
+    ...recipe.failure_signals.map((signal) => ({
+      direction: "rejected" as const,
+      signal,
+    })),
+    ...recipe.challenge_signals.map((signal) => ({
+      direction: "challenged" as const,
+      signal,
+    })),
+  ];
+}
+
 export function RecipeReview({ id }: { id: string }) {
   const [recipe, setRecipe] = useState<ReviewRecipe | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isActivating, setIsActivating] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [conflictingRecipeId, setConflictingRecipeId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     let current = true;
@@ -137,9 +177,13 @@ export function RecipeReview({ id }: { id: string }) {
     setIsConfirming(false);
     setIsActivating(true);
     setMessage(null);
+    setConflictingRecipeId(null);
     const result = await activateProposedRecipe(recipe, recipeStore());
     setIsActivating(false);
     setRecipe(result.row ?? null);
+    setConflictingRecipeId(
+      result.kind === "refused" ? (result.conflictingRecipeId ?? null) : null,
+    );
     if (result.kind === "activated") {
       setMessage("This shared login recipe is active for every user.");
       return;
@@ -178,6 +222,39 @@ export function RecipeReview({ id }: { id: string }) {
           This proposal describes how the login form is recognized. Activating
           it makes the recipe available to every user of this shared service.
         </p>
+        <dl className="grid gap-2 rounded-md border p-3 text-sm sm:grid-cols-[10rem_1fr]">
+          <dt className="font-medium">Provenance</dt>
+          <dd>{recipe.provenance.replaceAll("_", " ")}</dd>
+          <dt className="font-medium">Form actions</dt>
+          <dd>
+            <ul className="list-disc space-y-1 pl-4">
+              {recipe.field_map.map((field, index) => (
+                <li key={`${field.step}-${field.selector}-${index}`}>
+                  Step {field.step + 1}: fills saved field “{field.field_key}”
+                  at {field.selector}.
+                </li>
+              ))}
+              <li>{submitDescription(recipe)}</li>
+            </ul>
+          </dd>
+          <dt className="font-medium">Expected result</dt>
+          <dd>
+            <ul className="list-disc space-y-1 pl-4">
+              {expectedResults(recipe).map(({ direction, signal }, index) => (
+                <li
+                  key={`${direction}-${signal.kind}-${signal.value}-${index}`}
+                >
+                  {signalDescription(direction, signal)}
+                </li>
+              ))}
+              {recipe.success_signals.length === 0 &&
+              recipe.failure_signals.length === 0 &&
+              recipe.challenge_signals.length === 0 ? (
+                <li>No outcome signals are recorded.</li>
+              ) : null}
+            </ul>
+          </dd>
+        </dl>
         <details className="rounded-md border bg-muted/30 p-3">
           <summary className="cursor-pointer font-medium">
             Technical recipe data
@@ -187,6 +264,17 @@ export function RecipeReview({ id }: { id: string }) {
           </pre>
         </details>
         {message ? <p className="text-muted-foreground">{message}</p> : null}
+        {conflictingRecipeId ? (
+          <p className="text-destructive">
+            Blocking active recipe:{" "}
+            <Link
+              className="underline"
+              href={`/administration/agents/hindsight/recipes/${encodeURIComponent(conflictingRecipeId)}`}
+            >
+              {conflictingRecipeId}
+            </Link>
+          </p>
+        ) : null}
         {refusal ? <p className="text-destructive">{refusal}</p> : null}
         <Button disabled={!canActivate} onClick={() => setIsConfirming(true)}>
           {isActivating ? "Activating…" : "Activate shared recipe"}

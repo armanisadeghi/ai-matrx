@@ -108,6 +108,36 @@ describe("login recipe activation", () => {
     expect(persistence.writeActivation).not.toHaveBeenCalled();
   });
 
+  it("refuses an unsupported submit or reusable-field shape before writing", async () => {
+    const persistence = store();
+
+    const invalidSubmit = await activateProposedRecipe(
+      { ...harborDentalProposal, submit: { kind: "click" } },
+      persistence,
+    );
+    const literalMapping = await activateProposedRecipe(
+      {
+        ...harborDentalProposal,
+        field_map: [
+          {
+            ...harborDentalProposal.field_map[0],
+            field_key: null,
+            literal_key: "region",
+          },
+        ],
+      },
+      persistence,
+    );
+
+    expect(invalidSubmit).toMatchObject({ kind: "refused" });
+    expect(literalMapping).toMatchObject({
+      kind: "refused",
+      reason: expect.stringMatching(/non-reusable/),
+    });
+    expect(persistence.findExistingActive).not.toHaveBeenCalled();
+    expect(persistence.writeActivation).not.toHaveBeenCalled();
+  });
+
   it("refuses a deleted or stale proposal before any write", async () => {
     const persistence = store();
 
@@ -164,6 +194,7 @@ describe("login recipe activation", () => {
     expect(result).toMatchObject({
       kind: "refused",
       reason: expect.stringMatching(/already exists/),
+      conflictingRecipeId: "harbor-dental-current",
     });
     expect(persistence.writeActivation).not.toHaveBeenCalled();
   });

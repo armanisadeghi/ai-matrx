@@ -26,6 +26,27 @@ const recipeFieldMapSchema = z
   })
   .strict();
 
+const loginSubmitSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("click"),
+      selector: z.string().min(1),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("press_enter"),
+      selector: z.string().min(1),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("none"),
+      selector: z.null().optional(),
+    })
+    .strict(),
+]);
+
 /**
  * The persisted form of the Python LoginRecipe plus the entity concurrency
  * fields. The schema is closed so a surprising database shape never becomes an
@@ -40,7 +61,7 @@ export const reviewRecipeSchema = z
     provider_key: z.string().nullable(),
     recipe_version: z.number().int(),
     field_map: z.array(recipeFieldMapSchema),
-    submit: z.record(z.string(), z.unknown()),
+    submit: loginSubmitSchema,
     success_signals: z.array(signalDescriptorSchema),
     failure_signals: z.array(signalDescriptorSchema),
     challenge_signals: z.array(signalDescriptorSchema),
@@ -87,7 +108,12 @@ export type RecipeActivationStore = {
 export type ActivationResult =
   | { kind: "activated"; row: ReviewRecipe }
   | { kind: "already_active"; row: ReviewRecipe }
-  | { kind: "refused"; reason: string; row?: ReviewRecipe };
+  | {
+      kind: "refused";
+      reason: string;
+      row?: ReviewRecipe;
+      conflictingRecipeId?: string;
+    };
 
 export function parseReviewRecipe(
   value: unknown,
@@ -104,6 +130,16 @@ export function activationRefusal(value: unknown): string | undefined {
     return "This recipe was deleted and cannot be activated.";
   if (parsed.recipe.status !== "proposed") {
     return "This recipe is no longer proposed; refresh to review its current status.";
+  }
+  if (parsed.recipe.field_map.length === 0) {
+    return "This recipe has no saved-login fields, so it cannot be reused.";
+  }
+  if (
+    parsed.recipe.field_map.some(
+      (field) => !field.field_key || field.literal_key !== null,
+    )
+  ) {
+    return "This recipe includes a non-reusable field mapping, so it cannot be activated.";
   }
   return undefined;
 }
@@ -137,18 +173,13 @@ export async function activateProposedRecipe(
   if (!parsed.ok) return { kind: "refused", reason: parsed.reason };
 
   const recipe = parsed.recipe;
-  if (recipe.deleted_at)
-    return {
-      kind: "refused",
-      reason: "This recipe was deleted and cannot be activated.",
-    };
+  const refusal = activationRefusal(recipe);
   if (recipe.status === "active")
     return { kind: "already_active", row: recipe };
-  if (recipe.status !== "proposed") {
+  if (refusal) {
     return {
       kind: "refused",
-      reason:
-        "This recipe is no longer proposed; refresh to review its current status.",
+      reason: refusal,
       row: recipe,
     };
   }
@@ -175,11 +206,16 @@ export async function activateProposedRecipe(
     };
   }
   if (existing.data.length > 0) {
+    const conflict = z
+      .object({ id: z.string().min(1) })
+      .passthrough()
+      .safeParse(existing.data[0]);
     return {
       kind: "refused",
       reason:
         "An active recipe already exists for this origin and path. This proposal was not changed.",
       row: recipe,
+      conflictingRecipeId: conflict.success ? conflict.data.id : undefined,
     };
   }
 
