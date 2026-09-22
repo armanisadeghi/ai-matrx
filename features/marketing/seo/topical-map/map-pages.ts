@@ -22,18 +22,17 @@
 // `mapPagesBody` sends exactly the four fields it owns and nothing a caller
 // happened to carry alongside them.
 //
-// ⚠️ THE GENERATED CONTRACT DOES NOT YET CARRY THIS PATH. `types/python-generated/`
-// was last emitted before `map/pages`, `map/regions` and `map/intents` existed,
-// and it could not be regenerated in the container this file was written in
-// (aidream's OpenAPI emission boots the app, which needs live database
-// credentials). The body below is therefore transcribed field for field from
-// `MapPagesRequest`, and `run-clients.test.ts` FAILS until the
-// contract is regenerated and agrees with it. When it is:
-// replace `MapPagesRequestBody` with
-// `components["schemas"]["MapPagesRequest"]` and `MAP_PAGES_PATH`'s cast with
-// a plain `satisfies keyof paths`.
+// The generated contract owns the terminal result and route identity. The
+// request body remains deliberately narrower: organization and initiation
+// context belong to the transport layer, while this builder owns only its
+// command choices.
 
-import { isJsonObject } from "@/types/json";
+import {
+  isJsonObject,
+  toJsonRecord,
+  type JsonValue,
+} from "@/types/json";
+import type { components, paths } from "@/types/python-generated/api-types";
 
 /**
  * The one body `POST /seo/sites/{site_id}/map/pages` takes — every field
@@ -105,46 +104,10 @@ export function mapPagesBody(input: MapPagesInput = {}): MapPagesRequestBody {
  * above zero means this map still HAS a geography branch — say so and offer
  * the region pass, which is exactly what `notes` already explains.
  */
-export interface MapPagesResult {
-  result_kind: "seo.map_pages";
-  site_id: string;
-  map_id: string;
-  dry_run: boolean;
-  scanned: number;
-  refreshed: boolean;
-  skipped_planned: number;
-  skipped_missing: number;
-  batches: number;
-  claimed: number;
-  mapped: number;
-  edges_written: number;
-  no_topic: number;
-  kept_existing: number;
-  dropped_low_confidence: number;
-  dropped_unknown_slug: number;
-  dropped_geography_topic: number;
-  reasons_normalized_uncrawled: number;
-  returned_to_queue: number;
-  quarantined: number;
-  failed_batches: number;
-  queue_pending: number;
-  queue_done: number;
-  queue_no_topic: number;
-  queue_failed: number;
-  placed_by_human: number;
-  pending_clicks: number;
-  ceiling_reached: boolean;
-  daily_ceiling: number;
-  mapped_today: number;
-  /** The pass gave up after `mapping_consecutive_failure_stop` failures. The queue is intact. */
-  stopped_on_repeated_failure: boolean;
-  consecutive_failures: number;
-  /** What the mapper says the map is missing, biggest traffic first. */
-  wanted_topics: Record<string, unknown>[];
-  examples: Record<string, unknown>[];
-  notes: string[];
-  error: string | null;
-}
+export type MapPagesResult = components["schemas"]["MapPagesResult"];
+
+/** A validated terminal result with the server's defaults made explicit for the UI. */
+export type MapPagesRunResult = Required<MapPagesResult>;
 
 function readString(value: unknown): string | null {
   return typeof value === "string" ? value : null;
@@ -158,8 +121,10 @@ function readStrings(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
 }
 
-function readRecords(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value) ? value.filter(isJsonObject) : [];
+function readRecords(value: unknown): Record<string, JsonValue>[] {
+  return Array.isArray(value)
+    ? value.filter(isJsonObject).map(toJsonRecord)
+    : [];
 }
 
 /**
@@ -171,15 +136,15 @@ function readRecords(value: unknown): Record<string, unknown>[] {
  * identity of the answer: a document without both is not this result, whatever
  * else it carries.
  */
-export function parseMapPagesResult(raw: unknown): MapPagesResult | null {
+export function parseMapPagesResult(raw: unknown): MapPagesRunResult | null {
   if (!isJsonObject(raw)) return null;
   const resultKind = readString(raw.result_kind);
-  if (resultKind !== null && resultKind !== "seo.map_pages") return null;
+  if (resultKind !== null && resultKind !== "map.pages") return null;
   const siteId = readString(raw.site_id);
   const mapId = readString(raw.map_id);
   if (siteId === null || mapId === null) return null;
   return {
-    result_kind: "seo.map_pages",
+    result_kind: "map.pages",
     site_id: siteId,
     map_id: mapId,
     dry_run: raw.dry_run === true,
@@ -221,7 +186,7 @@ export function parseMapPagesResult(raw: unknown): MapPagesResult | null {
 // ── The wire vocabulary ────────────────────────────────────────────────────
 
 /** The command's streaming endpoint. `{site_id}` is filled per launch. */
-export const MAP_PAGES_PATH = "/seo/sites/{site_id}/map/pages" as const;
+export const MAP_PAGES_PATH = "/seo/sites/{site_id}/map/pages" satisfies keyof paths;
 
 /** The event kind carrying the finished {@link MapPagesResult}. */
 export const MAP_PAGES_FINAL_KIND = "seo.map_pages_complete";

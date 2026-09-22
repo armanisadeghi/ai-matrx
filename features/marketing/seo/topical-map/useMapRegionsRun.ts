@@ -20,7 +20,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
-import type { paths } from "@/types/python-generated/api-types";
 
 import { siteMappingReaderKeys, topicalMapKeys } from "./hooks";
 import {
@@ -30,7 +29,7 @@ import {
   mapRegionsBody,
   parseMapRegionsResult,
   type MapRegionsInput,
-  type MapRegionsResult,
+  type MapRegionsRunResult,
 } from "./map-regions";
 
 export interface UseMapRegionsRunOptions {
@@ -41,11 +40,11 @@ export interface UseMapRegionsRunOptions {
   /** Narrows the request context, exactly as every other SEO command does. */
   organizationId?: string | null;
   /** Called once with a validated terminal result, on a stream OR a rejoin. */
-  onResult?: (result: MapRegionsResult) => void;
+  onResult?: (result: MapRegionsRunResult) => void;
 }
 
 export interface MapRegionsRunHandle
-  extends ReturnType<typeof useSeoCommandRun<MapRegionsResult>> {
+  extends ReturnType<typeof useSeoCommandRun<MapRegionsRunResult>> {
   /**
    * Start a pass. The body is built and validated by `mapRegionsBody`, so a
    * field foreign to this endpoint — or geography slugs named without asking
@@ -58,11 +57,9 @@ export function useMapRegionsRun(options: UseMapRegionsRunOptions): MapRegionsRu
   const { siteId, mapId, organizationId, onResult } = options;
   const queryClient = useQueryClient();
 
-  const command = useSeoCommandRun<MapRegionsResult>({
+  const command = useSeoCommandRun<MapRegionsRunResult>({
     key: `topical-map.map-regions.${siteId ?? "none"}`,
-    // ⚠️ CAST, not a `satisfies`: the generated contract does not carry this
-    // path yet (see `map-regions.ts`).
-    path: MAP_REGIONS_PATH as unknown as keyof paths,
+    path: MAP_REGIONS_PATH,
     finalKind: MAP_REGIONS_FINAL_KIND,
     stageLabels: MAP_REGIONS_STAGES,
     parseResult: parseMapRegionsResult,

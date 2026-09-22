@@ -18,7 +18,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
-import type { paths } from "@/types/python-generated/api-types";
 
 import { siteMappingReaderKeys, topicalMapKeys } from "./hooks";
 import {
@@ -28,7 +27,7 @@ import {
   mapPagesBody,
   parseMapPagesResult,
   type MapPagesInput,
-  type MapPagesResult,
+  type MapPagesRunResult,
 } from "./map-pages";
 
 export interface UseMapPagesRunOptions {
@@ -49,11 +48,11 @@ export interface UseMapPagesRunOptions {
   /** Narrows the request context, exactly as every other SEO command does. */
   organizationId?: string | null;
   /** Called once with a validated terminal result, on a stream OR a rejoin. */
-  onResult?: (result: MapPagesResult) => void;
+  onResult?: (result: MapPagesRunResult) => void;
 }
 
 export interface MapPagesRunHandle
-  extends ReturnType<typeof useSeoCommandRun<MapPagesResult>> {
+  extends ReturnType<typeof useSeoCommandRun<MapPagesRunResult>> {
   /**
    * Start a pass. The body is built and validated by `mapPagesBody`, so a field
    * foreign to this endpoint, or a nonsense limit, throws HERE — before a paid
@@ -66,14 +65,10 @@ export function useMapPagesRun(options: UseMapPagesRunOptions): MapPagesRunHandl
   const { siteId, mapId, organizationId, onResult } = options;
   const queryClient = useQueryClient();
 
-  const command = useSeoCommandRun<MapPagesResult>({
+  const command = useSeoCommandRun<MapPagesRunResult>({
     // Per-site, so two sites' runs can never rejoin onto each other's screen.
     key: `topical-map.map-pages.${siteId ?? "none"}`,
-    // ⚠️ CAST, not a `satisfies`: the generated contract does not carry this
-    // path yet (see `map-pages.ts`). Drop the cast the moment
-    // `pnpm sync-types` has run — `run-clients.test.ts` fails until
-    // then, by design.
-    path: MAP_PAGES_PATH as unknown as keyof paths,
+    path: MAP_PAGES_PATH,
     finalKind: MAP_PAGES_FINAL_KIND,
     stageLabels: MAP_PAGES_STAGES,
     parseResult: parseMapPagesResult,

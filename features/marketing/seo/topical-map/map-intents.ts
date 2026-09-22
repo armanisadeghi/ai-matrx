@@ -26,12 +26,17 @@
 // 🚨 THE BODY IS `extra=forbid` (`ProposeIntentsRequest.model_config`) — a
 // field belonging to another map command is REFUSED (422), not ignored.
 //
-// ⚠️ THE GENERATED CONTRACT DOES NOT YET CARRY THIS PATH — see the same note in
-// `map-pages.ts`. `ProposeIntentsRequestBody` is transcribed field for field
-// from `ProposeIntentsRequest`, and `run-clients.test.ts` fails until
-// the contract is regenerated and agrees with it.
+// The generated contract owns the terminal result and route identity. The
+// request body remains deliberately narrower: organization and initiation
+// context belong to the transport layer, while this builder owns only its
+// command choices.
 
-import { isJsonObject } from "@/types/json";
+import {
+  isJsonObject,
+  toJsonRecord,
+  type JsonValue,
+} from "@/types/json";
+import type { components, paths } from "@/types/python-generated/api-types";
 
 /** The one body `POST /seo/sites/{site_id}/map/intents` takes. */
 export interface ProposeIntentsRequestBody {
@@ -110,49 +115,10 @@ export function proposeIntentsBody(
  * defect, not noise, and a screen that hides them hides the only signal that
  * says whether the agent is being trusted or policed.
  */
-export interface ProposeIntentsResult {
-  result_kind: "seo.propose_page_intents";
-  site_id: string;
-  map_id: string;
-  dry_run: boolean;
-  scanned: number;
-  refreshed: boolean;
-  skipped_no_topic: number;
-  batches: number;
-  topics_touched: number;
-  claimed: number;
-  proposed: number;
-  returned_to_queue: number;
-  held_by_human: number;
-  quarantined: number;
-  failed_batches: number;
-  downgraded_low_confidence: number;
-  downgraded_traffic_or_links: number;
-  downgraded_unknown_destination: number;
-  downgraded_self_destination: number;
-  /** A second address for one page sent to its canonical instead of being judged alone. */
-  rendition_retargeted: number;
-  dropped_unknown_slug: number;
-  dropped_locked: number;
-  /** The DOOR refused to overwrite: a higher source already holds the page's intent. */
-  kept_existing: number;
-  by_disposition: Record<string, number>;
-  queue_pending: number;
-  queue_done: number;
-  queue_held: number;
-  queue_failed: number;
-  topics_pending: number;
-  pending_clicks: number;
-  ceiling_reached: boolean;
-  daily_ceiling: number;
-  proposed_today: number;
-  /** The pass gave up after `intent_consecutive_failure_stop` failures. The queue is intact. */
-  stopped_on_repeated_failure: boolean;
-  consecutive_failures: number;
-  examples: Record<string, unknown>[];
-  notes: string[];
-  error: string | null;
-}
+export type ProposeIntentsResult = components["schemas"]["ProposeIntentsResult"];
+
+/** A validated terminal result with the server's defaults made explicit for the UI. */
+export type ProposeIntentsRunResult = Required<ProposeIntentsResult>;
 
 function readString(value: unknown): string | null {
   return typeof value === "string" ? value : null;
@@ -166,8 +132,10 @@ function readStrings(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
 }
 
-function readRecords(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value) ? value.filter(isJsonObject) : [];
+function readRecords(value: unknown): Record<string, JsonValue>[] {
+  return Array.isArray(value)
+    ? value.filter(isJsonObject).map(toJsonRecord)
+    : [];
 }
 
 function readCounts(value: unknown): Record<string, number> {
@@ -188,15 +156,15 @@ function readCounts(value: unknown): Record<string, number> {
  * `site_id`/`map_id` identity, or a `result_kind` naming a different command,
  * does.
  */
-export function parseProposeIntentsResult(raw: unknown): ProposeIntentsResult | null {
+export function parseProposeIntentsResult(raw: unknown): ProposeIntentsRunResult | null {
   if (!isJsonObject(raw)) return null;
   const resultKind = readString(raw.result_kind);
-  if (resultKind !== null && resultKind !== "seo.propose_page_intents") return null;
+  if (resultKind !== null && resultKind !== "map.intents") return null;
   const siteId = readString(raw.site_id);
   const mapId = readString(raw.map_id);
   if (siteId === null || mapId === null) return null;
   return {
-    result_kind: "seo.propose_page_intents",
+    result_kind: "map.intents",
     site_id: siteId,
     map_id: mapId,
     dry_run: raw.dry_run === true,
@@ -240,7 +208,7 @@ export function parseProposeIntentsResult(raw: unknown): ProposeIntentsResult | 
 // ── The wire vocabulary ────────────────────────────────────────────────────
 
 /** The command's streaming endpoint. `{site_id}` is filled per launch. */
-export const PROPOSE_INTENTS_PATH = "/seo/sites/{site_id}/map/intents" as const;
+export const PROPOSE_INTENTS_PATH = "/seo/sites/{site_id}/map/intents" satisfies keyof paths;
 
 /** The event kind carrying the finished {@link ProposeIntentsResult}. */
 export const PROPOSE_INTENTS_FINAL_KIND = "seo.propose_intents_complete";

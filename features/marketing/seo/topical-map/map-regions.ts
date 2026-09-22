@@ -27,12 +27,17 @@
 // 🚨 THE BODY IS `extra=forbid` (`MapRegionsRequest.model_config`) — a field
 // belonging to another map command is REFUSED (422), not ignored.
 //
-// ⚠️ THE GENERATED CONTRACT DOES NOT YET CARRY THIS PATH — see the same note in
-// `map-pages.ts`. `MapRegionsRequestBody` is transcribed field for field from
-// `MapRegionsRequest` and `run-clients.test.ts` fails until the
-// contract is regenerated and agrees with it.
+// The generated contract owns the terminal result and route identity. The
+// request body remains deliberately narrower: organization and initiation
+// context belong to the transport layer, while this builder owns only its
+// command choices.
 
-import { isJsonObject } from "@/types/json";
+import {
+  isJsonObject,
+  toJsonRecord,
+  type JsonValue,
+} from "@/types/json";
+import type { components, paths } from "@/types/python-generated/api-types";
 
 /** The one body `POST /seo/sites/{site_id}/map/regions` takes. */
 export interface MapRegionsRequestBody {
@@ -111,71 +116,26 @@ export function mapRegionsBody(input: MapRegionsInput = {}): MapRegionsRequestBo
 }
 
 /** One region facet value this pass would create, or already found. */
-export interface RegionValuePlan {
-  slug: string;
-  name: string;
-  parent_slug: string | null;
-  /** How many of this site's pages name it. */
-  pages: number;
-  /** `registered_location` when the business itself records this place, else `pages`. */
-  evidence: string;
-  ref_type: string | null;
-  ref_id: string | null;
-  existed: boolean;
-}
+export type RegionValuePlan = components["schemas"]["RegionValuePlan"];
 
 /**
  * A topic of this map that is a PLACE — the fault this pass exists to find.
  * `pages_with_no_other_topic` is the number that decides whether retiring it is
  * safe: those pages end on NO topic, still listed and named in the answer.
  */
-export interface GeographyBranch {
-  slug: string;
-  name: string;
-  /** The sentence saying what was recognised, written for the person who reads it. */
-  reason: string;
-  pages: number;
-  pages_with_no_other_topic: number;
-  retired: boolean;
-}
+export type GeographyBranch = components["schemas"]["GeographyBranch"];
 
 /** The terminal `seo.map_regions_complete` result — `MapRegionsResult`, field for field. */
-export interface MapRegionsResult {
-  result_kind: "seo.map_regions";
-  site_id: string;
-  brand_id: string;
-  map_id: string;
-  dry_run: boolean;
-  pages_scanned: number;
-  pages_with_a_place: number;
-  values_before: number;
-  values_created: string[];
-  values_existing: string[];
-  /**
-   * Candidates that did NOT clear `region_min_pages_per_value` or
-   * `region_value_evidence`, each with the sentence saying why and what would
-   * promote it. NOT hidden — a surface that drops these hides a decision.
-   */
-  values_held_back: Record<string, unknown>[];
-  plan: RegionValuePlan[];
-  pages_with_region_before: number;
-  pages_bound: number;
-  pages_kept_existing: number;
-  pages_already_correct: number;
-  pages_without_a_place: number;
-  pages_with_region_after: number;
-  geography_branches: GeographyBranch[];
-  pages_recovered_from_geography: number;
-  /** Pages that ended on NO topic because the place-named topic they sat on is gone. */
-  pages_left_without_topic: number;
-  examples_left_without_topic: string[];
-  ceiling_reached: boolean;
-  daily_ceiling: number;
-  bound_today: number;
-  examples: Record<string, unknown>[];
-  notes: string[];
-  error: string | null;
-}
+export type MapRegionsResult = components["schemas"]["MapRegionsResult"];
+
+/** A validated terminal result with the server's defaults made explicit for the UI. */
+export type MapRegionsRunResult = Omit<
+  Required<MapRegionsResult>,
+  "plan" | "geography_branches"
+> & {
+  plan: Required<RegionValuePlan>[];
+  geography_branches: Required<GeographyBranch>[];
+};
 
 function readString(value: unknown): string | null {
   return typeof value === "string" ? value : null;
@@ -189,11 +149,13 @@ function readStrings(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
 }
 
-function readRecords(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value) ? value.filter(isJsonObject) : [];
+function readRecords(value: unknown): Record<string, JsonValue>[] {
+  return Array.isArray(value)
+    ? value.filter(isJsonObject).map(toJsonRecord)
+    : [];
 }
 
-function readValuePlan(value: unknown): RegionValuePlan | null {
+function readValuePlan(value: unknown): Required<RegionValuePlan> | null {
   if (!isJsonObject(value)) return null;
   const slug = readString(value.slug);
   const name = readString(value.name);
@@ -210,7 +172,7 @@ function readValuePlan(value: unknown): RegionValuePlan | null {
   };
 }
 
-function readGeographyBranch(value: unknown): GeographyBranch | null {
+function readGeographyBranch(value: unknown): Required<GeographyBranch> | null {
   if (!isJsonObject(value)) return null;
   const slug = readString(value.slug);
   if (slug === null) return null;
@@ -232,15 +194,15 @@ function readGeographyBranch(value: unknown): GeographyBranch | null {
  * document missing that identity is not this result at all. Rendering the two
  * the same way would report a broken contract as a site with no geography.
  */
-export function parseMapRegionsResult(raw: unknown): MapRegionsResult | null {
+export function parseMapRegionsResult(raw: unknown): MapRegionsRunResult | null {
   if (!isJsonObject(raw)) return null;
   const resultKind = readString(raw.result_kind);
-  if (resultKind !== null && resultKind !== "seo.map_regions") return null;
+  if (resultKind !== null && resultKind !== "map.regions") return null;
   const siteId = readString(raw.site_id);
   const mapId = readString(raw.map_id);
   if (siteId === null || mapId === null) return null;
   return {
-    result_kind: "seo.map_regions",
+    result_kind: "map.regions",
     site_id: siteId,
     brand_id: readString(raw.brand_id) ?? "",
     map_id: mapId,
@@ -252,7 +214,9 @@ export function parseMapRegionsResult(raw: unknown): MapRegionsResult | null {
     values_existing: readStrings(raw.values_existing),
     values_held_back: readRecords(raw.values_held_back),
     plan: Array.isArray(raw.plan)
-      ? raw.plan.map(readValuePlan).filter((v): v is RegionValuePlan => v !== null)
+      ? raw.plan
+          .map(readValuePlan)
+          .filter((v): v is Required<RegionValuePlan> => v !== null)
       : [],
     pages_with_region_before: readNumber(raw.pages_with_region_before),
     pages_bound: readNumber(raw.pages_bound),
@@ -263,7 +227,7 @@ export function parseMapRegionsResult(raw: unknown): MapRegionsResult | null {
     geography_branches: Array.isArray(raw.geography_branches)
       ? raw.geography_branches
           .map(readGeographyBranch)
-          .filter((v): v is GeographyBranch => v !== null)
+          .filter((v): v is Required<GeographyBranch> => v !== null)
       : [],
     pages_recovered_from_geography: readNumber(raw.pages_recovered_from_geography),
     pages_left_without_topic: readNumber(raw.pages_left_without_topic),
@@ -280,7 +244,7 @@ export function parseMapRegionsResult(raw: unknown): MapRegionsResult | null {
 // ── The wire vocabulary ────────────────────────────────────────────────────
 
 /** The command's streaming endpoint. `{site_id}` is filled per launch. */
-export const MAP_REGIONS_PATH = "/seo/sites/{site_id}/map/regions" as const;
+export const MAP_REGIONS_PATH = "/seo/sites/{site_id}/map/regions" satisfies keyof paths;
 
 /** The event kind carrying the finished {@link MapRegionsResult}. */
 export const MAP_REGIONS_FINAL_KIND = "seo.map_regions_complete";

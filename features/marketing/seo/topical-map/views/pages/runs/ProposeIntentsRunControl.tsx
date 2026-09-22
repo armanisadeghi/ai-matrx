@@ -28,7 +28,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 
 import { TopicalMapFailed } from "../../../components/TopicalMapStates";
 import { useMapTopicSearch } from "../../../hooks";
-import type { ProposeIntentsResult } from "../../../map-intents";
+import type { ProposeIntentsRunResult } from "../../../map-intents";
 import { selectMapPageFilters } from "../../../redux/selectors";
 import { useProposeIntentsRun } from "../../../useProposeIntentsRun";
 import type { PagesWorkspaceContext } from "../seams";
@@ -335,7 +335,7 @@ function TopicPicker({
 function ProposeIntentsResultSummary({
   result,
 }: {
-  result: ProposeIntentsResult;
+  result: ProposeIntentsRunResult;
 }) {
   const dispositions = Object.entries(result.by_disposition);
   const corrections: [string, number][] = [

@@ -151,7 +151,7 @@ describe("a body the server would refuse, or silently ignore, throws HERE", () =
 // ── The result documents ───────────────────────────────────────────────────
 
 const PAGES_RESULT = {
-  result_kind: "seo.map_pages",
+  result_kind: "map.pages",
   site_id: "11111111-1111-1111-1111-111111111111",
   map_id: "22222222-2222-2222-2222-222222222222",
   dry_run: false,
@@ -168,7 +168,7 @@ const PAGES_RESULT = {
 };
 
 const REGIONS_RESULT = {
-  result_kind: "seo.map_regions",
+  result_kind: "map.regions",
   site_id: "11111111-1111-1111-1111-111111111111",
   brand_id: "33333333-3333-3333-3333-333333333333",
   map_id: "22222222-2222-2222-2222-222222222222",
@@ -184,7 +184,7 @@ const REGIONS_RESULT = {
 };
 
 const INTENTS_RESULT = {
-  result_kind: "seo.propose_page_intents",
+  result_kind: "map.intents",
   site_id: "11111111-1111-1111-1111-111111111111",
   map_id: "22222222-2222-2222-2222-222222222222",
   scanned: 400,
@@ -198,13 +198,13 @@ const INTENTS_RESULT = {
 
 describe("a malformed result is REPORTED, never half-typed", () => {
   it.each([
-    ["not an object", "seo.map_pages"],
+    ["not an object", "map.pages"],
     ["null", null],
     ["an array", []],
     ["missing site_id", { ...PAGES_RESULT, site_id: undefined }],
     ["missing map_id", { ...PAGES_RESULT, map_id: undefined }],
     ["a site_id that is not a string", { ...PAGES_RESULT, site_id: 42 }],
-    ["another command's result", { ...PAGES_RESULT, result_kind: "seo.map_regions" }],
+    ["another command's result", { ...PAGES_RESULT, result_kind: "map.regions" }],
   ])("map/pages rejects %s", (_label, raw) => {
     expect(parseMapPagesResult(raw)).toBeNull();
   });
@@ -212,7 +212,7 @@ describe("a malformed result is REPORTED, never half-typed", () => {
   it.each([
     ["missing map_id", { ...REGIONS_RESULT, map_id: undefined }],
     ["missing site_id", { ...REGIONS_RESULT, site_id: null }],
-    ["another command's result", { ...REGIONS_RESULT, result_kind: "seo.map_pages" }],
+    ["another command's result", { ...REGIONS_RESULT, result_kind: "map.pages" }],
     ["a bare string", "done"],
   ])("map/regions rejects %s", (_label, raw) => {
     expect(parseMapRegionsResult(raw)).toBeNull();
@@ -223,7 +223,7 @@ describe("a malformed result is REPORTED, never half-typed", () => {
     ["missing site_id", { ...INTENTS_RESULT, site_id: undefined }],
     [
       "another command's result",
-      { ...INTENTS_RESULT, result_kind: "seo.map_pages" },
+      { ...INTENTS_RESULT, result_kind: "map.pages" },
     ],
     ["a number", 7],
   ])("map/intents rejects %s", (_label, raw) => {
@@ -234,7 +234,7 @@ describe("a malformed result is REPORTED, never half-typed", () => {
 describe("the states that are ANSWERS are never rejected", () => {
   it("a pass that mapped nothing is a result, not a failure", () => {
     const parsed = parseMapPagesResult({
-      result_kind: "seo.map_pages",
+      result_kind: "map.pages",
       site_id: "s",
       map_id: "m",
     });
@@ -246,7 +246,7 @@ describe("the states that are ANSWERS are never rejected", () => {
 
   it("a site with no geography is a result, not a failure", () => {
     const parsed = parseMapRegionsResult({
-      result_kind: "seo.map_regions",
+      result_kind: "map.regions",
       site_id: "s",
       map_id: "m",
     });
@@ -257,7 +257,7 @@ describe("the states that are ANSWERS are never rejected", () => {
 
   it("a pass that proposed nothing is a result, not a failure", () => {
     const parsed = parseProposeIntentsResult({
-      result_kind: "seo.propose_page_intents",
+      result_kind: "map.intents",
       site_id: "s",
       map_id: "m",
     });
@@ -309,7 +309,7 @@ describe("the wire vocabulary is the server's own", () => {
     expect(MAP_PAGES_FINAL_KIND).toBe("seo.map_pages_complete");
     expect(MAP_REGIONS_FINAL_KIND).toBe("seo.map_regions_complete");
     // The proposer's result_kind and its final event deliberately differ:
-    // `seo.propose_page_intents` names the RESULT, `seo.propose_intents_complete`
+    // `map.intents` names the RESULT, `seo.propose_intents_complete`
     // names the EVENT (aidream `run_streamed_command(final_event=...)`).
     expect(PROPOSE_INTENTS_FINAL_KIND).toBe("seo.propose_intents_complete");
   });

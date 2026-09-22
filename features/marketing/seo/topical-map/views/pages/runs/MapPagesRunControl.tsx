@@ -32,7 +32,7 @@ import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 
 import { TopicalMapFailed } from "../../../components/TopicalMapStates";
 import { usePageMappingStatus } from "../../../hooks";
-import type { MapPagesResult } from "../../../map-pages";
+import type { MapPagesRunResult } from "../../../map-pages";
 import { useMapPagesRun } from "../../../useMapPagesRun";
 import type { PagesWorkspaceContext } from "../seams";
 import { KnobChips } from "./knobChips";
@@ -272,7 +272,7 @@ function MapPagesConsequence({
   );
 }
 
-function MapPagesResultSummary({ result }: { result: MapPagesResult }) {
+function MapPagesResultSummary({ result }: { result: MapPagesRunResult }) {
   return (
     <div className="space-y-1 rounded-md border border-border p-2">
       <p className="font-medium">

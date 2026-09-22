@@ -24,7 +24,7 @@ import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
-import type { GeographyBranch, MapRegionsResult } from "../../../map-regions";
+import type { MapRegionsRunResult } from "../../../map-regions";
 import { useMapRegionsRun } from "../../../useMapRegionsRun";
 import type { PagesWorkspaceContext } from "../seams";
 import { KnobChips } from "./knobChips";
@@ -55,7 +55,9 @@ export function MapRegionsRunControl({
   const [dryRun, setDryRun] = useState(false);
   const [retire, setRetire] = useState(false);
   const [probeState, setProbeState] = useState<ProbeState>("idle");
-  const [probeBranches, setProbeBranches] = useState<readonly GeographyBranch[]>(
+  const [probeBranches, setProbeBranches] = useState<
+    MapRegionsRunResult["geography_branches"]
+  >(
     [],
   );
   const [selectedSlugs, setSelectedSlugs] = useState<readonly string[]>([]);
@@ -282,7 +284,7 @@ function RetirementPlan({
   strandedPages,
 }: {
   probeState: ProbeState;
-  branches: readonly GeographyBranch[];
+  branches: MapRegionsRunResult["geography_branches"];
   selectedSlugs: readonly string[];
   onToggle: (slug: string) => void;
   movedPages: number;
@@ -378,7 +380,7 @@ function heldBackRow(raw: Record<string, unknown>): {
   };
 }
 
-function MapRegionsResultSummary({ result }: { result: MapRegionsResult }) {
+function MapRegionsResultSummary({ result }: { result: MapRegionsRunResult }) {
   return (
     <div className="space-y-1 rounded-md border border-border p-2">
       <p className="font-medium">

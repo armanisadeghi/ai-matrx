@@ -18,7 +18,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
-import type { paths } from "@/types/python-generated/api-types";
 
 import { siteMappingReaderKeys, topicalMapKeys } from "./hooks";
 import {
@@ -28,7 +27,7 @@ import {
   parseProposeIntentsResult,
   proposeIntentsBody,
   type ProposeIntentsInput,
-  type ProposeIntentsResult,
+  type ProposeIntentsRunResult,
 } from "./map-intents";
 
 export interface UseProposeIntentsRunOptions {
@@ -39,11 +38,11 @@ export interface UseProposeIntentsRunOptions {
   /** Narrows the request context, exactly as every other SEO command does. */
   organizationId?: string | null;
   /** Called once with a validated terminal result, on a stream OR a rejoin. */
-  onResult?: (result: ProposeIntentsResult) => void;
+  onResult?: (result: ProposeIntentsRunResult) => void;
 }
 
 export interface ProposeIntentsRunHandle
-  extends ReturnType<typeof useSeoCommandRun<ProposeIntentsResult>> {
+  extends ReturnType<typeof useSeoCommandRun<ProposeIntentsRunResult>> {
   /**
    * Start a pass. The body is built and validated by `proposeIntentsBody`, so a
    * field foreign to this endpoint, or a nonsense limit, throws HERE — before a
@@ -58,11 +57,9 @@ export function useProposeIntentsRun(
   const { siteId, mapId, organizationId, onResult } = options;
   const queryClient = useQueryClient();
 
-  const command = useSeoCommandRun<ProposeIntentsResult>({
+  const command = useSeoCommandRun<ProposeIntentsRunResult>({
     key: `topical-map.propose-intents.${siteId ?? "none"}`,
-    // ⚠️ CAST, not a `satisfies`: the generated contract does not carry this
-    // path yet (see `map-intents.ts`).
-    path: PROPOSE_INTENTS_PATH as unknown as keyof paths,
+    path: PROPOSE_INTENTS_PATH,
     finalKind: PROPOSE_INTENTS_FINAL_KIND,
     stageLabels: PROPOSE_INTENTS_STAGES,
     parseResult: parseProposeIntentsResult,

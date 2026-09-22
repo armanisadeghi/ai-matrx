@@ -30,9 +30,9 @@ import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query";
 import type { DurableRunHandle } from "@/lib/durable-run/useDurableRun";
 import type { Database } from "@/types/database.types";
 import type { TopicalMapKnobs } from "../../../knobs";
-import type { MapPagesResult } from "../../../map-pages";
-import type { MapRegionsResult } from "../../../map-regions";
-import type { ProposeIntentsResult } from "../../../map-intents";
+import type { MapPagesRunResult } from "../../../map-pages";
+import type { MapRegionsRunResult } from "../../../map-regions";
+import type { ProposeIntentsRunResult } from "../../../map-intents";
 import type { MapPagesRunHandle } from "../../../useMapPagesRun";
 import type { MapRegionsRunHandle } from "../../../useMapRegionsRun";
 import type { ProposeIntentsRunHandle } from "../../../useProposeIntentsRun";
@@ -340,7 +340,7 @@ export function pagesHandle(
   overrides: Partial<MapPagesRunHandle> = {},
 ): MapPagesRunHandle {
   return {
-    ...baseHandle<MapPagesResult>(),
+    ...baseHandle<MapPagesRunResult>(),
     run: jest.fn(async () => undefined),
     ...overrides,
   };
@@ -350,7 +350,7 @@ export function regionsHandle(
   overrides: Partial<MapRegionsRunHandle> = {},
 ): MapRegionsRunHandle {
   return {
-    ...baseHandle<MapRegionsResult>(),
+    ...baseHandle<MapRegionsRunResult>(),
     run: jest.fn(async () => undefined),
     ...overrides,
   };
@@ -360,17 +360,17 @@ export function intentsHandle(
   overrides: Partial<ProposeIntentsRunHandle> = {},
 ): ProposeIntentsRunHandle {
   return {
-    ...baseHandle<ProposeIntentsResult>(),
+    ...baseHandle<ProposeIntentsRunResult>(),
     run: jest.fn(async () => undefined),
     ...overrides,
   };
 }
 
 export function mapPagesResult(
-  overrides: Partial<MapPagesResult> = {},
-): MapPagesResult {
+  overrides: Partial<MapPagesRunResult> = {},
+): MapPagesRunResult {
   return {
-    result_kind: "seo.map_pages",
+    result_kind: "map.pages",
     site_id: "site-1",
     map_id: "map-1",
     dry_run: false,
@@ -411,10 +411,10 @@ export function mapPagesResult(
 }
 
 export function mapRegionsResult(
-  overrides: Partial<MapRegionsResult> = {},
-): MapRegionsResult {
+  overrides: Partial<MapRegionsRunResult> = {},
+): MapRegionsRunResult {
   return {
-    result_kind: "seo.map_regions",
+    result_kind: "map.regions",
     site_id: "site-1",
     brand_id: "brand-1",
     map_id: "map-1",
@@ -447,10 +447,10 @@ export function mapRegionsResult(
 }
 
 export function proposeIntentsResult(
-  overrides: Partial<ProposeIntentsResult> = {},
-): ProposeIntentsResult {
+  overrides: Partial<ProposeIntentsRunResult> = {},
+): ProposeIntentsRunResult {
   return {
-    result_kind: "seo.propose_page_intents",
+    result_kind: "map.intents",
     site_id: "site-1",
     map_id: "map-1",
     dry_run: false,
