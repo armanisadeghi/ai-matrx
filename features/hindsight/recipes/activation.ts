@@ -1,0 +1,4 @@
+export type ReviewRecipe={id:string;normalized_origin:string;match_pattern:string|null;status:string;recipe_version:number;version:number;deleted_at:string|null;field_map:unknown;submit:unknown;success_signals:unknown;failure_signals:unknown;challenge_signals:unknown};
+export type ActivationResult={kind:"activated"|"refused";reason?:string};
+const shaped=(x:unknown)=>Array.isArray(x)||(typeof x==="object"&&x!==null);
+export function activationRefusal(row:ReviewRecipe):string|undefined { if(row.deleted_at)return "This recipe was deleted."; if(row.status!=="proposed")return "This recipe is no longer proposed."; if(!shaped(row.field_map)||!shaped(row.submit)||!shaped(row.success_signals)||!shaped(row.failure_signals)||!shaped(row.challenge_signals))return "Recipe structure is malformed."; return undefined; }
