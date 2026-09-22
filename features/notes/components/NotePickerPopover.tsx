@@ -488,7 +488,7 @@ export function NotePickerPopover({
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>{mergedTrigger}</PopoverTrigger>
-      <PopoverContent className="w-[280px] p-0" align={align} side={side}>
+      <PopoverContent sizing="content" className="p-0" align={align} side={side}>
         {body}
       </PopoverContent>
     </Popover>

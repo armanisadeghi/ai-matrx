@@ -130,7 +130,7 @@ export function ProjectPicker({
             <ChevronDown className="size-3.5 shrink-0 opacity-60" />
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-72 p-0" align="start">
+        <PopoverContent sizing="content" className="p-0" align="start">
           <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-1.5">
             <Search className="size-3.5 shrink-0 text-muted-foreground" />
             <input

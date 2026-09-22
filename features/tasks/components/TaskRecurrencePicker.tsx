@@ -56,7 +56,7 @@ export function TaskRecurrencePicker({
           {description ?? "—"}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-44 p-1">
+      <PopoverContent /* sizing: fixed — fixed recurrence preset list */ align="start" className="w-44 p-1">
         {PRESETS.map((p) => {
           const active = (value ?? null) === p.rule;
           return (

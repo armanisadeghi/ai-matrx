@@ -200,7 +200,8 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
         </div>
       </PopoverAnchor>
       <PopoverContent
-        className="w-80 p-0"
+        sizing="content"
+        className="p-0"
         align="end"
         sideOffset={6}
         onOpenAutoFocus={(e) => e.preventDefault()}

@@ -64,7 +64,7 @@ export function TaskSnoozeButton({
           {isSnoozed ? `Snoozed · ${snoozedLabel}` : "Snooze"}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-40 p-1">
+      <PopoverContent /* sizing: fixed — fixed snooze preset list */ align="start" className="w-40 p-1">
         {snoozePresets().map((p) => (
           <button
             key={p.key}

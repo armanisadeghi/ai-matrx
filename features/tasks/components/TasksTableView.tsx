@@ -214,6 +214,7 @@ function ColumnFilterButton({
         </button>
       </PopoverTrigger>
       <PopoverContent
+        /* sizing: fixed — content already decides its own width; no fixed box to remove */
         align={align}
         side="bottom"
         className="w-auto p-3"

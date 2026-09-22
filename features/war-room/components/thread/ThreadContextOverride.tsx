@@ -77,7 +77,7 @@ export function ThreadContextOverride({
         </PopoverTrigger>
       )}
       <PopoverContent
-        className="w-72"
+        sizing="content"
         align="end"
         onClick={(e) => e.stopPropagation()}
       >

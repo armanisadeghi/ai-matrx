@@ -226,7 +226,8 @@ export default function AssociateTaskButton(props: AssociateTaskButtonProps) {
         )}
       </PopoverTrigger>
       <PopoverContent
-        className="w-80 p-0"
+        sizing="content"
+        className="p-0"
         align="start"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >

@@ -87,7 +87,7 @@ export function TaskDueDatePicker({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent align="start" className="w-auto p-0">
+      <PopoverContent /* sizing: fixed — content already decides its own width; no fixed box to remove */ align="start" className="w-auto p-0">
         <Calendar
           mode="single"
           selected={selected}

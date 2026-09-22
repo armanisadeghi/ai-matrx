@@ -81,7 +81,8 @@ export function SplitNotePicker({ children }: SplitNotePickerProps) {
         )}
       </PopoverTrigger>
       <PopoverContent
-        className="w-[260px] p-0"
+        sizing="content"
+        className="p-0"
         align="start"
         side="bottom"
       >

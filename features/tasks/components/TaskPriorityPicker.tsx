@@ -176,7 +176,7 @@ function PriorityPillPicker({
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-32 p-1">
+      <PopoverContent /* sizing: fixed — fixed priority enum */ align="start" className="w-32 p-1">
         {PRIORITY_OPTIONS.map((opt) => {
           const active = value === opt.value;
           return (

@@ -109,7 +109,7 @@ function StatusPillPicker({
           {meta.label}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-40 p-1">
+      <PopoverContent /* sizing: fixed — fixed status enum */ align="start" className="w-40 p-1">
         {TASK_STATUSES.map((s) => {
           const optMeta = TASK_STATUS_META[s];
           const OptIcon = optMeta.icon;

@@ -378,7 +378,7 @@ export function RoomHeader({
                   content aligns to the end of the header row on any viewport. */}
               <Popover open={identityOpen} onOpenChange={setIdentityOpen}>
                 <PopoverAnchor className="size-0" />
-                <PopoverContent className="w-80" align="end">
+                <PopoverContent sizing="content" align="end">
                   <RoomIdentityEditor
                     sessionId={sessionId}
                     title={session.title}
@@ -390,7 +390,7 @@ export function RoomHeader({
               </Popover>
               <Popover open={projectOpen} onOpenChange={setProjectOpen}>
                 <PopoverAnchor className="size-0" />
-                <PopoverContent className="w-72" align="end">
+                <PopoverContent sizing="content" align="end">
                   <RoomProjectPickerBody
                     sessionId={sessionId}
                     roomProjectId={roomProjectId}

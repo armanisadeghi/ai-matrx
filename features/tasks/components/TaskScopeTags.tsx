@@ -166,7 +166,8 @@ export default function TaskScopeTags({
           </button>
         </PopoverTrigger>
         <PopoverContent
-          className="w-72 p-0"
+          sizing="content"
+          className="p-0"
           align="start"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >

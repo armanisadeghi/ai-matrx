@@ -51,7 +51,8 @@ export function TaskCommentPopover({
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-80 p-3 max-h-96 overflow-y-auto"
+        sizing="content"
+        className="p-3 max-h-96 overflow-y-auto"
         align="start"
         onClick={(e) => e.stopPropagation()}
       >

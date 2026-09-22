@@ -621,7 +621,7 @@ function DatePill({
           {content}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent /* sizing: fixed — content already decides its own width; no fixed box to remove */ className="w-auto p-0" align="start">
         <Calendar
           mode="single"
           selected={selected}

@@ -136,7 +136,8 @@ export default function QuickCreateTaskButton(props: QuickCreateTaskButtonProps)
         )}
       </PopoverTrigger>
       <PopoverContent
-        className="w-80 p-2"
+        sizing="content"
+        className="p-2"
         align="start"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
