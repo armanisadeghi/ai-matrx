@@ -105,6 +105,9 @@ function DriftDashboard() {
         // user-aware admin link rather than reducing this identity to UUID text.
         cell: (row) => <AdminUserRef userId={row.user_id} />,
         width: 220,
+        // The package freezes only the leading desktop run when width is known.
+        // On phones it keeps the canonical horizontally scrollable table.
+        frozen: true,
         className: "max-sm:min-w-[9rem]",
         headerClassName: "max-sm:min-w-[9rem]",
       },
