@@ -209,6 +209,77 @@ export async function billingOwnerColumn(): Promise<BillingOwnerColumn> {
   return shape.state === "organization" ? "organization_id" : "user_id";
 }
 
+// ── the organization's own three states ──────────────────────────────────────
+//
+// A NULLABLE ID IS NOT AN ANSWER, AND THIS SEAM USED TO TREAT IT AS ONE. Until
+// 2026-09-22 `billingOwnerRef` read `input.organizationId?.trim()` and refused the
+// moment it was falsy. That is the defect `check-org-three-states` exists for, in
+// its server-side form: `null` arriving here meant THREE different things at once —
+// the request named no organization, the caller had not resolved one YET, or the
+// read that would have answered FAILED — and all three came out as the same
+// terminal sentence telling a person to choose an organization nobody had looked
+// for.
+//
+// So the organization arrives as a STATE, never as a nullable id:
+//
+//   `ready`       — an organization is named, and here it is.
+//   `required`    — the question was asked and the answer is genuinely "none".
+//                   THIS is the only state that spells the refusal.
+//   `unavailable` — we could not read what the request says. NOT the refusal:
+//                   nothing was written, and the caller says so with its cause.
+//
+// There is no `resolving` arm because there is nothing on this seam to wait FOR: a
+// request is a settled snapshot, not a booting client, and the one thing here that
+// genuinely resolves over time — which column is live — is `BillingOwnerShape`,
+// which has carried its own three states since this module was written.
+
+/** Which organization this billing write belongs to, as an answer with a state. */
+export type BillingOrganizationState =
+  | { state: "ready"; organizationId: string }
+  | { state: "required" }
+  | { state: "unavailable"; reason: string };
+
+/** The refusal when we could not read WHICH organization the request is acting in. */
+export class BillingOrganizationContextUnavailableError extends Error {
+  override name = "BillingOrganizationContextUnavailableError" as const;
+  constructor(reason: string) {
+    super(
+      `Could not read which organization this request is acting in (${reason}). ` +
+        "Nothing was written, because a Stripe customer, subscription or payout " +
+        "account labelled with the wrong owner is worse than one that is missing. " +
+        "Send the request again.",
+    );
+  }
+}
+
+export function isBillingOrganizationContextUnavailableError(
+  error: unknown,
+): error is BillingOrganizationContextUnavailableError {
+  return (
+    error instanceof BillingOrganizationContextUnavailableError ||
+    (error instanceof Error &&
+      error.name === "BillingOrganizationContextUnavailableError")
+  );
+}
+
+/**
+ * The state for a caller that has ALREADY resolved the organization authoritatively
+ * — a class's own `organization_id`, a scope row, a header the route read. This is
+ * the one place a nullable id becomes a state, it is named, and it says what the
+ * conversion means: the caller finished asking and came back with nothing, which on
+ * a settled request is `required` and never a race.
+ *
+ * A caller that has NOT finished asking must not call this — it passes its own
+ * `unavailable` (or does not call the seam yet), which is exactly what
+ * `readRequestOrganizationState` does when it cannot read the request.
+ */
+export function resolvedBillingOrganization(
+  organizationId: string | null | undefined,
+): BillingOrganizationState {
+  const value = organizationId?.trim();
+  return value ? { state: "ready", organizationId: value } : { state: "required" };
+}
+
 /**
  * The owner to write, for a caller who knows both the person and the organization
  * they are acting in.
@@ -217,16 +288,29 @@ export async function billingOwnerColumn(): Promise<BillingOwnerColumn> {
  * the organization is carried but unused — so a client that already sends the header
  * needs no second change on the night, and a client that does not keeps working
  * until the column moves and is then told, in a sentence, what to send.
+ *
+ * `organization` is the honest input: a state, with its three arms kept apart.
+ * `organizationId` remains for callers that resolved the id themselves and is
+ * funnelled through `resolvedBillingOrganization`, so the nullable-to-terminal
+ * conversion happens in ONE named place instead of inside this function's `if`.
  */
 export async function billingOwnerRef(input: {
   userId: string;
+  organization?: BillingOrganizationState;
   organizationId?: string | null;
 }): Promise<BillingOwnerRef> {
   const column = await billingOwnerColumn();
   if (column === "user_id") return { column, value: input.userId };
-  const organizationId = input.organizationId?.trim();
-  if (!organizationId) throw new BillingOrganizationRequiredError();
-  return { column, value: organizationId };
+  const organizationState: BillingOrganizationState =
+    input.organization ?? resolvedBillingOrganization(input.organizationId);
+  switch (organizationState.state) {
+    case "ready":
+      return { column, value: organizationState.organizationId };
+    case "unavailable":
+      throw new BillingOrganizationContextUnavailableError(organizationState.reason);
+    case "required":
+      throw new BillingOrganizationRequiredError();
+  }
 }
 
 /**
@@ -293,10 +377,36 @@ export function asRowBag(row: unknown): Record<string, unknown> | null {
  * no cookie, no last-used, no personal fallback. `null` when absent, which becomes a
  * refusal at the moment an organization is actually needed, never a substitution.
  */
+export function readRequestOrganizationState(request: {
+  headers: { get(name: string): string | null };
+}): BillingOrganizationState {
+  let raw: string | null;
+  try {
+    raw =
+      request.headers.get(ORGANIZATION_HEADER) ??
+      request.headers.get(ORGANIZATION_HEADER.toLowerCase());
+  } catch (err) {
+    // We could not read what the request SAYS. That is not "the request named no
+    // organization" — it is not knowing, and it must not come out as the sentence
+    // that tells a person to go and choose one.
+    return {
+      state: "unavailable",
+      reason: err instanceof Error ? err.message : String(err),
+    };
+  }
+  const value = raw?.trim();
+  return value ? { state: "ready", organizationId: value } : { state: "required" };
+}
+
+/**
+ * The header's value, or `null`. Kept for callers that only need the id and hand it
+ * straight back to `billingOwnerRef`/`ensureStripeCustomer`, which funnel it through
+ * `resolvedBillingOrganization`. New code reads the STATE:
+ * `readRequestOrganizationState` is the same read without the collapse.
+ */
 export function readRequestOrganizationId(request: {
   headers: { get(name: string): string | null };
 }): string | null {
-  const raw = request.headers.get(ORGANIZATION_HEADER) ?? request.headers.get(ORGANIZATION_HEADER.toLowerCase());
-  const value = raw?.trim();
-  return value ? value : null;
+  const organizationState = readRequestOrganizationState(request);
+  return organizationState.state === "ready" ? organizationState.organizationId : null;
 }

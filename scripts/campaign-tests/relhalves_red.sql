@@ -49,8 +49,10 @@ begin
     -- NOT a pass and NOT a failure: this arm cannot be honestly run here, it says so, and arms
     -- 2 and 3 — which take no such lock — carry on. Arm 1's proof is taken on the clone.
     raise notice
-      'ARM 1 SKIPPED ON THE MAIN DATABASE — switching `zz_w2a_relation_association_s_*` off '
-      'takes ACCESS EXCLUSIVE on custom.record and its sixteen partitions for the length of the '
+      'ARM 1 SKIPPED ON THE MAIN DATABASE — switching the edge-writing trigger pair '
+      '`zz_w2a_relation_association_s_i` / `_s_u` off (a trigger name, whose zz_ prefix is this '
+      'store''s firing-order device and not a row anybody reads) takes ACCESS EXCLUSIVE on '
+      'custom.record and its sixteen partitions for the length of the '
       'transaction, freezing every reader and writer of the unified store. This arm is proved on '
       'the dev clone; arms 2 and 3 run here.';
     return;

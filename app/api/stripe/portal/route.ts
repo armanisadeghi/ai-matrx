@@ -14,7 +14,8 @@ import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import {
   billingOwnerRef,
   ownerEq,
-  readRequestOrganizationId,
+  readRequestOrganizationState,
+  isBillingOrganizationContextUnavailableError,
   asRowBag,
 } from "@/features/entitlements/stripe/billingOwner";
 import {
@@ -46,11 +47,17 @@ export async function POST(request: NextRequest) {
     try {
       owner = await billingOwnerRef({
         userId: user.id,
-        organizationId: readRequestOrganizationId(request),
+        // The STATE, not a nullable id: "the request named none" and "we could not
+        // read what the request says" are different answers and get different
+        // replies (features/entitlements/stripe/billingOwner.ts).
+        organization: readRequestOrganizationState(request),
       });
     } catch (err) {
       if (isBillingOrganizationRequiredError(err)) {
         return billingOrganizationRequiredResponse(supabase, err);
+      }
+      if (isBillingOrganizationContextUnavailableError(err)) {
+        return NextResponse.json({ error: err.message }, { status: 503 });
       }
       throw err;
     }
