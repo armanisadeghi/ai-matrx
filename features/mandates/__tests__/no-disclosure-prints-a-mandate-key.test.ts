@@ -124,7 +124,7 @@ const BARE_JSX_CHILD =
 const KEY_AS_LABEL_FALLBACK =
   /(\?\?|\|\|)\s*(?:[A-Za-z_$][\w$]*(?:\?)?\.)*(?:mandateKey|mandate_key)\b/;
 /** A per-line opt-out that must carry a reason. */
-const LINE_OPT_OUT = /\/\/\s*key-is-the-subject:\s*\S/;
+const LINE_OPT_OUT = /\/(?:\/|\*)\s*key-is-the-subject:\s*\S/;
 
 function sourceFiles(): string[] {
   const out = execFileSync(
@@ -149,11 +149,21 @@ function exemptReason(path: string): string | null {
 /** Exported so the pre-fix proof can run the exact same scanner over old text. */
 export function findingsIn(path: string, source: string): string[] {
   const found: string[] = [];
-  source.split("\n").forEach((line, index) => {
-    // A comment is not a screen. This class is quoted in the very docblocks that
-    // forbid it, so a scanner that cannot tell the two apart cries wolf forever.
+  const lines = source.split("\n");
+  lines.forEach((line, index) => {
+    // On the line itself, or on the line above it (the `eslint-disable-next-line`
+    // shape), because prettier puts a JSX comment on its own line.
     if (LINE_OPT_OUT.test(line)) return;
-    const code = line.replace(/^\s*(?:\/\/|\*|\/\*).*$/, "");
+    if (index > 0 && LINE_OPT_OUT.test(lines[index - 1] ?? "")) return;
+    // A whole-line comment is not a screen — this class is quoted in the very
+    // docblocks that forbid it. A TRAILING comment is stripped instead of
+    // skipped, so a `// …` tacked onto the end cannot hide the shape by
+    // breaking the end-of-line anchor.
+    const code = line
+      .replace(/^\s*(?:\/\/|\*|\/\*).*$/, "")
+      .replace(/\{\s*\/\*[\s\S]*?\*\/\s*\}\s*$/, "")
+      .replace(/\/\/.*$/, "")
+      .replace(/\/\*[\s\S]*?\*\/\s*$/, "");
     if (BARE_JSX_CHILD.test(code)) {
       found.push(`${path}:${index + 1} — a mandate key rendered as a JSX child`);
     } else if (KEY_AS_LABEL_FALLBACK.test(code)) {
@@ -177,13 +187,22 @@ describe("no disclosure surface prints a mandate key", () => {
       findingsIn("x.tsx", "  {mandateDisplayName(row.mandateKey, label)}\n"),
     ).toHaveLength(0);
     // The opt-out needs a reason — a bare marker does not silence anything.
+    // A trailing comment cannot hide the shape by breaking the anchor…
+    expect(
+      findingsIn("x.tsx", "  {row.mandateKey} // just a note\n"),
+    ).toHaveLength(1);
+    // …and the opt-out needs a reason before it silences anything.
     expect(
       findingsIn("x.tsx", "  {row.mandateKey} // key-is-the-subject:\n"),
     ).toHaveLength(1);
     expect(
+      findingsIn("x.tsx", "  {row.mandateKey} // key-is-the-subject: it is\n"),
+    ).toHaveLength(0);
+    // The line above works too, which is where prettier puts a JSX comment.
+    expect(
       findingsIn(
         "x.tsx",
-        "  {row.mandateKey} // key-is-the-subject: admin-only mono sub-line\n",
+        "  {/* key-is-the-subject: admin-only */}\n  {row.mandateKey}\n",
       ),
     ).toHaveLength(0);
   });

@@ -1,50 +1,42 @@
--- target: branch,production
--- additive: yes
--- guard: custom/system_enabled
--- based-on: custom._field_type_parity_guard() c1f134ab2b73335f3557dab85a63194d6426b24a37bb95d15e0410842b88b46d
+-- FIX-10B-F5 — THE RED TWIN. IT PUTS THE DEFECT BACK AND REQUIRES THE GREEN CLAUSES TO FAIL.
 --
--- ══════════════════════════════════════════════════════════════════════════════════════
--- A WORKED-OUT COLUMN NAMES COLUMNS THAT EXIST, OR IT IS NOT CREATED.
--- lane FIX-10B-F5 · 2026-09-22
+--   "$PSQL" "<the five SUPABASE_MATRIX_* values>" -v ON_ERROR_STOP=1 \
+--     -f scripts/campaign-tests/fix10bf5_formula_red.sql
 --
--- VERIFIER-10, finding F5, on Rincon Plumbing Co's "Truck 1 dispatch backlog": an admin
--- added a column "Ticket label" through Add field -> "Worked out from other columns" ->
--- "Join them together", and every cell read `—`, on all 100 loaded rows, before a write,
--- after a write to a source column, and after a reload.
+-- It executes the REAL BYTES of
+-- `migrations/inverse/fix10bf5_a_worked_out_column_names_columns_that_exist_down.sql` inside a
+-- transaction that always rolls back. That is two things at once: it proves the inverse is
+-- valid SQL that actually executes, and it proves `fix10bf5_formula_green.sql` is green about
+-- something. A green suite nobody has seen fail is a green suite that may be asserting nothing.
 --
--- WHAT THE DIAGNOSIS FOUND, measured on the main database on 2026-09-22. The evaluator was
--- never broken. `custom.formula_value` over that same record, with the two field ids in the
--- expression, answers `RPC-T1-7000 — 100 Ventura Ave, Ventura`. What the panel had actually
--- stored was `{"op":"concat","args":[{"const":""}]}` — a formula reading no column at all,
--- which `custom.rule_eval` evaluates exactly as written to the empty string, which the grid
--- draws as `—`. That half is the PANEL's to refuse and is fixed in `@ai-matrx/records-ui`'s
--- FieldEditor, not here: a trivial expression is LEGITIMATE at the store, because a compute
--- Rule with `target_field_id` can be the thing that works the column out, and
--- `scripts/campaign-tests/w1_rule_apply.sql` declares exactly that pair deliberately. The
--- store cannot tell the two apart; the screen that asked the person which columns can.
+-- WHAT COMES BACK. The `custom._field_type_parity_guard` body in which a worked-out column
+-- could name its source columns BY NAME (REC-17 says by id, never by name), or name a column
+-- that is not in the organization at all, and be created anyway — after which
+-- `custom.rule_eval` refuses it on every read, `custom.derived_value` swallows that refusal
+-- into a server warning nobody reads, and the column shows `—` on every record of its table
+-- for the rest of its life. Three such columns were live on the main database on 2026-09-22.
 --
--- WHAT IS THE STORE'S, AND IS THIS FILE. The census that proved the above walked every live
--- formula column's expression and found three siblings of the same silent-blank class that
--- no screen can catch:
---
---     "Worked out"  {"op":"concat","args":[{"field":"title"}]}            -> a NAME, not an id
---     "Shouty"      {"node":"field","field":"serial"}                     -> a NAME, not an id
---     "Doubled"     {"op":"concat","args":[{"field":"3014b868-2c69-…"}]}  -> NO SUCH FIELD
---
--- `custom.rule_eval` refuses each of those by name at evaluation (REC-17, "by id, never by
--- name"), `custom.derived_value` catches the refusal, raises a warning no person will ever
--- read, and answers null. So those columns are `—` on every record of their table forever
--- and the only statement of the reason is a server log. Nothing fails silently: the
--- declaration is refused when somebody writes it, naming the column and what is wrong.
---
--- IN THE TRIGGER, NOT IN A DOOR, BECAUSE EVERY WRITER PASSES THROUGH THE TRIGGER:
--- `custom.field_declare`, `custom.field_update`'s behaviour arm, a table spec's inline
--- fields, an import's new columns, and any direct write to `custom.record`. A check in one
--- door would have left the other four open — which is the class this campaign keeps finding.
---
--- ADDITIVE. Nothing already saved is touched; a Field row is judged when something writes it.
--- Its red/green twins are scripts/campaign-tests/fix10bf5_formula_{red,green}.sql.
--- ══════════════════════════════════════════════════════════════════════════════════════
+-- NOTHING IS COMMITTED. The function body, the fixture and the organization all disappear at
+-- ROLLBACK. Same real use case as the green suite: Rincon Plumbing Co's Truck 1 ticket label.
+
+\set ON_ERROR_STOP on
+\timing off
+
+\set suite 'fix10bf5_formula_red.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
+
+\set ORG   '\'7e10b5f0-0000-4a00-8a00-000000000002\''
+\set ADMIN '\'87a6e699-3622-4869-8843-d0867456c0dd\''
+
+begin;
+set local statement_timeout = '60s';
+set local lock_timeout = '10s';
+select set_config('app.actor_system', 'campaign-test/fix10bf5_red', true);
+
+-- ══════════════════════════ THE DEFECT, PUT BACK, FROM THE INVERSE'S OWN BYTES ══════════════
 
 CREATE OR REPLACE FUNCTION custom._field_type_parity_guard()
  RETURNS trigger
@@ -60,8 +52,6 @@ declare
   v_edef     uuid;
   v_via      text;
   v_via_fld  jsonb;
-  v_leaf     text;
-  v_store_on boolean;
 begin
   -- THE DOOR. One call to the ONE predicate (`custom.assert_store_door`), which
   -- judges `custom.caller_role()` - the identity the caller actually held - and not
@@ -111,78 +101,6 @@ begin
     raise exception 'the field % is worked out and does not say how', v_label
       using errcode = '23514',
             hint = 'FLD-11 / REC-15: config.expr is a Rule expression - the same shape and the same evaluator a Rule uses (select node from custom.rule_node_kinds()).';
-  end if;
-
-  -- ── FIX-10B-F5, 2026-09-22: AND IT HAS TO SAY IT WITH COLUMNS THAT ARE ACTUALLY THERE. ──
-  --
-  -- The check above asks whether a worked-out column says HOW. This one asks whether what it
-  -- says can ever be answered. VERIFIER-10, on Rincon Plumbing Co's "Truck 1 dispatch
-  -- backlog": a "Ticket label" column built from the Add-field panel read `—` on all 100
-  -- rows, before a write, after a write to a source column, and after a reload. Its stored
-  -- expression was `{"op":"concat","args":[{"const":""}]}` — a formula reading no column at
-  -- all. That particular shape is the PANEL's to refuse (only the screen knows it asked a
-  -- person which columns and was answered with none; a trivial expression is legitimate here,
-  -- because a compute Rule with `target_field_id` can be the thing that fills the column —
-  -- `scripts/campaign-tests/w1_rule_apply.sql` declares exactly that pair on purpose). So
-  -- that half is closed in `@ai-matrx/records-ui`'s FieldEditor and NOT here.
-  --
-  -- WHAT IS THE STORE'S TO REFUSE IS THE SIBLING THE SAME CENSUS FOUND, WHICH NO SCREEN CAN
-  -- SEE. Measured on the main database, 2026-09-22, over every live formula column:
-  --
-  --     "Worked out"  expr {"op":"concat","args":[{"field":"title"}]}   -> NOT AN ID
-  --     "Shouty"      expr {"node":"field","field":"serial"}            -> NOT AN ID
-  --     "Doubled"     expr {"op":"concat","args":[{"field":"3014b868-…"}]} -> NO SUCH FIELD
-  --
-  -- `custom.rule_eval` refuses each of those BY NAME at evaluation — REC-17, "by id, never by
-  -- name" — and `custom.derived_value` catches the refusal, writes a `raise warning` no
-  -- person will ever read, and answers null. The column is therefore `—` on every record of
-  -- that table forever, and the only place the reason exists is a server log. That is the
-  -- same defect as F5 wearing a different hat, and it is exactly what a declaration-time
-  -- guard is for: the column is refused when somebody writes it, naming the column and what
-  -- is wrong with it, instead of going quiet for the rest of its life.
-  --
-  -- HERE, RATHER THAN IN A DOOR, BECAUSE EVERY WRITER PASSES THROUGH HERE. field_declare,
-  -- field_update's behaviour arm, a table spec's inline fields, an import's new columns and
-  -- any direct write to custom.record all fire this trigger; a check in one door would leave
-  -- the other four open. Rows already saved are untouched until something writes them again.
-  -- HELD OFF BY THE CAMPAIGN'S OWN SWITCH, READ BY NAME. `custom.store_is_open` is the one
-  -- reader of `custom/system_enabled` and is what `custom.assert_store_door` above already
-  -- obeyed — but it reads the knob through a function call, and an OFF proof that rests on a
-  -- lane's word about what a function does is not a proof. So the knob is ALSO read here by
-  -- its own name: while the switch resolves false for this organization, this new refusal
-  -- does not exist and the path is exactly what it was. The two readings differ in one case
-  -- and the OR is what keeps it honest — `custom.store_is_open` also answers true for an
-  -- organization born after 2026-09-21 01:30:44+00, which has the store on with no override
-  -- row to resolve, and a guard that went quiet for every new organization would be worse
-  -- than the defect.
-  v_store_on := custom.store_is_open(new.organization_id)
-                or coalesce((platform.knob_resolve('custom', 'system_enabled', new.organization_id) #>> '{}')::boolean,
-                            false);
-
-  if v_declared = 'formula' and v_store_on then
-    for v_leaf in
-      select distinct l #>> '{}'
-        from jsonb_path_query(coalesce(d -> 'config' -> 'expr', '{}'::jsonb),
-                              '$.**.field') l
-       where jsonb_typeof(l) = 'string'
-       union
-      select distinct l #>> '{}'
-        from jsonb_path_query(coalesce(d -> 'config' -> 'expr', '{}'::jsonb),
-                              '$.**.parent_field') l
-       where jsonb_typeof(l) = 'string'
-    loop
-      if v_leaf !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
-        raise exception 'the field % works its answer out from %, and that is a name rather than a column',
-                        v_label, coalesce(v_leaf, 'nothing')
-          using errcode = '23514',
-                hint = 'REC-17: a worked-out column points at a Field BY ITS ID - {"field": "<the field''s id>"}. A name changes and the column would stop resolving, so the store never accepts one. Nothing was written.';
-      end if;
-      if custom.rule_field_key(new.organization_id, v_leaf::uuid) is null then
-        raise exception 'the field % works its answer out from a column that is not in this organization', v_label
-          using errcode = '23503',
-                hint = 'REC-17 / REC-18: every {"field": …} in config.expr names a live Field of this organization. Open the table and use the id of the column you meant. Nothing was written.';
-      end if;
-    end loop;
   end if;
 
   -- (b) THE DECLARATION AND WHAT IT ACTUALLY DECLARES HAVE TO AGREE. This is the whole of
@@ -290,3 +208,87 @@ end;
 $function$
 
 ;
+
+insert into iam.organizations (id, name, slug, abbreviation, created_by)
+values (:ORG, 'FIX-10B-F5 Red Throwaway', 'fix10bf5-red-throwaway', 'FFR', :ADMIN);
+insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
+values (:ORG, 'organization', :ORG, :ADMIN, 'owner', 'active');
+insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+values ('custom', 'system_enabled', 'organization', :ORG, :ORG, 'true'::jsonb, 'FIX-10B-F5 red suite');
+
+do $t$
+declare
+  v_org     constant uuid := '7e10b5f0-0000-4a00-8a00-000000000002';
+  v_admin   constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
+  c_admin_j text;
+  v_home uuid; v_tbl uuid; v_job uuid; v_addr uuid; v_bad uuid; v_rec uuid;
+  v_seen text; v_ghost uuid := '3014b868-2c69-434c-87ed-d7bf9df14be3';
+begin
+  c_admin_j := json_build_object('sub', v_admin::text, 'role', 'authenticated', 'email', 'admin@admin.com')::text;
+  perform set_config('request.jwt.claims', c_admin_j, true);
+  perform set_config('role', 'authenticated', true);
+
+  v_home := custom.record_write(v_org, custom.organization_kernel_id(),
+                                jsonb_build_object('name', 'Rincon Plumbing Co'));
+  v_tbl  := custom.table_declare(v_org, jsonb_build_object(
+    'name','truck_1_dispatch_backlog','slug','truck_1_dispatch_backlog',
+    'label_singular','Ticket','label_plural','Tickets',
+    'type','entity','display','list','ordered',false,'weight','light','retention_days',30,
+    'default_sort','[]'::jsonb,'row_order','sorted','agent_writable',true,
+    'fields', jsonb_build_array(jsonb_build_object('name','title','kind','text')),
+    'title_field','title','parent_id', v_home::text));
+  v_job  := custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Job Number','type','text','sort',30));
+  v_addr := custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Service Address','type','text','sort',40));
+  v_rec  := custom.record_write(v_org, v_tbl, jsonb_build_object(
+    'title','RPC-T1-7000', 'job_number','RPC-T1-7000', 'service_address','100 Ventura Ave, Ventura'));
+
+  -- ══════════════════════════════ RED 2 — green PART 2 fails: it is CREATED.
+  v_bad := custom.field_declare(v_org, v_tbl, jsonb_build_object(
+    'label','Shouty','parity_type','formula','compute_on','read','sort',60,
+    'expr', jsonb_build_object('op','concat','args', jsonb_build_array(
+              jsonb_build_object('field','job_number')))));
+  if v_bad is null then
+    raise exception 'RED 2 DID NOT LAND: the by-name formula was still refused, so the inverse did not put the defect back';
+  end if;
+  -- AND THIS IS WHAT THE DISPATCHER THEN SEES, FOREVER, WITH NO WORD ANYWHERE.
+  select custom.read_record(v_org, v_rec, true) ->> 'shouty' into v_seen;
+  if v_seen is not null then
+    raise exception 'RED 2: the by-name column answered "%" — it was supposed to be empty on every read', v_seen;
+  end if;
+  raise notice 'RED 2 — a worked-out column naming its source BY NAME was created, and reads nothing on every ticket (field %)', v_bad;
+
+  -- ══════════════════════════════ RED 3 — green PART 3 fails: it is CREATED.
+  v_bad := custom.field_declare(v_org, v_tbl, jsonb_build_object(
+    'label','Doubled','parity_type','formula','compute_on','read','sort',70,
+    'expr', jsonb_build_object('op','concat','args', jsonb_build_array(
+              jsonb_build_object('field', v_ghost)))));
+  if v_bad is null then
+    raise exception 'RED 3 DID NOT LAND: the absent-column formula was still refused';
+  end if;
+  select custom.read_record(v_org, v_rec, true) ->> 'doubled' into v_seen;
+  if v_seen is not null then
+    raise exception 'RED 3: the absent-column formula answered "%"', v_seen;
+  end if;
+  raise notice 'RED 3 — a worked-out column naming a column that is not in this organization was created, and reads nothing (field %)', v_bad;
+
+  -- ══════════════════════════════ RED 4 — green PART 4 fails: the retype door takes it too.
+  v_bad := custom.field_update(v_org, v_bad, jsonb_build_object(
+    'parity_type','formula',
+    'expr', jsonb_build_object('op','concat','args', jsonb_build_array(
+              jsonb_build_object('field','service_address')))));
+  if v_bad is null then
+    raise exception 'RED 4 DID NOT LAND: the retype door still refused the by-name expression';
+  end if;
+  raise notice 'RED 4 — the retype door re-pointed a worked-out column at a NAME and the store took it';
+
+  -- ══════════════════════════════ AND THE CONTROL CLAUSES STAY GREEN, which is how this file
+  -- proves it put back ONE behaviour rather than breaking the function.
+  if custom.read_record(v_org, v_rec, true) ->> 'title' is distinct from 'RPC-T1-7000' then
+    raise exception 'RED CONTROL: the inverse body broke an ordinary column, so nothing above is about this defect';
+  end if;
+  raise notice 'RED CONTROL — ordinary columns are untouched by the inverse body';
+
+  raise notice 'ALL RED CLAUSES LANDED (2 by-name created, 3 absent-column created, 4 the retype door) — the green suite asserts something';
+end $t$;
+
+rollback;

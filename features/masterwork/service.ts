@@ -1,7 +1,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { doorCas } from "@/lib/db/door-cas";
-import { operationFailed } from "@/utils/errors";
+import { makeGovernedDataAsserter, operationFailed } from "@/utils/errors";
 import { readAgentRunOutput } from "@/features/workflow-runtime/agent-run-output";
 import { presentedPreview } from "@/features/workflow-runtime/run-result/presented-result";
 import { pokeUnderstudy } from "./understudy/refresh";
@@ -66,7 +66,50 @@ export interface CreateRulebookInput {
   organizationId: string;
   /** Guided-start answers; stored on metadata.intake — the Scout reads them. */
   intake?: RulebookIntake;
+  /**
+   * 🚨 ONE INTENT, ONE RULEBOOK (cold walk 20, defect C).
+   *
+   * The caller's own id for ONE decision to start a Rulebook — minted where
+   * that decision lives (the wizard draft, the picker's open create box), NOT
+   * here, because a token minted per call would be a different token on the
+   * second press and would dedupe nothing. `rulebook_create` enforces it with a
+   * unique index on `(created_by, client_token)`, so a second press, a lost
+   * acknowledgement or a remount answers with the Rulebook the first one made
+   * instead of minting another.
+   *
+   * Omitted, this mints one per call, which still protects a create that is
+   * retried inside this function — and nothing more. Pass one.
+   */
+  clientToken?: string;
 }
+
+/**
+ * A Rulebook, plus what the door said about the attempt that produced it.
+ *
+ * `created: false` means this token had already made it — the caller pressed
+ * twice and got its own Rulebook back, not a second one.
+ * `nameAlreadyInUse` means another live Rulebook in the same organization
+ * already carries this name. That is NEVER a refusal (Notion and Linear both
+ * let two pages carry one title) — it is the one fact the screen needs in order
+ * to say a sentence instead of the silence walk 20 measured.
+ */
+export type CreatedRulebook = Rulebook & {
+  created: boolean;
+  nameAlreadyInUse: boolean;
+};
+
+/**
+ * The door writes its refusals in English FOR THE PERSON, behind a
+ * `rulebook_create: ` machine prefix. `operationFailed` alone would replace
+ * every one of them with "We couldn't create that Rulebook." — which is how a
+ * server refusal becomes a screen that says nothing. This keeps the sentence
+ * and drops the prefix, and leaves ordinary PostgREST noise on the calm generic
+ * message. Same primitive the SEO value-system settings use; never a second one.
+ */
+const assertCreatedRulebook = makeGovernedDataAsserter(
+  "create that Rulebook",
+  /^rulebook_create:\s*/,
+);
 
 function slugify(name: string): string {
   return name
@@ -95,52 +138,75 @@ export function visibilityFromWhoRunsIt(
   return whoRunsIt && whoRunsIt !== "Just me" ? "internal" : "personal";
 }
 
+/**
+ * 🚨 THE RETRY LOOP THAT USED TO LIVE HERE IS THE DEFECT (cold walk 20, C).
+ *
+ * It read: send the create; if the door answers 23505, append four random
+ * characters to the slug and send it again, up to five times. That is a 4xx
+ * caught, acted on, and never mentioned — and it is exactly what the walk
+ * measured on the wire: `rulebook_create` → 409, retry → 200, a third Rulebook
+ * with the identical name in her list, and 4,311 characters of page carrying
+ * no word about a conflict of any kind.
+ *
+ * The 23505 was never about the NAME. `rulebook_slug_live_unique` is a plain
+ * global unique index on `platform.rulebook (slug)`, and `slugify` derives the
+ * slug from the name a person typed, so two Rulebooks called the same thing
+ * collide on an address she has never seen and cannot act on. A machine's
+ * uniqueness requirement is the machine's problem: the door resolves its own
+ * slug now (migrations/walk20_rulebook_create_is_idempotent_and_owns_its_slug.sql),
+ * duplicate names are allowed outright, and this function therefore has NOTHING
+ * left to retry. One call, one answer, and every refusal reaches the person as
+ * the door's own sentence.
+ */
 export async function createDraftRulebook(
   input: CreateRulebookInput,
-): Promise<Rulebook> {
-  const base = slugify(input.name) || "rulebook";
-  // Slug is globally unique among live rows; suffix on collision.
-  let slug = base;
-  for (let attempt = 0; attempt < 5; attempt++) {
-    // THE DOOR, not the base table. `platform` is not a client-writable schema
-    // (chair ruling, VERIFIER-8 HIGH-3): `rulebook_create` stamps `created_by`
-    // from auth.uid(), decides on the organization through the one ladder, and
-    // cannot be asked for a `status`, a rule or a `source_*` column at all — a
-    // Rulebook is born draft and empty by construction rather than by us
-    // remembering to say so.
-    const { data, error } = await supabase.rpc("rulebook_create", {
-      p_organization_id: input.organizationId,
-      p_name: input.name,
-      p_slug: slug,
-      p_description: input.description,
-      p_source: input.source as never,
-      p_sections: { G: { label: "General" } } as never,
-      p_visibility: visibilityFromWhoRunsIt(input.intake?.who_runs_it),
-      ...(input.intake
-        ? { p_metadata: { intake: input.intake } as never }
-        : {}),
-    });
-    if (!error && data) {
-      const created = parseRulebook(data as unknown as RulebookRow);
-      // Running from minute one: the Understudy exists the moment the
-      // Rulebook does — zero rules, pure improvisation on the intake.
-      pokeUnderstudy(created.id);
-      return created;
-    }
-    if (error?.code === "23505") {
-      slug = `${base}-${Math.random().toString(36).slice(2, 6)}`;
-      continue;
-    }
-    if (error) throw operationFailed("create that Rulebook", error);
-    // No error and no row. `rulebook_create` raises rather than returning NULL, so
-    // this is unreachable today — and it is written out rather than swallowed,
-    // because a door that silently starts answering NULL would otherwise surface
-    // as a Rulebook that never appeared with no message at all.
-    throw new Error(
-      "The Rulebook was not created and the database gave no reason. Nothing was saved — try again.",
-    );
-  }
-  throw new Error("Could not create the Rulebook: slug collision persisted.");
+): Promise<CreatedRulebook> {
+  const slug = slugify(input.name) || "rulebook";
+  // Minted here only when the caller did not bring one; see `clientToken`.
+  const clientToken = input.clientToken ?? crypto.randomUUID();
+  // THE DOOR, not the base table. `platform` is not a client-writable schema
+  // (chair ruling, VERIFIER-8 HIGH-3): `rulebook_create` stamps `created_by`
+  // from auth.uid(), decides on the organization through the one ladder, and
+  // cannot be asked for a `status`, a rule or a `source_*` column at all — a
+  // Rulebook is born draft and empty by construction rather than by us
+  // remembering to say so. `client_token` rides in `p_metadata` as TRANSPORT:
+  // the door reads it, strips it, and stores it in its own column, so nothing
+  // of it survives into the metadata six features share.
+  const { data, error } = await supabase.rpc("rulebook_create", {
+    p_organization_id: input.organizationId,
+    p_name: input.name,
+    p_slug: slug,
+    p_description: input.description,
+    p_source: input.source as never,
+    p_sections: { G: { label: "General" } } as never,
+    p_visibility: visibilityFromWhoRunsIt(input.intake?.who_runs_it),
+    p_metadata: {
+      ...(input.intake ? { intake: input.intake } : {}),
+      client_token: clientToken,
+    } as never,
+  });
+  // No error and no row. `rulebook_create` raises rather than returning NULL, so
+  // this is unreachable today — and it is written out rather than swallowed,
+  // because a door that silently starts answering NULL would otherwise surface
+  // as a Rulebook that never appeared with no message at all.
+  const row = assertCreatedRulebook(
+    (data ?? null) as unknown as
+      | (RulebookRow & { created?: boolean; name_already_in_use?: boolean })
+      | null,
+    error,
+  );
+  const created = parseRulebook(row);
+  // Running from minute one: the Understudy exists the moment the
+  // Rulebook does — zero rules, pure improvisation on the intake.
+  pokeUnderstudy(created.id);
+  return {
+    ...created,
+    // A door that has not been migrated yet answers neither key. Reading the
+    // absent `created` as `true` keeps this honest on an older database: it
+    // says "a Rulebook came back", never "we know it was not a replay".
+    created: row.created !== false,
+    nameAlreadyInUse: row.name_already_in_use === true,
+  };
 }
 
 /**

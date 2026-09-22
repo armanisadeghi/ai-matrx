@@ -122,7 +122,7 @@ begin
   -- creating a Rulebook is acting in an organization like anybody else.
   if not (iam.has_org_access(p_organization_id)
           or (p_organization_id in (select organization_id from iam.system_orgs where global_readable)
-              and is_super_admin())) then
+              and public.is_super_admin())) then
     raise exception 'rulebook_create: % is not an organization you can start a Rulebook in.', p_organization_id
       using errcode = '42501';
   end if;
@@ -160,6 +160,10 @@ begin
      where r.created_by = v_actor
        and r.client_token = v_token;
     if found then
+      if v_row.organization_id is distinct from p_organization_id then
+        raise exception 'rulebook_create: this create token belongs to a different organization. Start a new create.'
+          using errcode = '22023';
+      end if;
       return public._rulebook_json(v_row)
              || jsonb_build_object('created', false, 'name_already_in_use', false);
     end if;
@@ -202,6 +206,10 @@ begin
          where r.created_by = v_actor
            and r.client_token = v_token;
         if found then
+          if v_row.organization_id is distinct from p_organization_id then
+            raise exception 'rulebook_create: this create token belongs to a different organization. Start a new create.'
+              using errcode = '22023';
+          end if;
           return public._rulebook_json(v_row)
                  || jsonb_build_object('created', false, 'name_already_in_use', false);
         end if;
