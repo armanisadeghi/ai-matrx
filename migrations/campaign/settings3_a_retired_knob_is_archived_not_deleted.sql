@@ -47,12 +47,6 @@
 --     deadlock_backoff_max_ms), each of which is live and read. The subject of this row
 --     was deleted out from under it.
 --
--- DEPENDS ON migrations/campaign/knobguard_a_key_is_a_pair_not_a_word.sql having already
--- run on the same target: this file's knob_archive door calls the shared
--- platform.knob_live_readers(feature, key) that migration defines, instead of carrying its
--- own copy of the readers query (2026-09-22, same lane that fixed the false-positive on the
--- bare-word key).
---
 -- The inverse is migrations/inverse/settings3_a_retired_knob_is_archived_not_deleted_down.sql.
 
 set lock_timeout = '4s';
@@ -130,15 +124,17 @@ begin
             hint = 'So a retired registration always has somebody to ask.';
   end if;
 
-  -- The SAME predicate platform.knob_delete_refuses_a_live_reader runs, through the
-  -- ONE shared function platform.knob_live_readers(feature, key)
-  -- (migrations/campaign/knobguard_a_key_is_a_pair_not_a_word.sql, 2026-09-22): a
-  -- body counts as a reader only when it names BOTH the feature and the key
-  -- together, not merely the bare key as a word. A knob a database function still
-  -- reads is not orphaned: archiving it would take the control off every screen
-  -- while the function went on obeying the stored value, which is the lie this
+  -- The SAME census platform.knob_delete_refuses_a_live_reader runs. A knob a database
+  -- function still reads is not orphaned: archiving it would take the control off every
+  -- screen while the function went on obeying the stored value, which is the lie this
   -- whole system exists to prevent, pointing the other way.
-  v_readers := platform.knob_live_readers(p_feature, p_key);
+  select string_agg(distinct n.nspname || '.' || p.proname, ', ' order by n.nspname || '.' || p.proname)
+    into v_readers
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+   where p.prokind = 'f'
+     and n.nspname not in ('pg_catalog', 'information_schema')
+     and position('''' || p_key || '''' in pg_get_functiondef(p.oid)) > 0;
 
   if v_readers is not null then
     raise exception 'platform.knob_archive: %.% is still read by %', p_feature, p_key, v_readers
