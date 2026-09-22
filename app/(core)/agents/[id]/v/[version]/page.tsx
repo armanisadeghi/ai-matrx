@@ -3,6 +3,7 @@ import { getAgent } from "@/lib/agents/data";
 import { AgentVersionDiffPage } from "@/features/agents/components/diff/AgentVersionDiffPage";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentHeader } from "@/features/agents/components/shared/AgentHeader";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 export async function generateMetadata({
   params,
@@ -25,6 +26,20 @@ export default async function AgentVersionPage({
   if (isNaN(versionNum)) notFound();
 
   const agent = await getAgent(id);
+
+  // A null read is ambiguous under RLS (denied / deleted / never existed /
+  // session expired) — the gate asks the platform which one it actually is
+  // instead of a generic 404.
+  if (!agent) {
+    return (
+      <AccessGate
+        token="agent"
+        id={id}
+        fallbackHref="/agents"
+        fallbackLabel="All agents"
+      />
+    );
+  }
 
   return (
     <>

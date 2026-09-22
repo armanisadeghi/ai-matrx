@@ -32,7 +32,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 // A tsc --noEmit error line looks like:
 //   features/foo/bar.tsx(12,34): error TS2322: Type 'X' is not assignable to type 'Y'.
-const ERROR_LINE = /^(?<file>[^\s(][^(]*)\((?<line>\d+),(?<col>\d+)\):\s*error\s+(?<code>TS\d+):\s*(?<message>.*)$/;
+const ERROR_LINE = /^(?<file>.*)\((?<line>\d+),(?<col>\d+)\):\s*error\s+(?<code>TS\d+):\s*(?<message>.*)$/;
 
 /** Parse raw `tsc --noEmit` stdout/stderr text into one row per error. */
 export function parseErrors(text) {
@@ -116,17 +116,24 @@ function selfTest() {
     "features/agents/utils/scope-mapping.ts(42,7): error TS2322: Type 'string' is not assignable to type 'SurfaceScope'.",
     "features/agents/utils/scope-mapping.ts(58,3): error TS2345: Argument of type 'undefined' is not assignable to parameter of type 'string'.",
     "lib/api/typed-client.ts(101,12): error TS2551: Property 'foo' does not exist on type 'Client'. Did you mean 'fooBar'?",
-    "Found 3 errors in 2 files.",
+    "app/(admin)/administration/agents/system-agents/agents/[id]/v/[version]/page.tsx(36,22): error TS18047: 'agent' is possibly 'null'.",
+    "Found 4 errors in 3 files.",
     "",
   ].join("\n");
   const rows = parseErrors(sample);
   let failures = 0;
-  const expectCount = 3;
+  const expectCount = 4;
   if (rows.length !== expectCount) {
     failures += 1;
     console.log(`  FAIL  expected ${expectCount} parsed rows, got ${rows.length}`);
   } else {
     console.log(`  PASS  parsed ${rows.length} rows from sample tsc output`);
+  }
+  if (rows[3]?.file !== "app/(admin)/administration/agents/system-agents/agents/[id]/v/[version]/page.tsx") {
+    failures += 1;
+    console.log("  FAIL  preserved a diagnostic path containing parentheses");
+  } else {
+    console.log("  PASS  preserved a diagnostic path containing parentheses");
   }
   const grouped = groupByFile(rows);
   if (grouped[0]?.[0] !== "features/agents/utils/scope-mapping.ts" || grouped[0]?.[1]?.length !== 2) {

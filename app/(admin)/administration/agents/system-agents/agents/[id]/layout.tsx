@@ -2,6 +2,7 @@ import { getAgent } from "@/lib/agents/data";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 import { AgentHydratorServer } from "@/features/agents/route/AgentHydratorServer";
 import { SystemAgentSurfaceEmitter } from "@/features/agents/components/admin/SystemAgentSurfaceEmitter";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 export async function generateMetadata({
   params,
@@ -10,6 +11,14 @@ export async function generateMetadata({
 }) {
   const { id } = await params;
   const agent = await getAgent(id);
+  // A null read is ambiguous (denied / deleted / never existed) — the layout
+  // body renders the real answer via <AccessGate>; the tab title stays generic.
+  if (!agent) {
+    return createDynamicRouteMetadata(
+      "/administration/agents/system-agents/agents",
+      { title: "Agent (System)" },
+    );
+  }
   return createDynamicRouteMetadata(
     "/administration/agents/system-agents/agents",
     {
@@ -29,6 +38,20 @@ export default async function AdminSystemAgentDetailLayout({
 }) {
   const { id } = await params;
   const agent = await getAgent(id);
+
+  // A null read is ambiguous under RLS (denied / deleted / never existed /
+  // session expired) — the gate asks the platform which one it actually is
+  // instead of a generic 404. Nothing under this layout can render without it.
+  if (!agent) {
+    return (
+      <AccessGate
+        token="agent"
+        id={id}
+        fallbackHref="/administration/agents/system-agents"
+        fallbackLabel="System agents"
+      />
+    );
+  }
 
   // This is the SYSTEM agents admin — a personal (non-builtin) agent open
   // here is almost always a mistake (e.g. global-binding your own agent when

@@ -8,6 +8,15 @@ export async function generateMetadata({
 }) {
   const { id } = await params;
   const agent = await getAgent(id);
+  // A null read is ambiguous (denied / deleted / never existed) — the body
+  // renders the real answer via <AccessGate>; the tab title stays generic.
+  if (!agent) {
+    return createDynamicRouteMetadata("/agents", {
+      titlePrefix: "Surfaces",
+      letter: "SU",
+      title: "Agent",
+    });
+  }
   return createDynamicRouteMetadata("/agents", {
     titlePrefix: "Surfaces",
     title: agent.name,
