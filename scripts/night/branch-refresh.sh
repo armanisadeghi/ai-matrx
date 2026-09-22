@@ -164,14 +164,31 @@ SYSTEM_ORG_SQL="select * from iam.organizations where is_system is true"
 # metacommands of its own, so a loader can stage a second file it needs (the door's type-name
 # sidecar is the one that exists). It is written literally, so each line carries its own
 # terminator; nothing is appended to it.
-seed_load() {  # seed_load <schema.table> <tsv> [<fixup sql on _seed_stage>] [<prelude>] -> "loaded=N refused=M first=…"
-  local t="$1" f="$2" fix="${3:-}" pre="${4:-}" out
+# 🚨 THE COLUMN LIST, AND THE TRUNCATE THAT WAITS FOR THE COPY. Two defects the first live
+# seed-only run caused (2026-09-22 17:4xZ), both from the same assumption — that the branch's table
+# is shaped like the source's:
+#   · `platform.feature_knob` has THREE more columns on the clone (archived_at/_reason/_by) than on
+#     this branch, so the copy died on `extra data after last expected column` — AFTER the table had
+#     been truncated. 955 rows on the branch became ZERO. The seed now reads and writes the
+#     INTERSECTION of the two column lists, by NAME, so drift costs the drifted columns and nothing
+#     else; and the TRUNCATE has moved INSIDE this transaction, AFTER the copy, so a copy that fails
+#     rolls back with the branch's rows still there.
+#   · `first_err` was only recorded on pass > 1, so a table every row of which is refused on pass 1
+#     reported `(no reason captured)` — `tool.definition` refused all 693 and said nothing. The
+#     reason is now captured on every pass and the LAST pass's is the one reported, which is the
+#     pass whose refusals are real rather than ordering.
+seed_load() {  # seed_load <schema.table> <tsv> [<fix sql>] [<prelude>] [<truncate 0|1>] [<column list>]
+  local t="$1" f="$2" fix="${3:-}" pre="${4:-}" trunc="${5:-0}" cols="${6:-}" out
+  local collist="" truncsql=""
+  [ -n "$cols" ] && collist=" ($cols)"
+  [ "$trunc" = "1" ] && truncsql="truncate table $t cascade;"
   out="$("$PSQL" "$BRANCH_DSN" -qAt 2>&1 <<SQL
 begin;
 create temp table _seed_stage (like $t including defaults) on commit drop;
 create temp table _seed_done (c tid primary key) on commit drop;
 ${pre}
-\\copy _seed_stage from '$f'
+\\copy _seed_stage${collist} from '$f'
+${truncsql}
 ${fix:+$fix;}
 -- 🚨 IMMEDIATE, so a per-row handler can actually see the refusal. platform.client_callable_door
 -- carries DEFERRED constraint triggers (the §6d-4 definer/access-decision guards). Deferred, they
@@ -181,7 +198,7 @@ ${fix:+$fix;}
 -- counted and named where it happens, and the good 1,692 survive.
 set constraints all immediate;
 do \$SEEDLOAD\$
-declare r record; ok int := 0; bad int := 0; pass int := 0; moved int; first_err text;
+declare r record; ok int := 0; bad int := 0; pass int := 0; moved int; first_err text; pass_err text;
 begin
   -- REPEATED PASSES UNTIL ONE MOVES NOTHING. platform.taxonomy_node has a self-referencing
   -- parent_id, so a child staged before its parent is refused on the first pass and accepted on
@@ -199,9 +216,14 @@ begin
         insert into _seed_done values (r.c);
         ok := ok + 1; moved := moved + 1;
       exception when others then
-        if pass > 1 and first_err is null then first_err := left(sqlerrm, 160); end if;
+        -- Captured on EVERY pass, and the LAST pass's is what gets reported: a pass-1 refusal is
+        -- often just ordering (a child before its parent), but a table whose every row is refused
+        -- never reaches pass 2 and used to report "(no reason captured)".
+        if pass_err is null then pass_err := left(sqlerrm, 160); end if;
       end;
     end loop;
+    if pass_err is not null then first_err := pass_err; end if;
+    pass_err := null;
     exit when moved = 0 or pass >= 8;
   end loop;
   bad := (select count(*) from _seed_stage) - ok;
@@ -540,6 +562,32 @@ fi
 # `organization_id` (`platform.provision_spec` names it `owner_org_id`), and the curated five are
 # filtered by it exactly like the rest — until today they were copied whole, which carried
 # provision_spec's three customer rows onto the branch.
+# 🚨 THE COLUMN INTERSECTION, READ ONCE FROM BOTH CATALOGS. The branch is not always shaped like
+# the source — `platform.feature_knob` carries three columns on the clone that this branch lacks —
+# and `select *` into a differently shaped table is `extra data after last expected column`, which
+# on 2026-09-22 emptied that table and loaded nothing back. Every seeded table is therefore read
+# and written by the NAMES both sides have, in the source's order. A table the branch does not have
+# at all gets an empty list and is skipped by name.
+typeset -A SRC_COLS BR_COLS
+COLSQL="select n.nspname||'.'||c.relname, string_agg(quote_ident(a.attname), ',' order by a.attnum)
+          from pg_attribute a join pg_class c on c.oid=a.attrelid join pg_namespace n on n.oid=c.relnamespace
+         where c.relkind in ('r','p') and a.attnum > 0 and not a.attisdropped
+           and n.nspname = any(array['platform','tool','iam','custom','content_ir','history','public'])
+         group by 1"
+while IFS='|' read -r ct cv; do [ -n "$ct" ] && SRC_COLS[$ct]="$cv"; done < <("$PSQL" "${SRC[@]}" -qAtF'|' -c "$COLSQL" 2>/dev/null)
+while IFS='|' read -r ct cv; do [ -n "$ct" ] && BR_COLS[$ct]="$cv"; done < <("$PSQL" "$BRANCH_DSN" -qAtF'|' -c "$COLSQL" 2>/dev/null)
+say "  column catalogs read: ${#SRC_COLS[@]} tables on the source, ${#BR_COLS[@]} on the branch"
+
+# common_cols <schema.table> -> the quoted columns both sides have, in the source's order
+common_cols() {
+  local t="$1" out="" c
+  [ -n "${SRC_COLS[$t]:-}" ] && [ -n "${BR_COLS[$t]:-}" ] || { print -n ""; return 1; }
+  for c in ${(s:,:)SRC_COLS[$t]}; do
+    [[ ",${BR_COLS[$t]}," == *",$c,"* ]] && out="${out:+$out,}$c"
+  done
+  print -n -- "$out"
+}
+
 typeset -A SEED_FILTER
 while IFS='|' read -r ft fv; do SEED_FILTER[$ft]="$fv"; done < <(python3 -c '
 import json, sys
@@ -552,8 +600,10 @@ typeset -a SEED_OK
 for t in "${SEED_TABLES[@]}"; do
   f="$WORK/seed_${t//./_}.tsv"
   col="${SEED_FILTER[$t]:-}"
-  if [ -n "$col" ]; then CSEL="select * from $t where \"$col\" is null or \"$col\" = '$SYSORG_ID'"
-  else                   CSEL="select * from $t"; fi
+  cc="$(common_cols "$t")"
+  if [ -z "$cc" ]; then say "  $t: the branch does not have this table (or shares no column with the source); skipped"; continue; fi
+  if [ -n "$col" ]; then CSEL="select $cc from $t where \"$col\" is null or \"$col\" = '$SYSORG_ID'"
+  else                   CSEL="select $cc from $t"; fi
   out="$("$PSQL" "${SRC[@]}" -qAt -c "\copy ($CSEL) to '$f'" 2>&1)"
   if [ -f "$f" ] && ! print -r -- "$out" | grep -qE 'ERROR|FATAL'; then
     SEED_OK+=("$t"); say "  $t: $(wc -l < "$f" | tr -d ' ') rows, $(du -h "$f" | cut -f1)"
@@ -617,8 +667,10 @@ say "  tables the checked-in list declares SEEDED (beyond the curated ${#SEED_TA
 print -r -- "$DECLARED" | while IFS='|' read -r t col trunc; do
   [ -n "$t" ] || continue
   f="$WORK/lookup_${t//./_}.tsv"
-  if [ -n "$col" ]; then SEL="select * from $t where \"$col\" is null or \"$col\" = '$SYSORG_ID'"
-  else                   SEL="select * from $t"; fi
+  cc="$(common_cols "$t")"
+  if [ -z "$cc" ]; then say "    $t: the branch does not have this table (or shares no column with the source); skipped"; continue; fi
+  if [ -n "$col" ]; then SEL="select $cc from $t where \"$col\" is null or \"$col\" = '$SYSORG_ID'"
+  else                   SEL="select $cc from $t"; fi
   o="$("$PSQL" "${SRC[@]}" -qAt -c "\copy ($SEL) to '$f'" 2>&1)"
   if [ -f "$f" ] && ! print -r -- "$o" | grep -qE 'ERROR|FATAL'; then
     n="$(wc -l < "$f" | tr -d ' ')"
@@ -636,7 +688,8 @@ fi
 say "  declared tables with platform-owned rows to load: ${#LOOKUP_OK[@]}"
 
 SYSORG="$WORK/seed_system_org.tsv"
-SOUT="$("$PSQL" "${SRC[@]}" -qAt -c "\copy ($SYSTEM_ORG_SQL) to '$SYSORG'" 2>&1)"
+SYSORG_COLS="$(common_cols iam.organizations)"
+SOUT="$("$PSQL" "${SRC[@]}" -qAt -c "\copy (select $SYSORG_COLS from iam.organizations where is_system is true) to '$SYSORG'" 2>&1)"
 if [ -f "$SYSORG" ] && ! print -r -- "$SOUT" | grep -qE 'ERROR|FATAL'; then
   say "  the system organization(s): $(wc -l < "$SYSORG" | tr -d ' ') row(s) — is_system only, never a customer"
 else
@@ -918,7 +971,7 @@ say "loading the curated seed"
 if [ -n "$SYSORG" ] && [ "$REHEARSE" != "1" ]; then
   # Its created_by/updated_by name a production user this job purged, so they are re-pointed at
   # the branch's own admin identity. Nothing else about the row is touched.
-  say "  iam.organizations (is_system only): $(seed_load iam.organizations "$SYSORG" "update _seed_stage set created_by = (select id from auth.users where email = 'admin@admin.com'), updated_by = (select id from auth.users where email = 'admin@admin.com')")"
+  say "  iam.organizations (is_system only): $(seed_load iam.organizations "$SYSORG" "update _seed_stage set created_by = (select id from auth.users where email = 'admin@admin.com'), updated_by = (select id from auth.users where email = 'admin@admin.com')" "" 0 "$SYSORG_COLS")"
 fi
 # The curated five obey the SAME truncate rule as the declared set: emptied only when every source
 # row is platform-owned. `platform.provision_spec` is the one of them that is not (16 of 19), and
@@ -932,12 +985,7 @@ for t in d["tables"]:
 ' "$SEED_LIST_JSON" 2>/dev/null)
 for t in "${SEED_OK[@]}"; do
   f="$WORK/seed_${t//./_}.tsv"
-  if [ "${CURATED_TRUNC[$t]:-1}" = "1" ]; then
-    o="$("$PSQL" "$BRANCH_DSN" -qAt -c "truncate table $t cascade" 2>&1)"
-    if print -r -- "$o" | grep -qE 'ERROR:|FATAL:'; then say "  $t: could not empty it — $(print -r -- "$o" | grep -m1 -E 'ERROR:|FATAL:'); skipping"; continue; fi
-  else
-    say "  $t: NOT emptied — the source holds customer rows this branch must keep out, so the filtered copy is appended"
-  fi
+  [ "${CURATED_TRUNC[$t]:-1}" = "1" ] || say "  $t: NOT emptied — the source holds customer rows this branch must keep out, so the filtered copy is appended"
   PRE="" FIX=""
   if [ "$t" = "platform.client_callable_door" ] && [ -n "$DOOR_TYPES" ]; then
     # Re-point every row's identity_argtypes at THIS database's OIDs for the same type NAMES.
@@ -947,7 +995,7 @@ for t in "${SEED_OK[@]}"; do
 \\copy _door_types from '$DOOR_TYPES'"
     FIX="update _seed_stage s set identity_argtypes = x.oids from _door_types m, lateral (select array_agg(to_regtype(n)::oid order by ord) as oids, count(*) filter (where to_regtype(n) is null) as unresolved from unnest(string_to_array(m.names, ',')) with ordinality u(n, ord)) x where m.id = s.id and x.unresolved = 0"
   fi
-  say "  $t: $(seed_load "$t" "$f" "$FIX" "$PRE")  -> $("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) rows on the branch"
+  say "  $t: $(seed_load "$t" "$f" "$FIX" "$PRE" "${CURATED_TRUNC[$t]:-1}" "$(common_cols "$t")")  -> $("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) rows on the branch"
 done
 # WHAT THE DOOR TABLE STILL REFUSES, AND WHY IT IS NOT A COPY DEFECT. After the OID translation the
 # residue measured on 2026-09-22 was 9 of 1,735: two rows naming functions this branch does not hold
@@ -972,11 +1020,7 @@ say "  doors on the branch: $DOORMISS (source has $("$PSQL" "$SRC_DSN" -qAt -c '
 # by its own primary key, counted, and named.
 for t in "${LOOKUP_OK[@]}"; do
   f="$WORK/lookup_${t//./_}.tsv"
-  if [ "${LOOKUP_TRUNC[$t]}" = "1" ]; then
-    o="$("$PSQL" "$BRANCH_DSN" -qAt -c "truncate table $t cascade" 2>&1)"
-    if print -r -- "$o" | grep -qE 'ERROR:|FATAL:'; then say "  $t: could not empty it — $(print -r -- "$o" | grep -m1 -E 'ERROR:|FATAL:'); skipping"; continue; fi
-  fi
-  say "  $t: $(seed_load "$t" "$f")  -> $("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) rows on the branch$([ "${LOOKUP_TRUNC[$t]}" = "1" ] || print -n ' (appended: the source holds customer rows this branch must keep out, so it is never emptied)')"
+  say "  $t: $(seed_load "$t" "$f" "" "" "${LOOKUP_TRUNC[$t]}" "$(common_cols "$t")")  -> $("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) rows on the branch$([ "${LOOKUP_TRUNC[$t]}" = "1" ] || print -n ' (appended: the source holds customer rows this branch must keep out, so it is never emptied)')"
 done
 
 # BRANCH-REF re-point. Same database, so the identifier must NOT have moved; if it has,
