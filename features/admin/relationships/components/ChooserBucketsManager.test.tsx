@@ -165,6 +165,12 @@ describe("ChooserBucketsManager", () => {
     expect(mockReadAllRows).toHaveBeenCalledWith(expect.any(Function), {
       label: "entity_schemas_list()",
     });
+    expect(rpc).toHaveBeenCalledWith("reference_categories_list", undefined, {
+      count: "exact",
+    });
+    expect(rpc).toHaveBeenCalledWith("entity_schemas_list", undefined, {
+      count: "exact",
+    });
 
     await act(async () => {
       await categoryTable.edit?.onSave(
