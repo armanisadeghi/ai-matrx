@@ -9,7 +9,7 @@ import {
 } from "@ai-matrx/design-system/data-table";
 import type { ModelAuditResult, AuditCategory } from "./auditTypes";
 import type { AiModel } from "../types";
-import { ProviderBadge } from "./AuditTableShell";
+import { ApiNameCell, ProviderBadge } from "./AuditTableShell";
 import ModelDetailSheet, { OpenDetailButton } from "./ModelDetailSheet";
 
 const CATEGORY_LABELS: Record<AuditCategory, string> = {
@@ -59,11 +59,7 @@ export default function AuditOverviewTab({
       id: "model_name",
       accessorFn: (r) => r.model.name,
       header: "API name",
-      cell: (r) => (
-        <span className="font-mono text-xs text-muted-foreground">
-          {r.model.name}
-        </span>
-      ),
+      cell: (r) => <ApiNameCell name={r.model.name} />,
       width: 220,
       frozen: true,
     },

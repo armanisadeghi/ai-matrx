@@ -3,6 +3,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { CheckCircle2, Circle, Loader2, Save, Zap } from "lucide-react";
 import {
   MatrxDataTable,
@@ -22,7 +28,12 @@ import {
   CAPABILITY_GROUPS,
 } from "./auditTypes";
 import { mergeAuditRecordIntoCapabilities } from "../capabilities/parse";
-import { IssueList, ProviderBadge, StatusBadge } from "./AuditTableShell";
+import {
+  ApiNameCell,
+  IssueList,
+  ProviderBadge,
+  StatusBadge,
+} from "./AuditTableShell";
 import ModelDetailSheet, { OpenDetailButton } from "./ModelDetailSheet";
 
 interface CapabilitiesAuditTabProps {
@@ -178,17 +189,26 @@ function CapabilityChips({ caps }: { caps: CapabilitiesRecord }) {
   return enabled.length === 0 ? (
     <span className="text-xs italic text-muted-foreground/50">none</span>
   ) : (
-    <div className="flex flex-wrap gap-0.5">
-      {enabled.map((key) => (
-        <Badge
-          key={key}
-          variant="outline"
-          className="h-4 border-green-300 px-1 py-0 text-[9px] font-normal text-green-700"
-        >
-          {CAPABILITY_LABELS[key]}
-        </Badge>
-      ))}
-    </div>
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex min-w-0 items-center gap-0.5 overflow-hidden whitespace-nowrap">
+            {enabled.map((key) => (
+              <Badge
+                key={key}
+                variant="outline"
+                className="h-4 shrink-0 border-green-300 px-1 py-0 text-[9px] font-normal text-green-700"
+              >
+                {CAPABILITY_LABELS[key]}
+              </Badge>
+            ))}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-lg whitespace-normal break-words text-xs">
+          {enabled.map((key) => CAPABILITY_LABELS[key]).join(", ")}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
@@ -249,11 +269,7 @@ export default function CapabilitiesAuditTab({
       id: "model_name",
       accessorFn: (r) => r.model.name,
       header: "API name",
-      cell: (r) => (
-        <span className="font-mono text-xs text-muted-foreground">
-          {r.model.name}
-        </span>
-      ),
+      cell: (r) => <ApiNameCell name={r.model.name} />,
       frozen: true,
       width: 220,
     },

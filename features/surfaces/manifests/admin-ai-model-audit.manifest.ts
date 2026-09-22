@@ -1,9 +1,10 @@
 /**
  * Surface manifest — AI Model Data Audit (matrx-admin/ai-models/audit).
  *
- * The audit is a distinct read-only admin surface. It receives the loaded
- * model registry and its deterministic, in-browser audit results; it never
- * carries endpoints, vendor credentials, or offering pricing.
+ * The audit exposes read-only agent context while its existing admin controls
+ * still edit model records. It receives the loaded model registry and its
+ * deterministic, in-browser audit results; it never carries endpoints, vendor
+ * credentials, or offering pricing.
  */
 
 import type {

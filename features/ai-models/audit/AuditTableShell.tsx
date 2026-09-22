@@ -7,6 +7,12 @@
 import React from 'react';
 import { CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import type { AuditIssue } from './auditTypes';
 import { cn } from "@/lib/utils";
 import {
@@ -27,20 +33,39 @@ export function StatusBadge({ pass }: { pass: boolean }) {
 
 export function IssueList({ issues }: { issues: AuditIssue[] }) {
     if (issues.length === 0) return null;
+    const summary = issues.map((issue) => issue.message).join(' · ');
+    const hasError = issues.some((issue) => issue.severity === 'error');
     return (
-        <div className="flex flex-col gap-0.5">
-            {issues.map((issue, i) => (
-                <span
-                    key={i}
-                    className={`text-[10px] flex items-center gap-1 ${
-                        issue.severity === 'error' ? 'text-destructive' : 'text-amber-600'
-                    }`}
-                >
-                    <AlertTriangle className="h-2.5 w-2.5 shrink-0" />
-                    {issue.message}
-                </span>
-            ))}
-        </div>
+        <TooltipProvider delayDuration={200}>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <span className={`flex min-w-0 items-center gap-1 whitespace-nowrap text-[10px] ${hasError ? 'text-destructive' : 'text-amber-600'}`}>
+                        <AlertTriangle className="h-2.5 w-2.5 shrink-0" />
+                        <span className="truncate">{summary}</span>
+                    </span>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-lg whitespace-normal break-words text-xs">
+                    {summary}
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+    );
+}
+
+export function ApiNameCell({ name }: { name: string }) {
+    return (
+        <TooltipProvider delayDuration={200}>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <span className="block min-w-0 truncate whitespace-nowrap font-mono text-xs text-muted-foreground">
+                        {name}
+                    </span>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-lg break-all font-mono text-xs">
+                    {name}
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
     );
 }
 

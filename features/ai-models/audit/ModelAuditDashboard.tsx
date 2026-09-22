@@ -95,7 +95,7 @@ export default function ModelAuditDashboard() {
 
   const getSurfaceScope = () =>
     createAdminAiModelAuditScope({
-      models: models as unknown as Record<string, unknown>[],
+      models: models.map((model) => ({ ...model })),
       audit_results: auditResults.map((result) => ({
         model_id: result.model.id,
         pass: result.pass,
@@ -114,7 +114,7 @@ export default function ModelAuditDashboard() {
       },
       active_category: activeTab,
       exclude_deprecated: excludeDeprecated,
-      audit_rules: rules as unknown as Record<string, unknown>,
+      audit_rules: { ...rules },
       audit_loading: loading,
       audit_error: error ?? undefined,
       selection: window.getSelection()?.toString() || undefined,
