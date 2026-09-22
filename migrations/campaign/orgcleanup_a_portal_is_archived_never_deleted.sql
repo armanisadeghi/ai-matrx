@@ -53,6 +53,11 @@ comment on column custom.portal.archived_at is
 comment on column custom.portal.archived_by is 'Who archived it (auth.users.id).';
 comment on column custom.portal.archive_reason is 'The words the person typed, if they typed any.';
 
+-- THE GUARD CAUGHT THIS ONE (provision_shape_guard, 23514, on the first production apply):
+-- a NEW foreign key with no covering index makes every delete of the parent row sequentially
+-- scan this table. archived_by points at auth.users, so it needs its own index.
+create index if not exists portal_archived_by_idx on custom.portal (archived_by);
+
 create index if not exists portal_live_by_org_idx
   on custom.portal (organization_id, opened_at desc)
   where archived_at is null;
@@ -452,7 +457,7 @@ values
        'p_archived', jsonb_build_object(
          'type', 'text', 'position', 2, 'optional', true, 'sql_default', '''active''',
          'check', 'one of active | archived | all; anything else is 22023',
-         'null_rule', jsonb_build_object('means', 'active — the law''s default is to hide'))))))
+         'null_rule', jsonb_build_object('means', 'active — the law''s default is to hide')))))
 on conflict do nothing;
 
 -- ── 6. The grants ─────────────────────────────────────────────────────────────────────────────

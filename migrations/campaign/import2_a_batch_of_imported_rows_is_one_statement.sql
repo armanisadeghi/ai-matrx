@@ -128,6 +128,21 @@ $fn$;
 comment on function custom._io_declare_unmapped(uuid, uuid, jsonb, jsonb) is
   'IMPORT-2: the one body that turns a file''s unrecognised headers into real columns. Called by custom.io_import_declare_columns (its own wizard step) and by custom.io_import_rows (the safety net for a run that never took that step).';
 
+-- §6d-4: a SECURITY DEFINER function says IN DATA who may call it. Nobody may: the two doors
+-- above and below are the call surface, and each asks its own questions before it gets here.
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
+   non_client_lane, signed_in_callers, anonymous_callers)
+values
+  ('custom', '_io_declare_unmapped',
+   'p_organization_id uuid, p_table_id uuid, p_rows jsonb, p_mapping jsonb',
+   array[2950, 2950, 3802, 3802]::oid[],
+   'p_organization_id is the organization every column is declared into and is passed straight to custom.field_declare, which asks custom.assert_store_door and the admin rung itself; NULL is refused there. p_table_id is the custom Table the columns are added to and is passed to the same door; NULL is refused there. p_rows and p_mapping are the file and the headers a person already mapped, read only for header names and sample values, and reach no access decision. NULL p_rows means an empty file and NULL p_mapping means nothing was mapped by hand.',
+   'IMPORT-2',
+   'server_only: this is the shared body behind custom.io_import_declare_columns (the wizard step, a declared client door that asks the admin rung first) and custom.io_import_rows (the writing door, which asks the editor rung and whose run already named the table). No client ever reaches it directly, and it makes no access decision of its own - custom.field_declare does, on every column.',
+   false, false)
+on conflict do nothing;
+
 -- ── 2. THE DOOR THE SCREEN SHOWS AS ITS OWN STEP. ────────────────────────────────────────
 create or replace function custom.io_import_declare_columns(
   p_organization_id uuid,

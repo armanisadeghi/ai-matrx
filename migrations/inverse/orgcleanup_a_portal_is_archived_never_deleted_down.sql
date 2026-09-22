@@ -151,6 +151,7 @@ begin
 end $$;
 
 drop index if exists custom.portal_live_by_org_idx;
+drop index if exists custom.portal_archived_by_idx;
 
 alter table custom.portal
   drop column if exists archived_at,
