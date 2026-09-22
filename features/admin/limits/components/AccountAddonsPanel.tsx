@@ -222,11 +222,6 @@ const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
           name={row.org?.name ?? null}
           openInNewTab
         />
-       <p className="font-mono text-xs text-muted-foreground">
-         {row.org
-           ? `${row.org.slug}${row.org.is_personal ? " · personal" : ""}`
-           : "not among readable organizations"}
-       </p>
       </div>
     ),
     frozen: true,
@@ -236,14 +231,28 @@ const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
     id: "organization_slug",
     header: "Organization slug",
     accessorFn: (row) => row.org?.slug ?? "",
-    hidden: true,
   },
   {
     id: "personal_organization",
     header: "Personal organization",
-    accessorFn: (row) => row.org?.is_personal ?? false,
-    filter: "boolean",
-    hidden: true,
+    accessorFn: (row) =>
+      row.org ? (row.org.is_personal ? "personal" : "shared") : "unknown",
+    filter: "select",
+    filterOptions: [
+      { value: "personal", label: "Personal" },
+      { value: "shared", label: "Shared" },
+      { value: "unknown", label: "Unknown" },
+    ],
+  },
+  {
+    id: "organization_readability",
+    header: "Organization access",
+    accessorFn: (row) => (row.org ? "readable" : "not_readable"),
+    filter: "select",
+    filterOptions: [
+      { value: "readable", label: "Readable" },
+      { value: "not_readable", label: "Not readable" },
+    ],
   },
   {
     id: "capability",
@@ -287,7 +296,6 @@ const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
       ) : (
         "unknown"
       ),
-    hidden: true,
   },
   {
     id: "addon_value",
@@ -296,7 +304,15 @@ const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
     filter: "number",
     cell: (row) => (
       <div className="text-right">
-        <p>{limitToHuman(row.addon.capability, row.addon.limit_value)}</p>
+        <p>
+          {limitToHuman(row.addon.capability, row.addon.limit_value)}
+          {row.addon.limit_value !== null &&
+            !isMicroUsd(row.addon.capability) && (
+              <span className="ml-1 text-xs text-muted-foreground">
+                {capabilityUnitLabel(row.addon.capability)}
+              </span>
+            )}
+        </p>
         {isPoints(row.addon.capability) && (
           <p className="text-xs text-muted-foreground">
             {pointsToUsdLabel(row.addon.limit_value, row.addon.period)}
@@ -330,9 +346,16 @@ const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
         row.planAllowanceState === "numeric" &&
         row.planContext.kind === "known"
       ) {
-        return limitToHuman(
-          row.addon.capability,
-          row.planContext.limit?.limit_value ?? 0,
+        const value = row.planContext.limit?.limit_value ?? 0;
+        return (
+          <>
+            {limitToHuman(row.addon.capability, value)}
+            {!isMicroUsd(row.addon.capability) && (
+              <span className="ml-1 text-xs text-muted-foreground">
+                {capabilityUnitLabel(row.addon.capability)}
+              </span>
+            )}
+          </>
         );
       }
       return row.planAllowanceState === "unlimited"
@@ -364,7 +387,6 @@ const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
     header: "Plan",
     accessorFn: (row) =>
       row.planContext.kind === "known" ? row.planContext.plan.name : "",
-    hidden: true,
   },
   {
     id: "raises_by",

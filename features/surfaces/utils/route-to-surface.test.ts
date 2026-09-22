@@ -546,9 +546,14 @@ describe("commerce label routes", () => {
   it("gives only an exact batch detail route the label-batch surface", () => {
     expect(surfaceFromPathname("/commerce/labels")).toBeNull();
     expect(surfaceFromPathname("/commerce/labels/")).toBeNull();
-    expect(surfaceFromPathname("/commerce/labels/batch-123")).toBe(
+    expect(
+      surfaceFromPathname(
+        "/commerce/labels/02648d08-93bd-4c2e-b5cf-54c9c7828475",
+      ),
+    ).toBe(
       "matrx-user/commerce-label-batch",
     );
-    expect(surfaceFromPathname("/commerce/labels/batch-123/print")).toBeNull();
+    expect(surfaceFromPathname("/commerce/labels/printers")).toBeNull();
+    expect(surfaceFromPathname("/commerce/labels/printers/certify")).toBeNull();
   });
 });

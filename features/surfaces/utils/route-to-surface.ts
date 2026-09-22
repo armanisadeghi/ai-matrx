@@ -729,7 +729,11 @@ export function surfaceFromPathname(
 
   // The label hub is a batch list and cannot emit one batch's scope. Only an
   // exact dynamic batch detail route owns the label-batch surface.
-  if (/^\/commerce\/labels\/[^/]+\/?$/.test(stripped)) {
+  if (
+    /^\/commerce\/labels\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/?$/i.test(
+      stripped,
+    )
+  ) {
     return "matrx-user/commerce-label-batch";
   }
 
