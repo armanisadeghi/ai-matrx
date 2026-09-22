@@ -18,7 +18,7 @@
  */
 
 import { useRef, useState } from "react";
-import type { Basic as UnsplashBasicPhoto } from "unsplash-js/dist/methods/photos/types";
+import type { AssetBasic } from "unsplash-js";
 import {
   ExternalLink,
   FolderPlus,
@@ -53,6 +53,9 @@ import { MediaEmptyState } from "@/features/marketing/components/media/SnapshotM
 import type { BrandAsset } from "@/features/marketing/types";
 
 const STOCK_PAGE_SIZE = 24;
+
+// Unsplash still returns alt_description, but its v8 generated schema omits it.
+type UnsplashBasicPhoto = AssetBasic & { alt_description?: string | null };
 
 type StockOrientation = "any" | "landscape" | "portrait" | "squarish";
 

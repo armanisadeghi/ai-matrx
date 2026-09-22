@@ -14,9 +14,14 @@
  * `UnsplashMethod` switch.
  */
 
-import type { Basic as UnsplashBasicPhoto } from "unsplash-js/dist/methods/photos/types";
-import type { Basic as UnsplashBasicCollection } from "unsplash-js/dist/methods/collections/types";
-import type { Basic as UnsplashBasicTopic } from "unsplash-js/dist/methods/topics/types";
+import type {
+  AssetBasic,
+  CollectionBasic as UnsplashBasicCollection,
+  TopicBasic as UnsplashBasicTopic,
+} from "unsplash-js";
+
+// Unsplash still returns alt_description, but its v8 generated schema omits it.
+type UnsplashBasicPhoto = AssetBasic & { alt_description?: string | null };
 
 type UnsplashEnvelope<TResponse> =
   | { type: "success"; response: TResponse; errors?: undefined }

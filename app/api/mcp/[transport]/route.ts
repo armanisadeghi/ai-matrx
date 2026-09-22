@@ -7,7 +7,7 @@
 //      URL: https://appmatrx.com/api/mcp/mcp?token=<key>
 
 import { createMcpHandler, withMcpAuth } from "mcp-handler";
-import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
+import type { AuthInfo } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 import {
@@ -749,12 +749,7 @@ const handler = createMcpHandler(
       "The preferred `feedback` actions are report, list/search, get, update, comment/comments,",
       "triage, queue, rework, resolve, and decision.",
     ].join("\n"),
-  },
-  {
-    basePath: "/api/mcp",
-    maxDuration: 60,
     verboseLogs: true,
-    disableSse: true,
   },
 );
 
@@ -808,4 +803,5 @@ const authHandler = withMcpAuth(handler, verifyToken, {
   required: true,
 });
 
+export const maxDuration = 60;
 export { authHandler as GET, authHandler as POST, authHandler as DELETE };

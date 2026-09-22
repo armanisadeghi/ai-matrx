@@ -1,6 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { OrderBy, Orientation, Plus } from "unsplash-js";
-import { SearchOrderBy } from "unsplash-js/dist/methods/search/types/request";
 import { unsplashClient } from "./unsplashClient";
 
 // Our simple types
@@ -53,25 +51,28 @@ type UnsplashTopic = {
 };
 
 // Type conversion helpers
-const mapSortOrderToOrderBy = (sort?: SortOrder): OrderBy => {
-  if (!sort) return OrderBy.LATEST;
+type FeedOrder = "latest" | "oldest" | "popular" | "views" | "downloads";
+type SearchOrder = "latest" | "relevant";
+
+const mapSortOrderToOrderBy = (sort?: SortOrder): FeedOrder => {
+  if (!sort) return "latest";
   switch (sort) {
     case "latest":
-      return OrderBy.LATEST;
+      return "latest";
     case "oldest":
-      return OrderBy.OLDEST;
+      return "oldest";
     case "popular":
-      return OrderBy.POPULAR;
+      return "popular";
     case "views":
-      return OrderBy.VIEWS;
+      return "views";
     case "downloads":
-      return OrderBy.DOWNLOADS;
+      return "downloads";
     default:
-      return OrderBy.LATEST;
+      return "latest";
   }
 };
 
-const mapSortOrderToSearchOrderBy = (sort?: SortOrder): SearchOrderBy => {
+const mapSortOrderToSearchOrderBy = (sort?: SortOrder): SearchOrder => {
   if (!sort) return "relevant";
   switch (sort) {
     case "relevant":
@@ -168,8 +169,8 @@ export function useUnsplashGallery() {
         page: pageNum,
         perPage: 15,
         orderBy: mapSortOrderToSearchOrderBy(finalSortOrder),
-        orientation: finalOrientation as Orientation,
-        plus: finalPremiumFilter as Plus,
+        orientation: finalOrientation,
+        plus: finalPremiumFilter,
       });
 
       if (result.type === "success") {
@@ -293,7 +294,7 @@ export function useUnsplashGallery() {
         page: pageNum,
         perPage: 15,
         orderBy: mapSortOrderToOrderBy(finalSortOrder),
-        orientation: finalOrientation as Orientation,
+        orientation: finalOrientation,
       });
 
       if (result.type === "success") {
@@ -332,7 +333,7 @@ export function useUnsplashGallery() {
         page: pageNum,
         perPage: 15,
         orderBy: mapSortOrderToOrderBy(finalSortOrder),
-        orientation: finalOrientation as Orientation,
+        orientation: finalOrientation,
       });
 
       if (result.type === "success") {
@@ -589,8 +590,8 @@ export function useUnsplashGallery() {
         page: 1,
         perPage: 5,
         orderBy: mapSortOrderToSearchOrderBy(sortOrder),
-        orientation: orientation as Orientation,
-        plus: premiumFilter as Plus,
+        orientation,
+        plus: premiumFilter,
       });
 
       if (result.type === "success") {

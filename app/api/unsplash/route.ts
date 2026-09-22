@@ -18,9 +18,9 @@ import { requireEnv } from "@/utils/supabase/env";
  *          new client. Mirrors the unsplash-js `client.<group>.<call>(args)`
  *          shape exactly so consumers never have to translate result types.
  *
- * Returns the unsplash-js result envelope (`{ type, response, errors? }`)
- * unchanged, so callers can keep their existing `result.type === "success"`
- * branching.
+ * Unsplash JS 8 uses openapi-fetch's `{ data, error, response }` result. This
+ * route normalizes that result to the legacy `{ type, response, errors? }`
+ * envelope consumed by the browser shim.
  */
 
 const unsplash = createApi({
@@ -40,37 +40,210 @@ type UnsplashMethod =
   | "topics.getPhotos";
 
 async function dispatch(method: UnsplashMethod, args: Record<string, unknown>) {
-  // We intentionally trust the args shape — unsplash-js validates internally
-  // and the failure surface is just a normal `result.type === "error"` payload.
-  const argsAny = args as never;
+  const stringArg = (name: string) =>
+    typeof args[name] === "string" ? args[name] : undefined;
+  const numberArg = (name: string) =>
+    typeof args[name] === "number" ? args[name] : undefined;
+  const query = {
+    page: numberArg("page"),
+    per_page: numberArg("perPage"),
+  };
+
   switch (method) {
-    case "search.getPhotos":
-      return unsplash.search.getPhotos(argsAny);
+    case "search.getPhotos": {
+      // `plus` remains accepted by Unsplash but was dropped from the v8
+      // generated schema. Keep forwarding it so the existing premium filter
+      // does not silently stop working during the client migration.
+      const searchPhotoQuery = {
+        ...query,
+        query: stringArg("query") ?? "",
+        order_by: searchOrder(stringArg("orderBy")),
+        orientation: orientation(stringArg("orientation")),
+        content_filter: contentFilter(stringArg("contentFilter")),
+        plus: stringArg("plus"),
+      };
+      return toLegacy(
+        await unsplash.GET("/search/photos", {
+          params: { query: searchPhotoQuery },
+        }),
+      );
+    }
     case "search.getCollections":
-      return unsplash.search.getCollections(argsAny);
-    case "photos.list":
-      return unsplash.photos.list(argsAny);
-    case "photos.get":
-      return unsplash.photos.get(argsAny);
+      return toLegacy(
+        await unsplash.GET("/search/collections", {
+          params: {
+            query: { ...query, query: stringArg("query") ?? "" },
+          },
+        }),
+      );
+    case "photos.list": {
+      const photoListQuery = {
+        ...query,
+        order_by: feedOrder(stringArg("orderBy")),
+      };
+      return toLegacyFeed(
+        await unsplash.GET("/photos", { params: { query: photoListQuery } }),
+      );
+    }
+    case "photos.get": {
+      const assetSlug = stringArg("photoId") ?? stringArg("assetSlug") ?? stringArg("id");
+      if (!assetSlug) throw new Error("photoId is required");
+      return toLegacy(
+        await unsplash.GET("/photos/{assetSlug}", {
+          params: { path: { assetSlug } },
+        }),
+      );
+    }
     case "photos.getRandom":
-      return unsplash.photos.getRandom(argsAny);
-    case "photos.trackDownload":
+      return toLegacy(
+        await unsplash.GET("/photos/random", {
+          params: {
+            query: {
+              query: stringArg("query"),
+              orientation: orientation(stringArg("orientation")),
+            },
+          },
+        }),
+      );
+    case "photos.trackDownload": {
       // Unsplash API guideline: trigger a download event when a photo is
-      // actually used (e.g. embedded in a slide). args: { downloadLocation }.
-      return unsplash.photos.trackDownload(argsAny);
+      // actually used (e.g. embedded in a slide). Older callers carry the
+      // API's download-location URL, so recover its photo ID when necessary.
+      const downloadLocation = stringArg("downloadLocation");
+      const id =
+        stringArg("id") ??
+        (downloadLocation
+          ? /\/photos\/([^/]+)\/download(?:\?|$)/.exec(downloadLocation)?.[1]
+          : undefined);
+      if (!id) throw new Error("photo id is required to track a download");
+      return toLegacy(
+        await unsplash.GET("/photos/{id}/download", {
+          params: { path: { id } },
+        }),
+      );
+    }
     case "collections.list":
-      return unsplash.collections.list(argsAny);
-    case "collections.getPhotos":
-      return unsplash.collections.getPhotos(argsAny);
+      return toLegacyFeed(
+        await unsplash.GET("/collections", { params: { query } }),
+      );
+    case "collections.getPhotos": {
+      const collectionId = stringArg("collectionId");
+      if (!collectionId) throw new Error("collectionId is required");
+      const collectionPhotoQuery = {
+        ...query,
+        order_by: feedOrder(stringArg("orderBy")),
+        orientation: orientation(stringArg("orientation")),
+      };
+      return toLegacyFeed(
+        await unsplash.GET("/collections/{collectionId}/photos", {
+          params: {
+            path: { collectionId },
+            query: collectionPhotoQuery,
+          },
+        }),
+      );
+    }
     case "topics.list":
-      return unsplash.topics.list(argsAny);
-    case "topics.getPhotos":
-      return unsplash.topics.getPhotos(argsAny);
+      return toLegacyFeed(
+        await unsplash.GET("/topics", { params: { query } }),
+      );
+    case "topics.getPhotos": {
+      const topicSlug = stringArg("topicIdOrSlug");
+      if (!topicSlug) throw new Error("topicIdOrSlug is required");
+      return toLegacyFeed(
+        await unsplash.GET("/topics/{topicSlug}/photos", {
+          params: {
+            path: { topicSlug },
+            query: {
+              ...query,
+              order_by: topicOrder(stringArg("orderBy")),
+              orientation: orientation(stringArg("orientation")),
+            },
+          },
+        }),
+      );
+    }
     default: {
       const exhaustive: never = method;
       throw new Error(`Unsupported Unsplash method: ${exhaustive}`);
     }
   }
+}
+
+type OpenApiResult<T> = {
+  data?: T;
+  error?: unknown;
+  response: Response;
+};
+
+function errorMessages(error: unknown): string[] {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "errors" in error &&
+    Array.isArray(error.errors)
+  ) {
+    return error.errors.filter((item): item is string => typeof item === "string");
+  }
+  return [typeof error === "string" ? error : "Unsplash request failed"];
+}
+
+function toLegacy<T>(result: OpenApiResult<T>) {
+  return result.data === undefined
+    ? { type: "error" as const, errors: errorMessages(result.error) }
+    : { type: "success" as const, response: result.data };
+}
+
+function toLegacyFeed<T>(result: OpenApiResult<T[]>) {
+  if (result.data === undefined) {
+    return { type: "error" as const, errors: errorMessages(result.error) };
+  }
+  const headerTotal = Number.parseInt(result.response.headers.get("x-total") ?? "", 10);
+  return {
+    type: "success" as const,
+    response: {
+      results: result.data,
+      total: Number.isFinite(headerTotal) ? headerTotal : result.data.length,
+    },
+  };
+}
+
+function orientation(
+  value: string | undefined,
+): "landscape" | "portrait" | "squarish" | undefined {
+  return value === "landscape" || value === "portrait" || value === "squarish"
+    ? value
+    : undefined;
+}
+
+function contentFilter(value: string | undefined): "high" | "low" | undefined {
+  return value === "high" || value === "low" ? value : undefined;
+}
+
+function searchOrder(
+  value: string | undefined,
+): "latest" | "relevant" | undefined {
+  return value === "latest" || value === "relevant" ? value : undefined;
+}
+
+function topicOrder(
+  value: string | undefined,
+): "latest" | "oldest" | "popular" | undefined {
+  return value === "latest" || value === "oldest" || value === "popular"
+    ? value
+    : undefined;
+}
+
+function feedOrder(
+  value: string | undefined,
+): "latest" | "oldest" | "popular" | "views" | "downloads" | undefined {
+  return value === "latest" ||
+    value === "oldest" ||
+    value === "popular" ||
+    value === "views" ||
+    value === "downloads"
+    ? value
+    : undefined;
 }
 
 export async function POST(request: NextRequest) {
@@ -106,7 +279,7 @@ export async function GET(request: NextRequest) {
       if (!query) {
         return NextResponse.json({ error: "Missing 'query'" }, { status: 400 });
       }
-      const result = await unsplash.search.getPhotos({
+      const result = await dispatch("search.getPhotos", {
         query,
         page: parseInt(page),
         perPage: parseInt(perPage),
@@ -114,11 +287,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(result);
     }
     case "getRandomPhoto": {
-      const randomResult = await unsplash.photos.getRandom({});
+      const randomResult = await dispatch("photos.getRandom", {});
       return NextResponse.json(randomResult);
     }
     case "getCollections": {
-      const collectionsResult = await unsplash.collections.list({});
+      const collectionsResult = await dispatch("collections.list", {});
       return NextResponse.json(collectionsResult);
     }
     default:
