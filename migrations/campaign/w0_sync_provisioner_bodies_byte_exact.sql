@@ -197,7 +197,7 @@ begin
     end if;
 
     -- ===================================================== views run as their CALLER
-    if cmd.object_type = 'view' and cmd.command_tag = 'CREATE VIEW' then
+    if cmd.object_type = 'view' and cmd.command_tag = 'create or replace view' then
       select n.nspname, c.relname, array_to_string(c.reloptions, ',')
         into v_schema, v_rel, v_opts
         from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -1620,7 +1620,7 @@ begin
 
   -- ---- views -----------------------------------------------------------
   for v_item in select value from jsonb_array_elements(n->'views') loop
-    execute format('create view %I.%I with (security_invoker = %s) as %s',
+    execute format('create or replace view %I.%I with (security_invoker = %s) as %s',
       v_schema, v_item->>'name',
       case when coalesce((v_item->>'security_invoker')::boolean, true) then 'true' else 'false' end,
       v_item->>'definition');

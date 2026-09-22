@@ -182,7 +182,7 @@ comment on function custom.doc_format_value(jsonb, jsonb) is
 -- 4. THE VIEW. A template is a Record, and this is how a person reads one.
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create view custom.doc_template with (security_invoker = true) as
+create or replace view custom.doc_template with (security_invoker = true) as
   select r.id,
          r.organization_id,
          (r.data ->> 'renders_table_id')::uuid            as renders_table_id,

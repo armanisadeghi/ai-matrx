@@ -365,7 +365,7 @@ begin
       end if;
     end if;
     -- ===================================================== views run as their CALLER
-    if cmd.object_type = 'view' and cmd.command_tag = 'CREATE VIEW' then
+    if cmd.object_type = 'view' and cmd.command_tag = 'create or replace view' then
       select n.nspname, c.relname, array_to_string(c.reloptions, ',')
         into v_schema, v_rel, v_opts
         from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -837,7 +837,7 @@ begin
   end loop;
   -- ---- views -----------------------------------------------------------
   for v_item in select value from jsonb_array_elements(n->'views') loop
-    execute format('create view %I.%I with (security_invoker = %s) as %s',
+    execute format('create or replace view %I.%I with (security_invoker = %s) as %s',
       v_schema, v_item->>'name',
       case when coalesce((v_item->>'security_invoker')::boolean, true) then 'true' else 'false' end,
       v_item->>'definition');
@@ -2151,5 +2151,5 @@ select platform.provision_spec_grandfather_seed();
 -- 6. the guard itself, LAST, so it never fires on its own dependencies
 -- ============================================================
 DROP EVENT TRIGGER IF EXISTS provision_shape_guard;
-CREATE EVENT TRIGGER provision_shape_guard ON ddl_command_end WHEN TAG IN ('CREATE TABLE', 'CREATE TABLE AS', 'SELECT INTO', 'CREATE MATERIALIZED VIEW', 'CREATE FOREIGN TABLE', 'CREATE VIEW', 'create or replace function', 'CREATE PROCEDURE', 'ALTER TABLE') EXECUTE FUNCTION platform._provision_shape_guard();
+CREATE EVENT TRIGGER provision_shape_guard ON ddl_command_end WHEN TAG IN ('CREATE TABLE', 'CREATE TABLE AS', 'SELECT INTO', 'CREATE MATERIALIZED VIEW', 'CREATE FOREIGN TABLE', 'create or replace view', 'create or replace function', 'CREATE PROCEDURE', 'ALTER TABLE') EXECUTE FUNCTION platform._provision_shape_guard();
 

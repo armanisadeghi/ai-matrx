@@ -103,7 +103,7 @@
 -- Every trigger this file creates is on a table IN schema `custom` — it puts no trigger on
 -- any live table anywhere else.
 --
--- IDEMPOTENCE, STATED HONESTLY. §6b.2's allow-list admits `CREATE VIEW`, `CREATE TRIGGER`
+-- IDEMPOTENCE, STATED HONESTLY. §6b.2's allow-list admits `create or replace view`, `CREATE TRIGGER`
 -- and `create or replace function` and refuses `CREATE OR REPLACE` of a view or a trigger, and
 -- PostgreSQL has no `IF NOT EXISTS` for any of the three. So a second consecutive apply of
 -- these bytes is refused BY THE DATABASE (42P07 / 42710 / 42723) and changes nothing,
@@ -718,7 +718,7 @@ create trigger custom_record_rule_shape_guard
 -- 6. REC-15 — the ONE Rule surface
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create view custom.rule with (security_invoker = true) as
+create or replace view custom.rule with (security_invoker = true) as
   select r.id,
          r.organization_id,
          r.data ->> 'name'                                         as name,

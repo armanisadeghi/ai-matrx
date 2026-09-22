@@ -2303,7 +2303,7 @@ begin
 
   -- ---- views -----------------------------------------------------------
   for v_item in select value from jsonb_array_elements(n->'views') loop
-    execute format('create view %I.%I with (security_invoker = %s) as %s',
+    execute format('create or replace view %I.%I with (security_invoker = %s) as %s',
       v_schema, v_item->>'name',
       case when coalesce((v_item->>'security_invoker')::boolean, true) then 'true' else 'false' end,
       v_item->>'definition');

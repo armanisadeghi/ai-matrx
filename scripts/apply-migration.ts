@@ -2152,7 +2152,13 @@ function judgeOnly(paths: readonly string[]): number {
 export function normaliseIdempotent(sql: string): string {
   return sql
     .replace(/\bcreate\s+function\b/gi, "create or replace function")
-    .replace(/\bcreate\s+trigger\b/gi, "create or replace trigger");
+    .replace(/\bcreate\s+trigger\b/gi, "create or replace trigger")
+    // VIEWS TOO (lane INVERSE-GUARD, 2026-09-22). The same class one object-kind over: an
+    // inverse that leaves `custom.carrying_edges` standing — because it neuters the rule rows
+    // instead of demolishing the projection over them — makes its up-file's bare `CREATE VIEW`
+    // collide on re-apply. `CREATE OR REPLACE VIEW` is the same statement to a database that
+    // does not have the view, and stricter where it does (it refuses a changed column shape).
+    .replace(/\bcreate\s+view\b/gi, "create or replace view");
 }
 
 export interface AmendVerdict {
@@ -2184,8 +2190,9 @@ export function onlyIdempotencyDiffers(ledgered: string, current: string): Amend
         `    current:  ${(bl[i] ?? "<end of file>").slice(0, 160)}`,
     };
   }
-  const before = (ledgered.match(/\bcreate\s+function\b|\bcreate\s+trigger\b/gi) ?? []).length;
-  const after = (current.match(/\bcreate\s+function\b|\bcreate\s+trigger\b/gi) ?? []).length;
+  const BARE = /\bcreate\s+function\b|\bcreate\s+trigger\b|\bcreate\s+view\b/gi;
+  const before = (ledgered.match(BARE) ?? []).length;
+  const after = (current.match(BARE) ?? []).length;
   const changed = before - after;
   if (changed <= 0) {
     return { ok: false, changed: 0, why: "no bare CREATE FUNCTION/TRIGGER was made idempotent." };
@@ -2228,7 +2235,8 @@ function amendSelfTest(): number {
   const base =
     "-- a lane\nset lock_timeout = '5s';\n" +
     "create function custom.f(a uuid) returns int language sql as $$ select 1 $$;\n" +
-    "create trigger t after insert on custom.record execute function custom.f();\n";
+    "create trigger t after insert on custom.record execute function custom.f();\n" +
+    "create view custom.v as select 1 as n;\n";
 
   // RED — a file that ALSO changes something else is refused.
   const sneaky = normaliseIdempotent(base).replace("select 1", "select 2");
@@ -2252,14 +2260,17 @@ function amendSelfTest(): number {
 
   // GREEN — only the two idempotency rewrites.
   const good = onlyIdempotencyDiffers(base, normaliseIdempotent(base));
-  if (!good.ok || good.changed !== 2) {
+  if (!good.ok || good.changed !== 3) {
     console.error(
       `${TAG.fail}SELF-TEST FAILED — the idempotency-only amendment was refused (${good.why ?? "no reason"}) ` +
-        `or counted ${good.changed} instead of 2.`,
+        `or counted ${good.changed} instead of 3.`,
     );
     return 1;
   }
-  console.log(`${TAG.ok}self-test GREEN — CREATE FUNCTION and CREATE TRIGGER made idempotent, 2 creates, accepted.`);
+  console.log(
+    `${TAG.ok}self-test GREEN — CREATE FUNCTION, CREATE TRIGGER and CREATE VIEW made idempotent, ` +
+      `3 creates, accepted.`,
+  );
   return 0;
 }
 
