@@ -19,13 +19,24 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'stagerules2_green.sql'
-\set requires 'row:platform.feature_knob:feature = \'custom\' and key = \'system_enabled\' and default_value::text = \'true\''
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
 \endif
 
 begin;
+
+-- ── THE RECORD-STORE SWITCH, BORROWED (SUITES-TIDY 2026-09-22) ──────────────────────────────
+-- This suite used to DECLARE `row:platform.feature_knob:… key='system_enabled' and
+-- default_value='true'` and therefore SKIPPED everywhere, for ever: that default is FALSE by
+-- design — the record store is opt-in per organization (STORE-OFF / FIX-11A) — so the
+-- declaration described a platform this will never be. What the suite actually needs is its
+-- OWN organization's switch, which it borrows here inside its own transaction; the ROLLBACK at
+-- the foot of the file is what puts it back, and the platform default is untouched.
+-- Nineteenth Avenue renovation
+\set store_org '1a7fefc6-77e1-4c48-826f-003b1a2e17fd'
+\i scripts/campaign-tests/_borrow_store_switch.sql
+
 
 do $t$
 declare

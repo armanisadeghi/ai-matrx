@@ -366,6 +366,42 @@ begin
   returning id into v_fld;
   perform set_config('role', 'authenticated', true);
 
+  -- ── DOORS-ONLY CLOSED THE CLIENT'S DIRECT WRITE ON platform.associations ───────────────
+  -- SUITES-TIDY 2026-09-22. Measured on production AND on the clone: `authenticated` holds
+  -- SELECT on platform.associations and nothing else — DOORS-ONLY-5 dropped the
+  -- `assoc_insert/update/delete` policies by name, and the privilege was already gone. So
+  -- every clause below that INSERTs the edge itself was answered `42501 permission denied for
+  -- table associations` by Postgres before the trigger it is about was ever consulted. That is
+  -- the closure working, not a defect in this part.
+  --
+  -- The clauses are about `platform.enforce_relation_edge`, the TABLE's own contract. A table
+  -- contract is not reachable from a client seat any more, by design, so those clauses step
+  -- out of the seat and say so — the same device this part already uses for the relation-field
+  -- fixture above. What is asserted FROM THE SEAT is the new first clause 2.0 below: the
+  -- person's path to a relation edge is `platform.relation_set`, the direct table write is
+  -- refused to them, and that refusal names the table.
+  --
+  -- 2.0 — FROM THE SEAT: the table is closed to a person, and the door is what they have.
+  begin
+    insert into platform.associations
+      (source_type, source_id, target_type, target_id, organization_id, role, relation_field_id, origin, created_by)
+    values ('record', v_rec_a, 'record', v_rec_b, v_a, 'supplier', v_fld, 'campaign', v_admin);
+    raise exception '2.0 FAILED — a person wrote platform.associations directly; DOORS-ONLY closed that lane and the whole of PART 2 below assumes it is closed.';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlerrm like '%2.0 FAILED%' then raise; end if;
+      raise exception '2.0 FAILED — the direct write was refused for the wrong reason: % / %', sqlstate, sqlerrm;
+  end;
+  if not has_function_privilege('authenticated', 'platform.relation_set(uuid,uuid,text,jsonb)', 'EXECUTE') then
+    raise exception '2.0 FAILED — the table is closed to a person and platform.relation_set, the door that replaces it, is not granted to them either';
+  end if;
+  raise notice '2.0 OK  platform.associations is closed to the seat and platform.relation_set is the door a person has.';
+
+  -- Everything from here to the end of PART 2 is the TABLE's contract, so it runs as the role
+  -- that owns the table and asserts nothing about what a client may do.
+  perform set_config('role', v_boss, true);
+
   -- 2a — THE EDGE THE SWITCH USED TO WAVE THROUGH. Nothing has opened the wall, so it is
   -- refused. Before GUARD-SWITCH this insert SUCCEEDED for every organization on earth,
   -- because gate two of platform.enforce_relation_edge returned NEW untouched.
@@ -459,7 +495,10 @@ begin
   perform platform.knob_override_set('custom', 'system_enabled', 'organization', v_a, v_a,
                                      'true'::jsonb, 'guardswitch_green 2f control');
 
-  raise notice 'PART 2 PASSED (2a refused, 2b the table alone is not enough, 2c one side is not both, 2d both opted in, the link was made and the person is shown it, 2e the rest of the relation contract is live too, 2f and it all goes dark again when the store is switched off) — every clause from the seat `authenticated`.';
+  -- back into the seat, so anything after PART 2 is judged from it again.
+  perform set_config('role', 'authenticated', true);
+
+  raise notice 'PART 2 PASSED (2a refused, 2b the table alone is not enough, 2c one side is not both, 2d both opted in, the link was made and the person is shown it, 2e the rest of the relation contract is live too, 2f and it all goes dark again when the store is switched off) — 2.0 from the seat `authenticated`, and 2a-2f as the role that owns platform.associations, because DOORS-ONLY closed that table to a person and the clauses are about the TABLE''s own contract.';
 end $t$;
 commit;
 

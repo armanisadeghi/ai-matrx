@@ -79,7 +79,11 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'w1_rel_c12.sql'
-\set requires 'row:platform.feature_knob:feature = \'custom\' and key = \'associations_guard\' and default_value::text = \'true\''
+-- SUITES-TIDY 2026-09-22: this read `default_value::text = 'true'` and so SKIPPED everywhere.
+-- A knob's ANSWER is `coalesce(value, default_value)` — custom/associations_guard carries
+-- value=true over default_value=false and resolves TRUE on the main database — so the old
+-- declaration described a row shape the platform does not use, not a missing dependency.
+\set requires 'row:platform.feature_knob:feature = \'custom\' and key = \'associations_guard\' and coalesce(value, default_value)::text = \'true\''
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit

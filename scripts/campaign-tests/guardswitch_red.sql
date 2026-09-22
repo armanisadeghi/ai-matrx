@@ -862,9 +862,18 @@ begin
   v_red := v_red + 1;
 
   -- ══ RED 2 — AND BECAUSE IT READS OFF, THE WALL IS DARK. The same edge the green suite's 2a
-  -- has refused three times is ACCEPTED here, written by the same signed-in person, with the
-  -- INSERT privilege `authenticated` really holds: organization B never opted in, and gate two
-  -- of platform.enforce_relation_edge returns NEW untouched before the wall is ever asked.
+  -- has refused three times is ACCEPTED here: organization B never opted in, and gate two of
+  -- platform.enforce_relation_edge returns NEW untouched before the wall is ever asked.
+  --
+  -- SUITES-TIDY 2026-09-22: it used to say "written by the same signed-in person, with the
+  -- INSERT privilege `authenticated` really holds". That privilege is gone — DOORS-ONLY-5
+  -- dropped the assoc_insert/update/delete policies by name and `authenticated` holds SELECT
+  -- on platform.associations and nothing else, on production and on the clone alike — so the
+  -- clause was answered 42501 by Postgres before the trigger it is about was consulted. What
+  -- goes dark when the old bodies come back is the TABLE's contract, so this clause steps out
+  -- of the seat to the role that owns the table, exactly as RED 3 below already does, and
+  -- asserts nothing about what a client may do while it is out.
+  perform set_config('role', v_boss, true);
   insert into platform.associations
     (source_type, source_id, target_type, target_id, organization_id, role, relation_field_id, origin, created_by)
   values ('record', v_rec_a, 'record', v_rec_b, v_a, 'supplier', v_fld, 'campaign', v_admin);
@@ -875,6 +884,7 @@ begin
   insert into platform.associations
     (source_type, source_id, target_type, target_id, organization_id, role, relation_field_id, origin, created_by)
   values ('record', v_rec_a, 'record', v_rec_b, v_a, 'vendor', v_fld, 'campaign', v_admin);
+  perform set_config('role', 'authenticated', true);
   v_red := v_red + 1;
 
   -- ══ RED 3 — THE CENSUS THE GREEN SUITE'S 1c RUNS, FAILING. With the old bodies back, the
