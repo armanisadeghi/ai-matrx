@@ -23,10 +23,31 @@ export interface DecisionAnswerView {
   type: "noul" | "choice" | "score" | "unknown";
   /** The answer verbatim: boolean, option name, or score. */
   answer: boolean | string | number | null;
-  /** Yes/No only — probability that the answer is true. */
+  /**
+   * Yes/No only — probability that the answer is TRUE, verbatim from the
+   * payload. This is NOT the probability of the answer given: a `false`
+   * answer at `probability: 0.29` is a 71% No. Use `answerProbability` for
+   * the number that belongs beside the answer; this one is for the
+   * distribution and the author's threshold, both of which are stated on the
+   * true-probability scale.
+   */
   probability: number | null;
-  /** Choice/Score — the full distribution, option → probability. */
+  /**
+   * The full distribution, option/level → probability. For Yes/No this is
+   * SYNTHESISED from `probability` (Yes p, No 1−p) so every type has one
+   * distribution shape and no surface has to derive the complement itself.
+   */
   probabilities: Array<{ key: string; label: string; value: number }>;
+  /**
+   * The distribution key the ANSWER points at: the option for a choice, the
+   * nearest level for a score, `"true"`/`"false"` for a Yes/No. `null` when
+   * the answer is unreadable or no distribution was returned. THE LEGEND
+   * INDEX BASE IS RESOLVED HERE, ONCE — live TypeSafe indexes score levels
+   * from 0 while the contract's example shows 1, so the level is chosen by
+   * numeric nearness to the score rather than by assuming either base, and
+   * no component ever adds or subtracts one.
+   */
+  answerKey: string | null;
   confidence: number | null;
   /** Score only — level number → what that level means. */
   legend: Record<string, string>;
@@ -90,6 +111,55 @@ function readLegend(value: unknown): Record<string, string> {
   return out;
 }
 
+/**
+ * Yes/No as a two-entry distribution. `probability` is P(true), so No is its
+ * complement — the one place that subtraction happens.
+ */
+function noulDistribution(
+  probability: number | null,
+): Array<{ key: string; label: string; value: number }> {
+  if (probability == null) return [];
+  return [
+    { key: "true", label: "Yes", value: probability },
+    { key: "false", label: "No", value: 1 - probability },
+  ].sort((a, b) => b.value - a.value);
+}
+
+/**
+ * The distribution entry the answer points at.
+ *
+ * A score comes back as a probability-weighted number BETWEEN levels (1.87
+ * on a five-level scale), so the level it belongs to is the numerically
+ * nearest key the distribution actually carries. Choosing by nearness rather
+ * than by `round()` + an assumed base is what makes this correct on both the
+ * live 0-based payloads and the contract example's 1-based one — and it is
+ * why no component may compute a level itself.
+ */
+function answerKeyFor(
+  type: DecisionAnswerView["type"],
+  answer: boolean | string | number | null,
+  probabilities: Array<{ key: string; label: string; value: number }>,
+): string | null {
+  if (answer === null || probabilities.length === 0) return null;
+  if (typeof answer === "boolean") return answer ? "true" : "false";
+  if (typeof answer === "string") {
+    return probabilities.some((entry) => entry.key === answer) ? answer : null;
+  }
+  if (type === "choice") return null;
+  let best: string | null = null;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const entry of probabilities) {
+    const level = Number(entry.key);
+    if (!Number.isFinite(level)) continue;
+    const distance = Math.abs(level - answer);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = entry.key;
+    }
+  }
+  return best;
+}
+
 function readAnswer(name: string, value: unknown): DecisionAnswerView {
   const raw = record(value);
   const type =
@@ -104,12 +174,18 @@ function readAnswer(name: string, value: unknown): DecisionAnswerView {
     typeof answerRaw === "number"
       ? answerRaw
       : null;
+  const probability = finiteNumber(raw?.probability);
+  const probabilities =
+    type === "noul"
+      ? noulDistribution(probability)
+      : readDistribution(raw?.probabilities, legend);
   return {
     name,
     type,
     answer,
-    probability: finiteNumber(raw?.probability),
-    probabilities: readDistribution(raw?.probabilities, legend),
+    probability,
+    probabilities,
+    answerKey: answerKeyFor(type, answer, probabilities),
     confidence: finiteNumber(raw?.confidence),
     legend,
     suggestedThreshold: finiteNumber(raw?.suggested_threshold),
@@ -154,22 +230,41 @@ export function formatDecisionAnswer(answer: DecisionAnswerView): string {
   if (answer.answer === null) return "unreadable";
   if (typeof answer.answer === "boolean") return answer.answer ? "Yes" : "No";
   if (typeof answer.answer === "number") {
-    const rounded = Math.round(answer.answer);
-    const level = answer.legend[String(rounded)];
     const shown = Number.isInteger(answer.answer)
       ? String(answer.answer)
       : answer.answer.toFixed(1);
+    const key = answer.answerKey;
+    const level = key == null ? undefined : answer.legend[key];
     return level ? `${shown} — ${level}` : shown;
   }
   return answer.answer;
 }
 
-/** The one number that belongs beside the answer, or null when there isn't one. */
+/**
+ * The one number that belongs beside the answer: the probability OF THE
+ * ANSWER GIVEN, never the biggest number in the distribution and never the
+ * raw `probability` field.
+ *
+ * Two ways this used to lie, both live: a `noul` answered `false` at
+ * `probability: 0.3` printed "No 30%" when the model was 70% sure of No; and
+ * a score of 1.87 printed the top bucket's 49% beside level 2's label, whose
+ * own probability was 27%. Both are the same mistake — reading a number that
+ * describes something other than the answer on screen.
+ */
 export function answerProbability(answer: DecisionAnswerView): number | null {
-  if (answer.probability != null) return answer.probability;
+  const key = answer.answerKey;
+  if (key != null) {
+    const entry = answer.probabilities.find((e) => e.key === key);
+    if (entry) return entry.value;
+  }
   if (answer.type === "noul") return null;
-  const top = answer.probabilities[0];
-  return top ? top.value : null;
+  if (answer.probability != null) return answer.probability;
+  return null;
+}
+
+/** P(true) for a Yes/No — the scale the author's threshold is stated on. */
+export function probabilityOfTrue(answer: DecisionAnswerView): number | null {
+  return answer.type === "noul" ? answer.probability : null;
 }
 
 export const METHOD_LABELS: Record<DecisionMethod, string> = {

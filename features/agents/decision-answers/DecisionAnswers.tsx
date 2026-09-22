@@ -66,22 +66,46 @@ function ProbabilityBar({
   );
 }
 
-function Distribution({ answer }: { answer: DecisionAnswerView }) {
+/**
+ * The distribution, one row per option or level. A Yes/No carries one too
+ * (Yes p / No 1−p, synthesised by the reader), so the complement is visible
+ * instead of implied — and the author's threshold, which is stated on the
+ * true-probability scale, is marked on the Yes row rather than on whichever
+ * answer came back.
+ */
+function Distribution({
+  answer,
+  threshold,
+}: {
+  answer: DecisionAnswerView;
+  threshold?: number | null;
+}) {
   if (answer.probabilities.length === 0) return null;
   return (
     <div className="mt-1 flex flex-col gap-0.5">
       {answer.probabilities.map((entry) => (
         <div
           key={entry.key}
-          className="grid grid-cols-[minmax(4rem,9rem)_1fr_2.5rem] items-center gap-1.5 text-[10px]"
+          className={cn(
+            "grid grid-cols-[minmax(4rem,9rem)_1fr_2.5rem] items-center gap-1.5 text-[10px]",
+            entry.key === answer.answerKey && "text-foreground",
+          )}
         >
           <span
-            className="truncate text-muted-foreground"
+            className={cn(
+              "truncate text-muted-foreground",
+              entry.key === answer.answerKey && "font-medium text-foreground",
+            )}
             title={entry.label}
           >
             {entry.label}
           </span>
-          <ProbabilityBar value={entry.value} />
+          <ProbabilityBar
+            value={entry.value}
+            threshold={
+              answer.type === "noul" && entry.key === "true" ? threshold : null
+            }
+          />
           <span className="text-right font-mono text-muted-foreground">
             {percent(entry.value)}
           </span>
@@ -199,15 +223,7 @@ export function DecisionAnswers({
                 </p>
               )}
 
-              {probability != null && answer.type === "noul" && (
-                <ProbabilityBar
-                  value={probability}
-                  threshold={threshold}
-                  className="mt-1"
-                />
-              )}
-
-              <Distribution answer={answer} />
+              <Distribution answer={answer} threshold={threshold} />
 
               {threshold != null && (
                 <p className="mt-0.5 text-[10px] text-muted-foreground">

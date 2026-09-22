@@ -207,30 +207,21 @@ begin
   v_hit := v_hit + 1;
   raise notice '6 A COLUMN DECLARED AFTER THE MEMO WAS WARMED IS VISIBLE TO THE NEXT WRITE.';
 
-  -- 7. AND CLAUSE 6 IS NOT VACUOUS: THE MEMO REALLY IS BEING USED, AND THE DECLARATION REALLY
-  -- DOES EMPTY IT. (WRITE-PERF-4 wave 1 moved the declared-key answer out of the shared
-  -- `mx_memo.b` blob into its own slot, so this clause reads `platform.memo_k_get`; the relation
-  -- Fields still live in `mx_memo.s` and are still read there. Nothing else about the clause
-  -- changed, and it still fails if either half stops being true.) Without both halves clause 6 would pass for the wrong reason. So: warm the
-  -- memo with a write, prove the key is THERE; declare a column, prove the key is GONE.
-  perform custom.record_write(v_org, v_tbl, jsonb_build_object('claim','NAG-2026-90005'));
-  if platform.memo_k_get('udk:' || v_org::text || ':' || v_tbl::text) is null then
-    raise exception '7 FAILED: a write left no declared-key memo — clause 6 proves nothing';
-  end if;
-  if platform.memo_s_get('rre:' || v_org::text || ':' || v_tbl::text) is null then
-    raise exception '7 FAILED: a write left no relation-field memo — clause 6 proves nothing';
-  end if;
-  perform custom.field_declare(v_org, v_tbl,
-    jsonb_build_object('label','Deductible','key','deductible','type','currency','unit','USD'));
-  if platform.memo_k_get('udk:' || v_org::text || ':' || v_tbl::text) is not null
-     or platform.memo_s_get('rre:' || v_org::text || ':' || v_tbl::text) is not null then
-    raise exception '7 FAILED: declaring a column did NOT empty the memo — a stale answer is reachable';
-  end if;
-  v_hit := v_hit + 1;
-  raise notice '7 THE MEMO IS REALLY FILLED BY A WRITE AND REALLY EMPTIED BY A DECLARATION.';
+  -- 7. MOVED OUT — SUITES-TIDY 2026-09-22.
+  -- Clause 7 proved clause 6 is not vacuous by reading the memo slots directly
+  -- (`platform.memo_k_get` / `platform.memo_s_get`). `platform.memo_k_get` DOES NOT EXIST on
+  -- the main database: it ships in migrations/campaign/writeperf4_a_fact_about_the_table_is_
+  -- read_once.sql, and neither that file nor writeperf3b's own has been applied there — the
+  -- live `custom.undeclared_keys` reads no memo at all. Measured on the dev clone (production's
+  -- own data) 2026-09-22: `function platform.memo_k_get(text) does not exist`, which took this
+  -- whole suite down for one clause about an unshipped optimisation.
+  --
+  -- It now lives in `writeperf3b_the_memo_is_filled_and_emptied.sql`, which DECLARES those two
+  -- functions to the preamble and SKIPS by name — never as a pass — until the lane lands. The
+  -- five guard clauses here, which are what this file is named for, assert on every target.
 
-  if v_hit <> 7 then raise exception 'only % of 7 clauses ran', v_hit; end if;
-  raise notice 'writeperf3b_guards_still_fire: clauses 1, 2, 3, 6 and 7 PASSED from the seat `authenticated`.';
+  if v_hit <> 6 then raise exception 'only % of 6 clauses ran', v_hit; end if;
+  raise notice 'writeperf3b_guards_still_fire: clauses 1, 2, 3 and 6 PASSED from the seat `authenticated` (clause 7 moved out — see the note above).';
 end;
 $t$;
 reset role;
@@ -264,7 +255,7 @@ begin
       raise notice '5 GUARD FIRES — %', v_msg;
     end;
   end;
-  raise notice 'writeperf3b_guards_still_fire: ALL 7 CLAUSES PASSED.';
+  raise notice 'writeperf3b_guards_still_fire: ALL 6 CLAUSES PASSED (clause 7 moved out to writeperf3b_the_memo_is_filled_and_emptied.sql, which declares the memo lane and skips until it lands).';
 end;
 $t$;
 
