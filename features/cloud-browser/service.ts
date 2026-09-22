@@ -212,6 +212,7 @@ function actionResultClass(value: string): ActionResultClass {
   if (
     value === "ok" ||
     value === "failed" ||
+    value === "unknown" ||
     value === "timeout" ||
     value === "conflict" ||
     value === "blocked_by_human_control" ||

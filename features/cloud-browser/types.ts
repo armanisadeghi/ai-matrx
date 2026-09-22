@@ -75,6 +75,10 @@ export type ActionActor = "agent" | "human" | "system";
 export type ActionResultClass =
   | "ok"
   | "failed"
+  /** The action ran and its outcome could not be read. Never a synonym for
+   *  "failed": a sign-in that had SUCCEEDED was written down as failed on
+   *  2026-09-22 because this word did not exist yet (aidream migration 0999). */
+  | "unknown"
   | "timeout"
   | "conflict"
   | "blocked_by_human_control"

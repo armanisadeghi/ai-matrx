@@ -25,6 +25,7 @@ function actorIcon(actor: ProgressEvent["actor"]) {
 const RESULT_TONE: Record<ProgressEvent["resultClass"], string> = {
   ok: "text-emerald-600 dark:text-emerald-400",
   failed: "text-red-600 dark:text-red-400",
+  unknown: "text-muted-foreground",
   timeout: "text-amber-600 dark:text-amber-400",
   conflict: "text-amber-600 dark:text-amber-400",
   blocked_by_human_control: "text-amber-600 dark:text-amber-400",

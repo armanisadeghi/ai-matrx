@@ -23,6 +23,7 @@ import {
   XCircle,
   ShieldAlert,
   Clock,
+  HelpCircle,
 } from "lucide-react";
 import type { ProgressEvent } from "../types";
 
@@ -38,6 +39,15 @@ function ResultIcon({ result }: { result: ProgressEvent["resultClass"] }) {
       return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" aria-label="Done" />;
     case "failed":
       return <XCircle className="h-3.5 w-3.5 text-red-500" aria-label="Failed" />;
+    case "unknown":
+      // Said out loud rather than shaded into failure: the step ran, and the
+      // page did not say whether it worked.
+      return (
+        <HelpCircle
+          className="h-3.5 w-3.5 text-muted-foreground"
+          aria-label="Could not tell"
+        />
+      );
     case "timeout":
       return <Clock className="h-3.5 w-3.5 text-amber-500" aria-label="Timed out" />;
     case "blocked_by_human_control":
