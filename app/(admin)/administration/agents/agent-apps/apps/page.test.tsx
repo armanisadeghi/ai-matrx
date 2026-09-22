@@ -60,6 +60,7 @@ describe("Agent Apps canonical table contract", () => {
       anyOf: "",
       sort: { id: "success-rate", direction: "asc" },
       columnFilters: {
+        name: { kind: "text", value: "invoice app" },
         slug: { kind: "text", value: "billing" },
         status: { kind: "select", value: "published", values: ["published"] },
         category: { kind: "select", value: "finance", values: ["finance"] },
@@ -69,7 +70,7 @@ describe("Agent Apps canonical table contract", () => {
       },
     };
     expect(agentAppsScopeFilters(query)).toEqual({
-      name: "invoices",
+      name: "invoice app",
       slug: "billing",
       status: ["published"],
       category: ["finance"],

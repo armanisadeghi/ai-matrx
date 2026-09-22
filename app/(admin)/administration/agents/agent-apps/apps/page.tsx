@@ -99,7 +99,7 @@ export function agentAppsScopeFilters(query: MatrxDataTableQueryState) {
   const featured = query.columnFilters.featured;
   const verified = query.columnFilters.verified;
   return {
-    name: query.search,
+    name: textFilterValue(query.columnFilters.name),
     slug: textFilterValue(query.columnFilters.slug),
     status: selectedValues(query.columnFilters.status),
     category: selectedValues(query.columnFilters.category),
