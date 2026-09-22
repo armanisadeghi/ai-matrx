@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
+import { readAllRows } from "@ai-matrx/data/db";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
   CellEditsMap,
@@ -150,7 +151,15 @@ function BucketPanel({
               }
             : undefined,
         }}
-        edit={{ enabled: true, onSave: saveEdits }}
+        detail={{ enabled: false }}
+        edit={{
+          enabled: true,
+          validate: ({ columnId, value }) =>
+            columnId === "label" && (typeof value !== "string" || !value.trim())
+              ? "Display name is required."
+              : undefined,
+          onSave: saveEdits,
+        }}
       />
 
       {/* Primary owner decision: retain this unique two-field bucket editor while
@@ -219,31 +228,47 @@ export function ChooserBucketsManager() {
   async function reload() {
     setLoading(true);
     try {
-      const [cat, sch] = await Promise.all([
-        supabase.rpc("reference_categories_list"),
-        supabase.rpc("entity_schemas_list"),
+      const [categoriesResult, schemasResult] = await Promise.allSettled([
+        readAllRows(
+          ({ from, to }) =>
+            supabase
+              .rpc("reference_categories_list", undefined, { count: "exact" })
+              .order("slug", { ascending: true })
+              .range(from, to),
+          { label: "reference_categories_list()" },
+        ),
+        readAllRows(
+          ({ from, to }) =>
+            supabase
+              .rpc("entity_schemas_list", undefined, { count: "exact" })
+              .order("schema_name", { ascending: true })
+              .range(from, to),
+          { label: "entity_schemas_list()" },
+        ),
       ]);
-      if (cat.error) toast.error(`Categories failed: ${cat.error.message}`);
-      else {
+      if (categoriesResult.status === "fulfilled") {
         setCategories(
-          (cat.data ?? []).map((category) => ({
+          categoriesResult.value.map((category) => ({
             key: category.slug,
             label: category.label,
             sort_order: category.sort_order,
             is_active: category.is_active,
           })),
         );
+      } else {
+        toast.error(`Categories failed: ${String(categoriesResult.reason)}`);
       }
-      if (sch.error) toast.error(`Schemas failed: ${sch.error.message}`);
-      else {
+      if (schemasResult.status === "fulfilled") {
         setSchemas(
-          (sch.data ?? []).map((schema) => ({
+          schemasResult.value.map((schema) => ({
             key: schema.schema_name,
             label: schema.display_name,
             sort_order: schema.sort_order,
             is_active: schema.is_active,
           })),
         );
+      } else {
+        toast.error(`Schemas failed: ${String(schemasResult.reason)}`);
       }
     } finally {
       setLoading(false);

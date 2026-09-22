@@ -11,6 +11,7 @@ import { ChooserBucketsManager } from "./ChooserBucketsManager";
 
 let tables: MatrxDataTableProps<unknown>[] = [];
 const rpc = jest.fn();
+const mockReadAllRows = jest.fn();
 
 jest.mock("@ai-matrx/design-system/data-table", () => ({
   MatrxDataTable: (props: MatrxDataTableProps<unknown>) => {
@@ -23,6 +24,10 @@ jest.mock("@ai-matrx/design-system", () => ({
   Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     <input {...props} />
   ),
+}));
+
+jest.mock("@ai-matrx/data/db", () => ({
+  readAllRows: (...args: unknown[]) => mockReadAllRows(...args),
 }));
 
 jest.mock("@/components/ui/button", () => ({
@@ -49,34 +54,46 @@ describe("ChooserBucketsManager", () => {
   beforeEach(() => {
     tables = [];
     rpc.mockReset();
+    mockReadAllRows.mockReset();
+    mockReadAllRows.mockImplementation(async (query) => {
+      const result = await query({ from: 0, to: 999 });
+      if (result.error) throw result.error;
+      return result.data ?? [];
+    });
     rpc.mockImplementation((name: string) => {
-      if (name === "reference_categories_list") {
-        return Promise.resolve({
-          data: [
-            {
-              slug: "status",
-              label: "Status",
-              sort_order: 10,
-              is_active: true,
-            },
-          ],
-          error: null,
-        });
-      }
-      if (name === "entity_schemas_list") {
-        return Promise.resolve({
-          data: [
-            {
-              schema_name: "crm",
-              display_name: "CRM",
-              sort_order: 20,
-              is_active: false,
-            },
-          ],
-          error: null,
-        });
-      }
-      return Promise.resolve({ error: null });
+      const response =
+        name === "reference_categories_list"
+          ? {
+              data: [
+                {
+                  slug: "status",
+                  label: "Status",
+                  sort_order: 10,
+                  is_active: true,
+                },
+              ],
+              error: null,
+              count: 1,
+            }
+          : name === "entity_schemas_list"
+            ? {
+                data: [
+                  {
+                    schema_name: "crm",
+                    display_name: "CRM",
+                    sort_order: 20,
+                    is_active: false,
+                  },
+                ],
+                error: null,
+                count: 1,
+              }
+            : { error: null };
+      const order = jest.fn();
+      const range = jest.fn(() => Promise.resolve(response));
+      const query = Object.assign(Promise.resolve(response), { order, range });
+      order.mockReturnValue(query);
+      return query;
     });
     host = document.createElement("div");
     document.body.append(host);
@@ -105,6 +122,7 @@ describe("ChooserBucketsManager", () => {
       throw new Error("Tables did not render");
 
     expect(categoryTable.density).toBe("condensed");
+    expect(categoryTable.detail).toEqual({ enabled: false });
     expect(categoryTable.toolbar?.title).toBe("Reference categories");
     expect(categoryTable.toolbar?.add).toBeDefined();
     expect(schemaTable.toolbar?.add).toBeUndefined();
@@ -125,6 +143,28 @@ describe("ChooserBucketsManager", () => {
       categoryTable.columns.find((column) => column.id === "is_active")
         ?.editable,
     ).toBe("boolean");
+    expect(
+      categoryTable.edit?.validate?.({
+        row: {},
+        rowId: "status",
+        columnId: "label",
+        value: "  ",
+      }),
+    ).toBe("Display name is required.");
+    expect(
+      categoryTable.edit?.validate?.({
+        row: {},
+        rowId: "status",
+        columnId: "sort_order",
+        value: 30,
+      }),
+    ).toBeUndefined();
+    expect(mockReadAllRows).toHaveBeenCalledWith(expect.any(Function), {
+      label: "reference_categories_list()",
+    });
+    expect(mockReadAllRows).toHaveBeenCalledWith(expect.any(Function), {
+      label: "entity_schemas_list()",
+    });
 
     await act(async () => {
       await categoryTable.edit?.onSave(
