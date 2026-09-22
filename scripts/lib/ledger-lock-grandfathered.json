@@ -1,27 +1,12 @@
 {
-  "note": "THE EIGHT THAT PREDATE THE LOCK. Frozen 2026-09-22 by lane LEDGER-LOCK, the moment the guard was first run against origin/main. Each of these is a real post-apply edit a lane made to a file production had already run \u2014 the KNOB-GUARD class \u2014 and each landed BEFORE anything refused it at commit time. They are recorded here rather than repaired because the one legal repair (pnpm db:apply --amend-idempotent) proves the edit is keyword-only, and NONE of these is: they add DO-blocks, change message text a person reads, and rewrite an inverse's body. Repairing them means a NEW migration that supersedes the live body, which is a lane's work, not a guard's.",
-  "the_rule": "A name here exempts EXACTLY the bytes named here and nothing else. The entry binds BOTH the production checksum AND the tree checksum, so the very next edit to one of these files is refused like any other. ADDING A NAME HERE IS NOT A FIX \u2014 it is the same sentence the DDL-lock census carries about WINDOW_CLASS_GRANDFATHERED, for the same reason.",
+  "note": "THE RATCHET. Frozen 2026-09-22 by lane LEDGER-LOCK with EIGHT names (six here, three in aidream). Lane DRIFT-9 read each one's ledgered bytes, its bytes on origin/main and its LIVE body on production, and RESTORED the three whose ledgered bytes still exist in git: capture_a_sheet_a_crew_fills_on_a_phone.sql (live carries the ledgered form — the two anon_form CHECKs are NOT VALID on production, exactly as the ledgered file wrote them, and the grants the later edit added were already live from capture_the_crews_doors_can_be_reached.sql, so its later edit had nothing to land), invitedelivery_the_invitation_reaches_the_person.sql (live says 'You {{invite.means}}' — written by aidream/services/notifications/declarations.py, which the file itself names as the author of that row, so the SQL was edited to follow the code and no superseding SQL migration may re-author it), and redsuites2_a_new_organizations_first_migration_verb.sql (the 'edit' was a REGRESSION: wip commit 186186dc0a re-introduced the UNQUALIFIED `alter index` names that provably cannot run, undoing c2e03d9fa7; production has all 29 partitions attached to history.rv_org_latest_idx, so the ledgered qualified bytes are what ran). THE THREE THAT REMAIN CANNOT BE RESTORED BY ANY MEANS THIS REPO HAS — read the_rule.",
+  "the_rule": "A name here exempts EXACTLY the bytes named here and nothing else. The entry binds BOTH the production checksum AND the tree checksum, so the very next edit to one of these files is refused like any other. ADDING A NAME HERE IS NOT A FIX; this list is a RATCHET and only ever shrinks. Why each survivor survives (DRIFT-9, 2026-09-22): argsruled_the_second_id_lives_in_the_same_organization.sql and share_a_reason_that_names_nothing_down.sql — THEIR LEDGERED BYTES NO LONGER EXIST. Production ran checksums 53e52cf3… and eb4e785a…; neither is any blob in this repo's object store (155,296 blobs scanned, reachable and unreachable), nor in aidream's (123,822), nor any copy of the file anywhere on this machine (working trees, .Trash release copies, MatrxLocal session artifacts). The file was applied from the working tree and edited before it was ever committed, so there is no honest baseline to restore to and `db:apply --amend-idempotent` — which finds the ledgered blob in git before it will amend anything — also cannot clear them. Clearing them needs a new primitive and a chair ruling, not a lane. share_the_store_has_a_share_door_down.sql — its ledgered bytes DO exist (commit 52cbc33e4d) and were deliberately NOT restored: lane INVERSE-GUARD changed them on 2026-09-21 so the inverse stops dropping custom.share_grant, which zzz_pipelines_on_entry on custom.record reaches through custom._pipeline_on_entry. Restoring the ledgered bytes would re-break the record store and turn `pnpm check:inverses-leave-the-ground-standing` red. It belongs to lane INVERSE-GUARD, whose fix it is.",
   "frozen_at": "2026-09-22T17:29:36.503034+00:00",
   "files": {
     "migrations/campaign/argsruled_the_second_id_lives_in_the_same_organization.sql": {
       "ledgered": "53e52cf3fab6081595e954634c22d704ba416447feef5372a7177efc18e33723",
       "applied_at": "2026-09-21 22:51:00.977029+00",
       "tree": "224ec276ebc708750238208679e5154352ea65777a2f4b483f1b4cf2991d4a5c"
-    },
-    "migrations/campaign/capture_a_sheet_a_crew_fills_on_a_phone.sql": {
-      "ledgered": "f544f9e7521bd3ac462deb5bd9c8a4bb51a1d12d941c155dda8934fe335a321b",
-      "applied_at": "2026-09-20 19:31:19.10771+00",
-      "tree": "ff80451fb253769fead3541ac1b17368d7c07de61b588d2afe7c6529d38f2fb4"
-    },
-    "migrations/campaign/invitedelivery_the_invitation_reaches_the_person.sql": {
-      "ledgered": "db617c528b057fe6194ce5888d5190ddb3b22c942cab94746a65e0da5c45162a",
-      "applied_at": "2026-09-21 05:09:11.240624+00",
-      "tree": "4fff53e9e312038e777aea0579432e67c0e0dec134e5df157f791fae8534d326"
-    },
-    "migrations/campaign/redsuites2_a_new_organizations_first_migration_verb.sql": {
-      "ledgered": "bc18fcdfd451cc4f45de508485239458ad432c79f767daf2f70db3b93b7e085f",
-      "applied_at": "2026-09-22 00:19:57.914378+00",
-      "tree": "480b0140f6da027623061c5e129bc947983e9477cf7aaf545126546ad942febc"
     },
     "migrations/inverse/share_a_reason_that_names_nothing_down.sql": {
       "ledgered": "eb4e785a365c2c57a85be4f9bbf58310010efa5c9ae265b76aaf33376b785726",
@@ -33,5 +18,11 @@
       "applied_at": "2026-09-19 19:00:55.886336+00",
       "tree": "2f9d3015e76fada571c1a9c6915751aa780cad2c8363218d10f8f76d94c76ec3"
     }
+  },
+  "ratchet": {
+    "frozen_at_count": 6,
+    "current_count": 3,
+    "last_shrunk_by": "DRIFT-9",
+    "last_shrunk_at": "2026-09-22"
   }
 }

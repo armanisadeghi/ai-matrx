@@ -57,6 +57,15 @@
 --   cd aidream && uv run python db/apply_migrations.py \
 --     --only redsuites2_a_new_organizations_first_migration_verb.sql --source matrx-frontend
 -- IN THE 1-4 AM PACIFIC WINDOW, and nowhere else.
+--
+-- 🚨 NIGHT-SWEEP 2026-09-21: THIS FILE COULD NOT HAVE SUCCEEDED AS WRITTEN. The 29 `alter index`
+-- statements named `rv_org_latest_idx` and each partition index UNQUALIFIED. The parent index is
+-- created in schema `history` (it follows its table), which is not on the runner's search_path, so
+-- statement 31 of 59 died with `relation "rv_org_latest_idx" does not exist` — AFTER statements
+-- 1..30 had already committed under autocommit: 29 indexes built and NO ledger row. Caught by
+-- rehearsing on the branch, which is exactly what the rehearsal is for. Every `alter index` is now
+-- schema-qualified on BOTH names (the inverse file was already qualified, which is what gave it
+-- away). Re-run on the branch: ok (12.15s) executed sha256 413b564fa16c, ledger verified.
 
 -- 1. One index per partition, CONCURRENTLY, so no partition is ever locked against writes.
 create index concurrently if not exists row_versions_2025_11_org_latest_idx
@@ -123,32 +132,32 @@ create index if not exists rv_org_latest_idx
   on only history.row_versions (entity_type, organization_id, id desc);
 
 -- 3. Attach each partition's index. The parent index becomes valid on the last one.
-alter index rv_org_latest_idx attach partition row_versions_2025_11_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2025_12_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2026_01_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2026_02_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2026_03_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2026_04_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2026_05_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2026_06_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2026_07_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2026_08_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2026_09_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2026_10_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2026_11_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2026_12_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2027_01_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2027_02_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2027_03_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2027_04_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2027_05_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2027_06_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2027_07_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2027_08_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2027_09_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2027_10_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2027_11_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2027_12_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2028_01_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_2028_02_org_latest_idx;
-alter index rv_org_latest_idx attach partition row_versions_default_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2025_11_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2025_12_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2026_01_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2026_02_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2026_03_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2026_04_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2026_05_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2026_06_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2026_07_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2026_08_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2026_09_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2026_10_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2026_11_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2026_12_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2027_01_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2027_02_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2027_03_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2027_04_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2027_05_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2027_06_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2027_07_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2027_08_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2027_09_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2027_10_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2027_11_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2027_12_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2028_01_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_2028_02_org_latest_idx;
+alter index history.rv_org_latest_idx attach partition history.row_versions_default_org_latest_idx;
