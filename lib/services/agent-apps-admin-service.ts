@@ -541,23 +541,43 @@ export async function unresolveAgentAppError(
 export async function fetchAgentAppRateLimits(filters?: {
   app_id?: string;
   is_blocked?: boolean;
+  /** A bounded preview for legacy callers; omitted means the complete source. */
   limit?: number;
 }): Promise<AgentAppRateLimitRow[]> {
   const supabase = getClient();
-  let query = supabase
-    .schema("app").from("rate_limit")
-    .select("*")
-    .order("updated_at", { ascending: false });
+  const limit = filters?.limit;
+  const data = limit
+    ? await (async () => {
+        let query = supabase
+          .schema("app").from("rate_limit")
+          .select("*")
+          .order("updated_at", { ascending: false })
+          .order("id", { ascending: false });
+        if (filters.app_id) query = query.eq("app_id", filters.app_id);
+        if (filters.is_blocked !== undefined) {
+          query = query.eq("is_blocked", filters.is_blocked);
+        }
+        const { data: limited, error } = await query.limit(limit);
+        if (error) throw error;
+        return limited ?? [];
+      })()
+    : await readAllRows<Database["app"]["Tables"]["rate_limit"]["Row"]>(
+        ({ from, to }) => {
+          let query = supabase
+            .schema("app").from("rate_limit")
+            .select("*", { count: "exact" })
+            .order("updated_at", { ascending: false })
+            .order("id", { ascending: false });
+          if (filters?.app_id) query = query.eq("app_id", filters.app_id);
+          if (filters?.is_blocked !== undefined) {
+            query = query.eq("is_blocked", filters.is_blocked);
+          }
+          return query.range(from, to);
+        },
+        { label: "app.rate_limit (agent apps administration)" },
+      );
 
-  if (filters?.app_id) query = query.eq("app_id", filters.app_id);
-  if (filters?.is_blocked !== undefined)
-    query = query.eq("is_blocked", filters.is_blocked);
-  if (filters?.limit) query = query.limit(filters.limit);
-
-  const { data, error } = await query;
-  if (error) throw error;
-
-  if (data && data.length > 0) {
+  if (data.length > 0) {
     const appIds = [...new Set(data.map((e) => e.app_id))];
     const { data: apps, error: appsError } = await supabase
       .schema("app").from("definition")
@@ -571,7 +591,7 @@ export async function fetchAgentAppRateLimits(filters?: {
       app_slug: appMap.get(item.app_id)?.slug,
     })) as AgentAppRateLimitRow[];
   }
-  return (data ?? []) as AgentAppRateLimitRow[];
+  return data as AgentAppRateLimitRow[];
 }
 
 export async function unblockAgentAppRateLimit(

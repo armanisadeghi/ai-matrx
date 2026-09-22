@@ -517,7 +517,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "rate_limits_rows",
     label: "Rate limit rows",
     description:
-      "Rate-limit rows currently VISIBLE in the grid (after the app/identifier/type/blocked column filters, sorted): app_name/slug, identifier (user_id/ip_address/fingerprint), is_blocked, execution_count, first/last_execution_at, blocked_until, blocked_reason. Bindable rather than auto-context; up to 500 rows. Note rate_limits_stats counts the FULL fetch, not just these. Absent outside the rate-limits section.",
+      "Rate-limit rows currently VISIBLE in the grid (after the canonical table filters, sorted): id, app_name/slug, identifier (user_id/ip_address/fingerprint), is_blocked, execution_count, first/last/window_start_at, blocked_until, blocked_reason. Bindable rather than auto-context. rate_limits_stats counts the complete source selected by the source-status filter, not this filtered view. Absent outside the rate-limits section.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 5000,
@@ -529,7 +529,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "rate_limits_stats",
     label: "Rate limit stats",
     description:
-      "total/blocked/active/users/ips counts over the FULL rate-limit fetch (the stat tiles) — NOT the filtered subset in rate_limits_rows. Absent outside the rate-limits section.",
+      "total/blocked/active/users/ips counts over the loaded complete source selected by source status (the stat tiles) — NOT the filtered subset in rate_limits_rows. Absent outside the rate-limits section.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 60,
@@ -551,7 +551,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "rate_limits_table_query",
     label: "Rate limit table query",
     description:
-      "The canonical table's current local search, per-column filters, sort, and page state. It applies only to the loaded source slice, which is capped at 500 rows. Absent outside the rate-limits section.",
+      "The canonical table's current local search, per-column filters, sort, and page state. It applies to the complete source selected by source status. Absent outside the rate-limits section.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 500,
@@ -839,6 +839,7 @@ export interface AdminAgentAppErrorRowSummary {
 }
 
 export interface AdminAgentAppRateLimitRowSummary {
+  id: string;
   app_name: string;
   app_slug: string;
   user_id: string | null;
@@ -848,6 +849,7 @@ export interface AdminAgentAppRateLimitRowSummary {
   execution_count: number;
   first_execution_at: string;
   last_execution_at: string;
+  window_start_at: string;
   blocked_until: string | null;
   blocked_reason: string | null;
 }

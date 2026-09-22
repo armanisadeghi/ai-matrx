@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
   createAdminAgentAppsScope,
@@ -18,8 +18,13 @@ import {
 } from "@/lib/services/agent-apps-admin-service";
 import { useToast } from "@/components/ui/use-toast";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import { MatrxDataTable, type MatrxColumnDef, type MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table";
-import { ExternalLink, Globe, Shield, ShieldOff, User } from "lucide-react";
+import { ShieldCheckTapButton } from "@ai-matrx/tap-target/buttons";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+  type MatrxDataTableQueryState,
+} from "@ai-matrx/design-system/data-table";
+import { Globe, Shield, ShieldOff, User } from "lucide-react";
 
 const INITIAL_QUERY: MatrxDataTableQueryState = {
   page: 1,
@@ -53,7 +58,9 @@ function humanRateLimit(limit: AgentAppRateLimitRow): string {
     .join("\n");
 }
 
-function identifierKind(row: AgentAppRateLimitRow): "User" | "IP" | "Fingerprint" | "Unknown" {
+function identifierKind(
+  row: AgentAppRateLimitRow,
+): "User" | "IP" | "Fingerprint" | "Unknown" {
   if (row.user_id) return "User";
   if (row.ip_address) return "IP";
   if (row.fingerprint) return "Fingerprint";
@@ -69,10 +76,17 @@ function IdentifierCell({ row }: { row: AgentAppRateLimitRow }) {
   const kind = identifierKind(row);
   const Icon = kind === "User" ? User : kind === "IP" ? Globe : ShieldOff;
   return (
-    <span className="flex min-w-0 items-center gap-2" title={value || undefined}>
+    <span
+      className="flex min-w-0 items-center gap-2"
+      title={value || undefined}
+    >
       <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-      <span className="min-w-0 truncate font-mono text-xs">{value || "Unknown"}</span>
-      <Badge variant="outline" className="shrink-0 text-xs">{kind}</Badge>
+      <span className="min-w-0 truncate font-mono text-xs">
+        {value || "Unknown"}
+      </span>
+      <Badge variant="outline" className="shrink-0 text-xs">
+        {kind}
+      </Badge>
     </span>
   );
 }
@@ -83,17 +97,24 @@ export function RateLimitsClient() {
   const [visibleRows, setVisibleRows] = useState<AgentAppRateLimitRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [unblockingId, setUnblockingId] = useState<string | null>(null);
-  const [blockedFilter, setBlockedFilter] = useState<"all" | "blocked" | "not-blocked">("blocked");
+  const [blockedFilter, setBlockedFilter] = useState<
+    "all" | "blocked" | "not-blocked"
+  >("blocked");
   const [query, setQuery] = useState<MatrxDataTableQueryState>(INITIAL_QUERY);
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const isBlocked = blockedFilter === "all" ? undefined : blockedFilter === "blocked";
-      setRateLimits(await fetchAgentAppRateLimits({ is_blocked: isBlocked, limit: 500 }));
+      const isBlocked =
+        blockedFilter === "all" ? undefined : blockedFilter === "blocked";
+      setRateLimits(await fetchAgentAppRateLimits({ is_blocked: isBlocked }));
     } catch (error) {
       console.error("Error loading rate limits:", error);
-      toast({ title: "Error", description: "Failed to load rate limits", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to load rate limits",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -105,7 +126,11 @@ export function RateLimitsClient() {
   }, [loadData]);
 
   const handleUnblock = async (limit: AgentAppRateLimitRow) => {
-    const label = limit.user_id ? "user" : limit.ip_address ? "IP" : "fingerprint";
+    const label = limit.user_id
+      ? "user"
+      : limit.ip_address
+        ? "IP"
+        : "fingerprint";
     const confirmed = await confirmDialog({
       title: "Unblock rate limit",
       description: `Unblock this ${label}?`,
@@ -116,10 +141,17 @@ export function RateLimitsClient() {
       setUnblockingId(limit.id);
       await unblockAgentAppRateLimit(limit.id);
       await loadData();
-      toast({ title: "Unblocked", description: "Rate limit unblocked successfully" });
+      toast({
+        title: "Unblocked",
+        description: "Rate limit unblocked successfully",
+      });
     } catch (error) {
       console.error("Error unblocking rate limit:", error);
-      toast({ title: "Error", description: "Failed to unblock rate limit", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to unblock rate limit",
+        variant: "destructive",
+      });
     } finally {
       setUnblockingId(null);
     }
@@ -130,7 +162,8 @@ export function RateLimitsClient() {
     blocked: rateLimits.filter((row) => row.is_blocked).length,
     active: rateLimits.filter((row) => !row.is_blocked).length,
     users: rateLimits.filter((row) => Boolean(row.user_id)).length,
-    ips: rateLimits.filter((row) => Boolean(row.ip_address) && !row.user_id).length,
+    ips: rateLimits.filter((row) => Boolean(row.ip_address) && !row.user_id)
+      .length,
   };
 
   const columns: MatrxColumnDef<AgentAppRateLimitRow>[] = [
@@ -140,29 +173,52 @@ export function RateLimitsClient() {
       accessorFn: (row) => (row.is_blocked ? "Blocked" : "Active"),
       filter: "select",
       width: 110,
-      cell: (row) => row.is_blocked ? (
-        <Badge variant="destructive"><ShieldOff className="mr-1 h-3 w-3" />Blocked</Badge>
-      ) : (
-        <Badge variant="outline" className="border-green-600 text-green-600"><Shield className="mr-1 h-3 w-3" />Active</Badge>
-      ),
+      cell: (row) =>
+        row.is_blocked ? (
+          <Badge variant="destructive">
+            <ShieldOff className="mr-1 h-3 w-3" />
+            Blocked
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="border-green-600 text-green-600">
+            <Shield className="mr-1 h-3 w-3" />
+            Active
+          </Badge>
+        ),
     },
     {
-      id: "app",
+      id: "app_name",
       header: "App",
-      accessorFn: (row) => `${row.app_name ?? ""} ${row.app_slug ?? ""}`,
+      accessorFn: (row) => row.app_name ?? row.app_id,
       filter: "text",
       width: 220,
       frozen: true,
       cell: (row) => (
         <span className="flex min-w-0 items-center gap-2">
-          <span className="truncate font-medium">{row.app_name ?? row.app_id}</span>
-          {row.app_slug ? (
-            <a href={`/p/${row.app_slug}`} target="_blank" rel="noopener noreferrer" aria-label={`View ${row.app_name ?? row.app_slug}`} className="shrink-0 text-blue-600 hover:text-blue-700 dark:text-blue-400">
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          ) : null}
+          <EntityRef
+            token="app"
+            id={row.app_id}
+            name={row.app_name ?? row.app_id}
+            showIcon={false}
+          />
         </span>
       ),
+    },
+    {
+      accessorKey: "app_slug",
+      header: "App slug",
+      filter: "text",
+      width: 180,
+      hidden: true,
+      mobileHidden: true,
+    },
+    {
+      accessorKey: "id",
+      header: "Rate limit ID",
+      cellKind: "uuid",
+      filter: "text",
+      width: 180,
+      mobileHidden: true,
     },
     {
       id: "identifier",
@@ -180,48 +236,119 @@ export function RateLimitsClient() {
       hidden: true,
       mobileHidden: true,
     },
-    { accessorKey: "execution_count", header: "Executions", filter: "number", width: 120, align: "right", mobileHidden: true },
-    { accessorKey: "first_execution_at", header: "First execution", filter: "date", format: { id: "datetime" }, width: 180, mobileHidden: true },
-    { accessorKey: "last_execution_at", header: "Last execution", filter: "date", format: { id: "datetime" }, width: 180, mobileHidden: true },
-    { accessorKey: "window_start_at", header: "Window start", filter: "date", format: { id: "datetime" }, hidden: true, mobileHidden: true },
+    {
+      accessorKey: "execution_count",
+      header: "Executions",
+      filter: "number",
+      width: 120,
+      align: "right",
+      mobileHidden: true,
+    },
+    {
+      accessorKey: "first_execution_at",
+      header: "First execution",
+      filter: "date",
+      format: { id: "datetime" },
+      width: 180,
+      mobileHidden: true,
+    },
+    {
+      accessorKey: "last_execution_at",
+      header: "Last execution",
+      filter: "date",
+      format: { id: "datetime" },
+      width: 180,
+      mobileHidden: true,
+    },
+    {
+      accessorKey: "window_start_at",
+      header: "Window start",
+      filter: "date",
+      format: { id: "datetime" },
+      hidden: true,
+      mobileHidden: true,
+    },
+    {
+      accessorKey: "blocked_until",
+      header: "Blocked until",
+      filter: "date",
+      format: { id: "datetime" },
+      width: 180,
+      mobileHidden: true,
+    },
+    {
+      accessorKey: "blocked_reason",
+      header: "Block reason",
+      filter: "text",
+      width: 240,
+      mobileHidden: true,
+      cell: (row) => (
+        <span
+          className="block truncate"
+          title={row.blocked_reason ?? undefined}
+        >
+          {row.blocked_reason ?? "—"}
+        </span>
+      ),
+    },
   ];
 
   if (loading && rateLimits.length === 0) {
-    return <div className="flex h-full w-full items-center justify-center"><MatrxMiniLoader /></div>;
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <MatrxMiniLoader />
+      </div>
+    );
   }
 
   return (
     <SurfaceRuntimeProvider
       surfaceName={ADMIN_AGENT_APPS_SURFACE_NAME}
-      getScope={() => createAdminAgentAppsScope({
-        admin_section: "rate_limits",
-        rate_limits_rows: visibleRows.map((row) => ({
-          app_name: row.app_name ?? "",
-          app_slug: row.app_slug ?? "",
-          user_id: row.user_id ?? null,
-          ip_address: row.ip_address ?? null,
-          fingerprint: row.fingerprint ?? null,
-          is_blocked: row.is_blocked,
-          execution_count: row.execution_count,
-          first_execution_at: row.first_execution_at,
-          last_execution_at: row.last_execution_at,
-          blocked_until: row.blocked_until ?? null,
-          blocked_reason: row.blocked_reason ?? null,
-        })),
-        rate_limits_stats: stats,
-        rate_limits_filters: { blocked: blockedFilter },
-        rate_limits_table_query: query as unknown as Record<string, unknown>,
-      })}
+      getScope={() =>
+        createAdminAgentAppsScope({
+          admin_section: "rate_limits",
+          rate_limits_rows: visibleRows.map((row) => ({
+            app_name: row.app_name ?? "",
+            app_slug: row.app_slug ?? "",
+            user_id: row.user_id ?? null,
+            ip_address: row.ip_address ?? null,
+            fingerprint: row.fingerprint ?? null,
+            is_blocked: row.is_blocked,
+            id: row.id,
+            execution_count: row.execution_count,
+            first_execution_at: row.first_execution_at,
+            last_execution_at: row.last_execution_at,
+            window_start_at: row.window_start_at,
+            blocked_until: row.blocked_until ?? null,
+            blocked_reason: row.blocked_reason ?? null,
+          })),
+          rate_limits_stats: stats,
+          rate_limits_filters: { blocked: blockedFilter },
+          rate_limits_table_query: query as unknown as Record<string, unknown>,
+        })
+      }
     >
-      <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+      <div
+        data-matrx-table-page
+        className="flex h-full min-h-0 flex-col gap-3 p-4"
+      >
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {[
-            ["Total limits", stats.total, ""],
-            ["Blocked", stats.blocked, "text-destructive"],
-            ["Active", stats.active, "text-green-600"],
-            ["User limits", stats.users, "text-purple-600"],
+            ["Loaded limits", stats.total, ""],
+            ["Blocked loaded", stats.blocked, "text-destructive"],
+            ["Active loaded", stats.active, "text-green-600"],
+            ["User limits loaded", stats.users, "text-purple-600"],
           ].map(([label, value, color]) => (
-            <Card key={label as string}><CardContent className="p-2"><div className={`text-2xl font-bold ${color}`}>{value as number}</div><div className="text-xs text-muted-foreground">{label as string}</div></CardContent></Card>
+            <Card key={label as string}>
+              <CardContent className="p-2">
+                <div className={`text-2xl font-bold ${color}`}>
+                  {value as number}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {label as string}
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
         <MatrxDataTable
@@ -234,25 +361,32 @@ export function RateLimitsClient() {
           stickyHeader
           pageSize={25}
           localPagination={{ mode: "progressive" }}
-          query={{ mode: "controlled-local", state: query, onStateChange: setQuery }}
-          coverage={{ noun: "rate limit", cap: 500, answeredBy: "client" }}
+          query={{
+            mode: "controlled-local",
+            state: query,
+            onStateChange: setQuery,
+          }}
+          coverage={{ noun: "rate limit", answeredBy: "client" }}
           toolbar={{
             title: "Rate limits",
             search: true,
             searchPlaceholder: "Search apps and identifiers…",
-            facets: [{
-              type: "button-group",
-              id: "source-status",
-              label: "Source status",
-              value: blockedFilter,
-              defaultValue: "blocked",
-              options: [
-                { value: "blocked", label: "Blocked" },
-                { value: "not-blocked", label: "Active" },
-                { value: "all", label: "All" },
-              ],
-              onChange: (value) => setBlockedFilter(value as "all" | "blocked" | "not-blocked"),
-            }],
+            facets: [
+              {
+                type: "button-group",
+                id: "source-status",
+                label: "Source status",
+                value: blockedFilter,
+                defaultValue: "blocked",
+                options: [
+                  { value: "blocked", label: "Blocked" },
+                  { value: "not-blocked", label: "Active" },
+                  { value: "all", label: "All" },
+                ],
+                onChange: (value) =>
+                  setBlockedFilter(value as "all" | "blocked" | "not-blocked"),
+              },
+            ],
             refresh: { onRefresh: loadData, label: "Refresh rate limits" },
           }}
           copy={{
@@ -262,24 +396,44 @@ export function RateLimitsClient() {
             rowKind: "agent-app-rate-limit",
             listKind: "agent-app-rate-limits",
             rowDescription: "A single rate limit row.",
-            listDescription: "Rate limit rows currently shown after the canonical table filters.",
+            listDescription:
+              "Rate limit rows currently shown after the canonical table filters.",
             humanRow: humanRateLimit,
             agentRow: (row) => row,
-            rowAttributes: (row) => ({ id: row.id, is_blocked: row.is_blocked }),
-            listAttributes: (visible) => ({ count: visible.length, source_cap: 500 }),
-            export: (visible) => ({ items: [
-              jsonExportItem(() => visible, "JSON (this view)"),
-              csvExportItem(() => visible as unknown as Array<Record<string, unknown>>, "CSV (this view)"),
-            ] }),
+            rowAttributes: (row) => ({
+              id: row.id,
+              is_blocked: row.is_blocked,
+            }),
+            listAttributes: (visible) => ({ count: visible.length }),
+            export: (visible) => ({
+              items: [
+                jsonExportItem(() => visible, "JSON (this view)"),
+                csvExportItem(
+                  () => visible as unknown as Array<Record<string, unknown>>,
+                  "CSV (this view)",
+                ),
+              ],
+            }),
           }}
-          rowActions={(row) => row.is_blocked ? (
-            <Button variant="outline" size="sm" onClick={() => void handleUnblock(row)} disabled={unblockingId !== null} title={row.blocked_reason ?? "Unblock this rate limit"}>
-              <Shield className="mr-1 h-3 w-3" />Unblock
-            </Button>
-          ) : null}
+          rowActions={(row) =>
+            row.is_blocked ? (
+              <ShieldCheckTapButton
+                variant="transparent"
+                label="Unblock"
+                ariaLabel="Unblock rate limit"
+                tooltip="Unblock rate limit"
+                onClick={() => void handleUnblock(row)}
+                disabled={unblockingId !== null}
+              />
+            ) : null
+          }
           detail={{ enabled: false }}
           window={{ enabled: false }}
-          emptyState={{ title: "No rate limits found", description: "Change the source status or clear a table filter to see other loaded limits." }}
+          emptyState={{
+            title: "No rate limits found",
+            description:
+              "Change the source status or clear a table filter to see other loaded limits.",
+          }}
           onViewChange={setVisibleRows}
         />
       </div>

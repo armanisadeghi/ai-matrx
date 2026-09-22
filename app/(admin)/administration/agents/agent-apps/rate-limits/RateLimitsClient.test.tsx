@@ -36,7 +36,8 @@ jest.mock("@/components/loaders/MatrxMiniLoader", () => ({
 }));
 
 jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
-  SurfaceRuntimeProvider: ({ children }: { children: React.ReactNode }) => children,
+  SurfaceRuntimeProvider: ({ children }: { children: React.ReactNode }) =>
+    children,
 }));
 
 jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({
@@ -80,7 +81,7 @@ describe("RateLimitsClient canonical table contract", () => {
     host.remove();
   });
 
-  it("uses canonical query, coverage, source status, copy/export, and retained unblock action", async () => {
+  it("uses canonical query, complete-source coverage, independent identifiers, and the retained unblock action", async () => {
     await act(async () => {
       root.render(<RateLimitsClient />);
     });
@@ -89,24 +90,63 @@ describe("RateLimitsClient canonical table contract", () => {
     });
 
     if (!tableProps) throw new Error("Rate limits table was not rendered");
-    expect(load).toHaveBeenCalledWith({ is_blocked: true, limit: 500 });
+    expect(load).toHaveBeenCalledWith({ is_blocked: true });
     expect(tableProps.query).toMatchObject({
       mode: "controlled-local",
       state: { sort: { id: "last_execution_at", direction: "desc" } },
     });
-    expect(tableProps.coverage).toEqual({ noun: "rate limit", cap: 500, answeredBy: "client" });
-    expect(tableProps.toolbar?.facets).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: "source-status", value: "blocked" }),
-    ]));
+    expect(tableProps.coverage).toEqual({
+      noun: "rate limit",
+      answeredBy: "client",
+    });
+    expect(tableProps.toolbar?.facets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "source-status", value: "blocked" }),
+      ]),
+    );
     const copy = tableProps.copy;
-    if (!copy || !copy.export) throw new Error("Rate limit copy/export was not configured");
+    if (!copy || !copy.export)
+      throw new Error("Rate limit copy/export was not configured");
     expect(copy.export([row], [row]).items).toHaveLength(2);
-    expect(tableProps.columns).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: "app", filter: "text", frozen: true }),
-      expect.objectContaining({ id: "identifier", filter: "text" }),
-      expect.objectContaining({ id: "identifier_type", filter: "select", hidden: true }),
-      expect.objectContaining({ accessorKey: "execution_count", filter: "number" }),
-    ]));
+    expect(tableProps.columns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "app_name",
+          filter: "text",
+          frozen: true,
+        }),
+        expect.objectContaining({
+          accessorKey: "app_slug",
+          filter: "text",
+          hidden: true,
+        }),
+        expect.objectContaining({
+          accessorKey: "id",
+          cellKind: "uuid",
+          filter: "text",
+        }),
+        expect.objectContaining({ id: "identifier", filter: "text" }),
+        expect.objectContaining({
+          id: "identifier_type",
+          filter: "select",
+          hidden: true,
+        }),
+        expect.objectContaining({
+          accessorKey: "execution_count",
+          filter: "number",
+        }),
+        expect.objectContaining({
+          accessorKey: "blocked_until",
+          filter: "date",
+        }),
+        expect.objectContaining({
+          accessorKey: "blocked_reason",
+          filter: "text",
+        }),
+      ]),
+    );
+    expect(host.textContent).toContain("Loaded limits");
+    expect(host.textContent).toContain("Blocked loaded");
 
     await act(async () => {
       const action = tableProps?.rowActions?.(row, {} as never);
