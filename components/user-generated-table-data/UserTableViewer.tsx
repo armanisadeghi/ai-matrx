@@ -4514,7 +4514,21 @@ const UserTableViewer = ({
                         labelForValue={
                           choiceMap.get(field.field_name)?.choices.some((c) => c.label && c.label !== c.value)
                             ? (value) =>
-                                choiceMap.get(field.field_name)?.choices.find((c) => c.value === value)?.label ?? value
+                                choiceMap.get(field.field_name)?.choices.find((c) => c.value === value)?.label ??
+                                (
+                                // A RELATION VALUE NOTHING RESOLVED IS STILL NOT A BARE UUID.
+                                // The checklist fell straight back to the stored value, so the
+                                // one cell on the Rincon board pointing at a customer who is
+                                // not there put a raw uuid in the filter list while the grid
+                                // beside it showed the amber identifier chip — one column,
+                                // two answers. Caught by the headless walk, not by a test.
+                                (cellTextForReader(
+                                  value,
+                                  formatByField.get(field.field_name),
+                                  relationWords,
+                                  field.field_name,
+                                ) as string) ||
+                                  value)
                             : undefined
                         }
                         // The same three doors the right-click Column section
