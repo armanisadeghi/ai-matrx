@@ -18,8 +18,6 @@ import { toast } from "@/lib/toast";
 import {
   Check,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   Lightbulb,
   Network,
@@ -31,7 +29,6 @@ import {
 import { Skeleton } from "@ai-matrx/design-system";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/utils/cn";
-import { extractErrorMessage } from "@/utils/errors";
 import { useSuggestionsQuery } from "@/features/kg-suggestions/hooks/useSuggestionsQuery";
 import {
   KG_SUGGESTION_STAGE_FILTERS,
@@ -48,7 +45,6 @@ import {
   useSourcePreviewController,
 } from "@/features/kg-suggestions/components/source-preview/SourcePreviewContext";
 import { SourcePreviewPanel } from "@/features/kg-suggestions/components/source-preview/SourcePreviewPanel";
-import { SuggestionsFilterBar } from "./SuggestionsFilterBar";
 import { SuggestionsTable } from "./SuggestionsTable";
 
 export function SuggestionsManager() {
@@ -81,47 +77,9 @@ export function SuggestionsManager() {
   // review the document a suggestion came from without losing your place.
   const { target, openPreview, closePreview } = useSourcePreviewController();
 
-  const pageSize = query.pageSize ?? 50;
-  const page = query.page ?? 0;
-  const from = total === 0 ? 0 : page * pageSize + 1;
-  const to = Math.min(total, (page + 1) * pageSize);
-  const hasPrev = page > 0;
-  const hasNext = (page + 1) * pageSize < total;
-
   const pendingCount = sumStats(stats, (s) => s.status === "pending");
   const deferredCount = sumStats(stats, (s) => s.status === "deferred");
   const starredCount = sumStats(stats, (s) => s.is_starred);
-
-  const toggleExpand = (id: string) =>
-    setExpandedId((cur) => (cur === id ? null : id));
-
-  const toggleSelect = (id: string) =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-
-  const toggleSelectAll = () =>
-    setSelected((prev) =>
-      prev.size === rows.length ? new Set() : new Set(rows.map((r) => r.id)),
-    );
-
-  const clearSelection = () => setSelected(new Set());
-
-  const runBulk = async (
-    label: string,
-    fn: (id: string) => Promise<unknown>,
-  ) => {
-    const ids = Array.from(selected);
-    if (ids.length === 0) return;
-    const results = await Promise.allSettled(ids.map((id) => fn(id)));
-    const failed = results.filter((r) => r.status === "rejected").length;
-    clearSelection();
-    if (failed === 0) toast.success(`${label} ${ids.length} suggestion(s)`);
-    else toast.error(`${label}: ${ids.length - failed} done, ${failed} failed`);
-  };
 
   const dismissAllLowQuality = async () => {
     const ids = lowQuality.map((r) => r.id);
@@ -313,13 +271,15 @@ export function SuggestionsManager() {
     mainArea = (
       <SuggestionsTable
         rows={rows}
+        total={total}
+        loading={loading}
+        refresh={refresh}
         query={query}
         patchQuery={patchQuery}
         expandedId={expandedId}
-        onToggleExpand={toggleExpand}
+        onExpandedIdChange={setExpandedId}
         selected={selected}
-        onToggleSelect={toggleSelect}
-        onToggleSelectAll={toggleSelectAll}
+        onSelectedChange={setSelected}
         sourceTitles={sourceTitles}
         accept={accept}
         reject={reject}
@@ -344,11 +304,7 @@ export function SuggestionsManager() {
   const getWriteHandlers = useCallback(
     () => ({
       suggestions_filter: (value: unknown) => {
-        if (
-          typeof value !== "object" ||
-          value === null ||
-          Array.isArray(value)
-        )
+        if (typeof value !== "object" || value === null || Array.isArray(value))
           throw new Error(
             "suggestions_filter expects an object with any subset of: search, statuses, stage, minConfidence, starredOnly, unseenOnly.",
           );
@@ -426,9 +382,7 @@ export function SuggestionsManager() {
         for (const flag of ["starredOnly", "unseenOnly"] as const) {
           if (flag in input) {
             if (typeof input[flag] !== "boolean")
-              throw new Error(
-                `suggestions_filter.${flag} expects a boolean.`,
-              );
+              throw new Error(`suggestions_filter.${flag} expects a boolean.`);
             patch[flag] = input[flag] as boolean;
           }
         }
@@ -472,58 +426,6 @@ export function SuggestionsManager() {
             </button>
           </div>
 
-          <SuggestionsFilterBar
-            query={query}
-            patchQuery={patchQuery}
-            rows={rows}
-          />
-
-          {/* Bulk action bar */}
-          {selected.size > 0 ? (
-            <div className="flex flex-wrap items-center gap-1.5 border-b border-border bg-primary/5 px-3 py-1.5 text-[11px]">
-              <span className="font-medium text-foreground">
-                {selected.size} selected
-              </span>
-              <BulkButton
-                icon={<Check className="h-3 w-3" />}
-                label="Accept"
-                className="text-success hover:bg-success/10"
-                onClick={() =>
-                  void runBulk("Accepted", (id) =>
-                    accept(id).catch((e) => {
-                      throw new Error(extractErrorMessage(e));
-                    }),
-                  )
-                }
-              />
-              <BulkButton
-                icon={<Clock className="h-3 w-3" />}
-                label="Defer"
-                className="text-muted-foreground hover:bg-accent"
-                onClick={() => void runBulk("Deferred", (id) => defer(id))}
-              />
-              <BulkButton
-                icon={<X className="h-3 w-3" />}
-                label="Reject"
-                className="text-destructive hover:bg-destructive/10"
-                onClick={() => void runBulk("Rejected", (id) => reject(id))}
-              />
-              <BulkButton
-                icon={<Star className="h-3 w-3" />}
-                label="Star"
-                className="text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
-                onClick={() => void runBulk("Starred", (id) => star(id, true))}
-              />
-              <button
-                type="button"
-                onClick={clearSelection}
-                className="ml-1 rounded px-2 py-0.5 text-muted-foreground hover:bg-accent transition-colors"
-              >
-                Clear
-              </button>
-            </div>
-          ) : null}
-
           {/* Scroll body — heavy hitters lead; the table owns the vertical scroll so
           its header stays sticky. On mobile everything shares one scroll area. */}
           {isMobile ? (
@@ -543,33 +445,6 @@ export function SuggestionsManager() {
               {lowQualitySection}
             </div>
           )}
-
-          {/* Pagination footer */}
-          <div className="flex items-center justify-between border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground pb-safe">
-            <span className="tabular-nums">
-              {from}–{to} of {total}
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                disabled={!hasPrev}
-                onClick={() => patchQuery({ page: page - 1 })}
-                className="inline-flex items-center gap-0.5 rounded px-2 py-1 hover:bg-accent disabled:opacity-40 transition-colors"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-                Prev
-              </button>
-              <button
-                type="button"
-                disabled={!hasNext}
-                onClick={() => patchQuery({ page: page + 1 })}
-                className="inline-flex items-center gap-0.5 rounded px-2 py-1 hover:bg-accent disabled:opacity-40 transition-colors"
-              >
-                Next
-                <ChevronRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
         </div>
         <SourcePreviewPanel
           target={target}
@@ -578,32 +453,6 @@ export function SuggestionsManager() {
         />
       </SourcePreviewProvider>
     </SurfaceRuntimeProvider>
-  );
-}
-
-function BulkButton({
-  icon,
-  label,
-  className,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  className?: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "inline-flex items-center gap-1 rounded px-2 py-0.5 transition-colors",
-        className,
-      )}
-    >
-      {icon}
-      {label}
-    </button>
   );
 }
 
