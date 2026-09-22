@@ -88,7 +88,8 @@
     "LINKS-2": 3047,
     "DRILL": 3048,
     "FIX-13": 3045,
-    "FIX-14": 3052
+    "FIX-14": 3052,
+    "POPOVER-CENSUS": 3053
   },
   "noDevServer": {
     "W6-DOCS": "Proves its contract through the document pipeline, not a browser.",
