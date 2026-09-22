@@ -59,6 +59,43 @@
 > long-running command must use `night_dsn_args`.
 
 
+> 🚨 **THE POLICY-DDL WINDOW RULE (lane `POLICY-LOCK`, 2026-09-22) — it binds every job, every
+> migration and every lane, not just this directory.**
+>
+> Every `CREATE`, `ALTER` or `DROP POLICY` run as `postgres` on this database takes ACCESS
+> EXCLUSIVE on twenty-three relations that have nothing to do with it — sixteen `auth.*`, five
+> `storage.*`, `realtime.messages` and `realtime.subscription` — and PostgreSQL **holds them
+> until COMMIT**. While they are held nobody can sign in, refresh a token, read a file or receive
+> a realtime message. It is **not one of our event triggers** (proven by suppressing all eighteen
+> and watching the locks appear anyway); it is Supabase's own `supautils.policy_grants` hook,
+> context `sighup`, read from their configuration file, and `SET`, `SET LOCAL` and
+> `ALTER ROLE … SET` are each refused. **There is nothing of ours to turn off. The only lever we
+> own is how long the transaction lasts.**
+>
+> So, from 2026-09-22:
+>
+> 1. **Policy DDL runs ONE TABLE PER TRANSACTION.** A loop that regenerates many tables inside one
+>    transaction freezes sign-in for the whole loop. `iam.apply_rls` is one table; call it once per
+>    transaction, never inside a `DO $$ … FOR … LOOP … END LOOP $$` that spans a schema.
+> 2. **Policy DDL belongs in the 1–4 AM Pacific window** — unless it is ONE table and under a
+>    second, which since this date it is: `iam._apply_rls_unchecked` now computes everything first,
+>    does every non-policy side effect (RLS on, the anon grant or revoke, `iam.apply_table_grants`,
+>    the governance guard) and issues the drop/create policy statements LAST, back to back, with
+>    nothing between them and nothing after them but COMMIT. Measured on the dev clone on
+>    `iam.api_keys`: **first policy DDL → COMMIT was 4,418 ms, and is now 89 ms.** Cross-checked on
+>    the MAIN database the same day: while a full `iam.apply_rls` transaction was running, a second
+>    connection read `auth.users` in 83 ms.
+> 3. **A migration file that contains policy DDL is POLICY-ONLY** — policy statements, the grants
+>    and comments that belong with them, `set local`, and a `platform.entity_types` declaration that
+>    must be atomic with them. Nothing else. `pnpm db:apply` refuses a campaign file that mixes them,
+>    by name, before a connection exists. Self-test: `pnpm check:migration-policy-only:self-test`.
+> 4. **The lock set is watched, not assumed.** `scripts/campaign-tests/policylock_green.sql` asserts
+>    that a `create policy` locks its own table plus exactly the `supautils.policy_grants` set and
+>    nothing more — green today, red the day one of our triggers starts escalating or Supabase
+>    changes the list. Its red twin (`policylock_red.sql`) plants an escalating event trigger and
+>    proves the guard can fail. Both run in the nightly clone sweep; the green one is also a release
+>    gate, `pnpm check:policy-lock-set`.
+
 A night job is a **one-shot**: it fires once, on a calendar time, from a launchd user agent, and
 deletes its own plist on the way out. It exists because the session that scheduled it will not be
 alive when it runs.
