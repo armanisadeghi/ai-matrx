@@ -3,87 +3,948 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { AlertCircle, AlertTriangle, Brain, CheckCircle2, ChevronRight, Component, GitBranch, HelpCircle, ImageIcon, Lightbulb, MinusCircle, UserCheck, XCircle, Zap } from "lucide-react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  Brain,
+  CheckCircle2,
+  ChevronRight,
+  Component,
+  GitBranch,
+  HelpCircle,
+  ImageIcon,
+  Lightbulb,
+  MinusCircle,
+  UserCheck,
+  XCircle,
+  Zap,
+} from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { filterAndSortRows } from "@ai-matrx/design-system/data-table/filter-engine";
-import type { MatrxColumnDef, MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
+import type {
+  MatrxColumnDef,
+  MatrxDataTableQueryState,
+} from "@ai-matrx/design-system/data-table/types";
 import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getAllFeedback, setAdminDecision, updateFeedback, forceCloseFeedback } from "@/actions/feedback.actions";
-import { AdminUserDoorControls, AdminUserRef } from "@/features/admin/users/components/AdminUserRef";
-import { FEEDBACK_DEEP_LINK_PARAM, feedbackHref } from "@/features/admin/feedback/doors";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  getAllFeedback,
+  setAdminDecision,
+  updateFeedback,
+  forceCloseFeedback,
+} from "@/actions/feedback.actions";
+import {
+  AdminUserDoorControls,
+  AdminUserRef,
+} from "@/features/admin/users/components/AdminUserRef";
+import {
+  FEEDBACK_DEEP_LINK_PARAM,
+  feedbackHref,
+} from "@/features/admin/feedback/doors";
 import { getFeedbackScreenshotRefs } from "@/features/feedback/screenshot-refs";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
-import type { AdminDecision, FeedbackAssignableAdmin, FeedbackCategory, FeedbackStatus, UserFeedback } from "@/types/feedback.types";
-import { ADMIN_DECISION_COLORS, ADMIN_DECISION_LABELS } from "@/types/feedback.types";
+import type {
+  AdminDecision,
+  FeedbackAssignableAdmin,
+  FeedbackCategory,
+  FeedbackStatus,
+  UserFeedback,
+} from "@/types/feedback.types";
+import {
+  ADMIN_DECISION_COLORS,
+  ADMIN_DECISION_LABELS,
+} from "@/types/feedback.types";
 import FeedbackDetailDialog from "./FeedbackDetailDialog";
 import { feedbackBrief, feedbackRowSummary } from "../format";
 
 const TABLE_ID = "admin-feedback";
 const DONE: FeedbackStatus[] = ["resolved", "closed", "wont_fix", "deferred"];
-const statuses: Array<{ value: FeedbackStatus; label: string; color: string }> = [
-  { value: "new", label: "New", color: "bg-blue-100 text-blue-800" }, { value: "triaged", label: "Triaged", color: "bg-indigo-100 text-indigo-800" }, { value: "in_progress", label: "In Progress", color: "bg-purple-100 text-purple-800" }, { value: "awaiting_review", label: "Ready for Testing", color: "bg-orange-100 text-orange-800" }, { value: "user_review", label: "User Review", color: "bg-cyan-100 text-cyan-800" }, { value: "resolved", label: "Verified", color: "bg-green-100 text-green-800" }, { value: "closed", label: "Closed", color: "bg-gray-100 text-gray-800" }, { value: "wont_fix", label: "Won't Fix", color: "bg-red-100 text-red-800" }, { value: "deferred", label: "Deferred", color: "bg-gray-100 text-gray-600" },
+const statuses: Array<{ value: FeedbackStatus; label: string; color: string }> =
+  [
+    { value: "new", label: "New", color: "bg-blue-100 text-blue-800" },
+    {
+      value: "triaged",
+      label: "Triaged",
+      color: "bg-indigo-100 text-indigo-800",
+    },
+    {
+      value: "in_progress",
+      label: "In Progress",
+      color: "bg-purple-100 text-purple-800",
+    },
+    {
+      value: "awaiting_review",
+      label: "Ready for Testing",
+      color: "bg-orange-100 text-orange-800",
+    },
+    {
+      value: "user_review",
+      label: "User Review",
+      color: "bg-cyan-100 text-cyan-800",
+    },
+    {
+      value: "resolved",
+      label: "Verified",
+      color: "bg-green-100 text-green-800",
+    },
+    { value: "closed", label: "Closed", color: "bg-gray-100 text-gray-800" },
+    { value: "wont_fix", label: "Won't Fix", color: "bg-red-100 text-red-800" },
+    {
+      value: "deferred",
+      label: "Deferred",
+      color: "bg-gray-100 text-gray-600",
+    },
+  ];
+type Stage =
+  "untriaged" | "decision" | "working" | "testing" | "review" | "done" | "all";
+const stages: Array<{
+  key: Stage;
+  label: string;
+  match: (r: UserFeedback) => boolean;
+}> = [
+  { key: "untriaged", label: "New", match: (r) => r.status === "new" },
+  {
+    key: "decision",
+    label: "Decide",
+    match: (r) =>
+      r.status === "triaged" &&
+      (!r.admin_decision || r.admin_decision === "pending"),
+  },
+  {
+    key: "working",
+    label: "Fixing",
+    match: (r) =>
+      r.admin_decision === "approved" &&
+      ["triaged", "in_progress"].includes(r.status),
+  },
+  {
+    key: "testing",
+    label: "Test",
+    match: (r) => r.status === "awaiting_review",
+  },
+  {
+    key: "review",
+    label: "User review",
+    match: (r) => r.status === "user_review",
+  },
+  { key: "done", label: "Done", match: (r) => DONE.includes(r.status) },
 ];
-type Stage = "untriaged" | "decision" | "working" | "testing" | "review" | "done" | "all";
-const stages: Array<{ key: Stage; label: string; match: (r: UserFeedback) => boolean }> = [
-  { key: "untriaged", label: "New", match: r => r.status === "new" }, { key: "decision", label: "Decide", match: r => r.status === "triaged" && (!r.admin_decision || r.admin_decision === "pending") }, { key: "working", label: "Fixing", match: r => r.admin_decision === "approved" && ["triaged", "in_progress"].includes(r.status) }, { key: "testing", label: "Test", match: r => r.status === "awaiting_review" }, { key: "review", label: "User review", match: r => r.status === "user_review" }, { key: "done", label: "Done", match: r => DONE.includes(r.status) },
-];
-const tabs: Record<Stage, string> = { untriaged: "submission", decision: "decision", working: "comments", testing: "testing", review: "user-messages", done: "submission", all: "submission" };
+const tabs: Record<Stage, string> = {
+  untriaged: "submission",
+  decision: "decision",
+  working: "comments",
+  testing: "testing",
+  review: "user-messages",
+  done: "submission",
+  all: "submission",
+};
 
-function ImagePreview({ open, onOpenChange, refs }: { open: boolean; onOpenChange: (value: boolean) => void; refs: string[] }) {
-  const [index, setIndex] = useState(0); useEffect(() => { if (open) setIndex(0); }, [open]);
-  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-w-4xl bg-black/95 p-2">
-    {refs.length ? <div className="relative grid min-h-[400px] place-items-center"><InlineMediaRef ref={refs[index] ?? null} size="fill" fit="contain" rounded="none" fallback={null} className="max-h-[80dvh] max-w-full" alt={`Screenshot ${index + 1}`} />{refs.length > 1 ? <><Button aria-label="Previous screenshot" variant="ghost" size="icon" className="absolute left-2 text-white" onClick={() => setIndex(i => i === 0 ? refs.length - 1 : i - 1)}><ChevronRight className="rotate-180" /></Button><Button aria-label="Next screenshot" variant="ghost" size="icon" className="absolute right-2 text-white" onClick={() => setIndex(i => i === refs.length - 1 ? 0 : i + 1)}><ChevronRight /></Button></> : null}</div> : <p className="h-96 grid place-items-center text-white/60">No images found</p>}
-  </DialogContent></Dialog>;
+function ImagePreview({
+  open,
+  onOpenChange,
+  refs,
+}: {
+  open: boolean;
+  onOpenChange: (value: boolean) => void;
+  refs: string[];
+}) {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    if (open) setIndex(0);
+  }, [open]);
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl bg-black/95 p-2">
+        {refs.length ? (
+          <div className="relative grid min-h-[400px] place-items-center">
+            <InlineMediaRef
+              ref={refs[index] ?? null}
+              size="fill"
+              fit="contain"
+              rounded="none"
+              fallback={null}
+              className="max-h-[80dvh] max-w-full"
+              alt={`Screenshot ${index + 1}`}
+            />
+            {refs.length > 1 ? (
+              <>
+                <Button
+                  aria-label="Previous screenshot"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-2 text-white"
+                  onClick={() =>
+                    setIndex((i) => (i === 0 ? refs.length - 1 : i - 1))
+                  }
+                >
+                  <ChevronRight className="rotate-180" />
+                </Button>
+                <Button
+                  aria-label="Next screenshot"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 text-white"
+                  onClick={() =>
+                    setIndex((i) => (i === refs.length - 1 ? 0 : i + 1))
+                  }
+                >
+                  <ChevronRight />
+                </Button>
+              </>
+            ) : null}
+          </div>
+        ) : (
+          <p className="h-96 grid place-items-center text-white/60">
+            No images found
+          </p>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export default function FeedbackTable() {
-  const [rows, setRows] = useState<UserFeedback[]>([]); const [loading, setLoading] = useState(true); const [failed, setFailed] = useState(false);
-  const [categories, setCategories] = useState<FeedbackCategory[]>([]); const [admins, setAdmins] = useState<FeedbackAssignableAdmin[]>([]);
-  const [stage, setStage] = useState<Stage>("untriaged"); const [category, setCategory] = useState("all"); const [assignee, setAssignee] = useState("all"); const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [selected, setSelected] = useState<UserFeedback | null>(null); const [detailOpen, setDetailOpen] = useState(false); const [images, setImages] = useState<string[]>([]); const [imageOpen, setImageOpen] = useState(false);
-  const query = useTableUrlState({ tableId: TABLE_ID, defaultPageSize: 50, defaultSort: { id: "created_at", direction: "desc" } });
-  const router = useRouter(); const pathname = usePathname(); const params = useSearchParams(); const linkedId = params.get(FEEDBACK_DEEP_LINK_PARAM); const opened = useRef<string | null>(null);
-  const load = useCallback(async () => { setLoading(true); const result = await getAllFeedback(); if (result.success && result.data) { const data = result.data; setRows(data); setFailed(false); setSelected(old => old ? data.find(r => r.id === old.id) ?? old : null); } else { setFailed(true); toast.error("Couldn't load feedback", { description: result.error ?? "The list may be incomplete." }); } setLoading(false); }, []);
-  useEffect(() => { void load(); void fetch("/api/admin/feedback/categories").then(r => r.json()).then(d => setCategories(d.categories ?? [])).catch(() => undefined); void fetch("/api/admin/feedback/assignable-admins").then(r => r.json()).then(d => setAdmins(d.admins ?? [])).catch(() => undefined); }, [load]);
-  const setLink = useCallback((id: string | null) => { const next = new URLSearchParams(params.toString()); id ? next.set(FEEDBACK_DEEP_LINK_PARAM, id) : next.delete(FEEDBACK_DEEP_LINK_PARAM); router.replace(`${pathname}${next.size ? `?${next}` : ""}`, { scroll: false }); }, [params, pathname, router]);
-  const open = useCallback((row: UserFeedback) => { setSelected(row); setDetailOpen(true); setLink(row.id); }, [setLink]);
-  useEffect(() => { if (!linkedId) { opened.current = null; return; } if (opened.current === linkedId || loading) return; const row = rows.find(item => item.id === linkedId); if (row) { opened.current = linkedId; open(row); } else if (!failed) { opened.current = linkedId; toast.error("That feedback item isn't in this view"); setLink(null); } }, [failed, linkedId, loading, open, rows, setLink]);
-  const categoryById = useMemo(() => new Map(categories.map(item => [item.id, item])), [categories]); const adminById = useMemo(() => new Map(admins.map(item => [item.user_id, item])), [admins]);
-  const counts = useMemo(() => Object.fromEntries(stages.map(item => [item.key, rows.filter(item.match).length])) as Record<Stage, number>, [rows]);
-  const updateStatus = useCallback(async (id: string, status: FeedbackStatus) => { const result = ["closed", "resolved", "wont_fix"].includes(status) ? await forceCloseFeedback(id, status as "closed" | "resolved" | "wont_fix") : await updateFeedback(id, { status }); if (result.success) { toast.success("Status updated"); await load(); } else toast.error(`Failed to update status: ${result.error}`); }, [load]);
-  const approve = useCallback(async (id: string) => { const result = await setAdminDecision(id, "approved", undefined, Math.max(0, ...rows.map(row => row.work_priority ?? 0)) + 1); if (result.success) { toast.success("Approved and added to work queue"); await load(); } else toast.error(`Failed to approve: ${result.error}`); }, [load, rows]);
-  const columns = useMemo<MatrxColumnDef<UserFeedback>[]>(() => [
-    { id: "id", header: "Feedback", accessorFn: r => r.id, cellKind: "uuid", href: r => feedbackHref(r.id), width: 130 },
-    { id: "parent", header: "Split", accessorFn: r => r.parent_id ?? "", filter: "text", mobileHidden: true, cell: r => { const children = rows.filter(child => child.parent_id === r.id); return children.length ? <Button variant="ghost" size="xs" className="gap-1" onClick={e => { e.stopPropagation(); setExpanded(old => { const next = new Set(old); next.has(r.id) ? next.delete(r.id) : next.add(r.id); return next; }); }}><GitBranch className="size-3" />{children.length}<ChevronRight className={cn("size-3", expanded.has(r.id) && "rotate-90")} /></Button> : r.parent_id ? <span className="text-xs text-muted-foreground">Child</span> : "—"; } },
-    { id: "work_priority", header: "Queue", accessorFn: r => r.work_priority, filter: "number", align: "right", cell: r => r.work_priority === null ? "—" : `#${r.work_priority}` },
-    { id: "feedback_type", header: "Type", accessorFn: r => r.feedback_type, filter: "select", cell: r => <span className="inline-flex items-center gap-1 text-xs capitalize">{{ bug: <AlertCircle className="size-3 text-red-500" />, feature: <Zap className="size-3 text-purple-500" />, suggestion: <Lightbulb className="size-3 text-yellow-500" />, other: <HelpCircle className="size-3" /> }[r.feedback_type]}{r.feedback_type}</span> },
-    { id: "status", header: "Status", accessorFn: r => r.status, filter: "select", cell: r => { const option = statuses.find(item => item.value === r.status); return <Select value={r.status} onValueChange={value => void updateStatus(r.id, value as FeedbackStatus)}><SelectTrigger className="h-7 w-36 text-xs"><SelectValue><Badge className={cn("border-0", option?.color)}>{option?.label ?? r.status}</Badge></SelectValue></SelectTrigger><SelectContent>{statuses.map(item => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent></Select>; } },
-    { id: "category", header: "Category", accessorFn: r => r.category_id ? categoryById.get(r.category_id)?.name ?? r.category_id : "Uncategorized", filter: "select", cell: r => { const item = r.category_id ? categoryById.get(r.category_id) : null; return item ? <Button variant="ghost" size="xs" className="h-6 px-1.5" onClick={e => { e.stopPropagation(); setCategory(item.id); }}>{item.name}</Button> : <span className="text-xs text-muted-foreground">Uncategorized</span>; } },
-    { id: "description", header: "Description", accessorFn: r => r.description, filter: "text", minWidth: 280, cell: r => <div className="flex min-w-0 items-start gap-1"><span className="line-clamp-2 text-sm">{r.description}</span>{r.ai_solution_proposal ? <Brain className="size-3 shrink-0 text-indigo-500" /> : null}{getFeedbackScreenshotRefs(r).length ? <Button variant="ghost" size="xs" className="h-6 px-1" onClick={e => { e.stopPropagation(); setImages(getFeedbackScreenshotRefs(r)); setImageOpen(true); }}><ImageIcon className="size-3" />{getFeedbackScreenshotRefs(r).length}</Button> : null}</div> },
-    { id: "route", header: "Route", accessorFn: r => r.route, filter: "text", mobileHidden: true, cell: r => <span className="block max-w-48 truncate text-xs" title={r.route}>{r.route}</span> },
-    { id: "admin_decision", header: "Decision", accessorFn: r => r.admin_decision ?? "pending", filter: "select", cell: r => { const value: AdminDecision = r.admin_decision ?? "pending"; const colors = ADMIN_DECISION_COLORS[value]; return <span className="inline-flex items-center gap-1"><Badge className={cn("border-0", colors.bg, colors.text)}>{ADMIN_DECISION_LABELS[value]}</Badge>{r.status === "triaged" && value === "pending" ? <Button aria-label="Quick approve" variant="ghost" size="icon" className="size-6 text-green-600" onClick={e => { e.stopPropagation(); void approve(r.id); }}><CheckCircle2 className="size-4" /></Button> : null}</span>; } },
-    { id: "testing_result", header: "Testing", accessorFn: r => r.testing_result ?? "pending", filter: "select", mobileHidden: true, cell: r => r.testing_result && r.testing_result !== "pending" ? <span className="inline-flex items-center gap-1 text-xs">{r.testing_result === "pass" ? <CheckCircle2 className="size-3 text-green-500" /> : r.testing_result === "fail" ? <XCircle className="size-3 text-red-500" /> : <MinusCircle className="size-3 text-yellow-500" />}{r.testing_result}</span> : "—" },
-    { id: "has_open_issues", header: "Open issues", accessorFn: r => r.has_open_issues, filter: "boolean", mobileHidden: true, cell: r => r.has_open_issues ? <span className="inline-flex items-center gap-1 text-xs text-amber-700"><AlertTriangle className="size-3" />Open</span> : "—" },
-    { id: "username", header: "Reporter", accessorFn: r => r.username ?? "Anonymous", filter: "text", cell: r => <AdminUserRef userId={r.user_id} name={r.username || "Anonymous"} hideEmail /> },
-    { id: "assigned_to", header: "Assignee", accessorFn: r => r.assigned_to ? adminById.get(r.assigned_to)?.display_name ?? adminById.get(r.assigned_to)?.email ?? r.assigned_to : "Unassigned", filter: "select", cell: r => { if (!r.assigned_to) return <span className="text-xs text-muted-foreground">Unassigned</span>; const label = adminById.get(r.assigned_to)?.display_name ?? adminById.get(r.assigned_to)?.email ?? r.assigned_to.slice(0, 8); return <span className="inline-flex items-center gap-1"><Button variant="ghost" size="xs" className="h-6 px-1.5" onClick={e => { e.stopPropagation(); setAssignee(r.assigned_to!); }}><UserCheck className="size-3" />{label}</Button><AdminUserDoorControls userId={r.assigned_to} label={label} /></span>; } },
-    { id: "created_at", header: "Created", accessorFn: r => r.created_at, filter: "date", cell: r => <span className="whitespace-nowrap text-xs text-muted-foreground" title={r.created_at}>{formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}</span> },
-  ], [adminById, approve, categoryById, expanded, rows, updateStatus]);
-  const process = useCallback((source: UserFeedback[], state: MatrxDataTableQueryState) => { const filtered = filterAndSortRows(source, columns, state.columnFilters, state.sort, state.search, undefined, state.layeredFilters, undefined, r => `${r.id} ${r.description} ${r.username ?? ""} ${r.route}`); const stageRows = stage === "all" ? filtered : filtered.filter(stages.find(item => item.key === stage)?.match ?? (() => true)); const narrowed = stageRows.filter(r => (category === "all" || (category === "none" ? !r.category_id : r.category_id === category)) && (assignee === "all" || (assignee === "none" ? !r.assigned_to : r.assigned_to === assignee))); const ids = new Set(narrowed.map(r => r.id)); const children = new Map<string, UserFeedback[]>(); narrowed.forEach(r => { if (r.parent_id) children.set(r.parent_id, [...(children.get(r.parent_id) ?? []), r]); }); return narrowed.flatMap(r => r.parent_id && ids.has(r.parent_id) ? [] : [r, ...(expanded.has(r.id) ? children.get(r.id) ?? [] : [])]); }, [assignee, category, columns, expanded, stage]);
-  return <>
-    {failed ? <StaleDataNotice hasData={rows.length > 0} what="feedback" onRetry={() => void load()} retrying={loading} className="mb-3" /> : null}
-    <Card className="p-3"><MatrxDataTable<UserFeedback> data={rows} columns={columns} getRowId={r => r.id} tableId={TABLE_ID} density="condensed" pageSize={50} localPagination={{ mode: "numbered", reason: "Triage uses stable pages while administrators compare records.", approvedBy: "Arman" }} isLoading={loading && !rows.length} isFetching={loading && !!rows.length} query={{ mode: "controlled-local", state: query.state, onStateChange: query.onStateChange }} processLocalRows={process} searchText={r => `${r.id} ${r.description} ${r.username ?? ""} ${r.route}`} coverage={{ total: failed ? undefined : rows.length, answeredBy: "client", noun: "feedback item" }}
-      toolbar={{ title: "Feedback", search: true, searchPlaceholder: "Search feedback, reporter, route, or id…", refresh: { onRefresh: load }, facets: [{ type: "button-group", id: "stage", label: "Stage", value: stage, defaultValue: "untriaged", options: [...stages.map(item => ({ value: item.key, label: failed ? `${item.label} —` : `${item.label} ${counts[item.key]}` })), { value: "all", label: failed ? "All —" : `All ${rows.length}` }], onChange: value => setStage(value as Stage) }, { type: "custom", id: "source-filters", filter: { active: category !== "all" || assignee !== "all", onReset: () => { setCategory("all"); setAssignee("all"); } }, render: () => <div className="flex gap-2"><Select value={category} onValueChange={setCategory}><SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Category" /></SelectTrigger><SelectContent><SelectItem value="all">All categories</SelectItem><SelectItem value="none">Uncategorized</SelectItem>{categories.filter(item => item.is_active).map(item => <SelectItem value={item.id} key={item.id}>{item.name}</SelectItem>)}</SelectContent></Select><Select value={assignee} onValueChange={setAssignee}><SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Assignee" /></SelectTrigger><SelectContent><SelectItem value="all">All assignees</SelectItem><SelectItem value="none">Unassigned</SelectItem>{admins.map(item => <SelectItem value={item.user_id} key={item.user_id}>{item.display_name || item.email || item.user_id.slice(0, 8)}</SelectItem>)}</SelectContent></Select></div> }] }}
-      copy={{ label: "Feedback", listLabel: "Feedback (this view)", location: "AI Matrx Admin — Feedback Management · Feedback tab (/administration/users/feedback)", rowKind: "feedback-item", listKind: "feedback-items", rowDescription: "One user-feedback record.", listDescription: "Filtered feedback in the triage table.", humanRow: feedbackRowSummary, agentRow: r => r, rowAttributes: r => ({ id: r.id, type: r.feedback_type, status: r.status, priority: r.priority }), aiVariants: (visible, all) => [{ id: "brief", label: "Triage briefs", hint: "Metadata + trimmed descriptions", build: () => ({ kind: "feedback-items", location: "AI Matrx Admin feedback", description: "Compact triage digest.", data: visible.map(feedbackBrief), attributes: { count: visible.length, total_count: all.length } }) }], export: (visible, all) => ({ items: [{ id: "json-all", label: "JSON (all loaded feedback)", build: () => ({ content: JSON.stringify(all, null, 2), extension: "json", mime: "application/json", filename: "feedback.json" }) }, { id: "csv-view", label: "CSV (this view)", build: () => ({ content: visible.map(feedbackRowSummary).join("\\n"), extension: "csv", mime: "text/csv", filename: "feedback.csv" }) }] }) }}
-      rowClassName={r => cn(r.admin_decision === "approved" && !DONE.includes(r.status) && "bg-green-500/5", r.parent_id && "border-l-2 border-l-primary/20")} getRowHref={r => feedbackHref(r.id)} onRowOpen={open} selectedId={selected?.id} onSelectedIdChange={id => { const row = rows.find(item => item.id === id); if (row) open(row); }} emptyState={failed ? { title: "Couldn't load feedback", description: "Retry before treating this as an empty queue." } : { title: "No feedback matches this view", description: "Clear filters or select another pipeline stage." }} rowActions={r => <Button aria-label={`Open feedback ${r.id}`} variant="ghost" size="icon" onClick={() => open(r)}><Component className="size-4" /></Button>} /></Card>
-    {selected ? <FeedbackDetailDialog feedback={selected} open={detailOpen} onOpenChange={value => { setDetailOpen(value); if (!value) setLink(null); }} onUpdate={load} initialTab={tabs[stage]} onOpenFeedback={id => { const row = rows.find(item => item.id === id); if (row) open(row); else toast.error(failed ? "Can't open that related item while feedback is unavailable" : "That related item isn't in this view"); }} /> : null}
-    <ImagePreview open={imageOpen} onOpenChange={setImageOpen} refs={images} />
-  </>;
+  const [rows, setRows] = useState<UserFeedback[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [categories, setCategories] = useState<FeedbackCategory[]>([]);
+  const [admins, setAdmins] = useState<FeedbackAssignableAdmin[]>([]);
+  const [stage, setStage] = useState<Stage>("untriaged");
+  const [category, setCategory] = useState("all");
+  const [assignee, setAssignee] = useState("all");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<UserFeedback | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
+  const [imageOpen, setImageOpen] = useState(false);
+  const query = useTableUrlState({
+    tableId: TABLE_ID,
+    defaultPageSize: 50,
+    defaultSort: { id: "created_at", direction: "desc" },
+  });
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const linkedId = params.get(FEEDBACK_DEEP_LINK_PARAM);
+  const opened = useRef<string | null>(null);
+  const load = useCallback(async () => {
+    setLoading(true);
+    const result = await getAllFeedback();
+    if (result.success && result.data) {
+      const data = result.data;
+      setRows(data);
+      setFailed(false);
+      setSelected((old) =>
+        old ? (data.find((r) => r.id === old.id) ?? old) : null,
+      );
+    } else {
+      setFailed(true);
+      toast.error("Couldn't load feedback", {
+        description: result.error ?? "The list may be incomplete.",
+      });
+    }
+    setLoading(false);
+  }, []);
+  useEffect(() => {
+    void load();
+    void fetch("/api/admin/feedback/categories")
+      .then((r) => r.json())
+      .then((d) => setCategories(d.categories ?? []))
+      .catch(() => undefined);
+    void fetch("/api/admin/feedback/assignable-admins")
+      .then((r) => r.json())
+      .then((d) => setAdmins(d.admins ?? []))
+      .catch(() => undefined);
+  }, [load]);
+  const setLink = useCallback(
+    (id: string | null) => {
+      const next = new URLSearchParams(params.toString());
+      id
+        ? next.set(FEEDBACK_DEEP_LINK_PARAM, id)
+        : next.delete(FEEDBACK_DEEP_LINK_PARAM);
+      router.replace(`${pathname}${next.size ? `?${next}` : ""}`, {
+        scroll: false,
+      });
+    },
+    [params, pathname, router],
+  );
+  const open = useCallback(
+    (row: UserFeedback) => {
+      setSelected(row);
+      setDetailOpen(true);
+      setLink(row.id);
+    },
+    [setLink],
+  );
+  useEffect(() => {
+    if (!linkedId) {
+      opened.current = null;
+      return;
+    }
+    if (opened.current === linkedId || loading) return;
+    const row = rows.find((item) => item.id === linkedId);
+    if (row) {
+      opened.current = linkedId;
+      open(row);
+    } else if (!failed) {
+      opened.current = linkedId;
+      toast.error("That feedback item isn't in this view");
+      setLink(null);
+    }
+  }, [failed, linkedId, loading, open, rows, setLink]);
+  const categoryById = useMemo(
+    () => new Map(categories.map((item) => [item.id, item])),
+    [categories],
+  );
+  const adminById = useMemo(
+    () => new Map(admins.map((item) => [item.user_id, item])),
+    [admins],
+  );
+  const counts = useMemo(
+    () =>
+      Object.fromEntries(
+        stages.map((item) => [item.key, rows.filter(item.match).length]),
+      ) as Record<Stage, number>,
+    [rows],
+  );
+  const updateStatus = useCallback(
+    async (id: string, status: FeedbackStatus) => {
+      const result = ["closed", "resolved", "wont_fix"].includes(status)
+        ? await forceCloseFeedback(
+            id,
+            status as "closed" | "resolved" | "wont_fix",
+          )
+        : await updateFeedback(id, { status });
+      if (result.success) {
+        toast.success("Status updated");
+        await load();
+      } else toast.error(`Failed to update status: ${result.error}`);
+    },
+    [load],
+  );
+  const approve = useCallback(
+    async (id: string) => {
+      const result = await setAdminDecision(
+        id,
+        "approved",
+        undefined,
+        Math.max(0, ...rows.map((row) => row.work_priority ?? 0)) + 1,
+      );
+      if (result.success) {
+        toast.success("Approved and added to work queue");
+        await load();
+      } else toast.error(`Failed to approve: ${result.error}`);
+    },
+    [load, rows],
+  );
+  const columns = useMemo<MatrxColumnDef<UserFeedback>[]>(
+    () => [
+      {
+        id: "id",
+        header: "Feedback",
+        accessorFn: (r) => r.id,
+        cellKind: "uuid",
+        href: (r) => feedbackHref(r.id),
+        width: 130,
+      },
+      {
+        id: "parent",
+        header: "Split",
+        accessorFn: (r) => r.parent_id ?? "",
+        filter: "text",
+        mobileHidden: true,
+        cell: (r) => {
+          const children = rows.filter((child) => child.parent_id === r.id);
+          return children.length ? (
+            <Button
+              variant="ghost"
+              size="xs"
+              className="gap-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded((old) => {
+                  const next = new Set(old);
+                  next.has(r.id) ? next.delete(r.id) : next.add(r.id);
+                  return next;
+                });
+              }}
+            >
+              <GitBranch className="size-3" />
+              {children.length}
+              <ChevronRight
+                className={cn("size-3", expanded.has(r.id) && "rotate-90")}
+              />
+            </Button>
+          ) : r.parent_id ? (
+            <span className="text-xs text-muted-foreground">Child</span>
+          ) : (
+            "—"
+          );
+        },
+      },
+      {
+        id: "work_priority",
+        header: "Queue",
+        accessorFn: (r) => r.work_priority,
+        filter: "number",
+        align: "right",
+        cell: (r) => (r.work_priority === null ? "—" : `#${r.work_priority}`),
+      },
+      {
+        id: "feedback_type",
+        header: "Type",
+        accessorFn: (r) => r.feedback_type,
+        filter: "select",
+        cell: (r) => (
+          <span className="inline-flex items-center gap-1 text-xs capitalize">
+            {
+              {
+                bug: <AlertCircle className="size-3 text-red-500" />,
+                feature: <Zap className="size-3 text-purple-500" />,
+                suggestion: <Lightbulb className="size-3 text-yellow-500" />,
+                other: <HelpCircle className="size-3" />,
+              }[r.feedback_type]
+            }
+            {r.feedback_type}
+          </span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        accessorFn: (r) => r.status,
+        filter: "select",
+        cell: (r) => {
+          const option = statuses.find((item) => item.value === r.status);
+          return (
+            <Select
+              value={r.status}
+              onValueChange={(value) =>
+                void updateStatus(r.id, value as FeedbackStatus)
+              }
+            >
+              <SelectTrigger className="h-7 w-36 text-xs">
+                <SelectValue>
+                  <Badge className={cn("border-0", option?.color)}>
+                    {option?.label ?? r.status}
+                  </Badge>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {statuses.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          );
+        },
+      },
+      {
+        id: "category",
+        header: "Category",
+        accessorFn: (r) =>
+          r.category_id
+            ? (categoryById.get(r.category_id)?.name ?? r.category_id)
+            : "Uncategorized",
+        filter: "select",
+        cell: (r) => {
+          const item = r.category_id ? categoryById.get(r.category_id) : null;
+          return item ? (
+            <Button
+              variant="ghost"
+              size="xs"
+              className="h-6 px-1.5"
+              onClick={(e) => {
+                e.stopPropagation();
+                setCategory(item.id);
+              }}
+            >
+              {item.name}
+            </Button>
+          ) : (
+            <span className="text-xs text-muted-foreground">Uncategorized</span>
+          );
+        },
+      },
+      {
+        id: "description",
+        header: "Description",
+        accessorFn: (r) => r.description,
+        filter: "text",
+        minWidth: 280,
+        cell: (r) => (
+          <div className="flex min-w-0 items-start gap-1">
+            <span className="line-clamp-2 text-sm">{r.description}</span>
+            {r.ai_solution_proposal ? (
+              <Brain className="size-3 shrink-0 text-indigo-500" />
+            ) : null}
+            {getFeedbackScreenshotRefs(r).length ? (
+              <Button
+                variant="ghost"
+                size="xs"
+                className="h-6 px-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setImages(getFeedbackScreenshotRefs(r));
+                  setImageOpen(true);
+                }}
+              >
+                <ImageIcon className="size-3" />
+                {getFeedbackScreenshotRefs(r).length}
+              </Button>
+            ) : null}
+          </div>
+        ),
+      },
+      {
+        id: "route",
+        header: "Route",
+        accessorFn: (r) => r.route,
+        filter: "text",
+        mobileHidden: true,
+        cell: (r) => (
+          <span className="block max-w-48 truncate text-xs" title={r.route}>
+            {r.route}
+          </span>
+        ),
+      },
+      {
+        id: "admin_decision",
+        header: "Decision",
+        accessorFn: (r) => r.admin_decision ?? "pending",
+        filter: "select",
+        cell: (r) => {
+          const value: AdminDecision = r.admin_decision ?? "pending";
+          const colors = ADMIN_DECISION_COLORS[value];
+          return (
+            <span className="inline-flex items-center gap-1">
+              <Badge className={cn("border-0", colors.bg, colors.text)}>
+                {ADMIN_DECISION_LABELS[value]}
+              </Badge>
+              {r.status === "triaged" && value === "pending" ? (
+                <Button
+                  aria-label="Quick approve"
+                  variant="ghost"
+                  size="icon"
+                  className="size-6 text-green-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void approve(r.id);
+                  }}
+                >
+                  <CheckCircle2 className="size-4" />
+                </Button>
+              ) : null}
+            </span>
+          );
+        },
+      },
+      {
+        id: "testing_result",
+        header: "Testing",
+        accessorFn: (r) => r.testing_result ?? "pending",
+        filter: "select",
+        mobileHidden: true,
+        cell: (r) =>
+          r.testing_result && r.testing_result !== "pending" ? (
+            <span className="inline-flex items-center gap-1 text-xs">
+              {r.testing_result === "pass" ? (
+                <CheckCircle2 className="size-3 text-green-500" />
+              ) : r.testing_result === "fail" ? (
+                <XCircle className="size-3 text-red-500" />
+              ) : (
+                <MinusCircle className="size-3 text-yellow-500" />
+              )}
+              {r.testing_result}
+            </span>
+          ) : (
+            "—"
+          ),
+      },
+      {
+        id: "has_open_issues",
+        header: "Open issues",
+        accessorFn: (r) => r.has_open_issues,
+        filter: "boolean",
+        mobileHidden: true,
+        cell: (r) =>
+          r.has_open_issues ? (
+            <span className="inline-flex items-center gap-1 text-xs text-amber-700">
+              <AlertTriangle className="size-3" />
+              Open
+            </span>
+          ) : (
+            "—"
+          ),
+      },
+      {
+        id: "username",
+        header: "Reporter",
+        accessorFn: (r) => r.username ?? "Anonymous",
+        filter: "text",
+        cell: (r) => (
+          <AdminUserRef
+            userId={r.user_id}
+            name={r.username || "Anonymous"}
+            hideEmail
+          />
+        ),
+      },
+      {
+        id: "assigned_to",
+        header: "Assignee",
+        accessorFn: (r) =>
+          r.assigned_to
+            ? (adminById.get(r.assigned_to)?.display_name ??
+              adminById.get(r.assigned_to)?.email ??
+              r.assigned_to)
+            : "Unassigned",
+        filter: "select",
+        cell: (r) => {
+          if (!r.assigned_to)
+            return (
+              <span className="text-xs text-muted-foreground">Unassigned</span>
+            );
+          const label =
+            adminById.get(r.assigned_to)?.display_name ??
+            adminById.get(r.assigned_to)?.email ??
+            r.assigned_to.slice(0, 8);
+          return (
+            <span className="inline-flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="xs"
+                className="h-6 px-1.5"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setAssignee(r.assigned_to!);
+                }}
+              >
+                <UserCheck className="size-3" />
+                {label}
+              </Button>
+              <AdminUserDoorControls userId={r.assigned_to} label={label} />
+            </span>
+          );
+        },
+      },
+      {
+        id: "created_at",
+        header: "Created",
+        accessorFn: (r) => r.created_at,
+        filter: "date",
+        cell: (r) => (
+          <span
+            className="whitespace-nowrap text-xs text-muted-foreground"
+            title={r.created_at}
+          >
+            {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
+          </span>
+        ),
+      },
+    ],
+    [adminById, approve, categoryById, expanded, rows, updateStatus],
+  );
+  const process = useCallback(
+    (source: UserFeedback[], state: MatrxDataTableQueryState) => {
+      const filtered = filterAndSortRows(
+        source,
+        columns,
+        state.columnFilters,
+        state.sort,
+        state.search,
+        undefined,
+        state.layeredFilters,
+        undefined,
+        (r) => `${r.id} ${r.description} ${r.username ?? ""} ${r.route}`,
+      );
+      const stageRows =
+        stage === "all"
+          ? filtered
+          : filtered.filter(
+              stages.find((item) => item.key === stage)?.match ?? (() => true),
+            );
+      const narrowed = stageRows.filter(
+        (r) =>
+          (category === "all" ||
+            (category === "none"
+              ? !r.category_id
+              : r.category_id === category)) &&
+          (assignee === "all" ||
+            (assignee === "none"
+              ? !r.assigned_to
+              : r.assigned_to === assignee)),
+      );
+      const ids = new Set(narrowed.map((r) => r.id));
+      const children = new Map<string, UserFeedback[]>();
+      narrowed.forEach((r) => {
+        if (r.parent_id)
+          children.set(r.parent_id, [...(children.get(r.parent_id) ?? []), r]);
+      });
+      return narrowed.flatMap((r) =>
+        r.parent_id && ids.has(r.parent_id)
+          ? []
+          : [r, ...(expanded.has(r.id) ? (children.get(r.id) ?? []) : [])],
+      );
+    },
+    [assignee, category, columns, expanded, stage],
+  );
+  return (
+    <>
+      {failed ? (
+        <StaleDataNotice
+          hasData={rows.length > 0}
+          what="feedback"
+          onRetry={() => void load()}
+          retrying={loading}
+          className="mb-3"
+        />
+      ) : null}
+      <Card className="p-3">
+        <MatrxDataTable<UserFeedback>
+          data={rows}
+          columns={columns}
+          getRowId={(r) => r.id}
+          tableId={TABLE_ID}
+          density="condensed"
+          pageSize={50}
+          localPagination={{
+            mode: "numbered",
+            reason:
+              "Triage uses stable pages while administrators compare records.",
+            approvedBy: "Arman",
+          }}
+          isLoading={loading && !rows.length}
+          isFetching={loading && !!rows.length}
+          query={{
+            mode: "controlled-local",
+            state: query.state,
+            onStateChange: query.onStateChange,
+          }}
+          processLocalRows={process}
+          searchText={(r) =>
+            `${r.id} ${r.description} ${r.username ?? ""} ${r.route}`
+          }
+          coverage={{
+            total: failed ? undefined : rows.length,
+            answeredBy: "client",
+            noun: "feedback item",
+          }}
+          toolbar={{
+            title: "Feedback",
+            search: true,
+            searchPlaceholder: "Search feedback, reporter, route, or id…",
+            refresh: { onRefresh: load },
+            facets: [
+              {
+                type: "button-group",
+                id: "stage",
+                label: "Stage",
+                value: stage,
+                defaultValue: "untriaged",
+                options: [
+                  ...stages.map((item) => ({
+                    value: item.key,
+                    label: failed
+                      ? `${item.label} —`
+                      : `${item.label} ${counts[item.key]}`,
+                  })),
+                  {
+                    value: "all",
+                    label: failed ? "All —" : `All ${rows.length}`,
+                  },
+                ],
+                onChange: (value) => setStage(value as Stage),
+              },
+              {
+                type: "custom",
+                id: "source-filters",
+                filter: {
+                  active: category !== "all" || assignee !== "all",
+                  onReset: () => {
+                    setCategory("all");
+                    setAssignee("all");
+                  },
+                },
+                render: () => (
+                  <div className="flex gap-2">
+                    <Select value={category} onValueChange={setCategory}>
+                      <SelectTrigger className="h-8 w-40 text-xs">
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All categories</SelectItem>
+                        <SelectItem value="none">Uncategorized</SelectItem>
+                        {categories
+                          .filter((item) => item.is_active)
+                          .map((item) => (
+                            <SelectItem value={item.id} key={item.id}>
+                              {item.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={assignee} onValueChange={setAssignee}>
+                      <SelectTrigger className="h-8 w-40 text-xs">
+                        <SelectValue placeholder="Assignee" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All assignees</SelectItem>
+                        <SelectItem value="none">Unassigned</SelectItem>
+                        {admins.map((item) => (
+                          <SelectItem value={item.user_id} key={item.user_id}>
+                            {item.display_name ||
+                              item.email ||
+                              item.user_id.slice(0, 8)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ),
+              },
+            ],
+          }}
+          copy={{
+            label: "Feedback",
+            listLabel: "Feedback (this view)",
+            location:
+              "AI Matrx Admin — Feedback Management · Feedback tab (/administration/users/feedback)",
+            rowKind: "feedback-item",
+            listKind: "feedback-items",
+            rowDescription: "One user-feedback record.",
+            listDescription: "Filtered feedback in the triage table.",
+            humanRow: feedbackRowSummary,
+            agentRow: (r) => r,
+            rowAttributes: (r) => ({
+              id: r.id,
+              type: r.feedback_type,
+              status: r.status,
+              priority: r.priority,
+            }),
+            aiVariants: (visible, all) => [
+              {
+                id: "brief",
+                label: "Triage briefs",
+                hint: "Metadata + trimmed descriptions",
+                build: () => ({
+                  kind: "feedback-items",
+                  location: "AI Matrx Admin feedback",
+                  description: "Compact triage digest.",
+                  data: visible.map(feedbackBrief),
+                  attributes: {
+                    count: visible.length,
+                    total_count: all.length,
+                  },
+                }),
+              },
+            ],
+            export: (visible, all) => ({
+              items: [
+                {
+                  id: "json-all",
+                  label: "JSON (all loaded feedback)",
+                  build: () => ({
+                    content: JSON.stringify(all, null, 2),
+                    extension: "json",
+                    mime: "application/json",
+                    filename: "feedback.json",
+                  }),
+                },
+                {
+                  id: "csv-view",
+                  label: "CSV (this view)",
+                  build: () => ({
+                    content: visible.map(feedbackRowSummary).join("\\n"),
+                    extension: "csv",
+                    mime: "text/csv",
+                    filename: "feedback.csv",
+                  }),
+                },
+              ],
+            }),
+          }}
+          rowClassName={(r) =>
+            cn(
+              r.admin_decision === "approved" &&
+                !DONE.includes(r.status) &&
+                "bg-green-500/5",
+              r.parent_id && "border-l-2 border-l-primary/20",
+            )
+          }
+          getRowHref={(r) => feedbackHref(r.id)}
+          onRowOpen={open}
+          selectedId={selected?.id}
+          onSelectedIdChange={(id) => {
+            const row = rows.find((item) => item.id === id);
+            if (row) open(row);
+          }}
+          emptyState={
+            failed
+              ? {
+                  title: "Couldn't load feedback",
+                  description: "Retry before treating this as an empty queue.",
+                }
+              : {
+                  title: "No feedback matches this view",
+                  description:
+                    "Clear filters or select another pipeline stage.",
+                }
+          }
+          rowActions={(r) => (
+            <Button
+              aria-label={`Open feedback ${r.id}`}
+              variant="ghost"
+              size="icon"
+              onClick={() => open(r)}
+            >
+              <Component className="size-4" />
+            </Button>
+          )}
+        />
+      </Card>
+      {selected ? (
+        <FeedbackDetailDialog
+          feedback={selected}
+          open={detailOpen}
+          onOpenChange={(value) => {
+            setDetailOpen(value);
+            if (!value) setLink(null);
+          }}
+          onUpdate={load}
+          initialTab={tabs[stage]}
+          onOpenFeedback={(id) => {
+            const row = rows.find((item) => item.id === id);
+            if (row) open(row);
+            else
+              toast.error(
+                failed
+                  ? "Can't open that related item while feedback is unavailable"
+                  : "That related item isn't in this view",
+              );
+          }}
+        />
+      ) : null}
+      <ImagePreview
+        open={imageOpen}
+        onOpenChange={setImageOpen}
+        refs={images}
+      />
+    </>
+  );
 }
