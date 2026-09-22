@@ -92,7 +92,8 @@ const SWEEP_CLASSIFICATION =
 
 const SWEEP_REASON =
   "ORG-CLEANUP-2 2026-09-23 — throwaway organization minted per run by an aidream " +
-  "matrx-records suite. The suites now reuse one named fixture organization per use case " +
+  "matrx-records suite. The suites now reuse ONE organization per use case, found by its " +
+  "slug and named after a real business, " +
   "instead of minting one. Nothing deleted; restorable.";
 
 async function seat() {
@@ -229,7 +230,7 @@ if (cmd === "list") {
       console.log(`would classify+archive  ${org.id}  ${org.name}`);
       continue;
     }
-    if (!(org.settings ?? {}).test_fixture) {
+    if (!(org.settings ?? {})["test_fixture"]) { // settings.test_fixture — the classification key
       const settings = { ...(org.settings ?? {}), test_fixture: SWEEP_CLASSIFICATION };
       const { error: updErr } = await sb.rpc("org_update", { p_org_id: org.id, p_patch: { settings } });
       if (updErr) throw new Error(`org_update refused ${org.id}: ${updErr.message}`);
@@ -244,7 +245,10 @@ if (cmd === "list") {
     console.log(`${r.changed ? "ARCHIVED " : "already  "} ${org.id}  ${org.name}`);
   }
 
-  console.log(`\n${classified} newly classified test_fixture through public.org_update, ${archived} newly archived.`);
+  console.log(
+    `\n${classified} newly classified through public.org_update (the settings.test_fixture key), ` +
+      `${archived} newly archived.`,
+  );
   if (forArman.length === 0) {
     console.log("FOR ARMAN: nothing. Every banned-name organization was a test artifact by evidence.");
   } else {

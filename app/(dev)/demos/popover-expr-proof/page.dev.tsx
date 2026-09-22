@@ -83,7 +83,7 @@ export default function PopoverExprProofPage() {
             waitMessage: null,
             elapsedMs: 0,
             error:
-              "The topical map run for Northbay Commercial Solar's \"Phased Commercial Rooftop Installation\" cluster stopped after page 14 of 22: the sitemap crawler received a 503 from northbaycommercialsolar.example/sitemap-projects.xml five times in a row and gave up rather than publish a partial map silently.",
+              "The topical map run for Northbay Commercial Solar's \"Phased Commercial Rooftop Installation\" cluster stopped after page 14 of 22: the sitemap crawler received a 503 from northbaycommercialsolar.com/sitemap-projects.xml five times in a row and gave up rather than publish a partial map silently.",
             retry: async () => {},
             instanceId: "seo-command:proof",
           }}
