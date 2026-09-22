@@ -125,7 +125,7 @@ export function ActiveContextLensChip({
       ) : (
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-          <PopoverContent align={align} className="w-auto p-0">
+          <PopoverContent /* sizing: fixed — content already decides its own width; no fixed box to remove */ align={align} className="w-auto p-0">
             {picker}
           </PopoverContent>
         </Popover>

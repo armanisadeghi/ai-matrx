@@ -231,7 +231,7 @@ function ScopeRowPicker({
           <ChevronDown className="ml-1 h-3 w-3 opacity-60" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-96 p-0" align="start">
+      <PopoverContent sizing="content" className="p-0" align="start">
         {busy ? (
           <p className="flex items-center gap-2 p-3 text-xs text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />

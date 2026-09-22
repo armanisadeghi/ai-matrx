@@ -204,7 +204,7 @@ function CompactEngagementPicker({
           </span>
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-64 p-1">
+      <PopoverContent sizing="content" align="end" className="p-1">
         <div className="max-h-[156px] overflow-y-auto scrollbar-thin">
           {nodes.length === 0 ? (
             <EmptyPane text={`No ${label.toLowerCase()}s available.`} />

@@ -1009,7 +1009,7 @@ function ClassificationSection({
                 <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[320px] p-0" align="start">
+            <PopoverContent sizing="content" className="p-0" align="start">
               <Command>
                 <CommandInput
                   placeholder="Search surfaces…"

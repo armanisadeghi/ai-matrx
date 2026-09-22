@@ -58,7 +58,7 @@ export function ScopeColorPicker({
             <Palette className="h-3.5 w-3.5 text-muted-foreground ml-0.5" />
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-2 bg-textured border-border shadow-lg rounded-xl">
+        <PopoverContent /* sizing: fixed — content already decides its own width; no fixed box to remove */ className="w-auto p-2 bg-textured border-border shadow-lg rounded-xl">
           <div className="grid grid-cols-6 gap-1.5">
             {SCOPE_COLORS.map((c) => {
               const selected = c.key === current.key;

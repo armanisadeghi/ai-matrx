@@ -192,6 +192,7 @@ export function ActiveContextButton({
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
             <PopoverContent
+              /* sizing: fixed — fixed-shape panel wider than the sizing="content" 28rem ceiling */
               align={align}
               className="w-[560px] max-w-[92vw] p-0"
             >

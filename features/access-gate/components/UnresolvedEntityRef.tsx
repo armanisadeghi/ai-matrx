@@ -179,8 +179,9 @@ export function UnresolvedEntityRef({
         </button>
       </PopoverTrigger>
       <PopoverContent
+        sizing="content"
         align="start"
-        className="w-80 p-3"
+        className="p-3"
         onClick={(e) => e.stopPropagation()}
       >
         <p className="text-sm font-medium text-foreground">

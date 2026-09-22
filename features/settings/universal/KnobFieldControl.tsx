@@ -549,8 +549,9 @@ function VoiceField({
       </PopoverTrigger>
       {open && (
         <PopoverContent
+          sizing="content"
           align="start"
-          className="w-[20rem] max-w-[calc(100vw-2rem)] overflow-hidden p-0"
+          className="overflow-hidden p-0"
         >
           <VoiceChooser
             current={current}

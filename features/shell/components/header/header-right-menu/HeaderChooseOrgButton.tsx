@@ -108,7 +108,7 @@ export default function HeaderChooseOrgButton() {
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       {/* No auto-close on select — the user may still toggle "Set as default"
           (enabled only once an org is active). Outside-click / Esc closes. */}
-      <PopoverContent align="end" sideOffset={8} className="w-72 p-1">
+      <PopoverContent sizing="content" align="end" sideOffset={8} className="p-1">
         <OrganizationPickerPanel />
       </PopoverContent>
     </Popover>

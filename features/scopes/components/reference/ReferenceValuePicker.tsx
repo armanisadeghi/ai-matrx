@@ -168,8 +168,9 @@ export function ReferenceValuePicker({
             </Button>
           </PopoverTrigger>
           <PopoverContent
+            sizing="content"
             ref={addContentRef}
-            className="w-80 p-2"
+            className="p-2"
             align="start"
             onOpenAutoFocus={(event) => {
               event.preventDefault();
