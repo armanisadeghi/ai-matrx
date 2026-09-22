@@ -81,7 +81,12 @@ function census(dir: string): { relevant: string[]; seated: string[]; bare: stri
   const relevant: string[] = [];
   const seated: string[] = [];
   const bare: string[] = [];
-  for (const f of readdirSync(dir).filter((x) => x.endsWith(".sql")).sort()) {
+  // `_`-prefixed files are not suites: they exist to be `\i`-included by suites (the shared
+  // preamble, the w4 fixtures). They assert nothing about the product and take no seat of their
+  // own — the including suite takes it. The night sweep excludes them for the same reason.
+  for (const f of readdirSync(dir)
+    .filter((x) => x.endsWith(".sql") && !x.startsWith("_"))
+    .sort()) {
     const body = readFileSync(resolve(dir, f), "utf8");
     if (!TOUCHES_THE_STORE.test(body)) continue;
     relevant.push(f);
