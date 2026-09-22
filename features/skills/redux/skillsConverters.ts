@@ -186,7 +186,12 @@ function metaIsActiveStringFromJson(meta: Json | null): string | null {
   return null;
 }
 
-type PlatformCategorySelectRow = Pick<
+/**
+ * The columns this converter reads. EXPORTED since DOORS-ONLY-5, because the thunks now get
+ * their row back from `public.cat_write` — which returns the WHOLE row as jsonb — and narrow
+ * it to this on the way in.
+ */
+export type PlatformCategorySelectRow = Pick<
   PlatformCategoryRow,
   | "id"
   | "slug"

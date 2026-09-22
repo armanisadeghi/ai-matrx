@@ -18802,6 +18802,20 @@ export type Database = {
         }
         Returns: Json
       }
+      person_notification_caps: {
+        Args: {
+          p_channel?: string
+          p_organization_id: string
+          p_user_id: string
+        }
+        Returns: {
+          day_source: string
+          hour_source: string
+          max_per_day: number
+          max_per_hour: number
+          org_lowered: boolean
+        }[]
+      }
       person_notification_window: {
         Args: {
           p_channel?: string
@@ -73540,6 +73554,10 @@ export type Database = {
           severity: string
         }[]
       }
+      _category_json: {
+        Args: { p_row: Database["platform"]["Tables"]["categories"]["Row"] }
+        Returns: Json
+      }
       _count_super_admins: { Args: never; Returns: number }
       _d31_impl_add_data_row_to_user_table: {
         Args: { p_data: Json; p_table_id: string }
@@ -75866,6 +75884,10 @@ export type Database = {
         Args: { p_cutoff?: string; p_min_score?: number }
         Returns: Json
       }
+      cat_archive: {
+        Args: { p_category_id: string; p_dimension: string }
+        Returns: Json
+      }
       cat_create: {
         Args: {
           p_color?: string
@@ -75909,6 +75931,29 @@ export type Database = {
           p_slug?: string
         }
         Returns: string
+      }
+      cat_write: {
+        Args: {
+          p_category_id?: string
+          p_color?: string
+          p_dimension: string
+          p_icon?: string
+          p_is_system?: boolean
+          p_metadata_patch?: Json
+          p_name?: string
+          p_organization_id?: string
+          p_parent_id?: string
+          p_placement_type?: string
+          p_position?: number
+          p_set_color?: boolean
+          p_set_icon?: boolean
+          p_set_parent?: boolean
+          p_set_placement_type?: boolean
+          p_set_position?: boolean
+          p_set_slug?: boolean
+          p_slug?: string
+        }
+        Returns: Json
       }
       check_file_rate_limit: {
         Args: { p_actor_id: string; p_kind: string; p_limit: number }

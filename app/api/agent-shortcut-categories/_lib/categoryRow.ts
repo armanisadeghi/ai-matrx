@@ -2,7 +2,12 @@ import type { Database, Json } from "@/types/database.types";
 
 type PlatformCategoryRow = Database["platform"]["Tables"]["categories"]["Row"];
 
-type PlatformCategorySelectRow = Pick<
+/**
+ * The columns the legacy wire shape needs. EXPORTED since DOORS-ONLY-5, because the callers
+ * now get their row back from `public.cat_write` / `cat_archive` — which return the WHOLE row
+ * as jsonb — and each one narrows it to this on the way in.
+ */
+export type PlatformCategorySelectRow = Pick<
   PlatformCategoryRow,
   | "id"
   | "name"
