@@ -737,13 +737,9 @@ async function main(): Promise<number> {
   // `readperf_the_page_scan_has_its_indexes.sql` agree with what ran. VERIFY-AMEND counted six
   // with a plain hash; the difference is the comparison, not the files, and this arm uses the
   // same one the rest of the check uses so a campaign file is judged exactly like any other.
-  // None of the four is from the idempotency sweep: three are untouched older files, and
-  // redsuites2's drift predates it (a lane's own `alter index` schema-qualification fix).
+  // This one is not from the idempotency sweep; it remains the sole historical exception.
   const CAMPAIGN_DRIFT_BASELINE = [
     "argsruled_the_second_id_lives_in_the_same_organization.sql",
-    "capture_a_sheet_a_crew_fills_on_a_phone.sql",
-    "invitedelivery_the_invitation_reaches_the_person.sql",
-    "redsuites2_a_new_organizations_first_migration_verb.sql",
   ];
   let campaignBlocking = 0;
   {
