@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-22T17:44:12.338Z",
+  "generated_at": "2026-09-22T17:48:35.171Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -511,6 +511,12 @@
       "filename": "definer7_seven_client_doors_decide_or_stop_being_doors.sql",
       "checksum": "b644bec439bd990b75cb36c7f069cf53837435642c2bc9fef1edfec62c98983b",
       "applied_at": "2026-09-22 17:44:11.300928+00"
+    },
+    "migrations/campaign/definer7_the_dictionary_door_rules_its_arguments.sql": {
+      "source": "matrx-frontend",
+      "filename": "definer7_the_dictionary_door_rules_its_arguments.sql",
+      "checksum": "6e44fff70db44215cb713dfb3ed8aa17495bef7af1320dcef9acb3c5b910e997",
+      "applied_at": "2026-09-22 17:46:48.905348+00"
     },
     "migrations/campaign/digests_a_saved_view_has_a_door.sql": {
       "source": "matrx-frontend",
@@ -3589,6 +3595,12 @@
       "filename": "storeon_the_record_store_is_on_by_default.sql",
       "checksum": "bbeefe65efe579060a7a8ef773e8527241807adefd767fc41a441a2b8b98c593",
       "applied_at": "2026-09-22 17:40:15.551247+00"
+    },
+    "migrations/campaign/storeon_the_refusal_says_turned_off.sql": {
+      "source": "matrx-frontend",
+      "filename": "storeon_the_refusal_says_turned_off.sql",
+      "checksum": "a1179e0c50166d66e1e2f5204c2a43ce748a39a046102e32ec413c646d60f9ef",
+      "applied_at": "2026-09-22 17:48:34.483051+00"
     },
     "migrations/campaign/storerel_a_carrying_link_has_a_door.sql": {
       "source": "matrx-frontend",
