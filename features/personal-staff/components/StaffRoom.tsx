@@ -56,6 +56,16 @@ const MANDATE_CONSOLE_HREF = `/mandates/${PERSONAL_STAFF_MANDATE_KEY}`;
 const SANDBOX_HREF = "/sandbox";
 
 /**
+ * THE ROOM OWNS ITS OWN URL. `ChatRoomClient` navigates to
+ * `buildConversationHref(id)` the moment a fresh conversation gets an id; its
+ * DEFAULT is `/chat/<id>`, which would throw a person out of their staff room
+ * and into a bare chat mid-turn. `/staff` is the room's one address: the thread
+ * is resolved by the staff door (`openStaffThread`), never by a URL segment, so
+ * the conversation id does not belong in the path.
+ */
+const staffRoomHref = () => "/staff";
+
+/**
  * Conversation provenance for a staff turn. Registered in aidream's
  * `source_attribution.py` allow-list; an unregistered slug is refused by
  * `AgentStartRequest` outright, so this is never invented here.
@@ -201,6 +211,7 @@ function StaffThreadRoom({
           // is an aidream allow-list and `personal-staff` is registered there
           // (`source_attribution.py`); an unregistered one is refused outright.
           sourceFeature={STAFF_SOURCE_FEATURE}
+          buildConversationHref={staffRoomHref}
         />
       </div>
     </div>

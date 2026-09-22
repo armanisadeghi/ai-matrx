@@ -27,6 +27,8 @@
  *  - `saveNoteField` writing the field without persisting it.
  */
 
+import { withClaims } from "@/test-utils/supabase-auth";
+
 const schema = jest.fn();
 const rpc = jest.fn();
 const getSession = jest.fn();
@@ -36,7 +38,9 @@ const permanentlyDeleteNote = jest.fn();
 const emptyTrash = jest.fn();
 
 jest.mock("@/utils/supabase/client", () => ({
-  supabase: { schema, rpc, auth: { getSession } },
+  // The thunks verify the actor with `getClaimsUser(supabase)` →
+  // `auth.getClaims()`; `withClaims` derives it from this same `getSession`.
+  supabase: { schema, rpc, auth: withClaims({ getSession }) },
 }));
 jest.mock("@/utils/auth/getUserId", () => ({
   requireUserId: () => "user-1",

@@ -10,12 +10,20 @@
 // dispatch sequence differs from desktop's, and the coordinator ledger holds
 // no outcome for the phone's Keep Mine.
 
+import { withClaims } from "@/test-utils/supabase-auth";
+
 const getSession = jest.fn();
 const getUserId = jest.fn();
 const persistNoteUpdate = jest.fn();
 
 jest.mock("@/utils/supabase/client", () => ({
-  supabase: { auth: { getSession }, schema: jest.fn() },
+  // `resolveNoteConflict` verifies the decision actor with
+  // `getClaimsUser(supabase)` → `auth.getClaims()`; without it the resolution
+  // is refused and `applyNoteConflictResolution` is never dispatched.
+  // `rpc` answers `may_manage_sharing` for the note's own actor: the sharing
+  // authority read runs on mount, and a fake without it made
+  // `resolveSharingAuthority` log a real failure on every render.
+  supabase: { auth: withClaims({ getSession }), schema: jest.fn(), rpc: jest.fn(async () => ({ data: true, error: null })) },
 }));
 jest.mock("@/utils/auth/getUserId", () => ({ requireUserId: getUserId, getUserId }));
 jest.mock("@/features/notes/service/notesService", () => ({

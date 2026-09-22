@@ -1,35 +1,22 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useEffectEvent } from "react";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
 import {
-  Plus,
-  Trash2,
-  RefreshCw,
-  Edit2,
-  ChevronDown,
-  ChevronUp,
-  Copy,
-  Check,
-  Loader2,
-  FileText,
-  Search,
-  X,
-} from "lucide-react";
+  ADMIN_KNOWLEDGE_SURFACE_NAME,
+  createAdminKnowledgeScope,
+} from "@/features/surfaces/manifests/admin-knowledge.manifest";
+import { Loader2, X } from "lucide-react";
+import {
+  ChevronLeftTapButton,
+  ChevronRightTapButton,
+  SquarePenTapButton,
+  TrashTapButton,
+} from "@ai-matrx/tap-target/buttons";
 import { Button } from "@/components/ui/button";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -62,8 +49,9 @@ import {
 } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
-import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import type { Json } from "@/types/database.types";
 import type { ResearchTemplate, AutonomyLevel } from "../types";
 import type {
@@ -71,7 +59,11 @@ import type {
   TemplateFormData,
   AgentConfigKey,
 } from "./types";
-import { AGENT_CONFIG_KEYS, AGENT_CONFIG_META, jsonToAgentConfigStrings } from "./types";
+import {
+  AGENT_CONFIG_KEYS,
+  AGENT_CONFIG_META,
+  jsonToAgentConfigStrings,
+} from "./types";
 import {
   fetchTemplates,
   createTemplate,
@@ -117,27 +109,310 @@ const EMPTY_FORM: TemplateFormData = {
   metadata: {},
 };
 
+/** The query has no count or explicit cap receipt, so coverage stays client-unknown. */
+export const RESEARCH_TEMPLATES_COVERAGE = {
+  noun: "research template",
+  answeredBy: "client" as const,
+};
+
+export function researchTemplateWiringCount(
+  template: ResearchTemplate,
+): number {
+  const raw = template.agent_config;
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return 0;
+  const config = raw as Record<string, Json>;
+  return AGENT_CONFIG_KEYS.filter((key) => {
+    const value = config[key];
+    return typeof value === "string" && value.length > 0;
+  }).length;
+}
+
+export const RESEARCH_TEMPLATE_COLUMNS: MatrxColumnDef<ResearchTemplate>[] = [
+  {
+    id: "name",
+    header: "Name",
+    accessorKey: "name",
+    filter: "text",
+    width: 220,
+    cell: (template) => (
+      <span
+        className="block truncate font-medium text-sm"
+        title={template.name}
+      >
+        {template.name}
+      </span>
+    ),
+  },
+  {
+    id: "description",
+    header: "Description",
+    accessorFn: (template) => template.description ?? "",
+    filter: "text",
+    width: 280,
+    cell: (template) => (
+      <span
+        className="block truncate text-xs text-muted-foreground"
+        title={template.description ?? ""}
+      >
+        {template.description || "No description"}
+      </span>
+    ),
+  },
+  {
+    id: "system",
+    header: "System",
+    accessorKey: "is_system",
+    filter: "boolean",
+    width: 92,
+    cell: (template) => (
+      <Badge
+        variant={template.is_system ? "default" : "secondary"}
+        className="text-[10px]"
+      >
+        {template.is_system ? "System" : "Custom"}
+      </Badge>
+    ),
+  },
+  {
+    id: "autonomy",
+    header: "Autonomy",
+    accessorKey: "autonomy_level",
+    filter: "select",
+    filterOptions: [
+      { value: "auto", label: "Automatic" },
+      { value: "semi", label: "Semi-Auto" },
+      { value: "manual", label: "Manual" },
+    ],
+    width: 112,
+    cell: (template) => (
+      <Badge variant="outline" className="text-[10px] capitalize">
+        {template.autonomy_level}
+      </Badge>
+    ),
+  },
+  {
+    id: "keywords",
+    header: "Keywords",
+    accessorFn: (template) =>
+      jsonToStringArray(template.keyword_templates).length,
+    filter: "number",
+    width: 96,
+    className: "text-center tabular-nums",
+  },
+  {
+    id: "default-tags",
+    header: "Default tags",
+    accessorFn: (template) => jsonToStringArray(template.default_tags).length,
+    filter: "number",
+    width: 110,
+    className: "text-center tabular-nums",
+  },
+  {
+    id: "agent-wiring",
+    header: "Agent wiring",
+    accessorFn: researchTemplateWiringCount,
+    filter: "number",
+    width: 120,
+    className: "text-center",
+    cell: (template) => {
+      const count = researchTemplateWiringCount(template);
+      return (
+        <Badge
+          variant={count === AGENT_CONFIG_KEYS.length ? "default" : "secondary"}
+          className={cn(
+            "text-[10px] tabular-nums",
+            count === AGENT_CONFIG_KEYS.length
+              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+              : count > 0
+                ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                : "",
+          )}
+        >
+          {count}/{AGENT_CONFIG_KEYS.length}
+        </Badge>
+      );
+    },
+  },
+  {
+    id: "id",
+    header: "ID",
+    accessorKey: "id",
+    filter: "text",
+    width: 160,
+    cell: (template) => (
+      <MatrxUuidCell value={template.id} label="Template ID" />
+    ),
+  },
+  {
+    id: "keyword-templates",
+    header: "Keyword templates",
+    accessorFn: (template) =>
+      jsonToStringArray(template.keyword_templates).join(" "),
+    filter: "text",
+    hidden: true,
+  },
+  {
+    id: "default-tag-values",
+    header: "Default tag values",
+    accessorFn: (template) =>
+      jsonToStringArray(template.default_tags).join(" "),
+    filter: "text",
+    hidden: true,
+  },
+  {
+    id: "agent-config",
+    header: "Agent configuration",
+    accessorFn: (template) =>
+      Object.values(jsonToAgentConfigStrings(template.agent_config)).join(" "),
+    filter: "text",
+    hidden: true,
+  },
+];
+
+function TemplateConfiguration({
+  template,
+  builtinNames,
+}: {
+  template: ResearchTemplate;
+  builtinNames: Record<string, string>;
+}) {
+  const keywords = jsonToStringArray(template.keyword_templates);
+  const defaultTags = jsonToStringArray(template.default_tags);
+
+  return (
+    <div className="space-y-3">
+      {keywords.length > 0 && (
+        <div>
+          <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+            Keywords
+          </span>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {keywords.map((keyword) => (
+              <Badge key={keyword} variant="secondary" className="text-[10px]">
+                {keyword}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+      {defaultTags.length > 0 && (
+        <div>
+          <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+            Default tags
+          </span>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {defaultTags.map((tag) => (
+              <Badge key={tag} variant="outline" className="text-[10px]">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+      <div>
+        <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+          Agent wiring
+        </span>
+        <div className="mt-1 grid grid-cols-1 gap-1">
+          {AGENT_CONFIG_KEYS.map((key) => {
+            const value = agentConfigStringField(template.agent_config, key);
+            const resolvedName = value
+              ? (builtinNames[value] ?? `${value.slice(0, 8)}...`)
+              : "System default";
+            return (
+              <div
+                key={key}
+                className="flex min-w-0 items-center gap-2 text-[11px]"
+              >
+                <div
+                  className={cn(
+                    "h-2 w-2 shrink-0 rounded-full",
+                    value ? "bg-green-500" : "bg-zinc-300 dark:bg-zinc-600",
+                  )}
+                />
+                <span className="w-40 shrink-0 text-muted-foreground">
+                  {AGENT_CONFIG_META[key].label}
+                </span>
+                <span
+                  className={cn(
+                    "min-w-0 truncate",
+                    value ? "text-foreground" : "text-muted-foreground",
+                  )}
+                  title={
+                    value ? (builtinNames[value] ?? value) : "System default"
+                  }
+                >
+                  {resolvedName}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {template.metadata != null &&
+        Object.keys(template.metadata).length > 0 && (
+          <div>
+            <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+              Metadata
+            </span>
+            <pre className="mt-1 overflow-x-auto rounded bg-muted/50 p-2 text-[10px]">
+              {JSON.stringify(template.metadata, null, 2)}
+            </pre>
+          </div>
+        )}
+    </div>
+  );
+}
+
+export function TemplateRowActions({
+  template,
+  onEdit,
+  onDelete,
+}: {
+  template: ResearchTemplate;
+  onEdit: (template: ResearchTemplate) => void;
+  onDelete: (template: ResearchTemplate) => void;
+}) {
+  return (
+    <>
+      <SquarePenTapButton
+        ariaLabel={`Edit ${template.name}`}
+        tooltip={`Edit ${template.name}`}
+        variant="transparent"
+        onClick={() => onEdit(template)}
+      />
+      <TrashTapButton
+        ariaLabel={`Delete ${template.name}`}
+        tooltip={`Delete ${template.name}`}
+        variant="transparent"
+        iconColor="text-destructive"
+        onClick={() => onDelete(template)}
+      />
+    </>
+  );
+}
+
 export function TemplatesManager() {
   const dispatch = useAppDispatch();
   const [templates, setTemplates] = useState<ResearchTemplate[]>([]);
   // Canonical agent listing (THE CANONICAL-SELECTION LAW): builtins come from
   // the agent-definition slice, never a raw agent.definition query.
   const builtinAgents = useAppSelector(selectBuiltinAgents);
-  const builtins = useMemo<PromptBuiltinRef[]>(
-    () =>
-      builtinAgents
-        .filter((a) => a.isActive && !a.isArchived && !!a.name)
-        .map((a) => ({ id: a.id, name: a.name as string, is_active: true }))
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    [builtinAgents],
-  );
+  const builtins: PromptBuiltinRef[] = builtinAgents
+    .filter((agent) => agent.isActive && !agent.isArchived && !!agent.name)
+    .map((agent) => ({
+      id: agent.id,
+      name: agent.name as string,
+      is_active: true,
+    }))
+    .sort((left, right) => left.name.localeCompare(right.name));
   useEffect(() => {
     dispatch(fetchAgentsListFull());
   }, [dispatch]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [builtinNames, setBuiltinNames] = useState<Record<string, string>>({});
 
   const [editingTemplate, setEditingTemplate] =
@@ -155,56 +430,45 @@ export function TemplatesManager() {
 
   const { toast } = useToast();
 
-  const loadData = useCallback(async () => {
+  const loadData = async () => {
+    const retainsRows = templates.length > 0;
     try {
-      setLoading(true);
+      if (retainsRows) setIsRefreshing(true);
+      else setLoading(true);
       const templatesData = await fetchTemplates();
+      const agentIds = templatesData
+        .flatMap((template) =>
+          Object.values(jsonToAgentConfigStrings(template.agent_config)),
+        )
+        .filter((value) => value.length > 0);
+      const names =
+        agentIds.length > 0
+          ? await resolveBuiltinNames([...new Set(agentIds)])
+          : {};
       setTemplates(templatesData);
-
-      const allAgentIds = templatesData
-        .flatMap((t) => Object.values(jsonToAgentConfigStrings(t.agent_config)))
-        .filter((v) => v.length > 0);
-      const uniqueIds = [...new Set(allAgentIds)];
-      if (uniqueIds.length > 0) {
-        const names = await resolveBuiltinNames(uniqueIds);
-        setBuiltinNames(names);
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: (err as Error).message,
-        variant: "destructive",
-      });
+      setBuiltinNames(names);
+      setLoadError(null);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Could not load research templates.";
+      setLoadError(message);
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
-  }, [toast]);
+  };
+
+  const startLoad = useEffectEvent(() => {
+    void loadData();
+  });
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const filtered = searchQuery
-    ? filterAndSortBySearch(templates, searchQuery, [
-        { get: (t) => t.name, weight: "title" },
-        { get: (t) => t.description, weight: "body" },
-      ])
-    : templates;
-
-  const toggleExpand = (id: string) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const copyId = (id: string) => {
-    navigator.clipboard.writeText(id);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
+    const timer = window.setTimeout(startLoad, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const openCreate = () => {
     setFormData(EMPTY_FORM);
@@ -332,24 +596,6 @@ export function TemplatesManager() {
       agent_config: { ...prev.agent_config, [key]: value },
     }));
   };
-
-  const getAgentWiringCount = (template: ResearchTemplate) => {
-    const raw = template.agent_config;
-    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return 0;
-    const config = raw as Record<string, Json>;
-    return AGENT_CONFIG_KEYS.filter((k) => {
-      const v = config[k];
-      return typeof v === "string" && v.length > 0;
-    }).length;
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <MatrxMiniLoader />
-      </div>
-    );
-  }
 
   const formContent = (
     <div className="space-y-5 max-h-[70dvh] overflow-y-auto pr-1">
@@ -514,7 +760,11 @@ export function TemplatesManager() {
                   consumerId={`research-template-agent-${key}`}
                   onSelect={(agentId) => setAgentConfig(key, agentId)}
                   activeAgentId={formData.agent_config[key] || null}
-                  label={builtins.find((agent) => agent.id === formData.agent_config[key])?.name ?? "System default"}
+                  label={
+                    builtins.find(
+                      (agent) => agent.id === formData.agent_config[key],
+                    )?.name ?? "System default"
+                  }
                   initialTab="system"
                   visibleTabs={SYSTEM_AGENT_TAB}
                   systemTabLabel="System"
@@ -541,349 +791,205 @@ export function TemplatesManager() {
   );
 
   return (
-    <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "research_system", research_admin_tab: "templates", research_templates: templates, research_builtin_agents: builtins })}>
-    <div className="h-full flex flex-col">
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/50">
-        <div className="relative flex-1 max-w-sm">
-          <ProInput
-            enableCleanup={false}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search templates..."
-            className="text-base h-9"
-            wrapperClassName="w-full"
-            startIcon={
-              <Search className="h-4 w-4 text-muted-foreground pointer-events-none" />
-            }
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME}
+      getScope={() =>
+        createAdminKnowledgeScope({
+          knowledge_section: "research_system",
+          research_admin_tab: "templates",
+          research_templates: templates,
+          research_builtin_agents: builtins,
+        })
+      }
+    >
+      <div
+        className="flex h-full min-h-0 flex-col"
+        aria-busy={loading || isRefreshing}
+      >
+        {loadError && (
+          <div
+            role="alert"
+            className="mb-2 flex shrink-0 items-center gap-2 text-sm text-red-600 dark:text-red-400"
+          >
+            Could not refresh research templates: {loadError}
+            <button
+              type="button"
+              className="underline"
+              onClick={() => void loadData()}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        <div className="min-h-0 flex-1">
+          <MatrxDataTable<ResearchTemplate>
+            tableId="research-admin-templates"
+            urlState={{ id: "research-admin-templates" }}
+            data={templates}
+            columns={[
+              {
+                id: "configuration",
+                header: "",
+                accessorFn: (template) => template.id,
+                sortable: false,
+                filter: false,
+                width: 44,
+                cell: (template) =>
+                  expandedIds.has(template.id) ? (
+                    <ChevronLeftTapButton
+                      ariaLabel={`Collapse ${template.name} configuration`}
+                      tooltip={`Collapse ${template.name} configuration`}
+                      variant="transparent"
+                      onClick={() =>
+                        setExpandedIds((previous) => {
+                          const next = new Set(previous);
+                          next.delete(template.id);
+                          return next;
+                        })
+                      }
+                    />
+                  ) : (
+                    <ChevronRightTapButton
+                      ariaLabel={`Expand ${template.name} configuration`}
+                      tooltip={`Expand ${template.name} configuration`}
+                      variant="transparent"
+                      onClick={() =>
+                        setExpandedIds((previous) =>
+                          new Set(previous).add(template.id),
+                        )
+                      }
+                    />
+                  ),
+              },
+              ...RESEARCH_TEMPLATE_COLUMNS,
+            ]}
+            getRowId={(template) => template.id}
+            isLoading={loading}
+            isFetching={isRefreshing}
+            toolbar={{
+              title: "Research Templates",
+              searchPlaceholder: "Search templates…",
+              intelligentSearch: {
+                roles: { name: "name", description: "description" },
+              },
+              refresh: { onRefresh: loadData },
+              add: { onAdd: openCreate },
+            }}
+            expandedDetail={{
+              expandedIds,
+              onExpandedIdsChange: setExpandedIds,
+              render: (template) => (
+                <TemplateConfiguration
+                  template={template}
+                  builtinNames={builtinNames}
+                />
+              ),
+            }}
+            copy={false}
+            detail={{ enabled: false }}
+            window={{ enabled: false }}
+            coverage={RESEARCH_TEMPLATES_COVERAGE}
+            emptyState={{
+              title: loadError
+                ? "Could not load research templates."
+                : "No templates yet. Create one to get started.",
+            }}
+            rowActions={(template) => (
+              <TemplateRowActions
+                template={template}
+                onEdit={openEdit}
+                onDelete={setDeleteTarget}
+              />
+            )}
           />
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={loadData}
-          className="gap-1.5"
+
+        {/* Create Dialog */}
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Create Template</DialogTitle>
+              <DialogDescription>
+                Configure a reusable research template with default keywords,
+                tags, and agent wiring.
+              </DialogDescription>
+            </DialogHeader>
+            {formContent}
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                className="gap-1.5"
+              >
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                Create
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Dialog */}
+        <Dialog
+          open={!!editingTemplate}
+          onOpenChange={(open) => !open && setEditingTemplate(null)}
         >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Refresh
-        </Button>
-        <Button size="sm" onClick={openCreate} className="gap-1.5">
-          <Plus className="h-3.5 w-3.5" />
-          New Template
-        </Button>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Template</DialogTitle>
+              <DialogDescription>
+                Modify template configuration. Changes apply to new projects
+                only.
+              </DialogDescription>
+            </DialogHeader>
+            {formContent}
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => setEditingTemplate(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                className="gap-1.5"
+              >
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                Save Changes
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation */}
+        <AlertDialog
+          open={!!deleteTarget}
+          onOpenChange={(open) => !open && setDeleteTarget(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Template</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete &ldquo;{deleteTarget?.name}
+                &rdquo;? This cannot be undone. Existing projects using this
+                template will not be affected.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
-
-      {/* Table */}
-      <ScrollArea className="flex-1">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-8" />
-              <TableHead>Name</TableHead>
-              <TableHead className="w-20">System</TableHead>
-              <TableHead className="w-24">Autonomy</TableHead>
-              <TableHead className="w-20 text-center">Keywords</TableHead>
-              <TableHead className="w-24 text-center">Agent Wiring</TableHead>
-              <TableHead className="w-40">ID</TableHead>
-              <TableHead className="w-24" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 && (
-              <TableRow>
-                <TableCell
-                  colSpan={8}
-                  className="text-center text-muted-foreground py-12"
-                >
-                  {searchQuery
-                    ? "No templates match your search."
-                    : "No templates yet. Create one to get started."}
-                </TableCell>
-              </TableRow>
-            )}
-            {filtered.map((template) => {
-              const isExpanded = expandedIds.has(template.id);
-              const wiringCount = getAgentWiringCount(template);
-              const keywordList = jsonToStringArray(template.keyword_templates);
-              const defaultTagList = jsonToStringArray(template.default_tags);
-              return (
-                <TableRow key={template.id} className="group">
-                  <TableCell className="px-2">
-                    <button
-                      onClick={() => toggleExpand(template.id)}
-                      className="p-1 hover:bg-muted rounded"
-                    >
-                      {isExpanded ? (
-                        <ChevronUp className="h-4 w-4" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4" />
-                      )}
-                    </button>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <span className="font-medium text-sm">
-                        {template.name}
-                      </span>
-                      {template.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                          {template.description}
-                        </p>
-                      )}
-                    </div>
-                    {isExpanded && (
-                      <div className="mt-3 space-y-3 border-t border-border pt-3">
-                        {keywordList.length > 0 && (
-                          <div>
-                            <span className="text-[10px] font-semibold uppercase text-muted-foreground">
-                              Keywords
-                            </span>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {keywordList.map((kw) => (
-                                <Badge
-                                  key={kw}
-                                  variant="secondary"
-                                  className="text-[10px]"
-                                >
-                                  {kw}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {defaultTagList.length > 0 && (
-                          <div>
-                            <span className="text-[10px] font-semibold uppercase text-muted-foreground">
-                              Default Tags
-                            </span>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {defaultTagList.map((tag) => (
-                                <Badge
-                                  key={tag}
-                                  variant="outline"
-                                  className="text-[10px]"
-                                >
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {template.agent_config != null && (
-                          <div>
-                            <span className="text-[10px] font-semibold uppercase text-muted-foreground">
-                              Agent Wiring
-                            </span>
-                            <div className="grid grid-cols-1 gap-1 mt-1">
-                              {AGENT_CONFIG_KEYS.map((key) => {
-                                const val = agentConfigStringField(
-                                  template.agent_config,
-                                  key,
-                                );
-                                return (
-                                  <div
-                                    key={key}
-                                    className="flex items-center gap-2 text-[11px]"
-                                  >
-                                    <div
-                                      className={cn(
-                                        "h-2 w-2 rounded-full shrink-0",
-                                        val
-                                          ? "bg-green-500"
-                                          : "bg-zinc-300 dark:bg-zinc-600",
-                                      )}
-                                    />
-                                    <span className="text-muted-foreground w-40 shrink-0">
-                                      {AGENT_CONFIG_META[key].label}
-                                    </span>
-                                    <span
-                                      className={cn(
-                                        "truncate",
-                                        val
-                                          ? "text-foreground"
-                                          : "text-muted-foreground",
-                                      )}
-                                    >
-                                      {val
-                                        ? (builtinNames[val] ??
-                                          val.slice(0, 8) + "...")
-                                        : "System default"}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                        {template.metadata != null &&
-                          Object.keys(template.metadata).length > 0 && (
-                            <div>
-                              <span className="text-[10px] font-semibold uppercase text-muted-foreground">
-                                Metadata
-                              </span>
-                              <pre className="text-[10px] bg-muted/50 rounded p-2 mt-1 overflow-x-auto">
-                                {JSON.stringify(template.metadata, null, 2)}
-                              </pre>
-                            </div>
-                          )}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={template.is_system ? "default" : "secondary"}
-                      className="text-[10px]"
-                    >
-                      {template.is_system ? "System" : "Custom"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-[10px] capitalize">
-                      {template.autonomy_level}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <span className="text-sm tabular-nums">
-                      {keywordList.length}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge
-                      variant={
-                        wiringCount === AGENT_CONFIG_KEYS.length
-                          ? "default"
-                          : "secondary"
-                      }
-                      className={cn(
-                        "text-[10px]",
-                        wiringCount === AGENT_CONFIG_KEYS.length
-                          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                          : wiringCount > 0
-                            ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                            : "",
-                      )}
-                    >
-                      {wiringCount}/{AGENT_CONFIG_KEYS.length}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <code className="text-[10px] text-muted-foreground">
-                        {template.id.slice(0, 8)}...
-                      </code>
-                      <button
-                        onClick={() => copyId(template.id)}
-                        className="p-0.5 hover:bg-muted rounded"
-                      >
-                        {copiedId === template.id ? (
-                          <Check className="h-3 w-3 text-green-500" />
-                        ) : (
-                          <Copy className="h-3 w-3 text-muted-foreground" />
-                        )}
-                      </button>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6 rounded-full"
-                        onClick={() => openEdit(template)}
-                      >
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6 rounded-full text-destructive hover:text-destructive"
-                        onClick={() => setDeleteTarget(template)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </ScrollArea>
-
-      {/* Create Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Create Template</DialogTitle>
-            <DialogDescription>
-              Configure a reusable research template with default keywords,
-              tags, and agent wiring.
-            </DialogDescription>
-          </DialogHeader>
-          {formContent}
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={saving} className="gap-1.5">
-              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              Create
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog
-        open={!!editingTemplate}
-        onOpenChange={(open) => !open && setEditingTemplate(null)}
-      >
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Edit Template</DialogTitle>
-            <DialogDescription>
-              Modify template configuration. Changes apply to new projects only.
-            </DialogDescription>
-          </DialogHeader>
-          {formContent}
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button variant="outline" onClick={() => setEditingTemplate(null)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={saving} className="gap-1.5">
-              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              Save Changes
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation */}
-      <AlertDialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Template</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete &ldquo;{deleteTarget?.name}
-              &rdquo;? This cannot be undone. Existing projects using this
-              template will not be affected.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
     </SurfaceRuntimeProvider>
   );
 }

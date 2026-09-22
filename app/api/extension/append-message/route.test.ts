@@ -12,11 +12,23 @@
  *
  * Real here: the route, `@/features/public-chat/services/cx-chat`, and
  * supabase-js itself. The only double is the network: `fetch` is answered by
- * a small fake Supabase (Auth `/auth/v1/user` + PostgREST), which records
- * every request so the tests assert on the query emitted and the row body
- * actually sent. `@/utils/supabase/server` is replaced because Next's cookie
- * store only exists inside a real request scope; its stand-in is a real
- * supabase-js client holding the stored browser session.
+ * a small fake Supabase (Auth `/auth/v1/.well-known/jwks.json` +
+ * `/auth/v1/user` + PostgREST), which records every request so the tests
+ * assert on the query emitted and the row body actually sent.
+ * `@/utils/supabase/server` is replaced because Next's cookie store only
+ * exists inside a real request scope; its stand-in is a real supabase-js
+ * client holding the stored browser session.
+ *
+ * 🚨 THE TOKENS ARE REAL, LOCALLY-SIGNED ES256 JWTs. The route resolves its
+ * caller with `getClaimsUser(...)` → `auth.getClaims()`, which VERIFIES the
+ * access token's signature in-process against the project's JWKS instead of
+ * asking the auth server who the caller is (`utils/supabase/claimsUser.ts`).
+ * Opaque strings used to be enough when the route called `getUser()`; they
+ * now fail to decode and every request answers 401. So this suite mints a
+ * P-256 key pair once, serves its public half as the fake project's JWKS, and
+ * signs one token per identity — which lets it assert the thing the move was
+ * made FOR: not a single `/auth/v1/user` round trip, and a token whose
+ * signature does not check out is refused.
  */
 
 import { NextRequest } from "next/server";
@@ -40,8 +52,11 @@ const CONVERSATION_ID = "11111111-1111-4111-8111-111111111111";
 const CONVERSATION_ORG = "22222222-2222-4222-8222-222222222222";
 const BEARER_USER = "44444444-4444-4444-8444-444444444444";
 const COOKIE_USER = "55555555-5555-4555-8555-555555555555";
-const EXTENSION_TOKEN = "extension-supabase-access-token";
-const COOKIE_TOKEN = "browser-cookie-session-access-token";
+/** Signed in `beforeAll` — see `signAccessToken`. */
+let EXTENSION_TOKEN: string;
+let COOKIE_TOKEN: string;
+/** Same shape and same `kid`, signed by a key the fake project does not publish. */
+let FORGED_TOKEN: string;
 const AGENT_ID = "66666666-6666-4666-8666-666666666666";
 
 const conversationRow = {
@@ -122,6 +137,53 @@ const storedMessageRow = {
 } satisfies CxMessage;
 
 // ---------------------------------------------------------------------------
+// Access tokens — real ES256 JWTs, verified locally by supabase-js.
+// ---------------------------------------------------------------------------
+
+/** The `kid` both the published JWKS and every minted token carry. */
+const SIGNING_KID = "append-message-test-signing-key";
+
+/** The project's signing key; its public half is what `/jwks.json` serves. */
+let projectKeys: CryptoKeyPair;
+/** A key pair the project never published — used to forge a refused token. */
+let strangerKeys: CryptoKeyPair;
+// Not `JsonWebKey[]`: a published JWKS entry carries `kid`/`use`, which the
+// WebCrypto type does not declare.
+let projectJwks: { keys: Array<Record<string, unknown>> };
+
+const base64url = (bytes: Uint8Array): string =>
+  Buffer.from(bytes).toString("base64url");
+
+async function signAccessToken(
+  userId: string,
+  keys: CryptoKeyPair,
+): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: "ES256", typ: "JWT", kid: SIGNING_KID };
+  const payload = {
+    sub: userId,
+    aud: "authenticated",
+    role: "authenticated",
+    iss: `${SUPABASE_URL}/auth/v1`,
+    iat: now,
+    exp: now + 3600,
+    app_metadata: {},
+    user_metadata: {},
+  };
+  const signingInput = `${base64url(
+    new TextEncoder().encode(JSON.stringify(header)),
+  )}.${base64url(new TextEncoder().encode(JSON.stringify(payload)))}`;
+  // WebCrypto's ECDSA output is the raw r||s pair — exactly the JWS ES256
+  // signature encoding, so no DER unwrapping is needed.
+  const signature = await crypto.subtle.sign(
+    { name: "ECDSA", hash: "SHA-256" },
+    keys.privateKey,
+    new TextEncoder().encode(signingInput),
+  );
+  return `${signingInput}.${base64url(new Uint8Array(signature))}`;
+}
+
+// ---------------------------------------------------------------------------
 // Fake Supabase — answers what the real services ask, records every request.
 // ---------------------------------------------------------------------------
 
@@ -171,6 +233,12 @@ async function answer(
   const token = authorization?.replace(/^Bearer /, "") ?? "";
   const userId = backend.users.get(token);
 
+  if (url.pathname === "/auth/v1/.well-known/jwks.json") {
+    return json(200, projectJwks);
+  }
+  // Still answered, and answered CORRECTLY: an auth-server round trip would
+  // succeed here, so `expectNoAuthServerRoundTrip()` failing means the route
+  // really did stop making one — not that the fake refused it.
   if (url.pathname === "/auth/v1/user") {
     return userId
       ? json(200, {
@@ -213,6 +281,16 @@ async function answer(
         });
   }
   return json(404, { message: `unrouted ${request.method} ${url.pathname}` });
+}
+
+/**
+ * The point of `getClaims()`: the caller is verified from the token's
+ * signature, so no request asks the auth server who they are.
+ */
+function expectNoAuthServerRoundTrip(): void {
+  expect(
+    backend.requests.filter((r) => r.url.pathname === "/auth/v1/user"),
+  ).toEqual([]);
 }
 
 function restRequests(): RecordedRequest[] {
@@ -295,6 +373,23 @@ async function respond(request: NextRequest): Promise<Response> {
 }
 
 describe("POST /api/extension/append-message", () => {
+  beforeAll(async () => {
+    const generate = () =>
+      crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
+        "sign",
+        "verify",
+      ]) as Promise<CryptoKeyPair>;
+    projectKeys = await generate();
+    strangerKeys = await generate();
+    const publicJwk = await crypto.subtle.exportKey("jwk", projectKeys.publicKey);
+    projectJwks = {
+      keys: [{ ...publicJwk, kid: SIGNING_KID, alg: "ES256", use: "sig" }],
+    };
+    EXTENSION_TOKEN = await signAccessToken(BEARER_USER, projectKeys);
+    COOKIE_TOKEN = await signAccessToken(COOKIE_USER, projectKeys);
+    FORGED_TOKEN = await signAccessToken(BEARER_USER, strangerKeys);
+  });
+
   beforeEach(() => {
     backend = {
       requests: [],
@@ -352,6 +447,7 @@ describe("POST /api/extension/append-message", () => {
     expect(
       restRequests().every((r) => r.authorization === `Bearer ${EXTENSION_TOKEN}`),
     ).toBe(true);
+    expectNoAuthServerRoundTrip();
   });
 
   it("numbers the next message from live messages only, starting an empty conversation at 0", async () => {
@@ -412,9 +508,24 @@ describe("POST /api/extension/append-message", () => {
     expect(
       backend.requests.some((r) => r.authorization === `Bearer ${EXTENSION_TOKEN}`),
     ).toBe(false);
+    expectNoAuthServerRoundTrip();
   });
 
-  it("refuses an invalid bearer token without reading or writing conversation data", async () => {
+  it("refuses a bearer token signed by a key the project never published", async () => {
+    // A well-formed token for a REAL user id, carrying the project's own
+    // `kid` — everything about it is right except the signature. Local
+    // verification is the only thing standing between it and this user's
+    // conversation, so this is the assertion that proves it happens.
+    const response = await respond(
+      appendRequest(basicAppend, { Authorization: `Bearer ${FORGED_TOKEN}` }),
+    );
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ ok: false, error: "unauthorized" });
+    expect(restRequests()).toEqual([]);
+  });
+
+  it("refuses a bearer token that is not a token at all", async () => {
     const response = await respond(
       appendRequest(basicAppend, { Authorization: "Bearer revoked-token" }),
     );

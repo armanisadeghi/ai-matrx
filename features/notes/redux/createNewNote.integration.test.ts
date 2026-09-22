@@ -1,3 +1,5 @@
+import { withClaims } from "@/test-utils/supabase-auth";
+
 const schema = jest.fn();
 const getSession = jest.fn();
 const getUserId = jest.fn();
@@ -5,7 +7,11 @@ const listForSources = jest.fn();
 const setTargets = jest.fn();
 const invalidate = jest.fn();
 
-jest.mock("@/utils/supabase/client", () => ({ supabase: { schema, auth: { getSession } } }));
+// The create path verifies the actor with `getClaimsUser(supabase)` →
+// `auth.getClaims()`; `withClaims` derives it from the SAME scripted session,
+// so "the session changed" below stays a REAL identity change and not a
+// missing method on the fake.
+jest.mock("@/utils/supabase/client", () => ({ supabase: { schema, auth: withClaims({ getSession }) } }));
 jest.mock("@/utils/auth/getUserId", () => ({ requireUserId: getUserId }));
 jest.mock("@/features/scopes/service/associationsService", () => ({
   associationsService: { listForSources, setTargets },

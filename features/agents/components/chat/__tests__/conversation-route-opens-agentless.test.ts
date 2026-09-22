@@ -33,8 +33,15 @@ describe("/chat/[conversationId] opens every readable conversation", () => {
     expect(page).toContain("console.error(");
   });
 
+  // 2026-09-21 (f5e4880edf): the SSR seed moved from the UNBOUNDED
+  // `resolveMandateServer` to `resolveMandateSeed`, which carries the 2.5 s
+  // deadline and an abort. `resolveMandateServer` now has exactly one caller —
+  // `features/mandates/seed.server.ts` — because a first-paint read that hangs
+  // took `/staff` down with a 504 on six consecutive production loads. So this
+  // asserts the BOUNDED seam, and also that the route never reaches past it.
   it("opens an agent-less conversation under the default chat mandate", () => {
-    expect(page).toContain("resolveMandateServer(DEFAULT_NEW_CHAT_MANDATE_KEY)");
+    expect(page).toContain("resolveMandateSeed(DEFAULT_NEW_CHAT_MANDATE_KEY)");
+    expect(page).not.toContain("resolveMandateServer(");
     expect(page).toContain("<ChatConversationRoom");
     expect(room).toContain("mandateKey={DEFAULT_NEW_CHAT_MANDATE_KEY}");
     expect(room).toContain("useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY)");

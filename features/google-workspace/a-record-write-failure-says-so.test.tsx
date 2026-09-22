@@ -89,8 +89,17 @@ jest.mock("@/features/google-workspace/drivePickerToken", () => ({
 jest.mock("@/features/overlays/callbacks/googleConnectWindow", () => ({
   emitGoogleConnectEvent: jest.fn(),
 }));
+// The body also DISPATCHES now (ab34706ec7, "fix(files): retain provider
+// imports through delivery" — `upsertCanonical` puts an imported Drive file
+// into the files slice). A partial mock of this module that declares only
+// `useAppSelector` makes `useAppDispatch` undefined and the component dies at
+// its first line, so the real second hook is declared here too. Nothing in
+// this suite takes the Drive-import path, so the spy stands in for the store
+// and the clause below proves the picked-file path never touches it.
+const mockDispatch = jest.fn();
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => "org-1",
+  useAppDispatch: () => mockDispatch,
 }));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => "org-1",

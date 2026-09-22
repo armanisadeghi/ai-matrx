@@ -5,6 +5,7 @@
  * (fetchNoteContent) or, for find-across-notes and bulk export, in chunks by
  * ensureNoteBodiesLoaded.
  */
+import { withClaims } from "@/test-utils/supabase-auth";
 import { ENSURE_BODIES_CHUNK, ensureNoteBodiesLoaded, fetchNotesList } from "./thunks";
 import { enableMapSet } from "immer";
 import notesReducer, { upsertNotesFromServer } from "./slice";
@@ -12,7 +13,9 @@ import { supabase } from "@/utils/supabase/client";
 
 jest.mock("@/utils/supabase/client", () => ({
   supabase: {
-    auth: { getSession: jest.fn() },
+    // `getClaimsUser(supabase)` → `auth.getClaims()`, derived from the same
+    // scripted session (see test-utils/supabase-auth.ts).
+    auth: withClaims({ getSession: jest.fn() }),
     schema: jest.fn(),
     rpc: jest.fn(),
   },

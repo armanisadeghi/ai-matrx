@@ -26,6 +26,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useRouter } from "next/navigation";
 import { ExternalLink, RefreshCw } from "lucide-react";
 
@@ -1401,12 +1402,18 @@ function CrmContactTry({ organizationId }: { organizationId: string }) {
                         ))}
                     </select>
                     {chosen ? (
-                        <Link
-                            href={`/crm/${chosen}`}
-                            className="text-xs underline underline-offset-2 text-muted-foreground hover:text-foreground"
-                        >
-                            Open this contact’s own page
-                        </Link>
+                        /* THE DOOR LAW: the contact is named through the one
+                           party door (route + new tab + peek), never a
+                           hand-built `/crm/<id>` string. */
+                        <EntityRef
+                            token="party"
+                            id={chosen}
+                            name={
+                                contacts.find((contact) => contact.id === chosen)?.display_name ??
+                                null
+                            }
+                            className="text-xs"
+                        />
                     ) : null}
                 </div>
                 {chosen ? (

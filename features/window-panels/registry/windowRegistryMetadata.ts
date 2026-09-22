@@ -317,6 +317,27 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "fullscreen",
   },
 
+  // ── Storage source picker ────────────────────────────────────────────────
+  // A CALLBACK window (R35): it hands the chosen cloud files back to the
+  // uploader that opened it via `callbackGroupId`, so it deliberately has no
+  // `urlSync` address — a deep link would open a picker with nobody waiting
+  // for its answer. This is the census's own callback rule, not an exemption.
+  {
+    slug: "storage-source-picker",
+    overlayId: "storageSourcePicker",
+    kind: "window",
+    label: "Import from cloud storage",
+    defaultData: {
+      callbackGroupId: null,
+      destinationFolderPath: "",
+      accept: null,
+      multiple: true,
+    },
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+    instanceMode: "singleton",
+  },
+
   // ── Extraction cell editor ───────────────────────────────────────────────
   {
     slug: "extraction-cell-editor-window",

@@ -11,6 +11,7 @@ import {
 } from "@/app/api/sandbox/[id]/route";
 import { POST as extend } from "@/app/api/sandbox/[id]/extend/route";
 import { createClient } from "@/utils/supabase/server";
+import { withClaims } from "@/test-utils/supabase-auth";
 
 const rows: Array<{ data: any; error: any }> = [];
 const update = jest.fn();
@@ -31,12 +32,17 @@ const query = {
   delete: remove,
 };
 const from = jest.fn(() => query);
-const auth = {
+// The route resolves its caller with `getClaimsUser(client)` →
+// `client.auth.getClaims()`, so a fake that stubs only `getUser` answers
+// "signed out" and every one of these routes 500s on admin verification
+// instead of exercising the behaviour under test. `withClaims` derives the
+// claims door from THIS SAME `getUser`, so one fake admin answers at both.
+const auth = withClaims({
   getUser: jest.fn(async () => ({
     data: { user: { id: "admin" } },
     error: null,
   })),
-};
+});
 const lookup = jest.fn();
 
 jest.mock("@/utils/supabase/server", () => ({

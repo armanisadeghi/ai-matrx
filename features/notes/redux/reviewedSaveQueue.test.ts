@@ -1,10 +1,15 @@
+import { withClaims } from "@/test-utils/supabase-auth";
+
 const schema = jest.fn();
 const getSession = jest.fn();
 const listForSources = jest.fn();
 const setTargets = jest.fn();
 const invalidate = jest.fn();
 
-jest.mock("@/utils/supabase/client", () => ({ supabase: { schema, auth: { getSession } } }));
+// The reviewed-save path checks the actor with `getClaimsUser(supabase)` →
+// `auth.getClaims()`; `withClaims` derives it from this same `getSession`, so
+// the scripted user switch is still ONE identity at both doors.
+jest.mock("@/utils/supabase/client", () => ({ supabase: { schema, auth: withClaims({ getSession }) } }));
 jest.mock("@/features/scopes/service/associationsService", () => ({ associationsService: { listForSources, setTargets } }));
 jest.mock("@/features/scopes/host/associationsStore", () => ({ getAssociationsStore: () => ({ invalidate, services: { comments: new Proxy({}, { get: () => () => undefined }), categories: new Proxy({}, { get: () => () => undefined }) } }) }));
 

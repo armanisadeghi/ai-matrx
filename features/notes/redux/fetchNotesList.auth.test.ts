@@ -1,10 +1,15 @@
+import { withClaims } from "@/test-utils/supabase-auth";
 import { fetchNotesList } from "./thunks";
 import { supabase } from "@/utils/supabase/client";
 import { hydrateNoteContextLinks } from "../service/noteContextAssociations";
 
 jest.mock("@/utils/supabase/client", () => ({
   supabase: {
-    auth: { getSession: jest.fn() },
+    // The list read resolves identity through `getClaimsUser(supabase)` →
+    // `auth.getClaims()`. `withClaims` derives those claims from the SAME
+    // `getSession` this suite scripts, so one scripted session is one identity
+    // at both doors and the call counts below still count the session polls.
+    auth: withClaims({ getSession: jest.fn() }),
     schema: jest.fn(),
   },
 }));
