@@ -1,23 +1,27 @@
 #!/bin/bash
 # build-lab/run.sh — run a production-build experiment LOCALLY in an isolated
-# worktree. No Vercel push, no contact with your working tree. Measures wall
-# time, compile time, and peak RSS, and appends every run to a results ledger
-# so experiments accumulate into a comparable table.
+# EXPORT of a git ref (`git archive <ref> | tar -x`). No Vercel push, no contact
+# with your working tree, and NO worktree: Arman 2026-09-20 — local worktrees
+# are forbidden in every repo; `git worktree list` shows exactly one entry. An
+# export is a plain directory git knows nothing about. Measures wall time,
+# compile time, and peak RSS, and appends every run to a results ledger so
+# experiments accumulate into a comparable table.
 #
 # Usage:
 #   bash scripts/build-lab/run.sh <label> [--ref <git-ref>] [--profile slim|full|core|user] [--keep]
 #   bash scripts/build-lab/run.sh --results          # print the ledger
 #
 #   <label>     names the run in the ledger (e.g. "baseline-216", "no-store-edge")
-#   --ref       git ref to build (default: origin/main). Uncommitted ideas: commit
-#               to a scratch branch first, or --keep a worktree and edit it, then
-#               rerun with the same label (worktree is reused if present).
+#   --ref       git ref to build (default: origin/main). Uncommitted ideas:
+#               commit them first (any ref git can resolve works, including a
+#               bare sha), or --keep an export and edit it, then rerun with the
+#               same label (the export is reused if present).
 #   --profile   MATRX_PROFILE for the build (default: slim — what production runs)
 #               NOTE (2026-08-25): route-group PARKING is now Vercel-only (see
 #               THE PARK LAW in next.config.js), so a local build compiles the
 #               FULL app whatever profile you pass. The lab still measures a
 #               real build; it just no longer reproduces production's slice.
-#   --keep      don't remove the worktree afterward (for iterating by hand)
+#   --keep      don't remove the export afterward (for iterating by hand)
 #
 # Protocol notes (learned 2026-07-28):
 #   • Peak RSS is the trustworthy metric; single-run compile time carries
@@ -52,11 +56,17 @@ WT="$LAB/wt-$LABEL"
 cd "$REPO"
 git fetch origin main --quiet || true
 if [[ -d "$WT" ]]; then
-  echo "[lab] reusing existing worktree $WT (edit-and-rerun mode; --ref ignored)"
+  echo "[lab] reusing existing export $WT (edit-and-rerun mode; --ref ignored)"
 else
-  git worktree add "$WT" "$REF" >/dev/null
-  echo "[lab] worktree $WT @ $(git -C "$WT" rev-parse --short HEAD)"
+  # `git archive` writes exactly the committed tree of $REF; nothing is
+  # registered in the repo (never `git worktree add`).
+  SHA="$(git rev-parse --verify "$REF^{commit}")"
+  mkdir -p "$WT"
+  git archive --format=tar "$SHA" | tar -x -C "$WT"
+  echo "$SHA" > "$WT/.build-lab-ref"
+  echo "[lab] export $WT @ ${SHA:0:9}"
 fi
+LAB_SHA="$(cat "$WT/.build-lab-ref" 2>/dev/null || echo unknown)"
 [[ -f "$REPO/.env.local" ]] && cp "$REPO/.env.local" "$WT/"
 
 cd "$WT"
@@ -75,7 +85,7 @@ COMPILE="$(grep -oE 'Compiled successfully in [0-9.]+(min|s)' "$LAB/$LABEL-build
 RSS_BYTES="$(grep -E 'maximum resident' "$LAB/$LABEL-time.log" | grep -oE '[0-9]+' | head -1)"
 RSS_GB="$(awk -v b="${RSS_BYTES:-0}" 'BEGIN{printf "%.1f", b/1073741824}')"
 
-echo -e "$(date '+%m-%d %H:%M')\t$LABEL\t$(git -C "$WT" rev-parse --short HEAD)\t$PROFILE\t$CODE\t${COMPILE:-FAILED}\t$RSS_GB\t$WALL" >>"$LEDGER"
+echo -e "$(date '+%m-%d %H:%M')\t$LABEL\t${LAB_SHA:0:9}\t$PROFILE\t$CODE\t${COMPILE:-FAILED}\t$RSS_GB\t$WALL" >>"$LEDGER"
 
 echo
 echo "[lab] ━━ RESULT: $LABEL — exit=$CODE compile=${COMPILE:-FAILED} peakRSS=${RSS_GB}GB wall=$WALL"
@@ -84,9 +94,9 @@ echo "[lab] ━━ Ledger:"
 bash "$REPO/scripts/build-lab/run.sh" --results
 
 if [[ $KEEP -eq 0 ]]; then
-  cd "$REPO" && git worktree remove --force "$WT"
-  echo "[lab] worktree removed (use --keep to iterate by hand)"
+  cd "$REPO" && rm -rf "$WT"
+  echo "[lab] export removed (use --keep to iterate by hand)"
 else
-  echo "[lab] worktree kept at $WT"
+  echo "[lab] export kept at $WT"
 fi
 exit $CODE
