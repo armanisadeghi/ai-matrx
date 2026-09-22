@@ -192,6 +192,7 @@
     "check:client-writes-are-granted": "tsx scripts/check-client-writes-are-granted.ts",
     "check:client-writes-are-granted:self-test": "tsx scripts/check-client-writes-are-granted.ts --self-test",
     "db:apply": "tsx scripts/apply-migration.ts",
+    "db:rehearse": "tsx scripts/rehearse-migration.ts",
     "db:capture-go-signal": "tsx scripts/gate-corpus/capture-go-signal.ts",
     "db:based-on": "tsx scripts/db-based-on.ts",
     "db:objects-diff": "tsx scripts/db-objects-diff.ts",

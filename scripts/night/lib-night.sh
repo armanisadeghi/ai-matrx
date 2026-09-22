@@ -113,7 +113,45 @@ night_dsn_args() {
   return 0
 }
 
-# night_assert_target branch|production|clone <psql args…>
+# ── the target list ──────────────────────────────────────────────────────────
+# THE THREE TARGETS, NAMED ONCE. These are the same three the two migration runners take
+# (`pnpm db:apply --target …`, `uv run python db/apply_migrations.py --target …`), so a
+# night job names the nightly dev clone exactly the way an agent at a terminal does, and
+# `night_target_dsn` hands back the connection each one is reached through:
+#
+#   branch      the rehearsal preview branch   SUPABASE_BRANCH_DATABASE_URL (.env.local)
+#   clone       the nightly dev clone          CLONE_DATABASE_URL, else CLONE-REF + its
+#                                              password file — NEVER SUPABASE_MATRIX_*
+#   production  the live database              the five SUPABASE_MATRIX_* (a job builds
+#                                              that connection itself; there is no helper
+#                                              here, deliberately)
+#
+# 🚨 `clone` IS NOT A SOFTER `production`. It is a PHYSICAL RESTORE of production and
+# reports production's own system_identifier, so naming it is only safe because
+# `night_assert_target` checks the project ref in the connection as well. Never assemble a
+# clone connection by hand from SUPABASE_MATRIX_*; there is nothing in those five values
+# that could tell you which of the two you got.
+NIGHT_TARGETS="branch | clone | production"
+
+# night_target_dsn branch|clone — the DSN for a rehearsal target, or empty + non-zero.
+# `production` deliberately has no entry: a job that means the live database says so in
+# its own five variables, where a reader can see it.
+night_target_dsn() {
+  case "$1" in
+    branch) night_branch_dsn ;;
+    clone)  night_clone_dsn ;;
+    production)
+      say "REFUSED: night_target_dsn has no production entry, deliberately — a job that means"
+      say "  the live database builds that connection from its own SUPABASE_MATRIX_* values,"
+      say "  where a reader can see it. Nothing attempted."
+      return 78 ;;
+    *)
+      say "REFUSED: night_target_dsn got an unknown target '$1'. Known: $NIGHT_TARGETS."
+      return 78 ;;
+  esac
+}
+
+# night_assert_target branch|clone|production <psql args…>
 #
 # 🚨 A SYSTEM IDENTIFIER IS NOT AN IDENTITY. A Supabase DATA branch (`with_data: true`) is a
 # PHYSICAL restore of production's cluster, so the nightly dev clone answers
@@ -174,7 +212,13 @@ night_assert_target() {
         return 78
       fi
       want_id="$clone_id"; want_ref="$clone_ref"; label="the nightly dev clone" ;;
-    *) say "REFUSED: night_assert_target got an unknown target '$want'."; return 78 ;;
+    *)
+      say "REFUSED: night_assert_target got an unknown target '$want'."
+      say "  The three this library knows are: $NIGHT_TARGETS."
+      say "  They are the same three \`pnpm db:apply --target\` and \`uv run python"
+      say "  db/apply_migrations.py --target\` know, so a night job names the clone exactly the"
+      say "  way an agent at a terminal does. Nothing attempted."
+      return 78 ;;
   esac
 
   got="$("$PSQL" "$@" -qAt -c 'select system_identifier from pg_control_system()' 2>&1 | tr -d ' ')"

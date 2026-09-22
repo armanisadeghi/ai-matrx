@@ -85,13 +85,67 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-export type Target = "branch" | "production";
+export type Target = "branch" | "production" | "clone";
 
-export const TARGETS: readonly Target[] = ["branch", "production"] as const;
+export const TARGETS: readonly Target[] = ["branch", "production", "clone"] as const;
 
 /** Where `BRANCH-REF` lives, relative to the matrx-frontend checkout root. */
 export const BRANCH_REF_PATH =
   "../common-docs/projects/data-doctrine-adoption/plan/BRANCH-REF";
+
+/**
+ * `--target clone` — THE NIGHTLY DEV CLONE, AND WHY IT NEEDED ITS OWN IDENTITY RULE.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * The clone is a Supabase DATA branch of production (`with_data: true`): a PHYSICAL
+ * RESTORE of production's cluster, refreshed nightly. It is the only rehearsal
+ * database that holds production's real row counts, real indexes and real lock
+ * behaviour, which is why W1-ORG-PREP rehearsed four chair steps on it — and why it
+ * had to do so with `psql --single-transaction`, outside this runner, with no
+ * judgement and no ledger row, because `--target` knew only `branch` and
+ * `production`.
+ *
+ * 🚨 THE TRAP, AND THE ONE THING THAT CLOSES IT. A physical restore reports the SAME
+ * `pg_control_system().system_identifier` as its parent — production's own
+ * 7642734024280108049 (measured 2026-09-22). So the post-connection check that
+ * separates `branch` from `production` CANNOT separate the clone from production: it
+ * would call the clone MAIN and say `[ OK ] target production` while pointed at a
+ * copy, and would just as happily accept `--target clone` against PRODUCTION and
+ * rehearse a `DROP` on the live database.
+ *
+ * The identity that does separate them is the CONNECTION's PROJECT REF: the Supabase
+ * pooler user is `postgres.<ref>` and the direct host is `db.<ref>.supabase.co`. So a
+ * clone target is `(system_identifier, project ref)` TOGETHER — never the number alone.
+ * Both halves are read from the checked-in `common-docs/operations/clone/CLONE-REF`,
+ * the same file `scripts/campaign-tests/_branch-sysid.sh` and `scripts/night/lib-night.sh`
+ * read, so a fresh nightly clone needs no edit here.
+ *
+ * AND A SECOND, SERVER-SIDE CHECK, because a project ref is still something the CALLER
+ * configured. The nightly job QUARANTINES the clone — it drops `pg_net` and deactivates
+ * every `pg_cron` job — and neither is ever true of production. So:
+ *   · `--target clone` additionally REQUIRES the server to be quarantined. Production
+ *     presented as the clone is refused by production's own answer.
+ *   · `--target production` additionally REFUSES a quarantined server. The clone
+ *     presented as production is refused by the clone's own answer.
+ * Two facts, read from the server, in conjunction — so a single one of them changing
+ * on production can never refuse a real production apply.
+ *
+ * REACHABLE ONLY THROUGH THE CLONE'S OWN CONNECTION VARIABLES. `CLONE_DATABASE_URL`
+ * (the whole DSN), or the identities in `CLONE-REF` plus the password file `CLONE-REF`
+ * names. The five `SUPABASE_MATRIX_*` variables are NEVER consulted for `--target
+ * clone`: they select production's connection, and the whole point of this target is
+ * that production and the clone are indistinguishable by everything except the ref.
+ *
+ * WHAT IS JUDGED. Exactly what production is judged by, because the clone IS
+ * production's copy: the allow-list for a file that names production, the deny-list
+ * for a header-less file that has not run here yet, `-- chair-step:` as the named
+ * escape (announced here, confirmed only at production), the guard that must resolve
+ * OFF, the inverse ground gate and the campaign directory rules. The differences are
+ * the two the rehearsal role demands: `--confirm-chair-step` is not required (a
+ * rehearsal is one command), and the ledger row is MARKED as a rehearsal so the next
+ * nightly refresh overwriting it is expected rather than alarming.
+ */
+export const CLONE_REF_PATH = "../common-docs/operations/clone/CLONE-REF";
 
 export interface BranchRef {
   readonly branchRef: string;
@@ -205,6 +259,266 @@ export function loadBranchRef(root: string, overridePath?: string): BranchRef {
   };
 }
 
+// ── the nightly dev clone: CLONE-REF, its connection, and its two server facts ──
+
+export interface CloneRef {
+  readonly cloneRef: string;
+  readonly cloneName: string;
+  readonly parentRef: string;
+  readonly poolerHost: string;
+  readonly poolerPort: number;
+  readonly poolerUser: string;
+  readonly database: string;
+  readonly directHost: string;
+  readonly systemIdentifier: string;
+  readonly parentSystemIdentifier: string;
+  readonly passwordEnvVar: string;
+  /** Local staging path for the clone's OWN password. Never printed, never committed. */
+  readonly passwordFile: string;
+  readonly path: string;
+}
+
+/** `--clone-ref=<path>` / `MATRX_CLONE_REF`, the same override BRANCH-REF already takes. */
+export function cloneRefOverride(argv: readonly string[]): string | undefined {
+  const arg = argv.find((a) => a.startsWith("--clone-ref="));
+  if (arg) return resolve(arg.slice("--clone-ref=".length).trim());
+  const env = process.env.MATRX_CLONE_REF;
+  return env ? resolve(env) : undefined;
+}
+
+/**
+ * Read `CLONE-REF`. Absent, unreadable or short of a required key is a REFUSAL with the
+ * remedy — never a fallback. CLONE-REF says so itself and it is the whole safety
+ * argument: a connection that cannot be PROVEN to be the clone is never treated as the
+ * clone, and a connection that cannot be proven NOT to be the clone is never treated as
+ * production.
+ */
+export function loadCloneRef(root: string, overridePath?: string): CloneRef {
+  const path = overridePath ?? resolve(root, CLONE_REF_PATH);
+  if (!existsSync(path)) {
+    fail([
+      `CLONE-REF not found at ${path}.`,
+      `  --target clone reads the nightly dev clone's identity from that checked-in file — its`,
+      `  project ref AND its system_identifier, because a data clone reports its PARENT's`,
+      `  system_identifier and the number alone cannot tell them apart.`,
+      `  Refusing rather than falling back to whatever SUPABASE_MATRIX_* holds, which is`,
+      `  production.`,
+      `  Remedy: check out common-docs beside this repo, or pass --clone-ref=<path>`,
+      `  (or set MATRX_CLONE_REF).`,
+    ], "clone-ref-missing");
+  }
+  let text: string;
+  try {
+    text = readFileSync(path, "utf8");
+  } catch (e) {
+    fail([`CLONE-REF at ${path} is unreadable: ${String(e)}`], "clone-ref-unreadable");
+  }
+  const bag: Record<string, string> = {};
+  for (const line of text.split("\n")) {
+    if (/^\s*#/.test(line)) continue;
+    const m = line.match(/^\s*([a-z_]+)\s*=\s*(.+?)\s*$/);
+    if (m) bag[m[1]!] = m[2]!;
+  }
+  const need = [
+    "clone_ref",
+    "parent_ref",
+    "pooler_host",
+    "pooler_port",
+    "pooler_user",
+    "database",
+    "system_identifier",
+    "parent_system_identifier",
+    "password_env_var",
+    "password_file",
+  ];
+  const missing = need.filter((k) => !bag[k]);
+  if (missing.length) {
+    fail([
+      `CLONE-REF at ${path} is missing: ${missing.join(", ")}.`,
+      `  Every one of them is an identity, not a secret, and --target clone cannot decide`,
+      `  anything without them. Refusing rather than guessing.`,
+    ], "clone-ref-incomplete");
+  }
+  return {
+    cloneRef: bag.clone_ref!,
+    cloneName: bag.clone_name ?? bag.clone_ref!,
+    parentRef: bag.parent_ref!,
+    poolerHost: bag.pooler_host!,
+    poolerPort: Number(bag.pooler_port!),
+    poolerUser: bag.pooler_user!,
+    database: bag.database!,
+    directHost: bag.direct_host ?? "",
+    systemIdentifier: bag.system_identifier!,
+    parentSystemIdentifier: bag.parent_system_identifier!,
+    passwordEnvVar: bag.password_env_var!,
+    passwordFile: bag.password_file!,
+    path,
+  };
+}
+
+/**
+ * THE PROJECT REF A CONNECTION IS POINTED AT, read from the connection itself.
+ *
+ * This is the ONE thing that separates a physical data clone from the production
+ * cluster it was restored from, because the two answer `pg_control_system()`
+ * identically. Two shapes, which is every shape Supabase gives out:
+ *     pooler  → user `postgres.<ref>`        (everything after the FIRST dot)
+ *     direct  → host `db.<ref>.supabase.co`  (or `<ref>.supabase.co`)
+ * Anything else yields the empty string, which matches NO target and is therefore
+ * refused — never silently treated as "probably production".
+ *
+ * Identical to `night_conn_ref` in `scripts/night/lib-night.sh` and to the `matrx_ref`
+ * expression in `scripts/campaign-tests/_preamble.sql`. Three readers, one rule.
+ */
+export function projectRefOf(user: string, host: string): string {
+  const u = (user ?? "").trim();
+  const h = (host ?? "").trim();
+  const dot = u.indexOf(".");
+  if (dot > 0 && dot < u.length - 1) return u.slice(dot + 1);
+  const direct = /^db\.([a-z0-9]+)\.supabase\.(co|com)$/i.exec(h);
+  if (direct) return direct[1]!;
+  const bare = /^([a-z0-9]+)\.supabase\.(co|com)$/i.exec(h);
+  if (bare) return bare[1]!;
+  return "";
+}
+
+/**
+ * The QUARANTINE FACTS, as the SERVER answers them — the second, independent half of
+ * the clone's identity, and the only half production cannot be made to fake by
+ * pointing an environment variable somewhere.
+ *
+ * The nightly clone job drops `pg_net` and deactivates every `pg_cron` job. Production
+ * has both. Read in CONJUNCTION, deliberately: one of the two changing on production
+ * one day must never refuse a real production apply.
+ */
+export interface QuarantineFacts {
+  readonly pgNetInstalled: boolean;
+  readonly activeCronJobs: number;
+  readonly cronTablePresent: boolean;
+  readonly quarantined: boolean;
+}
+
+export async function readQuarantineFacts(
+  query: (sql: string) => Promise<{ rows: Array<Record<string, unknown>> }>,
+): Promise<QuarantineFacts> {
+  const base = await query(
+    `select (select count(*)::int from pg_extension where extname = 'pg_net') as net,
+            (to_regclass('cron.job') is not null) as cron_table`,
+  );
+  const pgNetInstalled = Number(base.rows[0]?.net ?? 0) > 0;
+  const cronTablePresent = base.rows[0]?.cron_table === true;
+  let activeCronJobs = 0;
+  if (cronTablePresent) {
+    const c = await query(`select count(*)::int as n from cron.job where active`);
+    activeCronJobs = Number(c.rows[0]?.n ?? 0);
+  }
+  return {
+    pgNetInstalled,
+    activeCronJobs,
+    cronTablePresent,
+    quarantined: !pgNetInstalled && activeCronJobs === 0,
+  };
+}
+
+/**
+ * The clone's connection, built from the ONE variable `CLONE-REF` names —
+ * `CLONE_DATABASE_URL`, a whole DSN — or, failing that, from `CLONE-REF`'s own
+ * identities plus the password file it names. Verified against `CLONE-REF`'s
+ * host/user before it is handed back.
+ *
+ * 🚨 The five `SUPABASE_MATRIX_*` variables are NEVER consulted here, and there is no
+ * fallback to them. They point at production, and production and the clone are
+ * indistinguishable by everything except the project ref — so a fallback would not be
+ * a convenience, it would be the failure this target exists to prevent.
+ */
+export interface CloneDbEnv {
+  readonly user: string;
+  readonly password: string;
+  readonly host: string;
+  readonly port: number;
+  readonly database: string;
+  readonly from: string;
+}
+
+export function loadCloneDbEnv(root: string, ref: CloneRef): CloneDbEnv {
+  const candidates: Array<[string, string | undefined]> = [
+    ["the environment", process.env[ref.passwordEnvVar]],
+    [".env.local", readEnvFile(resolve(root, ".env.local"))[ref.passwordEnvVar]],
+    [".env", readEnvFile(resolve(root, ".env"))[ref.passwordEnvVar]],
+    [
+      "../aidream/.env",
+      readEnvFile(resolve(process.env.AIDREAM_DIR ?? resolve(root, "..", "aidream"), ".env"))[
+        ref.passwordEnvVar
+      ],
+    ],
+  ];
+  const hit = candidates.find(([, v]) => v);
+  let env: CloneDbEnv;
+  if (hit) {
+    const [from, dsn] = hit;
+    let u: URL;
+    try {
+      u = new URL(dsn!);
+    } catch {
+      fail([
+        `${ref.passwordEnvVar} (from ${from}) is not a DSN.`,
+        `  Expected postgresql://<user>:<password>@<host>:<port>/<database>.`,
+      ], "clone-dsn-malformed");
+    }
+    env = {
+      user: decodeURIComponent(u.username),
+      password: decodeURIComponent(u.password),
+      host: u.hostname,
+      port: Number(u.port || ref.poolerPort),
+      database: u.pathname.replace(/^\//, "") || ref.database,
+      from: `${ref.passwordEnvVar} (${from})`,
+    };
+  } else {
+    // The checked-in identities plus the password file CLONE-REF names. The password is
+    // read and never printed; only the path it came from is.
+    if (!ref.passwordFile || !existsSync(ref.passwordFile)) {
+      fail([
+        `--target clone needs ${ref.passwordEnvVar}, and it is not set.`,
+        `  Looked in: ${candidates.map(([w]) => w).join(", ")}.`,
+        `  The fallback — the password file ${ref.path} names — is not there either:`,
+        `    ${ref.passwordFile || "(no password_file key)"}`,
+        `  A branch gets its OWN password; production's is not it, and there is no fallback to`,
+        `  SUPABASE_MATRIX_*. Re-mint the clone's password with the recipe inside ${ref.path}.`,
+      ], "clone-password-missing");
+    }
+    let password: string;
+    try {
+      password = readFileSync(ref.passwordFile, "utf8").trim();
+    } catch (e) {
+      fail([
+        `The clone password file ${ref.passwordFile} is unreadable: ${String(e)}`,
+      ], "clone-password-unreadable");
+    }
+    if (!password) {
+      fail([`The clone password file ${ref.passwordFile} is empty.`], "clone-password-empty");
+    }
+    env = {
+      user: ref.poolerUser,
+      password,
+      host: ref.poolerHost,
+      port: ref.poolerPort,
+      database: ref.database,
+      from: `${ref.path} + ${ref.passwordFile}`,
+    };
+  }
+  if (env.user !== ref.poolerUser || env.host !== ref.poolerHost) {
+    fail([
+      `${ref.passwordEnvVar} does not point at the dev clone ${ref.cloneRef}.`,
+      `  DSN says:   ${env.user}@${env.host}:${env.port}/${env.database}`,
+      `  CLONE-REF:  ${ref.poolerUser}@${ref.poolerHost}:${ref.poolerPort}/${ref.database}`,
+      `  project ref in the DSN: ${projectRefOf(env.user, env.host) || "(none)"}; expected ${ref.cloneRef}.`,
+      `  Refusing rather than rehearsing against whatever that DSN really is — which, if it is`,
+      `  production, answers pg_control_system() with the very number CLONE-REF records.`,
+    ], "clone-dsn-not-the-clone");
+  }
+  return env;
+}
+
 /**
  * `--target <t>`. Default `production`, so every migration written before this
  * module behaves exactly as it did. An unknown value is refused, never coerced.
@@ -217,7 +531,9 @@ export function parseTargetFlag(argv: readonly string[]): Target {
   if (!TARGETS.includes(value as Target)) {
     fail([
       `--target ${value || "(nothing)"} is not a target.`,
-      `  Valid: --target branch | --target production. Refusing rather than picking one.`,
+      `  Valid: --target branch | --target clone | --target production.`,
+      `  \`clone\` is the nightly dev clone named in ${CLONE_REF_PATH} — production's own data,`,
+      `  quarantined, judged exactly as production is. Refusing rather than picking one.`,
     ]);
   }
   return value as Target;
@@ -323,7 +639,7 @@ export function readHeader(sql: string): MigrationHeader {
       if (bad.length) {
         fail([
           `\`-- target: ${t[1]}\` names something that is not a target: ${bad.join(", ")}.`,
-          `  Valid headers: \`-- target: branch\`, \`-- target: production\`,`,
+          `  Valid headers: \`-- target: branch\`, \`-- target: clone\`, \`-- target: production\`,`,
           `  \`-- target: branch,production\`.`,
         ], "header-target-unknown");
       }
@@ -1254,6 +1570,36 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
         `  Refusing. Change one of them deliberately; the runner will not choose.`,
       ], "header-flag-disagree");
     }
+  } else if (flagTarget === "clone") {
+    // 🚨 THE CLONE IS PRODUCTION'S COPY, so its header rule is production's, not the
+    // branch's — with ONE refusal added and ONE amnesty kept.
+    //
+    // KEPT: a header-LESS file rehearses here. That is the ~3,567 migrations written
+    // before --target existed, production-only BY DEFINITION, and the clone is the only
+    // rehearsal database on which "what will this do to production" is a real question
+    // (production's rows, production's indexes, production's locks). The branch refuses
+    // them because the branch is not production's data; refusing them HERE would leave
+    // the one shape that most needs rehearsing with nowhere to rehearse — which is
+    // exactly the hole W1-ORG-PREP fell into, rehearsing four chair steps through
+    // `psql --single-transaction` with no judgement and no ledger row at all.
+    // They are judged below by the same deny-list production judges them by.
+    //
+    // ADDED: a file headed `-- target: branch` and nothing else names the OTHER
+    // rehearsal database on purpose. One deliberate header, one database — the same
+    // reason `--target branch` refuses a production-headed file.
+    if (named !== null && !named.includes("clone") && !named.includes("production")) {
+      fail([
+        `${filename} is headed \`-- target: ${named.join(",")}\` but you passed --target clone.`,
+        `  file header: ${named.join(",")}`,
+        `  command flag: clone`,
+        `  The dev clone is PRODUCTION'S OWN DATA, physically restored and quarantined, so a file`,
+        `  rehearses here when it names \`production\` (or \`clone\`) — or when it carries no`,
+        `  \`-- target:\` line at all, which is production-only by definition and is judged here`,
+        `  exactly as production judges it.`,
+        `  A \`-- target: branch\` file names the other rehearsal database deliberately; rehearse`,
+        `  it there, or change its header on purpose.`,
+      ], "header-flag-disagree");
+    }
   } else if (named !== null && !named.includes("production")) {
     fail([
       `${filename} is headed \`-- target: ${named.join(",")}\` and must not land on production.`,
@@ -1291,7 +1637,13 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
   // file, the same bytes, the same loudness. Only the CONFIRMATION is production-only.
   if (flagTarget === "branch" && named === null && chairStep)
     headerlessChairStep = { why: chairStep, reasons: [] };
-  if (flagTarget === "production" && named === null && !alreadyLedgered) {
+  // `clone` is judged here EXACTLY as `production` is: same deny-list, same
+  // `-- chair-step:` escape, same "already ledgered is frozen history" amnesty. The
+  // clone carries production's ledger (it is a physical copy of it), so
+  // `alreadyLedgered` answers the same question it answers on production. The ONE
+  // difference lives in the runner, not here: the chair step is ANNOUNCED on the clone
+  // and CONFIRMED only on production.
+  if ((flagTarget === "production" || flagTarget === "clone") && named === null && !alreadyLedgered) {
     // The DENY-list, deliberately: this is the header-less path, which is every
     // ordinary migration every other lane writes. See the list's own comment.
     const reasons = nonAdditiveReasonsDenyList(strippedSql, {
@@ -1601,7 +1953,52 @@ export function assertConfiguredHostMatchesTarget(
   conn: ConfiguredConnection,
   target: Target,
   ref: BranchRef,
+  cloneRef?: CloneRef | null,
 ): void {
+  const connRef = projectRefOf(conn.user, conn.host);
+  const looksLikeClone = Boolean(cloneRef) && connRef === cloneRef!.cloneRef;
+  // 🚨 THE CLONE'S HALF OF THE PRE-CONNECTION REFUSAL, both directions, with no
+  // credential in the process for either. The clone answers pg_control_system() with
+  // PRODUCTION'S OWN system_identifier, so this is the only check that can refuse
+  // before a socket is opened.
+  if (target === "clone") {
+    if (!cloneRef) {
+      fail([
+        `--target clone, but CLONE-REF was not loaded, so nothing can prove this connection is`,
+        `  the clone. A connection that cannot be PROVEN to be the clone is never treated as`,
+        `  the clone. Nothing was opened.`,
+      ], "clone-ref-missing");
+    }
+    if (!looksLikeClone) {
+      const what =
+        connRef === cloneRef.parentRef
+          ? `PRODUCTION ${cloneRef.parentRef}`
+          : connRef
+            ? `project ${connRef}`
+            : `a connection carrying no project ref at all`;
+      fail([
+        `--target clone, but the configured connection is ${what}, not the dev clone.`,
+        `  configured: ${conn.user}@${conn.host}:${conn.port}/${conn.database} (from ${conn.from})`,
+        `  CLONE-REF:  ${cloneRef.poolerUser}@${cloneRef.poolerHost}:${cloneRef.poolerPort}/${cloneRef.database} (${cloneRef.path})`,
+        `  A data clone reports its PARENT's pg_control_system().system_identifier, so the project`,
+        `  ref in the connection is the only thing that separates them. Nothing was opened.`,
+        `  Set ${cloneRef.passwordEnvVar} to the clone DSN; --target clone reads that variable (or`,
+        `  the password file CLONE-REF names) and nothing else — never SUPABASE_MATRIX_*.`,
+      ], "clone-configured-not-the-clone");
+    }
+    return;
+  }
+  if (target === "production" && looksLikeClone) {
+    fail([
+      `--target production, but the configured connection IS the dev clone ${cloneRef!.cloneRef}.`,
+      `  configured: ${conn.user}@${conn.host}:${conn.port}/${conn.database} (from ${conn.from})`,
+      `  The clone answers pg_control_system() with production's own system_identifier`,
+      `  (${cloneRef!.systemIdentifier}), so the server-side check CANNOT catch this one — the`,
+      `  project ref in the connection is what caught it. Nothing was opened.`,
+      `  Refusing rather than reporting a production apply that landed on a copy which the next`,
+      `  nightly refresh throws away.`,
+    ], "production-is-the-clone");
+  }
   const looksLikeBranch =
     conn.user === ref.poolerUser ||
     conn.host.includes(ref.branchRef) ||
@@ -1636,6 +2033,7 @@ export async function assertServerMatchesTarget(
   target: Target,
   ref: BranchRef,
   filename: string,
+  cloneRef?: CloneRef | null,
 ): Promise<string> {
   const res = await query(
     "select system_identifier::text as sysid from pg_control_system()",
@@ -1648,21 +2046,68 @@ export async function assertServerMatchesTarget(
       `  weaker check to fall back to. Nothing was applied.`,
     ]);
   }
-  const expected = target === "branch" ? ref.systemIdentifier : ref.parentSystemIdentifier;
+  const expected =
+    target === "branch"
+      ? ref.systemIdentifier
+      : target === "clone"
+        ? (cloneRef?.systemIdentifier ?? ref.parentSystemIdentifier)
+        : ref.parentSystemIdentifier;
   if (sysid !== expected) {
     const named =
       sysid === ref.systemIdentifier
         ? `the rehearsal branch ${ref.branchRef}`
         : sysid === ref.parentSystemIdentifier
-          ? `production ${ref.parentRef}`
+          ? `production ${ref.parentRef} (or a physical copy of it — see below)`
           : `an UNKNOWN cluster (system_identifier ${sysid})`;
     fail([
       `${filename}: the connected server is ${named}, not the --target you passed.`,
       `  command flag:      ${target}`,
-      `  expected sysid:    ${expected}   (${ref.path})`,
+      `  expected sysid:    ${expected}   (${target === "clone" && cloneRef ? cloneRef.path : ref.path})`,
       `  connected sysid:   ${sysid}`,
       `  Read from the server, not from the flag. Rolled back, nothing applied, no ledger row.`,
     ]);
+  }
+
+  // 🚨 THE SECOND, SERVER-SIDE HALF — and for `clone` vs `production` it is the ONLY
+  // server-side half there can be, because a physical data clone answers
+  // pg_control_system() with its PARENT's number. The nightly job quarantines the
+  // clone: it drops `pg_net` and deactivates every `pg_cron` job. Neither is ever true
+  // of production, and the two are read in CONJUNCTION so that one of them changing on
+  // production one day can never refuse a real production apply.
+  if (target === "clone" || (target === "production" && cloneRef)) {
+    let facts: QuarantineFacts;
+    try {
+      facts = await readQuarantineFacts(query);
+    } catch (e) {
+      fail([
+        `${filename}: could not read the quarantine facts from the connected server: ${String(e)}`,
+        `  They are what separates the dev clone from production, which answer`,
+        `  pg_control_system() identically. Refusing rather than guessing which one this is.`,
+      ]);
+    }
+    const shape =
+      `pg_net ${facts.pgNetInstalled ? "installed" : "absent"}, ` +
+      `${facts.activeCronJobs} active pg_cron job(s)`;
+    if (target === "clone" && !facts.quarantined) {
+      fail([
+        `${filename}: --target clone, and the connected server is NOT QUARANTINED (${shape}).`,
+        `  The nightly clone job drops pg_net and deactivates every cron job; production has`,
+        `  both. This server therefore looks like PRODUCTION — and it answers`,
+        `  pg_control_system() with the very number CLONE-REF records for the clone, because a`,
+        `  data clone is a physical restore, so that number proves nothing on its own.`,
+        `  Rolled back, nothing applied, no ledger row. Point ${cloneRef?.passwordEnvVar ?? "CLONE_DATABASE_URL"}`,
+        `  at today's clone (${cloneRef?.cloneRef ?? "see CLONE-REF"}) and re-run.`,
+      ], "clone-server-not-quarantined");
+    }
+    if (target === "production" && facts.quarantined) {
+      fail([
+        `${filename}: --target production, and the connected server is a QUARANTINED COPY (${shape}).`,
+        `  Every pg_cron job is inactive and pg_net is absent — that is what the nightly clone`,
+        `  job does to the dev clone, and it is never true of production.`,
+        `  Rolled back, nothing applied, no ledger row. Refusing rather than reporting a`,
+        `  production apply that landed on a copy the next refresh throws away.`,
+      ], "production-server-is-quarantined");
+    }
   }
   return sysid;
 }

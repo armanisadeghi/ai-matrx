@@ -163,6 +163,11 @@ import {
   TARGETS,
   basedOnFunctionNames,
   branchRefOverride,
+  cloneRefOverride,
+  loadCloneRef,
+  loadCloneDbEnv,
+  projectRefOf,
+  type CloneRef,
   TargetRefusal,
   type Target,
 } from "./lib/migration-target";
@@ -624,12 +629,16 @@ async function assertCampaignProductionIsAuthorised(
 
 function usage(): void {
   console.log(
-    `${C.bold}pnpm db:apply <migrations/file.sql> [--target branch|production] [--dry-run] [--reapply] [--statement-timeout=10min] [--confirm-chair-step <file.sql>]${C.reset}\n` +
+    `${C.bold}pnpm db:apply <migrations/file.sql> [--target branch|clone|production] [--dry-run] [--reapply] [--statement-timeout=10min] [--confirm-chair-step <file.sql>]${C.reset}\n` +
       `  pnpm db:apply migrations/${CAMPAIGN_DIRNAME}/<file>.sql --source ${CAMPAIGN_SOURCE} --target branch|production --lane <lane>\n` +
       `                                     the ONLY route into migrations/${CAMPAIGN_DIRNAME}/, which no\n` +
       `                                     release path, sweep, CI job or scheduled job scans\n` +
       `  pnpm db:apply --self-test          prove RED/GREEN against the live database\n` +
       `  pnpm db:apply --target-self-test   prove the --target refusal RED/GREEN on the rehearsal branch\n` +
+      `  pnpm db:apply --clone-self-test    prove the CLONE refusal RED/GREEN (production presented as\n` +
+      `                                     the clone, and the clone presented as production)\n` +
+      `  pnpm db:rehearse <file> --target clone   up -> inverse -> up on the dev clone, timed, with\n` +
+      `                                     pg_locks sampled per statement\n` +
       `  --pair <file.sql>                  a sibling file of THIS apply; the only thing it can do is\n` +
       `                                     carry the iam.entity_read_kernel_expected() re-record a\n` +
       `                                     file replacing an access-kernel body must land with\n` +
@@ -653,6 +662,8 @@ interface ApplyOpts {
   lane: string | null;
   /** `--branch-ref=<path>` / MATRX_BRANCH_REF — the override a throwaway worktree needs. */
   branchRefPath?: string;
+  /** `--clone-ref=<path>` / MATRX_CLONE_REF — the same override for the dev clone's identity. */
+  cloneRefPath?: string;
   /** `--confirm-chair-step <file>` — the basenames this command NAMED. A chair step at
    *  `--target production` runs only when its own basename is here (scripts/lib/chair-step.ts). */
   confirmedChairSteps?: readonly string[];
@@ -667,6 +678,7 @@ interface ApplyOpts {
 async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   const { dryRun, reapply, statementTimeout, target, campaignSource, lane } = opts;
   const branchRefPath = opts.branchRefPath;
+  const cloneRefPath = opts.cloneRefPath;
   const outsideMigrations = relative(MIGRATIONS_DIR, path).startsWith("..");
   // 🚨 THE ONE CARVE-OUT, and it is a filename pattern, not a flag. --target-self-test
   // writes its scratch file into a per-run temp directory instead of into the SHARED
@@ -970,6 +982,18 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   // existed nothing in this runner could tell the rehearsal branch from
   // production. See scripts/lib/migration-target.ts.
   let branchRef: BranchRef;
+  /**
+   * CLONE-REF, the nightly dev clone's identity. Loaded for EVERY apply, not only
+   * `--target clone`: the production half needs it to refuse a connection that IS the
+   * clone, and that refusal is the only one there can be — the clone is a physical
+   * restore and answers `pg_control_system()` with production's own number.
+   *
+   * At `--target clone` an unreadable CLONE-REF is a REFUSAL (below). At every other
+   * target it is a LOUD degradation, not a silent one: the cross-check is announced as
+   * unavailable and the server-side quarantine check still stands on its own.
+   */
+  let cloneRef: CloneRef | null = null;
+  let cloneRefWhyNot: string | null = null;
   let guard: { feature: string; key: string } | null = null;
   let revokeExemption: { schema: string; statements: Array<{ text: string }> } | null = null;
   let chairStep: { why: string; reasons: string[] } | null = null;
@@ -983,6 +1007,13 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     // production half needs the branch's identity to refuse a file that would
     // land on the branch while claiming production.
     branchRef = loadBranchRef(ROOT, branchRefPath);
+    try {
+      cloneRef = loadCloneRef(ROOT, cloneRefPath);
+    } catch (err) {
+      if (target === "clone") throw err;
+      cloneRef = null;
+      cloneRefWhyNot = err instanceof Error ? err.message.split("\n")[0]! : String(err);
+    }
     ({ guard, revokeExemption, chairStep, customDataInserts } = assertHeaderAgreesWithFlag({
       basedOnNames: basedOnFunctionNames(sql),
       filename,
@@ -1070,12 +1101,36 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       }
       throw err;
     }
+  } else if (target === "clone") {
+    // 🚨 THE CLONE'S OWN CONNECTION VARIABLES, AND NOTHING ELSE. CLONE_DATABASE_URL (the
+    // whole DSN), or CLONE-REF's checked-in identities plus the password file it names.
+    // There is NO fallback to the five SUPABASE_MATRIX_* — they point at production, and
+    // production and the clone are indistinguishable by everything except the project
+    // ref in the connection.
+    try {
+      const c = loadCloneDbEnv(ROOT, cloneRef!);
+      env = { ...c };
+    } catch (err) {
+      if (err instanceof TargetRefusal) {
+        console.error(`${TAG.fail}${err.message}`);
+        return 1;
+      }
+      throw err;
+    }
   } else {
     env = loadDbEnv();
   }
   if (!("missing" in env)) {
+    if (target === "production" && !cloneRef) {
+      console.warn(
+        `${TAG.warn}CLONE-REF could not be read, so the "is this connection actually the dev ` +
+          `clone?" cross-check is UNAVAILABLE for this production apply — ${cloneRefWhyNot}\n` +
+          `  The server-side quarantine check still runs. Say so in any report; this is a ` +
+          `degraded run, not a clean one.`,
+      );
+    }
     try {
-      assertConfiguredHostMatchesTarget(env, target, branchRef);
+      assertConfiguredHostMatchesTarget(env, target, branchRef, cloneRef);
     } catch (err) {
       if (err instanceof TargetRefusal) {
         console.error(`${TAG.fail}${err.message}`);
@@ -1128,11 +1183,21 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         target,
         branchRef,
         filename,
+        cloneRef,
       );
+      const connRef = projectRefOf(env.user, env.host);
       console.log(
         `${TAG.ok}target ${C.bold}${target}${C.reset} ${C.dim}(server system_identifier ${sysid}, ` +
-          `from ${branchRef.path})${C.reset}`,
+          `project ref ${connRef || "(none)"}, from ` +
+          `${target === "clone" && cloneRef ? cloneRef.path : branchRef.path})${C.reset}`,
       );
+      if (target === "clone") {
+        console.log(
+          `${TAG.ok}quarantine ${C.bold}confirmed${C.reset} ${C.dim}— pg_net absent and no active ` +
+            `pg_cron job, which is never true of production. A data clone reports its PARENT's ` +
+            `system_identifier, so this and the project ref are the identity.${C.reset}`,
+        );
+      }
       // A `-- target: branch,production` file lands on production only while its
       // named knob is OFF — the knob's platform value, which is
       // coalesce(value, default_value): platform.knob_scope_kind has no `system`
@@ -1153,13 +1218,17 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     // register file — which is bounded to the knob register itself. A header that
     // names production with neither is refused before this line by
     // assertHeaderAgreesWithFlag, so this can never quietly skip a guard check.
-    if (target === "production" && headerNamesProduction && !guard) {
+    if ((target === "production" || target === "clone") && headerNamesProduction && !guard) {
       console.log(
         `${TAG.ok}guard ${C.bold}-- seeds-guards: yes${C.reset} ${C.dim}— this file seeds the ` +
           `knob register itself and touches nothing else${C.reset}`,
       );
     }
-    if (guard && target === "production") {
+    // The clone carries production's knob register (it is a physical copy of it), so a
+    // guarded file rehearses here under exactly the condition it will land on production
+    // under: its knob exists and resolves OFF. A rehearsal that skipped this would not be
+    // a rehearsal of the production apply.
+    if (guard && (target === "production" || target === "clone")) {
       try {
         await assertGuardResolvesOff(
           (text) => client.query(text) as Promise<{ rows: Array<Record<string, unknown>> }>,
@@ -1331,10 +1400,107 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     const chairStepLog = chairStepConfirmed
       ? `alter table public._schema_migrations add column if not exists chair_step text;\n`
       : ``;
+    // 🚨 THE CLONE'S LEDGER IS PRODUCTION'S LEDGER PLUS REHEARSAL ROWS, AND THE
+    // REHEARSAL ROWS SAY SO.
+    //
+    // The clone is a physical restore, so it arrives carrying production's whole
+    // `public._schema_migrations` — every row production had at the moment of the
+    // snapshot. A rehearsal then writes rows into that copy. Two things follow, and
+    // both are why the mark exists rather than being nice-to-have:
+    //   · a row written here is NOT evidence that anything landed on production, and
+    //     anybody reading this table on the clone has to be able to tell the two apart
+    //     without knowing which day the snapshot was taken;
+    //   · the next nightly refresh THROWS THESE ROWS AWAY, because it restores
+    //     production again. That overwrite is expected, and a marked row says so in
+    //     the row itself instead of in a document nobody opens at 3 a.m.
+    // Added idempotently on the one path that writes it, exactly as `chair_step` is:
+    // nullable, no default, no live reader, and production never gets the column.
+    const rehearsalMark =
+      target === "clone" && cloneRef
+        ? `rehearsal on the dev clone ${cloneRef.cloneRef} (${cloneRef.cloneName}) by ` +
+          `${process.env.USER ?? "unknown"} — NOT a production apply; the next nightly clone ` +
+          `refresh restores production over this row, which is expected`
+        : null;
+    // 🚨 THE COLUMN IS ADDED OUTSIDE THE TRANSACTION, AND ONLY WHEN IT IS ACTUALLY
+    // ABSENT. `alter table … add column if not exists` is not free even when the column
+    // is already there: it still takes ACCESS EXCLUSIVE on `public._schema_migrations`,
+    // so carrying it inside every clone apply's transaction means every clone apply
+    // queues behind anything holding a share lock on the ledger — measured 2026-09-22,
+    // where the nightly schema dump's open transaction made the whole apply die with
+    // `55P03 canceling statement due to lock timeout` before it executed one byte of the
+    // migration. A migration must not fail because of the bookkeeping around it.
+    if (rehearsalMark) {
+      const has = await client.query<{ n: string }>(
+        `select count(*)::text as n from information_schema.columns
+          where table_schema = 'public' and table_name = '_schema_migrations'
+            and column_name = 'rehearsal_on'`,
+      );
+      if (has.rows[0]?.n === "0") {
+        // 🚨 AND IT WAITS, BECAUSE THE THING IT WAITS FOR IS ROUTINE. The clone is where
+        // the nightly schema dump runs, and pg_dump holds ACCESS SHARE on every table for
+        // its whole run — measured 2026-09-22, a dump transaction open for 5m40s made this
+        // one-statement catalog change die instantly at the runner's 2s lock_timeout. A
+        // rehearsal must not fail because a scheduled dump happened to be running, and the
+        // column is gone again after every nightly refresh, so this is not a one-off setup
+        // step somebody can do by hand. Four attempts at 15s, each announced by name.
+        const ATTEMPTS = 4;
+        let added = false;
+        let lastErr: unknown = null;
+        for (let attempt = 1; attempt <= ATTEMPTS && !added; attempt += 1) {
+          try {
+            await client.query(`set lock_timeout = '15s'`);
+            await client.query(
+              `alter table public._schema_migrations add column if not exists rehearsal_on text`,
+            );
+            added = true;
+          } catch (err) {
+            lastErr = err;
+            const blocker = await client
+              .query<{ who: string }>(
+                `select coalesce(string_agg(distinct
+                          'pid ' || pid || ' (' || coalesce(nullif(application_name, ''), 'unnamed') ||
+                          ', ' || state || ', open ' || date_trunc('second', now() - xact_start) || ')', '; '),
+                        '(nothing visible)') as who
+                   from pg_stat_activity
+                  where xact_start is not null and pid <> pg_backend_pid()
+                    and state = 'idle in transaction'`,
+              )
+              .then((r) => r.rows[0]?.who ?? "(unreadable)")
+              .catch(() => "(unreadable)");
+            if (attempt < ATTEMPTS) {
+              console.warn(
+                `${TAG.warn}waiting for ACCESS EXCLUSIVE on public._schema_migrations to add ` +
+                  `rehearsal_on (attempt ${attempt}/${ATTEMPTS}) — held open by ${blocker}`,
+              );
+            } else {
+              console.error(
+                `${TAG.fail}could not add public._schema_migrations.rehearsal_on on the clone after ` +
+                  `${ATTEMPTS} attempts — ${formatPgError(lastErr)}\n` +
+                  `  Holding a transaction open right now: ${blocker}\n` +
+                  `  Without that column a rehearsal row here is indistinguishable from the production ` +
+                  `rows this ledger is a physical copy of, so this runner refuses rather than writing ` +
+                  `an unmarked one. Nothing was applied, no ledger row was written.\n` +
+                  `  Remedy: re-run once the nightly schema dump has finished — it holds ACCESS SHARE ` +
+                  `on every table for its whole run, and nothing here should force it off.`,
+              );
+              await client.query(`set lock_timeout = '${LOCK_TIMEOUT}'`).catch(() => undefined);
+              return 1;
+            }
+          }
+        }
+        await client.query(`set lock_timeout = '${LOCK_TIMEOUT}'`).catch(() => undefined);
+        console.log(
+          `${TAG.ok}added public._schema_migrations.rehearsal_on on the clone ` +
+            `${C.dim}(nullable, no default, no live reader — the mark a rehearsal row carries; it is ` +
+            `gone again after every nightly refresh, which is why the runner adds it)${C.reset}`,
+        );
+      }
+    }
     const ledgerUpsert =
       chairStepLog +
       `insert into public._schema_migrations (source, filename, checksum, duration_ms` +
       (chairStepConfirmed ? `, chair_step` : ``) +
+      (rehearsalMark ? `, rehearsal_on` : ``) +
       `)\n` +
       `values (${lit(SOURCE)}, ${lit(filename)}, ${lit(checksum)},\n` +
       `        greatest(1, (extract(epoch from clock_timestamp()\n` +
@@ -1342,10 +1508,14 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       (chairStepConfirmed
         ? `,\n        ${lit(`${chairStepConfirmed} — named with --confirm-chair-step by ${process.env.USER ?? "unknown"}`)}`
         : ``) +
+      (rehearsalMark ? `,\n        ${lit(rehearsalMark)}` : ``) +
       `)\n` +
       `on conflict (source, filename) do update set\n` +
       `  checksum = excluded.checksum, applied_at = now(), duration_ms = excluded.duration_ms` +
       (chairStepConfirmed ? `, chair_step = excluded.chair_step` : ``) +
+      // A row COPIED FROM PRODUCTION that a rehearsal overwrites must stop looking like
+      // production's row the moment it is overwritten. That is the whole conflict case.
+      (rehearsalMark ? `, rehearsal_on = excluded.rehearsal_on` : ``) +
       `;`;
 
     if (dryRun) {
@@ -1402,6 +1572,13 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       `${TAG.ok}Applied and ledgered — checksum ${checksum} == sha256 of the executed bytes ` +
         `${C.dim}(${elapsed} ms, applied_at ${after.applied_at})${C.reset}`,
     );
+    if (rehearsalMark) {
+      console.log(
+        `${TAG.info}This ledger row is MARKED \`rehearsal_on\` — it records a rehearsal on the dev ` +
+          `clone ${cloneRef!.cloneRef}, not a production apply, and the next nightly clone refresh ` +
+          `restores production over it. That overwrite is expected.`,
+      );
+    }
     console.log(
       `${TAG.info}Next: ${C.white}pnpm db-types${C.reset} if this changed a table shape, then ` +
         `${C.white}pnpm check:migrations${C.reset}.`,
@@ -1779,7 +1956,8 @@ async function selfTest(statementTimeout: string): Promise<number> {
 // the checkout, the filename and the schema both carry a per-run suffix, cleanup
 // runs on EVERY path, and cleanup is ASSERTED against the branch the way aidream's
 // half already asserted its own.
-const TARGET_SELFTEST_SCRATCH_RE = /^zz_db_apply_target_selftest_[0-9a-f]{12}\.sql$/;
+const TARGET_SELFTEST_SCRATCH_RE =
+  /^zz_db_apply_(?:target|clone)_selftest_[0-9a-f]{12}\.sql$/;
 
 /**
  * `pnpm db:apply --ground-gate-self-test` — the RED-then-GREEN proof for the ground-standing
@@ -1833,6 +2011,300 @@ async function groundGateSelfTest(): Promise<number> {
   console.log(
     `${TAG.ok}the inverse ground gate refuses a defective inverse BEFORE it is ledgered, and ` +
       `passes the file it was spliced from.`,
+  );
+  return 0;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// --clone-self-test — the CLONE refusal, RED then GREEN, in both directions
+// ════════════════════════════════════════════════════════════════════════════
+//
+// 🚨 WHY THIS IS ITS OWN PROOF AND NOT A LINE IN --target-self-test. Every other
+// `--target` refusal ultimately rests on `pg_control_system().system_identifier`
+// differing between the two databases. THE CLONE'S DOES NOT DIFFER: it is a physical
+// restore of production's cluster and answers with production's own
+// 7642734024280108049. So the proofs below are the only ones in this runner that
+// exercise the two checks that CAN tell them apart — the project ref carried by the
+// connection, and the quarantine the nightly job leaves on the server.
+//
+// Five proofs, each by SPAWNING THIS SCRIPT, so what is proven is what an agent runs:
+//
+//   C1 RED   `--target clone` pointed at a PRODUCTION-shaped DSN -> refused before a
+//            socket is opened, with a FAKE password in the process. Production
+//            presented as the clone, caught by the ref.
+//   C2 RED   `--target production` while the five SUPABASE_MATRIX_* carry the CLONE's
+//            identities -> refused before a socket is opened, again with a fake
+//            password. The clone presented as production, caught by the same ref.
+//   C3 RED   a `-- target: branch` file with `--target clone` -> header/flag
+//            disagreement, with no connection at all.
+//   C4 RED   `--target clone` against a CLONE-REF that NAMES PRODUCTION, with
+//            production's own credentials and `--dry-run`: the pre-connection check
+//            now agrees (the ref matches the file), and the refusal has to come from
+//            THE SERVER — production is not quarantined. This is the deepest one: it
+//            is the exact shape a stale or hand-edited CLONE-REF produces, and the
+//            only thing standing between a rehearsal and the live database.
+//   C5 GREEN a `-- target: clone` file APPLIES to the clone, leaves a real object, and
+//            ledgers there with `rehearsal_on` SET — the mark that says the next
+//            nightly refresh overwriting this row is expected.
+//
+// C1-C3 need no credential of any kind and always run. C4 needs production's five
+// variables and never applies anything (`--dry-run` and, if the refusal ever failed,
+// a body that creates nothing). C5 needs the clone's own DSN. A proof that cannot run
+// says SKIPPED and names exactly what it lacked; a skip is never counted as a pass.
+async function cloneSelfTest(statementTimeout: string): Promise<number> {
+  const { spawnSync } = await import("node:child_process");
+  let failures = 0;
+  let skipped = 0;
+  const fail = (what: string) => {
+    failures += 1;
+    console.error(`${TAG.fail}clone-self-test: ${what}`);
+  };
+  const pass = (what: string) => console.log(`${TAG.ok}clone-self-test: ${what}`);
+  const skip = (what: string) => {
+    skipped += 1;
+    console.warn(`${TAG.warn}clone-self-test SKIPPED: ${what}`);
+  };
+
+  let ref;
+  try {
+    ref = loadCloneRef(ROOT, cloneRefOverride(process.argv.slice(2)));
+  } catch (err) {
+    console.error(
+      `${TAG.fail}clone-self-test cannot run: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return 2;
+  }
+  console.log(
+    `${C.bold}clone-self-test${C.reset} ${C.dim}— clone ${ref.cloneRef} (${ref.cloneName}), parent ` +
+      `${ref.parentRef}; both report system_identifier ${ref.systemIdentifier}${C.reset}`,
+  );
+  if (ref.systemIdentifier !== ref.parentSystemIdentifier) {
+    console.warn(
+      `${TAG.warn}CLONE-REF records DIFFERENT system_identifiers for the clone and its parent ` +
+        `(${ref.systemIdentifier} vs ${ref.parentSystemIdentifier}). That is not the trap this ` +
+        `target was built for; the ref and quarantine checks below still bind.`,
+    );
+  }
+
+  const runId = randomBytes(6).toString("hex");
+  const selftestFile = `zz_db_apply_clone_selftest_${runId}.sql`;
+  const selftestSchema = `zz_clone_selftest_${runId}`;
+  const scratchDir = mkdtempSync(join(tmpdir(), "db-apply-clone-selftest-"));
+  const path = join(scratchDir, selftestFile);
+  const self = resolve(ROOT, "scripts", "apply-migration.ts");
+  const run = (args: string[], env: Record<string, string>) =>
+    spawnSync("npx", ["tsx", self, ...args], {
+      cwd: ROOT,
+      encoding: "utf8",
+      env: { ...process.env, ...env } as NodeJS.ProcessEnv,
+      timeout: 180_000,
+    });
+  const out = (r: ReturnType<typeof run>) => `${r.stdout ?? ""}${r.stderr ?? ""}`;
+
+  const cloneBody =
+    `-- target: clone\n` +
+    `create schema if not exists ${selftestSchema};\n` +
+    `create table if not exists ${selftestSchema}.landed (id int primary key);\n` +
+    `insert into ${selftestSchema}.landed (id) values (1) on conflict do nothing;\n`;
+
+  try {
+    // ── C1. production presented as the clone, before any socket ────────────
+    writeFileSync(path, cloneBody, "utf8");
+    const r1 = run([path, "--target", "clone"], {
+      [ref.passwordEnvVar]: `postgresql://postgres.${ref.parentRef}:not-a-real-password@${ref.poolerHost}:${ref.poolerPort}/${ref.database}`,
+    });
+    const o1 = out(r1);
+    if (r1.status !== 1)
+      fail(`--target clone against a PRODUCTION-shaped DSN exited ${r1.status}, expected 1`);
+    // The refusal lands even EARLIER than the host check: `loadCloneDbEnv` compares the
+    // DSN to CLONE-REF before the connection is built at all, and it is the one that
+    // prints the project ref on both sides. Assert on what actually fires, not on the
+    // check we happened to write first.
+    else if (!new RegExp(`project ref in the DSN: ${ref.parentRef}`).test(o1))
+      fail(`the pre-connection refusal did not name production's project ref:\n${o1.slice(0, 900)}`);
+    else if (!new RegExp(`expected ${ref.cloneRef}`).test(o1))
+      fail(`the refusal did not name the clone it expected:\n${o1.slice(0, 900)}`);
+    else
+      pass(
+        "--target clone against a production-shaped DSN is refused with nothing opened, by the " +
+          "project ref — the system_identifier could not have caught it",
+      );
+
+    // ── C2. the clone presented as production, before any socket ────────────
+    writeFileSync(path, `drop table if exists ${selftestSchema}.no_such_table;\n`, "utf8");
+    const r2 = run([path, "--target", "production"], {
+      SUPABASE_MATRIX_USER: ref.poolerUser,
+      SUPABASE_MATRIX_PASSWORD: "not-a-real-password",
+      SUPABASE_MATRIX_HOST: ref.poolerHost,
+      SUPABASE_MATRIX_PORT: String(ref.poolerPort),
+      SUPABASE_MATRIX_DATABASE_NAME: ref.database,
+    });
+    const o2 = out(r2);
+    if (r2.status !== 1)
+      fail(`--target production against the CLONE's connection exited ${r2.status}, expected 1`);
+    else if (!new RegExp(`the configured connection IS the dev clone ${ref.cloneRef}`).test(o2))
+      fail(`the pre-connection refusal did not name the clone:\n${o2.slice(0, 900)}`);
+    else
+      pass(
+        "--target production against the clone's own connection is refused with nothing opened " +
+          "— the server-side check CANNOT catch this one and the message says so",
+      );
+
+    // ── C3. header vs flag, no connection ───────────────────────────────────
+    writeFileSync(path, `-- target: branch\ncreate schema if not exists ${selftestSchema};\n`, "utf8");
+    const r3 = run([path, "--target", "clone"], {
+      [ref.passwordEnvVar]: `postgresql://${ref.poolerUser}:not-a-real-password@${ref.poolerHost}:${ref.poolerPort}/${ref.database}`,
+    });
+    const o3 = out(r3);
+    if (r3.status !== 1) fail(`a branch-headed file with --target clone exited ${r3.status}, expected 1`);
+    else if (!/file header: branch/.test(o3) || !/command flag: clone/.test(o3))
+      fail(`the header/flag refusal did not print both identities:\n${o3.slice(0, 900)}`);
+    else pass("a `-- target: branch` file is refused by --target clone, before any connection");
+
+    // ── C4. THE DEEP ONE: a CLONE-REF that names production, production's own
+    //        credentials, --dry-run. Only the SERVER can refuse this. ─────────
+    const prodEnv = loadDbEnv();
+    if ("missing" in prodEnv) {
+      skip(
+        `C4 (a CLONE-REF that names production, refused by the server's own lack of quarantine) ` +
+          `needs ${DB_VARS.join(", ")} and they are not set. The refusal it proves is the last one ` +
+          `between a rehearsal and the live database — run this where those five are available.`,
+      );
+    } else {
+      const fakeRefPath = join(scratchDir, "CLONE-REF-naming-production");
+      writeFileSync(
+        fakeRefPath,
+        [
+          `# clone-self-test C4 fixture: a CLONE-REF that NAMES PRODUCTION. Never checked in.`,
+          `clone_ref                = ${ref.parentRef}`,
+          `clone_name               = not-really-a-clone`,
+          `parent_ref               = ${ref.parentRef}`,
+          `pooler_host              = ${prodEnv.host}`,
+          `pooler_port              = ${prodEnv.port}`,
+          `pooler_user              = ${prodEnv.user}`,
+          `database                 = ${prodEnv.database}`,
+          `system_identifier        = ${ref.parentSystemIdentifier}`,
+          `parent_system_identifier = ${ref.parentSystemIdentifier}`,
+          `password_env_var         = ${ref.passwordEnvVar}`,
+          `password_file            = ${join(scratchDir, "no-such-password-file")}`,
+          ``,
+        ].join("\n"),
+        "utf8",
+      );
+      // The body creates NOTHING even if every refusal above it failed, and --dry-run
+      // stops before a single byte would execute. A self-test may not be one bug away
+      // from writing to the live database.
+      writeFileSync(path, `-- target: clone\nselect 1;\n`, "utf8");
+      const r4 = run([path, "--target", "clone", `--clone-ref=${fakeRefPath}`, "--dry-run"], {
+        [ref.passwordEnvVar]: `postgresql://${encodeURIComponent(prodEnv.user)}:${encodeURIComponent(prodEnv.password)}@${prodEnv.host}:${prodEnv.port}/${prodEnv.database}`,
+      });
+      const o4 = out(r4);
+      if (r4.status !== 1)
+        fail(
+          `--target clone against PRODUCTION with a CLONE-REF that names production exited ` +
+            `${r4.status}, expected 1. The connection check agreed with the file; only the server ` +
+            `could refuse this, and it did not:\n${o4.slice(0, 1200)}`,
+        );
+      else if (!/is NOT QUARANTINED/.test(o4))
+        fail(`the refusal did not come from the quarantine facts:\n${o4.slice(0, 1200)}`);
+      else if (!/nothing applied, no ledger row/i.test(o4))
+        fail(`the refusal did not say nothing was applied:\n${o4.slice(0, 1200)}`);
+      else
+        pass(
+          "PRODUCTION presented as the clone by a CLONE-REF that names it is refused BY THE SERVER " +
+            "— pg_net installed and active pg_cron jobs, which the nightly clone never has",
+        );
+    }
+
+    // ── C5. GREEN — a real migration lands on the clone and is MARKED ───────
+    let cloneEnv;
+    try {
+      cloneEnv = loadCloneDbEnv(ROOT, ref);
+    } catch (err) {
+      cloneEnv = null;
+      skip(
+        `C5 (a real apply to the clone, ledgered and marked) — ` +
+          `${err instanceof Error ? err.message.split("\n")[0] : String(err)}`,
+      );
+    }
+    if (cloneEnv) {
+      writeFileSync(path, cloneBody, "utf8");
+      const r5 = run([path, "--target", "clone", `--statement-timeout=${statementTimeout}`], {});
+      const o5 = out(r5);
+      if (r5.status !== 0) {
+        fail(`the GREEN clone apply exited ${r5.status}, expected 0:\n${o5.slice(0, 1200)}`);
+      } else if (!/quarantine .*confirmed/.test(o5)) {
+        fail(`the GREEN apply did not announce the quarantine check:\n${o5.slice(0, 1200)}`);
+      } else {
+        const c = await connectDirect({ ...cloneEnv }, "matrx-frontend db:apply --clone-self-test");
+        try {
+          const back = await c.query<{ n: string; ledger: string; mark: string | null }>(
+            `select (select count(*)::text from ${selftestSchema}.landed) as n,
+                    (select count(*)::text from public._schema_migrations
+                       where source = ${lit(SOURCE)} and filename = ${lit(selftestFile)}) as ledger,
+                    (select to_jsonb(m) ->> 'rehearsal_on' from public._schema_migrations m
+                       where source = ${lit(SOURCE)} and filename = ${lit(selftestFile)}) as mark`,
+          );
+          const row = back.rows[0];
+          if (row?.n !== "1") fail(`the clone object did not read back (rows: ${row?.n})`);
+          else if (row?.ledger !== "1") fail(`the clone ledger row is missing (rows: ${row?.ledger})`);
+          else if (!row?.mark || !new RegExp(ref.cloneRef).test(row.mark))
+            fail(
+              `the clone ledger row is NOT MARKED as a rehearsal (rehearsal_on = ${row?.mark ?? "null"}) ` +
+                `— an unmarked row is indistinguishable from the production rows this ledger is a copy of`,
+            );
+          else
+            pass(
+              "a `-- target: clone` file applied to the clone, read back, and ledgered there with " +
+                `rehearsal_on naming ${ref.cloneRef} — the next refresh overwriting it is expected`,
+            );
+        } finally {
+          await c.end();
+        }
+      }
+      // Cleanup, asserted, on every path through C5.
+      try {
+        const c = await connectDirect({ ...cloneEnv }, "matrx-frontend db:apply --clone-self-test cleanup");
+        try {
+          await c.query(`drop schema if exists ${selftestSchema} cascade`);
+          await c.query(
+            `delete from public._schema_migrations where source = ${lit(SOURCE)} and filename = ${lit(selftestFile)}`,
+          );
+          const left = await c.query<{ schemas: string; ledger: string }>(
+            `select (select count(*)::text from information_schema.schemata
+                       where schema_name = ${lit(selftestSchema)}) as schemas,
+                    (select count(*)::text from public._schema_migrations
+                       where source = ${lit(SOURCE)} and filename = ${lit(selftestFile)}) as ledger`,
+          );
+          if (left.rows[0]?.schemas !== "0" || left.rows[0]?.ledger !== "0")
+            fail(
+              `cleanup left something behind on the clone (schema rows ${left.rows[0]?.schemas}, ` +
+                `ledger rows ${left.rows[0]?.ledger})`,
+            );
+          else pass(`cleanup verified on the clone — ${selftestSchema} gone, ledger row gone`);
+        } finally {
+          await c.end();
+        }
+      } catch (err) {
+        fail(
+          `cleanup could not be VERIFIED on the clone — remove schema ${selftestSchema} and the ` +
+            `${selftestFile} ledger row by hand: ${formatPgError(err)}`,
+        );
+      }
+    }
+  } finally {
+    if (existsSync(path)) unlinkSync(path);
+    rmSync(scratchDir, { recursive: true, force: true });
+  }
+
+  if (failures) {
+    console.error(`${TAG.fail}db:apply --clone-self-test FAILED (${failures} assertion(s))`);
+    return 1;
+  }
+  console.log(
+    `${TAG.ok}db:apply --clone-self-test passed — production presented as the clone and the clone ` +
+      `presented as production are both refused, and the clone apply is real and marked` +
+      (skipped ? ` (${skipped} proof(s) SKIPPED by name above — not passes)` : ``),
   );
   return 0;
 }
@@ -2136,7 +2608,10 @@ async function targetSelfTest(statementTimeout: string): Promise<number> {
     `${TAG.ok}db:apply --target-self-test passed — the refusal holds in both places and the ` +
       `branch apply is real`,
   );
-  return 0;
+  // The clone's own proofs, run from here too, so ONE command still covers every target
+  // this runner knows. They are a separate function because the thing they prove is
+  // different in kind: the clone's system_identifier is production's.
+  return cloneSelfTest(statementTimeout);
 }
 
 /**
@@ -2831,6 +3306,7 @@ async function main(): Promise<number> {
   }
 
   if (argv.includes("--ground-gate-self-test")) return groundGateSelfTest();
+  if (argv.includes("--clone-self-test")) return cloneSelfTest(statementTimeout);
   if (argv.includes("--target-self-test")) return targetSelfTest(statementTimeout);
   if (argv.includes("--self-test")) return selfTest(statementTimeout);
 
@@ -2876,7 +3352,7 @@ async function main(): Promise<number> {
         `  database that must not be reached by accident.\n` +
         `  The one command:\n` +
         `    pnpm db:apply migrations/${CAMPAIGN_DIRNAME}/<file>.sql --source ${CAMPAIGN_SOURCE} ` +
-        `--target branch --lane <lane>\n` +
+        `--target branch|clone --lane <lane>\n` +
         `  …and, once that rehearsal is ledgered on the branch and the lane holds its lock,\n` +
         `  the same command with --target production.`,
     );
@@ -2886,7 +3362,7 @@ async function main(): Promise<number> {
   // `--target branch` (space form) leaves "branch" in argv as a bare word; it is
   // the flag's VALUE, never the migration file. Same for --source and --lane.
   const valueIdxs = new Set<number>();
-  for (const flag of ["--target", "--source", "--lane", "--statement-timeout", "--branch-ref"]) {
+  for (const flag of ["--target", "--source", "--lane", "--statement-timeout", "--branch-ref", "--clone-ref"]) {
     const i = argv.indexOf(flag);
     if (i >= 0 && argv[i + 1] && !argv[i + 1]!.startsWith("--")) valueIdxs.add(i + 1);
   }
@@ -2935,6 +3411,7 @@ async function main(): Promise<number> {
     campaignSource,
     lane,
     branchRefPath: branchRefOverride(argv),
+    cloneRefPath: cloneRefOverride(argv),
     confirmedChairSteps,
     pairedWith,
   });
