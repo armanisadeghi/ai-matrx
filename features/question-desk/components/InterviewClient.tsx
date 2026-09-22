@@ -703,9 +703,6 @@ export function InterviewClient({
             ) : null}
             {askQuestions.length > 0 ? (
               <section>
-                <h2 className="qd-editorial mb-3 text-[26px] font-semibold tracking-tight text-foreground">
-                  Every question at once
-                </h2>
                 <AskTable
                   interviewId={interviewId}
                   questions={askQuestions}
