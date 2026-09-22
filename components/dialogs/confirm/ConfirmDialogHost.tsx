@@ -66,12 +66,50 @@ async function waitForConfirmHost(timeoutMs: number): Promise<boolean> {
 }
 
 /**
+ * 🚨 A CONFIRM THAT CANNOT BE SHOWN SAYS SO ITSELF (FIX-11A/F7, 2026-09-22).
+ *
+ * This used to THROW, on the stated assumption that "the caller's own error
+ * handling surfaces it". Measured against the tree, that assumption is false
+ * at every site that matters: the ordinary shape of a confirm-gated control is
+ *
+ *     onClick={() => void (async () => { const ok = await confirm({...}); ... })()}
+ *
+ * — a FLOATING promise. A rejection out of that reaches no `catch`, raises no
+ * toast, and prints nothing a person can see: it becomes an unhandled
+ * rejection and the button is, to the person pressing it, dead. That is the
+ * one shape law 4 forbids outright, and the census below counts 333 call sites
+ * in this repo standing in it.
+ *
+ * So the primitive now does what law 4 requires of every stand-in: it
+ * ANNOUNCES ITSELF WITH A REMEDY and resolves `false`. `false` is exactly what
+ * every caller already handles — `if (!ok) return;` — so nothing is performed,
+ * and the person is told why in a sentence instead of being handed a button
+ * that does nothing. Guard: `pnpm check:confirm-never-vanishes`.
+ */
+async function announceTheQuestionCouldNotBeAsked(): Promise<void> {
+  const sentence =
+    "We could not put the question on screen, so nothing was done. Reload the page and try again — if it keeps happening, this screen is missing its confirmation dialog and an engineer needs to know.";
+  try {
+    // Loaded here, on the failure path only, so the toast machinery stays out
+    // of the static graph of every route entry that mounts this host.
+    const { toast } = await import("@/lib/toast");
+    toast.error("That did not happen", { description: sentence, duration: 12000 });
+  } catch {
+    // Even the announcement's own machinery can be absent. The console is the
+    // last honest surface; silence is never an option.
+  }
+  console.error(
+    "[confirm] no <ConfirmDialogHost /> is mounted in this tree. " + sentence,
+  );
+}
+
+/**
  * The one ownership handoff for every imperative confirm in the app.
  *
  * 🚨 IT ALWAYS SETTLES (feedback 11b0a90c). Three outcomes, no fourth:
  * the person answers; the wait ran long and we opened anyway with a warning;
- * or the confirm genuinely cannot be shown and this THROWS, so the caller's
- * own error handling surfaces it. What it must never do again is hang, which
+ * or the confirm genuinely cannot be shown, and then it SAYS SO to the person
+ * and answers `false`. What it must never do is hang or vanish, both of which
  * a caller cannot tell apart from a button that does nothing.
  */
 export async function confirm(options: ConfirmOptions): Promise<boolean> {
@@ -86,9 +124,8 @@ export async function confirm(options: ConfirmOptions): Promise<boolean> {
   // become a silent hang: if no host ever appears, say so rather than leaving
   // the caller pending.
   if (!(await waitForConfirmHost(CONFIRM_HOST_WAIT_MS))) {
-    throw new Error(
-      "Could not show the confirmation dialog: no <ConfirmDialogHost /> is mounted in this tree. The action was not performed.",
-    );
+    await announceTheQuestionCouldNotBeAsked();
+    return false;
   }
   return openConfirm(options);
 }

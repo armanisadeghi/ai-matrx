@@ -238,6 +238,15 @@ export function OutsideSharePanel({
               try {
                 await openOutsideLane(organizationId);
                 await refresh();
+                // 🚨 IT DID THE THING, SO IT SAYS SO (FIX-11A/F7). Every other
+                // control in this panel answers in a sentence through `run`;
+                // this one changed the paragraph above it and said nothing,
+                // which reads exactly like a press that was never received.
+                toast({
+                  title: "Sharing with people outside is on for this organization.",
+                  description:
+                    "Invite somebody by email below. Nobody has access yet — each invitation is still a separate act.",
+                });
               } catch (error) {
                 toast({
                   title: "The outside door did not open",
