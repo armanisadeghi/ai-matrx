@@ -11,10 +11,12 @@
  * even after all audio has been received.
  */
 
-import type { Cartesia } from "@cartesia/cartesia-js";
-import Source from "@cartesia/cartesia-js/wrapper/source";
 import type { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
-import { connectCartesiaTts } from "@/lib/cartesia/connection";
+import {
+  CartesiaAudioSource,
+  connectCartesiaTts,
+  type CartesiaTtsRequest,
+} from "@/lib/cartesia/connection";
 import {
   AudioEncoding,
   Language,
@@ -153,7 +155,7 @@ export async function runTtsTest(
   metrics.connectMs = Math.round(performance.now() - t0);
   emit();
 
-  const request: Cartesia.WebSocketTtsRequest = {
+  const request: CartesiaTtsRequest = {
     modelId: config.modelId,
     voice: { mode: "id", id: config.voiceId },
     transcript,
@@ -196,7 +198,7 @@ export async function runTtsTest(
     }
   });
 
-  if (response.source instanceof Source) {
+  if (response.source instanceof CartesiaAudioSource) {
     player
       .play(response.source)
       .then(() => {

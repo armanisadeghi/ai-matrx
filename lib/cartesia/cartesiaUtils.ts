@@ -2,10 +2,10 @@
  * Cartesia voice catalog + management, browser-side.
  *
  * The browser NEVER holds a Cartesia API key (D113). Listing and management
- * (clone/create) are not covered by access-token grants, so they go through
+ * Cloning is not covered by access-token grants, so it goes through
  * our authenticated Next.js routes, which hold the server-only key:
  *   - GET  /api/cartesia/voices         → listVoices
- *   - POST /api/cartesia/voices/manage  → cloneVoiceFromFile / createVoice
+ *   - POST /api/cartesia/voices/manage  → cloneVoiceFromFile
  * TTS itself uses the access-token path — see lib/cartesia/connection.ts.
  */
 
@@ -47,10 +47,7 @@ export const listVoices = async (): Promise<CartesiaVoiceSummary[]> => {
 interface CloneVoiceOptions {
     name: string;
     description?: string;
-    mode?: "similarity" | "stability";
     language?: Language;
-    enhance?: boolean;
-    transcript?: string;
 }
 
 /** Clone a voice from an audio file (routes through the server; no client key). */
@@ -62,29 +59,11 @@ export const cloneVoiceFromFile = async (
     form.set("file", file);
     form.set("name", options.name);
     if (options.description) form.set("description", options.description);
-    if (options.mode) form.set("mode", options.mode);
     if (options.language) form.set("language", options.language);
-    if (options.enhance !== undefined)
-        form.set("enhance", String(options.enhance));
-    if (options.transcript) form.set("transcript", options.transcript);
 
     const res = await fetch("/api/cartesia/voices/manage", {
         method: "POST",
         body: form,
     });
     return parseOrThrow<unknown>(res, "Voice clone");
-};
-
-/** Create a voice from an embedding (routes through the server; no client key). */
-export const createVoice = async (
-    name: string,
-    description: string,
-    embedding: number[],
-): Promise<unknown> => {
-    const res = await fetch("/api/cartesia/voices/manage", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "create", name, description, embedding }),
-    });
-    return parseOrThrow<unknown>(res, "Voice create");
 };

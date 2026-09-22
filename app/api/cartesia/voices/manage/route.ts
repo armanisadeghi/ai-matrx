@@ -1,15 +1,12 @@
-// POST /api/cartesia/voices/manage — voice create/clone, server-side.
+// POST /api/cartesia/voices/manage — voice clone, server-side.
 //
 // Voice management is not covered by access-token grants, so it runs here
-// with the server-only CARTESIA_API_KEY. Two actions, discriminated by
-// content type:
-//   - multipart/form-data (fields: file, name, description?, mode?,
-//     language?, enhance?, transcript?)  → clone a voice from audio
-//   - application/json {action:"create", name, description, embedding}
-//     → create a voice from an embedding
+// with the server-only CARTESIA_API_KEY:
+//   - multipart/form-data (fields: file, name, description?, language?)
+//     → clone a voice from audio
 // Clients call these only via lib/cartesia/cartesiaUtils.ts.
 
-import { CartesiaClient, type Cartesia } from "@cartesia/cartesia-js";
+import CartesiaClient, { toFile, type Cartesia } from "@cartesia/cartesia-js";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveUser } from "@/utils/supabase/resolveUser";
 import { CARTESIA_API_VERSION } from "@/lib/cartesia/config";
@@ -25,8 +22,7 @@ function toSupportedLanguage(value: unknown): Cartesia.SupportedLanguage {
 function serverClient(): CartesiaClient {
   return new CartesiaClient({
     apiKey: process.env.CARTESIA_API_KEY,
-    // MATRX-EXCEPTION: stale vendor literal type; runtime accepts newer versions.
-    cartesiaVersion: CARTESIA_API_VERSION as unknown as "2024-06-10",
+    defaultHeaders: { "Cartesia-Version": CARTESIA_API_VERSION },
   });
 }
 
@@ -59,49 +55,20 @@ export async function POST(request: NextRequest) {
         );
       }
       const description = form.get("description");
-      const mode = form.get("mode");
       const language = form.get("language");
-      const enhance = form.get("enhance");
-      const transcript = form.get("transcript");
 
-      const cloned = await serverClient().voices.clone(file, {
+      const cloned = await serverClient().voices.clone({
+        clip: await toFile(file),
         name,
         description: typeof description === "string" ? description : undefined,
-        mode: mode === "stability" ? "stability" : "similarity",
         language: toSupportedLanguage(language),
-        enhance: enhance === "true",
-        ...(typeof transcript === "string" && transcript ? { transcript } : {}),
       });
       return NextResponse.json(cloned);
     }
-
-    const body = (await request.json().catch(() => null)) as {
-      action?: string;
-      name?: string;
-      description?: string;
-      embedding?: number[];
-    } | null;
-    if (
-      !body ||
-      body.action !== "create" ||
-      !body.name ||
-      !Array.isArray(body.embedding)
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            'Expected JSON {action:"create", name, description, embedding[]} or multipart clone form.',
-        },
-        { status: 400 },
-      );
-    }
-
-    const created = await serverClient().voices.create({
-      name: body.name,
-      description: body.description ?? "",
-      embedding: body.embedding,
-    });
-    return NextResponse.json(created);
+    return NextResponse.json(
+      { error: "Voice cloning requires multipart form data with an audio file and name." },
+      { status: 415 },
+    );
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : "Voice management failed";

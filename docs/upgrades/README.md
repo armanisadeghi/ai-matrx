@@ -190,7 +190,6 @@ The following are separate compatibility targets, not safe version-only bumps:
 | Target at inventory | Concrete boundary to migrate and verify |
 |---|---|
 | `@babel/core` 7.29.7→8.0.6 | Installed `ts-jest` 29.4.12 peers Babel core `<8`; coordinate the transformer graph before upgrading. Direct `@babel/types` 8.0.6 is adopted with the Jest ESM loader fix. Exercise `scripts/check-registry-repaint.ts` and `features/content-ir/sandbox/migrate-viewport-breakpoints.ts`. |
-| `@cartesia/cartesia-js` 2.2.9→4.2.0 | `lib/cartesia/connection.ts` and TTS hooks import removed/deep wrapper paths; migrate voice creation and streaming APIs while preserving audio bundle isolation. |
 | `@tsparticles/engine`, `@tsparticles/react`, `@tsparticles/slim` 3.x→4.4.0 | Upgrade together; React v4 peers the exact engine version. Published 4.4.0 `index.d.ts` exports `ParticlesProvider`/`useParticlesProvider` instead of the `initParticlesEngine` imported by `components/ui/sparkles.tsx`; migrate initialization/options and verify rendering in localhost. |
 | `mcp-handler` 1.1.0→2.2.0 | v2 peers `@modelcontextprotocol/server ^2`; `app/api/mcp/[transport]/route.ts` uses SDK 1.30 auth types and handler signatures. Migrate authentication and transport together with refusal/positive controls. |
 | `mermaid` 11.17.2→12.0.0; `@mermaid-js/layout-elk` 0.2.3→1.0.0 | ELK 1 peers Mermaid 12. Verify layout registration, strict rendering, export, and the SVG ID assumptions in `components/mermaid/visual/svg-id-map.ts`. |

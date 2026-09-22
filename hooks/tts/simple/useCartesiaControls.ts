@@ -1,9 +1,8 @@
 "use client";
-import type CartesiaWebsocket from "@cartesia/cartesia-js/wrapper/Websocket";
 import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Emotion } from "@/components/audio/VoiceConfigSelects";
-import { connectCartesiaTts } from "@/lib/cartesia/connection";
+import { connectCartesiaTts, type CartesiaTtsSocket } from "@/lib/cartesia/connection";
 import {
     buildGenerationConfig,
     READING_VOICE_ID,
@@ -15,7 +14,7 @@ type ConnectionState = "connecting" | "ready" | "disconnected";
 type PlayerState = "idle" | "playing" | "paused";
 
 export function useCartesiaControls() {
-    const websocketRef = useRef<CartesiaWebsocket | null>(null);
+    const websocketRef = useRef<CartesiaTtsSocket | null>(null);
     const playerRef = useRef<SinkAwarePlayer | null>(null);
     // Track whether play() has been called — the player's AudioContext is lazy-initialized on first play
     const hasPlayedRef = useRef(false);

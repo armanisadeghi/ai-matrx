@@ -1,6 +1,11 @@
 'use client';
 import {useState, useEffect, useCallback, useRef} from 'react';
-import {connectCartesiaTts} from "@/lib/cartesia/connection";
+import {
+    CartesiaAudioSource,
+    connectCartesiaTts,
+    type CartesiaTtsSocket,
+    type CartesiaTtsVoice,
+} from "@/lib/cartesia/connection";
 import {
     OutputContainer,
     AudioEncoding,
@@ -13,10 +18,7 @@ import {
     EmotionName,
     EmotionLevel
 } from '@/lib/cartesia/cartesia.types';
-import Source from '@cartesia/cartesia-js/wrapper/source';
 import {SinkAwarePlayer} from '@/features/audio/sinkAwarePlayer';
-import type CartesiaWebsocket from '@cartesia/cartesia-js/wrapper/Websocket';
-import type {TtsRequestVoiceSpecifier} from '@cartesia/cartesia-js/api/resources/tts/types/TtsRequestVoiceSpecifier';
 import {
     buildGenerationConfig,
     READING_VOICE_ID,
@@ -32,14 +34,11 @@ const VOICE_SPEED_TO_NUMBER: Record<VoiceSpeed, number> = {
     [VoiceSpeed.FASTEST]: 1.5,
 };
 
-// The SDK's wire type requires a literal, non-optional `mode` ("id" | "embedding"),
-// while our app-facing `VoiceOptions` leaves `mode` optional (defaults to "id").
-// Normalize at the send boundary instead of widening the app-facing type.
-function toVoiceSpecifier(voice: VoiceOptions): TtsRequestVoiceSpecifier {
-    // `mode` is optional on both variants, so it can't discriminate the union
-    // when undefined — the presence of `embedding` can.
+// Cartesia v4 accepts voice IDs only. Keep the legacy app type at this edge
+// so old embedding callers receive a useful failure before a provider request.
+function toVoiceSpecifier(voice: VoiceOptions): CartesiaTtsVoice {
     if ("embedding" in voice) {
-        return {mode: "embedding", embedding: voice.embedding};
+        throw new Error("Cartesia v4 requires a voice ID; embeddings are unsupported.");
     }
     return {mode: "id", id: voice.id};
 }
@@ -81,7 +80,7 @@ export function useCartesia(
         language = Language.EN,
         bufferDuration = 1,
     }: UseCartesiaProps = {}): UseCartesiaResult {
-    const [websocket, setWebsocket] = useState<CartesiaWebsocket | null>(null);
+    const [websocket, setWebsocket] = useState<CartesiaTtsSocket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [messages, setMessages] = useState<string[]>([]);
     const [error, setError] = useState<Error | null>(null);
@@ -100,12 +99,12 @@ export function useCartesia(
     // Track whether play() has been called at least once (AudioContext is lazy-initialized on first play)
     const hasPlayedRef = useRef(false);
     // Create a silent audio buffer to unlock Web Audio API
-    const silentSourceRef = useRef<Source | null>(null);
+    const silentSourceRef = useRef<CartesiaAudioSource | null>(null);
 
     // Initialize websocket connection
     useEffect(() => {
         let cancelled = false;
-        let connectedWs: CartesiaWebsocket | null = null;
+        let connectedWs: CartesiaTtsSocket | null = null;
 
         connectCartesiaTts({
             container: config.container,
@@ -230,7 +229,7 @@ export function useCartesia(
                 setMessages((prevMessages) => [...prevMessages, message]);
             });
             
-            if (playerRef.current && response.source instanceof Source) {
+            if (playerRef.current && response.source instanceof CartesiaAudioSource) {
                 hasPlayedRef.current = true;
                 await playerRef.current.play(response.source);
             } else {

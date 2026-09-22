@@ -1,10 +1,9 @@
 "use client";
-import type CartesiaWebsocket from "@cartesia/cartesia-js/wrapper/Websocket";
 import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
-import { connectCartesiaTts } from "@/lib/cartesia/connection";
+import { connectCartesiaTts, type CartesiaTtsSocket } from "@/lib/cartesia/connection";
 import {
   buildGenerationConfig,
   resolveVoiceId,
@@ -30,7 +29,7 @@ export function useCartesiaWithPreferences({
   onPlaybackEnd,
   onError,
 }: UseCartesiaWithPreferencesOptions = {}) {
-  const websocketRef = useRef<CartesiaWebsocket | null>(null);
+  const websocketRef = useRef<CartesiaTtsSocket | null>(null);
   const playerRef = useRef<SinkAwarePlayer | null>(null);
   // Track whether play() has been called — the player's AudioContext is lazy-initialized on first play
   const hasPlayedRef = useRef(false);
@@ -204,4 +203,3 @@ export function useCartesiaWithPreferences({
 }
 
 export default useCartesiaWithPreferences;
-

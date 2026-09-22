@@ -1,9 +1,8 @@
 "use client";
-import type CartesiaWebsocket from "@cartesia/cartesia-js/wrapper/Websocket";
 import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Emotion } from "@/components/audio/VoiceConfigSelects";
-import { connectCartesiaTts } from "@/lib/cartesia/connection";
+import { connectCartesiaTts, type CartesiaTtsSocket } from "@/lib/cartesia/connection";
 import {
     buildGenerationConfig,
     READING_VOICE_ID,
@@ -14,7 +13,7 @@ import {
 type ConnectionState = "connecting" | "ready" | "disconnected";
 
 export function useSimpleCartesia() {
-    const websocketRef = useRef<CartesiaWebsocket | null>(null);
+    const websocketRef = useRef<CartesiaTtsSocket | null>(null);
     // The hook connects on mount, so "connecting" is the true initial state.
     const [connectionState, setConnectionState] = useState<ConnectionState>("connecting");
     const [playerState, setPlayerState] = useState<"idle" | "playing">("idle");

@@ -12,7 +12,7 @@ import type { Cartesia } from "@cartesia/cartesia-js";
 
 /** Current model + API version for all in-app TTS. */
 export const TTS_MODEL_ID = "sonic-3.5";
-export const CARTESIA_API_VERSION = "2026-03-01";
+export const CARTESIA_API_VERSION = "2026-08-14";
 
 /**
  * System default voices, used only when a user has not chosen their own.
@@ -83,6 +83,6 @@ export function buildGenerationConfig(opts?: {
     speed: resolveSpeed(opts?.speed),
     volume: opts?.volume ?? TTS_DEFAULT_VOLUME,
   };
-  if (opts?.emotion) cfg.emotion = opts.emotion;
+  if (opts?.emotion) cfg.emotion = opts.emotion.toLowerCase() as Cartesia.Emotion;
   return cfg;
 }

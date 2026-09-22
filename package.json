@@ -669,7 +669,7 @@
     "@ai-sdk/google": "^4.0.77",
     "@anthropic-ai/sdk": "latest",
     "@babel/standalone": "^8.0.5",
-    "@cartesia/cartesia-js": "^2.2.9",
+    "@cartesia/cartesia-js": "^4.2.0",
     "@codemirror/lang-json": "^6.0.2",
     "@codemirror/lint": "^6.9.7",
     "@codemirror/state": "^6.7.6",
