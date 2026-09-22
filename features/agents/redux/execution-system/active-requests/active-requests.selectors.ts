@@ -13,6 +13,7 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import { blockMediaFileId } from "@/features/agents/redux/execution-system/utils/block-media-identity";
+import { DECISION_ANSWERS_BLOCK_TYPE } from "@/features/content-ir/kinds/decision-answers";
 import type { RootState } from "@/lib/redux/store";
 import type {
   ActiveRequest,
@@ -863,6 +864,67 @@ export function blockHasSomethingToRender(
   if (!block) return false;
   return Boolean(block.content?.trim()) || block.data != null;
 }
+
+/**
+ * Is this text nothing BUT a JSON value (an object or array), with no prose
+ * around it — the shape a text model's raw structured-output reply takes,
+ * optionally still inside a ```json code fence?
+ *
+ * THE CLASS THIS CLOSES (2026-09-22). A verbalized decision (any TEXT model
+ * asked `decision_questions`, never `jev-*`) is bound to a response schema
+ * that forces its ENTIRE reply to be the JSON `finalize_verbalized_decision`
+ * (aidream `matrx_ai/decisions/translate.py`) later parses into the answers.
+ * The server only strips that raw JSON out of `messages[-1].content` at
+ * PERSIST time, replacing it with one `decision_answers` part — so a reload
+ * shows one Answers card, and a live run shows the streamed JSON text block
+ * ABOVE the very same card the `decision_answers` data event just rendered.
+ * Native (`jev-*`) decisions never stream this text at all (no siblings).
+ */
+export function isJsonOnlyText(content: string | null | undefined): boolean {
+  if (!content) return false;
+  let trimmed = content.trim();
+  if (!trimmed) return false;
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (fenced) trimmed = fenced[1].trim();
+  if (!trimmed) return false;
+  const first = trimmed[0];
+  const last = trimmed[trimmed.length - 1];
+  const looksLikeJson =
+    (first === "{" && last === "}") || (first === "[" && last === "]");
+  if (!looksLikeJson) return false;
+  try {
+    JSON.parse(trimmed);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * BlockIds of "text" render blocks whose entire content is the raw
+ * structured-output JSON a verbalized `decision_answers` block on the same
+ * turn was parsed from — the live duplicate described on `isJsonOnlyText`.
+ * Empty when no `decision_answers` block is present, so a plain text turn
+ * that happens to reply with JSON prose is never touched.
+ */
+export function verbalizedDecisionJsonTextBlockIds(
+  blocks: readonly { blockId: string; type: string; content?: string | null }[] | undefined,
+): ReadonlySet<string> {
+  if (!blocks || blocks.length === 0) return EMPTY_STRING_SET;
+  const hasDecisionAnswers = blocks.some(
+    (b) => b.type === DECISION_ANSWERS_BLOCK_TYPE,
+  );
+  if (!hasDecisionAnswers) return EMPTY_STRING_SET;
+  const ids = new Set<string>();
+  for (const b of blocks) {
+    if (b.type === "text" && isJsonOnlyText(b.content)) {
+      ids.add(b.blockId);
+    }
+  }
+  return ids;
+}
+
+const EMPTY_STRING_SET: ReadonlySet<string> = new Set();
 
 const PHASE_LABELS: Record<string, string> = {
   connected: "Connected",

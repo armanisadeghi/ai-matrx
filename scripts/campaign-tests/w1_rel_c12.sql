@@ -494,6 +494,13 @@ begin
   -- ── 11. REL-13 / REL-16 : the edge is versioned, and relation history exists ────────────
   select a.id into e_id from platform.associations a
    where a.source_id = r_note and a.role = 'about' and a.target_id = r_a limit 1;
+  -- SUITES-TIDY 2026-09-22: this UPDATE steps out of the seat. DOORS-ONLY-5 dropped
+  -- `assoc_insert/update/delete` by name and `authenticated` holds SELECT on
+  -- platform.associations and nothing else, so it was answered 42501 before `_touch_row`, the
+  -- TABLE trigger this clause is about, was ever reached. The clause asserts nothing about
+  -- what a client may do while it is out — the client's side of this closure is asserted by
+  -- REL-12 above, which now reads the table's refusal and the door's refusal as two clauses.
+  perform set_config('role', v_boss, true);
   update platform.associations set label = 'part_of_nothing' where id = e_id;
   if (select version from platform.associations where id = e_id) < 1 then
     raise exception 'FAIL REL-16: _touch_row did not bump the version';
@@ -501,7 +508,8 @@ begin
   if not exists (select 1 from platform.relation_history(v_org, e_id)) then
     raise exception 'FAIL REL-13: relation history does not exist';
   end if;
-  raise notice 'PASS REL-13 / REL-16 — the edge is versioned and its history is readable.';
+  perform set_config('role', 'authenticated', true);
+  raise notice 'PASS REL-13 / REL-16 — the edge is versioned and its history is readable (the UPDATE that bumps it is the table''s own, not a client''s).';
 
   -- ── 12. THE OFF PATH : an association that is not one of ours carries none of our marks ──
   -- RESTATED 2026-09-19. The old clause asserted that such a row carries NULL in all FOUR new

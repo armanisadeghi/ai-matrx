@@ -31,6 +31,7 @@ import {
   selectLiveCitationMarkersByBlockId,
   blockCarriesDataNotText,
   blockHasSomethingToRender,
+  verbalizedDecisionJsonTextBlockIds,
   type ContentSegment,
   type ContentSegmentDbTool,
   type UnifiedSlot,
@@ -453,6 +454,20 @@ export const EnhancedChatMarkdownInternal: React.FC<
     return map;
   }, [reduxRenderBlocks]);
 
+  // A verbalized decision (any TEXT model asked `decision_questions`) streams
+  // its raw structured-output JSON as ordinary text BEFORE the server can
+  // finalize it into one `decision_answers` part. Persist time strips that
+  // JSON out of the message (aidream `finalize_verbalized_decision`), so a
+  // reload shows only the Answers card — but live, the JSON text block and
+  // the `decision_answers` block both sat in `reduxRenderBlocks`, and the
+  // answer appeared twice. Drop the JSON-only text block(s) live so the two
+  // paths render identically. Native (`jev-*`) decisions never stream text
+  // at all, so this set is empty for them.
+  const hiddenDecisionJsonTextBlockIds = useMemo(
+    () => verbalizedDecisionJsonTextBlockIds(reduxRenderBlocks),
+    [reduxRenderBlocks],
+  );
+
   /**
    * Render from the Redux render blocks whenever there ARE any — client-
    * produced (`client_…`, the StreamBlockAccumulator) or SERVER-produced
@@ -697,7 +712,11 @@ export const EnhancedChatMarkdownInternal: React.FC<
     // expensive splitContentIntoBlocksV2 entirely.
     if (hasReduxRenderBlocks && reduxRenderBlocks) {
       const clientBlocks: RenderBlock[] = reduxRenderBlocks
-        .filter(blockHasSomethingToRender)
+        .filter(
+          (rb) =>
+            blockHasSomethingToRender(rb) &&
+            !hiddenDecisionJsonTextBlockIds.has(rb.blockId),
+        )
         .map(renderBlockToContentBlock);
       return {
         blocks: expandTextBlocksInList(clientBlocks),
@@ -776,6 +795,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
     serverProcessedBlocks,
     hasReduxRenderBlocks,
     reduxRenderBlocks,
+    hiddenDecisionJsonTextBlockIds,
   ]);
 
   // Handle block processing errors outside of useMemo to avoid setState during render
@@ -1074,6 +1094,13 @@ export const EnhancedChatMarkdownInternal: React.FC<
       // carry their payload on `data`, not `content`. Drop a block only
       // when it has NEITHER — never because its text happens to be empty.
       if (!blockHasSomethingToRender(rb)) {
+        return null;
+      }
+      // A verbalized decision's raw structured-output JSON text — the
+      // source the `decision_answers` block on this same turn was parsed
+      // from. Drop it live so the turn matches the reloaded/persisted
+      // shape (one Answers card), not the JSON-plus-card double-render.
+      if (hiddenDecisionJsonTextBlockIds.has(slot.blockId)) {
         return null;
       }
 
