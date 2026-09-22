@@ -180,54 +180,28 @@ function fmt(v: unknown): string {
  * short-form + copy, never a bare truncated cell.
  */
 function FindingsTable({ rows }: { rows: Record<string, unknown>[] }) {
-  const columns = useMemo(() => {
-    const set = new Set<string>();
-    rows.forEach((r) => Object.keys(r).forEach((k) => set.add(k)));
-    return Array.from(set);
-  }, [rows]);
+  const keys = Array.from(new Set(rows.flatMap((row) => Object.keys(row))));
+  const columns: MatrxColumnDef<Record<string, unknown>>[] = keys.map((key) => ({
+    id: key,
+    header: key.replaceAll("_", " "),
+    accessorFn: (row) => row[key],
+    cell: (row) => isUuidValue(row[key]) ? (
+      <MatrxUuidCell value={row[key]} label={key} token={tokenFromColumnName(key)} />
+    ) : fmt(row[key]),
+  }));
 
   if (rows.length === 0) return null;
 
   return (
-    <div className="overflow-x-auto rounded-md border border-border">
-      <table className="w-full text-xs">
-        <thead className="bg-muted/50 text-[10px] uppercase tracking-wide text-muted-foreground">
-          <tr>
-            {columns.map((c) => (
-              <th key={c} className="text-left px-2 py-1.5 font-medium">
-                {c}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i} className="border-t border-border">
-              {columns.map((c) => {
-                const value = r[c];
-                return (
-                  <td
-                    key={c}
-                    className="px-2 py-1 font-mono text-[11px] whitespace-nowrap max-w-[28rem] truncate"
-                    title={isUuidValue(value) ? undefined : fmt(value)}
-                  >
-                    {isUuidValue(value) ? (
-                      <MatrxUuidCell
-                        value={value}
-                        label={c}
-                        token={tokenFromColumnName(c)}
-                      />
-                    ) : (
-                      fmt(value)
-                    )}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <MatrxDataTable
+      tableId="integrity/findings-sample"
+      data={rows}
+      columns={columns}
+      getRowId={(row) => String(rows.indexOf(row))}
+      toolbar={{ title: "Findings sample", search: true }}
+      coverage={{ noun: "sample finding", answeredBy: "client" }}
+      detail={{ enabled: false }}
+    />
   );
 }
 
