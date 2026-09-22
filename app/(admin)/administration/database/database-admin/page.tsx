@@ -6,7 +6,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 
 export default function DatabaseAdminPage() {
   return (
-    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
+    <div className="min-h-full">
       <Suspense
         fallback={
           <div className="p-6 space-y-4">

@@ -1,10 +1,11 @@
 import { renderHook } from "@/test-utils/renderHook";
 
 const executeSqlQuery = jest.fn();
+const getFunctions = jest.fn();
 
 jest.mock("@/actions/admin/database", () => ({
   executeSqlQuery: (...args: unknown[]) => executeSqlQuery(...args),
-  getFunctions: jest.fn(),
+  getFunctions: (...args: unknown[]) => getFunctions(...args),
   getPermissions: jest.fn(),
 }));
 
@@ -12,6 +13,33 @@ import { parseWorkbenchPersistedState } from "../database-admin/workbench/hooks/
 import { useDatabaseAdmin } from "./use-database-admin";
 
 describe("useDatabaseAdmin terminal execution", () => {
+  beforeEach(() => {
+    executeSqlQuery.mockReset();
+    getFunctions.mockReset();
+  });
+
+  it("preserves a function read failure for the dashboard to render and retry", async () => {
+    getFunctions.mockResolvedValue({
+      data: null,
+      error: "Function receipt unavailable",
+    });
+    const hook = await renderHook(() => useDatabaseAdmin());
+
+    let received: unknown;
+    await hook.act(async () => {
+      try {
+        await hook.current.fetchFunctions();
+      } catch (error) {
+        received = error;
+      }
+    });
+
+    expect(received).toEqual(expect.any(Error));
+    expect((received as Error).message).toBe("Function receipt unavailable");
+    expect(hook.current.error).toBe("Function receipt unavailable");
+    await hook.unmount();
+  });
+
   it("stays locked until the privileged query reaches its real terminal result", async () => {
     let resolveQuery!: (value: { data: unknown; error: null }) => void;
     executeSqlQuery.mockReturnValue(
