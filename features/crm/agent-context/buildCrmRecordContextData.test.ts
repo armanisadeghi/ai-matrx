@@ -109,6 +109,24 @@ describe("CRM record model-transfer boundary", () => {
     });
   });
 
+  it.each(["gmail", "google_workspace", "unverified_mail_provider"])(
+    "removes inbound email from restricted or unverified provider %s",
+    (provider) => {
+      const restricted = interaction({
+        channel_code: "email",
+        direction: "inbound",
+        provider,
+        subject: "Restricted intake subject",
+        body: "Restricted intake response",
+      });
+
+      expect(buildModelSafeInteractionContext([restricted])).toEqual({
+        interactions: [],
+        lastTouchAt: undefined,
+      });
+    },
+  );
+
   it("keeps organization-authored mail delivered through Google Workspace", () => {
     const outboundEmail = interaction({
       id: "77777777-7777-4777-8777-777777777777",

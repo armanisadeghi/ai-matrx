@@ -88,6 +88,20 @@ describe("CRM Activity model-transfer boundary", () => {
     interaction({
       channel_code: "email",
       direction: "inbound",
+      provider: "gmail",
+      subject: "Restricted canonical Gmail subject",
+      body: "Restricted canonical Gmail body",
+    }),
+    interaction({
+      channel_code: "email",
+      direction: "inbound",
+      provider: "unverified_mail_provider",
+      subject: "Unverified provider subject",
+      body: "Unverified provider body",
+    }),
+    interaction({
+      channel_code: "email",
+      direction: "inbound",
       attributes: {
         outreach_inbound: {
           label: "interested",

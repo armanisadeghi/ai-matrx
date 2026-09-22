@@ -39,6 +39,8 @@
 import { isJsonObject } from "@/types/json";
 import type { InteractionRow } from "../types";
 
+const VERIFIED_NON_GMAIL_INBOUND_EMAIL_PROVIDERS = new Set(["microsoft_365"]);
+
 /**
  * The classifier's verdict on an inbound reply. Closed set, mirrored from the
  * ingester's contract — anything else renders as "other" rather than as a raw
@@ -95,8 +97,10 @@ function readString(source: Record<string, unknown> | null, key: string): string
  * `attributes.outreach_inbound` block. Direction is part of the predicate so
  * an outbound message merely delivered through Google Workspace remains
  * ordinary organization-authored CRM content. An inbound email with neither
- * canonical provider nor historical provenance is ambiguous and fails closed;
- * calls, notes, and outbound organization content remain available.
+ * a verified non-Gmail provider is ambiguous and fails closed. The allowlist
+ * is intentionally explicit so aliases such as `gmail` and future providers
+ * cannot silently become safe; calls, notes, and outbound organization content
+ * remain available.
  */
 export function isGmailDerivedInteraction(
   interaction: Pick<
@@ -112,9 +116,8 @@ export function isGmailDerivedInteraction(
   }
   const provider = interaction.provider?.trim().toLowerCase() ?? "";
   return (
-    provider === "google_workspace" ||
     readObject(interaction.attributes, "outreach_inbound") !== null ||
-    !provider
+    !VERIFIED_NON_GMAIL_INBOUND_EMAIL_PROVIDERS.has(provider)
   );
 }
 

@@ -123,7 +123,9 @@ describe("Gmail model-transfer surface boundaries", () => {
 
   it.each([
     interaction({ provider: "google_workspace" }),
+    interaction({ provider: "gmail" }),
     interaction({ provider: " google_workspace " }),
+    interaction({ provider: "unverified_mail_provider" }),
     interaction({ provider: null, attributes: {} }),
     interaction({
       provider: "microsoft_365",
