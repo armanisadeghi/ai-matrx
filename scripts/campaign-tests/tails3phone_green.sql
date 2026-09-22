@@ -156,7 +156,7 @@ begin
   for r in
     select * from (values
       ('Whitlock household', 'Argos',  'call me on the landline'),
-      ('Ingram household',   'Sable',  'dana.ingram@harborlinemail.example'),
+      ('Ingram household',   'Sable',  'dana.ingram@harborlinehousecalls.com'),
       ('Petrakis household', 'Olive',  '415')
     ) as t(household, pet, phone)
   loop

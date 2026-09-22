@@ -247,7 +247,7 @@ begin
   declare v_src text; v_copy text;
   begin
     v_src  := pg_get_functiondef('custom._field_document_for(uuid,uuid,jsonb)'::regprocedure);
-    v_copy := replace(v_src, 'FUNCTION custom._field_document_for(', 'FUNCTION custom.zz_redsuites2_fdf(');
+    v_copy := replace(v_src, 'FUNCTION custom._field_document_for(', 'FUNCTION custom._field_document_for_live_copy(');
     if v_copy = v_src then
       raise exception 'storet_red: custom._field_document_for could not be copied under a throwaway name, so T7''s defect cannot be derived from the live door. Re-read it and re-write this block.';
     end if;
@@ -256,7 +256,7 @@ begin
       create or replace function custom._field_document_for(p_organization_id uuid, p_table_id uuid, p_spec jsonb)
       returns jsonb language plpgsql stable set search_path to 'pg_catalog' as $b$
       begin
-        return (custom.zz_redsuites2_fdf(p_organization_id, p_table_id, p_spec) - 'on_target_delete')
+        return (custom._field_document_for_live_copy(p_organization_id, p_table_id, p_spec) - 'on_target_delete')
                || jsonb_build_object('depends_on', '[]'::jsonb);
       end
       $b$;

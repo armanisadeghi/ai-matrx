@@ -73,7 +73,7 @@ begin
   insert into iam.organizations (id, name, slug, abbreviation, created_by, settings)
   values (v_org, 'Harborview Dental Group — Santa Barbara',
           'harborview-dental-sb-t7-' || substr(v_org::text, 1, 8), 'HDG', c_admin,
-          jsonb_build_object('test_fixture', true));
+          '{"test_fixture": true}'::jsonb);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
 

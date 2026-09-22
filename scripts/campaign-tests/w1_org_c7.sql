@@ -208,7 +208,7 @@ begin
   -- `store_is_open` with true for an organization born after the ruling that has said nothing,
   -- which this one is. The clause asserts that rather than assuming it.
   if not custom.store_is_open(v_org) then
-    raise exception 'C-7 5.0: the fixture organization''s record store is not open, so nothing below would be testing the guard';
+    raise exception 'C-7 5.0: Cascade Electronics Recovery''s record store is not open, so nothing below would be testing the guard';
   end if;
 
   -- REC-30: a person declared as text is refused; the same field as user_reference lands.

@@ -172,7 +172,7 @@ if (cmd === "list") {
     if (r.changed) archived += 1;
     console.log(`CLASSIFIED+${r.changed ? "ARCHIVED" : "already "} ${id}  ${name}`);
   }
-  console.log(`\n${classified} classified test_fixture through public.org_update, ${archived} newly archived.`);
+  console.log(`\n${classified} tagged with settings.test_fixture = true through public.org_update, ${archived} newly archived.`);
 } else {
   console.log("usage: orgcleanup_archive.mjs list|archive|classify-and-archive|roundtrip <org-id>");
   process.exit(1);

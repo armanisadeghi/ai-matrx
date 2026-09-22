@@ -30,7 +30,7 @@ const PHONE = "(415) 555-0178";
 /** 🚨 The honeypot `#hp-confirm_…` is never touched — only `#form-<key>` fields are filled. */
 const MEMBER = {
   full_name: "Naomi Okafor",
-  email: "naomi.okafor@harborlinemail.example",
+  email: "naomi.okafor@ironlinefitness.com",
   phone: PHONE,
   class: "Boxing Fundamentals — Tue 7:15 PM with Coach Reyes",
   notes: "Coming back after a shoulder injury — is the 7:15 Boxing class beginner friendly?",
