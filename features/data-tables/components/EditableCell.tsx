@@ -60,6 +60,8 @@ import { AttachmentInput } from "./AttachmentInput";
 import { isDirectClickEditor, type GridMove } from "../grid-selection";
 import { upsertCell } from "../service";
 import { validateCellValue, type ValidationRules } from "../validation";
+import { columnRuleRefusal, type ColumnRuleRefusal } from "../validation-refusal";
+import { FieldRuleRefusal } from "./FieldRuleRefusal";
 import { isServiceFailure, type FieldDataType } from "../types";
 
 type Props = {
@@ -165,6 +167,18 @@ export function EditableCell({
    * again; nothing about it is on a timer.
    */
   const [refusal, setRefusal] = useState<RecordsError | null>(null);
+  /**
+   * 🚨 THE COLUMN'S OWN REFUSAL WAS A TOAST THAT TIMED OUT (lane VALIDATION-REFUSAL,
+   * 2026-09-23 — the sibling FIX-15 named and left behind).
+   *
+   * A value the COLUMN refuses never reaches the store, so the store never gets to
+   * answer, so FIX-15's cell notice never fired: the person got a destructive toast
+   * carrying one line, which vanished on a timer, while the editor sat open holding
+   * the text nobody had told them what was wrong with. Now it is the SAME notice, in
+   * the SAME place, with the same two facts and the two doors out — and it is the
+   * notice, not a clock, that decides how long the typed text is kept.
+   */
+  const [ruleRefusal, setRuleRefusal] = useState<ColumnRuleRefusal | null>(null);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
   // Sync draft with prop when value changes from upstream (e.g. realtime).
@@ -189,6 +203,7 @@ export function EditableCell({
     if (editing && !wasEditing.current) {
       setDraft(seed ?? value);
       setRefusal(null);
+      setRuleRefusal(null);
     }
     wasEditing.current = editing;
   }, [editing, seed, value]);
@@ -196,6 +211,7 @@ export function EditableCell({
   const cancelEdit = useCallback(() => {
     setDraft(value);
     setRefusal(null);
+    setRuleRefusal(null);
     onEndEdit?.();
   }, [onEndEdit, value]);
 
@@ -239,16 +255,21 @@ export function EditableCell({
         existingValues,
       });
       if (!verdict.ok) {
-        // A rule the person can still fix keeps the editor OPEN, holding what they
-        // typed, so the toast is the right surface for it: the value they are being
-        // told about is right there in front of them, still editable. A STORE
-        // refusal is the other case — it closes the editor and puts the stored value
-        // back, so its sentence has to stay on the cell. See `refusal` above.
-        toast({
-          title: `${fieldDisplayName}: ${verdict.reason}`,
-          description: "The cell was not saved. Correct it, or press Escape to discard.",
-          variant: "destructive",
-        });
+        // THE COLUMN'S OWN REFUSAL, ON THE CELL, THROUGH THE ONE NOTICE. The editor
+        // stays open holding what was typed — and it is this notice, not a timer,
+        // that says for how long: Keep editing hands the text back, Discard puts the
+        // stored value back. Both doors are on the notice because the person cannot
+        // be left guessing which key escapes a message they did not ask for.
+        setRuleRefusal(
+          columnRuleRefusal({
+            fieldDisplayName,
+            reason: verdict.reason,
+            rules: validationRules,
+          }),
+        );
+        // A commit that came from BLUR has already taken focus out of the input. The
+        // notice is about text the person can still fix, so put them back in it.
+        requestAnimationFrame(() => inputRef.current?.focus());
         return;
       }
     }
@@ -281,6 +302,7 @@ export function EditableCell({
       return;
     }
     setRefusal(null);
+    setRuleRefusal(null);
 
     // Prior value FIRST — this is the whole basis of undo.
     onRecordEdit?.(value, normalized);
@@ -415,43 +437,14 @@ export function EditableCell({
             cell either. It is anchored to the cell and drawn in a portal, which no
             column width, scroll position or row height can reach. It sits until it is
             dismissed — a refusal on a timer is a refusal nobody read. */}
-        <Popover
-          open={refusal !== null}
-          onOpenChange={(next) => {
-            if (!next) setRefusal(null);
+        <CellRefusalPopover
+          refusal={refusal}
+          ruleRefusal={ruleRefusal}
+          onDismiss={() => {
+            setRefusal(null);
+            setRuleRefusal(null);
           }}
-        >
-          <PopoverAnchor asChild>
-            <span aria-hidden="true" className="pointer-events-none absolute inset-0" />
-          </PopoverAnchor>
-          {refusal ? (
-            <PopoverContent
-              data-matrx-cell-refusal=""
-              align="start"
-              side="bottom"
-              sizing="content"
-              className="p-2"
-              // The person is answering the refusal by editing the cell again, so a
-              // press inside the notice must never reach the grid underneath it.
-              onClick={(e) => e.stopPropagation()}
-              onDoubleClick={(e) => e.stopPropagation()}
-            >
-              <RefusalNotice
-                error={refusal}
-                className="border-0 p-0"
-                actions={
-                  <button
-                    type="button"
-                    className="mt-1 rounded border px-2 py-0.5 text-xs hover:bg-muted"
-                    onClick={() => setRefusal(null)}
-                  >
-                    Dismiss
-                  </button>
-                }
-              />
-            </PopoverContent>
-          ) : null}
-        </Popover>
+        />
       </div>
     );
   }
@@ -472,6 +465,7 @@ export function EditableCell({
    * `16px` font-size is deliberate and must not shrink: iOS Safari zooms the
    * viewport on focus for anything smaller, which yanks the whole grid.
    */
+  const editor: ReactNode = (() => {
   const editorClass =
     "w-full border-0 bg-transparent p-0 text-sm shadow-none outline-none " +
     "ring-0 focus:border-0 focus:outline-none focus:ring-0 " +
@@ -719,6 +713,105 @@ export function EditableCell({
       className={cn(editorClass, "min-h-0 resize-none leading-normal")}
       style={editorStyle}
     />
+  );
+  })();
+
+  /**
+   * THE EDITOR, AND THE NOTICE ANCHORED TO IT.
+   *
+   * 🚨 The wrapper is not decoration. Before this lane the refusal surface existed
+   * only in the READ branch, because only a STORE refusal could reach the screen
+   * and a store refusal closes the editor. A COLUMN's refusal is the opposite case
+   * — the editor is still open, holding the text — so the notice has to be able to
+   * appear over an open editor, anchored to the same cell, drawn in a portal that
+   * no column width or scroll position can clip (FIX-13's lesson, kept).
+   */
+  return (
+    <div className="relative w-full min-w-0" data-matrx-cell-editor="">
+      {editor}
+      <CellRefusalPopover
+        refusal={refusal}
+        ruleRefusal={ruleRefusal}
+        onDismiss={() => {
+          setRefusal(null);
+          setRuleRefusal(null);
+          requestAnimationFrame(() => inputRef.current?.focus());
+        }}
+        onDiscard={cancelEdit}
+      />
+    </div>
+  );
+}
+
+/**
+ * THE ONE REFUSAL SURFACE OF A GRID CELL — store refusal and column refusal alike.
+ *
+ * Portalled out of the table (FIX-13), never on a timer (FIX-15), and the same
+ * `RefusalNotice` body either way, so a person cannot tell which half of the
+ * system refused them and has no reason to want to.
+ */
+function CellRefusalPopover({
+  refusal,
+  ruleRefusal,
+  onDismiss,
+  onDiscard,
+}: {
+  refusal: RecordsError | null;
+  ruleRefusal: ColumnRuleRefusal | null;
+  onDismiss: () => void;
+  onDiscard?: () => void;
+}) {
+  const open = refusal !== null || ruleRefusal !== null;
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onDismiss();
+      }}
+    >
+      <PopoverAnchor asChild>
+        <span aria-hidden="true" className="pointer-events-none absolute inset-0" />
+      </PopoverAnchor>
+      {open ? (
+        <PopoverContent
+          data-matrx-cell-refusal=""
+          align="start"
+          side="bottom"
+          sizing="content"
+          className="p-2"
+          // A notice about text that is still in an open editor must never take the
+          // focus away from that editor — the person is mid-sentence.
+          {...(ruleRefusal ? { onOpenAutoFocus: (e: Event) => e.preventDefault() } : {})}
+          // The person is answering the refusal by editing the cell again, so a
+          // press inside the notice must never reach the grid underneath it.
+          onClick={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => e.stopPropagation()}
+        >
+          {ruleRefusal ? (
+            <FieldRuleRefusal
+              refusal={ruleRefusal}
+              className="border-0 p-0"
+              onKeepEditing={onDismiss}
+              {...(onDiscard ? { onDiscard } : {})}
+            />
+          ) : refusal ? (
+            <RefusalNotice
+              error={refusal}
+              className="border-0 p-0"
+              actions={
+                <button
+                  type="button"
+                  className="mt-1 rounded border px-2 py-0.5 text-xs hover:bg-muted"
+                  onClick={onDismiss}
+                >
+                  Dismiss
+                </button>
+              }
+            />
+          ) : null}
+        </PopoverContent>
+      ) : null}
+    </Popover>
   );
 }
 
