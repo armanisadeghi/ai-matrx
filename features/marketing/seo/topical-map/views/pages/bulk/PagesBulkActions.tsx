@@ -193,7 +193,7 @@ function BulkActionPopover({
           {action.label}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="flex w-96 flex-col gap-2 p-2">
+      <PopoverContent sizing="content" align="start" className="flex flex-col gap-2 p-2">
         <p className="text-xs text-muted-foreground">
           {action.id === "mark_done"
             ? `Write each selected page's current destination again, marked done. ${selected.length} loaded page${selected.length === 1 ? "" : "s"} selected.`

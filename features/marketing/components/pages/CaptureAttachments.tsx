@@ -73,7 +73,7 @@ export function CaptureAttachments({
             {attachedCount > 0 ? attachedCount : null}
           </button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-80 p-2">
+        <PopoverContent sizing="content" align="end" className="p-2">
           <UniversalAssociationPicker
             tokens={[...ATTACH_TOKENS]}
             attachedKeys={attachedKeys}

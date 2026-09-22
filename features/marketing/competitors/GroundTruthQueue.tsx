@@ -256,7 +256,8 @@ function AgreeAction({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-80 space-y-2"
+        sizing="content"
+        className="space-y-2"
         onClick={(event) => event.stopPropagation()}
       >
         <Label

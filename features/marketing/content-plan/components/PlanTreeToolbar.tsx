@@ -172,7 +172,7 @@ export function PlanTreeToolbar({
               ) : null}
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-60 p-2">
+          <PopoverContent sizing="content" align="start" className="p-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-foreground">
                 Filters

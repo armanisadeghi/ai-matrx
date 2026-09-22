@@ -55,7 +55,7 @@ function OrganizationRequiredNotice() {
               Choose organization
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="center" className="w-64 p-1">
+          <PopoverContent sizing="content" align="center" className="p-1">
             <OrganizationPickerPanel />
           </PopoverContent>
         </Popover>

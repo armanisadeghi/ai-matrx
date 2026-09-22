@@ -103,7 +103,7 @@ export function TextOverridesPopover({ knobs, overrides, onChange }: TextOverrid
           ) : null}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80">
+      <PopoverContent sizing="content" align="end">
         <div className="flex items-center justify-between">
           <p className="text-xs font-medium">Try other sizes</p>
           {active > 0 ? (

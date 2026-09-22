@@ -343,7 +343,7 @@ export function PlanToolbar({
                   : "Agents extend this plan — existing pages are never overwritten."}
               </TooltipContent>
             </Tooltip>
-            <PopoverContent align="end" className="w-80 space-y-3">
+            <PopoverContent sizing="content" align="end" className="space-y-3">
               <div>
                 <Label className="mb-1 block text-xs font-medium">
                   Research grounding

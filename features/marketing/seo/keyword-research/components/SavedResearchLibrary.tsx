@@ -99,7 +99,7 @@ export default function SavedResearchLibrary({
           ) : null}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[28rem] p-0">
+      <PopoverContent sizing="content" align="end" className="p-0">
         <div className="space-y-2 border-b border-border px-3 py-2">
           <div>
             <p className="text-xs font-semibold text-foreground">

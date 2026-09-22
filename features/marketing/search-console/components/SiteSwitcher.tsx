@@ -79,7 +79,7 @@ export function SiteSwitcher({
           <ChevronsUpDown className="h-3 w-3 shrink-0 text-muted-foreground" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-80 p-1.5">
+      <PopoverContent sizing="content" align="start" className="p-1.5">
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}

@@ -547,7 +547,7 @@ export function FilterBar({
               Filter
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-80 space-y-2 p-3">
+          <PopoverContent sizing="content" align="start" className="space-y-2 p-3">
             <Select
               value={effectiveKey}
               onValueChange={(next) => setDraftKey(next as FilterMenuKey)}

@@ -137,7 +137,7 @@ export function ColumnChooser({
           </span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-72 p-2">
+      <PopoverContent sizing="content" align="end" className="p-2">
         <div className="relative mb-2">
           <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input

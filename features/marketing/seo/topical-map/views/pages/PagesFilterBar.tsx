@@ -209,7 +209,7 @@ export function PagesFilterBar({
               <ChevronsUpDown className="h-3 w-3 text-muted-foreground" aria-hidden />
             </button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-80 p-0">
+          <PopoverContent sizing="content" align="start" className="p-0">
             <Command shouldFilter={false}>
               <CommandInput
                 value={topicQuery}
@@ -283,7 +283,7 @@ export function PagesFilterBar({
               <ChevronsUpDown className="h-3 w-3 text-muted-foreground" aria-hidden />
             </button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-80 p-2">
+          <PopoverContent sizing="content" align="start" className="p-2">
             <p className="text-xs text-muted-foreground">
               The page list cannot be narrowed by region yet —
               seo.list_page_intents carries no region. Filed with the

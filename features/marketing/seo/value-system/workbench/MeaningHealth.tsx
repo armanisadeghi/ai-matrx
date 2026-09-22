@@ -177,8 +177,9 @@ export function MeaningHealth({
         </button>
       </PopoverTrigger>
       <PopoverContent
+        sizing="content"
         align="start"
-        className="w-[min(420px,calc(100vw-2rem))] p-2"
+        className="p-2"
       >
         <div className="px-1 pb-2">
           <p className="text-xs font-semibold text-foreground">Value setup</p>

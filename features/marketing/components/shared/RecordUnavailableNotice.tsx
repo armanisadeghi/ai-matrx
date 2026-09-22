@@ -101,7 +101,7 @@ export function RecordUnavailableNotice({
                       Switch organization
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent align="start" className="w-64 p-1">
+                  <PopoverContent sizing="content" align="start" className="p-1">
                     <OrganizationPickerPanel />
                   </PopoverContent>
                 </Popover>

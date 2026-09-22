@@ -1266,7 +1266,7 @@ function LinkExistingPartyPopover({
           <Link2 className="mr-1 h-3 w-3" /> Link existing
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-2" align="end">
+      <PopoverContent sizing="content" className="p-2" align="end">
         <Input
           autoFocus
           value={search}

@@ -50,7 +50,7 @@ export function TextFocusPicker({ mapId, focus, onChange }: TextFocusPickerProps
             <span className="truncate">{focus ? `Focus: ${focus.name}` : "Focus: whole map"}</span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-80 p-0">
+        <PopoverContent sizing="content" align="start" className="p-0">
           <Command shouldFilter={false}>
             <CommandInput value={query} onValueChange={setQuery} placeholder="Focus on a topic…" />
             <CommandList className="max-h-64">

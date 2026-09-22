@@ -90,8 +90,9 @@ export function SiteConnectionChips({
             </button>
           </PopoverTrigger>
           <PopoverContent
+            sizing="content"
             align="start"
-            className="w-72 max-w-[calc(100vw-2rem)] p-3"
+            className="p-3"
             onClick={(event) => {
               event.stopPropagation();
             }}
