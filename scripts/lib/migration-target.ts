@@ -1244,6 +1244,159 @@ function triggerDdlSitesIn(text: string): Array<{ why: string; table: string; mo
   return out;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// THE MEASURED DDL LOCK FOOTPRINT (lane DDL-LOCK-CENSUS, 2026-09-22)
+// ─────────────────────────────────────────────────────────────────────────────
+// POLICY-LOCK judged by the word "policy". TRIGGER-LOCK judged by the words "drop trigger". Both
+// were right about the statements they had measured and silent about the twenty they had not, so
+// this runner's window rule was a list of NAMES — and a name is a guess about a lock.
+//
+// So the rule now reads a MEASUREMENT. `ddl-lock-footprint.json`, beside this file, is the census:
+// every DDL class a campaign file can carry, run on the dev clone inside its own
+// `begin … rollback` against a COMMITTED scratch estate (one plain table, one four-partition hash
+// parent), with the locks read from the measuring backend's own `pg_locks` and counted only on
+// relations that existed before the probe. Two runs; identical on strongest lock, hook membership
+// and ACCESS EXCLUSIVE count.
+//
+// WHAT THE CENSUS CORRECTED. TRIGGER-LOCK wrote that Supabase's `supautils.policy_grants` hook
+// "fires on DDL" generally. It does not. Measured, it fires on CREATE/ALTER/DROP POLICY and on
+// DROP TRIGGER, and on NOTHING ELSE in the census — `drop table`, `alter column … type`,
+// `truncate` and `drop index` all take ACCESS EXCLUSIVE with zero hook relations. The hook is
+// narrower than feared; ACCESS EXCLUSIVE is far more widespread than the old name list knew.
+//
+// THE RULE, and it is decided by the footprint, never by the statement's name:
+//   A statement is WINDOW-CLASS at `--target production` when its measured footprint either
+//   (a) includes the hook set — sign-in, token refresh, file reads and realtime stop until
+//       COMMIT — or
+//   (b) holds ACCESS EXCLUSIVE on a partitioned parent (`custom.record`, 16 partitions;
+//       `history.row_versions`, 29) — every reader AND every writer of the store waits.
+// The old name-based trigger rule stays as the FLOOR: whatever the JSON says, trigger DDL on a
+// partitioned parent is still window-class, so a mis-measured or truncated census can only ever
+// make this rule stricter than it was on 2026-09-22, never weaker.
+
+export type DdlShape = "plainTable" | "partitionedParent" | "noTable";
+
+export interface DdlFootprintShape {
+  readonly strongest: string;
+  readonly ownRelations: number;
+  readonly hookRelations: number;
+  readonly totalAccessExclusive: number;
+  readonly ms: number | null;
+  readonly windowClass: boolean;
+  readonly because?: string;
+  readonly note?: string;
+}
+
+export interface DdlFootprintClass {
+  readonly id: string;
+  readonly statement: string;
+  readonly plainTable?: DdlFootprintShape;
+  readonly partitionedParent?: DdlFootprintShape;
+  readonly noTable?: DdlFootprintShape;
+}
+
+export interface DdlFootprint {
+  readonly schemaVersion: number;
+  readonly measuredOn: string;
+  readonly hookSetSize: number;
+  readonly partitionedParents: Readonly<Record<string, number>>;
+  readonly classes: readonly DdlFootprintClass[];
+}
+
+/** The checked-in census. An unreadable or unparseable file is a REFUSAL, never a fallback. */
+export function loadDdlFootprint(path?: string): DdlFootprint {
+  const file = path ?? new URL("./ddl-lock-footprint.json", import.meta.url).pathname;
+  let raw: string;
+  try {
+    raw = readFileSync(file, "utf8");
+  } catch (e) {
+    fail([
+      `ddl-lock-footprint.json is unreadable at ${file}: ${String(e)}`,
+      `  The window-class rule is decided by that measurement. Without it this runner cannot`,
+      `  say which statements freeze the estate, and it refuses rather than guessing by name.`,
+    ]);
+  }
+  const parsed = JSON.parse(raw!) as DdlFootprint;
+  if (!parsed.classes?.length || !parsed.partitionedParents) {
+    fail([`ddl-lock-footprint.json at ${file} has no classes or no partitioned parents.`]);
+  }
+  return parsed;
+}
+
+export const DDL_LOCK_FOOTPRINT: DdlFootprint = loadDdlFootprint();
+
+/** One DDL site found in a statement: which measured class it is, and what it points at. */
+interface DdlSite {
+  readonly classId: string;
+  /** The table it acts on, raw as written, or null for a class that names no table. */
+  readonly table: string | null;
+}
+
+const ALTER_TABLE_HEAD = new RegExp(`^alter\\s+table\\b(?:\\s+if\\s+exists)?(?:\\s+only)?\\s+${TABLE_REF}([\\s\\S]*)$`, "i");
+
+/**
+ * Every measured DDL class a single top-level statement carries. Detection is deliberately
+ * GENEROUS on the table reference (a bare name matches a partitioned parent) and deliberately
+ * CONSERVATIVE on the class: an unrecognised statement contributes nothing, which is why the
+ * name-based trigger floor stays in place beneath it.
+ */
+export function ddlSitesIn(stmt: string): DdlSite[] {
+  const out: DdlSite[] = [];
+  const t = stmt.trim();
+  const push = (classId: string, table: string | null) => out.push({ classId, table });
+
+  const alter = t.match(ALTER_TABLE_HEAD);
+  if (alter) {
+    const table = alter[1]!;
+    const body = alter[2]!;
+    if (/\badd\s+(column\b|(?!constraint\b)(?:if\s+not\s+exists\s+)?"?[a-z0-9_]+"?\s)/i.test(body)) push("add_column", table);
+    if (/\bdrop\s+(column\b|"?[a-z0-9_]+"?\s*(,|;|$))/i.test(body) && !/\bdrop\s+constraint\b/i.test(body)) push("drop_column", table);
+    if (/\balter\s+(column\s+)?"?[a-z0-9_]+"?\s+(set\s+data\s+)?type\b/i.test(body)) push("alter_column_type", table);
+    if (/\badd\s+constraint\b[\s\S]*?\bforeign\s+key\b/i.test(body) || /\badd\s+foreign\s+key\b/i.test(body)) push("add_constraint_fk", table);
+    else if (/\badd\s+(constraint\b[\s\S]{0,120}?)?\b(unique|primary\s+key)\b/i.test(body)) push("add_constraint_unique", table);
+    else if (/\badd\s+(constraint\b[\s\S]{0,120}?)?\bcheck\b/i.test(body)) push("add_constraint_check", table);
+    if (/\bdrop\s+constraint\b/i.test(body)) push("drop_constraint", table);
+    if (/\b(enable|disable)\s+(always\s+|replica\s+)?trigger\b/i.test(body)) push("alter_trigger_enable_disable", table);
+    if (/\benable\s+row\s+level\s+security\b/i.test(body)) push("enable_rls", table);
+    if (/\bforce\s+row\s+level\s+security\b/i.test(body)) push("force_rls", table);
+    return out;
+  }
+
+  let m: RegExpMatchArray | null;
+  if ((m = t.match(new RegExp(`^truncate\\b(?:\\s+table)?(?:\\s+only)?\\s+${TABLE_REF}`, "i")))) push("truncate", m[1]!);
+  else if ((m = t.match(new RegExp(`^drop\\s+table\\b(?:\\s+if\\s+exists)?\\s+${TABLE_REF}`, "i")))) push("drop_table", m[1]!);
+  else if (/^create\s+(unlogged\s+|global\s+|local\s+|temp\w*\s+)*table\b/i.test(t)) push("create_table", null);
+  else if ((m = t.match(new RegExp(`^create\\s+(?:unique\\s+)?index\\s+concurrently\\b[\\s\\S]*?\\bon\\s+(?:only\\s+)?${TABLE_REF}`, "i")))) push("create_index_concurrently", m[1]!);
+  else if ((m = t.match(new RegExp(`^create\\s+(?:unique\\s+)?index\\b[\\s\\S]*?\\bon\\s+(?:only\\s+)?${TABLE_REF}`, "i")))) push("create_index", m[1]!);
+  else if (/^drop\s+index\s+concurrently\b/i.test(t)) push("drop_index_concurrently", null);
+  else if (/^drop\s+index\b/i.test(t)) push("drop_index", null);
+  else if (/^alter\s+index\b[\s\S]*?\brename\s+to\b/i.test(t)) push("rename_index", null);
+  else if ((m = t.match(new RegExp(`^create\\s+policy\\b[\\s\\S]*?\\bon\\s+${TABLE_REF}`, "i")))) push("create_policy", m[1]!);
+  else if ((m = t.match(new RegExp(`^alter\\s+policy\\b[\\s\\S]*?\\bon\\s+${TABLE_REF}`, "i")))) push("alter_policy", m[1]!);
+  else if ((m = t.match(new RegExp(`^drop\\s+policy\\b[\\s\\S]*?\\bon\\s+${TABLE_REF}`, "i")))) push("drop_policy", m[1]!);
+  else if ((m = t.match(new RegExp(`^create\\s+(?:or\\s+replace\\s+)?(?:constraint\\s+)?trigger\\b[\\s\\S]*?\\bon\\s+${TABLE_REF}`, "i")))) push("create_trigger", m[1]!);
+  else if ((m = t.match(new RegExp(`^drop\\s+trigger\\b(?:\\s+if\\s+exists)?\\s+(?:"[^"]+"|[a-z0-9_]+)\\s+on\\s+${TABLE_REF}`, "i")))) push("drop_trigger", m[1]!);
+  else if (/^drop\s+function\b/i.test(t)) push("drop_function", null);
+  else if (/^create\s+(or\s+replace\s+)?function\b/i.test(t)) push("create_or_replace_function", null);
+  else if ((m = t.match(new RegExp(`^grant\\b[\\s\\S]*?\\bon\\s+(?:table\\s+)?${TABLE_REF}`, "i")))) push("grant", m[1]!);
+  else if ((m = t.match(new RegExp(`^revoke\\b[\\s\\S]*?\\bon\\s+(?:table\\s+)?${TABLE_REF}`, "i")))) push("revoke", m[1]!);
+  else if (/^create\s+(or\s+replace\s+)?(recursive\s+)?view\b/i.test(t)) push("create_view", null);
+  else if (/^drop\s+view\b/i.test(t)) push("drop_view", null);
+  else if (/^comment\s+on\b/i.test(t)) push("comment_on", null);
+  return out;
+}
+
+/** The measured footprint of one class in one shape, or undefined when the census is silent. */
+export function ddlFootprintOf(
+  classId: string,
+  shape: DdlShape,
+  footprint: DdlFootprint = DDL_LOCK_FOOTPRINT,
+): DdlFootprintShape | undefined {
+  const c = footprint.classes.find((x) => x.id === classId);
+  if (!c) return undefined;
+  return c[shape] ?? (shape === "partitionedParent" ? c.plainTable : undefined);
+}
+
 /**
  * The two lock modes trigger DDL actually takes, measured on the dev clone 2026-09-22.
  * ACCESS EXCLUSIVE additionally drags in the 23-relation supautils set, so it stops sign-in;
@@ -1254,13 +1407,19 @@ export type TriggerLockMode = "ACCESS EXCLUSIVE" | "SHARE ROW EXCLUSIVE";
 export interface WindowClassSite {
   readonly why: string;
   /** What this statement kind actually takes, per the measurement, not per belief. */
-  readonly mode: TriggerLockMode;
+  readonly mode: string;
   /** True when this statement also freezes the supautils auth/storage/realtime set. */
   readonly freezesSignIn: boolean;
-  /** The partitioned parent, canonically qualified. */
+  /** The table, canonically qualified when it is one of the partitioned parents. */
   readonly table: string;
-  /** How many relations one ACCESS EXCLUSIVE statement reaches through it. */
+  /** How many partitions one statement reaches through it; 0 for an ordinary table. */
   readonly partitions: number;
+  /** Which measured shape decided this — or `nameRule` for the trigger floor. */
+  readonly shape: DdlShape | "nameRule";
+  /** The census class id, or the name-rule label. */
+  readonly classId: string;
+  /** The measured sentence saying WHY this one is window-class. */
+  readonly because: string;
   readonly stmt: string;
 }
 
@@ -1269,20 +1428,64 @@ export interface WindowClassSite {
  * FUNCTION` whose BODY contains trigger DDL is NOT a site — replacing a body takes no lock,
  * running the attachment does — exactly the distinction `policyStatementReasonOf` draws.
  */
-export function windowClassVerdict(rawSql: string): WindowClassSite[] {
+export function windowClassVerdict(
+  rawSql: string,
+  footprint: DdlFootprint = DDL_LOCK_FOOTPRINT,
+): WindowClassSite[] {
   const sites: WindowClassSite[] = [];
+  const seen = new Set<string>();
+  const add = (site: WindowClassSite) => {
+    const key = `${site.table}|${site.stmt}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    sites.push(site);
+  };
+
   for (const stmt of topLevelStatements(stripCommentsQuoteAware(rawSql))) {
     const t = stmt.trim();
+    // A `CREATE OR REPLACE FUNCTION` whose BODY contains DDL is not a site — replacing a body
+    // takes no lock (measured: nothing at all on any table), running the attachment does.
     if (/^create\s+(or\s+replace\s+)?function\b/i.test(t) || /^create\s+(or\s+replace\s+)?procedure\b/i.test(t)) continue;
+
+    // ── THE MEASUREMENT DECIDES ────────────────────────────────────────────
+    for (const d of ddlSitesIn(t)) {
+      const parent = d.table ? isPartitionedParentRef(d.table) : null;
+      const shape: DdlShape = parent ? "partitionedParent" : d.table ? "plainTable" : "noTable";
+      const fp = ddlFootprintOf(d.classId, shape, footprint);
+      if (!fp || !fp.windowClass) continue;
+      const cls = footprint.classes.find((x) => x.id === d.classId)!;
+      add({
+        why: cls.statement.toUpperCase(),
+        mode: fp.strongest,
+        freezesSignIn: fp.hookRelations > 0,
+        table: parent ?? normalizeTableRef(d.table ?? "?"),
+        partitions: parent ? footprint.partitionedParents[parent]! : 0,
+        shape,
+        classId: d.classId,
+        because: fp.because ?? "measured window-class",
+        stmt: t.slice(0, 160),
+      });
+    }
+
+    // ── THE NAME RULE STAYS AS THE FLOOR ───────────────────────────────────
+    // TRIGGER-LOCK's rule, 2026-09-22: trigger DDL on a partitioned parent is window-class
+    // whatever a census says. A truncated, stale or mis-measured footprint can therefore only
+    // ever make this verdict STRICTER than it was that day, never weaker.
     for (const site of triggerDdlSitesIn(t)) {
       const parent = isPartitionedParentRef(site.table);
       if (!parent) continue;
-      sites.push({
+      add({
         why: site.why,
         mode: site.mode,
         freezesSignIn: site.mode === "ACCESS EXCLUSIVE",
         table: parent,
         partitions: PARTITIONED_PARENTS[parent]!,
+        shape: "nameRule",
+        classId: "trigger-ddl-name-rule",
+        because:
+          site.mode === "ACCESS EXCLUSIVE"
+            ? "trigger DDL on a partitioned parent, and this kind also freezes the supautils set"
+            : "trigger DDL on a partitioned parent: SHARE ROW EXCLUSIVE on the parent and every partition, so every WRITER to the store waits until COMMIT",
         stmt: t.slice(0, 160),
       });
     }
@@ -1364,12 +1567,20 @@ export const POLICY_MIXED_GRANDFATHERED: readonly string[] = [
 ] as const;
 
 /**
- * 🚨 THE WINDOW-CLASS GRANDFATHER LIST, AND IT NEVER GROWS. Census by lane TRIGGER-LOCK,
- * 2026-09-22, run with `windowClassVerdict` itself over every file in `migrations/campaign/`
- * (33) and `migrations/inverse/` (25): these 58 carry trigger DDL on a partitioned parent and
- * were written before the window rule existed. Their bytes are ledgered history and this
- * campaign does not rewrite an applied file. The rule binds every file written from
- * 2026-09-22 onward.
+ * 🚨 THE WINDOW-CLASS GRANDFATHER LIST. It was closed once and REOPENED once, by the census
+ * that replaced the name rule with a measurement — and it is closed again.
+ *
+ *   · Lane TRIGGER-LOCK, 2026-09-22: 58 files (33 campaign, 25 inverse) carrying trigger DDL on
+ *     a partitioned parent.
+ *   · Lane DDL-LOCK-CENSUS, the same day: once the verdict read the MEASURED footprint instead
+ *     of the statement's name, 291 more files were window-class and had always been — 286 of
+ *     them not yet named here. Almost all are policy DDL (158 `drop policy`, 149 `create policy`,
+ *     2 `alter policy`), which freezes the 23-relation supautils set exactly as a `drop trigger`
+ *     does; the rest are `add column`, `add constraint`, `drop constraint` and `enable rls` on a
+ *     partitioned parent, which the old rule could not see at all.
+ *
+ * 344 names, and their bytes are ledgered history: this campaign does not rewrite an
+ * applied file. The rule binds every file written from 2026-09-22 onward.
  * ADDING A NAME HERE IS NOT A FIX. Declare `-- window-class: <why>` and apply it in the window.
  */
 export const WINDOW_CLASS_GRANDFATHERED: readonly string[] = [
@@ -1377,16 +1588,294 @@ export const WINDOW_CLASS_GRANDFATHERED: readonly string[] = [
   "apprvtail_a_field_row_is_a_field_down.sql",
   "checklists_a_checklist_is_a_template_of_work.sql",
   "checklists_a_checklist_is_a_template_of_work_down.sql",
+  "deadkeys_feature_knob_has_no_signed_out_reader.inverse.sql",
+  "deadkeys_feature_knob_has_no_signed_out_reader.sql",
   "doorfix_a_field_type_change_converts_or_retires.sql",
   "doorfix_a_field_type_change_converts_or_retires_down.sql",
+  "doorsonly2_iam_access_requests_is_never_client_written.inverse.sql",
+  "doorsonly2_iam_access_requests_is_never_client_written.sql",
+  "doorsonly2_iam_permissions_is_never_client_written.inverse.sql",
+  "doorsonly2_iam_permissions_is_never_client_written.sql",
+  "doorsonly2_platform__bak_assoc_file_processed_document_20260812_is_never_client_written.inverse.sql",
+  "doorsonly2_platform__bak_assoc_file_processed_document_20260812_is_never_client_written.sql",
+  "doorsonly2_platform__bak_assoc_type_file_processed_document_20260812_is_never_client_written.inverse.sql",
+  "doorsonly2_platform__bak_assoc_type_file_processed_document_20260812_is_never_client_written.sql",
+  "doorsonly2_platform__base_entity_is_never_client_written.inverse.sql",
+  "doorsonly2_platform__base_entity_is_never_client_written.sql",
+  "doorsonly2_platform_actor_session_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_actor_session_is_never_client_written.sql",
+  "doorsonly2_platform_approach_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_approach_is_never_client_written.sql",
+  "doorsonly2_platform_assist_producer_policy_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_assist_producer_policy_is_never_client_written.sql",
+  "doorsonly2_platform_assists_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_assists_is_never_client_written.sql",
+  "doorsonly2_platform_association_types_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_association_types_is_never_client_written.sql",
+  "doorsonly2_platform_associations_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_associations_is_never_client_written.sql",
+  "doorsonly2_platform_assurance_level_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_assurance_level_is_never_client_written.sql",
+  "doorsonly2_platform_change_type_default_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_change_type_default_is_never_client_written.sql",
+  "doorsonly2_platform_comments_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_comments_is_never_client_written.sql",
+  "doorsonly2_platform_custom_entity_definition_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_custom_entity_definition_is_never_client_written.sql",
+  "doorsonly2_platform_custom_field_definition_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_custom_field_definition_is_never_client_written.sql",
+  "doorsonly2_platform_custom_field_target_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_custom_field_target_is_never_client_written.sql",
+  "doorsonly2_platform_custom_record_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_custom_record_is_never_client_written.sql",
+  "doorsonly2_platform_deprecated_relations_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_deprecated_relations_is_never_client_written.sql",
+  "doorsonly2_platform_domain_classification_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_domain_classification_is_never_client_written.sql",
+  "doorsonly2_platform_edge_payload_kind_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_edge_payload_kind_is_never_client_written.sql",
+  "doorsonly2_platform_entity_relationships_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_entity_relationships_is_never_client_written.sql",
+  "doorsonly2_platform_entity_types_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_entity_types_is_never_client_written.sql",
+  "doorsonly2_platform_lifecycle_entity_plan_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_lifecycle_entity_plan_is_never_client_written.sql",
+  "doorsonly2_platform_lifecycle_reference_map_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_lifecycle_reference_map_is_never_client_written.sql",
+  "doorsonly2_platform_masterwork_corpus_item_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_masterwork_corpus_item_is_never_client_written.sql",
+  "doorsonly2_platform_masterwork_source_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_masterwork_source_is_never_client_written.sql",
+  "doorsonly2_platform_mtx_media_heal_queue_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_mtx_media_heal_queue_is_never_client_written.sql",
+  "doorsonly2_platform_mtx_public_url_guard_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_mtx_public_url_guard_is_never_client_written.sql",
+  "doorsonly2_platform_org_change_policy_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_org_change_policy_is_never_client_written.sql",
+  "doorsonly2_platform_org_module_config_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_org_module_config_is_never_client_written.sql",
+  "doorsonly2_platform_outcome_event_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_outcome_event_is_never_client_written.sql",
+  "doorsonly2_platform_output_feedback_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_output_feedback_is_never_client_written.sql",
+  "doorsonly2_platform_outsider_consumer_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_outsider_consumer_is_never_client_written.sql",
+  "doorsonly2_platform_purpose_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_purpose_is_never_client_written.sql",
+  "doorsonly2_platform_reachability_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_reachability_is_never_client_written.sql",
+  "doorsonly2_platform_reference_categories_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_reference_categories_is_never_client_written.sql",
+  "doorsonly2_platform_reference_declaration_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_reference_declaration_is_never_client_written.sql",
+  "doorsonly2_platform_repo_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_repo_is_never_client_written.sql",
+  "doorsonly2_platform_schemas_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_schemas_is_never_client_written.sql",
+  "doorsonly2_platform_shareable_resource_registry_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_shareable_resource_registry_is_never_client_written.sql",
+  "doorsonly2_platform_source_authority_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_source_authority_is_never_client_written.sql",
+  "doorsonly2_platform_taxonomy_node_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_taxonomy_node_is_never_client_written.sql",
+  "doorsonly2_platform_user_entity_state_is_never_client_written.inverse.sql",
+  "doorsonly2_platform_user_entity_state_is_never_client_written.sql",
+  "doorsonly3_iam_organization_preferences_is_never_client_written.inverse.sql",
+  "doorsonly3_iam_organization_preferences_is_never_client_written.sql",
+  "doorsonly3_iam_organizations_is_never_client_written.inverse.sql",
+  "doorsonly3_iam_organizations_is_never_client_written.sql",
+  "doorsonly3_platform_egress_device_is_never_client_written.inverse.sql",
+  "doorsonly3_platform_egress_device_is_never_client_written.sql",
+  "doorsonly3_platform_flexible_data_is_never_client_written.inverse.sql",
+  "doorsonly3_platform_flexible_data_is_never_client_written.sql",
+  "doorsonly3_platform_guided_checklist_run_is_never_client_written.inverse.sql",
+  "doorsonly3_platform_guided_checklist_run_is_never_client_written.sql",
+  "doorsonly3_platform_masterwork_run_is_never_client_written.inverse.sql",
+  "doorsonly3_platform_masterwork_run_is_never_client_written.sql",
+  "doorsonly5_machinery_batch_01_the_for_select_twin.inverse.sql",
+  "doorsonly5_machinery_batch_01_the_for_select_twin.sql",
+  "doorsonly5_machinery_batch_02_the_for_select_twin.inverse.sql",
+  "doorsonly5_machinery_batch_02_the_for_select_twin.sql",
+  "doorsonly5_machinery_batch_03_the_for_select_twin.inverse.sql",
+  "doorsonly5_machinery_batch_03_the_for_select_twin.sql",
+  "doorsonly5_machinery_batch_04_the_for_select_twin.inverse.sql",
+  "doorsonly5_machinery_batch_04_the_for_select_twin.sql",
+  "doorsonly5_platform_categories_is_never_client_written.inverse.sql",
+  "doorsonly5_platform_categories_is_never_client_written.sql",
+  "doorsonly5_platform_rulebook_is_never_client_written.inverse.sql",
+  "doorsonly5_platform_rulebook_is_never_client_written.sql",
+  "doorsonly5_platform_saved_view_is_never_client_written.inverse.sql",
+  "doorsonly5_platform_saved_view_is_never_client_written.sql",
+  "doorsonly5_the_tail_of_the_write_surface.inverse.sql",
+  "doorsonly5_the_tail_of_the_write_surface.sql",
+  "doorsonly_iam_industries_is_never_client_written.inverse.sql",
+  "doorsonly_iam_industries_is_never_client_written.sql",
+  "doorsonly_iam_industry_curators_is_never_client_written.inverse.sql",
+  "doorsonly_iam_industry_curators_is_never_client_written.sql",
+  "doorsonly_iam_membership_grant_is_never_client_written.inverse.sql",
+  "doorsonly_iam_membership_grant_is_never_client_written.sql",
+  "doorsonly_iam_memberships_is_never_client_written.inverse.sql",
+  "doorsonly_iam_memberships_is_never_client_written.sql",
+  "doorsonly_iam_org_industries_is_never_client_written.inverse.sql",
+  "doorsonly_iam_org_industries_is_never_client_written.sql",
+  "doorsonly_iam_system_orgs_is_never_client_written.inverse.sql",
+  "doorsonly_iam_system_orgs_is_never_client_written.sql",
+  "doorsonly_iam_system_personal_org_failures_is_never_client_written.inverse.sql",
+  "doorsonly_iam_system_personal_org_failures_is_never_client_written.sql",
+  "doorsonly_platform_activity_log_is_never_client_written.inverse.sql",
+  "doorsonly_platform_activity_log_is_never_client_written.sql",
+  "doorsonly_platform_assist_producer_policy_history_is_never_client_written.inverse.sql",
+  "doorsonly_platform_assist_producer_policy_history_is_never_client_written.sql",
+  "doorsonly_platform_ddl_guard_log_is_never_client_written.inverse.sql",
+  "doorsonly_platform_ddl_guard_log_is_never_client_written.sql",
+  "doorsonly_platform_entity_grants_is_never_client_written.inverse.sql",
+  "doorsonly_platform_entity_grants_is_never_client_written.sql",
+  "doorsonly_platform_feature_knob_is_never_client_written.inverse.sql",
+  "doorsonly_platform_feature_knob_is_never_client_written.sql",
+  "doorsonly_platform_knob_scope_kind_is_never_client_written.inverse.sql",
+  "doorsonly_platform_knob_scope_kind_is_never_client_written.sql",
+  "doorsonly_platform_knob_write_door_is_never_client_written.inverse.sql",
+  "doorsonly_platform_knob_write_door_is_never_client_written.sql",
+  "doorsonly_platform_lifecycle_archive_is_never_client_written.inverse.sql",
+  "doorsonly_platform_lifecycle_archive_is_never_client_written.sql",
+  "doorsonly_platform_lifecycle_archive_row_is_never_client_written.inverse.sql",
+  "doorsonly_platform_lifecycle_archive_row_is_never_client_written.sql",
+  "doorsonly_platform_lifecycle_audit_is_never_client_written.inverse.sql",
+  "doorsonly_platform_lifecycle_audit_is_never_client_written.sql",
+  "doorsonly_platform_lifecycle_map_build_is_never_client_written.inverse.sql",
+  "doorsonly_platform_lifecycle_map_build_is_never_client_written.sql",
+  "doorsonly_platform_lifecycle_run_is_never_client_written.inverse.sql",
+  "doorsonly_platform_lifecycle_run_is_never_client_written.sql",
+  "doorsonly_platform_route_manifest_is_never_client_written.inverse.sql",
+  "doorsonly_platform_route_manifest_is_never_client_written.sql",
   "fieldtruth_a_record_carries_only_declared_fields.sql",
   "fieldtruth_a_table_cannot_claim_a_column_it_never_defined.sql",
   "fieldtruth_a_table_says_where_its_columns_come_from.sql",
   "fieldtruth_the_deferred_guard_comes_off.sql",
+  "mergehist_a_compound_operation_signs_its_revision.sql",
   "oldtables_w0_the_two_halves_of_a_relation_can_never_disagree.sql",
   "oldtables_w0_the_two_halves_of_a_relation_can_never_disagree_down.sql",
+  "orgarch_an_organization_is_archived_never_deleted.sql",
+  "orgarch_an_organization_is_archived_never_deleted_down.sql",
   "pipelines_a_stage_is_a_field_and_its_moves_are_rules.sql",
   "pipelines_a_stage_is_a_field_and_its_moves_are_rules_down.sql",
+  "realtime_INVERSE.sql",
+  "realtime_a_topic_is_admitted_by_its_owning_schema.sql",
+  "seckeys_api_keys_have_exactly_one_door.sql",
+  "secsweep2_browser_profile_owner_user_id_is_the_caller.inverse.sql",
+  "secsweep2_browser_profile_owner_user_id_is_the_caller.sql",
+  "secsweep2_browser_stream_ticket_user_id_is_the_caller.inverse.sql",
+  "secsweep2_browser_stream_ticket_user_id_is_the_caller.sql",
+  "secsweep2_canvas_canvas_items_user_id_is_the_caller.inverse.sql",
+  "secsweep2_canvas_canvas_items_user_id_is_the_caller.sql",
+  "secsweep2_communication_contact_submissions_user_id_is_the_caller.inverse.sql",
+  "secsweep2_communication_contact_submissions_user_id_is_the_caller.sql",
+  "secsweep2_communication_meet_call_invites_caller_user_id.inverse.sql",
+  "secsweep2_communication_meet_call_invites_caller_user_id.sql",
+  "secsweep2_communication_meet_meetings_host_user_id.inverse.sql",
+  "secsweep2_communication_meet_meetings_host_user_id.sql",
+  "secsweep2_communication_notification_preference_user_id_is_the_caller.inverse.sql",
+  "secsweep2_communication_notification_preference_user_id_is_the_caller.sql",
+  "secsweep2_communication_notification_recipient_user_id.inverse.sql",
+  "secsweep2_communication_notification_recipient_user_id.sql",
+  "secsweep2_communication_sms_consent_user_id_is_the_caller.inverse.sql",
+  "secsweep2_communication_sms_consent_user_id_is_the_caller.sql",
+  "secsweep2_communication_sms_conversations_user_id_is_the_caller.inverse.sql",
+  "secsweep2_communication_sms_conversations_user_id_is_the_caller.sql",
+  "secsweep2_communication_sms_notification_preferences_user_id_is_the_caller.inverse.sql",
+  "secsweep2_communication_sms_notification_preferences_user_id_is_the_caller.sql",
+  "secsweep2_communication_sms_notifications_user_id_is_the_caller.inverse.sql",
+  "secsweep2_communication_sms_notifications_user_id_is_the_caller.sql",
+  "secsweep2_communication_sms_phone_numbers_user_id_is_the_caller.inverse.sql",
+  "secsweep2_communication_sms_phone_numbers_user_id_is_the_caller.sql",
+  "secsweep2_docproc_derive_runs_user_id_is_the_caller.inverse.sql",
+  "secsweep2_docproc_derive_runs_user_id_is_the_caller.sql",
+  "secsweep2_docproc_page_extraction_jobs_owner_id_is_the_caller.inverse.sql",
+  "secsweep2_docproc_page_extraction_jobs_owner_id_is_the_caller.sql",
+  "secsweep2_docproc_page_extraction_page_runs_user_id_is_the_caller.inverse.sql",
+  "secsweep2_docproc_page_extraction_page_runs_user_id_is_the_caller.sql",
+  "secsweep2_docproc_processed_documents_owner_id_is_the_caller.inverse.sql",
+  "secsweep2_docproc_processed_documents_owner_id_is_the_caller.sql",
+  "secsweep2_education_game_room_host_user_id.inverse.sql",
+  "secsweep2_education_game_room_host_user_id.sql",
+  "secsweep2_hr_access_audit_is_never_client_written.inverse.sql",
+  "secsweep2_hr_access_audit_is_never_client_written.sql",
+  "secsweep2_hr_candidate_actor_user_id.inverse.sql",
+  "secsweep2_hr_candidate_actor_user_id.sql",
+  "secsweep2_hr_eeo_response_actor_user_id.inverse.sql",
+  "secsweep2_hr_eeo_response_actor_user_id.sql",
+  "secsweep2_hr_employee_login_user_id.inverse.sql",
+  "secsweep2_hr_employee_login_user_id.sql",
+  "secsweep2_hr_reference_check_actor_user_id.inverse.sql",
+  "secsweep2_hr_reference_check_actor_user_id.sql",
+  "secsweep2_interview_decision_interview_respondent_user_id.inverse.sql",
+  "secsweep2_interview_decision_interview_respondent_user_id.sql",
+  "secsweep2_legal_wc_claim_user_id_is_the_caller.inverse.sql",
+  "secsweep2_legal_wc_claim_user_id_is_the_caller.sql",
+  "secsweep2_ops_ops_issue_event_user_id_is_the_caller.inverse.sql",
+  "secsweep2_ops_ops_issue_event_user_id_is_the_caller.sql",
+  "secsweep2_ops_system_error_user_id_is_the_caller.inverse.sql",
+  "secsweep2_ops_system_error_user_id_is_the_caller.sql",
+  "secsweep2_ops_system_write_failure_user_id_is_the_caller.inverse.sql",
+  "secsweep2_ops_system_write_failure_user_id_is_the_caller.sql",
+  "secsweep2_platform_assists_user_id.inverse.sql",
+  "secsweep2_platform_assists_user_id.sql",
+  "secsweep2_public_app_instances_user_id_is_the_caller.inverse.sql",
+  "secsweep2_public_app_instances_user_id_is_the_caller.sql",
+  "secsweep2_public_sandbox_instances_user_id_is_the_caller.inverse.sql",
+  "secsweep2_public_sandbox_instances_user_id_is_the_caller.sql",
+  "secsweep2_rag_context_item_suggestions_user_id_is_the_caller.inverse.sql",
+  "secsweep2_rag_context_item_suggestions_user_id_is_the_caller.sql",
+  "secsweep2_rag_kg_alerts_user_id_is_the_caller.inverse.sql",
+  "secsweep2_rag_kg_alerts_user_id_is_the_caller.sql",
+  "secsweep2_rag_kg_sweep_run_user_id_is_the_caller.inverse.sql",
+  "secsweep2_rag_kg_sweep_run_user_id_is_the_caller.sql",
+  "secsweep2_rag_kg_value_matches_user_id_is_the_caller.inverse.sql",
+  "secsweep2_rag_kg_value_matches_user_id_is_the_caller.sql",
+  "secsweep2_rag_ner_canonicalizer_shadow_user_id_is_the_caller.inverse.sql",
+  "secsweep2_rag_ner_canonicalizer_shadow_user_id_is_the_caller.sql",
+  "secsweep2_rag_scope_suggestions_user_id_is_the_caller.inverse.sql",
+  "secsweep2_rag_scope_suggestions_user_id_is_the_caller.sql",
+  "secsweep2_scheduler_sch_task_user_id_is_the_caller.inverse.sql",
+  "secsweep2_scheduler_sch_task_user_id_is_the_caller.sql",
+  "secsweep2_three_vault_tables_are_never_client_written.inverse.sql",
+  "secsweep2_transcripts_studio_runs_user_id_is_the_caller.inverse.sql",
+  "secsweep2_transcripts_studio_runs_user_id_is_the_caller.sql",
+  "secsweep2_ui_ui_surface_agent_pref_user_id_is_the_caller.inverse.sql",
+  "secsweep2_ui_ui_surface_agent_pref_user_id_is_the_caller.sql",
+  "secsweep2_ui_ui_surface_config_user_id_is_the_caller.inverse.sql",
+  "secsweep2_ui_ui_surface_config_user_id_is_the_caller.sql",
+  "secsweep2_users_invitation_codes_used_by_user_id.inverse.sql",
+  "secsweep2_users_invitation_codes_used_by_user_id.sql",
+  "secsweep2_users_system_announcements_target_user_id.inverse.sql",
+  "secsweep2_users_system_announcements_target_user_id.sql",
+  "secsweep2_users_user_email_preferences_user_id_is_the_caller.inverse.sql",
+  "secsweep2_users_user_email_preferences_user_id_is_the_caller.sql",
+  "secsweep2_users_user_feedback_user_id_is_the_caller.inverse.sql",
+  "secsweep2_users_user_feedback_user_id_is_the_caller.sql",
+  "secsweep2_users_user_surface_state_user_id_is_the_caller.inverse.sql",
+  "secsweep2_users_user_surface_state_user_id_is_the_caller.sql",
+  "secsweep2_workbench_heatmap_saves_user_id_is_the_caller.inverse.sql",
+  "secsweep2_workbench_heatmap_saves_user_id_is_the_caller.sql",
+  "secsweep2_workbench_udt_datasets_user_id_is_the_caller.inverse.sql",
+  "secsweep2_workbench_udt_datasets_user_id_is_the_caller.sql",
+  "secsweep2_workbench_udt_documents_user_id_is_the_caller.inverse.sql",
+  "secsweep2_workbench_udt_documents_user_id_is_the_caller.sql",
+  "secsweep2_workbench_udt_structured_lists_user_id_is_the_caller.inverse.sql",
+  "secsweep2_workbench_udt_structured_lists_user_id_is_the_caller.sql",
+  "secsweep2_workbench_udt_workbooks_user_id_is_the_caller.inverse.sql",
+  "secsweep2_workbench_udt_workbooks_user_id_is_the_caller.sql",
+  "secsweep_iam_access_audit_is_never_client_written.inverse.sql",
+  "secsweep_iam_emergency_door_request_is_never_client_written.inverse.sql",
+  "secsweep_iam_org_member_controls_is_never_client_written.inverse.sql",
+  "secsweep_platform_action_request_is_never_client_written.inverse.sql",
+  "secsweep_platform_retention_policy_is_never_client_written.inverse.sql",
+  "secsweep_the_invitation_token_has_exactly_one_door.inverse.sql",
+  "secsweep_the_invitation_token_has_exactly_one_door.sql",
+  "secsweep_the_share_link_token_has_exactly_one_door.inverse.sql",
+  "secsweep_the_share_link_token_has_exactly_one_door.sql",
+  "secsweep_the_unsubscribe_token_has_exactly_one_door.inverse.sql",
+  "secsweep_the_unsubscribe_token_has_exactly_one_door.sql",
   "storerel_a_relation_edge_names_its_field.sql",
   "storerel_a_relation_edge_names_its_field_down.sql",
   "storet_a_choice_is_a_word_and_unique_means_unique.sql",
@@ -1394,6 +1883,8 @@ export const WINDOW_CLASS_GRANDFATHERED: readonly string[] = [
   "tableowner_the_table_door_names_an_owner.sql",
   "visfix_containment_reaches_the_ladder.inverse.sql",
   "visfix_containment_reaches_the_ladder.sql",
+  "w0_sync2_masterwork_source_and_definer_lint.sql",
+  "w0_sync_provisioner_and_shape_guard.sql",
   "w1_field_definitions_and_validation.sql",
   "w1_field_definitions_and_validation_down.sql",
   "w1_field_types_the_parity_floor.sql",
@@ -1401,6 +1892,10 @@ export const WINDOW_CLASS_GRANDFATHERED: readonly string[] = [
   "w1_field_types_thirteen_parity_types.sql",
   "w1_index_the_promotion_layer.sql",
   "w1_index_the_promotion_layer_down.sql",
+  "w1_org_billing_owner_columns_move_on_main.sql",
+  "w1_org_billing_owner_columns_move_on_main_down.sql",
+  "w1_org_billing_owner_columns_move_to_the_organization.sql",
+  "w1_org_billing_owner_columns_move_to_the_organization_down.sql",
   "w1_rule_apply_membership_and_applicability.sql",
   "w1_rule_apply_the_other_two_uses_down.sql",
   "w1_rule_object_and_uses.sql",
@@ -1417,8 +1912,10 @@ export const WINDOW_CLASS_GRANDFATHERED: readonly string[] = [
   "w1_val_the_value_envelope_down.sql",
   "w1_val_the_value_envelope_on_main.sql",
   "w3_hist_down.sql",
+  "w3_hist_retention_and_the_floor.sql",
   "w3_hist_the_one_store.sql",
   "w3_hist_two_clocks.sql",
+  "w3_mig_the_ten_verbs.sql",
   "w3_work_assignment_templates_and_slots.sql",
   "w3_work_assignment_templates_and_slots_down.sql",
   "w4_door_the_read_door.sql",

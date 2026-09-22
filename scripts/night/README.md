@@ -151,6 +151,132 @@
 >    gate, `pnpm check:trigger-lock-set`, and the byte-level rule has
 >    `pnpm check:migration-window-class:self-test`.
 
+> ## 🚨 THE WHOLE CORRIDOR, MEASURED: EVERY DDL CLASS A MIGRATION CAN CARRY (lane DDL-LOCK-CENSUS, 2026-09-22)
+>
+> POLICY-LOCK judged by the word "policy". TRIGGER-LOCK judged by the words "drop trigger". Both
+> were right about what they had measured and silent about the twenty classes they had not — and
+> **a name is a guess about a lock.** So every DDL class a campaign file can carry was measured the
+> same way TRIGGER-LOCK measured triggers: on the dev clone, each probe inside its own
+> `begin … rollback` against a COMMITTED scratch estate (one plain table, one four-partition hash
+> parent), locks read from the measuring backend's own `pg_locks`, counting only relations that
+> existed before the probe. `CONCURRENTLY` cannot run in a transaction, so it was read from a
+> second connection while a third held the build waiting. Two runs, identical on strongest lock,
+> hook membership and ACCESS EXCLUSIVE count.
+>
+> | statement | shape | strongest lock | own relations | + supautils set | total ACCESS EXCLUSIVE | ms | window-class |
+> |---|---|---|---|---|---|---|---|
+> | `create table` | plain table | ACCESS SHARE | 8 | no | **0** | 11.5 | · |
+> | `create table` | 4-partition parent | ACCESS SHARE | 6 | no | **0** | 8.9 | · |
+> | `drop table` | plain table | ACCESS EXCLUSIVE | 2 | no | **2** | 1.3 | · |
+> | `drop table` | 4-partition parent | ACCESS EXCLUSIVE | 10 | no | **10** | 2.7 | **WINDOW** |
+> | `add column` | plain table | ACCESS EXCLUSIVE | 8 | no | **1** | 8.3 | · |
+> | `add column` | 4-partition parent | ACCESS EXCLUSIVE | 10 | no | **5** | 8.5 | **WINDOW** |
+> | `drop column` | plain table | ACCESS EXCLUSIVE | 6 | no | **1** | 8.4 | · |
+> | `drop column` | 4-partition parent | ACCESS EXCLUSIVE | 10 | no | **5** | 8.8 | **WINDOW** |
+> | `alter column type` | plain table | ACCESS EXCLUSIVE | 13 | no | **6** | 17.6 | · |
+> | `alter column type` | 4-partition parent | ACCESS EXCLUSIVE | 35 | no | **25** | 28.9 | **WINDOW** |
+> | `add constraint fk` | plain table | SHARE ROW EXCLUSIVE | 21 | no | **0** | 12.1 | · |
+> | `add constraint fk` | 4-partition parent | SHARE ROW EXCLUSIVE | 38 | no | **0** | 12.0 | · |
+> | `add constraint unique` | plain table | ACCESS EXCLUSIVE | 7 | no | **1** | 10.9 | · |
+> | `add constraint unique` | 4-partition parent | ACCESS EXCLUSIVE | 11 | no | **1** | 14.7 | **WINDOW** |
+> | `add constraint check` | plain table | ACCESS EXCLUSIVE | 6 | no | **1** | 8.6 | · |
+> | `add constraint check` | 4-partition parent | ACCESS EXCLUSIVE | 10 | no | **5** | 9.3 | **WINDOW** |
+> | `drop constraint` | plain table | ACCESS EXCLUSIVE | 6 | no | **1** | 8.4 | · |
+> | `drop constraint` | 4-partition parent | ACCESS EXCLUSIVE | 10 | no | **5** | 8.6 | **WINDOW** |
+> | `create index` | plain table | SHARE | 1 | no | **0** | 2.3 | · |
+> | `create index` | 4-partition parent | SHARE | 5 | no | **0** | 4.6 | · |
+> | `drop index` | plain table | ACCESS EXCLUSIVE | 2 | no | **2** | 0.7 | · |
+> | `drop index` | 4-partition parent | ACCESS EXCLUSIVE | 10 | no | **10** | 1.2 | **WINDOW** |
+> | `rename index` | plain table | SHARE UPDATE EXCLUSIVE | 1 | no | **0** | 0.5 | · |
+> | `rename index` | 4-partition parent | SHARE UPDATE EXCLUSIVE | 1 | no | **0** | 0.4 | · |
+> | `create policy` | plain table | ACCESS EXCLUSIVE | 1 | **yes, 23** | **24** | 0.7 | **WINDOW** |
+> | `create policy` | 4-partition parent | ACCESS EXCLUSIVE | 1 | **yes, 23** | **24** | 0.7 | **WINDOW** |
+> | `drop policy` | plain table | ACCESS EXCLUSIVE | 2 | **yes, 23** | **24** | 0.8 | **WINDOW** |
+> | `drop policy` | 4-partition parent | ACCESS EXCLUSIVE | 2 | **yes, 23** | **24** | 0.8 | **WINDOW** |
+> | `alter policy` | plain table | ACCESS EXCLUSIVE | 1 | **yes, 23** | **24** | 0.7 | **WINDOW** |
+> | `alter policy` | 4-partition parent | ACCESS EXCLUSIVE | 1 | **yes, 23** | **24** | 0.7 | **WINDOW** |
+> | `create trigger` | plain table | SHARE ROW EXCLUSIVE | 5 | no | **0** | 0.9 | · |
+> | `create trigger` | 4-partition parent | SHARE ROW EXCLUSIVE | 9 | no | **0** | 1.2 | · |
+> | `drop trigger` | plain table | ACCESS EXCLUSIVE | 2 | **yes, 23** | **24** | 0.9 | **WINDOW** |
+> | `drop trigger` | 4-partition parent | ACCESS EXCLUSIVE | 6 | **yes, 23** | **28** | 1.3 | **WINDOW** |
+> | `enable/disable trigger` | plain table | SHARE ROW EXCLUSIVE | 6 | no | **0** | 8.2 | · |
+> | `enable/disable trigger` | 4-partition parent | SHARE ROW EXCLUSIVE | 10 | no | **0** | 8.4 | · |
+> | `drop function` | no table | ACCESS SHARE | 4 | no | **0** | 0.7 | · |
+> | `create or replace function` | no table | ACCESS SHARE | 8 | no | **0** | 72.7 | · |
+> | `grant` | plain table | ACCESS SHARE | 18 | no | **0** | 71.8 | · |
+> | `grant` | 4-partition parent | ACCESS SHARE | 18 | no | **0** | 70.4 | · |
+> | `revoke` | plain table | ACCESS SHARE | 8 | no | **0** | 64.5 | · |
+> | `revoke` | 4-partition parent | ACCESS SHARE | 8 | no | **0** | 64.4 | · |
+> | `enable rls` | plain table | ACCESS EXCLUSIVE | 6 | no | **1** | 8.1 | · |
+> | `enable rls` | 4-partition parent | ACCESS EXCLUSIVE | 6 | no | **1** | 8.0 | **WINDOW** |
+> | `force rls` | plain table | ACCESS EXCLUSIVE | 6 | no | **1** | 8.1 | · |
+> | `force rls` | 4-partition parent | ACCESS EXCLUSIVE | 6 | no | **1** | 7.9 | **WINDOW** |
+> | `truncate` | plain table | ACCESS EXCLUSIVE | 8 | no | **6** | 3.0 | · |
+> | `truncate` | 4-partition parent | ACCESS EXCLUSIVE | 33 | no | **25** | 7.1 | **WINDOW** |
+> | `create view` | no table | ACCESS SHARE | 3 | no | **0** | 7.1 | · |
+> | `drop view` | no table | ACCESS EXCLUSIVE | 1 | no | **1** | 0.8 | · |
+> | `comment on table` | plain table | SHARE UPDATE EXCLUSIVE | 2 | no | **0** | 0.6 | · |
+> | `comment on table` | 4-partition parent | SHARE UPDATE EXCLUSIVE | 2 | no | **0** | 0.6 | · |
+> | `create index concurrently` | plain table | SHARE UPDATE EXCLUSIVE | 1 | no | **0** | — | · |
+> | `create index concurrently` | 4-partition parent | unsupported | 0 | no | **0** | — | · |
+> | `drop index concurrently` | plain table | SHARE UPDATE EXCLUSIVE | 2 | no | **0** | — | · |
+>
+> **TWO BELIEFS THIS CORRECTS, AND ONE BLIND SPOT IT CLOSES:**
+>
+> 1. **The supautils hook is NOT "fired by DDL generally".** TRIGGER-LOCK's sentence was too
+>    broad. Measured, `supautils.policy_grants` freezes its 23 `auth`/`storage`/`realtime`
+>    relations on `CREATE`/`ALTER`/`DROP POLICY` and on `DROP TRIGGER` — **and on nothing else in
+>    the census.** `drop table`, `alter column … type`, `truncate`, `drop index`, `drop view` and
+>    `enable rls` all take ACCESS EXCLUSIVE with **zero** hook relations. Sign-in survives them.
+> 2. **ACCESS EXCLUSIVE is far more widespread than the name rules knew.** Eight classes with no
+>    trigger and no policy word anywhere take it on a partitioned parent and fan it out across
+>    every partition: `drop table`, `add column`, `drop column`, `alter column type`,
+>    `add constraint unique/check`, `drop constraint`, `drop index`, `enable rls`, `force rls`,
+>    `truncate`. On `custom.record` that is 17 relations, on `history.row_versions` 29. The old
+>    rule would have applied every one of them at noon.
+> 3. **The cheap ways to do the same job are cheap, and now provably so.** `create index` takes
+>    SHARE (and `CONCURRENTLY` only SHARE UPDATE EXCLUSIVE — unsupported on a partitioned parent);
+>    `add constraint … foreign key` takes SHARE ROW EXCLUSIVE; `grant`, `revoke`, `create table`,
+>    `create view`, `drop function` and `create or replace function` take nothing stronger than
+>    ACCESS SHARE; `rename index` and `comment on` take SHARE UPDATE EXCLUSIVE. **None of them is
+>    window-class.** A rule that fired on every statement would be a rule someone switches off.
+>
+> **THE RULE, FROM 2026-09-22 — the runner reads the measurement, not the statement's name:**
+>
+> 1. `scripts/lib/ddl-lock-footprint.json` is the census, checked in beside the runner. A
+>    statement is **WINDOW-CLASS** at `--target production` when its measured footprint either
+>    **(a)** includes the hook set — sign-in, token refresh, file reads and realtime stop until
+>    COMMIT — or **(b)** holds **ACCESS EXCLUSIVE on a partitioned parent**. `pnpm db:apply`
+>    refuses it without a `-- window-class: <why>` header at every target, and refuses it outside
+>    **01:00–04:00 Pacific** at production, on the bytes and the clock, before a connection
+>    exists. No flag removes the window.
+> 2. **An unreadable or unparseable census is a REFUSAL, never a fallback.** An unmeasured
+>    footprint must never read as "nothing freezes".
+> 3. **The old trigger name rule stays underneath as the FLOOR.** Whatever the JSON says, trigger
+>    DDL on a partitioned parent is window-class — so a truncated or stale census can only make
+>    the verdict stricter than it was on 2026-09-22, never weaker.
+> 4. **It is proven that the JSON is load-bearing.** `pnpm check:migration-window-class:self-test`
+>    runs the same verdict against a census in which `GRANT` was measured as firing the hook, and
+>    GRANT must become window-class with no code change. Delete that arm and the rule is back to
+>    judging by name. RED-4 and RED-5 add the two blind spots (ACCESS EXCLUSIVE with no trigger
+>    word; policy DDL on an unpartitioned table); GREEN-3 holds the harmless classes harmless on
+>    the parent itself; GREEN-5 proves the missing-census refusal.
+> 5. **RE-CENSUS: 291 more files were window-class and always had been** (148 campaign, 143
+>    inverse) — 158 `drop policy`, 149 `create policy`, 2 `alter policy`, plus `add column`,
+>    `add constraint check`, `drop constraint` and `enable rls` on a partitioned parent. 286 of
+>    them were not yet named, so `WINDOW_CLASS_GRANDFATHERED` went from 58 to **344**. Their bytes
+>    are ledgered history and this campaign does not rewrite an applied file. **Adding a name
+>    there is still not a fix.**
+>
+> ⚠️ **WHAT THIS COSTS, SAID OUT LOUD.** Under this rule **every future migration containing
+> policy DDL is window-class** and is refused at production outside 1–4 AM — including the
+> one-table `iam.apply_rls` call POLICY-LOCK measured at 89 ms and explicitly allowed at midday
+> ("unless it is ONE table and under a second"). The measurement says a 89 ms sign-in freeze is
+> still a sign-in freeze; the earlier ruling says a sub-second one is affordable. **The two
+> disagree and the disagreement is Arman's to settle.** Until he does, the stricter reading is
+> the one in force, because it is the one that cannot cause an outage.
+
+
 A night job is a **one-shot**: it fires once, on a calendar time, from a launchd user agent, and
 deletes its own plist on the way out. It exists because the session that scheduled it will not be
 alive when it runs.

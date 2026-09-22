@@ -1,0 +1,595 @@
+{
+  "schemaVersion": 1,
+  "measuredBy": "lane DDL-LOCK-CENSUS",
+  "measuredOn": "2026-09-22, dev clone jxhgzalwckuarngvsdyq, PostgreSQL 17.6",
+  "method": "Each statement ran inside its own BEGIN \u2026 ROLLBACK on a COMMITTED scratch estate (schema ddlcensus: one plain table, one 4-partition hash parent), and the locks were read from the measuring backend's own pg_locks (pid = pg_backend_pid()), counting only relations that already existed before the probe \u2014 a brand-new index locking itself is not contention. CONCURRENTLY cannot run in a transaction: it was measured from a second connection while a third held the build waiting. Run twice; strongest lock, hook membership and ACCESS EXCLUSIVE count identical on both runs (own-relation counts wobble by 1-2 through our own event triggers touching platform.entity_types).",
+  "hookSetSize": 23,
+  "hook": "Supabase's supautils.policy_grants, context sighup, unchangeable by us. It fires on CREATE/ALTER/DROP POLICY and on DROP TRIGGER \u2014 and, measured here, on NOTHING ELSE: drop table, alter column type, truncate and drop index take ACCESS EXCLUSIVE without it. TRIGGER-LOCK's sentence 'it fires on DDL generally' is too broad.",
+  "partitionedParents": {
+    "custom.record": 16,
+    "history.row_versions": 29
+  },
+  "rule": "A statement class is WINDOW-CLASS at --target production when its measured footprint either (a) includes the hook set, or (b) holds ACCESS EXCLUSIVE on a partitioned parent. Nothing here is decided by the statement NAME.",
+  "classes": [
+    {
+      "id": "create_table",
+      "statement": "create table",
+      "plainTable": {
+        "strongest": "ACCESS SHARE",
+        "ownRelations": 8,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 11.5,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "ACCESS SHARE",
+        "ownRelations": 6,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 8.9,
+        "windowClass": false
+      }
+    },
+    {
+      "id": "drop_table",
+      "statement": "drop table",
+      "plainTable": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 2,
+        "hookRelations": 0,
+        "totalAccessExclusive": 2,
+        "ms": 1.3,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 10,
+        "hookRelations": 0,
+        "totalAccessExclusive": 10,
+        "ms": 2.7,
+        "windowClass": true,
+        "because": "ACCESS EXCLUSIVE on the partitioned parent and every partition (10 relations on a 4-partition scratch parent) \u2014 every reader and every writer of the store waits until COMMIT"
+      }
+    },
+    {
+      "id": "add_column",
+      "statement": "add column",
+      "plainTable": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 8,
+        "hookRelations": 0,
+        "totalAccessExclusive": 1,
+        "ms": 8.3,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 10,
+        "hookRelations": 0,
+        "totalAccessExclusive": 5,
+        "ms": 8.5,
+        "windowClass": true,
+        "because": "ACCESS EXCLUSIVE on the partitioned parent and every partition (5 relations on a 4-partition scratch parent) \u2014 every reader and every writer of the store waits until COMMIT"
+      }
+    },
+    {
+      "id": "drop_column",
+      "statement": "drop column",
+      "plainTable": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 6,
+        "hookRelations": 0,
+        "totalAccessExclusive": 1,
+        "ms": 8.4,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 10,
+        "hookRelations": 0,
+        "totalAccessExclusive": 5,
+        "ms": 8.8,
+        "windowClass": true,
+        "because": "ACCESS EXCLUSIVE on the partitioned parent and every partition (5 relations on a 4-partition scratch parent) \u2014 every reader and every writer of the store waits until COMMIT"
+      }
+    },
+    {
+      "id": "alter_column_type",
+      "statement": "alter column type",
+      "plainTable": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 13,
+        "hookRelations": 0,
+        "totalAccessExclusive": 6,
+        "ms": 17.6,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 35,
+        "hookRelations": 0,
+        "totalAccessExclusive": 25,
+        "ms": 28.9,
+        "windowClass": true,
+        "because": "ACCESS EXCLUSIVE on the partitioned parent and every partition (25 relations on a 4-partition scratch parent) \u2014 every reader and every writer of the store waits until COMMIT"
+      }
+    },
+    {
+      "id": "add_constraint_fk",
+      "statement": "add constraint fk",
+      "plainTable": {
+        "strongest": "SHARE ROW EXCLUSIVE",
+        "ownRelations": 21,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 12.1,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "SHARE ROW EXCLUSIVE",
+        "ownRelations": 38,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 12.0,
+        "windowClass": false
+      }
+    },
+    {
+      "id": "add_constraint_unique",
+      "statement": "add constraint unique",
+      "plainTable": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 7,
+        "hookRelations": 0,
+        "totalAccessExclusive": 1,
+        "ms": 10.9,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 11,
+        "hookRelations": 0,
+        "totalAccessExclusive": 1,
+        "ms": 14.7,
+        "windowClass": true,
+        "because": "ACCESS EXCLUSIVE on the partitioned parent and every partition (1 relations on a 4-partition scratch parent) \u2014 every reader and every writer of the store waits until COMMIT"
+      }
+    },
+    {
+      "id": "add_constraint_check",
+      "statement": "add constraint check",
+      "plainTable": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 6,
+        "hookRelations": 0,
+        "totalAccessExclusive": 1,
+        "ms": 8.6,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 10,
+        "hookRelations": 0,
+        "totalAccessExclusive": 5,
+        "ms": 9.3,
+        "windowClass": true,
+        "because": "ACCESS EXCLUSIVE on the partitioned parent and every partition (5 relations on a 4-partition scratch parent) \u2014 every reader and every writer of the store waits until COMMIT"
+      }
+    },
+    {
+      "id": "drop_constraint",
+      "statement": "drop constraint",
+      "plainTable": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 6,
+        "hookRelations": 0,
+        "totalAccessExclusive": 1,
+        "ms": 8.4,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 10,
+        "hookRelations": 0,
+        "totalAccessExclusive": 5,
+        "ms": 8.6,
+        "windowClass": true,
+        "because": "ACCESS EXCLUSIVE on the partitioned parent and every partition (5 relations on a 4-partition scratch parent) \u2014 every reader and every writer of the store waits until COMMIT"
+      }
+    },
+    {
+      "id": "create_index",
+      "statement": "create index",
+      "plainTable": {
+        "strongest": "SHARE",
+        "ownRelations": 1,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 2.3,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "SHARE",
+        "ownRelations": 5,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 4.6,
+        "windowClass": false
+      }
+    },
+    {
+      "id": "drop_index",
+      "statement": "drop index",
+      "plainTable": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 2,
+        "hookRelations": 0,
+        "totalAccessExclusive": 2,
+        "ms": 0.7,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 10,
+        "hookRelations": 0,
+        "totalAccessExclusive": 10,
+        "ms": 1.2,
+        "windowClass": true,
+        "because": "ACCESS EXCLUSIVE on the partitioned parent and every partition (10 relations on a 4-partition scratch parent) \u2014 every reader and every writer of the store waits until COMMIT"
+      }
+    },
+    {
+      "id": "rename_index",
+      "statement": "rename index",
+      "plainTable": {
+        "strongest": "SHARE UPDATE EXCLUSIVE",
+        "ownRelations": 1,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 0.5,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "SHARE UPDATE EXCLUSIVE",
+        "ownRelations": 1,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 0.4,
+        "windowClass": false
+      }
+    },
+    {
+      "id": "create_policy",
+      "statement": "create policy",
+      "plainTable": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 1,
+        "hookRelations": 23,
+        "totalAccessExclusive": 24,
+        "ms": 0.7,
+        "windowClass": true,
+        "because": "it freezes the supautils set \u2014 23 auth/storage/realtime relations held to COMMIT, so nobody signs in, refreshes a token, reads a file or receives a realtime message"
+      },
+      "partitionedParent": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 1,
+        "hookRelations": 23,
+        "totalAccessExclusive": 24,
+        "ms": 0.7,
+        "windowClass": true,
+        "because": "it freezes the supautils set \u2014 23 auth/storage/realtime relations held to COMMIT, so nobody signs in, refreshes a token, reads a file or receives a realtime message"
+      }
+    },
+    {
+      "id": "drop_policy",
+      "statement": "drop policy",
+      "plainTable": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 2,
+        "hookRelations": 23,
+        "totalAccessExclusive": 24,
+        "ms": 0.8,
+        "windowClass": true,
+        "because": "it freezes the supautils set \u2014 23 auth/storage/realtime relations held to COMMIT, so nobody signs in, refreshes a token, reads a file or receives a realtime message"
+      },
+      "partitionedParent": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 2,
+        "hookRelations": 23,
+        "totalAccessExclusive": 24,
+        "ms": 0.8,
+        "windowClass": true,
+        "because": "it freezes the supautils set \u2014 23 auth/storage/realtime relations held to COMMIT, so nobody signs in, refreshes a token, reads a file or receives a realtime message"
+      }
+    },
+    {
+      "id": "alter_policy",
+      "statement": "alter policy",
+      "plainTable": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 1,
+        "hookRelations": 23,
+        "totalAccessExclusive": 24,
+        "ms": 0.7,
+        "windowClass": true,
+        "because": "it freezes the supautils set \u2014 23 auth/storage/realtime relations held to COMMIT, so nobody signs in, refreshes a token, reads a file or receives a realtime message"
+      },
+      "partitionedParent": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 1,
+        "hookRelations": 23,
+        "totalAccessExclusive": 24,
+        "ms": 0.7,
+        "windowClass": true,
+        "because": "it freezes the supautils set \u2014 23 auth/storage/realtime relations held to COMMIT, so nobody signs in, refreshes a token, reads a file or receives a realtime message"
+      }
+    },
+    {
+      "id": "create_trigger",
+      "statement": "create trigger",
+      "plainTable": {
+        "strongest": "SHARE ROW EXCLUSIVE",
+        "ownRelations": 5,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 0.9,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "SHARE ROW EXCLUSIVE",
+        "ownRelations": 9,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 1.2,
+        "windowClass": false
+      }
+    },
+    {
+      "id": "drop_trigger",
+      "statement": "drop trigger",
+      "plainTable": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 2,
+        "hookRelations": 23,
+        "totalAccessExclusive": 24,
+        "ms": 0.9,
+        "windowClass": true,
+        "because": "it freezes the supautils set \u2014 23 auth/storage/realtime relations held to COMMIT, so nobody signs in, refreshes a token, reads a file or receives a realtime message"
+      },
+      "partitionedParent": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 6,
+        "hookRelations": 23,
+        "totalAccessExclusive": 28,
+        "ms": 1.3,
+        "windowClass": true,
+        "because": "it freezes the supautils set \u2014 23 auth/storage/realtime relations held to COMMIT, so nobody signs in, refreshes a token, reads a file or receives a realtime message"
+      }
+    },
+    {
+      "id": "alter_trigger_enable_disable",
+      "statement": "enable/disable trigger",
+      "plainTable": {
+        "strongest": "SHARE ROW EXCLUSIVE",
+        "ownRelations": 6,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 8.2,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "SHARE ROW EXCLUSIVE",
+        "ownRelations": 10,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 8.4,
+        "windowClass": false
+      }
+    },
+    {
+      "id": "drop_function",
+      "statement": "drop function",
+      "noTable": {
+        "strongest": "ACCESS SHARE",
+        "ownRelations": 4,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 0.7,
+        "windowClass": false
+      }
+    },
+    {
+      "id": "create_or_replace_function",
+      "statement": "create or replace function",
+      "noTable": {
+        "strongest": "ACCESS SHARE",
+        "ownRelations": 8,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 72.7,
+        "windowClass": false
+      }
+    },
+    {
+      "id": "grant",
+      "statement": "grant",
+      "plainTable": {
+        "strongest": "ACCESS SHARE",
+        "ownRelations": 18,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 71.8,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "ACCESS SHARE",
+        "ownRelations": 18,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 70.4,
+        "windowClass": false
+      }
+    },
+    {
+      "id": "revoke",
+      "statement": "revoke",
+      "plainTable": {
+        "strongest": "ACCESS SHARE",
+        "ownRelations": 8,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 64.5,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "ACCESS SHARE",
+        "ownRelations": 8,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 64.4,
+        "windowClass": false
+      }
+    },
+    {
+      "id": "enable_rls",
+      "statement": "enable rls",
+      "plainTable": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 6,
+        "hookRelations": 0,
+        "totalAccessExclusive": 1,
+        "ms": 8.1,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 6,
+        "hookRelations": 0,
+        "totalAccessExclusive": 1,
+        "ms": 8.0,
+        "windowClass": true,
+        "because": "ACCESS EXCLUSIVE on the partitioned parent and every partition (1 relations on a 4-partition scratch parent) \u2014 every reader and every writer of the store waits until COMMIT"
+      }
+    },
+    {
+      "id": "force_rls",
+      "statement": "force rls",
+      "plainTable": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 6,
+        "hookRelations": 0,
+        "totalAccessExclusive": 1,
+        "ms": 8.1,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 6,
+        "hookRelations": 0,
+        "totalAccessExclusive": 1,
+        "ms": 7.9,
+        "windowClass": true,
+        "because": "ACCESS EXCLUSIVE on the partitioned parent and every partition (1 relations on a 4-partition scratch parent) \u2014 every reader and every writer of the store waits until COMMIT"
+      }
+    },
+    {
+      "id": "truncate",
+      "statement": "truncate",
+      "plainTable": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 8,
+        "hookRelations": 0,
+        "totalAccessExclusive": 6,
+        "ms": 3.0,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 33,
+        "hookRelations": 0,
+        "totalAccessExclusive": 25,
+        "ms": 7.1,
+        "windowClass": true,
+        "because": "ACCESS EXCLUSIVE on the partitioned parent and every partition (25 relations on a 4-partition scratch parent) \u2014 every reader and every writer of the store waits until COMMIT"
+      }
+    },
+    {
+      "id": "create_view",
+      "statement": "create view",
+      "noTable": {
+        "strongest": "ACCESS SHARE",
+        "ownRelations": 3,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 7.1,
+        "windowClass": false
+      }
+    },
+    {
+      "id": "drop_view",
+      "statement": "drop view",
+      "noTable": {
+        "strongest": "ACCESS EXCLUSIVE",
+        "ownRelations": 1,
+        "hookRelations": 0,
+        "totalAccessExclusive": 1,
+        "ms": 0.8,
+        "windowClass": false
+      }
+    },
+    {
+      "id": "comment_on",
+      "statement": "comment on table",
+      "plainTable": {
+        "strongest": "SHARE UPDATE EXCLUSIVE",
+        "ownRelations": 2,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 0.6,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "SHARE UPDATE EXCLUSIVE",
+        "ownRelations": 2,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": 0.6,
+        "windowClass": false
+      }
+    },
+    {
+      "id": "create_index_concurrently",
+      "statement": "create index concurrently",
+      "plainTable": {
+        "strongest": "SHARE UPDATE EXCLUSIVE",
+        "ownRelations": 1,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": null,
+        "windowClass": false
+      },
+      "partitionedParent": {
+        "strongest": "unsupported",
+        "ownRelations": 0,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": null,
+        "note": "PostgreSQL 17 refuses CREATE INDEX CONCURRENTLY on a partitioned table outright.",
+        "windowClass": false
+      }
+    },
+    {
+      "id": "drop_index_concurrently",
+      "statement": "drop index concurrently",
+      "plainTable": {
+        "strongest": "SHARE UPDATE EXCLUSIVE",
+        "ownRelations": 2,
+        "hookRelations": 0,
+        "totalAccessExclusive": 0,
+        "ms": null,
+        "windowClass": false
+      }
+    }
+  ]
+}

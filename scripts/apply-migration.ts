@@ -179,6 +179,10 @@ import {
   windowClassVerdict,
   windowClassDeclaration,
   WINDOW_CLASS_GRANDFATHERED,
+  DDL_LOCK_FOOTPRINT,
+  ddlSitesIn,
+  ddlFootprintOf,
+  loadDdlFootprint,
   WINDOW_CLASS_OPEN_HHMM,
   WINDOW_CLASS_CLOSE_HHMM,
   pacificHHMM,
@@ -1057,22 +1061,35 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   if (inCampaign || inInverse) {
     const sites = windowClassVerdict(sql);
     if (sites.length > 0 && !WINDOW_CLASS_GRANDFATHERED.includes(filename)) {
-      const tables = [...new Set(sites.map((x) => `${x.table} (+${x.partitions} partitions)`))];
-      const worst = sites.some((x) => x.freezesSignIn) ? "ACCESS EXCLUSIVE" : "SHARE ROW EXCLUSIVE";
+      const tables = [
+        ...new Set(sites.map((x) => (x.partitions > 0 ? `${x.table} (+${x.partitions} partitions)` : x.table))),
+      ];
+      const worst =
+        sites.find((x) => x.mode === "ACCESS EXCLUSIVE")?.mode ?? sites[0]!.mode;
       const consequence = sites.some((x) => x.freezesSignIn)
-        ? `every write to the record store blocked AND nobody able to sign in, refresh a token, ` +
-          `read a file or receive a realtime message (a DROP TRIGGER drags in the same 23 ` +
-          `auth/storage/realtime relations a policy change does)`
-        : `every write to the record store blocked for the length of the transaction (readers ` +
-          `and sign-in are untouched by this kind)`;
+        ? `nobody able to sign in, refresh a token, read a file or receive a realtime message ` +
+          `until it commits — this statement class drags in the 23 auth/storage/realtime ` +
+          `relations Supabase's supautils.policy_grants hook declares (measured, ` +
+          `scripts/lib/ddl-lock-footprint.json)`
+        : sites.some((x) => x.mode === "ACCESS EXCLUSIVE")
+          ? `every READER and every WRITER of the partitioned store blocked for the length of ` +
+            `the transaction (sign-in is untouched by this kind)`
+          : `every WRITER to the partitioned store blocked for the length of the transaction ` +
+            `(readers and sign-in are untouched by this kind)`;
       const declared = windowClassDeclaration(sql);
       if (!declared) {
         console.error(
-          `${TAG.fail}${filename} ${C.bold}issues trigger DDL on a partitioned parent and does ` +
-            `not declare itself window-class${C.reset}.\n` +
-            `  The statement(s), with what each one actually takes:\n` +
+          `${TAG.fail}${filename} ${C.bold}carries DDL whose MEASURED lock footprint freezes the ` +
+            `estate, and does not declare itself window-class${C.reset}.\n` +
+            `  The statement(s), with what each one actually takes ` +
+            `${C.dim}(measured ${DDL_LOCK_FOOTPRINT.measuredOn})${C.reset}:\n` +
             sites
-              .map((x) => `    ${x.why} on ${x.table} — ${x.mode}: ${x.stmt.slice(0, 100)}`)
+              .map(
+                (x) =>
+                  `    ${x.why} on ${x.table} — ${x.mode}${x.freezesSignIn ? " + the 23-relation supautils set" : ""}\n` +
+                  `      ${x.because}\n` +
+                  `      ${x.stmt.slice(0, 100)}`,
+              )
               .join("\n") +
             `\n  Worst of them is ${worst} across ${tables.join(", ")}: ${consequence}.\n` +
             `  Add a header line saying why, e.g.\n` +
@@ -1098,7 +1115,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         return 1;
       }
       console.log(
-        `${TAG.ok}window-class ${C.dim}— "${declared}" · ${sites.length} trigger statement(s), ` +
+        `${TAG.ok}window-class ${C.dim}— "${declared}" · ${sites.length} measured statement(s), ` +
           `worst ${worst}, on ${tables.join(", ")}${C.reset}`,
       );
     }
@@ -2418,9 +2435,139 @@ function windowClassSelfTest(): number {
     `${C.bold}window-class GREEN-2${C.reset} ${C.dim}— an unpartitioned table and a function body ` +
       `do not fire the rule${C.reset}`,
   );
+  // ── DDL-LOCK-CENSUS, 2026-09-22: the verdict is the MEASUREMENT, not the name ─────────────
+  // RED-4  ACCESS EXCLUSIVE on a partitioned parent with NO trigger word anywhere — the old
+  //        name-based rule was blind to it and would have applied it at noon.
+  const red4 = `
+    alter table custom.record add column note text;
+    alter table history.row_versions alter column recorded_at type timestamptz;
+    truncate custom.record;
+  `;
+  const red4Sites = windowClassVerdict(red4);
+  const red4Classes = red4Sites.map((x) => x.classId).sort();
+  if (
+    red4Sites.length !== 3 ||
+    red4Classes.join(",") !== "add_column,alter_column_type,truncate" ||
+    red4Sites.some((x) => x.mode !== "ACCESS EXCLUSIVE") ||
+    red4Sites.some((x) => x.freezesSignIn) ||
+    red4Sites.some((x) => x.shape !== "partitionedParent")
+  ) {
+    console.error(
+      `${TAG.fail}--window-class-self-test RED-4 FAILED: add column / alter column type / ` +
+        `truncate on a partitioned parent were judged ${red4Sites.length} site(s) ` +
+        `[${red4Classes.join(", ")}]; expected 3, all ACCESS EXCLUSIVE on the parent, none ` +
+        `freezing sign-in. The measured footprint is not reaching the verdict.`,
+    );
+    return 1;
+  }
   console.log(
-    `${TAG.ok}trigger DDL on a partitioned parent declares itself and waits for the window; ` +
-      `everything else is untouched.`,
+    `${C.bold}window-class RED-4${C.reset} ${C.dim}— no trigger word in sight: add column, ` +
+      `alter column type and truncate on a partitioned parent are window-class on the ` +
+      `measurement alone${C.reset}`,
+  );
+
+  // RED-5  the hook set: policy DDL on an ORDINARY table freezes sign-in, so it is window-class
+  //        with no partitions involved at all.
+  const red5 = `drop policy api_keys_read on iam.api_keys;`;
+  const red5Sites = windowClassVerdict(red5);
+  if (
+    red5Sites.length !== 1 ||
+    red5Sites[0]!.classId !== "drop_policy" ||
+    red5Sites[0]!.freezesSignIn !== true ||
+    red5Sites[0]!.partitions !== 0 ||
+    red5Sites[0]!.shape !== "plainTable"
+  ) {
+    console.error(
+      `${TAG.fail}--window-class-self-test RED-5 FAILED: a drop policy on an unpartitioned table ` +
+        `was judged ${red5Sites.length} site(s) ` +
+        `(${red5Sites.map((x) => `${x.classId}/freezes=${x.freezesSignIn}`).join(", ")}); ` +
+        `expected 1 drop_policy that freezes sign-in.`,
+    );
+    return 1;
+  }
+  console.log(
+    `${C.bold}window-class RED-5${C.reset} ${C.dim}— the hook set makes policy DDL window-class ` +
+      `on any table, partitions or not${C.reset}`,
+  );
+
+  // GREEN-3  the classes the census measured as harmless stay harmless, ON the parent: create
+  //          index (SHARE), grant/revoke (ACCESS SHARE), add foreign key (SHARE ROW EXCLUSIVE),
+  //          rename index and comment on (SHARE UPDATE EXCLUSIVE), create table (nothing).
+  const green3 = `
+    create index record_note_idx on custom.record (organization_id);
+    grant select on custom.record to authenticated;
+    revoke select on custom.record from anon;
+    alter table custom.record add constraint record_org_fk foreign key (organization_id) references iam.organizations(id);
+    alter index custom.record_pkey rename to record_pk;
+    comment on table custom.record is 'the record store';
+    create table custom.record_scratch (id uuid primary key);
+  `;
+  const green3Sites = windowClassVerdict(green3);
+  if (green3Sites.length !== 0) {
+    console.error(
+      `${TAG.fail}--window-class-self-test GREEN-3 FAILED: statements the census measured as ` +
+        `taking no ACCESS EXCLUSIVE and no hook relations were judged ` +
+        `${green3Sites.length} window-class site(s): ` +
+        `${green3Sites.map((x) => x.classId).join(", ")}. A rule that fires on every statement ` +
+        `is a rule that gets switched off.`,
+    );
+    return 1;
+  }
+  console.log(
+    `${C.bold}window-class GREEN-3${C.reset} ${C.dim}— create index, grant, revoke, add foreign ` +
+      `key, rename index, comment on and create table stay midday work, on the parent itself${C.reset}`,
+  );
+
+  // GREEN-4  THE LOAD-BEARING PROOF: the JSON decides. Feed the same verdict function a
+  //          footprint in which `grant` was measured as firing the hook, and `grant` must become
+  //          window-class — without one character of the runner changing. If this arm can be
+  //          deleted and the suite still passes, the rule is back to judging by name.
+  const mutated = JSON.parse(JSON.stringify(loadDdlFootprint())) as typeof DDL_LOCK_FOOTPRINT;
+  const grantClass = mutated.classes.find((x) => x.id === "grant") as {
+    plainTable: { hookRelations: number; windowClass: boolean; because: string };
+  };
+  grantClass.plainTable.hookRelations = 23;
+  grantClass.plainTable.windowClass = true;
+  grantClass.plainTable.because = "mutated for the self-test";
+  const beforeMutation = windowClassVerdict(`grant select on iam.api_keys to authenticated;`);
+  const afterMutation = windowClassVerdict(`grant select on iam.api_keys to authenticated;`, mutated);
+  if (beforeMutation.length !== 0 || afterMutation.length !== 1 || afterMutation[0]!.classId !== "grant") {
+    console.error(
+      `${TAG.fail}--window-class-self-test GREEN-4 FAILED: with the real census a GRANT was ` +
+        `${beforeMutation.length} site(s) (expected 0) and with a census that measures it as ` +
+        `firing the hook it was ${afterMutation.length} site(s) (expected 1). The verdict is NOT ` +
+        `reading the checked-in measurement — it is judging by name again.`,
+    );
+    return 1;
+  }
+  console.log(
+    `${C.bold}window-class GREEN-4${C.reset} ${C.dim}— the measurement is load-bearing: change ` +
+      `what the JSON says GRANT locks and the verdict changes with it${C.reset}`,
+  );
+
+  // GREEN-5  an unreadable census is a REFUSAL, never a fallback to judging by name.
+  let refused = false;
+  try {
+    loadDdlFootprint("/nonexistent/ddl-lock-footprint.json");
+  } catch {
+    refused = true;
+  }
+  if (!refused) {
+    console.error(
+      `${TAG.fail}--window-class-self-test GREEN-5 FAILED: a missing ddl-lock-footprint.json did ` +
+        `not refuse. An unmeasured footprint must never read as "nothing is window-class".`,
+    );
+    return 1;
+  }
+  console.log(
+    `${C.bold}window-class GREEN-5${C.reset} ${C.dim}— a missing census refuses; it never ` +
+      `degrades into silence${C.reset}`,
+  );
+
+  console.log(
+    `${TAG.ok}window-class is decided by the measured footprint ` +
+      `(${DDL_LOCK_FOOTPRINT.classes.length} classes, ${DDL_LOCK_FOOTPRINT.measuredOn}), with the ` +
+      `trigger name rule kept underneath as the floor.`,
   );
   return 0;
 }
