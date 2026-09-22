@@ -1304,9 +1304,44 @@ export interface DdlFootprint {
   readonly classes: readonly DdlFootprintClass[];
 }
 
+/**
+ * Where the census sits, WITHOUT naming `import.meta`.
+ *
+ * 🚨 THIS IS NOT A STYLE CHOICE (lane CI-FIX-3, 2026-09-22). The census loader shipped as
+ * `new URL("./ddl-lock-footprint.json", import.meta.url).pathname`, and `import.meta` is a
+ * SYNTAX-LEVEL ESM marker: one occurrence anywhere in this file makes the whole module
+ * ESM-only, so jest could no longer require it and THREE suites stopped running altogether —
+ * `migration-target-refusals`, `gate-corpus-refuses-production-identity` and
+ * `rehearse-comment-stripper-shared`, which between them are the only automated proof that
+ * the migration judge refuses what it is supposed to refuse. They did not fail an assertion;
+ * they failed to LOAD, which is the worse shape, because a suite that cannot start asserts
+ * nothing and says so only in a runner nobody reads. Guarding the reference behind a branch
+ * would not have helped: the parser sees the token whether or not the branch runs.
+ *
+ * `__dirname` is not the answer either — it is CommonJS-only, and this module is executed as
+ * real ESM by tsx in every runner. So the anchor is the ONE thing both worlds agree on: the
+ * package root, which is where `pnpm <script>` and jest's rootDir both put the working
+ * directory, walked upward so a script invoked from a subdirectory still finds it.
+ *
+ * An unfound file is still a REFUSAL — see `loadDdlFootprint`. Nothing here falls back to a
+ * guess; this only decides WHERE to look.
+ */
+function ddlFootprintCandidates(): string[] {
+  const out: string[] = [];
+  let dir = process.cwd();
+  for (let i = 0; i < 6; i++) {
+    out.push(resolve(dir, "scripts", "lib", "ddl-lock-footprint.json"));
+    const up = dirname(dir);
+    if (up === dir) break;
+    dir = up;
+  }
+  return out;
+}
+
 /** The checked-in census. An unreadable or unparseable file is a REFUSAL, never a fallback. */
 export function loadDdlFootprint(path?: string): DdlFootprint {
-  const file = path ?? new URL("./ddl-lock-footprint.json", import.meta.url).pathname;
+  const candidates = path ? [path] : ddlFootprintCandidates();
+  const file = candidates.find((c) => existsSync(c)) ?? candidates[0]!;
   let raw: string;
   try {
     raw = readFileSync(file, "utf8");
