@@ -20,6 +20,16 @@
 -- RUN IT:  binlocal/p.sh -f scripts/campaign-tests/argsruled_relation_history_red_green.sql
 -- MEASURED 2026-09-21: BEFORE 2 version(s), AFTER 0.
 
+
+-- TARGET AND DEPENDENCIES — the one shared preamble. It accepts the MAIN database or the
+-- rehearsal branch named in common-docs/.../plan/BRANCH-REF, refuses anything else by name,
+-- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
+-- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
+\set suite 'argsruled_relation_history_red_green.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
 begin;
 set local lock_timeout = '15s';
 set local statement_timeout = '120s';

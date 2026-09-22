@@ -32,6 +32,16 @@
 \set ON_ERROR_STOP on
 \timing off
 
+-- TARGET AND DEPENDENCIES — the one shared preamble. It accepts the MAIN database or the
+-- rehearsal branch named in common-docs/.../plan/BRANCH-REF, refuses anything else by name,
+-- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
+-- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
+\set suite 'levelfix_t2_t14.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
+
 \set ORG   '\'1ef10000-0000-4a00-8a00-000000000e01\''
 \set ADMIN '\'87a6e699-3622-4869-8843-d0867456c0dd\''
 \set DANA  '\'4060701e-706a-4c76-b3ca-0bbc69fa5a14\''

@@ -46,6 +46,16 @@
 \set ON_ERROR_STOP on
 \timing off
 
+-- TARGET AND DEPENDENCIES — the one shared preamble. It accepts the MAIN database or the
+-- rehearsal branch named in common-docs/.../plan/BRANCH-REF, refuses anything else by name,
+-- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
+-- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
+\set suite 'w1_field_t4_t8.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
+
 begin;
 
 do $t$
@@ -90,11 +100,6 @@ declare
   v_j        jsonb;
   v_boss     text := current_user;   -- the connected role, for the three steps no door covers
 begin
-  if (pg_control_system()).system_identifier <> 7642734024280108049 then
-    raise exception 'w1_field_t4_t8.sql runs on the MAIN database only, and this is %',
-                    (pg_control_system()).system_identifier;
-  end if;
-
   -- Schema `custom` is LIVE and other campaign suites are writing it right now, so this
   -- suite WAITS for a row rather than dying on the five-second lock_timeout the connection
   -- carries. Nothing below is a race: every clause is about what a door answers.

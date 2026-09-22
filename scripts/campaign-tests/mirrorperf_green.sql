@@ -25,6 +25,16 @@
 
 \set ON_ERROR_STOP on
 
+-- TARGET AND DEPENDENCIES — the one shared preamble. It accepts the MAIN database or the
+-- rehearsal branch named in common-docs/.../plan/BRANCH-REF, refuses anything else by name,
+-- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
+-- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
+\set suite 'mirrorperf_green.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
+
 -- 🚨 RED-SUITES 2026-09-21 — A SUITE THAT NEEDS AN ARGUMENT SAYS SO AND THEN SUPPLIES ONE.
 -- This file reads `:'seat'`, which psql substitutes BEFORE the server sees the line, so a run
 -- without `-v seat=…` dies on `syntax error at or near ":"` — an error about psql's own
@@ -66,10 +76,6 @@ declare
 begin
   if v_seat not in ('admin', 'dana') then
     raise exception 'mirrorperf_green.sql needs -v seat=admin or -v seat=dana, not %', v_seat;
-  end if;
-  if (select system_identifier from pg_control_system()) <> 7642734024280108049 then
-    raise exception 'mirrorperf_green.sql runs on the MAIN database only, and this is %',
-      (select system_identifier from pg_control_system());
   end if;
 
   ---------------------------------------------------------------------------------------------

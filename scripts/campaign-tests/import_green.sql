@@ -16,6 +16,16 @@
 -- clause would not be. It is `set local` inside the suite's OWN transaction because the
 -- pooler hands each statement a different backend and a session-level SET would not survive
 -- to the statement that needs it — measured 2026-09-20, the suite still died at 5 s.
+
+-- TARGET AND DEPENDENCIES — the one shared preamble. It accepts the MAIN database or the
+-- rehearsal branch named in common-docs/.../plan/BRANCH-REF, refuses anything else by name,
+-- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
+-- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
+\set suite 'import_green.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
 begin;
 set local lock_timeout = '10s';
 set local statement_timeout = '60s';

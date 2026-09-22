@@ -14,6 +14,16 @@
 \set ON_ERROR_STOP on
 \timing off
 
+-- TARGET AND DEPENDENCIES — the one shared preamble. It accepts the MAIN database or the
+-- rehearsal branch named in common-docs/.../plan/BRANCH-REF, refuses anything else by name,
+-- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
+-- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
+\set suite 'pipelines_red.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
+
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- RED 1 — BEFORE `pipelines_a_stage_is_a_field_and_its_moves_are_rules.sql`:
 -- a Rule could not speak about where a card came FROM, and there was no board at all.

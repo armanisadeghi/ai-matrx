@@ -19,6 +19,16 @@
 \set ON_ERROR_STOP on
 \timing off
 
+-- TARGET AND DEPENDENCIES — the one shared preamble. It accepts the MAIN database or the
+-- rehearsal branch named in common-docs/.../plan/BRANCH-REF, refuses anything else by name,
+-- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
+-- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
+\set suite 'exportfix_red.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
+
 \set ORG   '\'e5f00000-0000-4a00-8a00-000000000002\''
 \set ADMIN '\'87a6e699-3622-4869-8843-d0867456c0dd\''
 \set DANA  '\'4060701e-706a-4c76-b3ca-0bbc69fa5a14\''
@@ -225,10 +235,6 @@ declare
   v_home uuid; v_tbl uuid; v_r1 uuid; v_r2 uuid; v_r3 uuid;
   v_exp jsonb; n int; v_red int := 0; v_msg text; v_ok boolean;
 begin
-  if (select system_identifier from pg_control_system()) <> 7642734024280108049 then
-    raise exception 'exportfix_red.sql runs on the MAIN database only, and this is %',
-      (select system_identifier from pg_control_system());
-  end if;
   c_admin_j := json_build_object('sub', v_admin::text, 'role', 'authenticated', 'email', 'admin@admin.com')::text;
   c_dana_j  := json_build_object('sub', v_dana::text,  'role', 'authenticated', 'email', 'test@test.com')::text;
 

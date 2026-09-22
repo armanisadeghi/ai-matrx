@@ -14,6 +14,16 @@
 -- Run: <scratchpad>/prod.sh -f scripts/campaign-tests/limitsfix_green.sql
 
 \set ON_ERROR_STOP on
+
+-- TARGET AND DEPENDENCIES — the one shared preamble. It accepts the MAIN database or the
+-- rehearsal branch named in common-docs/.../plan/BRANCH-REF, refuses anything else by name,
+-- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
+-- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
+\set suite 'limitsfix_green.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
 begin;
 set local lock_timeout = '10s';
 set local statement_timeout = '60s';
@@ -28,10 +38,6 @@ declare
   v_n integer; v_msg text; v_keys text[]; v_types text[]; v_want text;
   v_begin jsonb; v_res jsonb;
 begin
-  if (select system_identifier from pg_control_system()) <> 7642734024280108049 then
-    raise exception 'limitsfix_green.sql runs on the MAIN database only, and this is %',
-      (select system_identifier from pg_control_system());
-  end if;
   perform set_config('app.actor_system', 'campaign-test/limitsfix_green', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
 

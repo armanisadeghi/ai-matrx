@@ -9,6 +9,16 @@
 -- Run before the closure and clause 1 FAILS (the direct insert succeeds). Run after and all
 -- five pass. It ends in ROLLBACK and leaves nothing.
 
+
+-- TARGET AND DEPENDENCIES — the one shared preamble. It accepts the MAIN database or the
+-- rehearsal branch named in common-docs/.../plan/BRANCH-REF, refuses anything else by name,
+-- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
+-- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
+\set suite 'doorsonly2_associations_door_green.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
 begin;
 -- AUTH-504's ceiling, applied by lane RED-SUITES-3 (2026-09-21): a suite that shares the
 -- instance people sign in to may not give itself a statement ceiling a person would wait

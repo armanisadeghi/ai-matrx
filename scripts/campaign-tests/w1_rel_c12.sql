@@ -73,6 +73,16 @@
 
 \set ON_ERROR_STOP on
 \timing off
+
+-- TARGET AND DEPENDENCIES — the one shared preamble. It accepts the MAIN database or the
+-- rehearsal branch named in common-docs/.../plan/BRANCH-REF, refuses anything else by name,
+-- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
+-- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
+\set suite 'w1_rel_c12.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
 \pset pager off
 
 begin;
@@ -100,11 +110,6 @@ declare
   v_granted integer;
   v_boss    text := current_user;
 begin
-  if (select system_identifier from pg_control_system()) <> 7642734024280108049 then
-    raise exception 'w1_rel_c12.sql runs on the MAIN database only, and this is %',
-      (select system_identifier from pg_control_system());
-  end if;
-
   -- Every write in this suite is made by a named system: `platform._stamp_actor_tier` stamps
   -- actor_tier=code for the connected role, and the provenance guard then refuses a code write
   -- that names no system — '"an AI did it" with no name is not provenance'.

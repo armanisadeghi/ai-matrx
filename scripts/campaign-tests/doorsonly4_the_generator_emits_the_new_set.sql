@@ -22,6 +22,16 @@
 --
 -- Run: psql <main db> -f scripts/campaign-tests/doorsonly4_the_generator_emits_the_new_set.sql
 \set ON_ERROR_STOP on
+
+-- TARGET AND DEPENDENCIES — the one shared preamble. It accepts the MAIN database or the
+-- rehearsal branch named in common-docs/.../plan/BRANCH-REF, refuses anything else by name,
+-- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
+-- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
+\set suite 'doorsonly4_the_generator_emits_the_new_set.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
 begin;
 set local lock_timeout = '5s';
 

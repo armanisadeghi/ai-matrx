@@ -39,6 +39,16 @@
 \set ON_ERROR_STOP on
 \timing off
 
+-- TARGET AND DEPENDENCIES — the one shared preamble. It accepts the MAIN database or the
+-- rehearsal branch named in common-docs/.../plan/BRANCH-REF, refuses anything else by name,
+-- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
+-- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
+\set suite 'w1_tier_red.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
+
 begin;
 set local lock_timeout = '10s';
 
@@ -67,10 +77,6 @@ declare
   v_conname text;
   v_boss    text := current_user;
 begin
-  if (select system_identifier from pg_control_system()) <> 7642734024280108049 then
-    raise exception 'w1_tier_red.sql runs on the MAIN database only, and this is %',
-      (select system_identifier from pg_control_system());
-  end if;
   v_b_j := json_build_object('sub', v_b, 'role', 'authenticated')::text;
 
   perform set_config('app.actor_system', 'campaign-test/w1_tier_red', true);

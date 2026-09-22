@@ -9,6 +9,16 @@
 -- The three principals are synthesized identities created once for this lane's proof; they
 -- belong to nobody and are members of no organization, which is what makes them external
 -- principals (VIS-31).
+
+-- TARGET AND DEPENDENCIES — the one shared preamble. It accepts the MAIN database or the
+-- rehearsal branch named in common-docs/.../plan/BRANCH-REF, refuses anything else by name,
+-- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
+-- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
+\set suite 'portal_green.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
 set local lock_timeout = '10s';
 set local statement_timeout = '60s';
 do $suite$

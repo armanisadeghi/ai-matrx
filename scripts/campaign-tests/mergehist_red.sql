@@ -42,6 +42,16 @@
 \set ON_ERROR_STOP on
 \timing off
 
+-- TARGET AND DEPENDENCIES — the one shared preamble. It accepts the MAIN database or the
+-- rehearsal branch named in common-docs/.../plan/BRANCH-REF, refuses anything else by name,
+-- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
+-- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
+\set suite 'mergehist_red.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
+
 begin;
 set local statement_timeout = '60s';
 
@@ -59,10 +69,6 @@ declare
   v_proj uuid; v_note_t uuid; v_x uuid; v_n1 uuid; v_n2 uuid;
   v_boss text := current_user;
 begin
-  if (select system_identifier from pg_control_system()) <> 7642734024280108049 then
-    raise exception 'mergehist_red.sql runs on the MAIN database only, and this is %',
-      (select system_identifier from pg_control_system());
-  end if;
   perform set_config('app.actor_system', 'campaign-test/mergehist_red', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
 

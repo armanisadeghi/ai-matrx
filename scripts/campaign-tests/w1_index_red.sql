@@ -44,6 +44,16 @@
 \set ON_ERROR_STOP on
 \timing off
 
+-- TARGET AND DEPENDENCIES — the one shared preamble. It accepts the MAIN database or the
+-- rehearsal branch named in common-docs/.../plan/BRANCH-REF, refuses anything else by name,
+-- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
+-- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
+\set suite 'w1_index_red.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
+
 begin;
 
 -- THE FLOOR. Every write here lands in `custom.record`, a LIVE table with sixteen hash
@@ -71,11 +81,6 @@ declare
   v_red   integer := 0;
   v_boss  text := current_user;   -- the connected role, for the removals and the catalogue
 begin
-  if (pg_control_system()).system_identifier <> 7642734024280108049 then
-    raise exception 'w1_index_red.sql runs on the MAIN database only, and this is %',
-                    (pg_control_system()).system_identifier;
-  end if;
-
   -- ── THE FIXTURES, as the connected role. A seat is a PERSON: an organization, a
   --    membership for both identities, the store switched on for it, and a Home.
   perform set_config('app.actor_system', 'campaign-test/w1_index_red', true);

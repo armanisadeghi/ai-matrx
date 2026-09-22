@@ -41,13 +41,15 @@
 \set ON_ERROR_STOP on
 \timing off
 
-do $target$
-begin
-  if (select system_identifier from pg_control_system()) <> 7642734024280108049 then
-    raise exception 'w4_anon_green.sql expects the MAIN database, and this is %',
-      (select system_identifier from pg_control_system());
-  end if;
-end $target$;
+-- TARGET AND DEPENDENCIES — the one shared preamble. It accepts the MAIN database or the
+-- rehearsal branch named in common-docs/.../plan/BRANCH-REF, refuses anything else by name,
+-- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
+-- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
+\set suite 'w4_anon_green.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
 
 begin;
 

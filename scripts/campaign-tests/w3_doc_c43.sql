@@ -81,6 +81,16 @@
 \set ON_ERROR_STOP on
 \timing off
 
+-- TARGET AND DEPENDENCIES — the one shared preamble. It accepts the MAIN database or the
+-- rehearsal branch named in common-docs/.../plan/BRANCH-REF, refuses anything else by name,
+-- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
+-- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
+\set suite 'w3_doc_c43.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
+
 begin;
 set local lock_timeout = '10s';
 set local statement_timeout = '60s';
@@ -121,11 +131,6 @@ declare
   v_src     jsonb;
   v_boss    text := current_user;   -- the connected role, for the steps no client door covers
 begin
-  if (pg_control_system()).system_identifier <> 7642734024280108049 then
-    raise exception 'w3_doc_c43.sql runs on the MAIN database only, and this is %',
-                    (pg_control_system()).system_identifier;
-  end if;
-
   -- ════════════════════════════════════════════════════════════════════════════
   -- THE FIXTURES NO CLIENT DOOR COVERS, as the connected role. Nothing is
   -- asserted here: a person's browser makes none of these.

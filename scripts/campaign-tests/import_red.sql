@@ -15,6 +15,16 @@
 -- RED 3  no file identity at all — the same file, twice, writes it twice
 -- RED 5  THE CONTROL, which must be GREEN, so the twin cannot pass by refusing everything
 
+
+-- TARGET AND DEPENDENCIES — the one shared preamble. It accepts the MAIN database or the
+-- rehearsal branch named in common-docs/.../plan/BRANCH-REF, refuses anything else by name,
+-- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
+-- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
+\set suite 'import_red.sql'
+\i scripts/campaign-tests/_preamble.sql
+\if :matrx_skip
+\quit
+\endif
 begin;
 set local lock_timeout = '10s';
 set local statement_timeout = '60s';
