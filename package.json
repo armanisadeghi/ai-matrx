@@ -621,7 +621,9 @@
     "check:inverses-leave-the-ground-standing:self-test": "tsx scripts/check-inverses-leave-the-ground-standing.ts --self-test",
     "check:inverses-leave-the-ground-standing:live": "tsx scripts/check-inverses-leave-the-ground-standing.ts --live",
     "check:inverses-leave-the-ground-standing:record-census": "tsx scripts/check-inverses-leave-the-ground-standing.ts --record-census",
-    "check:amend-idempotent:self-test": "tsx scripts/apply-migration.ts --amend-idempotent --self-test"
+    "check:amend-idempotent:self-test": "tsx scripts/apply-migration.ts --amend-idempotent --self-test",
+    "check:udt-label-census": "tsx scripts/check-udt-label-census.ts",
+    "check:udt-label-census:self-test": "tsx scripts/check-udt-label-census.ts --self-test"
   },
   "dependencies": {
     "@ai-matrx/agents": "latest",
