@@ -103,6 +103,22 @@
  * NOT in that list — every file written from now on — must be clean. The list
  * only ever shrinks.
  *
+ * THE CENSUS — AND WHY A SUPERSESSION HEADER WAS NEVER ENOUGH (DEFAULT-ORG-4).
+ * ---------------------------------------------------------------------------
+ * Clause 3 asks the catalogue about the functions a `-- supersedes-function:`
+ * header NAMES. On 2026-09-22 this guard exited 0 while SEVENTEEN live function
+ * bodies carried the shape, because no header named any of them. A guard that can
+ * only see what it was handed is measuring the headers.
+ *
+ * So the last clause reads EVERY function body in every non-system schema —
+ * `pg_get_functiondef` through the same stripping, against the same RULES — and
+ * prints the ones still carrying it BY NAME. Two declared ways out: the display
+ * preference itself (CENSUS_PRIMITIVES, named one by one) and a body that says, in
+ * its own body, `-- personal-organization-creation: <schema.fn> — <why>`.
+ * `scripts/no-default-organization-live-bodies.ratchet.json` forgives nothing; it
+ * says which lane owns each remaining body, only ever shrinks, and a live body
+ * missing from it is reported louder because nobody owns it.
+ *
  * Run:  pnpm check:no-default-organization-sql
  *       pnpm check:no-default-organization-sql --self-test   (proves it FAILS)
  * Exit 1 on any unallowlisted violation; exit 2 on unexpected errors.
@@ -122,6 +138,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SCAN_DIR = "migrations";
 const ALLOWLIST = join(ROOT, "scripts", "no-default-organization-sql.allowlist.json");
+const LIVE_RATCHET = join(ROOT, "scripts", "no-default-organization-live-bodies.ratchet.json");
 
 /**
  * `-- supersedes: <path>` and `-- supersedes-function: <schema.name>`. Built fresh
@@ -206,7 +223,7 @@ const RULES: Rule[] = [
  * deliberate: a guard with a false alarm on the files that FIX the problem is a
  * guard somebody deletes, and then it catches nothing at all.
  */
-function executableSql(source: string): string {
+export function executableSql(source: string): string {
   return source
     .replace(/\/\*[\s\S]*?\*\//g, " ")
     .split("\n")
@@ -311,7 +328,19 @@ export function scan(
 ): Violation[] {
   const violations: Violation[] = [];
   for (const [rel, source] of collectFiles()) {
+    // A file whose header declares `-- personal-organization-creation: <schema.fn>`
+    // and really does replace that function is writing a CREATION site: the
+    // organization it makes IS the answer, so rule 7 does not apply to it. Rules
+    // 6 and 8 still do — creating a workspace is never a reason to read somebody's
+    // stated default or to attach the stamping trigger. The claim is only half
+    // settled here; the other half is the CENSUS, which requires the same
+    // declaration in the LIVE body.
+    const declared = declaredCreationSites(source);
+    const creationHolds =
+      declared.length > 0 &&
+      declared.every((d) => replacesFunction(executableSql(source), d.fn));
     for (const v of scanSource(rel, source)) {
+      if (v.rule === 7 && creationHolds) continue;
       const entry = allowlist[rel];
       if (entry && entry.rules.includes(v.rule)) continue;
       violations.push(v);
@@ -431,6 +460,256 @@ export async function readCatalog(functions: string[]): Promise<CatalogVerdict[]
   }
 }
 
+
+// ---------------------------------------------------------------------------
+// THE CENSUS — EVERY LIVE FUNCTION BODY, NOT ONLY THE ONES A HEADER NAMES.
+//
+// 🚨 WHY THIS EXISTS (DEFAULT-ORG-4, 2026-09-22). Clause 3 above asks the
+// catalogue a question it was HANDED: "is the shape gone from the functions this
+// `-- supersedes-function:` header names?" Every function nobody thought to name
+// is outside the question, so the guard reported OK on a database carrying
+// SEVENTEEN live bodies with the shape. DEFAULT-ORG-3 found them by hand and
+// wrote them into a BUILD-LOG row, which is a note, not a guard.
+//
+// A guard that can only see what a header points at measures the headers. This
+// clause measures THE DATABASE: `pg_get_functiondef` for every function in every
+// non-system schema, through the same comment/literal stripping the file scan
+// uses, matched against the same RULES. Nobody has to remember to declare a
+// function for it to be counted — it is counted because it is live.
+//
+// Two ways out, both declared and both checkable:
+//
+//   • CENSUS_PRIMITIVES — the display preference itself and the constraint that
+//     keeps it honest. `iam.default_organization_id` IS the preference a person
+//     states; forbidding it from naming itself would forbid the preference from
+//     existing. Named one by one, with the reason, never a pattern.
+//
+//   • `-- personal-organization-creation: <schema.fn> — <why>` INSIDE THE BODY.
+//     Creating a person's own personal organization at provisioning is not
+//     substituting one: the organization being created IS the answer, and there
+//     is nothing to guess. The declaration lives in the body, so
+//     `pg_get_functiondef` carries it and the claim is read off the live
+//     database rather than off a promise in a file.
+//
+// Everything else live is RED, BY NAME. The ratchet
+// (`scripts/no-default-organization-live-bodies.ratchet.json`) does not forgive
+// anything — it says WHO OWNS each remaining body, so a red run is a work list
+// rather than a mystery. A live body absent from it is louder: nobody owns it,
+// so it is new. A ratchet entry whose body is no longer live is itself an error:
+// the list only ever shrinks, and the guard is what makes it shrink.
+//
+// NEVER A COUNT. "17 violations" is a number somebody argues down; seventeen
+// names are seventeen pieces of work.
+// ---------------------------------------------------------------------------
+
+/**
+ * The live bodies that are ALLOWED to name a default organization, one by one,
+ * with the reason. Keyed by `schema.name` — every overload of these is exempt,
+ * because the exemption is about what the function IS.
+ */
+export const CENSUS_PRIMITIVES: Record<string, string> = {
+  "iam.default_organization_id":
+    "THE display preference itself. This is the primitive the law permits: a per-client " +
+    "preference a person states, readable by the org picker and pure UI display. A guard " +
+    "that flagged it would forbid the one permitted shape from existing.",
+  "iam._default_organization_is_a_membership":
+    "The constraint trigger that keeps that preference honest — it refuses a stated default " +
+    "that is not an organization the person is actually a member of. It names the column in " +
+    "order to police it.",
+};
+
+/** `-- personal-organization-creation: <schema.fn> — <why>`, in a file or in a live body. */
+export function declaredCreationSites(source: string): { fn: string; why: string }[] {
+  return [
+    ...source.matchAll(
+      /^\s*--\s*personal-organization-creation:\s*([A-Za-z_][\w$]*\.[A-Za-z_][\w$]*)\s*(?:[-—–:]\s*)?(.*)$/gim,
+    ),
+  ].map((m) => ({ fn: m[1]!.toLowerCase(), why: (m[2] ?? "").trim() }));
+}
+
+/** One live function body, as the census read it. */
+export interface CensusEntry {
+  /** `public.wsp_upsert_system_task(text,text,...)` — the identity, never a bare name. */
+  readonly sig: string;
+  /** `schema.name`, for the primitive exemption and the ratchet's readability. */
+  readonly qualified: string;
+  /** Which RULES its executable body matched. */
+  readonly rules: number[];
+  /** The `-- personal-organization-creation:` reason found in the body, if any. */
+  readonly creationDeclared: string | null;
+}
+
+export type CensusReader = () => Promise<CensusEntry[]>;
+
+/**
+ * Read EVERY function body in the database and match it against the RULES. No
+ * argument: there is no list to pass, which is the entire point of this clause.
+ */
+export async function readLiveCensus(): Promise<CensusEntry[]> {
+  const { loadDbEnv, connectDirect } = await import("./lib/direct-db");
+  const env = loadDbEnv();
+  if ("missing" in env) {
+    throw new Error(`no database credentials (${env.missing.join(", ")} absent)`);
+  }
+  const client = await connectDirect(env, "check-no-default-organization-sql --census");
+  try {
+    const { rows } = await client.query<{ sig: string; qualified: string; def: string }>(
+      // The signature is built rather than taken from ::regprocedure, which drops
+      // the schema for anything on the search_path — and a ratchet keyed by name has
+      // to name the thing unambiguously. ARGUMENT TYPES, never argument names:
+      // renaming a parameter must not silently orphan a ratchet row.
+      `select n.nspname || '.' || p.proname || '(' ||
+                coalesce(pg_catalog.oidvectortypes(p.proargtypes), '') || ')' as sig,
+              n.nspname || '.' || p.proname   as qualified,
+              pg_get_functiondef(p.oid)       as def
+         from pg_proc p
+         join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname not in ('pg_catalog', 'information_schema')
+          and p.prokind = 'f'`,
+    );
+    const out: CensusEntry[] = [];
+    for (const r of rows) {
+      const code = executableSql(r.def);
+      const lines = code.split("\n");
+      const rules = RULES.filter((rule) =>
+        lines.some((l) => {
+          // The primitive's own CREATE header is not a call — same carve-out the
+          // file scan makes, for the same reason.
+          if (
+            rule.id === 7 &&
+            /create\s+(?:or\s+replace\s+)?function\s+(?:[\w]+\.)?(?:ensure_personal_organization|current_personal_org_id)\s*\(/i.test(
+              l,
+            )
+          ) {
+            return false;
+          }
+          return rule.pattern.test(l);
+        }),
+      ).map((rule) => rule.id);
+      if (rules.length === 0) continue;
+      // The declaration is read from the RAW definition: `executableSql` strips
+      // comments, and the declaration is deliberately a comment so that it
+      // travels with the body instead of doing anything.
+      const declared = declaredCreationSites(r.def).find((d) => d.fn === r.qualified.toLowerCase());
+      out.push({
+        sig: r.sig,
+        qualified: r.qualified,
+        rules,
+        creationDeclared: declared ? declared.why || "(no reason given)" : null,
+      });
+    }
+    return out.sort((a, b) => a.sig.localeCompare(b.sig));
+  } finally {
+    await client.end();
+  }
+}
+
+export interface RatchetEntry {
+  readonly lane: string;
+  readonly note?: string;
+}
+
+export function loadLiveRatchet(): Record<string, RatchetEntry> {
+  try {
+    return JSON.parse(readFileSync(LIVE_RATCHET, "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+export interface CensusVerdict {
+  /** Live bodies that must stop carrying the shape, by name, in catalogue order. */
+  readonly open: { sig: string; rules: number[]; lane: string | null }[];
+  /** Bodies exempt because they ARE the permitted primitive. */
+  readonly primitives: string[];
+  /** Bodies exempt because the body itself declares it CREATES the organization. */
+  readonly creation: { sig: string; why: string }[];
+  /** Ratchet names no longer live — the list only shrinks, so these must go. */
+  readonly stale: string[];
+}
+
+/**
+ * The judgement, as a pure function of what the catalogue said and what the
+ * ratchet claims — so the self-test can prove it RED and GREEN without a
+ * database, which is the only way anybody ever watches a guard fail.
+ */
+export function censusVerdict(
+  entries: CensusEntry[],
+  ratchet: Record<string, RatchetEntry>,
+): CensusVerdict {
+  const open: { sig: string; rules: number[]; lane: string | null }[] = [];
+  const primitives: string[] = [];
+  const creation: { sig: string; why: string }[] = [];
+  for (const e of entries) {
+    if (CENSUS_PRIMITIVES[e.qualified.toLowerCase()]) {
+      primitives.push(e.sig);
+      continue;
+    }
+    if (e.creationDeclared) {
+      creation.push({ sig: e.sig, why: e.creationDeclared });
+      continue;
+    }
+    open.push({ sig: e.sig, rules: e.rules, lane: ratchet[e.sig]?.lane ?? null });
+  }
+  const live = new Set(open.map((o) => o.sig));
+  const stale = Object.keys(ratchet)
+    .filter((sig) => !live.has(sig))
+    .sort();
+  return { open, primitives, creation, stale };
+}
+
+/** Print the verdict the way it has to be read: names, never a count. */
+export function reportCensus(v: CensusVerdict): number {
+  for (const c of v.creation) {
+    console.log(
+      `check-no-default-organization-sql: ${c.sig} CREATES the personal organization it names — ` +
+        `declared in its own body: ${c.why}`,
+    );
+  }
+  for (const p of v.primitives) {
+    console.log(
+      `check-no-default-organization-sql: ${p} is the display preference itself (CENSUS_PRIMITIVES).`,
+    );
+  }
+  if (v.open.length === 0 && v.stale.length === 0) {
+    console.log(
+      "check-no-default-organization-sql: THE CENSUS IS CLEAN — every live function body in the " +
+        "database was read, and none of them answers 'which organization?' with the caller's own.",
+    );
+    return 0;
+  }
+  if (v.open.length > 0) {
+    console.error(
+      `\ncheck-no-default-organization-sql: THE LIVE CATALOGUE STILL CARRIES THE SHAPE.\n` +
+        `Every function body in the database was read. These answer "which organization?"\n` +
+        `with the caller's own personal workspace, or read a stated default to route a write:\n`,
+    );
+    for (const o of v.open) {
+      console.error(
+        `  ${o.sig}  [rule ${o.rules.join(", ")}]  ` +
+          (o.lane
+            ? `owned by ${o.lane}`
+            : `🚨 NO LANE OWNS THIS — it is not in scripts/no-default-organization-live-bodies.ratchet.json, ` +
+              `so it is NEW. Fix it here, or add it with the lane that will.`),
+      );
+    }
+    console.error(
+      `\n  Remedy: the organization comes from the record, from the membership ladder, or from the\n` +
+        `  door's own argument — and where none of those answers, the call is REFUSED (23502 naming\n` +
+        `  the argument). A body that legitimately CREATES a person's personal organization at\n` +
+        `  provisioning says so in its own body:\n` +
+        `      -- personal-organization-creation: <schema.fn> — <why the created org IS the answer>\n`,
+    );
+  }
+  for (const sig of v.stale) {
+    console.error(
+      `\ncheck-no-default-organization-sql: the ratchet still lists ${sig}, which no longer carries\n` +
+        `  the shape. The list only ever SHRINKS — remove that entry.\n`,
+    );
+  }
+  return 1;
+}
+
 // ---------------------------------------------------------------------------
 // Self-test — it must FLAG a newly written violating file and must NOT flag a
 // compliant one, including the ones that merely EXPLAIN the removed shape in a
@@ -466,6 +745,41 @@ $$;`,
 returns uuid language sql as $$
   select iam.personal_org_id((select auth.uid()));
 $$;`,
+  // A DECLARED CREATION SITE that really does replace what it names. Creating the
+  // person's own personal organization at provisioning is not substituting one.
+  "__self_test_ok_creation__.sql": `-- personal-organization-creation: zz_selftest.provision — the organization being created IS the answer.
+create or replace function zz_selftest.provision() returns trigger language plpgsql as $$
+begin
+  perform public.ensure_personal_organization(new.id);
+  return new;
+end $$;`,
+};
+
+/**
+ * The creation declaration must not become an allow-list with a nicer name. Each
+ * of these carries it and must STILL be flagged.
+ */
+const CREATION_NEAR_MISSES: Record<string, number> = {
+  // Declares a function it does not touch — the header points at nothing.
+  "__self_test_creation_empty__.sql": 7,
+  // Declares creation and then reads somebody's STATED default (rule 6), which is
+  // a different thing entirely and is never what provisioning needs.
+  "__self_test_creation_reads_default__.sql": 6,
+};
+
+const CREATION_NEAR_MISS_BODIES: Record<string, string> = {
+  "__self_test_creation_empty__.sql": `-- personal-organization-creation: zz_selftest.not_here — claims a creation site it never writes.
+create or replace function zz_selftest.something_entirely_else() returns trigger language plpgsql as $$
+begin
+  new.organization_id := public.ensure_personal_organization(new.created_by);
+  return new;
+end $$;`,
+  "__self_test_creation_reads_default__.sql": `-- personal-organization-creation: zz_selftest.provision_reads — provisioning does not read a preference.
+create or replace function zz_selftest.provision_reads() returns trigger language plpgsql as $$
+begin
+  new.organization_id := iam.default_organization_id(new.id);
+  return new;
+end $$;`,
 };
 
 /**
@@ -539,7 +853,12 @@ function selfTest(): number {
     console.log(`[self-test] ${pass ? "ok  " : "FAIL"} ${msg}`);
   };
   try {
-    for (const [name, body] of Object.entries({ ...PLANTS, ...COMPLIANT, ...SUPERSESSION_PLANTS })) {
+    for (const [name, body] of Object.entries({
+      ...PLANTS,
+      ...COMPLIANT,
+      ...SUPERSESSION_PLANTS,
+      ...CREATION_NEAR_MISS_BODIES,
+    })) {
       const p = join(dir, name);
       writeFileSync(p, body, "utf8");
       written.push(p);
@@ -556,6 +875,13 @@ function selfTest(): number {
       say(
         !hit,
         `compliant: ${name} is flagged = ${hit} (expected false)`,
+      );
+    }
+    for (const [name, rule] of Object.entries(CREATION_NEAR_MISSES)) {
+      const hit = found.some((v) => v.file.endsWith(name) && v.rule === rule);
+      say(
+        hit,
+        `creation declaration is not an allow-list: ${name} is STILL flagged on rule ${rule} = ${hit} (expected true)`,
       );
     }
 
@@ -584,6 +910,71 @@ function selfTest(): number {
           : `supersession: ${name} IS forgiven by its superseding file = ${forgiven} (expected true)`,
       );
     }
+    // ── THE CENSUS, proved RED and GREEN without a database ────────────────
+    // `censusVerdict` is a pure function of what the catalogue said and what the
+    // ratchet claims, precisely so that it can be watched failing here. Nobody
+    // trusts a clause they have only ever seen pass.
+    const entry = (
+      sig: string,
+      qualified: string,
+      creationDeclared: string | null = null,
+    ): CensusEntry => ({ sig, qualified, rules: [7], creationDeclared });
+
+    const red = censusVerdict(
+      [
+        entry("public.wsp_upsert_system_task(text)", "public.wsp_upsert_system_task"),
+        entry("public.somebody_elses_new_door(uuid)", "public.somebody_elses_new_door"),
+        entry("iam.default_organization_id(uuid)", "iam.default_organization_id"),
+        entry(
+          "public._provision_new_user_profile()",
+          "public._provision_new_user_profile",
+          "the organization being created IS the answer",
+        ),
+      ],
+      {
+        "public.wsp_upsert_system_task(text)": { lane: "DEFAULT-ORG-4" },
+        "public.a_body_that_is_no_longer_live()": { lane: "SOME-OLD-LANE" },
+      },
+    );
+    say(
+      red.open.length === 2 &&
+        red.open[0]!.lane === "DEFAULT-ORG-4" &&
+        red.open[1]!.lane === null,
+      `census: a live body is OPEN and carries its owning lane; one nobody owns carries none ` +
+        `(open = ${red.open.map((o) => `${o.sig}:${o.lane ?? "UNOWNED"}`).join(", ")})`,
+    );
+    say(
+      red.primitives.length === 1 && red.primitives[0] === "iam.default_organization_id(uuid)",
+      `census: the display preference itself is NOT a violation (primitives = ${red.primitives.join(", ")})`,
+    );
+    say(
+      red.creation.length === 1 &&
+        red.creation[0]!.sig === "public._provision_new_user_profile()",
+      `census: a body that DECLARES it creates the organization is not a violation ` +
+        `(creation = ${red.creation.map((c) => c.sig).join(", ")})`,
+    );
+    say(
+      red.stale.length === 1 &&
+        red.stale[0] === "public.a_body_that_is_no_longer_live()",
+      `census: a ratchet entry whose body is gone is an ERROR — the list only shrinks ` +
+        `(stale = ${red.stale.join(", ")})`,
+    );
+
+    // The verdict, not just its parts: RED must exit 1, GREEN must exit 0.
+    const quiet = { log: console.log, error: console.error };
+    console.log = () => {};
+    console.error = () => {};
+    const redCode = reportCensus(red);
+    const greenCode = reportCensus(
+      censusVerdict(
+        [entry("iam.default_organization_id(uuid)", "iam.default_organization_id")],
+        {},
+      ),
+    );
+    console.log = quiet.log;
+    console.error = quiet.error;
+    say(redCode === 1, `census: a dirty catalogue exits ${redCode} (expected 1)`);
+    say(greenCode === 0, `census: a clean catalogue exits ${greenCode} (expected 0)`);
   } finally {
     for (const p of written) {
       try {
@@ -674,11 +1065,28 @@ async function main(): Promise<number> {
     );
   }
 
-  if (violations.length === 0) {
+  // ── THE CENSUS — every live body, not only the ones a header names ─────────
+  let censusCode = 0;
+  try {
+    const entries = await readLiveCensus();
+    censusCode = reportCensus(censusVerdict(entries, loadLiveRatchet()));
+  } catch (err) {
     console.log(
-      "check-no-default-organization-sql: OK — no migration picks an organization for the user.",
+      `check-no-default-organization-sql: THE CENSUS DID NOT RUN — ` +
+        `${err instanceof Error ? err.message : String(err)}. ` +
+        `Nothing here has read the live function bodies, so this run cannot say the database is ` +
+        `clean — only that the FILES are. Run it where the five SUPABASE_MATRIX_* variables ` +
+        `resolve (any developer machine) to close that half.`,
     );
-    return 0;
+  }
+
+  if (violations.length === 0) {
+    if (censusCode === 0) {
+      console.log(
+        "check-no-default-organization-sql: OK — no migration picks an organization for the user.",
+      );
+    }
+    return censusCode;
   }
   console.error(
     `\ncheck-no-default-organization-sql: ${violations.length} violation(s).\n`,
