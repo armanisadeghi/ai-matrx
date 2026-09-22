@@ -65157,6 +65157,9 @@ export type Database = {
       feature_knob: {
         Row: {
           allowed_values: Json | null
+          archived_at: string | null
+          archived_by: string | null
+          archived_reason: string | null
           basis: string | null
           bound_value: Json | null
           created_at: string
@@ -65185,6 +65188,9 @@ export type Database = {
         }
         Insert: {
           allowed_values?: Json | null
+          archived_at?: string | null
+          archived_by?: string | null
+          archived_reason?: string | null
           basis?: string | null
           bound_value?: Json | null
           created_at?: string
@@ -65213,6 +65219,9 @@ export type Database = {
         }
         Update: {
           allowed_values?: Json | null
+          archived_at?: string | null
+          archived_by?: string | null
+          archived_reason?: string | null
           basis?: string | null
           bound_value?: Json | null
           created_at?: string
@@ -70567,6 +70576,15 @@ export type Database = {
       is_provisioning: { Args: never; Returns: boolean }
       is_service_only_history: { Args: { p_token: string }; Returns: boolean }
       is_sqlstate: { Args: { p_code: string }; Returns: boolean }
+      knob_archive: {
+        Args: {
+          p_feature: string
+          p_key: string
+          p_lane: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       knob_history_row_id: {
         Args: {
           p_feature: string
@@ -70639,6 +70657,10 @@ export type Database = {
       }
       knob_snapshot: {
         Args: { p_organization_id: string; p_scopes?: Json; p_user_id?: string }
+        Returns: Json
+      }
+      knob_unarchive: {
+        Args: { p_feature: string; p_key: string }
         Returns: Json
       }
       knob_value_as_of: {
