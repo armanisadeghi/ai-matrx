@@ -62,7 +62,9 @@ export async function GET(request: NextRequest) {
           quiet_hours_enabled: true,
           quiet_hours_start: "21:00",
           quiet_hours_end: "08:00",
-          timezone: "America/New_York",
+          // 1020: nobody has declared a clock, and saying "New York" here is
+          // the API inventing one. The pane shows "not set" and asks.
+          timezone: null,
           max_messages_per_hour: 10,
           max_messages_per_day: 50,
           sms_consent_status: null,

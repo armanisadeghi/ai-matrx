@@ -258,8 +258,39 @@ export async function sendNotificationSms(options: {
 
   // Check quiet hours
   if (prefs.quiet_hours_enabled) {
+    // 🚨 THE ENROLMENT'S TIMEZONE CAN BE NULL, AND THAT IS THE POINT (aidream
+    // migration 1020). It used to be NOT NULL DEFAULT 'America/New_York', so
+    // this line judged everybody's night on a New York clock they never chose.
+    // A person who has not declared a zone now reads NULL, and
+    // `toLocaleString({ timeZone: null })` throws a RangeError — so ask the
+    // canonical ladder, `communication.person_notification_window`, which is
+    // where this whole check belongs (0998) and which reaches the person's
+    // other channels, their profile, their work location and the org knob
+    // before giving up. Only when NOTHING on that ladder answers do we fall to
+    // UTC, and we say so: a guessed clock that nobody is told about is a
+    // quiet-hours window silently applied at the wrong hour.
+    let zone = prefs.timezone ?? null;
+    if (!zone) {
+      const { data: rungs } = await supabase
+        .schema('communication')
+        .rpc('person_notification_window', {
+          p_user_id: userId,
+          p_organization_id: prefs.organization_id,
+          p_channel: 'sms',
+        });
+      zone = rungs?.[0]?.timezone ?? null;
+    }
+    if (!zone) {
+      console.error(
+        `[sms] no timezone on any rung for user ${userId} (org ${prefs.organization_id}); ` +
+        `judging quiet hours in UTC. Remedy: the person declares one in their SMS ` +
+        `settings, the Chief of Staff's onboarding ask records one, or the ` +
+        `organization sets communication.notifications/default_timezone.`,
+      );
+      zone = 'UTC';
+    }
     const now = new Date();
-    const userTime = new Date(now.toLocaleString('en-US', { timeZone: prefs.timezone }));
+    const userTime = new Date(now.toLocaleString('en-US', { timeZone: zone }));
     const currentTime = `${String(userTime.getHours()).padStart(2, '0')}:${String(userTime.getMinutes()).padStart(2, '0')}`;
     const start = prefs.quiet_hours_start;
     const end = prefs.quiet_hours_end;

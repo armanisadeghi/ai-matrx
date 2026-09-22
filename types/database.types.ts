@@ -17403,7 +17403,7 @@ export type Database = {
           sms_enabled: boolean
           system_alerts: boolean
           task_notifications: boolean
-          timezone: string
+          timezone: string | null
           updated_at: string
           updated_by: string | null
           user_id: string
@@ -17435,7 +17435,7 @@ export type Database = {
           sms_enabled?: boolean
           system_alerts?: boolean
           task_notifications?: boolean
-          timezone?: string
+          timezone?: string | null
           updated_at?: string
           updated_by?: string | null
           user_id: string
@@ -17467,7 +17467,7 @@ export type Database = {
           sms_enabled?: boolean
           system_alerts?: boolean
           task_notifications?: boolean
-          timezone?: string
+          timezone?: string | null
           updated_at?: string
           updated_by?: string | null
           user_id?: string
@@ -18824,7 +18824,7 @@ export type Database = {
         }
         Returns: {
           quiet_windows: Json
-          timezone: string
+          timezone: string | null
           timezone_source: string
         }[]
       }
