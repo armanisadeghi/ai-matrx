@@ -990,6 +990,23 @@ module in the folder + the two deleted filenames).
   there is no run viewer to route to) and approved-by (the person resolved through
   `useOrgMembers`, plus the time). Until 2026-09-17 the timeline rendered a
   subject and a date and none of it (VERIFY-B1-B2 A4/D6).
+- **Deleting an imported Gmail reply erases its message data from the current
+  primary CRM rows.**
+  `removeInteraction(row)` recognizes only the server-authored inbound shape
+  (`direction='inbound'`, email channel, provider message id and
+  `attributes.outreach_inbound.identity_id`). It first scrubs the matching
+  organization + sending-identity `crm.sending_event`, then scrubs and
+  soft-deletes `crm.interaction`. Subject, body, Gmail/RFC/thread ids,
+  classification evidence and provider metadata become NULL or empty objects;
+  `message_id` becomes `erased:sha256:<digest>`, the content-free tombstone the
+  server checks before accepting a redelivery. Both writes stay direct
+  Supabase CRUD under canonical RLS and explicit organization predicates. A
+  second-write failure leaves the interaction visible so the person can retry;
+  success means both current primary CRM rows were scrubbed. Party, contact,
+  organization, outreach-list and event lifecycle links remain because deleting
+  one message is not permission to erase the surrounding CRM record. This path
+  does not claim to purge database backups, provider mailboxes or downstream
+  exports.
 - 🚨 **"Associated with" is a real edge, written by the SERVER.** The spine writes
   `crm_interaction → party | crm_deal | project` with role `gmail_send`
   (`GMAIL_SEND_ASSOCIATION_ROLE` in `gmail/types.ts` is the same spelling — two
@@ -1046,6 +1063,11 @@ module in the folder + the two deleted filenames).
 ---
 
 ## Change log
+
+- 2026-09-22 — Imported Gmail reply deletion now scrubs retained content and
+  provider identifiers from both primary CRM rows, keeps only a SHA-256
+  redelivery tombstone, scopes every write by organization and sending identity,
+  and refuses to report success when RLS updates no interaction.
 
 - 2026-09-18 — **F-50: `refinePartyDetail` gives the header's TYPE CHIP the record's OWN kind, per row.** F-47 shipped the honest per-TYPE generic ("Contact") because `DetailRecordType.label` is a `string`, not a function of the row — so the chip still said "Contact" for both the real company `d3dc196a-3a63-4fae-b2a4-e2605eadb3b2` and a real person, one register entry serving 1,432 companies and 460 people. F-46 landed the escalation (`DetailRecordType.labelForRow?: (row) => string | null`, consumed by `useDetailCore` for the chip and the stand-in titles only); `refinePartyDetail` now sets it to `partyKindWord(row.party_kind)`, so the chip reads "Company" over the company row and "Person" over a person row, in every presentation. `title` already did this for the "Untitled …" stand-in — `labelForRow` is the same word reaching the chip. Red-then-green over the REAL rows through the REAL type map: `features/item-presentation/__tests__/a-company-is-never-called-a-person.test.tsx`'s new `[data-detail-type-chip]` assertions (6 cases: Company/Person × window/docked/page) all read "Contact" before the fix, the type-level generic; restored, all read the row's own kind. 17/17 green in the file.
 

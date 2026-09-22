@@ -18,6 +18,10 @@ import { apiPost } from "@/lib/api/typed-client";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
+import {
+  buildInteractionRemoval,
+  type InteractionRemovalTarget,
+} from "./interaction-erasure";
 import type {
   AddressInsert,
   DedupScanResult,
@@ -1735,11 +1739,50 @@ export async function logInteraction(args: {
   if (error) throw pgError(error);
 }
 
-export async function removeInteraction(id: string): Promise<void> {
-  const { error } = await supabase
+export async function removeInteraction(
+  row: InteractionRemovalTarget,
+): Promise<void> {
+  const removal = await buildInteractionRemoval(row);
+
+  if (removal.providerMessageId && removal.sendingIdentityId) {
+    // Scrub dependent audit rows first. If the interaction update then fails,
+    // the still-visible interaction remains available for a retry; a successful
+    // return means neither primary CRM row retains Gmail content or raw ids.
+    const { error: eventError } = await supabase
+      .schema("crm")
+      .from("sending_event")
+      .update({
+        provider_message_id: removal.patch.message_id,
+        subject: null,
+        detail: {},
+        error_code: null,
+        error_message: null,
+        metadata: {},
+        custom_fields: {},
+      })
+      .eq("organization_id", row.organization_id)
+      .eq("identity_id", removal.sendingIdentityId)
+      .eq("provider_message_id", removal.providerMessageId);
+    if (eventError) throw pgError(eventError);
+  }
+
+  let interactionUpdate = supabase
     .schema("crm")
     .from("interaction")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+    .update(removal.patch, { count: "exact" })
+    .eq("id", row.id)
+    .eq("organization_id", row.organization_id);
+  if (removal.providerMessageId) {
+    interactionUpdate = interactionUpdate.eq(
+      "message_id",
+      removal.providerMessageId,
+    );
+  }
+  const { count, error } = await interactionUpdate;
   if (error) throw pgError(error);
+  if (count !== 1) {
+    throw new Error(
+      "The interaction was not deleted because it is no longer writable in this organization.",
+    );
+  }
 }

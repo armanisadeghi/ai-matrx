@@ -220,7 +220,7 @@ export function InteractionTimeline({
     });
     if (!ok) return;
     try {
-      await removeInteraction(row.id);
+      await removeInteraction(row);
       await onChanged();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to delete");
