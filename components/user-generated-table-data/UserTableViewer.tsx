@@ -4118,6 +4118,36 @@ const UserTableViewer = ({
               />
             </div>
 
+            {!isReadOnly && (cellUndo.canUndo || cellUndo.canRedo) ? (
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 justify-start gap-2 px-3 text-sm"
+                  disabled={!cellUndo.canUndo || cellUndo.busy}
+                  onClick={() => void cellUndo.undo()}
+                >
+                  <Undo2 className="h-4 w-4" />
+                  Undo
+                  {cellUndo.undoDepth > 1 ? (
+                    <span className="tabular-nums text-muted-foreground">
+                      {cellUndo.undoDepth}
+                    </span>
+                  ) : null}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 justify-start gap-2 px-3 text-sm"
+                  disabled={!cellUndo.canRedo || cellUndo.busy}
+                  onClick={() => void cellUndo.redo()}
+                >
+                  <Redo2 className="h-4 w-4" />
+                  Redo
+                </Button>
+              </div>
+            ) : null}
+
             <div className="[&>button]:h-11 [&>button]:w-full [&>button]:justify-start [&>button]:px-2 [&>button]:text-sm">
               <ColumnViewMenu
                 fields={fields.map((field) => ({
