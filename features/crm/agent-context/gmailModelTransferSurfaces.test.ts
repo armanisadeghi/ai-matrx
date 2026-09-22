@@ -1,7 +1,21 @@
+import { readReplyProvenance } from "@/features/crm/inbox/attributes";
 import { createCrmChaseboxScope } from "@/features/surfaces/manifests/crm-chasebox.manifest";
 import { createCrmInboxScope } from "@/features/surfaces/manifests/crm-inbox.manifest";
 
 describe("Gmail model-transfer surface boundaries", () => {
+  it("treats a partially malformed provider receipt as ambiguous", () => {
+    const reply = readReplyProvenance({
+      outreach_single_send: {
+        reply: {
+          model_transfer_provenance: "full_thread_checked_v1",
+          source_providers: ["microsoft_365", null],
+        },
+      },
+    });
+
+    expect(reply?.sourceProviders).toEqual([]);
+  });
+
   it("keeps inbox view state but removes every Gmail reply row", () => {
     const scope = createCrmInboxScope({
       scope: "mine",
@@ -70,7 +84,8 @@ describe("Gmail model-transfer surface boundaries", () => {
         grounded_on: ["They asked for a walkthrough [inbound_message]"],
         answering_label: "interested",
         thread_message_count: 2,
-        model_transfer_allowed: false,
+        model_transfer_provenance: null,
+        source_providers: [],
       },
       draft_approved: false,
     });
@@ -117,7 +132,8 @@ describe("Gmail model-transfer surface boundaries", () => {
         grounded_on: ["They asked in a CRM note [record]"],
         answering_label: "interested",
         thread_message_count: 2,
-        model_transfer_allowed: true,
+        model_transfer_provenance: "full_thread_checked_v1",
+        source_providers: ["microsoft_365"],
       },
       draft_approved: false,
     });
@@ -125,7 +141,39 @@ describe("Gmail model-transfer surface boundaries", () => {
     expect(scope).toMatchObject({
       draft_subject: "Re: intake workflow",
       draft_body: "Here is the requested workflow.",
-      draft_reply: { model_transfer_allowed: true },
+      draft_reply: {
+        model_transfer_provenance: "full_thread_checked_v1",
+        source_providers: ["microsoft_365"],
+      },
     });
   });
+
+  it.each<{ sourceProviders: string[] }>([
+    { sourceProviders: ["google_workspace"] },
+    { sourceProviders: ["unknown"] },
+    { sourceProviders: [] },
+  ])(
+    "refuses a reply draft whose full-thread providers are restricted or ambiguous",
+    ({ sourceProviders }) => {
+      const scope = createCrmChaseboxScope({
+        active_queue: "pending_drafts",
+        queue_counts: { pending_drafts: 1 },
+        total_items: 1,
+        visible_items: [],
+        draft_subject: "Restricted thread subject",
+        draft_body: "Restricted thread body",
+        draft_reply: {
+          intent: "Answer their question",
+          grounded_on: ["A restricted source [inbound_message]"],
+          answering_label: "interested",
+          thread_message_count: 3,
+          model_transfer_provenance: "full_thread_checked_v1",
+          source_providers: sourceProviders,
+        },
+      });
+
+      expect(JSON.stringify(scope)).not.toContain("Restricted thread");
+      expect(scope).not.toHaveProperty("draft_reply");
+    },
+  );
 });

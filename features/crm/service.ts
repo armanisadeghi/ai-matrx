@@ -33,6 +33,7 @@ import type {
   DateBucket,
   InteractionChannel,
   InteractionDirection,
+  InteractionRow,
   PartyDetail,
   PartyKind,
   PartyListQuery,
