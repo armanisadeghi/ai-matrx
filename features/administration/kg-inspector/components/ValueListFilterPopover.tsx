@@ -99,8 +99,9 @@ export function ValueListFilterPopover({
         </button>
       </PopoverTrigger>
       <PopoverContent
+        sizing="content"
         align="start"
-        className="w-64 space-y-2 p-3"
+        className="space-y-2 p-3"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">

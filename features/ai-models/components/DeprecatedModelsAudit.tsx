@@ -644,7 +644,7 @@ export default function DeprecatedModelsAudit({
                         )}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent align="start" className="w-80 space-y-3">
+                    <PopoverContent sizing="content" align="start" className="space-y-3">
                       <div className="space-y-1">
                         <span className="text-xs font-medium">Provider</span>
                         <Select

@@ -1861,7 +1861,7 @@ function ColumnFilterControl({
           <Filter className={cn("h-3 w-3", !active && "opacity-50")} />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-64 p-3 space-y-2">
+      <PopoverContent sizing="content" align="start" className="p-3 space-y-2">
         <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
           Filter {column.header}
         </div>

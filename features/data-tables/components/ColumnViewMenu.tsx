@@ -105,7 +105,7 @@ export function ColumnViewMenu({
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" className="w-72 p-2">
+      <PopoverContent sizing="content" align="end" className="p-2">
         <div className="flex items-center justify-between px-1 pb-2">
           <p className="text-xs font-medium text-foreground">
             Columns in this view

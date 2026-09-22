@@ -349,7 +349,7 @@ export function MandateAgentPicker({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-96 p-3">
+      <PopoverContent sizing="content" align="end" className="p-3">
         {loadError ? (
           <p className="flex items-start gap-1.5 text-[12px] text-destructive">
             <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0" />

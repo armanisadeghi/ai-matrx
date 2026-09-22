@@ -74,7 +74,7 @@ export function ColumnSummaryCell({
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-44 p-1">
+      <PopoverContent sizing="content" align="end" className="p-1">
         <div className="px-2 py-1.5 text-[11px] font-medium text-muted-foreground">
           {displayName}
         </div>

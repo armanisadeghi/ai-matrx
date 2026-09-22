@@ -208,7 +208,7 @@ export function ChoiceInput({
           </Button>
         </PopoverTrigger>
 
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <PopoverContent sizing="content" className="p-0" align="start">
           <Command shouldFilter>
             <CommandInput
               placeholder={allowOther ? "Search or type a value…" : "Search options…"}

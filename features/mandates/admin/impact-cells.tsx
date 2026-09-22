@@ -345,6 +345,7 @@ export function ImpactLegend() {
         </Button>
       </PopoverTrigger>
       <PopoverContent
+        /* sizing: fixed — fixed-shape panel wider than the sizing="content" 28rem ceiling */
         align="end"
         className="w-[min(30rem,96vw)] space-y-2 p-3 text-xs"
       >

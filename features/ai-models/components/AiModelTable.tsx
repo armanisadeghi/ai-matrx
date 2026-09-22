@@ -909,6 +909,7 @@ function ColumnHeaderFilter({
         </button>
       </PopoverTrigger>
       <PopoverContent
+        /* sizing: fixed — content already decides its own width; no fixed box to remove */
         align="start"
         side="bottom"
         className="w-auto p-3"

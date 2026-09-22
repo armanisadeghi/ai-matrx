@@ -128,7 +128,7 @@ export function TableLayoutMenu({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-72 space-y-4 p-3">
+      <PopoverContent sizing="content" align="end" className="space-y-4 p-3">
         <div className="space-y-1.5">
           <Label className="text-xs">Column widths</Label>
           <Segmented

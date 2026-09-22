@@ -207,7 +207,7 @@ export function BulkRowActions({
                 Set a column
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="start" className="w-72 space-y-2 p-3">
+            <PopoverContent sizing="content" align="start" className="space-y-2 p-3">
               <p className="text-xs font-medium text-foreground">
                 Set one column on {count} {noun}
               </p>
@@ -282,7 +282,7 @@ export function BulkRowActions({
                 Fill down
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="start" className="w-64 space-y-2 p-3">
+            <PopoverContent sizing="content" align="start" className="space-y-2 p-3">
               <p className="text-xs text-muted-foreground">
                 Copies the first selected row&apos;s value into the other{" "}
                 {count - 1}.
@@ -328,7 +328,7 @@ export function BulkRowActions({
                   Run action
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="start" className="w-72 space-y-1 p-2">
+              <PopoverContent sizing="content" align="start" className="space-y-1 p-2">
                 {rowActions.map((a) => (
                   <button
                     key={a.id}

@@ -1354,7 +1354,7 @@ function IconPicker({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-2" align="start">
+      <PopoverContent sizing="content" className="p-2" align="start">
         <Input
           placeholder="Search icons…"
           value={q}

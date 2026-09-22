@@ -165,7 +165,7 @@ export function ColumnValidationEditor({
             </span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-80 space-y-3 p-3">
+        <PopoverContent sizing="content" align="start" className="space-y-3 p-3">
           <div>
             <p className="text-sm font-medium">Validation rules</p>
             <p className="text-[11px] text-muted-foreground">
