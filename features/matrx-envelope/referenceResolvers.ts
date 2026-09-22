@@ -132,7 +132,15 @@ function createRecordResolver(config: RecordResolverConfig): ReferenceResolver {
   };
 }
 
-/** Live value of a single dataset-row cell: `udt_dataset_rows.data[column]`. */
+/**
+ * Live value of a single dataset-row cell: `udt_dataset_rows.data[column]`.
+ *
+ * A `relation` column stores a RECORD ID, so this used to paste a raw uuid into
+ * a prompt wherever somebody wrote `@table_cell` at a customer column — reader 8
+ * of OLD-TABLES-CUTOVER rev 2 §3.3. It now resolves through the older store's
+ * own words door, the same one the grid uses, so the agent reads the customer's
+ * name. Every other column is stringified exactly as before.
+ */
 async function resolveCell(
   supabase: SupabaseClient,
   rowId: string | undefined,
@@ -142,14 +150,58 @@ async function resolveCell(
   const { data, error } = await supabase
     .schema("workbench")
     .from("udt_dataset_rows")
-    .select("data")
+    .select("data, table_id, organization_id")
     .eq("id", rowId)
     .maybeSingle();
   if (error || !data) return undefined;
-  const cells = (data as { data?: Record<string, unknown> | null }).data;
+  const row = data as {
+    data?: Record<string, unknown> | null;
+    table_id?: string | null;
+    organization_id?: string | null;
+  };
+  const cells = row.data;
   if (!cells || typeof cells !== "object") return undefined;
-  return stringify(cells[column]);
+  const raw = cells[column];
+
+  // Is this column a relation? The format lives on the field row, so it is one
+  // read, and only for a cell that could be one (a uuid, or a list of them).
+  const couldBeRelation =
+    typeof raw === "string" ? UUID_TEXT.test(raw.trim()) : Array.isArray(raw);
+  if (!couldBeRelation || !row.table_id || !row.organization_id) return stringify(raw);
+
+  const { data: field } = await supabase
+    .schema("workbench")
+    .from("udt_dataset_fields")
+    .select("metadata")
+    .eq("table_id", row.table_id)
+    .eq("field_name", column)
+    .is("deleted_at", null)
+    .maybeSingle();
+  const format = (field as { metadata?: { format?: { id?: string; options?: Record<string, unknown> } } } | null)
+    ?.metadata?.format;
+  if (format?.id !== "relation") return stringify(raw);
+
+  const ids = (Array.isArray(raw) ? raw : [raw])
+    .filter((v): v is string => typeof v === "string" && UUID_TEXT.test(v.trim()))
+    .map((v) => v.trim());
+  const { data: words } = await supabase
+    .schema("workbench")
+    .rpc("udt_row_words_many", {
+      p_organization_id: row.organization_id,
+      p_display: format.options?.display ?? null,
+      p_row_ids: ids,
+    });
+  const byId = new Map<string, string>();
+  for (const w of (Array.isArray(words) ? words : []) as { row_id?: string; words?: string | null }[]) {
+    if (w?.row_id && typeof w.words === "string") byId.set(w.row_id, w.words);
+  }
+  // An id nothing resolved keeps its identifier rather than vanishing: a prompt
+  // that silently dropped a reference would be worse than one that says the
+  // reference did not resolve.
+  return ids.map((id) => byId.get(id) ?? `Record ${id.slice(0, 8)}`).join(", ");
 }
+
+const UUID_TEXT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * The 7-type reference resolver registry (+ the `dataset_cell` legacy alias).

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Table,
   TableBody,
@@ -62,6 +62,17 @@ import {
   PersonChoicesProvider,
   usePersonChoicesFor,
 } from "@/features/data-tables/person-choices";
+import {
+  cellTextForReader,
+  relationCellText,
+  relationDisplayOf,
+  relationIdsInColumn,
+  type RelationWordsByField,
+} from "@/features/data-tables/relation-words";
+import {
+  fetchRelationWords,
+  useRelationWordsFor,
+} from "@/features/data-tables/relation-words-client";
 import {
   choicesForRow,
   useFieldChoiceMap,
@@ -1027,12 +1038,94 @@ const UserTableViewer = ({
   // A hook per column is impossible anyway — the column count is data.
   // Members of the table's organization — the options of every `person` column.
   const personChoices = usePersonChoicesFor(tableInfo?.organization_id ?? null);
-  const choiceMap = useFieldChoiceMap(
-    fields.map((field) => ({
-      field_name: field.field_name,
-      format: resolveFieldFormat(field.data_type, field.metadata),
-    })),
-    personChoices,
+  const formatFields = useMemo(
+    () =>
+      fields.map((field) => ({
+        field_name: field.field_name,
+        format: resolveFieldFormat(field.data_type, field.metadata),
+      })),
+    [fields],
+  );
+  // THE WORDS EVERY `relation` CELL ON THIS PAGE READS — one call per relation
+  // column, through the older store's own door. `fullDatasetCache` is the
+  // superset once a column filter has loaded it, so resolving over it keeps the
+  // filtered page's chips resolved too; without it the visible page is the set.
+  // See features/data-tables/relation-words.tsx for the three states, including
+  // why an id the store answers nothing for is deliberately absent here.
+  const { choicesByField: relationChoices, wordsByField: relationWords } = useRelationWordsFor(
+    tableInfo?.organization_id ?? null,
+    formatFields,
+    fullDatasetCache ?? data,
+  );
+  const choiceMap = useFieldChoiceMap(formatFields, personChoices, relationChoices);
+
+  /** Machine field name → its resolved format, for the readers below. */
+  const formatByField = useMemo(
+    () => new Map(formatFields.map((f) => [f.field_name, f.format] as const)),
+    [formatFields],
+  );
+
+  /**
+   * THE ONE READER-FACING VALUE OF A CELL.
+   *
+   * Everything that turns a cell into TEXT rather than drawing it — copy, the
+   * clipboard, an export, the row label, the sort comparator, a formula, the
+   * agent scope, the right-click menu's own Copy — asks this, so a `relation`
+   * column reads as the record's WORDS everywhere and as a raw uuid nowhere.
+   * Every other column is handed straight back, unchanged.
+   */
+  /** The same answer, addressed by field name — what the formula engine asks. */
+  const displayValueOf = useCallback(
+    (fieldName: string, raw: unknown): unknown =>
+      cellTextForReader(raw, formatByField.get(fieldName), relationWords, fieldName),
+    [formatByField, relationWords],
+  );
+
+  /**
+   * EVERY ROW A COPY, AN EXPORT OR AN AGENT PAYLOAD SEES, with its `relation`
+   * cells already resolved to words.
+   *
+   * The grid's own page is resolved by `useRelationWordsFor`, but a copy or an
+   * export reads the COMPLETE table — ids the visible page never held — so this
+   * asks the door for exactly the ids in the rows it was handed. One call per
+   * relation column, and a table with no relation column does no work at all
+   * and returns the same array it was given.
+   */
+  const rowsForReaders = useCallback(
+    async <R extends { data: Record<string, unknown> }>(rows: R[]): Promise<R[]> => {
+      const relationFields = formatFields.filter((f) => f.format?.id === "relation");
+      if (relationFields.length === 0 || rows.length === 0) return rows;
+      const byField = new Map<string, ReadonlyMap<string, string>>();
+      for (const f of relationFields) {
+        byField.set(
+          f.field_name,
+          await fetchRelationWords({
+            organizationId: tableInfo?.organization_id ?? null,
+            display: relationDisplayOf(f.format),
+            rowIds: relationIdsInColumn(rows, f.field_name),
+          }),
+        );
+      }
+      return rows.map((row) => {
+        const data = { ...row.data };
+        for (const f of relationFields) {
+          data[f.field_name] = relationCellText(data[f.field_name], byField.get(f.field_name));
+        }
+        return { ...row, data };
+      });
+    },
+    [formatFields, tableInfo?.organization_id],
+  );
+
+  const cellValueForReader = useCallback(
+    (row: { data?: Record<string, unknown> | null } | null | undefined, fieldName: string): unknown =>
+      cellTextForReader(
+        row?.data?.[fieldName] ?? null,
+        formatByField.get(fieldName),
+        relationWords,
+        fieldName,
+      ),
+    [formatByField, relationWords],
   );
 
   // ─── Colors (table-style.ts) ─────────────────────────────────────────────
@@ -1397,8 +1490,12 @@ const UserTableViewer = ({
       declaredDataType === "integer" || declaredDataType === "number";
 
     return [...rows].sort((a, b) => {
-      const aValue = a.data[fieldName];
-      const bValue = b.data[fieldName];
+      // A `relation` column sorts by the WORDS its cells read, never by the
+      // record ids they store — sorting a customer column by uuid puts the
+      // rows in an order nobody can explain (OLD-TABLES-CUTOVER rev 2 §3.3,
+      // reader 6). Every other column is its raw value, exactly as before.
+      const aValue = displayValueOf(fieldName, a.data[fieldName]);
+      const bValue = displayValueOf(fieldName, b.data[fieldName]);
 
       // Handle null/undefined values
       if (aValue === null || aValue === undefined) {
@@ -1521,7 +1618,7 @@ const UserTableViewer = ({
         // A formula column has no stored value to sort by — compute it over
         // the freshly loaded rows first, then sort on what the user sees.
         const sortedData = smartSort(
-          withComputedColumns(asTableDataRows(allPayload.data), fields).rows,
+          withComputedColumns(asTableDataRows(allPayload.data), fields, displayValueOf).rows,
           field,
           newDirection,
           fieldDataType,
@@ -1581,6 +1678,7 @@ const UserTableViewer = ({
         updated_at: typeof row.updated_at === "string" ? row.updated_at : undefined,
       })),
       fields,
+      displayValueOf,
     ).rows;
     const query = searchTerm.trim().toLowerCase();
     if (query) {
@@ -1603,7 +1701,7 @@ const UserTableViewer = ({
         getFieldDataType(sortField),
       );
     }
-    return rows;
+    return rowsForReaders(rows);
   };
 
   // Handle search
@@ -2273,7 +2371,7 @@ const UserTableViewer = ({
   if (hasColumnFilters) {
     // Formula values are computed BEFORE the filter and the sort run, so a
     // filter on a formula column judges the number the user sees.
-    const source = withComputedColumns(fullDatasetCache ?? data, fields).rows;
+    const source = withComputedColumns(fullDatasetCache ?? data, fields, displayValueOf).rows;
     let filtered = applyColumnFilters(source);
     if (sortField) {
       filtered = smartSort(
@@ -2298,7 +2396,7 @@ const UserTableViewer = ({
   // number and a write can never land in it (the cell is read-only below, and
   // paste / clear / fill skip it). Errors are per cell: a bad reference or a
   // division by zero renders #ERROR with the reason.
-  const computedPage = withComputedColumns(displayRows, fields);
+  const computedPage = withComputedColumns(displayRows, fields, displayValueOf);
   displayRows = computedPage.rows;
   const formulaErrors = computedPage.errors;
   // Formula AND system columns (Created / Last modified time): everything the
@@ -2481,8 +2579,11 @@ const UserTableViewer = ({
 
   /** What a cell puts on the clipboard — the same text a spreadsheet would. */
   const getCellText = useCallback(
-    (address: CellAddress): string => cellClipboardText(readCell(address)),
-    [readCell],
+    (address: CellAddress): string =>
+      cellClipboardText(
+        cellTextForReader(readCell(address), formatByField.get(address.fieldName), relationWords, address.fieldName),
+      ),
+    [readCell, formatByField, relationWords],
   );
 
   const handleCopied = useCallback((cells: CellAddress[], text: string) => {
@@ -2671,7 +2772,7 @@ const UserTableViewer = ({
       if (rows.length === 0) return;
       if (action.kind === "agent") {
         const row = rows[0];
-        const label = rowLabelText(row, fields, effectiveRowLabel(tableInfo?.metadata, fields)).text;
+        const label = rowLabelText(row, fields, effectiveRowLabel(tableInfo?.metadata, fields), relationWords).text;
         const launchOptions: ManagedAgentOptions = {
           surfaceKey: `data-table-row-action:${tableId}:${row.id}`,
           sourceFeature: "chat",
@@ -2719,7 +2820,7 @@ const UserTableViewer = ({
       if (!built.ok) {
         const failing = displayRows.find((r) => r.id === built.rowId);
         const name = failing
-          ? rowLabelText(failing, fields, effectiveRowLabel(tableInfo?.metadata, fields)).text || "one row"
+          ? rowLabelText(failing, fields, effectiveRowLabel(tableInfo?.metadata, fields), relationWords).text || "one row"
           : "one row";
         toast({
           title: `"${action.name}" was not run`,
@@ -3005,7 +3106,7 @@ const UserTableViewer = ({
       const row = displayRows.find((r) => r.id === rowId);
       if (!row) return;
       const text = gridToTsv([
-        viewFields.map((f) => row.data?.[f.field_name] ?? null),
+        viewFields.map((f) => cellValueForReader(row, f.field_name)),
       ]);
       void navigator.clipboard.writeText(text).then(
         () => toast({ title: "Row copied", description: text.slice(0, 80) }),
@@ -3120,11 +3221,11 @@ const UserTableViewer = ({
       ? getCellText(t.cell)
       : t.rowId
         ? gridToTsv([
-            viewFields.map(
-              (f) =>
-                displayRows.find((r) => r.id === t.rowId)?.data?.[
-                  f.field_name
-                ] ?? null,
+            viewFields.map((f) =>
+              cellValueForReader(
+                displayRows.find((r) => r.id === t.rowId),
+                f.field_name,
+              ),
             ),
           ])
         : "";
@@ -3304,9 +3405,10 @@ const UserTableViewer = ({
   const tickedRows = withComputedColumns(
     (fullDatasetCache ?? data).filter((row) => selectedRowIdSet.has(row.id)),
     fields,
+    displayValueOf,
   ).rows;
   const fullDatasetForScope = fullDatasetCache
-    ? withComputedColumns(fullDatasetCache, fields).rows
+    ? withComputedColumns(fullDatasetCache, fields, displayValueOf).rows
     : null;
 
   const surfaceScopeSnapshot: DataTableScopeInput = {
@@ -3410,9 +3512,9 @@ const UserTableViewer = ({
             // only a row with an empty label falls back to its first filled cell.
             label:
               (
-                rowLabelText(menuRow, fields, effectiveRowLabel(tableInfo?.metadata, fields)).text ||
+                rowLabelText(menuRow, fields, effectiveRowLabel(tableInfo?.metadata, fields), relationWords).text ||
                 viewFields
-                  .map((f) => cellClipboardText(menuRow.data?.[f.field_name]).trim())
+                  .map((f) => cellClipboardText(cellValueForReader(menuRow, f.field_name)).trim())
                   .find(Boolean) ||
                 "row"
               ).slice(0, 40),
@@ -3752,10 +3854,16 @@ const UserTableViewer = ({
               if (isServiceFailure(complete)) throw new Error(complete.error);
               // Same rule as `loadRowsForCopy`: formula columns are computed
               // before anything downstream (export, sort) reads the rows.
-              const rows = withComputedColumns(complete.data.rows, fields).rows;
-              return sortField
-                ? smartSort(rows, sortField, sortDirection, getFieldDataType(sortField))
+              const rows = withComputedColumns(complete.data.rows, fields, displayValueOf).rows;
+              const ordered: typeof rows = sortField
+                ? (smartSort(
+                    rows as unknown as TableDataRow[],
+                    sortField,
+                    sortDirection,
+                    getFieldDataType(sortField),
+                  ) as unknown as typeof rows)
                 : rows;
+              return rowsForReaders(ordered);
             }}
             onChooseReference={onChooseReference}
           />
@@ -4384,7 +4492,7 @@ const UserTableViewer = ({
                         // do not cover `totalCount`.
                         localRows={
                           isFormulaField(field.field_name)
-                            ? withComputedColumns(fullDatasetCache ?? data, fields).rows
+                            ? withComputedColumns(fullDatasetCache ?? data, fields, displayValueOf).rows
                             : (fullDatasetCache ?? data)
                         }
                         totalCount={totalCount}
@@ -5152,7 +5260,7 @@ const UserTableViewer = ({
                 <TableCell className="sticky left-0 z-10 w-10 bg-inherit px-2 md:px-3" />
                 {viewFields.map((field) => {
                   const kind = columnSummaries[field.field_name] ?? null;
-                  const summaryRows = withComputedColumns(fullDatasetCache ?? displayRows, fields).rows;
+                  const summaryRows = withComputedColumns(fullDatasetCache ?? displayRows, fields, displayValueOf).rows;
                   const partial = summaryRows.length < effectiveTotalCount;
                   return (
                     <TableCell

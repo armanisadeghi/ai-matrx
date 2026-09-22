@@ -1310,7 +1310,26 @@ export function withComputedColumns<
     updated_at?: string;
   },
   F extends ComputedColumnField,
->(rows: readonly R[], fields: readonly F[]): ComputedRowsResult<R> {
+>(
+  rows: readonly R[],
+  fields: readonly F[],
+  /**
+   * THE FORMULA SEAM (OLD-TABLES-CUTOVER rev 2 §3.3, reader 2).
+   *
+   * `compareValues` compares whatever it is handed, and a formula handed two
+   * `relation` cells compares RECORD IDS as strings — `=` works by accident and
+   * `<` is nonsense. That is not fixed inside the comparison: it is fixed at the
+   * one place a cell BECOMES a formula value, so `=`, `<`, `&`, IF and every
+   * function this language will ever gain see the words at once, and there is
+   * one arm to get right rather than one per operator.
+   *
+   * It is a FUNCTION and not a words map on purpose: this module deliberately
+   * imports nothing from `lib/field-formats`, and the caller already holds both
+   * the formats and the resolved words. Omitted, every value is its raw self —
+   * exactly today's behaviour.
+   */
+  displayValueOf?: (fieldName: string, raw: unknown) => unknown,
+): ComputedRowsResult<R> {
   const columns = formulaColumnsOf(fields);
   const systemColumns = fields.flatMap((field) => {
     const kind = systemColumnKindOf(field);
@@ -1343,11 +1362,13 @@ export function withComputedColumns<
   }
   const computed = rows.map((row) => {
     const data: Record<string, unknown> = { ...(row.data ?? {}) };
+    const shown = (fieldName: string, raw: unknown): unknown =>
+      displayValueOf ? displayValueOf(fieldName, raw) : raw;
     const resolve: ResolveCell = (name) => {
-      if (name in data) return data[name];
+      if (name in data) return shown(name, data[name]);
       const fieldName = fieldNameByReference.get(name.toLowerCase());
       if (fieldName === undefined) return undefined; // truly no such column
-      return data[fieldName] ?? null;
+      return shown(fieldName, data[fieldName] ?? null);
     };
     // System columns first, so a formula may reference them
     // (`DATEDIF({Created}, TODAY(), "D")`). A reader that did not return the

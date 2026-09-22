@@ -346,6 +346,18 @@ export function useFieldChoiceMap(
   }[],
   /** Options for every `person` column: the organization's members (`undefined` while loading). */
   personChoices?: FieldChoice[],
+  /**
+   * Options for each `relation` column, keyed by machine field name: the ids
+   * this page's cells point at, each carrying the WORDS the store resolved for
+   * it (`features/data-tables/relation-words`). Same `{ value, label }` shape
+   * `person` uses — the cell stores the identifier, the chip and the filter
+   * checklist show the name, and a write still sends the value.
+   *
+   * An id the store answered nothing for is deliberately ABSENT from that list:
+   * the cell then has no matching choice and falls to the amber identifier
+   * chip, which is what an unresolvable reference is supposed to look like.
+   */
+  relationChoices?: ReadonlyMap<string, FieldChoice[]>,
 ): Map<string, ResolvedChoices> {
   const listIds = fields.map((f) =>
     isChoiceFormat(f.format?.id)
@@ -360,6 +372,22 @@ export function useFieldChoiceMap(
     for (const field of fields) {
       const format = field.format;
       if (!isChoiceFormat(format?.id)) continue;
+
+      if (format?.id === "relation") {
+        const choices = relationChoices?.get(field.field_name) ?? EMPTY;
+        out.set(field.field_name, {
+          choices,
+          groups: groupChoices(choices),
+          loading: relationChoices === undefined,
+          unavailable: false,
+          // A relation cell holds an id of a real row or it holds nothing; a
+          // free-typed name in an id column is refused at the write door
+          // (W3's trigger), so there is no "other" to allow.
+          allowOther: false,
+          groupFromField: null,
+        });
+        continue;
+      }
 
       if (isPersonFormat(format?.id)) {
         const choices = personChoices ?? EMPTY;
@@ -412,5 +440,5 @@ export function useFieldChoiceMap(
       });
     }
     return out;
-  }, [fields, byListId, unavailable, personChoices]);
+  }, [fields, byListId, unavailable, personChoices, relationChoices]);
 }

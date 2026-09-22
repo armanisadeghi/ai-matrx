@@ -15,6 +15,11 @@
 
 import { evaluateFormula, parseFormula } from "./formulas";
 import { formatFieldValue, resolveFieldFormat } from "@/lib/field-formats/format";
+import {
+  isRelationFormat,
+  relationCellText,
+  type RelationWordsByField,
+} from "./relation-words";
 
 export type RowLabelConfig =
   | { kind: "field"; field: string }
@@ -108,28 +113,52 @@ export function rowLabelText(
   row: { data: Record<string, unknown> },
   fields: readonly RowLabelField[],
   config: RowLabelConfig | null,
+  /**
+   * The words each `relation` column's ids read (`relation-words.ts`). A row
+   * named by a relation column is a row NAMED BY A UUID without this, on every
+   * chip and every peek — which is why OLD-TABLES-CUTOVER rev 2 counts the row
+   * label among the ten readers. Optional so every existing caller is unchanged;
+   * a caller that omits it on a table with no relation column loses nothing.
+   */
+  relationWords?: RelationWordsByField,
 ): RowLabelResult {
   if (!config) return { text: "", problem: "This table has no columns to name a row by." };
   if (config.kind === "field") {
     const field = fields.find((f) => f.field_name === config.field);
     if (!field) return { text: "", problem: `The label column "${config.field}" no longer exists.` };
-    const shown = formatFieldValue(
-      row.data?.[field.field_name],
-      resolveFieldFormat(field.data_type, field.metadata),
-      field.data_type,
-    );
+    const format = resolveFieldFormat(field.data_type, field.metadata);
+    if (isRelationFormat(format?.id)) {
+      // The words, or the identifier marked as one — never the bare uuid, and
+      // never a blank, which would leave the row with no name at all.
+      return { text: relationCellText(row.data?.[field.field_name], relationWords?.get(field.field_name)) };
+    }
+    const shown = formatFieldValue(row.data?.[field.field_name], format, field.data_type);
     return { text: shown.empty ? "" : shown.text };
   }
   const parsed = parseFormula(config.expression);
   if (!parsed.ok) return { text: "", problem: parsed.error };
   const byDisplay = new Map(fields.map((f) => [f.display_name.toLowerCase(), f.field_name] as const));
   const byMachine = new Map(fields.map((f) => [f.field_name.toLowerCase(), f.field_name] as const));
+  const formatByName = new Map(
+    fields.map((f) => [f.field_name, resolveFieldFormat(f.data_type, f.metadata)] as const),
+  );
   const data = row.data ?? {};
+  // THE FORMULA SEAM. `compareValues` compares whatever it is handed, and a
+  // formula handed two uuids compares them as strings — `=` works by accident
+  // and `<` is nonsense. It is not fixed inside the comparison: it is fixed at
+  // the one place a cell BECOMES a formula value, so `=`, `<`, `&`, IF and
+  // every function the language will ever gain all see the words at once.
+  const read = (fieldName: string): unknown => {
+    const raw = data[fieldName];
+    return isRelationFormat(formatByName.get(fieldName)?.id)
+      ? relationCellText(raw, relationWords?.get(fieldName))
+      : raw;
+  };
   const result = evaluateFormula(parsed.ast, (name) => {
-    if (name in data) return data[name];
+    if (name in data) return read(name);
     const fieldName = byMachine.get(name.toLowerCase()) ?? byDisplay.get(name.toLowerCase());
     if (fieldName === undefined) return undefined;
-    return data[fieldName] ?? null;
+    return read(fieldName) ?? null;
   });
   if (!result.ok) return { text: "", problem: result.error };
   if (result.value === null || result.value === undefined) return { text: "" };
@@ -141,7 +170,8 @@ export function rowLabelOrFallback(
   row: { id: string; data: Record<string, unknown> },
   fields: readonly RowLabelField[],
   config: RowLabelConfig | null,
+  relationWords?: RelationWordsByField,
 ): string {
-  const { text } = rowLabelText(row, fields, config);
+  const { text } = rowLabelText(row, fields, config, relationWords);
   return text || `Row ${row.id.slice(0, 8)}`;
 }
