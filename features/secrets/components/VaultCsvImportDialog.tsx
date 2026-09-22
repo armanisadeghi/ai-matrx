@@ -25,6 +25,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { fetchCsvImportLimits } from "../csv-import-limits";
 import { fetchBitwardenJsonImportLimits } from "../csv-import-limits";
+import { readDashlaneCsvArchive } from "../dashlane-csv-archive";
 import {
   hasValidStructuredImportFileNotices,
   type StructuredImportFileNotice,
@@ -153,6 +154,7 @@ export function VaultCsvImportDialog({
   const jsonWorker = useRef<Worker | null>(null);
   const cancelJsonParse = useRef<(() => void) | null>(null);
   const jsonWorkerTimeout = useRef<number | null>(null);
+  const dashlaneArchiveAbort = useRef<AbortController | null>(null);
   const limitsRef = useRef<Awaited<
     ReturnType<typeof fetchCsvImportLimits>
   > | null>(null);
@@ -172,7 +174,10 @@ export function VaultCsvImportDialog({
   const [jsonLoaded, setJsonLoaded] = useState(false);
   const [includeTrash, setIncludeTrash] = useState(false);
   const [includeArchived, setIncludeArchived] = useState(false);
-  const [fileNotices, setFileNotices] = useState<StructuredImportFileNotice[]>([]);
+  const [fileNotices, setFileNotices] = useState<StructuredImportFileNotice[]>(
+    [],
+  );
+  const [dashlaneOmittedCsvCount, setDashlaneOmittedCsvCount] = useState(0);
   const [metadataApproved, setMetadataApproved] = useState(false);
   const [preview, setPreview] = useState<CsvImportPreview | null>(null);
   const [mapping, setMapping] = useState<CsvColumnRole[]>([]);
@@ -191,6 +196,8 @@ export function VaultCsvImportDialog({
 
   const clearSensitiveDraft = (preserveResult = false) => {
     hasActiveFileIntake.current = false;
+    dashlaneArchiveAbort.current?.abort();
+    dashlaneArchiveAbort.current = null;
     parseGeneration.current += 1;
     cancelJsonParse.current?.();
     cancelJsonParse.current = null;
@@ -210,6 +217,7 @@ export function VaultCsvImportDialog({
     setIncludeTrash(false);
     setIncludeArchived(false);
     setFileNotices([]);
+    setDashlaneOmittedCsvCount(0);
     setMetadataApproved(false);
     setMapping([]);
     setUnavailable(null);
@@ -238,6 +246,8 @@ export function VaultCsvImportDialog({
   useEffect(
     () => () => {
       cancelled.current = true;
+      dashlaneArchiveAbort.current?.abort();
+      dashlaneArchiveAbort.current = null;
       parseGeneration.current += 1;
       cancelJsonParse.current?.();
       cancelJsonParse.current = null;
@@ -394,7 +404,31 @@ export function VaultCsvImportDialog({
         });
         return;
       }
-      const parsed = await parseCsvFile(file, limits);
+      const parsed = await (source === "dashlane" &&
+      file.name.toLowerCase().endsWith(".zip")
+        ? (async () => {
+            const abort = new AbortController();
+            dashlaneArchiveAbort.current = abort;
+            const archive = await readDashlaneCsvArchive(
+              file,
+              limits,
+              abort.signal,
+            );
+            if (
+              generation !== parseGeneration.current ||
+              cancelled.current ||
+              abort.signal.aborted
+            )
+              throw new Error("The Dashlane import was cancelled.");
+            setDashlaneOmittedCsvCount(archive.omittedCsvCount);
+            return parseCsvFile(
+              new File([archive.credentialsText], "credentials.csv", {
+                type: "text/csv",
+              }),
+              limits,
+            );
+          })()
+        : parseCsvFile(file, limits));
       if (generation !== parseGeneration.current || cancelled.current) return;
       setPreview(parsed);
       setMapping(suggestedCsvMapping(parsed.headers));
@@ -736,7 +770,10 @@ export function VaultCsvImportDialog({
                 className="hidden"
                 type="file"
                 accept={
-                  structuredImportSource(source)?.accept ?? ".csv,text/csv"
+                  structuredImportSource(source)?.accept ??
+                  (source === "dashlane"
+                    ? ".csv,text/csv,.zip,application/zip"
+                    : ".csv,text/csv")
                 }
                 onChange={(event) => {
                   const file = event.target.files?.[0];
@@ -765,6 +802,15 @@ export function VaultCsvImportDialog({
                   ? `${unsupportedRows} non-login, passkey, or attachment rows are unsupported by CSV and will be skipped.`
                   : ""}
               </p>
+              {dashlaneOmittedCsvCount > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  This Dashlane export contains {dashlaneOmittedCsvCount} other
+                  {dashlaneOmittedCsvCount === 1
+                    ? " CSV file"
+                    : " CSV files"}{" "}
+                  that will not be imported.
+                </p>
+              )}
               {preparedRows.map((prepared, index) => {
                 if (prepared.status !== "invalid") return null;
                 const row = preview.rows[index];
@@ -1005,10 +1051,7 @@ export function VaultCsvImportDialog({
                 </label>
               )}
               {fileNotices.map((notice) => (
-                <p
-                  key={notice.code}
-                  className="text-xs text-muted-foreground"
-                >
+                <p key={notice.code} className="text-xs text-muted-foreground">
                   {fileNoticeText[notice.code](notice.count)}
                 </p>
               ))}

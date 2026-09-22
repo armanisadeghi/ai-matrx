@@ -16,6 +16,7 @@ import {
 } from "../csv-import-limits";
 import type { StructuredImportSource } from "../structured-import-source-registry";
 import { createVaultItem, VaultImportTransportError } from "../vault-service";
+import { readDashlaneCsvArchive } from "../dashlane-csv-archive";
 
 let mockDeferredKeePassLoadWorker:
   | StructuredImportSource["loadWorker"]
@@ -27,6 +28,7 @@ let mockAuthStateListener:
 let mockOrganizationId = "11111111-1111-4111-8111-111111111111";
 
 jest.mock("@/utils/supabase/client", () => ({
+  supabase: { auth: {} },
   createClient: () => ({
     auth: {
       onAuthStateChange: (
@@ -104,6 +106,10 @@ jest.mock("../csv-import-limits", () => ({
     // its own 50ms. It must not be an ambient race under every other assertion.
     jsonWorkerTimeoutMs: 30_000,
   })),
+}));
+
+jest.mock("../dashlane-csv-archive", () => ({
+  readDashlaneCsvArchive: jest.fn(),
 }));
 
 type ControlledWorker = {
@@ -223,6 +229,18 @@ if (typeof globalThis.TextEncoder === "undefined")
     configurable: true,
     value: TextEncoder,
   });
+if (!File.prototype.arrayBuffer) {
+  Object.defineProperty(File.prototype, "arrayBuffer", {
+    configurable: true,
+    value: async function (this: File) {
+      return new TextEncoder().encode(
+        this.name === "credentials.csv"
+          ? "title,username,password,url\nExample,user,secret,https://example.test"
+          : "",
+      ).buffer;
+    },
+  });
+}
 if (!HTMLElement.prototype.scrollIntoView) {
   HTMLElement.prototype.scrollIntoView = jest.fn();
 }
@@ -232,6 +250,7 @@ const fetchCsvImportLimitsMock = jest.mocked(fetchCsvImportLimits);
 const fetchBitwardenJsonImportLimitsMock = jest.mocked(
   fetchBitwardenJsonImportLimits,
 );
+const readDashlaneCsvArchiveMock = jest.mocked(readDashlaneCsvArchive);
 
 /**
  * Drain the dialog's pending promise chain after a file-input change.
@@ -273,6 +292,30 @@ function jsonFile(text: string, size = text.length): File {
     value: jest.fn(async () => new TextEncoder().encode(text).buffer),
   });
   return file;
+}
+
+function zipFile(): File {
+  return new File(["zip"], "dashlane-export.zip", {
+    type: "application/zip",
+  });
+}
+
+async function chooseDashlane(): Promise<HTMLInputElement> {
+  const trigger = [...document.querySelectorAll("button")].find((button) =>
+    button.textContent?.includes("CSV export"),
+  );
+  if (!(trigger instanceof HTMLButtonElement))
+    throw new Error("source trigger missing");
+  await act(async () => trigger.click());
+  const option = [...document.querySelectorAll('[role="option"]')].find(
+    (node) => node.textContent?.includes("Dashlane"),
+  );
+  if (!(option instanceof HTMLElement))
+    throw new Error("Dashlane option missing");
+  await act(async () => option.click());
+  const input = document.body.querySelector('input[type="file"]');
+  if (!(input instanceof HTMLInputElement)) throw new Error("file input missing");
+  return input;
 }
 
 function jsonRecord(overrides: Partial<Record<string, unknown>> = {}) {
@@ -359,7 +402,8 @@ async function chooseKeePassXml(): Promise<HTMLInputElement> {
     throw new Error("KeePass XML source option missing");
   await act(async () => option.click());
   const input = document.body.querySelector('input[type="file"]');
-  if (!(input instanceof HTMLInputElement)) throw new Error("file input missing");
+  if (!(input instanceof HTMLInputElement))
+    throw new Error("file input missing");
   if (!input.accept.includes("application/xml"))
     throw new Error(`KeePass XML source was not selected: ${input.accept}`);
   return input;
@@ -414,6 +458,7 @@ describe("VaultCsvImportDialog", () => {
     document.body.appendChild(host);
     root = createRoot(host);
     createVaultItemMock.mockReset();
+    readDashlaneCsvArchiveMock.mockReset();
     mockAuthStateListener = undefined;
     mockOrganizationId = "11111111-1111-4111-8111-111111111111";
     workers = [];
@@ -425,6 +470,147 @@ describe("VaultCsvImportDialog", () => {
   afterEach(() => {
     act(() => root.unmount());
     document.body.replaceChildren();
+  });
+
+  it("accepts a Dashlane ZIP, previews only credentials.csv, and discloses omitted CSVs", async () => {
+    readDashlaneCsvArchiveMock.mockResolvedValueOnce({
+      credentialsText:
+        "title,username,password,url\nExample,user,secret,https://example.test",
+      omittedCsvCount: 2,
+    });
+    await act(async () => {
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      );
+    });
+    const input = await chooseDashlane();
+    expect(input.accept).toContain(".csv");
+    expect(input.accept).toContain(".zip");
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [zipFile()],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await settle();
+    });
+    expect(readDashlaneCsvArchiveMock).toHaveBeenCalledWith(
+      expect.any(File),
+      expect.objectContaining({ maxFileBytes: 10_000, maxRecords: 20 }),
+      expect.any(AbortSignal),
+    );
+    expect(document.body.textContent).toContain("Row 2: Example");
+    expect(document.body.textContent).toContain(
+      "This Dashlane export contains 2 other CSV files that will not be imported.",
+    );
+    expect(document.body.textContent).not.toContain("secret");
+  });
+
+  it("retains Dashlane raw CSV imports without an archive omission notice", async () => {
+    await act(async () => {
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      );
+    });
+    const input = await chooseDashlane();
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [csvFile("title,password\nRaw Dashlane,secret")],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await settle();
+    });
+    expect(readDashlaneCsvArchiveMock).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain("Row 2: Raw Dashlane");
+    expect(document.body.textContent).not.toContain("will not be imported");
+  });
+
+  it("shows the existing unavailable surface for an invalid Dashlane ZIP without secret diagnostics", async () => {
+    readDashlaneCsvArchiveMock.mockRejectedValueOnce(
+      new Error("The Dashlane archive is invalid."),
+    );
+    await act(async () => {
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      );
+    });
+    const input = await chooseDashlane();
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [zipFile()],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await settle();
+    });
+    expect(document.body.textContent).toContain(
+      "The Dashlane archive is invalid.",
+    );
+    expect(document.body.textContent).not.toContain("credentials.csv");
+  });
+
+  it("aborts an active Dashlane archive read and clears its omission state when the source changes", async () => {
+    let signal: AbortSignal | undefined;
+    readDashlaneCsvArchiveMock.mockImplementationOnce(
+      async (_file, _limits, activeSignal) => {
+        signal = activeSignal;
+        return await new Promise(() => undefined);
+      },
+    );
+    await act(async () => {
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      );
+    });
+    const input = await chooseDashlane();
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [zipFile()],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await settle();
+    });
+    expect(signal?.aborted).toBe(false);
+    const trigger = [...document.querySelectorAll("button")].find((button) =>
+      button.textContent?.includes("Dashlane"),
+    );
+    if (!(trigger instanceof HTMLButtonElement))
+      throw new Error("source trigger missing");
+    await act(async () => trigger.click());
+    const replacement = [...document.querySelectorAll('[role="option"]')].find(
+      (node) => node.textContent?.includes("Bitwarden"),
+    );
+    if (!(replacement instanceof HTMLElement))
+      throw new Error("replacement source missing");
+    await act(async () => replacement.click());
+    expect(signal?.aborted).toBe(true);
+    expect(document.body.textContent).not.toContain("will not be imported");
   });
 
   it("renders every masked CSV row, including rows after the former five-row cutoff", async () => {
@@ -1376,29 +1562,105 @@ describe("VaultCsvImportDialog", () => {
   });
 
   it("shows only lifecycle controls represented by the loaded 1PUX records", async () => {
-    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
     const input = await chooseOnePux();
-    Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("zip", 3)] });
-    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await settle(); });
-    const worker = onePuxWorkers[0]; if (!worker) throw new Error("1PUX worker missing");
-    const requestId = (worker.postMessage.mock.calls[0]?.[0] as { requestId: string }).requestId;
-    await act(async () => worker.onmessage?.({ data: { ok: true, requestId, records: [jsonRecord({ sourceState: "archived" })], fileNotices: [] } } as MessageEvent));
-    expect(document.body.textContent).toContain("0 selected; 0 skipped; 0 invalid; 0 unsupported; 0 deleted; 1 archived.");
-    expect(document.body.textContent).toContain("Include archived source items");
-    expect(document.body.textContent).not.toContain("Include deleted source items");
-    const archivedToggle = [...document.querySelectorAll('[role="switch"]')].find((node) => node.parentElement?.textContent?.includes("Include archived"));
-    if (!(archivedToggle instanceof HTMLElement)) throw new Error("archived toggle missing");
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [jsonFile("zip", 3)],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await settle();
+    });
+    const worker = onePuxWorkers[0];
+    if (!worker) throw new Error("1PUX worker missing");
+    const requestId = (
+      worker.postMessage.mock.calls[0]?.[0] as { requestId: string }
+    ).requestId;
+    await act(async () =>
+      worker.onmessage?.({
+        data: {
+          ok: true,
+          requestId,
+          records: [jsonRecord({ sourceState: "archived" })],
+          fileNotices: [],
+        },
+      } as MessageEvent),
+    );
+    expect(document.body.textContent).toContain(
+      "0 selected; 0 skipped; 0 invalid; 0 unsupported; 0 deleted; 1 archived.",
+    );
+    expect(document.body.textContent).toContain(
+      "Include archived source items",
+    );
+    expect(document.body.textContent).not.toContain(
+      "Include deleted source items",
+    );
+    const archivedToggle = [
+      ...document.querySelectorAll('[role="switch"]'),
+    ].find((node) =>
+      node.parentElement?.textContent?.includes("Include archived"),
+    );
+    if (!(archivedToggle instanceof HTMLElement))
+      throw new Error("archived toggle missing");
     await act(async () => archivedToggle.click());
-    expect(document.body.textContent).toContain("1 selected; 0 skipped; 0 invalid; 0 unsupported; 0 deleted; 0 archived.");
+    expect(document.body.textContent).toContain(
+      "1 selected; 0 skipped; 0 invalid; 0 unsupported; 0 deleted; 0 archived.",
+    );
   });
 
   it("shows no lifecycle controls for active-only 1PUX records", async () => {
-    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
-    const input = await chooseOnePux(); Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("zip", 3)] });
-    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await settle(); });
-    const worker = onePuxWorkers[0]; if (!worker) throw new Error("1PUX worker missing"); const requestId = (worker.postMessage.mock.calls[0]?.[0] as { requestId: string }).requestId;
-    await act(async () => worker.onmessage?.({ data: { ok: true, requestId, records: [jsonRecord({ sourceState: "active" })], fileNotices: [] } } as MessageEvent));
-    expect(document.body.textContent).not.toContain("Include deleted source items"); expect(document.body.textContent).not.toContain("Include archived source items");
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
+    const input = await chooseOnePux();
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [jsonFile("zip", 3)],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await settle();
+    });
+    const worker = onePuxWorkers[0];
+    if (!worker) throw new Error("1PUX worker missing");
+    const requestId = (
+      worker.postMessage.mock.calls[0]?.[0] as { requestId: string }
+    ).requestId;
+    await act(async () =>
+      worker.onmessage?.({
+        data: {
+          ok: true,
+          requestId,
+          records: [jsonRecord({ sourceState: "active" })],
+          fileNotices: [],
+        },
+      } as MessageEvent),
+    );
+    expect(document.body.textContent).not.toContain(
+      "Include deleted source items",
+    );
+    expect(document.body.textContent).not.toContain(
+      "Include archived source items",
+    );
   });
 
   it("selects KeePass XML, terminates its worker on source change, and suppresses its late completion", async () => {
@@ -1430,14 +1692,19 @@ describe("VaultCsvImportDialog", () => {
     const trigger = [...document.querySelectorAll("button")].find((button) =>
       button.textContent?.includes("KeePass / KeePassXC XML"),
     );
-    if (!(trigger instanceof HTMLButtonElement)) throw new Error("source trigger missing");
+    if (!(trigger instanceof HTMLButtonElement))
+      throw new Error("source trigger missing");
     await act(async () => trigger.click());
     const replacement = [...document.querySelectorAll('[role="option"]')].find(
       (node) => node.textContent?.includes("Bitwarden JSON"),
     );
-    if (!(replacement instanceof HTMLElement)) throw new Error("replacement source missing");
+    if (!(replacement instanceof HTMLElement))
+      throw new Error("replacement source missing");
     await act(async () => replacement.click());
-    expect(worker.postMessage).toHaveBeenCalledWith({ type: "cancel", requestId });
+    expect(worker.postMessage).toHaveBeenCalledWith({
+      type: "cancel",
+      requestId,
+    });
     expect(worker.terminate).toHaveBeenCalled();
     await act(async () =>
       worker.onmessage?.({
@@ -1467,7 +1734,9 @@ describe("VaultCsvImportDialog", () => {
     );
     await startDeferredKeePassLoad(deferred);
     await act(async () =>
-      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })),
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      ),
     );
     deferred.resolve();
     await act(async () => {
@@ -1494,12 +1763,14 @@ describe("VaultCsvImportDialog", () => {
     const trigger = [...document.querySelectorAll("button")].find((button) =>
       button.textContent?.includes("KeePass / KeePassXC XML"),
     );
-    if (!(trigger instanceof HTMLButtonElement)) throw new Error("source trigger missing");
+    if (!(trigger instanceof HTMLButtonElement))
+      throw new Error("source trigger missing");
     await act(async () => trigger.click());
     const replacement = [...document.querySelectorAll('[role="option"]')].find(
       (node) => node.textContent?.includes("Bitwarden JSON"),
     );
-    if (!(replacement instanceof HTMLElement)) throw new Error("replacement source missing");
+    if (!(replacement instanceof HTMLElement))
+      throw new Error("replacement source missing");
     await act(async () => replacement.click());
     deferred.resolve();
     await act(async () => {
