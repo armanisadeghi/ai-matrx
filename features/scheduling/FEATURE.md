@@ -211,6 +211,8 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Current work / known gaps
 
+- **`event` trigger producer exists (2026-09-22, data-tables lane):** every user-data-table row change now writes a `platform.activity_log` event (`entity_type user_table_row`, actions `row.created|updated|archived|restored|deleted`, metadata `table_id`, `changed_fields`). `TriggerConfig` still has no `event` shape and no scanner reads the spine — that is the next step for this feature; see `features/data-tables/FEATURE.md` change log 2026-09-22.
+
 - **Templates DB backing** — UI stubbed; `sch_template` table not
   built yet.
 - **Multi-trigger UI** — form structured so adding it is mechanical.
