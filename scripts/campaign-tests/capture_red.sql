@@ -19,6 +19,7 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'capture_red.sql'
+\set requires 'type:custom.anon_form'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit

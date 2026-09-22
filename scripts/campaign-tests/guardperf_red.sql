@@ -22,6 +22,7 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'guardperf_red.sql'
+\set requires 'function:custom.carrying_edges_of'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit

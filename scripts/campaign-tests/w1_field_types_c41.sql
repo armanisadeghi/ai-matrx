@@ -75,6 +75,7 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'w1_field_types_c41.sql'
+\set requires 'exec:custom.record_values_versioned'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit

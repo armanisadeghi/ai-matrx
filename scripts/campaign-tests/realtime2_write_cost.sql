@@ -62,6 +62,7 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'realtime2_write_cost.sql'
+\set requires 'function:platform.memo_clear'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit

@@ -39,6 +39,7 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'writeperf2_parity.sql'
+\set requires 'exec:custom.person_kernel_id'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit

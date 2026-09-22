@@ -34,6 +34,7 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'doorsonly5_categories_doors_work_from_a_seat.sql'
+\set requires 'function:public.cat_write'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
