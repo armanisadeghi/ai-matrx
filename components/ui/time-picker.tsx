@@ -59,7 +59,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
                     {time ? formatTime(time) : <span>{placeholder}</span>}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-4" align="start">
+            <PopoverContent /* sizing: fixed — content already decides its own width; no fixed box to remove */ className="w-auto p-4" align="start">
                 <div className="flex flex-col space-y-2">
                     <Input
                         type="time"

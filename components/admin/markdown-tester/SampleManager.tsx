@@ -258,7 +258,7 @@ export function SampleManager({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-96 p-0" align="start">
+        <PopoverContent sizing="content" className="p-0" align="start">
           <div className="p-3 pb-2 border-b border-border">
             <div className="flex items-center justify-between mb-1">
               <h4 className="text-sm font-medium">Markdown samples</h4>

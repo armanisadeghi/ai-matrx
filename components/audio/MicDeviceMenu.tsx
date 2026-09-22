@@ -49,10 +49,11 @@ export function MicDeviceMenu({
         </button>
       </PopoverTrigger>
       <PopoverContent
+        sizing="content"
         align="end"
         side="bottom"
         sideOffset={6}
-        className="w-60 p-1"
+        className="p-1"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <MicDeviceMenuPanel onOpenSettings={() => openSettings()} />

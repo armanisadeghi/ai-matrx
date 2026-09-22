@@ -250,7 +250,7 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
                 Filter by Tags {selectedTags.size > 0 && `(${selectedTags.size})`}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80">
+            <PopoverContent sizing="content">
               <div className="space-y-2">
                 <h3 className="font-medium text-sm">Filter by Tags</h3>
                 {allTags.length > 0 ? (

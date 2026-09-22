@@ -282,7 +282,7 @@ export const CompactMultiSelect = <T extends string>({ label, icon, value, optio
                         <ChevronDownIcon className="h-3 w-3 opacity-50" />
                     </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[200px] p-0" align="start">
+                <PopoverContent sizing="content" className="p-0" align="start">
                     <Command>
                         <CommandInput placeholder="Search..." className="h-8" />
                         <CommandEmpty>No options found.</CommandEmpty>

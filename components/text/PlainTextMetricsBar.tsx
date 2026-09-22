@@ -235,7 +235,7 @@ export function PlainTextMetricsBar({
               <span>chars</span>
             </button>
           </PopoverTrigger>
-          <PopoverContent align="start" side="top" className="w-56 p-0">
+          <PopoverContent /* sizing: fixed — fixed metric tag list */ align="start" side="top" className="w-56 p-0">
             <div className="flex items-center gap-1.5 border-b border-border px-3 py-2 text-xs font-semibold text-foreground">
               <BarChart3 className="h-3.5 w-3.5 text-primary" />
               Text stats
@@ -288,7 +288,7 @@ export function PlainTextMetricsBar({
               <BarChart3 className="h-3 w-3" />
             </button>
           </PopoverTrigger>
-          <PopoverContent align="end" side="top" className="w-56 p-0">
+          <PopoverContent /* sizing: fixed — fixed metric tag list */ align="end" side="top" className="w-56 p-0">
             <div className="flex items-center gap-1.5 border-b border-border px-3 py-2 text-xs font-semibold text-foreground">
               <BarChart3 className="h-3.5 w-3.5 text-primary" />
               Text stats

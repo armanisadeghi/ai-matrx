@@ -692,8 +692,9 @@ export function KnobOverrideRow(props: {
               </Button>
             </PopoverTrigger>
             <PopoverContent
+              sizing="content"
               align="end"
-              className="w-72 max-w-[calc(100vw-2rem)] space-y-3 break-words p-3 text-left text-xs leading-snug [overflow-wrap:anywhere]"
+              className="space-y-3 break-words p-3 text-left text-xs leading-snug [overflow-wrap:anywhere]"
             >
               <div className="space-y-1 text-muted-foreground">
                 <p>

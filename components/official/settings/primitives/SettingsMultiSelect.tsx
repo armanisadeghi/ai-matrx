@@ -109,8 +109,9 @@ export function SettingsMultiSelect<T extends string = string>({
             </button>
           </PopoverTrigger>
           <PopoverContent
+            sizing="content"
             align="start"
-            className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] p-1"
+            className="p-1"
           >
             <div className="max-h-64 overflow-y-auto">
               {options.map((opt) => {

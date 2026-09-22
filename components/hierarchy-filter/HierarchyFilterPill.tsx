@@ -96,7 +96,7 @@ export function HierarchyFilterPill({
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-[220px] p-0 rounded-xl border-border/50 shadow-xl" align="start" sideOffset={6}>
+      <PopoverContent sizing="content" className="p-0 rounded-xl border-border/50 shadow-xl" align="start" sideOffset={6}>
         <Command>
           {options.length > 5 && (
             <CommandInput placeholder={`Search...`} className="text-base h-8 text-xs" style={{ fontSize: '16px' }} />

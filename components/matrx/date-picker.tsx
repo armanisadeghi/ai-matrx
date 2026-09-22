@@ -58,7 +58,7 @@ export const DatePicker: React.FC<DatePickerProps> = (
                     {date ? format(date, formatString) : <span>{placeholder}</span>}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent /* sizing: fixed — content already decides its own width; no fixed box to remove */ className="w-auto p-0" align="start">
                 <Calendar
                     mode="single"
                     selected={date}

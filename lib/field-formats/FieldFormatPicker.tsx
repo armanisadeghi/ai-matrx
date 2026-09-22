@@ -423,8 +423,9 @@ export function FieldFormatPicker({
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent
+                  sizing="content"
                   align="end"
-                  className="w-[min(26rem,calc(100vw-2rem))] p-3"
+                  className="p-3"
                 >
                   <div className="mb-2 text-xs font-medium">
                     {def?.label ?? "Text"} options

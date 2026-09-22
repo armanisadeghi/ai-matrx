@@ -147,7 +147,7 @@ export default function TableIdentityMenu({
         </button>
       </PopoverTrigger>
 
-      <PopoverContent align="start" className="w-80 p-0">
+      <PopoverContent sizing="content" align="start" className="p-0">
         {/* Identity + rename */}
         <div className="border-b border-border px-2.5 py-2">
           <div className="mb-1 text-[0.625rem] font-semibold uppercase tracking-wide text-muted-foreground">

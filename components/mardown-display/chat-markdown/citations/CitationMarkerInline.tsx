@@ -118,7 +118,7 @@ export function CitationMarkerInline(props: CitationMarkerInlineProps) {
           </button>
         </sup>
       </PopoverTrigger>
-      <PopoverContent align="start" side="top" sideOffset={6} className="w-80 p-3">
+      <PopoverContent sizing="content" align="start" side="top" sideOffset={6} className="p-3">
         <CitationPopoverBody
           icon={Icon}
           label={label}

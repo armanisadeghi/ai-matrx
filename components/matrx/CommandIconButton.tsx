@@ -88,8 +88,8 @@ const CommandIconButton: React.FC<CommandIconButtonProps> = ({
           <Icon size={size} />
         </button>
       </PopoverTrigger>
-      <PopoverContent 
-        className="w-64 p-0 bg-elevation1 rounded-md border-2 border-elevation3" 
+      <PopoverContent sizing="content" 
+        className="p-0 bg-elevation1 rounded-md border-2 border-elevation3" 
         align="end"
       >
         <Command className="bg-elevation1" shouldFilter={false}>

@@ -146,7 +146,7 @@ export function CitationChip({
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-80 p-3">
+      <PopoverContent sizing="content" align="start" className="p-3">
         <CitationPopoverBody {...body} />
       </PopoverContent>
     </Popover>

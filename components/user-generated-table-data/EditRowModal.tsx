@@ -284,7 +284,7 @@ export default function EditRowModal({
                 <CalendarIcon className="ml-auto h-4 w-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
+            <PopoverContent /* sizing: fixed — content already decides its own width; no fixed box to remove */ className="w-auto p-0">
               <Calendar
                 mode="single"
                 selected={value ? new Date(value) : undefined}

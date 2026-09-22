@@ -67,7 +67,8 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
           </button>
         </PopoverTrigger>
         <PopoverContent
-          className="w-[var(--radix-popover-trigger-width)] p-0 bg-popover text-popover-foreground rounded-md border border-border shadow-md"
+          sizing="content"
+          className="p-0 bg-popover text-popover-foreground rounded-md border border-border shadow-md"
           align="start"
         >
           <Command className="bg-popover text-popover-foreground" shouldFilter={false}>

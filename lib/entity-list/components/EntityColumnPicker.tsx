@@ -60,7 +60,7 @@ export function EntityColumnPicker<TRow>({
           <span className="hidden tabular-nums lg:inline">{visibleCount}</span>
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" sideOffset={8} className="w-56 p-0">
+      <PopoverContent sizing="content" align="end" sideOffset={8} className="p-0">
         <div className="flex items-center justify-between border-b border-border px-3 py-2">
           <span className="text-sm font-semibold">Columns</span>
           <button

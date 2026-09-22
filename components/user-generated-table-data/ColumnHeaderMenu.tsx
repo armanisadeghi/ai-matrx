@@ -304,8 +304,9 @@ const ColumnHeaderMenu = ({
         </Button>
       </PopoverTrigger>
       <PopoverContent
+        sizing="content"
         align="start"
-        className="w-72 p-2"
+        className="p-2"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-baseline justify-between gap-2 px-1 pb-2">

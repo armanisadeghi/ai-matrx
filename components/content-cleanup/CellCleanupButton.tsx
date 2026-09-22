@@ -153,7 +153,7 @@ export function CellCleanupButton({
             {showLabel && <span className="hidden md:inline">Clean</span>}
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-auto p-0">
+        <PopoverContent /* sizing: fixed — content already decides its own width; no fixed box to remove */ align="end" className="w-auto p-0">
           <CellCleanupOptionsPopover
             enabled={enabled}
             onToggle={onToggle}

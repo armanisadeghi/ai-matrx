@@ -236,10 +236,11 @@ export function EntityFilterPanel<TRow>({
       </PopoverTrigger>
 
       <PopoverContent
+        sizing="content"
         align="end"
         sideOffset={8}
         collisionPadding={16}
-        className="flex w-[360px] flex-col overflow-hidden p-0"
+        className="flex flex-col overflow-hidden p-0"
         style={{
           maxHeight:
             "var(--radix-popover-content-available-height, calc(100dvh - 120px))",
