@@ -180,6 +180,10 @@ import {
   windowClassDeclaration,
   WINDOW_CLASS_GRANDFATHERED,
   DDL_LOCK_FOOTPRINT,
+  policyDdlOneTableVerdict,
+  policyDdlOneTableDeclared,
+  POLICY_DDL_ONE_TABLE_MAX_MS,
+  sha256OfBytes,
   ddlSitesIn,
   ddlFootprintOf,
   loadDdlFootprint,
@@ -1100,7 +1104,27 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         );
         return 1;
       }
-      if (target === "production" && !isInsideWindow()) {
+      // THE ONE VERIFIED EXEMPTION (chair ruling 2026-09-22). A single table's policy
+      // regeneration, measured under 200 ms on the clone for THESE EXACT BYTES, may run at
+      // midday. The runner proves both halves itself; the header alone proves nothing.
+      const oneTable = policyDdlOneTableVerdict(sql, path, sites);
+      if (target === "production" && !isInsideWindow() && oneTable.refusal) {
+        console.error(
+          `${TAG.fail}${filename} claims the ${C.bold}\`-- policy-ddl: one-table\`${C.reset} ` +
+            `exemption and does not have it:\n  ${oneTable.refusal}\n` +
+            `  ${C.dim}Nothing was applied and no ledger row was written. The exemption is ` +
+            `VERIFIED, never asserted — that is the whole difference between it and a force ` +
+            `flag.${C.reset}`,
+        );
+        return 1;
+      }
+      if (target === "production" && !isInsideWindow() && oneTable.exempt) {
+        console.log(
+          `${TAG.ok}policy-ddl: one-table ${C.dim}— ${oneTable.table}, measured ` +
+            `${oneTable.measuredMs} ms first policy statement → end of transaction on the clone ` +
+            `(ceiling ${POLICY_DDL_ONE_TABLE_MAX_MS} ms). Window waived, on the measurement.${C.reset}`,
+        );
+      } else if (target === "production" && !isInsideWindow()) {
         const now = String(pacificHHMM()).padStart(4, "0");
         console.error(
           `${TAG.fail}${filename} is ${C.bold}window-class${C.reset} — "${declared}" — and local ` +
@@ -2562,6 +2586,113 @@ function windowClassSelfTest(): number {
   console.log(
     `${C.bold}window-class GREEN-5${C.reset} ${C.dim}— a missing census refuses; it never ` +
       `degrades into silence${C.reset}`,
+  );
+
+  // ── THE ONE VERIFIED EXEMPTION: `-- policy-ddl: one-table` (chair ruling 2026-09-22) ──────
+  // POLICY-LOCK's midday allowance survives the census — as an exemption the runner PROVES, not
+  // a switch a file asserts. Every arm below is a way of claiming it without having it.
+  const oneTableFile = "migrations/campaign/exemption_probe.sql";
+  const oneTableBody = `-- policy-ddl: one-table
+-- window-class: one table's policies are regenerated; the supautils set freezes for the transaction
+set local statement_timeout = '30s';
+drop policy if exists api_keys_read on iam.api_keys;
+create policy api_keys_read on iam.api_keys for select using (true);
+`;
+  const noMeasurement = () => null;
+  const measurementOf = (ms: number) => () => ({
+    file: "exemption_probe.sql",
+    sha256: sha256OfBytes(oneTableBody),
+    target: "clone",
+    firstPolicyDdlToEndMs: ms,
+    tables: ["iam.api_keys"],
+    measuredAt: "2026-09-22T16:00:00.000Z",
+  });
+  const sitesOf = (body: string) => windowClassVerdict(body);
+
+  // RED-6  declared, one table, policy-only — and NO measurement of these bytes.
+  const red6 = policyDdlOneTableVerdict(oneTableBody, oneTableFile, sitesOf(oneTableBody), noMeasurement);
+  if (red6.exempt || !red6.refusal || !/NO measurement for these exact/.test(red6.refusal)) {
+    console.error(
+      `${TAG.fail}--window-class-self-test RED-6 FAILED: a file claiming the exemption with no ` +
+        `measurement was ${red6.exempt ? "EXEMPTED" : `refused with "${red6.refusal}"`}; expected a ` +
+        `refusal naming the missing measurement.`,
+    );
+    return 1;
+  }
+  console.log(
+    `${C.bold}policy-ddl RED-6${C.reset} ${C.dim}— declared, but no measurement of these exact ` +
+      `bytes: refused, and the refusal names what is missing${C.reset}`,
+  );
+
+  // RED-7  declared, measured fast — but it touches TWO tables. Counted, not trusted.
+  const twoTables = oneTableBody + `create policy orgs_read on iam.organizations for select using (true);\n`;
+  const red7 = policyDdlOneTableVerdict(twoTables, oneTableFile, sitesOf(twoTables), measurementOf(89));
+  if (red7.exempt || !red7.refusal || !/names 2:/.test(red7.refusal)) {
+    console.error(
+      `${TAG.fail}--window-class-self-test RED-7 FAILED: a file declaring one table and naming two ` +
+        `was ${red7.exempt ? "EXEMPTED" : `refused with "${red7.refusal}"`}; expected a refusal ` +
+        `counting the tables.`,
+    );
+    return 1;
+  }
+  console.log(
+    `${C.bold}policy-ddl RED-7${C.reset} ${C.dim}— declared "one-table" and names two: refused by ` +
+      `counting${C.reset}`,
+  );
+
+  // RED-8  declared, one table, policy-only, measured — at 4,418 ms, POLICY-LOCK's own
+  //        before-number. A measurement is not a pass; the NUMBER is the pass.
+  const red8 = policyDdlOneTableVerdict(oneTableBody, oneTableFile, sitesOf(oneTableBody), measurementOf(4418));
+  if (red8.exempt || !red8.refusal || !/4418 ms/.test(red8.refusal)) {
+    console.error(
+      `${TAG.fail}--window-class-self-test RED-8 FAILED: a 4,418 ms measured freeze was ` +
+        `${red8.exempt ? "EXEMPTED" : `refused with "${red8.refusal}"`}; expected a refusal naming ` +
+        `the measured milliseconds.`,
+    );
+    return 1;
+  }
+  console.log(
+    `${C.bold}policy-ddl RED-8${C.reset} ${C.dim}— measured 4,418 ms (POLICY-LOCK's before-number): ` +
+      `refused, ceiling ${POLICY_DDL_ONE_TABLE_MAX_MS} ms${C.reset}`,
+  );
+
+  // RED-9  declared, but the window-class DDL is not all policy DDL — a drop trigger rides along.
+  const red9Body = oneTableBody + `drop trigger record_stamp on custom.record;\n`;
+  const red9 = policyDdlOneTableVerdict(red9Body, oneTableFile, sitesOf(red9Body), measurementOf(89));
+  if (red9.exempt || !red9.refusal || !/not all\s+policy DDL/.test(red9.refusal)) {
+    console.error(
+      `${TAG.fail}--window-class-self-test RED-9 FAILED: a file mixing the exemption with a drop ` +
+        `trigger on custom.record was ${red9.exempt ? "EXEMPTED" : `refused with "${red9.refusal}"`}.`,
+    );
+    return 1;
+  }
+  console.log(
+    `${C.bold}policy-ddl RED-9${C.reset} ${C.dim}— the exemption does not carry a drop trigger with ` +
+      `it${C.reset}`,
+  );
+
+  // GREEN-6  all four halves proved: declared, policy-only, one table, measured 89 ms.
+  const green6 = policyDdlOneTableVerdict(oneTableBody, oneTableFile, sitesOf(oneTableBody), measurementOf(89));
+  const undeclared = policyDdlOneTableVerdict(
+    oneTableBody.replace("-- policy-ddl: one-table\n", ""),
+    oneTableFile,
+    sitesOf(oneTableBody),
+    measurementOf(89),
+  );
+  if (!green6.exempt || green6.table !== "iam.api_keys" || undeclared.exempt || undeclared.refusal !== null) {
+    console.error(
+      `${TAG.fail}--window-class-self-test GREEN-6 FAILED: the fully proved file was ` +
+        `${green6.exempt ? "exempt" : `REFUSED ("${green6.refusal}")`} on ${green6.table}, and a ` +
+        `file that never claims the exemption was ${undeclared.exempt ? "EXEMPTED" : "not exempted"} ` +
+        `with refusal ${JSON.stringify(undeclared.refusal)} (expected null — it simply waits for ` +
+        `the window).`,
+    );
+    return 1;
+  }
+  console.log(
+    `${C.bold}policy-ddl GREEN-6${C.reset} ${C.dim}— declared + policy-only + one table + 89 ms ` +
+      `measured on these exact bytes: the window is waived, and a file that never claims it just ` +
+      `waits${C.reset}`,
   );
 
   console.log(

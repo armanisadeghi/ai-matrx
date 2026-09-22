@@ -77,7 +77,7 @@
  *     lock it still believes it holds.
  */
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -95,6 +95,13 @@ import {
   INVERSE_DIRNAME,
   CAMPAIGN_DIRNAME,
   CAMPAIGN_SOURCE,
+  policyDdlMeasurementPath,
+  policyDdlOneTableDeclared,
+  policyStatementReasonOf,
+  policyStatementTableOf,
+  sha256OfBytes,
+  topLevelStatements,
+  POLICY_DDL_ONE_TABLE_MAX_MS,
 } from "./lib/migration-target";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -281,6 +288,72 @@ async function measure(
     await sampler.end().catch(() => undefined);
   }
   return { statements: out, totalMs: Date.now() - t0, failedAt };
+}
+
+/**
+ * THE HASH-BOUND MEASUREMENT behind the `-- policy-ddl: one-table` exemption (chair ruling
+ * 2026-09-22). The span that matters is FIRST POLICY STATEMENT → END OF TRANSACTION, because
+ * that is exactly how long the 23-relation supautils set is held and therefore how long nobody
+ * can sign in. The measure pass already executes the file one statement at a time inside one
+ * transaction and ends it — the end is a ROLLBACK rather than a COMMIT, and both release the
+ * locks at the same moment, so the span is the same span.
+ *
+ * It is written keyed by the sha256 of THE FILE'S BYTES. Change one character and the record no
+ * longer answers for the file, which is the point: the runner must never honour a measurement
+ * of an earlier draft. A file that declares nothing still gets its record — a measurement is a
+ * fact, not a favour — and the runner reads it only when the file claims the exemption.
+ */
+function recordPolicyDdlMeasurement(
+  filePath: string,
+  sql: string,
+  m: Awaited<ReturnType<typeof measure>>,
+): void {
+  const stmts = topLevelStatements(stripCommentsQuoteAware(sql));
+  const firstPolicy = stmts.findIndex((st) => policyStatementReasonOf(st) !== null);
+  if (firstPolicy < 0) return;
+  // The measure pass walks the same top-level statements in the same order.
+  const tail = m.statements.filter((st) => st.index - 1 >= firstPolicy);
+  if (tail.length === 0) return;
+  const ms = tail.reduce((a, st) => a + st.ms, 0);
+  const tables = [
+    ...new Set(
+      stmts
+        .map((st) => (policyStatementReasonOf(st) ? policyStatementTableOf(st) : null))
+        .filter((t): t is string => t !== null),
+    ),
+  ].sort();
+  const sha = sha256OfBytes(sql);
+  const out = policyDdlMeasurementPath(filePath, sha);
+  mkdirSync(dirname(out), { recursive: true });
+  writeFileSync(
+    out,
+    JSON.stringify(
+      {
+        file: basename(filePath),
+        sha256: sha,
+        target: "clone",
+        firstPolicyDdlToEndMs: ms,
+        tables,
+        measuredAt: new Date().toISOString(),
+        note:
+          "First policy statement to the end of the measure-pass transaction, measured on the " +
+          "dev clone by pnpm db:rehearse. That span is the sign-in freeze. Bound to the file's " +
+          "sha256: edit the file and this record stops answering for it.",
+      },
+      null,
+      2,
+    ) + "\n",
+    "utf8",
+  );
+  const verdict =
+    ms < POLICY_DDL_ONE_TABLE_MAX_MS
+      ? `under the ${POLICY_DDL_ONE_TABLE_MAX_MS} ms exemption ceiling`
+      : `OVER the ${POLICY_DDL_ONE_TABLE_MAX_MS} ms ceiling — this one waits for the window`;
+  console.log(
+    `${TAG.ok}policy-DDL freeze measured ${C.bold}${ms} ms${C.reset} ` +
+      `${C.dim}(${tables.join(", ") || "no table read from the bytes"}, ${verdict}); recorded at ` +
+      `${relative(process.cwd(), out)}${policyDdlOneTableDeclared(sql) ? "" : " (the file claims no exemption)"}${C.reset}`,
+  );
 }
 
 function printMeasurement(
@@ -631,12 +704,13 @@ async function main(): Promise<number> {
   // trap can wrap them, and a null-narrowing does not follow a value into a closure.
   const upPath: string = resolvedUp;
 
+  const measureOnly = argv.includes("--measure-only");
   const resolvedInverse = inverseArg
     ? existsSync(resolve(process.cwd(), inverseArg))
       ? resolve(process.cwd(), inverseArg)
       : resolve(MIGRATIONS_DIR, inverseArg)
     : guessInverse(upPath);
-  if (!resolvedInverse || !existsSync(resolvedInverse)) {
+  if (!measureOnly && (!resolvedInverse || !existsSync(resolvedInverse))) {
     console.error(
       `${TAG.fail}${relative(ROOT, upPath)} has no inverse, and rule 27 IS the inverse.\n` +
         `  Looked for migrations/${INVERSE_DIRNAME}/<name>_down.sql and <name>.inverse.sql.\n` +
@@ -646,7 +720,7 @@ async function main(): Promise<number> {
     );
     return 1;
   }
-  const inversePath: string = resolvedInverse;
+  const inversePath: string = resolvedInverse ?? upPath;
 
   // The clone's identity and its own connection - never SUPABASE_MATRIX_*.
   // Typed explicitly: both are read from inside `runLegs` below, and an inferred `any`
@@ -789,6 +863,20 @@ async function main(): Promise<number> {
   // -- leg 1: the up ---------------------------------------------------------
   const m1 = await measure(env, "up", upSql, statementTimeout);
   const s1 = printMeasurement("MEASURE - up", upPath, m1, upNamed);
+  if (m1.failedAt === null) recordPolicyDdlMeasurement(upPath, upSql, m1);
+  // `--measure-only`: the MEASURE PASS and nothing else. It exists because the
+  // `-- policy-ddl: one-table` exemption needs ONE NUMBER, and running rule 27's three apply
+  // legs on the shared clone to get it is exactly the ceremony that was banned on 2026-09-18.
+  // It applies nothing, ledgers nothing, and needs no inverse — so it is never a substitute for
+  // rule 27, which every file still owes before it lands anywhere.
+  if (measureOnly) {
+    if (m1.failedAt !== null) return 1;
+    console.log(
+      `${TAG.ok}--measure-only: the measure pass ran and rolled back. ` +
+        `${C.dim}Rule 27 was NOT run — this proves nothing about the file's inverse.${C.reset}`,
+    );
+    return 0;
+  }
   if (m1.failedAt !== null) {
     console.error(
       `${TAG.fail}the up failed in the measure pass at statement ${m1.failedAt + 1} (rolled back, ` +

@@ -82,8 +82,9 @@
  * `-- allows: revoke`. The two are kept in step by `BRANCH-REF` being the single
  * source of both identities.
  */
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 
 export type Target = "branch" | "production" | "clone";
 
@@ -1491,6 +1492,193 @@ export function windowClassVerdict(
     }
   }
   return sites;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THE ONE VERIFIED EXEMPTION: `-- policy-ddl: one-table` (chair ruling, 2026-09-22)
+// ─────────────────────────────────────────────────────────────────────────────
+// The census made every policy migration window-class, because policy DDL freezes the 23-relation
+// supautils set exactly as a `drop trigger` does. POLICY-LOCK had measured the other half: with
+// `iam.apply_rls` reordered, ONE table's policy regeneration is 89 ms, and a 89 ms freeze at
+// midday is affordable. Both are true, so the allowance survives — as an EXEMPTION THE RUNNER
+// VERIFIES, never as a switch a file can assert.
+//
+// A file may declare `-- policy-ddl: one-table` in its header. At `--target production` outside
+// the window the runner honours it ONLY when it can prove BOTH halves itself:
+//
+//   (a) every policy statement in the file names the SAME ONE table, and the file is policy-only
+//       (POLICY-LOCK's existing rule: policy, grant, comment, `set local` and an atomic
+//       `platform.entity_types` declaration, nothing else); and
+//   (b) a `pnpm db:rehearse --target clone` measure pass OF THESE EXACT BYTES recorded
+//       first-policy-DDL → end-of-transaction under 200 ms, and the runner finds that record
+//       HASH-BOUND to the file — the way the night jobs' inverse gate is bound to its inverse.
+//       One byte changes and the measurement is gone, because it measured a different file.
+//
+// Anything missing is a REFUSAL that NAMES the missing proof. A declaration alone proves nothing;
+// a file that says "one table" and touches two is refused by counting, not by trust.
+
+/** The measured ceiling. A freeze under this is affordable at midday; over it waits for 1 a.m. */
+export const POLICY_DDL_ONE_TABLE_MAX_MS = 200;
+
+const HEADER_POLICY_DDL_ONE_TABLE_RE = /^\s*--\s*policy-ddl:\s*one-table\s*$/i;
+
+/** Does the file CLAIM the exemption? Claiming it is not having it. */
+export function policyDdlOneTableDeclared(rawSql: string): boolean {
+  return rawSql.split("\n", 40).some((line) => HEADER_POLICY_DDL_ONE_TABLE_RE.test(line));
+}
+
+/** What a rehearsal wrote down about one exact file. `target` is always the clone. */
+export interface PolicyDdlMeasurement {
+  readonly file: string;
+  readonly sha256: string;
+  readonly target: string;
+  /** First policy statement → end of transaction, in ms. That span IS the sign-in freeze. */
+  readonly firstPolicyDdlToEndMs: number;
+  readonly tables: readonly string[];
+  readonly measuredAt: string;
+}
+
+/** `migrations/campaign/x.sql` + sha → `migrations/measurements/<sha>.json`. */
+export function policyDdlMeasurementPath(migrationFilePath: string, sha: string): string {
+  return resolve(dirname(resolve(migrationFilePath)), "..", "measurements", `${sha}.json`);
+}
+
+export function sha256OfBytes(raw: string): string {
+  return createHash("sha256").update(raw, "utf8").digest("hex");
+}
+
+/** Read the record for these exact bytes, or null. A malformed record is null, never a pass. */
+export function loadPolicyDdlMeasurement(
+  migrationFilePath: string,
+  sha: string,
+): PolicyDdlMeasurement | null {
+  const path = policyDdlMeasurementPath(migrationFilePath, sha);
+  if (!existsSync(path)) return null;
+  try {
+    const m = JSON.parse(readFileSync(path, "utf8")) as PolicyDdlMeasurement;
+    if (m.sha256 !== sha) return null;
+    if (typeof m.firstPolicyDdlToEndMs !== "number") return null;
+    return m;
+  } catch {
+    return null;
+  }
+}
+
+/** The table one policy statement names, or null when it names none statically. */
+export function policyStatementTableOf(stmt: string): string | null {
+  const m = stmt
+    .trim()
+    .match(new RegExp(`^(?:create|alter|drop)\\s+policy\\b[\\s\\S]*?\\bon\\s+${TABLE_REF}`, "i"));
+  return m ? normalizeTableRef(m[1]!) : null;
+}
+
+export interface PolicyDdlOneTableVerdict {
+  /** True only when the runner PROVED both halves. */
+  readonly exempt: boolean;
+  /** The sentence naming the missing proof. Null when the file never claimed the exemption. */
+  readonly refusal: string | null;
+  readonly table?: string;
+  readonly measuredMs?: number;
+}
+
+/**
+ * The verified exemption. `load` is injectable so the RED-then-GREEN self-test can hand it a
+ * measurement that does not exist on disk — the same trick that makes the footprint self-test
+ * honest.
+ */
+export function policyDdlOneTableVerdict(
+  rawSql: string,
+  migrationFilePath: string,
+  sites: readonly WindowClassSite[],
+  load: (file: string, sha: string) => PolicyDdlMeasurement | null = loadPolicyDdlMeasurement,
+): PolicyDdlOneTableVerdict {
+  if (!policyDdlOneTableDeclared(rawSql)) return { exempt: false, refusal: null };
+
+  const POLICY_CLASSES = new Set(["create_policy", "alter_policy", "drop_policy"]);
+  const others = sites.filter((x) => !POLICY_CLASSES.has(x.classId));
+  if (others.length > 0) {
+    return {
+      exempt: false,
+      refusal:
+        `it declares \`-- policy-ddl: one-table\`, but the window-class DDL in it is not all ` +
+        `policy DDL — ${others.map((x) => `${x.why} on ${x.table}`).join(", ")}. The exemption ` +
+        `covers a single table's policy regeneration and nothing else.`,
+    };
+  }
+
+  const verdict = policyOnlyVerdict(rawSql);
+  if (verdict.policy.length === 0) {
+    return {
+      exempt: false,
+      refusal: `it declares \`-- policy-ddl: one-table\` and contains no policy DDL at all.`,
+    };
+  }
+  if (verdict.strangers.length > 0) {
+    return {
+      exempt: false,
+      refusal:
+        `it declares \`-- policy-ddl: one-table\`, but it is not policy-only — ` +
+        `${verdict.strangers.length} statement(s) ride with the policy DDL, starting with ` +
+        `"${verdict.strangers[0]!.slice(0, 80)}". The length of the file is the length of the freeze.`,
+    };
+  }
+
+  const tables = new Set<string>();
+  for (const p of verdict.policy) {
+    const t = policyStatementTableOf(p.stmt);
+    if (!t) {
+      return {
+        exempt: false,
+        refusal:
+          `it declares \`-- policy-ddl: one-table\`, but "${p.why}" names no table this runner ` +
+          `can read before it connects ("${p.stmt.slice(0, 80)}"). A regenerator call can touch ` +
+          `any number of tables, so the exemption cannot be proved on the bytes.`,
+      };
+    }
+    tables.add(t);
+  }
+  if (tables.size !== 1) {
+    return {
+      exempt: false,
+      refusal:
+        `it declares \`-- policy-ddl: one-table\` and names ${tables.size}: ` +
+        `${[...tables].sort().join(", ")}. Each table's policies go in their own file, because ` +
+        `one transaction is one freeze.`,
+    };
+  }
+  const table = [...tables][0]!;
+
+  const sha = sha256OfBytes(rawSql);
+  const m = load(migrationFilePath, sha);
+  if (!m) {
+    return {
+      exempt: false,
+      refusal:
+        `it declares \`-- policy-ddl: one-table\`, but there is NO measurement for these exact ` +
+        `bytes (sha256 ${sha.slice(0, 12)}…). Run \`pnpm db:rehearse <file> --target clone\`, ` +
+        `which writes ${policyDdlMeasurementPath(migrationFilePath, sha)}. A measurement of an ` +
+        `earlier version of this file is a measurement of a different file.`,
+    };
+  }
+  if (m.target !== "clone") {
+    return {
+      exempt: false,
+      refusal:
+        `its measurement was taken against "${m.target}", not the dev clone. The only target ` +
+        `that may execute-and-roll-back a policy change for measurement is the disposable copy.`,
+    };
+  }
+  if (m.firstPolicyDdlToEndMs >= POLICY_DDL_ONE_TABLE_MAX_MS) {
+    return {
+      exempt: false,
+      refusal:
+        `its measured freeze is ${m.firstPolicyDdlToEndMs} ms — first policy statement to end of ` +
+        `transaction — and the exemption stops at ${POLICY_DDL_ONE_TABLE_MAX_MS} ms. That is ` +
+        `${m.firstPolicyDdlToEndMs} ms in which nobody signs in, refreshes a token, reads a file ` +
+        `or receives a realtime message. It waits for the window.`,
+    };
+  }
+  return { exempt: true, refusal: null, table, measuredMs: m.firstPolicyDdlToEndMs };
 }
 
 /** The maintenance window, Pacific, as HHMM. Same window every night job in `scripts/night/` uses. */
