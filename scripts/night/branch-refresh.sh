@@ -144,10 +144,20 @@ LOOKUP_DERIVE_SQL="select n.nspname||'.'||c.relname
 # register is an empty enumeration: `test_the_enumeration_is_not_empty` and
 # `test_the_door_speaks_for_a_relation_the_platform_really_superseded` both went red on the branch
 # for a reason that had nothing to do with the store.
+#
+# `custom.carrying_rule` joined it the same day and is the first entry OUTSIDE `platform` — the
+# derivation is scoped to that schema, so a campaign-owned schema's own reference table could never
+# be seen. It holds THREE rows (`contains`, `home`, `references`) and it is the exemption list
+# `custom._store_relation_edge_names_its_field` reads: an edge out of the record store whose role
+# is not in this table is refused 23514. With the table empty, EVERY `table_propose` on the branch
+# died with 'a relation on a record has to say which field it came from, and "contains" does not' —
+# 24 of the package suite's errors, all of them one absent lookup. The copy loop already handles a
+# table with no `organization_id` (this one has none: three role words, no customer data).
 typeset -a NAMED_REGISTRIES
 NAMED_REGISTRIES=(platform.association_types platform.metadata_reserved_keys
                   platform.provision_rule_message platform.domain_classification
-                  platform.retention_policy platform.deprecated_relations)
+                  platform.retention_policy platform.deprecated_relations
+                  custom.carrying_rule)
 
 # 🚨 NO CUSTOMER ROWS COME ACROSS THIS WIRE. Every platform table carries `organization_id` (the
 # platform's own law), so "it has no org column" is not a safety filter here — the filter is the
