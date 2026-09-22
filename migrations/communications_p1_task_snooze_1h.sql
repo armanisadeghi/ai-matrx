@@ -130,12 +130,6 @@ declare
   person_defer timestamptz;
   clean_title text;
   reminder_body text;
-  local_now timestamp without time zone;
-  local_time time without time zone;
-  local_day_start timestamptz;
-  local_day_end timestamptz;
-  hourly_count integer;
-  daily_count integer;
   created_notification_id uuid;
   created_message_id uuid;
   created_assist_id uuid;
@@ -347,63 +341,6 @@ begin
       and suppressed.deleted_at is null
   ) then
     block_code := 'notification_source_suppressed';
-  end if;
-
-  if block_code is null then
-    begin
-      local_now := now() at time zone preference.timezone;
-    exception
-      when invalid_parameter_value then
-        block_code := 'invalid_notification_timezone';
-    end;
-  end if;
-
-  if block_code is null then
-    local_time := local_now::time;
-    if preference.quiet_hours_enabled and (
-      case
-        when preference.quiet_hours_start > preference.quiet_hours_end
-          then local_time >= preference.quiet_hours_start
-            or local_time < preference.quiet_hours_end
-        when preference.quiet_hours_start < preference.quiet_hours_end
-          then local_time >= preference.quiet_hours_start
-            and local_time < preference.quiet_hours_end
-        else false
-      end
-    ) then
-      block_code := 'quiet_hours';
-    end if;
-  end if;
-
-  if block_code is null then
-    select count(*) into hourly_count
-    from communication.sms_messages m
-    where m.organization_id = preference.organization_id
-      and m.to_number = preference.phone_number
-      and m.direction = 'outbound'
-      and m.created_at >= now() - interval '1 hour'
-      and m.deleted_at is null;
-    if hourly_count >= preference.max_messages_per_hour then
-      block_code := 'hourly_rate_limit';
-    end if;
-  end if;
-
-  if block_code is null then
-    local_day_start := pg_catalog.date_trunc('day', local_now)
-      at time zone preference.timezone;
-    local_day_end := (pg_catalog.date_trunc('day', local_now) + interval '1 day')
-      at time zone preference.timezone;
-    select count(*) into daily_count
-    from communication.sms_messages m
-    where m.organization_id = preference.organization_id
-      and m.to_number = preference.phone_number
-      and m.direction = 'outbound'
-      and m.created_at >= local_day_start
-      and m.created_at < local_day_end
-      and m.deleted_at is null;
-    if daily_count >= preference.max_messages_per_day then
-      block_code := 'daily_rate_limit';
-    end if;
   end if;
 
   if block_code is not null then

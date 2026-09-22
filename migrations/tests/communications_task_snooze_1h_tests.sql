@@ -37,7 +37,9 @@ begin
   update communication.sms_notification_preferences
     set sms_enabled = true, task_notifications = true,
       quiet_hours_enabled = false, timezone = 'America/Los_Angeles',
-      max_messages_per_hour = 1000, max_messages_per_day = 1000,
+      -- A low historical enrollment value must not override an explicit
+      -- current channel preference. The immediate+later sends exceed this one.
+      max_messages_per_hour = 1, max_messages_per_day = 1000,
       preferred_agent_id = null, preferred_agent_version_id = null
     where id = pref.id;
   -- Retain the admin's actual enrollment; allow only current live-guard test
