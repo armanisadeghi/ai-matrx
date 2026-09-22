@@ -20,6 +20,7 @@
 export type KnownItemType =
   | "agent"
   | "app"
+  | "research_template"
   | "note"
   | "task"
   | "project"

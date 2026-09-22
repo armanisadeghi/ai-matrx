@@ -35,6 +35,7 @@ import {
   Mail,
   BrainCircuit,
   Contact,
+  LayoutTemplate,
 } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ENTITY_TYPE_METADATA } from "@ai-matrx/associations";
@@ -140,6 +141,7 @@ export type ItemOpenKind =
   // Wired as openers ship for these types (an agent is building them). Each
   // becomes one branch in `useOpenItemPresentation` + one `open` entry here.
   | { kind: "app" }
+  | { kind: "research_template" }
   | { kind: "task" }
   | { kind: "project" }
   | { kind: "scope" }
@@ -265,6 +267,22 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
         name: clip(r.name, 80),
         about: clip(r.description),
       }), "app"),
+  },
+  research_template: {
+    type: "research_template",
+    label: "Research Template",
+    icon: LayoutTemplate,
+    accent: {
+      text: "text-violet-600 dark:text-violet-400",
+      bg: "bg-violet-500/10",
+      ring: "ring-violet-500/20",
+    },
+    open: { kind: "research_template" },
+    detailSource: {
+      table: "rs_template",
+      schemaName: "research",
+      titleField: "name",
+    },
   },
   note: {
     type: "note",

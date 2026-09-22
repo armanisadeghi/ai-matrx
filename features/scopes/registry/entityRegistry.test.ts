@@ -44,6 +44,12 @@ describe("entityRegistry content-role resolution", () => {
     );
   });
 
+  it("gives research templates the generic Detail presentation door", () => {
+    expect(getEntityInfo("research_template").hrefFor?.("template-id")).toBe(
+      "/detail/research_template/template-id",
+    );
+  });
+
   // ─── V-21: the two Google Workspace records the registry was never told about ──
   it.each([
     ["calendar_event", "/detail/calendar_event/record-id"],

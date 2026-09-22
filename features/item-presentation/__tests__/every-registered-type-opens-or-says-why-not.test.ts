@@ -30,6 +30,7 @@ import type { KnownItemType } from "../types";
 const ALL_REGISTERED_TYPES: KnownItemType[] = [
   "agent",
   "app",
+  "research_template",
   "note",
   "task",
   "project",

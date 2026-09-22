@@ -427,6 +427,11 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Research Topics",
     hrefFor: (id) => `/research/topics/${id}`,
   },
+  research_template: {
+    Icon: LayoutTemplate,
+    labelPlural: "Research Templates",
+    hrefFor: (id) => detailRecordHref("research_template", id),
+  },
   research_tag: {
     Icon: Tag,
     labelPlural: "Research Tags",
