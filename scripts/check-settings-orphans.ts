@@ -78,6 +78,7 @@ import {
   collectSandbox,
   dbReaders,
   loadRegistry,
+  localStringConsts,
   scanKnobReads,
   unmeasured,
   type KnobRow,
@@ -183,6 +184,35 @@ async function main(): Promise<void> {
   const literals = new Set<string>();
   for (const f of files) {
     for (const m of f.text.matchAll(/["']([A-Za-z][\w.\-]{2,80})["']/g)) literals.add(m[1]);
+    // 🚨 THE ADDRESS SPELT AS A TEMPLATE (SETTINGS-3, 2026-09-22). A file that names its
+    // feature ONCE and builds each address from it —
+    //     const KNOB_FEATURE = "masterwork.capture_plan";
+    //     export const KNOB_SESSION_MINUTES = `${KNOB_FEATURE}.session_minutes`;
+    // — is the most disciplined shape there is, and it was INVISIBLE here: the key never
+    // appears between quotes, so nine live `masterwork.capture_plan` knobs that
+    // `useCapturePlanSettings.ts` reads on every Capture Plan screen, through
+    // `ensureEffectiveKnob`, were reported as knobs no code reads. Three of its twelve keys
+    // escaped only because the same words happened to be quoted somewhere else, which is
+    // luck, not measurement. A guard that calls a real consumer dead teaches people to
+    // ignore it. So the same address written as a template resolves here exactly as a quoted
+    // one does — the interpolated constant is looked up in the SAME pooled `consts` map the
+    // resolvable-call scanner uses, and only a constant it can actually resolve counts.
+    // 🚨 THE FILE'S OWN CONSTANT WINS. The pooled map is last-writer-wins across 22k files,
+    // and `KNOB_FEATURE` is declared twice in this repo — "masterwork.capture_plan" in
+    // useCapturePlanSettings.ts and "seo.keyword_place_detection" in PlaceDetectionStrip.tsx.
+    // Reading the pool first resolved every capture-plan address to the SEO feature and the
+    // nine keys stayed invisible. Local first, pool second, exactly as `resolveName` does.
+    const local = localStringConsts(f.text);
+    const baseOf = (name: string) => local.get(name) ?? consts.get(name);
+    for (const m of f.text.matchAll(/`\$\{([A-Za-z_$][\w$]*)\}((?:\.[A-Za-z][\w]*)+)`/g)) {
+      const base = baseOf(m[1]);
+      if (base) literals.add(`${base}${m[2]}`);
+    }
+    // The Python spelling of the same thing: f"{FEATURE}.some_key".
+    for (const m of f.text.matchAll(/f["']\{([A-Za-z_][\w]*)\}((?:\.[A-Za-z][\w]*)+)["']/g)) {
+      const base = baseOf(m[1]);
+      if (base) literals.add(`${base}${m[2]}`);
+    }
   }
   const featuresMentioned = new Set<string>(literals);
   for (const v of consts.values()) featuresMentioned.add(v);

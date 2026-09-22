@@ -118,12 +118,22 @@ export function addr(feature: string, key: string): string {
  * pass. Precedent: `scripts/shape/generate-kind-types.ts`, which refuses to
  * emit anything without the live registry.
  */
+/**
+ * THE LIVE REGISTRY — archived registrations are NOT part of it.
+ *
+ * `platform.knob_archive` (SETTINGS-3, 2026-09-22) retires a row that decides nothing, with a
+ * compulsory reason and the lane that said so, and `platform.knob_index` stops offering it on
+ * every settings screen in the same breath. A guard that went on grading an archived row would
+ * be asking for a consumer, a screen and a rung for a control nobody is offered — so all four
+ * settings guards read only the live rows. Archived rows still RESOLVE; they are simply no
+ * longer part of what the product promises.
+ */
 export async function loadRegistry(guard: string): Promise<KnobRow[]> {
   loadEnv();
   // Door 1 — the secret key through execute_admin_query (the only credential
   // CI holds, and the one that also reaches the catalog).
   const admin = await adminQuery<KnobRow>(
-    `select ${REGISTRY_COLUMNS} from platform.feature_knob order by feature, key`,
+    `select ${REGISTRY_COLUMNS} from platform.feature_knob where archived_at is null order by feature, key`,
   );
   if (admin.rows) {
     if (admin.rows.length === 0) {
@@ -159,6 +169,7 @@ export async function loadRegistry(guard: string): Promise<KnobRow[]> {
       .schema("platform")
       .from("feature_knob")
       .select(REGISTRY_COLUMNS)
+      .is("archived_at", null)
       .order("feature")
       .order("key")
       .range(from, from + 999);
@@ -410,7 +421,19 @@ const PAIR_CONST_RE =
   /^[ \t]*(?:export\s+)?const\s+([A-Za-z_$][\w$]*)[^=\n]*=\s*\{\s*feature\s*:\s*["']([\w.]+)["']\s*,\s*key\s*:\s*["']([\w.]+)["']\s*,?\s*\}/gm;
 const FEATURE_MAP_RE = new RegExp(`\\b(${FEATURE_MAP_FNS})\\s*\\(\\s*(["'][^"'\\n]+["']|[A-Z][A-Z0-9_]{2,})`, "g");
 // `KNOB MIRROR of platform.feature_knob "feature" "key"` (also `KNOB-MIRROR`, any words between).
-const KNOB_MIRROR_RE = /KNOB[ -]?MIRROR[^\n]*?["']([A-Za-z][\w.]*)["']\s*["']([A-Za-z][\w.]*)["']/g;
+//
+// 🚨 THE KEY IS USUALLY ON THE NEXT COMMENT LINE (SETTINGS-3, 2026-09-22). A mirror
+// declaration is written in prose, and prose wraps: `"masterwork.recovery"` ends the line and
+// `#: "resume_claim_ttl_seconds" — how long a run may go …` starts the next one. Five of the
+// eight mirror declarations in the two repos are shaped that way, and requiring both names on
+// ONE line made every one of them invisible to both settings guards at once — the orphans
+// guard would call the key dead, and check:settings-unregistered would never grade it. Only
+// WHITESPACE and comment markers (`#`, `//`, `*`, `-`, `:`, `/`) may sit between the two
+// names, so the pair is still the mirror's own declaration and never a quoted string that
+// happens to come later in the file. The FEATURE must still be named on the `KNOB MIRROR`
+// line itself.
+const KNOB_MIRROR_RE =
+  /KNOB[ -]?MIRROR[^\n]*?["']([A-Za-z][\w.]*)["'][\s#*/:-]{0,12}["']([A-Za-z][\w.]*)["']/g;
 // A computed key whose shape is static: f"max_live_{x}_runs" / `max_live_${x}_runs`.
 const PY_FSTRING_RE = /^f["']([^"'\n]*\{[^"'\n]*)["']$/;
 const TS_TEMPLATE_RE = /^`([^`\n]*\$\{[^`\n]*)`$/;
