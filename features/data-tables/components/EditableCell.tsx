@@ -52,6 +52,7 @@ import type { FieldFormatConfig } from "@/lib/field-formats/types";
 
 import { ChoiceInput } from "./ChoiceInput";
 import { RatingInput } from "./RatingInput";
+import { AttachmentInput } from "./AttachmentInput";
 import { isDirectClickEditor, type GridMove } from "../grid-selection";
 import { upsertCell } from "../service";
 import { validateCellValue, type ValidationRules } from "../validation";
@@ -460,6 +461,21 @@ export function EditableCell({
         rows={4}
         className={cn(editorClass, "min-h-8 resize-none")}
         style={editorStyle}
+      />
+    );
+  }
+
+  // An attachment column edits through the ONE attachment input: chips with a
+  // remove control and "Add files…" through the platform file picker; commits
+  // once on Done rather than on every pick.
+  if (editorKind === "attachment") {
+    return (
+      <AttachmentInput
+        value={draft}
+        onChange={(next) => setDraft(next)}
+        onDone={(final) => void commitEdit({ value: final })}
+        disabled={saving}
+        className="py-1"
       />
     );
   }

@@ -22,6 +22,7 @@ import {
   validateCellValue,
   type ValidationRules,
 } from "@/features/data-tables/validation";
+import { AttachmentChips } from "@/features/data-tables/components/AttachmentChips";
 
 import { choiceColorClass, isChoiceFormat } from "./choices";
 import { formatFieldValue } from "./format";
@@ -182,6 +183,8 @@ function renderRich(
           <span className="truncate">{text}</span>
         </a>
       );
+    case "attachment":
+      return <AttachmentChips value={raw} className={className} />;
     case "address":
       return (
         <a

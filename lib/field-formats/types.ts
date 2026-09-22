@@ -77,6 +77,7 @@ export type FieldFormatId =
   | "json"
   | "array"
   | "tags"
+  | "attachment"
   // computed — the cell stores nothing; the value comes from a formula
   | "formula";
 
@@ -246,6 +247,8 @@ export type FieldEditorKind =
   | "json"
   | "select"
   | "multiselect"
+  /** Files from the files feature, chosen through the one file picker. */
+  | "attachment"
   /**
    * Not editable at all — the value is COMPUTED, so the grid refuses editing
    * rather than offering an input that would throw the computed value away.

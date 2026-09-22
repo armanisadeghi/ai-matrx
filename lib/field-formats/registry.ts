@@ -683,6 +683,42 @@ const DEFS: FieldFormatDef[] = [
     },
   },
   {
+    // FILES ATTACHED TO THE ROW. The cell stores the files feature's file ids
+    // (`files.files.id`), never a URL or a name: a rename or a move in Files
+    // changes nothing here, and access is the file's own (RLS) — a reader who
+    // may see the row but not the file gets the chip's honest "no access", not
+    // a broken link. Drawn by `AttachmentChips`, edited by `AttachmentInput`
+    // through the ONE file picker.
+    id: "attachment",
+    label: "Attachments",
+    description: "Files from your Files, shown as chips",
+    group: "Structured",
+    base: "array",
+    alsoAccepts: ["json", "string"],
+    editor: "attachment",
+    rich: true,
+    format: (v) => {
+      const list = toList(v);
+      if (list === null) return null;
+      const n = list.filter((i) => String(i).trim()).length;
+      return n === 0 ? "" : n === 1 ? "1 file" : `${n} files`;
+    },
+    parse: (raw) => {
+      if (raw == null || raw === "") return null;
+      if (Array.isArray(raw)) return raw.map((i) => String(i).trim()).filter(Boolean);
+      const text = String(raw).trim();
+      if (text.startsWith("[")) {
+        try {
+          const parsed = JSON.parse(text);
+          if (Array.isArray(parsed)) return parsed.map((i) => String(i).trim()).filter(Boolean);
+        } catch {
+          // a comma list, below
+        }
+      }
+      return text.split(",").map((s) => s.trim()).filter(Boolean);
+    },
+  },
+  {
     id: "tags",
     label: "Tags",
     description: "List of values shown as chips",

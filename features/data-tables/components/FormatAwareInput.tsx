@@ -12,6 +12,7 @@
  * Shared by both row modals so an email column cannot offer a real email input
  * in one and a plain box in the other.
  */
+import { AttachmentInput } from "./AttachmentInput";
 import { Input } from "@ai-matrx/design-system";
 
 import { ChoiceInput } from "./ChoiceInput";
@@ -22,6 +23,7 @@ import type { FieldFormatConfig } from "@/lib/field-formats/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 const OWNED_EDITORS = new Set([
+  "attachment",
   "email",
   "time",
   "url",
@@ -160,6 +162,9 @@ export function FormatAwareInput({
           onChange={(e) => commit(e.target.value)}
         />
       );
+
+    case "attachment":
+      return <AttachmentInput id={id} value={value} onChange={(next) => onChange(next)} />;
 
     default:
       // number / checkbox / date / datetime / json / text — the caller's own
