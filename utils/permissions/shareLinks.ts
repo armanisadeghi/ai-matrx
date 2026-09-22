@@ -188,7 +188,12 @@ export async function listShareLinks(
     p_resource_type: resourceType,
     p_resource_id: resourceId,
   });
-  if (error || !data) return [];
+  if (error) {
+    throw operationFailed("load this item's share links", error);
+  }
+  if (!Array.isArray(data)) {
+    throw operationFailed("load this item's share links");
+  }
   return (data as Record<string, unknown>[]).map((r) => ({
     id: r.id as string,
     token: r.token as string,

@@ -20,7 +20,7 @@ One RLS-backed permissions system that makes any resource type shareable with us
 
 - `ShareButton.tsx` — self-contained button that mounts `ShareModal` only while open; closed buttons do not resolve modal ownership. Shows public status only when requested
 - `ShareModal.tsx` — three-tab dialog (Users / Organizations / Public), the only UI surface owners need
-- `ShareLinkPanel.tsx` — "Anyone with the link" no-login token links (mint / copy / revoke / view-count), rendered in the Public tab
+- `ShareLinkPanel.tsx` — "Anyone with the link" no-login token links (mint / copy / review-before-text-share / revoke / view-count), rendered in the Public tab
 - `DuplicateToEditButton.tsx` — canonical **"Make a copy & use it"** for a view-only sharee / public / anon viewer; forks the resource into the caller's account (signed-out → sign-up → finish). Shared by `/s/[token]`, `/p/e`, and in-app view surfaces
 - `resourceIcons.ts` — token → Lucide icon map for share cards/previews (fallback: `Share2`)
 - `PermissionsList.tsx` — list of current grants with inline level edit + revoke
@@ -34,9 +34,11 @@ One RLS-backed permissions system that makes any resource type shareable with us
 - `useShare()` opens the platform share sheet, falls back to clipboard, then an
   accessible manual-copy dialog. It is the reusable hook for public acquisition
   surfaces; the podcast import is a compatibility re-export. `share()` resolves
-  to which door actually opened — `"shared" | "copied" | "manual"` — so a caller
-  that announces the result cannot claim a copy the manual dialog never made
-  (added 2026-09-07 for the Agent Review copy-link column).
+  to which door actually opened — `"shared" | "copied" | "manual" | "cancelled"` —
+  so a caller that announces the result cannot claim a copy the manual dialog
+  never made. Native cancellation returns `"cancelled"` without writing to the
+  clipboard; `copy()` supports reviewed message text as well as URLs (updated
+  2026-09-22 for share-by-text).
 
 **Hooks** (`utils/permissions/hooks.ts`)
 
@@ -370,6 +372,8 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 ---
 
 ## Change log
+
+- `2026-09-22` — **Canonical links can be reviewed and handed to a messaging app.** `ShareLinkPanel` now refreshes the selected canonical link before review and again before copy or native handoff; changed access, expiry, or use counts require another review, while revoked, expired, exhausted, or unverifiable links cannot be handed out. The preview identifies only an “AI Matrx item” and the exact canonical link; it never includes resource title or body. Native share cancellation does not copy, desktop can copy the reviewed message, and every result says prepared/opened/copied rather than sent. `listShareLinks()` now exposes refresh failures rather than turning them into an empty list. The canonical resolver remains authoritative for races after refresh. **Localhost evidence (admin test account, disposable task):** copied content exactly matched the generic preview and contained no title; cancel left clipboard unchanged; revoking from another tab caused the stale review to close with “This link has been turned off” and no clipboard write. At 390px viewport the dialog measured 358px without horizontal overflow. Native share UI could not be completed in the browser harness, so real-device native handoff remains unverified.
 
 - `2026-09-10` — `ShareButton` mounts its dialog on demand, avoiding closed-dialog ownership queries on list and responsive toolbar consumers.
 
