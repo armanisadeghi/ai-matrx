@@ -56,6 +56,27 @@ const values: SurfaceValue[] = [
     typicalCharCount: 120,
   },
   {
+    name: "processed_codes",
+    label: "Filtered codes",
+    description: "Rows matching the current canonical table view.",
+    valueType: "array",
+    alwaysAvailable: true,
+    autoContext: false,
+    group: "codes",
+    sortOrder: 215,
+    typicalCharCount: 120,
+  },
+  {
+    name: "processed_codes_count",
+    label: "Filtered code count",
+    description: "Count of rows matching the current canonical table view.",
+    valueType: "number",
+    alwaysAvailable: true,
+    group: "codes",
+    sortOrder: 218,
+    typicalCharCount: 120,
+  },
+  {
     name: "codes_loaded_count",
     label: "Loaded codes",
     description: "Complete code count loaded for this batch.",
@@ -80,6 +101,8 @@ export function createCommerceLabelBatchScope(values: {
   batch_id: string;
   codes_table_query: object;
   codes_loaded_count: number;
+  processed_codes: unknown[];
+  processed_codes_count: number;
   label_batch?: object;
   label_codes?: unknown[];
 }): SurfaceScopePayload {

@@ -164,6 +164,7 @@ export function LabelBatchDetail({
   const [pageIndex, setPageIndex] = useState(0);
   const [pendingVoid, setPendingVoid] = useState(false);
   const [voiding, setVoiding] = useState(false);
+  const [processedCodes, setProcessedCodes] = useState<LabelCode[]>([]);
   const codesTable = useTableUrlState({
     tableId: `commerce-label-codes-${batchId}`,
     defaultPageSize: 25,
@@ -310,6 +311,8 @@ export function LabelBatchDetail({
           batch_id: batch.id,
           label_batch: batch,
           label_codes: codes,
+          processed_codes: processedCodes,
+          processed_codes_count: processedCodes.length,
           codes_loaded_count: codes.length,
           codes_table_query: codesTable.state,
         })
@@ -459,7 +462,15 @@ export function LabelBatchDetail({
             state: codesTable.state,
             onStateChange: codesTable.onStateChange,
           }}
-          toolbar={{ title: "Codes", search: true }}
+          toolbar={{
+            title: "Codes",
+            search: true,
+            refresh: {
+              onRefresh: () => setReloadNonce((value) => value + 1),
+              label: "Refresh codes",
+            },
+          }}
+          onViewChange={setProcessedCodes}
           coverage={{
             noun: "label code",
             total: codes.length,
