@@ -42,7 +42,7 @@
 -- REC-1 (a Table declares its fields) · REC-51 (a validation trigger enforces the field
 -- definitions on write).
 
-CREATE FUNCTION custom._undeclared_key_guard()
+create or replace function custom._undeclared_key_guard()
  RETURNS trigger
  LANGUAGE plpgsql
  SET search_path TO 'pg_catalog'

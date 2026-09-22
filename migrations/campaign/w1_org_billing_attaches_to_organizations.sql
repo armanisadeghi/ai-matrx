@@ -68,7 +68,7 @@
 set lock_timeout = '5s';
 
 -- 1. TODAY'S ANSWER, KEPT UNDER ITS OWN NAME -----------------------------------------------
-create function billing._resolve_tier_legacy(p_user uuid)
+create or replace function billing._resolve_tier_legacy(p_user uuid)
 returns billing.tier
 language sql
 stable
@@ -120,7 +120,7 @@ comment on function billing.resolve_tier(uuid) is
   'REC-47: tier resolves through the default organization''s plan. Behind custom/signup_provisioning_guard: OFF calls billing._resolve_tier_legacy (today''s per-person answer, verbatim); ON resolves iam.default_organization_id(person) -> billing.resolve_org_tier(organization). The no-downgrade proof the move is allowed on is billing.tier_no_downgrade().';
 
 -- 3. THE PROOF, AS A QUERY -------------------------------------------------------------------
-create function billing.tier_no_downgrade()
+create or replace function billing.tier_no_downgrade()
 returns table(user_id uuid, legacy_tier billing.tier, organization_tier billing.tier)
 language sql
 stable

@@ -43,14 +43,14 @@
 set lock_timeout = '5s';
 set statement_timeout = '600s';
 
-create function custom.agg_operations()
+create or replace function custom.agg_operations()
 returns text[]
 language sql
 immutable
 set search_path to 'pg_catalog'
 as $fn$ select array['count', 'sum', 'avg', 'min', 'max']::text[] $fn$;
 
-create function custom.agg_buckets()
+create or replace function custom.agg_buckets()
 returns text[]
 language sql
 immutable
@@ -63,7 +63,7 @@ comment on function custom.agg_buckets() is
   'W4-AGG / AGT-N-8: the closed set of date buckets, as the only copy.';
 
 -- ── a key is a key, never a fragment of SQL ───────────────────────────────────
-create function custom.agg_assert_key(p_key text)
+create or replace function custom.agg_assert_key(p_key text)
 returns text
 language plpgsql
 immutable
@@ -90,7 +90,7 @@ comment on function custom.agg_assert_key(text) is
   'W4-AGG: refuses anything that is not a Field key BEFORE it reaches the assembled statement. The guarantee is shape, not escaping.';
 
 -- ── the value of one Field, read the one way every W4 surface reads it ────────
-create function custom.agg_value_sql(p_key text)
+create or replace function custom.agg_value_sql(p_key text)
 returns text
 language sql
 immutable
@@ -115,7 +115,7 @@ comment on function custom.agg_value_sql(text) is
 -- way the exit clause can be asserted at all: `EXPLAIN` over a plpgsql function reports one
 -- `Function Scan` and says NOTHING about the plan inside it, so a suite that explained the verb
 -- would be reading the wrapper and calling it proof.
-create function custom.agg_sql(p_organization_id uuid,
+create or replace function custom.agg_sql(p_organization_id uuid,
                                p_table_id uuid,
                                p_group_by jsonb default '[]'::jsonb,
                                p_measures jsonb default '[]'::jsonb,
@@ -242,7 +242,7 @@ $fn$;
 comment on function custom.agg_sql(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text) is
   'W4-AGG / AGT-N-8: the one statement the eighth verb runs, as text. The verb executes it and custom.agg_explain explains it, so the plan a suite reads is the plan the verb runs — not a Function Scan standing in front of it.';
 
-create function custom.record_aggregate(p_organization_id uuid,
+create or replace function custom.record_aggregate(p_organization_id uuid,
                                         p_table_id uuid,
                                         p_group_by jsonb default '[]'::jsonb,
                                         p_measures jsonb default '[]'::jsonb,
@@ -265,7 +265,7 @@ comment on function custom.record_aggregate(uuid, uuid, jsonb, jsonb, jsonb, jso
   'W4-AGG / AGT-N-8, THE EIGHTH VERB: group, count, sum, avg, min, max and bucket over one Table, computed INSIDE one query whose Visibility join sits below the aggregate node. A row the principal may not see is never fetched, so it can neither be counted nor be inferred from a total.';
 
 -- ── the plan, readable by a test rather than by a person ──────────────────────
-create function custom.agg_explain(p_organization_id uuid, p_table_id uuid,
+create or replace function custom.agg_explain(p_organization_id uuid, p_table_id uuid,
                                    p_group_by jsonb default '[]'::jsonb,
                                    p_measures jsonb default '[]'::jsonb,
                                    p_bucket jsonb default null,

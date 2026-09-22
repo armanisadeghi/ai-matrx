@@ -42,7 +42,7 @@ set statement_timeout = '600s';
 -- a default, an override, and a maximum the override is clamped to rather than refused at,
 -- because a person who types a bigger number should get the biggest number they can have and
 -- be able to read what it is.
-create function custom.table_record_ceiling(p_organization_id uuid)
+create or replace function custom.table_record_ceiling(p_organization_id uuid)
   returns integer language plpgsql stable set search_path to 'pg_catalog' as $$
 declare
   v_platform_maximum constant integer := 1000000;  -- REC-N-5: settable up to here, never past it.
@@ -69,7 +69,7 @@ comment on function custom.table_record_ceiling(uuid) is
   'clamped to the platform maximum of 1,000,000. The zero-argument sibling is the published '
   'platform number and stays IMMUTABLE so it can be read from an index expression.';
 
-create function custom.table_capacity(p_organization_id uuid, p_table_id uuid)
+create or replace function custom.table_capacity(p_organization_id uuid, p_table_id uuid)
   returns jsonb language plpgsql stable set search_path to 'pg_catalog' as $$
 declare
   v_records bigint;

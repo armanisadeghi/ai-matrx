@@ -31,7 +31,7 @@
 -- permission level, each written through `format`'s `%L`, so nothing a caller supplies reaches
 -- the statement as text.
 
-create function custom.visible_predicate_sql(
+create or replace function custom.visible_predicate_sql(
   p_user            uuid,
   p_organization_id uuid,
   p_table_id        uuid,

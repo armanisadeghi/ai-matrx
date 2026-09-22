@@ -45,7 +45,7 @@ set statement_timeout = '600s';
 -- THE MEMBERSHIP IS THE TRUTH. A person who is not a member of this organization cannot be
 -- given work in it; `custom.share_grant` refuses that too (VIS-31), and refusing it HERE
 -- means the refusal names assigning rather than sharing.
-create function custom.work_person(p_organization_id uuid, p_user_id uuid, p_create boolean default true)
+create or replace function custom.work_person(p_organization_id uuid, p_user_id uuid, p_create boolean default true)
 returns uuid
 language plpgsql
 security definer
@@ -104,7 +104,7 @@ comment on function custom.work_person(uuid, uuid, boolean) is
   'actually a member.';
 
 -- ── assign ───────────────────────────────────────────────────────────────────────────────
-create function custom.work_assign(p_organization_id uuid, p_record_id uuid,
+create or replace function custom.work_assign(p_organization_id uuid, p_record_id uuid,
                                    p_assignee_user_id uuid,
                                    p_due_date timestamptz default null,
                                    p_clear_due boolean default false)
@@ -191,7 +191,7 @@ comment on function custom.work_assign(uuid, uuid, uuid, timestamptz, boolean) i
   'transaction, through the store''s own doors.';
 
 -- ── the states a record can actually be moved to, and the move itself ────────────────────
-create function custom.work_record_states(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.work_record_states(p_organization_id uuid, p_record_id uuid)
 returns table (state_id uuid, name text, sort integer, terminal boolean,
                is_current boolean, allowed boolean, refusal text)
 language plpgsql
@@ -250,7 +250,7 @@ $$;
 -- THE MOVE. The trigger `zz_w3_work_shape_guard` is what actually refuses an illegal move —
 -- this door asks first so that a screen can say WHY before it acts, and the store still says
 -- no if anything raced it.
-create function custom.work_set_state(p_organization_id uuid, p_record_id uuid, p_state_id uuid)
+create or replace function custom.work_set_state(p_organization_id uuid, p_record_id uuid, p_state_id uuid)
 returns jsonb
 language plpgsql
 security definer
@@ -310,7 +310,7 @@ $$;
 -- ── the two lists ────────────────────────────────────────────────────────────────────────
 -- ONE shape for both, so a screen renders one row component. `flavour` says which list a row
 -- came from, because the inbox shows them together.
-create function custom.work_list(p_organization_id uuid, p_flavour text default 'mine',
+create or replace function custom.work_list(p_organization_id uuid, p_flavour text default 'mine',
                                  p_include_finished boolean default false,
                                  p_limit integer default 100, p_offset integer default 0)
 returns table (record_id uuid, table_id uuid, table_name text, title text,

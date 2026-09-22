@@ -62,7 +62,7 @@ set lock_timeout = '5s';
 set statement_timeout = '600s';
 
 -- ── what can I render this table's records as ────────────────────────────────
-create function custom.doc_templates(p_organization_id uuid, p_table_id uuid)
+create or replace function custom.doc_templates(p_organization_id uuid, p_table_id uuid)
 returns table(template_id uuid, renders_table_id uuid, name text, body text,
               template_version integer, token_count bigint, updated_at timestamptz)
 language plpgsql
@@ -100,7 +100,7 @@ values ('custom', 'doc_templates',
 on conflict do nothing;
 
 -- ── stop offering this wording ───────────────────────────────────────────────
-create function custom.doc_template_delete(p_organization_id uuid, p_template_id uuid)
+create or replace function custom.doc_template_delete(p_organization_id uuid, p_template_id uuid)
 returns boolean
 language plpgsql
 security definer
@@ -157,7 +157,7 @@ values ('custom', 'doc_template_delete',
 on conflict do nothing;
 
 -- ── the documents already made from this record ──────────────────────────────
-create function custom.doc_renders(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.doc_renders(p_organization_id uuid, p_record_id uuid)
 returns table(render_id uuid, template_id uuid, record_id uuid, table_id uuid,
               template_version integer, body text, content_hash text,
               rendered_at timestamptz)
@@ -198,7 +198,7 @@ values ('custom', 'doc_renders',
 on conflict do nothing;
 
 -- ── the seals over those documents ───────────────────────────────────────────
-create function custom.doc_signatures(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.doc_signatures(p_organization_id uuid, p_record_id uuid)
 returns table(signature_id uuid, render_id uuid, record_id uuid, field_key text,
               signer_name text, signer_user_id uuid, signed_at timestamptz,
               document_hash text, document_version integer)
@@ -237,7 +237,7 @@ values ('custom', 'doc_signatures',
 on conflict do nothing;
 
 -- ── the cadences the digest runner actually understands ──────────────────────
-create function custom.subscription_cadences(p_organization_id uuid)
+create or replace function custom.subscription_cadences(p_organization_id uuid)
 returns text[]
 language plpgsql
 stable

@@ -52,7 +52,7 @@
 -- custom.history_restore_body — the same body, with the author in it.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.history_restore_body(p_current jsonb, p_target jsonb,
+create or replace function custom.history_restore_body(p_current jsonb, p_target jsonb,
                                             p_field_key text, p_author jsonb)
 returns jsonb
 language sql
@@ -92,7 +92,7 @@ on conflict do nothing;
 -- custom.io_restore — the same restore, saying who did it.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.io_restore(p_organization_id uuid, p_record_id uuid,
+create or replace function custom.io_restore(p_organization_id uuid, p_record_id uuid,
                                   p_version integer, p_author jsonb)
 returns integer
 language plpgsql
@@ -156,7 +156,7 @@ on conflict do nothing;
 -- saying who did it.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.record_restore_version(p_organization_id uuid, p_record_id uuid,
+create or replace function custom.record_restore_version(p_organization_id uuid, p_record_id uuid,
                                               p_version integer, p_author jsonb)
 returns jsonb
 language plpgsql
@@ -193,7 +193,7 @@ values ('custom', 'record_restore_version',
         false, false)
 on conflict do nothing;
 
-create function custom.value_restore(p_organization_id uuid, p_record_id uuid,
+create or replace function custom.value_restore(p_organization_id uuid, p_record_id uuid,
                                      p_field_key text, p_version integer, p_author jsonb)
 returns jsonb
 language plpgsql

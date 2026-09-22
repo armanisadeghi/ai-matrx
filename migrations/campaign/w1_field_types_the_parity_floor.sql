@@ -102,7 +102,7 @@
 -- schema `custom` is revoked from PUBLIC, anon, authenticated and service_role and is absent
 -- from `pgrst.db_schemas`. Nothing in this file is in `iam` or `platform`.
 --
--- IDEMPOTENCE, STATED HONESTLY. §6b.2's allow-list admits `CREATE FUNCTION` and
+-- IDEMPOTENCE, STATED HONESTLY. §6b.2's allow-list admits `create or replace function` and
 -- `CREATE TRIGGER` and refuses `CREATE OR REPLACE` of a trigger, and PostgreSQL has no
 -- `IF NOT EXISTS` for either. A second consecutive apply of these bytes is refused BY THE
 -- DATABASE (42723 / 42710) and changes nothing — the same honesty W1-STORE, W1-TABLE,
@@ -118,7 +118,7 @@ set statement_timeout = '300s';
 -- 1. THE THIRTEEN, IN CODE — the name, the behaviour it is made of, what it means
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom.parity_field_types()
+create or replace function custom.parity_field_types()
   returns table (parity_type text, behavior text, made_of text)
   language sql immutable parallel safe
   set search_path to 'pg_catalog'
@@ -147,7 +147,7 @@ comment on function custom.parity_field_types() is
 -- 2. THE ONE DERIVATION
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom.person_kernel_id() returns uuid
+create or replace function custom.person_kernel_id() returns uuid
   language sql immutable parallel safe
   set search_path to 'pg_catalog'
 as $fn_person_kernel$
@@ -157,7 +157,7 @@ $fn_person_kernel$;
 comment on function custom.person_kernel_id() is
   'REC-27''s fifth kernel Table, `Person`. A relation whose target is this IS the `member` parity type — there is no member column and no second person store.';
 
-create function custom.file_kernel_id() returns uuid
+create or replace function custom.file_kernel_id() returns uuid
   language sql immutable parallel safe
   set search_path to 'pg_catalog'
 as $fn_file_kernel$
@@ -167,7 +167,7 @@ $fn_file_kernel$;
 comment on function custom.file_kernel_id() is
   'REC-31 / REC-27''s sixth kernel Table, `File`. A picture is a File record reached through a relation, so a relation whose target is this IS the `attachment` parity type.';
 
-create function custom.parity_type(p_field_data jsonb)
+create or replace function custom.parity_type(p_field_data jsonb)
   returns text
   language sql immutable parallel safe
   set search_path to 'pg_catalog'
@@ -210,7 +210,7 @@ comment on function custom.parity_type(jsonb) is
 -- 3. THE PARITY GUARD — what each of the thirteen must declare to BE one
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom._field_type_parity_guard() returns trigger
+create or replace function custom._field_type_parity_guard() returns trigger
   language plpgsql
   set search_path to 'pg_catalog'
 as $fn_parity_guard$
@@ -381,7 +381,7 @@ create trigger custom_record_field_type_parity_guard
 -- 4. THE RELATION SEAM — the one body W1-REL repoints
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom.relation_targets(p_organization_id uuid, p_record_id uuid, p_via_key text)
+create or replace function custom.relation_targets(p_organization_id uuid, p_record_id uuid, p_via_key text)
   returns setof uuid
   language sql stable
   set search_path to 'pg_catalog'
@@ -408,7 +408,7 @@ comment on function custom.relation_targets(uuid, uuid, text) is
 -- 5. THE THREE EVALUATIONS
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom.lookup_value(p_organization_id uuid, p_record_id uuid, p_field_data jsonb)
+create or replace function custom.lookup_value(p_organization_id uuid, p_record_id uuid, p_field_data jsonb)
   returns jsonb
   language plpgsql stable
   set search_path to 'pg_catalog'
@@ -442,7 +442,7 @@ $fn_lookup$;
 comment on function custom.lookup_value(uuid, uuid, jsonb) is
   'FLD-11 lookup, with an implementation rather than a vocabulary entry: follow config.via to the related record and read config.pick off it through custom.record_values. A single lookup answers the first related record''s Value and a multi lookup answers all of them; a missing relation answers nothing at all rather than a zero or an empty string, because "nobody said" is what VAL-2 calls an absence and not a value.';
 
-create function custom.rollup_value(p_organization_id uuid, p_record_id uuid, p_field_data jsonb)
+create or replace function custom.rollup_value(p_organization_id uuid, p_record_id uuid, p_field_data jsonb)
   returns jsonb
   language plpgsql stable
   set search_path to 'pg_catalog'
@@ -487,7 +487,7 @@ $fn_rollup$;
 comment on function custom.rollup_value(uuid, uuid, jsonb) is
   'FLD-11 rollup: an aggregate along a relation, with NO DOUBLE COUNTING - the far-side ids come from custom.relation_targets, which takes them DISTINCT, so a record listed twice in one relation is added once and counted once. A sum of nothing answers nothing rather than 0, because a record with no lines has no total and a zero would be a claim nobody made.';
 
-create function custom.formula_value(p_organization_id uuid, p_record_id uuid,
+create or replace function custom.formula_value(p_organization_id uuid, p_record_id uuid,
                                      p_field_data jsonb, p_values jsonb default null)
   returns jsonb
   language plpgsql stable
@@ -507,7 +507,7 @@ $fn_formula$;
 comment on function custom.formula_value(uuid, uuid, jsonb, jsonb) is
   'FLD-9 / FLD-11 formula: config.expr IS a Rule expression and custom.rule_eval is what works it out. There is no second expression language in this system, so a formula Field and a Rule can never disagree about what `add` means, and a formula that names a Field instead of pointing at it is refused by REC-17''s own refusal.';
 
-create function custom.derived_value(p_organization_id uuid, p_record_id uuid, p_field_data jsonb,
+create or replace function custom.derived_value(p_organization_id uuid, p_record_id uuid, p_field_data jsonb,
                                      p_values jsonb default null)
   returns jsonb
   language plpgsql stable
@@ -528,7 +528,7 @@ $fn_derived$;
 comment on function custom.derived_value(uuid, uuid, jsonb, jsonb) is
   'The ONE dispatcher: which of the three computed parity types this Field is decides which body works its Value out. A consumer never asks "is this a rollup" - it asks for the Value.';
 
-create function custom.derived_values(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.derived_values(p_organization_id uuid, p_record_id uuid)
   returns jsonb
   language plpgsql stable
   set search_path to 'pg_catalog'
@@ -591,7 +591,7 @@ comment on function custom.derived_values(uuid, uuid) is
 -- 6. THE WRITE PATH — compute_on: write, stamped where nobody can forge it
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom._derived_fields() returns trigger
+create or replace function custom._derived_fields() returns trigger
   language plpgsql
   set search_path to 'pg_catalog'
 as $fn_derived_trigger$
@@ -765,7 +765,7 @@ as $function$
    order by keys.k;
 $function$;
 
-create function custom.parity_values(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.parity_values(p_organization_id uuid, p_record_id uuid)
   returns table (field_key text, field_id uuid, parity_type text, behavior text,
                  unit text, format text, value jsonb, value_version integer,
                  actor text, written_at timestamptz)

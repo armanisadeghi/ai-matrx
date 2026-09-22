@@ -85,7 +85,7 @@ as $fn$
 $fn$;
 
 -- ── what am I subscribed to here ─────────────────────────────────────────────
-create function custom.subscriptions(p_organization_id uuid, p_table_id uuid default null)
+create or replace function custom.subscriptions(p_organization_id uuid, p_table_id uuid default null)
 returns table(rule_id uuid, name text, table_id uuid, saved_view_id uuid,
               cadence text, schedule text, channel text, recipient_user_id uuid,
               event_key text, muted boolean, mine boolean, i_may_mute boolean)
@@ -144,7 +144,7 @@ values ('custom', 'subscriptions',
 on conflict do nothing;
 
 -- ── stop telling me ──────────────────────────────────────────────────────────
-create function custom.subscription_mute(p_organization_id uuid, p_rule_id uuid,
+create or replace function custom.subscription_mute(p_organization_id uuid, p_rule_id uuid,
                                          p_muted boolean default true)
 returns boolean
 language plpgsql

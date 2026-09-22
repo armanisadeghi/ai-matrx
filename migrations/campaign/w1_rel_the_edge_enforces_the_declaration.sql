@@ -54,7 +54,7 @@
 set lock_timeout = '5s';
 set statement_timeout = '300s';
 
-create function platform.enforce_relation_edge()
+create or replace function platform.enforce_relation_edge()
 returns trigger
 language plpgsql
 set search_path to 'pg_catalog'

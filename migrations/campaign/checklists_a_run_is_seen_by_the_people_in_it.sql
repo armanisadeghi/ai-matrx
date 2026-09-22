@@ -119,7 +119,7 @@ drop function if exists custom.checklist_run(uuid, uuid);
 drop function if exists custom.checklist_runs(uuid, uuid, uuid, boolean, integer);
 
 -- ── is this run one of mine ──────────────────────────────────────────────────────────────
-create function custom._checklist_run_visible(p_organization_id uuid, p_run_id uuid, p_data jsonb)
+create or replace function custom._checklist_run_visible(p_organization_id uuid, p_run_id uuid, p_data jsonb)
 returns boolean
 language sql
 stable
@@ -142,7 +142,7 @@ as $$
                                               'viewer'::public.permission_level));
 $$;
 
-create function custom.checklist_run(p_organization_id uuid, p_run_id uuid)
+create or replace function custom.checklist_run(p_organization_id uuid, p_run_id uuid)
 returns table (step_id uuid, step_order integer, ref text, title text, role text,
                assignee_name text, assignee_user_id uuid,
                due_on timestamptz, due_state text, status text, finished boolean,
@@ -223,7 +223,7 @@ begin
 end
 $$;
 
-create function custom.checklist_runs(p_organization_id uuid,
+create or replace function custom.checklist_runs(p_organization_id uuid,
                                       p_about_table_id uuid default null,
                                       p_about_record_id uuid default null,
                                       p_include_closed boolean default true,

@@ -34,7 +34,7 @@
 set lock_timeout = '3s';
 set statement_timeout = '2min';
 
-create function custom.provenance_write(
+create or replace function custom.provenance_write(
   p_organization_id uuid,
   p_conversation_id uuid,
   p_turn_id text,

@@ -44,10 +44,10 @@
 -- be shown RED. The lane's red twin, `scripts/campaign-tests/leakt10_red.sql`, additionally
 -- executes the real inverse bodies inside a rolled-back transaction and re-runs the real doors.
 
--- A NEW function, so `CREATE FUNCTION` and not `CREATE OR REPLACE`: the runner's
+-- A NEW function, so `create or replace function` and not `CREATE OR REPLACE`: the runner's
 -- allow-list reads `OR REPLACE` as a whole-body write over something live and demands a
 -- `-- based-on:` hash of the body being replaced, which does not exist yet.
-CREATE FUNCTION custom.list_door_disagreements(
+create or replace function custom.list_door_disagreements(
   p_pretend text DEFAULT NULL,
   p_only_organization uuid DEFAULT NULL,
   p_sample integer DEFAULT 200)

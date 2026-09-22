@@ -36,7 +36,7 @@ set lock_timeout = '5s';
 set statement_timeout = '600s';
 
 -- ── DID ANYTHING MOVE — the question that decides whether an event exists ────
-create function custom.io_changed_keys(p_old jsonb, p_new jsonb)
+create or replace function custom.io_changed_keys(p_old jsonb, p_new jsonb)
 returns text[]
 language sql
 immutable

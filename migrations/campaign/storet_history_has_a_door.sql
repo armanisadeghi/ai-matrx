@@ -30,7 +30,7 @@
 -- caller may open the thing it is about. `inverse` is NOT returned — it is the store's own
 -- undo instruction, not a person's business, and `custom.migrate_undo` is how it is used.
 
-create function custom.migrations(
+create or replace function custom.migrations(
   p_organization_id uuid,
   p_target_id       uuid default null,
   p_limit           integer default 100)

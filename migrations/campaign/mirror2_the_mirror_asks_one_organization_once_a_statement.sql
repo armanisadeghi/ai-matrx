@@ -69,7 +69,7 @@
 -- migrations/inverse/mirror2_*_down.sql and shows the read at 6.7 s again.
 
 -- ── THE FENCE ────────────────────────────────────────────────────────────────────────────────
-create function iam.statement_memo_epoch()
+create or replace function iam.statement_memo_epoch()
 returns text
 language sql
 stable
@@ -89,7 +89,7 @@ comment on function iam.statement_memo_epoch() is
   'MIRROR-2: the fence a statement-scoped visibility memo is keyed on — statement, backend, and whether this transaction has written yet.';
 
 -- ── THE MEMO ─────────────────────────────────────────────────────────────────────────────────
-create function iam.record_visible_in_org(
+create or replace function iam.record_visible_in_org(
   p_organization_id uuid,
   p_table_id        uuid,
   p_id              uuid,
@@ -226,7 +226,7 @@ grant execute on function iam.record_visible_in_org(uuid, uuid, uuid, platform.v
 -- ── THE CENSUS ───────────────────────────────────────────────────────────────────────────────
 -- A policy that still asks for the WHOLE-DATABASE record set is the defect this file closes.
 -- It names them; `pnpm check:store-doors-decide` and the green suite turn it into a failure.
-create function custom.mirror_asks_the_whole_database()
+create or replace function custom.mirror_asks_the_whole_database()
 returns table(schema_name text, table_name text, policy_name text, why text)
 language sql
 stable

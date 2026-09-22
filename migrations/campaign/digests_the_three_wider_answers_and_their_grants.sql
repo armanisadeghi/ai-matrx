@@ -35,7 +35,7 @@ set statement_timeout = '600s';
 
 drop function if exists custom.agg_subscriptions(uuid, uuid, text);
 
-create function custom.agg_subscriptions(p_organization_id uuid,
+create or replace function custom.agg_subscriptions(p_organization_id uuid,
                                          p_saved_view_id uuid default null,
                                          p_cadence text default null)
 returns table(rule_id uuid, saved_view_id uuid, table_id uuid, cadence text,
@@ -76,7 +76,7 @@ comment on function custom.agg_subscriptions(uuid, uuid, text) is
 
 drop function if exists custom.agg_deliver(uuid, uuid, uuid, text, uuid, text, text, text, jsonb);
 
-create function custom.agg_deliver(p_organization_id uuid, p_rule_id uuid, p_record_id uuid,
+create or replace function custom.agg_deliver(p_organization_id uuid, p_rule_id uuid, p_record_id uuid,
         p_channel text, p_recipient_user_id uuid, p_event_key text, p_subject text, p_body text,
         p_payload jsonb default '{}'::jsonb, p_dedupe_suffix text default null)
 returns uuid
@@ -126,7 +126,7 @@ comment on function custom.agg_deliver(uuid, uuid, uuid, text, uuid, text, text,
 
 drop function if exists custom.subscriptions(uuid, uuid);
 
-create function custom.subscriptions(p_organization_id uuid, p_table_id uuid default null)
+create or replace function custom.subscriptions(p_organization_id uuid, p_table_id uuid default null)
 returns table(rule_id uuid, name text, table_id uuid, saved_view_id uuid, cadence text,
               schedule text, quiet_hours jsonb, channel text, recipient_user_id uuid,
               event_key text, muted boolean, mine boolean, i_may_mute boolean,

@@ -38,7 +38,7 @@
 -- it could answer: a person who holds no live grant addressed to her anywhere and owns no record
 -- in this organization has no rung 1, 2 or 3 at all, and that is two indexed probes.
 
-create function custom.addressed_cap_specific(p_user_id uuid, p_type text, p_id uuid,
+create or replace function custom.addressed_cap_specific(p_user_id uuid, p_type text, p_id uuid,
                                               p_organization_id uuid default null,
                                               p_table_id uuid default null)
  returns permission_level

@@ -148,7 +148,7 @@ comment on column platform.schema_client_exposure.reason is
 alter table platform.schema_client_exposure enable row level security;
 
 -- ── reading it ────────────────────────────────────────────────────────────────
-create function platform.schema_is_client_exposed(p_schema text)
+create or replace function platform.schema_is_client_exposed(p_schema text)
 returns boolean
 language sql
 stable
@@ -167,7 +167,7 @@ comment on function platform.schema_is_client_exposed(text) is
   'True when schema p_schema may receive client-role grants from the provisioner. Reads platform.schema_client_exposure; a schema with no row is exposed.';
 
 -- ── proving it, from the catalogue ────────────────────────────────────────────
-create function platform.schema_exposure_violations(p_schema text default null)
+create or replace function platform.schema_exposure_violations(p_schema text default null)
 returns table (schema_name text, kind text, object_name text, detail text)
 language sql
 stable
@@ -1373,7 +1373,7 @@ begin
   -- lane B). An entry WITHOUT one declares a door for a function that already exists.
   for v_item in select value from jsonb_array_elements(n->'functions') loop
     if v_item ? 'body' then
-      execute format('create function %I.%I(%s) returns %s language %s %s set search_path to %L as $provision_body$%s$provision_body$',
+      execute format('create or replace function %I.%I(%s) returns %s language %s %s set search_path to %L as $provision_body$%s$provision_body$',
         v_schema, v_item->>'name', coalesce(v_item->>'args',''), v_item->>'returns',
         coalesce(v_item->>'language','plpgsql'),
         case when lower(coalesce(v_item->>'security','invoker')) = 'definer' then 'security definer' else 'security invoker' end,

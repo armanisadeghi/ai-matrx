@@ -64,7 +64,7 @@ set lock_timeout = '5s';
 set statement_timeout = '600s';
 
 -- ── the publish act, which is the only thing that opens a form ───────────────
-create function custom.anon_publish(p_organization_id uuid,
+create or replace function custom.anon_publish(p_organization_id uuid,
                                     p_form_id uuid,
                                     p_published boolean default true)
 returns timestamptz
@@ -114,7 +114,7 @@ values ('custom', 'anon_publish',
 on conflict do nothing;
 
 -- ── DOOR-20: issuing a token. The secret leaves ONCE and is never stored ──────
-create function custom.anon_token_issue(p_organization_id uuid,
+create or replace function custom.anon_token_issue(p_organization_id uuid,
                                         p_mode text,
                                         p_allowed_origins jsonb,
                                         p_form_id uuid default null,
@@ -196,7 +196,7 @@ values ('custom', 'anon_token_issue',
         null, true, false)
 on conflict do nothing;
 
-create function custom.anon_token_revoke(p_organization_id uuid, p_token_id uuid)
+create or replace function custom.anon_token_revoke(p_organization_id uuid, p_token_id uuid)
 returns boolean
 language plpgsql
 security definer
@@ -226,7 +226,7 @@ values ('custom', 'anon_token_revoke',
 on conflict do nothing;
 
 -- ── DOOR-20: what a token is allowed to be, checked from the origin it arrived from ──
-create function custom.anon_token_verify(p_secret text, p_origin text, p_required_mode text)
+create or replace function custom.anon_token_verify(p_secret text, p_origin text, p_required_mode text)
 returns table(token_id uuid, organization_id uuid, form_id uuid,
               saved_view_id uuid, record_id uuid, mode text)
 language plpgsql
@@ -291,7 +291,7 @@ values ('custom', 'anon_token_verify',
 on conflict do nothing;
 
 -- ── DOOR-17: the rate limit, atomic ─────────────────────────────────────────
-create function custom.anon_rate_take(p_organization_id uuid,
+create or replace function custom.anon_rate_take(p_organization_id uuid,
                                       p_form_id uuid,
                                       p_bucket text,
                                       p_token_id uuid default null)
@@ -348,7 +348,7 @@ values ('custom', 'anon_rate_take',
 on conflict do nothing;
 
 -- ── DOOR-17: THE ANONYMOUS WRITE DOOR ────────────────────────────────────────
-create function custom.anon_write(p_secret text,
+create or replace function custom.anon_write(p_secret text,
                                   p_origin text,
                                   p_payload jsonb,
                                   p_client_key text default null,
@@ -466,7 +466,7 @@ values ('custom', 'anon_write',
 on conflict do nothing;
 
 -- ── DOOR-17: the Rule clears the quarantine ─────────────────────────────────
-create function custom.anon_clear(p_organization_id uuid, p_submission_id uuid)
+create or replace function custom.anon_clear(p_organization_id uuid, p_submission_id uuid)
 returns uuid
 language plpgsql
 security definer
@@ -535,7 +535,7 @@ values ('custom', 'anon_clear',
 on conflict do nothing;
 
 -- ── DOOR-19: an inbound address lands a submission, source stamped ───────────
-create function custom.anon_inbound_land(p_address text,
+create or replace function custom.anon_inbound_land(p_address text,
                                          p_secret text,
                                          p_payload jsonb,
                                          p_raw_payload jsonb default '{}'::jsonb,
@@ -612,7 +612,7 @@ values ('custom', 'anon_inbound_land',
 on conflict do nothing;
 
 -- ── DOOR-21: the offline replay, counted as rows ────────────────────────────
-create function custom.anon_capture(p_organization_id uuid,
+create or replace function custom.anon_capture(p_organization_id uuid,
                                     p_client_key text,
                                     p_table_id uuid,
                                     p_payload jsonb,

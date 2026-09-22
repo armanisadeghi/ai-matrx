@@ -95,7 +95,7 @@ comment on column custom.anon_form.notify_rule_id is
 -- custom.form_slug — a name a person can read, made unique inside one organization
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.form_slug(p_organization_id uuid, p_title text, p_form_id uuid default null)
+create or replace function custom.form_slug(p_organization_id uuid, p_title text, p_form_id uuid default null)
 returns text
 language plpgsql
 stable
@@ -134,7 +134,7 @@ comment on function custom.form_slug(uuid, text, uuid) is
 -- be the "form silo" PRODUCTS row 1 exists to avoid: an answer that lands nowhere.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.form_declare(p_organization_id uuid,
+create or replace function custom.form_declare(p_organization_id uuid,
                                     p_table_id uuid,
                                     p_title text,
                                     p_questions jsonb,
@@ -283,7 +283,7 @@ on conflict do nothing;
 -- custom.forms — the owner's list, with the counts that make it worth looking at
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.forms(p_organization_id uuid, p_table_id uuid default null)
+create or replace function custom.forms(p_organization_id uuid, p_table_id uuid default null)
 returns table(form_id uuid, table_id uuid, title text, slug text,
               published_at timestamptz, closed_at timestamptz,
               submission_cap integer, responses bigint, in_table bigint,
@@ -354,7 +354,7 @@ on conflict do nothing;
 -- existence, so a link cannot be used to learn that something is there.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.form_public(p_form_id uuid)
+create or replace function custom.form_public(p_form_id uuid)
 returns table(form_id uuid, organization_id uuid, table_id uuid, title text,
               presentation jsonb, fields jsonb, honeypot_key text,
               state text, message text)
@@ -430,7 +430,7 @@ on conflict do nothing;
 -- custom.form_notify — DOOR-18's delivery, on a form's own subscription Rule
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.form_notify(p_organization_id uuid,
+create or replace function custom.form_notify(p_organization_id uuid,
                                    p_form_id uuid,
                                    p_record_id uuid,
                                    p_submission_id uuid)
@@ -498,7 +498,7 @@ on conflict do nothing;
 -- one touches custom.record directly.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.form_submit(p_form_id uuid,
+create or replace function custom.form_submit(p_form_id uuid,
                                    p_origin text,
                                    p_payload jsonb,
                                    p_bucket text,

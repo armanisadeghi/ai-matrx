@@ -78,7 +78,7 @@ set statement_timeout = '600s';
 
 -- ═══ 1. THE CADENCE VOCABULARY ════════════════════════════════════════════════
 
-create function custom.agg_cadence_normalize(p_cadence text)
+create or replace function custom.agg_cadence_normalize(p_cadence text)
 returns text
 language sql
 immutable
@@ -115,7 +115,7 @@ comment on function custom.agg_subscription_cadences() is
 
 -- ═══ 2. QUIET HOURS ═══════════════════════════════════════════════════════════
 
-create function custom.agg_quiet_until(p_quiet jsonb, p_at timestamptz)
+create or replace function custom.agg_quiet_until(p_quiet jsonb, p_at timestamptz)
 returns timestamptz
 language plpgsql
 immutable
@@ -174,7 +174,7 @@ comment on function custom.agg_quiet_until(jsonb, timestamptz) is
 
 -- ═══ 3. WHEN THE NEXT SUMMARY IS DUE ══════════════════════════════════════════
 
-create function custom.agg_digest_due_at(p_cadence text, p_schedule text,
+create or replace function custom.agg_digest_due_at(p_cadence text, p_schedule text,
                                                     p_quiet jsonb, p_after timestamptz)
 returns timestamptz
 language plpgsql
@@ -243,7 +243,7 @@ comment on function custom.agg_digest_due_at(text, text, jsonb, timestamptz) is
 
 -- ═══ 4. DOES THIS VIEW ADMIT THIS STATE? ══════════════════════════════════════
 
-create function custom.agg_view_admits_state(p_definition jsonb, p_state jsonb)
+create or replace function custom.agg_view_admits_state(p_definition jsonb, p_state jsonb)
 returns boolean
 language plpgsql
 immutable
@@ -285,7 +285,7 @@ comment on function custom.agg_view_admits_state(jsonb, jsonb) is
 
 -- ═══ 6. WHAT TO CALL A RECORD IN A SUMMARY ════════════════════════════════════
 
-create function custom.agg_record_name(p_organization_id uuid, p_record_id uuid,
+create or replace function custom.agg_record_name(p_organization_id uuid, p_record_id uuid,
                                                   p_state jsonb default null)
 returns text
 language plpgsql
@@ -333,7 +333,7 @@ comment on function custom.agg_record_name(uuid, uuid, jsonb) is
 
 -- ═══ 7. THE WATERMARK — THE LAST SEND IS THE NOTIFICATION ═════════════════════
 
-create function custom.agg_last_digest_at(p_organization_id uuid, p_rule_id uuid)
+create or replace function custom.agg_last_digest_at(p_organization_id uuid, p_rule_id uuid)
 returns timestamptz
 language sql
 stable
@@ -366,7 +366,7 @@ comment on function custom.agg_last_digest_at(uuid, uuid) is
 -- summary is delivered to a person and a record they may not see is not theirs to
 -- be told about — the notification's mere existence would leak it.
 
-create function custom.agg_digest_assemble(p_organization_id uuid, p_rule_id uuid,
+create or replace function custom.agg_digest_assemble(p_organization_id uuid, p_rule_id uuid,
                                                       p_since timestamptz default null,
                                                       p_until timestamptz default null)
 returns jsonb
@@ -547,7 +547,7 @@ comment on function custom.agg_digest_assemble(uuid, uuid, timestamptz, timestam
 
 -- ═══ 9. DELIVERY, WITH QUIET HOURS AND THE CLICK-THROUGH ══════════════════════
 
-create function custom.agg_deliver_quietly(p_organization_id uuid, p_rule_id uuid,
+create or replace function custom.agg_deliver_quietly(p_organization_id uuid, p_rule_id uuid,
         p_subject_id uuid, p_channel text, p_recipient_user_id uuid, p_event_key text,
         p_subject text, p_body text, p_payload jsonb, p_quiet_hours jsonb, p_link text,
         p_dedupe_suffix text default null)
@@ -587,7 +587,7 @@ comment on function custom.agg_deliver_quietly(uuid, uuid, uuid, text, uuid, tex
 
 -- ═══ 10. INSTANT — FIRES ON ENTERING, NEVER ON TOUCHING ═══════════════════════
 
-create function custom.agg_subscription_fire_entered(p_organization_id uuid,
+create or replace function custom.agg_subscription_fire_entered(p_organization_id uuid,
         p_record_id uuid, p_table_id uuid default null, p_since timestamptz default null)
 returns integer
 language plpgsql
@@ -739,7 +739,7 @@ comment on function custom.agg_digest_run(uuid, uuid, timestamptz) is
 -- client grant — and both step over an organization that raises rather than
 -- letting one tenant's switched-off store stop every other tenant's notifications.
 
-create function custom.agg_subscription_tick(p_window interval default '15 minutes')
+create or replace function custom.agg_subscription_tick(p_window interval default '15 minutes')
 returns integer
 language plpgsql
 set search_path to 'pg_catalog'
@@ -789,7 +789,7 @@ $fn$;
 comment on function custom.agg_subscription_tick(interval) is
   'DOOR-18: read the records.changed outbox for the last window and fire every instant subscription whose view a record has just ENTERED. Claims nothing, so other consumers of the same feed are untouched; idempotent through the delivery dedupe key.';
 
-create function custom.agg_digest_tick()
+create or replace function custom.agg_digest_tick()
 returns integer
 language plpgsql
 set search_path to 'pg_catalog'
@@ -836,7 +836,7 @@ comment on function custom.agg_digest_tick() is
 
 -- ═══ 14. THE DOORS A PERSON REACHES ═══════════════════════════════════════════
 
-create function custom.subscription_declare(p_organization_id uuid, p_table_id uuid,
+create or replace function custom.subscription_declare(p_organization_id uuid, p_table_id uuid,
                                                        p_spec jsonb)
 returns uuid
 language plpgsql
@@ -924,7 +924,7 @@ $fn$;
 comment on function custom.subscription_declare(uuid, uuid, jsonb) is
   'DOOR-18: the one door that writes a subscription. It refuses a cadence no runner acts on, a channel this platform does not send on, quiet hours nobody can parse and a subscription with no view or nobody to tell — BY NAME — then declares the Rule through custom.rule_declare (REC-72).';
 
-create function custom.subscription_preview(p_organization_id uuid, p_rule_id uuid)
+create or replace function custom.subscription_preview(p_organization_id uuid, p_rule_id uuid)
 returns jsonb
 language plpgsql
 stable

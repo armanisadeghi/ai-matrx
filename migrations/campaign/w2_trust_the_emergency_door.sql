@@ -88,7 +88,7 @@ as $function$
     ) x;
 $function$;
 
-create function iam.emergency_door_sweep()
+create or replace function iam.emergency_door_sweep()
 returns jsonb
 language plpgsql
 security definer
@@ -118,7 +118,7 @@ comment on function iam.emergency_door_sweep() is
   'custom/emergency_door_sweep_enabled resolves false.';
 
 -- gap (8).
-create function iam.emergency_door_lapsed_grants()
+create or replace function iam.emergency_door_lapsed_grants()
 returns table (permission_id uuid, resource_type text, resource_id uuid,
                granted_to_user_id uuid, subject_user_id uuid, expires_at timestamptz,
                audit_id uuid)

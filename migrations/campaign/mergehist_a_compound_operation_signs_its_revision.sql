@@ -404,7 +404,7 @@ comment on function custom.io_changed_keys(jsonb, jsonb) is
 -- THE CHAIN, CARRYING THE OPERATION
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 drop function if exists history.record_versions(uuid, uuid);
-create function history.record_versions(p_organization_id uuid, p_record_id uuid)
+create or replace function history.record_versions(p_organization_id uuid, p_record_id uuid)
 returns table(version integer, operation text, occurred_at timestamptz, actor_id uuid,
               row_data jsonb, migration_id uuid, operation_name text)
 language sql
@@ -430,7 +430,7 @@ comment on function history.record_versions(uuid, uuid) is
 -- THE DOOR A PERSON HAS: what each version IS, in words, with the fields that moved
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 drop function if exists custom.io_revisions(uuid, uuid);
-create function custom.io_revisions(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.io_revisions(p_organization_id uuid, p_record_id uuid)
 returns table(version integer, changed_at timestamptz, changed_by uuid, summary text,
               operation text, changed_fields jsonb)
 language plpgsql

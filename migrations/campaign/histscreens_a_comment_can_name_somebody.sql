@@ -68,7 +68,7 @@
 -- row with its own key, `custom.mention:<comment>:<person>`, and nothing else differs.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.comment_mention_deliver(p_organization_id uuid, p_record_id uuid,
+create or replace function custom.comment_mention_deliver(p_organization_id uuid, p_record_id uuid,
                                                p_table_id uuid, p_comment_id uuid,
                                                p_recipient uuid, p_author_name text,
                                                p_record_title text, p_body text)
@@ -127,7 +127,7 @@ on conflict do nothing;
 -- validation of it, and the delivery.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.comment_write(p_organization_id uuid, p_record_id uuid, p_body text,
+create or replace function custom.comment_write(p_organization_id uuid, p_record_id uuid, p_body text,
                                      p_anchor jsonb default '{}'::jsonb,
                                      p_parent_comment_id uuid default null,
                                      p_mentions uuid[] default null)
@@ -234,7 +234,7 @@ on conflict do nothing;
 -- for somebody the store will refuse is the defect lane UI-HONEST spent a night removing.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.comment_thread(p_organization_id uuid, p_record_id uuid,
+create or replace function custom.comment_thread(p_organization_id uuid, p_record_id uuid,
                                       p_include_resolved boolean default false)
 returns jsonb
 language plpgsql

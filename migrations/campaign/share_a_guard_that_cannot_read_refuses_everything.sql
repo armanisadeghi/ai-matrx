@@ -95,7 +95,7 @@ comment on function files.guard_tombstone_retention() is
 
 -- ───────────────────────────────────────────────────────────── the census, written as code
 
-create function iam.grant_path_blanket_refusals()
+create or replace function iam.grant_path_blanket_refusals()
 returns table (
   on_table          text,
   trigger_name      text,

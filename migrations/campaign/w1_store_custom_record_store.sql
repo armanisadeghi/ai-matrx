@@ -166,7 +166,7 @@ create trigger _touch_row before insert or update on custom.record
 -- and this is the entry point every later writing lane goes through. It is created with
 -- NO grant at all — `ALTER DEFAULT PRIVILEGES` above already revoked EXECUTE from every
 -- client role, and the grant is switch-checklist work, not a lane's.
-create function custom.record_write(
+create or replace function custom.record_write(
   p_organization_id uuid,
   p_table_id        uuid,
   p_data            jsonb

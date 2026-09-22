@@ -33,7 +33,7 @@
 -- `organization` is a leak waiting for the next regeneration even if its policy text is clean
 -- today, and the census names it. Text drift and registry drift are both caught.
 
-create function iam.policy_carries_a_plain_system_org_arm(p_expr text)
+create or replace function iam.policy_carries_a_plain_system_org_arm(p_expr text)
   returns boolean
   language sql
   immutable

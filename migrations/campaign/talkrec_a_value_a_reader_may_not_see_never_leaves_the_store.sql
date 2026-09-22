@@ -45,7 +45,7 @@
 -- ids behind both — the exact four things `custom.read_record` worked out privately.
 -- SERVER-ONLY: it answers a field census, so it is not a client door and holds no grant.
 -- ════════════════════════════════════════════════════════════════════════════════════════
-create function custom.read_mask(p_organization_id uuid, p_record_id uuid,
+create or replace function custom.read_mask(p_organization_id uuid, p_record_id uuid,
                                             p_action text default 'read')
 returns jsonb
 language plpgsql
@@ -143,7 +143,7 @@ comment on function custom.read_mask(uuid, uuid, text) is
 -- ════════════════════════════════════════════════════════════════════════════════════════
 -- THE ONE ANSWER FOR "MAY I SEE THIS KEY". Kept beside the fact so no door re-derives it.
 -- ════════════════════════════════════════════════════════════════════════════════════════
-create function custom.mask_says_withheld(p_mask jsonb, p_key text)
+create or replace function custom.mask_says_withheld(p_mask jsonb, p_key text)
 returns boolean
 language sql
 immutable
@@ -156,7 +156,7 @@ revoke all on function custom.mask_says_withheld(jsonb, text) from public;
 revoke all on function custom.mask_says_withheld(jsonb, text) from authenticated, anon;
 
 /** The withheld stand-in a door puts where a value used to be: named, with the reason. */
-create function custom.withheld_marker(p_mask jsonb, p_key text)
+create or replace function custom.withheld_marker(p_mask jsonb, p_key text)
 returns jsonb
 language sql
 immutable
@@ -170,7 +170,7 @@ revoke all on function custom.withheld_marker(jsonb, text) from public;
 revoke all on function custom.withheld_marker(jsonb, text) from authenticated, anon;
 
 /** The one sentence a door writes into a text column where a value used to be. */
-create function custom.withheld_sentence(p_mask jsonb, p_key text)
+create or replace function custom.withheld_sentence(p_mask jsonb, p_key text)
 returns text
 language sql
 immutable
@@ -733,7 +733,7 @@ $fn$;
 -- a client door in schema `custom` that reaches a raw value source and never reaches the
 -- mask. `--` comments are stripped, so a sentence promising the mask is not the mask.
 -- ════════════════════════════════════════════════════════════════════════════════════════
-create function custom.doors_not_masking_fields()
+create or replace function custom.doors_not_masking_fields()
 returns table(function_name text, identity_args text, why text)
 language sql
 stable

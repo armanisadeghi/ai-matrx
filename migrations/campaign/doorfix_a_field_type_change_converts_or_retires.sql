@@ -43,7 +43,7 @@ set statement_timeout = '5min';
 -- WHAT A FIELD HOLDS, as one comparable string. Two Field documents with the same
 -- signature ask the same thing of a value, so nothing has to be converted.
 -- ─────────────────────────────────────────────────────────────────────────────
-create function custom.field_behaviour(p_field_data jsonb)
+create or replace function custom.field_behaviour(p_field_data jsonb)
 returns text
 language sql
 immutable
@@ -64,7 +64,7 @@ comment on function custom.field_behaviour(jsonb) is
 -- THE CONVERSION TABLE. One place, narrow on purpose. NULL means "this value does
 -- not become that", which is an answer and not a failure.
 -- ─────────────────────────────────────────────────────────────────────────────
-create function custom.field_value_convert(p_to jsonb, p_value jsonb)
+create or replace function custom.field_value_convert(p_to jsonb, p_value jsonb)
 returns jsonb
 language plpgsql
 immutable
@@ -153,7 +153,7 @@ comment on function custom.field_value_convert(jsonb, jsonb) is
 -- THE TRIGGER. Whichever way in changed the Field, the records follow in the same
 -- transaction.
 -- ─────────────────────────────────────────────────────────────────────────────
-create function custom._field_type_converts_values()
+create or replace function custom._field_type_converts_values()
 returns trigger
 language plpgsql
 set search_path to 'pg_catalog'

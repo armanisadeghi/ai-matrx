@@ -147,7 +147,7 @@ on conflict (schema_name, function_name, identity_argtypes) do update
 -- THE TWO NEW READERS
 -- ════════════════════════════════════════════════════════════════════════════════════════
 
-create function platform.relation_withheld_label()
+create or replace function platform.relation_withheld_label()
 returns text
 language sql
 immutable
@@ -159,7 +159,7 @@ as $function$
   select 'A record you have not been given access to'::text;
 $function$;
 
-create function platform.relation_edge_has_a_live_field(p_organization_id uuid, p_field_id uuid)
+create or replace function platform.relation_edge_has_a_live_field(p_organization_id uuid, p_field_id uuid)
 returns boolean
 language sql
 stable
@@ -179,7 +179,7 @@ as $function$
        and f.data ->> 'type' = 'relation');
 $function$;
 
-create function platform.relation_edges_without_a_live_field()
+create or replace function platform.relation_edges_without_a_live_field()
 returns table(organization_id uuid, association_id uuid, role text, field_id uuid, why text)
 language sql
 stable

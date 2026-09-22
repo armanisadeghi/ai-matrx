@@ -33,7 +33,7 @@ set lock_timeout = '5s';
 set statement_timeout = '600s';
 
 -- ── DOOR-6 ────────────────────────────────────────────────────────────────────
-create function custom.query_by_coordinates(p_organization_id uuid,
+create or replace function custom.query_by_coordinates(p_organization_id uuid,
                                                        p_table_id uuid default null,
                                                        p_coordinates jsonb default '[]'::jsonb,
                                                        p_limit integer default 50,
@@ -109,7 +109,7 @@ comment on function custom.query_by_coordinates(uuid, uuid, jsonb, integer, inte
   'W4-QUERY / DOOR-6: query by any combination of relation coordinates and any subset of them. An absent key is an absent constraint. Visibility is joined (custom.query_visible_ids), never applied afterwards.';
 
 -- ── DOOR-9 ────────────────────────────────────────────────────────────────────
-create function custom.query_table_homes(p_organization_id uuid, p_table_id uuid)
+create or replace function custom.query_table_homes(p_organization_id uuid, p_table_id uuid)
 returns setof uuid
 language sql
 stable
@@ -128,7 +128,7 @@ $fn$;
 comment on function custom.query_table_homes(uuid, uuid) is
   'W4-QUERY / DOOR-9: every Home of one Table, from both mechanisms that declare one, deduplicated.';
 
-create function custom.query_across_homes(p_organization_id uuid,
+create or replace function custom.query_across_homes(p_organization_id uuid,
                                                      p_table_id uuid,
                                                      p_limit integer default 50,
                                                      p_offset integer default 0,

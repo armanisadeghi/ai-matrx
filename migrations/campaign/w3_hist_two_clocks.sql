@@ -71,7 +71,7 @@ comment on function custom.value_envelope_keys() is
 -- ─────────────────────────────────────────────────────────────────────────────
 -- THE WORLD CLOCK'S OWN GUARD. New body, new trigger: nothing else is replaced.
 -- ─────────────────────────────────────────────────────────────────────────────
-create function custom._dated_values_guard()
+create or replace function custom._dated_values_guard()
 returns trigger
 language plpgsql
 set search_path to 'pg_catalog'
@@ -205,7 +205,7 @@ create trigger custom_record_dated_values_guard
 -- ─────────────────────────────────────────────────────────────────────────────
 -- READING ON EITHER CLOCK. One body; the two clocks are two arguments.
 -- ─────────────────────────────────────────────────────────────────────────────
-create function history.value_in_document(p_data jsonb, p_key text, p_world_on date)
+create or replace function history.value_in_document(p_data jsonb, p_key text, p_world_on date)
 returns jsonb
 language plpgsql
 immutable
@@ -249,7 +249,7 @@ $fn$;
 comment on function history.value_in_document(jsonb, text, date) is
   'HIS-5: the WORLD clock, applied to one stored document — the value that was true on a date, from the periods the `dated` modifier carries. A date no period covers answers nothing, which is how a contract valid from 2027 stays absent from every earlier as-of read.';
 
-create function history.value_as_of(p_organization_id uuid,
+create or replace function history.value_as_of(p_organization_id uuid,
                                                p_record_id uuid,
                                                p_key text,
                                                p_world_on date default null,
@@ -294,7 +294,7 @@ comment on function history.value_as_of(uuid, uuid, text, date, timestamptz) is
 -- ─────────────────────────────────────────────────────────────────────────────
 -- DYN-19 — a merge field declares live, as-of or snapshot, and as-of reads either clock.
 -- ─────────────────────────────────────────────────────────────────────────────
-create function custom._merge_field_temporal_guard()
+create or replace function custom._merge_field_temporal_guard()
 returns trigger
 language plpgsql
 set search_path to 'pg_catalog'
@@ -378,7 +378,7 @@ create trigger custom_record_merge_field_temporal_guard
   before insert or update on custom.record
   for each row execute function custom._merge_field_temporal_guard();
 
-create function history.merge_field_resolve(p_organization_id uuid,
+create or replace function history.merge_field_resolve(p_organization_id uuid,
                                                        p_merge_field_id uuid,
                                                        p_record_id uuid,
                                                        p_key text)

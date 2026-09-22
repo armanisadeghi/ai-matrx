@@ -32,7 +32,7 @@ set local idle_in_transaction_session_timeout = '600s';
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- The arms ONE person may hold on ONE thing, derived from the sources.
 -- ─────────────────────────────────────────────────────────────────────────────────────────
-create function iam.access_arms_from_sources(
+create or replace function iam.access_arms_from_sources(
   p_user_id         uuid,
   p_organization_id uuid,
   p_type            text,
@@ -134,7 +134,7 @@ comment on function iam.access_arms_from_sources(uuid, uuid, text, uuid, uuid) i
 -- And the level the RULE justifies on a record: its own arms, plus whatever carries it, at
 -- no more than the carrying link conveys.
 -- ─────────────────────────────────────────────────────────────────────────────────────────
-create function iam.member_level_justified(
+create or replace function iam.member_level_justified(
   p_user_id         uuid,
   p_organization_id uuid,
   p_record_id       uuid
@@ -183,7 +183,7 @@ comment on function iam.member_level_justified(uuid, uuid, uuid) is
 -- THE CENSUS. Every organization on this database, every plain member, every record they
 -- did not create.
 -- ─────────────────────────────────────────────────────────────────────────────────────────
-create function iam.member_level_overreach()
+create or replace function iam.member_level_overreach()
 returns table(
   organization_id   uuid,
   organization_name text,

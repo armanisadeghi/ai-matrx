@@ -40,7 +40,7 @@
 -- client that could name an arbitrary `p_user_id` would be reading another person's
 -- permissions. The question a SCREEN asks is not that one — it is "what may *I* do with this",
 -- and that question is about the caller, so this door takes no principal at all.
-create function custom.my_level(p_organization_id uuid, p_id uuid, p_type text default 'record')
+create or replace function custom.my_level(p_organization_id uuid, p_id uuid, p_type text default 'record')
 returns public.permission_level
 language plpgsql
 stable
@@ -66,7 +66,7 @@ $function$;
 -- `custom.record_state_as_of` stays server-only for the reason its row gives: it returns a
 -- record's whole stored row with no access decision of its own. This is the decision, in front
 -- of it — the wall, then the row at viewer — so T6's second clock is answerable from a seat.
-create function custom.record_as_of(p_organization_id uuid, p_record_id uuid, p_at timestamp with time zone)
+create or replace function custom.record_as_of(p_organization_id uuid, p_record_id uuid, p_at timestamp with time zone)
 returns table(state jsonb, replayed boolean)
 language plpgsql
 stable
@@ -86,7 +86,7 @@ $function$;
 -- about the caller and, asked to apply, it detaches set_null edges for real. This door decides,
 -- and it NEVER applies — a screen asks what would happen, it does not make it happen. That is
 -- the T7 preview the sixth pass could not reach.
-create function custom.delete_preview(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.delete_preview(p_organization_id uuid, p_record_id uuid)
 returns jsonb
 language plpgsql
 security definer

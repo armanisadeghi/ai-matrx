@@ -85,7 +85,7 @@ set lock_timeout = '5s';
 set statement_timeout = '600s';
 
 -- ── the judgement, asked before anything is written ──────────────────────────────────────
-create function custom.checklist_refusal(p_spec jsonb)
+create or replace function custom.checklist_refusal(p_spec jsonb)
 returns text
 language plpgsql
 immutable
@@ -232,7 +232,7 @@ end
 $$;
 
 -- ── the one Table every step of every checklist is a row of ──────────────────────────────
-create function custom.checklist_steps_table(p_organization_id uuid)
+create or replace function custom.checklist_steps_table(p_organization_id uuid)
 returns uuid
 language plpgsql
 security definer
@@ -304,7 +304,7 @@ end
 $$;
 
 -- ── is this state the end of the line ────────────────────────────────────────────────────
-create function custom._checklist_finished(p_organization_id uuid, p_table_id uuid, p_status text)
+create or replace function custom._checklist_finished(p_organization_id uuid, p_table_id uuid, p_status text)
 returns boolean
 language sql
 stable
@@ -320,7 +320,7 @@ $$;
 -- ── why this step cannot be finished right now, in plain words ───────────────────────────
 -- Takes the document EXPLICITLY so the BEFORE trigger can ask about the row as it is being
 -- written, and the client door can ask about the row as it stands. One rule, two callers.
-create function custom._checklist_refusal_for(p_organization_id uuid, p_step_id uuid, p_data jsonb)
+create or replace function custom._checklist_refusal_for(p_organization_id uuid, p_step_id uuid, p_data jsonb)
 returns text
 language plpgsql
 stable
@@ -404,7 +404,7 @@ begin
 end
 $$;
 
-create function custom.checklist_step_refusal(p_organization_id uuid, p_step_id uuid)
+create or replace function custom.checklist_step_refusal(p_organization_id uuid, p_step_id uuid)
 returns text
 language plpgsql
 stable
@@ -431,7 +431,7 @@ end
 $$;
 
 -- ── the door that stores a checklist, and the one that changes it ────────────────────────
-create function custom.checklist_declare(p_organization_id uuid, p_spec jsonb,
+create or replace function custom.checklist_declare(p_organization_id uuid, p_spec jsonb,
                                          p_template_id uuid default null)
 returns jsonb
 language plpgsql
@@ -531,7 +531,7 @@ begin
 end
 $$;
 
-create function custom.checklist_templates(p_organization_id uuid,
+create or replace function custom.checklist_templates(p_organization_id uuid,
                                            p_about_table_id uuid default null,
                                            p_limit integer default 100)
 returns table (template_id uuid, name text, about_table_id uuid, about_table text,
@@ -582,7 +582,7 @@ begin
 end
 $$;
 
-create function custom.checklist_template_shape(p_organization_id uuid, p_template_id uuid)
+create or replace function custom.checklist_template_shape(p_organization_id uuid, p_template_id uuid)
 returns jsonb
 language plpgsql
 stable
@@ -620,7 +620,7 @@ $$;
 -- (`custom.checklist_start`) asks the ladder and then calls this; the trigger calls it
 -- directly, because a run that the ORGANIZATION'S OWN RULE starts is not the acting person's
 -- act to be refused for — they are being given work, not taking it.
-create function custom._checklist_instantiate(p_organization_id uuid, p_template_id uuid,
+create or replace function custom._checklist_instantiate(p_organization_id uuid, p_template_id uuid,
                                               p_about_record_id uuid, p_roles jsonb,
                                               p_starting_at timestamptz, p_origin text)
 returns jsonb
@@ -807,7 +807,7 @@ begin
 end
 $$;
 
-create function custom.checklist_start(p_organization_id uuid, p_template_id uuid,
+create or replace function custom.checklist_start(p_organization_id uuid, p_template_id uuid,
                                        p_about_record_id uuid default null,
                                        p_roles jsonb default '{}'::jsonb,
                                        p_starting_at timestamptz default null)
@@ -827,7 +827,7 @@ end
 $$;
 
 -- ── what a run looks like, step by step ──────────────────────────────────────────────────
-create function custom.checklist_run(p_organization_id uuid, p_run_id uuid)
+create or replace function custom.checklist_run(p_organization_id uuid, p_run_id uuid)
 returns table (step_id uuid, step_order integer, ref text, title text, role text,
                assignee_name text, assignee_user_id uuid,
                due_on timestamptz, due_state text, status text, finished boolean,
@@ -900,7 +900,7 @@ begin
 end
 $$;
 
-create function custom.checklist_runs(p_organization_id uuid,
+create or replace function custom.checklist_runs(p_organization_id uuid,
                                       p_about_table_id uuid default null,
                                       p_about_record_id uuid default null,
                                       p_include_closed boolean default true,
@@ -972,7 +972,7 @@ end
 $$;
 
 -- ── finishing a step, with whatever it asked for ─────────────────────────────────────────
-create function custom.checklist_step_complete(p_organization_id uuid, p_step_id uuid,
+create or replace function custom.checklist_step_complete(p_organization_id uuid, p_step_id uuid,
                                                p_evidence jsonb default '{}'::jsonb)
 returns jsonb
 language plpgsql
@@ -1067,7 +1067,7 @@ $$;
 -- DONE end of the line is what this guard asks about. It recognises the cancel state by its
 -- name, which is a record this organization owns: if somebody renames it, this guard starts
 -- asking about that move too, which is the safe direction to fail in.
-create function custom._checklist_step_guard()
+create or replace function custom._checklist_step_guard()
 returns trigger
 language plpgsql
 set search_path to 'pg_catalog'
@@ -1116,7 +1116,7 @@ create index checklist_template_trigger_idx on custom.record
   (organization_id, ((data #>> '{trigger,table_id}')))
   where data_class = 'checklist_template' and deleted_at is null;
 
-create function custom._checklist_watch()
+create or replace function custom._checklist_watch()
 returns trigger
 language plpgsql
 security definer

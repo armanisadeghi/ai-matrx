@@ -106,7 +106,7 @@
 -- `custom/entity_custom_fields_guard` resolves true, which it does nowhere.
 --
 -- IDEMPOTENCE, STATED HONESTLY. §6b.2's allow-list admits `CREATE VIEW`, `CREATE TRIGGER`
--- and `CREATE FUNCTION` and refuses `CREATE OR REPLACE` of a view or a trigger, and
+-- and `create or replace function` and refuses `CREATE OR REPLACE` of a view or a trigger, and
 -- PostgreSQL has no `IF NOT EXISTS` for any of the three. So a second consecutive apply of
 -- these bytes is refused BY THE DATABASE (42P07 / 42710 / 42723) and changes nothing,
 -- exactly as `W1-STORE`'s, `W1-PROV`'s and `W1-TABLE`'s files do. Rule 27's loop is up →
@@ -122,7 +122,7 @@ set statement_timeout = '300s';
 -- 1. The two kernel ids, in code
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom.field_kernel_id() returns uuid
+create or replace function custom.field_kernel_id() returns uuid
   language sql immutable parallel safe
   set search_path to 'pg_catalog'
 as $fn_field_kernel_id$
@@ -132,7 +132,7 @@ $fn_field_kernel_id$;
 comment on function custom.field_kernel_id() is
   'REC-25 / REC-27 / FLD-8: the id of the kernel `Field` record in custom.record, written by W1-STORE''s w1_store_kernel_tables.sql and read back live before this file was written. A record whose table_id is this id IS a field definition.';
 
-create function custom.merge_field_kernel_id() returns uuid
+create or replace function custom.merge_field_kernel_id() returns uuid
   language sql immutable parallel safe
   set search_path to 'pg_catalog'
 as $fn_mf_kernel_id$
@@ -162,7 +162,7 @@ on conflict (organization_id, id) do nothing;
 -- 3. FLD-3's seam — the ONE place an attached constraint Rule is read
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom.field_rules(p_field_data jsonb)
+create or replace function custom.field_rules(p_field_data jsonb)
   returns table (kind text, spec jsonb)
   language sql immutable parallel safe
   set search_path to 'pg_catalog'
@@ -178,7 +178,7 @@ comment on function custom.field_rules(jsonb) is
 -- 4. FLD-10 — which fields apply, and the type field that decides it
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom.table_type_field(p_organization_id uuid, p_table_id uuid)
+create or replace function custom.table_type_field(p_organization_id uuid, p_table_id uuid)
   returns text
   language sql stable
   set search_path to 'pg_catalog'
@@ -194,7 +194,7 @@ $fn_type_field$;
 comment on function custom.table_type_field(uuid, uuid) is
   'FLD-10 / T8: the name of the field whose VALUE selects which Fields and Rules apply to a record of this Table. A Table with no type_field has one shape and every field applies.';
 
-create function custom.applicable_fields(p_organization_id uuid, p_table_id uuid,
+create or replace function custom.applicable_fields(p_organization_id uuid, p_table_id uuid,
                                          p_record_type text default null)
   returns setof custom.record
   language sql stable
@@ -214,7 +214,7 @@ $fn_applicable$;
 comment on function custom.applicable_fields(uuid, uuid, text) is
   'FLD-10: the one body that answers "which Fields apply to this record". A Field with an empty applies_to_types applies to every record of its Table; otherwise the record''s own type value, read out of the Table''s type_field, selects it. T8''s Circle shows Radius and its Rectangle shows Width and Height because of THIS query and nothing else.';
 
-create function custom.field_options(p_organization_id uuid, p_field_id uuid)
+create or replace function custom.field_options(p_organization_id uuid, p_field_id uuid)
   returns setof custom.record
   language sql stable
   set search_path to 'pg_catalog'
@@ -239,7 +239,7 @@ comment on function custom.field_options(uuid, uuid) is
 --    what a field DEFINITION must declare
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom._field_shape_guard() returns trigger
+create or replace function custom._field_shape_guard() returns trigger
   language plpgsql
   set search_path to 'pg_catalog'
 as $fn_fguard$
@@ -497,7 +497,7 @@ create trigger custom_record_field_shape_guard
 -- 6. DYN-2 — three axes, never collapsed
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom._merge_field_shape_guard() returns trigger
+create or replace function custom._merge_field_shape_guard() returns trigger
   language plpgsql
   set search_path to 'pg_catalog'
 as $fn_mfguard$
@@ -581,7 +581,7 @@ create trigger custom_record_merge_field_shape_guard
 -- One body validates a jsonb document against a set of field definitions, so the store half
 -- and the `custom_fields` half (§8) are the SAME validator rather than two that drift.
 
-create function custom.validate_values(p_organization_id uuid, p_fields custom.record[],
+create or replace function custom.validate_values(p_organization_id uuid, p_fields custom.record[],
                                        p_values jsonb, p_record_type text default null)
   returns void
   language plpgsql stable
@@ -772,7 +772,7 @@ $fn_validate$;
 comment on function custom.validate_values(uuid, custom.record[], jsonb, text) is
   'REC-51: ONE validator for type, required, relation rules and option membership. It is shared by the store half (custom_record_field_validation) and the custom_fields half (custom.validate_custom_fields), so the two can never drift apart, and every refusal names the FIELD, in the words a person reading the screen would use.';
 
-create function custom._record_field_validation() returns trigger
+create or replace function custom._record_field_validation() returns trigger
   language plpgsql
   set search_path to 'pg_catalog'
 as $fn_rfv$
@@ -895,7 +895,7 @@ create view custom.field with (security_invoker = true) as
 comment on view custom.field is
   'FLD-8 and FLD-13: ONE definitions table for all custom fields, on standard and custom tables alike, organization-scoped - so two organizations add different fields to the same standard table and neither can see the other''s. A PROJECTION over custom.record, never a second relation: a Field IS a Record (REC-25), so its id is its record id and its base contract is custom.record''s own certified columns. entity_definition_id names a custom Table record and table_token a standard table''s registry token; exactly one is ever set. security_invoker: every caller reads it under their own row-level security.';
 
-create function custom._field_definition_write() returns trigger
+create or replace function custom._field_definition_write() returns trigger
   language plpgsql
   set search_path to 'pg_catalog'
 as $fn_fdw$

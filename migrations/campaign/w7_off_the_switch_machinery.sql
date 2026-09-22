@@ -280,7 +280,7 @@ alter table campaign_watch.switch_outbox     enable row level security;
 -- consumer_gate reports the deepest depth it actually saw so a reader can tell
 -- whether the domain was exercised at all.
 
-create function campaign_watch.consumer_access_diff(
+create or replace function campaign_watch.consumer_access_diff(
   p_consumer        text,
   p_organization_id uuid
 )
@@ -365,7 +365,7 @@ comment on function campaign_watch.consumer_access_diff(text, uuid) is
   'named separately (CUT-N-8). Stored = platform.reachability; derived = '
   'platform.derive_reachability over platform.containment_edges.';
 
-create function campaign_watch.consumer_gate(
+create or replace function campaign_watch.consumer_gate(
   p_consumer        text,
   p_organization_id uuid,
   p_ran_by          uuid default null
@@ -506,7 +506,7 @@ comment on function campaign_watch.consumer_gate(text, uuid, uuid) is
 
 -- ───────────────────────────────── 3. THE SWITCH WINDOW AND ITS OUTBOX (CUT-N-2)
 
-create function campaign_watch.switch_window_open(
+create or replace function campaign_watch.switch_window_open(
   p_consumer        text,
   p_organization_id uuid,
   p_opened_by       uuid default null,
@@ -539,7 +539,7 @@ begin
 end;
 $fn$;
 
-create function campaign_watch.switch_window_close(
+create or replace function campaign_watch.switch_window_close(
   p_consumer        text,
   p_organization_id uuid,
   p_closed_by       uuid default null
@@ -558,7 +558,7 @@ as $fn$
   returning *;
 $fn$;
 
-create function campaign_watch.switch_outbox_capture(
+create or replace function campaign_watch.switch_outbox_capture(
   p_consumer        text,
   p_organization_id uuid,
   p_source_table    text,
@@ -609,7 +609,7 @@ comment on function campaign_watch.switch_outbox_capture(text, uuid, text, uuid,
   'CUT-N-2: called in the SAME transaction as the record write. A no-op when no switch '
   'window is open, so a consumer may call it unconditionally on every write for ever.';
 
-create function campaign_watch.switch_outbox_replay(
+create or replace function campaign_watch.switch_outbox_replay(
   p_consumer        text,
   p_organization_id uuid
 )
@@ -666,7 +666,7 @@ comment on function campaign_watch.switch_outbox_replay(text, uuid) is
 
 -- ───────────────────────────────────────── 4. THE REACHABILITY REBUILD (CUT-N-6)
 
-create function campaign_watch.reachability_rebuild(
+create or replace function campaign_watch.reachability_rebuild(
   p_lock_timeout_ms integer default 3000,
   p_max_attempts    integer default 5,
   p_dry_run         boolean default true
@@ -782,7 +782,7 @@ comment on function campaign_watch.reachability_rebuild(integer, integer, boolea
 
 -- ─────────────────────────────────────────────── THE SHARE CUTOVER (CUT-N-5)
 
-create function campaign_watch.share_cutover_plan(
+create or replace function campaign_watch.share_cutover_plan(
   p_limit integer default 1000
 )
 returns table (
@@ -860,7 +860,7 @@ comment on function campaign_watch.share_cutover_plan(integer) is
 -- campaign_watch is not exposed to PostgREST and must not be. Each one asks
 -- is_platform_admin() as its first act and refuses by name otherwise.
 
-create function platform.unified_data_ramp_state(
+create or replace function platform.unified_data_ramp_state(
   p_organization_id uuid
 )
 returns table (
@@ -910,7 +910,7 @@ begin
 end;
 $fn$;
 
-create function platform.unified_data_ramp_gate(
+create or replace function platform.unified_data_ramp_gate(
   p_consumer        text,
   p_organization_id uuid
 )
@@ -931,7 +931,7 @@ begin
 end;
 $fn$;
 
-create function platform.unified_data_ramp_set(
+create or replace function platform.unified_data_ramp_set(
   p_consumer        text,
   p_organization_id uuid,
   p_on              boolean,

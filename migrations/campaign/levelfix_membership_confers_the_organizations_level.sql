@@ -93,7 +93,7 @@ set local idle_in_transaction_session_timeout = '120s';
 -- says union only. This is the narrower question VIS-19 needs — "did somebody decide about
 -- THIS PERSON on THIS THING" — and a public grant is not that decision.
 -- ─────────────────────────────────────────────────────────────────────────────────────────
-create function iam.grant_addressed_level(
+create or replace function iam.grant_addressed_level(
   p_user_id       uuid,
   p_resource_type text,
   p_resource_id   uuid
@@ -127,7 +127,7 @@ comment on function iam.grant_addressed_level(uuid, text, uuid) is
 -- 2. WHAT MEMBERSHIP ALONE CONFERS, HERE. The ONE function the access kernel, the level
 --    resolver and the share dialog all answer to.
 -- ─────────────────────────────────────────────────────────────────────────────────────────
-create function iam.member_lane_confers(
+create or replace function iam.member_lane_confers(
   p_user_id         uuid,
   p_organization_id uuid,
   p_type            text default 'record',

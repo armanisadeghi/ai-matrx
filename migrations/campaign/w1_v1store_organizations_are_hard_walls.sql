@@ -78,7 +78,7 @@
 -- `--reapply`, with the catalogue read back identical at both ends. THE INVERSE:
 -- `migrations/inverse/w1_v1store_organizations_are_hard_walls_down.sql`.
 
-create function custom.organization_references(
+create or replace function custom.organization_references(
   p_kind            text,
   p_organization_id uuid,
   p_row             jsonb)
@@ -145,7 +145,7 @@ $$;
 comment on function custom.organization_references(text, uuid, jsonb) is
   'REC-29: the census of every reference the custom store accepts that must resolve inside the organization. One row per site. A new site is a branch added here, and it is walled from that moment.';
 
-create function custom.assert_organization_wall(
+create or replace function custom.assert_organization_wall(
   p_kind            text,
   p_organization_id uuid,
   p_row             jsonb)
@@ -203,7 +203,7 @@ $$;
 comment on function custom.assert_organization_wall(text, uuid, jsonb) is
   'REC-29: refuses any reference in the census that resolves in ANOTHER organization. An id that resolves nowhere is referential integrity, not a wall breach, and is left to its own guards.';
 
-create function custom._organization_wall_guard()
+create or replace function custom._organization_wall_guard()
 returns trigger
 language plpgsql
 set search_path to 'pg_catalog'

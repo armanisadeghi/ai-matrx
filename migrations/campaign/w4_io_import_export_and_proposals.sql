@@ -42,7 +42,7 @@ set lock_timeout = '5s';
 set statement_timeout = '600s';
 
 -- ── RFC 4180, in one function, because "split on comma" is wrong ──────────────
-create function custom.io_csv_parse(p_text text, p_delimiter text default ',')
+create or replace function custom.io_csv_parse(p_text text, p_delimiter text default ',')
 returns table(row_number integer, cells text[])
 language plpgsql
 immutable
@@ -102,7 +102,7 @@ $fn$;
 comment on function custom.io_csv_parse(text, text) is
   'DOOR-11: RFC 4180 CSV parse — quoted fields, embedded delimiters, embedded newlines, "" as a literal quote, CRLF or LF. "split on comma" is wrong on the first real file.';
 
-create function custom.io_csv_escape(p_value text, p_delimiter text default ',')
+create or replace function custom.io_csv_escape(p_value text, p_delimiter text default ',')
 returns text
 language sql
 immutable
@@ -121,7 +121,7 @@ comment on function custom.io_csv_escape(text, text) is
   'DOOR-11: the render half of RFC 4180 — a value carrying a quote, a delimiter or a newline is quoted and its quotes doubled, so what export writes is what import reads back.';
 
 -- ── the import run ───────────────────────────────────────────────────────────
-create function custom.io_import_open(p_organization_id uuid,
+create or replace function custom.io_import_open(p_organization_id uuid,
                                       p_table_id uuid,
                                       p_format text default 'csv',
                                       p_source_name text default null,
@@ -164,7 +164,7 @@ values ('custom', 'io_import_open',
 on conflict do nothing;
 
 -- ── the rows, written through the ONE write door ─────────────────────────────
-create function custom.io_import_rows(p_organization_id uuid,
+create or replace function custom.io_import_rows(p_organization_id uuid,
                                       p_import_id uuid,
                                       p_rows jsonb,
                                       p_mapping jsonb default '{}'::jsonb)
@@ -270,7 +270,7 @@ values ('custom', 'io_import_rows',
 on conflict do nothing;
 
 -- ── the type a column looks like, from what is actually in it ────────────────
-create function custom.io_infer_type(p_samples jsonb)
+create or replace function custom.io_infer_type(p_samples jsonb)
 returns text
 language sql
 immutable
@@ -296,7 +296,7 @@ comment on function custom.io_infer_type(jsonb) is
   'DOOR-14: the type a proposed column looks like, from its own values. Conservative on purpose — it answers text when unsure, because a wrong "number" costs a data repair and a wrong "text" costs one dropdown.';
 
 -- ── DOOR-14: accepting a proposal MINTS a Field through the same door ────────
-create function custom.io_proposal_accept(p_organization_id uuid,
+create or replace function custom.io_proposal_accept(p_organization_id uuid,
                                           p_import_id uuid,
                                           p_column text,
                                           p_type text default null,
@@ -386,7 +386,7 @@ values ('custom', 'io_proposal_accept',
         false, false)
 on conflict do nothing;
 
-create function custom.io_proposal_reject(p_organization_id uuid, p_import_id uuid, p_column text)
+create or replace function custom.io_proposal_reject(p_organization_id uuid, p_import_id uuid, p_column text)
 returns boolean
 language plpgsql
 security definer
@@ -420,7 +420,7 @@ values ('custom', 'io_proposal_reject',
 on conflict do nothing;
 
 -- ── export, through the READ door ────────────────────────────────────────────
-create function custom.io_export(p_organization_id uuid,
+create or replace function custom.io_export(p_organization_id uuid,
                                  p_table_id uuid,
                                  p_columns text[] default null,
                                  p_limit integer default 10000,
@@ -475,7 +475,7 @@ values ('custom', 'io_export',
         false, false)
 on conflict do nothing;
 
-create function custom.io_export_csv(p_organization_id uuid,
+create or replace function custom.io_export_csv(p_organization_id uuid,
                                      p_table_id uuid,
                                      p_columns text[] default null,
                                      p_limit integer default 10000,

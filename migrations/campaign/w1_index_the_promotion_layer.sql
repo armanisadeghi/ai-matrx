@@ -112,7 +112,7 @@ set statement_timeout = '600s';
 -- 1. THE PUBLISHED CEILINGS (REC-N-5) — published, never discovered in production
 -- ═══════════════════════════════════════════════════════════════════════════════════════
 
-create function custom.promoted_field_cap()
+create or replace function custom.promoted_field_cap()
   returns integer language sql immutable parallel safe set search_path to 'pg_catalog' as $$
   select 8;
 $$;
@@ -120,7 +120,7 @@ $$;
 comment on function custom.promoted_field_cap() is
   'REC-N-5: eight promoted Fields per Table. Published, and refused at the write door.';
 
-create function custom.table_record_ceiling()
+create or replace function custom.table_record_ceiling()
   returns integer language sql immutable parallel safe set search_path to 'pg_catalog' as $$
   select 150000;
 $$;
@@ -131,7 +131,7 @@ comment on function custom.table_record_ceiling() is
 
 -- The line between ROUTE A and ROUTE B of ruling (e). A Table under this many records may be
 -- promoted inside one transaction; above it the generator's statements are the only route.
-create function custom.promotion_inline_ceiling()
+create or replace function custom.promotion_inline_ceiling()
   returns integer language sql immutable parallel safe set search_path to 'pg_catalog' as $$
   select 10000;
 $$;
@@ -145,7 +145,7 @@ comment on function custom.promotion_inline_ceiling() is
 -- 2. REC-4 — light and heavy, one store
 -- ═══════════════════════════════════════════════════════════════════════════════════════
 
-create function custom.storage_modes()
+create or replace function custom.storage_modes()
   returns text[] language sql immutable parallel safe set search_path to 'pg_catalog' as $$
   select array['light', 'heavy']::text[];
 $$;
@@ -154,7 +154,7 @@ comment on function custom.storage_modes() is
   'REC-4: light is whole-document storage with Rules on read; heavy is indexed storage with '
   'Rules on write. The choice is per Table and keeps ONE store.';
 
-create function custom.table_storage(p_organization_id uuid, p_table_id uuid)
+create or replace function custom.table_storage(p_organization_id uuid, p_table_id uuid)
   returns text language sql stable set search_path to 'pg_catalog' as $$
   -- A Table that has never said is `light`: whole-document storage is what the store does
   -- with no further declaration, so the default is the behaviour rather than a setting.
@@ -178,7 +178,7 @@ comment on function custom.table_storage(uuid, uuid) is
 -- `custom.field.type` is the BEHAVIOUR (list · range · text · relation · formula) and
 -- `custom.parity_type(data)` derives the parity type; neither is the platform function's
 -- vocabulary, and the map between them is written ONCE, here.
-create function custom.promoted_index_arm(p_field_data jsonb)
+create or replace function custom.promoted_index_arm(p_field_data jsonb)
   returns text language sql immutable parallel safe set search_path to 'pg_catalog' as $$
   select case custom.parity_type(p_field_data)
     when 'multi_select' then 'multi_select'   -- many values in one key: no scalar to index
@@ -217,7 +217,7 @@ comment on function custom.promoted_index_arm(jsonb) is
   'answer NULL — a Field mapped to either gets no index, by name and not by silence.';
 
 -- Which of the store's three value paths this Field's values live on (ruling (b)).
-create function custom.promoted_value_path(p_field_data jsonb)
+create or replace function custom.promoted_value_path(p_field_data jsonb)
   returns text language sql immutable parallel safe set search_path to 'pg_catalog' as $$
   select case
     when p_field_data ->> 'compute_on' = 'read'  then 'derived'
@@ -232,7 +232,7 @@ comment on function custom.promoted_value_path(jsonb) is
   '_computed -> key -> value (compute_on = write), `derived` is worked out at READ time and '
   'has no stored path at all — so a derived Field is not indexable.';
 
-create function custom.promoted_index_expr(p_field_data jsonb)
+create or replace function custom.promoted_index_expr(p_field_data jsonb)
   returns text language plpgsql immutable parallel safe set search_path to 'pg_catalog' as $$
 declare
   v_key  text := p_field_data ->> 'key';
@@ -301,7 +301,7 @@ comment on function custom.promoted_index_expr(jsonb) is
 
 -- Deterministic, readable, and inside Postgres's 63-byte identifier limit. The field key is
 -- kept in the name because REC-N-12's refusal quotes the index name at a person.
-create function custom.promoted_index_name(p_table_id uuid, p_field_key text, p_unique boolean)
+create or replace function custom.promoted_index_name(p_table_id uuid, p_field_key text, p_unique boolean)
   returns text language sql immutable parallel safe set search_path to 'pg_catalog' as $$
   select case when p_unique then 'cpu_' else 'cpi_' end
          || left(p_field_key, 32) || '_'
@@ -312,7 +312,7 @@ comment on function custom.promoted_index_name(uuid, text, boolean) is
   'REC-N-12: the constraint''s own name is what refuses the loser of a concurrent duplicate '
   'write, so it carries the field key a person recognises and a hash of the Table.';
 
-create function custom.promoted_fields(p_organization_id uuid, p_table_id uuid)
+create or replace function custom.promoted_fields(p_organization_id uuid, p_table_id uuid)
   returns table(field_id uuid, field_key text, parity_type text, is_unique boolean,
                 value_path text, index_arm text, index_expr text, index_name text,
                 indexable boolean, why_not text)
@@ -354,7 +354,7 @@ comment on function custom.promoted_fields(uuid, uuid) is
 -- 5. THE INDEX-DDL GENERATOR AND ITS GUARD (REC-N-1 · REC-N-2 · ruling (e))
 -- ═══════════════════════════════════════════════════════════════════════════════════════
 
-create function custom.promoted_index_ddl(p_organization_id uuid, p_table_id uuid)
+create or replace function custom.promoted_index_ddl(p_organization_id uuid, p_table_id uuid)
   returns table(step integer, purpose text, statement text)
   language plpgsql stable set search_path to 'pg_catalog' as $$
 declare
@@ -440,7 +440,7 @@ comment on function custom.promoted_index_ddl(uuid, uuid) is
 -- 6. PROMOTION (REC-5) — and it moves nothing
 -- ═══════════════════════════════════════════════════════════════════════════════════════
 
-create function custom.promote_field(p_organization_id uuid, p_table_id uuid, p_field_id uuid)
+create or replace function custom.promote_field(p_organization_id uuid, p_table_id uuid, p_field_id uuid)
   returns jsonb language plpgsql set search_path to 'pg_catalog' as $$
 declare
   v_on    boolean;
@@ -531,7 +531,7 @@ comment on function custom.promote_field(uuid, uuid, uuid) is
   'REC-5: promotion is CREATE INDEX and nothing else. `rows_moved` is in the answer and it is '
   'always zero — that is what makes the Migration cheap.';
 
-create function custom.promote_table(p_organization_id uuid, p_table_id uuid)
+create or replace function custom.promote_table(p_organization_id uuid, p_table_id uuid)
   returns jsonb language plpgsql set search_path to 'pg_catalog' as $$
 declare
   v_before bigint;
@@ -569,7 +569,7 @@ comment on function custom.promote_table(uuid, uuid) is
 -- 7. DOOR-N-3 / REC-N-2 — the hot read path, as a prepared statement
 -- ═══════════════════════════════════════════════════════════════════════════════════════
 
-create function custom.promoted_query_sql(p_organization_id uuid, p_table_id uuid, p_field_key text)
+create or replace function custom.promoted_query_sql(p_organization_id uuid, p_table_id uuid, p_field_key text)
   returns text language plpgsql stable set search_path to 'pg_catalog' as $$
 declare v_expr text;
 begin
@@ -595,7 +595,7 @@ comment on function custom.promoted_query_sql(uuid, uuid, text) is
   'PREPARE text so a client issues the same expression the index was built from — one '
   'expression, never two that have to agree.';
 
-create function custom.promoted_read(p_organization_id uuid, p_table_id uuid, p_field_key text, p_value text)
+create or replace function custom.promoted_read(p_organization_id uuid, p_table_id uuid, p_field_key text, p_value text)
   returns setof uuid language plpgsql stable set search_path to 'pg_catalog' as $$
 declare v_expr text;
 begin
@@ -621,7 +621,7 @@ comment on function custom.promoted_read(uuid, uuid, text, text) is
 -- 8. THE PER-TABLE CAP (REC-N-5) — a refusal at the write door, not a lint
 -- ═══════════════════════════════════════════════════════════════════════════════════════
 
-create function custom._promoted_field_cap_guard()
+create or replace function custom._promoted_field_cap_guard()
   returns trigger language plpgsql set search_path to 'pg_catalog' as $$
 declare
   v_table uuid;

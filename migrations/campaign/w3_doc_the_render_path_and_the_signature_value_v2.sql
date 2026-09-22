@@ -95,7 +95,7 @@ set statement_timeout = '600s';
 -- 1. THE HASH. One definition, so the render, the seal and the check cannot disagree.
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.doc_content_hash(p_body text)
+create or replace function custom.doc_content_hash(p_body text)
 returns text language sql immutable parallel safe set search_path = pg_catalog as $$
   select encode(sha256(convert_to(coalesce(p_body, ''), 'UTF8')), 'hex');
 $$;
@@ -108,7 +108,7 @@ comment on function custom.doc_content_hash(text) is
 --    with the unit and format ITS FIELD carries.
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.doc_render_body(
+create or replace function custom.doc_render_body(
   p_organization_id uuid, p_template_id uuid, p_record_id uuid)
 returns text
 language plpgsql stable set search_path = pg_catalog as $$
@@ -184,7 +184,7 @@ comment on function custom.doc_render_body(uuid, uuid, uuid) is
 -- 3. THE RENDER PATH — one record, one document version.
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.doc_render_document(
+create or replace function custom.doc_render_document(
   p_organization_id uuid, p_template_id uuid, p_record_id uuid)
 returns uuid
 language plpgsql
@@ -241,7 +241,7 @@ on conflict do nothing;
 -- 4. WHICH FIELDS CAN HOLD A SIGNATURE — the closed behaviour set, unwidened.
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.doc_signature_field_ok(p_field_data jsonb)
+create or replace function custom.doc_signature_field_ok(p_field_data jsonb)
 returns boolean language sql immutable parallel safe set search_path = pg_catalog as $$
   -- VAL-10 through FLD-1's CLOSED set: behaviour `text` — one of the five, nothing added —
   -- and format `signature`, which is what the value MEANS (FLD-N-1). `custom.parity_type`
@@ -258,7 +258,7 @@ comment on function custom.doc_signature_field_ok(jsonb) is
 -- 5. THE SEAL IS IMMUTABLE. A RETURNS trigger, reading the ONE predicate.
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom._doc_signature_immutable()
+create or replace function custom._doc_signature_immutable()
 returns trigger language plpgsql set search_path = pg_catalog as $$
 declare
   v_row record := coalesce(new, old);   -- `new` is unassigned on DELETE; reading it raises
@@ -292,7 +292,7 @@ create trigger doc_signature_immutable
 -- `content_hash` or `template_version` be edited would break a seal from behind, which is
 -- the one way ② and ③ above could be walked around without touching `custom.doc_signature`
 -- at all.
-create function custom._doc_render_immutable()
+create or replace function custom._doc_render_immutable()
 returns trigger language plpgsql set search_path = pg_catalog as $$
 begin
   -- THE DOOR. The ONE predicate, same as everywhere.
@@ -319,7 +319,7 @@ create trigger doc_render_immutable
 -- 6. SIGNING — the Value on the record AND the seal, in one transaction.
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.doc_sign(
+create or replace function custom.doc_sign(
   p_organization_id uuid,
   p_render_id       uuid,
   p_field_key       text,
@@ -447,7 +447,7 @@ on conflict do nothing;
 --    VISIBLY. Nothing here can change a seal; it only says what the seal now means.
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.doc_signature_intact(p_organization_id uuid, p_signature_id uuid)
+create or replace function custom.doc_signature_intact(p_organization_id uuid, p_signature_id uuid)
 returns jsonb
 language plpgsql stable set search_path = pg_catalog as $$
 declare

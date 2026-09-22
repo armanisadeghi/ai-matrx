@@ -28,7 +28,7 @@
 set lock_timeout = '3s';
 set statement_timeout = '2min';
 
-create function platform.unified_data_store_state(p_organization_id uuid)
+create or replace function platform.unified_data_store_state(p_organization_id uuid)
 returns jsonb
 language plpgsql
 security definer
@@ -64,7 +64,7 @@ values
    false, false)
 on conflict (schema_name, function_name, identity_argtypes) do nothing;
 
-create function platform.unified_data_store_set(p_organization_id uuid, p_on boolean,
+create or replace function platform.unified_data_store_set(p_organization_id uuid, p_on boolean,
                                                 p_acting_user_id uuid default null,
                                                 p_note text default null)
 returns jsonb

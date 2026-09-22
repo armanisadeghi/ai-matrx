@@ -47,7 +47,7 @@
 -- against the real organization. It never raises: a person's write must not fail because the
 -- announcement of it did.
 
-create function custom._realtime_notice(
+create or replace function custom._realtime_notice(
   p_organization_id uuid,
   p_table_id        uuid,
   p_kind            text,
@@ -125,7 +125,7 @@ values
 on conflict do nothing;
 
 -- ── THE EMITTER ─────────────────────────────────────────────────────────────────────────
-create function custom.io_outbox_broadcast_stmt()
+create or replace function custom.io_outbox_broadcast_stmt()
 returns trigger
 language plpgsql
 security definer

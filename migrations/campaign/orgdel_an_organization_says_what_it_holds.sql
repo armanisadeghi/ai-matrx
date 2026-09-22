@@ -64,7 +64,7 @@
 -- migrations/inverse/orgdel_an_organization_says_what_it_holds_down.sql does — and
 -- `scripts/campaign-tests/orgdel_green.sql` goes red on every PART naming them.
 
-create function custom.organization_contents(p_organization_id uuid)
+create or replace function custom.organization_contents(p_organization_id uuid)
 returns jsonb
 language plpgsql
 stable
@@ -173,7 +173,7 @@ begin
 end;
 $function$;
 
-create function custom.organization_clear(
+create or replace function custom.organization_clear(
   p_organization_id uuid,
   p_confirm         text,
   p_and_destroy     boolean default false)

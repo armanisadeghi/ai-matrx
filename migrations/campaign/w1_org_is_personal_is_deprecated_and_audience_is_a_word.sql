@@ -67,7 +67,7 @@ values ('iam.organizations.is_personal',
         'REC-61 / Doctrine R11. The default organization is a PERSON''s preference, not a property of the organization, so the flag cannot answer the question it was being asked. Enforcement (the partial unique index organizations_one_personal_per_creator) was removed by the campaign; the column stays until iam.is_personal_dependents() returns zero rows.')
 on conflict (old_ref) do nothing;
 
-create function iam.is_personal_dependents()
+create or replace function iam.is_personal_dependents()
 returns table(kind text, identity text, detail text)
 language sql
 stable

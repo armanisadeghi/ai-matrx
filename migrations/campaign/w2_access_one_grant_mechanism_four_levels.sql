@@ -44,7 +44,7 @@ set statement_timeout = '600s';
 -- Three organization words that are NOT levels: owner, admin, member.
 -- The lists are READ FROM THE CATALOGUE, never typed out, so they cannot drift from the enum.
 
-create function iam.content_levels()
+create or replace function iam.content_levels()
 returns table (level public.permission_level, ordinal integer, noun text)
 language sql stable
 set search_path to 'pg_catalog'
@@ -67,7 +67,7 @@ $fn$;
 comment on function iam.content_levels() is
   'VIS-17: the ONE ladder of content levels, read from public.permission_level itself.';
 
-create function iam.organization_roles()
+create or replace function iam.organization_roles()
 returns table (role text, rank integer, what_it_means text)
 language sql immutable
 set search_path to 'pg_catalog'
@@ -82,7 +82,7 @@ $fn$;
 comment on function iam.organization_roles() is
   'VIS-17: the three organization words. They are ROLES, never levels, and never compared to one.';
 
-create function iam.top_content_level()
+create or replace function iam.top_content_level()
 returns public.permission_level
 language sql stable
 set search_path to 'pg_catalog'
@@ -93,7 +93,7 @@ comment on function iam.top_content_level() is
 
 -- VIS-N-2: "Admin" never stands alone in an access surface. Every label carries its scope
 -- noun. The database owns the words so a screen cannot invent a second vocabulary.
-create function iam.level_label(p_scope_noun text, p_level public.permission_level)
+create or replace function iam.level_label(p_scope_noun text, p_level public.permission_level)
 returns text
 language plpgsql immutable
 set search_path to 'pg_catalog'
@@ -113,7 +113,7 @@ begin
 end;
 $fn$;
 
-create function iam.role_label(p_role text)
+create or replace function iam.role_label(p_role text)
 returns text
 language plpgsql immutable
 set search_path to 'pg_catalog'
@@ -154,7 +154,7 @@ values
    '{}'::text[], 'any', 'next_load', false, '{}'::jsonb)
 on conflict (feature, key) do nothing;
 
-create function iam.member_default_level(p_organization_id uuid, p_table_id uuid default null)
+create or replace function iam.member_default_level(p_organization_id uuid, p_table_id uuid default null)
 returns public.permission_level
 language plpgsql stable
 set search_path to 'pg_catalog'
@@ -215,7 +215,7 @@ $fn$;
 -- 3. OWNERSHIP, AND THE ONE RESOLUTION  (VIS-19, VIS-23, VIS-25)
 -- ---------------------------------------------------------------------------------------
 
-create function iam.owner_of(p_resource_type text, p_resource_id uuid)
+create or replace function iam.owner_of(p_resource_type text, p_resource_id uuid)
 returns uuid
 language plpgsql stable security definer
 set search_path to ''
@@ -242,7 +242,7 @@ comment on function iam.owner_of(text, uuid) is
 -- The grant arm: the ONE mechanism. A grant to this person, a grant to any organization this
 -- person belongs to (which is what cross-organization sharing IS - VIS-23, no separate
 -- system), and a grant to everyone. Resolved by union, highest wins.
-create function iam.granted_level(p_user_id uuid, p_resource_type text, p_resource_id uuid)
+create or replace function iam.granted_level(p_user_id uuid, p_resource_type text, p_resource_id uuid)
 returns public.permission_level
 language sql stable security definer
 set search_path to ''
@@ -266,7 +266,7 @@ comment on function iam.granted_level(uuid, text, uuid) is
 -- The whole answer, in one place: ownership outranks everything, then the highest of the
 -- per-thing grant and the role default. VIS-19 in one line - roles set a default, grants
 -- override it - and VIS-25 above both.
-create function iam.effective_level(
+create or replace function iam.effective_level(
   p_user_id       uuid,
   p_resource_type text,
   p_resource_id   uuid,
@@ -320,7 +320,7 @@ values
    '{}'::text[], 'any', 'next_load', false, '{}'::jsonb)
 on conflict (feature, key) do nothing;
 
-create function iam.field_sensitivity_level(
+create or replace function iam.field_sensitivity_level(
   p_sensitivity text, p_action text default 'read', p_organization_id uuid default null)
 returns public.permission_level
 language plpgsql stable
@@ -353,7 +353,7 @@ $fn$;
 
 -- The answer for one field, for one caller. `p_level_on_record` is what the caller already
 -- holds on the record (section 3), so this costs no second access walk per field.
-create function iam.may_touch_field(
+create or replace function iam.may_touch_field(
   p_user_id          uuid,
   p_field_id         uuid,
   p_organization_id  uuid,
@@ -398,7 +398,7 @@ comment on function iam.may_touch_field(uuid, uuid, uuid, public.permission_leve
   'VIS-21 / VIS-22 / VIS-26: one grant mechanism, the same four levels, a sensitivity default and a per-principal override. Never a per-column boolean.';
 
 -- The set-based twin, so a read door asks ONCE per table per request rather than per field.
-create function iam.visible_field_ids(
+create or replace function iam.visible_field_ids(
   p_user_id         uuid,
   p_organization_id uuid,
   p_table_id        uuid,
@@ -421,7 +421,7 @@ $fn$;
 -- 5. WHO MANAGES WHOM  (VIS-20)
 -- ---------------------------------------------------------------------------------------
 
-create function iam.membership_change_refusal(
+create or replace function iam.membership_change_refusal(
   p_actor_id        uuid,
   p_organization_id uuid,
   p_target_user_id  uuid,
@@ -471,7 +471,7 @@ comment on function iam.membership_change_refusal(uuid, uuid, uuid, text) is
 
 -- ONE OWNER PER ORGANIZATION. The trigger is inert while the store is switched off, so it
 -- changes nothing live today and is already in place when the switch is thrown.
-create function iam._one_owner_guard()
+create or replace function iam._one_owner_guard()
 returns trigger
 language plpgsql
 set search_path to 'pg_catalog'
@@ -517,7 +517,7 @@ create trigger _iam_one_owner_guard
 -- A grant on a Table record is a per-table grant. This refuses one aimed at anything that is
 -- not a custom Table. Inert while the store is switched off.
 
-create function iam._per_table_grant_guard()
+create or replace function iam._per_table_grant_guard()
 returns trigger
 language plpgsql
 set search_path to 'pg_catalog'
@@ -601,7 +601,7 @@ alter table iam.content_lane enable row level security;
 -- VIS-N-5: the world lane is entered by an explicit act, and by no other statement. A row
 -- that arrives already in the world lane is refused, so it cannot be inherited from a parent
 -- or copied from a template.
-create function iam._world_lane_is_an_act()
+create or replace function iam._world_lane_is_an_act()
 returns trigger
 language plpgsql
 set search_path to 'pg_catalog'
@@ -626,7 +626,7 @@ create trigger _iam_world_lane_is_an_act
   before insert or update on iam.content_lane
   for each row execute function iam._world_lane_is_an_act();
 
-create function iam.publish_to_world(
+create or replace function iam.publish_to_world(
   p_resource_type text, p_resource_id uuid, p_organization_id uuid,
   p_discoverable boolean default false)
 returns iam.content_lane
@@ -667,7 +667,7 @@ begin
 end;
 $fn$;
 
-create function iam.lane_of(p_resource_type text, p_resource_id uuid)
+create or replace function iam.lane_of(p_resource_type text, p_resource_id uuid)
 returns text
 language sql stable security definer
 set search_path to ''
@@ -681,7 +681,7 @@ comment on function iam.lane_of(text, uuid) is
   'VIS-N-5: no row means the closed lane. World is never the answer by default.';
 
 -- VIS-N-4: discoverable returns a TITLE and nothing else. The shape is the guarantee.
-create function iam.discoverable_card(p_resource_type text, p_resource_id uuid)
+create or replace function iam.discoverable_card(p_resource_type text, p_resource_id uuid)
 returns table (resource_type text, resource_id uuid, title text)
 language sql stable security definer
 set search_path to ''
@@ -702,7 +702,7 @@ $fn$;
 -- VIS-27. Repointing a live registry row switches a live feature over to the new store, which
 -- is the one class this campaign stops for. The plan is executable and refuses while the
 -- switch is off, so the switch checklist runs it rather than re-deriving it.
-create function iam.shareable_registry_repoint_plan()
+create or replace function iam.shareable_registry_repoint_plan()
 returns table (resource_type text, from_target text, to_target text, already_done boolean)
 language sql stable
 set search_path to 'pg_catalog'
@@ -727,7 +727,7 @@ comment on function iam.shareable_registry_repoint_plan() is
 -- VIS-29. The role vocabulary reaching the membership objects themselves means retyping live
 -- columns, which is destructive. The census is what lands; it names every row where a content
 -- level is standing in a role column.
-create function iam.role_vocabulary_offenders()
+create or replace function iam.role_vocabulary_offenders()
 returns table (object text, detail text, how_many bigint)
 language sql stable
 set search_path to 'pg_catalog'
@@ -751,7 +751,7 @@ $fn$;
 -- ships whole rows, so the census asks the only question that matters: is anything carrying
 -- secured fields published at all? The remedy is a column-level REVOKE, which takes a live
 -- grant away and is therefore not a lane's.
-create function iam.realtime_field_exposure()
+create or replace function iam.realtime_field_exposure()
 returns table (schema_name text, table_name text, why text)
 language sql stable
 set search_path to 'pg_catalog'
@@ -790,7 +790,7 @@ comment on function iam.realtime_field_exposure() is
 -- file would write `permission_level`, and the two never match. That is a live defect
 -- (W2-PRED owns its repair in the guard itself); until that lands, this renders the way the
 -- guard renders, by asking for the rendering under the guard's own search_path.
-create function iam.door_identity_args(p_oid oid)
+create or replace function iam.door_identity_args(p_oid oid)
 returns text
 language sql stable
 set search_path to 'pg_catalog'

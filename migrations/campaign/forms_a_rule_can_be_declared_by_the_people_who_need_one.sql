@@ -58,7 +58,7 @@
 set lock_timeout = '5s';
 set statement_timeout = '600s';
 
-create function custom.rule_declare(p_organization_id uuid,
+create or replace function custom.rule_declare(p_organization_id uuid,
                                     p_spec jsonb,
                                     p_rule_id uuid default null)
 returns uuid

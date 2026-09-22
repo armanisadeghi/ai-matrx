@@ -47,7 +47,7 @@
 set lock_timeout = '5s';
 set statement_timeout = '600s';
 
-create function custom.view_declare(p_organization_id uuid, p_table_id uuid, p_spec jsonb)
+create or replace function custom.view_declare(p_organization_id uuid, p_table_id uuid, p_spec jsonb)
 returns uuid
 language plpgsql
 security definer
@@ -101,7 +101,7 @@ $fn$;
 comment on function custom.view_declare(uuid, uuid, jsonb) is
   'DOOR-18: save a view of a Table — its name and its filters — at the VIEWER rung, because writing down a question about a Table is not changing it. The definition is written in the one shape the notifier already admits records against, so a subscription can be written over it with no translation.';
 
-create function custom.views(p_organization_id uuid, p_table_id uuid default null)
+create or replace function custom.views(p_organization_id uuid, p_table_id uuid default null)
 returns table(view_id uuid, name text, table_id uuid, filters jsonb, created_at timestamptz)
 language plpgsql
 stable

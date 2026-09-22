@@ -90,7 +90,7 @@
 -- become a way to read `auth.users`.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.history_people(p_organization_id uuid, p_ids uuid[])
+create or replace function custom.history_people(p_organization_id uuid, p_ids uuid[])
 returns jsonb
 language sql
 stable
@@ -138,7 +138,7 @@ on conflict do nothing;
 -- a second spelling of the vocabulary.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.history_actor(p_tier text, p_document jsonb, p_actor_id uuid,
+create or replace function custom.history_actor(p_tier text, p_document jsonb, p_actor_id uuid,
                                      p_people jsonb)
 returns jsonb
 language sql
@@ -192,7 +192,7 @@ $$;
 -- through the same version's `_sources`.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.history_changes(p_organization_id uuid, p_table_id uuid,
+create or replace function custom.history_changes(p_organization_id uuid, p_table_id uuid,
                                        p_old jsonb, p_new jsonb)
 returns jsonb
 language sql
@@ -267,7 +267,7 @@ on conflict do nothing;
 -- with a read-only collaborator. Restoring is a separate door and a separate rung.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.record_history(p_organization_id uuid, p_record_id uuid,
+create or replace function custom.record_history(p_organization_id uuid, p_record_id uuid,
                                       p_limit integer default 200,
                                       p_offset integer default 0)
 returns table(version integer, occurred_at timestamptz, operation text,
@@ -390,7 +390,7 @@ on conflict do nothing;
 -- visibility class rather than once per row.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.field_history(p_organization_id uuid, p_table_id uuid,
+create or replace function custom.field_history(p_organization_id uuid, p_table_id uuid,
                                      p_field_key text,
                                      p_limit integer default 100,
                                      p_offset integer default 0,
@@ -524,7 +524,7 @@ on conflict do nothing;
 -- refuses them.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.record_restore_preview(p_organization_id uuid, p_record_id uuid,
+create or replace function custom.record_restore_preview(p_organization_id uuid, p_record_id uuid,
                                               p_version integer,
                                               p_field_key text default null)
 returns jsonb
@@ -609,7 +609,7 @@ on conflict do nothing;
 -- an old author on a new write.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.history_restore_body(p_current jsonb, p_target jsonb,
+create or replace function custom.history_restore_body(p_current jsonb, p_target jsonb,
                                             p_field_key text default null)
 returns jsonb
 language sql
@@ -727,7 +727,7 @@ $$;
 -- actually moved, so a screen can say "3 fields changed" without asking again.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.record_restore_version(p_organization_id uuid, p_record_id uuid,
+create or replace function custom.record_restore_version(p_organization_id uuid, p_record_id uuid,
                                               p_version integer)
 returns jsonb
 language plpgsql
@@ -774,7 +774,7 @@ on conflict do nothing;
 -- lands as a version with its own author like everything else.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.value_restore(p_organization_id uuid, p_record_id uuid,
+create or replace function custom.value_restore(p_organization_id uuid, p_record_id uuid,
                                      p_field_key text, p_version integer)
 returns jsonb
 language plpgsql

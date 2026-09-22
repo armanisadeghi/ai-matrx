@@ -89,7 +89,7 @@ create policy record_alias_read on custom.record_alias
   using ((select is_platform_admin())
          or (organization_id is not null and organization_id in (select iam.my_orgs())));
 
-create function custom.resolve_id(p_organization_id uuid, p_id uuid)
+create or replace function custom.resolve_id(p_organization_id uuid, p_id uuid)
 returns uuid
 language plpgsql
 stable
@@ -121,7 +121,7 @@ comment on function custom.resolve_id(uuid, uuid) is
 -- ═════════════════════════════════════════════════════════════════════════════
 -- REC-18 — what depends on a Field, read BOTH the ways this store writes it.
 -- ═════════════════════════════════════════════════════════════════════════════
-create function custom.field_dependants(p_organization_id uuid, p_field_id uuid)
+create or replace function custom.field_dependants(p_organization_id uuid, p_field_id uuid)
 returns table(kind text, dependant_id uuid, label text, how text)
 language plpgsql
 stable
@@ -180,7 +180,7 @@ comment on function custom.field_dependants(uuid, uuid) is
 -- ═════════════════════════════════════════════════════════════════════════════
 -- REC-23 — the purge retention finally allows, and never before.
 -- ═════════════════════════════════════════════════════════════════════════════
-create function custom.migrate_purge(p_organization_id uuid, p_table_id uuid default null,
+create or replace function custom.migrate_purge(p_organization_id uuid, p_table_id uuid default null,
                                      p_dry_run boolean default true)
 returns jsonb
 language plpgsql
@@ -259,7 +259,7 @@ comment on function custom.migrate_purge(uuid, uuid, boolean) is
 -- ═════════════════════════════════════════════════════════════════════════════
 -- THE DELETE VERB — REC-12, REC-13, REC-18, REC-23, T7.
 -- ═════════════════════════════════════════════════════════════════════════════
-create function custom.migrate_delete(p_organization_id uuid, p_record_id uuid,
+create or replace function custom.migrate_delete(p_organization_id uuid, p_record_id uuid,
                                       p_note text default null)
 returns jsonb
 language plpgsql
@@ -367,7 +367,7 @@ comment on function custom.migrate_delete(uuid, uuid, text) is
 -- ═════════════════════════════════════════════════════════════════════════════
 -- MERGE and SPLIT — REC-21 and REC-22, the two verbs that move ids.
 -- ═════════════════════════════════════════════════════════════════════════════
-create function custom.migrate_merge(p_organization_id uuid, p_winner_id uuid, p_loser_id uuid,
+create or replace function custom.migrate_merge(p_organization_id uuid, p_winner_id uuid, p_loser_id uuid,
                                      p_note text default null)
 returns jsonb
 language plpgsql
@@ -465,7 +465,7 @@ $fn$;
 comment on function custom.migrate_merge(uuid, uuid, uuid, text) is
   'T5 / REC-21: two records become one. Values the winner lacks are taken; values that disagree become ALTERNATES inside the winner''s one document, each carrying the record it came from. The losing id resolves to the winner forever through custom.record_alias, and the whole of the loser is stored as the inverse so undo restores both records and both ids.';
 
-create function custom.migrate_split(p_organization_id uuid, p_record_id uuid, p_moved_keys text[],
+create or replace function custom.migrate_split(p_organization_id uuid, p_record_id uuid, p_moved_keys text[],
                                      p_note text default null)
 returns jsonb
 language plpgsql
@@ -535,7 +535,7 @@ comment on function custom.migrate_split(uuid, uuid, text[], text) is
 -- ═════════════════════════════════════════════════════════════════════════════
 -- RETYPE — REC-N-18 (a record) and FLD-4 / T12 (a Field's behaviour). ONE verb.
 -- ═════════════════════════════════════════════════════════════════════════════
-create function custom.migrate_retype(p_organization_id uuid, p_id uuid, p_to text,
+create or replace function custom.migrate_retype(p_organization_id uuid, p_id uuid, p_to text,
                                       p_note text default null)
 returns jsonb
 language plpgsql
@@ -641,7 +641,7 @@ comment on function custom.migrate_retype(uuid, uuid, text, text) is
 -- ═════════════════════════════════════════════════════════════════════════════
 -- THE FIVE SMALLER VERBS. Each one logs its inverse before it writes.
 -- ═════════════════════════════════════════════════════════════════════════════
-create function custom.migrate_rename(p_organization_id uuid, p_id uuid, p_to text,
+create or replace function custom.migrate_rename(p_organization_id uuid, p_id uuid, p_to text,
                                       p_note text default null)
 returns jsonb
 language plpgsql
@@ -685,7 +685,7 @@ begin
 end;
 $fn$;
 
-create function custom.migrate_reparent(p_organization_id uuid, p_id uuid, p_parent_id uuid,
+create or replace function custom.migrate_reparent(p_organization_id uuid, p_id uuid, p_parent_id uuid,
                                         p_note text default null)
 returns jsonb
 language plpgsql
@@ -719,7 +719,7 @@ begin
 end;
 $fn$;
 
-create function custom.migrate_extract_parent(p_organization_id uuid, p_id uuid,
+create or replace function custom.migrate_extract_parent(p_organization_id uuid, p_id uuid,
                                               p_parent_table_id uuid, p_moved_keys text[],
                                               p_note text default null)
 returns jsonb
@@ -770,7 +770,7 @@ begin
 end;
 $fn$;
 
-create function custom.migrate_promote(p_organization_id uuid, p_table_id uuid,
+create or replace function custom.migrate_promote(p_organization_id uuid, p_table_id uuid,
                                        p_note text default null)
 returns jsonb
 language plpgsql
@@ -801,7 +801,7 @@ begin
 end;
 $fn$;
 
-create function custom.migrate_demote(p_organization_id uuid, p_table_id uuid,
+create or replace function custom.migrate_demote(p_organization_id uuid, p_table_id uuid,
                                       p_note text default null)
 returns jsonb
 language plpgsql

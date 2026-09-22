@@ -45,18 +45,10 @@
 -- the seat immediately before it asserts.
 --
 -- WHAT IS STILL DONE AS THE CONNECTED ROLE, and why each is a PLANT and never an assertion:
--- 🚨 THE OTHER HALF OF RED 0'S FINDING IS CLOSED TOO (lane TAILS-5, 2026-09-21), and the two
--- `relation` fields this file used to PLANT are now declared from the seat like every other
--- column. This bullet used to read: "`custom.field_declare` offers a person `member` and
--- `attachment` and refuses the word `relation` by name, so a relation column cannot be
--- declared from a person's seat at all." It has not been true since 2026-09-20:
--- `custom._field_document_for` carries a `relation` arm that takes the target under either
--- `relation_target` or `target_table`, refuses a target that is not one of this organization's
--- Tables (`23503`, by name), and `custom.field_declare` asks `custom.assert_may_know_table`
--- about that target on top of `assert_client_may_change(… 'admin' …)` on the table whose shape
--- is changing — may I POINT at it is may I SEE it. Measured from this seat on the main
--- database, 2026-09-21. So the ONLY thing left out of the seat in this file is the trigger
--- drops below.
+--   * the two `custom.field` rows of type `relation` — `custom.field_declare` offers a person
+--     `member` and `attachment` and refuses the word `relation` by name, so a relation column
+--     cannot be declared from a person's seat at all. That is the second half of RED 0's
+--     original finding and it is still open.
 --   * `drop trigger … on platform.associations` — DDL on a table a person does not own. A red
 --     twin's whole method is to REMOVE the thing under test; removing it is the plant, and no
 --     person is ever supposed to be able to do it. The moment each drop is done the file sits
@@ -143,10 +135,12 @@ begin
   end;
   raise notice 'PART 0 PASSED — the seat is `authenticated`, the ladder sees a client, and custom.record is not readable from it.';
 
-  -- ------------------------------------------------------------------ the fixture, ALL of it
-  -- through the doors. The three Tables, their records AND their relation columns are a
-  -- person's: `custom.field_declare` takes the word `relation` when the caller names the Table
-  -- it points at (see the header). Nothing here needs the connected role.
+  -- ------------------------------------------------------------------ the fixture, through
+  -- the doors as far as the doors go. The three Tables and their records are a person's; the
+  -- relation FIELDS are not — `custom.field_declare` offers a person `member` (a Person) and
+  -- `attachment` (a File) and refuses the word `relation` by name, so a column pointing at
+  -- another Table is written into the `custom.field` view as the connected role, which is the
+  -- second half of the same finding RED 0 records. Nothing is asserted while out.
   v_note_t := custom.table_declare(v_org, jsonb_build_object(
     'name','Gift Notes','slug','gift_notes','type','entity','display','list',
     'label_singular','Gift Note','label_plural','Gift Notes','ordered',true,'weight','light',
@@ -210,40 +204,47 @@ begin
   end if;
   raise notice 'RED 0 — MEASURED: `platform.relation_set` ANSWERS a signed-in person now and refuses an undeclared column by its own name (% "%"). The 42501 wall this clause was written to record is gone, so RED 1 and RED 2 below ask their questions from this same seat.', v_state, v_caught;
 
-  -- ------------------------------------------- THE TWO RELATION COLUMNS, DECLARED FROM THE SEAT.
-  -- This used to be a PLANT, out of the seat, with the fields INSERTed straight into
-  -- `custom.field` as the connected role, because the door refused the word `relation` to a
-  -- person. It does not any more (header), so the fundraising office declares its own columns
-  -- exactly as it declares every other one — and the fact that RED 1 and RED 2 below still go
-  -- red is now measuring the TRIGGERS and nothing else.
-  --
+  -- ------------------------------------------------------------------ PLANT, not a clause.
+  -- The relation FIELDS go in as the connected role because `custom.field_declare` refuses the
+  -- word `relation` to a person by name — the open half of RED 0's finding. Nothing is
+  -- asserted while out of the seat.
+  perform set_config('role', v_boss, true);
+
+  update custom.record
+     set data = jsonb_set(data, '{fields}',
+                  coalesce(data -> 'fields', '[]'::jsonb) || jsonb_build_array(jsonb_build_object('name','about')))
+   where organization_id = v_org and id = v_note_t;
+  insert into custom.field (organization_id, entity_definition_id, key, name, label, type,
+                            relation_target, relation_max, on_target_delete, config,
+                            source, source_config, sensitivity, context_policy,
+                            rules, depends_on, applies_to_types, multi, dated, required, sort)
   -- `ordered` is true so that the ORDER of the targets is a real, writable column on the edge
   -- (`platform.associations.position`, which `relation_declaration` gates on exactly this key).
   -- RED 2 needs one edit a person can make that actually CHANGES a column, and reordering the
   -- things a record points at is that edit.
-  if current_user <> 'authenticated' then
-    raise exception 'the relation columns were about to be declared out of the seat — current_user is %', current_user;
-  end if;
-  perform custom.field_declare(v_org, v_note_t, jsonb_build_object(
-    'key','about','label','About','type','relation',
-    'relation_target', v_proj_t::text, 'relation_max', 50, 'multi', true,
-    'on_target_delete','set_null', 'sort', 10,
-    'config', jsonb_build_object('target_mode','one','loops',false,'ordered',true)));
+  values (v_org, v_note_t, 'about', 'About', 'About', 'relation', v_proj_t, 50, 'set_null',
+          jsonb_build_object('target_mode','one','loops',false,'ordered',true),
+          'manual','{}'::jsonb,'internal','include',
+          '[]'::jsonb,'[]'::jsonb,'[]'::jsonb,true,false,false,10);
 
   -- REL-5's clause needs a field that points a Table at ITSELF, declared on the project Table,
   -- because `platform.relation_set` resolves the field off the SOURCE record's Table before the
   -- contract trigger ever runs — a fact this twin measured the hard way.
-  perform custom.field_declare(v_org, v_proj_t, jsonb_build_object(
-    'key','about','label','About','type','relation',
-    'relation_target', v_proj_t::text, 'relation_max', 50, 'multi', true,
-    'on_target_delete','set_null', 'sort', 10,
-    'config', jsonb_build_object('target_mode','one','loops',false)));
+  update custom.record
+     set data = jsonb_set(data, '{fields}',
+                  coalesce(data -> 'fields', '[]'::jsonb) || jsonb_build_array(jsonb_build_object('name','about')))
+   where organization_id = v_org and id = v_proj_t;
+  insert into custom.field (organization_id, entity_definition_id, key, name, label, type,
+                            relation_target, relation_max, on_target_delete, config,
+                            source, source_config, sensitivity, context_policy,
+                            rules, depends_on, applies_to_types, multi, dated, required, sort)
+  values (v_org, v_proj_t, 'about', 'About', 'About', 'relation', v_proj_t, 50, 'set_null',
+          jsonb_build_object('target_mode','one','loops',false),
+          'manual','{}'::jsonb,'internal','include',
+          '[]'::jsonb,'[]'::jsonb,'[]'::jsonb,true,false,false,10);
 
   -- ==================================================================== RED 1: the contract goes
   -- THE PLANT (connected role, DDL a person can never do): take the contract trigger away.
-  -- The seat is left HERE and nowhere earlier — the fixture above, relation columns included,
-  -- is entirely a person's now (TAILS-5, 2026-09-21).
-  perform set_config('role', v_boss, true);
   drop trigger trg_associations_zzz_relation_contract on platform.associations;
 
   -- BACK INTO THE SEAT before a single question is asked. Everything from here to the end of
@@ -390,7 +391,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   raise notice 'RED 3 — seated: the owner adds a column and it lands, test@test.com is refused the same call ("%"), and she reads the record shared with her. The three drops touched the relation contract and not the access ladder.', left(v_caught, 80);
 
-  raise notice '=== W1-REL RED — the three triggers were shown failing, on the main database, FROM THE `authenticated` SEAT: every clause here is a signed-in person calling platform.relation_set and reading what RLS lets her read, and the ONLY thing done as the connected role is the plant no person can ever do — the trigger drops themselves. BOTH halves of RED 0''s finding are now closed: the relations door answers a person (2026-09-21, lane RED-SUITES-3) and custom.field_declare takes the word `relation` from her too (2026-09-21, lane TAILS-5), so this file declares its own relation columns from the seat. Rolling back. ===';
+  raise notice '=== W1-REL RED — the three triggers were shown failing, on the main database, FROM THE `authenticated` SEAT: every clause here is a signed-in person calling platform.relation_set and reading what RLS lets her read, and the only things done as the connected role are the two plants no person can do (a `relation` field, which custom.field_declare still refuses by name, and the trigger drops themselves). RED 0''s finding is CLOSED and RED 1/RED 2 have moved into the seat it opened. Rolling back. ===';
 end $red$;
 
 rollback;

@@ -29,7 +29,7 @@
 set lock_timeout = '3s';
 set statement_timeout = '2min';
 
-create function custom.freshness_verdict(
+create or replace function custom.freshness_verdict(
   p_written_at timestamptz,
   p_ceiling_seconds numeric
 )

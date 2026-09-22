@@ -30,7 +30,7 @@
 --
 -- NOT ONE ANSWER MOVES: the skipped comparison is one whose result is a constant `true`.
 
-create function custom.level_floor()
+create or replace function custom.level_floor()
  returns permission_level
  language sql
  stable security definer

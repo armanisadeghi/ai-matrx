@@ -14,7 +14,7 @@
 set lock_timeout = '3s';
 set statement_timeout = '2min';
 
-create function platform.unified_data_ramp_exit()
+create or replace function platform.unified_data_ramp_exit()
 returns table (
   id           text,
   engine_old   text,

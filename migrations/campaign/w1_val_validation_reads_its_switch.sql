@@ -69,7 +69,7 @@ set statement_timeout = '300s';
 -- 1. THE SWITCH, READ THE WAY EVERY OTHER CAMPAIGN BODY READS A KNOB
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.store_is_open(p_organization_id uuid default null)
+create or replace function custom.store_is_open(p_organization_id uuid default null)
   returns boolean
   language plpgsql
   stable

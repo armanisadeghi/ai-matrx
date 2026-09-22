@@ -31,7 +31,7 @@
 -- migrations/inverse/seatsuites_the_quarantine_has_a_door_down.sql does — and
 -- `scripts/campaign-tests/w4_anon_green.sql` PART 2, PART 6 and PART 7 go red naming it.
 
-create function custom.anon_submissions(
+create or replace function custom.anon_submissions(
   p_organization_id uuid,
   p_table_id        uuid default null,
   p_state           text default null,

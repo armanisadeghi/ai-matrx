@@ -83,7 +83,7 @@
 -- for a Table carrying a `restricted` field, and for a person a grant already speaks for - by
 -- which point rungs 1 to 3 have answered anyway.
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
-create function custom.addressed_cap(p_user_id uuid, p_type text, p_id uuid,
+create or replace function custom.addressed_cap(p_user_id uuid, p_type text, p_id uuid,
                                      p_organization_id uuid default null,
                                      p_table_id uuid default null)
  returns permission_level
@@ -248,7 +248,7 @@ $function$;
 -- read from the rungs (`iam.grant_addressed_level` / `iam.member_lane_confers` / `iam.owner_of`)
 -- and the answered side from the door, so the two can disagree and the census says so.
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
-create function custom.levels_raised_by_a_less_specific_rung()
+create or replace function custom.levels_raised_by_a_less_specific_rung()
  returns table(organization_id uuid, organization_name text, member_id uuid, member_email text,
                record_id uuid, addressed_level permission_level, answered_level permission_level)
  language sql

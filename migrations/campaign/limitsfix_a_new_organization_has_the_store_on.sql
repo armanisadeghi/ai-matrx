@@ -37,7 +37,7 @@
 --
 -- CREATE, not CREATE OR REPLACE: this function is new, and a file that names
 -- production is judged by an allow-list in which a REPLACE must declare the body it saw.
-CREATE FUNCTION custom._store_on_for_a_new_organization()
+create or replace function custom._store_on_for_a_new_organization()
  RETURNS trigger
  LANGUAGE plpgsql
  SECURITY DEFINER

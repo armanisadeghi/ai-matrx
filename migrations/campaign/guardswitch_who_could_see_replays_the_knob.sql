@@ -48,7 +48,7 @@ set statement_timeout = '120s';
 
 
 -- ═══════════════════════════════════════════ THE MEMBER LANE, AS IT STOOD THEN (VIS-33)
-create function iam.member_lane_open_as_of(p_organization_id uuid, p_at timestamptz)
+create or replace function iam.member_lane_open_as_of(p_organization_id uuid, p_at timestamptz)
 returns table(lane_open boolean, replayed boolean)
 language plpgsql
 stable security definer
@@ -82,7 +82,7 @@ $$;
 
 
 -- ════════════════════════════════════ WHAT MEMBERSHIP ALONE CONFERRED THEN (VIS-19/VIS-33)
-create function iam.member_default_level_as_of(
+create or replace function iam.member_default_level_as_of(
   p_organization_id uuid, p_table_id uuid, p_at timestamptz)
 returns table(level permission_level, replayed boolean)
 language plpgsql

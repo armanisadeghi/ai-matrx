@@ -139,7 +139,7 @@ comment on table custom.portal_principal is
 
 -- ────────────────────────────────────────────────── 2. is this person an outsider here
 
-create function custom.portal_admits(p_organization_id uuid, p_user_id uuid default null)
+create or replace function custom.portal_admits(p_organization_id uuid, p_user_id uuid default null)
 returns boolean
 language sql
 stable security definer
@@ -172,7 +172,7 @@ comment on function custom.portal_admits(uuid, uuid) is
 
 -- ─────────────────────────────────────────── 3. the helpers the declaring door leans on
 
-create function custom.portal_slug(p_organization_id uuid, p_title text, p_portal_id uuid default null)
+create or replace function custom.portal_slug(p_organization_id uuid, p_title text, p_portal_id uuid default null)
 returns text
 language plpgsql
 stable security definer
@@ -197,7 +197,7 @@ begin
   return v_try;
 end $function$;
 
-create function custom.portal_field_map(p_organization_id uuid, p_table_id uuid)
+create or replace function custom.portal_field_map(p_organization_id uuid, p_table_id uuid)
 returns table(field_id uuid, field_key text, field_type text, points_at uuid)
 language sql
 stable security definer
@@ -219,7 +219,7 @@ $function$;
 
 -- ───────────────────────────────────────────────────────────── 4. the declaring door
 
-create function custom.portal_declare(
+create or replace function custom.portal_declare(
   p_organization_id uuid,
   p_title           text,
   p_client_table_id uuid,
@@ -401,7 +401,7 @@ end $function$;
 
 -- ─────────────────────────────────────────────────────── 5. the owner's reading doors
 
-create function custom.portals(p_organization_id uuid)
+create or replace function custom.portals(p_organization_id uuid)
 returns table(portal_id uuid, title text, slug text, client_table_id uuid, client_table text,
               is_active boolean, tables integer, invited integer, signed_in integer,
               sign_in_method text, opened_at timestamptz)
@@ -431,7 +431,7 @@ begin
      order by p.is_active desc, p.opened_at desc nulls last;
 end $function$;
 
-create function custom.portal_card(p_organization_id uuid, p_portal_id uuid)
+create or replace function custom.portal_card(p_organization_id uuid, p_portal_id uuid)
 returns jsonb
 language plpgsql
 stable security definer
@@ -485,7 +485,7 @@ end $function$;
 
 -- One record's title, said once, because four things below want it and a portal that
 -- named a client by uuid would be a screen nobody can read.
-create function custom.portal_record_title(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.portal_record_title(p_organization_id uuid, p_record_id uuid)
 returns text
 language sql
 stable security definer
@@ -501,7 +501,7 @@ $function$;
 
 -- ─────────────────────────────────────────────────── 6. invite, bind, revoke
 
-create function custom.portal_invite(
+create or replace function custom.portal_invite(
   p_organization_id uuid,
   p_portal_id       uuid,
   p_client_record_id uuid,
@@ -586,7 +586,7 @@ begin
                 else format('%s is invited to "%s". They get access the moment they follow the sign-in link and the platform gives them an identity - until then this row holds nothing.', v_mail, v_p.title) end);
 end $function$;
 
-create function custom.portal_principal_bind(
+create or replace function custom.portal_principal_bind(
   p_organization_id uuid, p_principal_id uuid, p_user_id uuid)
 returns jsonb
 language plpgsql
@@ -650,7 +650,7 @@ begin
                   v_pp.email, coalesce(v_lv, 'viewer'::public.permission_level)::text));
 end $function$;
 
-create function custom.portal_revoke(
+create or replace function custom.portal_revoke(
   p_organization_id uuid, p_portal_id uuid, p_principal_id uuid)
 returns jsonb
 language plpgsql
@@ -694,7 +694,7 @@ end $function$;
 
 -- ───────────────────────────────────────────────── 7. what the outsider's screen reads
 
-create function custom.portal_me()
+create or replace function custom.portal_me()
 returns jsonb
 language plpgsql
 stable security definer
@@ -744,7 +744,7 @@ begin
       '[]'::jsonb));
 end $function$;
 
-create function custom.portal_public(p_slug text)
+create or replace function custom.portal_public(p_slug text)
 returns jsonb
 language plpgsql
 stable security definer
@@ -778,7 +778,7 @@ end $function$;
 -- WHO IS INVITED UNDER THIS ADDRESS, asked by the server lane alone, so a sign-in link
 -- can be sent to an address that was actually invited and to no other. It answers the
 -- principal id and nothing about the client, the records or the organization's people.
-create function custom.portal_invitation(p_slug text, p_email text)
+create or replace function custom.portal_invitation(p_slug text, p_email text)
 returns jsonb
 language plpgsql
 stable security definer
@@ -807,7 +807,7 @@ end $function$;
 
 -- ──────────────────────────────────────────── 8. what this client sees, asked honestly
 
-create function custom.portal_preview(
+create or replace function custom.portal_preview(
   p_organization_id uuid, p_portal_id uuid, p_principal_id uuid, p_table_id uuid)
 returns table(record_id uuid, title text)
 language plpgsql

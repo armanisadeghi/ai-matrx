@@ -58,7 +58,7 @@ set statement_timeout = '300s';
 -- ─────────────────────────────────────────────────────────────────────────────
 -- THE FLOOR — one named read, over the knob that already exists.
 -- ─────────────────────────────────────────────────────────────────────────────
-create function history.retention_floor_days(p_organization_id uuid default null)
+create or replace function history.retention_floor_days(p_organization_id uuid default null)
 returns integer
 language plpgsql
 stable
@@ -96,7 +96,7 @@ comment on function history.retention_floor_days(uuid) is
 -- ─────────────────────────────────────────────────────────────────────────────
 -- RAISING IT — and the refusal, which is the half a person actually meets.
 -- ─────────────────────────────────────────────────────────────────────────────
-create function history.retention_floor_raise(p_organization_id uuid, p_days integer)
+create or replace function history.retention_floor_raise(p_organization_id uuid, p_days integer)
 returns integer
 language plpgsql
 volatile
@@ -157,7 +157,7 @@ comment on function history.retention_floor_raise(uuid, integer) is
 -- ─────────────────────────────────────────────────────────────────────────────
 -- PER-TABLE RETENTION — REC-1's property, in the Table's own document.
 -- ─────────────────────────────────────────────────────────────────────────────
-create function history.retention_days(p_organization_id uuid, p_table_id uuid)
+create or replace function history.retention_days(p_organization_id uuid, p_table_id uuid)
 returns integer
 language plpgsql
 stable
@@ -192,7 +192,7 @@ $fn$;
 comment on function history.retention_days(uuid, uuid) is
   'HIS-2: how long one Table''s value history is kept — the Table''s own `retention` property (REC-1), never below the organization''s floor. Retention is the per-Table knob; existence is not.';
 
-create function history.retention_set(p_organization_id uuid, p_table_id uuid, p_days integer)
+create or replace function history.retention_set(p_organization_id uuid, p_table_id uuid, p_days integer)
 returns integer
 language plpgsql
 volatile
@@ -289,7 +289,7 @@ create policy migration_log_read on history.migration_log
 -- ─────────────────────────────────────────────────────────────────────────────
 -- THE PRUNE — schema `history`'s first, and it refuses the Migration log BY NAME.
 -- ─────────────────────────────────────────────────────────────────────────────
-create function history.prune(p_organization_id uuid,
+create or replace function history.prune(p_organization_id uuid,
                                          p_scope text default 'values',
                                          p_table_id uuid default null,
                                          p_dry_run boolean default true)

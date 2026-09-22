@@ -52,7 +52,7 @@
 
 set lock_timeout = '5s';
 
-create function iam.legacy_column_worklist()
+create or replace function iam.legacy_column_worklist()
 returns table(
   schema_name text,
   table_name  text,
@@ -129,7 +129,7 @@ $function$;
 comment on function iam.legacy_column_worklist() is
   'REC-63''s work list, computed rather than remembered: every active entity token whose live table still carries org_id, user_id, owner_id, author_id, creator_id, is_public or is_deleted, with the canonical column it converges on and the exact statement that gets it there. disposition is rename (safe), merge (the canonical column already exists - move the values first), retype (boolean to enum or timestamp - information is lost if done blind) or keep (the personal variant''s user_id IS its access owner; renaming it breaks the table''s RLS lane and iam.verify_canonical FAILS the table without it). A token leaves this list by conversion, never by exemption - there is no exemption column.';
 
-create function iam.converge_legacy_column(
+create or replace function iam.converge_legacy_column(
   p_schema  text,
   p_table   text,
   p_column  text,

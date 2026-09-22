@@ -36,7 +36,7 @@
 --
 -- Everything else about both doors is byte-identical to what they already did.
 
-create function custom.sign_request_unchanged(p_organization_id uuid, p_request_id uuid)
+create or replace function custom.sign_request_unchanged(p_organization_id uuid, p_request_id uuid)
 returns boolean
 language plpgsql
 security definer

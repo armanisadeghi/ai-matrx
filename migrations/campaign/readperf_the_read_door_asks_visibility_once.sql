@@ -83,7 +83,7 @@
 -- 1. THE CEILING. How many individual ladder calls one read may make before the set-based
 --    shape stops being cheaper than the walk it replaces, and the door says so and walks.
 -- ────────────────────────────────────────────────────────────────────────────────────────
-create function custom.read_door_ladder_ceiling()
+create or replace function custom.read_door_ladder_ceiling()
 returns integer
 language sql
 immutable
@@ -108,7 +108,7 @@ comment on function custom.read_door_ladder_ceiling() is
 --    A platform-level association (`organization_id is null`, 5 live) belongs to every
 --    organization and is kept, exactly as the unscoped view keeps it.
 -- ────────────────────────────────────────────────────────────────────────────────────────
-create function custom.carrying_edges_in(p_organization_id uuid)
+create or replace function custom.carrying_edges_in(p_organization_id uuid)
 returns table(container_type text, container_id uuid, item_type text, item_id uuid,
               conveys_max public.permission_level)
 language sql
@@ -161,7 +161,7 @@ comment on function custom.carrying_edges_in(uuid) is
 --    anyway — because an id that lands here costs one ladder call, where an id missing from here
 --    would be answered by a class that does not speak for it.
 -- ────────────────────────────────────────────────────────────────────────────────────────
-create function custom.read_door_granted_ids(p_organization_id uuid, p_table_id uuid)
+create or replace function custom.read_door_granted_ids(p_organization_id uuid, p_table_id uuid)
 returns uuid[]
 language sql
 stable
@@ -211,7 +211,7 @@ comment on function custom.read_door_granted_ids(uuid, uuid) is
 --    CONTAINMENT ONLY EVER ADDS (VIS-6: union only, no deny), which is why a row this returns
 --    needs no further question and a row it does not return is still answered by every other arm.
 -- ────────────────────────────────────────────────────────────────────────────────────────
-create function custom.read_door_carried_ids(
+create or replace function custom.read_door_carried_ids(
   p_user            uuid,
   p_organization_id uuid,
   p_table_id        uuid,
@@ -331,7 +331,7 @@ comment on function custom.read_door_carried_ids(uuid, uuid, uuid, public.permis
 --    o_carried_visible    the ones containment carries, resolved downward
 --    o_fallback / o_note  it did not answer, why, and what to do about it
 -- ────────────────────────────────────────────────────────────────────────────────────────
-create function custom.visible_set(
+create or replace function custom.visible_set(
   p_user            uuid,
   p_organization_id uuid,
   p_table_id        uuid,
@@ -732,7 +732,7 @@ $function$;
 --    remove, kept as the thing that proves the fast thing right. A difference is a ROW, with a
 --    sentence saying which way it went wrong, never a count.
 -- ────────────────────────────────────────────────────────────────────────────────────────
-create function custom.read_door_parity(
+create or replace function custom.read_door_parity(
   p_organization_id uuid,
   p_table_id        uuid,
   p_user            uuid,

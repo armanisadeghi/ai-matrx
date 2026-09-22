@@ -36,7 +36,7 @@
 -- ════════════════════════════════════════════════════════════════════════════════════════
 -- THE SCOPE OF A CONVERSATION — read.
 -- ════════════════════════════════════════════════════════════════════════════════════════
-create function custom.conversation_scope(p_organization_id uuid, p_conversation_id uuid)
+create or replace function custom.conversation_scope(p_organization_id uuid, p_conversation_id uuid)
 returns jsonb
 language plpgsql
 stable security definer
@@ -116,7 +116,7 @@ on conflict do nothing;
 -- ════════════════════════════════════════════════════════════════════════════════════════
 -- THE SCOPE OF A CONVERSATION — bind, and unbind.
 -- ════════════════════════════════════════════════════════════════════════════════════════
-create function custom.conversation_scope_bind(p_organization_id uuid, p_conversation_id uuid,
+create or replace function custom.conversation_scope_bind(p_organization_id uuid, p_conversation_id uuid,
                                                p_record_id uuid)
 returns jsonb
 language plpgsql
@@ -217,7 +217,7 @@ values
    null, true, false)
 on conflict do nothing;
 
-create function custom.conversation_scope_unbind(p_organization_id uuid, p_conversation_id uuid)
+create or replace function custom.conversation_scope_unbind(p_organization_id uuid, p_conversation_id uuid)
 returns jsonb
 language plpgsql
 security definer
@@ -270,7 +270,7 @@ on conflict do nothing;
 -- ════════════════════════════════════════════════════════════════════════════════════════
 -- THE CONTEXT — ONE DOOR, ONE ROUND TRIP, EVERY PIECE THROUGH THE READ DOOR.
 -- ════════════════════════════════════════════════════════════════════════════════════════
-create function custom.record_scope_context(p_organization_id uuid, p_record_id uuid,
+create or replace function custom.record_scope_context(p_organization_id uuid, p_record_id uuid,
                                             p_relations integer default 12,
                                             p_history integer default 15,
                                             p_siblings integer default 8)
@@ -496,7 +496,7 @@ on conflict do nothing;
 -- THE BOUND CONVERSATION'S CONTEXT — the binding and the context in ONE round trip, which is
 -- what a chat surface and an agent turn each actually ask for.
 -- ════════════════════════════════════════════════════════════════════════════════════════
-create function custom.conversation_scope_context(p_organization_id uuid, p_conversation_id uuid,
+create or replace function custom.conversation_scope_context(p_organization_id uuid, p_conversation_id uuid,
                                                   p_relations integer default 12,
                                                   p_history integer default 15,
                                                   p_siblings integer default 8)

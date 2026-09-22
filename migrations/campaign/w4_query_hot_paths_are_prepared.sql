@@ -29,7 +29,7 @@
 set lock_timeout = '5s';
 set statement_timeout = '600s';
 
-create function custom.query_hot_paths()
+create or replace function custom.query_hot_paths()
 returns table(name text, statement text)
 language sql
 immutable
@@ -60,7 +60,7 @@ $fn$;
 comment on function custom.query_hot_paths() is
   'W4-QUERY / DOOR-N-3: the declared hot read paths of the record store, as PREPARE texts. A list a reviewer reads and a suite asserts against, never a comment.';
 
-create function custom.query_prepare_hot()
+create or replace function custom.query_prepare_hot()
 returns integer
 language plpgsql
 set search_path to 'pg_catalog'
@@ -84,7 +84,7 @@ $fn$;
 comment on function custom.query_prepare_hot() is
   'W4-QUERY / DOOR-N-3: prepares every declared hot read path on THIS connection, skipping what is already prepared. Called once per pool checkout; safe to call on every one.';
 
-create function custom.query_hot_paths_prepared()
+create or replace function custom.query_hot_paths_prepared()
 returns table(name text, prepared boolean, generic_plans bigint)
 language sql
 stable

@@ -113,7 +113,7 @@ set statement_timeout = '600s';
 -- "a state the model forbids" a refusal rather than a convention, and it is DATA on the state
 -- record, so an organization that wants a different workflow edits its own states rather than
 -- waiting for a code change (law 6: opinions become knobs).
-create function custom.work_states()
+create or replace function custom.work_states()
 returns table (sort integer, name text, terminal boolean, next text[])
 language sql
 immutable
@@ -134,7 +134,7 @@ $$;
 -- key, and nothing about the shape is re-decided per table. `parity_type` is DECLARED on each
 -- one so `custom._field_type_parity_guard` checks the declaration against what the Field
 -- actually says it is, rather than this file asserting it in a comment.
-create function custom.work_assignment_fields(p_options_table_id uuid default null)
+create or replace function custom.work_assignment_fields(p_options_table_id uuid default null)
 returns table (key text, label text, spec jsonb)
 language sql
 stable
@@ -178,7 +178,7 @@ $$;
 
 -- Does this Table hold the assignment fields? One answer, read from the definitions
 -- themselves rather than from a flag somebody could forget to set.
-create function custom.work_has_assignment(p_organization_id uuid, p_table_id uuid)
+create or replace function custom.work_has_assignment(p_organization_id uuid, p_table_id uuid)
 returns boolean
 language sql
 stable
@@ -201,7 +201,7 @@ $$;
 --     `custom._field_shape_guard` refuses a definition for a field the Table never declared
 --     (REC-1 / FLD-8: one source of truth, both ways);
 --   · it COUNTS ITS ROWS in the sentence it returns (`V1-STORE-FIXES` finding 3).
-create function custom.work_take_assignment(p_organization_id uuid, p_table_id uuid)
+create or replace function custom.work_take_assignment(p_organization_id uuid, p_table_id uuid)
 returns jsonb
 language plpgsql
 set search_path to 'pg_catalog'
@@ -341,7 +341,7 @@ $$;
 --   `state`  — overdue / due_today / scheduled / undated / finished.
 -- The three reads are the promoted paths `custom.promoted_index_expr` builds over, so a Table
 -- whose Fields were promoted answers this through its own indexes.
-create function custom.work_whose_turn(p_organization_id uuid, p_table_id uuid,
+create or replace function custom.work_whose_turn(p_organization_id uuid, p_table_id uuid,
                                                   p_include_finished boolean default false)
 returns table (record_id uuid, title text, assignee_id uuid, turn text,
                due_on timestamptz, state text, status text, terminal boolean)
@@ -395,7 +395,7 @@ $$;
 -- is what it is enforced as — that is the case of an organization that built its own state
 -- Table by hand and never declared a workflow. `custom.work_take_assignment` always writes
 -- `next`, so every Table that took the kernel fields has a model.
-create function custom.work_transition_refusal(p_organization_id uuid,
+create or replace function custom.work_transition_refusal(p_organization_id uuid,
                                                           p_from_state_id uuid, p_to_state_id uuid)
 returns text
 language plpgsql
@@ -437,7 +437,7 @@ $$;
 -- The relation kinds a template may ask for TODAY. `owned` is what `custom.relation_own`
 -- writes; `referenced` is named and refused, because W1-REL has not built it and an owned
 -- edge written where a referenced one was asked for is precisely the silent wrong answer.
-create function custom.work_relation_kinds()
+create or replace function custom.work_relation_kinds()
 returns table (kind text, available boolean, why text)
 language sql
 immutable
@@ -454,7 +454,7 @@ $$;
 
 -- The refusal a badly shaped template graph earns, as TEXT, so the shape guard and the verb
 -- give the same answer and neither can drift from the other.
-create function custom.work_template_refusal(p_graph jsonb)
+create or replace function custom.work_template_refusal(p_graph jsonb)
 returns text
 language plpgsql
 immutable
@@ -530,7 +530,7 @@ $$;
 
 -- A Template IS a record of the store (data_class `work_template`, no Table of its own — the
 -- same shape `custom.relation_own` already writes its edges in).
-create function custom.work_template_declare(p_organization_id uuid, p_name text, p_graph jsonb)
+create or replace function custom.work_template_declare(p_organization_id uuid, p_name text, p_graph jsonb)
 returns uuid
 language plpgsql
 set search_path to 'pg_catalog'
@@ -559,7 +559,7 @@ $$;
 -- refusal anywhere unwinds all of it and the store holds zero rows from the attempt. That is
 -- what the proof counts, and it is why this function catches NOTHING: an exception handler
 -- here would open a subtransaction and could leave part of a graph standing.
-create function custom.work_template_instantiate(p_organization_id uuid, p_template_id uuid,
+create or replace function custom.work_template_instantiate(p_organization_id uuid, p_template_id uuid,
                                                             p_overrides jsonb default '{}'::jsonb)
 returns jsonb
 language plpgsql
@@ -650,7 +650,7 @@ $$;
 -- THE SHAPE OF A GRAPH, so "the instance's ids differ from the template's while its shape
 -- matches" (C-44) is a COMPARISON rather than an eyeball. Both readers answer the same
 -- document: how many records of each Table, and which Table-to-Table edges carry them.
-create function custom.work_template_shape(p_organization_id uuid, p_template_id uuid)
+create or replace function custom.work_template_shape(p_organization_id uuid, p_template_id uuid)
 returns jsonb
 language sql
 stable
@@ -675,7 +675,7 @@ as $$
                                   from e group by src, dst, kind) t), '[]'::jsonb));
 $$;
 
-create function custom.work_instantiation_shape(p_organization_id uuid, p_instantiation_id uuid)
+create or replace function custom.work_instantiation_shape(p_organization_id uuid, p_instantiation_id uuid)
 returns jsonb
 language sql
 stable
@@ -719,7 +719,7 @@ $$;
 --    function answers the PREFIX every one of those names begins with, which is the stable thing
 --    a caller can match on; the refusal itself always carries the exact name, taken from
 --    Postgres's own diagnostics.
-create function custom.work_slot_index_name(p_table_id uuid)
+create or replace function custom.work_slot_index_name(p_table_id uuid)
 returns text
 language sql
 stable
@@ -735,7 +735,7 @@ $$;
 -- IT REFUSES OUT LOUD WHEN PROMOTION IS SWITCHED OFF, with the key and the remedy, rather
 -- than declaring a Table whose slot_key is not actually unique — which would be a booking
 -- system that silently double-books (law 4).
-create function custom.work_slots_declare(p_organization_id uuid, p_name text, p_slug text,
+create or replace function custom.work_slots_declare(p_organization_id uuid, p_name text, p_slug text,
                                                      p_home_id uuid default null)
 returns jsonb
 language plpgsql
@@ -837,7 +837,7 @@ $$;
 
 -- THE SWEEP. An expired hold is soft-deleted, which takes it out of the unique index's own
 -- partial predicate (`deleted_at is null`) and frees the slot. It returns how many it let go.
-create function custom.work_slot_expire(p_organization_id uuid, p_table_id uuid)
+create or replace function custom.work_slot_expire(p_organization_id uuid, p_table_id uuid)
 returns integer
 language plpgsql
 set search_path to 'pg_catalog'
@@ -859,7 +859,7 @@ $$;
 
 -- TAKE A HOLD. The expiry sweep and the insert are one statement, so two callers racing for
 -- one slot both sweep and both insert — and REC-N-12's index decides, by name.
-create function custom.work_slot_hold(p_organization_id uuid, p_table_id uuid,
+create or replace function custom.work_slot_hold(p_organization_id uuid, p_table_id uuid,
                                                  p_slot_key text, p_holder text,
                                                  p_ttl interval default interval '15 minutes')
 returns jsonb
@@ -912,7 +912,7 @@ $$;
 
 -- RELEASE. Soft, like every delete in this store (REC-23), and it says whether it released
 -- anything rather than answering silently.
-create function custom.work_slot_release(p_organization_id uuid, p_hold_id uuid)
+create or replace function custom.work_slot_release(p_organization_id uuid, p_hold_id uuid)
 returns boolean
 language plpgsql
 set search_path to 'pg_catalog'
@@ -932,7 +932,7 @@ $$;
 
 -- WHO HOLDS WHAT, right now. The live holds of one slot Table, expired ones excluded by the
 -- same clock the sweep uses.
-create function custom.work_slot_holds(p_organization_id uuid, p_table_id uuid)
+create or replace function custom.work_slot_holds(p_organization_id uuid, p_table_id uuid)
 returns table (hold_id uuid, slot_key text, holder text, expires_at timestamptz, expired boolean)
 language sql
 stable
@@ -959,7 +959,7 @@ $$;
 -- WHY THE VERBS ARE NOT ENOUGH, said plainly: a shape enforced only inside
 -- `custom.work_slot_hold` is a safe path beside an unsafe one. `insert into custom.record`
 -- reaches the same rows. So the shape lives here, on the table, where every writer meets it.
-create function custom._work_shape_guard()
+create or replace function custom._work_shape_guard()
 returns trigger
 language plpgsql
 set search_path to 'pg_catalog'

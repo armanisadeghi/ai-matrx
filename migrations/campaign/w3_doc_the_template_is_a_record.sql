@@ -68,7 +68,7 @@ set statement_timeout = '600s';
 -- 1. THE TOKEN. One pattern, stated once, so nothing anywhere re-spells it.
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.doc_token_pattern()
+create or replace function custom.doc_token_pattern()
 returns text language sql immutable parallel safe set search_path = pg_catalog as $$
   -- PandaDoc's mechanism: the token carries the Field's ID. The uuid shape is part of the
   -- pattern rather than checked afterwards, so `{{field:full_name}}` is NOT A TOKEN at all —
@@ -79,7 +79,7 @@ $$;
 comment on function custom.doc_token_pattern() is
   'REC-68: a document-template token names a Field by its id. W3-DOC.';
 
-create function custom.doc_tokens(p_body text)
+create or replace function custom.doc_tokens(p_body text)
 returns table(ordinal integer, raw text, field_id uuid)
 language sql immutable parallel safe set search_path = pg_catalog as $$
   select row_number() over ()::integer,
@@ -98,7 +98,7 @@ comment on function custom.doc_tokens(text) is
 --    rule 3's second input with a different expected value, built into the law itself.
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.doc_unresolved_tokens(
+create or replace function custom.doc_unresolved_tokens(
   p_organization_id uuid, p_table_id uuid, p_body text)
 returns table(raw text, field_id uuid, why text)
 language sql stable set search_path = pg_catalog as $$
@@ -123,7 +123,7 @@ comment on function custom.doc_unresolved_tokens(uuid, uuid, text) is
 --    the record does not hold: every arm below formats the STORED value and computes none.
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.doc_format_value(p_field_data jsonb, p_value jsonb)
+create or replace function custom.doc_format_value(p_field_data jsonb, p_value jsonb)
 returns text language plpgsql immutable set search_path = pg_catalog as $$
 declare
   v_fmt  text := nullif(p_field_data ->> 'format', '');
@@ -203,7 +203,7 @@ comment on view custom.doc_template is
 -- 5. THE DOOR — and the refusal, BY NAME, that REC-68 is made of.
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.doc_template_save(
+create or replace function custom.doc_template_save(
   p_organization_id uuid,
   p_table_id        uuid,
   p_name            text,

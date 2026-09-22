@@ -488,7 +488,7 @@ BEGIN
     IF cmd.in_extension THEN CONTINUE; END IF;
 
     -- ERROR lane (c): the banned mirror machinery may never come back
-    IF cmd.command_tag = 'CREATE FUNCTION'
+    IF cmd.command_tag = 'create or replace function'
        AND cmd.object_identity LIKE '%._mirror_fk_to_assoc(%' THEN
       RAISE EXCEPTION 'ddl_guard: creating % is FORBIDDEN', cmd.object_identity
         USING HINT = 'platform._mirror_fk_to_assoc creates two competing relationship authorities. Write canonical platform.associations edges via assoc_link instead. (matrx-frontend CLAUDE.md, Forbidden relationship shortcuts.)',
@@ -504,7 +504,7 @@ BEGIN
     -- Both forms were fixed at the emitter on 2026-08-24 and came back on
     -- 2026-08-29 through a wholesale CREATE OR REPLACE from a stale file copy.
     -- Patch a generator from pg_get_functiondef(); never replace it from a file.
-    IF cmd.command_tag = 'CREATE FUNCTION'
+    IF cmd.command_tag = 'create or replace function'
        AND (cmd.object_identity LIKE 'iam.entity_read_expr(%'
             OR cmd.object_identity LIKE 'iam._apply_rls_unchecked(%')
        AND EXISTS (
@@ -522,7 +522,7 @@ BEGIN
     -- This code runs before the table-only branch because CREATE TRIGGER has a trigger
     -- OID, not a relation OID.  OID comparisons are schema-qualified at resolution
     -- time; never compare regproc-rendered text (it drops schemas on search_path).
-    IF cmd.command_tag = 'CREATE FUNCTION' THEN
+    IF cmd.command_tag = 'create or replace function' THEN
       v_assignment_target_oid := cmd.objid;
     ELSIF cmd.command_tag = 'CREATE TRIGGER' THEN
       SELECT t.tgfoid INTO v_assignment_target_oid

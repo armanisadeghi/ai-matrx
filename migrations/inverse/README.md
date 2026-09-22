@@ -81,3 +81,49 @@ you write or change a file here, read the header of
 A file that has looked at a clause and genuinely handled it says so in its own bytes,
 `-- ground-standing-ok: <clauses>`, with the sentence that explains why beside it. That is not an
 excuse list and there is no excuse list: the guard's counts are a ratchet that may only go down.
+
+## Rule 27 over this directory — what passes, what cannot, and why (lane INVERSE-GUARD, 2026-09-22)
+
+Rule 27 is `up → inverse → up`. On the rehearsal branch, which already carries every up-file,
+the meaningful half is **inverse → up**: take the lane off, then put it back on top of what the
+inverse left. One transaction per pair, always ending in `ROLLBACK`.
+
+**The class defect it exposed, and the primitive that closed it.** An inverse may not drop a body
+a live trigger reaches or a later lane adopted — the guard above refuses that. But an up-file
+that creates those bodies with a bare `CREATE FUNCTION` can then never be re-applied on top of
+what the inverse left, so rule 27 fails. 28 of 84 inverses failed exactly this way, and the same
+pairs passed with the pre-fix inverse bytes, so it was the remedy that broke them and not the
+inverses. The fix is not to edit ledgered files quietly (checksum drift forever) and not
+`--reapply` (which re-EXECUTES a whole campaign file against the live database). It is
+`pnpm db:apply --amend-idempotent <file> --target production`, which executes NOTHING: it finds
+the ledgered bytes in git by checksum, proves the only difference is `CREATE FUNCTION` →
+`CREATE OR REPLACE FUNCTION`, moves the ledger checksum and writes the old one plus
+`amend-idempotent` into `chair_step` so the amendment is visible forever. **151 campaign
+up-files were amended this way; none was executed.**
+
+**Four things rule 27 cannot prove here, each for a stated reason — none of them a silenced
+failure:**
+
+1. **A lane-wide inverse has no single up-file.** `w3_hist_down.sql`, `w4_agg_down.sql`,
+   `w4_query_down.sql`, `w3_mig_down.sql`, `w4_io_down.sql` and
+   `w1_rule_apply_the_other_two_uses_down.sql` invert a whole LANE that shipped as many
+   up-files (`w3_hist_grant_capture.sql`, `w3_hist_retention_and_the_floor.sql`, …). Rule 27 for
+   them means applying every up-file of the lane, running the one inverse, and re-applying them
+   all, in order — not a pair. Until that is scripted they are rehearsed by hand.
+2. **`DROP INDEX CONCURRENTLY` cannot run inside a transaction block, at all.**
+   `readperf_the_class_finds_its_row_without_a_scan_down.sql` drops sixteen creator indexes that
+   way, so it can never be rehearsed in a rolled-back transaction and can never be proven
+   without leaving something behind. It is rehearsed MANUALLY, on the branch, in an autocommit
+   session, and the indexes are recreated by re-applying its up-file. Say so in the run notes.
+3. **A refusal is the inverse working.** `w1_reg_registry_attributes_down.sql` stops because
+   1,078 rows carry the column it would drop, and `w1_tier_external_tier_down.sql` stops on the
+   provisioner's CLOSED-schema door. Those are the files declining to corrupt live rows — a
+   PASS, recorded as a refusal, never "fixed".
+4. **The rehearsal branch does not carry every lane.** Five inverses fail on the branch naming a
+   function that exists on the MAIN database and not on the branch — `platform.memo_reach_tables`,
+   `custom.choice_field_map`, `custom.choice_key_of`, `custom.choice_slug`,
+   `custom.work_state_id` (branch 0, main 1, measured). Those are branch drift, not inverse
+   bugs, and they cannot be rehearsed until the branch is levelled on those lanes or they are
+   run on main inside the 1–4 AM PT window — dropping triggers off `custom.record` takes ACCESS
+   EXCLUSIVE on the parent and sixteen partitions, which is a write freeze on the instance
+   people sign in to.

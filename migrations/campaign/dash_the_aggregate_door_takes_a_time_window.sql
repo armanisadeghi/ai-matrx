@@ -77,7 +77,7 @@ set statement_timeout = '600s';
 -- `created_at` and no test will notice.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.dashboard_moment_sql(p_key text)
+create or replace function custom.dashboard_moment_sql(p_key text)
 returns text
 language sql
 immutable
@@ -101,7 +101,7 @@ comment on function custom.dashboard_moment_sql(text) is
 -- custom.dashboard_window_sql — one predicate for one `{"from":…, "to":…}`.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.dashboard_window_sql(p_key text, p_window jsonb)
+create or replace function custom.dashboard_window_sql(p_key text, p_window jsonb)
 returns text
 language plpgsql
 immutable

@@ -27,7 +27,7 @@
 -- `container_side = 'none'` is not a container and produces no edge, exactly as the view's
 -- `container_side = any(array['source','target'])` says.
 
-create function custom.carrying_edges_of(p_item_type text, p_item_id uuid)
+create or replace function custom.carrying_edges_of(p_item_type text, p_item_id uuid)
 returns table(container_type text, container_id uuid, conveys_max public.permission_level)
 language sql
 stable

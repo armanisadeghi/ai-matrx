@@ -73,7 +73,7 @@ on conflict (feature, key) do nothing;
 -- ---------------------------------------------------------------------------
 -- 2. THE RESOLVED NUMBER — knob, never below the store's history floor.
 -- ---------------------------------------------------------------------------
-create function custom.provenance_retention_days(p_organization_id uuid)
+create or replace function custom.provenance_retention_days(p_organization_id uuid)
 returns integer
 language plpgsql
 stable
@@ -122,7 +122,7 @@ comment on function custom.provenance_retention_days(uuid) is
 -- ---------------------------------------------------------------------------
 -- 3. THE PRUNE.
 -- ---------------------------------------------------------------------------
-create function custom.provenance_prune(
+create or replace function custom.provenance_prune(
   p_organization_id uuid default null,
   p_dry_run boolean default true,
   p_limit integer default 200000

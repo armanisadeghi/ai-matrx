@@ -36,7 +36,7 @@ set statement_timeout = '600s';
 -- 1. WHAT THE CALLER MAY SEE, AND WHAT IS HIDDEN  (DOOR-2)
 -- ---------------------------------------------------------------------------------------
 
-create function custom.hidden_field_notice(p_field custom.record, p_action text default 'read')
+create or replace function custom.hidden_field_notice(p_field custom.record, p_action text default 'read')
 returns jsonb
 language sql stable
 set search_path to 'pg_catalog'
@@ -54,7 +54,7 @@ comment on function custom.hidden_field_notice(custom.record, text) is
 
 -- The masking itself, done by the STORE. An application never decides this, because an
 -- application never receives the value to decide about.
-create function custom.mask_document(
+create or replace function custom.mask_document(
   p_document jsonb, p_visible_keys text[], p_notices jsonb, p_by_id boolean default false,
   p_key_ids jsonb default '{}'::jsonb)
 returns jsonb
@@ -77,7 +77,7 @@ comment on function custom.mask_document(jsonb, text[], jsonb, boolean, jsonb) i
 -- 2. THE READ DOOR  (DOOR-1, DOOR-2, DOOR-5, DOOR-N-5, DYN-21)
 -- ---------------------------------------------------------------------------------------
 
-create function custom.read_records(
+create or replace function custom.read_records(
   p_organization_id uuid,
   p_table_id        uuid,
   p_by_id           boolean default false,
@@ -149,7 +149,7 @@ $fn$;
 comment on function custom.read_records(uuid, uuid, boolean, integer, integer) is
   'DOOR-1: THE read door. Visibility and field-level security, applied by the store, for the signed-in person and nobody else.';
 
-create function custom.read_record(
+create or replace function custom.read_record(
   p_organization_id uuid, p_record_id uuid, p_by_id boolean default false)
 returns jsonb
 language plpgsql stable security definer
@@ -208,7 +208,7 @@ $fn$;
 -- paths. They are three CALLERS of the one door, and each is written here so nobody has to
 -- build a fourth. Every one of them resolves the principal the same way, so what an export
 -- writes to a file and what an index writes to a row is exactly what that person may see.
-create function custom.export_records(p_organization_id uuid, p_table_id uuid, p_limit integer default 1000)
+create or replace function custom.export_records(p_organization_id uuid, p_table_id uuid, p_limit integer default 1000)
 returns table (id uuid, document jsonb)
 language sql stable
 set search_path to 'pg_catalog'
@@ -219,7 +219,7 @@ $fn$;
 comment on function custom.export_records(uuid, uuid, integer) is
   'DOOR-4: an export stores only what the reading principal may see, because it IS the read door.';
 
-create function custom.index_payload(p_organization_id uuid, p_table_id uuid, p_limit integer default 1000)
+create or replace function custom.index_payload(p_organization_id uuid, p_table_id uuid, p_limit integer default 1000)
 returns table (id uuid, searchable text)
 language sql stable
 set search_path to 'pg_catalog'
@@ -234,7 +234,7 @@ $fn$;
 comment on function custom.index_payload(uuid, uuid, integer) is
   'DOOR-4: a search index holds only what the reading principal may see. A hidden value is never in the index text.';
 
-create function custom.agent_context(p_organization_id uuid, p_table_id uuid, p_limit integer default 50)
+create or replace function custom.agent_context(p_organization_id uuid, p_table_id uuid, p_limit integer default 50)
 returns jsonb
 language sql stable
 set search_path to 'pg_catalog'
@@ -255,7 +255,7 @@ comment on function custom.agent_context(uuid, uuid, integer) is
 -- Enforced by the STORE, on the table, in front of every write door there is or ever will
 -- be — not by whichever application happened to call one.
 
-create function custom._field_write_door()
+create or replace function custom._field_write_door()
 returns trigger
 language plpgsql
 set search_path to 'pg_catalog'
@@ -327,7 +327,7 @@ create trigger custom_record_field_write_door
 -- 4. THE LAWS, AS QUERIES THAT CAN FAIL  (DOOR-N-1, DOOR-12, VIS-N-8)
 -- ---------------------------------------------------------------------------------------
 
-create function custom.client_write_grants()
+create or replace function custom.client_write_grants()
 returns table (role_name text, object_name text, privilege text)
 language sql stable
 set search_path to 'pg_catalog'
@@ -344,7 +344,7 @@ $fn$;
 comment on function custom.client_write_grants() is
   'DOOR-N-1: there is exactly ONE write door into the record store and `authenticated` holds no direct INSERT, UPDATE or DELETE on any of it. Empty is the passing answer.';
 
-create function custom.read_paths_outside_the_door()
+create or replace function custom.read_paths_outside_the_door()
 returns table (object_name text, why text)
 language sql stable
 set search_path to 'pg_catalog'

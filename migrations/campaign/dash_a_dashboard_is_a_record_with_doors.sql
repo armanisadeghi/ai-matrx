@@ -96,7 +96,7 @@ set statement_timeout = '600s';
 -- The closed vocabularies, as the only copy (rule 15 — no literals in a gate).
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.dashboard_kinds()
+create or replace function custom.dashboard_kinds()
 returns text[]
 language sql
 immutable
@@ -107,7 +107,7 @@ comment on function custom.dashboard_kinds() is
   'SCR-15: the closed set of block shapes. A shape nobody drew is not offered, so a screen '
   'never has to render a kind it does not know.';
 
-create function custom.dashboard_class()
+create or replace function custom.dashboard_class()
 returns text
 language sql
 immutable
@@ -125,7 +125,7 @@ comment on function custom.dashboard_class() is
 -- and a grid can never disagree about what a column is called.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.dashboard_field_keys(p_organization_id uuid, p_table_id uuid)
+create or replace function custom.dashboard_field_keys(p_organization_id uuid, p_table_id uuid)
 returns text[]
 language sql
 stable
@@ -152,7 +152,7 @@ comment on function custom.dashboard_field_keys(uuid, uuid) is
 --   · anything that is not an object                                         22004
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.dashboard_block_normalize(
+create or replace function custom.dashboard_block_normalize(
   p_organization_id uuid,
   p_subject_table_id uuid,
   p_block jsonb)
@@ -353,7 +353,7 @@ on conflict do nothing;
 -- custom.dashboard_declare — the ONE way a dashboard comes into existence.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.dashboard_declare(
+create or replace function custom.dashboard_declare(
   p_organization_id uuid,
   p_table_id uuid,
   p_name text,
@@ -458,7 +458,7 @@ on conflict do nothing;
 -- custom.dashboards — the list, narrowed the way custom.forms is narrowed.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.dashboards(p_organization_id uuid, p_table_id uuid default null)
+create or replace function custom.dashboards(p_organization_id uuid, p_table_id uuid default null)
 returns table(dashboard_id uuid, table_id uuid, name text, blocks jsonb,
               presentation jsonb, block_count integer, version integer,
               created_at timestamptz, updated_at timestamptz)
@@ -531,7 +531,7 @@ on conflict do nothing;
 -- nobody has to guess whether a date means what they think it means.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.dashboard_stuck(
+create or replace function custom.dashboard_stuck(
   p_organization_id uuid,
   p_table_id uuid,
   p_state_key text,
@@ -654,7 +654,7 @@ on conflict do nothing;
 -- custom.dashboard_run — the WHOLE canvas, in ONE call, under the caller's own principal.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.dashboard_run(
+create or replace function custom.dashboard_run(
   p_organization_id uuid,
   p_dashboard_id uuid,
   p_filter jsonb default '{}'::jsonb)
@@ -799,7 +799,7 @@ on conflict do nothing;
 -- custom.dashboard_delete — through the store's own delete, not a second one.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.dashboard_delete(p_organization_id uuid, p_dashboard_id uuid)
+create or replace function custom.dashboard_delete(p_organization_id uuid, p_dashboard_id uuid)
 returns boolean
 language plpgsql
 security definer
