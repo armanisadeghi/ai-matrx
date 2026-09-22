@@ -70,6 +70,7 @@ import {
   GOOGLE_CONNECTOR_PROVIDER,
   type ConnectorProviderConfig,
 } from "./provider-config";
+import { confirmGmailReadDisclosure } from "./gmail-read-disclosure";
 
 export function ConnectorsSettingsPanel({
   className,
@@ -167,6 +168,8 @@ function ProviderConnectorsPanel({
     );
     setFailure(null);
     try {
+      const disclosed = await confirmGmailReadDisclosure(plan.request);
+      if (!disclosed) return;
       await runner.run(plan.request, {
         owner:
           account.ownerKind === "organization" && account.organizationId

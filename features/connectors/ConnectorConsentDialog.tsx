@@ -99,6 +99,7 @@ import {
 } from "./google-adapter";
 import { ConsentFailureNotice } from "./ConsentFailureNotice";
 import { GOOGLE_CONNECTOR_PROVIDER } from "./provider-config";
+import { confirmGmailReadDisclosure } from "./gmail-read-disclosure";
 
 /** The sentinel account id meaning "a Google login not connected here yet". */
 const NEW_ACCOUNT = "__new_account__";
@@ -638,6 +639,8 @@ export function ConnectorConsentBody({
     setBusy(true);
     setFailure(null);
     try {
+      const disclosed = await confirmGmailReadDisclosure(plan.request);
+      if (!disclosed) return;
       await runner.run(plan.request, {
         owner:
           forOrganization && activeOrganization

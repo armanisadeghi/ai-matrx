@@ -36,6 +36,10 @@ jest.mock("@/lib/toast", () => ({
   },
 }));
 
+jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({
+  confirm: async () => true,
+}));
+
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
   useAppDispatch: () => jest.fn(),
@@ -263,7 +267,7 @@ describe("the settings card for a dead account", () => {
 });
 
 describe("the consent dialog for a dead account", () => {
-  it("opens the provider window instead of saying everything is connected", () => {
+  it("opens the provider window instead of saying everything is connected", async () => {
     mount(
       <ConnectorConsentBody
         provider={provider}
@@ -280,6 +284,9 @@ describe("the consent dialog for a dead account", () => {
     );
     expect(cta).toBeDefined();
     click(cta!);
+    await act(async () => {
+      await Promise.resolve();
+    });
     expect(toastInfo).not.toHaveBeenCalled();
     expect(run).toHaveBeenCalledTimes(1);
     const request = run.mock.calls[0]?.[0] as

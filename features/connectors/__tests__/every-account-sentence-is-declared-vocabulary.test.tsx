@@ -387,7 +387,7 @@ const PRODUCT_WORDS = [
  * about the whole account" above — a static pass there would also grade the
  * Plane A resource-binding diagnoses, where "Analytics" is the subject.
  */
-const PRODUCT_NAME_HOMES = /(provider-config\.ts|google-adapter\.ts|marketing\/google\/health\.ts)$/;
+const PRODUCT_NAME_HOMES = /(provider-config\.ts|google-adapter\.ts|gmail-read-disclosure\.tsx|marketing\/google\/health\.ts)$/;
 
 describe("the connector primitive's own words", () => {
   const files = CENSUS_ROOTS.flatMap(sourceFiles);

@@ -26,6 +26,10 @@ jest.mock("@/lib/toast", () => ({
   },
 }));
 
+jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({
+  confirm: async () => true,
+}));
+
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
   useAppDispatch: () => jest.fn(),
@@ -169,13 +173,16 @@ afterEach(() => {
 });
 
 describe("the press on a refused product reaches the provider", () => {
-  it("opens the provider window instead of answering 'already connected'", () => {
+  it("opens the provider window instead of answering 'already connected'", async () => {
     mount();
     const cta = [...container.querySelectorAll("button")].find((node) =>
       (node.textContent ?? "").includes(provider.dialog.cta),
     );
     expect(cta).toBeDefined();
     click(cta!);
+    await act(async () => {
+      await Promise.resolve();
+    });
     expect(toastInfo).not.toHaveBeenCalled();
     expect(run).toHaveBeenCalledTimes(1);
     const request = run.mock.calls[0]?.[0] as

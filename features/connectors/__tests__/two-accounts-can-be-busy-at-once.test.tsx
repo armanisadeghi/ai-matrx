@@ -67,7 +67,7 @@ jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
 }));
 
 jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({
-  confirm: async () => false,
+  confirm: async () => true,
 }));
 
 jest.mock("@/features/marketing/google/hooks", () => ({

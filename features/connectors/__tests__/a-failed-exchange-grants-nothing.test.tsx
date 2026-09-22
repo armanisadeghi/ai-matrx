@@ -24,6 +24,10 @@ jest.mock("@/lib/toast", () => ({
   toast: { info: jest.fn(), success: jest.fn(), error: jest.fn() },
 }));
 
+jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({
+  confirm: async () => true,
+}));
+
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
   useAppDispatch: () => jest.fn(),

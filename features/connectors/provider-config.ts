@@ -299,7 +299,8 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
     {
       key: "gmail_read",
       name: "Gmail reading",
-      promise: "Search and open messages when you ask. We do not sync your whole mailbox or change your email.",
+      promise:
+        "Search and open messages when you ask. If you separately register this mailbox for outreach, matched replies are saved in CRM.",
       group: WORKSPACE_GROUP,
       icon: Mail,
       capabilityKeys: ["gmail_read"],
