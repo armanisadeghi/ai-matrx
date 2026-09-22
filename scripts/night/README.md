@@ -13,6 +13,12 @@
 > production. It is fine for your schema-only branch (different identifier) but must assert on the
 > connection user `postgres.<ref>` or the host before it is ever pointed at the nightly clone
 > (`common-docs/operations/clone/CURRENT.md`).
+>
+> 🚨 **2026-09-22 ~00:10 PT (same session, on Arman's word):** `com.aimatrx.night.branch-refresh-nightly`
+> (daily 01:05) and the one-shot `com.aimatrx.night-sweep.branch-refresh` (2026-09-23 01:05) were also
+> **unloaded**, plists kept as `.PAUSED-2026-09-22`. They write only the branch, but each takes a
+> ~7-minute `pg_dump --schema-only` of production (ACCESS SHARE on every table). Nothing of ours is
+> loaded on the Mac now. When these return, take the schema from the nightly clone, not production.
 
 
 A night job is a **one-shot**: it fires once, on a calendar time, from a launchd user agent, and
