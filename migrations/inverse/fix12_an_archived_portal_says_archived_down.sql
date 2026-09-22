@@ -4,6 +4,8 @@
 -- main database on 2026-09-22 (md5 of prosrc 8344e950d90ca32cc2b9da387edb2abf). After it, an
 -- archived portal reads as "closed" to the client again.
 
+-- based-on: public.portal_share_peek(text) 54898b993cfe0bd831a424f6d8bfc264a306ad7fdc4084f944eaaacf98ef875c
+
 set lock_timeout = '4s';
 
 CREATE OR REPLACE FUNCTION public.portal_share_peek(p_token text)
