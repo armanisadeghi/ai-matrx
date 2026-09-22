@@ -448,6 +448,7 @@ const UserTableViewer = ({
   emitSurfaceScope = false,
 }: UserTableViewerProps) => {
   const router = useRouter();
+  const [scheduleNavigationPending, startScheduleNavigation] = React.useTransition();
   const isMobile = useIsMobile();
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
   const [fields, setFields] = useState<TableField[]>([]);
@@ -4757,14 +4758,20 @@ const UserTableViewer = ({
                             schedule form with the "table change" trigger set to
                             this table; the schedule runs the agent when a row changes. */}
                         <DropdownMenuItem
-                          onSelect={() =>
-                            router.push(
-                              `/schedules/new?trigger=event&tableId=${encodeURIComponent(tableId)}&prompt=${encodeURIComponent(`A row in the table "${tableInfo?.table_name ?? "this table"}" changed. The event variable names the row and the columns that changed. `)}`,
-                            )
-                          }
+                          disabled={scheduleNavigationPending}
+                          onSelect={() => {
+                            if (scheduleNavigationPending) return;
+                            startScheduleNavigation(() => {
+                              router.push(
+                                `/schedules/new?trigger=event&tableId=${encodeURIComponent(tableId)}&prompt=${encodeURIComponent(`A row in the table "${tableInfo?.table_name ?? "this table"}" changed. The event variable names the row and the columns that changed. `)}`,
+                              );
+                            });
+                          }}
                         >
                           <Zap className="mr-2 h-3.5 w-3.5" />
-                          When a row changes, run an agent…
+                          {scheduleNavigationPending
+                            ? "Opening schedule…"
+                            : "When a row changes, run an agent…"}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
