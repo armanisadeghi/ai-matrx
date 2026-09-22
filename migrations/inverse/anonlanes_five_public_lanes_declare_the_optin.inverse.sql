@@ -1,3 +1,5 @@
+-- chair-step: an inverse. It clears five live anonymous-lane declarations, which the withdrawal
+-- arm then treats as undeclared live lanes -- see the warning below before running it alone.
 -- INVERSE of migrations/campaign/anonlanes_five_public_lanes_declare_the_optin.sql (lane ANON-LANES)
 --
 -- Clears the five declarations. It deliberately does NOT revoke `anon`'s column grants: those

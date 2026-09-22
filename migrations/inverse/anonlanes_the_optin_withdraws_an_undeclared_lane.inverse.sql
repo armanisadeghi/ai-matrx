@@ -1,3 +1,5 @@
+-- chair-step: an inverse. It cuts a block back out of a LIVE generator function body; the
+-- additive allow-list cannot read DDL built at run time.
 -- INVERSE of migrations/campaign/anonlanes_the_optin_withdraws_an_undeclared_lane.sql
 -- (lane ANON-LANES)
 --

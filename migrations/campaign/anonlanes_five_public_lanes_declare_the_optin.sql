@@ -1,4 +1,8 @@
 -- lane: ANON-LANES
+-- chair-step: this file calls `iam.apply_table_grants(...)`, a spec-driven builder — the additive
+-- allow-list cannot read the GRANT statements it will execute. What it executes is the canonical
+-- grant route and nothing else, and on these five tables it re-issues the exact column ACLs they
+-- already hold (every excluded set below was read live from pg_attribute first).
 -- DD-249 / R12 — THE FOUR (PLUS ONE) ANONYMOUS READ LANES NOBODY HAD CENSUSED, RULED.
 --
 -- ─────────────────────────────────────────────────────────────────────────────────────────────

@@ -30,6 +30,9 @@ declare
   v_dead int;
   v_pending int;
   v_red boolean := false;
+  v_s text;
+  v_t text;
+  v_v text;
 begin
   select count(*) into v_tokens from platform.entity_types where is_active;
   select count(*) into v_declared
@@ -223,11 +226,62 @@ begin
     raise notice '  PASS 8b (GREEN) re-declaring it makes the same call succeed — the refusal tracks the declaration, not the table';
   end;
 
+  -- ═══ 8c. THE DEAD-KEY ARM ACTUALLY REVOKES ══════════════════════════════════
+  -- 8a/8b prove the REFUSAL. The other half of the withdrawal is the silent one: an `anon` SELECT
+  -- grant that NO SELECT-capable policy reaches can never return a row, so the generator takes it
+  -- away rather than leaving the catalogue describing a reader who does not exist. That arm is
+  -- invisible on a database that happens to carry no dead key, so this PLANTS one — on whatever
+  -- registered, client-exposed, policy-bearing table currently has no anonymous grant at all —
+  -- and proves the next generation removes it. Rolled back with everything else.
+  select et.schema_name, et.table_name, et.rls_variant into v_s, v_t, v_v
+    from platform.entity_types et
+   where et.is_active
+     and to_regclass(format('%I.%I', et.schema_name, et.table_name)) is not null
+     and not coalesce(et.client_anonymous_public_read, false)
+     and et.anon_lane_pending_withdrawal_reason is null
+     and et.client_excluded_columns is null
+     and not coalesce(et.client_read_only, false)
+     and et.rls_variant in ('entity','system','reference','ledger','component')
+     and platform.schema_is_client_exposed(et.schema_name)
+     and not (iam.class_lanes(et.token)).anon_lane
+     and (select c.relrowsecurity from pg_class c
+           where c.oid = format('%I.%I', et.schema_name, et.table_name)::regclass)
+     and exists (select 1 from pg_policy p
+                  where p.polrelid = format('%I.%I', et.schema_name, et.table_name)::regclass)
+     and not exists (select 1 from pg_attribute a
+                      where a.attrelid = format('%I.%I', et.schema_name, et.table_name)::regclass
+                        and a.attnum > 0 and not a.attisdropped
+                        and a.attacl::text like '%authenticated=%')
+     and not has_table_privilege('anon', format('%I.%I', et.schema_name, et.table_name)::regclass, 'SELECT')
+     and not has_any_column_privilege('anon', format('%I.%I', et.schema_name, et.table_name)::regclass, 'SELECT')
+     and not exists (
+       select 1 from pg_policy p
+        where p.polrelid = format('%I.%I', et.schema_name, et.table_name)::regclass
+          and p.polpermissive and p.polcmd in ('r','*')
+          and (p.polroles = '{0}'::oid[]
+               or 'anon' = any(select pg_get_userbyid(x) from unnest(p.polroles) x)))
+   order by et.schema_name, et.table_name
+   limit 1;
+  if v_s is null then
+    raise exception '8c: no registered table is available to plant a dead anonymous key on. This suite cannot prove the revoke arm, and a proof it cannot run is not a proof.';
+  end if;
+  execute format('grant select (id) on %I.%I to anon', v_s, v_t);
+  if not has_any_column_privilege('anon', format('%I.%I', v_s, v_t)::regclass, 'SELECT') then
+    raise exception '8c: the planted dead key did not take on %.%', v_s, v_t;
+  end if;
+  perform iam.apply_table_grants(v_s, v_t, v_v);
+  if has_any_column_privilege('anon', format('%I.%I', v_s, v_t)::regclass, 'SELECT')
+     or has_table_privilege('anon', format('%I.%I', v_s, v_t)::regclass, 'SELECT') then
+    raise exception '8c: %.% kept an anonymous SELECT grant that no policy reaches. The dead-key arm does not revoke.', v_s, v_t;
+  end if;
+  v_passes := v_passes + 1;
+  raise notice '  PASS 8c  a planted dead anonymous key on %.% — a grant no SELECT policy reaches — is REVOKED by the next generation', v_s, v_t;
+
   raise notice '';
-  raise notice '  %/8 assertions green (registry: % active tokens, % resolving class `public`, % declared opt-in)',
+  raise notice '  %/9 assertions green (registry: % active tokens, % resolving class `public`, % declared opt-in)',
     v_passes, v_tokens, v_public_class, v_declared;
-  if v_passes <> 8 then
-    raise exception 'suite: % assertions passed, not 8', v_passes;
+  if v_passes <> 9 then
+    raise exception 'suite: % assertions passed, not 9', v_passes;
   end if;
 end;
 $suite$;
