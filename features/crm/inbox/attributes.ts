@@ -255,6 +255,8 @@ export interface ReplyProvenance {
   threadHash: string | null;
   version: string | null;
   generatedAt: string | null;
+  /** Server receipt: source resolved and was not Gmail-derived. */
+  modelTransferAllowed: boolean;
 }
 
 /** Human-readable intents. An unknown intent renders as its raw name rather than
@@ -290,6 +292,7 @@ export function readReplyProvenance(attributes: unknown): ReplyProvenance | null
     threadHash: readString(block, "thread_hash"),
     version: readString(block, "version"),
     generatedAt: readString(block, "generated_at"),
+    modelTransferAllowed: block.model_transfer_allowed === true,
   };
 }
 

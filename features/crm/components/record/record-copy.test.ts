@@ -50,6 +50,7 @@ describe("CRM record copy projections", () => {
         body: "Paragraph one\n\nParagraph two",
         classification: null,
         classification_evidence: null,
+        model_transfer_restricted: false,
       },
     ];
 

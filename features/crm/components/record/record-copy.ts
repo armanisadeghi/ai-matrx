@@ -1,6 +1,9 @@
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import type { PlatformComment as Comment } from "@ai-matrx/associations";
-import { readInboundClassification } from "@/features/crm/inbox/attributes";
+import {
+  isGmailDerivedInteraction,
+  readInboundClassification,
+} from "@/features/crm/inbox/attributes";
 import { MEDIUM_BLOCK_LABELS, mediumBlocks } from "@/features/crm/reachability";
 import { partyKindWord } from "@/features/crm/party-words";
 import type {
@@ -287,6 +290,9 @@ export function buildInteractionCopyView(row: InteractionRow) {
     body: row.body,
     classification: classification?.rawLabel ?? null,
     classification_evidence: classification?.evidence ?? null,
+    // Kept beside the local copy view so every Activity → agent serializer
+    // uses the same source decision. Clipboard formatting remains local.
+    model_transfer_restricted: isGmailDerivedInteraction(row),
   };
 }
 
@@ -315,11 +321,17 @@ export function interactionAgentPayload(
   row: InteractionRow,
   view: InteractionCopyView,
 ): AgentPayloadInput {
+  if (view.model_transfer_restricted || isGmailDerivedInteraction(row)) {
+    throw new Error(
+      "Gmail-derived activity cannot be sent to the configured model provider.",
+    );
+  }
+  const { model_transfer_restricted: _restricted, ...safeView } = view;
   return {
     kind: "crm-record-activity-item",
     location: "CRM record — Activity",
     description: `One activity item visible on ${parent.label}.`,
-    data: view,
+    data: safeView,
     summary: formatInteractionCopy(view),
     attributes: {
       record_id: parent.id,
@@ -350,18 +362,29 @@ export function interactionsAgentPayload(
   views: InteractionCopyView[],
   includeBodies = true,
 ): AgentPayloadInput {
+  const safeViews = views.filter((view) => !view.model_transfer_restricted);
+  if (safeViews.length === 0 && views.length > 0) {
+    throw new Error(
+      "Gmail-derived activity cannot be sent to the configured model provider.",
+    );
+  }
   const data = includeBodies
-    ? views
-    : views.map((view) => ({ ...view, body: null }));
+    ? safeViews.map(
+        ({ model_transfer_restricted: _restricted, ...view }) => view,
+      )
+    : safeViews.map(({ model_transfer_restricted: _restricted, ...view }) => ({
+        ...view,
+        body: null,
+      }));
   return {
     kind: "crm-record-activity",
     location: "CRM record — Activity",
     description: `${includeBodies ? "All visible activity details" : "An activity overview"} for ${parent.label}.`,
     data,
-    summary: formatInteractionsCopy(parent, views, includeBodies),
+    summary: formatInteractionsCopy(parent, safeViews, includeBodies),
     attributes: {
       record_id: parent.id,
-      count: views.length,
+      count: safeViews.length,
       includes_bodies: includeBodies,
     },
     context: parentContext(parent),

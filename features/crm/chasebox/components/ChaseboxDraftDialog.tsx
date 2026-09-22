@@ -96,6 +96,7 @@ export interface ReviewedDraft {
     grounded_on: string[];
     answering_label: string | null;
     thread_message_count: number | null;
+    model_transfer_allowed: boolean;
   };
 }
 
@@ -228,6 +229,7 @@ export function ChaseboxDraftDialog({
             grounded_on: reply.groundedOn,
             answering_label: reply.latestInboundLabel,
             thread_message_count: reply.threadMessageCount,
+            model_transfer_allowed: reply.modelTransferAllowed,
           }
         : undefined,
     });

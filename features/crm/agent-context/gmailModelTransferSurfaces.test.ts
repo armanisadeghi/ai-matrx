@@ -70,6 +70,7 @@ describe("Gmail model-transfer surface boundaries", () => {
         grounded_on: ["They asked for a walkthrough [inbound_message]"],
         answering_label: "interested",
         thread_message_count: 2,
+        model_transfer_allowed: false,
       },
       draft_approved: false,
     });
@@ -99,6 +100,32 @@ describe("Gmail model-transfer surface boundaries", () => {
       draft_subject: "Harbor Dental intake workflow",
       draft_body: "Would a workflow review be useful?",
       draft_approved: false,
+    });
+  });
+
+  it("keeps a reply draft with a server-issued non-Gmail transfer receipt", () => {
+    const scope = createCrmChaseboxScope({
+      active_queue: "pending_drafts",
+      queue_counts: { pending_drafts: 1 },
+      total_items: 1,
+      visible_items: [],
+      draft_subject: "Re: intake workflow",
+      draft_body: "Here is the requested workflow.",
+      draft_personalization: [],
+      draft_reply: {
+        intent: "Answer their question",
+        grounded_on: ["They asked in a CRM note [record]"],
+        answering_label: "interested",
+        thread_message_count: 2,
+        model_transfer_allowed: true,
+      },
+      draft_approved: false,
+    });
+
+    expect(scope).toMatchObject({
+      draft_subject: "Re: intake workflow",
+      draft_body: "Here is the requested workflow.",
+      draft_reply: { model_transfer_allowed: true },
     });
   });
 });

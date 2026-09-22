@@ -235,6 +235,7 @@ export function createCrmChaseboxScope(values: {
     grounded_on: string[];
     answering_label: string | null;
     thread_message_count: number | null;
+    model_transfer_allowed: boolean;
   };
   draft_approved?: boolean;
 }): SurfaceScopePayload {
@@ -254,10 +255,11 @@ export function createCrmChaseboxScope(values: {
       (item) => item.queue !== "fresh_replies",
     ),
   };
-  if (!draft_reply) {
+  if (!draft_reply || draft_reply.model_transfer_allowed) {
     safeScope.draft_subject = draft_subject;
     safeScope.draft_body = draft_body;
     safeScope.draft_personalization = draft_personalization;
+    safeScope.draft_reply = draft_reply;
     safeScope.draft_approved = draft_approved;
   }
   return safeScope as SurfaceScopePayload;
