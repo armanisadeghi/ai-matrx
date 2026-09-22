@@ -277,6 +277,23 @@
 > the one in force, because it is the one that cannot cause an outage.
 
 
+> ### THE ONE VERIFIED EXEMPTION — `-- policy-ddl: one-table` (chair ruling, 2026-09-22)
+>
+> The census made every policy migration window-class. POLICY-LOCK's midday allowance survives it
+> **as an exemption the runner PROVES, never a switch a file asserts.** A file may declare
+> `-- policy-ddl: one-table`; at `--target production` outside the window the runner honours it
+> only when it can prove both halves itself: **(a)** every policy statement names the SAME ONE
+> table and the file is policy-only, and **(b)** a `pnpm db:rehearse <file> --target clone`
+> (`--measure-only` for the measure pass alone) recorded **first-policy-DDL → end of transaction
+> under 200 ms** for THESE EXACT BYTES, in `migrations/measurements/<sha256>.json`, checked in and
+> hash-bound the way a night job's inverse gate is bound to its inverse. Anything missing is a
+> refusal that NAMES the missing proof; one changed byte and the measurement stops answering for
+> the file. Proof: `pnpm check:migration-window-class:self-test` arms RED-6 (no measurement),
+> RED-7 (declares one table, names two — refused by counting), RED-8 (4,418 ms, POLICY-LOCK's own
+> before-number), RED-9 (a drop trigger riding along), GREEN-6. Measured live the same day on the
+> clone: `drop policy` + `create policy` on `iam.api_keys` = **244 ms, refused**; the single
+> `create policy` = **115 ms, window waived**.
+
 A night job is a **one-shot**: it fires once, on a calendar time, from a launchd user agent, and
 deletes its own plist on the way out. It exists because the session that scheduled it will not be
 alive when it runs.
