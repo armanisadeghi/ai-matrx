@@ -25,6 +25,7 @@
 \timing off
 
 \set suite 'fix10b_f6_red.sql'
+\set requires 'grant:authenticated:custom.table_declare'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit

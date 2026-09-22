@@ -92,6 +92,7 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'w3_work_c44.sql'
+\set requires 'grant:authenticated:custom.work_assign'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit

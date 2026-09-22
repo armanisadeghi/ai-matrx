@@ -43,9 +43,16 @@
 --                                         of the EXECUTE grants production gives that role
 --     column:<schema>.<table>.<column>    a column
 --     schema:<name>                       a schema
---     row:<schema>.<table>:<predicate>    at least one row matching the predicate,
---                                         e.g. row:platform.feature_knob:key = 'agents.x'
+--     row:<schema>.<table>:<predicate>    at least one row matching the predicate. Inner quotes
+--                                         are escaped for psql's \set, e.g.
+--                                         row:platform.feature_knob:key = \'agents.x\'
+--     tablegrant:<role>:<schema>.<table>:<priv>   <role> holds <priv> on that table
 --     extension:<name>                    an installed extension
+--
+-- A token may be NEGATED with a leading `!`: `!tablegrant:authenticated:platform.associations:DELETE`
+-- means the suite needs that privilege to be ABSENT here. Production revokes a door's direct
+-- write and the branch does not, so a suite about what the door decides proves nothing here —
+-- and says so by name instead of failing as if the door were broken.
 -- ═══════════════════════════════════════════════════════════════════════════════════════════
 
 \set ON_ERROR_STOP on
@@ -105,13 +112,15 @@ select
 do $matrx_req$
 declare
   v_tok text; v_kind text; v_arg text; v_pred text; v_rel text;
-  v_miss text[] := '{}'; v_ok boolean; v_n bigint;
+  v_miss text[] := '{}'; v_ok boolean; v_n bigint; v_neg boolean;
 begin
   foreach v_tok in array coalesce(
       string_to_array(nullif(current_setting('matrx.suite_requires', true), ''), '|'), '{}'::text[])
   loop
     v_tok := btrim(v_tok);
     if v_tok = '' then continue; end if;
+    v_neg := left(v_tok, 1) = '!';
+    if v_neg then v_tok := substr(v_tok, 2); end if;
     v_kind := split_part(v_tok, ':', 1);
     v_arg  := substr(v_tok, length(v_kind) + 2);
     if v_kind = 'relation' then
@@ -146,6 +155,16 @@ begin
           and column_name  = split_part(v_arg, '.', 3));
     elsif v_kind = 'schema' then
       v_ok := exists (select 1 from pg_namespace where nspname = v_arg);
+    elsif v_kind = 'tablegrant' then
+      -- tablegrant:<role>:<schema>.<table>:<priv>
+      v_pred := split_part(v_arg, ':', 1);                       -- the role
+      v_rel  := split_part(v_arg, ':', 2);                       -- schema.table
+      if not exists (select 1 from pg_roles where rolname = v_pred)
+         or to_regclass(v_rel) is null then
+        v_ok := false;
+      else
+        v_ok := has_table_privilege(v_pred, v_rel::regclass, split_part(v_arg, ':', 3));
+      end if;
     elsif v_kind = 'extension' then
       v_ok := exists (select 1 from pg_extension where extname = v_arg);
     elsif v_kind = 'row' then
@@ -154,15 +173,20 @@ begin
       if to_regclass(v_rel) is null then
         v_ok := false;
       else
+        -- A predicate that will not parse is a BROKEN DECLARATION, never a missing row: it
+        -- would skip on every database, production included. It is raised, not swallowed.
         begin
           execute format('select count(*) from %s where %s', v_rel, v_pred) into v_n;
-          v_ok := coalesce(v_n, 0) > 0;
-        exception when others then v_ok := false; end;
+        exception when others then
+          raise exception 'campaign preamble: the row: predicate in "%" could not be evaluated here (%). Fix the declaration — escape inner quotes as \'' in psql \set.', v_tok, sqlerrm;
+        end;
+        v_ok := coalesce(v_n, 0) > 0;
       end if;
     else
       raise exception 'campaign preamble: unknown dependency token kind "%" in "%"', v_kind, v_tok;
     end if;
-    if not v_ok then v_miss := v_miss || v_tok; end if;
+    if v_neg then v_ok := not v_ok; end if;
+    if not v_ok then v_miss := v_miss || ((case when v_neg then '!' else '' end) || v_tok); end if;
   end loop;
   perform set_config('matrx.suite_missing', array_to_string(v_miss, ', '), false);
 end

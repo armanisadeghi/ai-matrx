@@ -19,6 +19,7 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'mirrorperf_red.sql'
+\set requires 'function:custom.visible_record_ids'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit

@@ -79,6 +79,7 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'w1_rel_c12.sql'
+\set requires 'row:platform.feature_knob:feature = \'custom\' and key = \'associations_guard\' and default_value::text = \'true\''
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit

@@ -221,6 +221,18 @@ export function grantCsvRows(
  * they see this?".
  */
 export const NO_GRANTS_HEADLINE = "Not shared with anyone";
+
+/**
+ * 🚨 THE SAME EMPTY STATE WHEN SOMETHING ELSE IS PENDING ON THE SAME SCREEN
+ * (FIX-10C, VERIFIER-10 F13, 2026-09-22).
+ *
+ * "Not shared with anyone" stood directly above an invited person's row, and a
+ * screen that contradicts itself is worse than either sentence alone. An
+ * invitation is genuinely not a grant — it confers nothing until it is
+ * accepted — so the list does not start counting invitations. It says the
+ * narrower, still-true thing: nobody has access YET.
+ */
+export const NO_GRANTS_YET_HEADLINE = "Nobody has access yet";
 export const NO_GRANTS_DETAIL = "No one has been granted access here";
 
 /**

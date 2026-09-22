@@ -23,6 +23,7 @@
 \timing off
 
 \set suite 'fix10bf5_formula_red.sql'
+\set requires 'function:custom.organization_kernel_id'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit

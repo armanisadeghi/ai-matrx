@@ -29,6 +29,7 @@ import {
   GRANT_LIST_SCOPE_NOTE,
   NO_GRANTS_DETAIL,
   NO_GRANTS_HEADLINE,
+  NO_GRANTS_YET_HEADLINE,
   type SharingCopyContext,
 } from "@/features/sharing/format";
 import type {
@@ -69,6 +70,24 @@ interface PermissionsListProps {
   copy?: SharingCopyContext;
   /** Which slice this list renders, e.g. "Users" / "Organizations". */
   listLabel?: string;
+  /**
+   * 🚨 WHAT ELSE IS ON THIS SCREEN THAT IS NOT A GRANT (FIX-10C, VERIFIER-10
+   * F13, 2026-09-22).
+   *
+   * This list only ever knew about DIRECT grants, and said so honestly in its
+   * scope note. But after an outside invitation lands, the dialog read
+   * "Current Access — Not shared with anyone — No one has been granted access
+   * here" with the invited person's row drawn directly underneath it. Both
+   * halves were true and the screen contradicted itself, which is the one thing
+   * a screen may not do.
+   *
+   * An invitation is not a grant — it confers nothing until it is accepted, and
+   * making this list count it would be the same lie pointing the other way. So
+   * the empty state stays an empty state and simply stops pretending it is the
+   * whole screen: the caller that also draws the pending rows says how many
+   * there are, and the sentence names them.
+   */
+  alsoPending?: { count: number; one: string; many: string } | undefined;
 }
 
 /**
@@ -77,6 +96,27 @@ interface PermissionsListProps {
  * payload and every export covers ALL grants, not the visible slice.
  */
 const GRANT_PREVIEW = 12;
+
+/**
+ * What is on the screen besides the grants, in a sentence a person reads.
+ *
+ * The caller hands BOTH words. A plural is a word the thing already knows,
+ * never an "s" glued onto a noun phrase — that rule cost this platform "22 new
+ * Invoicess" once already, and "3 person outside this organizations" here.
+ */
+function pendingSentence({
+  count,
+  one,
+  many,
+}: {
+  count: number;
+  one: string;
+  many: string;
+}): string {
+  return count === 1
+    ? `One ${one} is invited below and has not joined yet — they get access the moment they follow their link.`
+    : `${count} ${many} are invited below and have not joined yet — each gets access the moment they follow their link.`;
+}
 
 /** Header toggle between the preview and the full grant list. */
 function ShowAllToggle({
@@ -124,6 +164,7 @@ export function PermissionsList({
   loading = false,
   copy,
   listLabel = "Current access",
+  alsoPending,
 }: PermissionsListProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
@@ -168,7 +209,9 @@ export function PermissionsList({
     return (
       <div className="group text-center py-6 text-muted-foreground">
         <Lock className="w-10 h-10 mx-auto mb-1.5 opacity-20" />
-        <p className="text-sm">{NO_GRANTS_HEADLINE}</p>
+        <p className="text-sm">
+          {alsoPending && alsoPending.count > 0 ? NO_GRANTS_YET_HEADLINE : NO_GRANTS_HEADLINE}
+        </p>
         {/*
          * This list only knows about DIRECT grants. It cannot see visibility,
          * org membership, or access conveyed through a container — so "only you
@@ -176,6 +219,13 @@ export function PermissionsList({
          * actually known: no one has been granted access here.
          */}
         <p className="text-xs mt-0.5">{NO_GRANTS_DETAIL}</p>
+        {/* And what IS on the screen, so the headline above can never stand
+            over a row that contradicts it. */}
+        {alsoPending && alsoPending.count > 0 ? (
+          <p className="text-xs mt-0.5" data-testid="grants-also-pending">
+            {pendingSentence(alsoPending)}
+          </p>
+        ) : null}
         {/*
          * "Nobody has been granted access" is an ANSWER, not an absence — it is
          * usually the whole reason the user is here asking why someone can't

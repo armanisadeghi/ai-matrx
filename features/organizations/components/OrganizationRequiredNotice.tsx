@@ -30,7 +30,7 @@
 //                            already-framed card, panel, or list.
 //   `onRetry`              — re-run the load after a pick; omitted = no button.
 
-import { Building2 } from "lucide-react";
+import { Building2, LogIn } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
 import {
   ORGANIZATION_UNAVAILABLE_DESCRIPTION,
@@ -128,7 +128,71 @@ export function OrganizationRequiredNotice({
   );
 }
 
-// ─── The three states, in ONE component ─────────────────────────────────────
+/**
+ * WHAT A SIGNED-OUT READER IS ACTUALLY TOLD.
+ *
+ * Measured (VERIFIER-10 F11): a digest's own deep link, opened in a clean
+ * browser, answered "Data records need an organization … pick the one you are
+ * working in" with Sign In / Sign Up in the header directly above it. The link
+ * DID carry its organization — `platform.link_carries_its_organization` stamps
+ * `?org=<uuid>` onto every in-app notice link and the live rows show it — and
+ * `resolveActiveOrgContext` honours that as the rung above the remembered
+ * choice. None of that can run for somebody the platform has never met. So the
+ * sentence names the real state, says the link will still work, and the control
+ * is the one that fixes it.
+ *
+ * The link is deliberately relative and built from the CURRENT address, so
+ * signing in returns the person to the exact thing they were sent — including
+ * its `?org=`, which is what makes the organization rung fire on the way back.
+ */
+function SignInFirstNotice({
+  what,
+  compact,
+  className,
+}: {
+  what?: string | undefined;
+  compact: boolean;
+  className?: string | undefined;
+}) {
+  const headline = what ? `Sign in to open ${what.toLowerCase()}` : "Sign in to open this";
+  const sentence =
+    "You are not signed in, so nothing was loaded. This link knows which " +
+    "organization it belongs to and will open the right thing as soon as we " +
+    "know who you are — nothing here is missing and you have not lost the link.";
+  const href =
+    typeof window === "undefined"
+      ? "/login"
+      : `/login?returnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+  const body = (
+    <>
+      <h3 className="text-sm font-semibold text-foreground">{headline}</h3>
+      <p className={compact ? "mt-1 text-xs text-muted-foreground" : "text-sm text-muted-foreground"}>
+        {sentence}
+      </p>
+      <Button asChild size="sm">
+        <a href={href}>Sign in</a>
+      </Button>
+    </>
+  );
+  return (
+    <div
+      className={className}
+      role="status"
+      data-testid="organization-signed-out-notice"
+    >
+      {compact ? (
+        <div className="space-y-2 p-3">{body}</div>
+      ) : (
+        <div className="mx-auto flex max-w-md flex-col items-center gap-3 p-6 text-center">
+          <LogIn className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
+          {body}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── The states, in ONE component ───────────────────────────────────────────
 
 /**
  * 🚨 THE THIRD STATE IS NOT THE REFUSAL, AND IT IS NOT AN EMPTY SCREEN.
@@ -166,6 +230,20 @@ export function OrganizationContextNotice({
   className,
 }: OrganizationRequiredNoticeProps & { state: OrganizationState }) {
   if (state === "ready") return null;
+  // 🚨 THE FIFTH STATE, FIRST (FIX-10C, VERIFIER-10 F11, 2026-09-22). A person
+  // who is not signed in is not a person with no organization, and the picker
+  // this file draws under the organization sentence is empty for them and
+  // always will be. Every surface that already passes `state` inherits this one
+  // too — that is the whole point of the states living in one component.
+  if (state === "signed_out") {
+    return (
+      <SignInFirstNotice
+        what={what}
+        compact={compact}
+        className={className}
+      />
+    );
+  }
   if (state === "unavailable") {
     return (
       <OrganizationUnavailableNotice

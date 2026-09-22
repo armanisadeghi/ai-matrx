@@ -116,6 +116,10 @@ export function ShareModal({
   const [activeTab, setActiveTab] = useState<
     "users" | "organizations" | "public" | "access"
   >("users");
+  // How many people outside this organization are invited and have not joined.
+  // Reported UP by the panel that draws them, so the grant list's empty state
+  // cannot say "Not shared with anyone" over one of their rows (FIX-10C F13).
+  const [outsidePending, setOutsidePending] = useState(0);
   const [emailingLink, setEmailingLink] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const { toast } = useToast();
@@ -390,6 +394,14 @@ export function ShareModal({
                     onUpdateLevel={updateLevel}
                     onRevoke={revokeAccess}
                     loading={loading}
+                    // The outside panel at the bottom of this same tab draws
+                    // invited-but-not-joined rows; without this the empty state
+                    // above them read "Not shared with anyone" (FIX-10C F13).
+                    alsoPending={{
+                      count: outsidePending,
+                      one: "person outside this organization",
+                      many: "people outside this organization",
+                    }}
                   />
                 </div>
 
@@ -419,6 +431,8 @@ export function ShareModal({
                     organizationId={outsideShare.organizationId}
                     tableId={outsideShare.tableId}
                     tableName={resourceName}
+                    onPendingChange={setOutsidePending}
+                    onGranted={refresh}
                   />
                 ) : null}
               </TabsContent>

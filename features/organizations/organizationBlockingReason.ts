@@ -68,5 +68,10 @@ export function organizationBlockingReason(
       return `We could not check which workspace you are working in, so ${act} is not available right now. Reload the page to try again.`;
     case "required":
       return `Choose a workspace before ${act} — pick one from the menu under your avatar.`;
+    case "signed_out":
+      // 🚨 THE FIFTH STATE (FIX-10C, 2026-09-22). Nobody is signed in, so
+      // "choose a workspace" names a question this person cannot be asked —
+      // the menu under the avatar is not there, and neither is the avatar.
+      return `Sign in before ${act} — this is your workspace's, and we do not know who you are yet.`;
   }
 }

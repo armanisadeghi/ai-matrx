@@ -46,6 +46,7 @@
 \timing off
 
 \set suite 'fix10b_f6_green.sql'
+\set requires 'function:custom.field_kinds'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit

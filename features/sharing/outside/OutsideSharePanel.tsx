@@ -65,12 +65,29 @@ export interface OutsideSharePanelProps {
   organizationId: string;
   tableId: string;
   tableName: string;
+  /**
+   * 🚨 SO THE LIST ABOVE CANNOT CONTRADICT THE ROWS BELOW (FIX-10C, VERIFIER-10
+   * F13). The grant list up the page knows only about grants, which is correct
+   * and was still how "Not shared with anyone" came to stand directly over an
+   * invited person. This panel tells its host how many people are invited and
+   * not yet joined; the host passes that to the grant list's empty state.
+   */
+  onPendingChange?: ((count: number) => void) | undefined;
+  /**
+   * An address already inside the organization is GRANTED the table rather than
+   * invited (FIX-10C, VERIFIER-10 F7), and that grant belongs in the list at the
+   * top of this dialog, not here. So the host is told to re-read it — otherwise
+   * the person gets a sentence saying it happened and an unchanged screen.
+   */
+  onGranted?: (() => void) | undefined;
 }
 
 export function OutsideSharePanel({
   organizationId,
   tableId,
   tableName,
+  onPendingChange,
+  onGranted,
 }: OutsideSharePanelProps) {
   const { toast } = useToast();
   const [state, setState] = useState<OutsideShareState | null>(null);
@@ -105,6 +122,12 @@ export function OutsideSharePanel({
     void refresh();
   }, [refresh]);
 
+  // A read that FAILED says nothing about how many are pending, so it reports
+  // zero rather than a guess — the same rule the panel's own error state obeys.
+  useEffect(() => {
+    onPendingChange?.((state?.invitations ?? []).filter((row) => !row.joined).length);
+  }, [state, onPendingChange]);
+
   /**
    * 🚨 PUTTING THE LINK IN SOMEBODY'S HAND IS THE ORDINARY CASE, NOT A FALLBACK.
    * A plumber texts his customer the link. So this control is drawn beside every
@@ -132,7 +155,7 @@ export function OutsideSharePanel({
 
   const run = async (
     key: string,
-    work: () => Promise<{ say: string; delivery?: { say: string } }>,
+    work: () => Promise<{ say: string; delivery?: { say: string } | null | undefined }>,
   ) => {
     setBusy(key);
     try {
@@ -288,6 +311,10 @@ export function OutsideSharePanel({
               void run("invite", async () => {
                 const answer = await inviteOutside(organizationId, tableId, email.trim(), level);
                 setEmail("");
+                // They were already inside and were given the table outright —
+                // the row for that lives in the grant list above, so ask the
+                // host to re-read it (FIX-10C F7).
+                if (answer.granted) onGranted?.();
                 return answer;
               })
             }

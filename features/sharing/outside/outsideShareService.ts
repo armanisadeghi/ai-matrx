@@ -135,12 +135,34 @@ export async function readOutsideShare(
   return data as unknown as OutsideShareState;
 }
 
+/**
+ * What the invite door answered. TWO acts, not one (FIX-10C, VERIFIER-10 F7).
+ *
+ * An address whose account is ALREADY a member of this organization is not an
+ * outside share at all, so the door does the ordinary thing — it grants them
+ * the table through `custom.share_grant`, the same door the people picker above
+ * uses — and answers `granted: true` with no invitation, no link and no
+ * message. It used to refuse and name that function at the person instead,
+ * which is the dead end this whole panel exists to remove, rebuilt one floor
+ * down.
+ */
+export interface OutsideInviteAnswer {
+  /** An `iam.invitations` row was written and a link minted. */
+  invited: boolean;
+  /** They were already inside, so they were given the table outright. */
+  granted: boolean;
+  say: string;
+  /** Null when nobody was invited — an invitation that did not happen has no link. */
+  accept_path: string | null;
+  delivery: OutsideShareDelivery | null;
+}
+
 export async function inviteOutside(
   organizationId: string,
   tableId: string,
   email: string,
   level: string,
-): Promise<{ say: string; accept_path: string; delivery: OutsideShareDelivery }> {
+): Promise<OutsideInviteAnswer> {
   const { data, error } = await custom().rpc("table_share_outside_invite", {
     p_organization_id: organizationId,
     p_table_id: tableId,
@@ -148,7 +170,7 @@ export async function inviteOutside(
     p_level: level,
   });
   if (error) throw new Error(error.message);
-  return data as unknown as Awaited<ReturnType<typeof inviteOutside>>;
+  return data as unknown as OutsideInviteAnswer;
 }
 
 export async function resendOutside(

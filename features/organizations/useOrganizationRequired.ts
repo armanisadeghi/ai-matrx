@@ -74,6 +74,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 // which every stand-in ever written already carries.
 import { selectOrgBootstrapFailure } from "@/lib/organizations/orgBootstrapFailure";
 import { selectShouldPromptForOrganization } from "@/lib/organizations/shouldPromptForOrganization";
+import { selectSignedOut } from "@/lib/organizations/signedOut";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { retryActiveOrgBootstrap } from "@/lib/redux/thunks/activeOrgBootstrap";
 
@@ -88,7 +89,14 @@ export type OrganizationState =
   | "resolving"
   | "required"
   | "ready"
-  | "unavailable";
+  | "unavailable"
+  // 🚨 THE FIFTH STATE (FIX-10C, VERIFIER-10 F11, 2026-09-22). Nobody is signed
+  // in. It is NOT `required`: there is no organization to choose because there
+  // is no person yet, and the picker under that sentence is empty and always
+  // will be. A digest link followed in a clean browser landed on "Data records
+  // need an organization" with Sign In in the header above it — the screen
+  // named a real state and not the one the reader was in.
+  | "signed_out";
 
 export interface OrganizationRequiredGate {
   /** The explicitly selected organization, or null. */
@@ -151,6 +159,10 @@ export function useOrganizationRequired(): OrganizationRequiredGate {
   // Non-null ONLY when the read failed. `selectShouldPromptForOrganization`
   // already refuses to nudge in that case, so the two can never both be true.
   const unavailableReason = useAppSelector(selectOrgBootstrapFailure);
+  // Answers true ONLY once the auth read finished with no identity — "still
+  // reading" is never "stranger", the same discipline as the failed-membership
+  // rule below.
+  const signedOut = useAppSelector(selectSignedOut);
   const canLoad = organizationId != null;
   const unavailable = !canLoad && unavailableReason != null;
   // The legacy pair keeps the checking posture through `unavailable` — see the
@@ -172,11 +184,16 @@ export function useOrganizationRequired(): OrganizationRequiredGate {
 
   const organizationState: OrganizationState = canLoad
     ? "ready"
-    : unavailable
-      ? "unavailable"
-      : organizationRequired
-        ? "required"
-        : "resolving";
+    : // Before anything else: an organization question asked of somebody who is
+      // not signed in is the wrong question. It outranks `unavailable` too — we
+      // could not read their memberships because they have none to read.
+      signedOut
+      ? "signed_out"
+      : unavailable
+        ? "unavailable"
+        : organizationRequired
+          ? "required"
+          : "resolving";
 
   return {
     organizationId,

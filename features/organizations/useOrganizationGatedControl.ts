@@ -117,6 +117,9 @@ export function organizationControlRefusal(act: string): string {
  * the act, because the act is not the problem and nothing the person does to
  * the act will help — the read is what failed.
  */
+export const ORGANIZATION_SIGNED_OUT_TITLE_CONTROL =
+  "Sign in first — we do not know who you are yet. Press to sign in.";
+
 export const ORGANIZATION_UNAVAILABLE_TITLE_CONTROL =
   "We could not check which organization you are working in. Press to try again.";
 
@@ -165,6 +168,9 @@ export function useOrganizationGatedControl(act: string): OrganizationGatedContr
         return ORGANIZATION_UNAVAILABLE_TITLE_CONTROL;
       case "required":
         return organizationControlRefusal(act);
+      case "signed_out":
+        // Never the organization question: there is nobody to ask it of.
+        return ORGANIZATION_SIGNED_OUT_TITLE_CONTROL;
     }
   };
   const press = (act: (organizationId: string) => void) => () => {
@@ -172,6 +178,18 @@ export function useOrganizationGatedControl(act: string): OrganizationGatedContr
     // through the ONE re-run every other "Try again" on this state calls.
     if (organizationState === "unavailable") {
       retry();
+      return;
+    }
+    // NOBODY IS SIGNED IN. The press is still the remedy, and the remedy is the
+    // sign-in screen with this exact address to come back to — including its
+    // `?org=`, which is what makes the link's own organization rung fire on the
+    // way back in (`lib/organizations/linkOrganization.ts`).
+    if (organizationState === "signed_out") {
+      if (typeof window !== "undefined") {
+        window.location.assign(
+          `/login?returnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`,
+        );
+      }
       return;
     }
     // The refusal's press IS the question. Hold the act, open the ONE picker,
