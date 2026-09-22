@@ -104,7 +104,7 @@ describe("XmlBlock Markdown text rendering", () => {
     expect(collapse).not.toBeNull();
     act(() => collapse?.click());
     expect(container.querySelector("table")).toBeNull();
-    expect(container.textContent).toContain("...");
+    expect(container.querySelector("[data-xml-card-body]")).toBeNull();
     const expand = container.querySelector<HTMLButtonElement>(
       '[aria-label="Expand db_schema"]',
     );
@@ -120,6 +120,43 @@ describe("XmlBlock Markdown text rendering", () => {
     expect(writeText).toHaveBeenCalledWith(XML_WITH_MARKDOWN);
   });
 
+  it("uses the outer XML element as the collapsible card title instead of rendering wrapper tags in the body", () => {
+    act(() => {
+      root.render(<XmlBlock content={XML_WITH_MARKDOWN} />);
+    });
+
+    const title = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Collapse db_schema"]',
+    );
+    const body = container.querySelector<HTMLElement>("[data-xml-card-body]");
+    expect(title?.textContent).toBe("db_schema");
+    expect(body?.textContent).not.toContain("db_schema");
+    expect(body?.textContent).not.toContain("</db_schema>");
+
+    act(() => title?.click());
+    expect(container.querySelector("[data-xml-card-body]")).toBeNull();
+    expect(
+      container.querySelector('[aria-label="Expand db_schema"]'),
+    ).not.toBeNull();
+  });
+
+  it.each([
+    ["an empty paired root", "<empty_root></empty_root>", "empty_root"],
+    ["a self-closing root", "<empty_root />", "empty_root"],
+  ])("keeps the root name in the header for %s", (_, content, rootName) => {
+    act(() => {
+      root.render(<XmlBlock content={content} />);
+    });
+
+    expect(container.querySelector("[data-xml-root-name]")?.textContent).toBe(
+      rootName,
+    );
+    expect(container.querySelector("[data-xml-card-body]")).not.toBeNull();
+    expect(container.querySelector("[data-xml-card-body]")?.textContent).toBe(
+      "",
+    );
+  });
+
   it("gives every XML action a 44px touch target through tablet widths while preserving compact desktop controls", () => {
     act(() => {
       root.render(
@@ -129,10 +166,12 @@ describe("XmlBlock Markdown text rendering", () => {
       );
     });
 
-    const actions = [...container.querySelectorAll<HTMLButtonElement>("button")];
+    const actions = [
+      ...container.querySelectorAll<HTMLButtonElement>("button"),
+    ];
     expect(actions.map((action) => action.getAttribute("aria-label"))).toEqual([
-      "Copy XML",
       "Collapse report",
+      "Copy XML",
       "Collapse relationships",
     ]);
     for (const action of actions) {
