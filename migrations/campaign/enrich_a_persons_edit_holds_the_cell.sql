@@ -124,7 +124,7 @@ comment on function custom.value_envelope_keys() is
 -- 2. custom.pin_agent_cells — the pin rule, in one testable place.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.pin_agent_cells(
+create or replace function custom.pin_agent_cells(
   p_new jsonb, p_old jsonb, p_agent_keys text[])
 returns jsonb
 language plpgsql
@@ -186,7 +186,7 @@ comment on function custom.pin_agent_cells(jsonb, jsonb, text[]) is
 -- 3. custom.carry_unchanged_value_stamps — a value keeps its own moment.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.carry_unchanged_value_stamps(p_old jsonb, p_new jsonb)
+create or replace function custom.carry_unchanged_value_stamps(p_old jsonb, p_new jsonb)
 returns jsonb
 language plpgsql
 immutable

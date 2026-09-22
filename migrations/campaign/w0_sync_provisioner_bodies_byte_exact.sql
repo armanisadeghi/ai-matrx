@@ -219,7 +219,7 @@ begin
 
     -- ====================================== a DEFINER function makes an access DECISION
     if cmd.object_type in ('function','procedure')
-       and cmd.command_tag in ('CREATE FUNCTION','CREATE PROCEDURE') then
+       and cmd.command_tag in ('create or replace function','CREATE PROCEDURE') then
       select p.prosecdef, p.prorettype, n.nspname, p.proname,
              pg_get_function_identity_arguments(p.oid)
         into v_secdef, v_rettype, v_schema, v_rel, v_idargs
@@ -236,7 +236,7 @@ begin
                             and d.identity_args = v_idargs)
       then
         -- A DEBT, not a refusal here: DD-223 forbids a door row that names a function
-        -- which does not exist yet, so the door CANNOT precede the CREATE FUNCTION.
+        -- which does not exist yet, so the door CANNOT precede the create or replace function.
         insert into platform.provision_shape_debt (txid, kind, object_ref, detail)
         values (pg_current_xact_id(), 'definer_no_door',
                 v_schema || '.' || v_rel || '(' || v_idargs || ')',
@@ -283,7 +283,7 @@ begin
     then return null; end if;
 
     raise exception 'provision_shape_guard: SECURITY DEFINER function % reached COMMIT with no access decision declared', new.object_ref
-      using hint = 'A SECURITY DEFINER function runs as `postgres` (BYPASSRLS). Somebody has to say, IN DATA, who may call it and what each entity-id argument is checked against — prose in a comment is not a declaration and no test executes it (lessons ledger 23, 27, 28). Declare it anywhere in THIS SAME transaction (DD-223 requires the function to exist first, so straight after the CREATE FUNCTION is the normal place): INSERT INTO platform.client_callable_door (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers) VALUES (''<schema>'', ''<fn>'', ''<exactly pg_get_function_identity_arguments>'', ARRAY[''uuid''::regtype]::oid[], ''<what each entity-id argument is checked against, and the NULL rule for each>'', ''<migration>'', ''server_only: <which server lane calls it, and why no client ever does>'', false, false); — non_client_lane is a SENTENCE of at least 40 characters (with signed_in_callers=false and anonymous_callers=false) when no client may ever call it; leave it NULL and set signed_in_callers=true for a client door. A RETURNS trigger / event_trigger function never incurs this debt: it has no direct call surface.' || c_boundary,
+      using hint = 'A SECURITY DEFINER function runs as `postgres` (BYPASSRLS). Somebody has to say, IN DATA, who may call it and what each entity-id argument is checked against — prose in a comment is not a declaration and no test executes it (lessons ledger 23, 27, 28). Declare it anywhere in THIS SAME transaction (DD-223 requires the function to exist first, so straight after the create or replace function is the normal place): INSERT INTO platform.client_callable_door (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers) VALUES (''<schema>'', ''<fn>'', ''<exactly pg_get_function_identity_arguments>'', ARRAY[''uuid''::regtype]::oid[], ''<what each entity-id argument is checked against, and the NULL rule for each>'', ''<migration>'', ''server_only: <which server lane calls it, and why no client ever does>'', false, false); — non_client_lane is a SENTENCE of at least 40 characters (with signed_in_callers=false and anonymous_callers=false) when no client may ever call it; leave it NULL and set signed_in_callers=true for a client door. A RETURNS trigger / event_trigger function never incurs this debt: it has no direct call surface.' || c_boundary,
             errcode = 'check_violation';
 
   elsif new.kind = 'fk_without_index' then
@@ -1632,7 +1632,7 @@ begin
   -- lane B). An entry WITHOUT one declares a door for a function that already exists.
   for v_item in select value from jsonb_array_elements(n->'functions') loop
     if v_item ? 'body' then
-      execute format('create function %I.%I(%s) returns %s language %s %s set search_path to %L as $provision_body$%s$provision_body$',
+      execute format('create or replace function %I.%I(%s) returns %s language %s %s set search_path to %L as $provision_body$%s$provision_body$',
         v_schema, v_item->>'name', coalesce(v_item->>'args',''), v_item->>'returns',
         coalesce(v_item->>'language','plpgsql'),
         case when lower(coalesce(v_item->>'security','invoker')) = 'definer' then 'security definer' else 'security invoker' end,

@@ -369,7 +369,7 @@ begin
   -- lane B). An entry WITHOUT one declares a door for a function that already exists.
   for v_item in select value from jsonb_array_elements(n->'functions') loop
     if v_item ? 'body' then
-      execute format('create function %I.%I(%s) returns %s language %s %s set search_path to %L as $provision_body$%s$provision_body$',
+      execute format('create or replace function %I.%I(%s) returns %s language %s %s set search_path to %L as $provision_body$%s$provision_body$',
         v_schema, v_item->>'name', coalesce(v_item->>'args',''), v_item->>'returns',
         coalesce(v_item->>'language','plpgsql'),
         case when lower(coalesce(v_item->>'security','invoker')) = 'definer' then 'security definer' else 'security invoker' end,

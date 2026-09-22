@@ -42,7 +42,7 @@
 -- exactly these records of this Table", which a printing surface, an export preview and an
 -- undo step all want as much as a nudge does.
 
-create function custom.read_records_by_ids(
+create or replace function custom.read_records_by_ids(
   p_organization_id uuid,
   p_table_id        uuid,
   p_record_ids      uuid[],

@@ -138,7 +138,7 @@ comment on table custom.visibility_cache is
 -- ---------------------------------------------------------------------------------------------
 -- 4. THE BUMP. O(1), in the same commit (VIS-12).
 -- ---------------------------------------------------------------------------------------------
-create function custom.bump_epoch(
+create or replace function custom.bump_epoch(
   p_entity_type     text,
   p_entity_id       uuid,
   p_organization_id uuid default null
@@ -188,7 +188,7 @@ comment on function custom.bump_epoch(text, uuid, uuid) is
 -- every association row the platform writes today. Existing writes are unaffected: the trigger
 -- body does not run for them at all.
 -- ---------------------------------------------------------------------------------------------
-create function custom.trg_associations_bump_visibility()
+create or replace function custom.trg_associations_bump_visibility()
 returns trigger
 language plpgsql
 security definer
@@ -252,7 +252,7 @@ create trigger zz_w2_epoch_bump
 -- higher than every stamp beneath it, so every entry beneath it fails here without any of them
 -- having been touched by the write.
 -- ---------------------------------------------------------------------------------------------
-create function custom.required_epoch(
+create or replace function custom.required_epoch(
   p_container_type text,
   p_container_id   uuid,
   p_item_type      text,
@@ -279,7 +279,7 @@ comment on function custom.required_epoch(text, uuid, text, uuid) is
   'W2-EPOCH / VIS-11. The maximum epoch over the pair itself, its ancestors and its carrying '
   'targets. A cache entry is valid only when its stamp is at least this.';
 
-create function custom.cache_lookup(
+create or replace function custom.cache_lookup(
   p_container_type text,
   p_container_id   uuid,
   p_item_type      text,
@@ -307,7 +307,7 @@ comment on function custom.cache_lookup(text, uuid, text, uuid) is
 -- ---------------------------------------------------------------------------------------------
 -- 7. BACKGROUND WARMING (VIS-13, allowed but never load-bearing).
 -- ---------------------------------------------------------------------------------------------
-create function custom.visibility_warm(
+create or replace function custom.visibility_warm(
   p_container_type text,
   p_container_id   uuid
 ) returns integer
@@ -338,7 +338,7 @@ comment on function custom.visibility_warm(text, uuid) is
   'W2-EPOCH / VIS-13. Background warming. Every entry is stamped with the epoch read in the same '
   'statement, so a warmer racing a write LOSES the race rather than winning it with a stale value.';
 
-create function custom.visibility_cache_rebuild()
+create or replace function custom.visibility_cache_rebuild()
 returns integer
 language plpgsql
 security definer
@@ -366,7 +366,7 @@ comment on function custom.visibility_cache_rebuild() is
 -- ---------------------------------------------------------------------------------------------
 -- 8. THE READ THAT CARRIES A VERSION (VIS-14, VIS-15).
 -- ---------------------------------------------------------------------------------------------
-create function custom.has_visibility_at(
+create or replace function custom.has_visibility_at(
   p_user_id       uuid,
   p_type          text,
   p_id            uuid,

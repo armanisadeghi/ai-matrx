@@ -69,7 +69,7 @@
 -- ---------------------------------------------------------------------------------------------
 -- 1. THE SPEC — what a plan-cached probe has to cover, read from the registries.
 -- ---------------------------------------------------------------------------------------------
-create function platform.static_row_probe_spec()
+create or replace function platform.static_row_probe_spec()
 returns table(kind text, key text, schema_name text, table_name text,
               shape integer, id_column text, owner_column text)
 language plpgsql
@@ -133,7 +133,7 @@ comment on function platform.static_row_probe_spec() is
 -- ---------------------------------------------------------------------------------------------
 -- 2. THE GENERATOR — the text of the two probes, and the writer that installs them.
 -- ---------------------------------------------------------------------------------------------
-create function platform.static_row_probe_sql()
+create or replace function platform.static_row_probe_sql()
 returns table(which text, ddl text)
 language plpgsql
 stable
@@ -256,7 +256,7 @@ end;
 $fn$;
 
 
-create function platform.rebuild_static_row_probes()
+create or replace function platform.rebuild_static_row_probes()
 returns integer
 language plpgsql
 volatile
@@ -285,7 +285,7 @@ select platform.rebuild_static_row_probes();
 -- ---------------------------------------------------------------------------------------------
 -- 3. THE CENSUS — the probes are current, or this says exactly what is missing.
 -- ---------------------------------------------------------------------------------------------
-create function platform.static_row_probes_stale()
+create or replace function platform.static_row_probes_stale()
 returns table(what text, detail text, remedy text)
 language plpgsql
 stable

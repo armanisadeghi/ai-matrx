@@ -115,7 +115,7 @@ create trigger custom_external_source_store_door_delete
   before delete on custom.external_source
   for each row execute function custom._store_door();
 
-create function custom.record_delete(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.record_delete(p_organization_id uuid, p_record_id uuid)
 returns timestamptz
 language plpgsql
 security definer
@@ -156,7 +156,7 @@ begin
 end;
 $$;
 
-create function custom.record_restore(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.record_restore(p_organization_id uuid, p_record_id uuid)
 returns void
 language plpgsql
 security definer

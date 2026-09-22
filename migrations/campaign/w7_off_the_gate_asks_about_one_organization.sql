@@ -44,7 +44,7 @@ set statement_timeout = '5min';
 
 -- THE SCOPE. One function, so the diff, the drift check and the gate cannot
 -- drift apart about what "this organization's containers" means.
-create function campaign_watch.consumer_scope(
+create or replace function campaign_watch.consumer_scope(
   p_organization_id uuid
 )
 returns table (container_type text, container_id uuid)

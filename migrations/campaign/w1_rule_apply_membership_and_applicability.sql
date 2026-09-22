@@ -96,7 +96,7 @@
 --
 -- IDEMPOTENCE, STATED HONESTLY, exactly as `W1-RULE` states it: §6b.2's allow-list refuses
 -- `CREATE OR REPLACE TRIGGER` and PostgreSQL has no `IF NOT EXISTS` for `CREATE TRIGGER` or
--- `CREATE FUNCTION`, so a second consecutive apply of these bytes is refused BY THE DATABASE
+-- `create or replace function`, so a second consecutive apply of these bytes is refused BY THE DATABASE
 -- (42723 / 42710) and changes nothing. Rule 27's loop is up -> inverse -> `--reapply`. Every
 -- seeded ROW is `on conflict do nothing`.
 --
@@ -146,7 +146,7 @@ $fn_rule_nodes$;
 -- 2. REC-16 — THE CONTEXT, one level up and no further, by construction
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom.rule_context(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.rule_context(p_organization_id uuid, p_record_id uuid)
   returns jsonb
   language sql stable
   set search_path to 'pg_catalog'
@@ -391,7 +391,7 @@ comment on function custom.rule_eval(uuid, jsonb, jsonb, jsonb) is
 -- 4. REC-16 — THE APPLICABILITY USE
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom.rule_applies(p_organization_id uuid, p_rule_id uuid, p_record_id uuid)
+create or replace function custom.rule_applies(p_organization_id uuid, p_rule_id uuid, p_record_id uuid)
   returns jsonb
   language plpgsql stable
   set search_path to 'pg_catalog'
@@ -422,7 +422,7 @@ $fn_rule_applies$;
 comment on function custom.rule_applies(uuid, uuid, uuid) is
   'REC-16 / REC-15: does this Rule apply to this record. It is custom.rule_run() - the one evaluation - given custom.rule_context(), so the Rule reads the record''s own Values and its parent''s, one level up. THREE answers, never two: true, false, and UNDECIDED (null), which is what an absent Value or an absent parent gives and is not the same as "does not apply".';
 
-create function custom.record_applicability(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.record_applicability(p_organization_id uuid, p_record_id uuid)
   returns table (rule_id uuid, rule_name text, rule_version integer, applies boolean, answer jsonb)
   language plpgsql stable
   set search_path to 'pg_catalog'
@@ -461,7 +461,7 @@ comment on function custom.record_applicability(uuid, uuid) is
 -- 5. DYN-6 — THE MEMBERSHIP USE, AND THE RESOLVER THAT IS THE SAME RULE
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom.rule_membership(p_organization_id uuid, p_rule_id uuid, p_record_id uuid)
+create or replace function custom.rule_membership(p_organization_id uuid, p_rule_id uuid, p_record_id uuid)
   returns jsonb
   language plpgsql stable
   set search_path to 'pg_catalog'
@@ -481,7 +481,7 @@ $fn_rule_membership$;
 comment on function custom.rule_membership(uuid, uuid, uuid) is
   'DYN-6 / REC-15: is this record in the set this Rule defines. The same custom.rule_run(), the same expression, the same version stamp as validate, compute and applicability - the use is what the caller does with the truth.';
 
-create function custom.rule_members(p_organization_id uuid, p_rule_id uuid)
+create or replace function custom.rule_members(p_organization_id uuid, p_rule_id uuid)
   returns setof custom.record
   language plpgsql stable
   set search_path to 'pg_catalog'
@@ -520,7 +520,7 @@ $fn_rule_members$;
 comment on function custom.rule_members(uuid, uuid) is
   'DYN-6: the records a membership Rule is true of - the set, as a query. UNDECIDED is not membership: a record whose Values leave the answer open is out of the set and is not refused, because a set is not a validator.';
 
-create function custom.resolve_first_match(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.resolve_first_match(p_organization_id uuid, p_record_id uuid)
   returns jsonb
   language plpgsql stable
   set search_path to 'pg_catalog'
@@ -594,7 +594,7 @@ comment on function custom.resolve_first_match(uuid, uuid) is
 -- on what" to drift from the first. A node is `rule:<id>`, `merge:<id>` or `field:<id>`, and
 -- an edge points from the thing that NEEDS to the thing it needs.
 
-create function custom.dependency_label(p_organization_id uuid, p_node text)
+create or replace function custom.dependency_label(p_organization_id uuid, p_node text)
   returns text
   language sql stable
   set search_path to 'pg_catalog'
@@ -613,7 +613,7 @@ $fn_dep_label$;
 comment on function custom.dependency_label(uuid, text) is
   'What a person calls the thing a dependency node stands for. A refusal that named `rule:6f3c…` would be a refusal nobody can act on.';
 
-create function custom.rule_dependency_edges(p_organization_id uuid, p_row custom.record default null)
+create or replace function custom.rule_dependency_edges(p_organization_id uuid, p_row custom.record default null)
   returns table (needs text, needed text)
   language plpgsql stable
   set search_path to 'pg_catalog'
@@ -679,7 +679,7 @@ $fn_dep_edges$;
 comment on function custom.rule_dependency_edges(uuid, custom.record) is
   'THE ONE dependency graph over Rules and merge fields, derived from what is stored rather than declared a second time. Pass the row being saved and it REPLACES its stored self, so the graph answered is the one the save would create and not the one that exists.';
 
-create function custom.dependency_cycle(p_organization_id uuid, p_row custom.record)
+create or replace function custom.dependency_cycle(p_organization_id uuid, p_row custom.record)
   returns text[]
   language sql stable
   set search_path to 'pg_catalog'
@@ -709,7 +709,7 @@ $fn_dep_cycle$;
 comment on function custom.dependency_cycle(uuid, custom.record) is
   'The SHORTEST loop the row being saved would close, as the path it runs round, or nothing. It walks only from the saved row, so the cost is the row''s own reachable set and never the whole graph, and it stops revisiting a node unless that node is the one it started from - which is the loop it is looking for.';
 
-create function custom._rule_topology_guard() returns trigger
+create or replace function custom._rule_topology_guard() returns trigger
   language plpgsql
   set search_path to 'pg_catalog'
 as $fn_topo$

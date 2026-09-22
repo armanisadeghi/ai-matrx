@@ -41,7 +41,7 @@
 set lock_timeout = '5s';
 set statement_timeout = '600s';
 
-create function custom.agg_subscription_cadences()
+create or replace function custom.agg_subscription_cadences()
 returns text[]
 language sql
 immutable
@@ -52,7 +52,7 @@ comment on function custom.agg_subscription_cadences() is
   'W4-AGG / DOOR-18: the two cadences of ONE mechanism — "tell me now" and "tell me Monday". Rule 15: the set has one copy.';
 
 -- ── the subscriptions of one organization, read off the Rules that are them ───
-create function custom.agg_subscriptions(p_organization_id uuid,
+create or replace function custom.agg_subscriptions(p_organization_id uuid,
                                          p_saved_view_id uuid default null,
                                          p_cadence text default null)
 returns table(rule_id uuid, saved_view_id uuid, cadence text, schedule text,
@@ -84,7 +84,7 @@ comment on function custom.agg_subscriptions(uuid, uuid, text) is
   'W4-AGG / DOOR-18: every subscription of one organization, read off the Rule records that ARE the subscriptions. No second table, so "who wants to hear about what" has one home.';
 
 -- ── does this record belong to that saved view? ───────────────────────────────
-create function custom.agg_view_admits(p_organization_id uuid,
+create or replace function custom.agg_view_admits(p_organization_id uuid,
                                        p_saved_view_id uuid,
                                        p_record_id uuid)
 returns boolean
@@ -138,7 +138,7 @@ comment on function custom.agg_view_admits(uuid, uuid, uuid) is
   'W4-AGG / DOOR-18: whether one record belongs to one saved view, read through custom.query_visible_ids so a subscription can never notify somebody about a record they may not see.';
 
 -- ── the delivery, written into the platform's own notification system ─────────
-create function custom.agg_deliver(p_organization_id uuid,
+create or replace function custom.agg_deliver(p_organization_id uuid,
                                    p_rule_id uuid,
                                    p_record_id uuid,
                                    p_channel text,
@@ -194,7 +194,7 @@ comment on function custom.agg_deliver(uuid, uuid, uuid, text, uuid, text, text,
   'W4-AGG / DOOR-18: one delivery row in the platform''s own notification system, deduplicated per subscription per record per day so a replayed event is one message and not many.';
 
 -- ── "tell me now" ─────────────────────────────────────────────────────────────
-create function custom.agg_subscription_fire(p_organization_id uuid,
+create or replace function custom.agg_subscription_fire(p_organization_id uuid,
                                              p_record_id uuid,
                                              p_table_id uuid default null,
                                              p_changed_field_ids jsonb default '[]'::jsonb)
@@ -231,7 +231,7 @@ comment on function custom.agg_subscription_fire(uuid, uuid, uuid, jsonb) is
   'W4-AGG / DOOR-18, "tell me now": every immediate subscription whose saved view admits this record gets one delivery row. Called by DOOR-13''s outbox consumer — never by a trigger on custom.record, because nothing publishes from the record table itself.';
 
 -- ── "tell me Monday" ──────────────────────────────────────────────────────────
-create function custom.agg_digest_run(p_organization_id uuid,
+create or replace function custom.agg_digest_run(p_organization_id uuid,
                                       p_rule_id uuid default null,
                                       p_since timestamptz default null)
 returns integer

@@ -81,7 +81,7 @@ comment on column platform.realtime_topic_prefix.admits_fn is
 
 
 -- ── THE ONE PREDICATE ───────────────────────────────────────────────────────────────────
-create function platform.realtime_topic_admits(p_topic text)
+create or replace function platform.realtime_topic_admits(p_topic text)
 returns boolean
 language plpgsql
 volatile

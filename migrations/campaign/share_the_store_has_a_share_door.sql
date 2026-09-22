@@ -58,7 +58,7 @@
 
 -- ─────────────────────────────────────────────────────────────────── the vocabulary, first
 
-create function custom.share_levels()
+create or replace function custom.share_levels()
 returns table (level public.permission_level, ordinal integer, label text, means text)
 language sql
 stable
@@ -72,7 +72,7 @@ as $$
    order by l.ordinal;
 $$;
 
-create function custom.share_lanes()
+create or replace function custom.share_lanes()
 returns table (choice text, lane text, discoverable boolean, label text, means text)
 language sql
 stable
@@ -95,7 +95,7 @@ $$;
 
 -- ─────────────────────────────────────────────────────────── the people picker (org members)
 
-create function custom.share_people(
+create or replace function custom.share_people(
   p_organization_id uuid,
   p_query           text    default null,
   p_limit           integer default 25
@@ -139,7 +139,7 @@ $$;
 
 -- ───────────────────────────────────────────────────── who has access, and WHY (the whole point)
 
-create function custom.share_access(p_organization_id uuid, p_subject_id uuid)
+create or replace function custom.share_access(p_organization_id uuid, p_subject_id uuid)
 returns table (
   principal_kind  text,
   principal_id    uuid,
@@ -284,7 +284,7 @@ $$;
 
 -- ───────────────────────────────────────────────────────────────────────── letting somebody in
 
-create function custom.share_grant(
+create or replace function custom.share_grant(
   p_organization_id uuid,
   p_subject_id      uuid,
   p_principal_kind  text,
@@ -405,7 +405,7 @@ $$;
 
 -- ──────────────────────────────────────────────────────────────────────── taking it back again
 
-create function custom.share_revoke(
+create or replace function custom.share_revoke(
   p_organization_id uuid,
   p_subject_id      uuid,
   p_principal_kind  text,
@@ -471,7 +471,7 @@ $$;
 
 -- ──────────────────────────────────────────────────────────────────────────────── the lanes
 
-create function custom.share_lane_set(
+create or replace function custom.share_lane_set(
   p_organization_id uuid,
   p_subject_id      uuid,
   p_choice          text,

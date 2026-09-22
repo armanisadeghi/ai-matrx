@@ -41,7 +41,7 @@
 -- the refusal says "the store" rather than naming an index that is not there.
 
 -- ── THE CHOICE A PERSON TYPED ───────────────────────────────────────────────────────────
-create function custom._resolve_choice_words()
+create or replace function custom._resolve_choice_words()
 returns trigger
 language plpgsql
 set search_path to 'pg_catalog'
@@ -142,7 +142,7 @@ create trigger custom_record_choice_words
   for each row execute function custom._resolve_choice_words();
 
 -- ── UNIQUE MEANS UNIQUE ─────────────────────────────────────────────────────────────────
-create function custom._unique_rule_holds()
+create or replace function custom._unique_rule_holds()
 returns trigger
 language plpgsql
 set search_path to 'pg_catalog'

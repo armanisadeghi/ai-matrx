@@ -37,7 +37,7 @@ set lock_timeout = '5s';
 set statement_timeout = '600s';
 
 -- ── DOOR-15: writing a comment ───────────────────────────────────────────────
-create function custom.io_comment_write(p_organization_id uuid,
+create or replace function custom.io_comment_write(p_organization_id uuid,
                                         p_record_id uuid,
                                         p_body text,
                                         p_anchor jsonb default '{}'::jsonb,
@@ -107,7 +107,7 @@ values ('custom', 'io_comment_write',
 on conflict do nothing;
 
 -- ── resolving, which does not delete ─────────────────────────────────────────
-create function custom.io_comment_resolve(p_organization_id uuid,
+create or replace function custom.io_comment_resolve(p_organization_id uuid,
                                           p_comment_id uuid,
                                           p_resolved boolean default true)
 returns boolean
@@ -150,7 +150,7 @@ values ('custom', 'io_comment_resolve',
 on conflict do nothing;
 
 -- ── reading a record's comments, through the record's own visibility ─────────
-create function custom.io_comments(p_organization_id uuid,
+create or replace function custom.io_comments(p_organization_id uuid,
                                    p_record_id uuid,
                                    p_include_resolved boolean default false)
 returns table(id uuid, body text, anchor jsonb, parent_comment_id uuid,
@@ -191,7 +191,7 @@ values ('custom', 'io_comments',
 on conflict do nothing;
 
 -- ── DOOR-16: what there is to restore, said before anything is pressed ───────
-create function custom.io_revisions(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.io_revisions(p_organization_id uuid, p_record_id uuid)
 returns table(version integer, changed_at timestamptz, changed_by uuid, summary text)
 language plpgsql
 security definer
@@ -236,7 +236,7 @@ values ('custom', 'io_revisions',
 on conflict do nothing;
 
 -- ── DOOR-16: the restore itself, and it is a versioned change like any other ──
-create function custom.io_restore(p_organization_id uuid,
+create or replace function custom.io_restore(p_organization_id uuid,
                                   p_record_id uuid,
                                   p_version integer)
 returns integer

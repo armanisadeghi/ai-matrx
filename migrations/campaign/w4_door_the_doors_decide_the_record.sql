@@ -71,7 +71,7 @@
 -- exactly these four rows before this file and answers zero after it. matrx-frontend
 -- `scripts/check-doors-decide-the-record.ts` is the guard that fails on a non-empty answer.
 
-create function custom.assert_client_may_change(
+create or replace function custom.assert_client_may_change(
   p_organization_id uuid,
   p_subject_id      uuid,
   p_door            text,
@@ -308,7 +308,7 @@ $function$;
 
 -- ── The census, as a function, so a later door cannot be added without the question. ─────
 
-create function custom.doors_not_deciding_the_record()
+create or replace function custom.doors_not_deciding_the_record()
 returns table(function_name text, identity_args text, why text)
 language sql
 stable

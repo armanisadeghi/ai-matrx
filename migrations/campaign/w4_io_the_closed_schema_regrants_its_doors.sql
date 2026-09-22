@@ -49,7 +49,7 @@ set lock_timeout = '5s';
 set statement_timeout = '600s';
 
 -- ── CLASS 1, the generic form ───────────────────────────────────────────────
-create function platform.reopen_declared_doors(p_schema text)
+create or replace function platform.reopen_declared_doors(p_schema text)
 returns table(reopened text)
 language plpgsql
 security definer
@@ -121,7 +121,7 @@ comment on function platform.reopen_declared_doors(text) is
   'Re-grants EXECUTE to `authenticated` for every function platform.client_callable_door declares with signed_in_callers, in a schema platform.schema_client_exposure declares CLOSED. Generic form of custom.reopen_declared_doors(), which only ever knew one schema. Called automatically by the platform_reopen_declared_doors event trigger, so the re-grant happens in the revoking statement''s own transaction.';
 
 -- ── CLASS 1, the mechanism ──────────────────────────────────────────────────
-create function platform._reopen_declared_doors_after_revoke()
+create or replace function platform._reopen_declared_doors_after_revoke()
 returns event_trigger
 language plpgsql
 security definer

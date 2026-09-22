@@ -63,7 +63,7 @@ set statement_timeout = '300s';
 -- 1. THE IDENTITY THE CALLER ACTUALLY HELD  (NEW FUNCTION)
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.caller_role()
+create or replace function custom.caller_role()
   returns name
   language sql
   stable
@@ -88,7 +88,7 @@ comment on function custom.caller_role() is
 -- 2. THE ONE DOOR PREDICATE  (NEW FUNCTION)
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.assert_store_door(p_organization_id uuid, p_door text)
+create or replace function custom.assert_store_door(p_organization_id uuid, p_door text)
   returns void
   language plpgsql
   stable
@@ -127,7 +127,7 @@ comment on function custom.assert_store_door(uuid, text) is
 -- 3. THE SAME PREDICATE AS A TRIGGER, FOR THE TWO TABLES THAT HAD NO DOOR
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom._store_door()
+create or replace function custom._store_door()
   returns trigger
   language plpgsql
   set search_path to 'pg_catalog'

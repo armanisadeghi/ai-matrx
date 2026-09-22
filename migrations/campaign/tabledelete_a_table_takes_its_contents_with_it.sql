@@ -63,7 +63,7 @@ set statement_timeout = '5min';
 -- store's own eyes for nothing, and would need a client_callable_door row and a
 -- GRANT to keep field_dependants working at all.
 -- ─────────────────────────────────────────────────────────────────────────────
-create function custom.table_is_live(p_organization_id uuid, p_table_id uuid)
+create or replace function custom.table_is_live(p_organization_id uuid, p_table_id uuid)
 returns boolean
 language sql
 stable
@@ -84,7 +84,7 @@ comment on function custom.table_is_live(uuid, uuid) is
 -- with entity_definition_id, a Rule with scope_table_id, an ordinary record with
 -- its own table_id. A record that names no Table is not an orphan; it is free.
 -- ─────────────────────────────────────────────────────────────────────────────
-create function custom.owning_table(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.owning_table(p_organization_id uuid, p_record_id uuid)
 returns uuid
 language plpgsql
 stable
@@ -127,7 +127,7 @@ $fn$;
 comment on function custom.owning_table(uuid, uuid) is
   'The Table this record belongs to: a Field''s entity_definition_id, a Rule''s scope_table_id, a saved view''s subject, an ordinary record''s table_id. NULL when it belongs to no Table. TABLE-DELETE.';
 
-create function custom.owning_table_gone(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.owning_table_gone(p_organization_id uuid, p_record_id uuid)
 returns boolean
 language sql
 stable
@@ -148,7 +148,7 @@ comment on function custom.owning_table_gone(uuid, uuid) is
 -- saved views, then its Rules, then its Fields — so that while each one is being
 -- retired the Table and the Fields it is validated against are all still there.
 -- ─────────────────────────────────────────────────────────────────────────────
-create function custom.table_contents(p_organization_id uuid, p_table_id uuid)
+create or replace function custom.table_contents(p_organization_id uuid, p_table_id uuid)
 returns table (record_id uuid, kind text, goes_at integer)
 language sql
 stable

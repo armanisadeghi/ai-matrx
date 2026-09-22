@@ -33,7 +33,7 @@
 set lock_timeout = '45s';
 set statement_timeout = '600s';
 
-create function custom.choice_synonyms_in(p_map jsonb, p_token text)
+create or replace function custom.choice_synonyms_in(p_map jsonb, p_token text)
 returns text[]
 language sql
 immutable

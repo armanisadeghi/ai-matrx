@@ -27,7 +27,7 @@
 
 drop function if exists custom.views(uuid, uuid);
 
-create function custom.views(p_organization_id uuid, p_table_id uuid default null)
+create or replace function custom.views(p_organization_id uuid, p_table_id uuid default null)
   returns table (view_id uuid, name text, table_id uuid, filters jsonb,
                  definition jsonb, created_at timestamp with time zone)
   language plpgsql stable security definer set search_path = pg_catalog as $fn$

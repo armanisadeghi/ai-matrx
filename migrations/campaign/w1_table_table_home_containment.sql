@@ -124,7 +124,7 @@ values
 on conflict do nothing;
 
 -- ── the kernel `Table` record's id, in code ────────────────────────────────────
-create function custom.table_kernel_id() returns uuid
+create or replace function custom.table_kernel_id() returns uuid
   language sql immutable parallel safe
   set search_path to 'pg_catalog'
 as $fn_table_kernel_id$
@@ -135,7 +135,7 @@ comment on function custom.table_kernel_id() is
   'REC-25 / REC-27: the id of the kernel `Table` record in custom.record, written by W1-STORE''s w1_store_kernel_tables.sql and read back live before this file was written. A record whose table_id is this id IS a Table.';
 
 -- ── REC-N-4: the ceiling, READ OUT OF THIS FUNCTION ────────────────────────────
-create function custom.containment_depth_ceiling(p_organization_id uuid default null)
+create or replace function custom.containment_depth_ceiling(p_organization_id uuid default null)
   returns integer
   language plpgsql stable
   set search_path to 'pg_catalog'
@@ -162,7 +162,7 @@ comment on function custom.containment_depth_ceiling(uuid) is
   'REC-N-4. The ceiling is the literal v_platform_default in THIS body and is read out of the function, never out of a document; an organization may raise it through custom/containment_depth_ceiling up to the literal v_platform_maximum, which this body clamps.';
 
 -- ── REC-7: the parent, and there is only ever one of it ────────────────────────
-create function custom.containment_parent(p_data jsonb) returns uuid
+create or replace function custom.containment_parent(p_data jsonb) returns uuid
   language plpgsql immutable parallel safe
   set search_path to 'pg_catalog'
 as $fn_parent$
@@ -190,7 +190,7 @@ comment on function custom.containment_parent(jsonb) is
   'REC-7: a Record has zero or one parent, never two. The parent is ONE jsonb key, so two is unrepresentable; an array or any non-string is refused by name here rather than read past.';
 
 -- ── the chain UP, bounded so the guard can SEE the chain that is one too long ───
-create function custom.containment_chain(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.containment_chain(p_organization_id uuid, p_record_id uuid)
   returns table (ancestor_id uuid, depth integer)
   language sql stable
   set search_path to 'pg_catalog'
@@ -217,7 +217,7 @@ comment on function custom.containment_chain(uuid, uuid) is
   'REC-7/REC-8/REC-N-4: the containment chain above a record, nearest ancestor first, bounded at the platform maximum plus one so the guard can see the chain that is one too long. It is also the cycle detector: meeting the record itself on the way up IS a cycle.';
 
 -- ── the ONE place an edge kind is enumerated ────────────────────────────────────
-create function custom.containment_edges(p_organization_id uuid)
+create or replace function custom.containment_edges(p_organization_id uuid)
   returns table (parent_id uuid, child_id uuid, via text)
   language sql stable
   set search_path to 'pg_catalog'
@@ -246,7 +246,7 @@ comment on function custom.containment_edges(uuid) is
   'The ONE body that enumerates what an edge is in this store: a containment edge (parent_id) or a carrying relation (from → to). W1-REL repoints this and custom.home_relations() and no consumer moves.';
 
 -- ── the closure DOWN ───────────────────────────────────────────────────────────
-create function custom.reachable_from(p_organization_id uuid, p_roots uuid[])
+create or replace function custom.reachable_from(p_organization_id uuid, p_roots uuid[])
   returns table (record_id uuid, depth integer, via text)
   language sql stable
   set search_path to 'pg_catalog'
@@ -266,7 +266,7 @@ comment on function custom.reachable_from(uuid, uuid[]) is
   'The containment-and-carrying closure this lane owns: what is reachable from the roots. T10 is answered over it. The Visibility DERIVATION is W2-VIS''s and reads this closure; this function decides no grant and reads no grant. The depth bound is the platform maximum plus one, so a relation loop (T11) terminates rather than recursing forever.';
 
 -- ── REC-26: the one body W1-REL repoints ───────────────────────────────────────
-create function custom.home_relations()
+create or replace function custom.home_relations()
   returns table (table_id uuid, home_record_id uuid, organization_id uuid, relation_id uuid)
   language sql stable
   set search_path to 'pg_catalog'
@@ -289,7 +289,7 @@ comment on function custom.home_relations() is
   'REC-26: additional Homes are referenced carrying relations FROM the Home record TO the Table record. They are written into the store because platform.associations is LOCK:platform and the general relation layer is W1-REL''s; this is the ONE body W1-REL repoints, so no consumer moves.';
 
 -- ── REC-7, REC-8, REC-N-4: the containment trigger ─────────────────────────────
-create function custom._containment_guard() returns trigger
+create or replace function custom._containment_guard() returns trigger
   language plpgsql
   set search_path to 'pg_catalog'
 as $fn_cguard$
@@ -362,7 +362,7 @@ create trigger custom_record_containment_guard
   for each row execute function custom._containment_guard();
 
 -- ── REC-1, REC-2, REC-11, REC-66, REC-N-17: what a Table must declare ──────────
-create function custom._table_shape_guard() returns trigger
+create or replace function custom._table_shape_guard() returns trigger
   language plpgsql
   set search_path to 'pg_catalog'
 as $fn_tguard$
@@ -555,7 +555,7 @@ comment on view custom.home is
   'REC-3, REC-14 and REC-26: where a Table appears. The DECLARED Home is the Table record''s own parent, so REC-1''s "exactly one Home" and REC-7''s "zero or one parent" are one stored fact and the Home tree is the containment tree. ADDITIONAL Homes are referenced carrying relations from the Home record to the Table record, read through custom.home_relations() - the one body W1-REL repoints.';
 
 -- ── T10's question, as a query ─────────────────────────────────────────────────
-create function custom.tables_at_home(p_organization_id uuid, p_home_ids uuid[])
+create or replace function custom.tables_at_home(p_organization_id uuid, p_home_ids uuid[])
   returns table (table_id uuid, home_record_id uuid, kind text)
   language sql stable
   set search_path to 'pg_catalog'
@@ -573,7 +573,7 @@ comment on function custom.tables_at_home(uuid, uuid[]) is
 -- None of these is a write DOOR: schema `custom` is revoked from every client role and
 -- none of them carries a GRANT or SECURITY DEFINER, so `custom.record_write` (DOOR-N-1)
 -- remains the single door and these are owner-side constructors above it.
-create function custom.table_declare(p_organization_id uuid, p_spec jsonb) returns uuid
+create or replace function custom.table_declare(p_organization_id uuid, p_spec jsonb) returns uuid
   language plpgsql
   set search_path to 'pg_catalog'
 as $fn_declare$
@@ -594,7 +594,7 @@ $fn_declare$;
 comment on function custom.table_declare(uuid, jsonb) is
   'REC-1: declare a Table. Every property is checked by custom._table_shape_guard on the way in, so a half-declared Table cannot be stored.';
 
-create function custom.home_add(p_organization_id uuid, p_table_id uuid, p_home_record_id uuid)
+create or replace function custom.home_add(p_organization_id uuid, p_table_id uuid, p_home_record_id uuid)
   returns uuid
   language plpgsql
   set search_path to 'pg_catalog'
@@ -661,7 +661,7 @@ $fn_home_add$;
 comment on function custom.home_add(uuid, uuid, uuid) is
   'REC-3 and REC-26: an additional Home for a Table declared at the organization, written as a referenced carrying relation FROM the Home record TO the Table record. REC-11 refuses a detail record as a Home by name, and a second identical placement is refused by name rather than silently de-duplicated.';
 
-create function custom.relation_own(p_organization_id uuid, p_owner_id uuid, p_target_id uuid)
+create or replace function custom.relation_own(p_organization_id uuid, p_owner_id uuid, p_target_id uuid)
   returns uuid
   language plpgsql
   set search_path to 'pg_catalog'
@@ -698,7 +698,7 @@ $fn_own$;
 comment on function custom.relation_own(uuid, uuid, uuid) is
   'REC-10: an owned relation makes its target contained. The target enters the containment closure (so W2-VIS''s derivation gives it the parent''s Visibility), may be shared directly, and may be a Home - none of which a detail Table''s record may do (REC-11).';
 
-create function custom.record_reparent(p_organization_id uuid, p_record_id uuid, p_parent_id uuid)
+create or replace function custom.record_reparent(p_organization_id uuid, p_record_id uuid, p_parent_id uuid)
   returns void
   language plpgsql
   set search_path to 'pg_catalog'

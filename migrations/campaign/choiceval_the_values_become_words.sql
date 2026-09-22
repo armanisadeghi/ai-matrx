@@ -60,7 +60,7 @@
 set lock_timeout = '45s';
 set statement_timeout = '600s';
 
-create function custom.choice_census(p_organization_id uuid, p_table_id uuid default null)
+create or replace function custom.choice_census(p_organization_id uuid, p_table_id uuid default null)
 returns jsonb
 language plpgsql
 stable
@@ -122,7 +122,7 @@ begin
 end;
 $function$;
 
-create function custom.migrate_choice_keys(p_organization_id uuid, p_table_id uuid, p_dry_run boolean default false)
+create or replace function custom.migrate_choice_keys(p_organization_id uuid, p_table_id uuid, p_dry_run boolean default false)
 returns jsonb
 language plpgsql
 security definer

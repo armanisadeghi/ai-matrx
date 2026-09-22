@@ -35,7 +35,7 @@
 set lock_timeout = '5s';
 set statement_timeout = '120s';
 
-create function custom.reopen_declared_doors()
+create or replace function custom.reopen_declared_doors()
 returns table (reopened text)
 language plpgsql
 security definer

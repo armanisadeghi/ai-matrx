@@ -81,7 +81,7 @@ set statement_timeout = '300s';
 
 -- ----------------------------------------------------------------- 1. the door and the switch
 
-create function platform.relations_are_on(p_organization_id uuid default null)
+create or replace function platform.relations_are_on(p_organization_id uuid default null)
 returns boolean
 language plpgsql
 stable
@@ -105,7 +105,7 @@ begin
 end;
 $fn$;
 
-create function platform.assert_relations_door(p_organization_id uuid default null)
+create or replace function platform.assert_relations_door(p_organization_id uuid default null)
 returns void
 language plpgsql
 stable
@@ -133,23 +133,23 @@ $fn$;
 -- Rule 15: no literals in gates. Every refusal below and in file 3 names its set by calling
 -- these, so a word can be added in exactly one place and a test can read the set it is testing.
 
-create function platform.relation_flavors() returns text[]
+create or replace function platform.relation_flavors() returns text[]
   language sql immutable set search_path to 'pg_catalog'
   as $fn$ select array['owned','referenced'] $fn$;
 
-create function platform.relation_on_delete_actions() returns text[]
+create or replace function platform.relation_on_delete_actions() returns text[]
   language sql immutable set search_path to 'pg_catalog'
   as $fn$ select array['cascade','set_null','restrict'] $fn$;
 
-create function platform.relation_bindings() returns text[]
+create or replace function platform.relation_bindings() returns text[]
   language sql immutable set search_path to 'pg_catalog'
   as $fn$ select array['live','snapshot'] $fn$;
 
-create function platform.relation_cardinalities() returns text[]
+create or replace function platform.relation_cardinalities() returns text[]
   language sql immutable set search_path to 'pg_catalog'
   as $fn$ select array['at_most_one','many'] $fn$;
 
-create function platform.relation_target_modes() returns text[]
+create or replace function platform.relation_target_modes() returns text[]
   language sql immutable set search_path to 'pg_catalog'
   as $fn$ select array['one','several','any'] $fn$;
 
@@ -166,7 +166,7 @@ create function platform.relation_target_modes() returns text[]
 
 -- -------------------------------------------------------------- 4. the declaration, read once
 
-create function platform.relation_declaration(p_organization_id uuid, p_field_id uuid)
+create or replace function platform.relation_declaration(p_organization_id uuid, p_field_id uuid)
 returns jsonb
 language plpgsql
 stable
@@ -294,7 +294,7 @@ begin
 end;
 $fn$;
 
-create function platform.relation_field(p_organization_id uuid, p_record_id uuid, p_field_key text)
+create or replace function platform.relation_field(p_organization_id uuid, p_record_id uuid, p_field_key text)
 returns uuid
 language plpgsql
 stable
@@ -329,7 +329,7 @@ $fn$;
 
 -- --------------------------------------------------------- 5. the label, hydrated at read
 
-create function platform.relation_label(p_organization_id uuid, p_target_type text, p_target_id uuid)
+create or replace function platform.relation_label(p_organization_id uuid, p_target_type text, p_target_id uuid)
 returns text
 language plpgsql
 stable
@@ -379,7 +379,7 @@ begin
 end;
 $fn$;
 
-create function platform.relation_snapshot_of(p_organization_id uuid, p_target_type text, p_target_id uuid)
+create or replace function platform.relation_snapshot_of(p_organization_id uuid, p_target_type text, p_target_id uuid)
 returns jsonb
 language plpgsql
 stable
@@ -409,7 +409,7 @@ $fn$;
 
 -- ------------------------------------------------------------ 6. the write door, and the read
 
-create function platform.relation_set(
+create or replace function platform.relation_set(
   p_organization_id uuid, p_record_id uuid, p_field_key text, p_targets jsonb)
 returns integer
 language plpgsql
@@ -473,7 +473,7 @@ begin
 end;
 $fn$;
 
-create function platform.relation_unset(
+create or replace function platform.relation_unset(
   p_organization_id uuid, p_record_id uuid, p_field_key text, p_target_id uuid)
 returns integer
 language plpgsql
@@ -495,7 +495,7 @@ begin
 end;
 $fn$;
 
-create function platform.relations_from(p_organization_id uuid, p_record_id uuid)
+create or replace function platform.relations_from(p_organization_id uuid, p_record_id uuid)
 returns table(role text, target_type text, target_id uuid, "position" integer,
               label text, flavor text, binding text, snapshot jsonb, field_id uuid)
 language plpgsql
@@ -520,7 +520,7 @@ begin
 end;
 $fn$;
 
-create function platform.relations_to(p_organization_id uuid, p_record_id uuid)
+create or replace function platform.relations_to(p_organization_id uuid, p_record_id uuid)
 returns table(role text, source_type text, source_id uuid, "position" integer,
               label text, flavor text, field_id uuid)
 language plpgsql

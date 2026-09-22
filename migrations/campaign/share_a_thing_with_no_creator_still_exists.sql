@@ -31,7 +31,7 @@
 -- 19 rows that already exist — so it belongs to whoever owns that door, with this file as the
 -- evidence that it matters.
 
-create function public.shareable_resource_exists(p_resource_type text, p_resource_id uuid)
+create or replace function public.shareable_resource_exists(p_resource_type text, p_resource_id uuid)
 returns boolean
 language plpgsql
 stable

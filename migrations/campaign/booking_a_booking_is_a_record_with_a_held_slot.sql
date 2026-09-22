@@ -93,7 +93,7 @@ create unique index if not exists anon_submission_booking_ref_key
 -- custom._booking_availability — the organization's opinion, normalised and checked
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom._booking_availability(p_organization_id uuid, p_raw jsonb)
+create or replace function custom._booking_availability(p_organization_id uuid, p_raw jsonb)
 returns jsonb
 language plpgsql
 stable
@@ -222,7 +222,7 @@ on conflict do nothing;
 -- custom._booking_slots — the OFFER. The one generator, in the organization's timezone.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom._booking_slots(p_avail jsonb, p_days integer default null)
+create or replace function custom._booking_slots(p_avail jsonb, p_days integer default null)
 returns table(slot_key text, slot_at timestamptz, member_user_id uuid)
 language plpgsql
 stable
@@ -297,7 +297,7 @@ on conflict do nothing;
 -- custom.booking_declare — the owner's side: a Booking page over a Table
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.booking_declare(p_organization_id uuid, p_table_id uuid,
+create or replace function custom.booking_declare(p_organization_id uuid, p_table_id uuid,
                                        p_title text, p_questions jsonb,
                                        p_availability jsonb default '{}'::jsonb,
                                        p_presentation jsonb default '{}'::jsonb,
@@ -456,7 +456,7 @@ on conflict do nothing;
 -- custom.booking_public — the visitor's page: the questions AND what is free
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.booking_public(p_form_id uuid, p_days integer default null)
+create or replace function custom.booking_public(p_form_id uuid, p_days integer default null)
 returns table(form_id uuid, organization_id uuid, table_id uuid, title text,
               presentation jsonb, fields jsonb, honeypot_key text,
               availability jsonb, slots jsonb, state text, message text)
@@ -562,7 +562,7 @@ on conflict do nothing;
 -- custom.booking_hold — THE ATOMIC ONE. Two people, one slot, one refusal by name.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.booking_hold(p_form_id uuid, p_slot_key text, p_origin text,
+create or replace function custom.booking_hold(p_form_id uuid, p_slot_key text, p_origin text,
                                     p_bucket text, p_client_key text default null)
 returns table(hold_id uuid, slot_key text, expires_at timestamptz,
               member_user_id uuid, state text, message text)
@@ -700,7 +700,7 @@ on conflict do nothing;
 -- custom.booking_confirm — the details, and the booking becomes a record
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.booking_confirm(p_form_id uuid, p_hold_id uuid, p_origin text,
+create or replace function custom.booking_confirm(p_form_id uuid, p_hold_id uuid, p_origin text,
                                        p_payload jsonb, p_bucket text,
                                        p_honeypot text default null,
                                        p_client_key text default null)
@@ -858,7 +858,7 @@ on conflict do nothing;
 -- custom._booking_release — letting a slot go, as the person who published the page
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom._booking_release(p_organization_id uuid, p_published_by uuid, p_hold_id uuid)
+create or replace function custom._booking_release(p_organization_id uuid, p_published_by uuid, p_hold_id uuid)
 returns boolean
 language plpgsql
 security definer
@@ -907,7 +907,7 @@ on conflict do nothing;
 -- custom.booking_notify — the page's OWN notify Rule, with the words for a move
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.booking_notify(p_organization_id uuid, p_form_id uuid, p_record_id uuid,
+create or replace function custom.booking_notify(p_organization_id uuid, p_form_id uuid, p_record_id uuid,
                                       p_submission_id uuid, p_event text, p_when text)
 returns uuid
 language plpgsql
@@ -972,7 +972,7 @@ on conflict do nothing;
 -- custom.booking_manage — the visitor's own booking, by their own link
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.booking_manage(p_booking_ref text, p_days integer default null)
+create or replace function custom.booking_manage(p_booking_ref text, p_days integer default null)
 returns table(booking_ref text, form_id uuid, title text, slot_key text, slot_at timestamptz,
               status text, slots jsonb, availability jsonb, state text, message text)
 language plpgsql
@@ -1058,7 +1058,7 @@ on conflict do nothing;
 -- custom.booking_reschedule — the record AND the calendar hold move together
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.booking_reschedule(p_booking_ref text, p_slot_key text,
+create or replace function custom.booking_reschedule(p_booking_ref text, p_slot_key text,
                                           p_origin text, p_bucket text default null)
 returns table(booking_ref text, record_id uuid, slot_key text, slot_at timestamptz,
               state text, message text)
@@ -1210,7 +1210,7 @@ on conflict do nothing;
 -- custom.booking_cancel — the slot goes back on offer
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.booking_cancel(p_booking_ref text, p_origin text default null)
+create or replace function custom.booking_cancel(p_booking_ref text, p_origin text default null)
 returns table(booking_ref text, record_id uuid, slot_key text, state text, message text)
 language plpgsql
 security definer
@@ -1315,7 +1315,7 @@ on conflict do nothing;
 -- custom.bookings — the owner's list, with what makes it worth looking at
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.bookings(p_organization_id uuid, p_table_id uuid default null)
+create or replace function custom.bookings(p_organization_id uuid, p_table_id uuid default null)
 returns table(form_id uuid, table_id uuid, title text, slug text,
               published_at timestamptz, closed_at timestamptz,
               slot_minutes integer, timezone text, slot_table_id uuid,

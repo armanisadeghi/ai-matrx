@@ -121,7 +121,7 @@ set statement_timeout = '600s';
 
 -- VAL-2. The four words, VERBATIM from the contract row. No coining, no renaming: the row
 -- reads "never asked, none, refused, conflicting" and so does this array.
-create function custom.absence_reasons()
+create or replace function custom.absence_reasons()
   returns text[] language sql immutable set search_path to 'pg_catalog' as $$
   select array['never asked', 'none', 'refused', 'conflicting']::text[];
 $$;
@@ -130,7 +130,7 @@ comment on function custom.absence_reasons() is
   'VAL-2: a Value''s reason for absence. The four words verbatim from the contract row.';
 
 -- VAL-8. The actor vocabulary, and nothing else.
-create function custom.actor_vocabulary()
+create or replace function custom.actor_vocabulary()
   returns text[] language sql immutable set search_path to 'pg_catalog' as $$
   select array['user', 'agent', 'system']::text[];
 $$;
@@ -141,7 +141,7 @@ comment on function custom.actor_vocabulary() is
 -- VAL-9 (c). The retired triple and what each becomes, so the refusal can print the
 -- replacement instead of a list. This is the whole of VAL-9 that is this lane''s: a
 -- translation at one door, never a second vocabulary.
-create function custom.retired_actor_words()
+create or replace function custom.retired_actor_words()
   returns jsonb language sql immutable set search_path to 'pg_catalog' as $$
   select jsonb_build_object('human', 'user', 'ai', 'agent', 'code', 'system');
 $$;
@@ -150,12 +150,12 @@ comment on function custom.retired_actor_words() is
   'VAL-9 as this lane holds it: platform.actor_tier()''s live triple mapped to the store''s own. human->user, ai->agent, code->system.';
 
 -- The CLOSED key sets. VAL-5 and VAL-6 are enforced by closing these, not by adding a column.
-create function custom.value_envelope_keys()
+create or replace function custom.value_envelope_keys()
   returns text[] language sql immutable set search_path to 'pg_catalog' as $$
   select array['ver', 'src', 'actor', 'on_behalf_of', 'at', 'absent', 'alternates']::text[];
 $$;
 
-create function custom.value_alternate_keys()
+create or replace function custom.value_alternate_keys()
   returns text[] language sql immutable set search_path to 'pg_catalog' as $$
   select array['value', 'src', 'rank']::text[];
 $$;
@@ -164,7 +164,7 @@ comment on function custom.value_alternate_keys() is
   'VAL-3 under ruling (a): an alternate is a value, a source and a RANK. Never a confidence, score, probability or weight — D-3 stays deferred and its escape is a plain Field.';
 
 -- The seven words that mean "somebody tried to put access on a Value".
-create function custom.per_value_access_words()
+create or replace function custom.per_value_access_words()
   returns text[] language sql immutable set search_path to 'pg_catalog' as $$
   select array['visibility', 'access', 'share', 'acl', 'permission', 'permissions', 'secret']::text[];
 $$;
@@ -176,7 +176,7 @@ comment on function custom.per_value_access_words() is
 -- 2. THE LAW — one implementation, read by the trigger and by the CHECK
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.value_envelope_refusal(p_data jsonb)
+create or replace function custom.value_envelope_refusal(p_data jsonb)
   returns text language plpgsql immutable set search_path to 'pg_catalog' as $$
 declare
   v_values  jsonb;
@@ -339,7 +339,7 @@ $$;
 comment on function custom.value_envelope_refusal(jsonb) is
   'VAL-1..VAL-8: the value envelope''s whole law, in one implementation. Returns the sentence a person should read, or null. The trigger _value_envelope raises it; the CHECK constraint record_value_envelope reads it through custom.value_envelope_ok.';
 
-create function custom.value_envelope_ok(p_data jsonb)
+create or replace function custom.value_envelope_ok(p_data jsonb)
   returns boolean language sql immutable set search_path to 'pg_catalog' as $$
   select custom.value_envelope_refusal(p_data) is null;
 $$;
@@ -351,7 +351,7 @@ comment on function custom.value_envelope_ok(jsonb) is
 -- 3. INTERNING — VAL-1's "once per save", as a function and not as a hope
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.source_pointer(p_sources jsonb, p_source jsonb)
+create or replace function custom.source_pointer(p_sources jsonb, p_source jsonb)
   returns text language sql immutable set search_path to 'pg_catalog' as $$
   select e.key
     from jsonb_each(coalesce(p_sources, '{}'::jsonb)) e
@@ -362,14 +362,14 @@ $$;
 comment on function custom.source_pointer(jsonb, jsonb) is
   'The pointer this record already holds for a source description, by jsonb equality (which is key-order independent), or null. This is what makes interning idempotent.';
 
-create function custom.source_next_pointer(p_sources jsonb)
+create or replace function custom.source_next_pointer(p_sources jsonb)
   returns text language sql immutable set search_path to 'pg_catalog' as $$
   select 's' || (coalesce(max(substring(k from 2)::int), 0) + 1)::text
     from jsonb_object_keys(coalesce(p_sources, '{}'::jsonb)) k
    where k ~ '^s[0-9]+$';
 $$;
 
-create function custom.intern_provenance(p_data jsonb)
+create or replace function custom.intern_provenance(p_data jsonb)
   returns jsonb language plpgsql immutable set search_path to 'pg_catalog' as $$
 declare
   v_sources jsonb := coalesce(p_data -> '_sources', '{}'::jsonb);
@@ -440,7 +440,7 @@ comment on function custom.intern_provenance(jsonb) is
 -- 4. THE STAMP AND THE VERSION — both computed, never accepted
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.stamp_value_envelopes(p_data jsonb, p_actor text, p_on_behalf_of text, p_at timestamptz)
+create or replace function custom.stamp_value_envelopes(p_data jsonb, p_actor text, p_on_behalf_of text, p_at timestamptz)
   returns jsonb language plpgsql immutable set search_path to 'pg_catalog' as $$
 declare
   v_out jsonb := '{}'::jsonb;
@@ -466,7 +466,7 @@ $$;
 comment on function custom.stamp_value_envelopes(jsonb, text, text, timestamptz) is
   'VAL-7/VAL-8: who wrote each value, on whose behalf, and when — taken from the WRITE and never from the document, so no caller can choose an author (the same law platform._stamp_actor holds over created_by).';
 
-create function custom.value_versions(p_old jsonb, p_new jsonb)
+create or replace function custom.value_versions(p_old jsonb, p_new jsonb)
   returns jsonb language plpgsql immutable set search_path to 'pg_catalog' as $$
 declare
   v_out   jsonb := '{}'::jsonb;
@@ -508,7 +508,7 @@ comment on function custom.value_versions(jsonb, jsonb) is
 -- 5. THE ACTOR, RESOLVED AND REFUSED AT THE DOOR
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.actor_word(p_declared text)
+create or replace function custom.actor_word(p_declared text)
   returns text language plpgsql stable set search_path to 'pg_catalog' as $$
 declare
   v_word text := nullif(btrim(coalesce(p_declared, '')), '');
@@ -551,7 +551,7 @@ comment on function custom.actor_word(text) is
 -- 6. THE WRITE PATH — one trigger, on the table the one door writes
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom._value_envelope()
+create or replace function custom._value_envelope()
   returns trigger language plpgsql set search_path to 'pg_catalog' as $$
 declare
   v_data     jsonb := coalesce(new.data, '{}'::jsonb);
@@ -610,7 +610,7 @@ comment on constraint record_value_envelope on custom.record is
 -- 7. THE READS — every Value read returns its version id (DYN-8's triple)
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.record_values_versioned(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.record_values_versioned(p_organization_id uuid, p_record_id uuid)
   returns table(field_key text, field_id uuid, value jsonb, value_version integer,
                 source jsonb, absent_reason text, actor text, on_behalf_of text,
                 written_at timestamptz, alternates jsonb)
@@ -659,7 +659,7 @@ $$;
 comment on function custom.record_values_versioned(uuid, uuid) is
   'DYN-8: every Value of a record with the version id a run must be able to quote, beside its source, its author, its reason for absence and its ranked alternates. A value that is absent WITH a reason comes back as a row — VAL-2 is unreadable otherwise.';
 
-create function custom.value_read(p_organization_id uuid, p_record_id uuid, p_key text)
+create or replace function custom.value_read(p_organization_id uuid, p_record_id uuid, p_key text)
   returns table(field_key text, field_id uuid, value jsonb, value_version integer,
                 source jsonb, absent_reason text, actor text, on_behalf_of text,
                 written_at timestamptz, alternates jsonb)
@@ -675,7 +675,7 @@ comment on function custom.value_read(uuid, uuid, text) is
 -- 8. THE VALIDATION PATH, EXTENDED — not a second one
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.validate_value_envelope(p_organization_id uuid, p_fields custom.record[], p_data jsonb)
+create or replace function custom.validate_value_envelope(p_organization_id uuid, p_fields custom.record[], p_data jsonb)
   returns void language plpgsql stable set search_path to 'pg_catalog' as $$
 declare
   v_keys  text[];

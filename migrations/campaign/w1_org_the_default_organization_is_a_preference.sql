@@ -72,7 +72,7 @@
 -- lookup expressed as `ADD CONSTRAINT` inside a `not exists` predicate is not available to an
 -- allow-listed file, so the constraint is added with a name the second apply collides on —
 -- which is why the second apply is run with `--reapply` and the catalogue read back identical
--- at both ends. The two functions are plain `CREATE FUNCTION`, NOT `CREATE OR REPLACE`: the
+-- at both ends. The two functions are plain `create or replace function`, NOT `CREATE OR REPLACE`: the
 -- allow-list cannot prove a replacement is of a function that does not yet exist, so it
 -- refuses every `CREATE OR REPLACE` carrying no `-- based-on:` line — a line a NEW function
 -- cannot have. Measured on this very file: `--judge-only` returned `not-additive` at both
@@ -105,7 +105,7 @@ create index if not exists user_preferences_default_organization_id_idx
   on users.user_preferences (default_organization_id);
 
 -- 2 ---------------------------------------------------------------- the resolver
-create function iam.default_organization_id(p_user_id uuid)
+create or replace function iam.default_organization_id(p_user_id uuid)
 returns uuid
 language plpgsql
 stable
@@ -166,7 +166,7 @@ comment on function iam.default_organization_id(uuid) is
   'REC-44 / Doctrine R11: THE ONE RESOLVER for a person''s default organization. Order: the users.user_preferences column, then the legacy preferences JSON key (announced in a NOTICE with its remedy), then the oldest active organization membership, then null. Never reads iam.organizations.is_personal — the default organization is a user preference, never an organization flag.';
 
 -- 3 --------------------------------------------- the preference names a real membership
-create function iam._default_organization_is_a_membership()
+create or replace function iam._default_organization_is_a_membership()
 returns trigger
 language plpgsql
 security definer

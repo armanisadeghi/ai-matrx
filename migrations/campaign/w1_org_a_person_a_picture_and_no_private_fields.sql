@@ -49,7 +49,7 @@
 
 set lock_timeout = '5s';
 
-create function platform.doctrine_shape_vocabulary()
+create or replace function platform.doctrine_shape_vocabulary()
 returns table(law text, kind text, word text, remedy_type text, sentence text)
 language sql
 immutable
@@ -93,7 +93,7 @@ $function$;
 comment on function platform.doctrine_shape_vocabulary() is
   'REC-30/REC-31/REC-39: the words platform._doctrine_field_shape_guard() recognises, as DATA rather than a regular expression inside a trigger. law says which rule the word serves, remedy_type names the field type that IS the right answer, and sentence carries the refusal wording for the first word of each kind (the others inherit it). Anyone refused by that guard can read this list and see exactly why.';
 
-create function platform._doctrine_field_shape_guard()
+create or replace function platform._doctrine_field_shape_guard()
 returns trigger
 language plpgsql
 set search_path to 'pg_catalog'

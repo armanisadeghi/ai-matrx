@@ -39,7 +39,7 @@ set lock_timeout = '5s';
 set statement_timeout = '600s';
 
 -- ── the edges a rollup walks, filtered by DECLARATION ──────────────────────────
-create function custom.query_relation_edges(p_organization_id uuid,
+create or replace function custom.query_relation_edges(p_organization_id uuid,
                                                        p_flavor text default null,
                                                        p_role text default null)
 returns table(parent_id uuid, child_id uuid, role text, flavor text)
@@ -63,7 +63,7 @@ comment on function custom.query_relation_edges(uuid, text, text) is
   'W4-QUERY / DOOR-7: the relation edges of one organization, flavor read from platform.relation_declaration (REL-1: the Field owns that fact) and never from the edge row.';
 
 -- ── DOOR-7 ────────────────────────────────────────────────────────────────────
-create function custom.query_rollup(p_organization_id uuid,
+create or replace function custom.query_rollup(p_organization_id uuid,
                                                p_roots uuid[],
                                                p_flavor text default null,
                                                p_role text default null,
@@ -114,7 +114,7 @@ $fn$;
 comment on function custom.query_rollup(uuid, uuid[], text, text, integer, text) is
   'W4-QUERY / DOOR-7: roll up along a chosen relation flavor and role, counting every reachable record EXACTLY ONCE on loops and on diamonds — cycle detection stops the walk, the grouping makes once true of the answer. Visibility is joined, not applied after.';
 
-create function custom.query_rollup_sum(p_organization_id uuid,
+create or replace function custom.query_rollup_sum(p_organization_id uuid,
                                                    p_roots uuid[],
                                                    p_field_key text,
                                                    p_flavor text default null,
@@ -141,7 +141,7 @@ comment on function custom.query_rollup_sum(uuid, uuid[], text, text, text, inte
   'W4-QUERY / DOOR-7: the sum of one Field over a rollup. Built ON custom.query_rollup, so it inherits exactly-once counting rather than re-deriving it.';
 
 -- ── DOOR-8 ────────────────────────────────────────────────────────────────────
-create function custom.query_record_as_of(p_organization_id uuid,
+create or replace function custom.query_record_as_of(p_organization_id uuid,
                                                      p_record_id uuid,
                                                      p_recorded_at timestamptz default null,
                                                      p_world_on date default null,
@@ -189,7 +189,7 @@ $fn$;
 comment on function custom.query_record_as_of(uuid, uuid, timestamptz, date, text) is
   'W4-QUERY / DOOR-8: one record as-of a date on EITHER clock, or both. p_recorded_at is what the store SAID (history.record_at); p_world_on is what was TRUE (history.value_in_document). Visibility is checked through the one helper first.';
 
-create function custom.query_table_as_of(p_organization_id uuid,
+create or replace function custom.query_table_as_of(p_organization_id uuid,
                                                     p_table_id uuid,
                                                     p_recorded_at timestamptz default null,
                                                     p_world_on date default null,

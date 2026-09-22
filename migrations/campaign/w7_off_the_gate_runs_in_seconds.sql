@@ -130,7 +130,7 @@ $fn$;
 -- containers this organization holds a grant on. A row here means the stored
 -- form and the associations disagree in a way that no CURRENT grant happens to
 -- surface but the next grant would.
-create function campaign_watch.consumer_cache_drift(
+create or replace function campaign_watch.consumer_cache_drift(
   p_consumer        text,
   p_organization_id uuid
 )

@@ -33,7 +33,7 @@
 set lock_timeout = '5s';
 set statement_timeout = '300s';
 
-create function history.grant_capture()
+create or replace function history.grant_capture()
 returns trigger
 language plpgsql
 security definer

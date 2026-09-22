@@ -94,7 +94,7 @@ $function$;
 -- ─────────────────────────────────────────────────────────────────────────────
 -- THE ONE RULE.
 -- ─────────────────────────────────────────────────────────────────────────────
-create function custom.delete_rule(p_organization_id uuid, p_record_id uuid,
+create or replace function custom.delete_rule(p_organization_id uuid, p_record_id uuid,
                                               p_apply boolean default true)
 returns jsonb
 language plpgsql
@@ -222,7 +222,7 @@ comment on function custom.delete_rule(uuid, uuid, boolean) is
 
 -- The whole cascade, ahead of time, so a delete can record an inverse that puts every record
 -- back. It walks the SAME rule, so the list cannot disagree with what the door will do.
-create function custom.delete_cascade_closure(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.delete_cascade_closure(p_organization_id uuid, p_record_id uuid)
 returns uuid[]
 language plpgsql
 set search_path to 'pg_catalog'

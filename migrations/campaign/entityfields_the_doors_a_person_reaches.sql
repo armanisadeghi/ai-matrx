@@ -67,7 +67,7 @@ set statement_timeout = '300s';
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- 0. THE ONE PLACE A TOKEN IS RESOLVED, AND THE ONE PLACE EACH REFUSAL IS WORDED
 -- ─────────────────────────────────────────────────────────────────────────────────────────
-CREATE FUNCTION custom.entity_table(p_token text)
+create or replace function custom.entity_table(p_token text)
 RETURNS TABLE(token text, schema_name text, table_name text, type text, title_column text, label text,
               has_organization boolean, has_deleted_at boolean)
 LANGUAGE plpgsql
@@ -134,7 +134,7 @@ end
 $function$;
 
 
-CREATE FUNCTION custom.assert_entity_is_organization_scoped(p_token text, p_label text, p_scoped boolean)
+create or replace function custom.assert_entity_is_organization_scoped(p_token text, p_label text, p_scoped boolean)
 RETURNS void
 LANGUAGE plpgsql
 IMMUTABLE
@@ -157,7 +157,7 @@ $function$;
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- 1. WHAT THIS ORGANIZATION ADDED TO THIS STANDARD TABLE
 -- ─────────────────────────────────────────────────────────────────────────────────────────
-CREATE FUNCTION custom.entity_fields(p_organization_id uuid, p_token text)
+create or replace function custom.entity_fields(p_organization_id uuid, p_token text)
 RETURNS SETOF custom.record
 LANGUAGE plpgsql
 STABLE SECURITY DEFINER
@@ -185,7 +185,7 @@ $function$;
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- 2. ADD A COLUMN TO A STANDARD TABLE
 -- ─────────────────────────────────────────────────────────────────────────────────────────
-CREATE FUNCTION custom.entity_field_declare(p_organization_id uuid, p_token text, p_spec jsonb)
+create or replace function custom.entity_field_declare(p_organization_id uuid, p_token text, p_spec jsonb)
 RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -276,7 +276,7 @@ $function$;
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- 3. CHANGE ONE, AND 4. TAKE ONE AWAY
 -- ─────────────────────────────────────────────────────────────────────────────────────────
-CREATE FUNCTION custom.entity_field_update(p_organization_id uuid, p_field_id uuid, p_patch jsonb)
+create or replace function custom.entity_field_update(p_organization_id uuid, p_field_id uuid, p_patch jsonb)
 RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -336,7 +336,7 @@ end
 $function$;
 
 
-CREATE FUNCTION custom.entity_field_retire(p_organization_id uuid, p_field_id uuid)
+create or replace function custom.entity_field_retire(p_organization_id uuid, p_field_id uuid)
 RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -397,7 +397,7 @@ $function$;
 -- table. There is no second access system for custom values and this door cannot show a row
 -- the CRM would not. A row the person may not open comes back as nothing at all, which is
 -- what a standard `select` gives them today.
-CREATE FUNCTION custom.entity_record_read(p_organization_id uuid, p_token text, p_record_id uuid)
+create or replace function custom.entity_record_read(p_organization_id uuid, p_token text, p_record_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql
 STABLE
@@ -472,7 +472,7 @@ $function$;
 -- SECURITY INVOKER for the same reason: the UPDATE runs as the person, so the table's own
 -- `std_update` policy decides, and `custom._entity_custom_fields_guard` validates and
 -- envelopes what lands. A person who may edit the contact may edit its custom fields.
-CREATE FUNCTION custom.entity_value_write(p_organization_id uuid, p_token text, p_record_id uuid, p_patch jsonb)
+create or replace function custom.entity_value_write(p_organization_id uuid, p_token text, p_record_id uuid, p_patch jsonb)
 RETURNS jsonb
 LANGUAGE plpgsql
 SET search_path TO 'pg_catalog'
@@ -536,7 +536,7 @@ $function$;
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- Also SECURITY INVOKER, so the rows that come back are exactly the rows the person could
 -- already list. A filter is not a way around the wall.
-CREATE FUNCTION custom.entity_records_find(p_organization_id uuid, p_token text, p_key text,
+create or replace function custom.entity_records_find(p_organization_id uuid, p_token text, p_key text,
                                            p_value jsonb DEFAULT NULL,
                                            p_limit integer DEFAULT 50, p_offset integer DEFAULT 0)
 RETURNS jsonb

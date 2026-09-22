@@ -42,7 +42,7 @@ on conflict (feature, key) do nothing;
 -- VIS-31 — the external principal
 -- ═══════════════════════════════════════════════════════════════════════════════════════
 
-create function iam.is_external_principal(p_user_id uuid default null)
+create or replace function iam.is_external_principal(p_user_id uuid default null)
 returns boolean
 language plpgsql
 stable
@@ -72,7 +72,7 @@ comment on function iam.is_external_principal(uuid) is
   'account, so counting it would mean nobody is ever external. This is the ONE place that '
   'question is answered.';
 
-create function iam.external_principal_card(p_user_id uuid default null)
+create or replace function iam.external_principal_card(p_user_id uuid default null)
 returns jsonb
 language plpgsql
 stable
@@ -108,7 +108,7 @@ begin
                   'of the ways things reach them.', v_n) end);
 end $function$;
 
-create function iam.external_principal_reach(p_resource_type text, p_user_id uuid default null)
+create or replace function iam.external_principal_reach(p_resource_type text, p_user_id uuid default null)
 returns table (resource_id uuid)
 language plpgsql
 stable
@@ -175,7 +175,7 @@ comment on table iam.publish_binding is
   'world-lane row exactly where they were. Notion''s Publish to web is the reference: a per-page '
   'binding with its own switches, separate from the page''s sharing.';
 
-create function iam.publish_binding_create(p_slug text, p_resource_type text, p_resource_id uuid,
+create or replace function iam.publish_binding_create(p_slug text, p_resource_type text, p_resource_id uuid,
                                            p_organization_id uuid, p_render_mode text default 'page')
 returns iam.publish_binding
 language plpgsql
@@ -242,7 +242,7 @@ begin
   return v_row;
 end $function$;
 
-create function iam.publish_binding_revoke(p_slug text)
+create or replace function iam.publish_binding_revoke(p_slug text)
 returns jsonb
 language plpgsql
 security definer
@@ -274,7 +274,7 @@ begin
                'row are untouched — only the public door closed.');
 end $function$;
 
-create function iam.resolve_publish_binding(p_slug text)
+create or replace function iam.resolve_publish_binding(p_slug text)
 returns table (slug text, resource_type text, resource_id uuid, organization_id uuid,
                render_mode text, namespace text, notice text)
 language plpgsql

@@ -57,7 +57,7 @@
 -- It is IMMUTABLE because its caller is, and it reaches nothing.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create function custom.io_value_shape(p_envelope jsonb)
+create or replace function custom.io_value_shape(p_envelope jsonb)
 returns jsonb
 language sql
 immutable

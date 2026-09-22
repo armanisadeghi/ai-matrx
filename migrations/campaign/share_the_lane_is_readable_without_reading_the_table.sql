@@ -30,7 +30,7 @@
 -- world, plus discoverable) — answering from the column would report a different thing from the
 -- one the Access tab beside it reports, which is two answers to one question.
 
-create function public.store_door_lane(p_resource_type text, p_resource_id uuid)
+create or replace function public.store_door_lane(p_resource_type text, p_resource_id uuid)
 returns jsonb
 language plpgsql
 stable

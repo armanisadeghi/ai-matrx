@@ -48,7 +48,7 @@ set statement_timeout = '600s';
 
 -- ── THE RENDERERS ───────────────────────────────────────────────────────────────────────
 
-create function custom.choice_render_value(p_field jsonb, p_value jsonb)
+create or replace function custom.choice_render_value(p_field jsonb, p_value jsonb)
 returns jsonb
 language sql
 immutable
@@ -68,7 +68,7 @@ as $function$
     else p_value end;
 $function$;
 
-create function custom.choice_render_note(p_field jsonb, p_value jsonb)
+create or replace function custom.choice_render_note(p_field jsonb, p_value jsonb)
 returns jsonb
 language sql
 immutable
@@ -92,7 +92,7 @@ as $function$
     else null end;
 $function$;
 
-create function custom.choice_render(p_organization_id uuid, p_table_id uuid, p_doc jsonb)
+create or replace function custom.choice_render(p_organization_id uuid, p_table_id uuid, p_doc jsonb)
 returns jsonb
 language plpgsql
 stable
@@ -133,7 +133,7 @@ begin
 end;
 $function$;
 
-create function custom.choice_render_groups(p_map jsonb, p_groups jsonb)
+create or replace function custom.choice_render_groups(p_map jsonb, p_groups jsonb)
 returns jsonb
 language sql
 immutable
@@ -152,7 +152,7 @@ as $function$
   end;
 $function$;
 
-create function custom.choice_filter_normalize(p_map jsonb, p_filter jsonb)
+create or replace function custom.choice_filter_normalize(p_map jsonb, p_filter jsonb)
 returns jsonb
 language sql
 stable

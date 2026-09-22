@@ -91,7 +91,7 @@ create trigger trg_associations_zzz_version_capture_delete
 -- REL-13's read: the history of one relation, from the rows the capture writes. It is a function
 -- and not a view so the door applies to it like everything else this lane built - a relation's
 -- history is as dark as the relation while the switch is off.
-create function platform.relation_history(p_organization_id uuid, p_association_id uuid)
+create or replace function platform.relation_history(p_organization_id uuid, p_association_id uuid)
 returns table(version integer, operation text, at_time timestamp with time zone,
               actor_id uuid, role text, target_type text, target_id uuid)
 language plpgsql

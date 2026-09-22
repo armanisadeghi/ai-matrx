@@ -663,7 +663,7 @@ $fn$;
 -- It is read by `pnpm check:store-doors-decide` and it is the thing that goes red if a later
 -- lane writes a new SQL-language helper into the ladder.
 -- ---------------------------------------------------------------------------------------------
-create function custom.ladder_replanners(p_roots text[] default array['custom.has_visibility','custom.effective_level','custom.reaches_directly','custom.visible_set'])
+create or replace function custom.ladder_replanners(p_roots text[] default array['custom.has_visibility','custom.effective_level','custom.reaches_directly','custom.visible_set'])
 returns table(fn text, lang text, why text, remedy text)
 language plpgsql
 stable

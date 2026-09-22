@@ -37,7 +37,7 @@ set lock_timeout = '5s';
 set statement_timeout = '600s';
 
 -- ── who is asking ──────────────────────────────────────────────────────────────
-create function custom.query_principal()
+create or replace function custom.query_principal()
 returns uuid
 language plpgsql
 stable
@@ -65,7 +65,7 @@ comment on function custom.query_principal() is
   'W4-QUERY: the reading principal, or null when there is none. Read once per query, never per row.';
 
 -- ── the server lane, judged from the catalogue and never from a role literal ────
-create function custom.query_is_store_owner()
+create or replace function custom.query_is_store_owner()
 returns boolean
 language sql
 stable
@@ -82,7 +82,7 @@ comment on function custom.query_is_store_owner() is
 -- ══════════════════════════════════════════════════════════════════════════════
 -- THE SWAP POINT. This function, and only this function, names `iam.*`.
 -- ══════════════════════════════════════════════════════════════════════════════
-create function custom.query_access_ids(p_organization_id uuid,
+create or replace function custom.query_access_ids(p_organization_id uuid,
                                                    p_required text default 'viewer')
 returns uuid[]
 language plpgsql
@@ -125,7 +125,7 @@ comment on function custom.query_access_ids(uuid, text) is
 -- ══════════════════════════════════════════════════════════════════════════════
 -- THE SET EVERY QUERY JOINS.
 -- ══════════════════════════════════════════════════════════════════════════════
-create function custom.query_visible_ids(p_organization_id uuid,
+create or replace function custom.query_visible_ids(p_organization_id uuid,
                                                     p_table_id uuid default null,
                                                     p_required text default 'viewer')
 returns setof uuid
@@ -152,7 +152,7 @@ comment on function custom.query_visible_ids(uuid, uuid, text) is
   'W4-QUERY / DOOR-10: the set of record ids this principal may see, joined by every W4 query so the plan shows a JOIN and never Rows Removed by Filter. Excludes soft-deleted rows and DOOR-17 quarantine.';
 
 -- ── the same answer for one row, for the callers that hold an id already ───────
-create function custom.query_can_see(p_organization_id uuid, p_record_id uuid,
+create or replace function custom.query_can_see(p_organization_id uuid, p_record_id uuid,
                                                 p_required text default 'viewer')
 returns boolean
 language sql

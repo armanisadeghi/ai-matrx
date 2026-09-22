@@ -93,7 +93,7 @@ create policy capture_window_read on history.capture_window
 -- ─────────────────────────────────────────────────────────────────────────────
 -- THE GUARD, READ THROUGH THE ONE PREDICATE.
 -- ─────────────────────────────────────────────────────────────────────────────
-create function history.capture_is_open(p_organization_id uuid default null)
+create or replace function history.capture_is_open(p_organization_id uuid default null)
 returns boolean
 language plpgsql
 stable
@@ -135,7 +135,7 @@ comment on function history.capture_is_open(uuid) is
 -- ─────────────────────────────────────────────────────────────────────────────
 -- THE CAPTURE. One trigger, one store, every data_class.
 -- ─────────────────────────────────────────────────────────────────────────────
-create function history.record_capture()
+create or replace function history.record_capture()
 returns trigger
 language plpgsql
 security definer
@@ -213,7 +213,7 @@ create trigger zzz_history_capture
 -- ─────────────────────────────────────────────────────────────────────────────
 -- WHAT A REPLAY IS ALLOWED TO ANSWER.
 -- ─────────────────────────────────────────────────────────────────────────────
-create function history.assert_watching(p_entity_type text, p_at timestamptz)
+create or replace function history.assert_watching(p_entity_type text, p_at timestamptz)
 returns void
 language plpgsql
 stable
@@ -247,7 +247,7 @@ comment on function history.assert_watching(text, timestamptz) is
 -- ─────────────────────────────────────────────────────────────────────────────
 -- THE READ. One body every replay in this lane goes through.
 -- ─────────────────────────────────────────────────────────────────────────────
-create function history.record_at(p_organization_id uuid, p_record_id uuid, p_at timestamptz)
+create or replace function history.record_at(p_organization_id uuid, p_record_id uuid, p_at timestamptz)
 returns jsonb
 language sql
 stable
@@ -266,7 +266,7 @@ $fn$;
 comment on function history.record_at(uuid, uuid, timestamptz) is
   'The RECORDED clock (HIS-5): the record exactly as the store held it at a moment, reconstructed from history.row_versions and from nothing else.';
 
-create function history.record_versions(p_organization_id uuid, p_record_id uuid)
+create or replace function history.record_versions(p_organization_id uuid, p_record_id uuid)
 returns table(version integer, operation text, occurred_at timestamptz, actor_id uuid, row_data jsonb)
 language sql
 stable

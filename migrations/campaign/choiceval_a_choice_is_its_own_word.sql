@@ -55,7 +55,7 @@ set statement_timeout = '600s';
 
 -- ── 1. THE SLUG, AND THE KEY IT BECOMES ─────────────────────────────────────────────────
 
-create function custom.choice_slug(p_word text)
+create or replace function custom.choice_slug(p_word text)
 returns text
 language sql
 immutable
@@ -71,7 +71,7 @@ as $function$
            'c_' || substr(md5(coalesce(btrim(p_word), '')), 1, 8));
 $function$;
 
-create function custom.choice_key_for(p_organization_id uuid, p_options_table_id uuid,
+create or replace function custom.choice_key_for(p_organization_id uuid, p_options_table_id uuid,
                                                  p_title text, p_exclude uuid default null)
 returns text
 language plpgsql
@@ -100,7 +100,7 @@ $function$;
 
 -- ── 2. WHAT THE STORE KNOWS ABOUT ONE TABLE'S CHOICES ───────────────────────────────────
 
-create function custom.choice_options(p_organization_id uuid, p_options_table_id uuid)
+create or replace function custom.choice_options(p_organization_id uuid, p_options_table_id uuid)
 returns jsonb
 language sql
 stable
@@ -127,7 +127,7 @@ as $function$
            order by (o.deleted_at is null), o.created_at) x;
 $function$;
 
-create function custom.choice_field_map(p_organization_id uuid, p_table_id uuid)
+create or replace function custom.choice_field_map(p_organization_id uuid, p_table_id uuid)
 returns jsonb
 language sql
 stable
@@ -155,7 +155,7 @@ $function$;
 
 -- ── 3. ONE TOKEN IN, ONE KEY OUT ────────────────────────────────────────────────────────
 
-create function custom.choice_key_of(p_field jsonb, p_token text)
+create or replace function custom.choice_key_of(p_field jsonb, p_token text)
 returns text
 language sql
 immutable
@@ -172,7 +172,7 @@ as $function$
       where e.value ->> 'id' = btrim(coalesce(p_token, '')) limit 1));
 $function$;
 
-create function custom.choice_words(p_field jsonb)
+create or replace function custom.choice_words(p_field jsonb)
 returns text
 language sql
 immutable
@@ -184,7 +184,7 @@ as $function$
    where not coalesce((e.value ->> 'retired')::boolean, false);
 $function$;
 
-create function custom.choice_synonyms(p_organization_id uuid, p_table_id uuid, p_token text)
+create or replace function custom.choice_synonyms(p_organization_id uuid, p_table_id uuid, p_token text)
 returns text[]
 language sql
 stable

@@ -63,7 +63,7 @@ set statement_timeout = '600s';
 -- `data` keyed by the Field's `key`, so the answer is the Field RECORDS whose key's value
 -- moved. Envelope bookkeeping (`_values`, `_sources`, `_computed`, `_derived`, `_retired`,
 -- `_actor`) is not a Field and never counts as a change.
-create function custom.io_changed_field_ids(p_organization_id uuid,
+create or replace function custom.io_changed_field_ids(p_organization_id uuid,
                                             p_table_id uuid,
                                             p_old jsonb,
                                             p_new jsonb)
@@ -93,7 +93,7 @@ comment on function custom.io_changed_field_ids(uuid, uuid, jsonb, jsonb) is
   'W4-IO / DOOR-13: the Field ids whose value differs between two record documents. Envelope keys (leading underscore) are bookkeeping and never count as a change.';
 
 -- ── the trigger: one outbox row, in the SAME transaction as the record ────────
-create function custom.io_record_changed()
+create or replace function custom.io_record_changed()
 returns trigger
 language plpgsql
 security definer
@@ -160,7 +160,7 @@ create trigger io_record_changed
   for each row execute function custom.io_record_changed();
 
 -- ── the ONE publisher, and it is on the outbox, never on the record ───────────
-create function custom.io_outbox_announce()
+create or replace function custom.io_outbox_announce()
 returns trigger
 language plpgsql
 security definer
@@ -190,7 +190,7 @@ create trigger io_outbox_announce
   for each row execute function custom.io_outbox_announce();
 
 -- ── the idempotent consumer ───────────────────────────────────────────────────
-create function custom.io_outbox_drain(p_organization_id uuid,
+create or replace function custom.io_outbox_drain(p_organization_id uuid,
                                        p_consumer text,
                                        p_limit integer default 100,
                                        p_event_key text default 'records.changed')
@@ -245,7 +245,7 @@ values ('custom', 'io_outbox_drain',
 on conflict do nothing;
 
 -- ── releasing a claim a consumer could not finish ─────────────────────────────
-create function custom.io_outbox_release(p_organization_id uuid,
+create or replace function custom.io_outbox_release(p_organization_id uuid,
                                          p_consumer text,
                                          p_older_than interval default '15 minutes')
 returns integer

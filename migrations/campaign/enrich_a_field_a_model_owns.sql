@@ -144,7 +144,7 @@ on conflict (feature, key) do nothing;
 -- ═══════════════════════════════════════════════════ 2. THE CLOSED VOCABULARIES
 -- One copy each (rule 15 — no literal in a gate).
 
-create function custom.enrich_run_class()
+create or replace function custom.enrich_run_class()
 returns text
 language sql
 immutable
@@ -155,7 +155,7 @@ comment on function custom.enrich_run_class() is
   'ENRICH: the data_class an enrichment run record carries. One copy, so the door that '
   'writes a run and every door that sums the money cannot drift apart.';
 
-create function custom.enrich_sensitivity_rank(p_word text)
+create or replace function custom.enrich_sensitivity_rank(p_word text)
 returns integer
 language sql
 immutable
@@ -174,7 +174,7 @@ comment on function custom.enrich_sensitivity_rank(text) is
   'AGT-7: the four sensitivity words in order, least to most. NULL for a word that is not '
   'one of them, so a typo in a ceiling is refused rather than silently read as "public".';
 
-create function custom.enrich_triggers()
+create or replace function custom.enrich_triggers()
 returns text[]
 language sql
 immutable
@@ -199,7 +199,7 @@ comment on function custom.enrich_triggers() is
 --   · a write policy that is not auto or ask                                   22023
 --   · an enrichment whose only input is the field it fills                     22023
 
-create function custom.enrich_normalize(
+create or replace function custom.enrich_normalize(
   p_organization_id uuid,
   p_table_id uuid,
   p_field_key text,
@@ -401,7 +401,7 @@ on conflict do nothing;
 -- walked away. `enabled` is part of the same act, so turning one on is one call and leaves
 -- one History version saying who did it.
 
-create function custom.enrich_declare(
+create or replace function custom.enrich_declare(
   p_organization_id uuid,
   p_field_id uuid,
   p_spec jsonb)
@@ -529,7 +529,7 @@ on conflict do nothing;
 -- ═══════════════════════════════════════════════ 5. custom.enrichments
 -- The list: every agent-owned column of a Table, with its freshness census and its money.
 
-create function custom.enrichments(p_organization_id uuid, p_table_id uuid default null)
+create or replace function custom.enrichments(p_organization_id uuid, p_table_id uuid default null)
 returns table(field_id uuid, table_id uuid, field_key text, label text,
               enrichment jsonb, enabled boolean, review_interval_days integer,
               rows_total integer, rows_filled integer, rows_stale integer,
@@ -650,7 +650,7 @@ on conflict do nothing;
 --   · past its freshness date    — `at` + review_interval_days is behind us (AGT-6)
 -- A cell a person PINNED is never due, and never appears here at all.
 
-create function custom.enrich_due(
+create or replace function custom.enrich_due(
   p_organization_id uuid,
   p_field_id uuid,
   p_limit integer default 50,
@@ -793,7 +793,7 @@ on conflict do nothing;
 -- date. A grid that asked custom.value_read per cell would make fifty round trips to draw
 -- fifty badges. So the page asks once, for the ids it is drawing.
 
-create function custom.enrich_cells(
+create or replace function custom.enrich_cells(
   p_organization_id uuid,
   p_table_id uuid,
   p_field_keys text[] default null,
@@ -910,7 +910,7 @@ on conflict do nothing;
 --     without it there is nothing to stand on
 --   · record a run that would take this organization past its monthly budget
 
-create function custom.enrich_land(
+create or replace function custom.enrich_land(
   p_organization_id uuid,
   p_field_id uuid,
   p_results jsonb,
@@ -1215,7 +1215,7 @@ on conflict do nothing;
 -- the other two halves — pinning a cell WITHOUT changing it, and un-pinning one so the
 -- enrichment may have it back.
 
-create function custom.enrich_pin(
+create or replace function custom.enrich_pin(
   p_organization_id uuid,
   p_record_id uuid,
   p_field_key text,
@@ -1301,7 +1301,7 @@ on conflict do nothing;
 -- What this column has cost, run by run. A number with no history behind it is a number
 -- nobody can argue with.
 
-create function custom.enrich_runs(
+create or replace function custom.enrich_runs(
   p_organization_id uuid,
   p_field_id uuid default null,
   p_limit integer default 50)

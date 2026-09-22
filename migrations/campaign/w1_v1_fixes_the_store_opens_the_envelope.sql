@@ -117,7 +117,7 @@ on conflict (feature, key) do nothing;
 -- 2. THE CEILING, READ AND ENFORCED IN ONE PLACE  (NEW FUNCTION)
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-create function custom.size_refusal(p_organization_id uuid, p_data jsonb)
+create or replace function custom.size_refusal(p_organization_id uuid, p_data jsonb)
   returns text
   language plpgsql
   stable

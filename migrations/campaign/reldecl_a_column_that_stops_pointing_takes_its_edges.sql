@@ -56,7 +56,7 @@
 --
 -- ITS INVERSE: migrations/inverse/reldecl_a_column_that_stops_pointing_takes_its_edges_down.sql
 
-create function custom.relation_edges_withdraw(p_organization_id uuid, p_field_ids uuid[], p_why text)
+create or replace function custom.relation_edges_withdraw(p_organization_id uuid, p_field_ids uuid[], p_why text)
 returns integer
 language plpgsql
 security definer

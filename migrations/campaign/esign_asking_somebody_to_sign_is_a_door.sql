@@ -80,7 +80,7 @@
 -- THE TOKEN
 -- ═══════════════════════════════════════════════════════════════════════════════════════
 
-create function custom.sign_token_encode(p_bytes bytea)
+create or replace function custom.sign_token_encode(p_bytes bytea)
 returns text
 language sql
 immutable
@@ -95,7 +95,7 @@ $$;
 comment on function custom.sign_token_encode(bytea) is
   'ESIGN: base64url without padding. The signing link''s one encoding.';
 
-create function custom.sign_token_decode(p_token text)
+create or replace function custom.sign_token_decode(p_token text)
 returns bytea
 language plpgsql
 immutable
@@ -119,7 +119,7 @@ comment on function custom.sign_token_decode(text) is
 -- WHAT STATE A REQUEST IS IN — derived, never stored, so it can never disagree with itself
 -- ═══════════════════════════════════════════════════════════════════════════════════════
 
-create function custom.sign_request_state(p_data jsonb)
+create or replace function custom.sign_request_state(p_data jsonb)
 returns text
 language sql
 stable
@@ -141,7 +141,7 @@ $$;
 comment on function custom.sign_request_state(jsonb) is
   'ESIGN: sent / viewed / signed / declined / invalidated / expired, derived from the request Record. Never stored, so the screen and the store cannot say different things.';
 
-create function custom.sign_request_sentence(p_data jsonb)
+create or replace function custom.sign_request_sentence(p_data jsonb)
 returns text
 language sql
 stable
@@ -173,7 +173,7 @@ comment on function custom.sign_request_sentence(jsonb) is
 -- about a record is a bigger act than reading it.
 -- ═══════════════════════════════════════════════════════════════════════════════════════
 
-create function custom.sign_request_create(
+create or replace function custom.sign_request_create(
   p_organization_id uuid,
   p_render_id       uuid,
   p_field_key       text,
@@ -344,7 +344,7 @@ comment on function custom.sign_request_create(uuid, uuid, text, text, text, int
 -- THE OWNER'S SIDE — the requests on a record, and stopping one
 -- ═══════════════════════════════════════════════════════════════════════════════════════
 
-create function custom.sign_requests(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.sign_requests(p_organization_id uuid, p_record_id uuid)
 returns table (
   request_id       uuid,
   render_id        uuid,
@@ -413,7 +413,7 @@ $$;
 comment on function custom.sign_requests(uuid, uuid) is
   'ESIGN: every signature request on one record, with its state and the one sentence that describes it. Viewer on the record.';
 
-create function custom.sign_request_cancel(
+create or replace function custom.sign_request_cancel(
   p_organization_id uuid, p_request_id uuid, p_reason text default null)
 returns jsonb
 language plpgsql
@@ -459,7 +459,7 @@ $$;
 comment on function custom.sign_request_cancel(uuid, uuid, text) is
   'ESIGN: withdraw a signature request that has not been answered. Editor on the record.';
 
-create function custom.sign_request_remind(p_organization_id uuid, p_request_id uuid)
+create or replace function custom.sign_request_remind(p_organization_id uuid, p_request_id uuid)
 returns jsonb
 language plpgsql
 security definer
@@ -537,7 +537,7 @@ comment on function custom.sign_request_remind(uuid, uuid) is
 -- assert, and they are part of what a signature certificate means.
 -- ═══════════════════════════════════════════════════════════════════════════════════════
 
-create function custom._sign_request_resolve(p_token text)
+create or replace function custom._sign_request_resolve(p_token text)
 returns table (organization_id uuid, request_id uuid, data jsonb, ok boolean)
 language plpgsql
 security definer
@@ -591,7 +591,7 @@ $$;
 comment on function custom._sign_request_resolve(text) is
   'ESIGN: token -> (organization, request, data), or nothing. A wrong secret aimed at a real request is counted and, at ten, stops it.';
 
-create function custom.sign_request_public(p_token text, p_origin text default null)
+create or replace function custom.sign_request_public(p_token text, p_origin text default null)
 returns jsonb
 language plpgsql
 security definer
@@ -672,7 +672,7 @@ $$;
 comment on function custom.sign_request_public(text, text) is
   'ESIGN: what the signing page shows. Server lane. Marks the request viewed on the first open and invalidates it if the record moved since the ask.';
 
-create function custom.sign_request_sign(
+create or replace function custom.sign_request_sign(
   p_token       text,
   p_signed_name text,
   p_mark        text,
@@ -845,7 +845,7 @@ $$;
 comment on function custom.sign_request_sign(text, text, text, text, text, text, text) is
   'ESIGN / VAL-10: the signer signs. Writes the Value on the record with full provenance through custom.doc_sign plus this lane''s completion, the seal, the drawn image as a File, and the request''s own answer. Server lane.';
 
-create function custom.sign_request_decline(
+create or replace function custom.sign_request_decline(
   p_token text, p_reason text default null, p_ip text default null, p_user_agent text default null)
 returns jsonb
 language plpgsql

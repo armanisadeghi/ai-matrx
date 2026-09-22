@@ -19,8 +19,8 @@
 -- WHY THE OBVIOUS FIX IS REFUSED. "Add an optional `p_client_op_id uuid DEFAULT NULL` to the
 -- write doors" is not additive on PostgreSQL, and this was proven rather than assumed:
 --
---     create function f(a uuid, b uuid, c jsonb) …
---     create function f(a uuid, b uuid, c jsonb, d uuid default null) …
+--     create or replace function f(a uuid, b uuid, c jsonb) …
+--     create or replace function f(a uuid, b uuid, c jsonb, d uuid default null) …
 --     select f(…, …, '{}'::jsonb);
 --     ERROR:  function f(uuid, uuid, jsonb) is not unique
 --
@@ -78,7 +78,7 @@ comment on column custom.io_outbox.op_id is
 -- ── THE ONE PLACE THE ENVELOPE KEY IS READ ──────────────────────────────────────────────
 -- Three doors need exactly the same four lines, so they are one function rather than three
 -- copies: lift, validate, remember, hand back the document without it.
-create function custom._take_op_id(p_doc jsonb, p_door text)
+create or replace function custom._take_op_id(p_doc jsonb, p_door text)
 returns jsonb
 language plpgsql
 volatile

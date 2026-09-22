@@ -42,7 +42,7 @@
 -- it without a JWT, an `auth.uid()` of NULL must refuse rather than match a NULL topic part.
 -- `is distinct from` and an explicit null check make that impossible to get wrong by accident.
 
-create function scheduler.realtime_topic_admits(p_topic text)
+create or replace function scheduler.realtime_topic_admits(p_topic text)
 returns boolean
 language plpgsql
 stable

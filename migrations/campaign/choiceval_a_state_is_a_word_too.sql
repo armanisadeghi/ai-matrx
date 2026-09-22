@@ -35,7 +35,7 @@
 set lock_timeout = '45s';
 set statement_timeout = '600s';
 
-create function custom.work_state_id(p_organization_id uuid, p_table_id uuid, p_value text)
+create or replace function custom.work_state_id(p_organization_id uuid, p_table_id uuid, p_value text)
 returns uuid
 language sql
 stable

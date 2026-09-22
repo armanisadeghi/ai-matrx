@@ -37,7 +37,7 @@
 -- UNMEASURED IS NOT PASSED: an organization with more (member, record) pairs than the ceiling
 -- returns a row saying so rather than a quiet zero.
 
-CREATE FUNCTION custom.shared_only_disagreements(p_pretend text DEFAULT null)
+create or replace function custom.shared_only_disagreements(p_pretend text DEFAULT null)
  RETURNS TABLE(organization_id uuid, organization_name text, member_id uuid, record_id uuid,
                table_id uuid, ladder boolean, read_door boolean, rls_mirror boolean, why text)
  LANGUAGE plpgsql

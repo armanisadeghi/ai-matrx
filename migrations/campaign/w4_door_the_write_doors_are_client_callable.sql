@@ -83,7 +83,7 @@ set statement_timeout = '600s';
 -- 1. THE ONE ACCESS DECISION EVERY WRITE DOOR MAKES
 -- ---------------------------------------------------------------------------------------
 
-create function custom.assert_client_may_reach(p_organization_id uuid, p_door text)
+create or replace function custom.assert_client_may_reach(p_organization_id uuid, p_door text)
 returns void
 language plpgsql
 stable

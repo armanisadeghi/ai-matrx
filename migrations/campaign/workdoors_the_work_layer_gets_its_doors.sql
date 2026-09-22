@@ -573,7 +573,7 @@ $$;
 drop function if exists custom.work_templates(uuid, integer);
 
 -- THE LIST A PERSON PICKS FROM. Without it the template doors take an id nobody can obtain.
-create function custom.work_templates(p_organization_id uuid, p_limit integer default 100)
+create or replace function custom.work_templates(p_organization_id uuid, p_limit integer default 100)
 returns table (template_id uuid, name text, nodes integer, relations integer, created_at timestamptz)
 language plpgsql
 stable

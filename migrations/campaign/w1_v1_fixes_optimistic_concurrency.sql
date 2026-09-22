@@ -60,7 +60,7 @@ set lock_timeout = '5s';
 set statement_timeout = '300s';
 
 
-create function custom.record_update(p_organization_id uuid,
+create or replace function custom.record_update(p_organization_id uuid,
                                      p_record_id uuid,
                                      p_patch jsonb,
                                      p_expected_version integer default null)

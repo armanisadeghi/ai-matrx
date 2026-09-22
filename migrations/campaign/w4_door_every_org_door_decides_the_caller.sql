@@ -57,7 +57,7 @@ $function$;
 
 -- ── The census, as a function, so the next door cannot be added without the question. ────
 
-create function custom.doors_not_deciding_the_caller()
+create or replace function custom.doors_not_deciding_the_caller()
 returns table(function_name text, identity_args text)
 language sql
 stable

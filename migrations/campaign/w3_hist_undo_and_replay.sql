@@ -52,7 +52,7 @@ set statement_timeout = '300s';
 -- ═════════════════════════════════════════════════════════════════════════════
 -- HIS-8 — the Migration log's two verbs: record the inverse, and run it.
 -- ═════════════════════════════════════════════════════════════════════════════
-create function history.migration_record(p_organization_id uuid,
+create or replace function history.migration_record(p_organization_id uuid,
                                                     p_verb text,
                                                     p_target_kind text,
                                                     p_target_id uuid,
@@ -109,7 +109,7 @@ $fn$;
 comment on function history.migration_record(uuid, text, text, uuid, jsonb, text) is
   'HIS-8: record a Migration with the inverse stored AT THE TIME it ran. W3-MIG''s nine verbs call this. An entry with no inverse, or with an inverse this store cannot execute, is refused rather than written — a log that claims undoability it does not have is worse than no log.';
 
-create function history.migration_undo(p_organization_id uuid, p_log_id uuid)
+create or replace function history.migration_undo(p_organization_id uuid, p_log_id uuid)
 returns jsonb
 language plpgsql
 volatile
@@ -179,7 +179,7 @@ comment on function history.migration_undo(uuid, uuid) is
 -- ═════════════════════════════════════════════════════════════════════════════
 -- HIS-N-2 — ONE Value, put back, through the same door.
 -- ═════════════════════════════════════════════════════════════════════════════
-create function history.value_undo(p_organization_id uuid, p_record_id uuid, p_key text)
+create or replace function history.value_undo(p_organization_id uuid, p_record_id uuid, p_key text)
 returns jsonb
 language plpgsql
 volatile
@@ -246,7 +246,7 @@ comment on function history.value_undo(uuid, uuid, text) is
 -- ═════════════════════════════════════════════════════════════════════════════
 -- HIS-N-1 — a File-shaped record's snapshot chain IS its History.
 -- ═════════════════════════════════════════════════════════════════════════════
-create function history.snapshot_chain(p_organization_id uuid, p_record_id uuid)
+create or replace function history.snapshot_chain(p_organization_id uuid, p_record_id uuid)
 returns table(version integer, label text, occurred_at timestamptz, actor_id uuid, body jsonb)
 language sql
 stable
@@ -274,7 +274,7 @@ $fn$;
 comment on function history.snapshot_chain(uuid, uuid) is
   'HIS-N-1: a document''s or a spreadsheet''s snapshot chain, labelled and restorable — and it is this store''s ordinary History for that record, not a second mechanism beside it. The live udt_workbook_snapshots / udt_document_snapshots chains are what this replaces for File-shaped records here.';
 
-create function history.snapshot_restore(p_organization_id uuid, p_record_id uuid, p_version integer)
+create or replace function history.snapshot_restore(p_organization_id uuid, p_record_id uuid, p_version integer)
 returns jsonb
 language plpgsql
 volatile
@@ -322,7 +322,7 @@ comment on function history.snapshot_restore(uuid, uuid, integer) is
 -- ═════════════════════════════════════════════════════════════════════════════
 -- VIS-16 — who could see R on date D, by REPLAY. No access-history store.
 -- ═════════════════════════════════════════════════════════════════════════════
-create function history.grants_at(p_resource_type text, p_resource_id uuid, p_at timestamptz)
+create or replace function history.grants_at(p_resource_type text, p_resource_id uuid, p_at timestamptz)
 returns table(permission_id uuid, granted_to_user_id uuid, granted_to_organization_id uuid,
               is_public boolean, level text, status text)
 language sql
@@ -357,7 +357,7 @@ $fn$;
 comment on function history.grants_at(text, uuid, timestamptz) is
   'VIS-16: the grants on one resource as they stood at a moment, replayed from history.row_versions — including grants that have since been revoked or deleted, which is exactly who an audit is asking about.';
 
-create function history.who_could_see(p_organization_id uuid, p_record_id uuid, p_at timestamptz)
+create or replace function history.who_could_see(p_organization_id uuid, p_record_id uuid, p_at timestamptz)
 returns table(principal_kind text, principal_id uuid, level text, via_kind text, via_id uuid)
 language plpgsql
 stable

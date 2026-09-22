@@ -13,7 +13,7 @@ delete from platform.client_callable_door d
  where d.schema_name = 'custom' and d.function_name = 'share_people'
    and d.identity_argtypes = array['uuid'::regtype::oid, 'text'::regtype::oid, 'int4'::regtype::oid];
 
-create function custom.share_people(
+create or replace function custom.share_people(
   p_organization_id uuid,
   p_subject_id      uuid    default null,
   p_query           text    default null,

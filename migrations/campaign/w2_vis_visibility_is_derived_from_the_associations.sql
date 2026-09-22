@@ -152,7 +152,7 @@ comment on view custom.carrying_edges is
 -- ---------------------------------------------------------------------------------------------
 -- 3. THE DERIVATION, DOWNWARD. What a container conveys.
 -- ---------------------------------------------------------------------------------------------
-create function custom.derive_visibility(
+create or replace function custom.derive_visibility(
   p_container_type text,
   p_container_id   uuid
 ) returns table (item_type text, item_id uuid, depth integer, max_level public.permission_level)
@@ -194,7 +194,7 @@ comment on function custom.derive_visibility(text, uuid) is
 --
 -- This is the half a READ needs: an access question starts at a record and asks what reaches it.
 -- ---------------------------------------------------------------------------------------------
-create function custom.visibility_ancestors(
+create or replace function custom.visibility_ancestors(
   p_item_type text,
   p_item_id   uuid
 ) returns table (container_type text, container_id uuid, depth integer, max_level public.permission_level)
@@ -243,7 +243,7 @@ comment on function custom.visibility_ancestors(text, uuid) is
 -- the same or any later snapshot — there is no cache to serve stale from. W2-EPOCH's cache re-states
 -- this guarantee for the stored form it adds.
 -- ---------------------------------------------------------------------------------------------
-create function custom.has_visibility(
+create or replace function custom.has_visibility(
   p_user_id  uuid,
   p_type     text,
   p_id       uuid,
@@ -293,7 +293,7 @@ comment on function custom.has_visibility(uuid, text, uuid, public.permission_le
 -- record store has not been built yet and starts answering the moment it is. The kernel call is
 -- made ONCE PER DISTINCT CONTAINER, never once per row: that is the whole point of the row.
 -- ---------------------------------------------------------------------------------------------
-create function custom.visible_record_ids(
+create or replace function custom.visible_record_ids(
   p_user_id  uuid,
   p_required public.permission_level default 'viewer'
 ) returns table (id uuid)
@@ -367,7 +367,7 @@ comment on function custom.visible_record_ids(uuid, public.permission_level) is
 -- `depth < 8` and this derivation `depth < 16`, so rows at depth 9..16 are DERIVED-ONLY by
 -- construction and are reported with reason 'beyond_stored_ceiling' rather than counted as drift.
 -- ---------------------------------------------------------------------------------------------
-create function custom.visibility_parity()
+create or replace function custom.visibility_parity()
 returns table (side text, container_type text, container_id uuid,
                item_type text, item_id uuid,
                stored_level public.permission_level,

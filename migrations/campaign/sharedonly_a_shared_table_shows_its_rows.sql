@@ -150,7 +150,7 @@ $function$;
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- 2. THE UPWARD HALF: a Table you can see something inside is a Table you may know.
 -- ─────────────────────────────────────────────────────────────────────────────────────────
-CREATE FUNCTION custom.table_has_a_visible_record(p_user uuid, p_organization_id uuid, p_table_id uuid)
+create or replace function custom.table_has_a_visible_record(p_user uuid, p_organization_id uuid, p_table_id uuid)
  RETURNS boolean
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER

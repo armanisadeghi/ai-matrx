@@ -34,7 +34,7 @@ set statement_timeout = '180s';
 -- ══════════════════════ THE AUDIT ANSWER CARRIES THE INTERVAL EACH PRINCIPAL HELD
 drop function if exists custom.visibility_as_of(uuid, uuid, timestamptz);
 
-create function custom.visibility_as_of(p_organization_id uuid, p_record_id uuid, p_at timestamptz)
+create or replace function custom.visibility_as_of(p_organization_id uuid, p_record_id uuid, p_at timestamptz)
 returns table(principal_kind text, principal_id uuid, level public.permission_level,
               through_kind text, through_id uuid, reason text, replayed boolean,
               held_from timestamptz, held_to timestamptz)

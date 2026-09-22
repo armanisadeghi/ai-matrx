@@ -104,7 +104,7 @@
 -- any live table anywhere else.
 --
 -- IDEMPOTENCE, STATED HONESTLY. §6b.2's allow-list admits `CREATE VIEW`, `CREATE TRIGGER`
--- and `CREATE FUNCTION` and refuses `CREATE OR REPLACE` of a view or a trigger, and
+-- and `create or replace function` and refuses `CREATE OR REPLACE` of a view or a trigger, and
 -- PostgreSQL has no `IF NOT EXISTS` for any of the three. So a second consecutive apply of
 -- these bytes is refused BY THE DATABASE (42P07 / 42710 / 42723) and changes nothing,
 -- exactly as `W1-STORE`'s, `W1-PROV`'s, `W1-TABLE`'s and `W1-FIELD`'s files do. Rule 27's
@@ -120,7 +120,7 @@ set statement_timeout = '300s';
 -- 1. The kernel id and the two closed vocabularies, in code
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom.rule_kernel_id() returns uuid
+create or replace function custom.rule_kernel_id() returns uuid
   language sql immutable parallel safe
   set search_path to 'pg_catalog'
 as $fn_rule_kernel_id$
@@ -130,7 +130,7 @@ $fn_rule_kernel_id$;
 comment on function custom.rule_kernel_id() is
   'REC-25 / REC-27 / REC-15: the id of the kernel `Rule` record in custom.record, written by W1-STORE''s w1_store_kernel_tables.sql. A record whose table_id is this id IS a Rule.';
 
-create function custom.rule_uses() returns text[]
+create or replace function custom.rule_uses() returns text[]
   language sql immutable parallel safe
   set search_path to 'pg_catalog'
 as $fn_rule_uses$
@@ -140,7 +140,7 @@ $fn_rule_uses$;
 comment on function custom.rule_uses() is
   'REC-15: the FOUR uses of the one Rule object, as a closed set in code rather than a convention in prose. A Rule declares a non-empty subset; W1-RULE wires validate and compute, W1-RULE-APPLY wires membership and applicability, and a fifth use is a contract change, not a data value.';
 
-create function custom.rule_node_kinds() returns table (node text, evaluated_by text, note text)
+create or replace function custom.rule_node_kinds() returns table (node text, evaluated_by text, note text)
   language sql immutable parallel safe
   set search_path to 'pg_catalog'
 as $fn_rule_nodes$
@@ -175,7 +175,7 @@ comment on function custom.rule_node_kinds() is
 -- 2. REC-17 — a Field is reached by ID, and the key is resolved at evaluation
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom.rule_field_key(p_organization_id uuid, p_field_id uuid)
+create or replace function custom.rule_field_key(p_organization_id uuid, p_field_id uuid)
   returns text
   language sql stable
   set search_path to 'pg_catalog'
@@ -191,7 +191,7 @@ $fn_rule_field_key$;
 comment on function custom.rule_field_key(uuid, uuid) is
   'REC-17: THE mechanism. A Rule stores a Field''s ID; this body resolves the CURRENT key every time the Rule is evaluated, so renaming the Field leaves the Rule resolving. A Rule that had stored the name would be resolving a string nothing points at.';
 
-create function custom.rule_field_label(p_organization_id uuid, p_field_id uuid)
+create or replace function custom.rule_field_label(p_organization_id uuid, p_field_id uuid)
   returns text
   language sql stable
   set search_path to 'pg_catalog'
@@ -207,7 +207,7 @@ $fn_rule_field_label$;
 comment on function custom.rule_field_label(uuid, uuid) is
   'REC-17: what a person reads when a Rule refuses their write. Resolved from the Field ROW at refusal time, so the message carries the field''s CURRENT name — the visible half of "by id, never by name".';
 
-create function custom.rule_version(p_organization_id uuid, p_rule_id uuid)
+create or replace function custom.rule_version(p_organization_id uuid, p_rule_id uuid)
   returns integer
   language sql stable
   set search_path to 'pg_catalog'
@@ -227,7 +227,7 @@ comment on function custom.rule_version(uuid, uuid) is
 -- 3. REC-15 (c) — the ONE evaluator
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom.rule_eval(p_organization_id uuid, p_expr jsonb,
+create or replace function custom.rule_eval(p_organization_id uuid, p_expr jsonb,
                                  p_values jsonb, p_context jsonb default '{}'::jsonb)
   returns jsonb
   language plpgsql stable
@@ -396,7 +396,7 @@ $fn_rule_eval$;
 comment on function custom.rule_eval(uuid, jsonb, jsonb, jsonb) is
   'REC-15 / REC-17: the ONE body that works out what a Rule says, over a record''s Values. Field leaves are FIELD IDS resolved to their current key at evaluation time (REC-17); a name leaf is refused by name; a node the vocabulary does not carry is refused rather than ignored; an absent Value makes the answer UNDECIDED rather than false. The four uses differ in what they do with the answer, never in how the answer is reached.';
 
-create function custom.rule_truth(p_answer jsonb) returns boolean
+create or replace function custom.rule_truth(p_answer jsonb) returns boolean
   language sql immutable parallel safe
   set search_path to 'pg_catalog'
 as $fn_rule_truth$
@@ -415,7 +415,7 @@ comment on function custom.rule_truth(jsonb) is
 -- 4. REC-15 / REC-19 — one row, one evaluation, WITH the version that produced it
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom.rule_run(p_organization_id uuid, p_rule_id uuid,
+create or replace function custom.rule_run(p_organization_id uuid, p_rule_id uuid,
                                 p_values jsonb, p_context jsonb default '{}'::jsonb)
   returns jsonb
   language plpgsql stable
@@ -447,7 +447,7 @@ $fn_rule_run$;
 comment on function custom.rule_run(uuid, uuid, jsonb, jsonb) is
   'REC-15 and REC-19 in ONE body: the four uses all reach a Rule through here, and what comes back carries the Rule''s id and THE VERSION THAT PRODUCED THE ANSWER. That is what makes REC-19 recordable rather than merely available — the version travels with the answer instead of being fetched again later, when the Rule may already have moved.';
 
-create function custom.table_rules(p_organization_id uuid, p_table_id uuid,
+create or replace function custom.table_rules(p_organization_id uuid, p_table_id uuid,
                                    p_use text, p_record_type text default null)
   returns setof custom.record
   language plpgsql stable
@@ -489,7 +489,7 @@ comment on function custom.table_rules(uuid, uuid, text, text) is
 -- 5. What a Rule must declare — refused in the user's own words
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom._rule_shape_guard() returns trigger
+create or replace function custom._rule_shape_guard() returns trigger
   language plpgsql
   set search_path to 'pg_catalog'
 as $fn_rguard$
@@ -745,7 +745,7 @@ create view custom.rule with (security_invoker = true) as
 comment on view custom.rule is
   'REC-15: ONE Rule object with four uses, organization-scoped. A PROJECTION over custom.record, never a second relation: a Rule IS a Record (REC-25), so its id is its record id, its version is the store''s own certified version column (REC-19), and History, Visibility and Migration cover it with no second mechanism. The four boolean columns are the four uses read out of one stored list, so "which uses does this Rule serve" is a query rather than a convention. security_invoker: every caller reads it under their own row-level security.';
 
-create function custom._rule_definition_write() returns trigger
+create or replace function custom._rule_definition_write() returns trigger
   language plpgsql
   set search_path to 'pg_catalog'
 as $fn_rdw$
@@ -816,7 +816,7 @@ create trigger custom_rule_definition_validation
 -- lane's suite rather than assumed: the field definitions decide the TYPES, and a Rule is
 -- then asked about values that are already the right shape.
 
-create function custom._record_rule_uses() returns trigger
+create or replace function custom._record_rule_uses() returns trigger
   language plpgsql
   set search_path to 'pg_catalog'
 as $fn_rru$
@@ -939,7 +939,7 @@ create trigger custom_record_rule_uses
 -- 8. REC-19 — what W3-HIST reads, and what a reader sees
 -- ══════════════════════════════════════════════════════════════════════════════
 
-create function custom.computed_provenance(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.computed_provenance(p_organization_id uuid, p_record_id uuid)
   returns table (field_key text, field_id uuid, value jsonb,
                  rule_id uuid, rule_version integer, computed_at timestamptz)
   language sql stable
@@ -960,7 +960,7 @@ $fn_prov$;
 comment on function custom.computed_provenance(uuid, uuid) is
   'REC-19: "History knows which version produced a Value", as a QUERY. One row per computed Value, carrying the Field it belongs to, the Rule that produced it and THE RULE VERSION AT THE MOMENT IT WAS PRODUCED. W3-HIST stamps its History rows from this and needs nothing else from this lane; until it lands, this is where the answer lives and it says so.';
 
-create function custom.record_values(p_organization_id uuid, p_record_id uuid)
+create or replace function custom.record_values(p_organization_id uuid, p_record_id uuid)
   returns jsonb
   language sql stable
   set search_path to 'pg_catalog'

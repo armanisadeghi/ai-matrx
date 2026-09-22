@@ -37,7 +37,7 @@
 -- answer is no.
 
 
-create function custom.realtime_topic_admits(p_topic text)
+create or replace function custom.realtime_topic_admits(p_topic text)
 returns boolean
 language plpgsql
 stable

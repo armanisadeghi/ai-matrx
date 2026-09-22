@@ -35,7 +35,7 @@ set lock_timeout = '5s';
 set statement_timeout = '300s';
 
 
-create function custom.custom_fields_tables()
+create or replace function custom.custom_fields_tables()
   returns table (token text, schema_name text, table_name text)
   language sql stable
   set search_path to 'pg_catalog'
@@ -52,7 +52,7 @@ $fn_cft$;
 comment on function custom.custom_fields_tables() is
   'REC-51: the ONE body that answers "which tables carry custom fields". The law says "every table whose registry row reads custom_fields_enabled"; platform.entity_types carries NO such column today - that flag is W1-REG''s registry surgery (REC-57). So the stand-in is the registry row AND the physical presence of the column, which is conservative in the safe direction (a table with no column cannot be validated at all), announced here rather than discovered, with W1-REG as the remedy. When the flag lands, this body reads it and no consumer moves.';
 
-create function custom.validate_custom_fields(p_token text, p_organization_id uuid, p_values jsonb)
+create or replace function custom.validate_custom_fields(p_token text, p_organization_id uuid, p_values jsonb)
   returns void
   language plpgsql stable
   set search_path to 'pg_catalog'
@@ -76,7 +76,7 @@ $fn_vcf$;
 comment on function custom.validate_custom_fields(text, uuid, jsonb) is
   'REC-51 / FLD-8: the same validator, over the custom_fields document of a STANDARD table. One definitions surface means the definitions read here are the very rows custom.field serves - there is no second definition store for standard tables.';
 
-create function custom._entity_custom_fields_guard() returns trigger
+create or replace function custom._entity_custom_fields_guard() returns trigger
   language plpgsql
   set search_path to 'pg_catalog'
 as $fn_ecfg$

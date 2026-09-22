@@ -63,7 +63,7 @@
 
 -- ───────────────────────────────────────────────────────────── the one question, asked once
 
-create function public.may_manage_sharing(p_resource_type text, p_resource_id uuid)
+create or replace function public.may_manage_sharing(p_resource_type text, p_resource_id uuid)
 returns boolean
 language plpgsql
 stable
@@ -103,7 +103,7 @@ comment on function public.may_manage_sharing(text, uuid) is
 
 -- ──────────────────────────────────────────── the two adapters onto the record store's door
 
-create function public.store_door_share(
+create or replace function public.store_door_share(
   p_resource_type text, p_resource_id uuid, p_kind text, p_principal_id uuid, p_level text
 ) returns jsonb
 language plpgsql
@@ -135,7 +135,7 @@ exception when others then
 end;
 $$;
 
-create function public.store_door_unshare(
+create or replace function public.store_door_unshare(
   p_resource_type text, p_resource_id uuid, p_kind text, p_principal_id uuid
 ) returns jsonb
 language plpgsql

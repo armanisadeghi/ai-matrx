@@ -86,7 +86,7 @@
 -- lane's report under "awaiting the attended step".
 --
 -- IDEMPOTENCE (rule 27): the replaced trigger body is a `CREATE OR REPLACE FUNCTION` carrying
--- its `-- based-on:` line; the two new functions are plain `CREATE FUNCTION` (the allow-list
+-- its `-- based-on:` line; the two new functions are plain `create or replace function` (the allow-list
 -- refuses a `CREATE OR REPLACE` that declares no `-- based-on:`, which a new function cannot
 -- have), so a second consecutive apply is refused by the DATABASE (42723) having changed
 -- nothing, as are the two new triggers (42710).
@@ -96,7 +96,7 @@ set lock_timeout = '5s';
 set statement_timeout = '120s';
 
 -- 1 ------------------------------------------------ the doctrine's signup implementation
-create function iam.provision_signup_organization(p_user_id uuid)
+create or replace function iam.provision_signup_organization(p_user_id uuid)
 returns uuid
 language plpgsql
 security definer
@@ -282,7 +282,7 @@ END;
 $function$;
 
 -- 3 --------------------------------------------------- never the last organization
-create function iam._guard_last_organization_membership()
+create or replace function iam._guard_last_organization_membership()
 returns trigger
 language plpgsql
 security definer

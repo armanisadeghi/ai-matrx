@@ -63,7 +63,7 @@ comment on table iam.world_namespace is
   'public URL is namespaced by it. Unclaimed means unpublishable — a name nobody owns cannot be '
   'impersonated, which is the whole point of namespacing.';
 
-create function iam.reserved_namespace()
+create or replace function iam.reserved_namespace()
 returns table (namespace text, reason text)
 language sql
 immutable
@@ -137,7 +137,7 @@ comment on table iam.world_publish_admission is
   'recorded as such on every row — the enum has exactly one value each, so nothing can ever '
   'write a row here that claims a scan was performed.';
 
-create function iam.world_publish_gap_notice()
+create or replace function iam.world_publish_gap_notice()
 returns text
 language sql
 immutable
@@ -155,7 +155,7 @@ comment on function iam.world_publish_gap_notice() is
   'screen, the API and the audit row cannot drift into three different admissions of the same '
   'gap — or into none.';
 
-create function iam.world_publish_admit(p_organization_id uuid)
+create or replace function iam.world_publish_admit(p_organization_id uuid)
 returns jsonb
 language plpgsql
 stable
@@ -201,7 +201,7 @@ comment on function iam.world_publish_admit(uuid) is
   'VIS-N-7: the two admission checks, answered together so a caller learns BOTH things it has to '
   'fix rather than one per round trip. The refusal names which of the two failed, by name.';
 
-create function iam.claim_world_namespace(p_organization_id uuid, p_namespace text)
+create or replace function iam.claim_world_namespace(p_organization_id uuid, p_namespace text)
 returns iam.world_namespace
 language plpgsql
 security definer
@@ -320,7 +320,7 @@ begin
   return v_row;
 end $function$;
 
-create function iam.world_publish_announcement(p_resource_type text, p_resource_id uuid)
+create or replace function iam.world_publish_announcement(p_resource_type text, p_resource_id uuid)
 returns jsonb
 language sql
 stable

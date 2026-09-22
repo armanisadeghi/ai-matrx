@@ -39,7 +39,7 @@
 -- (`Matrx System`) has no members, so neither source can resolve one. They are named in the
 -- notice rather than given a fabricated Owner.
 
-create function custom._table_owner_stamp()
+create or replace function custom._table_owner_stamp()
 returns trigger
 language plpgsql
 security definer

@@ -33,7 +33,7 @@
 -- once per portal is ten round trips to answer one question. So: one new reading door that
 -- answers exactly the question the rail has to ask, under the same wall as `custom.portals`.
 
-create function custom.portal_tables(p_organization_id uuid)
+create or replace function custom.portal_tables(p_organization_id uuid)
 returns table(portal_id uuid, table_id uuid, name text)
 language plpgsql
 stable security definer

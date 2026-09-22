@@ -60,7 +60,7 @@ set lock_timeout = '5s';
 set statement_timeout = '600s';
 
 -- ── who may decide, asked once ───────────────────────────────────────────────────────────
-create function custom.work_approval_approvers(p_organization_id uuid, p_subject_id uuid,
+create or replace function custom.work_approval_approvers(p_organization_id uuid, p_subject_id uuid,
                                                p_approver_id uuid default null)
 returns table (user_id uuid, name text, why text)
 language plpgsql
@@ -98,7 +98,7 @@ comment on function custom.work_approval_approvers(uuid, uuid, uuid) is
 -- THE THRESHOLD TO ASK IS `viewer`, deliberately. The whole product is "this change needs
 -- somebody else's yes" — a person who could already write it would not be here, and a person
 -- who may see the row is entitled to propose a change to it. What they may not do is DECIDE.
-create function custom.work_approval_request(p_organization_id uuid, p_subject_id uuid,
+create or replace function custom.work_approval_request(p_organization_id uuid, p_subject_id uuid,
                                              p_change jsonb, p_note text default null,
                                              p_approver_id uuid default null,
                                              p_origin text default 'person',
@@ -210,7 +210,7 @@ end
 $$;
 
 -- ── may I decide this one? ───────────────────────────────────────────────────────────────
-create function custom.work_approval_may_decide(p_organization_id uuid, p_approval_id uuid)
+create or replace function custom.work_approval_may_decide(p_organization_id uuid, p_approval_id uuid)
 returns boolean
 language plpgsql
 stable
@@ -243,7 +243,7 @@ end
 $$;
 
 -- ── decide, and APPLY ────────────────────────────────────────────────────────────────────
-create function custom.work_approval_decide(p_organization_id uuid, p_approval_id uuid,
+create or replace function custom.work_approval_decide(p_organization_id uuid, p_approval_id uuid,
                                             p_approve boolean, p_note text default null)
 returns jsonb
 language plpgsql
@@ -359,7 +359,7 @@ $$;
 -- ── the ONE inbox ────────────────────────────────────────────────────────────────────────
 -- Assignments, approvals and the agent's proposals in ONE ordered list with ONE row shape,
 -- because ServiceNow's worklist is the bar and a queue per origin is what it beat.
-create function custom.work_inbox(p_organization_id uuid, p_limit integer default 50,
+create or replace function custom.work_inbox(p_organization_id uuid, p_limit integer default 50,
                                   p_offset integer default 0,
                                   p_include_decided boolean default false)
 returns table (item_id uuid, kind text, origin text, title text, subject_id uuid,
@@ -438,7 +438,7 @@ comment on function custom.work_inbox(uuid, integer, integer, boolean) is
   'PRODUCTS.md row 6: ONE inbox holding what is assigned to me, what is waiting on my '
   'approval, and the agent''s proposals — the same queue and the same right to approve.';
 
-create function custom.work_approval_read(p_organization_id uuid, p_approval_id uuid)
+create or replace function custom.work_approval_read(p_organization_id uuid, p_approval_id uuid)
 returns jsonb
 language plpgsql
 stable
@@ -475,7 +475,7 @@ $$;
 
 -- ── the shape guard: on the table, where every writer meets it ───────────────────────────
 -- A shape enforced only inside the verbs above would be a safe path beside an unsafe one.
-create function custom._workdoors_approval_guard()
+create or replace function custom._workdoors_approval_guard()
 returns trigger
 language plpgsql
 set search_path to 'pg_catalog'
