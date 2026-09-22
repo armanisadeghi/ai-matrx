@@ -229,7 +229,10 @@ function CustomActionsSection({
   if (visible.length === 0) return null;
 
   return (
-    <section className="border-t border-border" aria-label="Custom actions">
+    <section
+      className="max-h-48 shrink-0 overflow-y-auto border-t border-border"
+      aria-label="Custom actions"
+    >
       <div className="bg-muted/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Custom Actions (Plane 2) &amp; legacy Directives
       </div>
