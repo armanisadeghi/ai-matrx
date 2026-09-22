@@ -145,7 +145,13 @@ select v as tbl3 from wp3b_fx where slot=3 and k='tbl' \gset
 select v as org4 from wp3b_fx where slot=4 and k='org' \gset
 select v as tbl4 from wp3b_fx where slot=4 and k='tbl' \gset
 
-\echo '###### PUTTING THE PRE-WAVE-1 BODIES BACK (inside this transaction) ######'
+-- INTERLEAVED, so that whatever drifts across one transaction drifts across BOTH columns.
+-- WRITE-PERF-3 measured the second half of a transaction 4.8% slower than the first with
+-- nothing changed, and measuring A,A,B,B hands that whole drift to the B column as if it
+-- were a saving. A,B,A,B does not: each pair is adjacent, and the four fixtures are
+-- identical, so slot order and DDL-invalidation cost fall on both columns equally.
+
+\echo '###### -> PRE-WAVE-1 BODIES ######'
 \i migrations/inverse/writeperf4_a_fact_about_the_table_is_read_once_down.sql
 
 \echo '###### BEFORE A1 ######'
@@ -154,23 +160,34 @@ insert into custom.record (organization_id, table_id, id, data)
 select :'org1'::uuid, :'tbl1'::uuid, gen_random_uuid(), d
   from unnest(pg_temp.docs(1, 1, 250)) with ordinality as u(d, ord) order by ord;
 
-\echo '###### BEFORE A2 ######'
-explain (analyze, buffers, costs off, timing on)
-insert into custom.record (organization_id, table_id, id, data)
-select :'org2'::uuid, :'tbl2'::uuid, gen_random_uuid(), d
-  from unnest(pg_temp.docs(2, 1, 250)) with ordinality as u(d, ord) order by ord;
-
-\echo '###### APPLYING WAVE 1 (inside this transaction) ######'
+\echo '###### -> WAVE 1 ######'
 \i migrations/campaign/writeperf4_a_fact_about_the_table_is_read_once.sql
 \i migrations/campaign/writeperf4_a_memo_slot_costs_what_a_guc_costs.sql
 \i migrations/campaign/writeperf4_the_wave_keeps_only_what_it_measured.sql
 \i migrations/campaign/writeperf4_the_fields_are_named_once_and_read_from_the_store.sql
+\i migrations/campaign/writeperf4_the_field_rows_go_back_in_the_memo.sql
 
 \echo '###### AFTER B1 ######'
 explain (analyze, buffers, costs off, timing on)
 insert into custom.record (organization_id, table_id, id, data)
 select :'org3'::uuid, :'tbl3'::uuid, gen_random_uuid(), d
   from unnest(pg_temp.docs(3, 1, 250)) with ordinality as u(d, ord) order by ord;
+
+\echo '###### -> PRE-WAVE-1 BODIES ######'
+\i migrations/inverse/writeperf4_a_fact_about_the_table_is_read_once_down.sql
+
+\echo '###### BEFORE A2 ######'
+explain (analyze, buffers, costs off, timing on)
+insert into custom.record (organization_id, table_id, id, data)
+select :'org2'::uuid, :'tbl2'::uuid, gen_random_uuid(), d
+  from unnest(pg_temp.docs(2, 1, 250)) with ordinality as u(d, ord) order by ord;
+
+\echo '###### -> WAVE 1 ######'
+\i migrations/campaign/writeperf4_a_fact_about_the_table_is_read_once.sql
+\i migrations/campaign/writeperf4_a_memo_slot_costs_what_a_guc_costs.sql
+\i migrations/campaign/writeperf4_the_wave_keeps_only_what_it_measured.sql
+\i migrations/campaign/writeperf4_the_fields_are_named_once_and_read_from_the_store.sql
+\i migrations/campaign/writeperf4_the_field_rows_go_back_in_the_memo.sql
 
 \echo '###### AFTER B2 ######'
 explain (analyze, buffers, costs off, timing on)

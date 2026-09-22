@@ -145,25 +145,27 @@ select v as tbl3 from wp3b_fx where slot=3 and k='tbl' \gset
 select v as org4 from wp3b_fx where slot=4 and k='org' \gset
 select v as tbl4 from wp3b_fx where slot=4 and k='tbl' \gset
 
+-- THE NO-CHANGE CONTROL: the same four fixtures, the same four measurements, in the same
+-- interleaved order as `writeperf4_ab.sql`, with NOTHING applied between them. Whatever
+-- separates its A column from its B column is drift, and the A/B has to beat it.
+
 \echo '###### BEFORE A1 ######'
 explain (analyze, buffers, costs off, timing on)
 insert into custom.record (organization_id, table_id, id, data)
 select :'org1'::uuid, :'tbl1'::uuid, gen_random_uuid(), d
   from unnest(pg_temp.docs(1, 1, 250)) with ordinality as u(d, ord) order by ord;
 
-\echo '###### BEFORE A2 ######'
-explain (analyze, buffers, costs off, timing on)
-insert into custom.record (organization_id, table_id, id, data)
-select :'org2'::uuid, :'tbl2'::uuid, gen_random_uuid(), d
-  from unnest(pg_temp.docs(2, 1, 250)) with ordinality as u(d, ord) order by ord;
-
-\echo '###### THE CONTROL CHANGES NOTHING HERE ######'
-
 \echo '###### AFTER B1 ######'
 explain (analyze, buffers, costs off, timing on)
 insert into custom.record (organization_id, table_id, id, data)
 select :'org3'::uuid, :'tbl3'::uuid, gen_random_uuid(), d
   from unnest(pg_temp.docs(3, 1, 250)) with ordinality as u(d, ord) order by ord;
+
+\echo '###### BEFORE A2 ######'
+explain (analyze, buffers, costs off, timing on)
+insert into custom.record (organization_id, table_id, id, data)
+select :'org2'::uuid, :'tbl2'::uuid, gen_random_uuid(), d
+  from unnest(pg_temp.docs(2, 1, 250)) with ordinality as u(d, ord) order by ord;
 
 \echo '###### AFTER B2 ######'
 explain (analyze, buffers, costs off, timing on)
