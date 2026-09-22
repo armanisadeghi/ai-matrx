@@ -1,29 +1,20 @@
 "use client";
 
-// features/admin/relationships/components/ChooserBucketsManager.tsx
-//
-// Direct CRUD for the two bucket vocabularies behind the reference
-// "Allowed types" chooser: platform.reference_categories (admin-defined
-// buckets) and platform.schemas (pretty names for the schema fallback).
-// Writes via admin_upsert_reference_category / admin_upsert_schema; reads
-// via the anon list RPCs, so edits show live without a page reload.
-// Chooser UIs read these through the GENERATED registry — after editing,
-// run `pnpm gen:entity-types` to update what end users see (the banner in
-// EntityTypesClient covers registry drift; labels drift silently, hence the
-// inline reminder here).
+// Direct CRUD for the two vocabularies behind the reference "Allowed types"
+// chooser. The chooser itself reads the generated registry, so writes retain
+// the visible reminder to run `pnpm gen:entity-types`.
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, Pencil, Plus, X } from "lucide-react";
+import { X } from "lucide-react";
+import { Input } from "@ai-matrx/design-system";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type {
+  CellEditsMap,
+  MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table/types";
+import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
-import { Switch } from "@/components/ui/switch";
-import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
 
 interface BucketRow {
   key: string;
@@ -37,7 +28,8 @@ interface BucketPanelProps {
   description: string;
   keyHeader: string;
   rows: BucketRow[];
-  /** Undefined = keys are fixed (schemas); provided = new rows allowed. */
+  loading: boolean;
+  /** Undefined means keys are fixed (schemas); provided permits new rows. */
   onCreate?: (key: string, label: string) => Promise<void>;
   onSave: (row: BucketRow) => Promise<void>;
 }
@@ -47,235 +39,219 @@ function BucketPanel({
   description,
   keyHeader,
   rows,
+  loading,
   onCreate,
   onSave,
 }: BucketPanelProps) {
-  const [editing, setEditing] = useState<BucketRow | null>(null);
+  const [creating, setCreating] = useState(false);
   const [newKey, setNewKey] = useState("");
   const [newLabel, setNewLabel] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [createBusy, setCreateBusy] = useState(false);
 
-  async function run(fn: () => Promise<void>) {
-    setBusy(true);
+  const columns = useMemo(
+    (): MatrxColumnDef<BucketRow>[] => [
+      {
+        id: "key",
+        accessorKey: "key",
+        header: keyHeader,
+        cell: (row) => <span className="font-mono text-xs">{row.key}</span>,
+        width: 150,
+      },
+      {
+        id: "label",
+        accessorKey: "label",
+        header: "Display name",
+        editable: "string",
+        cell: (row) => <span className="text-sm">{row.label}</span>,
+        width: 190,
+      },
+      {
+        id: "sort_order",
+        accessorKey: "sort_order",
+        header: "Sort",
+        filter: "number",
+        editable: "number",
+        cell: (row) => (
+          <span className="tabular-nums text-muted-foreground">
+            {row.sort_order}
+          </span>
+        ),
+        align: "right",
+        width: 72,
+      },
+      {
+        id: "is_active",
+        accessorKey: "is_active",
+        header: "Active",
+        filter: "boolean",
+        editable: "boolean",
+        cell: (row) => (
+          <span className="text-xs">{row.is_active ? "Yes" : "No"}</span>
+        ),
+        align: "center",
+        width: 76,
+      },
+    ],
+    [keyHeader],
+  );
+
+  async function saveEdits(editsMap: CellEditsMap) {
+    for (const key of Object.keys(editsMap)) {
+      const row = rows.find((candidate) => candidate.key === key);
+      if (!row) continue;
+      await onSave({ ...row, ...(editsMap[key] ?? {}) } as BucketRow);
+    }
+  }
+
+  async function createBucket() {
+    if (!onCreate || !newKey.trim() || !newLabel.trim()) return;
+    setCreateBusy(true);
     try {
-      await fn();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : String(e));
+      await onCreate(newKey.trim(), newLabel.trim());
+      setNewKey("");
+      setNewLabel("");
+      setCreating(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : String(error));
     } finally {
-      setBusy(false);
+      setCreateBusy(false);
     }
   }
 
   return (
-    <div className="min-w-0 flex-1 rounded-md border border-border">
-      <div className="border-b border-border px-3 py-2">
-        <span className="text-sm font-semibold">{title}</span>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </div>
-      <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
-        <thead>
-          <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
-            <th className="px-3 py-1.5 font-medium">{keyHeader}</th>
-            <th className="px-2 py-1.5 font-medium">Display name</th>
-            <th className="w-16 px-2 py-1.5 font-medium">Sort</th>
-            <th className="w-14 px-2 py-1.5 font-medium">Active</th>
-            <th className="w-16 px-2 py-1.5" />
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => {
-            const isEditing = editing?.key === row.key;
-            const r = isEditing ? editing : row;
-            return (
-              <tr key={row.key} className="border-b border-border/60">
-                <td className="px-3 py-1 font-mono">{row.key}</td>
-                <td className="px-2 py-1">
-                  {isEditing ? (
-                    <Input
-                      value={r.label}
-                      onChange={(e) =>
-                        setEditing({ ...r, label: e.target.value })
-                      }
-                      className="h-6 px-1.5 text-xs"
-                      style={{ fontSize: "16px" }}
-                    />
-                  ) : (
-                    <span>
-                      {row.label}
-                      {!row.is_active && (
-                        <Badge
-                          variant="outline"
-                          className="ml-1.5 px-1 py-0 text-[9px] text-muted-foreground"
-                        >
-                          inactive
-                        </Badge>
-                      )}
-                    </span>
-                  )}
-                </td>
-                <td className="px-2 py-1">
-                  {isEditing ? (
-                    <Input
-                      type="number"
-                      value={String(r.sort_order)}
-                      onChange={(e) =>
-                        setEditing({
-                          ...r,
-                          sort_order: Number(e.target.value) || 0,
-                        })
-                      }
-                      className="h-6 w-14 px-1.5 text-xs"
-                      style={{ fontSize: "16px" }}
-                    />
-                  ) : (
-                    <span className="tabular-nums text-muted-foreground">
-                      {row.sort_order}
-                    </span>
-                  )}
-                </td>
-                <td className="px-2 py-1">
-                  <Switch
-                    checked={r.is_active}
-                    disabled={!isEditing || busy}
-                    onCheckedChange={(v) =>
-                      isEditing && setEditing({ ...r, is_active: v })
-                    }
-                  />
-                </td>
-                <td className="px-2 py-1 text-right">
-                  {isEditing ? (
-                    <span className="inline-flex gap-0.5">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6"
-                        title="Save"
-                        disabled={busy || !r.label.trim()}
-                        onClick={() =>
-                          run(async () => {
-                            await onSave(r);
-                            setEditing(null);
-                          })
-                        }
-                      >
-                        <Check className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6"
-                        title="Cancel"
-                        disabled={busy}
-                        onClick={() => setEditing(null)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </span>
-                  ) : (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6"
-                      title="Edit"
-                      onClick={() => setEditing({ ...row })}
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </Button>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-          {onCreate && (
-            <tr>
-              <td className="px-3 py-1.5">
-                <Input
-                  value={newKey}
-                  onChange={(e) =>
-                    setNewKey(
-                      e.target.value.toLowerCase().replace(/\s+/g, "-"),
-                    )
-                  }
-                  placeholder="slug"
-                  className="h-6 px-1.5 font-mono text-xs"
-                  style={{ fontSize: "16px" }}
-                />
-              </td>
-              <td className="px-2 py-1.5" colSpan={3}>
-                <Input
-                  value={newLabel}
-                  onChange={(e) => setNewLabel(e.target.value)}
-                  placeholder="Display name"
-                  className="h-6 px-1.5 text-xs"
-                  style={{ fontSize: "16px" }}
-                />
-              </td>
-              <td className="px-2 py-1.5 text-right">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6"
-                  title="Add"
-                  disabled={busy || !newKey.trim() || !newLabel.trim()}
-                  onClick={() =>
-                    run(async () => {
-                      await onCreate(newKey.trim(), newLabel.trim());
-                      setNewKey("");
-                      setNewLabel("");
-                    })
-                  }
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </Button>
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
+    <section className="min-w-0 flex-1 rounded-md border border-border p-3">
+      <MatrxDataTable
+        urlState={{
+          id: `chooser-${keyHeader.toLowerCase()}`,
+          selectedRow: false,
+        }}
+        data={rows}
+        columns={columns}
+        getRowId={(row) => row.key}
+        density="condensed"
+        viewTabs={false}
+        pageSize={25}
+        zebra
+        isLoading={loading}
+        defaultSort={{ id: "sort_order", direction: "asc" }}
+        emptyState={{
+          title: `No ${title.toLowerCase()} yet`,
+          description,
+        }}
+        toolbar={{
+          title,
+          search: true,
+          searchPlaceholder: `Search ${title.toLowerCase()}…`,
+          add: onCreate
+            ? {
+                onAdd: () => setCreating(true),
+                disabled: createBusy,
+                disabledReason: createBusy ? "Creating bucket…" : undefined,
+              }
+            : undefined,
+        }}
+        edit={{ enabled: true, onSave: saveEdits }}
+      />
+
+      {/* Primary owner decision: retain this unique two-field bucket editor while
+          the shared table owns rendering, headers, filters, pagination, and edits. */}
+      {creating && onCreate ? (
+        <form
+          className="mt-2 flex flex-wrap items-center gap-2 border-t border-border pt-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void createBucket();
+          }}
+        >
+          <Input
+            value={newKey}
+            onChange={(event) =>
+              setNewKey(event.target.value.toLowerCase().replace(/\s+/g, "-"))
+            }
+            placeholder="Slug"
+            aria-label="Bucket slug"
+            className="h-8 min-w-32 flex-1 font-mono text-sm"
+            disabled={createBusy}
+          />
+          <Input
+            value={newLabel}
+            onChange={(event) => setNewLabel(event.target.value)}
+            placeholder="Display name"
+            aria-label="Bucket display name"
+            className="h-8 min-w-40 flex-[2] text-sm"
+            disabled={createBusy}
+          />
+          <Button
+            type="submit"
+            size="sm"
+            disabled={createBusy || !newKey.trim() || !newLabel.trim()}
+          >
+            Create bucket
+          </Button>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8"
+            aria-label="Cancel bucket creation"
+            disabled={createBusy}
+            onClick={() => {
+              setCreating(false);
+              setNewKey("");
+              setNewLabel("");
+            }}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </form>
+      ) : null}
+    </section>
   );
 }
 
-/**
- * The "Chooser buckets" strip on /administration/database/relationships/entity-types:
- * reference categories are fully creatable/editable; schema display names are
- * editable (keys fixed — a schema exists or it doesn't).
- */
+/** Reference categories are creatable; schema keys are fixed by live schemas. */
 export function ChooserBucketsManager() {
   const supabase = useMemo(() => createClient(), []);
   const [categories, setCategories] = useState<BucketRow[]>([]);
   const [schemas, setSchemas] = useState<BucketRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
   async function reload() {
-    const [cat, sch] = await Promise.all([
-      supabase.rpc("reference_categories_list"),
-      supabase.rpc("entity_schemas_list"),
-    ]);
-    if (cat.error) toast.error(`Categories failed: ${cat.error.message}`);
-    else
-      setCategories(
-        (cat.data ?? []).map((c) => ({
-          key: c.slug,
-          label: c.label,
-          sort_order: c.sort_order,
-          is_active: c.is_active,
-        })),
-      );
-    if (sch.error) toast.error(`Schemas failed: ${sch.error.message}`);
-    else
-      setSchemas(
-        (sch.data ?? []).map((s) => ({
-          key: s.schema_name,
-          label: s.display_name,
-          sort_order: s.sort_order,
-          is_active: s.is_active,
-        })),
-      );
+    setLoading(true);
+    try {
+      const [cat, sch] = await Promise.all([
+        supabase.rpc("reference_categories_list"),
+        supabase.rpc("entity_schemas_list"),
+      ]);
+      if (cat.error) toast.error(`Categories failed: ${cat.error.message}`);
+      else {
+        setCategories(
+          (cat.data ?? []).map((category) => ({
+            key: category.slug,
+            label: category.label,
+            sort_order: category.sort_order,
+            is_active: category.is_active,
+          })),
+        );
+      }
+      if (sch.error) toast.error(`Schemas failed: ${sch.error.message}`);
+      else {
+        setSchemas(
+          (sch.data ?? []).map((schema) => ({
+            key: schema.schema_name,
+            label: schema.display_name,
+            sort_order: schema.sort_order,
+            is_active: schema.is_active,
+          })),
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
-    void reload();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    void Promise.resolve().then(reload);
   }, []);
 
   async function saveCategory(row: BucketRow) {
@@ -286,8 +262,6 @@ export function ChooserBucketsManager() {
       p_is_active: row.is_active,
     });
     if (error) throw error;
-    // Deliberately NOT a recordToast: the key is a bare vocabulary word
-    // ("status", "crm") that would match unrelated route segments.
     toast.success(`Category "${row.key}" saved — run pnpm gen:entity-types`);
     await reload();
   }
@@ -300,8 +274,6 @@ export function ChooserBucketsManager() {
       p_is_active: row.is_active,
     });
     if (error) throw error;
-    // Deliberately NOT a recordToast: a schema name ("crm", "hr") is also a
-    // top-level route segment and would falsely keep the toast alive there.
     toast.success(`Schema "${row.key}" saved — run pnpm gen:entity-types`);
     await reload();
   }
@@ -314,8 +286,8 @@ export function ChooserBucketsManager() {
           The tier-1 buckets in the reference &ldquo;Allowed types&rdquo;
           chooser. A type with a category uses it; otherwise its schema&apos;s
           display name. Chooser UIs read the generated registry — run{" "}
-          <span className="font-mono">pnpm gen:entity-types</span> after
-          editing so users see the change.
+          <span className="font-mono">pnpm gen:entity-types</span> after editing
+          so users see the change.
         </p>
       </div>
       <div className="flex flex-col gap-3 lg:flex-row">
@@ -324,6 +296,7 @@ export function ChooserBucketsManager() {
           description="Admin-defined buckets (platform.reference_categories). Assign one to a type in its editor."
           keyHeader="Slug"
           rows={categories}
+          loading={loading}
           onCreate={(key, label) =>
             saveCategory({ key, label, sort_order: 100, is_active: true })
           }
@@ -334,6 +307,7 @@ export function ChooserBucketsManager() {
           description="Fallback bucket names (platform.schemas). Keys are the live DB schemas."
           keyHeader="Schema"
           rows={schemas}
+          loading={loading}
           onSave={saveSchema}
         />
       </div>
