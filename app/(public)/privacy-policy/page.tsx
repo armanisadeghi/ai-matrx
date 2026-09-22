@@ -308,17 +308,16 @@ const PrivacyPolicyPage = () => {
           messages are not saved as CRM interactions.
         </p>
         <p>
-          Google Workspace content is used only to provide or improve the
-          user-facing feature you request. It is not sold, used for advertising,
-          used to determine creditworthiness, or used to train or fine-tune a
-          generalized AI model. When you run an agent from a CRM record, its
-          recorded interactions may be included in the agent context, including
-          subjects and body text from matched outreach replies and Gmail
-          messages sent from that record. This context may be sent to the model
-          provider configured for that agent solely to answer your request. An
-          on-demand Gmail search or message view is not automatically sent to an
-          agent. Other Workspace content you choose to give an agent may also be
-          sent for that request, as described in Section 3.1.
+          Google Workspace content is used to provide the feature you request.
+          It is not sold, used for advertising, or used to determine
+          creditworthiness. Gmail search results and opened messages are not
+          automatically sent to an AI agent. Saved CRM interaction subjects and
+          bodies, including matched outreach replies, are also excluded from
+          automatic agent context. If you choose to provide Google content to
+          an agent in a chat or another explicit request, the configured model
+          provider may process that content to answer your request, as described
+          in Section 3.1. We do not use Gmail content to train our own
+          generalized AI models.
         </p>
         <p>
           The use of information received from Google Workspace APIs will adhere

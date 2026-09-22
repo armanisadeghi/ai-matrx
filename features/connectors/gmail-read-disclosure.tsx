@@ -46,9 +46,10 @@ export async function confirmGmailReadDisclosure(
           data already saved in CRM.
         </p>
         <p>
-          When you choose to run an AI agent on a CRM record, AI Matrx may add
-          its saved email subject and message text to that agent&apos;s context
-          and send it to the AI model provider configured for that agent.
+          Saved CRM interaction subjects and message bodies are not
+          automatically added to an agent&apos;s context. If you choose to
+          provide Gmail content to an agent in a chat or another explicit
+          request, the configured model provider may process it to answer you.
         </p>
         <p>
           <Link

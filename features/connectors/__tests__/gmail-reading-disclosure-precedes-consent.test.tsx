@@ -148,8 +148,9 @@ describe("Gmail reading disclosure", () => {
     expect(disclosure).toContain("separately register this mailbox for outreach");
     expect(disclosure).toContain("up to 20,000 characters");
     expect(disclosure).toContain("does not erase reply data already saved in CRM");
-    expect(disclosure).toContain("choose to run an AI agent");
-    expect(disclosure).toContain("AI model provider configured for that agent");
+    expect(disclosure).toContain("not automatically added to an agent");
+    expect(disclosure).toContain("choose to provide Gmail content to an agent");
+    expect(disclosure).toContain("configured model provider may process it");
     expect(disclosure).toContain('href="/privacy-policy"');
   });
 
