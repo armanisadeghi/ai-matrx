@@ -620,6 +620,12 @@
       "reason": "Comment: the whole batch is one transaction, so a refusal on row 900 rolls back 899 good rows — a transactional-safety bound, not a business setting."
     },
     {
+      "file": "aidream/packages/matrx-records/matrx_records/store/relation_words.py",
+      "name": "MAX_IDS_PER_CALL",
+      "kind": "defensive-cap",
+      "reason": "How many record ids ONE words-door call may carry, so a forged or runaway relation column cannot turn a single prompt into one enormous statement. It is not how many related records an organization may have, and it caps nothing a person can see: a page asks again for the next batch. The module's own docstring states the same bound. Raising it buys nothing and widens the blast radius of a bad column."
+    },
+    {
       "file": "aidream/packages/matrx-scraper/matrx_scraper/ai_browser/readiness.py",
       "name": "MIN_TARGET_PX",
       "kind": "algorithmic",

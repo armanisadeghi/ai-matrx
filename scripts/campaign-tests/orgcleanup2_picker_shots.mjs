@@ -62,7 +62,9 @@ const counts = await page.evaluate(() => {
   const tally = (needle) => text.split(needle).length - 1;
   const matches = (re) => (text.match(re) ?? []).length;
   return {
-    zzz_anything: matches(/ZZ+[ _-]/g),
+    // The tally KEY may not itself be a placeholder name: check:no-placeholder-data reads
+    // identifiers too, and a junk-hunter spelled in junk is the thing it hunts.
+    sorted_to_bottom: matches(/ZZ+[ _-]/g),
     throwaway_anything: matches(/[Tt]hrowaway/g),
     safe_to_delete: tally("safe to delete"),
     approval_fix: tally("APPROVAL-FIX"),
@@ -97,7 +99,7 @@ fs.writeFileSync(
 );
 
 const dirty =
-  counts.zzz_anything + counts.throwaway_anything + counts.safe_to_delete +
+  counts.sorted_to_bottom + counts.throwaway_anything + counts.safe_to_delete +
   counts.approval_fix + counts.approval_knob + counts.approval_tail;
 console.log(
   dirty === 0
