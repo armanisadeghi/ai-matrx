@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/use-toast";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import {
   formatCount,
@@ -90,6 +91,15 @@ export const AGENT_APP_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
     cell: (app) => (
       <AgentAppRef appId={app.id} name={app.name} slug={app.slug} />
     ),
+  },
+  {
+    id: "id",
+    header: "ID",
+    accessorKey: "id",
+    filter: "text",
+    width: 160,
+    mobileHidden: true,
+    cell: (app) => <MatrxUuidCell value={app.id} label="Agent app ID" />,
   },
   {
     id: "slug",
@@ -394,10 +404,10 @@ export default function AgentAppsAdminListPage() {
           )}
           <div className="grid shrink-0 grid-cols-4 gap-3 pb-3">
             {[
-              [stats.total, "Total", ""],
-              [stats.published, "Published", "text-success"],
-              [stats.featured, "Featured", "text-warning"],
-              [stats.verified, "Verified", "text-primary"],
+              [stats.total, "Loaded", ""],
+              [stats.published, "Published loaded", "text-success"],
+              [stats.featured, "Featured loaded", "text-warning"],
+              [stats.verified, "Verified loaded", "text-primary"],
             ].map(([value, label, color]) => (
               <Card key={String(label)}>
                 <CardContent className="p-2">

@@ -22,6 +22,7 @@ describe("Agent Apps canonical table contract", () => {
   it("keeps the existing independent filters and metrics as table accessors", () => {
     for (const id of [
       "name",
+      "id",
       "slug",
       "mandate",
       "status",
