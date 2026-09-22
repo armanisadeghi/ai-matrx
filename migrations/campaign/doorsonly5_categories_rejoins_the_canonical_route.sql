@@ -1,0 +1,52 @@
+-- lane: DOORS-ONLY-5
+-- chair-step: `select iam.apply_rls(...)` is a spec-driven builder — the additive allow-list
+-- cannot read the DDL it will execute. What it executes is the CANONICAL ROUTE and nothing else.
+--
+-- platform.categories REJOINS THE CANONICAL ROUTE. It is the last table in `platform` or `iam`
+-- carrying a client write surface, and the only one whose grant the generator could not take.
+--
+-- WHAT CHANGED SO THAT IT CAN. `iam.apply_rls` refused this table by name since DD-249 / R12: it
+-- holds 355 rows marked `visibility = 'public'` and grants `anon` SELECT, while its class
+-- `organization` emitted no anonymous lane. The chair ruled (2026-09-22) that a row marked
+-- `visibility = 'public'` IS an anonymous read lane by definition — that is what the word means
+-- to the person who set it — so the generator learned an OPT-IN anonymous lane and this table
+-- declared it (`doorsonly5_the_class_learns_an_optin_anonymous_read_lane.sql`). The refusal
+-- stops firing because the answer it asks for changed, not because the guard was weakened: its
+-- condition is `NOT (iam.class_lanes(p_token)).anon_lane` and it is untouched.
+--
+-- WHAT THIS REGENERATION DOES, read from the generator rather than assumed:
+--
+--   `platform` is DECLARED doors-only in platform.schema_client_exposure and this table's
+--   `doors_only_pending_cutover` row is gone, so `iam._apply_rls_unchecked` does NOT emit
+--   std_insert / std_update / std_delete, and `iam.apply_table_grants` issues the read-only
+--   client grant and withdraws the write grants BY NAME, asserting the privilege is gone before
+--   it returns. **That is the last three RESIDUAL triples in `platform` and `iam`.**
+--
+--   `pub_read` is emitted, because the opt-in lane now answers yes — the SAME predicate it has
+--   carried all along: `deleted_at is null and visibility = 'public'`.
+--
+--   `anon`'s SELECT becomes the GENERATOR'S OUTPUT. It has been live on thirteen hand-written
+--   column ACLs; `iam.apply_table_grants` now issues exactly those thirteen, because the seven
+--   columns anon must not hold are DECLARED in `client_anonymous_excluded_columns`
+--   (organization_id, is_system, created_by, updated_by, version, metadata, custom_fields — the
+--   seven it does not hold today, read live before the declaration). **This declares what is
+--   already true; it widens nothing.**
+--
+--   The three named restrictive refusals are KEPT — DD-147: this generator drops only the names
+--   in `iam.generated_policy_names()` and keeps everything else.
+--
+--   before  std_select + std_insert/std_update/std_delete + platform_admin_all + pub_read +
+--           svc_all, the write grants, thirteen hand-written anon ACLs, and the named refusals
+--   after   std_select + platform_admin_select + pub_read + svc_all, NO write grant, the SAME
+--           thirteen anon column grants issued by the generator, and the SAME named refusals
+--
+-- 🚨 RE-RUN THE GUARD AND A SEAT PROBE AFTER THIS APPLIES — including the signed-out read. The
+-- seated suite's clause 9 exists for exactly this apply: it takes the `anon` seat and asserts the
+-- 355 rows still answer. DOORS-ONLY-4's eleven-minute outage was caught by re-running the guard
+-- rather than assuming the number would move.
+--
+-- Inverse: migrations/inverse/doorsonly5_categories_rejoins_the_canonical_route.inverse.sql
+set lock_timeout = '5s';
+set statement_timeout = '600s';
+
+select iam.apply_rls('platform', 'categories', 'category', 'entity');
