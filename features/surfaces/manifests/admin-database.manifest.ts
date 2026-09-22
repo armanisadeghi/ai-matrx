@@ -7,9 +7,10 @@
  * the data-bearing child is the SQL workbench at
  * `/administration/database/sql-queries`, which runs arbitrary read
  * queries against the live Supabase project through the
- * `execute_admin_query` RPC. (The sibling `/administration/database/database-admin`
- * dashboard has its own editor and mounts NO surface provider — it emits
- * nothing and receives nothing.)
+ * `execute_admin_query` RPC. The sibling `/administration/database/database-admin`
+ * dashboard emits its loaded function catalogue, selected overload signature,
+ * and read state through this same surface identity. Its permissions and SQL
+ * editor do not emit here because this mount does not own their state.
  *
  * What an agent bound here may safely do: read the admin's SQL text, the
  * shape of the result it got back, its recent query history, and the catalogue
@@ -32,6 +33,7 @@
  * Emitters (real, wired):
  *   - Hub catalogue → `features/administration/database-hub/DatabaseHubLanding.tsx`
  *   - Query state   → `app/(admin)/administration/database/components/enhanced-sql-editor.tsx`
+ *   - Function catalogue → `features/administration/database-admin/DatabaseAdminDashboard.tsx`
  *
  * Deliberately NOT declared (nothing emits them): a schema/table/column
  * browser with a selected table and row sample does not exist as page state on
@@ -75,6 +77,13 @@ const groups: SurfaceValueGroup[] = [
     sortOrder: 300,
     description:
       "What came back from the last execution: rows, shape, timing, and any error.",
+  },
+  {
+    key: "functions",
+    label: "Database functions",
+    sortOrder: 400,
+    description:
+      "The current function catalogue snapshot, its selected overload, and its read status.",
   },
 ];
 
@@ -253,6 +262,64 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 350,
     group: "query_result",
   },
+
+  // ── Function catalogue ───────────────────────────────────────────────
+  {
+    name: "database_functions",
+    label: "Database functions",
+    description:
+      "The function rows loaded by the database-admin dashboard, with each overload's schema, name, arguments, security mode, and return type. This is a client snapshot only: the source total is unknown, so this list must never be treated as the complete function catalogue.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 24000,
+    autoContext: false,
+    sortOrder: 400,
+    group: "functions",
+  },
+  {
+    name: "database_function_count",
+    label: "Loaded function count",
+    description:
+      "Number of database function rows in the dashboard's current client snapshot. It is not a source total or completeness claim.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 4,
+    sortOrder: 410,
+    group: "functions",
+  },
+  {
+    name: "database_functions_loading",
+    label: "Functions loading",
+    description:
+      "True while the dashboard is reading the function catalogue. Existing rows remain visible during a refresh.",
+    valueType: "boolean",
+    alwaysAvailable: false,
+    typicalCharCount: 5,
+    sortOrder: 420,
+    group: "functions",
+  },
+  {
+    name: "database_functions_error",
+    label: "Functions error",
+    description:
+      "The most recent database-function read failure. Absent after a successful read.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 240,
+    sortOrder: 430,
+    group: "functions",
+  },
+  {
+    name: "selected_function_signature",
+    label: "Selected function signature",
+    description:
+      "The overload currently open in the function details dialog, identified as schema.name(arguments). Absent when no details dialog is open.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 200,
+    sortOrder: 440,
+    group: "functions",
+  },
 ];
 
 /**
@@ -328,15 +395,15 @@ export const adminDatabaseManifest: SurfaceManifest = {
   surfaceName: ADMIN_DATABASE_SURFACE_NAME,
   readiness: "partial",
   readinessNote:
-    "Hub-catalogue and SQL-workbench emitters are wired and real. The route has no schema/table browser page state (selected table, columns, row sample), so those values are deliberately undeclared; the schema visualizer, sql-functions, enums, relationships, canonicalization and workbench sub-routes have no emitter yet.",
+    "Hub-catalogue, SQL-workbench, and database-admin function-catalogue emitters are wired and real. The route has no schema/table browser page state (selected table, columns, row sample), so those values are deliberately undeclared; the schema visualizer, sql-functions, enums, relationships, canonicalization and workbench sub-routes have no emitter yet.",
   label: "Database Admin",
   urlPattern: "/administration/database",
   intro: `<surface_intro>
 This is an ADMIN surface: the super-admin database console at /administration/database.
 
-/administration/database itself is a hub — a grid of links to database tools (schema visualizer, SQL functions, enums, relationships, canonicalization, data integrity, workbench). The data-bearing page is the SQL workbench, where a super-admin writes read-only SQL and runs it against the live Supabase project.
+/administration/database itself is a hub — a grid of links to database tools (schema visualizer, SQL functions, enums, relationships, canonicalization, data integrity, workbench). The data-bearing pages are the SQL workbench, where a super-admin writes read-only SQL and runs it against the live Supabase project, and the database-admin dashboard's Functions tab.
 
-How to read the values: console_section tells you which one you are on — "hub" or "sql_workbench". On the hub, database_tool_pages is the catalogue and the query_* values are absent. In the workbench, sql_query is what the admin has written, and the query_* result values describe the LAST execution (they are all absent before the first run, and query_error replaces them when a run fails).
+How to read the values: console_section tells you which one you are on — "hub", "sql_workbench", or "database_admin". On the hub, database_tool_pages is the catalogue and the query_* values are absent. In the workbench, sql_query is what the admin has written, and the query_* result values describe the LAST execution (they are all absent before the first run, and query_error replaces them when a run fails). In the database-admin dashboard, database_functions is the loaded client snapshot, not a complete source catalogue; database_function_count is only the number loaded, and database_functions_error records a failed read.
 
 What you may safely do: read the SQL and the result shape, then write, correct, explain, or optimise SQL and diagnose errors. Put the SQL you wrote straight into the editor with the sql_query write target instead of making the admin copy it out of chat — it REPLACES the whole editor buffer, so read sql_query first if you mean to extend rather than replace. Staging is not running: you never execute anything, and there is no write path to Execute, Cancel, or the cache. Running a query is the admin pressing Execute. When the SQL you stage would change data or schema, say so plainly in your message — the admin's review is the only gate. Treat result rows as live production data: summarise them, do not republish them.
 
@@ -357,13 +424,22 @@ export interface AdminDatabaseToolEntry {
   section?: string;
 }
 
+export interface AdminDatabaseFunctionEntry {
+  signature: string;
+  name: string;
+  schema: string;
+  security_type: string;
+  arguments: string;
+  returns: string;
+}
+
 /**
  * Type-safe payload helper. Required keys (no `?`) mirror every value declared
  * `alwaysAvailable: true`; optional keys mirror `alwaysAvailable: false`.
  */
 export function createAdminDatabaseScope(values: {
   // alwaysAvailable: true → required
-  console_section: "hub" | "sql_workbench";
+  console_section: "hub" | "sql_workbench" | "database_admin";
   default_schema: string;
   // alwaysAvailable: false → optional
   selection?: string;
@@ -371,6 +447,11 @@ export function createAdminDatabaseScope(values: {
   context?: Record<string, unknown>;
   database_tool_pages?: AdminDatabaseToolEntry[];
   database_tool_count?: number;
+  database_functions?: AdminDatabaseFunctionEntry[];
+  database_function_count?: number;
+  database_functions_loading?: boolean;
+  database_functions_error?: string;
+  selected_function_signature?: string;
   sql_query?: string;
   sql_query_length?: number;
   use_cache?: boolean;

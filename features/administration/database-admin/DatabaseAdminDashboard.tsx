@@ -8,7 +8,17 @@ import { FunctionsList } from "./FunctionsList";
 import { SQLEditor } from "./SQLEditor";
 import FunctionDetails from "./functionDetails";
 import PermissionsList from "./PermissionsList";
-import type { DatabaseFunction, DatabasePermission } from "./types";
+import {
+  databaseFunctionSignature,
+  type DatabaseFunction,
+  type DatabasePermission,
+} from "./types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  ADMIN_DATABASE_SURFACE_NAME,
+  createAdminDatabaseScope,
+} from "@/features/surfaces/manifests/admin-database.manifest";
 import {
   enumUrlCodec,
   stringUrlCodec,
@@ -78,6 +88,8 @@ const DatabaseAdminDashboard = () => {
   );
   const isDetailsOpen = Boolean(selectedFunctionKey);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [functionsLoading, setFunctionsLoading] = useState(true);
+  const [functionsError, setFunctionsError] = useState<string | null>(null);
 
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
 
@@ -87,9 +99,7 @@ const DatabaseAdminDashboard = () => {
   useEffect(() => {
     const selected =
       functions.find(
-        (func) =>
-          `${func.schema}.${func.name}(${func.arguments})` ===
-          selectedFunctionKey,
+        (func) => databaseFunctionSignature(func) === selectedFunctionKey,
       ) ?? null;
     setSelectedFunction(selected);
   }, [functions, selectedFunctionKey]);
@@ -110,11 +120,20 @@ const DatabaseAdminDashboard = () => {
   }, [activeTab, permissionsLoaded]);
 
   const loadFunctions = async () => {
+    setFunctionsLoading(true);
     try {
       const functionsData = await fetchFunctions();
       setFunctions(toDatabaseFunctions(functionsData));
+      setFunctionsError(null);
     } catch (err) {
       console.error("Failed to load functions:", err);
+      setFunctionsError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load database functions.",
+      );
+    } finally {
+      setFunctionsLoading(false);
     }
   };
 
@@ -163,67 +182,105 @@ const DatabaseAdminDashboard = () => {
     if (isAdminTab(value)) setActiveTab(value);
   };
 
+  const getSurfaceScope = () =>
+    createAdminDatabaseScope({
+      console_section: "database_admin",
+      default_schema: "public",
+      database_functions: functions.map((func) => ({
+        signature: databaseFunctionSignature(func),
+        name: func.name,
+        schema: func.schema,
+        security_type: func.security_type,
+        arguments: func.arguments,
+        returns: func.returns,
+      })),
+      database_function_count: functions.length,
+      database_functions_loading: functionsLoading,
+      ...(functionsError ? { database_functions_error: functionsError } : {}),
+      ...(selectedFunctionKey
+        ? { selected_function_signature: selectedFunctionKey }
+        : {}),
+    });
+
   return (
-    <div className="space-y-6 p-6">
-      <FunctionDetails
-        func={selectedFunction}
-        open={isDetailsOpen}
-        onOpenChange={(open) => {
-          if (!open) setSelectedFunctionKey("");
-        }}
-      />
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_DATABASE_SURFACE_NAME}
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
+      <NonEditableContextMenu
+        sourceFeature="admin"
+        surfaceName={ADMIN_DATABASE_SURFACE_NAME}
+        getApplicationScope={getSurfaceScope}
+        contentSource={{ type: "raw" }}
+      >
+        <div className="space-y-6 p-6" data-surface-value="database_functions">
+          <FunctionDetails
+            func={selectedFunction}
+            open={isDetailsOpen}
+            onOpenChange={(open) => {
+              if (!open) setSelectedFunctionKey("");
+            }}
+          />
 
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList>
-          <TabsTrigger value="functions" className="flex items-center gap-2">
-            <SquareFunction className="h-4 w-4" />
-            Functions
-          </TabsTrigger>
-          <TabsTrigger value="permissions" className="flex items-center gap-2">
-            <Key className="h-4 w-4" />
-            Permissions
-          </TabsTrigger>
-          <TabsTrigger value="sql" className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            SQL Query
-          </TabsTrigger>
-        </TabsList>
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList>
+              <TabsTrigger
+                value="functions"
+                className="flex items-center gap-2"
+              >
+                <SquareFunction className="h-4 w-4" />
+                Functions
+              </TabsTrigger>
+              <TabsTrigger
+                value="permissions"
+                className="flex items-center gap-2"
+              >
+                <Key className="h-4 w-4" />
+                Permissions
+              </TabsTrigger>
+              <TabsTrigger value="sql" className="flex items-center gap-2">
+                <Database className="h-4 w-4" />
+                SQL Query
+              </TabsTrigger>
+            </TabsList>
 
-        <div className="mt-4">
-          <TabsContent value="functions">
-            <FunctionsList
-              functions={functions}
-              loading={loading}
-              isRefreshing={isRefreshing}
-              onRefresh={refreshData}
-              onViewDetails={(func: DatabaseFunction) => {
-                setSelectedFunction(func);
-                setSelectedFunctionKey(
-                  `${func.schema}.${func.name}(${func.arguments})`,
-                );
-              }}
-            />
-          </TabsContent>
+            <div className="mt-4">
+              <TabsContent value="functions">
+                <FunctionsList
+                  functions={functions}
+                  loading={functionsLoading}
+                  isRefreshing={isRefreshing}
+                  error={functionsError}
+                  onRefresh={refreshData}
+                  onViewDetails={(func: DatabaseFunction) => {
+                    setSelectedFunction(func);
+                    setSelectedFunctionKey(databaseFunctionSignature(func));
+                  }}
+                />
+              </TabsContent>
 
-          <TabsContent value="permissions">
-            <PermissionsList
-              permissions={permissions}
-              loading={loading}
-              isRefreshing={isRefreshing}
-              onRefresh={refreshData}
-            />
-          </TabsContent>
+              <TabsContent value="permissions">
+                <PermissionsList
+                  permissions={permissions}
+                  loading={loading}
+                  isRefreshing={isRefreshing}
+                  onRefresh={refreshData}
+                />
+              </TabsContent>
 
-          <TabsContent value="sql">
-            <SQLEditor
-              loading={loading}
-              error={error}
-              onExecuteQuery={handleExecuteQuery}
-            />
-          </TabsContent>
+              <TabsContent value="sql">
+                <SQLEditor
+                  loading={loading}
+                  error={error}
+                  onExecuteQuery={handleExecuteQuery}
+                />
+              </TabsContent>
+            </div>
+          </Tabs>
         </div>
-      </Tabs>
-    </div>
+      </NonEditableContextMenu>
+    </SurfaceRuntimeProvider>
   );
 };
 

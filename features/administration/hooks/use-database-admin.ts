@@ -30,12 +30,13 @@ export const useDatabaseAdmin = () => {
       const result = await getFunctions();
       if (result.error) {
         setError(result.error);
-        return [];
+        throw new Error(result.error);
       }
       return result.data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-      return [];
+      const message = err instanceof Error ? err.message : "An error occurred";
+      setError(message);
+      throw err instanceof Error ? err : new Error(message);
     } finally {
       setLoading(false);
     }
@@ -59,10 +60,7 @@ export const useDatabaseAdmin = () => {
     }
   };
 
-  const executeQuery = async (
-    query: string,
-    useCache = true,
-  ) => {
+  const executeQuery = async (query: string, useCache = true) => {
     // Check cache first if enabled
     if (useCache && queryCache[query]) {
       return queryCache[query].result;
