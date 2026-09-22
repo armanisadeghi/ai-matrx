@@ -354,6 +354,16 @@ else
   say "  are judging against yesterday's snapshot until someone runs pnpm refresh:ledger-snapshot."
 fi
 
+# BOTH REPOS, ONE NIGHTLY READ. aidream's runner writes into the SAME production ledger
+# table on the SAME database, so its snapshot goes stale for exactly the same reasons and
+# is refreshed in the same step — one job, not two that can fall out of step.
+if ( cd /Users/armanisadeghi/code/aidream && uv run python scripts/refresh_ledger_snapshot.py ); then
+  say "  aidream ledger snapshot refreshed — commit it if git reports it changed."
+else
+  say "  NOTE: could not refresh aidream's db/migrations/LEDGER.json; its commit guard and"
+  say "  release gate are judging against yesterday's snapshot."
+fi
+
 say "parity repairs made: $REPAIRED; superseded on production: $SUPERSEDED"
 for n in "${SUPERSEDED_NAMES[@]:-}"; do [ -n "$n" ] && say "  superseded, not carried: $n"; done
 for n in "${FAILED_NAMES[@]:-}"; do [ -n "$n" ] && say "  did not land: $n"; done
