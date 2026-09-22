@@ -38,6 +38,7 @@
     }
   ],
   "lanes": {
+    "IMPORT-2": 3049,
     "DATA-CREATE-FIX": 3037,
     "W4-DOOR": 3002,
     "W5-AGENT": 3003,
