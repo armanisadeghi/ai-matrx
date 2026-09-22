@@ -136,10 +136,18 @@ LOOKUP_DERIVE_SQL="select n.nspname||'.'||c.relname
 # constraints and yet `custom.record` refuses every relation with "Unknown association type:
 # record -> record. Register it in platform.association_types". Those are named here, each because
 # a suite or a door actually raised on it, and the list stays short on purpose.
+#
+# `platform.deprecated_relations` joined the list on 2026-09-22 (lane RECORDS-SUITE-2). Nothing
+# holds a foreign key to it, so the derivation could not see it, and the first live refresh left it
+# at 0 rows where main carries 398. `matrx_records.server.enumeration` decides which registered
+# models are record-bearing by INTERSECTING matrx-orm's registry with this register, so an empty
+# register is an empty enumeration: `test_the_enumeration_is_not_empty` and
+# `test_the_door_speaks_for_a_relation_the_platform_really_superseded` both went red on the branch
+# for a reason that had nothing to do with the store.
 typeset -a NAMED_REGISTRIES
 NAMED_REGISTRIES=(platform.association_types platform.metadata_reserved_keys
                   platform.provision_rule_message platform.domain_classification
-                  platform.retention_policy)
+                  platform.retention_policy platform.deprecated_relations)
 
 # 🚨 NO CUSTOMER ROWS COME ACROSS THIS WIRE. Every platform table carries `organization_id` (the
 # platform's own law), so "it has no org column" is not a safety filter here — the filter is the
@@ -352,10 +360,25 @@ if ! night_dsn_args "$SRC_DSN" || [ ${#NIGHT_DSN_ARGS[@]} -lt 8 ]; then
 fi
 typeset -a DUMPCONN; DUMPCONN=("${NIGHT_DSN_ARGS[@]}")
 export PGPASSWORD="$NIGHT_DSN_PASSWORD"; NIGHT_DSN_PASSWORD=""
+# 🚨 THE ARCHIVE IS `-Fc`, NOT PLAIN SQL, AND THE REASON IS 3,634 SECONDS.
+# The first cut wrote plain SQL and fed it to `psql -f`: 20,878 statements sent ONE AT A TIME
+# over the pooler, each waiting a full round trip. Measured 2026-09-22: the restore took
+# 3,634 s — 174 ms per statement, which is the network, not the database. Proven with an A/B on
+# 885 real GRANT statements from that very dump, replayed against this branch: 82 s through one
+# connection, 12 s through eight (6.8x). A custom-format archive lets `pg_restore -j` open
+# several connections and order the work by the archive's own dependency graph, which is the
+# only safe way to parallelise a schema restore.
+# The plain text is still produced — LOCALLY, from the archive, with no server contact — because
+# every check in this file reads text: the GRANT count that refuses a privilege-less dump, the
+# role names step (1b) greps for, and the CREATE SCHEMA tolerance sed.
 PGOPTIONS='-c statement_timeout=600000' timeout $DUMP_CAP "$PGDUMP" "${DUMPCONN[@]}" \
-  --schema-only --no-owner --no-comments --quote-all-identifiers \
-  --lock-wait-timeout=5000 "${DUMPARGS[@]}" -f "$DUMP" 2> "$WORK/dump.err"
+  --schema-only --no-owner --no-comments --quote-all-identifiers -Fc \
+  --lock-wait-timeout=5000 "${DUMPARGS[@]}" -f "$WORK/schema.dump" 2> "$WORK/dump.err"
 DRC=$?
+if [ $DRC -eq 0 ] && [ -s "$WORK/schema.dump" ]; then
+  # -f - writes the archive out as SQL; it talks to nothing.
+  "${PGDUMP:h}/pg_restore" -f "$DUMP" "$WORK/schema.dump" 2>> "$WORK/dump.err" || DRC=$?
+fi
 DUMP_SECS=$(( $(date +%s) - DUMP_START ))
 if [ $DRC -eq 124 ]; then
   say "REFUSED: the schema dump exceeded the ${DUMP_CAP}s cap (${DUMP_SECS}s) and was aborted."
@@ -716,8 +739,14 @@ else
   else say "  purged; $("$PSQL" "$BRANCH_DSN" -qAt -c 'select count(*) from auth.users' 2>&1) auth.users row(s) remain"; fi
 fi
 
-say "recreating the schemas and their extensions"
-{ for s in "${DROP_SET[@]}"; do print -r -- "create schema if not exists \"$s\";"; done
+say "recreating the extensions' own schemas and the extensions"
+# ONLY the namespaces the extensions need, NOT all 68. The archive creates the rest itself, and
+# `pg_restore` has no IF NOT EXISTS: every schema pre-created here comes back as an
+# `already exists` error. Pre-creating all of them added ~68 lines of pure noise to the error
+# count the log is supposed to make meaningful.
+{ print -r -- "$EXTS" | while IFS='|' read -r e ns; do
+    [ -n "$ns" ] && print -r -- "create schema if not exists \"$ns\";"
+  done
   print -r -- "$EXTS" | while IFS='|' read -r e ns; do
     [ -n "$e" ] && print -r -- "create extension if not exists \"$e\" with schema \"$ns\";"
   done
@@ -734,17 +763,40 @@ say "restoring the schema dump onto the branch"
 # in a worse state than finishing. THE DRIFT NUMBER IN STEP (4) IS THE VERDICT, not this
 # exit code — judged by output text, as the README requires.
 RESTORE_START=$(date +%s)
-"$PSQL" "$BRANCH_DSN" -q -f "$WORK/schema.apply.sql" > "$WORK/restore.out" 2>&1
+# 🚨 EIGHT CONNECTIONS, ORDERED BY THE ARCHIVE'S OWN DEPENDENCY GRAPH. `pg_restore -j` is not
+# "run the file eight ways": it walks the archive's table of contents, keeps everything that has
+# a dependency in order, and hands the independent items (indexes, constraints, triggers,
+# policies, the 9,961 GRANTs) to parallel workers. The branch runs max_connections = 60, so eight
+# is a small share. The password goes through PGPASSWORD for the same reason the dump's does: a
+# DSN in argv is readable in `ps aux` by every process on this machine for as long as it runs.
+# `--exit-on-error` is deliberately OFF, exactly as ON_ERROR_STOP was: a restore of this size
+# produces dependency noise, and stopping on the first line leaves the branch worse than
+# finishing. THE DRIFT NUMBER IN STEP (4) IS THE VERDICT, not this exit code.
+RESTORE_J=8
+if night_dsn_args "$BRANCH_DSN" && [ ${#NIGHT_DSN_ARGS[@]} -ge 8 ]; then
+  typeset -a RESTCONN; RESTCONN=("${NIGHT_DSN_ARGS[@]}")
+  export PGPASSWORD="$NIGHT_DSN_PASSWORD"; NIGHT_DSN_PASSWORD=""
+  "${PGDUMP:h}/pg_restore" "${RESTCONN[@]}" -j $RESTORE_J --no-owner "$WORK/schema.dump" \
+    > "$WORK/restore.out" 2>&1
+  unset PGPASSWORD
+  say "  restored with pg_restore -j $RESTORE_J from the custom-format archive"
+else
+  say "  the branch connection could not be split for pg_restore; falling back to the serial"
+  say "  psql path, which is CORRECT but takes about an hour. This is announced, not silent."
+  "$PSQL" "$BRANCH_DSN" -q -f "$WORK/schema.apply.sql" > "$WORK/restore.out" 2>&1
+fi
 RESTORE_SECS=$(( $(date +%s) - RESTORE_START ))
 # psql writes `psql:<file>:<line>: ERROR:  …`, never a bare `ERROR:` at column 0. The first
 # cut of this line counted '^ERROR:' and reported ZERO of the rehearsal's 23,610 errors — a
 # green manufactured by a grep anchor. Match the text, never the column.
-RERR=$(grep -c 'ERROR:' "$WORK/restore.out")
+# psql writes `psql:<file>:<line>: ERROR:  …`; pg_restore writes `pg_restore: error: …` and
+# echoes the server's `ERROR:  …` on the next line. Count both shapes, never a column anchor.
+RERR=$(grep -c -E 'ERROR:|^pg_restore: error' "$WORK/restore.out")
 RDUP=$(grep -c 'already exists' "$WORK/restore.out")
 say "restore finished in ${RESTORE_SECS}s with $RERR ERROR line(s), of which $RDUP are 'already exists'"
 if [ "$RERR" -gt 0 ]; then
   say "first restore errors:"
-  grep 'ERROR:' "$WORK/restore.out" | head -20 | while read -r l; do say "    ${l##*/}"; done
+  grep -E 'ERROR:|^pg_restore: error' "$WORK/restore.out" | head -20 | while read -r l; do say "    ${l##*/}"; done
 fi
 
 if [ -n "$LEDGER" ] && [ "$REHEARSE" != "1" ]; then
