@@ -663,9 +663,9 @@
     },
     {
       "file": "matrx-frontend/app/api/sandbox/[id]/access-tokens/route.ts",
-      "name": "TOKEN_MINT_ATTEMPT_TIMEOUT_MS",
+      "name": "TOKEN_MINT_TIMEOUT_MS",
       "kind": "operational-timeout",
-      "reason": "Keeps a retry attempt inside Vercel's serverless function invocation budget; a hosting-platform constraint, not tunable business behavior."
+      "reason": "Keeps the WHOLE token mint — all three attempts and their backoff — inside Vercel's serverless invocation budget, so a black-holed orchestrator socket ends as this route's own abort rather than as FUNCTION_INVOCATION_TIMEOUT, which kills the caller's retry path with it. A hosting-platform constraint we do not own, not tunable business behaviour. (Renamed from TOKEN_MINT_ATTEMPT_TIMEOUT_MS when the budget moved from per-attempt to whole-mint; same constant, same argument.)"
     },
     {
       "file": "matrx-frontend/app/api/sign/[token]/route.ts",
@@ -894,6 +894,12 @@
       "name": "MIN_COLUMN_WIDTH_PX",
       "kind": "algorithmic",
       "reason": "Layout floor below which a dragged column hides its own header menu; a UI mechanics constraint, not a business preference."
+    },
+    {
+      "file": "matrx-frontend/features/entitlements/stripe/billingOwner.ts",
+      "name": "SHAPE_CACHE_MS",
+      "kind": "resolver-cache",
+      "reason": "How long ONE catalog answer is trusted before it is re-read: whether billing.customer carries organization_id yet (REC-62). It is not a value about anybody's business — it is the staleness window on a `limit 0` probe of the live catalog, and every organization on every database gets the same answer from it. Its bound is the DDL commit itself: the shape changes exactly once, unattended, with no redeploy, so the window has to be shorter than a person's patience on that one night and long enough that the probe costs one select per server process per half-minute. An organization holding a different view of it would be holding a view about our own migration window."
     },
     {
       "file": "matrx-frontend/features/files/devices/useDevicesAndSync.ts",
