@@ -23903,10 +23903,6 @@ export type Database = {
         Args: { p_identity_id: string; p_window?: string }
         Returns: Json
       }
-      erase_interaction: {
-        Args: { p_interaction_id: string }
-        Returns: Json
-      }
       ensure_user_party: {
         Args: { p_source?: string; p_user_id: string }
         Returns: string

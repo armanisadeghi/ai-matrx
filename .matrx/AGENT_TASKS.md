@@ -16,6 +16,21 @@ _(none)_
 
 ## Blocked
 
+### TASK-CRM-ERASURE-RPC: Apply the missing Gmail interaction erasure RPC
+- **Status:** blocked (2026-09-22) — live East schema is missing the RPC used by current CRM code
+- **Source:** `pnpm sync-types:live` against AI Dream SHA `468ca559d7b98f3128e01796e35f3fceb9513572`; read-only East catalog check by senior delegate
+
+**Current evidence**
+
+- Frontend `features/crm/service.ts:1746` calls `crm.erase_interaction(p_interaction_id)` for CRM interaction erasure.
+- Live East has no `crm.erase_interaction` function, no migration ledger row for `1031_an_erased_gmail_reply_leaves_only_a_tombstone.sql`, and no `client_callable_door` entry. The canonical migration exists at `/Users/armanisadeghi/code/aidream/db/migrations/1031_an_erased_gmail_reply_leaves_only_a_tombstone.sql`; its inverse drops the function.
+- Type generation removed the RPC from `types/database.types.ts`, and the sync typecheck now reports TS2345 at the `erase_interaction` call. No live database write was made.
+- A senior AI Dream delegate is repairing the migration's rejected apply declaration and obtaining independent review. East apply and verification remain outstanding; West is out of scope.
+
+**Next concrete step**
+
+After the reviewed migration is accepted by the AI Dream database release owner, apply it to East only; verify the function, callable-door registry, and ledger row; then rerun `pnpm sync-types:live` and frontend type health. Keep the typegen drop visible until live East contains the RPC.
+
 ### TASK-W1-ORG-CUTOVER: Repair rejected REC-61/REC-64 production migrations
 - **Status:** blocked (2026-09-22) — current production files are committed but must not be applied
 - **Source:** senior chair review of commit `5c917eac385540b7bc636c21dae51b1bf178f260`
