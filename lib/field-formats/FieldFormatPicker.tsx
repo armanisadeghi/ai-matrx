@@ -130,10 +130,11 @@ export function FieldFormatPicker({
     ? Object.values(FIELD_FORMATS).filter(
         (d) =>
           !groups.some((g) => g.formats.some((f) => f.id === d.id)) &&
-          // Computed and structural formats are not "kinds of data" one retypes into.
+          // Computed formats and the two raw structural formats are not
+          // "kinds of data" one retypes into; Tags and Attachments are.
           d.editor !== "computed" &&
-          d.base !== "json" &&
-          d.base !== "array",
+          d.id !== "json" &&
+          d.id !== "array",
       )
     : [];
   // `||`, not `??` — an empty-string id is as absent as undefined, and one can

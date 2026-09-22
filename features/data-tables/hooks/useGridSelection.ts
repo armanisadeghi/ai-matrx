@@ -307,7 +307,8 @@ export function useGridSelection(args: {
   // Two exceptions, and only two:
   //  - inside the grid itself, which manages its own selection;
   //  - inside a floating layer the grid OPENED (a choice chooser, a confirm
-  //    dialog, a toast). Those render in portals OUTSIDE the container, so a
+  //    dialog, a toast, a window panel such as the file picker an attachment
+  //    cell opens). Those render in portals OUTSIDE the container, so a
   //    naive outside-click test would treat picking an option as clicking away
   //    and tear down the very editor the user is answering.
   //
@@ -323,7 +324,7 @@ export function useGridSelection(args: {
       if (
         target instanceof Element &&
         target.closest(
-          '[data-radix-popper-content-wrapper],[role="dialog"],[role="listbox"],[role="menu"],[data-sonner-toaster]',
+          '[data-radix-popper-content-wrapper],[role="dialog"],[role="listbox"],[role="menu"],[data-sonner-toaster],[data-window-panel]',
         )
       ) {
         return;
