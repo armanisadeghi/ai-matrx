@@ -79,17 +79,31 @@ async function openOrganizationGroup(page) {
   await sleep(1200);
 }
 
-/** Click the one disclosure that reveals the test organizations. Returns whether it opened. */
+/**
+ * Click EVERY disclosure that reveals the test organizations. Returns whether any is open.
+ *
+ * 🚨 THERE ARE TWO, AND CLICKING ONLY THE FIRST IS WHY THIS USED TO FAIL (lane TAILS-7,
+ * 2026-09-22). The organization picker is drawn twice on a page with nothing chosen yet: once
+ * in the sidebar and once inside the `organization-required-notice` hold that sits over the
+ * shell. Both carry a `Test organizations (N)` button with its own `aria-expanded`. The old
+ * body took `.find(...)` — the first one — so the copy a person is actually looking at could
+ * stay closed, and the 30-second retry around it re-asked for a row that was never revealed:
+ * `the organization "Rincon Plumbing Co — Summerland Branch" was not on the picker`, while the
+ * picker's own sentence on screen read *1 match for "Summerland" is in your test organizations
+ * — show them*. Opening all of them is what a person does when she clicks the one she can see.
+ */
 async function revealTestOrganizations(page) {
   return page.evaluate(() => {
-    const button = Array.from(document.querySelectorAll("button")).find(
+    const buttons = Array.from(document.querySelectorAll("button")).filter(
       (b) =>
         /test organizations/i.test(b.textContent ?? "") && b.getAttribute("aria-expanded") !== null,
     );
-    if (!button) return false;
-    if (button.getAttribute("aria-expanded") === "true") return true;
-    button.scrollIntoView({ block: "center" });
-    button.click();
+    if (buttons.length === 0) return false;
+    for (const button of buttons) {
+      if (button.getAttribute("aria-expanded") === "true") continue;
+      button.scrollIntoView({ block: "center" });
+      button.click();
+    }
     return true;
   });
 }
