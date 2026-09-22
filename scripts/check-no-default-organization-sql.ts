@@ -62,6 +62,38 @@
  * `migrations/w1_org_billing_is_organization_keyed.sql` failed on its own
  * explanatory comment the first time it ran.)
  *
+ * SUPERSESSION — THE ONE WAY A LEDGERED FILE STOPS BEING A VIOLATION.
+ * -------------------------------------------------------------------
+ * A migration that ALREADY RAN is applied history. Its bytes are frozen: editing
+ * them changes nothing on the database and desynchronises its ledger checksum, so
+ * the shape it carries cannot be "fixed" in place. It can only be SUPERSEDED — by
+ * a later migration that replaces the same function with a body that does not
+ * carry the shape.
+ *
+ * That is a fact about the DATABASE, so this guard checks the database rather than
+ * taking a promise. The LATER file declares the supersession in its own header:
+ *
+ *     -- supersedes: migrations/campaign/<the ledgered file>.sql
+ *     -- supersedes-function: public._library_audit
+ *
+ * and the violation in the ledgered file is forgiven only when ALL of these hold:
+ *
+ *   1. the superseding file is itself clean under every rule;
+ *   2. it actually replaces each function it names (`create or replace function`
+ *      or `drop function`) — a header that claims a supersession nothing carries
+ *      out is worth nothing;
+ *   3. THE CATALOG AGREES: no overload of any named function has a live body
+ *      carrying the offending shape. This is the clause that cannot be talked
+ *      into passing.
+ *
+ * Clause 3 needs the five `SUPABASE_MATRIX_*` variables. Where they are absent —
+ * CI's ORGANIZATION CONTEXT job has no database — the guard SAYS SO, by name, on
+ * every run, and rests on clauses 1 and 2. A stand-in that announces itself is not
+ * a silent pass; an unannounced one is how a guard becomes decoration.
+ *
+ * This is NOT an allow-list. An allow-list is a promise about a file. A
+ * supersession is a claim about the live catalogue, and the catalogue is asked.
+ *
  * FROZEN HISTORY IS A RATCHET, NOT AN AMNESTY.
  * `scripts/no-default-organization-sql.allowlist.json` pins the migration files
  * that ALREADY carried these shapes when this guard was written. They are
@@ -90,6 +122,35 @@ import { fileURLToPath } from "node:url";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SCAN_DIR = "migrations";
 const ALLOWLIST = join(ROOT, "scripts", "no-default-organization-sql.allowlist.json");
+
+/**
+ * `-- supersedes: <path>` and `-- supersedes-function: <schema.name>`. Built fresh
+ * per call: a `/g` regex held in a module constant carries `lastIndex` between
+ * files and silently skips every other match.
+ */
+function declaredSupersedes(source: string): { paths: string[]; functions: string[] } {
+  const paths = [...source.matchAll(/^\s*--\s*supersedes:\s*(\S+)\s*$/gim)].map((m) =>
+    m[1]!.replace(/\\/g, "/").replace(/^\.\//, ""),
+  );
+  const functions = [
+    ...source.matchAll(/^\s*--\s*supersedes-function:\s*([A-Za-z_][\w$]*\.[A-Za-z_][\w$]*)\s*$/gim),
+  ].map((m) => m[1]!.toLowerCase());
+  return { paths, functions };
+}
+
+/**
+ * Does this file actually DO what its `-- supersedes-function:` header claims?
+ * A `create or replace` of that exact name, or a `drop function` of it. A header
+ * that nothing carries out forgives nothing.
+ */
+function replacesFunction(code: string, qualified: string): boolean {
+  const [schema, name] = qualified.split(".");
+  const q = `(?:${schema}\\s*\\.\\s*)?${name}`;
+  return (
+    new RegExp(`create\\s+or\\s+replace\\s+function\\s+${q}\\s*\\(`, "i").test(code) ||
+    new RegExp(`drop\\s+function\\s+(?:if\\s+exists\\s+)?${q}\\s*\\(`, "i").test(code)
+  );
+}
 
 interface Rule {
   id: number;
@@ -249,14 +310,7 @@ export function scan(
   allowlist = loadAllowlist(),
 ): Violation[] {
   const violations: Violation[] = [];
-  for (const full of walk(join(ROOT, SCAN_DIR))) {
-    const rel = relative(ROOT, full).split("\\").join("/");
-    let source: string;
-    try {
-      source = readFileSync(full, "utf8");
-    } catch {
-      continue;
-    }
+  for (const [rel, source] of collectFiles()) {
     for (const v of scanSource(rel, source)) {
       const entry = allowlist[rel];
       if (entry && entry.rules.includes(v.rule)) continue;
@@ -266,6 +320,115 @@ export function scan(
   return violations.sort(
     (a, b) => a.file.localeCompare(b.file) || a.rule - b.rule || a.line - b.line,
   );
+}
+
+/** Every scanned migration, read once, keyed by its repo-relative path. */
+export function collectFiles(): Map<string, string> {
+  const files = new Map<string, string>();
+  for (const full of walk(join(ROOT, SCAN_DIR))) {
+    const rel = relative(ROOT, full).split("\\").join("/");
+    try {
+      files.set(rel, readFileSync(full, "utf8"));
+    } catch {
+      continue;
+    }
+  }
+  return files;
+}
+
+export interface Supersession {
+  /** The ledgered file whose violation this claims to answer. */
+  readonly superseded: string;
+  /** The later migration making the claim. */
+  readonly by: string;
+  /** The functions it says it replaces, lower-cased and schema-qualified. */
+  readonly functions: string[];
+  /** Null when the claim stands on its own bytes; otherwise why it does not. */
+  readonly refusedBecause: string | null;
+}
+
+/**
+ * Read every `-- supersedes:` claim and judge the SOURCE half of it — clauses 1
+ * and 2. The catalog half (clause 3) is asked separately, because it needs a
+ * database and this half must be judgeable without one.
+ */
+export function readSupersessions(
+  files: Map<string, string>,
+  violationsByFile: Map<string, Violation[]>,
+): Supersession[] {
+  const out: Supersession[] = [];
+  for (const [by, source] of files) {
+    const { paths, functions } = declaredSupersedes(source);
+    if (paths.length === 0) continue;
+    const code = executableSql(source);
+    for (const superseded of paths) {
+      let refusedBecause: string | null = null;
+      if (!files.has(superseded)) {
+        refusedBecause = `it names ${superseded}, which is not a migration in this repository`;
+      } else if ((violationsByFile.get(by) ?? []).length > 0) {
+        refusedBecause =
+          "the superseding file carries the same shape itself — a file cannot forgive what it repeats";
+      } else if (functions.length === 0) {
+        refusedBecause =
+          "it names no `-- supersedes-function:`, so there is nothing to check against the catalogue";
+      } else {
+        const missing = functions.filter((fn) => !replacesFunction(code, fn));
+        if (missing.length > 0) {
+          refusedBecause = `it claims to supersede ${missing.join(", ")} but replaces no such function`;
+        }
+      }
+      out.push({ superseded, by, functions, refusedBecause });
+    }
+  }
+  return out;
+}
+
+/** What the catalogue said about one function name. */
+export interface CatalogVerdict {
+  readonly fn: string;
+  /** Overloads whose LIVE body still carries an offending shape. */
+  readonly stillLive: string[];
+  /** How many overloads were read (0 = the function is not defined at all). */
+  readonly overloads: number;
+}
+
+export type CatalogReader = (functions: string[]) => Promise<CatalogVerdict[]>;
+
+/**
+ * Ask the live catalogue whether any overload of these functions still carries a
+ * rule shape in its body. `pg_get_functiondef` is run through the SAME comment
+ * and literal stripping the file scan uses, so a body that merely documents the
+ * removed shape is not read as carrying it.
+ */
+export async function readCatalog(functions: string[]): Promise<CatalogVerdict[]> {
+  const { loadDbEnv, connectDirect } = await import("./lib/direct-db");
+  const env = loadDbEnv();
+  if ("missing" in env) {
+    throw new Error(`no database credentials (${env.missing.join(", ")} absent)`);
+  }
+  const client = await connectDirect(env, "check-no-default-organization-sql");
+  try {
+    const verdicts: CatalogVerdict[] = [];
+    for (const fn of functions) {
+      const [schema, name] = fn.split(".");
+      const { rows } = await client.query<{ sig: string; def: string }>(
+        `select p.oid::regprocedure::text as sig, pg_get_functiondef(p.oid) as def
+           from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+          where n.nspname = $1 and p.proname = $2`,
+        [schema, name],
+      );
+      const stillLive = rows
+        .filter((r) => {
+          const code = executableSql(r.def);
+          return RULES.some((rule) => code.split("\n").some((l) => rule.pattern.test(l)));
+        })
+        .map((r) => r.sig);
+      verdicts.push({ fn, stillLive, overloads: rows.length });
+    }
+    return verdicts;
+  } finally {
+    await client.end();
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -305,6 +468,68 @@ returns uuid language sql as $$
 $$;`,
 };
 
+/**
+ * The supersession half of the self-test. Four pairs: one that must be forgiven
+ * and three near-misses that must not be, because every one of them is a way a
+ * `-- supersedes:` header could become an allow-list by another name.
+ */
+const SUPERSESSION_PLANTS: Record<string, string> = {
+  // FORGIVEN: a clean later file that really does replace the named function.
+  "__self_test_sup_old_good__.sql": `create or replace function zz_selftest.audit_writer(p_actor uuid)
+returns void language sql as $$
+  select iam.default_organization_id(p_actor);
+$$;`,
+  "__self_test_sup_new_good__.sql": `-- supersedes: migrations/__self_test_sup_old_good__.sql
+-- supersedes-function: zz_selftest.audit_writer
+create or replace function zz_selftest.audit_writer(p_actor uuid, p_org uuid)
+returns void language sql as $$
+  select p_org;
+$$;`,
+
+  // NOT FORGIVEN: the superseding file carries the same shape itself.
+  "__self_test_sup_old_dirty__.sql": `create or replace function zz_selftest.dirty_writer(p_actor uuid)
+returns void language sql as $$
+  select iam.default_organization_id(p_actor);
+$$;`,
+  "__self_test_sup_new_dirty__.sql": `-- supersedes: migrations/__self_test_sup_old_dirty__.sql
+-- supersedes-function: zz_selftest.dirty_writer
+create or replace function zz_selftest.dirty_writer(p_actor uuid, p_org uuid)
+returns void language sql as $$
+  select coalesce(p_org, iam.default_organization_id(p_actor));
+$$;`,
+
+  // NOT FORGIVEN: the header claims a supersession the file never carries out.
+  "__self_test_sup_old_empty__.sql": `create or replace function zz_selftest.empty_writer(p_actor uuid)
+returns void language sql as $$
+  select iam.default_organization_id(p_actor);
+$$;`,
+  "__self_test_sup_new_empty__.sql": `-- supersedes: migrations/__self_test_sup_old_empty__.sql
+-- supersedes-function: zz_selftest.empty_writer
+create or replace function zz_selftest.something_else(p_org uuid)
+returns void language sql as $$
+  select p_org;
+$$;`,
+
+  // NOT FORGIVEN: no `-- supersedes-function:` at all, so the catalogue cannot be asked.
+  "__self_test_sup_old_unnamed__.sql": `create or replace function zz_selftest.unnamed_writer(p_actor uuid)
+returns void language sql as $$
+  select iam.default_organization_id(p_actor);
+$$;`,
+  "__self_test_sup_new_unnamed__.sql": `-- supersedes: migrations/__self_test_sup_old_unnamed__.sql
+create or replace function zz_selftest.unnamed_writer(p_actor uuid, p_org uuid)
+returns void language sql as $$
+  select p_org;
+$$;`,
+};
+
+/** file -> is its violation expected to survive supersession? */
+const SUPERSESSION_EXPECT: Record<string, boolean> = {
+  "__self_test_sup_old_good__.sql": false,
+  "__self_test_sup_old_dirty__.sql": true,
+  "__self_test_sup_old_empty__.sql": true,
+  "__self_test_sup_old_unnamed__.sql": true,
+};
+
 function selfTest(): number {
   const dir = join(ROOT, SCAN_DIR);
   const written: string[] = [];
@@ -314,7 +539,7 @@ function selfTest(): number {
     console.log(`[self-test] ${pass ? "ok  " : "FAIL"} ${msg}`);
   };
   try {
-    for (const [name, body] of Object.entries({ ...PLANTS, ...COMPLIANT })) {
+    for (const [name, body] of Object.entries({ ...PLANTS, ...COMPLIANT, ...SUPERSESSION_PLANTS })) {
       const p = join(dir, name);
       writeFileSync(p, body, "utf8");
       written.push(p);
@@ -331,6 +556,32 @@ function selfTest(): number {
       say(
         !hit,
         `compliant: ${name} is flagged = ${hit} (expected false)`,
+      );
+    }
+
+    // SUPERSESSION. Every plant violates rule 6 on its own bytes — the question
+    // is only whether a later file's claim answers it. The catalogue half is
+    // stubbed here (these functions do not exist anywhere), so what is measured
+    // is exactly clauses 1 and 2.
+    const files = collectFiles();
+    const byFile = new Map<string, Violation[]>();
+    for (const v of found) byFile.set(v.file, [...(byFile.get(v.file) ?? []), v]);
+    const claims = readSupersessions(files, byFile);
+    for (const [name, expectKept] of Object.entries(SUPERSESSION_EXPECT)) {
+      const rel = `migrations/${name}`;
+      const flagged = found.some((v) => v.file === rel);
+      const claim = claims.find((c) => c.superseded === rel);
+      const forgiven = flagged && claim != null && claim.refusedBecause === null;
+      const kept = flagged && !forgiven;
+      say(
+        flagged,
+        `supersession: ${name} violates rule 6 on its own bytes = ${flagged} (expected true)`,
+      );
+      say(
+        kept === expectKept,
+        expectKept
+          ? `supersession: ${name} is NOT forgiven = ${kept} (expected true — ${claim?.refusedBecause ?? "no claim"})`
+          : `supersession: ${name} IS forgiven by its superseding file = ${forgiven} (expected true)`,
       );
     }
   } finally {
@@ -350,10 +601,79 @@ function selfTest(): number {
   return ok ? 0 : 1;
 }
 
-function main(): number {
+async function main(): Promise<number> {
   if (process.argv.includes("--self-test")) return selfTest();
 
-  const violations = scan();
+  const found = scan();
+  const files = collectFiles();
+  const byFile = new Map<string, Violation[]>();
+  for (const v of found) byFile.set(v.file, [...(byFile.get(v.file) ?? []), v]);
+
+  const claims = readSupersessions(files, byFile).filter((c) => byFile.has(c.superseded));
+  const standing = claims.filter((c) => c.refusedBecause === null);
+
+  // CLAUSE 3 — the catalogue. It is the half a header cannot argue with, so it is
+  // asked whenever the credentials are here, and its absence is SAID rather than
+  // assumed away.
+  const wanted = [...new Set(standing.flatMap((c) => c.functions))];
+  let catalog: CatalogVerdict[] | null = null;
+  let catalogSkipped: string | null = null;
+  if (wanted.length > 0) {
+    try {
+      catalog = await readCatalog(wanted);
+    } catch (err) {
+      catalogSkipped = err instanceof Error ? err.message : String(err);
+    }
+  }
+
+  const stillLive = new Map<string, string[]>();
+  for (const v of catalog ?? []) if (v.stillLive.length > 0) stillLive.set(v.fn, v.stillLive);
+
+  const forgiven: Supersession[] = [];
+  const forgivenFiles = new Set<string>();
+  for (const c of standing) {
+    const live = c.functions.filter((fn) => stillLive.has(fn));
+    if (live.length > 0) {
+      console.error(
+        `\ncheck-no-default-organization-sql: ${c.by} claims to supersede ${c.superseded},\n` +
+          `  but the LIVE catalogue still holds that shape in: ${live
+            .flatMap((fn) => stillLive.get(fn)!)
+            .join(", ")}.\n` +
+          `  Remedy: apply the superseding migration, or fix the body that is actually live.\n`,
+      );
+      continue;
+    }
+    forgiven.push(c);
+    forgivenFiles.add(c.superseded);
+  }
+
+  const violations = found.filter((v) => !forgivenFiles.has(v.file));
+
+  for (const c of claims) {
+    if (c.refusedBecause === null) continue;
+    console.error(
+      `\ncheck-no-default-organization-sql: ${c.by}'s \`-- supersedes: ${c.superseded}\` does not hold —\n` +
+        `  ${c.refusedBecause}.\n`,
+    );
+  }
+
+  for (const c of forgiven) {
+    console.log(
+      `check-no-default-organization-sql: ${c.superseded} is applied history, superseded by ${c.by} ` +
+        `(${c.functions.join(", ")}${
+          catalog ? " — confirmed gone from the live catalogue" : " — catalogue NOT consulted"
+        }).`,
+    );
+  }
+  if (catalogSkipped) {
+    console.log(
+      `check-no-default-organization-sql: THE CATALOGUE WAS NOT ASKED — ${catalogSkipped}. ` +
+        `${forgiven.length} supersession claim(s) rest on their source proof alone here. ` +
+        `Run this where the five SUPABASE_MATRIX_* variables resolve (any developer machine, ` +
+        `or \`pnpm check:no-default-organization-sql\` locally) to close that half.`,
+    );
+  }
+
   if (violations.length === 0) {
     console.log(
       "check-no-default-organization-sql: OK — no migration picks an organization for the user.",
@@ -370,17 +690,20 @@ function main(): number {
     console.error(`      remedy: ${rule.remedy}\n`);
   }
   console.error(
-    "A migration that is genuinely an exception goes in\n" +
-      "scripts/no-default-organization-sql.allowlist.json WITH A REASON. That list is\n" +
-      "frozen applied history and only ever shrinks — a NEW file never belongs in it.\n" +
+    "An APPLIED file whose shape a later migration has already replaced is declared in that\n" +
+      "later file's header — `-- supersedes: <path>` plus `-- supersedes-function: <schema.fn>` —\n" +
+      "and is forgiven only when the live catalogue agrees the body is gone. That is not an\n" +
+      "allow-list: it is a claim about the database, and the database is asked.\n" +
+      "scripts/no-default-organization-sql.allowlist.json is frozen applied history from before\n" +
+      "this guard existed and only ever shrinks — a NEW file never belongs in it.\n" +
       "Law: docs/handoffs/default-org-annihilation.md\n",
   );
   return 1;
 }
 
-try {
-  exitAfterDrain(main());
-} catch (err) {
-  console.error("check-no-default-organization-sql: unexpected error", err);
-  exitAfterDrain(2);
-}
+main()
+  .then((code) => exitAfterDrain(code))
+  .catch((err) => {
+    console.error("check-no-default-organization-sql: unexpected error", err);
+    exitAfterDrain(2);
+  });
