@@ -4,6 +4,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { ReactNode } from "react";
 import type { MatrxDataTableProps } from "@ai-matrx/design-system/data-table";
+import { listOrgCosts } from "../service/kgCostService";
 import { KgCostDashboard } from "./KgCostDashboard";
 
 (
@@ -59,11 +60,11 @@ describe("KgCostDashboard canonical tables", () => {
   it("keeps all four bounded dashboard grids canonical and honestly scoped", () => {
     act(() => root.render(<KgCostDashboard />));
 
-    for (const [id, title] of [
-      ["administration/kg-cost/by-source-kind", "By source kind"],
-      ["administration/kg-cost/recent-runs", "Recent runs"],
-      ["administration/kg-cost/organizations", "Organizations"],
-      ["administration/kg-cost/pending-batches", "In-flight batches"],
+    for (const [id, title, answeredBy] of [
+      ["administration/kg-cost/by-source-kind", "By source kind", "source"],
+      ["administration/kg-cost/recent-runs", "Recent runs", "client"],
+      ["administration/kg-cost/organizations", "Organizations", "source"],
+      ["administration/kg-cost/pending-batches", "In-flight batches", "source"],
     ]) {
       const props = table(id);
       expect(props.density).toBe("condensed");
@@ -74,7 +75,7 @@ describe("KgCostDashboard canonical tables", () => {
       expect(props.toolbar?.title).toBe(title);
       expect(props.detail).toEqual({ enabled: false });
       expect(props.window).toEqual({ enabled: false });
-      expect(props.coverage).toMatchObject({ answeredBy: "client" });
+      expect(props.coverage).toMatchObject({ answeredBy });
     }
   });
 
@@ -107,6 +108,15 @@ describe("KgCostDashboard canonical tables", () => {
     ).toBe(true);
 
     const runColumns = table("administration/kg-cost/recent-runs").columns;
+    expect(table("administration/kg-cost/recent-runs").coverage).toMatchObject({
+      cap: 50,
+    });
+    expect(
+      table("administration/kg-cost/organizations").coverage,
+    ).toMatchObject({ cap: 200 });
+    expect(
+      table("administration/kg-cost/pending-batches").coverage,
+    ).toMatchObject({ cap: 100 });
     expect(runColumns.map((column) => column.accessorKey)).toEqual(
       expect.arrayContaining([
         "source_kind",
@@ -137,5 +147,21 @@ describe("KgCostDashboard canonical tables", () => {
     expect(batch.onRowOpen).toEqual(expect.any(Function));
     expect(organization.rowActions).toEqual(expect.any(Function));
     expect(batch.rowActions).toEqual(expect.any(Function));
+  });
+
+  it("surfaces an organization-read failure with a retry while retaining the table", async () => {
+    jest
+      .mocked(listOrgCosts)
+      .mockRejectedValueOnce(new Error("Organization receipt unavailable"));
+
+    await act(async () => {
+      root.render(<KgCostDashboard />);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(host.textContent).toContain("Organization receipt unavailable");
+    expect(host.textContent).toContain("Retry");
+    expect(table("administration/kg-cost/organizations").data).toEqual([]);
   });
 });

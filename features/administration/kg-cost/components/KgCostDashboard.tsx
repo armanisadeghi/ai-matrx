@@ -211,6 +211,14 @@ function KpiTile({
   );
 }
 
+function ReadFailure({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"><span>{message}</span><Button variant="outline" size="sm" onClick={onRetry}>Retry</Button></div>;
+}
+
+function readFailureMessage(error: unknown, subject: string): string {
+  return error instanceof Error && error.message ? error.message : `Could not load ${subject}.`;
+}
+
 function fmtPercent(value: number | null | undefined): string | null {
   if (value === null || value === undefined || !Number.isFinite(value))
     return null;
@@ -290,10 +298,14 @@ function KpiTiles({
 function OrgLeaderboard({
   orgs,
   loading,
+  refreshing,
+  total,
   onPick,
 }: {
   orgs: OrgCostRow[];
   loading: boolean;
+  refreshing: boolean;
+  total: number | null;
   onPick: (orgId: string) => void;
 }) {
   const columns: MatrxColumnDef<OrgCostRow>[] = [
@@ -371,6 +383,7 @@ function OrgLeaderboard({
       columns={columns}
       getRowId={(row) => row.organization_id}
       isLoading={loading}
+      isFetching={refreshing}
       density="condensed"
       stickyHeader
       pageSize={0}
@@ -383,7 +396,7 @@ function OrgLeaderboard({
       }}
       detail={{ enabled: false }}
       window={{ enabled: false }}
-      coverage={{ noun: "organization", answeredBy: "client" }}
+      coverage={{ noun: "organization", total: total ?? undefined, cap: 200, answeredBy: "source" }}
       onRowOpen={(row) => onPick(row.organization_id)}
       rowActions={() => (
         <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -403,10 +416,14 @@ function OrgLeaderboard({
 function PendingBatchesTable({
   batches,
   loading,
+  refreshing,
+  total,
   onPick,
 }: {
   batches: BatchRow[];
   loading: boolean;
+  refreshing: boolean;
+  total: number | null;
   onPick: (batchRowId: string) => void;
 }) {
   const columns: MatrxColumnDef<BatchRow>[] = [
@@ -497,6 +514,7 @@ function PendingBatchesTable({
       columns={columns}
       getRowId={(row) => row.id}
       isLoading={loading}
+      isFetching={refreshing}
       density="condensed"
       stickyHeader
       pageSize={0}
@@ -517,7 +535,7 @@ function PendingBatchesTable({
       }}
       detail={{ enabled: false }}
       window={{ enabled: false }}
-      coverage={{ noun: "batch", answeredBy: "client" }}
+      coverage={{ noun: "batch", total: total ?? undefined, cap: 100, answeredBy: "source" }}
       onRowOpen={(row) => onPick(row.id)}
       rowActions={() => (
         <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -1293,7 +1311,7 @@ function BySourceKindTable({
       }}
       detail={{ enabled: false }}
       window={{ enabled: false }}
-      coverage={{ noun: "source kind", answeredBy: "client" }}
+      coverage={{ noun: "source kind", total: rows.length, answeredBy: "source" }}
       emptyState={{ title: "No ingest runs in this window" }}
     />
   );
@@ -1523,7 +1541,7 @@ function RecentRunsTable({
       }}
       detail={{ enabled: false }}
       window={{ enabled: false }}
-      coverage={{ noun: "run", answeredBy: "client" }}
+      coverage={{ noun: "run", cap: 50, answeredBy: "client" }}
       rowClassName={(row) => (isStuckRun(row) ? "bg-destructive/5" : undefined)}
       emptyState={{ title: "No runs recorded yet" }}
     />
@@ -1532,7 +1550,7 @@ function RecentRunsTable({
 
 const UNIT_ECON_DAY_OPTIONS = [7, 30, 90] as const;
 
-function UnitEconomicsSection() {
+function UnitEconomicsSection({ refreshTick, onRetry }: { refreshTick: number; onRetry: () => void }) {
   const [data, setData] = useState<UnitEconomicsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1554,7 +1572,7 @@ function UnitEconomicsSection() {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [days]);
+  }, [days, refreshTick]);
 
   const stuckRunning =
     data?.by_source_kind.reduce((sum, r) => sum + num(r.stuck_running), 0) ??
@@ -1597,11 +1615,7 @@ function UnitEconomicsSection() {
         </div>
       </div>
 
-      {error && (
-        <div className="mb-3 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+      {error && <ReadFailure message={error} onRetry={onRetry} />}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
         <KpiTile
@@ -1681,12 +1695,19 @@ function UnitEconomicsSection() {
 export function KgCostDashboard() {
   const [summary, setSummary] = useState<KgCostSummaryResponse | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
 
   const [orgs, setOrgs] = useState<OrgCostRow[]>([]);
   const [orgsLoading, setOrgsLoading] = useState(true);
+  const [orgsRefreshing, setOrgsRefreshing] = useState(false);
+  const [orgsTotal, setOrgsTotal] = useState<number | null>(null);
+  const [orgsError, setOrgsError] = useState<string | null>(null);
 
   const [batches, setBatches] = useState<BatchRow[]>([]);
   const [batchesLoading, setBatchesLoading] = useState(true);
+  const [batchesRefreshing, setBatchesRefreshing] = useState(false);
+  const [batchesTotal, setBatchesTotal] = useState<number | null>(null);
+  const [batchesError, setBatchesError] = useState<string | null>(null);
 
   const [openOrgId, setOpenOrgId] = useState<string | null>(null);
   const [openBatchId, setOpenBatchId] = useState<string | null>(null);
@@ -1698,9 +1719,10 @@ export function KgCostDashboard() {
   useEffect(() => {
     const controller = new AbortController();
     setSummaryLoading(true);
+    setSummaryError(null);
     getKgCostSummary({ signal: controller.signal })
       .then(setSummary)
-      .catch(() => {})
+      .catch((error: unknown) => { if (!controller.signal.aborted) setSummaryError(readFailureMessage(error, "cost summary")); })
       .finally(() => {
         if (!controller.signal.aborted) setSummaryLoading(false);
       });
@@ -1709,24 +1731,26 @@ export function KgCostDashboard() {
 
   useEffect(() => {
     const controller = new AbortController();
-    setOrgsLoading(true);
+    if (orgs.length === 0) setOrgsLoading(true); else setOrgsRefreshing(true);
+    setOrgsError(null);
     listOrgCosts({ limit: 200 }, { signal: controller.signal })
-      .then((r) => setOrgs(r.items))
-      .catch(() => {})
+      .then((r) => { setOrgs(r.items); setOrgsTotal(r.total); })
+      .catch((error: unknown) => { if (!controller.signal.aborted) setOrgsError(readFailureMessage(error, "organizations")); })
       .finally(() => {
-        if (!controller.signal.aborted) setOrgsLoading(false);
+        if (!controller.signal.aborted) { setOrgsLoading(false); setOrgsRefreshing(false); }
       });
     return () => controller.abort();
   }, [refreshTick]);
 
   useEffect(() => {
     const controller = new AbortController();
-    setBatchesLoading(true);
+    if (batches.length === 0) setBatchesLoading(true); else setBatchesRefreshing(true);
+    setBatchesError(null);
     listPendingBatches({ limit: 100 }, { signal: controller.signal })
-      .then((r) => setBatches(r.items))
-      .catch(() => {})
+      .then((r) => { setBatches(r.items); setBatchesTotal(r.total); })
+      .catch((error: unknown) => { if (!controller.signal.aborted) setBatchesError(readFailureMessage(error, "in-flight batches")); })
       .finally(() => {
-        if (!controller.signal.aborted) setBatchesLoading(false);
+        if (!controller.signal.aborted) { setBatchesLoading(false); setBatchesRefreshing(false); }
       });
     return () => controller.abort();
   }, [refreshTick]);
@@ -1776,21 +1800,28 @@ export function KgCostDashboard() {
       <ScrollArea className="flex-1">
         <div className="space-y-6 p-4">
           <KpiTiles summary={summary} loading={summaryLoading} />
+          {summaryError && <ReadFailure message={summaryError} onRetry={() => setRefreshTick((t) => t + 1)} />}
 
-          <UnitEconomicsSection />
+          <UnitEconomicsSection refreshTick={refreshTick} onRetry={() => setRefreshTick((t) => t + 1)} />
 
           <section>
+            {orgsError && <ReadFailure message={orgsError} onRetry={() => setRefreshTick((t) => t + 1)} />}
             <OrgLeaderboard
               orgs={orgs}
               loading={orgsLoading}
+              refreshing={orgsRefreshing}
+              total={orgsTotal}
               onPick={setOpenOrgId}
             />
           </section>
 
           <section>
+            {batchesError && <ReadFailure message={batchesError} onRetry={() => setRefreshTick((t) => t + 1)} />}
             <PendingBatchesTable
               batches={batches}
               loading={batchesLoading}
+              refreshing={batchesRefreshing}
+              total={batchesTotal}
               onPick={setOpenBatchId}
             />
           </section>
