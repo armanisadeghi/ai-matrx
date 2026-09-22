@@ -338,22 +338,25 @@ export function GoogleTasksImportPanel({
           </span>
           {/* 🚨 REFRESH NEVER SILENTLY RE-RUNS A REQUEST WE KNOW WILL FAIL
               (F-113): while the server is waiting to be told WHICH account to
-              read, the same read is the same refusal, and the choice is below. */}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="ml-auto h-7 gap-1 px-2 text-xs"
-            onClick={() => void load()}
-            disabled={loading || readFailure?.kind === "several_accounts"}
-            title={
-              readFailure?.kind === "several_accounts"
-                ? "Choose which Google account to read from first."
-                : undefined
-            }
-          >
-            <RefreshCw className="h-3 w-3" />
-            Refresh
-          </Button>
+              read, the same read is the same refusal, and the choice is below.
+              It used to stay on screen greyed out with the reason in a `title=`
+              tooltip — a reason a sighted person never sees and a touch user
+              cannot reach (check:hidden-alerts, 2026-09-22). The notice below
+              carries the same truth VISIBLY and owns both the account chooser
+              and its own Try again, so this control is ABSENT while that
+              notice is up rather than dead beside it. */}
+          {readFailure?.kind === "several_accounts" ? null : (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="ml-auto h-7 gap-1 px-2 text-xs"
+              onClick={() => void load()}
+              disabled={loading}
+            >
+              <RefreshCw className="h-3 w-3" />
+              Refresh
+            </Button>
+          )}
         </div>
         {/* 🚨 THE REQUEST'S OWN `project_id` IS NAMED HERE, NEVER LEFT UNSAID
             (VERIFY-B1-B2-R4 V8). The only opener on this build

@@ -11,7 +11,6 @@
     "features/agents/components/inputs/resources/AttachedDocumentChips.tsx :: title={links.error}",
     "features/agents/components/observational-memory/components/MemoryOverviewCard.tsx :: title={lastError?.error ?? \"A memory operation failed. The conversation continues normally.\"}",
     "features/agents/components/run-controls/ContextPoliciesTab.tsx :: title={jsonError}",
-    "features/block-ledger/columns.tsx :: title={row.error_sentence}",
     "features/code/views/sandboxes/SandboxDiagnosticsPanel.tsx :: title={node.error}",
     "features/dictionary/components/DictionaryManager.tsx :: title={assistantError ?? undefined}",
     "features/files/components/inline/MediaAttachmentThumbnail.tsx :: title={isError ? errorMessage : undefined}",
