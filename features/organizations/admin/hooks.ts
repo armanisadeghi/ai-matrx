@@ -8,7 +8,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useResolvedOrganization } from "../hooks";
 import type { Organization, OrgRole } from "../types";
 import { getOrgMember, getOrgOverview, listOrgMembers } from "./service";
-import type { OrgAdminMember, OrgAdminMemberDetail, OrgAdminOverview } from "./types";
+import type {
+  OrgAdminMember,
+  OrgAdminMemberDetail,
+  OrgAdminOverview,
+} from "./types";
 
 export interface OrgAdminGate {
   /** Resolved org UUID (slug params are resolved). */
@@ -73,7 +77,10 @@ export function useOrgRoster(orgId: string | null): OrgRosterState {
         setError(null);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load members");
+        if (!cancelled)
+          setError(
+            err instanceof Error ? err.message : "Failed to load members",
+          );
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -94,35 +101,58 @@ export interface OrgMemberDetailState {
 }
 
 /** Single member's detail (roster row + resource breakdown). */
-export function useOrgMemberDetail(orgId: string | null, userId: string | undefined): OrgMemberDetailState {
-  const [member, setMember] = useState<OrgAdminMemberDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export function useOrgMemberDetail(
+  orgId: string | null,
+  userId: string | undefined,
+): OrgMemberDetailState {
   const [tick, setTick] = useState(0);
+  const identityKey = orgId && userId ? `${orgId}:${userId}` : null;
+  const requestKey = identityKey ? `${identityKey}:${tick}` : null;
+  const [resolved, setResolved] = useState<{
+    identityKey: string;
+    requestKey: string;
+    member: OrgAdminMemberDetail | null;
+    error: string | null;
+  } | null>(null);
 
   const refresh = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
-    if (!orgId || !userId) return;
+    if (!orgId || !userId || !identityKey || !requestKey) return;
     let cancelled = false;
-    setLoading(true);
     getOrgMember(orgId, userId)
       .then((m) => {
         if (!cancelled) {
-          setMember(m);
-          setError(null);
+          setResolved({
+            identityKey,
+            requestKey,
+            member: m,
+            error: null,
+          });
         }
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load member");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setResolved((current) => ({
+            identityKey,
+            requestKey,
+            member:
+              current?.identityKey === identityKey ? current.member : null,
+            error: err instanceof Error ? err.message : "Failed to load member",
+          }));
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [orgId, userId, tick]);
+  }, [identityKey, orgId, requestKey, userId]);
 
-  return { member, loading, error, refresh };
+  const current = resolved?.identityKey === identityKey ? resolved : null;
+
+  return {
+    member: current?.member ?? null,
+    loading: requestKey !== null && current?.requestKey !== requestKey,
+    error: current?.error ?? null,
+    refresh,
+  };
 }
