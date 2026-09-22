@@ -113,7 +113,19 @@ let activeOrg: string | null = SWITCH_ON_ORG;
 // seams, and they are the ONLY things replaced here: the client handed back is
 // a REAL one carrying a REAL admin session, so every door call below is a real
 // call to the real store.
-jest.mock("@/utils/supabase/client", () => ({ createClient: () => authedClient }));
+// BOTH exports, and both lazily: `lib/supabase/authRetry.ts` (pulled in
+// transitively by the organizations service the page imports) reads the
+// pre-built `supabase` SINGLETON at module load — `auth: supabase.auth` — so a
+// mock offering only `createClient` made every test in this file die on
+// "Cannot read properties of undefined (reading 'auth')" before a single byte
+// of the page rendered. A getter, not a captured value, because this factory is
+// evaluated by jest before `beforeAll` assigns the signed-in client.
+jest.mock("@/utils/supabase/client", () => ({
+  createClient: () => authedClient,
+  get supabase() {
+    return authedClient;
+  },
+}));
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: unknown) => (selector as (s: unknown) => unknown)(undefined),
   useAppDispatch: () => () => undefined,
@@ -136,7 +148,17 @@ jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () =
     </div>
   ),
 }));
-jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn() }) }));
+// The table route reads `?dashboard=` and `?record=` off the URL, so the
+// navigation stub owes `useSearchParams` as well as `useRouter` — without it
+// the third test died on "useSearchParams is not a function" before the store
+// was ever asked anything. Empty params: this suite opens the table route with
+// no query, which is the plain "open this table" case it is asserting.
+const routeQuery = new URLSearchParams();
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), refresh: jest.fn(), back: jest.fn() }),
+  useSearchParams: () => routeQuery,
+  usePathname: () => "/data-v2",
+}));
 // Page chrome is the platform's and is proved by its own tests; it drags the
 // whole shell (and its own store reads) into jsdom for nothing here.
 jest.mock("@/features/shell/components/header/PageHeader", () => ({

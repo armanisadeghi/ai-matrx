@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import {
+  existsSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
@@ -65,26 +66,53 @@ describe("Pattern Patrol delivery policy", () => {
     );
   });
 
+  // 2026-09-20 (31a6de8f4d, "release: ship in under a minute…"): the release
+  // stopped verifying patrol delivery INSIDE `scripts/release.sh`. Everything
+  // that is not the push moved behind it, into ONE parallel runner that starts
+  // AFTER the tag is on origin and turns every failure into a finding for the
+  // fixer dispatcher — "a check NEVER blocks: the runner exits 0". So patrol
+  // delivery is fail-forward by CONSTRUCTION now, not by a `warn` the old
+  // pre-push block was careful to use, and this test reads its new home. The
+  // policy it guards is unchanged and asserted harder: the check still runs on
+  // every release, it can still fail on its own, and it can still never stop a
+  // release or rewrite history.
   it("keeps patrol findings loud while the release remains fail-forward", () => {
     const release = readFileSync("scripts/release.sh", "utf8");
-    expect(release).toContain(
-      'warn "Pattern Patrol delivery records need reconciliation at $head; release remains fail-forward."',
+    const runner = readFileSync("scripts/checks/run.mjs", "utf8");
+    const pkg = JSON.parse(readFileSync("package.json", "utf8")) as {
+      scripts: Record<string, string>;
+    };
+
+    // 1. THE CHECK STILL RUNS ON EVERY RELEASE — as a row in the one runner,
+    //    named, with the command that can actually fail.
+    expect(runner).toContain(
+      "Pattern Patrol delivery records authorize every patrol commit|pnpm --silent patrol:delivery:check",
     );
+    expect(pkg.scripts["patrol:delivery:check"]).toBe(
+      "tsx scripts/pattern-patrol/check-delivery.ts",
+    );
+    expect(existsSync("scripts/pattern-patrol/check-delivery.ts")).toBe(true);
+
+    // 2. IT RUNS AFTER THE PUSH, so a finding can never hold a release back.
+    const push = release.indexOf('git push "$REMOTE" "${RELEASE_SHA}:refs/heads/$BRANCH"');
+    const checks = release.indexOf('node "$SCRIPT_DIR/checks/run.mjs"');
+    expect(push).toBeGreaterThan(-1);
+    expect(checks).toBeGreaterThan(push);
+
+    // 3. AND THE RUNNER ITSELF NEVER BLOCKS: its only failure mode in the
+    //    release is "the runner crashed", which is stated as not affecting the
+    //    release.
+    expect(release).toContain(
+      "The check runner itself crashed — nothing was measured. The release is not affected.",
+    );
+
+    // 4. THE OLD BLOCKING SHAPES STAY GONE — neither the pre-push `fail` this
+    //    policy was written against, nor any patrol gate back inside the
+    //    release script, nor a history rewrite.
     expect(release).not.toContain(
       'fail "Pattern Patrol delivery records are missing independent exact-candidate certification.',
     );
-    const leaseClaim = release.indexOf("\n    acquire_delivery_lease\n");
-    const fastForward = release.indexOf('git merge --ff-only "$REMOTE/$BRANCH"');
-    const synchronizedAuthorization = release.indexOf(
-      "\nverify_patrol_delivery\n",
-      fastForward,
-    );
-    expect(leaseClaim).toBeGreaterThan(-1);
-    expect(fastForward).toBeGreaterThan(leaseClaim);
-    expect(synchronizedAuthorization).toBeGreaterThan(fastForward);
-    expect(release).not.toContain('verify_patrol_delivery "$BRANCH"');
-    expect(release).not.toContain('verify_patrol_delivery "$REMOTE/$BRANCH"');
-    expect(release).toContain("if $SHIP_MODE; then\n    verify_patrol_delivery");
+    expect(release).not.toMatch(/patrol/i);
     expect(release).not.toContain("git rebase ");
   });
 

@@ -142,26 +142,33 @@ describeLive('applyListChange — kind:"table", live main database', () => {
     if (!declared.ok) throw new Error(`tableDeclare refused: ${declared.error.message}`);
     tableId = declared.data;
 
-    const fieldKernel = await setupClient.fieldKernelId();
-    if (!fieldKernel.ok) throw new Error(`fieldKernelId refused: ${fieldKernel.error.message}`);
-    const field = await setupClient.recordWrite({
-      table_id: fieldKernel.data,
-      data: {
-        key: "title",
-        label: "Title",
-        type: "text",
-        multi: false,
-        dated: false,
-        rules: [],
-        source: "manual",
-        sensitivity: "public",
-        context_policy: "include",
-        depends_on: [],
-        applies_to_types: [],
-        entity_definition_id: tableId,
-      },
-    });
-    if (!field.ok) throw new Error(`declaring the "title" field refused: ${field.error.message}`);
+    // FLD-13: a COLUMN is declared through `custom.field_declare`, never written
+    // as a plain record into the field kernel — a record written that way keeps
+    // class "record" and is invisible to every reader that asks for a Field by
+    // class. This setup used `recordWrite` until the store started refusing it
+    // by name ("a column of a table is stored as a field, and this one says
+    // record"). `tableDeclare` above already asks for a `title` column, so the
+    // field is declared here only if the store did not make it — and either way
+    // the column's existence is PROVED through the store's own field reader
+    // before the test that depends on it runs.
+    const declaredFields = await setupClient.fields({ table_id: tableId });
+    if (!declaredFields.ok) throw new Error(`fields refused: ${declaredFields.error.message}`);
+    if (!declaredFields.data.some((f) => f.key === "title")) {
+      const field = await setupClient.fieldDeclare({
+        table_id: tableId,
+        spec: { label: "Title", key: "title", plain: "text" },
+      });
+      if (!field.ok) throw new Error(`declaring the "title" field refused: ${field.error.message}`);
+    }
+    const withTitle = await setupClient.fields({ table_id: tableId });
+    if (!withTitle.ok) throw new Error(`fields refused: ${withTitle.error.message}`);
+    if (!withTitle.data.some((f) => f.key === "title")) {
+      throw new Error(
+        `the probe table has no "title" column after declaring it — the store kept: ${withTitle.data
+          .map((f) => f.key)
+          .join(", ")}`,
+      );
+    }
 
     // `lib/supabase/authRetry.ts` (imported transitively via scopesService)
     // reads the pre-built `supabase` singleton, not just `createClient` — both

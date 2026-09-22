@@ -725,6 +725,12 @@ export const staticSettingsControlIndex = [
     "controlId": "settings-control-desktop-show-desktop-notifications"
   },
   {
+    "tabId": "communication.messaging",
+    "label": "Open your staff",
+    "description": "The same conversation your texts and calls already use.",
+    "controlId": "settings-control-your-staff-open-your-staff"
+  },
+  {
     "tabId": "learning.flashcards",
     "label": "Education level",
     "controlId": "settings-control-session-education-level"
@@ -769,6 +775,11 @@ export const staticSettingsControlIndex = [
     "label": "Target score",
     "description": "Mastery threshold before cards are retired from active rotation.",
     "controlId": "settings-control-difficulty-target-score"
+  },
+  {
+    "tabId": "organizations",
+    "label": "Switch organization when a link asks",
+    "controlId": "settings-control-links-from-notifications-and-emails-switch-organization-when-a-link-asks"
   },
   {
     "tabId": "admin.server",

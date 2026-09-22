@@ -16,10 +16,26 @@
 import type { PrintOutcome } from "@ai-matrx/print";
 import { toast } from "@/lib/toast";
 
+/**
+ * THE ONE SOURCE OF TRUTH for the words this fallback says. Every suite that
+ * pins this toast — the unit test here and the whole-path Chat print test in
+ * `features/conversation/utils/markdown-print.test.ts` — asserts against these
+ * two constants, so the sentence exists in exactly one place and a copy change
+ * cannot leave one surface saying something else.
+ *
+ * The title states what actually happened (a screen never lies) and the
+ * description names the remedy, in that order and in that many words: the copy
+ * sweep of 2026-09-20 shortened the description from a sentence that repeated
+ * the title back at the reader.
+ */
+export const PRINT_BLOCKED_TOAST = {
+  title: "Print window was blocked — downloaded the print file instead",
+  description: "Open the downloaded file to print it, or allow pop-ups for this site.",
+} as const;
+
 export function notifyPrintOutcome(outcome: void | PrintOutcome): void {
   if (outcome !== "downloaded") return;
-  toast.info("Print window was blocked — downloaded the print file instead", {
-    description:
-      "Open the downloaded file to print it, or allow pop-ups for this site.",
+  toast.info(PRINT_BLOCKED_TOAST.title, {
+    description: PRINT_BLOCKED_TOAST.description,
   });
 }

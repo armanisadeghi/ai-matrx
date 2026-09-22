@@ -36,6 +36,28 @@
  *                     a shipped feature. It is registered so the guard can tell
  *                     it apart from new campaign code, never to be switched.
  */
+/**
+ * THE KINDS, WRITTEN DOWN ONCE. The union below DERIVES from this array, so a
+ * lane that adds a word adds it here and every reader — the compiler, the
+ * guard, this module's own suite — learns it at the same moment.
+ *
+ * It is an array and not only a type because on 2026-09-20 lane ENTITY-FIELDS
+ * registered three rows with a word that was not in the union (`pnpm type-check`
+ * red on main with three TS2322 while `check:campaign-entry-points` was green),
+ * and on 2026-09-21 `unifiedDataCampaign.test.ts` was still checking each row
+ * against its own hand-copied list of three words — so a legitimately added kind
+ * (`door_gated`) failed a suite that had no way to know the union had grown.
+ * A hand-copied list of the kinds is exactly the drift this replaces.
+ */
+export const CAMPAIGN_ENTRY_POINT_KINDS = [
+    "runtime",
+    "tooling",
+    "preexisting",
+    "one_line",
+    "red_twin",
+    "door_gated",
+] as const;
+
 export type CampaignEntryPointKind =
     | "runtime"
     | "tooling"
@@ -95,6 +117,17 @@ export type CampaignEntryPointKind =
      * all.
      */
     | "door_gated";
+
+/**
+ * The array and the union are the same set — in BOTH directions, checked by the
+ * compiler. Either one gaining a word the other lacks is a type error here,
+ * which is the drift that shipped on 2026-09-20.
+ */
+const _kindsCoverTheUnion: readonly CampaignEntryPointKind[] = CAMPAIGN_ENTRY_POINT_KINDS;
+const _unionCoversTheKinds: (typeof CAMPAIGN_ENTRY_POINT_KINDS)[number] =
+    null as unknown as CampaignEntryPointKind;
+void _kindsCoverTheUnion;
+void _unionCoversTheKinds;
 
 export interface CampaignEntryPoint {
     /** Stable id, for the guard's failure message. */

@@ -391,8 +391,20 @@ describe("gmail_send: one ask identity per proposal VERSION", () => {
     // The superseded version records NOTHING and says so — and the plan the
     // replaced card was holding is gone with it, so no record context could be
     // built from it either.
+    //
+    // The words are the ones the 2026-09-20 toast copy sweep (4ec92d59c0) put
+    // on this surface; this test used to pin its predecessor ("…a draft this
+    // queue has since replaced… log it by hand"). Pinned in full rather than by
+    // phrase, because the two things the reader must be told are exactly these:
+    // the message DID go out, and the approval did NOT get recorded, with the
+    // manual remedy beside it.
     const said = warnings.join(" ");
-    expect(said).toContain("since replaced");
-    expect(said).toContain("by hand");
+    expect(said).toBe(
+      "Message sent, but approval was not recorded. Check Sent Mail and add it to the timeline manually.",
+    );
+    // A fallback that claims success, or that names no remedy, is the silent
+    // mis-record this resolver exists to prevent.
+    expect(said).toContain("not recorded");
+    expect(said).toMatch(/manually|by hand/);
   });
 });

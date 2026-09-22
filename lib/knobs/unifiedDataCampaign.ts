@@ -96,6 +96,7 @@ export const UNIFIED_DATA_STORE_DOOR = "unified_data_store_on";
 export const UNIFIED_DATA_CAMPAIGN_DEFAULT = false;
 
 export {
+    CAMPAIGN_ENTRY_POINT_KINDS,
     CAMPAIGN_MODULES,
     CAMPAIGN_STORE_TABLES,
     ENTRY_POINTS,

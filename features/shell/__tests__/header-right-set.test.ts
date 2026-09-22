@@ -80,11 +80,43 @@ describe("the header right set", () => {
     }
   });
 
-  it("keeps one copy of the profile menu — no canvas or glass-layer twins", () => {
+  it("keeps one IMPLEMENTATION of the profile menu — the canvas-pane twin is gone", () => {
     const css = read("styles/shell.css");
+    // The canvas pane's own avatar chrome was deleted with the header set
+    // (edbdcfe551) and has no stand-in: nothing draws a second avatar there.
     expect(css).not.toContain("canvas-shell-user-menu");
-    expect(css).not.toContain("elevated-shell-user-menu");
-    expect(css).not.toContain("dynamic-panel-avatar-cover");
     expect(css).toContain(".shell-user-block {");
+  });
+
+  it("lets the glass layer RE-POSITION that one menu, never re-implement it", () => {
+    // 🚨 WHY THIS CLAUSE REPLACED A BLACKLIST OF `elevated-shell-user-menu`.
+    //
+    // edbdcfe551 deleted the glass-layer stand-in with the canvas one, and this
+    // file forbade both class families by name. 59f6843894 ("avatar menu stays
+    // clickable above the canvas") then brought the glass layer BACK on
+    // purpose, with its own Playwright gate: the canvas sheet sits at z-10000
+    // over the top-right corner, so while it is open the menu there was visible
+    // and DEAD — a control that looks pressable and does nothing, which law 4
+    // forbids outright. Forbidding the class name would have meant deleting
+    // that fix, so the rule is stated where it actually bites: the stand-in
+    // must be the SAME menu moved, not a second one written.
+    const elevated = read("components/matrx/resizable/ElevatedShellUserMenu.tsx");
+    // It mounts the canonical trigger and panel components — no local copy.
+    for (const part of [
+      "header-right-menu/UserMenuTrigger",
+      "header-right-menu/UserMenuPanel",
+      "header-right-menu/GuestUserMenuTrigger",
+      "header-right-menu/GuestUserMenuPanel",
+    ]) {
+      expect(elevated).toContain(part);
+    }
+    // And it shares the ONE open/close checkbox rather than declaring a second
+    // id — two ids would be two menus that can be open at once, and every
+    // `htmlFor="shell-user-menu"` item would stop dismissing this one.
+    expect(elevated).toContain('htmlFor="shell-user-menu"');
+    expect(elevated).not.toContain('id="shell-user-menu"');
+    // One mount point, claimed and released by the covering surface — never one
+    // per panel (its own header says so).
+    expect(elevated).toContain("elevatedShellUserMenuStore");
   });
 });

@@ -78,6 +78,43 @@ if (typeof (globalThis as { TextEncoder?: unknown }).TextEncoder === "undefined"
 }
 
 /**
+ * ── The WHATWG streams ───────────────────────────────────────────────────────
+ *
+ * Same class as `TextEncoder` above, one layer out: Node has had
+ * `ReadableStream` / `WritableStream` / `TransformStream` as globals since 18,
+ * jsdom's test-local `globalThis` carries none of them, and a package that
+ * reaches for one at IMPORT time dies before a single test is collected.
+ * `@zip.js/zip.js` does exactly that (`new TransformStream()` while building
+ * its codec at module scope), so importing anything that can read a zip — the
+ * vault's CSV-archive import, and therefore `VaultWorkspace` — took a whole
+ * suite down with `ReferenceError: TransformStream is not defined`.
+ *
+ * `node:stream/web` ships the real WHATWG implementations. Nothing here is a
+ * stub: a test that pipes bytes through one gets the same semantics a browser
+ * gives it.
+ */
+if (
+  typeof (globalThis as { TransformStream?: unknown }).TransformStream ===
+  "undefined"
+) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const webStreams = require("node:stream/web") as {
+    ReadableStream: typeof globalThis.ReadableStream;
+    WritableStream: typeof globalThis.WritableStream;
+    TransformStream: typeof globalThis.TransformStream;
+  };
+  for (const name of [
+    "ReadableStream",
+    "WritableStream",
+    "TransformStream",
+  ] as const) {
+    if (typeof (globalThis as Record<string, unknown>)[name] === "undefined") {
+      (globalThis as Record<string, unknown>)[name] = webStreams[name];
+    }
+  }
+}
+
+/**
  * ── THE TOP-LAYER PSEUDO-CLASSES ARE ANSWERED HERE, NOT BY nwsapi ────────────
  *
  * MEASURED, not guessed: opening ONE Radix popover (`ColumnHeaderCell`'s

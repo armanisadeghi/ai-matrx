@@ -127,12 +127,27 @@ function queryValues(request: RecordedRequest, key: string): string[] {
   return request.url.searchParams.getAll(key);
 }
 
-function expectCapturedIdentity(request: RecordedRequest) {
+/**
+ * The identity every request carries, and the schema it is addressed to.
+ *
+ * 🚨 THE SCHEMA SPLIT IS THE CONTRACT NOW (2e7afc7118, "doors-only:
+ * platform.saved_view moves behind three doors, all 17 callers with it"). A
+ * browser may still READ `platform.saved_view` — that request is addressed to
+ * the `platform` profile — but it may no longer WRITE it: creating and updating
+ * a view go through `public.saved_view_save`, which is an ordinary RPC on the
+ * default `public` profile. A write that still reached the `platform` profile
+ * would be the closed door standing open.
+ */
+function expectCapturedIdentity(
+  request: RecordedRequest,
+  profile: "platform" | "public" = "platform",
+) {
   expect(request.headers.get("authorization")).toBe("Bearer captured-token-a");
   expect(
     request.headers.get("accept-profile") ??
-      request.headers.get("content-profile"),
-  ).toBe("platform");
+      request.headers.get("content-profile") ??
+      "public",
+  ).toBe(profile);
 }
 
 beforeEach(() => {
@@ -174,16 +189,17 @@ describe("table saved view transport contract", () => {
     expect(requests).toHaveLength(1);
     const [request] = requests;
     expect(request.method).toBe("POST");
-    expectCapturedIdentity(request);
+    // Through the door, on the public profile — never an INSERT into platform.
+    expect(request.url.pathname).toBe("/rest/v1/rpc/saved_view_save");
+    expectCapturedIdentity(request, "public");
     expect(request.body).toEqual(
       expect.objectContaining({
-        name: "My view",
-        organization_id: "org-a",
-        created_by: "actor-a",
-        surface_key: "matrx/table/sandboxes/active",
-        visibility: "personal",
-        definition_version: 1,
-        definition: {
+        p_name: "My view",
+        p_organization_id: "org-a",
+        p_surface_key: "matrx/table/sandboxes/active",
+        p_visibility: "personal",
+        p_definition_version: 1,
+        p_definition: {
           __kind: "matrx-table-view",
           version: 1,
           format: "canonical-table-snapshot",
@@ -191,6 +207,9 @@ describe("table saved view transport contract", () => {
         },
       }),
     );
+    // `created_by` is the door's business, stamped from the verified caller —
+    // a browser that could send it could file a view as somebody else.
+    expect(request.body).not.toHaveProperty("created_by");
   });
 
   it("reads every exact-count page and retains only the actor's personal table views", async () => {
@@ -251,7 +270,12 @@ describe("table saved view transport contract", () => {
   });
 
   it("does not overwrite when a version-guarded update finds a newer personal view", async () => {
-    responses.push({ body: [] }, { body: savedRow("view-a", 3) });
+    // The CAS lives in the door now: `saved_view_save` takes the expected
+    // version and answers NULL when the stored row has moved on. NULL is also
+    // what an absent row answers, deliberately — a door never tells a caller
+    // that somebody else's row exists — so ONE request settles it and there is
+    // no client-side re-read to lose the race in.
+    responses.push({ body: null });
 
     await expect(
       updatePersonalTableView(
@@ -263,32 +287,42 @@ describe("table saved view transport contract", () => {
       ),
     ).rejects.toThrow("changed elsewhere");
 
-    expect(requests).toHaveLength(2);
-    const [update, reread] = requests;
-    expect(update.method).toBe("PATCH");
-    expectCapturedIdentity(update);
-    expect(queryValues(update, "id")).toEqual(["eq.view-a"]);
-    expect(queryValues(update, "version")).toEqual(["eq.2"]);
-    expect(queryValues(update, "created_by")).toEqual(["eq.actor-a"]);
-    expect(queryValues(update, "surface_key")).toEqual([
-      "eq.matrx/table/sandboxes/active",
-    ]);
-    expect(queryValues(update, "visibility")).toEqual(["eq.personal"]);
-    expect(queryValues(update, "deleted_at")).toEqual(["is.null"]);
+    expect(requests).toHaveLength(1);
+    const [update] = requests;
+    expect(update.method).toBe("POST");
+    expect(update.url.pathname).toBe("/rest/v1/rpc/saved_view_save");
+    expectCapturedIdentity(update, "public");
     expect(update.body).toEqual(
-      expect.objectContaining({ version: 3, updated_by: "actor-a" }),
+      expect.objectContaining({
+        p_id: "view-a",
+        p_expected_version: 2,
+        // The door resolves the row by (id, SURFACE KEY) together, so a
+        // personal table view cannot be reached by id from another surface.
+        p_surface_key: "matrx/table/sandboxes/active",
+        p_definition: {
+          __kind: "matrx-table-view",
+          version: 1,
+          format: "canonical-table-snapshot",
+          snapshot: JSON.stringify(snapshot),
+        },
+      }),
     );
+  });
 
-    expect(reread.method).toBe("GET");
-    expectCapturedIdentity(reread);
-    expect(queryValues(reread, "id")).toEqual(["eq.view-a"]);
-    expect(queryValues(reread, "version")).toEqual([]);
-    expect(queryValues(reread, "created_by")).toEqual(["eq.actor-a"]);
-    expect(queryValues(reread, "surface_key")).toEqual([
-      "eq.matrx/table/sandboxes/active",
-    ]);
-    expect(queryValues(reread, "visibility")).toEqual(["eq.personal"]);
-    expect(queryValues(reread, "deleted_at")).toEqual(["is.null"]);
+  it("returns the door's own row when the version-guarded update lands", async () => {
+    responses.push({ body: savedRow("view-a", 3) });
+
+    await expect(
+      updatePersonalTableView(
+        actor,
+        tableId,
+        { id: "view-a", name: "View view-a", version: 2, snapshot },
+        snapshot,
+        new AbortController().signal,
+      ),
+    ).resolves.toMatchObject({ id: "view-a", version: 3 });
+
+    expect(requests).toHaveLength(1);
   });
 
   it("binds the supplied abort signal before the terminal create request", async () => {

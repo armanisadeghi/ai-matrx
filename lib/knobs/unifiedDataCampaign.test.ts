@@ -23,6 +23,7 @@ import { execSync } from "child_process";
 
 import { judge, scanFiles } from "../../scripts/lib/campaign-entry-points";
 import {
+    CAMPAIGN_ENTRY_POINT_KINDS,
     ENTRY_POINTS,
     UNIFIED_DATA_CAMPAIGN,
     UNIFIED_DATA_CAMPAIGN_DEFAULT,
@@ -142,9 +143,19 @@ describe("the unified record store's one switch", () => {
         expect(warn).toHaveBeenCalledTimes(1);
         const said = String(warn.mock.calls[0][0]);
         expect(said).toContain("unified_data_store_on");
-        expect(said).toMatch(/OFF/);
+        // 2026-09-21 (lane SHARE-OUT): the sentence deliberately stopped saying
+        // "OFF". A failed read is not a fact about the organization — `/data-v2`
+        // printed "this organization does not keep its data in the unified record
+        // store" about an organization whose switch was demonstrably true, through
+        // a transient PGRST002. `enabled()` still FAILS CLOSED (asserted on the
+        // line above: it resolved `false`); what changed is what it SAYS. So this
+        // asserts the stronger contract: the announcement names the door, says
+        // plainly that it is not an answer about the organization, carries the
+        // remedy and the cause — and never claims the store is off.
+        expect(said).toMatch(/NOT an answer about the organization/);
         expect(said).toMatch(/Remedy:/);
         expect(said).toContain("permission denied");
+        expect(said).not.toMatch(/\bOFF\b/);
     });
 
     it("is OFF and ANNOUNCES ITSELF when the read throws for any other reason", async () => {
@@ -163,7 +174,13 @@ describe("the unified record store's one switch", () => {
     it("REGISTER IS HONEST: every entry names a kind and a reason, and the file exists", () => {
         expect(ENTRY_POINTS.length).toBeGreaterThan(0);
         for (const entry of ENTRY_POINTS) {
-            expect(["runtime", "tooling", "preexisting"]).toContain(entry.kind);
+            // The register's OWN declared kinds, never a copy of them here: this
+            // list was hand-written as three words and went stale the moment the
+            // register legitimately grew `one_line`, `red_twin` and `door_gated`,
+            // each with its reason. `CAMPAIGN_ENTRY_POINT_KINDS` is the one
+            // source, and the register proves at compile time that it and the
+            // `CampaignEntryPointKind` union are the same set.
+            expect(CAMPAIGN_ENTRY_POINT_KINDS).toContain(entry.kind);
             expect(entry.why.trim().length).toBeGreaterThan(10);
             expect(fs.existsSync(path.resolve(REPO_ROOT, entry.file))).toBe(true);
         }
@@ -184,10 +201,44 @@ describe("the unified record store's one switch", () => {
         const importers = trackedImportersOfTheSwitch();
         const runtime = UNIFIED_DATA_CAMPAIGN.RUNTIME_ENTRY_POINTS.map((e) => e.file).sort();
         expect(runtime.length).toBeGreaterThan(0);
-        expect(importers.filter((f) => !runtime.includes(f))).toEqual([]);
+        // A RED TWIN IS NOT SHIPPED CODE, and this rule is about what ships.
+        // `*.red.test.ts(x)` is a suite that MUST fail: it wires the gate the
+        // OLD way on purpose so the real fix's clauses are provably
+        // load-bearing. `jest.config.ts` excludes the whole class from
+        // `pnpm test`, it serves no request, and it CANNOT call
+        // `enabled()`-as-a-runtime-entry without ceasing to be a twin of the
+        // broken world. The register already has the word for it (`red_twin`,
+        // added by lane APPROVAL-KNOB) and `scripts/lib/campaign-entry-points.ts`
+        // already honours it; this suite was the last reader still demanding
+        // every importer be `runtime`.
+        //
+        // THIS IS NOT AN EXEMPTION LIST: the whole `\.red\.test\.tsx?$` class is
+        // excluded from the RUNTIME rule, and each member must still be on the
+        // register under exactly the `red_twin` kind — which is a stricter
+        // requirement than the one it replaces, since a served file cannot take
+        // the word (the guard refuses `red_twin` on any file not named like one).
+        const redTwins = new Set(
+            ENTRY_POINTS.filter((e) => e.kind === "red_twin").map((e) => e.file),
+        );
+        const isRedTwin = (f: string) => /\.red\.test\.tsx?$/.test(f);
+        expect([...redTwins].filter((f) => !isRedTwin(f))).toEqual([]);
+        expect(importers.filter(isRedTwin).filter((f) => !redTwins.has(f))).toEqual([]);
+        expect(
+            importers.filter((f) => !isRedTwin(f)).filter((f) => !runtime.includes(f)),
+        ).toEqual([]);
         for (const file of runtime) {
             const src = fs.readFileSync(path.resolve(REPO_ROOT, file), "utf8");
-            expect(src).toMatch(/UNIFIED_DATA_CAMPAIGN\.enabled\s*\(/);
+            // EITHER READER COUNTS, because there are now two on purpose (lane
+            // SHARE-OUT, 21 September): `enabled()` is the boolean for a read
+            // path, and `check()` is the three-state answer every surface that
+            // SAYS something to a person must use — `enabled()` is implemented
+            // in terms of `check()`, so a file calling `check()` reads the same
+            // one switch and reads it MORE honestly. Four registered runtime
+            // entries (`/data-v2/[tableId]`, `/d/[renderId]`, the public capture
+            // sheet and the ramp) moved to `check()` in that change and this
+            // clause still demanded the boolean; it went unseen only because the
+            // importer census above this line failed first.
+            expect(src).toMatch(/UNIFIED_DATA_CAMPAIGN\.(enabled|check)\s*\(/);
         }
     });
 

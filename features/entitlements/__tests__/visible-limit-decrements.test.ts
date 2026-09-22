@@ -24,12 +24,73 @@ import reducer, {
 } from "../state/entitlementsSlice";
 import { makeSelectEntitlement } from "../state/selectors";
 import type { RootState } from "@/lib/redux/rootReducer";
+import { setStoreSingleton } from "@/lib/redux/store-singleton";
 import type { EntitlementConsumeResult, EntitlementSnapshot } from "../types";
 
 const rpc = jest.fn();
+/**
+ * The client answers TWO doors now, because the consume path resolves the
+ * workspace before it charges anything: `billing.entitlement_consume` through
+ * `.rpc`, and `platform.feature_knob` through `.from` — the bounded wait an
+ * action gives a bootstrap still in flight is a knob, never a constant, and
+ * `readAllRows` pages it with an exact count.
+ *
+ * `organizations.workspace action_wait_ms = 4000` is the live row, read from
+ * the database on 2026-09-21. A knob has NO code fallback by design: a missing
+ * row raises, so a fake that answers with an empty table would fail every
+ * clause here with `Missing feature knob` instead of exercising the contract.
+ */
+const KNOB_ROWS = [
+  { feature: "organizations.workspace", key: "action_wait_ms", value: 4000 },
+];
 jest.mock("@/utils/supabase/client", () => ({
-  createClient: () => ({ schema: () => ({ rpc: (...a: unknown[]) => rpc(...a) }) }),
+  createClient: () => ({
+    schema: (name: string) => ({
+      rpc: (...a: unknown[]) => rpc(...a),
+      from: () => {
+        const page = {
+          select: () => page,
+          order: () => page,
+          range: async () => ({
+            data: name === "platform" ? KNOB_ROWS : [],
+            error: null,
+            count: name === "platform" ? KNOB_ROWS.length : 0,
+          }),
+        };
+        return page;
+      },
+    }),
+  }),
 }));
+
+/**
+ * 🚨 A CONSUME NAMES THE ORGANIZATION IT CHARGES (DD-208).
+ *
+ * `consumeEntitlement` no longer files a ledger row against whatever
+ * organization the database would have guessed: it resolves the SELECTED one
+ * first (`awaitEffectiveOrganizationId`) and passes it as `p_org`, and when
+ * there is none it skips the write and screams rather than billing a workspace
+ * nobody chose. That resolution reads the live store through the canonical
+ * singleton, so a suite that stands nobody in never reaches the RPC at all —
+ * which is why this file stands a real one in.
+ */
+const ORG = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
+
+function signedInto(organizationId: string | null): void {
+  setStoreSingleton({
+    getState: () => ({
+      appContext: {
+        organization_id: organizationId,
+        // The bootstrap FINISHED. Without this the no-organization case is
+        // "still booting", and the resolver would wait the workspace knob out
+        // instead of answering — the two states this contract keeps apart.
+        orgBootstrapResolved: true,
+        orgBootstrapFailure: null,
+      },
+    }),
+    subscribe: () => () => undefined,
+  } as never);
+}
 
 // An UN-ENFORCED capability on purpose — the case a short-circuit would
 // break. Was education.generate_cards until the 2026-08-22 Q2 flip enforced
@@ -41,6 +102,7 @@ const asState = (e: unknown) => ({ entitlements: e }) as unknown as RootState;
 
 beforeEach(() => {
   rpc.mockReset();
+  signedInto(ORG);
 });
 
 describe("a visible limit must decrement", () => {
@@ -80,7 +142,9 @@ describe("a visible limit must decrement", () => {
     expect(rpc).toHaveBeenCalledTimes(1);
     expect(rpc).toHaveBeenCalledWith(
       "entitlement_consume",
-      expect.objectContaining({ p_capability: CAP, p_quantity: 1 }),
+      // …and it names the organization it is charging, rather than leaving the
+      // database to substitute one (DD-208).
+      expect.objectContaining({ p_capability: CAP, p_quantity: 1, p_org: ORG }),
     );
     expect(result?.consumed).toBe(true);
     expect(result?.remaining).toBe(7);
@@ -189,6 +253,16 @@ describe("a visible limit must decrement", () => {
     expect(verdict.period).toBe("rolling_5h");
     expect(verdict.remaining).toBe(1);
     expect(verdict.limit).toBe(5);
+  });
+
+  it("with no organization selected, nothing is charged to anybody", async () => {
+    // The other half of DD-208: an un-billable action is skipped loudly, never
+    // filed against a workspace the person did not choose.
+    signedInto(null);
+    rpc.mockResolvedValue({ data: {}, error: null });
+
+    await expect(consumeEntitlement(CAP)).resolves.toBeNull();
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("a failed consume returns null so the caller re-hydrates rather than lying", () => {

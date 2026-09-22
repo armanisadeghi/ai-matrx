@@ -1,4 +1,5 @@
 import { toast } from "@/lib/toast";
+import { PRINT_BLOCKED_TOAST } from "@/lib/print/print-outcome-toast";
 import { printMarkdownContent } from "./markdown-print";
 
 jest.mock("@/lib/toast", () => ({
@@ -43,13 +44,12 @@ describe("printMarkdownContent — blocked Chat popup", () => {
         expect(clickSpy).toHaveBeenCalledTimes(1);
         expect(downloadName).toBe("message.html");
         expect(toast.info).toHaveBeenCalledTimes(1);
-        expect(toast.info).toHaveBeenCalledWith(
-            "Print window was blocked — downloaded the print file instead",
-            {
-                description:
-                    "Your browser blocked the pop-up, so the printable page was saved as an .html download. Open it and print from there, or allow pop-ups for this site.",
-            },
-        );
+        // The words themselves are pinned once, in
+        // `lib/print/print-outcome-toast.test.ts`; what this whole-path test
+        // proves is that the Chat print path really raises THAT toast.
+        expect(toast.info).toHaveBeenCalledWith(PRINT_BLOCKED_TOAST.title, {
+            description: PRINT_BLOCKED_TOAST.description,
+        });
 
         jest.runAllTimers();
         expect(revokeObjectURL).toHaveBeenCalledWith("blob:chat-print-test");
