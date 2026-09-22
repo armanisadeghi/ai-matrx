@@ -21,7 +21,8 @@ export PGPASSWORD=$(grep -m1 '^SUPABASE_MATRIX_PASSWORD=' $ENVF | cut -d= -f2-)
 export PGHOST=$(grep -m1 '^SUPABASE_MATRIX_HOST=' $ENVF | cut -d= -f2-)
 export PGPORT=$(grep -m1 '^SUPABASE_MATRIX_PORT=' $ENVF | cut -d= -f2-)
 export PGDATABASE=$(grep -m1 '^SUPABASE_MATRIX_DATABASE_NAME=' $ENVF | cut -d= -f2-)
-PSQL="/opt/homebrew/opt/libpq/bin/psql -v ON_ERROR_STOP=1 -Atc"
+# zsh does not word-split an unquoted variable, so the runner is a function.
+q() { /opt/homebrew/opt/libpq/bin/psql -v ON_ERROR_STOP=1 -Atc "$1"; }
 
 ORG=6069a466-1445-42df-a64e-cf37ecdc1b99          # Rincon Plumbing Co
 FORM=640dc5c3-4f2f-4df6-afad-a086b0c3f92b         # "New Job Request"
@@ -39,14 +40,14 @@ print(' '.join(html.unescape(re.sub(r'<[^>]+>',' ',m.group(0) if m else '')).spl
 code() { curl -s -o /dev/null -w '%{http_code}' "$BASE/f/$FORM" --max-time 90; }
 
 echo "── 1. the publish door, as admin@admin.com, while the store is off"
-$PSQL "
+q "
 set local role authenticated;
 select set_config('request.jwt.claims', json_build_object('sub','$ADMIN','role','authenticated')::text, true);
 do \$\$ begin
   perform custom.anon_publish('$ORG'::uuid, '$FORM'::uuid, true);
   raise exception 'PUBLISH WAS NOT REFUSED — the store is off and the door let it through';
 exception when sqlstate '42501' then
-  raise notice 'REFUSED 42501: %', sqlerrm;
+  raise info 'REFUSED 42501: %', sqlerrm;
 end \$\$;" 2>&1 | grep -E "REFUSED|PUBLISH WAS NOT"
 
 echo "── 2. the public link, store off"
@@ -54,13 +55,13 @@ echo "   HTTP $(code)"
 echo "   says: $(page)"
 
 echo "── 3. the switch turned ON through the settings door"
-$PSQL "select platform.unified_data_store_set('$ORG'::uuid, true, '$ADMIN'::uuid, 'STORE-OFF proof') is not null" >/dev/null
-echo "   store_is_open: $($PSQL "select custom.store_is_open('$ORG'::uuid)")"
+q "select platform.unified_data_store_set('$ORG'::uuid, true, '$ADMIN'::uuid, 'STORE-OFF proof') is not null" >/dev/null
+echo "   store_is_open: $(q "select custom.store_is_open('$ORG'::uuid)")"
 echo "   HTTP $(code)"
 echo "   says: $(page)"
 
 echo "── 4. the switch put back OFF, exactly as it was found"
-$PSQL "select platform.unified_data_store_set('$ORG'::uuid, false, '$ADMIN'::uuid, 'STORE-OFF proof — restored') is not null" >/dev/null
-echo "   store_is_open: $($PSQL "select custom.store_is_open('$ORG'::uuid)")"
+q "select platform.unified_data_store_set('$ORG'::uuid, false, '$ADMIN'::uuid, 'STORE-OFF proof — restored') is not null" >/dev/null
+echo "   store_is_open: $(q "select custom.store_is_open('$ORG'::uuid)")"
 echo "   HTTP $(code)"
 echo "   says: $(page)"
