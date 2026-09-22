@@ -53,39 +53,29 @@ values (:HQ,  :ORG, '11111111-0000-4000-8000-000000000004', 'record',
        (:REC, :ORG, '11111111-0000-4000-8000-000000000004', 'record',
         jsonb_build_object('name', 'Roadside Call #4471 - Alternator Replacement', 'parent_id', :HQ), :ADMIN);
 
--- ══════ BLOCK 1 — the guard that cannot read what it guards refuses every share
-alter function iam._per_table_grant_guard() security invoker;
-do $t$
-declare v_n int;
-begin
-  select count(*) into v_n from iam.grant_path_blanket_refusals()
-   where guard_function like 'iam._per_table_grant_guard%';
-  if v_n <> 1 then
-    raise exception 'BLOCK 1 NOT RED — the census does not name the guard it just broke.';
-  end if;
-  raise notice 'BLOCK 1 IS RED — the census names iam._per_table_grant_guard reading custom.record.';
-end $t$;
-select set_config('request.jwt.claims', '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
-set local role authenticated;
-do $t$
-declare v_msg text;
-begin
-  begin
-    insert into iam.permissions (resource_type, resource_id, granted_to_user_id, permission_level, created_by)
-    values ('record', '5bd50000-0000-4a00-8a00-000000000301',
-            '4060701e-706a-4c76-b3ca-0bbc69fa5a14', 'viewer',
-            '87a6e699-3622-4869-8843-d0867456c0dd');
-    raise exception 'BLOCK 1 NOT RED — the share landed with the guard back as SECURITY INVOKER.';
-  exception when insufficient_privilege then
-    get stacked diagnostics v_msg = message_text;
-    if v_msg not like '%permission denied for table record%' then
-      raise exception 'BLOCK 1 NOT RED — refused, but not by the privilege error: %', v_msg;
-    end if;
-    raise notice 'BLOCK 1 IS RED — a real person''s share dies with "%", exactly as it did before this lane.', v_msg;
-  end;
-end $t$;
-reset role;
-alter function iam._per_table_grant_guard() security definer;
+-- ══════ BLOCK 1 — RETIRED, SUITES-TIDY 2026-09-22 ═══════════════════════════════════════
+-- WHAT IT ASSERTED. Flip `iam._per_table_grant_guard()` back to SECURITY INVOKER and (a) the
+-- census `iam.grant_path_blanket_refusals()` names it, and (b) a real person's share into
+-- iam.permissions then dies with `permission denied for table record` — the guard refusing
+-- every write it was meant to judge, including the ones its rule allows.
+--
+-- WHY IT CANNOT GO RED ANY MORE. The census is deliberately scoped to a trigger on a table a
+-- CLIENT MAY WRITE; that is the whole class, because a guard on a table no client can write
+-- cannot refuse a client's write. DOORS-ONLY-5 dropped iam.permissions' "Users can … permissions
+-- for own resources" trio by name and `authenticated` now holds SELECT on that table and
+-- nothing else. Measured on the dev clone (production's own data) 2026-09-22: with the guard
+-- flipped to SECURITY INVOKER the census still answers ZERO rows, and clause (b)'s INSERT is
+-- refused by the missing privilege long before the guard is reached.
+--
+-- So the defect this block restores is not merely fixed — the door it came through is gone.
+-- A red clause with no way to go red is not a guard. What covers the class now:
+--   · iam.grant_path_blanket_refusals() itself, asserted at zero by share_green.sql PART 1
+--   · doorsonly2_associations_door_green.sql clause 1 and levelfix_green/share_green, which
+--     assert that the client role holds no write privilege on these tables at all
+-- Fixing lane: DOORS-ONLY-5 (see common-docs .../handoff-2026-09-20/PROGRESS-DOORS-ONLY-5.md
+-- § "12 write-only lanes dropped").
+--
+-- Blocks 2 to 5 below are untouched and still go red.
 
 -- ══════ BLOCK 2 — the second ladder: only `created_by` may share, so `admin` cannot
 select public.share_resource_with_user('record', :REC, :DANA, 'admin') \gset seed_
@@ -189,7 +179,8 @@ begin
   end;
 end $t$;
 
-do $t$ begin raise notice '5 of 5 blocks are RED'; end $t$;
+-- SUITES-TIDY 2026-09-22: 4, not 5 — BLOCK 1 is retired above and asserts nothing.
+do $t$ begin raise notice '4 of 4 blocks are RED (BLOCK 1 retired: its class no longer has a door)'; end $t$;
 rollback;
 
 -- ════════════════════════════════════════════════ THE ROLLBACK, verified out loud

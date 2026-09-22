@@ -11,8 +11,15 @@
 -- tenant and the display name of another account, one id at a time, and
 -- `platform.relation_history` reads the version history of an association nobody decided about.
 --
--- IT MUST FAIL once the fix is applied. Run it BEFORE the fix, or after running
--- migrations/inverse/argsruled_the_far_end_of_a_relation_is_decided_too_down.sql.
+-- SUITES-TIDY 2026-09-22 — IT NOW RUNS ITS OWN INVERSE, like every other red twin here.
+-- It used to say "run it BEFORE the fix, or after running the inverse by hand", which meant
+-- that in any unattended sweep it could only ever FAIL: the fix IS applied, so
+-- `platform.relation_label` correctly answers "A record you have not been given access to" and
+-- clause 1 reported "the leak is already closed, run the green suite instead". A red twin that
+-- needs a human to prepare the database first is not a guard, it is a note. It now runs the
+-- REAL BYTES of its own inverse inside the same rolled-back transaction — the pattern
+-- workdoors_red.sql and reldisp_red.sql already use — so it proves the leak on the old bodies
+-- and leaves the live ones untouched.
 --
 -- RUN IT:  binlocal/p.sh -f scripts/campaign-tests/argsruled_red.sql
 
@@ -31,6 +38,12 @@
 \endif
 
 begin;
+
+-- ══ PUT THE OLD BYTES BACK, FOR REAL — and only inside this transaction ═══════════════════
+-- The verbatim inverse of migrations/campaign/argsruled_the_far_end_of_a_relation_is_decided_too.sql,
+-- not a paraphrase of it. The ROLLBACK at the foot of this file is what restores the shipped
+-- bodies; the block after it proves they are back rather than assuming it.
+\i migrations/inverse/argsruled_the_far_end_of_a_relation_is_decided_too_down.sql
 
 do $t$
 declare
@@ -74,7 +87,22 @@ begin
   end if;
   raise notice '2 — RED: relation_label handed her another account''s display name: %', v_out;
 
-  raise notice 'RED SUITE PASSED — which means the defect is live.';
+  raise notice 'RED SUITE PASSED — on the old bytes the leak is live. Rolling back.';
 end $t$;
 
 rollback;
+
+-- ══ AND THE SHIPPED BYTES ARE BACK, OUTSIDE THE TRANSACTION ══════════════════════════════
+do $t$
+declare
+  v_out text;
+begin
+  perform set_config('request.jwt.claims', '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}', true);
+  perform set_config('role', 'authenticated', true);
+  v_out := platform.relation_label('6069a466-1445-42df-a64e-cf37ecdc1b99', 'organization',
+                                   '235a6add-e8b5-43f9-883e-9dd0389c1759');
+  if v_out = 'Calder Approvals' then
+    raise exception 'ROLLBACK DID NOT RESTORE — the door still hands Dana another tenant''s name. The old bytes are live on this database.';
+  end if;
+  raise notice 'ROLLBACK VERIFIED — the shipped bodies are back: the door answers "%" for a tenant she is not in.', v_out;
+end $t$;
