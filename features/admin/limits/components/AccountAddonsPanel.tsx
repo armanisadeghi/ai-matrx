@@ -613,8 +613,13 @@ export function AccountAddonsPanel() {
     [addons, capabilityByName, now, orgById, planContextFor],
   );
   const processedAddonRows = useMemo(() => {
-    const visibleIds = new Set(processedAddonIds);
-    return addonRows.filter((row) => visibleIds.has(row.addon.id));
+    const rowsById = new Map(
+      addonRows.map((row) => [row.addon.id, row] as const),
+    );
+    return processedAddonIds.flatMap((id) => {
+      const row = rowsById.get(id);
+      return row ? [row] : [];
+    });
   }, [addonRows, processedAddonIds]);
 
   if (loading) {
