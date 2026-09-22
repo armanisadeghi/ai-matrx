@@ -4,6 +4,7 @@ import type { ResearchProjectTableRow } from "./ProjectsOverview";
 import {
   RESEARCH_PROJECT_COLUMNS,
   RESEARCH_PROJECTS_COVERAGE,
+  loadResearchProjectSnapshot,
   researchProjectCreatedAt,
   researchProjectOverrideCount,
 } from "./ProjectsOverview";
@@ -63,5 +64,19 @@ describe("ProjectsOverview canonical table contract", () => {
     expect(researchProjectOverrideCount(null)).toBe(0);
     expect(researchProjectOverrideCount(row.agent_config)).toBe(1);
     expect(researchProjectCreatedAt(null)).toBe("Unknown");
+  });
+
+  it("does not publish a partial refresh when project-link loading fails", async () => {
+    const fetchProjectLinks = jest.fn().mockRejectedValue(new Error("offline"));
+
+    await expect(
+      loadResearchProjectSnapshot({
+        fetchTopics: async () => [row],
+        fetchTemplates: async () => [],
+        fetchProjectLinks,
+      }),
+    ).rejects.toThrow("offline");
+
+    expect(fetchProjectLinks).toHaveBeenCalledWith(["topic-1"]);
   });
 });

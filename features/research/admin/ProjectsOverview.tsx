@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import Link from "next/link";
 
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -23,7 +23,7 @@ import type { ResearchTemplate } from "../types";
 import { fetchResearchTopics, fetchTemplates } from "./service";
 import { AGENT_CONFIG_KEYS } from "./types";
 
-interface ResearchTopicRow {
+export interface ResearchTopicRow {
   id: string;
   name: string;
   status: string;
@@ -37,6 +37,31 @@ export interface ResearchProjectTableRow extends ResearchTopicRow {
   project_id: string | null;
   template_name: string | null;
   agent_override_count: number;
+}
+
+export async function loadResearchProjectSnapshot(
+  reads: {
+    fetchTopics: typeof fetchResearchTopics;
+    fetchTemplates: typeof fetchTemplates;
+    fetchProjectLinks: typeof getTopicProjectLinks;
+  } = {
+    fetchTopics: fetchResearchTopics,
+    fetchTemplates,
+    fetchProjectLinks: getTopicProjectLinks,
+  },
+): Promise<{
+  configs: ResearchTopicRow[];
+  templates: ResearchTemplate[];
+  projectLinks: Record<string, string>;
+}> {
+  const [configs, templates] = await Promise.all([
+    reads.fetchTopics(),
+    reads.fetchTemplates(),
+  ]);
+  const projectLinks = await reads.fetchProjectLinks(
+    configs.map((row) => row.id),
+  );
+  return { configs, templates, projectLinks };
 }
 
 /** This endpoint intentionally returns the latest 50 topics, without a total. */
@@ -134,15 +159,11 @@ export const RESEARCH_PROJECT_COLUMNS: MatrxColumnDef<ResearchProjectTableRow>[]
       filter: "text",
       width: 220,
       cell: (row) =>
-        row.template_name ? (
-          <span className="block truncate text-xs" title={row.template_name}>
-            {row.template_name}
-          </span>
-        ) : row.template_id ? (
-          <MatrxUuidCell
-            value={row.template_id}
+        row.template_id ? (
+          <EntityRef
             token="research_template"
-            label="Template"
+            id={row.template_id}
+            name={row.template_name}
           />
         ) : (
           <span className="text-xs text-muted-foreground">None</span>
@@ -192,34 +213,45 @@ export function ProjectsOverview() {
   const [templates, setTemplates] = useState<ResearchTemplate[]>([]);
   const [projectLinks, setProjectLinks] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const loadData = useCallback(async () => {
+  const loadData = async () => {
+    const retainsRows = configs.length > 0;
     try {
-      setLoading(true);
-      const [configsData, templatesData] = await Promise.all([
-        fetchResearchTopics(),
-        fetchTemplates(),
-      ]);
-      setConfigs(configsData);
-      setTemplates(templatesData);
-      setProjectLinks(
-        await getTopicProjectLinks(configsData.map((row) => row.id)),
-      );
+      if (retainsRows) setIsRefreshing(true);
+      else setLoading(true);
+      setLoadError(null);
+      const snapshot = await loadResearchProjectSnapshot();
+      setConfigs(snapshot.configs);
+      setTemplates(snapshot.templates);
+      setProjectLinks(snapshot.projectLinks);
     } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Could not load research projects.";
+      setLoadError(message);
       toast({
         title: "Error",
-        description: (error as Error).message,
+        description: message,
         variant: "destructive",
       });
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
-  }, [toast]);
+  };
+
+  const startLoad = useEffectEvent(() => {
+    void loadData();
+  });
 
   useEffect(() => {
-    void Promise.resolve().then(loadData);
-  }, [loadData]);
+    const timer = window.setTimeout(startLoad, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const rows: ResearchProjectTableRow[] = configs.map((config) => ({
     ...config,
@@ -242,24 +274,49 @@ export function ProjectsOverview() {
         })
       }
     >
-      <div className="h-full">
-        <MatrxDataTable<ResearchProjectTableRow>
-          tableId="research/admin/projects"
-          urlState={{ id: "research-admin-projects" }}
-          data={rows}
-          columns={RESEARCH_PROJECT_COLUMNS}
-          getRowId={(row) => row.id}
-          isLoading={loading}
-          toolbar={{
-            title: "Active Research Projects",
-            refresh: { onRefresh: () => void loadData() },
-          }}
-          copy={false}
-          detail={{ enabled: false }}
-          window={{ enabled: false }}
-          coverage={RESEARCH_PROJECTS_COVERAGE}
-          emptyState={{ title: "No research projects found." }}
-        />
+      <div
+        className="flex h-full min-h-0 flex-col"
+        aria-busy={loading || isRefreshing}
+      >
+        {loadError && (
+          <div
+            role="alert"
+            className="mb-2 flex shrink-0 items-center gap-2 text-sm text-red-600 dark:text-red-400"
+          >
+            Could not refresh research projects: {loadError}
+            <button
+              type="button"
+              className="underline"
+              onClick={() => void loadData()}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        <div className="min-h-0 flex-1">
+          <MatrxDataTable<ResearchProjectTableRow>
+            tableId="research/admin/projects"
+            urlState={{ id: "research-admin-projects" }}
+            data={rows}
+            columns={RESEARCH_PROJECT_COLUMNS}
+            getRowId={(row) => row.id}
+            isLoading={loading}
+            isFetching={isRefreshing}
+            toolbar={{
+              title: "Active Research Projects",
+              refresh: { onRefresh: () => loadData() },
+            }}
+            copy={false}
+            detail={{ enabled: false }}
+            window={{ enabled: false }}
+            coverage={RESEARCH_PROJECTS_COVERAGE}
+            emptyState={{
+              title: loadError
+                ? "Could not load research projects."
+                : "No research projects found.",
+            }}
+          />
+        </div>
       </div>
     </SurfaceRuntimeProvider>
   );
