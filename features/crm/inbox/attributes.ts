@@ -37,6 +37,7 @@
 // bag can never be clobbered.
 
 import { isJsonObject } from "@/types/json";
+import type { InteractionRow } from "../types";
 
 /**
  * The classifier's verdict on an inbound reply. Closed set, mirrored from the
@@ -84,6 +85,25 @@ function readString(source: Record<string, unknown> | null, key: string): string
   if (!source) return null;
   const value = source[key];
   return typeof value === "string" && value.trim() ? value : null;
+}
+
+/**
+ * Whether an interaction contains data obtained from Gmail.
+ *
+ * New rows carry the canonical `provider` column. Rows created before that
+ * source stamp are still identifiable by the Gmail ingester's one
+ * `attributes.outreach_inbound` block. Direction is part of the predicate so
+ * an outbound message merely delivered through Google Workspace remains
+ * ordinary organization-authored CRM content.
+ */
+export function isGmailDerivedInteraction(
+  interaction: Pick<InteractionRow, "attributes" | "direction" | "provider">,
+): boolean {
+  if (interaction.direction !== "inbound") return false;
+  return (
+    interaction.provider === "google_workspace" ||
+    readObject(interaction.attributes, "outreach_inbound") !== null
+  );
 }
 
 /** The classifier block, whichever of the two accepted paths it arrived on. */

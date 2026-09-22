@@ -238,5 +238,27 @@ export function createCrmChaseboxScope(values: {
   };
   draft_approved?: boolean;
 }): SurfaceScopePayload {
-  return values as SurfaceScopePayload;
+  const {
+    draft_subject,
+    draft_body,
+    draft_personalization,
+    draft_reply,
+    draft_approved,
+    ...base
+  } = values;
+  const safeScope: Record<string, unknown> = {
+    ...base,
+    // A fresh-reply item exists only because Gmail content was read. Other
+    // queues remain available to the model unchanged.
+    visible_items: values.visible_items.filter(
+      (item) => item.queue !== "fresh_replies",
+    ),
+  };
+  if (!draft_reply) {
+    safeScope.draft_subject = draft_subject;
+    safeScope.draft_body = draft_body;
+    safeScope.draft_personalization = draft_personalization;
+    safeScope.draft_approved = draft_approved;
+  }
+  return safeScope as SurfaceScopePayload;
 }

@@ -40,6 +40,56 @@ import { MarkdownTableScrollArea } from "@/components/mardown-display/tables/Mar
 
 const INLINE_VARIABLE_RE = /\{\{([a-zA-Z_][a-zA-Z0-9_.]*)\}\}/g;
 
+/** Private-use sentinel for a standalone `===` line. The `p` renderer swaps a
+ *  paragraph whose only child is this token for a thick blue rule. */
+const THICK_HR_SENTINEL = "\uE000THICK_HR\uE000";
+
+/**
+ * Turn standalone `===` lines into their own sentinel paragraphs, leaving
+ * fenced code untouched so a sample of `===` stays `===`.
+ *
+ * A blank line is forced on both sides. The one before stops CommonMark from
+ * reading the previous line as a setext heading. The one after is required
+ * because remark-breaks turns a single newline into a `<br>` inside the same
+ * paragraph, and the rule only replaces a paragraph whose only child is the
+ * sentinel. Without that break the token is painted as text.
+ */
+function isolateThickHorizontalRules(source: string): string {
+  const lines = source.split("\n");
+  let fenceMarker: string | null = null;
+  const out: string[] = [];
+  for (const line of lines) {
+    const opened = /^[ \t]{0,3}(`{3,}|~{3,})/.exec(line);
+    if (fenceMarker === null && opened?.[1]) {
+      fenceMarker = opened[1];
+      out.push(line);
+      continue;
+    }
+    if (fenceMarker !== null) {
+      const trimmed = line.trim();
+      if (
+        trimmed.startsWith(fenceMarker) &&
+        trimmed.slice(fenceMarker.length).trim() === ""
+      ) {
+        fenceMarker = null;
+      }
+      out.push(line);
+      continue;
+    }
+    out.push(/^[ \t]*={3,}[ \t]*$/.test(line) ? THICK_HR_SENTINEL : line);
+  }
+  return out
+    .join("\n")
+    .replace(
+      new RegExp(`([^\\n])\\n+(${THICK_HR_SENTINEL})`, "g"),
+      "$1\n\n$2",
+    )
+    .replace(
+      new RegExp(`(${THICK_HR_SENTINEL})\\n+([^\\n])`, "g"),
+      "$1\n\n$2",
+    );
+}
+
 /**
  * Splits a plain string into an array mixing literal spans and
  * MatrxVariableInline elements. Used for inline code and fenced-code paths
@@ -341,23 +391,8 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
     // This prevents paragraph text from being interpreted as h2 headings
     processed = processed.replace(/([^\n])\n---/g, "$1\n\n---");
 
-    // Same guard for `===` — without a preceding blank line, CommonMark treats
-    // the line above as an H1 setext heading. We use standalone `={3,}` lines
-    // as a thick blue thematic break (see the `p` renderer below), so force a
-    // blank line before any pure-equals line to keep its meaning paragraph-level.
-    processed = processed.replace(
-      /([^\n])\n(={3,})[ \t]*(?=\n|$)/g,
-      "$1\n\n$2",
-    );
-
-    // Convert standalone `===` (3+ equals on their own line) into a sentinel
-    // paragraph. The `p` renderer below detects this exact token and emits a
-    // thicker blue <hr>. We use a private-use unicode marker so it cannot
-    // collide with any plausible user content.
-    processed = processed.replace(
-      /^[ \t]*={3,}[ \t]*$/gm,
-      "\uE000THICK_HR\uE000",
-    );
+    // Standalone `===` → thick blue rule. See isolateThickHorizontalRules.
+    processed = isolateThickHorizontalRules(processed);
 
     // Ensure proper line breaks after bold text that should start a new line
     // This handles cases like "**Meta Title:**\n[content]" to ensure proper paragraph separation
@@ -477,7 +512,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
           // default `---` <hr>, with extra vertical breathing room.
           if (
             childArray.length === 1 &&
-            childArray[0] === "\uE000THICK_HR\uE000"
+            childArray[0] === THICK_HR_SENTINEL
           ) {
             return (
               <hr

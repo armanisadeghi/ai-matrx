@@ -167,5 +167,11 @@ export function createCrmInboxScope(values: {
   total_replies: number;
   visible_replies: InboxReplySummary[];
 }): SurfaceScopePayload {
-  return values as SurfaceScopePayload;
+  return {
+    ...values,
+    // Every row on this surface is content obtained from Gmail. Keep the UI's
+    // real count and filters, but never place reply content in model context
+    // until provider non-training compliance has been demonstrated.
+    visible_replies: [],
+  } as SurfaceScopePayload;
 }

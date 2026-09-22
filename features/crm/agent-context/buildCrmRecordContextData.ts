@@ -26,7 +26,8 @@ import {
   CONTACT_BLOCK_REASON_LABELS,
   contactPointBlockReason,
 } from "../reachability";
-import type { PartyDetail } from "../types";
+import { isGmailDerivedInteraction } from "../inbox/attributes";
+import type { InteractionRow, PartyDetail } from "../types";
 
 export interface BuildCrmRecordContextDataArgs {
   detail: PartyDetail | null;
@@ -40,14 +41,34 @@ export interface BuildCrmRecordContextDataArgs {
 }
 
 /** Newest-first interaction timestamp — `last_touch_at` is never stored. */
-function deriveLastTouch(detail: PartyDetail): string | undefined {
+function deriveLastTouch(
+  interactions: readonly InteractionRow[],
+): string | undefined {
   let latest: string | undefined;
-  for (const interaction of detail.interactions) {
+  for (const interaction of interactions) {
     const at = interaction.occurred_at;
     if (!at) continue;
     if (!latest || at > latest) latest = at;
   }
   return latest;
+}
+
+/**
+ * The exact interaction context permitted to cross a model-provider boundary.
+ * Gmail-derived rows fail closed until provider non-training compliance has
+ * been demonstrated. Their derived last-touch timestamp is excluded with
+ * them; non-Gmail CRM interactions remain available unchanged.
+ */
+export function buildModelSafeInteractionContext(
+  interactions: readonly InteractionRow[],
+): { interactions: InteractionRow[]; lastTouchAt: string | undefined } {
+  const modelSafeInteractions = interactions.filter(
+    (interaction) => !isGmailDerivedInteraction(interaction),
+  );
+  return {
+    interactions: modelSafeInteractions,
+    lastTouchAt: deriveLastTouch(modelSafeInteractions),
+  };
 }
 
 function buildContactPoints(detail: PartyDetail): CrmRecordContactPointScope[] {
@@ -103,6 +124,9 @@ export function buildCrmRecordContextData(
 
   const party = detail.party;
   const contactPoints = buildContactPoints(detail);
+  const interactionContext = buildModelSafeInteractionContext(
+    detail.interactions,
+  );
 
   return createCrmRecordScope({
     party_id: party.id,
@@ -167,8 +191,8 @@ export function buildCrmRecordContextData(
     addresses: detail.addresses,
     affiliations: detail.affiliations,
     members: detail.members,
-    interactions: detail.interactions,
-    last_touch_at: deriveLastTouch(detail),
+    interactions: interactionContext.interactions,
+    last_touch_at: interactionContext.lastTouchAt,
     notes: args.notes ?? [],
     notes_load_error: notesLoadError,
     merge_state: party.canonical_id
