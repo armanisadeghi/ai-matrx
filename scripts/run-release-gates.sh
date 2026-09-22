@@ -473,6 +473,13 @@ if $STRICT; then
         # conversations were, because a component's NULL lane set was read as "allow".
         # `check:admin-door` has the ORG-admin twin of this and stayed green throughout.
         "Staff door (private/confidential, components included)|pnpm exec tsx scripts/check-staff-door.ts --strict"
+        # 🚨 ACCESS PARITY — the SCREEN and the DOOR must admit the same people. The generated read
+        # policy (what an HTTP read runs against) and iam.has_access_for_base (what every RPC asks)
+        # are separate code and have drifted: measured 2026-09-22, 438 of 776 active tokens carry a
+        # read lane the resolver refuses, 418 of them the blanket `public.is_platform_admin()`
+        # prefix. On agent.definition that is 273 rows of other people's work listed on a platform
+        # admin's screen that every door then declines to act on. RED on purpose until it is closed.
+        "Access parity (policy lanes vs iam.has_access_for_base)|pnpm exec tsx scripts/check-access-parity.ts"
         # THE LIST-SCOPE AXIS (DD-137b §3.3) is RED at 11 of 11 on purpose: the eleven
         # %_list_scoped RPCs are still SECURITY DEFINER. It runs NON-strict here so the
         # standing RED is printed at every release instead of being remembered, without
@@ -988,6 +995,7 @@ else
         "Agent sync fields vs live RPC (snapshot fallback)|pnpm exec tsx scripts/check-agent-sync-fields.ts --live"
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts"
         "Staff door (private/confidential, components included)|pnpm exec tsx scripts/check-staff-door.ts --strict"
+        "Access parity (policy lanes vs iam.has_access_for_base)|pnpm exec tsx scripts/check-access-parity.ts"
         "List-scope axis (RED until the eleven RPCs convert)|pnpm exec tsx scripts/check-list-scope.ts"
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts"
         # 🚨 `:strict` ON PURPOSE, IN THE ADVISORY LIST TOO — and this line is the
