@@ -153,11 +153,18 @@ LOOKUP_DERIVE_SQL="select n.nspname||'.'||c.relname
 # died with 'a relation on a record has to say which field it came from, and "contains" does not' —
 # 24 of the package suite's errors, all of them one absent lookup. The copy loop already handles a
 # table with no `organization_id` (this one has none: three role words, no customer data).
+#
+# `platform.shareable_resource_registry` joined on the same day and for the same blind spot —
+# nothing holds a foreign key to it either. It is the list of what can be SHARED and under which
+# token; `iam.has_access` reads it and a CHECK on `permissions` refuses a grant whose
+# `resource_type` is not one of its 292 rows. Empty, it turned every store access decision into
+# "You do not have access to this table", which reads as a broken door and is a missing lookup.
+# All 292 rows belong to the one `is_system` organization, so the value filter already covers it.
 typeset -a NAMED_REGISTRIES
 NAMED_REGISTRIES=(platform.association_types platform.metadata_reserved_keys
                   platform.provision_rule_message platform.domain_classification
                   platform.retention_policy platform.deprecated_relations
-                  custom.carrying_rule)
+                  custom.carrying_rule platform.shareable_resource_registry)
 
 # 🚨 NO CUSTOMER ROWS COME ACROSS THIS WIRE. Every platform table carries `organization_id` (the
 # platform's own law), so "it has no org column" is not a safety filter here — the filter is the
