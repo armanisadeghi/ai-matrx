@@ -29,6 +29,9 @@ const ORIGIN = `http://127.0.0.1:${PORT}`;
 
 const ORG = "Rincon Plumbing Co";
 const JOBS = "af3bfff6-a255-41e5-9ac2-879d53816163";
+// Her "Truck 1 — jobs by stage" board. Named, because a proof that clicks whichever chart
+// happens to be first proves whatever that chart happened to be.
+const BOARD = "4fb858b5-4f68-4b9d-9738-67131f54e870";
 
 const argv = process.argv.slice(2);
 const OUT = argv.includes("--out") ? argv[argv.indexOf("--out") + 1] : resolve(ROOT, "scripts/drill/shots");
@@ -68,7 +71,7 @@ async function main() {
   say(`organization: ${ORG}`);
 
   // ── 1. THE DASHBOARD, AND THE NUMBER ───────────────────────────────────────
-  await page.goto(`${ORIGIN}/data-v2/${JOBS}?view=dashboards`, {
+  await page.goto(`${ORIGIN}/data-v2/${JOBS}?view=dashboards&dashboard=${BOARD}`, {
     waitUntil: "domcontentloaded",
     timeout: 120000,
   });
@@ -81,7 +84,11 @@ async function main() {
   if (barCount === 0) throw new Error("no bar to click — nothing was proved");
 
   // ── 2. THE CLICK ───────────────────────────────────────────────────────────
-  await bars.nth(0).click({ force: true });
+  // The LAST bar, not the first: the chart orders by count descending, so the first
+  // is the biggest and the last is the smallest — and a drill that "worked" by
+  // opening the biggest group is the one least likely to notice it opened them all.
+  const pick = barCount - 1;
+  await bars.nth(pick).click({ force: true });
   await until("the address to carry the question", async () => page.url().includes("filter="), 30000);
   const url = new URL(page.url());
   const question = url.searchParams.get("filter");
@@ -99,7 +106,17 @@ async function main() {
     throw new Error("the screen does not say it is narrowed");
   }
 
-  await sleep(2000);
+  await sleep(2500);
+  // ── 4. AND THE ROWS. Not "a table rendered" — how many, against what the number said.
+  const drawn = await until(
+    "the narrowed rows",
+    async () => {
+      const n = await page.evaluate(() => document.querySelectorAll("table tbody tr").length);
+      return n > 0 ? n : null;
+    },
+    60000,
+  );
+  say(`rows on screen after the click: ${drawn.v}`);
   await page.screenshot({ path: resolve(OUT, "drill-2-only-those-rows.png"), fullPage: false });
 
   writeFileSync(resolve(OUT, "drill-what-was-proved.txt"), said.join("\n") + "\n");
