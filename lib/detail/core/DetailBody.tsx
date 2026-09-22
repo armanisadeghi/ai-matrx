@@ -16,6 +16,7 @@ import {
   type AssociationTargetType,
 } from "@ai-matrx/associations";
 import { AssociationCardGrid, PrimaryEntityProvider } from "@ai-matrx/associations/react";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import { formatWhen } from "../format";
 import type { DetailHistoryEntry, DetailSection, DetailSourceHealth } from "../types";
@@ -323,8 +324,8 @@ function LoadingFields({ core, label }: { core: DetailCore; label: string }) {
       {slow ? (
         <p className="text-xs text-muted-foreground" data-detail-slow-load>
           Still loading this {label} — the read has been running for more than{" "}
-          {Math.round(SLOW_LOAD_NOTICE_MS / 1000)} seconds. If nothing appears, the record may be
-          unreachable from here; closing and reopening it starts a fresh read.
+          {formatDurationMs(SLOW_LOAD_NOTICE_MS, { style: "long" })}. If nothing appears, the
+          record may be unreachable from here; closing and reopening it starts a fresh read.
         </p>
       ) : null}
       {Array.from({ length: 5 }).map((_, i) => (
