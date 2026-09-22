@@ -1,8 +1,17 @@
 import { createClient } from '@/utils/supabase/server';
+import { accessSatisfies } from '@/utils/permissions/access-core';
+import { resolveAccess } from '@/utils/permissions/requireAccess';
 import type { ResearchTopic, ResearchProgress, ResearchIntent } from '../types';
 import { rowToResearchTopic, researchProgressFromJson } from '../types';
 
 export async function getTopicServer(topicId: string): Promise<ResearchTopic | null> {
+    // `rs_topic` has an admin-inspection RLS lane, while the product access
+    // resolver deliberately refuses a stranger's personal topic. Gate before
+    // reading so the layout can render AccessGate and metadata cannot disclose
+    // a title that the ordinary product access model denies.
+    const access = await resolveAccess('research_topic', topicId);
+    if (!accessSatisfies(access.level, 'view')) return null;
+
     const supabase = await createClient();
     const { data, error } = await supabase
         .schema('research').from('rs_topic')
