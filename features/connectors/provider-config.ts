@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import {
   GOOGLE_IDENTITY_SCOPES,
+  GOOGLE_GMAIL_READ_SCOPES,
   GOOGLE_SCOPE,
   GOOGLE_WORKSPACE_FILE_SCOPES,
 } from "@/lib/googleScopes";
@@ -175,6 +176,8 @@ const GOOGLE_SCOPE_LANGUAGE: Record<string, string> = {
     "Open, create and edit the Google files you pick — nothing else in your Drive",
   [GOOGLE_SCOPE.gmailSend]:
     "Send an email as you, after you have reviewed it. No inbox access",
+  [GOOGLE_SCOPE.gmailReadonly]:
+    "Search and read messages in the Google account you choose. No changes or sends",
   [GOOGLE_SCOPE.webmastersReadonly]:
     "Read Search Console performance for sites you own",
   [GOOGLE_SCOPE.analyticsReadonly]: "Read your Google Analytics reports",
@@ -276,7 +279,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
     {
       key: "gmail",
       name: "Gmail",
-      promise: "Send emails you have reviewed. We never read your inbox.",
+      promise: "Send emails you have reviewed. This sending permission cannot read your inbox.",
       group: WORKSPACE_GROUP,
       icon: Mail,
       capabilityKeys: ["gmail_send"],
@@ -291,6 +294,22 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         kind: "none",
         because:
           "Nothing to open yet — a Gmail send begins with an agent's draft, not with a screen a person visits.",
+      },
+    },
+    {
+      key: "gmail_read",
+      name: "Gmail reading",
+      promise: "Search and open messages when you ask. We do not sync your whole mailbox or change your email.",
+      group: WORKSPACE_GROUP,
+      icon: Mail,
+      capabilityKeys: ["gmail_read"],
+      scopes: GOOGLE_GMAIL_READ_SCOPES,
+      attachableResourceTypes: [],
+      stopsOnRevoke: "mailbox searches and message opening here",
+      firstAction: {
+        kind: "route",
+        label: "Search your Gmail",
+        href: "/gmail-read-review",
       },
     },
     {

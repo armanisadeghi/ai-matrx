@@ -187,7 +187,7 @@ describe("a Google account our own configuration blocks", () => {
     const shown = renderCard(blockedRow()).textContent ?? "";
     expect(shown).not.toContain("Connected");
     expect(shown).not.toMatch(/\d+ of \d+ products in use/);
-    expect(shown).toContain("None of these 9 products can be used right now");
+    expect(shown).toContain(`None of these ${provider.products.length} products can be used right now`);
     // The declared sentence, on the account line and on every row it breaks.
     expect(shown).toContain("This one is ours to repair");
     expect(shown).toContain("probe@example.com");

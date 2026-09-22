@@ -176,6 +176,29 @@ export interface GoogleConnectionResult {
   connectionId: string;
 }
 
+/** Gmail read review contracts; kept local until the generated API snapshot is refreshed. */
+export interface GmailMessageSummary {
+  id: string;
+  thread_id: string | null;
+  subject: string;
+  from_address: string;
+  to_address: string;
+  date: string;
+  snippet: string;
+}
+
+export interface GmailSearchResult {
+  messages: GmailMessageSummary[];
+  has_more: boolean;
+  access_mode: "on_demand_read_only";
+}
+
+export interface GmailMessageDetail extends GmailMessageSummary {
+  text_body: string;
+  truncated: boolean;
+  access_mode: "on_demand_read_only";
+}
+
 export interface YouTubeVideoPreview {
   video_id: string;
   title: string;

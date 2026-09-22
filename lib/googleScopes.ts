@@ -137,41 +137,13 @@ export const GOOGLE_READ_ONLY_SWEEP_SCOPES = [
   GOOGLE_SCOPE.tagManagerReadonly,
 ] as const;
 
-/**
- * 🚨 NOT REQUESTED FROM ANY USER YET — and it is SCHEDULED, not optional.
- *
- * RULED BY ARMAN 2026-08-15: `gmail.readonly` is added AFTER the current Google
- * verification round closes, as its own focused campaign. Do NOT move it into
- * `GOOGLE_FIRST_CAMPAIGN_CLOUD_SCOPES` before that round closes; do NOT quietly
- * drop it either — outreach reply ingestion is already built and deployed and
- * reads nothing without it. Queued in
- * `common-docs/projects/google-oauth-verification/PLAN.md` (status header,
- * frozen scope table, § "Later restricted access", execution row 12).
- *
- * Outreach reply ingestion (G6) is built and live server-side
- * (`aidream/services/outreach_inbound/`), and it needs `gmail.readonly` on the
- * sending mailbox's connection. The scope is registered here so the server and
- * client mirrors agree, and for NO other reason.
- *
- * It is deliberately absent from `GOOGLE_FIRST_CAMPAIGN_CLOUD_SCOPES` because
- * that submission is mid-review with an open Google thread and currently
- * declares **no restricted scopes at all**. `gmail.readonly` is RESTRICTED —
- * a tier above the deferred sensitive scopes above. Adding it to the campaign
- * path would recreate the exact code/console mismatch that campaign just
- * finished fixing, and this project already has a recorded production failure
- * where `include_granted_scopes=true` merged an extra grant and Google REJECTED
- * the authorization outright. The shared OAuth client is the platform's one
- * blast radius that is NOT contained to the customer who causes it
- * (outreach-system §5.3), so it does not get widened as a side effect of
- * shipping a feature.
- *
- * Until it is granted, an identity without the scope surfaces the ordinary
- * fixable refusal (`mailbox_cannot_read_replies` → `reconnect_mailbox`) — the
- * cadence still refuses to run un-listened, which is the correct failure.
- *
- * Decision + steps: `common-docs/projects/outreach-system/DECISION_LOG.md`
- * (D-W1-10) and `common-docs/projects/google-oauth-verification/PLAN.md`.
- */
+/** Separate restricted Gmail read consent, internal-test only until approval. */
+export const GOOGLE_GMAIL_READ_SCOPES = [
+  ...GOOGLE_IDENTITY_SCOPES,
+  GOOGLE_SCOPE.gmailReadonly,
+] as const;
+
+/** Outreach also needs read access, but its send flow is a separate product. */
 export const GOOGLE_OUTREACH_INBOX_SCOPES = [
   ...GOOGLE_WORKSPACE_SEND_SCOPES,
   GOOGLE_SCOPE.gmailReadonly,

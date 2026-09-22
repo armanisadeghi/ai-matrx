@@ -972,8 +972,8 @@ export function GoogleWorkspaceReviewWorkspace({
                     Test the email connection
                   </span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">
-                    Send one reviewed test email. Gmail reading is never
-                    requested.
+                    Send one reviewed test email. This action requests only
+                    sending permission.
                   </span>
                 </span>
                 <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
@@ -1001,7 +1001,7 @@ export function GoogleWorkspaceReviewWorkspace({
                   <div className="space-y-3 rounded-lg border p-3">
                     <div className="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">
                       <CheckCircle2 className="h-4 w-4" />
-                      Gmail sending is ready; Gmail reading is not allowed.
+                      Gmail sending is ready. This sending permission cannot read your inbox.
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5">

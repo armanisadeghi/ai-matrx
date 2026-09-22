@@ -60,6 +60,7 @@ const LIVE: ConnectorCapabilityRollout[] = [
   "docs",
   "sheets",
   "gmail_send",
+  "gmail_read",
   "calendar",
   "contacts",
   "tasks",
@@ -120,7 +121,7 @@ const ARMANSADEGHI = account("c3", "arman@armansadeghi.com", [
 const INFO = account("c4", "info@aimatrx.com", [DRIVE_FILE, GMAIL_SEND]);
 
 describe("D3 — the verb is Connect until this account has a grant", () => {
-  it('offers "Connect", never "Reconnect", on the seven never-granted rows of info@aimatrx.com', () => {
+  it('offers "Connect", never "Reconnect", on the never-granted rows of info@aimatrx.com', () => {
     const rows = accountHealth({ provider, account: INFO, rollout: LIVE });
     const notConnected = rows.filter((row) => row.state === "not_connected");
 
@@ -129,6 +130,7 @@ describe("D3 — the verb is Connect until this account has a grant", () => {
         "analytics",
         "calendar",
         "contacts",
+        "gmail_read",
         "search_console",
         "tag_manager",
         "tasks",

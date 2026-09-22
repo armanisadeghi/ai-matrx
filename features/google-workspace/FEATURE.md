@@ -42,7 +42,7 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
   a second GIS popup or exposes the refresh token.
 - The durable refresh token is encrypted in aidream's canonical user secrets vault and is never persisted in the browser.
 - When GIS popup consent cannot be controlled, the shared connect panel offers an explicit same-tab redirect-code fallback. It uses the current registered origin as the callback, binds the request to a one-time HttpOnly `SameSite=Lax` state cookie plus bounded session metadata, and bypasses the root Supabase recovery-code redirect only while that cookie is present. The callback exchanges the code through the same aidream endpoint and scope contract and stores neither codes nor tokens in browser storage.
-- Gmail is incremental and uses only `gmail.send`. The product cannot read, search, delete, or organize Gmail.
+- The reviewed-send workflow uses only `gmail.send`. A separate `gmail.readonly` internal-test row opens an on-demand search/message reader; it cannot delete, organize, or send Gmail.
 - Gmail sending requires visible recipients, subject, body, and an unchecked user confirmation immediately before the send action.
 - Google Workspace content is not persisted by these endpoints and is not used to train generalized AI models.
 - `/privacy-policy` affirmatively states that Google Workspace API data use adheres to the Google User Data Policy, including Limited Use requirements.
@@ -401,7 +401,7 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
   Drawings, and Apps Script projects selected in Picker. Forms, Vids, folders,
   shortcuts, owner-disabled downloads, and native exports over Google's 10 MB
   export limit remain actionable refusals; no broad Drive listing is added.
-- No Gmail read scope or endpoint exists in this feature.
+- Gmail reading is separate from the Workspace send endpoints: `POST /api/google-integrations/gmail/search` returns at most 20 message summaries and `POST /api/google-integrations/gmail/message` opens one selected plain-text body (at most 64 KB). Neither action starts a mailbox sync or AI transfer.
 - No file content or email body is stored by the Workspace service.
 - **A range without a tab name targets the spreadsheet's first tab.** The UI
   defaults to `A1:C10`; never assume a selected spreadsheet contains `Sheet1`.

@@ -16,6 +16,8 @@ import type {
   GoogleTasksPreview,
   TagManagerInventory,
   YouTubeAnalyticsPreview,
+  GmailSearchResult,
+  GmailMessageDetail,
 } from "@/features/marketing/google/types";
 import { isGoogleConnectionResourceType } from "@/features/marketing/google/types";
 import { readConnectionStatus } from "@/features/connectors/connection-status";
@@ -545,6 +547,31 @@ export async function disconnectGoogle(connectionId: string): Promise<void> {
     { connection_id: connectionId },
     "Unable to disconnect Google.",
   );
+}
+
+/** A fresh bounded Gmail read; queries and messages stay out of local storage. */
+export async function searchGmail(
+  connectionId: string,
+  query: string,
+): Promise<GmailSearchResult> {
+  const response = await postGoogleBackend(
+    "/api/google-integrations/gmail/search",
+    { connection_id: connectionId, query },
+    "Gmail search could not finish. Try again.",
+  );
+  return (await response.json()) as GmailSearchResult;
+}
+
+export async function readGmailMessage(
+  connectionId: string,
+  messageId: string,
+): Promise<GmailMessageDetail> {
+  const response = await postGoogleBackend(
+    "/api/google-integrations/gmail/message",
+    { connection_id: connectionId, message_id: messageId },
+    "This Gmail message could not open. Try again.",
+  );
+  return (await response.json()) as GmailMessageDetail;
 }
 
 export async function getYouTubeChannelPreview(

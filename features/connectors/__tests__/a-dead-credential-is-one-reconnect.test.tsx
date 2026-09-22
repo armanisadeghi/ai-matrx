@@ -258,7 +258,7 @@ describe("the settings card for a dead account", () => {
     const text = container!.textContent ?? "";
     expect(text).toContain("Reconnect probe@example.com.");
     // It says what one approval covers, before it is pressed.
-    expect(text).toContain("9 products");
+    expect(text).toContain(`${provider.products.length} products`);
   });
 });
 

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1231,
+  "routeCount": 1232,
   "routes": [
     {
       "pattern": "/",
@@ -2702,6 +2702,11 @@
       "pattern": "/free/zip-code-heatmap/[id]",
       "status": "live",
       "source": "app/(public)/free/zip-code-heatmap/[id]/page.tsx"
+    },
+    {
+      "pattern": "/gmail-read-review",
+      "status": "live",
+      "source": "app/(core)/gmail-read-review/page.tsx"
     },
     {
       "pattern": "/google-analytics-youtube-review",
