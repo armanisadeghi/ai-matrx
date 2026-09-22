@@ -134,7 +134,7 @@ export async function PUT(request: NextRequest) {
       await adminSupabase
         .schema("communication")
         .from("sms_notification_preferences")
-        .select("phone_number, sms_enabled")
+        .select("phone_number, sms_enabled, metadata")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -172,6 +172,31 @@ export async function PUT(request: NextRequest) {
       if (body[field] !== undefined) {
         updateData[field] = body[field];
       }
+    }
+
+    // 🚨 THE ROW MUST SAY WHAT THE PERSON WAS ACTUALLY ASKED (aidream 1023).
+    // Every column on this row is NOT NULL with a default — timezone was
+    // 'America/New_York', the caps are 10/50, the night is 21:00-08:00 — so the
+    // row cannot say "nobody chose this" unless a writer records what it chose.
+    // communication.person_notification_caps now counts this enrolment's caps
+    // ONLY when metadata->'declared' contains 'volume_caps', which means a
+    // person who sets their caps here and is not stamped has them SILENTLY
+    // IGNORED. This is that stamp. It is additive: it never removes a field
+    // somebody declared earlier.
+    const declaredNow = new Set<string>();
+    if (body.timezone !== undefined) declaredNow.add("timezone");
+    if (
+      body.quiet_hours_enabled !== undefined ||
+      body.quiet_hours_start !== undefined ||
+      body.quiet_hours_end !== undefined
+    ) {
+      declaredNow.add("quiet_hours");
+    }
+    if (
+      body.max_messages_per_hour !== undefined ||
+      body.max_messages_per_day !== undefined
+    ) {
+      declaredNow.add("volume_caps");
     }
 
     // Normalize phone number if provided
@@ -256,7 +281,39 @@ export async function PUT(request: NextRequest) {
       .schema("communication")
       .from("sms_notification_preferences")
       .upsert(
-        { user_id: user.id, organization_id: organizationId, ...updateData },
+        {
+          user_id: user.id,
+          organization_id: organizationId,
+          ...updateData,
+          ...(declaredNow.size
+            ? {
+                metadata: {
+                  ...((existingPreferences?.metadata as Record<
+                    string,
+                    unknown
+                  > | null) ?? {}),
+                  declared: Array.from(
+                    new Set([
+                      ...(Array.isArray(
+                        (
+                          existingPreferences?.metadata as {
+                            declared?: unknown;
+                          } | null
+                        )?.declared,
+                      )
+                        ? ((
+                            existingPreferences!.metadata as {
+                              declared: string[];
+                            }
+                          ).declared)
+                        : []),
+                      ...declaredNow,
+                    ]),
+                  ),
+                },
+              }
+            : {}),
+        },
         { onConflict: "user_id" },
       )
       .select()

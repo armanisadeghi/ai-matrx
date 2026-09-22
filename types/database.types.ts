@@ -68235,6 +68235,7 @@ export type Database = {
       rulebook: {
         Row: {
           assurance_level: string | null
+          client_token: string | null
           created_at: string
           created_by: string
           custom_fields: Json
@@ -68261,6 +68262,7 @@ export type Database = {
         }
         Insert: {
           assurance_level?: string | null
+          client_token?: string | null
           created_at?: string
           created_by?: string
           custom_fields?: Json
@@ -68287,6 +68289,7 @@ export type Database = {
         }
         Update: {
           assurance_level?: string | null
+          client_token?: string | null
           created_at?: string
           created_by?: string
           custom_fields?: Json
