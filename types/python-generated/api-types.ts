@@ -51413,11 +51413,8 @@ export interface components {
             /** Container Id */
             container_id?: string | null;
             filter?: components["schemas"]["SourceFilterModel"];
-            /**
-             * Limit
-             * @default 200
-             */
-            limit?: number;
+            /** Limit */
+            limit?: number | null;
             /**
              * Offset
              * @default 0
@@ -60327,11 +60324,8 @@ export interface components {
              * @default 50
              */
             limit?: number;
-            /**
-             * Max Records
-             * @default 2000
-             */
-            max_records?: number;
+            /** Max Records */
+            max_records?: number | null;
         };
         /** ContactSearchResult */
         ContactSearchResult: {
@@ -145066,7 +145060,7 @@ export interface operations {
                 provider: string;
                 /** @description Substring of the name or ref */
                 q?: string | null;
-                limit?: number;
+                limit?: number | null;
                 /** @description Ask the provider itself instead of our inventory. NO provider offers a live search today — /connections/attachable reports the source of every kind and none is `live` — so this changes nothing. Google in particular can never be live: AI Matrx holds the drive.file scope only, which reaches the files the user handed us and nothing else. */
                 live?: boolean;
             };

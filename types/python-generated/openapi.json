@@ -17644,10 +17644,15 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer",
-              "maximum": 200,
-              "minimum": 1,
-              "default": 50,
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Limit"
             }
           },
@@ -116137,11 +116142,17 @@
             "$ref": "#/components/schemas/SourceFilterModel"
           },
           "limit": {
-            "type": "integer",
-            "maximum": 1000,
-            "minimum": 1,
-            "title": "Limit",
-            "default": 200
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit"
           },
           "offset": {
             "type": "integer",
@@ -137914,7 +137925,6 @@
               "$ref": "#/components/schemas/ContactImportItem"
             },
             "type": "array",
-            "maxItems": 50,
             "minItems": 1,
             "title": "Contacts"
           },
@@ -138071,11 +138081,16 @@
             "default": 50
           },
           "max_records": {
-            "type": "integer",
-            "maximum": 2000,
-            "minimum": 1,
-            "title": "Max Records",
-            "default": 2000
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Records"
           }
         },
         "type": "object",
@@ -270437,7 +270452,6 @@
               "type": "string"
             },
             "type": "array",
-            "maxItems": 200,
             "minItems": 1,
             "title": "Task Ids"
           },
