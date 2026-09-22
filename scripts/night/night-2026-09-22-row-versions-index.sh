@@ -2,6 +2,16 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # NIGHT-SWEEP — ONE SHOT, 2026-09-22, 01:20 America/Los_Angeles.
 #
+# 🚨 STATUS: SPENT. IT ALREADY RAN — AND NOT IN THE WINDOW. On 2026-09-21 at 17:19 Pacific this
+# script was invoked with NIGHT_SWEEP_FORCE=1 to exercise its inverse gate, and because the gate
+# passed it went on and did its whole job: the migration is applied and ledgered on the MAIN
+# database (2026-09-22 00:19:57Z, 82.08s, 29 valid partition indexes, parent valid with 29
+# attached, zero blocked backends). It unloaded and deleted its own plist on the way out, so
+# nothing is armed. The file is kept as the record and as the shape for the next one-shot.
+# The lesson is in the flag: NIGHT_SWEEP_FORCE=1 is not a dry run, it is the real thing without
+# the window. A future one-shot wanting a rehearsal needs a NIGHT_SWEEP_DRY_RUN that stops
+# before the runner, which this script does not have.
+#
 # WHAT IT DOES: applies `migrations/campaign/redsuites2_a_new_organizations_first_migration_verb.sql`
 # to the MAIN (production) database. That file builds `(entity_type, organization_id, id desc)` on
 # `history.row_versions` — 7,095 MB across 29 partitions — so that a brand-new organization's FIRST
@@ -55,6 +65,26 @@ if [ "${NIGHT_SWEEP_FORCE:-0}" != "1" ] && { [ "$HHMM" -lt 0100 ] || [ "$HHMM" -
   exit 75
 fi
 say "window ok: Pacific $TODAY $HHMM"
+
+# THE INVERSE GATE. A live index build never goes out without a proven way back. The sha256 below
+# is the EXACT inverse this lane ran on the branch under rule 27 (up -> inverse -> up, three real
+# runs verified by pg_indexes: 29+1 valid -> 0 -> 29+1 valid). If the inverse file has moved since,
+# it has not been proven, and an unproven inverse may not accompany a build on the live database.
+INVERSE=/Users/armanisadeghi/code/matrx-frontend/migrations/inverse/redsuites2_a_new_organizations_first_migration_verb_down.sql
+INVERSE_SHA_PROVEN=d3c939651008797af477c5de1c938181459277405127952a4cc1587263c83af9
+if [ ! -f "$INVERSE" ]; then
+  say "REFUSED: the inverse file is missing ($INVERSE). Nothing attempted."
+  exit 78
+fi
+INVERSE_SHA_NOW="$(shasum -a 256 "$INVERSE" | cut -d' ' -f1)"
+if [ "$INVERSE_SHA_NOW" != "$INVERSE_SHA_PROVEN" ]; then
+  say "REFUSED: the inverse has changed since it was proven on the branch."
+  say "  proven: $INVERSE_SHA_PROVEN"
+  say "  on disk: $INVERSE_SHA_NOW"
+  say "  Re-run rule 27 on the branch and re-pin this hash. Nothing attempted."
+  exit 78
+fi
+say "inverse gate ok: $INVERSE_SHA_NOW (proven on the branch by rule 27)"
 
 BRANCH_DSN="$(grep -m1 '^SUPABASE_BRANCH_DATABASE_URL=' "$FRONTEND/.env.local" | cut -d= -f2- | tr -d '"')"
 if [ -z "$BRANCH_DSN" ]; then say "REFUSED: no SUPABASE_BRANCH_DATABASE_URL; nothing attempted."; exit 78; fi
