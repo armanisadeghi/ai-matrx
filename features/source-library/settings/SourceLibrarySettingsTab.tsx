@@ -20,6 +20,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Settings2 } from "lucide-react";
+import { formatCount } from "@ai-matrx/kit/format";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -259,7 +260,7 @@ export default function SourceLibrarySettingsTab() {
                     // organization-wide, so it uses the feature's own canonical noun
                     // (`FEATURE.md`: "Library · Source · Action") rather than one
                     // adapter's word.
-                    title={`${reclassification.toLocaleString()} ${
+                    title={`${formatCount(reclassification)} ${
                         reclassification === 1 ? "Source" : "Sources"
                     } would be classified differently`}
                 >

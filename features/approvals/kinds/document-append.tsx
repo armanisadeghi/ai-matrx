@@ -15,6 +15,7 @@
  */
 
 import type { ApprovalKind, ApprovalScope } from "../types";
+import { formatCount } from "@ai-matrx/kit/format";
 import {
   GOOGLE_OPERATOR_SCOPE,
   GOOGLE_REJECT_COPY,
@@ -34,7 +35,7 @@ const PAYLOAD_KIND = "document_append_dry_run";
 /** How the counted characters read on screen. A missing count says so. */
 function characters(count: number | null): string {
   if (count === null) return "an unknown number of characters";
-  return `${count.toLocaleString()} character${count === 1 ? "" : "s"}`;
+  return `${formatCount(count)} character${count === 1 ? "" : "s"}`;
 }
 
 /**
@@ -59,10 +60,10 @@ function AppendPreview({ payload }: { payload: GoogleProposalPayload }) {
         Lands at the very end of {title ? `“${title}”` : "the document"}
         {afterChar === null
           ? ""
-          : `, after character ${afterChar.toLocaleString()}`}
+          : `, after character ${formatCount(afterChar)}`}
         {totalChars === null
           ? "."
-          : ` of ${totalChars.toLocaleString()}. Nothing already in the document is changed or removed.`}
+          : ` of ${formatCount(totalChars)}. Nothing already in the document is changed or removed.`}
       </p>
       <div className="overflow-hidden rounded-md border border-border">
         {tail ? (

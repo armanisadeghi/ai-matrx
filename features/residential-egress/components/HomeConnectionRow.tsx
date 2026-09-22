@@ -17,6 +17,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
 import Link from "next/link";
 import { HouseWifi, Loader2, Trash2 } from "lucide-react";
 import { Badge, Button, EditableLabel, Switch } from "@ai-matrx/design-system";
@@ -48,13 +49,7 @@ const STATUS_CLASS: Record<HomeConnectionStatus, string> = {
 
 function usedLabel(iso: string | null): string {
   if (!iso) return "never used";
-  const delta = Date.now() - new Date(iso).getTime();
-  const minutes = Math.round(delta / 60_000);
-  if (minutes < 1) return "used moments ago";
-  if (minutes < 60) return `used ${minutes} minutes ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `used ${hours} hours ago`;
-  return `used ${Math.round(hours / 24)} days ago`;
+  return `used ${formatRelativeTime(iso, { style: "long" })}`;
 }
 
 export function HomeConnectionRow({
@@ -188,7 +183,7 @@ export function HomeConnectionRow({
         <>
           <span className="text-[11px] text-muted-foreground">
             {usedLabel(device.last_used_at)} ·{" "}
-            {device.streams_relayed.toLocaleString()} page
+            {formatCount(device.streams_relayed)} page
             {device.streams_relayed === 1 ? "" : "s"} ·{" "}
             {formatFileSize(device.bytes_relayed)}
           </span>

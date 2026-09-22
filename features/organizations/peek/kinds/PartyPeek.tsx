@@ -23,6 +23,7 @@
 
 import React from "react";
 import { Building2, Contact, User } from "lucide-react";
+import { formatAbsoluteDate } from "@ai-matrx/kit/format";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { fetchPartyDetail } from "@/features/crm/service";
 import { describeBlocks, mediumBlocks } from "@/features/crm/reachability";
@@ -153,9 +154,9 @@ export default function PartyPeek({ id, open, onClose }: PeekProps) {
           <PeekField label="Last activity">
             <span className="text-muted-foreground">
               {lastInteraction
-                ? `${channelWords(lastInteraction.channel_code)} · ${new Date(
+                ? `${channelWords(lastInteraction.channel_code)} · ${formatAbsoluteDate(
                     lastInteraction.occurred_at ?? lastInteraction.created_at,
-                  ).toLocaleString()}`
+                  )}`
                 : "Nothing logged with this record yet."}
             </span>
           </PeekField>

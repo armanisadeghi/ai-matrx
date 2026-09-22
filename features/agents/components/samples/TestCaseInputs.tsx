@@ -37,6 +37,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { formatCount } from "@ai-matrx/kit/format";
 import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
@@ -82,8 +83,7 @@ interface TestCasePart {
 function formatSize(text: string): string {
   const lines = text.split("\n").length;
   const chars = text.length;
-  const size =
-    chars >= 1000 ? `${(chars / 1000).toFixed(chars >= 10000 ? 0 : 1)}k` : chars;
+  const size = formatCount(chars, { style: "compact" });
   return lines > 1 ? `${size} chars · ${lines} lines` : `${size} chars`;
 }
 

@@ -1,6 +1,6 @@
 import { fetchAgentAppRateLimits } from "./agent-apps-admin-service";
 
-const readAllRows = jest.fn();
+const mockReadAllRows = jest.fn();
 const schema = jest.fn();
 const from = jest.fn();
 const rateLimitSelect = jest.fn();
@@ -16,7 +16,7 @@ jest.mock("@/utils/supabase/client", () => ({
 }));
 
 jest.mock("@ai-matrx/data/db", () => ({
-  readAllRows: (...args: unknown[]) => readAllRows(...args),
+  readAllRows: (...args: unknown[]) => mockReadAllRows(...args),
 }));
 
 const rateLimitRow = {
@@ -71,7 +71,7 @@ describe("fetchAgentAppRateLimits", () => {
   });
 
   it("reads every source-status row through the verified pagination primitive", async () => {
-    readAllRows.mockImplementation(async (page, options) => {
+    mockReadAllRows.mockImplementation(async (page, options) => {
       expect(options).toEqual({
         label: "app.rate_limit (agent apps administration)",
       });
@@ -102,7 +102,7 @@ describe("fetchAgentAppRateLimits", () => {
   it("preserves the explicit bounded preview for legacy callers", async () => {
     await fetchAgentAppRateLimits({ limit: 25 });
 
-    expect(readAllRows).not.toHaveBeenCalled();
+    expect(mockReadAllRows).not.toHaveBeenCalled();
     expect(rateLimitLimit).toHaveBeenCalledWith(25);
   });
 });

@@ -3,6 +3,7 @@
 import * as React from "react";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from "lucide-react";
+import { formatCount } from "@ai-matrx/kit/format";
 import IconButton from "@/components/official/IconButton";
 import { Button } from "@/components/ui/button";
 import {
@@ -186,7 +187,7 @@ export function TrimControl({
             </SliderPrimitive.Track>
             <SliderPrimitive.Thumb
               aria-label={`${label} slider`}
-              aria-valuetext={`${clampedValue.toLocaleString()} characters`}
+              aria-valuetext={`${formatCount(clampedValue)} characters`}
               className="block size-4 rounded-full border-2 border-background bg-primary shadow-sm transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 active:scale-110 disabled:pointer-events-none"
             />
           </SliderPrimitive.Root>

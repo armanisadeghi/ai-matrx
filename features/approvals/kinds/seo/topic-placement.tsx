@@ -19,6 +19,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatCount } from "@ai-matrx/kit/format";
 import AppLink from "@/components/navigation/AppLink";
 import { Button } from "@/components/ui/button";
 import {
@@ -110,7 +111,7 @@ function toItem(scope: ApprovalScope, row: OfferingProposalRow): PlacementItem {
           {row.offeringName}
         </AppLink>
         <span className="tabular-nums">
-          · {row.clicks.toLocaleString()} clicks · {row.impressions.toLocaleString()} impressions
+          · {formatCount(row.clicks)} clicks · {formatCount(row.impressions)} impressions
         </span>
       </span>
     ),

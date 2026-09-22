@@ -1,4 +1,4 @@
-const readAllRows = jest.fn();
+const mockReadAllRows = jest.fn();
 const requireUserId = jest.fn(() => "learner-1");
 const notesCreate = jest.fn();
 const notesGetById = jest.fn();
@@ -8,7 +8,7 @@ const associationListForEntity = jest.fn();
 const associationListForTargetsVisible = jest.fn();
 const schema = jest.fn();
 
-jest.mock("@ai-matrx/data/db", () => ({ readAllRows }));
+jest.mock("@ai-matrx/data/db", () => ({ readAllRows: mockReadAllRows }));
 jest.mock("@/utils/auth/getUserId", () => ({ requireUserId }));
 jest.mock("@/features/notes/service/notesApi", () => ({
   NotesAPI: { create: notesCreate, getById: notesGetById },
@@ -102,7 +102,7 @@ beforeEach(() => {
   notesGetById.mockResolvedValue(null);
   associationAdd.mockResolvedValue({ ok: true });
   associationListForEntity.mockResolvedValue({ ok: true, data: { edges: [] } });
-  readAllRows.mockImplementation(async (loadPage) => {
+  mockReadAllRows.mockImplementation(async (loadPage) => {
     const result = await loadPage({ from: 0, to: 999 });
     if (result.error) throw result.error;
     return result.data ?? [];

@@ -30,21 +30,14 @@
 
 import { useId, useState } from "react";
 import { AlertTriangle, Check, ChevronDown, Clock, Info } from "lucide-react";
+import { formatRelativeTime, parseTimestamp } from "@ai-matrx/kit/format";
 import { cn } from "@/lib/utils";
 import { rolloutSentence, type ConnectorProductHealth } from "./health";
 
 /** Absolute timestamp → how long ago, or null when it is not a timestamp. */
 export function relativeTime(iso: string | null): string | null {
-  if (!iso) return null;
-  const at = Date.parse(iso);
-  if (Number.isNaN(at)) return null;
-  const minutes = Math.round((Date.now() - at) / 60_000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} h ago`;
-  const days = Math.round(hours / 24);
-  return `${days} day${days === 1 ? "" : "s"} ago`;
+  if (!parseTimestamp(iso)) return null;
+  return formatRelativeTime(iso, { style: "long" });
 }
 
 export interface ProductPermissionsDisclosureProps {

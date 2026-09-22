@@ -1068,10 +1068,6 @@
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/html-pages/components/HtmlPageListView.tsx",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
           "file": "features/image-studio/components/Base64DecoderShell.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
@@ -1348,14 +1344,6 @@
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/marketing/seo/value-system/approvals/ApprovalQueue.tsx",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "features/marketing/seo/value-system/approvals/kinds/topic-placement.tsx",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
           "file": "features/marketing/seo/value-system/offerings/OfferingsWorkbench.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
@@ -1385,10 +1373,6 @@
         },
         {
           "file": "features/masterwork/kept-sources/KeptSourceReader.tsx",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "features/masterwork/record/ExpertRecordPage.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {

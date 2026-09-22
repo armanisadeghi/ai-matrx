@@ -45,6 +45,7 @@ import {
   X,
 } from "lucide-react";
 import AppLink from "@/components/navigation/AppLink";
+import { formatCount } from "@ai-matrx/kit/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -742,7 +743,7 @@ export function ApprovalQueue({
                         </h3>
                         <span className="text-[11px] text-muted-foreground">
                           {section.total > section.items.length
-                            ? `${section.items.length} of ${section.total.toLocaleString()} shown`
+                            ? `${section.items.length} of ${formatCount(section.total)} shown`
                             : `${section.items.length}`}
                         </span>
                         {section.total > section.items.length &&

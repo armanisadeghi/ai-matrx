@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, Play, RefreshCw, Scale } from "lucide-react";
+import { formatUsd } from "@ai-matrx/kit/format";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -351,11 +352,10 @@ function DecisionResultCard({
         <Fact label="Output tokens" value={String(result.outputTokens)} />
         <Fact
           label="Cost"
-          value={
-            result.costUsd === null
-              ? "Unavailable"
-              : `$${result.costUsd.toFixed(6)}`
-          }
+          value={formatUsd(result.costUsd, {
+            digits: "adaptive",
+            unknown: "Unavailable",
+          })}
         />
         <Fact label="Route" value={result.route ?? "Unavailable"} />
         <Fact label="Execution ID" value={result.executionId} />

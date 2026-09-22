@@ -14,6 +14,7 @@
  */
 
 import { AlertTriangle, Ban } from "lucide-react";
+import { formatUsd } from "@ai-matrx/kit/format";
 import { cn } from "@/lib/utils";
 import {
   answerProbability,
@@ -151,7 +152,7 @@ export function DecisionAnswers({
         )}
         {view.costUsd != null && (
           <span className="ml-auto font-mono text-[10px] text-muted-foreground">
-            ${view.costUsd.toFixed(5)}
+            {formatUsd(view.costUsd, { digits: "adaptive" })}
           </span>
         )}
       </div>

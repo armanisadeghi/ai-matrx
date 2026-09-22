@@ -37,7 +37,7 @@ import type {
   MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table/types";
 import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
-import { formatCount, formatUsd } from "@ai-matrx/kit/format";
+import { formatCount, formatDurationMs, formatUsd } from "@ai-matrx/kit/format";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -247,7 +247,7 @@ export const EXECUTION_COLUMNS: MatrxColumnDef<AgentAppExecutionRow>[] = [
     cell: (row) =>
       row.execution_time_ms == null
         ? "—"
-        : `${row.execution_time_ms.toLocaleString()}ms`,
+        : formatDurationMs(row.execution_time_ms, { style: "compact" }),
   },
   {
     id: "created",

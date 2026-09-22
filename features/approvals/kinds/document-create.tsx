@@ -15,6 +15,7 @@
  */
 
 import type { ApprovalKind, ApprovalScope } from "../types";
+import { formatCount } from "@ai-matrx/kit/format";
 import {
   GOOGLE_OPERATOR_SCOPE,
   GOOGLE_REJECT_COPY,
@@ -73,11 +74,11 @@ function NewDocumentPreview({ payload }: { payload: GoogleProposalPayload }) {
       </div>
       {lines.length > shown.length ? (
         <p className="text-[11px] text-muted-foreground">
-          Showing the first {shown.length} of {lines.length.toLocaleString()}{" "}
+          Showing the first {shown.length} of {formatCount(lines.length)}{" "}
           lines
           {startingChars === null
             ? ""
-            : ` (${startingChars.toLocaleString()} characters)`}
+            : ` (${formatCount(startingChars)} characters)`}
           . Approving creates the whole document.
         </p>
       ) : null}

@@ -13,6 +13,7 @@
  */
 
 import type { ApprovalKind, ApprovalScope } from "../types";
+import { formatCount } from "@ai-matrx/kit/format";
 import {
   GOOGLE_OPERATOR_SCOPE,
   GOOGLE_REJECT_COPY,
@@ -92,7 +93,7 @@ function NewSheetPreview({ payload }: { payload: GoogleProposalPayload }) {
       </div>
       {total > shown.length ? (
         <p className="text-[11px] text-muted-foreground">
-          Showing the first {shown.length} of {total.toLocaleString()} starting
+          Showing the first {shown.length} of {formatCount(total)} starting
           rows. Approving creates all of them.
         </p>
       ) : null}
@@ -110,7 +111,7 @@ const contract: GoogleKindContract = {
       readGrid(payload.arguments.rows).length;
     return {
       headline: `Create a Google Sheet called ${title}`,
-      acceptEffect: `Creates “${title}” in your own Google Drive with ${rows.toLocaleString()} starting row${rows === 1 ? "" : "s"}, and registers it so AI Matrx can read it later. Nothing existing is changed.`,
+      acceptEffect: `Creates “${title}” in your own Google Drive with ${formatCount(rows)} starting row${rows === 1 ? "" : "s"}, and registers it so AI Matrx can read it later. Nothing existing is changed.`,
       rejectEffect:
         "Creates nothing, and records the proposal as rejected with your reason.",
       body: <NewSheetPreview payload={payload} />,

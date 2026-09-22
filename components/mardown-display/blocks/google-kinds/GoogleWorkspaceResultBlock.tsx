@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { formatCount } from "@ai-matrx/kit/format";
 import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
 import { humanizeKey } from "@/features/tool-call-visualization/result-fields/shape";
 import {
@@ -220,7 +221,7 @@ const AppendPreview: React.FC<{
         <ChipRow>
           {position ? <StateChip label={position} /> : null}
           {afterChar !== null ? (
-            <StateChip label={`after character ${afterChar.toLocaleString()}`} />
+            <StateChip label={`after character ${formatCount(afterChar)}`} />
           ) : null}
           {title ? <StateChip label={`in ${title}`} /> : null}
           {revision ? (
@@ -453,7 +454,7 @@ const GoogleWorkspaceResultBlock: React.FC<ResultKindBlockProps> = ({
         {rowCount !== null && rows ? <CountChip value={rowCount} label="rows shown" /> : null}
         {showing && totalChars !== null ? (
           <StateChip
-            label={`characters ${showing} of ${totalChars.toLocaleString()}`}
+            label={`characters ${showing} of ${formatCount(totalChars)}`}
             tone={hasMore ? "warn" : "neutral"}
           />
         ) : null}
@@ -461,7 +462,7 @@ const GoogleWorkspaceResultBlock: React.FC<ResultKindBlockProps> = ({
           <StateChip
             label={
               nextStartChar !== null
-                ? `more to read — continue at character ${nextStartChar.toLocaleString()}`
+                ? `more to read — continue at character ${formatCount(nextStartChar)}`
                 : nextRange
                   ? `more to read — continue at ${nextRange}`
                   : "more to read"
