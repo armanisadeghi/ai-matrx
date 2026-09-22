@@ -1144,6 +1144,185 @@ export function policyOnlyVerdict(rawSql: string): PolicyOnlyVerdict {
   return { policy, strangers };
 }
 
+
+// ── WINDOW-CLASS (2026-09-22, lane TRIGGER-LOCK): TRIGGER DDL ON A PARTITIONED PARENT ──────
+//
+// The POLICY-LOCK rule above closed one door: a policy change freezes sign-in for as long as
+// its transaction. Trigger DDL is the SECOND door onto the same corridor, and it was found the
+// hard way — lane OLD-TABLES-1, 2026-09-22, measured a single `drop trigger` on `custom.record`
+// taking ACCESS EXCLUSIVE on ~41 relations for ~810 ms: the same 23 `auth.*`/`storage.*`/
+// `realtime.*` relations `supautils.policy_grants` freezes, PLUS the table and its 16 hash
+// partitions. This lane re-measured it statement by statement on the dev clone the same day,
+// from the measuring backend's own `pg_locks`, each probe inside a rolled-back transaction, and
+// counts FORTY (23 + parent + 16); the one-relation difference from OLD-TABLES-1's count is not
+// reconciled and does not change any rule. The shape (full table: `scripts/night/README.md`):
+//
+//   · `drop trigger`                  — ACCESS EXCLUSIVE. On `custom.record`: 40 relations —
+//                                       the parent, all 16 partitions, and the SAME 23
+//                                       auth/storage/realtime relations a `create policy`
+//                                       freezes. A DROP TRIGGER stops sign-in exactly the way
+//                                       a policy change does. On a plain table: 24 (itself
+//                                       plus the 23).
+//   · `create trigger`                — SHARE ROW EXCLUSIVE on the parent and every partition
+//                                       (17 on `custom.record`), and NOTHING from the supautils
+//                                       set. It stops no reader and no sign-in; it stops every
+//                                       WRITER to the record store.
+//   · `alter table … enable/disable`  — SHARE ROW EXCLUSIVE, same fan-out (17), no supautils
+//                                       set. That is PostgreSQL 15's lowered lock, and it
+//                                       surprised this lane, which expected ACCESS EXCLUSIVE.
+//   · `create or replace function`    — takes neither: no ACCESS EXCLUSIVE anywhere and no lock
+//                                       on the table at all. Replacing a trigger function's
+//                                       BODY is free; attaching or detaching it is not.
+//
+// THE FAN-OUT IS POSTGRESQL'S, NOT OURS, AND NEITHER IS THE 23. A scratch hash-partitioned
+// table with four partitions that this campaign never touched behaves identically — 5 own
+// relations where `custom.record` has 17 — and a `drop trigger` on an ordinary UNPARTITIONED
+// scratch table still drags in all 23. So the supautils hook is not policy-specific: it fires
+// on DDL, and the partition count is simply the multiplier on top of it. `history.row_versions`
+// has 29 partitions.
+//
+// So: a file that issues trigger DDL on a partitioned parent is WINDOW-CLASS. It says so in its
+// own header, and at `--target production` it runs in the 1-4 AM Pacific maintenance window and
+// nowhere else. The inverse is window-class too — undoing a trigger is `drop trigger`, which is
+// the expensive half — so it carries the same declaration, and a 3 a.m. operator reading the
+// abort checklist can see which steps freeze the estate before running them.
+
+/**
+ * The partitioned parents on this estate, censused on the dev clone 2026-09-22 (`relkind='p'`).
+ * `realtime.messages` is Supabase's and is not ours to carry trigger DDL for; the two that are
+ * ours are here with their partition counts, which ARE the freeze multiplier.
+ */
+export const PARTITIONED_PARENTS: Readonly<Record<string, number>> = {
+  "custom.record": 16,
+  "history.row_versions": 29,
+};
+
+/** `custom.record` → `record`. A campaign file that writes the bare name still means this table. */
+const PARTITIONED_PARENT_BARE_NAMES: readonly string[] = Object.keys(PARTITIONED_PARENTS).map(
+  (t) => t.split(".")[1]!,
+);
+
+/** Quotes off, whitespace off, lowercase — `"custom"."record"` and `custom.record` are one table. */
+function normalizeTableRef(raw: string): string {
+  return raw.trim().replace(/"/g, "").toLowerCase();
+}
+
+/**
+ * Is this table reference one of the partitioned parents? A schema-qualified name must match
+ * exactly; a BARE name matches on the table name alone, on purpose and in the safe direction —
+ * a false positive costs a file one header line and a maintenance window, a false negative
+ * costs the estate a frozen sign-in at midday.
+ */
+export function isPartitionedParentRef(rawRef: string): string | null {
+  const ref = normalizeTableRef(rawRef);
+  if (ref in PARTITIONED_PARENTS) return ref;
+  if (!ref.includes(".") && PARTITIONED_PARENT_BARE_NAMES.includes(ref)) {
+    return Object.keys(PARTITIONED_PARENTS).find((t) => t.endsWith(`.${ref}`))!;
+  }
+  return null;
+}
+
+const TABLE_REF = `((?:"[^"]+"|[a-z0-9_]+)(?:\\s*\\.\\s*(?:"[^"]+"|[a-z0-9_]+))?)`;
+
+/**
+ * Every trigger-DDL site in ONE piece of SQL text, as [why, table] pairs. It is run over a
+ * top-level statement AND over the body of a `DO`/`CALL`/`SELECT` that issues DDL dynamically,
+ * because that statement takes the locks when it runs.
+ */
+function triggerDdlSitesIn(text: string): Array<{ why: string; table: string; mode: TriggerLockMode }> {
+  const out: Array<{ why: string; table: string; mode: TriggerLockMode }> = [];
+  const push = (why: string, table: string, mode: TriggerLockMode) => out.push({ why, table, mode });
+  for (const m of text.matchAll(
+    new RegExp(`\\bcreate\\s+(?:or\\s+replace\\s+)?(?:constraint\\s+)?trigger\\b[\\s\\S]*?\\bon\\s+${TABLE_REF}`, "gi"),
+  )) push("CREATE TRIGGER", m[1]!, "SHARE ROW EXCLUSIVE");
+  for (const m of text.matchAll(
+    new RegExp(`\\bdrop\\s+trigger\\b(?:\\s+if\\s+exists)?\\s+(?:"[^"]+"|[a-z0-9_]+)\\s+on\\s+${TABLE_REF}`, "gi"),
+  )) push("DROP TRIGGER", m[1]!, "ACCESS EXCLUSIVE");
+  for (const m of text.matchAll(
+    new RegExp(`\\balter\\s+table\\b(?:\\s+if\\s+exists)?(?:\\s+only)?\\s+${TABLE_REF}[\\s\\S]{0,200}?\\b(enable|disable)\\s+(?:always\\s+|replica\\s+)?trigger\\b`, "gi"),
+  )) push(`ALTER TABLE … ${m[2]!.toUpperCase()} TRIGGER`, m[1]!, "SHARE ROW EXCLUSIVE");
+  return out;
+}
+
+/**
+ * The two lock modes trigger DDL actually takes, measured on the dev clone 2026-09-22.
+ * ACCESS EXCLUSIVE additionally drags in the 23-relation supautils set, so it stops sign-in;
+ * SHARE ROW EXCLUSIVE stops every WRITER and no reader. Both fan out across every partition.
+ */
+export type TriggerLockMode = "ACCESS EXCLUSIVE" | "SHARE ROW EXCLUSIVE";
+
+export interface WindowClassSite {
+  readonly why: string;
+  /** What this statement kind actually takes, per the measurement, not per belief. */
+  readonly mode: TriggerLockMode;
+  /** True when this statement also freezes the supautils auth/storage/realtime set. */
+  readonly freezesSignIn: boolean;
+  /** The partitioned parent, canonically qualified. */
+  readonly table: string;
+  /** How many relations one ACCESS EXCLUSIVE statement reaches through it. */
+  readonly partitions: number;
+  readonly stmt: string;
+}
+
+/**
+ * The window-class sites in a file's RAW bytes, or an empty array. A `CREATE OR REPLACE
+ * FUNCTION` whose BODY contains trigger DDL is NOT a site — replacing a body takes no lock,
+ * running the attachment does — exactly the distinction `policyStatementReasonOf` draws.
+ */
+export function windowClassVerdict(rawSql: string): WindowClassSite[] {
+  const sites: WindowClassSite[] = [];
+  for (const stmt of topLevelStatements(stripCommentsQuoteAware(rawSql))) {
+    const t = stmt.trim();
+    if (/^create\s+(or\s+replace\s+)?function\b/i.test(t) || /^create\s+(or\s+replace\s+)?procedure\b/i.test(t)) continue;
+    for (const site of triggerDdlSitesIn(t)) {
+      const parent = isPartitionedParentRef(site.table);
+      if (!parent) continue;
+      sites.push({
+        why: site.why,
+        mode: site.mode,
+        freezesSignIn: site.mode === "ACCESS EXCLUSIVE",
+        table: parent,
+        partitions: PARTITIONED_PARENTS[parent]!,
+        stmt: t.slice(0, 160),
+      });
+    }
+  }
+  return sites;
+}
+
+/** The maintenance window, Pacific, as HHMM. Same window every night job in `scripts/night/` uses. */
+export const WINDOW_CLASS_OPEN_HHMM = 100;
+export const WINDOW_CLASS_CLOSE_HHMM = 400;
+
+/** Local Pacific time as HHMM, from the one clock the runner and the night jobs share. */
+export function pacificHHMM(now: Date = new Date()): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const hh = Number(parts.find((p) => p.type === "hour")!.value);
+  const mm = Number(parts.find((p) => p.type === "minute")!.value);
+  return hh * 100 + mm;
+}
+
+export function isInsideWindow(now: Date = new Date()): boolean {
+  const hhmm = pacificHHMM(now);
+  return hhmm >= WINDOW_CLASS_OPEN_HHMM && hhmm <= WINDOW_CLASS_CLOSE_HHMM;
+}
+
+const HEADER_WINDOW_CLASS_RE = /^\s*--\s*window-class:\s*(.+)$/i;
+
+/** The `-- window-class: <why>` a window-class file declares, or null. Read from the header. */
+export function windowClassDeclaration(rawSql: string): string | null {
+  for (const line of rawSql.split("\n", 40)) {
+    const m = line.match(HEADER_WINDOW_CLASS_RE);
+    if (m && m[1]!.trim().length >= 12) return m[1]!.trim();
+  }
+  return null;
+}
+
 /**
  * 🚨 THE GRANDFATHER LIST, AND IT NEVER GROWS. These campaign files were written before the
  * rule existed and are ledgered history; their bytes are frozen and rewriting them is not a
@@ -1182,6 +1361,76 @@ export const POLICY_MIXED_GRANDFATHERED: readonly string[] = [
   "w3_hist_retention_and_the_floor.sql",
   "w3_hist_the_one_store.sql",
   "w3_mig_the_ten_verbs.sql",
+] as const;
+
+/**
+ * 🚨 THE WINDOW-CLASS GRANDFATHER LIST, AND IT NEVER GROWS. Census by lane TRIGGER-LOCK,
+ * 2026-09-22, run with `windowClassVerdict` itself over every file in `migrations/campaign/`
+ * (33) and `migrations/inverse/` (25): these 58 carry trigger DDL on a partitioned parent and
+ * were written before the window rule existed. Their bytes are ledgered history and this
+ * campaign does not rewrite an applied file. The rule binds every file written from
+ * 2026-09-22 onward.
+ * ADDING A NAME HERE IS NOT A FIX. Declare `-- window-class: <why>` and apply it in the window.
+ */
+export const WINDOW_CLASS_GRANDFATHERED: readonly string[] = [
+  "apprvtail_a_field_row_is_a_field.sql",
+  "apprvtail_a_field_row_is_a_field_down.sql",
+  "checklists_a_checklist_is_a_template_of_work.sql",
+  "checklists_a_checklist_is_a_template_of_work_down.sql",
+  "doorfix_a_field_type_change_converts_or_retires.sql",
+  "doorfix_a_field_type_change_converts_or_retires_down.sql",
+  "fieldtruth_a_record_carries_only_declared_fields.sql",
+  "fieldtruth_a_table_cannot_claim_a_column_it_never_defined.sql",
+  "fieldtruth_a_table_says_where_its_columns_come_from.sql",
+  "fieldtruth_the_deferred_guard_comes_off.sql",
+  "oldtables_w0_the_two_halves_of_a_relation_can_never_disagree.sql",
+  "oldtables_w0_the_two_halves_of_a_relation_can_never_disagree_down.sql",
+  "pipelines_a_stage_is_a_field_and_its_moves_are_rules.sql",
+  "pipelines_a_stage_is_a_field_and_its_moves_are_rules_down.sql",
+  "storerel_a_relation_edge_names_its_field.sql",
+  "storerel_a_relation_edge_names_its_field_down.sql",
+  "storet_a_choice_is_a_word_and_unique_means_unique.sql",
+  "storet_a_choice_is_a_word_and_unique_means_unique_down.sql",
+  "tableowner_the_table_door_names_an_owner.sql",
+  "visfix_containment_reaches_the_ladder.inverse.sql",
+  "visfix_containment_reaches_the_ladder.sql",
+  "w1_field_definitions_and_validation.sql",
+  "w1_field_definitions_and_validation_down.sql",
+  "w1_field_types_the_parity_floor.sql",
+  "w1_field_types_the_parity_floor_down.sql",
+  "w1_field_types_thirteen_parity_types.sql",
+  "w1_index_the_promotion_layer.sql",
+  "w1_index_the_promotion_layer_down.sql",
+  "w1_rule_apply_membership_and_applicability.sql",
+  "w1_rule_apply_the_other_two_uses_down.sql",
+  "w1_rule_object_and_uses.sql",
+  "w1_rule_object_and_uses_down.sql",
+  "w1_store_custom_record_store.sql",
+  "w1_table_table_home_containment.sql",
+  "w1_table_table_home_containment_down.sql",
+  "w1_v1_fixes_one_door_predicate_down.sql",
+  "w1_v1store_organizations_are_hard_walls.sql",
+  "w1_v1store_organizations_are_hard_walls_down.sql",
+  "w1_v1store_the_soft_delete_door.sql",
+  "w1_v1store_the_soft_delete_door_down.sql",
+  "w1_val_the_value_envelope.sql",
+  "w1_val_the_value_envelope_down.sql",
+  "w1_val_the_value_envelope_on_main.sql",
+  "w3_hist_down.sql",
+  "w3_hist_the_one_store.sql",
+  "w3_hist_two_clocks.sql",
+  "w3_work_assignment_templates_and_slots.sql",
+  "w3_work_assignment_templates_and_slots_down.sql",
+  "w4_door_the_read_door.sql",
+  "w4_door_the_read_door_down.sql",
+  "w4_io_down.sql",
+  "w4_io_the_outbox_and_its_consumer.sql",
+  "workdoors_one_approval_queue.sql",
+  "workdoors_one_approval_queue_down.sql",
+  "writeperf2_the_after_triggers_fire_once_per_statement.sql",
+  "writeperf2_the_after_triggers_fire_once_per_statement_down.sql",
+  "writeperf3_a_structure_row_empties_the_memo_before_it_lands.sql",
+  "writeperf3_a_structure_row_empties_the_memo_before_it_lands_down.sql",
 ] as const;
 
 /** Every function name a file declares it was written against (`-- based-on:`). */

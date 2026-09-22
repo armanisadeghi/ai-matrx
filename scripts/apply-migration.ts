@@ -76,6 +76,7 @@
  *                                               row holds a DIFFERENT checksum
  *   pnpm db:apply migrations/foo.sql --statement-timeout=30min   raise the budget
  *   pnpm db:apply --policy-only-self-test       prove the POLICY-LOCK policy-only rule RED then GREEN
+ *   pnpm db:apply --window-class-self-test      prove the TRIGGER-LOCK window-class rule RED then GREEN
  *   pnpm db:apply --ground-gate-self-test       prove the inverse ground gate RED then GREEN
  *                                               (no database, no file written)
  *   pnpm db:apply --self-test                   prove RED then GREEN in a throwaway
@@ -175,6 +176,13 @@ import {
   TargetRefusal,
   type Target,
   policyOnlyVerdict,
+  windowClassVerdict,
+  windowClassDeclaration,
+  WINDOW_CLASS_GRANDFATHERED,
+  WINDOW_CLASS_OPEN_HHMM,
+  WINDOW_CLASS_CLOSE_HHMM,
+  pacificHHMM,
+  isInsideWindow,
   POLICY_MIXED_GRANDFATHERED,
 } from "./lib/migration-target";
 import { confirmChairStep } from "./lib/chair-step";
@@ -1023,6 +1031,76 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         );
         return 1;
       }
+    }
+  }
+
+  // ── WINDOW-CLASS (2026-09-22): TRIGGER DDL ON A PARTITIONED PARENT RUNS AT NIGHT ─────────
+  //
+  // Measured on the dev clone by lane TRIGGER-LOCK, statement by statement (the table is in
+  // `scripts/night/README.md`):
+  //   · `drop trigger` on `custom.record`  — ACCESS EXCLUSIVE on 40 relations: the parent, all
+  //     16 partitions, and the same 23 auth/storage/realtime relations a policy change freezes.
+  //     Nobody signs in, refreshes a token, reads a file or gets a realtime message until it
+  //     commits. (~810 ms, lane OLD-TABLES-1.)
+  //   · `create trigger` and `alter table … enable/disable trigger` — SHARE ROW EXCLUSIVE on
+  //     the parent and all 16 partitions, nothing from the supautils set: readers and sign-in
+  //     are fine, every WRITE to the record store is blocked for the transaction.
+  // The fan-out is PostgreSQL's own — a scratch hash-partitioned table behaves identically — so
+  // it scales with the partition count, and `history.row_versions` has 29.
+  //
+  // So a file carrying that DDL is WINDOW-CLASS: it declares itself in its own header, and at
+  // `--target production` it runs in the 1-4 AM Pacific maintenance window and nowhere else.
+  // Refused on the bytes and on the clock, before a connection exists. The declaration is
+  // required at EVERY target, because its point is that the operator reading the file at 3 a.m.
+  // — and the abort checklist running its inverse — sees the freeze coming without measuring it
+  // again.
+  if (inCampaign || inInverse) {
+    const sites = windowClassVerdict(sql);
+    if (sites.length > 0 && !WINDOW_CLASS_GRANDFATHERED.includes(filename)) {
+      const tables = [...new Set(sites.map((x) => `${x.table} (+${x.partitions} partitions)`))];
+      const worst = sites.some((x) => x.freezesSignIn) ? "ACCESS EXCLUSIVE" : "SHARE ROW EXCLUSIVE";
+      const consequence = sites.some((x) => x.freezesSignIn)
+        ? `every write to the record store blocked AND nobody able to sign in, refresh a token, ` +
+          `read a file or receive a realtime message (a DROP TRIGGER drags in the same 23 ` +
+          `auth/storage/realtime relations a policy change does)`
+        : `every write to the record store blocked for the length of the transaction (readers ` +
+          `and sign-in are untouched by this kind)`;
+      const declared = windowClassDeclaration(sql);
+      if (!declared) {
+        console.error(
+          `${TAG.fail}${filename} ${C.bold}issues trigger DDL on a partitioned parent and does ` +
+            `not declare itself window-class${C.reset}.\n` +
+            `  The statement(s), with what each one actually takes:\n` +
+            sites
+              .map((x) => `    ${x.why} on ${x.table} — ${x.mode}: ${x.stmt.slice(0, 100)}`)
+              .join("\n") +
+            `\n  Worst of them is ${worst} across ${tables.join(", ")}: ${consequence}.\n` +
+            `  Add a header line saying why, e.g.\n` +
+            `      -- window-class: drop+recreate of the record write trigger; 40 relations frozen\n` +
+            `  and apply it between ${String(WINDOW_CLASS_OPEN_HHMM).padStart(4, "0")} and ` +
+            `${String(WINDOW_CLASS_CLOSE_HHMM).padStart(4, "0")} Pacific. Nothing was applied and ` +
+            `no ledger row was written.`,
+        );
+        return 1;
+      }
+      if (target === "production" && !isInsideWindow()) {
+        const now = String(pacificHHMM()).padStart(4, "0");
+        console.error(
+          `${TAG.fail}${filename} is ${C.bold}window-class${C.reset} — "${declared}" — and local ` +
+            `Pacific time is ${now}, outside ${String(WINDOW_CLASS_OPEN_HHMM).padStart(4, "0")}-` +
+            `${String(WINDOW_CLASS_CLOSE_HHMM).padStart(4, "0")}.\n` +
+            `  Applying it now would take ${worst} on ${tables.join(", ")} in the middle of the ` +
+            `day: ${consequence}.\n` +
+            `  ${C.dim}Run it in the window. Nothing was applied and no ledger row was written. ` +
+            `There is no flag that removes the window — that switch was itself the defect on ` +
+            `2026-09-21 (scripts/night/lib-night.sh).${C.reset}`,
+        );
+        return 1;
+      }
+      console.log(
+        `${TAG.ok}window-class ${C.dim}— "${declared}" · ${sites.length} trigger statement(s), ` +
+          `worst ${worst}, on ${tables.join(", ")}${C.reset}`,
+      );
     }
   }
 
@@ -2221,6 +2299,128 @@ function policyOnlySelfTest(): number {
   console.log(
     `${TAG.ok}a campaign file that changes a policy carries nothing else, and the rule is silent ` +
       `on every file that changes none.`,
+  );
+  return 0;
+}
+
+
+/**
+ * `pnpm db:apply --window-class-self-test` — the RED-then-GREEN proof for the TRIGGER-LOCK rule.
+ *
+ * IT TOUCHES NO DATABASE AND WRITES NO FILE. It judges BYTES:
+ *   RED    a `drop trigger` + `create trigger` on `custom.record` — two window-class sites, and
+ *          the file carries no `-- window-class:` line, which is the refusal.
+ *   RED-2  the same body WITH the declaration — still window-class, and still refused at
+ *          production outside 01:00-04:00 Pacific (asserted against a fixed midday clock, so
+ *          this half does not change its verdict depending on when the suite runs).
+ *   RED-3  `alter table history.row_versions disable trigger` — the other partitioned parent,
+ *          the other statement kind, the unqualified-name arm included.
+ *   GREEN  the declared body inside the window (a fixed 02:30 Pacific clock).
+ *   GREEN-2 trigger DDL on a table that is NOT partitioned, and a `create or replace function`
+ *          whose BODY contains `create trigger` — neither takes the fan-out, so the rule stays
+ *          silent. A rule that fired on every trigger in the estate would be turned off.
+ */
+function windowClassSelfTest(): number {
+  const red = `
+    drop trigger record_write_guard on custom.record;
+    create trigger record_write_guard before insert on custom.record
+      for each row execute function custom.record_write_guard();
+  `;
+  const redSites = windowClassVerdict(red);
+  const redDrop = redSites.find((x) => x.why === "DROP TRIGGER");
+  const redCreate = redSites.find((x) => x.why === "CREATE TRIGGER");
+  if (
+    redSites.length !== 2 ||
+    windowClassDeclaration(red) !== null ||
+    redDrop?.mode !== "ACCESS EXCLUSIVE" ||
+    redDrop?.freezesSignIn !== true ||
+    redCreate?.mode !== "SHARE ROW EXCLUSIVE" ||
+    redCreate?.freezesSignIn !== false
+  ) {
+    console.error(
+      `${TAG.fail}--window-class-self-test RED FAILED: a drop+create trigger on custom.record was ` +
+        `judged ${redSites.length} window-class site(s) (expected 2) and the undeclared body was ` +
+        `${windowClassDeclaration(red) === null ? "correctly" : "NOT"} seen as undeclared.`,
+    );
+    return 1;
+  }
+  console.log(
+    `${C.bold}window-class RED${C.reset} ${C.dim}— ${redSites.length} site(s) on ` +
+      `${redSites[0]!.table} (+${redSites[0]!.partitions} partitions), no declaration; the DROP ` +
+      `is ACCESS EXCLUSIVE and freezes sign-in, the CREATE is SHARE ROW EXCLUSIVE and does ` +
+      `not${C.reset}`,
+  );
+
+  const midday = new Date("2026-09-22T19:00:00Z"); // 12:00 Pacific
+  const inWindow = new Date("2026-09-22T09:30:00Z"); // 02:30 Pacific
+  const red2 = `-- window-class: the record write trigger is replaced; 41 relations freeze\n${red}`;
+  if (windowClassDeclaration(red2) === null || isInsideWindow(midday)) {
+    console.error(
+      `${TAG.fail}--window-class-self-test RED-2 FAILED: the declared body was ` +
+        `${windowClassDeclaration(red2) === null ? "not read as declared" : "read as declared"} and ` +
+        `12:00 Pacific was judged ${isInsideWindow(midday) ? "INSIDE" : "outside"} the window.`,
+    );
+    return 1;
+  }
+  console.log(
+    `${C.bold}window-class RED-2${C.reset} ${C.dim}— declared, but 12:00 Pacific ` +
+      `(${pacificHHMM(midday)}) is outside ${WINDOW_CLASS_OPEN_HHMM}-${WINDOW_CLASS_CLOSE_HHMM}${C.reset}`,
+  );
+
+  const red3 = `alter table only history.row_versions disable trigger row_versions_stamp;`;
+  const red3Sites = windowClassVerdict(red3);
+  if (
+    red3Sites.length !== 1 ||
+    red3Sites[0]!.table !== "history.row_versions" ||
+    red3Sites[0]!.partitions !== 29 ||
+    red3Sites[0]!.mode !== "SHARE ROW EXCLUSIVE"
+  ) {
+    console.error(
+      `${TAG.fail}--window-class-self-test RED-3 FAILED: an \`alter table … disable trigger\` on ` +
+        `history.row_versions was judged ${red3Sites.length} site(s) ` +
+        `(${red3Sites.map((x) => `${x.table}/+${x.partitions}`).join(", ")}); expected 1 on ` +
+        `history.row_versions with 29 partitions.`,
+    );
+    return 1;
+  }
+  console.log(
+    `${C.bold}window-class RED-3${C.reset} ${C.dim}— enable/disable counts (SHARE ROW EXCLUSIVE ` +
+      `across 29 partitions), and the second parent is known${C.reset}`,
+  );
+
+  if (!isInsideWindow(inWindow) || windowClassVerdict(red2).length !== 2) {
+    console.error(
+      `${TAG.fail}--window-class-self-test GREEN FAILED: 02:30 Pacific was judged ` +
+        `${isInsideWindow(inWindow) ? "inside" : "OUTSIDE"} the window.`,
+    );
+    return 1;
+  }
+  console.log(`${C.bold}window-class GREEN${C.reset} ${C.dim}— declared, 02:30 Pacific, it runs${C.reset}`);
+
+  const green2 = `
+    create trigger plain_stamp before insert on iam.api_keys
+      for each row execute function iam.stamp();
+    create or replace function custom.install() returns void language plpgsql as $fn$
+    begin
+      execute 'create trigger t before insert on custom.record for each row execute function custom.f()';
+    end $fn$;
+  `;
+  const green2Sites = windowClassVerdict(green2);
+  if (green2Sites.length !== 0) {
+    console.error(
+      `${TAG.fail}--window-class-self-test GREEN-2 FAILED: a trigger on a non-partitioned table ` +
+        `and a function BODY containing trigger DDL were judged ${green2Sites.length} ` +
+        `window-class site(s): ${green2Sites.map((x) => x.stmt.slice(0, 60)).join(" | ")}`,
+    );
+    return 1;
+  }
+  console.log(
+    `${C.bold}window-class GREEN-2${C.reset} ${C.dim}— an unpartitioned table and a function body ` +
+      `do not fire the rule${C.reset}`,
+  );
+  console.log(
+    `${TAG.ok}trigger DDL on a partitioned parent declares itself and waits for the window; ` +
+      `everything else is untouched.`,
   );
   return 0;
 }
@@ -3572,6 +3772,7 @@ async function main(): Promise<number> {
   }
 
   if (argv.includes("--policy-only-self-test")) return policyOnlySelfTest();
+  if (argv.includes("--window-class-self-test")) return windowClassSelfTest();
   if (argv.includes("--ground-gate-self-test")) return groundGateSelfTest();
   if (argv.includes("--clone-self-test")) return cloneSelfTest(statementTimeout);
   if (argv.includes("--target-self-test")) return targetSelfTest(statementTimeout);

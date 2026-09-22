@@ -96,6 +96,61 @@
 >    proves the guard can fail. Both run in the nightly clone sweep; the green one is also a release
 >    gate, `pnpm check:policy-lock-set`.
 
+> ## 🚨 THE SECOND DOOR ONTO THE SAME CORRIDOR: TRIGGER DDL (lane TRIGGER-LOCK, 2026-09-22)
+>
+> A policy change is not the only statement that freezes this estate. Lane OLD-TABLES-1 hit the
+> same freeze from a `drop trigger` on `custom.record` — ~810 ms with sign-in stopped — and
+> believed it was our partitioning. It is not. **Measured on the dev clone, 2026-09-22, each probe
+> inside a rolled-back transaction, from the measuring backend's own `pg_locks`:**
+>
+> | statement | strongest lock | its own relations | + supautils set | total ACCESS EXCLUSIVE | elapsed |
+> |---|---|---|---|---|---|
+> | `create trigger` on `custom.record` (16 partitions) | SHARE ROW EXCLUSIVE | 17 (parent + 16) | no | **0** | 3.7 ms |
+> | `create trigger` on a 4-partition scratch table | SHARE ROW EXCLUSIVE | 5 | no | **0** | 1.2 ms |
+> | `create trigger` on an unpartitioned table | SHARE ROW EXCLUSIVE | 1 | no | **0** | 0.7 ms |
+> | `drop trigger` on `custom.record` | ACCESS EXCLUSIVE | 17 | **yes, 23** | **40** | 3.7 ms |
+> | `drop trigger` on a 4-partition scratch table | ACCESS EXCLUSIVE | 5 | **yes, 23** | **28** | 1.3 ms |
+> | `drop trigger` on an unpartitioned table | ACCESS EXCLUSIVE | 1 | **yes, 23** | **24** | 0.8 ms |
+> | `alter table … disable trigger` on `custom.record` | SHARE ROW EXCLUSIVE | 17 | no | **0** | 13.1 ms |
+> | `alter table … enable/disable trigger` on an unpartitioned table | SHARE ROW EXCLUSIVE | 1 | no | **0** | 10.0 ms |
+> | `create or replace function` of a trigger function | none on any table | 0 | no | **0** | 72.8 ms |
+> | `create policy` (the POLICY-LOCK baseline, same harness) | ACCESS EXCLUSIVE | 1 | **yes, 23** | **24** | 0.8 ms |
+>
+> **What the table says, and it corrects two beliefs:**
+>
+> 1. **`drop trigger` is the expensive one, and it freezes sign-in exactly like a policy change.**
+>    The 23 `auth.*`/`storage.*`/`realtime.*` relations appear on a `drop trigger` against an
+>    ORDINARY UNPARTITIONED table too, so Supabase's `supautils.policy_grants` hook is not
+>    policy-specific: it fires on DDL. The partition count is simply the multiplier on top of it.
+> 2. **`create trigger` and `alter table … enable/disable trigger` take SHARE ROW EXCLUSIVE, not
+>    ACCESS EXCLUSIVE** (PostgreSQL 15 lowered the latter). They stop no reader and no sign-in —
+>    they stop every WRITER to the table and all of its partitions for the length of the
+>    transaction. That is still an outage of the record store; it is not an outage of the platform.
+> 3. **The fan-out is PostgreSQL's, not ours.** A scratch hash-partitioned table this campaign never
+>    touched behaves identically — 5 own relations where `custom.record` has 17. So the cost scales
+>    with the partition count, and `history.row_versions` has **29**.
+> 4. **Replacing a trigger function's body is free.** Trigger LOGIC can be fixed at midday; which
+>    triggers EXIST cannot.
+>
+> So, from 2026-09-22:
+>
+> 1. **A migration file carrying trigger DDL on a partitioned parent (`custom.record`,
+>    `history.row_versions`) is WINDOW-CLASS.** It declares itself with a header line —
+>    `-- window-class: <why>` — at every target, and `pnpm db:apply --target production` REFUSES it
+>    outside **01:00–04:00 Pacific**, on the bytes and the clock, before a connection exists. There
+>    is no flag that removes the window; that switch was itself the defect on 2026-09-21.
+> 2. **Its inverse is window-class too** — undoing a trigger is `drop trigger`, the expensive half —
+>    so it carries the same declaration and the abort checklist can see the freeze coming.
+> 3. **58 files predate the rule** (33 in `migrations/campaign/`, 25 in `migrations/inverse/`) and
+>    are grandfathered BY NAME in `WINDOW_CLASS_GRANDFATHERED`. Adding a name there is not a fix.
+> 4. **The lock set is watched, not assumed.** `scripts/campaign-tests/triggerlock_green.sql`
+>    asserts, per statement kind, that trigger DDL on a scratch partitioned parent locks exactly
+>    its own relations (and, for `drop trigger`, exactly those plus the supautils set) and nothing
+>    more. Its red twin `triggerlock_red.sql` plants an escalating event trigger and proves BOTH
+>    arms of the predicate can fail. Both run in the nightly clone sweep; the green one is a release
+>    gate, `pnpm check:trigger-lock-set`, and the byte-level rule has
+>    `pnpm check:migration-window-class:self-test`.
+
 A night job is a **one-shot**: it fires once, on a calendar time, from a launchd user agent, and
 deletes its own plist on the way out. It exists because the session that scheduled it will not be
 alive when it runs.

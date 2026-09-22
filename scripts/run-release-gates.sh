@@ -387,6 +387,15 @@ if $STRICT; then
         # today; it goes red the day one of our event triggers starts escalating, or the day
         # Supabase changes the list. Its red twin is scripts/campaign-tests/policylock_red.sql.
         "POLICY-LOCK: a policy change locks nothing undeclared (clone)|pnpm check:policy-lock-set"
+        # TRIGGER-LOCK is the same pair for the OTHER statement that freezes this estate.
+        # Measured 2026-09-22: a `drop trigger` on `custom.record` takes ACCESS EXCLUSIVE on 40
+        # relations — the parent, its 16 partitions and the same 23 auth/storage/realtime ones —
+        # so a file carrying trigger DDL on a partitioned parent is window-class and the runner
+        # refuses it at production outside 1-4 AM Pacific. The self-test judges bytes and needs
+        # no connection; the clone suite measures the lock set itself and has its red twin in
+        # scripts/campaign-tests/triggerlock_red.sql.
+        "Trigger DDL on a partitioned parent is window-class (self-test)|pnpm check:migration-window-class:self-test"
+        "TRIGGER-LOCK: trigger DDL locks nothing undeclared (clone)|pnpm check:trigger-lock-set"
         # PARTITION RUNWAY stays ADVISORY even in strict mode. It is the only
         # gate whose subject is the CALENDAR, not the code: a release that has
         # nothing to do with history.row_versions must not be blocked because a
