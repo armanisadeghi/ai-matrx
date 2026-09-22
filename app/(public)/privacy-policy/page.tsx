@@ -377,6 +377,19 @@ const PrivacyPolicyPage = () => {
             )
           </li>
           <li>
+            <strong>Amazon Web Services (AWS)</strong> &mdash; hosts the AI
+            Matrx server that processes connected-service requests, including
+            Gmail reading and outreach replies. (
+            <a
+              href="https://aws.amazon.com/privacy/"
+              rel="external noopener"
+              target="_blank"
+            >
+              AWS privacy notice
+            </a>
+            )
+          </li>
+          <li>
             <strong>Vercel</strong> &mdash; hosting for our web application and
             API routes. Receives request metadata (IP address, user-agent) as
             part of normal HTTPS serving. (
@@ -487,7 +500,7 @@ const PrivacyPolicyPage = () => {
           queries, or Gmail message bodies as records. The separately configured
           outreach-reply feature saves matched replies as described in Section
           2.9; that CRM copy remains after you disconnect Google until you
-          delete it or your account.
+          request its deletion or delete your account.
         </p>
 
         <h3>3.6 Amazon credentials and information</h3>
@@ -561,7 +574,7 @@ const PrivacyPolicyPage = () => {
             Gmail message bodies handled by on-demand Workspace operations are
             processed for the requested action and are not stored by those
             endpoints. Matched outreach replies saved as CRM interactions are
-            retained until you delete the interaction or your account;
+            retained until you request their deletion or delete your account;
             disconnecting Google stops future access but does not itself delete
             those existing CRM interactions.
           </li>
@@ -602,9 +615,9 @@ const PrivacyPolicyPage = () => {
             Workspace connection control in AI Matrx to revoke Google
             authorization and remove the saved server-side credential and
             selected-file references. This does not delete any CRM interactions
-            previously saved from matched outreach replies; delete those
-            separately or request account deletion. You can also revoke AI Matrx
-            from your Google Account permissions.
+            previously saved from matched outreach replies; request their
+            deletion separately or request account deletion. You can also revoke
+            AI Matrx from your Google Account permissions.
           </li>
           <li>
             <strong>Disconnect Amazon.</strong> Use the Amazon connection
