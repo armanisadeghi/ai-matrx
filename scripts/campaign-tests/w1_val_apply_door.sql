@@ -158,8 +158,17 @@ begin
     if v_msg not ilike '%has turned the record store off%' then
       raise exception 'B FAILED: refused with "%" (%), which does not say this organization has turned the record store off.', v_msg, v_state;
     end if;
-    if coalesce(v_hint, '') not like '%custom/system_enabled%' and v_msg not like '%custom/system_enabled%' then
-      raise exception 'B FAILED: the refusal carries no remedy naming the knob. Message "%", hint "%".', v_msg, v_hint;
+    -- 🚨 STORE-ON 2026-09-23 — THE REMEDY IS ASSERTED, NOT THE KNOB KEY. This used to demand
+    -- the literal string `custom/system_enabled` in the message or the hint. A knob key is a
+    -- database identifier, not a remedy: the campaign's own rule for these sentences is "one
+    -- sentence, no knob key" (matrx_records/switch.py), and the hint stopped carrying it when
+    -- the platform default moved to ON and the sentence was rewritten to name the ACT — an
+    -- owner or an administrator here switched the store off — instead of the setting. What
+    -- this clause is for is that a refused person is told WHAT TO DO, so that is what it asks
+    -- for: where the switch lives, and the verb.
+    if coalesce(v_hint, '') not ilike '%database settings%'
+       or coalesce(v_hint, '') not ilike '%turn it back on%' then
+      raise exception 'B FAILED: the refusal carries no remedy — it never says where the switch lives or what to do there. Message "%", hint "%".', v_msg, v_hint;
     end if;
     raise notice 'B. the same person, the same table, the switch OFF — REFUSED % — "%"', v_state, v_msg;
     raise notice 'B. remedy — "%"', coalesce(v_hint, v_msg);

@@ -61,7 +61,10 @@ create temporary table ridgeline_fixture on commit drop as select
   '87a6e699-3622-4869-8843-d0867456c0dd'::uuid as admin_id,
   '4060701e-706a-4c76-b3ca-0bbc69fa5a14'::uuid as dana_id,
   gen_random_uuid() as org,
-  null::uuid as people, null::uuid as tpl, null::uuid as home;
+  null::uuid as people, null::uuid as tpl, null::uuid as home,
+  -- STORE-ON 2026-09-23: a SECOND real organization, switched off, that nobody in this
+  -- fixture belongs to. RED 3 needs one — see the block that fills it in.
+  null::uuid as stranger_org;
 
 -- The seat reads and writes this one row. A temporary table is not the store, it dies with the
 -- transaction, and it carries no product clause — it is how the four blocks below share one
@@ -234,10 +237,35 @@ $t$;
 -- ════════════════════════════════════════════════════════════════════════════
 -- RED 3 — THE REAL PRE-FIX BYTES of the three writing doors: a stranger is told about an
 -- organization's switch instead of being told they are not in it.
+--
+-- 🚨 REPAIRED 2026-09-23 (lane STORE-ON) — THE PLANT HAD STOPPED ARMING, AND THE REASON IS
+-- THE POINT. This clause used to name `gen_random_uuid()`: an organization that does not
+-- exist, whose record store therefore resolved to the PLATFORM DEFAULT, which was OFF. The
+-- pre-fix door order could only leak the store's state while the store was off, so the whole
+-- twin rested on a default. Arman ruled that default ON, every organization resolves ON, and
+-- the pre-fix bytes fell straight through the store door and answered "you are not a member"
+-- — the twin reported "RED 3 failed for another reason", correctly: it could no longer arm.
+--
+-- So the twin now BUILDS the state it is about instead of borrowing it from a default: a real
+-- second organization, Summit Ridge Chiropractic, with its store switched off through
+-- `platform.unified_data_store_set` — the same door an owner uses — and nobody in this fixture
+-- is a member of it. That is the only state in which the defect exists, and now the file says
+-- so out loud. It dies with the ROLLBACK like everything else here.
 do $t$
+declare
+  f        record;
+  v_other  uuid := gen_random_uuid();
 begin
   -- OUT OF THE SEAT: planting bytes is an operator act. No product clause is asserted here.
   perform set_config('role', (select who from ridgeline_boss), true);
+  select * into f from ridgeline_fixture;
+  insert into iam.organizations (id, name, slug, abbreviation, created_by)
+  values (v_other, 'Summit Ridge Chiropractic ' || substr(v_other::text, 1, 8),
+          'summit-ridge-chiropractic-' || substr(v_other::text, 1, 8), 'SRC', f.admin_id);
+  perform platform.unified_data_store_set(
+    v_other, false, f.admin_id,
+    'checklists_red RED 3: this organization keeps its store off, which is the only state in which the pre-fix door order can leak it to a stranger');
+  update ridgeline_fixture set stranger_org = v_other;
 end
 $t$;
 
@@ -253,12 +281,13 @@ begin
   perform set_config('request.jwt.claims',
                      '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}', true);
   begin
-    perform custom.checklist_start(gen_random_uuid(), f.tpl, null, '{}'::jsonb, null);
-    raise exception 'RED 3 CAME OUT GREEN — a stranger started a checklist in an organization of their own';
+    perform custom.checklist_start(f.stranger_org, f.tpl, null, '{}'::jsonb, null);
+    raise exception 'RED 3 CAME OUT GREEN — a stranger started a checklist in an organization they are not in';
   exception when insufficient_privilege then
     get stacked diagnostics v_caught = message_text;
   end;
-  -- 🚨 RE-PINNED (lane RED-SUITES-2, 2026-09-21). This clause used to demand the literal words
+  -- 🚨 RE-PINNED (lane RED-SUITES-2, 2026-09-21; the sentence moved again on 2026-09-23, see
+  -- the block above). This clause used to demand the literal words
   -- "switched off". `limitsfix_a_new_organization_has_the_store_on.sql` rewrote the ONE body
   -- every write door reaches (`custom.assert_store_door`) to say "This organization has not
   -- turned the record store on yet …" instead. The DEFECT the red twin plants is unchanged and
