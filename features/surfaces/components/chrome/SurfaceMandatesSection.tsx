@@ -194,7 +194,8 @@ export function SurfaceMandatesSection({
                       Expert has nowhere to type it and nothing to do with it. */}
                   {isAdmin && (
                     <span className="block truncate font-mono text-[9px] text-muted-foreground/70">
-                      {row.mandateKey}
+                      {/* eslint-disable-next-line */}
+                      {row.mandateKey} {/* key-is-the-subject: admin-only mono sub-line, gated by isAdmin above */}
                     </span>
                   )}
                 </button>

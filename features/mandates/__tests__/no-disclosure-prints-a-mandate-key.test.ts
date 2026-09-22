@@ -14,6 +14,11 @@
  * exists so there is exactly one answer: the author's label, else the key's own
  * last segment title-cased — never the dotted key.
  *
+ * A SINGLE LINE opts out with a trailing `// key-is-the-subject: <reason>`,
+ * which is how an admin-gated mono sub-line keeps the key without exempting the
+ * whole file around it. The reason is required, so the opt-out is a sentence a
+ * reviewer reads, not a flag.
+ *
  * WHAT THIS GUARD DOES NOT FORBID: the mandates CONSOLE and the mandate BROWSE
  * surfaces, where the key is the subject of the page and lives in its own mono
  * chip ("slugs live in mono chips; prose speaks labels"), and the authoring
@@ -118,6 +123,8 @@ const BARE_JSX_CHILD =
   /^\s*\{\s*(?:[A-Za-z_$][\w$]*(?:\?)?\.)*(?:mandateKey|mandate_key)\s*\}\s*$/;
 const KEY_AS_LABEL_FALLBACK =
   /(\?\?|\|\|)\s*(?:[A-Za-z_$][\w$]*(?:\?)?\.)*(?:mandateKey|mandate_key)\b/;
+/** A per-line opt-out that must carry a reason. */
+const LINE_OPT_OUT = /\/\/\s*key-is-the-subject:\s*\S/;
 
 function sourceFiles(): string[] {
   const out = execFileSync(
@@ -145,6 +152,7 @@ export function findingsIn(path: string, source: string): string[] {
   source.split("\n").forEach((line, index) => {
     // A comment is not a screen. This class is quoted in the very docblocks that
     // forbid it, so a scanner that cannot tell the two apart cries wolf forever.
+    if (LINE_OPT_OUT.test(line)) return;
     const code = line.replace(/^\s*(?:\/\/|\*|\/\*).*$/, "");
     if (BARE_JSX_CHILD.test(code)) {
       found.push(`${path}:${index + 1} — a mandate key rendered as a JSX child`);
@@ -167,6 +175,16 @@ describe("no disclosure surface prints a mandate key", () => {
     ).toHaveLength(1);
     expect(
       findingsIn("x.tsx", "  {mandateDisplayName(row.mandateKey, label)}\n"),
+    ).toHaveLength(0);
+    // The opt-out needs a reason — a bare marker does not silence anything.
+    expect(
+      findingsIn("x.tsx", "  {row.mandateKey} // key-is-the-subject:\n"),
+    ).toHaveLength(1);
+    expect(
+      findingsIn(
+        "x.tsx",
+        "  {row.mandateKey} // key-is-the-subject: admin-only mono sub-line\n",
+      ),
     ).toHaveLength(0);
   });
 

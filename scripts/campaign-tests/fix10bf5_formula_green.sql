@@ -114,7 +114,7 @@ begin
               jsonb_build_object('field', v_job),
               jsonb_build_object('const', ' — '),
               jsonb_build_object('field', v_addr)))));
-  select custom.read_record(v_org, v_rec, true) -> 'document' ->> 'ticket_label' into v_seen;
+  select custom.read_record(v_org, v_rec, true) ->> 'ticket_label' into v_seen;
   if v_seen is distinct from 'RPC-T1-7000 — 100 Ventura Ave, Ventura' then
     raise exception '1: a worked-out column built from two real columns by id reads % on the read door, and the dispatcher should see "RPC-T1-7000 — 100 Ventura Ave, Ventura"',
                     coalesce(v_seen, 'nothing at all');
@@ -180,7 +180,7 @@ begin
     end if;
   end;
   -- and the column it tried to break still answers exactly what it answered in part 1.
-  select custom.read_record(v_org, v_rec, true) -> 'document' ->> 'ticket_label' into v_seen;
+  select custom.read_record(v_org, v_rec, true) ->> 'ticket_label' into v_seen;
   if v_seen is distinct from 'RPC-T1-7000 — 100 Ventura Ave, Ventura' then
     raise exception '4: the refused retype left the column reading %', coalesce(v_seen, 'nothing');
   end if;
