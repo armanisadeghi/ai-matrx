@@ -85,7 +85,8 @@
     "REALTIME-2": 3044,
     "TAILS-4": 3046,
     "LINKS-2": 3047,
-    "DRILL": 3048
+    "DRILL": 3048,
+    "FIX-13": 3045
   },
   "noDevServer": {
     "W6-DOCS": "Proves its contract through the document pipeline, not a browser.",
