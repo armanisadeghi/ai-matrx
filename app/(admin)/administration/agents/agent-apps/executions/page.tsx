@@ -1,41 +1,17 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Activity,
   AlertCircle,
   CheckCircle,
   ExternalLink,
-  Eye,
-  Filter,
-  RefreshCw,
-  X,
   XCircle,
 } from "lucide-react";
+import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatCount, formatUsd } from "@ai-matrx/kit/format";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@ai-matrx/design-system";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -44,15 +20,28 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/use-toast";
-import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
-import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
+import type {
+  ColumnFilterValue,
+  MatrxColumnDef,
+  MatrxDataTableQueryState,
+} from "@ai-matrx/design-system/data-table/types";
+import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
+import { formatCount, formatUsd } from "@ai-matrx/kit/format";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 import {
   fetchAgentAppErrors,
   fetchAgentAppExecutions,
@@ -67,61 +56,19 @@ import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
   createAdminAgentAppsScope,
 } from "@/features/surfaces/manifests/admin-agent-apps.manifest";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
-/**
- * The shared TabsContent wrapper hardcodes `forceMount`, so BOTH tables stay
- * mounted regardless of the active tab. Registering both providers would let
- * the later registration shadow the active tab's scope (same surface, same
- * depth) — so each table registers its provider ONLY while its tab is active.
- */
-function SurfaceScopeWhenActive({
-  active,
-  getScope,
-  children,
-}: {
-  active: boolean;
-  getScope: () => SurfaceScopePayload;
-  children: React.ReactNode;
-}) {
-  if (!active) return <>{children}</>;
-  return (
-    <SurfaceRuntimeProvider
-      surfaceName={ADMIN_AGENT_APPS_SURFACE_NAME}
-      getScope={getScope}
-    >
-      {children}
-    </SurfaceRuntimeProvider>
-  );
-}
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
-
-function humanExecution(r: AgentAppExecutionRow): string {
-  return [
-    `${r.app_name ?? r.app_id} — ${r.success ? "OK" : "Failed"}`,
-    `Task: ${r.task_id}`,
-    r.error_message ? `Error: ${r.error_message}` : null,
-    `Tokens: ${formatCount(r.tokens_used)} · Cost: ${formatUsd(r.cost, { digits: 4 })}`,
-    r.execution_time_ms ? `Time: ${r.execution_time_ms}ms` : null,
-    `When: ${new Date(r.created_at).toLocaleString()}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
-}
-
-function humanError(r: AgentAppErrorRow): string {
-  return [
-    `${r.app_name ?? r.app_id} — ${ERROR_TYPE_LABELS[r.error_type] ?? r.error_type}`,
-    r.resolved ? "Resolved" : "Unresolved",
-    r.error_message ? `Message: ${r.error_message}` : null,
-    r.error_code ? `Code: ${r.error_code}` : null,
-    r.resolution_notes ? `Resolution: ${r.resolution_notes}` : null,
-    `When: ${new Date(r.created_at).toLocaleString()}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
-}
+const LIMIT = 500;
+/** Both source calls order newest first and request only the newest 500; no total receipt exists. */
+export const EXECUTIONS_COVERAGE = {
+  noun: "execution",
+  cap: LIMIT,
+  answeredBy: "client" as const,
+};
+export const ERRORS_COVERAGE = {
+  noun: "error",
+  cap: LIMIT,
+  answeredBy: "client" as const,
+};
 
 const ERROR_TYPE_LABELS: Record<string, string> = {
   missing_variable: "Missing Variable",
@@ -133,46 +80,354 @@ const ERROR_TYPE_LABELS: Record<string, string> = {
   other: "Other",
 };
 
+function humanExecution(row: AgentAppExecutionRow) {
+  return [
+    `${row.app_name ?? row.app_id} — ${row.success ? "OK" : "Failed"}`,
+    `Task: ${row.task_id}`,
+    row.error_message ? `Error: ${row.error_message}` : null,
+    `Tokens: ${formatCount(row.tokens_used)} · Cost: ${formatUsd(row.cost, { digits: 4 })}`,
+    row.execution_time_ms == null ? null : `Time: ${row.execution_time_ms}ms`,
+    `When: ${new Date(row.created_at).toLocaleString()}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+function humanError(row: AgentAppErrorRow) {
+  return [
+    `${row.app_name ?? row.app_id} — ${ERROR_TYPE_LABELS[row.error_type] ?? row.error_type}`,
+    row.resolved ? "Resolved" : "Unresolved",
+    row.error_message ? `Message: ${row.error_message}` : null,
+    row.error_code ? `Code: ${row.error_code}` : null,
+    row.resolution_notes ? `Resolution: ${row.resolution_notes}` : null,
+    `When: ${new Date(row.created_at).toLocaleString()}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+function filterText(filter: ColumnFilterValue | undefined) {
+  return filter?.kind === "text" ? filter.value : "";
+}
+export function executionSuccessFilter(
+  query: MatrxDataTableQueryState,
+): "all" | "success" | "failed" {
+  const filter = query.columnFilters.success;
+  return filter?.kind === "boolean"
+    ? filter.value
+      ? "success"
+      : "failed"
+    : "all";
+}
+export function errorResolvedFilter(
+  query: MatrxDataTableQueryState,
+): "all" | "resolved" | "unresolved" {
+  const filter = query.columnFilters.resolved;
+  return filter?.kind === "boolean"
+    ? filter.value
+      ? "resolved"
+      : "unresolved"
+    : "all";
+}
+
+const AppCell = ({ name, slug }: { name?: string; slug?: string }) => (
+  <div className="flex min-w-0 items-center gap-2">
+    <span className="truncate text-sm" title={name}>
+      {name ?? "—"}
+    </span>
+    {slug && (
+      <a
+        href={`/p/${slug}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shrink-0 text-primary"
+        title={`Open ${name ?? slug}`}
+      >
+        <ExternalLink className="h-3 w-3" />
+      </a>
+    )}
+  </div>
+);
+export const EXECUTION_COLUMNS: MatrxColumnDef<AgentAppExecutionRow>[] = [
+  {
+    id: "success",
+    header: "Outcome",
+    accessorKey: "success",
+    filter: "boolean",
+    width: 105,
+    cell: (row) =>
+      row.success ? (
+        <Badge variant="outline" className="border-success/40 text-success">
+          <CheckCircle className="mr-1 h-3 w-3" />
+          OK
+        </Badge>
+      ) : (
+        <Badge variant="destructive">
+          <XCircle className="mr-1 h-3 w-3" />
+          Fail
+        </Badge>
+      ),
+  },
+  {
+    id: "app",
+    header: "App",
+    accessorFn: (row) =>
+      [row.app_name, row.app_slug, row.app_id].filter(Boolean).join(" "),
+    filter: "text",
+    width: 190,
+    cell: (row) => <AppCell name={row.app_name} slug={row.app_slug} />,
+  },
+  {
+    id: "id",
+    header: "ID",
+    accessorKey: "id",
+    filter: "text",
+    width: 150,
+    mobileHidden: true,
+    cell: (row) => <MatrxUuidCell value={row.id} label="Execution ID" />,
+  },
+  {
+    id: "task",
+    header: "Task",
+    accessorKey: "task_id",
+    filter: "text",
+    width: 180,
+    cell: (row) => (
+      <EntityRef
+        token="task"
+        id={row.task_id}
+        name={row.task_id}
+        showIcon={false}
+      />
+    ),
+  },
+  {
+    id: "identifier",
+    header: "Identifier",
+    accessorFn: (row) => row.user_id ?? row.fingerprint ?? row.ip_address ?? "",
+    filter: "text",
+    width: 170,
+    mobileHidden: true,
+    cell: (row) => (
+      <code
+        className="block truncate text-[11px] text-muted-foreground"
+        title={row.user_id ?? row.fingerprint ?? row.ip_address ?? ""}
+      >
+        {row.user_id
+          ? `user:${row.user_id.slice(0, 8)}`
+          : row.fingerprint
+            ? `fp:${row.fingerprint.slice(0, 8)}`
+            : (row.ip_address ?? "—")}
+      </code>
+    ),
+  },
+  {
+    id: "tokens",
+    header: "Tokens",
+    accessorFn: (row) => row.tokens_used ?? null,
+    filter: "number",
+    align: "right",
+    width: 100,
+    cell: (row) => formatCount(row.tokens_used),
+  },
+  {
+    id: "cost",
+    header: "Cost",
+    accessorFn: (row) => row.cost ?? null,
+    filter: "number",
+    align: "right",
+    width: 100,
+    cell: (row) => formatUsd(row.cost, { digits: 4 }),
+  },
+  {
+    id: "duration",
+    header: "Time",
+    accessorFn: (row) => row.execution_time_ms ?? null,
+    filter: "number",
+    align: "right",
+    width: 110,
+    cell: (row) =>
+      row.execution_time_ms == null
+        ? "—"
+        : `${row.execution_time_ms.toLocaleString()}ms`,
+  },
+  {
+    id: "created",
+    header: "When",
+    accessorKey: "created_at",
+    filter: "date",
+    width: 175,
+    cell: (row) => (
+      <span className="text-xs text-muted-foreground">
+        {new Date(row.created_at).toLocaleString()}
+      </span>
+    ),
+  },
+];
+export const ERROR_COLUMNS: MatrxColumnDef<AgentAppErrorRow>[] = [
+  {
+    id: "resolved",
+    header: "Status",
+    accessorKey: "resolved",
+    filter: "boolean",
+    width: 120,
+    cell: (row) =>
+      row.resolved ? (
+        <Badge variant="outline" className="border-success/40 text-success">
+          <CheckCircle className="mr-1 h-3 w-3" />
+          Resolved
+        </Badge>
+      ) : (
+        <Badge variant="destructive">
+          <AlertCircle className="mr-1 h-3 w-3" />
+          Open
+        </Badge>
+      ),
+  },
+  {
+    id: "type",
+    header: "Type",
+    accessorKey: "error_type",
+    filter: "select",
+    width: 170,
+    cell: (row) => (
+      <Badge variant="outline" className="text-xs">
+        {ERROR_TYPE_LABELS[row.error_type] ?? row.error_type}
+      </Badge>
+    ),
+  },
+  {
+    id: "app",
+    header: "App",
+    accessorFn: (row) =>
+      [row.app_name, row.app_slug, row.app_id].filter(Boolean).join(" "),
+    filter: "text",
+    width: 190,
+    cell: (row) => <AppCell name={row.app_name} slug={row.app_slug} />,
+  },
+  {
+    id: "id",
+    header: "ID",
+    accessorKey: "id",
+    filter: "text",
+    width: 150,
+    mobileHidden: true,
+    cell: (row) => <MatrxUuidCell value={row.id} label="Error ID" />,
+  },
+  {
+    id: "message",
+    header: "Message",
+    accessorFn: (row) => row.error_message ?? "",
+    filter: "text",
+    width: 330,
+    cell: (row) => (
+      <span
+        className="block truncate text-sm"
+        title={row.error_message ?? "No error message"}
+      >
+        {row.error_message ?? "No error message"}
+      </span>
+    ),
+  },
+  {
+    id: "code",
+    header: "Code",
+    accessorFn: (row) => row.error_code ?? "",
+    filter: "text",
+    width: 130,
+    mobileHidden: true,
+    cell: (row) =>
+      row.error_code ? (
+        <code className="block truncate text-xs" title={row.error_code}>
+          {row.error_code}
+        </code>
+      ) : (
+        "—"
+      ),
+  },
+  {
+    id: "execution",
+    header: "Execution ID",
+    accessorFn: (row) => row.execution_id ?? "",
+    filter: "text",
+    width: 150,
+    mobileHidden: true,
+    cell: (row) =>
+      row.execution_id ? (
+        <MatrxUuidCell value={row.execution_id} label="Execution ID" />
+      ) : (
+        "—"
+      ),
+  },
+  {
+    id: "created",
+    header: "When",
+    accessorKey: "created_at",
+    filter: "date",
+    width: 175,
+    cell: (row) => (
+      <span className="text-xs text-muted-foreground">
+        {new Date(row.created_at).toLocaleString()}
+      </span>
+    ),
+  },
+];
+
+function SurfaceScopeWhenActive({
+  active,
+  getScope,
+  children,
+}: {
+  active: boolean;
+  getScope: () => SurfaceScopePayload;
+  children: React.ReactNode;
+}) {
+  return active ? (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_AGENT_APPS_SURFACE_NAME}
+      getScope={getScope}
+    >
+      {children}
+    </SurfaceRuntimeProvider>
+  ) : (
+    <>{children}</>
+  );
+}
+
 export default function AgentAppsExecutionsAdminPage() {
   const [activeTab, setActiveTab] = useState<"executions" | "errors">(
     "executions",
   );
   return (
     <TooltipProvider>
-      <div className="flex flex-col h-full bg-textured">
+      <div className="flex h-full flex-col bg-textured">
         <Tabs
           value={activeTab}
-          onValueChange={(v) => setActiveTab(v as "executions" | "errors")}
-          className="flex-1 flex flex-col overflow-hidden"
+          onValueChange={(value) =>
+            setActiveTab(value as "executions" | "errors")
+          }
+          className="flex flex-1 flex-col overflow-hidden"
         >
-          <div className="border-b border-border px-4 bg-card">
-            <TabsList className="bg-transparent h-auto p-0 gap-1">
-              <TabsTrigger
-                value="executions"
-                className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
-              >
-                <Activity className="w-4 h-4" />
+          <div className="border-b border-border bg-card px-4">
+            <TabsList className="h-auto gap-1 bg-transparent p-0">
+              <TabsTrigger value="executions">
+                <Activity className="mr-2 h-4 w-4" />
                 Executions
               </TabsTrigger>
-              <TabsTrigger
-                value="errors"
-                className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
-              >
-                <AlertCircle className="w-4 h-4" />
+              <TabsTrigger value="errors">
+                <AlertCircle className="mr-2 h-4 w-4" />
                 Errors
               </TabsTrigger>
             </TabsList>
           </div>
-          <div className="flex-1 overflow-hidden">
+          <div className="min-h-0 flex-1">
             <TabsContent
               value="executions"
-              className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col"
+              className="m-0 h-full data-[state=active]:flex data-[state=active]:flex-col"
             >
               <ExecutionsTable active={activeTab === "executions"} />
             </TabsContent>
             <TabsContent
               value="errors"
-              className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col"
+              className="m-0 h-full data-[state=active]:flex data-[state=active]:flex-col"
             >
               <ErrorsTable active={activeTab === "errors"} />
             </TabsContent>
@@ -187,303 +442,156 @@ function ExecutionsTable({ active }: { active: boolean }) {
   const { toast } = useToast();
   const [rows, setRows] = useState<AgentAppExecutionRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [appFilter, setAppFilter] = useState("");
-  const [successFilter, setSuccessFilter] = useState<
-    "all" | "success" | "failed"
-  >("all");
-
-  const load = useCallback(async () => {
-    setLoading(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [viewRows, setViewRows] = useState<AgentAppExecutionRow[]>([]);
+  const tableQuery = useTableUrlState({
+    tableId: "admin-agent-app-executions",
+    defaultSort: { id: "created", direction: "desc" },
+    defaultPageSize: 50,
+  });
+  const outcome = executionSuccessFilter(tableQuery.state);
+  const load = async () => {
+    const retain = rows.length > 0;
+    retain ? setRefreshing(true) : setLoading(true);
     try {
-      const successVal =
-        successFilter === "all" ? undefined : successFilter === "success";
       const data = await fetchAgentAppExecutions({
-        success: successVal,
-        limit: 500,
+        success: outcome === "all" ? undefined : outcome === "success",
+        limit: LIMIT,
       });
       setRows(data);
-    } catch (err) {
-      toast({
-        title: "Error",
-        description:
-          err instanceof Error ? err.message : "Failed to load executions",
-        variant: "destructive",
-      });
+      setViewRows(data);
+      setError(null);
+    } catch (cause) {
+      const message =
+        cause instanceof Error ? cause.message : "Failed to load executions";
+      setError(message);
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, [successFilter, toast]);
-
+  };
   useEffect(() => {
     void load();
-  }, [load]);
-
-  const filtered = useMemo(() => {
-    if (!appFilter) return rows;
-    const q = appFilter.toLowerCase();
-    return rows.filter(
-      (r) =>
-        r.app_name?.toLowerCase().includes(q) ||
-        r.app_slug?.toLowerCase().includes(q) ||
-        idMatchesQuery(r, q),
-    );
-  }, [rows, appFilter]);
-
-  const stats = useMemo(() => {
-    const total = rows.length;
-    const success = rows.filter((r) => r.success).length;
-    const failed = total - success;
-    return { total, success, failed };
-  }, [rows]);
-
-  if (loading && rows.length === 0) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <MatrxMiniLoader />
-      </div>
-    );
-  }
-
+  }, [outcome]);
+  const stats = {
+    total: rows.length,
+    success: rows.filter((row) => row.success).length,
+    failed: rows.filter((row) => !row.success).length,
+  };
+  const scope = () =>
+    createAdminAgentAppsScope({
+      admin_section: "executions",
+      executions_active_tab: "executions",
+      executions_rows: viewRows.map((row) => ({
+        success: row.success,
+        app_name: row.app_name ?? null,
+        app_slug: row.app_slug ?? null,
+        task_id: row.task_id,
+        user_id: row.user_id ?? null,
+        fingerprint: row.fingerprint ?? null,
+        ip_address: row.ip_address ?? null,
+        tokens_used: row.tokens_used ?? null,
+        cost: row.cost ?? null,
+        execution_time_ms: row.execution_time_ms ?? null,
+        created_at: row.created_at,
+      })),
+      executions_stats: stats,
+      executions_app_filter: filterText(tableQuery.state.columnFilters.app),
+      executions_success_filter: outcome,
+    });
   return (
-    <SurfaceScopeWhenActive
-      active={active}
-      getScope={() =>
-        createAdminAgentAppsScope({
-          admin_section: "executions",
-          executions_active_tab: "executions",
-          executions_rows: filtered.map((r) => ({
-            success: r.success,
-            app_name: r.app_name ?? null,
-            app_slug: r.app_slug ?? null,
-            task_id: r.task_id,
-            user_id: r.user_id ?? null,
-            fingerprint: r.fingerprint ?? null,
-            ip_address: r.ip_address ?? null,
-            tokens_used: r.tokens_used ?? null,
-            cost: r.cost ?? null,
-            execution_time_ms: r.execution_time_ms ?? null,
-            created_at: r.created_at,
-          })),
-          executions_stats: stats,
-          executions_app_filter: appFilter,
-          executions_success_filter: successFilter,
-        })
-      }
-    >
-    <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="flex-shrink-0 p-4 border-b border-border bg-card space-y-3">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 min-w-[300px]">
-              <Card>
-                <CardContent className="p-2">
-                  <div className="text-xl font-bold">{stats.total}</div>
-                  <div className="text-xs text-muted-foreground">Total</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-2">
-                  <div className="text-xl font-bold text-success">
-                    {stats.success}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Success</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-2">
-                  <div className="text-xl font-bold text-destructive">
-                    {stats.failed}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Failed</div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="Filter by app..."
-              value={appFilter}
-              onChange={(e) => setAppFilter(e.target.value)}
-              className="h-8 text-xs max-w-[240px]"
-            />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Filter className="h-3.5 w-3.5 mr-1" />
-                  {successFilter === "all"
-                    ? "All"
-                    : successFilter === "success"
-                      ? "Success"
-                      : "Failed"}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Filter by Outcome</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem
-                  checked={successFilter === "all"}
-                  onCheckedChange={() => setSuccessFilter("all")}
-                >
-                  All
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={successFilter === "success"}
-                  onCheckedChange={() => setSuccessFilter("success")}
-                >
-                  Success only
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={successFilter === "failed"}
-                  onCheckedChange={() => setSuccessFilter("failed")}
-                >
-                  Failed only
-                </DropdownMenuCheckboxItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button variant="outline" size="sm" onClick={() => void load()}>
-              <RefreshCw className="h-3.5 w-3.5 mr-1" />
-              Refresh
-            </Button>
-            {filtered.length > 0 && (
-              <>
+    <SurfaceScopeWhenActive active={active} getScope={scope}>
+      <div
+        className="flex min-h-0 flex-1 flex-col"
+        aria-busy={loading || refreshing}
+      >
+        {error && <LoadError label="executions" error={error} retry={load} />}
+        <Stats
+          cards={[
+            [stats.total, "Loaded"],
+            [stats.success, "Success loaded", "text-success"],
+            [stats.failed, "Failed loaded", "text-destructive"],
+          ]}
+        />
+        <div className="min-h-0 flex-1">
+          <MatrxDataTable
+            tableId="admin-agent-app-executions"
+            query={{
+              mode: "controlled-local",
+              state: tableQuery.state,
+              onStateChange: tableQuery.onStateChange,
+            }}
+            data={rows}
+            columns={EXECUTION_COLUMNS}
+            getRowId={(row) => row.id}
+            isLoading={loading}
+            isFetching={refreshing}
+            stickyHeader
+            pageSize={50}
+            localPagination={{ mode: "progressive" }}
+            coverage={EXECUTIONS_COVERAGE}
+            toolbar={{
+              title: "Executions",
+              search: true,
+              searchPlaceholder: "Search executions…",
+              refresh: { onRefresh: load },
+              actions: viewRows.length ? (
                 <CopyButtons
                   size="icon"
-                  label={`Executions (${filtered.length})`}
-                  human={() => filtered.map(humanExecution).join("\n\n")}
-                  json={() => filtered}
+                  label={`Executions (${viewRows.length})`}
+                  human={() => viewRows.map(humanExecution).join("\n\n")}
+                  json={() => viewRows}
                   agent={() => ({
                     kind: "agent-app-executions",
                     location: "AI Matrx Admin — Agent Apps — Executions",
-                    description: "Recent executions currently shown (filtered).",
-                    data: filtered,
-                    attributes: { count: filtered.length },
+                    description:
+                      "Recent executions currently shown after canonical table filters.",
+                    data: viewRows,
+                    attributes: { count: viewRows.length },
                   })}
                   export={{
                     items: [
-                      jsonExportItem(() => filtered, "JSON (this view)"),
+                      jsonExportItem(() => viewRows, "JSON (this view)"),
                       csvExportItem(
-                        () => filtered as unknown as Array<Record<string, unknown>>,
+                        () =>
+                          viewRows as unknown as Array<Record<string, unknown>>,
                         "CSV (this view)",
                       ),
                     ],
                   }}
                 />
-              </>
+              ) : undefined,
+            }}
+            copy={false}
+            detail={{ enabled: false }}
+            window={{ enabled: false }}
+            emptyState={{
+              title: error
+                ? "Could not load executions."
+                : "No executions match the current view.",
+            }}
+            onViewChange={setViewRows}
+            rowActions={(row) => (
+              <CopyButtons
+                size="xs"
+                label={row.app_name ?? row.task_id}
+                human={() => humanExecution(row)}
+                json={() => row}
+                agent={() => ({
+                  kind: "agent-app-execution",
+                  location: "AI Matrx Admin — Agent Apps — Executions",
+                  description: "A single agent-app execution row.",
+                  data: row,
+                  summary: humanExecution(row),
+                  attributes: { id: row.id, success: row.success },
+                })}
+              />
             )}
-          </div>
+          />
         </div>
       </div>
-
-      <ScrollArea className="flex-1">
-        <Table>
-          <TableHeader className="sticky top-0 bg-background z-10">
-            <TableRow>
-              <TableHead className="w-24">Status</TableHead>
-              <TableHead>App</TableHead>
-              <TableHead>Task</TableHead>
-              <TableHead>Identifier</TableHead>
-              <TableHead className="text-right">Tokens</TableHead>
-              <TableHead className="text-right">Cost</TableHead>
-              <TableHead className="text-right">Time</TableHead>
-              <TableHead>When</TableHead>
-              <TableHead className="w-10" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((r) => (
-              <TableRow key={r.id} className="group/x">
-                <TableCell>
-                  {r.success ? (
-                    <Badge
-                      variant="outline"
-                      className="text-success border-success/40"
-                    >
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      OK
-                    </Badge>
-                  ) : (
-                    <Badge variant="destructive">
-                      <XCircle className="w-3 h-3 mr-1" />
-                      Fail
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">{r.app_name ?? "—"}</span>
-                    {r.app_slug && (
-                      <a
-                        href={`/p/${r.app_slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="font-mono text-[11px] text-muted-foreground truncate max-w-[160px]">
-                  <EntityRef
-                    token="task"
-                    id={r.task_id}
-                    name={r.task_id}
-                    showIcon={false}
-                  />
-                </TableCell>
-                <TableCell className="font-mono text-[11px] text-muted-foreground truncate max-w-[160px]">
-                  {r.user_id ? `user:${r.user_id.slice(0, 8)}` : ""}
-                  {r.fingerprint
-                    ? `fp:${r.fingerprint.slice(0, 8)}`
-                    : ""}
-                  {r.ip_address ?? ""}
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatCount(r.tokens_used)}
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatUsd(r.cost, { digits: 4 })}
-                </TableCell>
-                <TableCell className="text-right">
-                  {r.execution_time_ms
-                    ? `${r.execution_time_ms.toLocaleString()}ms`
-                    : "—"}
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {new Date(r.created_at).toLocaleString()}
-                </TableCell>
-                <TableCell
-                  className="text-right"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <CopyButtons
-                    size="xs"
-                    label={r.app_name ?? r.task_id}
-                    className="opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
-                    human={() => humanExecution(r)}
-                    json={() => r}
-                    agent={() => ({
-                      kind: "agent-app-execution",
-                      location: "AI Matrx Admin — Agent Apps — Executions",
-                      description: "A single agent-app execution row.",
-                      data: r,
-                      summary: humanExecution(r),
-                      attributes: { id: r.id, success: r.success },
-                    })}
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        {filtered.length === 0 && !loading && (
-          <div className="text-center py-12 text-muted-foreground">
-            <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            No executions match your filter.
-          </div>
-        )}
-      </ScrollArea>
-    </div>
     </SurfaceScopeWhenActive>
   );
 }
@@ -492,74 +600,58 @@ function ErrorsTable({ active }: { active: boolean }) {
   const { toast } = useToast();
   const [rows, setRows] = useState<AgentAppErrorRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [resolvedFilter, setResolvedFilter] = useState<
-    "all" | "resolved" | "unresolved"
-  >("unresolved");
-  const [appFilter, setAppFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState<Set<string>>(new Set());
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [viewRows, setViewRows] = useState<AgentAppErrorRow[]>([]);
   const [selected, setSelected] = useState<AgentAppErrorRow | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState("");
-
-  const load = useCallback(async () => {
-    setLoading(true);
+  const tableQuery = useTableUrlState({
+    tableId: "admin-agent-app-errors",
+    defaultSort: { id: "created", direction: "desc" },
+    defaultPageSize: 50,
+  });
+  const queryResolved = errorResolvedFilter(tableQuery.state);
+  const hasLoadedDefault = useRef(false);
+  // The legacy Errors tab opens on unresolved rows. Once a person clears the canonical status filter, all rows are requested.
+  const resolved =
+    queryResolved === "all" && !hasLoadedDefault.current
+      ? "unresolved"
+      : queryResolved;
+  const load = async () => {
+    const retain = rows.length > 0;
+    retain ? setRefreshing(true) : setLoading(true);
     try {
-      const r =
-        resolvedFilter === "all"
-          ? undefined
-          : resolvedFilter === "resolved";
-      const data = await fetchAgentAppErrors({ resolved: r, limit: 500 });
-      setRows(data);
-    } catch (err) {
-      toast({
-        title: "Error",
-        description:
-          err instanceof Error ? err.message : "Failed to load errors",
-        variant: "destructive",
+      const data = await fetchAgentAppErrors({
+        resolved: resolved === "all" ? undefined : resolved === "resolved",
+        limit: LIMIT,
       });
+      setRows(data);
+      setViewRows(data);
+      hasLoadedDefault.current = true;
+      setError(null);
+    } catch (cause) {
+      const message =
+        cause instanceof Error ? cause.message : "Failed to load errors";
+      setError(message);
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, [resolvedFilter, toast]);
-
+  };
   useEffect(() => {
     void load();
-  }, [load]);
-
-  const uniqueTypes = useMemo(() => {
-    const s = new Set<string>();
-    rows.forEach((r) => r.error_type && s.add(r.error_type));
-    return Array.from(s).sort();
-  }, [rows]);
-
-  const filtered = useMemo(() => {
-    let f = [...rows];
-    if (typeFilter.size > 0)
-      f = f.filter((r) => r.error_type && typeFilter.has(r.error_type));
-    if (appFilter) {
-      const q = appFilter.toLowerCase();
-      f = f.filter(
-        (r) =>
-          r.app_name?.toLowerCase().includes(q) ||
-          r.app_slug?.toLowerCase().includes(q) ||
-          idMatchesQuery(r, q),
-      );
-    }
-    return f;
-  }, [rows, typeFilter, appFilter]);
-
-  const stats = useMemo(() => {
-    const total = rows.length;
-    const resolved = rows.filter((r) => r.resolved).length;
-    const unresolved = total - resolved;
-    return { total, resolved, unresolved };
-  }, [rows]);
-
-  const handleOpen = (row: AgentAppErrorRow) => {
+  }, [resolved]);
+  const stats = {
+    total: rows.length,
+    resolved: rows.filter((row) => row.resolved).length,
+    unresolved: rows.filter((row) => !row.resolved).length,
+  };
+  const open = (row: AgentAppErrorRow) => {
     setSelected(row);
     setResolutionNotes(row.resolution_notes ?? "");
   };
-
-  const handleResolve = async () => {
+  const resolve = async () => {
     if (!selected) return;
     try {
       await resolveAgentAppError({
@@ -569,471 +661,350 @@ function ErrorsTable({ active }: { active: boolean }) {
       setSelected(null);
       await load();
       toast({ title: "Resolved", description: "Error marked resolved" });
-    } catch (err) {
+    } catch (cause) {
       toast({
         title: "Error",
         description:
-          err instanceof Error ? err.message : "Failed to resolve error",
+          cause instanceof Error ? cause.message : "Failed to resolve error",
         variant: "destructive",
       });
     }
   };
-
-  const handleUnresolve = async () => {
+  const unresolve = async () => {
     if (!selected) return;
     try {
       await unresolveAgentAppError(selected.id);
       setSelected(null);
       await load();
       toast({ title: "Unresolved", description: "Error re-opened" });
-    } catch (err) {
+    } catch (cause) {
       toast({
         title: "Error",
         description:
-          err instanceof Error ? err.message : "Failed to unresolve error",
+          cause instanceof Error ? cause.message : "Failed to unresolve error",
         variant: "destructive",
       });
     }
   };
-
-  if (loading && rows.length === 0) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <MatrxMiniLoader />
-      </div>
-    );
-  }
-
+  const scope = () =>
+    createAdminAgentAppsScope({
+      admin_section: "executions",
+      executions_active_tab: "errors",
+      errors_rows: viewRows.map((row) => ({
+        resolved: row.resolved,
+        error_type: row.error_type,
+        app_name: row.app_name ?? null,
+        app_slug: row.app_slug ?? null,
+        error_message: row.error_message ?? null,
+        created_at: row.created_at,
+      })),
+      errors_stats: stats,
+      errors_resolved_filter: resolved,
+      selected_error: selected
+        ? {
+            resolved: selected.resolved,
+            error_type: selected.error_type,
+            app_name: selected.app_name ?? null,
+            app_slug: selected.app_slug ?? null,
+            error_message: selected.error_message ?? null,
+            created_at: selected.created_at,
+            error_code: selected.error_code ?? null,
+            variables_sent: selected.variables_sent,
+            expected_variables: selected.expected_variables,
+            error_details: selected.error_details,
+          }
+        : undefined,
+    });
   return (
-    <SurfaceScopeWhenActive
-      active={active}
-      getScope={() =>
-        createAdminAgentAppsScope({
-          admin_section: "executions",
-          executions_active_tab: "errors",
-          errors_rows: filtered.map((r) => ({
-            resolved: r.resolved,
-            error_type: r.error_type,
-            app_name: r.app_name ?? null,
-            app_slug: r.app_slug ?? null,
-            error_message: r.error_message ?? null,
-            created_at: r.created_at,
-          })),
-          errors_stats: stats,
-          errors_resolved_filter: resolvedFilter,
-          selected_error: selected
-            ? {
-                resolved: selected.resolved,
-                error_type: selected.error_type,
-                app_name: selected.app_name ?? null,
-                app_slug: selected.app_slug ?? null,
-                error_message: selected.error_message ?? null,
-                created_at: selected.created_at,
-                error_code: selected.error_code ?? null,
-                variables_sent: selected.variables_sent,
-                expected_variables: selected.expected_variables,
-                error_details: selected.error_details,
-              }
-            : undefined,
-        })
-      }
-    >
-    <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="flex-shrink-0 p-4 border-b border-border bg-card space-y-3">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 min-w-[300px]">
-            <Card>
-              <CardContent className="p-2">
-                <div className="text-xl font-bold">{stats.total}</div>
-                <div className="text-xs text-muted-foreground">Total</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-2">
-                <div className="text-xl font-bold text-destructive">
-                  {stats.unresolved}
-                </div>
-                <div className="text-xs text-muted-foreground">Unresolved</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-2">
-                <div className="text-xl font-bold text-success">
-                  {stats.resolved}
-                </div>
-                <div className="text-xs text-muted-foreground">Resolved</div>
-              </CardContent>
-            </Card>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Input
-              placeholder="Filter by app..."
-              value={appFilter}
-              onChange={(e) => setAppFilter(e.target.value)}
-              className="h-8 text-xs max-w-[240px]"
-            />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Filter className="h-3.5 w-3.5 mr-1" />
-                  Types
-                  {typeFilter.size > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-4 px-1">
-                      {typeFilter.size}
-                    </Badge>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel className="flex items-center justify-between">
-                  <span>Filter by Type</span>
-                  {typeFilter.size > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 px-2 text-xs"
-                      onClick={() => setTypeFilter(new Set())}
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {uniqueTypes.map((t) => (
-                  <DropdownMenuCheckboxItem
-                    key={t}
-                    checked={typeFilter.has(t)}
-                    onCheckedChange={() => {
-                      const next = new Set(typeFilter);
-                      if (next.has(t)) next.delete(t);
-                      else next.add(t);
-                      setTypeFilter(next);
-                    }}
-                    onSelect={(e) => e.preventDefault()}
-                  >
-                    {ERROR_TYPE_LABELS[t] ?? t}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Filter className="h-3.5 w-3.5 mr-1" />
-                  {resolvedFilter === "all"
-                    ? "All"
-                    : resolvedFilter === "resolved"
-                      ? "Resolved"
-                      : "Unresolved"}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem
-                  checked={resolvedFilter === "all"}
-                  onCheckedChange={() => setResolvedFilter("all")}
-                >
-                  All
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={resolvedFilter === "unresolved"}
-                  onCheckedChange={() => setResolvedFilter("unresolved")}
-                >
-                  Unresolved
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={resolvedFilter === "resolved"}
-                  onCheckedChange={() => setResolvedFilter("resolved")}
-                >
-                  Resolved
-                </DropdownMenuCheckboxItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button variant="outline" size="sm" onClick={() => void load()}>
-              <RefreshCw className="h-3.5 w-3.5 mr-1" />
-              Refresh
-            </Button>
-            {filtered.length > 0 && (
-              <>
+    <SurfaceScopeWhenActive active={active} getScope={scope}>
+      <div
+        className="flex min-h-0 flex-1 flex-col"
+        aria-busy={loading || refreshing}
+      >
+        {error && <LoadError label="errors" error={error} retry={load} />}
+        <Stats
+          cards={[
+            [stats.total, "Loaded"],
+            [stats.unresolved, "Unresolved loaded", "text-destructive"],
+            [stats.resolved, "Resolved loaded", "text-success"],
+          ]}
+        />
+        <div className="min-h-0 flex-1">
+          <MatrxDataTable
+            tableId="admin-agent-app-errors"
+            query={{
+              mode: "controlled-local",
+              state: tableQuery.state,
+              onStateChange: tableQuery.onStateChange,
+            }}
+            data={rows}
+            columns={ERROR_COLUMNS}
+            getRowId={(row) => row.id}
+            isLoading={loading}
+            isFetching={refreshing}
+            stickyHeader
+            pageSize={50}
+            localPagination={{ mode: "progressive" }}
+            coverage={ERRORS_COVERAGE}
+            toolbar={{
+              title: "Errors",
+              search: true,
+              searchPlaceholder: "Search errors…",
+              refresh: { onRefresh: load },
+              actions: viewRows.length ? (
                 <CopyButtons
                   size="icon"
-                  label={`Errors (${filtered.length})`}
-                  human={() => filtered.map(humanError).join("\n\n")}
-                  json={() => filtered}
+                  label={`Errors (${viewRows.length})`}
+                  human={() => viewRows.map(humanError).join("\n\n")}
+                  json={() => viewRows}
                   agent={() => ({
                     kind: "agent-app-errors",
                     location: "AI Matrx Admin — Agent Apps — Errors",
-                    description: "Errors currently shown (filtered).",
-                    data: filtered,
-                    attributes: { count: filtered.length },
+                    description:
+                      "Errors currently shown after canonical table filters.",
+                    data: viewRows,
+                    attributes: { count: viewRows.length },
                   })}
                   export={{
                     items: [
-                      jsonExportItem(() => filtered, "JSON (this view)"),
+                      jsonExportItem(() => viewRows, "JSON (this view)"),
                       csvExportItem(
-                        () => filtered as unknown as Array<Record<string, unknown>>,
+                        () =>
+                          viewRows as unknown as Array<Record<string, unknown>>,
                         "CSV (this view)",
                       ),
                     ],
                   }}
                 />
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <ScrollArea className="flex-1">
-        <Table>
-          <TableHeader className="sticky top-0 bg-background z-10">
-            <TableRow>
-              <TableHead className="w-28">Status</TableHead>
-              <TableHead className="w-40">Type</TableHead>
-              <TableHead>App</TableHead>
-              <TableHead>Message</TableHead>
-              <TableHead className="w-40">When</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((r) => (
-              <TableRow
-                key={r.id}
-                className="group/x cursor-pointer hover:bg-accent/40"
-                onClick={() => handleOpen(r)}
-              >
-                <TableCell>
-                  {r.resolved ? (
-                    <Badge
-                      variant="outline"
-                      className="text-success border-success/40"
-                    >
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Resolved
-                    </Badge>
-                  ) : (
-                    <Badge variant="destructive">
-                      <AlertCircle className="w-3 h-3 mr-1" />
-                      Open
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="text-xs">
-                    {ERROR_TYPE_LABELS[r.error_type] ?? r.error_type}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">{r.app_name ?? "—"}</span>
-                    {r.app_slug && (
-                      <a
-                        href={`/p/${r.app_slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="max-w-md">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <p className="text-sm truncate">
-                        {r.error_message ?? "No error message"}
-                      </p>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-md">
-                      {r.error_message ?? "No error message"}
-                    </TooltipContent>
-                  </Tooltip>
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {new Date(r.created_at).toLocaleString()}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div
-                    className="flex items-center justify-end gap-1"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7"
-                      onClick={() => handleOpen(r)}
-                    >
-                      <Eye className="w-3 h-3 mr-1" />
-                      View
-                    </Button>
-                    <CopyButtons
-                      size="xs"
-                      label={r.app_name ?? r.error_type}
-                      className="opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
-                      human={() => humanError(r)}
-                      json={() => r}
-                      agent={() => ({
-                        kind: "agent-app-error",
-                        location: "AI Matrx Admin — Agent Apps — Errors",
-                        description: "A single agent-app error row.",
-                        data: r,
-                        summary: humanError(r),
-                        attributes: { id: r.id, resolved: r.resolved },
-                      })}
+              ) : undefined,
+            }}
+            copy={false}
+            detail={{ enabled: false }}
+            window={{ enabled: false }}
+            emptyState={{
+              title: error
+                ? "Could not load errors."
+                : "No errors match the current view.",
+            }}
+            onViewChange={setViewRows}
+            onRowOpen={open}
+            rowActions={(row) => (
+              <>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <MoreHorizontalTapButton
+                      ariaLabel={`Actions for ${row.error_type}`}
+                      variant="transparent"
                     />
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        {filtered.length === 0 && !loading && (
-          <div className="text-center py-12 text-muted-foreground">
-            <CheckCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            No errors to review.
-          </div>
-        )}
-      </ScrollArea>
-
-      <Dialog
-        open={!!selected}
-        onOpenChange={(o) => !o && setSelected(null)}
-      >
-        <DialogContent className="max-w-3xl max-h-[90dvh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {selected?.resolved ? (
-                <CheckCircle className="w-5 h-5 text-success" />
-              ) : (
-                <AlertCircle className="w-5 h-5 text-destructive" />
-              )}
-              Error Details
-              {selected && (
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => open(row)}>
+                      View and manage
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <CopyButtons
-                  size="icon"
-                  label={`Error ${selected.id}`}
-                  className="ml-auto"
-                  human={() => humanError(selected)}
-                  json={() => selected}
+                  size="xs"
+                  label={row.app_name ?? row.error_type}
+                  human={() => humanError(row)}
+                  json={() => row}
                   agent={() => ({
                     kind: "agent-app-error",
                     location: "AI Matrx Admin — Agent Apps — Errors",
-                    description: "The agent-app error record open in this dialog.",
-                    data: selected,
-                    summary: humanError(selected),
-                    attributes: { id: selected.id, resolved: selected.resolved },
+                    description: "A single agent-app error row.",
+                    data: row,
+                    summary: humanError(row),
+                    attributes: { id: row.id, resolved: row.resolved },
                   })}
                 />
-              )}
-            </DialogTitle>
-            <DialogDescription>
-              Review and manage this error
-            </DialogDescription>
-          </DialogHeader>
-          {selected && (
-            <div className="space-y-4">
-              <div>
-                <Label>Error Type</Label>
-                <div className="mt-1">
-                  <Badge variant="outline">
-                    {ERROR_TYPE_LABELS[selected.error_type] ??
-                      selected.error_type}
-                  </Badge>
-                </div>
-              </div>
-              <div>
-                <Label>Message</Label>
-                <p className="mt-1 text-sm">
-                  {selected.error_message ?? "No error message"}
-                </p>
-              </div>
-              {selected.error_code && (
-                <div>
-                  <Label>Error Code</Label>
-                  <code className="block mt-1 px-2 py-1 bg-muted rounded text-sm">
-                    {selected.error_code}
-                  </code>
-                </div>
-              )}
-              <div>
-                <Label>App</Label>
-                <div className="mt-1 flex items-center gap-2">
-                  <span className="text-sm">{selected.app_name}</span>
-                  {selected.app_slug && (
-                    <a
-                      href={`/p/${selected.app_slug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  )}
-                </div>
-              </div>
-              <div>
-                <Label>Variables Sent</Label>
-                <pre className="mt-1 p-3 bg-muted rounded text-xs overflow-x-auto">
-                  {JSON.stringify(selected.variables_sent, null, 2)}
-                </pre>
-              </div>
-              <div>
-                <Label>Expected Variables</Label>
-                <pre className="mt-1 p-3 bg-muted rounded text-xs overflow-x-auto">
-                  {JSON.stringify(selected.expected_variables, null, 2)}
-                </pre>
-              </div>
-              {Object.keys(selected.error_details ?? {}).length > 0 && (
-                <div>
-                  <Label>Error Details</Label>
-                  <pre className="mt-1 p-3 bg-muted rounded text-xs overflow-x-auto">
-                    {JSON.stringify(selected.error_details, null, 2)}
-                  </pre>
-                </div>
-              )}
-              <div>
-                <Label>Created At</Label>
-                <p className="mt-1 text-sm">
-                  {new Date(selected.created_at).toLocaleString()}
-                </p>
-              </div>
-              {!selected.resolved && (
-                <div>
-                  <Label htmlFor="resolution-notes">Resolution Notes</Label>
-                  <ProTextarea
-                    id="resolution-notes"
-                    value={resolutionNotes}
-                    onChange={(e) => setResolutionNotes(e.target.value)}
-                    placeholder="Add notes about how this was resolved..."
-                    rows={4}
-                    className="mt-1 text-[16px]"
-                  />
-                </div>
-              )}
-              <div className="flex justify-end gap-2 pt-4 border-t border-border">
-                <Button variant="outline" onClick={() => setSelected(null)}>
-                  Close
-                </Button>
-                {selected.resolved ? (
-                  <Button variant="outline" onClick={handleUnresolve}>
-                    <XCircle className="w-4 h-4 mr-1" />
-                    Mark Unresolved
-                  </Button>
-                ) : (
-                  <Button onClick={handleResolve}>
-                    <CheckCircle className="w-4 h-4 mr-1" />
-                    Mark Resolved
-                  </Button>
-                )}
+              </>
+            )}
+          />
+        </div>
+        <ErrorDialog
+          selected={selected}
+          notes={resolutionNotes}
+          setNotes={setResolutionNotes}
+          close={() => setSelected(null)}
+          resolve={resolve}
+          unresolve={unresolve}
+        />
+      </div>
+    </SurfaceScopeWhenActive>
+  );
+}
+
+function Stats({ cards }: { cards: Array<[number, string, string?]> }) {
+  return (
+    <div className="grid shrink-0 grid-cols-3 gap-3 pb-3">
+      {cards.map(([value, label, color]) => (
+        <Card key={label}>
+          <CardContent className="p-2">
+            <div className={`text-2xl font-bold ${color ?? ""}`}>{value}</div>
+            <div className="text-xs text-muted-foreground">{label}</div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+function LoadError({
+  label,
+  error,
+  retry,
+}: {
+  label: string;
+  error: string;
+  retry: () => Promise<void>;
+}) {
+  return (
+    <div
+      role="alert"
+      className="mb-2 flex shrink-0 items-center gap-2 text-sm text-red-600 dark:text-red-400"
+    >
+      Could not refresh {label}: {error}
+      <button type="button" className="underline" onClick={() => void retry()}>
+        Retry
+      </button>
+    </div>
+  );
+}
+function ErrorDialog({
+  selected,
+  notes,
+  setNotes,
+  close,
+  resolve,
+  unresolve,
+}: {
+  selected: AgentAppErrorRow | null;
+  notes: string;
+  setNotes: (value: string) => void;
+  close: () => void;
+  resolve: () => Promise<void>;
+  unresolve: () => Promise<void>;
+}) {
+  return (
+    <Dialog open={!!selected} onOpenChange={(open) => !open && close()}>
+      <DialogContent className="max-h-[90dvh] max-w-3xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {selected?.resolved ? (
+              <CheckCircle className="h-5 w-5 text-success" />
+            ) : (
+              <AlertCircle className="h-5 w-5 text-destructive" />
+            )}
+            Error Details
+            {selected && (
+              <CopyButtons
+                size="icon"
+                label={`Error ${selected.id}`}
+                className="ml-auto"
+                human={() => humanError(selected)}
+                json={() => selected}
+                agent={() => ({
+                  kind: "agent-app-error",
+                  location: "AI Matrx Admin — Agent Apps — Errors",
+                  description:
+                    "The agent-app error record open in this dialog.",
+                  data: selected,
+                  summary: humanError(selected),
+                  attributes: { id: selected.id, resolved: selected.resolved },
+                })}
+              />
+            )}
+          </DialogTitle>
+          <DialogDescription>Review and manage this error</DialogDescription>
+        </DialogHeader>
+        {selected && (
+          <div className="space-y-4">
+            <div>
+              <Label>Error Type</Label>
+              <div className="mt-1">
+                <Badge variant="outline">
+                  {ERROR_TYPE_LABELS[selected.error_type] ??
+                    selected.error_type}
+                </Badge>
               </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
-    </SurfaceScopeWhenActive>
+            <div>
+              <Label>Message</Label>
+              <p className="mt-1 text-sm">
+                {selected.error_message ?? "No error message"}
+              </p>
+            </div>
+            {selected.error_code && (
+              <div>
+                <Label>Error Code</Label>
+                <code className="mt-1 block rounded bg-muted px-2 py-1 text-sm">
+                  {selected.error_code}
+                </code>
+              </div>
+            )}
+            <div>
+              <Label>App</Label>
+              <div className="mt-1">
+                <AppCell name={selected.app_name} slug={selected.app_slug} />
+              </div>
+            </div>
+            <div>
+              <Label>Variables Sent</Label>
+              <pre className="mt-1 overflow-x-auto rounded bg-muted p-3 text-xs">
+                {JSON.stringify(selected.variables_sent, null, 2)}
+              </pre>
+            </div>
+            <div>
+              <Label>Expected Variables</Label>
+              <pre className="mt-1 overflow-x-auto rounded bg-muted p-3 text-xs">
+                {JSON.stringify(selected.expected_variables, null, 2)}
+              </pre>
+            </div>
+            {Object.keys(selected.error_details ?? {}).length > 0 && (
+              <div>
+                <Label>Error Details</Label>
+                <pre className="mt-1 overflow-x-auto rounded bg-muted p-3 text-xs">
+                  {JSON.stringify(selected.error_details, null, 2)}
+                </pre>
+              </div>
+            )}
+            <div>
+              <Label>Created At</Label>
+              <p className="mt-1 text-sm">
+                {new Date(selected.created_at).toLocaleString()}
+              </p>
+            </div>
+            {!selected.resolved && (
+              <div>
+                <Label htmlFor="resolution-notes">Resolution Notes</Label>
+                <ProTextarea
+                  id="resolution-notes"
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  placeholder="Add notes about how this was resolved..."
+                  rows={4}
+                  className="mt-1 text-[16px]"
+                />
+              </div>
+            )}
+            <div className="flex justify-end gap-2 border-t border-border pt-4">
+              <Button variant="outline" onClick={close}>
+                Close
+              </Button>
+              {selected.resolved ? (
+                <Button variant="outline" onClick={() => void unresolve()}>
+                  <XCircle className="mr-1 h-4 w-4" />
+                  Mark Unresolved
+                </Button>
+              ) : (
+                <Button onClick={() => void resolve()}>
+                  <CheckCircle className="mr-1 h-4 w-4" />
+                  Mark Resolved
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
