@@ -81,7 +81,9 @@ export function ReviewRow({
               <div className="text-xs font-medium uppercase text-muted-foreground">
                 What the reviewer saw
               </div>
-              <p className="mt-1 whitespace-pre-wrap text-sm">{review.summary}</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm">
+                {review.summary}
+              </p>
             </div>
           )}
           {review.what_worked && (
@@ -112,7 +114,11 @@ export function ReviewRow({
                     ? `${kind} ${id.slice(0, 8)} · ${fmtDate(ex.at)}`
                     : `${kind} ${id.slice(0, 8)}`;
                   return door ? (
-                    <DoorLink key={`${id}-${i}`} size="xs" door={{ ...door, label }} />
+                    <DoorLink
+                      key={`${id}-${i}`}
+                      size="xs"
+                      door={{ ...door, label }}
+                    />
                   ) : (
                     <span
                       key={`${id}-${i}`}
@@ -134,7 +140,10 @@ export function ReviewRow({
               <DoorLink
                 size="xs"
                 door={{
-                  href: conversationHref(review.reviewer_conversation_id, audience),
+                  href: conversationHref(
+                    review.reviewer_conversation_id,
+                    audience,
+                  ),
                   label: "Open reviewer transcript",
                   external: false,
                 }}
@@ -158,9 +167,6 @@ export function ReviewRow({
           {detail.isLoading && <Skeleton className="h-16" />}
           {detail.data && (detail.data.replays ?? []).length > 0 && (
             <div>
-              <div className="mb-1 text-xs font-medium uppercase text-muted-foreground">
-                Replays ({(detail.data.replays ?? []).length})
-              </div>
               <ReplaysTable replays={detail.data.replays ?? []} />
             </div>
           )}

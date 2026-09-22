@@ -14,6 +14,12 @@
  * outcome text has a full detail panel, and each recorded conversation or
  * workflow run retains its audience-correct door.
  */
+import type { ReactNode } from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
@@ -169,16 +175,21 @@ function OriginalCostCell({ replay }: { replay: Replay }) {
   );
 }
 
-function ReplayOutcomeCell({ replay }: { replay: Replay }) {
-  const outcome = replayOutcome(replay);
+function CompactEvidence({ children }: { children: ReactNode }) {
   return (
-    <span
-      className="block max-w-md truncate text-xs text-muted-foreground"
-      title={outcome}
-    >
-      {outcome}
-    </span>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="block truncate whitespace-nowrap">{children}</span>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-lg break-words">
+        {children}
+      </TooltipContent>
+    </Tooltip>
   );
+}
+
+function ReplayOutcomeCell({ replay }: { replay: Replay }) {
+  return <CompactEvidence>{replayOutcome(replay)}</CompactEvidence>;
 }
 
 function ReplayDetail({
@@ -281,7 +292,11 @@ export function replayColumns(
       filter: "number",
       width: 150,
       align: "right",
-      cell: (replay) => <ReplayCostCell replay={replay} />,
+      cell: (replay) => (
+        <CompactEvidence>
+          <ReplayCostCell replay={replay} />
+        </CompactEvidence>
+      ),
     },
     {
       id: "original-cost",
@@ -291,7 +306,11 @@ export function replayColumns(
       filter: "number",
       width: 168,
       align: "right",
-      cell: (replay) => <OriginalCostCell replay={replay} />,
+      cell: (replay) => (
+        <CompactEvidence>
+          <OriginalCostCell replay={replay} />
+        </CompactEvidence>
+      ),
     },
     {
       id: "outcome",

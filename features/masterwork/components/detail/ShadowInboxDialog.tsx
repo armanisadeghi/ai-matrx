@@ -228,7 +228,17 @@ export function ShadowInboxDialog({
   const [text, setText] = useState("");
   const [expertEmail, setExpertEmail] = useState("");
   const [sourceNote, setSourceNote] = useState("");
-  const [ownRepliesOnly, setOwnRepliesOnly] = useState(true);
+  // 🚨 `null` = THE PERSON HAS NOT TOUCHED THIS, so the knob answers (DD-211,
+  // 2026-09-22). `masterwork.shadow_inbox.own_replies_only` is Rulebook-
+  // overridable and the organization configuration screen saves that rung —
+  // but this dialog opened on a hardcoded `true` and then SENT it on every
+  // preview and every run, so the server's `if request.own_replies_only is
+  // None` branch never ran and the saved rung was honoured by nothing. It is
+  // sent only once it is touched; the displayed state comes from the preview,
+  // which reports what it actually used.
+  const [ownRepliesOnly, setOwnRepliesOnly] = useState<boolean | null>(null);
+  const [ownRepliesOnlyInEffect, setOwnRepliesOnlyInEffect] = useState(true);
+  const ownRepliesOnlyShown = ownRepliesOnly ?? ownRepliesOnlyInEffect;
   const [daysBack, setDaysBack] = useState(30);
   const [preparing, setPreparing] = useState(false);
   const [rows, setRows] = useState<ThreadRow[] | null>(null);
@@ -348,7 +358,15 @@ export function ShadowInboxDialog({
     let cancelled = false;
 
     void store
-      .dispatch(callApi({ path: CONNECTION_PATH, method: "GET" }))
+      .dispatch(
+        callApi({
+          path: CONNECTION_PATH,
+          method: "GET",
+          // The Rulebook we are inside, so `days_back_default` is the number
+          // the RUN will use and not the platform default (DD-211).
+          queryParams: { rulebook_id: rulebook.id },
+        }),
+      )
       .then((result) => {
         if (cancelled) return;
         const data = (
@@ -381,7 +399,14 @@ export function ShadowInboxDialog({
 
   const previewSource = async (body: Record<string, unknown>): Promise<void> => {
     const result = await store.dispatch(
-      callApi({ path: PREVIEW_PATH, method: "POST", body: body as never }),
+      callApi({
+        path: PREVIEW_PATH,
+        method: "POST",
+        // ONE place, so no caller can forget it: the preview reads the knobs at
+        // this Rulebook's rung, exactly as the run does, and a row it calls
+        // "nothing to shadow" is a row the run also skips.
+        body: { ...body, rulebook_id: rulebook.id } as never,
+      }),
     );
     const error = (result as { error?: { message?: string } }).error;
     if (error) {
@@ -415,6 +440,7 @@ export function ShadowInboxDialog({
           }[];
           expert_email?: string;
           notes?: string[];
+          own_replies_only?: boolean;
         };
       }
     ).data;
@@ -451,12 +477,18 @@ export function ShadowInboxDialog({
     setSelected(new Set(mapped.filter((t) => t.youReplied).map((t) => t.key)));
     if (data?.expert_email && !expertEmail) setExpertEmail(data.expert_email);
     setNotes(data?.notes ?? []);
+    // What the server ACTUALLY used — the knob at this Rulebook's rung when the
+    // person has not touched the switch. The control shows the truth rather
+    // than a hardcoded `true` the run would then disagree with.
+    if (typeof data?.own_replies_only === "boolean") {
+      setOwnRepliesOnlyInEffect(data.own_replies_only);
+    }
   };
 
   const sourceBody = (): Record<string, unknown> => ({
     ...(expertEmail.trim() ? { expert_email: expertEmail.trim() } : {}),
     ...(myVoices.size ? { voice_keys: [...myVoices] } : {}),
-    own_replies_only: ownRepliesOnly,
+    ...(ownRepliesOnly === null ? {} : { own_replies_only: ownRepliesOnly }),
   });
 
   const prepareUpload = async () => {
@@ -510,7 +542,7 @@ export function ShadowInboxDialog({
     const body: Record<string, unknown> = {
       ...(expertEmail.trim() ? { expert_email: expertEmail.trim() } : {}),
       ...(keys.size ? { voice_keys: [...keys] } : {}),
-      own_replies_only: ownRepliesOnly,
+      ...(ownRepliesOnly === null ? {} : { own_replies_only: ownRepliesOnly }),
       ...(fileId ? { file_id: fileId } : { text }),
     };
     setPreparing(true);
@@ -567,7 +599,7 @@ export function ShadowInboxDialog({
     const shared = {
       rulebook_id: rulebook.id,
       source_note: sourceNote.trim() || undefined,
-      own_replies_only: ownRepliesOnly,
+      ...(ownRepliesOnly === null ? {} : { own_replies_only: ownRepliesOnly }),
       ...(expertEmail.trim() ? { expert_email: expertEmail.trim() } : {}),
       // The answer to "which of these is you?" — the picker's whole point is
       // that it reaches the run, not just the preview.
@@ -991,7 +1023,7 @@ export function ShadowInboxDialog({
 
           <label className="flex items-center gap-2.5 rounded-md border border-border bg-card p-2.5">
             <Switch
-              checked={ownRepliesOnly}
+              checked={ownRepliesOnlyShown}
               onCheckedChange={setOwnRepliesOnly}
               aria-label="Only read threads you replied to"
             />
