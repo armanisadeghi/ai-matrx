@@ -87,7 +87,15 @@ describe("login recipe activation", () => {
     const result = await activateProposedRecipe(
       {
         ...harborDentalProposal,
-        field_map: [{ selector: "#patient-email", unexpected: true }],
+        field_map: [
+          {
+            step: -1,
+            selector: "#patient-email",
+            field_key: "username",
+            literal_key: null,
+            clear_first: true,
+          },
+        ],
       },
       persistence,
     );
@@ -186,6 +194,32 @@ describe("login recipe activation", () => {
     expect(persistence.readRecipe).toHaveBeenCalledWith(
       harborDentalProposal.id,
     );
+  });
+
+  it("refuses an active reread whose version or recipe revision is not the write receipt", async () => {
+    const persistence = store({
+      readRecipe: jest.fn().mockResolvedValue({
+        data: {
+          ...harborDentalProposal,
+          status: "active",
+          recipe_version: 4,
+          version: 10,
+        },
+        error: null,
+      }),
+    });
+
+    const result = await activateProposedRecipe(
+      harborDentalProposal,
+      persistence,
+    );
+
+    expect(result).toMatchObject({
+      kind: "refused",
+      reason: expect.stringMatching(/changed before activation/),
+      row: { status: "active", recipe_version: 4, version: 10 },
+    });
+    expect(persistence.writeActivation).toHaveBeenCalledTimes(1);
   });
 
   it("activates once only after the authoritative reread is active", async () => {

@@ -18,7 +18,7 @@ const signalDescriptorSchema = z
 
 const recipeFieldMapSchema = z
   .object({
-    step: z.number().int().default(0),
+    step: z.number().int().min(0).default(0),
     selector: z.string().min(1),
     field_key: z.string().nullable().default(null),
     literal_key: z.string().nullable().default(null),
@@ -67,6 +67,13 @@ export type RecipeWrite = {
   data: unknown | null;
   error: RecipeStoreError | null;
 };
+
+const writeReceiptSchema = z
+  .object({
+    id: z.string().min(1),
+    version: z.number().int(),
+  })
+  .strict();
 
 export type RecipeActivationStore = {
   findExistingActive: (recipe: ReviewRecipe) => Promise<{
@@ -207,6 +214,20 @@ export async function activateProposedRecipe(
   if (current.recipe.status === "active") {
     if (write.error || !write.data)
       return { kind: "already_active", row: current.recipe };
+    const receipt = writeReceiptSchema.safeParse(write.data);
+    if (
+      !receipt.success ||
+      receipt.data.id !== recipe.id ||
+      current.recipe.version !== receipt.data.version ||
+      current.recipe.recipe_version !== recipe.recipe_version
+    ) {
+      return {
+        kind: "refused",
+        reason:
+          "The recipe changed before activation could be confirmed. Review the current version before trying again.",
+        row: current.recipe,
+      };
+    }
     return { kind: "activated", row: current.recipe };
   }
   return {
