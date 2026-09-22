@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-22T17:48:35.171Z",
+  "generated_at": "2026-09-22T17:57:12.874Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3590,6 +3590,12 @@
       "checksum": "0796ae0f46e5ef0c5bcc6f548f0f4619e56082ffae7c506ad0139ee52cd5eb1a",
       "applied_at": "2026-09-22 04:52:30.924935+00"
     },
+    "migrations/campaign/storeon_the_door_comment_records_the_ruling.sql": {
+      "source": "matrx-frontend",
+      "filename": "storeon_the_door_comment_records_the_ruling.sql",
+      "checksum": "7a019db7213d574fc6e787843c344308faa006edcb338c50c9850f1364fe3fed",
+      "applied_at": "2026-09-22 17:57:12.123864+00"
+    },
     "migrations/campaign/storeon_the_record_store_is_on_by_default.sql": {
       "source": "matrx-frontend",
       "filename": "storeon_the_record_store_is_on_by_default.sql",
@@ -3745,6 +3751,12 @@
       "filename": "storetxn3c_the_revoke_lands_after_the_register_says_so.sql",
       "checksum": "c4678176e9f1bb727328dbd7023e12f0f8817d3cbf84190308072901196e697c",
       "applied_at": "2026-09-22 17:26:08.012261+00"
+    },
+    "migrations/campaign/storetxn4_the_halves_that_already_disagree_are_repaired.sql": {
+      "source": "matrx-frontend",
+      "filename": "storetxn4_the_halves_that_already_disagree_are_repaired.sql",
+      "checksum": "0f859a6babbde316bc38338d62b6df4f525f88c86b3507db30ccf256f9e32e39",
+      "applied_at": "2026-09-22 17:57:07.855179+00"
     },
     "migrations/campaign/storetxn_a_record_graph_is_one_transaction.sql": {
       "source": "matrx-frontend",
