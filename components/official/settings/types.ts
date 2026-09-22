@@ -20,6 +20,13 @@ export type SettingsCommonProps = {
   label: string;
   /** Small muted text shown under the label. Optional. */
   description?: ReactNode;
+  /**
+   * Identity/provenance line shown under the label, ABOVE the description:
+   * the thing an operator scans a long register for (a key, where a value
+   * came from). Unlike `description` it is never truncated in the compact
+   * variant, because a half-printed key is worse than none.
+   */
+  meta?: ReactNode;
   /** Yellow warning message shown under description. Optional. */
   warning?: ReactNode;
   /** Red error message shown under description. Optional. */

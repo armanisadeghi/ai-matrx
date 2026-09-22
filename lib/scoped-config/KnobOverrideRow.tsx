@@ -36,7 +36,12 @@ import {
 } from "@/features/settings/universal/KnobFieldControl";
 import { knobChoices } from "./choices";
 import Link from "next/link";
-import { formatKnobValue, type KnobLadder, type ViewerStanding } from "./ladder";
+import {
+  formatKnobValue,
+  systemOriginSentence,
+  type KnobLadder,
+  type ViewerStanding,
+} from "./ladder";
 import { availableVoices } from "@/lib/cartesia/voices";
 import {
   setKnobOverride,
@@ -164,6 +169,13 @@ export function KnobOverrideRow(props: {
   /** Platform defaults use feature_knob_set; platform is not a scoped rung. */
   system?: { canWrite: boolean; registeredDefault: unknown };
   /**
+   * How many organizations hold their own value for this key. Only the system
+   * destination has it (it reads the override register); `undefined` means
+   * NOT KNOWN, and the origin line then simply does not mention overrides
+   * rather than implying there are none.
+   */
+  overrideCount?: number | null;
+  /**
    * Org screen only: offer the per-key "personal overrides" switch (the scfg_50
    * rung lock — the organization turning off user-level control of this one
    * setting even though the platform allows it; Arman 2026-08-29). Owner/admin
@@ -218,6 +230,7 @@ export function KnobOverrideRow(props: {
     hideKey = false,
     ladder,
     system,
+    overrideCount,
     stateOnly,
     scopeLabel,
     writeDoor,
@@ -508,6 +521,26 @@ export function KnobOverrideRow(props: {
       </span>
     ) : undefined;
 
+  // 🚨 THE KEY AND THE ORIGIN ARE READ, NOT HUNTED. On the system register an
+  // operator scans ~880 rows looking for one key ("orchestration.loop_guard.*")
+  // and needs to know at a glance whether a value is still what shipped. Both
+  // facts used to live only inside the row's "…" popover, which is a fact you
+  // cannot scan. They are printed on the row itself at the system destination;
+  // the curated user-facing sections still pass `hideKey` and stay clean.
+  const systemOrigin = system
+    ? systemOriginSentence(knob, system.registeredDefault, overrideCount)
+    : null;
+  const metaLine =
+    systemOrigin && !hideKey && !scopeLabel ? (
+      <>
+        <code className="rounded bg-muted px-1 py-px font-mono text-[10px] text-foreground/80">
+          {knob.full_key}
+        </code>
+        <span aria-hidden>·</span>
+        <span>{systemOrigin}</span>
+      </>
+    ) : undefined;
+
   const usesLabelledGroup =
     Boolean(stateOnly) ||
     lockedForMe ||
@@ -520,6 +553,7 @@ export function KnobOverrideRow(props: {
       anchorId={rowIdentity}
       labelFor={usesLabelledGroup ? null : inputId}
       label={scopeLabel ?? knob.label}
+      meta={metaLine}
       description={scopeLabel ? undefined : knob.description}
       helpText={scopeLabel ? undefined : knob.ui.help}
       warning={viewerNotice}
@@ -649,11 +683,8 @@ export function KnobOverrideRow(props: {
                 <p>
                   {stateOnly
                     ? "Not connected yet."
-                    : system
-                      ? JSON.stringify(knob.platform_default) !==
-                        JSON.stringify(system.registeredDefault)
-                        ? "Set for the platform."
-                        : "Registered default."
+                    : systemOrigin
+                      ? `${systemOrigin}.`
                       : isSetHere
                         ? "Set here."
                         : `Inherited from ${inheritedFrom}.`}

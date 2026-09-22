@@ -40,10 +40,17 @@ import { KnobRungOverrides } from "./KnobRungOverrides";
 export function UniversalSettingsRows({
   knobs,
   hideKey = false,
+  overrideCounts,
   onChanged,
 }: {
   knobs: ScopedKnob[];
   hideKey?: boolean;
+  /**
+   * System destination only: how many organizations hold their own value for
+   * each `full_key`. A key absent from the map is NOT KNOWN, not zero, so the
+   * row's origin line stays silent about overrides rather than claiming none.
+   */
+  overrideCounts?: Record<string, number>;
   onChanged?: () => void;
 }) {
   const settings = useUniversalSettings();
@@ -135,6 +142,7 @@ export function UniversalSettingsRows({
                   canWrite: settings.canManageSystem,
                   registeredDefault: knob.shipped_default,
                 } : undefined}
+                overrideCount={overrideCounts?.[knob.full_key]}
                 stateOnly={stateOnly}
                 showUserLockControl={
                   settings.editingContext === "organization" &&

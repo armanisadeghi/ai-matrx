@@ -7,6 +7,7 @@ import { staticSettingsControlIndex } from "../static-control-index";
 import { SETTINGS_BASE, tabIdToHref } from "../route-shell/routing";
 import {
   dedupeSettingsControlSearchHits,
+  knobMatchesControlSearch,
   type SettingsControlSearchHit,
 } from "../search/controlSearch";
 
@@ -56,11 +57,7 @@ export function useSettingsControlSearch(
     const section = sections.find((candidate) =>
       candidate.knobs.some((item) => item.full_key === knob.full_key),
     );
-    const haystack = [knob.full_key, knob.label, knob.description, knob.ui.help]
-      .filter((value): value is string => typeof value === "string")
-      .join(" ")
-      .toLowerCase();
-    if (!section || !haystack.includes(trimmed)) return [];
+    if (!section || !knobMatchesControlSearch(knob, trimmed)) return [];
     return [{
       id: knob.full_key,
       label: knob.label,

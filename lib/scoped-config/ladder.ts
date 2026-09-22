@@ -398,3 +398,31 @@ export function compareKnobOrder(
   if (a.ladder.order !== b.ladder.order) return a.ladder.order - b.ladder.order;
   return a.knob.label.localeCompare(b.knob.label);
 }
+
+/**
+ * 🚨 THE ORIGIN SENTENCE FOR THE SYSTEM DESTINATION — the one place it is
+ * worded, read by the row's visible line AND by its options panel, so the two
+ * can never drift apart (they did: only the panel said it, behind a "…" the
+ * admin had to open ~880 times to find out where a value came from).
+ *
+ * "System default"  — the value is exactly what the register shipped.
+ * "Set for the platform" — somebody changed the platform-wide default.
+ *
+ * A system row has no ONE organization to name, so an organization's dissent
+ * is reported as a COUNT ("overridden by 2 organizations"): that is the honest
+ * answer at this rung, and the count is the live override register, never a
+ * cached number.
+ */
+export function systemOriginSentence(
+  knob: ScopedKnob,
+  registeredDefault: unknown,
+  overrideCount?: number | null,
+): string {
+  const changed =
+    JSON.stringify(knob.platform_default) !== JSON.stringify(registeredDefault);
+  const base = changed ? "Set for the platform" : "System default";
+  if (typeof overrideCount === "number" && overrideCount > 0) {
+    return `${base} · overridden by ${overrideCount} organization${overrideCount === 1 ? "" : "s"}`;
+  }
+  return base;
+}

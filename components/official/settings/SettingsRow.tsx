@@ -80,6 +80,7 @@ function BadgePill({ badge }: { badge: SettingsBadge }) {
 export function SettingsRow({
   label,
   description,
+  meta,
   warning,
   error,
   badge,
@@ -167,6 +168,16 @@ export function SettingsRow({
           </TooltipProvider>
         )}
       </div>
+      {meta ? (
+        <div
+          className={cn(
+            "mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 break-words text-[11px] leading-snug text-muted-foreground [overflow-wrap:anywhere]",
+            disabled && "opacity-50",
+          )}
+        >
+          {meta}
+        </div>
+      ) : null}
       {description ? (
         <div
           className={cn(
