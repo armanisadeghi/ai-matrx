@@ -282,8 +282,48 @@ begin
 end;
 $function$;
 
-drop function if exists platform.memo_b_put(text, text);
-drop function if exists platform.memo_b_get(text);
-drop function if exists platform.memo_b_seat();
-drop function if exists platform.memo_b_bytes();
-drop function if exists platform.memo_b_ceiling();
+-- ── the second memo, dropped ONLY if nothing adopted it ───────────────────────────────
+--
+-- 🚨 WHY THIS IS A CONDITION AND NOT FIVE BARE DROPS (lane FIX-11B, 2026-09-22).
+-- `platform.memo_b_*` outlived this lane. Bodies outside it adopted the big-answer memo and
+-- live triggers RUN them right now — `zzzz_a_undeclared_key_guard` on `custom.record` (runs
+-- `custom._undeclared_key_guard`) and `custom_fields_validation` on `crm.party` (runs
+-- `custom._entity_custom_fields_guard`) both reach memo_b_get/memo_b_put. Five bare drops
+-- would leave those triggers attached over functions that are gone, and the next write to the
+-- record store or to a CRM party would explode. This lane's defect is put back by the seven
+-- bodies restored above — each of them reading the Table again on every row, which is the
+-- whole defect; the memo other lanes adopted is not this file's to take away.
+-- depends-on: platform.memo_b_get/put are adopted by custom._undeclared_key_guard and
+--   custom._entity_custom_fields_guard, both run by standing triggers.
+-- ground-standing-ok: a, d — the drops below run only when the catalogue shows no body calling
+--   platform.memo_b_get/platform.memo_b_put; an adopter outside this lane (a standing trigger's
+--   body under clause (a), a later lane's body under clause (d)) leaves them standing, with a
+--   notice. Same condition, both clauses: the object is never taken from under an adopter.
+do $drops$
+declare
+  v_left text[];
+begin
+  select array_agg(pn.nspname || '.' || p.proname order by pn.nspname, p.proname)
+    into v_left
+    from pg_proc p
+    join pg_namespace pn on pn.oid = p.pronamespace
+   where p.prokind = 'f'
+     and pn.nspname not in ('pg_catalog', 'information_schema')
+     and p.proname not like 'memo\_b\_%'
+     and (pg_get_functiondef(p.oid) like '%platform.memo_b_get%'
+       or pg_get_functiondef(p.oid) like '%platform.memo_b_put%');
+
+  if v_left is not null then
+    raise notice
+      'platform.memo_b_* is still called by % - leaving the second memo standing. This lane''s defect is back (the seven bodies restored above read the Table on every row again); the memo a later lane adopted is not this file''s to take away.',
+      array_to_string(v_left, ', ');
+    return;
+  end if;
+
+  execute 'drop function if exists platform.memo_b_put(text, text)';
+  execute 'drop function if exists platform.memo_b_get(text)';
+  execute 'drop function if exists platform.memo_b_seat()';
+  execute 'drop function if exists platform.memo_b_bytes()';
+  execute 'drop function if exists platform.memo_b_ceiling()';
+end;
+$drops$;

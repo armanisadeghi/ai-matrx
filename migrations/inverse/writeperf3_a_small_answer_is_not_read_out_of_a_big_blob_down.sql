@@ -271,7 +271,48 @@ begin
 end;
 $function$;
 
-drop function if exists platform.memo_s_put(text, text);
-drop function if exists platform.memo_s_get(text);
-drop function if exists platform.memo_s_bytes();
-drop function if exists platform.memo_s_ceiling();
+-- ── the third memo, dropped ONLY if nothing adopted it ────────────────────────────────
+--
+-- 🚨 WHY THIS IS A CONDITION AND NOT FOUR BARE DROPS (lane FIX-11B, 2026-09-22).
+-- `platform.memo_s_*` outlived this lane. A LATER migration outside it —
+-- `writeperf3b_the_relation_fields_are_read_once_per_statement.sql` — built
+-- `custom._relation_associations_stmt_insert` / `_stmt_update` on top of memo_s_get/put, and
+-- the statement-level triggers `zz_w2a_relation_association_s_i` / `_s_u` on `custom.record`
+-- RUN those bodies on every write. Four bare drops would leave those triggers attached over a
+-- function that is gone: the next insert into the record store would explode before this
+-- file's own red twin asked a single question. This lane's defect is put back by the four
+-- bodies restored above; the memo the next lane adopted is not this file's to take away.
+-- depends-on: platform.memo_s_get/put are adopted by custom._relation_associations_stmt_insert
+--   and custom._relation_associations_stmt_update
+--   (migrations/campaign/writeperf3b_the_relation_fields_are_read_once_per_statement.sql).
+-- ground-standing-ok: a, d — the drops below run only when the catalogue shows no body calling
+--   platform.memo_s_get/platform.memo_s_put; an adopter outside this lane (a standing trigger's
+--   body under clause (a), a later lane's body under clause (d)) leaves them standing, with a
+--   notice. Same condition, both clauses: the object is never taken from under an adopter.
+do $drops$
+declare
+  v_left text[];
+begin
+  select array_agg(pn.nspname || '.' || p.proname order by pn.nspname, p.proname)
+    into v_left
+    from pg_proc p
+    join pg_namespace pn on pn.oid = p.pronamespace
+   where p.prokind = 'f'
+     and pn.nspname not in ('pg_catalog', 'information_schema')
+     and p.proname not like 'memo\_s\_%'
+     and (pg_get_functiondef(p.oid) like '%platform.memo_s_get%'
+       or pg_get_functiondef(p.oid) like '%platform.memo_s_put%');
+
+  if v_left is not null then
+    raise notice
+      'platform.memo_s_* is still called by % - leaving the third memo standing. This lane''s defect is back (the four bodies restored above); the memo a later lane built its statement-level triggers on is not this file''s to take away.',
+      array_to_string(v_left, ', ');
+    return;
+  end if;
+
+  execute 'drop function if exists platform.memo_s_put(text, text)';
+  execute 'drop function if exists platform.memo_s_get(text)';
+  execute 'drop function if exists platform.memo_s_bytes()';
+  execute 'drop function if exists platform.memo_s_ceiling()';
+end;
+$drops$;
