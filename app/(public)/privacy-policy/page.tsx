@@ -582,9 +582,10 @@ const PrivacyPolicyPage = () => {
             disconnecting Google stops future access but does not itself delete
             those existing CRM interactions. Deleting a CRM copy from the active
             database does not immediately remove earlier backup copies. Our
-            whole-database backup copies expire after up to 365 days; the
-            point-in-time recovery window was about seven days when last checked
-            in September 2026.
+            daily S3 database backups have a 365-day expiration rule. The
+            separate point-in-time recovery window was about seven days when
+            last checked in September 2026; other copies may have different
+            retention.
           </li>
           <li>
             <strong>Amazon Selling Partner connection:</strong> encrypted
