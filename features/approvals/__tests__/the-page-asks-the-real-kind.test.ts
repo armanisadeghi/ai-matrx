@@ -33,6 +33,13 @@ jest.mock("@/features/assists/service", () => ({
   emitAssist: jest.fn(),
 }));
 jest.mock("@ai-matrx/data/db", () => ({ readAllRows: jest.fn() }));
+// The queue's page size is `approvals.queue_page_size`, resolved through the
+// register. What this suite measures is the predicate, not the register, so the
+// row is served here at its seeded default.
+jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
+  ensureEffectiveKnob: async () => 50,
+  useEffectiveKnob: () => 50,
+}));
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({ schema: () => ({ from: () => ({}) }) }),
 }));

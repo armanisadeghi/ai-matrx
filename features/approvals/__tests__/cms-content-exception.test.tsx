@@ -49,7 +49,7 @@ jest.mock("../cms-door", () => ({
 }));
 jest.mock("../data", () => ({
   APPROVAL_SURFACE: "matrx-user/approval-queue",
-  APPROVAL_PAGE_SIZE: 50,
+  APPROVAL_PAGE_SIZE_KNOB: { feature: "approvals", key: "queue_page_size" },
   listPendingProposals: async (_userId: string, kind: { id: string }) => ({
     proposals: [
       {

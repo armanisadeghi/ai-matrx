@@ -42,7 +42,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@ai-matrx/design-system";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { ensureEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import {
   createJob,
   listLibraries,
@@ -83,8 +86,13 @@ export function libraryReadiness(input: {
 /** How many times the dialog looks for the written rows before saying it stopped. */
 const WATCH_ATTEMPTS = 6;
 const WATCH_INTERVAL_MS = 4000;
-/** One page of catalogued items — the honest ceiling the copy names. */
-const ITEM_PAGE_SIZE = 200;
+/**
+ * One page of catalogued items — the honest ceiling the copy names. How big it
+ * is belongs to the organization (a large-library owner wants more), never to
+ * this file: law 6, `platform.feature_knob` row `agents.samples`
+ * `library_page_size`, read through the one cached register read.
+ */
+const ITEM_PAGE_SIZE_KNOB = { feature: "agents.samples", key: "library_page_size" };
 
 type Phase =
   | { kind: "choosing" }
@@ -116,6 +124,26 @@ export function LoadFromLibraryDialog({
   onSamplesChanged,
 }: LoadFromLibraryDialogProps) {
   const dispatch = useAppDispatch();
+  const organizationId = useAppSelector(selectActiveOrganizationId);
+  const userId = useAppSelector(selectUserId);
+  const itemPageSize = useCallback(async (): Promise<number> => {
+    if (!organizationId) {
+      throw new Error(
+        "This dialog cannot tell how many Library items to load because no organization is " +
+          "active yet. Reopen it once your workspace has finished loading.",
+      );
+    }
+    const raw = await ensureEffectiveKnob(organizationId, userId, ITEM_PAGE_SIZE_KNOB);
+    const limit = typeof raw === "number" ? raw : Number(raw);
+    if (!Number.isFinite(limit) || limit <= 0) {
+      throw new Error(
+        `The setting "${ITEM_PAGE_SIZE_KNOB.feature}.${ITEM_PAGE_SIZE_KNOB.key}" is ` +
+          `${JSON.stringify(raw)}, which is not a number of items. Fix it in settings; nothing ` +
+          "here will guess a page size.",
+      );
+    }
+    return limit;
+  }, [organizationId, userId]);
 
   const [libraries, setLibraries] = useState<LibraryRow[]>([]);
   const [librariesLoading, setLibrariesLoading] = useState(false);
@@ -156,9 +184,16 @@ export function LoadFromLibraryDialog({
       setVideosLoading(true);
       setError(null);
       try {
+        // THE PAGE SIZE IS THE ORGANIZATION'S, AWAITED — never a constant and
+        // never a stale render value. `ensureEffectiveKnob` shares the ONE
+        // register fetch every other reader on the page uses, so this costs no
+        // round trip of its own; an unseeded or unreadable row raises by name
+        // and lands in the dialog's own error line rather than quietly loading
+        // a page size nobody chose (law 4).
+        const limit = await itemPageSize();
         const response = await listVideos(dispatch, id, {
           transcript_status: ["ready"],
-          limit: ITEM_PAGE_SIZE,
+          limit,
           order: "published_at",
           direction: "desc",
         });
@@ -181,7 +216,7 @@ export function LoadFromLibraryDialog({
         setVideosLoading(false);
       }
     },
-    [dispatch],
+    [dispatch, itemPageSize],
   );
 
   const readiness = chosenLibrary

@@ -50,7 +50,7 @@ let expired: { sentence: string } | null = { sentence: SERVER_EXPIRED };
 
 jest.mock("../data", () => ({
   APPROVAL_SURFACE: "matrx-user/approval-queue",
-  APPROVAL_PAGE_SIZE: 50,
+  APPROVAL_PAGE_SIZE_KNOB: { feature: "approvals", key: "queue_page_size" },
   listPendingProposals: async () => ({
     proposals: [
       {

@@ -113,10 +113,13 @@ const TABLE_TREE_INCLUDE = ["description", "status", "counts", "facets"];
  */
 const INTENTS_PAGE_LIMIT = 1000;
 
-const PAGE_SIZE = 100;
-
-function emptyQuery(search = ""): MatrxDataTableQueryState {
-  return { page: 1, pageSize: PAGE_SIZE, search, anyOf: "", columnFilters: {}, sort: null };
+/**
+ * The table's blank query. Its page size is the ORGANIZATION'S
+ * (`seo.topical_map.table_page_size`, law 6), handed in by the caller from the
+ * knobs this component already receives — never a constant frozen here.
+ */
+function emptyQuery(pageSize: number, search = ""): MatrxDataTableQueryState {
+  return { page: 1, pageSize, search, anyOf: "", columnFilters: {}, sort: null };
 }
 
 type FlipReason = { kind: "sort"; columnId: string } | { kind: "filter" } | null;
@@ -175,7 +178,9 @@ export function TopicTable({ mapId, siteId, host, readOnly, knobs }: TopicTableP
   const rejectTopics = useRejectMapTopics(mapId);
 
   // ── Local state: only what has no meaning in the other mode ──────────────
-  const [flatQuery, setFlatQuery] = useState<MatrxDataTableQueryState>(() => emptyQuery());
+  const [flatQuery, setFlatQuery] = useState<MatrxDataTableQueryState>(() =>
+    emptyQuery(knobs.table_page_size),
+  );
   const [flipReason, setFlipReason] = useState<FlipReason>(null);
   const [contextRow, setContextRow] = useState<MapTableRow | null>(null);
   const [pendingRename, setPendingRename] = useState<PendingRename | null>(null);
@@ -254,7 +259,10 @@ export function TopicTable({ mapId, siteId, host, readOnly, knobs }: TopicTableP
 
   // ── R10: the query the table sees, and what a change means ───────────────
   const query: MatrxDataTableQueryState = hierarchy
-    ? { ...emptyQuery(filters.text), sort: sortStateForSiblingSort(siblingSort) }
+    ? {
+        ...emptyQuery(knobs.table_page_size, filters.text),
+        sort: sortStateForSiblingSort(siblingSort),
+      }
     : flatQuery;
 
   const goFlat = (next: MatrxDataTableQueryState, reason: FlipReason) => {
@@ -270,7 +278,7 @@ export function TopicTable({ mapId, siteId, host, readOnly, knobs }: TopicTableP
     if (flatQuery.search !== filters.text) {
       dispatch(setFilters({ mapId, filters: { text: flatQuery.search } }));
     }
-    setFlatQuery(emptyQuery());
+    setFlatQuery(emptyQuery(knobs.table_page_size));
     setFlipReason(null);
   };
 
@@ -533,7 +541,7 @@ export function TopicTable({ mapId, siteId, host, readOnly, knobs }: TopicTableP
                     ],
                     onChange: (value) => {
                       if (value === "hierarchy" && !hierarchy) goHierarchy();
-                      else if (value === "flat" && hierarchy) goFlat(emptyQuery(filters.text), null);
+                      else if (value === "flat" && hierarchy) goFlat(emptyQuery(knobs.table_page_size, filters.text), null);
                     },
                   },
                 ],

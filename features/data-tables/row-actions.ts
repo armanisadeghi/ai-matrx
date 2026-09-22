@@ -81,7 +81,18 @@ export type RowActionField = ComputedColumnField & {
   field_order?: number;
 };
 
+// KNOB MIRROR of platform.feature_knob "data_tables.row_actions" "max_actions"
+// `readRowActions` is a synchronous pure function called from render paths (the
+// grid's action bar, the editor's memo) that cannot await a register read, and
+// its cap is asserted by `__tests__/row-actions.test.ts`. The registry row is
+// the authority; a change to it takes effect on the next deploy that re-mirrors
+// this line.
 export const MAX_ROW_ACTIONS = 24;
+// KNOB MIRROR of platform.feature_knob "data_tables.row_actions" "max_steps"
+// `validateRowActions` is a synchronous pure function that runs on every
+// keystroke of the row-action editor and has no async seam. The registry row is
+// the authority; a change to it takes effect on the next deploy that re-mirrors
+// this line.
 export const MAX_ROW_ACTION_STEPS = 60;
 
 export function newRowActionId(): string {

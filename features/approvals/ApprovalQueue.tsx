@@ -553,7 +553,7 @@ export function ApprovalQueue({
 
   /**
    * WHAT HAPPENED TO THE ROW THE LINK NAMED — answered by evidence, never by
-   * absence. Each kind reads ONE page (`APPROVAL_PAGE_SIZE`), so a row that is
+   * absence. Each kind reads ONE page (`approvals.queue_page_size`), so a row that is
    * not on screen may simply be row 51 and still waiting; saying "already
    * decided" there is the screen lying (Bugbot MEDIUM #2, 2026-09-17). The
    * queue therefore reads that id directly and reports what the store says.

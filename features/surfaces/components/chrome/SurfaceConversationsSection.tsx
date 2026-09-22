@@ -40,9 +40,17 @@ import type { ConversationListItem } from "@/features/agents/redux/conversation-
 import { resumeConversation } from "@/features/agents/redux/execution-system/thunks/resume-conversation.thunk";
 import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
 import { useAgentNames } from "@/features/surfaces/hooks/useAgentNames";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 
 const RECENT_COUNT = 2;
-const ALL_PAGE_SIZE = 30;
+/**
+ * How many past conversations the "All" tab loads at once — the organization's
+ * (or the person's) setting, not this file's opinion (law 6). Read through the
+ * one cached register read, so it costs no round trip of its own.
+ */
+const ALL_PAGE_SIZE_KNOB = { feature: "surfaces.conversations", key: "all_page_size" };
 /** Voice transcripts render incorrectly in a text conversation view. */
 const EXCLUDED_FEATURES = ["voice-agent"];
 
@@ -112,6 +120,15 @@ export function SurfaceConversationsSection({
   const [showAll, setShowAll] = useState(false);
   const [openingId, setOpeningId] = useState<string | null>(null);
 
+  const organizationId = useAppSelector(selectActiveOrganizationId);
+  const userId = useAppSelector(selectUserId);
+  const rawAllPageSize = useEffectiveKnob(organizationId, userId, ALL_PAGE_SIZE_KNOB);
+  // `undefined` is "not answered yet", never a number nobody chose: the read
+  // below simply does not run until the register answers, and the section keeps
+  // saying it is fetching. A read that FAILS is named in the console by
+  // `useEffectiveKnob` itself, with the remedy.
+  const allPageSize = typeof rawAllPageSize === "number" ? rawAllPageSize : null;
+
   const recentScopeId = `surface-chrome:recent:${feature ?? "none"}`;
   const allScopeId = "surface-chrome:all";
   const scopeId = showAll ? allScopeId : recentScopeId;
@@ -130,12 +147,13 @@ export function SurfaceConversationsSection({
 
   useEffect(() => {
     if (showAll) {
+      if (allPageSize === null) return;
       void dispatch(
         fetchConversationHistory({
           scopeId: allScopeId,
           excludeSourceFeatures: EXCLUDED_FEATURES,
           includeSourceFeatures: [],
-          pageSize: ALL_PAGE_SIZE,
+          pageSize: allPageSize,
           replace: true,
         }),
       );
@@ -154,7 +172,7 @@ export function SurfaceConversationsSection({
         replace: true,
       }),
     );
-  }, [dispatch, showAll, feature, recentScopeId]);
+  }, [dispatch, showAll, feature, recentScopeId, allPageSize]);
 
   // A conversation with no agent cannot be resumed — never offer a dead row.
   const resumable = items.filter((c) => !!c.agentId);

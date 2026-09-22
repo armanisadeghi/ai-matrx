@@ -12,7 +12,17 @@ import type {
   StorageImportSelection,
 } from "@/features/files/storage-sources/types";
 
-export const STORAGE_BROWSE_PAGE_SIZE = 50;
+/**
+ * How many items one browse of a connected Drive/Dropbox/OneDrive/Box folder
+ * asks for. An organization with very large folders wants more; providers get
+ * slower per request as it grows — so it is theirs to decide (law 6), not this
+ * file's. The caller resolves the row and passes the number, because this
+ * module has no organization in hand.
+ */
+export const STORAGE_BROWSE_PAGE_SIZE_KNOB = {
+  feature: "files.storage_sources",
+  key: "browse_page_size",
+};
 const COLLISION_HASH_LENGTH = 8;
 
 export function safeStorageBasename(name: string): string | null {
@@ -71,6 +81,12 @@ export async function browseStorageSource(args: {
   connectionId: string;
   folderRef?: string | null;
   cursor?: string | null;
+  /**
+   * REQUIRED, and there is deliberately no default: the page size is
+   * `files.storage_sources.browse_page_size`, and a default here would be a
+   * number nobody chose quietly outranking the organization's own.
+   */
+  pageSize: number;
   signal?: AbortSignal;
 }): Promise<StorageBrowsePage> {
   const body = {
@@ -78,7 +94,7 @@ export async function browseStorageSource(args: {
     connection_id: args.connectionId,
     folder_ref: args.folderRef ?? null,
     cursor: args.cursor ?? null,
-    page_size: STORAGE_BROWSE_PAGE_SIZE,
+    page_size: args.pageSize,
   };
   const { data } = args.signal
     ? await apiPost("/storage-sources/browse", body, { signal: args.signal })

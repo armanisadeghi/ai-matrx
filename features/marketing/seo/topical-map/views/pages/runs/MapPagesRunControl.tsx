@@ -198,7 +198,7 @@ export function MapPagesRunControl({
 
           {run.result ? <MapPagesResultSummary result={run.result} /> : null}
 
-          <WantedTopicsPanel mapId={mapId} siteId={siteId} />
+          <WantedTopicsPanel mapId={mapId} siteId={siteId} limit={knobs.wanted_topic_limit} />
         </>
       )}
     </RunControlShell>

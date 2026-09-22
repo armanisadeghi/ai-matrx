@@ -46,6 +46,7 @@ import {
 } from "../components/TopicalMapStates";
 import type { MapViewProps } from "../components/TopicalMapWorkspaceBody";
 import { useMapHistory, useMapTree, usePatchMapTopics } from "../hooks";
+import { useTopicalMapKnobs } from "../knobs";
 import { ProposalReview } from "../proposals/ProposalReview";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectMapTotals } from "../redux/selectors";
@@ -58,7 +59,6 @@ import type {
 import { TopicStatusMark } from "../ui/TopicStatusMark";
 import { TREE_INCLUDE } from "./MapTreeHarness";
 
-const PAGE_SIZE = 200;
 
 /** Which statuses the history read may be narrowed to (the function's own list). */
 const STATUS_CHOICES: readonly MapTopicStatus[] = ["rejected", "retired", "proposed", "active"];
@@ -110,11 +110,22 @@ export function HistoryView({ mapId, siteId, host, readOnly }: MapViewProps) {
   // query key the other screens use, so a view switch never re-fetches.
   const tree = useMapTree(mapId, { include: TREE_INCLUDE, siteId: siteId ?? undefined });
   const totals = useAppSelector(selectMapTotals(mapId));
-  const history = useMapHistory(mapId, {
-    status: filters.statuses,
-    limit: PAGE_SIZE,
-    offset,
-  });
+  // HOW BIG A PAGE IS, is the organization's (law 6 — `seo.topical_map`
+  // `history_page_size`), read through this feature's ONE knob reader. Until it
+  // answers the history is not read at all: a page size this file invented
+  // would be a number nobody chose, and a failed read is rendered below by
+  // name rather than quietly guessed.
+  const mapKnobs = useTopicalMapKnobs();
+  const pageSize = mapKnobs.knobs?.history_page_size ?? null;
+  const history = useMapHistory(
+    mapId,
+    {
+      status: filters.statuses,
+      limit: pageSize ?? undefined,
+      offset,
+    },
+    pageSize !== null,
+  );
   const openWindow = useOpenTopicalMapWindow();
 
   const proposedCount = totals.proposed;
@@ -172,7 +183,9 @@ export function HistoryView({ mapId, siteId, host, readOnly }: MapViewProps) {
         />
       </section>
 
-      {history.isPending ? (
+      {mapKnobs.error ? (
+        <TopicalMapFailed what="this map's settings" error={mapKnobs.error} />
+      ) : pageSize === null || history.isPending ? (
         <TopicalMapLoading what="this map's history" />
       ) : history.isError ? (
         <TopicalMapFailed what="this map's history" error={history.error} />
@@ -183,6 +196,7 @@ export function HistoryView({ mapId, siteId, host, readOnly }: MapViewProps) {
           total={history.data.total}
           pageCount={history.data.items.length}
           offset={offset}
+          pageSize={pageSize}
           onPage={setOffset}
           readOnly={readOnly}
         />
@@ -269,6 +283,7 @@ function HistoryList({
   items,
   total,
   pageCount,
+  pageSize,
   offset,
   onPage,
   readOnly,
@@ -277,6 +292,8 @@ function HistoryList({
   items: MapHistoryEntry[];
   total: number;
   pageCount: number;
+  /** `seo.topical_map.history_page_size`, resolved by the view above. */
+  pageSize: number;
   offset: number;
   onPage: (offset: number) => void;
   readOnly: boolean;
@@ -405,7 +422,7 @@ function HistoryList({
         </ul>
       )}
 
-      {total > PAGE_SIZE ? (
+      {total > pageSize ? (
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>
             {offset + 1}–{Math.min(offset + pageCount, total)} of {total}
@@ -416,18 +433,18 @@ function HistoryList({
               size="sm"
               variant="ghost"
               disabled={offset === 0}
-              onClick={() => onPage(Math.max(0, offset - PAGE_SIZE))}
+              onClick={() => onPage(Math.max(0, offset - pageSize))}
             >
-              Previous {PAGE_SIZE}
+              Previous {pageSize}
             </Button>
             <Button
               type="button"
               size="sm"
               variant="ghost"
               disabled={offset + pageCount >= total}
-              onClick={() => onPage(offset + PAGE_SIZE)}
+              onClick={() => onPage(offset + pageSize)}
             >
-              Next {PAGE_SIZE}
+              Next {pageSize}
             </Button>
           </span>
         </div>

@@ -46,6 +46,13 @@ jest.mock("../registry", () => ({
 jest.mock("../data", () => ({
   readProposalStatus: (...args: unknown[]) =>
     mockReadProposalStatus(...(args as [])),
+  APPROVAL_PAGE_SIZE_KNOB: { feature: "approvals", key: "queue_page_size" },
+}));
+// The page size is `approvals.queue_page_size`; this suite measures the queue's
+// states, not the register, so the row is served at its seeded default.
+jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
+  ensureEffectiveKnob: async () => 50,
+  useEffectiveKnob: () => 50,
 }));
 jest.mock("@/lib/toast", () => ({
   toast: { success: jest.fn(), error: jest.fn() },

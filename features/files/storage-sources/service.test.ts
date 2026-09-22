@@ -69,6 +69,7 @@ test("browse sends the exact contract payload without provider URLs or tokens", 
     provider: "dropbox",
     connectionId: "connection-1",
     folderRef: "folder-1",
+    pageSize: 50,
     cursor: "opaque-before",
   });
   expect(mockApiPost).toHaveBeenCalledWith(
@@ -99,6 +100,7 @@ test("browse refuses a page for a different provider account or folder", async (
       provider: "dropbox",
       connectionId: "connection-1",
       folderRef: "folder-1",
+      pageSize: 50,
     }),
   ).rejects.toThrow("different location");
 });

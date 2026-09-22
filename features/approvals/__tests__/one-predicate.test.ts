@@ -37,6 +37,13 @@ jest.mock("@/features/assists/service", () => ({
 jest.mock("@ai-matrx/data/db", () => ({
   readAllRows: (...args: unknown[]) => mockReadAllRows(...args),
 }));
+// The queue's page size is `approvals.queue_page_size`, resolved through the
+// register. What this suite measures is the predicate, not the register, so the
+// row is served here at its seeded default.
+jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
+  ensureEffectiveKnob: async () => 50,
+  useEffectiveKnob: () => 50,
+}));
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     schema: () => ({
@@ -397,7 +404,40 @@ describe("there is no client-side mode ladder either (A-vii)", () => {
    */
   const WINDOW_READER = "review-window.ts";
 
-  it("`mode.ts` is gone and only the review window reads a knob, and only that one", () => {
+  /**
+   * 🚨 A KNOB READ IN THIS FEATURE IS DECLARED HERE OR IT FAILS (SETTINGS-3,
+   * 2026-09-22). The ban this guard enforces is on a second AUTHORITY: nothing
+   * in the browser may resolve who is allowed to write. It was written when the
+   * review window was the only knob this feature had, so it said "exactly one
+   * module, exactly one knob" — and law 6 then made the queue's page size a knob
+   * too (`approvals.queue_page_size`), which is a data-volume opinion and no
+   * kind of permission. Narrowing the guard to a DECLARED set keeps the forcing
+   * function exactly as sharp: a new reader still fails this test until someone
+   * writes down which knob it reads and why that knob is not an authority.
+   */
+  const DECLARED_READERS: ReadonlyArray<{
+    file: string;
+    knob: string;
+    why: string;
+  }> = [
+    {
+      file: "review-window.ts",
+      knob: "hitl.google.review_timeout_hours",
+      why: "removes a control whose 403 refusal the server already decided; it grants nothing",
+    },
+    {
+      file: "data.ts",
+      knob: "approvals.queue_page_size",
+      why: "how many proposals one page reads — a data-volume setting, not a permission",
+    },
+    {
+      file: "ApprovalsWorkspace.tsx",
+      knob: "approvals.queue_page_size",
+      why: "the same row, so the sentence on screen can never name a page size the read did not use",
+    },
+  ];
+
+  it("`mode.ts` is gone and every knob read here is declared, and none is a mode", () => {
     const { existsSync, readFileSync, readdirSync, statSync } =
       jest.requireActual<typeof import("node:fs")>("node:fs");
     const { join } = jest.requireActual<typeof import("node:path")>("node:path");
@@ -416,21 +456,44 @@ describe("there is no client-side mode ladder either (A-vii)", () => {
     walk(root);
     expect(files.length).toBeGreaterThan(5);
     let readers = 0;
+    let windowReaders = 0;
     for (const file of files) {
       const source = readFileSync(file, "utf8");
       // Mentions in prose are fine; a read is not — `useEffectiveKnob` /
       // `ensureEffectiveKnob` are how one is made.
       if (/(use|ensure)EffectiveKnob/.test(source)) {
-        expect(file.endsWith(WINDOW_READER)).toBe(true);
+        const declared = DECLARED_READERS.find((entry) =>
+          file.endsWith(entry.file),
+        );
+        // An undeclared reader fails here BY NAME, with the file that added it.
+        expect(
+          declared ? file : `${file} reads a knob but is not in DECLARED_READERS`,
+        ).toBe(declared ? file : "declared");
+        if (!declared) continue;
         readers += 1;
-        // And it reads the review window, never a mode: a mode resolved in the
-        // browser is the second authority this guard exists to forbid.
-        expect(source).toContain("hitl.google.review_timeout_hours");
+        // Never a mode: a mode resolved in the browser is the second authority
+        // this guard exists to forbid.
         expect(source).not.toContain("autonomy_mode");
+        if (file.endsWith(WINDOW_READER)) windowReaders += 1;
       }
     }
-    // The reader EXISTS: an expired row with a live Approve button is the defect
-    // this replaced, so its absence is a regression, not a clean slate.
-    expect(readers).toBe(1);
+    // AND THE DECLARED KNOB IS THE ONE THE FEATURE ACTUALLY NAMES. A reader may
+    // import the `{ feature, key }` pair from a sibling rather than spell it,
+    // so the address is looked for across the feature, not in each file: a
+    // declaration naming a knob nothing here holds is a declaration that has
+    // gone stale.
+    const everySource = files
+      .map((file) => readFileSync(file, "utf8"))
+      .join("\n");
+    for (const entry of DECLARED_READERS) {
+      const key = entry.knob.slice(entry.knob.lastIndexOf(".") + 1);
+      expect(everySource).toContain(key);
+    }
+
+    // The review-window reader EXISTS: an expired row with a live Approve button
+    // is the defect it replaced, so its absence is a regression, not a clean
+    // slate. And every reader that exists is one of the declared ones.
+    expect(windowReaders).toBe(1);
+    expect(readers).toBe(DECLARED_READERS.length);
   });
 });

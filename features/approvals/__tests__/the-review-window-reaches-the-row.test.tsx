@@ -35,8 +35,19 @@ jest.mock("@ai-matrx/data/db", () => ({ readAllRows: jest.fn() }));
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({ schema: () => ({ from: () => ({}) }) }),
 }));
+// TWO knobs are resolved on this path now: the review window (what this suite
+// measures) and `approvals.queue_page_size` (how big a page the read asks for,
+// SETTINGS-3). The page size is served at its seeded default so that a failure
+// here is always about the window.
 jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
-  ensureEffectiveKnob: (...args: unknown[]) => mockEnsureKnob(...args),
+  ensureEffectiveKnob: (...args: unknown[]) => {
+    const ref = args[2] as string | { key?: string };
+    if (typeof ref !== "string" && ref?.key === "queue_page_size") {
+      return Promise.resolve(50);
+    }
+    return mockEnsureKnob(...args);
+  },
+  useEffectiveKnob: () => 50,
 }));
 jest.mock("../registry", () => ({ APPROVAL_KINDS: [] }));
 jest.mock("@/lib/toast", () => ({
@@ -192,7 +203,8 @@ describe("the page read marks the row", () => {
     const byId = new Map(page.proposals.map((p) => [p.assist.id, p]));
     expect(byId.get("old")?.expired?.sentence).toBe(SERVER_24H);
     expect(byId.get("fresh")?.expired).toBeNull();
-    // The knob is resolved for the org and the person, once for the page.
+    // The window knob is resolved for the org and the person, once for the page
+    // (the page-size knob is answered by the mock above and never reaches here).
     expect(mockEnsureKnob).toHaveBeenCalledWith("o1", "u1", REVIEW_TIMEOUT_KNOB);
     expect(mockEnsureKnob).toHaveBeenCalledTimes(1);
   });

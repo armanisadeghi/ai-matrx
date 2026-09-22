@@ -45,17 +45,22 @@ import type {
   PageMappingWantedTopicHeldBack,
 } from "../../../types";
 
-/** How many rows either list asks for. The function clamps to 1..200. */
-const WANTED_TOPIC_LIMIT = 20;
 
 export interface WantedTopicsPanelProps {
   mapId: string;
   siteId: string;
+  /**
+   * How many rows either list asks for — `seo.topical_map.wanted_topic_limit`,
+   * the organization's setting (the function clamps to 1..200). It is handed in
+   * by the run control, which already holds this map's knobs, so there is one
+   * knob read per screen and no number frozen in this file (law 6).
+   */
+  limit: number;
 }
 
-export function WantedTopicsPanel({ mapId, siteId }: WantedTopicsPanelProps) {
-  const wanted = usePageMappingWantedTopics(siteId, WANTED_TOPIC_LIMIT);
-  const heldBack = usePageMappingWantedTopicsHeldBack(siteId, WANTED_TOPIC_LIMIT);
+export function WantedTopicsPanel({ mapId, siteId, limit }: WantedTopicsPanelProps) {
+  const wanted = usePageMappingWantedTopics(siteId, limit);
+  const heldBack = usePageMappingWantedTopicsHeldBack(siteId, limit);
   const upsert = useUpsertMapTopics(mapId);
   const [heldBackOpen, setHeldBackOpen] = useState(false);
   const [adding, setAdding] = useState<string | null>(null);

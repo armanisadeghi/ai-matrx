@@ -19,7 +19,7 @@ jest.mock("@/features/files/storage-sources/inventory", () => ({
   loadStoragePickerAccounts: (...args: unknown[]) => mockAccounts(...args),
 }));
 jest.mock("@/features/files/storage-sources/service", () => ({
-  STORAGE_BROWSE_PAGE_SIZE: 50,
+  STORAGE_BROWSE_PAGE_SIZE_KNOB: { feature: "files.storage_sources", key: "browse_page_size" },
   browseStorageSource: (...args: unknown[]) => mockBrowse(...args),
   importStorageSourceFiles: (...args: unknown[]) => mockImport(...args),
   safeStorageBasename: (name: string) => name || null,
@@ -28,7 +28,23 @@ jest.mock("@/features/overlays/callbacks/storageSourcePicker", () => ({
   deliverStorageSourceImports: (...args: unknown[]) => mockDeliver(...args),
   disposeStorageSourcePickerCallbackGroup: (...args: unknown[]) => mockDispose(...args),
 }));
-jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => mockDispatch }));
+jest.mock("@/lib/redux/hooks", () => ({
+  useAppDispatch: () => mockDispatch,
+  useAppSelector: (selector: (state: unknown) => unknown) =>
+    selector({ __test: true }),
+}));
+jest.mock("@/lib/redux/selectors/userSelectors", () => ({
+  selectUserId: () => "user-1",
+}));
+jest.mock("@/features/scopes/redux/selectors/active-context", () => ({
+  selectActiveOrganizationId: () => "org-1",
+}));
+// The picker resolves `files.storage_sources.browse_page_size` before it
+// browses; the register itself is not what this test measures.
+jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
+  ensureEffectiveKnob: async () => 50,
+  useEffectiveKnob: () => 50,
+}));
 jest.mock("@/features/window-panels/WindowPanel", () => ({
   WindowPanel: ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => (
     <div>{children}<button onClick={onClose}>Window close</button></div>

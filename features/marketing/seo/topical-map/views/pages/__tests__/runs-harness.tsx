@@ -185,6 +185,9 @@ export function heldBackTopicRow(
  * placeholder and chip, so a fixture missing one would not compile.
  */
 export const KNOBS: TopicalMapKnobs = {
+  table_page_size: 100,
+  history_page_size: 200,
+  wanted_topic_limit: 20,
   default_view: "outline",
   outline_detail: "labels",
   outline_hover_popover: true,

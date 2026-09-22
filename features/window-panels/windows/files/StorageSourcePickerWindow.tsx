@@ -15,7 +15,13 @@ import { Input } from "@ai-matrx/design-system";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { SettingDoor } from "@/features/settings/doors/SettingDoor";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  ensureEffectiveKnob,
+  useEffectiveKnob,
+} from "@/lib/scoped-config/effectiveKnobs";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { attachChildToFolder, upsertFiles } from "@/features/files/redux/slice";
 import { matchStorageAccept, enforceStorageSelectionMode } from "@/features/files/storage-sources/accept";
 import { loadStoragePickerAccounts, type StoragePickerAccount } from "@/features/files/storage-sources/inventory";
@@ -23,7 +29,7 @@ import {
   browseStorageSource,
   importStorageSourceFiles,
   safeStorageBasename,
-  STORAGE_BROWSE_PAGE_SIZE,
+  STORAGE_BROWSE_PAGE_SIZE_KNOB,
 } from "@/features/files/storage-sources/service";
 import type {
   CanonicalStorageImport,
@@ -73,6 +79,41 @@ export function StorageSourcePickerWindow({
   multiple = true,
 }: StorageSourcePickerWindowProps) {
   const dispatch = useAppDispatch();
+  const organizationId = useAppSelector(selectActiveOrganizationId);
+  const userId = useAppSelector(selectUserId);
+  /**
+   * The page size for the "Load more" LABEL — `undefined` until the register
+   * answers, in which case the button says "Load more" rather than promising a
+   * number this file made up. The browse itself awaits the same row.
+   */
+  const rawPageSize = useEffectiveKnob(
+    organizationId,
+    userId,
+    STORAGE_BROWSE_PAGE_SIZE_KNOB,
+  );
+  const knownPageSize = typeof rawPageSize === "number" ? rawPageSize : null;
+  const resolvePageSize = useCallback(async (): Promise<number> => {
+    if (!organizationId) {
+      throw new Error(
+        "This picker cannot tell how many files to list at a time because no organization is " +
+          "active yet. Reopen it once your workspace has finished loading.",
+      );
+    }
+    const raw = await ensureEffectiveKnob(
+      organizationId,
+      userId,
+      STORAGE_BROWSE_PAGE_SIZE_KNOB,
+    );
+    const size = typeof raw === "number" ? raw : Number(raw);
+    if (!Number.isFinite(size) || size <= 0) {
+      throw new Error(
+        `The setting "${STORAGE_BROWSE_PAGE_SIZE_KNOB.feature}.` +
+          `${STORAGE_BROWSE_PAGE_SIZE_KNOB.key}" is ${JSON.stringify(raw)}, which is not a ` +
+          "number of files. Set it to a positive whole number in settings.",
+      );
+    }
+    return size;
+  }, [organizationId, userId]);
   const [accounts, setAccounts] = useState<StoragePickerAccount[] | null>(null);
   const [inventoryError, setInventoryError] = useState<string | null>(null);
   const [provider, setProvider] = useState<StorageBrowseProvider>("onedrive");
@@ -150,11 +191,18 @@ export function StorageSourcePickerWindow({
       setBrowseBusy(true);
       setBrowseError(null);
       try {
+        // THE PAGE SIZE IS THE ORGANIZATION'S, RESOLVED BEFORE THE CALL. One
+        // cached register read backs every knob on this screen, so this costs
+        // no round trip of its own; an unseeded or unreadable row raises by
+        // name into the picker's own error line instead of quietly browsing at
+        // a page size nobody chose (law 4).
+        const pageSize = await resolvePageSize();
         const page = await browseStorageSource({
           provider,
           connectionId,
           folderRef: folder.ref,
           cursor,
+          pageSize,
           signal: controller.signal,
         });
         if (generation !== generationRef.current) return;
@@ -170,7 +218,7 @@ export function StorageSourcePickerWindow({
         if (generation === generationRef.current) setBrowseBusy(false);
       }
     },
-    [connectionId, provider],
+    [connectionId, provider, resolvePageSize],
   );
 
   useEffect(() => {
@@ -503,7 +551,9 @@ export function StorageSourcePickerWindow({
               ) : null}
               {nextCursor && pageCount < 20 ? (
                 <Button className="mt-2 w-full" variant="outline" disabled={browseBusy} onClick={() => void loadFolder(currentFolder, nextCursor)}>
-                  Load {STORAGE_BROWSE_PAGE_SIZE} more
+                  {typeof knownPageSize === "number"
+                    ? `Load ${knownPageSize} more`
+                    : "Load more"}
                 </Button>
               ) : null}
             </div>

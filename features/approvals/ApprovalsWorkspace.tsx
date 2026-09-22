@@ -20,7 +20,8 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { ApprovalQueue, type ApprovalQueueSummary } from "./ApprovalQueue";
-import { APPROVAL_PAGE_SIZE } from "./data";
+import { APPROVAL_PAGE_SIZE_KNOB } from "./data";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import {
   APPROVALS_EMPTY_BODY,
   APPROVALS_EMPTY_TITLE,
@@ -46,6 +47,12 @@ export function ApprovalsWorkspace({
 }) {
   const userId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectActiveOrganizationId);
+  // The SAME row the reader pages by, so the sentence below can never promise a
+  // page size the queue did not use. `undefined` is "not answered yet", and the
+  // sentence says "this page" rather than inventing a number for it.
+  const rawPageSize = useEffectiveKnob(organizationId, userId, APPROVAL_PAGE_SIZE_KNOB);
+  const pageSizeWords =
+    typeof rawPageSize === "number" ? `the first ${rawPageSize}` : "one page";
   const [summary, setSummary] = useState<ApprovalQueueSummary | null>(null);
   /**
    * The queue's evidence-backed verdict AND THE ID IT IS ABOUT. `null` = not
@@ -114,7 +121,7 @@ export function ApprovalsWorkspace({
               : focusResolution === "no_screen"
                 ? "That item is still waiting on you and this version of the app has no screen for it — it was filed by a newer part of the system. Nothing was decided; tell us and it will be shown here."
                 : focusResolution === "pending_elsewhere"
-                  ? `The item that link points to is still waiting on you, but it is not in the list above — this page shows the first ${APPROVAL_PAGE_SIZE} of each kind, and the rest are reached from each section's own link.`
+                  ? `The item that link points to is still waiting on you, but it is not in the list above — this page shows ${pageSizeWords} of each kind, and the rest are reached from each section's own link.`
                   : focusResolution === "not_an_approval"
                     ? "That link does not point at something waiting for your approval — the item it names is a different kind of notice."
                     : focusResolution === "unconfirmed"

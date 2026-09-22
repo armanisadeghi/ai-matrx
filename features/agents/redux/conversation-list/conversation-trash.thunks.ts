@@ -20,6 +20,8 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import { getUserId } from "@/utils/auth/getUserId";
 import { operationFailed } from "@/utils/errors";
+import { ensureEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { ConversationListItem } from "./conversation-list.types";
 import {
@@ -31,8 +33,16 @@ import {
 } from "./conversation-list.slice";
 import { upsertConversationIntoScopes } from "../conversation-history/slice";
 
-/** How many trashed rows the disclosure shows at once. */
-export const CONVERSATION_TRASH_PAGE_SIZE = 50;
+/**
+ * How many trashed rows the disclosure shows at once — the ORGANIZATION'S
+ * choice (or the person's), not this file's. Law 6: how much of their own
+ * history one page carries is a data-volume opinion, so it is a registered knob
+ * read through the one cached register fetch, never a constant frozen here.
+ */
+const CONVERSATION_TRASH_PAGE_SIZE_KNOB = {
+  feature: "agents.conversations",
+  key: "trash_page_size",
+};
 
 interface ThunkApi {
   dispatch: AppDispatch;
@@ -48,15 +58,48 @@ export const fetchTrashedConversations = createAsyncThunk<
   ThunkApi
 >(
   "conversationList/fetchTrashed",
-  async (rawArgs, { dispatch, rejectWithValue }) => {
-    const limit =
-      (rawArgs as { limit?: number } | undefined)?.limit ??
-      CONVERSATION_TRASH_PAGE_SIZE;
-
+  async (rawArgs, { dispatch, getState, rejectWithValue }) => {
     dispatch(setTrashLoading());
 
     // VIEW LAW: the trash is MINE, declared — never "everything I can reach".
     const viewerId = getUserId();
+
+    // THE PAGE SIZE IS A SETTING, AWAITED BEFORE THE READ. A caller may still
+    // ask for a specific number (a compact disclosure), but nothing here
+    // invents one: an unseeded or unreadable row raises by name and the trash
+    // says it could not open, with the remedy, instead of quietly showing a
+    // page size nobody chose (law 4).
+    let limit = (rawArgs as { limit?: number } | undefined)?.limit;
+    if (limit === undefined) {
+      const organizationId = selectActiveOrganizationId(getState());
+      try {
+        if (!organizationId) {
+          throw new Error(
+            "no organization is active yet, so its page size cannot be resolved",
+          );
+        }
+        const raw = await ensureEffectiveKnob(
+          organizationId,
+          viewerId ?? null,
+          CONVERSATION_TRASH_PAGE_SIZE_KNOB,
+        );
+        const resolved = typeof raw === "number" ? raw : Number(raw);
+        if (!Number.isFinite(resolved) || resolved <= 0) {
+          throw new Error(
+            `it resolves to ${JSON.stringify(raw)}, which is not a number of conversations`,
+          );
+        }
+        limit = resolved;
+      } catch (error) {
+        const message =
+          "The trash could not be opened: the setting that decides how many deleted " +
+          `conversations one page shows ("${CONVERSATION_TRASH_PAGE_SIZE_KNOB.feature}.` +
+          `${CONVERSATION_TRASH_PAGE_SIZE_KNOB.key}") could not be read — ` +
+          `${error instanceof Error ? error.message : String(error)}.`;
+        dispatch(setTrashError(message));
+        return rejectWithValue({ message });
+      }
+    }
     let query = supabase
       .schema("chat")
       .from("conversation")

@@ -29,6 +29,7 @@ import {
 } from "@/features/assists/service";
 import { type Assist, type AssistAction } from "@/features/assists/types";
 import { createClient } from "@/utils/supabase/client";
+import { ensureEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import type { Json } from "@/types/database.types";
 import { readApprovalReceipt } from "./receipt";
 import {
@@ -54,8 +55,46 @@ import type { ApprovalKind, ApprovalScope, AutonomyMode } from "./types";
  */
 export const APPROVAL_SURFACE = "matrx-user/approval-queue";
 
-/** One page of proposals is bounded on purpose; the queue shows the total. */
-export const APPROVAL_PAGE_SIZE = 50;
+/**
+ * One page of proposals is bounded on purpose; the queue shows the total. HOW
+ * bounded is the organization's call, not this file's (law 6) — review and
+ * approval volumes differ wildly between organizations — so it is a registered
+ * knob, read through the one cached register fetch every other reader shares.
+ */
+export const APPROVAL_PAGE_SIZE_KNOB = { feature: "approvals", key: "queue_page_size" };
+
+/**
+ * The page size for THIS organization. It RAISES when the row is unseeded or
+ * unreadable: the queue's own failure state then says a page could not be read,
+ * which is the honest answer — a queue quietly rendered at a page size nobody
+ * chose is how a person comes to believe nothing else is waiting on them.
+ */
+export async function approvalPageSize(
+  organizationId: string | null | undefined,
+  userId: string | null | undefined,
+): Promise<number> {
+  if (!organizationId) {
+    throw new Error(
+      `[approvals] ${APPROVAL_PAGE_SIZE_KNOB.feature}.${APPROVAL_PAGE_SIZE_KNOB.key} cannot be ` +
+        "resolved without an organization, so this queue cannot say how many proposals one page " +
+        "holds. Mount it inside an organization.",
+    );
+  }
+  const raw = await ensureEffectiveKnob(
+    organizationId,
+    userId ?? null,
+    APPROVAL_PAGE_SIZE_KNOB,
+  );
+  const size = typeof raw === "number" ? raw : Number(raw);
+  if (!Number.isFinite(size) || size <= 0) {
+    throw new Error(
+      `[approvals] ${APPROVAL_PAGE_SIZE_KNOB.feature}.${APPROVAL_PAGE_SIZE_KNOB.key} is ` +
+        `${JSON.stringify(raw)}, which is not a number of proposals. Set it to a positive whole ` +
+        "number in settings; nothing here will guess one.",
+    );
+  }
+  return size;
+}
 
 /**
  * THE ASSIST ACTION KINDS THIS QUEUE'S REGISTERED KINDS READ.
@@ -204,6 +243,7 @@ export async function listPendingProposals(
     );
   }
   const kindsHere: readonly ApprovalKind[] = [kind];
+  const pageSize = await approvalPageSize(scope.organizationId, scope.userId ?? userId);
   const page = await queryAssists(userId, {
     statuses: ["pending"],
     // Filtered SERVER-side by this kind's own source key, so `total` is this
@@ -217,7 +257,7 @@ export async function listPendingProposals(
     minPriority: null,
     maxPriority: null,
     page: 1,
-    pageSize: APPROVAL_PAGE_SIZE,
+    pageSize,
     sortField: "created_at",
     sortAscending: false,
     includeSnoozed: true,
