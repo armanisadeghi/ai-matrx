@@ -17,6 +17,11 @@
  * this rule, 2026-09-17).
  */
 
+import {
+  formatDurationSeconds,
+  formatRelativeTime,
+  parseTimestamp,
+} from "@ai-matrx/kit/format";
 import type { DetailField, DetailRow, DetailSourceHealth } from "@/lib/detail/types";
 
 import type {
@@ -108,23 +113,15 @@ export function durationText(seconds: number | null): string {
   if (seconds === null || !Number.isFinite(seconds) || seconds < 0) {
     return "Length not recorded";
   }
-  const whole = Math.floor(seconds);
-  const hours = Math.floor(whole / 3600);
-  const minutes = Math.floor((whole % 3600) / 60);
-  const rest = whole % 60;
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return hours > 0
-    ? `${hours}:${pad(minutes)}:${pad(rest)}`
-    : `${minutes}:${pad(rest)}`;
+  return formatDurationSeconds(seconds, { style: "clock" });
 }
 
 /** A duration in seconds as words, for the headline figure. */
 export function durationWords(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds <= 0) return "0s";
-  const whole = Math.round(seconds);
-  const minutes = Math.floor(whole / 60);
-  const rest = whole % 60;
-  return minutes > 0 ? `${minutes}m ${rest}s` : `${rest}s`;
+  // Whole seconds in, so an average that arrives fractional does not render a
+  // decimal nobody asked for.
+  return formatDurationSeconds(Math.round(seconds), { style: "compact" });
 }
 
 /** The published day as a person reads it, or the honest absence. */
@@ -273,15 +270,12 @@ export function youtubeVideoHealthOverride(
 }
 
 function refreshedPhrase(value: string | null, now: Date): string {
-  if (!value) return "Never refreshed from YouTube";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "Never refreshed from YouTube";
-  const minutes = Math.max(0, Math.round((now.getTime() - parsed.getTime()) / 60_000));
-  if (minutes < 1) return "Refreshed from YouTube just now";
-  if (minutes < 60) return `Refreshed from YouTube ${minutes} minutes ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 48) return `Refreshed from YouTube ${hours} hours ago`;
-  return `Refreshed from YouTube ${Math.round(hours / 24)} days ago`;
+  const parsed = parseTimestamp(value);
+  if (!parsed) return "Never refreshed from YouTube";
+  return `Refreshed from YouTube ${formatRelativeTime(parsed, {
+    style: "long",
+    now: now.getTime(),
+  })}`;
 }
 
 function count(value: number | null, absent: string): string {

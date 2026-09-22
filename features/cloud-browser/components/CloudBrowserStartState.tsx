@@ -19,6 +19,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Globe, Hourglass, Loader2, RotateCw } from "lucide-react";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
 import { isWaitingForCapacity, type CloudBrowserLoadError } from "../types";
 
@@ -135,7 +136,7 @@ export function CloudBrowserWaitingForCapacity({
         </p>
         <p className="max-w-sm text-xs text-muted-foreground">{error.message}</p>
         <p className="max-w-sm text-xs text-muted-foreground">
-          You keep your place. This panel asks again every {Math.round(interval / 1000)} seconds
+          You keep your place. This panel asks again every {formatDurationMs(interval, { style: "long" })}
           and starts your browser the moment one frees up.
         </p>
       </div>

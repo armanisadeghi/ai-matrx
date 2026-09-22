@@ -25,6 +25,8 @@
  * `state_reason` always wins over our sentence when it is present.
  */
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 /** Where the browser can act, and how. */
 export type RemedyKind =
   | { kind: "none" }
@@ -329,16 +331,6 @@ export interface MappingReport {
   tone: HonestState["tone"];
 }
 
-/** "6 days", "3 hours", "12 minutes" — the age of an observation. */
-function ageLabel(ms: number): string {
-  const minutes = Math.max(1, Math.round(ms / 60_000));
-  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"}`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"}`;
-  const days = Math.round(hours / 24);
-  return `${days} day${days === 1 ? "" : "s"}`;
-}
-
 export function describeMappingReport(input: {
   state: string | null;
   /** The daemon's own remedy sentence, when it sent one. */
@@ -375,7 +367,7 @@ export function describeMappingReport(input: {
     state,
     stale: true,
     badge: `Last reported · ${state.title}`,
-    sentence: `Nothing has been heard from this folder for ${ageLabel(age)}. “${state.title}” is the last thing this device reported, not what is happening now.`,
+    sentence: `Nothing has been heard from this folder for ${formatDurationMs(age, { style: "long" })}. “${state.title}” is the last thing this device reported, not what is happening now.`,
     // A present-tense "everything is fine" tone over a stale observation is
     // the same lie in colour, so an otherwise-active row goes amber.
     tone: state.tone === "active" || state.tone === "neutral" ? "warning" : state.tone,
