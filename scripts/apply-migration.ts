@@ -78,8 +78,11 @@
  *   pnpm db:apply --policy-only-self-test       prove the POLICY-LOCK policy-only rule RED then GREEN
  *   pnpm db:apply --ground-gate-self-test       prove the inverse ground gate RED then GREEN
  *                                               (no database, no file written)
- *   pnpm db:apply --self-test                   prove RED then GREEN against the
- *                                               real DB in a throwaway schema
+ *   pnpm db:apply --self-test                   prove RED then GREEN in a throwaway
+ *                                               schema ON THE NIGHTLY DEV CLONE
+ *                                               (`--target production` must be spelled
+ *                                               out AND fall in the 1–4 AM Pacific
+ *                                               window; see selfTest below)
  *
  * `--reapply` means: EXECUTE THESE BYTES AGAIN against the one live database.
  * The DB is not reconciled against files — a file is a record of a change that
@@ -636,7 +639,9 @@ function usage(): void {
       `  pnpm db:apply migrations/${CAMPAIGN_DIRNAME}/<file>.sql --source ${CAMPAIGN_SOURCE} --target branch|production --lane <lane>\n` +
       `                                     the ONLY route into migrations/${CAMPAIGN_DIRNAME}/, which no\n` +
       `                                     release path, sweep, CI job or scheduled job scans\n` +
-      `  pnpm db:apply --self-test          prove RED/GREEN against the live database\n` +
+      `  pnpm db:apply --self-test          prove RED/GREEN on the NIGHTLY DEV CLONE (the default);\n` +
+      `                                     --target production must be spelled out AND fall inside\n` +
+      `                                     the 1-4 AM Pacific window\n` +
       `  pnpm db:apply --target-self-test   prove the --target refusal RED/GREEN on the rehearsal branch\n` +
       `  pnpm db:apply --clone-self-test    prove the CLONE refusal RED/GREEN (production presented as\n` +
       `                                     the clone, and the clone presented as production)\n` +
@@ -1635,10 +1640,32 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
 }
 
 /**
- * `pnpm db:apply --self-test` — the forcing test for this applier, run against
- * the REAL database with a throwaway schema. It is the only thing that can prove
- * the properties everything else here rests on, and it proves them by making
- * them FAIL first:
+ * `pnpm db:apply --self-test` — the forcing test for this applier, run against a
+ * REAL database with a throwaway schema, and SINCE 2026-09-22 THAT DATABASE IS THE
+ * NIGHTLY DEV CLONE UNLESS THE COMMAND SPELLS PRODUCTION OUT.
+ *
+ * 🚨 WHY IT MOVED. This arm CREATES a schema, a table, a function and five ledger
+ * rows, sleeps ten seconds inside a transaction, and drops it all again — on
+ * whatever database `SUPABASE_MATRIX_*` selects, which is the MAIN one. Lanes run it
+ * by reflex, as a "does the runner still work" reflex, several times a night
+ * (REHEARSE-STRIP did on 2026-09-22), and the campaign preamble has had to carry a
+ * shouted NEVER RUN THIS line since 2026-09-17. A proof that has to be fenced off
+ * with a warning in a document is a proof pointed at the wrong database: the clone
+ * IS production's cluster, physically restored, so every property below — one
+ * transaction, the ledger checksum, the 10-second statement the deleted PostgREST
+ * door could not carry, the live `pg_get_functiondef` hash — is proven there exactly
+ * as it was proven here, on real catalogues, with nothing at stake.
+ *
+ * So the target is chosen, never inherited:
+ *   · NO `--target`, or `--target clone` → THE CLONE. The default is the safe one.
+ *   · `--target production` → allowed, but only when the 1–4 AM Pacific maintenance
+ *     window says so (`maintenance-window-and-locks`, Arman 2026-09-21: big routine
+ *     jobs run 1–4 AM PT and never hold long locks on the live database). Outside it
+ *     the refusal names the clone command.
+ *   · `--target branch` → refused: the branch is a thin schema-only rehearsal branch
+ *     and `--target-self-test` is the arm that belongs to it.
+ *
+ * It proves its properties by making them FAIL first:
  *
  *   RED   a file whose LAST statement errors → exit 1, NO ledger row, and none of
  *         the earlier statements survive (so the runner is still ONE transaction;
@@ -1664,8 +1691,105 @@ const SELFTEST_DYNAMIC_FILE = "zz_db_apply_selftest_dd220_dynamic.sql";
 /** `-- retired:` arm: a file the live database has moved past, proven unrunnable. */
 const SELFTEST_RETIRED_FILE = "zz_db_apply_selftest_retired.sql";
 
-async function selfTest(statementTimeout: string): Promise<number> {
-  const env = loadDbEnv();
+/**
+ * The hour in Pacific time, as the system clock answers it. One reader, so the window
+ * and the sentence that names it can never disagree.
+ */
+export function pacificHour(now: Date = new Date()): number {
+  return Number(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Los_Angeles",
+      hour: "2-digit",
+      hour12: false,
+    }).format(now),
+  );
+}
+
+/** 01:00–03:59 Pacific — the maintenance window (Arman, 2026-09-21). */
+export function insideMaintenanceWindow(now: Date = new Date()): boolean {
+  const h = pacificHour(now);
+  return h >= 1 && h < 4;
+}
+
+function pacificClockLine(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZoneName: "short",
+  }).format(now);
+}
+
+/**
+ * The target the COMMAND actually named, or null when it named none. `parseTargetFlag`
+ * DEFAULTS to production on purpose — every migration written before `--target` existed
+ * behaves as it did — and that default is precisely what must not decide where a
+ * destructive self-test runs. So this asks the narrower question: did a human type it?
+ */
+function spelledOutTarget(argv: readonly string[]): Target | null {
+  const named = argv.some((a) => a === "--target" || a.startsWith("--target="));
+  return named ? parseTargetFlag(argv) : null;
+}
+
+async function selfTest(statementTimeout: string, argv: readonly string[]): Promise<number> {
+  // ── WHICH DATABASE, decided before a socket exists ────────────────────────
+  const asked = spelledOutTarget(argv);
+  if (asked === "branch") {
+    console.error(
+      `${TAG.fail}db:apply --self-test does not run on the rehearsal branch.\n` +
+        `  The branch's own proof is \`pnpm db:apply --target-self-test\`, which is what proves the\n` +
+        `  --target refusal there. This arm needs production's real catalogues, so it runs on the\n` +
+        `  nightly dev clone: \`pnpm db:apply --self-test\` (or --self-test --target clone).`,
+    );
+    return 1;
+  }
+  const target: Target = asked === "production" ? "production" : "clone";
+  if (target === "production" && !insideMaintenanceWindow()) {
+    console.error(
+      `${TAG.fail}db:apply --self-test --target production is outside the 1–4 AM Pacific window ` +
+        `(it is ${pacificClockLine()} now).\n` +
+        `  This arm CREATES schema ${SELFTEST_SCHEMA}, a table, a function and five ledger rows on ` +
+        `the database it runs against,\n` +
+        `  holds a transaction open for more than ten seconds, and drops it all again. On the MAIN ` +
+        `database that is a routine job,\n` +
+        `  and routine jobs run 1–4 AM Pacific and nowhere else (Arman, 2026-09-21).\n` +
+        `  Run it on the nightly dev clone instead — production's own cluster, physically restored, ` +
+        `so every property it proves is the same:\n` +
+        `    pnpm db:apply --self-test            ${C.dim}(the clone is the default)${C.reset}\n` +
+        `    pnpm db:apply --self-test --target clone\n` +
+        `  Nothing was created and nothing was connected to.`,
+    );
+    return 1;
+  }
+
+  let cloneRef: CloneRef | null = null;
+  let env: DbEnv | { missing: string[]; looked: string[] };
+  if (target === "clone") {
+    try {
+      cloneRef = loadCloneRef(ROOT, cloneRefOverride(argv));
+      env = { ...loadCloneDbEnv(ROOT, cloneRef) };
+    } catch (err) {
+      console.error(
+        `${TAG.fail}db:apply --self-test runs on the dev clone by default and its identity could ` +
+          `not be read, so it refuses rather than falling back to production:\n` +
+          `${err instanceof Error ? err.message : String(err)}`,
+      );
+      return 2;
+    }
+    console.log(
+      `${TAG.ok}self-test target ${C.bold}clone${C.reset} ${C.dim}— ${cloneRef.cloneRef} ` +
+        `(${cloneRef.cloneName}), connection from ${(env as DbEnv).from}. Production is reached only ` +
+        `by spelling out --target production inside the 1–4 AM Pacific window.${C.reset}`,
+    );
+  } else {
+    env = loadDbEnv();
+    console.warn(
+      `${TAG.warn}self-test target ${C.bold}PRODUCTION${C.reset} — spelled out, inside the 1–4 AM ` +
+        `Pacific window (${pacificClockLine()}). It will create and drop schema ${SELFTEST_SCHEMA} ` +
+        `on the MAIN database.`,
+    );
+  }
   if ("missing" in env) {
     console.error(
       `${TAG.fail}db:apply --self-test needs ${DB_VARS.join(", ")}. ` +
@@ -1722,8 +1846,12 @@ async function selfTest(statementTimeout: string): Promise<number> {
     dryRun: false,
     reapply: false,
     statementTimeout,
-    target: "production",
-      campaignSource: false,
+    // WHERE the proof runs — the clone unless the command spelled production out inside
+    // the maintenance window. `cloneRefPath` rides along so the override a throwaway
+    // checkout needs (--clone-ref / MATRX_CLONE_REF) reaches applyFile too.
+    target,
+    cloneRefPath: cloneRefOverride(argv),
+    campaignSource: false,
     lane: null,
   };
 
@@ -1965,7 +2093,13 @@ async function selfTest(statementTimeout: string): Promise<number> {
     console.error(`${TAG.fail}db:apply --self-test FAILED (${failures} assertion(s))`);
     return 1;
   }
-  console.log(`${TAG.ok}db:apply --self-test passed against the live database`);
+  console.log(
+    `${TAG.ok}db:apply --self-test passed against ` +
+      (target === "clone"
+        ? `the dev clone ${cloneRef!.cloneRef} (${cloneRef!.cloneName}) — production's own cluster, ` +
+          `physically restored, so the catalogues these proofs read are production's`
+        : `the MAIN database`),
+  );
   return 0;
 }
 
@@ -3441,7 +3575,7 @@ async function main(): Promise<number> {
   if (argv.includes("--ground-gate-self-test")) return groundGateSelfTest();
   if (argv.includes("--clone-self-test")) return cloneSelfTest(statementTimeout);
   if (argv.includes("--target-self-test")) return targetSelfTest(statementTimeout);
-  if (argv.includes("--self-test")) return selfTest(statementTimeout);
+  if (argv.includes("--self-test")) return selfTest(statementTimeout, argv);
 
   // `--source campaign` / `--lane <id>` — the plan's own command, and the ONLY
   // route into `migrations/campaign/` (ATTACK-6 finding 1).
