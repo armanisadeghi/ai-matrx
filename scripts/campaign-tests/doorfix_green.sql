@@ -385,7 +385,13 @@ begin
     raise exception '3d: number -> text did not convert 12 back to "12"; it is now %', coalesce(v_doc::text,'absent');
   end if;
   perform custom.record_update(v_org, v_a, jsonb_build_object('phone','2026-03-01'));
-  perform custom.field_update(v_org, v_f_phone, jsonb_build_object('parity_type','datetime','kind','date'));
+  -- SUITES-TIDY 2026-09-22: this used to send `'kind','date'` alongside the parity type.
+  -- IMPORT-2 gave this door a CLOSED LIST of the settings it stores and made it refuse
+  -- anything else BY NAME rather than dropping it on the floor ("A column has no setting
+  -- called \"kind\"."), and `kind` is not on that list — it lives inside the type spec the
+  -- door builds, not in the patch. Sending it was always a no-op; now it is an honest refusal,
+  -- which is the fix working. The parity type alone is what changes the column's shape.
+  perform custom.field_update(v_org, v_f_phone, jsonb_build_object('parity_type','datetime'));
   v_doc := custom.read_record(v_org, v_a, true) -> 'phone';
   if v_doc is distinct from '"2026-03-01"'::jsonb then
     raise exception '3d: text -> date did not keep the date; it is now %', coalesce(v_doc::text,'absent');

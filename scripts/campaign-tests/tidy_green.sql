@@ -25,6 +25,12 @@
 \if :matrx_skip
 \quit
 \endif
+
+-- SUITES-TIDY 2026-09-22: the preamble's own verdict, handed to the DO blocks below. psql does
+-- not interpolate :variables inside dollar-quoted bodies, and clause 3d needs to know whether
+-- it is on the quarantined clone.
+select set_config('matrx.db', :'matrx_db', false)
+\g (tuples_only=on format=unaligned) /dev/null
 begin;
 set local lock_timeout = '10s';
 set local statement_timeout = '60s';
@@ -258,10 +264,18 @@ begin
   if v_n <> 0 then
     raise exception '3c: % cron job(s) name the provenance log. No schedule was approved for it and none should exist.', v_n;
   end if;
+  -- SUITES-TIDY 2026-09-22: the JOB and its INTERVAL are the approval, and they are asserted
+  -- on every target. Its `active` flag is asserted only where `active` means anything: the
+  -- nightly dev clone DEACTIVATES every cron job on purpose — that is what the quarantine IS,
+  -- and a clone that kept its parent's schedules running would be a second production sending
+  -- real mail. Verified 2026-09-22: production `active = true`, clone `active = false`, same
+  -- job, same `7 * * * *`. Keying the clause on `active` made this the only one of the 209
+  -- suites that could never pass on a clone, for ever.
   select count(*) into v_n from cron.job
-   where jobname = 'prune-high-volume-logs' and schedule = '7 * * * *' and active;
+   where jobname = 'prune-high-volume-logs' and schedule = '7 * * * *'
+     and (active or current_setting('matrx.db', true) = 'DEV CLONE');
   if v_n <> 1 then
-    raise exception '3d: the approved hourly log-retention job is not where it was. Nothing runs the policy.';
+    raise exception '3d: the approved hourly log-retention job is not where it was (jobname prune-high-volume-logs, schedule 7 * * * *, active on every target but the quarantined clone). Nothing runs the policy.';
   end if;
   raise notice 'PART 3 PASSED — the approved hourly job applies the policy and no new schedule exists';
 

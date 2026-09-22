@@ -88,19 +88,32 @@ begin
   -- fifth of the same shape, which was not in its brief but would otherwise have been disarmed by
   -- the withdrawal arm. The set is enumerated here rather than counted, because a COUNT would
   -- pass for any six tokens and this suite's job is to say which.
+  --
+  -- SUITES-TIDY 2026-09-22 — A SEVENTH TOKEN, AND IT WAS REVIEWED. The clone sweep found
+  -- `workbench.heatmap_saves` declaring the opt-in and this suite refusing it as "a lane
+  -- arrived from somewhere nobody reviewed". It did not: lane DEAD-KEYS declared it as R12 on
+  -- 2026-09-22 and recorded WHY. `app/(public)/free/zip-code-heatmap/[id]/page.tsx` reads that
+  -- table with the browser client on a link the product calls public, and for every signed-out
+  -- visitor it answered `200 []` and the page rendered "heatmap unavailable" — the table was
+  -- the one genuinely BROKEN row in that lane's four-table verdict. Declaring the opt-in makes
+  -- `iam.apply_rls` emit the lane, and a signed-out browser now renders the shared heatmap
+  -- (proof on production, signed out, in common-docs .../PROGRESS-DEAD-KEYS.md § R12). So it is
+  -- censused, it has a named signed-out reader, and it belongs in the set below.
   select string_agg(schema_name || '.' || table_name, ', ' order by schema_name, table_name)
     into v_unexpected
     from platform.entity_types
    where is_active and coalesce(client_anonymous_public_read, false)
      and (schema_name, table_name) not in (
        ('platform','categories'), ('app','definition'), ('education','learn_doc'),
-       ('agent','message_template'), ('workbench','notes'), ('canvas','canvas_items'));
+       ('agent','message_template'), ('workbench','notes'), ('canvas','canvas_items'),
+       ('workbench','heatmap_saves'));
   if v_unexpected is not null then
     raise exception '3: % declare(s) the anonymous opt-in and this suite has not read its census. A lane arrived from somewhere nobody reviewed.', v_unexpected;
   end if;
   select string_agg(s || '.' || t, ', ') into v_missing
     from (values ('platform','categories'),('app','definition'),('education','learn_doc'),
-                 ('agent','message_template'),('workbench','notes'),('canvas','canvas_items')) x(s,t)
+                 ('agent','message_template'),('workbench','notes'),('canvas','canvas_items'),
+                 ('workbench','heatmap_saves')) x(s,t)
    where not exists (select 1 from platform.entity_types et
                       where et.is_active and coalesce(et.client_anonymous_public_read,false)
                         and et.schema_name = x.s and et.table_name = x.t);
@@ -108,7 +121,7 @@ begin
     raise exception '3: % lost its anonymous-lane declaration. A signed-out page reads each of these.', v_missing;
   end if;
   v_passes := v_passes + 1;
-  raise notice '  PASS 3  the declared set is EXACTLY the six censused tokens (the CHECK constraint already refuses a declaration with no reason)';
+  raise notice '  PASS 3  the declared set is EXACTLY the seven censused tokens (six from ANON-LANES plus workbench.heatmap_saves, declared by DEAD-KEYS as R12; the CHECK constraint already refuses a declaration with no reason)';
 
   -- ═══ 4. EVERY DECLARED TABLE CARRIES THE visibility COLUMN THE LANE IS GATED ON ═══
   -- The emitter's gate is `if v_has_vis then`, so a declared token on a table WITHOUT that column
