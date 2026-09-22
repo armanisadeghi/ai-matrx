@@ -93,6 +93,7 @@ describe("FunctionsList canonical contract", () => {
     );
     expect(tableProps.coverage).toEqual({
       noun: "database function",
+      cap: 1000,
       answeredBy: "client",
     });
     expect(tableProps.hidePagination).toBeUndefined();

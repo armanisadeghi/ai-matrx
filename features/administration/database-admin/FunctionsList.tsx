@@ -142,7 +142,7 @@ export const FunctionsList = ({
         }}
         detail={{ enabled: false }}
         window={{ enabled: false }}
-        coverage={{ noun: "database function", answeredBy: "client" }}
+        coverage={{ noun: "database function", cap: 1000, answeredBy: "client" }}
         onRowOpen={onViewDetails}
         rowActions={(func) => (
           <ViewTapButton
