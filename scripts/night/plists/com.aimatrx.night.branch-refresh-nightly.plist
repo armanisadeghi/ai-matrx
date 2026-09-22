@@ -17,7 +17,11 @@
   <key>StartCalendarInterval</key>
   <dict><key>Hour</key><integer>1</integer><key>Minute</key><integer>5</integer></dict>
   <key>RunAtLoad</key><false/>
-  <key>Disabled</key><true/>
+  <!-- NOT `<key>Disabled</key><true/>`: launchd refuses to bootstrap a plist that carries it
+       ("Bootstrap failed: 5: Input/output error"), so the job would not be registered at all.
+       The disable lives in launchd's own override database instead, which survives reboots:
+         launchctl disable gui/$(id -u)/com.aimatrx.night.branch-refresh-nightly
+       `launchctl print-disabled gui/$(id -u) | grep branch-refresh` is the proof. -->
   <key>AbandonProcessGroup</key><true/>
   <key>StandardOutPath</key><string>/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/night-branch-refresh.log</string>
   <key>StandardErrorPath</key><string>/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/night-branch-refresh.log</string>

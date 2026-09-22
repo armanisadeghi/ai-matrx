@@ -113,3 +113,18 @@ Every refusal is shown RED before the job is trusted, and each one must end in
 The plists live in [`plists/`](./plists/) so they are reviewable in the repo rather than only in
 `~/Library/LaunchAgents`. A recurring job's label must differ from any one-shot's, because
 `night_self_destruct` removes the plist named by the job's own `LABEL`.
+
+**Arming a job that must stay OFF until somebody reads a log.** `<key>Disabled</key><true/>` in
+the plist does not do it — `launchctl bootstrap` answers `Bootstrap failed: 5: Input/output
+error` and the job is never registered at all, and so does a bootstrap of a label already sitting
+in launchd's disabled override database. The order that works, and the proof:
+
+```sh
+launchctl enable    "gui/$(id -u)/<label>"
+launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/<label>.plist
+launchctl disable   "gui/$(id -u)/<label>"
+launchctl print-disabled "gui/$(id -u)" | grep <label>      # => "<label>" => disabled
+```
+
+The override database is what survives a reboot, so that is where the OFF lives — never in the
+plist file.
