@@ -75,6 +75,21 @@ real error, never a blank.
   bound. That message is the useful one — surface it verbatim.
 - **Reset is always available.** `feature_knob_set(…, null)` restores the
   agent-set default, so an admin's experiment is reversible without a migration.
+- 🚨 **THE KNOBS TAB IS A REGISTER OF ~950 ROWS, so identity and provenance are
+  SCANNED, never hunted** (independent review, 2026-09-22). Every row prints its
+  full `feature.key` and its origin in words — "System default", "Set for the
+  platform", plus "· overridden by N organizations" — on the row itself, from
+  `systemOriginSentence` in `lib/scoped-config/ladder.ts`, which the row's "…"
+  panel reads too so the two can never disagree. The tab has a search box over
+  `knobMatchesControlSearch` (`features/settings/search/controlSearch.ts`), the
+  SAME matcher the settings route shell uses. `?knob=<feature.key>` opens this
+  page on the knobs tab filtered to that row, so a mandate page or a doc can
+  link one knob; clearing the box drops the parameter.
+- 🚨 **This tab is NOT a second editor.** It mounts the universal settings
+  editor's system destination (`UniversalSettingsProvider target="system"` +
+  `UniversalSettingsRows`) and may add only REGISTER affordances — search, the
+  deep link, the overdue-review banner. Anything about how a row reads or
+  writes belongs in `KnobOverrideRow`, where every destination inherits it.
 
 ## Files
 
@@ -85,7 +100,7 @@ real error, never a blank.
 | [`components/LimitsAdminClient.tsx`](./components/LimitsAdminClient.tsx) | The three-tab shell, with quiet links to the two usage surfaces (`/administration/knowledge/kg-cost`, `/administration/users/usage`) so this is never a disconnected third place. |
 | [`components/PlanAllowancesPanel.tsx`](./components/PlanAllowancesPanel.tsx) | The grid that IS the free tier; exports `EnforcementBadge`. |
 | [`components/AccountAddonsPanel.tsx`](./components/AccountAddonsPanel.tsx) | Per-org grants (list + grant dialog with searchable org picker) over `billing.account_addon` / `addon_grant` / `org_plan_list` / `iam.organizations`. |
-| [`components/FeatureKnobsPanel.tsx`](./components/FeatureKnobsPanel.tsx) | Operational ceilings and defaults, with basis and review state. |
+| [`components/FeatureKnobsPanel.tsx`](./components/FeatureKnobsPanel.tsx) | The universal editor's system destination plus the register affordances: search, the `?knob=` deep link, the overdue-review banner and override counts. |
 
 Read-only sibling: **Entitlements & Usage** (`/administration/users/entitlements`,
 `features/admin/users/components/EntitlementsTableClient.tsx`) — enforcement
