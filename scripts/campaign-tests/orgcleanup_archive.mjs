@@ -50,6 +50,34 @@ export const TARGETS = [
   ["72dac591-0bc7-44e8-b9f2-2ba4fe4176f3", "Wraithmoor Regional Museum of Art & Craft"],
 ];
 
+// ROUND 2 (coordinator ruling, 2026-09-22): the classification is the test, not the name.
+// Each of these was created by admin@admin.com and has admin@admin.com as its ONLY member —
+// a test artifact by evidence, not by a junk name. They are classified through the settings
+// door `public.org_update` (never a table write), then archived through the same door as the
+// nineteen. The classification is MERGED into the settings the organization already carries,
+// because org_update replaces the whole object.
+export const UNCLASSIFIED = [
+  ["91b6ddff-12ce-4423-986a-04ac69802f70", "Rincon Plumbing Co — Ojai Branch"],
+  ["971ad659-17d0-409c-9864-8b2b462ab6ec", "Rincon Plumbing Co — Ojai Branch"],
+  ["d670c242-8f7a-40ec-92f8-f0376395ee09", "Rincon Plumbing Co — Carpinteria Branch"],
+  ["f07a44ca-4aec-4769-beb1-b887b9a9cf26", "Rincon Plumbing Co — Carpinteria Branch"],
+  ["89b13539-fbe4-4256-9b19-bf30e9c26e43", "Rincon Plumbing Co — Carpinteria Branch"],
+  ["cdd75e04-f55a-41c1-8365-37ee07c93b14", "Linden Approvals"],
+  ["6b17f54c-8d06-4c52-9113-2c3712bc668f", "Linden Approvals II"],
+  ["6b69e71b-7a49-4f5e-9565-3023e77d2959", "Linden Approvals III"],
+  ["6c7d2f58-168a-4cff-a9f2-01402b092633", "Linden Approvals IV"],
+  ["6eccc9f7-a17c-4065-bf0d-fcf3da6064f4", "Linden Approvals V"],
+  ["8cdec2ab-c189-484e-ab37-90922e5caa24", "Linden Approvals VI"],
+  ["db06c283-fdff-47a2-a4c2-a4b13053b352", "Linden Approvals VII"],
+  ["1265c43e-7028-41af-8255-d41fde1ef46b", "Knox Review"],
+  ["3cf77ee2-3e79-4056-bb8c-6e9320fd1aa6", "Knox Review II"],
+  ["757ecbf3-756d-440a-a2a0-c804b4006c16", "Knox Review III"],
+  ["319fad99-427c-4aaf-8e0b-17af53dd0424", "Fairview People II"],
+];
+
+const CLASSIFICATION =
+  "ORG-CLEANUP 2026-09-22 — created by admin@admin.com with admin@admin.com as its only member";
+
 async function seat() {
   const sb = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -99,7 +127,53 @@ if (cmd === "list") {
   console.log("state    :", JSON.stringify(await call(sb, "organization_archive_state", { p_org: id })));
   console.log("re-archive:", (await call(sb, "organization_archive", { p_org: id, p_confirm_name: name, p_reason: REASON })).sentence);
   console.log("state    :", JSON.stringify(await call(sb, "organization_archive_state", { p_org: id })));
+} else if (cmd === "classify-and-archive") {
+  let classified = 0;
+  let archived = 0;
+  for (const [id, name] of UNCLASSIFIED) {
+    // Read what it already carries — the settings door replaces the whole object.
+    const { data: before, error: readErr } = await sb
+      .schema("iam")
+      .from("organizations")
+      .select("id, name, settings, created_by")
+      .eq("id", id)
+      .single();
+    if (readErr) throw new Error(`could not read ${id}: ${readErr.message}`);
+    if (before.name !== name) throw new Error(`${id} is named "${before.name}", not "${name}"`);
+
+    // THE EVIDENCE TEST, RE-RUN HERE rather than trusted from a census taken minutes ago.
+    const { data: members, error: memErr } = await sb
+      .schema("iam")
+      .from("memberships")
+      .select("user_id")
+      .eq("organization_id", id)
+      .is("deleted_at", null);
+    if (memErr) throw new Error(`could not read members of ${id}: ${memErr.message}`);
+    const SEATS = new Set([
+      "87a6e699-3622-4869-8843-d0867456c0dd", // admin@admin.com
+      "4060701e-706a-4c76-b3ca-0bbc69fa5a14", // test@test.com
+    ]);
+    const strangers = members.filter((m) => !SEATS.has(m.user_id));
+    if (strangers.length > 0 || !SEATS.has(before.created_by)) {
+      console.log(`LEFT ALONE ${id}  ${name} — a person outside the test seats made it or is in it`);
+      continue;
+    }
+
+    const settings = { ...(before.settings ?? {}), test_fixture: CLASSIFICATION };
+    const { error: updErr } = await sb.rpc("org_update", { p_org_id: id, p_patch: { settings } });
+    if (updErr) throw new Error(`org_update refused ${id}: ${updErr.message}`);
+    classified += 1;
+
+    const r = await call(sb, "organization_archive", {
+      p_org: id,
+      p_confirm_name: name,
+      p_reason: REASON,
+    });
+    if (r.changed) archived += 1;
+    console.log(`CLASSIFIED+${r.changed ? "ARCHIVED" : "already "} ${id}  ${name}`);
+  }
+  console.log(`\n${classified} classified test_fixture through public.org_update, ${archived} newly archived.`);
 } else {
-  console.log("usage: orgcleanup_archive.mjs list|archive|roundtrip <org-id>");
+  console.log("usage: orgcleanup_archive.mjs list|archive|classify-and-archive|roundtrip <org-id>");
   process.exit(1);
 }
