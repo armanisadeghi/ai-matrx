@@ -766,7 +766,12 @@ export function ToolTestSamplesViewer({ toolName, toolId }: ToolTestSamplesViewe
                         leading: !loading && samples.length > 0 ? <FilterBar active={filter} onChange={setFilter} counts={counts} /> : undefined,
                         refresh: { onRefresh: load },
                     }}
-                    coverage={{ noun: "test sample", answeredBy: "client", cap: 1000 }}
+                    coverage={{
+                        noun: "test sample",
+                        answeredBy: "client",
+                        cap: 1000,
+                        loaded: samples.length,
+                    }}
                     detail={{ enabled: false }}
                     window={{ enabled: false }}
                     copy={false}

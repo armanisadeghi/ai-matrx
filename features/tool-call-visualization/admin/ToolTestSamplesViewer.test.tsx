@@ -123,6 +123,7 @@ describe("ToolTestSamplesViewer", () => {
       noun: "test sample",
       answeredBy: "client",
       cap: 1000,
+      loaded: 1,
     });
     expect(tableProps.copy).toBe(false);
     expect(tableProps.detail?.enabled).toBe(false);
