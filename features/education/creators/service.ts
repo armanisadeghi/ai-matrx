@@ -65,15 +65,28 @@ export async function isHandleAvailable(handle: string): Promise<boolean> {
   return data === true;
 }
 
-/** Opt in as a creator by claiming a unique handle. Creates the profile row if needed. */
+/**
+ * Opt in as a creator by claiming a unique handle. Creates the profile row if needed.
+ *
+ * `organizationId` is the organization the creator is ACTING IN, read from the active-
+ * organization ladder by the caller. The RPC uses it only when there is no profile row yet
+ * (signup provisioning failed for that user), because a profile row already carries its own
+ * organization and carrying one is not choosing one. It exists because the RPC used to answer
+ * that case with the caller's personal workspace, and a person has no default organization
+ * (DEFAULT-ORG-3, 2026-09-22; migrations/campaign/dorg3_three_doors_name_the_organization_they_act_in.sql).
+ * Omitting it is legal and works for every user who has a profile row; the RPC then raises a
+ * sentence naming this argument rather than inventing a workspace.
+ */
 export async function claimHandle(
   handle: string,
   displayName?: string,
+  organizationId?: string | null,
 ): Promise<CreatorProfileMine | null> {
   const sb = createClient();
   const { data, error } = await sb.rpc("creator_claim_handle", {
     p_handle: handle,
     p_display_name: displayName ?? undefined,
+    p_organization_id: organizationId ?? undefined,
   });
   if (error) throw handleRuleError(error);
   return coerceMine(data);

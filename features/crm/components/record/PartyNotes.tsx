@@ -3,8 +3,10 @@
 // features/crm/components/record/PartyNotes.tsx
 //
 // Notes = platform.comments (features/crm/FEATURE.md § inherited, never
-// rebuilt). Reached ONLY through commentsService; p_org_id is passed
-// explicitly because cmt_add's own org resolution is task-only.
+// rebuilt). Reached ONLY through commentsService. p_org_id is passed explicitly
+// because this surface already knows the organization; since DEFAULT-ORG-3
+// (2026-09-22) cmt_add would also read it off the party record itself, and it
+// REFUSES a p_org_id that disagrees with the record's own organization.
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";

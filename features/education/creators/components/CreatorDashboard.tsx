@@ -45,6 +45,8 @@ import {
   updateCreatorProfile,
   type OwnedPublicResource,
 } from "../service";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { parseYouTubeId } from "../youtube";
 import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 import { CreatorPayoutsPanel } from "./CreatorPayoutsPanel";
@@ -74,6 +76,7 @@ function featuredKey(item: FeaturedItem, i: number): string {
 
 // ── Claim gate ────────────────────────────────────────────────────────────────
 function ClaimHandle({ onClaimed }: { onClaimed: (p: CreatorProfileMine) => void }) {
+  const activeOrganizationId = useAppSelector(selectActiveOrganizationId);
   const [handle, setHandle] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [checking, setChecking] = useState(false);
@@ -107,7 +110,10 @@ function ClaimHandle({ onClaimed }: { onClaimed: (p: CreatorProfileMine) => void
   async function claim() {
     setClaiming(true);
     try {
-      const p = await claimHandle(handle.trim(), displayName.trim() || undefined);
+      // The organization the creator is acting in, from the active-organization ladder.
+      // The RPC only needs it when the user has no profile row yet (signup provisioning
+      // failed); passing it always means that case never has to invent a workspace.
+      const p = await claimHandle(handle.trim(), displayName.trim() || undefined, activeOrganizationId);
       if (p) {
         toast.success(`Handle @${p.handle} is yours`);
         onClaimed(p);

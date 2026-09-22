@@ -70523,7 +70523,12 @@ export type Database = {
         Args: { p_token: string }
         Returns: Database["platform"]["Enums"]["visibility"]
       }
+      entity_is_org_scoped: { Args: { p_token: string }; Returns: boolean }
       entity_link_shareable: { Args: { p_token: string }; Returns: boolean }
+      entity_organization_id: {
+        Args: { p_id: string; p_token: string }
+        Returns: string
+      }
       entity_row_access_attrs: {
         Args: { p_id: string; p_schema: string; p_table: string }
         Returns: Record<string, unknown>
@@ -76482,7 +76487,11 @@ export type Database = {
         Returns: string
       }
       creator_claim_handle: {
-        Args: { p_display_name?: string; p_handle: string }
+        Args: {
+          p_display_name?: string
+          p_handle: string
+          p_organization_id?: string
+        }
         Returns: Json
       }
       creator_connect_status: { Args: never; Returns: Json }
