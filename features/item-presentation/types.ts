@@ -108,8 +108,4 @@ export interface EnrichedItem {
 }
 
 export type EnrichmentStatus =
-  | "idle"
-  | "loading"
-  | "ready"
-  | "not-found"
-  | "error";
+  "idle" | "loading" | "ready" | "not-found" | "error";

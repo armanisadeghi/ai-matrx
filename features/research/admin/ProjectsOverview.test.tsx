@@ -60,6 +60,24 @@ describe("ProjectsOverview canonical table contract", () => {
     expect(markup).toContain("1 overrides");
   });
 
+  it("opens a resolved template through its canonical detail door", () => {
+    const markup = renderToStaticMarkup(
+      <>
+        {column("template").cell?.(
+          {
+            ...row,
+            template_id: "template-1",
+            template_name: "Scientific Research",
+          },
+          0,
+        )}
+      </>,
+    );
+
+    expect(markup).toContain('href="/detail/research_template/template-1"');
+    expect(markup).toContain("Scientific Research");
+  });
+
   it("counts only configured agent-role slots and preserves absent dates", () => {
     expect(researchProjectOverrideCount(null)).toBe(0);
     expect(researchProjectOverrideCount(row.agent_config)).toBe(1);

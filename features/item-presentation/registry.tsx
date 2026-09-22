@@ -232,7 +232,11 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
     // 🚨 NEW-9 — the SAME canonical table the enrichment below reads. A type with
     // no `detailSource` took the honest-absent path, so `/detail/agent/<id>` — a
     // URL anyone can build — showed nothing about a record that is fully stored.
-    detailSource: { table: "definition", schemaName: "agent", titleField: "name" },
+    detailSource: {
+      table: "definition",
+      schemaName: "agent",
+      titleField: "name",
+    },
     enrich: (s, id) =>
       fetchRow(
         s,
@@ -261,12 +265,23 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-sky-500/20",
     },
     open: { kind: "app" },
-    detailSource: { table: "definition", schemaName: "app", titleField: "name" },
+    detailSource: {
+      table: "definition",
+      schemaName: "app",
+      titleField: "name",
+    },
     enrich: (s, id) =>
-      fetchRow(s, "definition", id, "name, description", (r) => ({
-        name: clip(r.name, 80),
-        about: clip(r.description),
-      }), "app"),
+      fetchRow(
+        s,
+        "definition",
+        id,
+        "name, description",
+        (r) => ({
+          name: clip(r.name, 80),
+          about: clip(r.description),
+        }),
+        "app",
+      ),
   },
   research_template: {
     type: "research_template",
@@ -295,7 +310,11 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
     },
     open: { kind: "note" },
     // NEW-9 — `workbench.notes`, the table the enrichment below already reads.
-    detailSource: { table: "notes", schemaName: "workbench", titleField: "label" },
+    detailSource: {
+      table: "notes",
+      schemaName: "workbench",
+      titleField: "label",
+    },
     enrich: (s, id) =>
       fetchRow(
         s,
@@ -551,7 +570,11 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-cyan-500/20",
     },
     open: { kind: "table" },
-    detailSource: { table: "udt_datasets", schemaName: "workbench", titleField: "table_name" },
+    detailSource: {
+      table: "udt_datasets",
+      schemaName: "workbench",
+      titleField: "table_name",
+    },
     enrich: (s, id) =>
       fetchRow(
         s,
@@ -638,7 +661,11 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-green-500/20",
     },
     open: { kind: "workbook" },
-    detailSource: { table: "udt_workbooks", schemaName: "workbench", titleField: "workbook_name" },
+    detailSource: {
+      table: "udt_workbooks",
+      schemaName: "workbench",
+      titleField: "workbook_name",
+    },
     enrich: (s, id) =>
       fetchRow(
         s,
@@ -664,7 +691,11 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-stone-500/20",
     },
     open: { kind: "document" },
-    detailSource: { table: "udt_documents", schemaName: "workbench", titleField: "document_name" },
+    detailSource: {
+      table: "udt_documents",
+      schemaName: "workbench",
+      titleField: "document_name",
+    },
     enrich: (s, id) =>
       fetchRow(
         s,
@@ -692,7 +723,11 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
     // initialSelectedConversationId) — the reference chip's "Open conversation"
     // silently no-oped before this entry existed.
     open: { kind: "conversation" },
-    detailSource: { table: "conversation", schemaName: "chat", titleField: "title" },
+    detailSource: {
+      table: "conversation",
+      schemaName: "chat",
+      titleField: "title",
+    },
   },
   message: {
     type: "message",
@@ -718,7 +753,11 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-blue-500/20",
     },
     open: { kind: "email" },
-    detailSource: { table: "emails", schemaName: "communication", titleField: "subject" },
+    detailSource: {
+      table: "emails",
+      schemaName: "communication",
+      titleField: "subject",
+    },
     enrich: (s, id) =>
       fetchRow(
         s,
@@ -778,7 +817,11 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-teal-500/20",
     },
     open: { kind: "party" },
-    detailSource: { table: "party", schemaName: "crm", titleField: "display_name" },
+    detailSource: {
+      table: "party",
+      schemaName: "crm",
+      titleField: "display_name",
+    },
     // 🚨 N5/N6 — the Person/Company DOSSIER, as ONE refinement of the composed
     // registration: the curated, ordered, human-labelled field list instead of
     // `select *` in PostgREST key order; the reads it needs beyond one table
@@ -1015,7 +1058,9 @@ export interface RecordTableTarget {
  * THE ONE resolution of a server `record_table` stamp. `null` means no
  * registered entity claims that table — the only case a reader renders nothing.
  */
-export function recordTableTarget(recordTable: unknown): RecordTableTarget | null {
+export function recordTableTarget(
+  recordTable: unknown,
+): RecordTableTarget | null {
   if (typeof recordTable !== "string") return null;
   const key = recordTable.trim().toLowerCase();
   if (!key.includes(".")) return null;
@@ -1025,10 +1070,15 @@ export function recordTableTarget(recordTable: unknown): RecordTableTarget | nul
     const config = REGISTRY[itemType];
     const declared = config.entityToken ?? itemType;
     // The item type's own token wins when the table backs several (aliases).
-    return { token: tokens.includes(declared) ? declared : (tokens[0] ?? declared), itemType };
+    return {
+      token: tokens.includes(declared) ? declared : (tokens[0] ?? declared),
+      itemType,
+    };
   }
   if (tokens.length === 0) return null;
-  const token = tokens.find((candidate) => ITEM_TYPE_BY_ENTITY_TOKEN.has(candidate)) ?? tokens[0];
+  const token =
+    tokens.find((candidate) => ITEM_TYPE_BY_ENTITY_TOKEN.has(candidate)) ??
+    tokens[0];
   return { token, itemType: ITEM_TYPE_BY_ENTITY_TOKEN.get(token) ?? null };
 }
 

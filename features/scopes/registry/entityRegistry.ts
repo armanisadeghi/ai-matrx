@@ -87,18 +87,19 @@ import {
   type ContentRole,
   type EntityInfo as PackageEntityInfo,
 } from "@ai-matrx/associations/core";
-import type {
-  EntityOverlayMap,
-  EntityTypeToken,
-} from "@ai-matrx/associations";
+import type { EntityOverlayMap, EntityTypeToken } from "@ai-matrx/associations";
 import { listDataStoreCandidates } from "@/features/rag/service/dataStoreCandidates";
 import { listHrEmployeeCandidates } from "@/features/hr/entry-points/employeeCandidates";
 import { associationsErrorSink } from "@/features/scopes/host/errorSink";
 
 // Conventions + token normalisation come straight from the package.
-export { resolveEntityToken, isContentRole, DEFAULT_OWNER_COLUMN, DEFAULT_ORG_COLUMN };
+export {
+  resolveEntityToken,
+  isContentRole,
+  DEFAULT_OWNER_COLUMN,
+  DEFAULT_ORG_COLUMN,
+};
 export type { ContentRole };
-
 
 // ─── Content roles ──────────────────────────────────────────────────────────
 // The knowledge-model grouping axis (common-docs/projects/knowledge-system/vision/scopeable_entities.md):
