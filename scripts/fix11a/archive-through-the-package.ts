@@ -12,8 +12,12 @@
  * Signed in as admin@admin.com through the client door. Never prints a secret.
  */
 import { formatDurationMs } from "@ai-matrx/kit/format";
-import { createRecordsClient } from "../../../aidream/apps/shared/records/src/core/client";
-import { supabaseDataSource } from "../../../aidream/apps/shared/records/src/core/supabase";
+// THE PACKAGE, not a sibling checkout's source. The docblock above says this script
+// builds `@ai-matrx/records` "exactly as a host does", and a host has the published
+// package — 0.53.0, which this app moved to in ae475e7e60. Importing the source also
+// made `pnpm type-check` claim a fact it cannot check: CI has no `../../aidream`, so
+// those two specifiers were TS2307 on every run while resolving fine on a dev machine.
+import { createRecordsClient, supabaseDataSource } from "@ai-matrx/records/core";
 import { signedInClient } from "../campaign-tests/use-cases/_client.mjs";
 
 const positional = process.argv.slice(2).filter((a) => !a.startsWith("--"));

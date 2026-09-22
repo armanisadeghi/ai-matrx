@@ -24,9 +24,27 @@
 // Run: node --import tsx scripts/realtime-proof/echo-and-ids.mts
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import { createRecordsClient } from "../../../aidream/apps/shared/records/src/core/client";
-import { isOwnOp } from "../../../aidream/apps/shared/records/src/ops";
-import type { RecordsDataSource } from "../../../aidream/apps/shared/records/src/ports";
+// 🚨 DANA'S SIDE LOADS THE SIBLING CHECKOUT'S SOURCE, AND IT HAS TO — see the note below
+// about two module instances. But a static `import` of a path outside this repo makes
+// `pnpm type-check` assert TS2307 about modules that load perfectly, which is how this
+// script turned CI red twice (af0d9e6702 fixed it once). The specifiers are therefore
+// held in consts and loaded the way the rest of this repo reaches the sibling checkout:
+// TypeScript resolves literals, not consts, so the compiler stops claiming a false fact
+// while the runtime — and Dana's ONE op ledger — stays byte for byte what it was.
+import type {
+  RecordsClient,
+  RecordsConfig,
+  RecordsDataSource,
+} from "@ai-matrx/records/core";
+
+const DANA_RECORDS_CLIENT = "../../../aidream/apps/shared/records/src/core/client";
+const DANA_OPS = "../../../aidream/apps/shared/records/src/ops";
+const { createRecordsClient } = (await import(DANA_RECORDS_CLIENT)) as {
+  createRecordsClient: (config: RecordsConfig) => RecordsClient;
+};
+const { isOwnOp } = (await import(DANA_OPS)) as {
+  isOwnOp: (id: string | null | undefined) => boolean;
+};
 
 // 🚨 TWO BROWSERS ARE TWO MODULE INSTANCES, AND THE FIRST DRAFT OF THIS FILE FORGOT IT.
 // The op ledger lives at module scope — one tab, one ledger, one person — which is right in a
