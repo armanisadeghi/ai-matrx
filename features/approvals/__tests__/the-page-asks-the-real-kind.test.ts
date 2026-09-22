@@ -32,7 +32,14 @@ jest.mock("@/features/assists/service", () => ({
   decideAssist: jest.fn(),
   emitAssist: jest.fn(),
 }));
-jest.mock("@ai-matrx/data/db", () => ({ readAllRows: jest.fn() }));
+// Only the seams are stood in for, and this one keeps the rest of its module: a bare
+// factory leaves `createActiveOrgCookie` undefined, and `../data` now reaches it through
+// `awaitOrganizationForRecordRead` -> appContextSlice -> activeOrgCookie, so the suite
+// cannot even import (SETTINGS-3, 2026-09-22).
+jest.mock("@ai-matrx/data/db", () => ({
+  ...jest.requireActual("@ai-matrx/data/db"),
+  readAllRows: jest.fn(),
+}));
 // The queue's page size is `approvals.queue_page_size`, resolved through the
 // register. What this suite measures is the predicate, not the register, so the
 // row is served here at its seeded default.

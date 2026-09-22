@@ -31,7 +31,12 @@ jest.mock("@/features/assists/service", () => ({
   decideAssist: jest.fn(),
   emitAssist: jest.fn(),
 }));
+// Only the seams are stood in for, and this one keeps the rest of its module: a bare
+// factory leaves `createActiveOrgCookie` undefined, and `../data` now reaches it through
+// `awaitOrganizationForRecordRead` -> appContextSlice -> activeOrgCookie, so the suite
+// cannot even import (SETTINGS-3, 2026-09-22).
 jest.mock("@ai-matrx/data/db", () => ({
+  ...jest.requireActual("@ai-matrx/data/db"),
   readAllRows: (...args: unknown[]) => mockReadAllRows(...args),
 }));
 jest.mock("@/utils/supabase/client", () => ({
