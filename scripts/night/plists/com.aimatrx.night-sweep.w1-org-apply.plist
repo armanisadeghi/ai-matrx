@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.aimatrx.night-sweep.w1-org-apply</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>/Users/armanisadeghi/code/matrx-frontend/scripts/night/w1-org-apply.sh</string>
+  </array>
+  <!-- W1-ORG's four chair steps, applied to the MAIN database in the documented order,
+       each as its own short transaction, with the documented seat probe after every one
+       and a hard stop on any probe that does not answer PASS. The chair step is
+       common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/W1-ORG-CHAIR-STEP.md.
+
+       WHY 02:05 AND NOT ANY OTHER TIME. The fourth file creates twelve RLS policies, and
+       every CREATE/ALTER/DROP POLICY run as `postgres` on this database takes ACCESS
+       EXCLUSIVE on twenty-three relations across auth, storage and realtime and holds
+       them to COMMIT (Supabase's own supautils.policy_grants hook — context sighup,
+       nothing of ours to turn off). For those ~7 seconds nobody can sign in, refresh a
+       token, read a file or receive a realtime message. That belongs inside the 1-4 AM
+       Pacific maintenance window and nowhere else. 02:05 sits AFTER the 01:05 branch
+       refresh (com.aimatrx.night-sweep.branch-refresh) so the two never contend.
+
+       ONE SHOT: a single calendar occurrence, 2026-09-23 02:05 America/Los_Angeles.
+       The job deletes this plist on its way out (night_self_destruct), so it can never
+       fire twice. RunAtLoad is false so bootstrapping it now does not run it now, and
+       the script's own window guard refuses anything outside 0100-0330 regardless. -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Month</key><integer>9</integer>
+    <key>Day</key><integer>23</integer>
+    <key>Hour</key><integer>2</integer>
+    <key>Minute</key><integer>5</integer>
+  </dict>
+  <key>RunAtLoad</key><false/>
+  <key>AbandonProcessGroup</key><true/>
+  <key>StandardOutPath</key><string>/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/night-2026-09-23-w1-org-apply.log</string>
+  <key>StandardErrorPath</key><string>/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/night-2026-09-23-w1-org-apply.log</string>
+  <key>WorkingDirectory</key><string>/Users/armanisadeghi/code/matrx-frontend</string>
+</dict>
+</plist>

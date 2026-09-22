@@ -1,3 +1,19 @@
+-- based-on: billing._resolve_tier_legacy(uuid) f1bd05afe637ceb2408244a6934d3853c50d47467d305b689f86a9e4d4ca6760
+-- based-on: billing.resolve_org_tier(uuid) 2a56f477240d2e7a3b53ccb6ebe05251c80a10be5bc1e086efe629b0e7b3cdc4
+-- based-on: billing.entitlement_snapshot() dfc5a70a3e2f14bdc1cd94eaf3d4ba903202d0ed7a6e55eb4b3d1ad71c3a6669
+--
+-- 🚨 THE THREE HASHES ABOVE ARE NOT PRODUCTION'S BODIES — THEY ARE THE UP FILE'S OUTPUT, and that
+--   is the point. A `-- based-on:` line declares the body THIS file will overwrite, and an inverse
+--   only ever runs over a database where its own up has landed, so what it overwrites is what the
+--   up created. The bodies it WRITES are production's own text, whose hashes are the four the up
+--   file carries in its own header. Both facts are needed and they are different numbers.
+--
+--   Found the hard way, lane W1-ORG-APPLY, 2026-09-22: without these three lines this file was
+--   REFUSED by `pnpm db:apply` at rule 27 leg 2 on the dev clone (DD-220, "the file never says
+--   which body it was written against"). The up had landed and its inverse could not run — which
+--   means the documented revert order was not runnable and the night job's inverse gate would have
+--   been guarding an inverse nobody had ever executed.
+--
 -- chair-step: the inverse of w1_org_billing_owner_columns_move_on_main.sql. It renames the three
 --   organization_id columns back to user_id, re-points their foreign keys at auth.users, puts
 --   billing.subscription.user_id and its user_or_org CHECK back, replaces twelve RLS policies,

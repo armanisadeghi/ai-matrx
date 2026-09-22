@@ -1,3 +1,19 @@
+-- based-on: public.list_templates(text, boolean) 4f469f2f1e968a63f0273614c003f0898ecc667d976d79c12787f937e3d30c07
+-- based-on: public.ctx_seed_template(jsonb) 6cc7cd24fa5f4a9187d3e2d9b6f0c239484b96724b26902cd2c2b45280f056bf
+--
+-- 🚨 THE TWO HASHES ABOVE ARE NOT PRODUCTION'S BODIES — THEY ARE THE UP FILE'S OUTPUT, and that
+--   is the point. A `-- based-on:` line declares the body THIS file will overwrite, and an
+--   inverse only ever runs over a database where its own up has landed, so what it overwrites is
+--   what the up created. The bodies it WRITES are production's own text, and their hashes are the
+--   ones quoted in the paragraph below. Both facts are needed and they are different numbers.
+--
+--   Found the hard way, lane W1-ORG-APPLY, 2026-09-22: without these two lines this file was
+--   REFUSED by `pnpm db:apply` at rule 27 leg 2 on the dev clone — "line 29 replaces
+--   public.list_templates(text, boolean), which ALREADY EXISTS on this database, and the file
+--   never says which body it was written against" (DD-220). The up had landed and its inverse
+--   could not run, which means the documented revert order was not runnable and the night job's
+--   inverse gate would have been guarding an inverse nobody had ever executed.
+--
 -- chair-step: the inverse of w1_org_audience_is_a_word_on_main.sql. It DROPS the column
 --   context.templates.audience after copying its meaning back into a re-created is_personal
 --   boolean, restores both live bodies to the exact text production carried on 2026-09-22, and

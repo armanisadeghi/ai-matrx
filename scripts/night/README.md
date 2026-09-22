@@ -185,8 +185,21 @@ launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/<label>.plist
 launchctl print "gui/$(id -u)/<label>"      # state, runs = 0, and the calendar descriptor
 ```
 
-**Rehearse it against the branch before you load it.** A job nobody has watched succeed is a job
-nobody should arm.
+**Rehearse it against the branch — or, when the branch's empty tables would make its probes
+meaningless, against the nightly dev clone — before you load it.** A job nobody has watched
+succeed is a job nobody should arm. `night_assert_target` takes `clone` as a first-class target,
+so a rehearsal that needs production's real data says `clone` and is refused by (system
+identifier, project ref) if it is handed anything else — proven RED by `w1-org-apply.sh`'s own
+`CLONE_DATABASE_URL`-pointed-at-production run on 2026-09-22.
+
+🚨 **A SEAT PROBE IS ASSERTED AGAINST WHAT THE FILE CHANGES, NEVER AGAINST A NUMBER SOMEBODY
+EXPECTED.** W1-ORG's chair step said B2's probe was `billing.tier_no_downgrade()` -> "zero rows —
+REC-62's own proof that nobody's tier fell". Measured 2026-09-22, SELECT-only: it is **340 rows on
+production and 340 on the clone, before anything is applied**, and the file provably cannot move it
+(`billing.subscription` holds zero rows). A probe asserting zero would have stopped the job at its
+last file every single time, on a database where nothing was wrong — and it did, in rehearsal,
+which is what found it. The probe now reads the count immediately BEFORE the file and refuses if
+the file GREW it. Zero growth is the proof; zero rows never was.
 
 ## Before you arm anything, prove it refuses
 
@@ -204,6 +217,7 @@ Every refusal is shown RED before the job is trusted, and each one must end in
 |---|---|---|
 | `night-2026-09-22-row-versions-index.sh` | applied the `history.row_versions` org-latest index | **spent** — ran 2026-09-22 00:19:57Z, plist self-deleted. Kept as the worked example and the incident record |
 | `night-2026-09-22-suite-sweep.sh` | the serial sweep of every campaign suite against the MAIN database, 01:35–03:30 PT, hard stop with the remainder named | one-shot |
+| `w1-org-apply.sh` | W1-ORG's **four** chair steps against the MAIN database, in the documented order (C, A, B1, B2), each as its OWN short transaction with `lock_timeout` 5 s and three attempts, the documented seat probe after every one, and a HARD STOP on the first probe that does not answer `PASS`. It is the first job here to hold MORE THAN ONE object-scoped lock (`context`, `iam`, `billing`) — `night_take_locks` / `night_release_locks`, added to the library for it, are all-or-nothing and release the ones they got when a later one is held. `NIGHT_REHEARSE=1` aims it at the **nightly dev clone**, not the branch: the four files only mean anything against production's real data (629 organizations, 34 templates, 805 `user_plan` rows), and a probe on the empty branch would pass and prove nothing | one-shot — armed for 2026-09-23 02:05 PT (`com.aimatrx.night-sweep.w1-org-apply`, self-deleting), after the 01:05 branch refresh so the two never contend |
 | `branch-refresh.sh` | rebuilds the rehearsal branch from the **nightly dev clone's** schema plus a curated reference seed, per `v5/BRANCH-DRIFT.md` §4(c). **It has no production code path at all** — `night_assert_target clone` is the only source it can ask for. The clone is READ ONLY (`pg_dump --schema-only`, `--lock-wait-timeout=5000`, aborts at 10 minutes); the branch is the only thing written, and it is written destructively. `NIGHT_REHEARSE=1` keeps the real clone read and narrows the drop set to one probe schema | **recurring** — armed as a one-shot for 2026-09-23 01:05 PT (`com.aimatrx.night-sweep.branch-refresh`, self-deleting) with a nightly twin at 01:05 (`com.aimatrx.night.branch-refresh-nightly`) that stays **disabled** until the one-shot's log shows a clean run |
 
 The plists live in [`plists/`](./plists/) so they are reviewable in the repo rather than only in
