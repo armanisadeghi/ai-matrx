@@ -22,6 +22,7 @@
  */
 
 import { readAllRows } from "@ai-matrx/data/db";
+import { awaitOrganizationForRecordRead } from "@/features/organizations/awaitWorkspace";
 import {
   decideAssist,
   getAssistById,
@@ -73,15 +74,30 @@ export async function approvalPageSize(
   organizationId: string | null | undefined,
   userId: string | null | undefined,
 ): Promise<number> {
-  if (!organizationId) {
-    throw new Error(
-      `[approvals] ${APPROVAL_PAGE_SIZE_KNOB.feature}.${APPROVAL_PAGE_SIZE_KNOB.key} cannot be ` +
-        "resolved without an organization, so this queue cannot say how many proposals one page " +
-        "holds. Mount it inside an organization.",
-    );
+  /**
+   * 🚨 A MISSING ORGANIZATION IS NOT YET AN ANSWER (check:org-three-states,
+   * 2026-09-22). This used to throw the moment `organizationId` was falsy —
+   * and falsy is what boot hands every caller for the first few seconds, what
+   * a person with no selection has, and what a FAILED membership read leaves
+   * behind. One value, three meanings, and the queue stated the terminal one
+   * ("Mount it inside an organization") during the race. So: WAIT for the
+   * answer the boot path is already fetching — bounded, no second request —
+   * and refuse only once it has settled, in the words that match WHY it
+   * settled that way (nothing chosen vs. we could not check).
+   */
+  let effectiveOrganizationId = organizationId ?? null;
+  if (!effectiveOrganizationId) {
+    const resolved = await awaitOrganizationForRecordRead();
+    if (resolved.status !== "ready") {
+      throw new Error(
+        `[approvals] ${APPROVAL_PAGE_SIZE_KNOB.feature}.${APPROVAL_PAGE_SIZE_KNOB.key} could not ` +
+          `be resolved: ${resolved.reason}`,
+      );
+    }
+    effectiveOrganizationId = resolved.organizationId;
   }
   const raw = await ensureEffectiveKnob(
-    organizationId,
+    effectiveOrganizationId,
     userId ?? null,
     APPROVAL_PAGE_SIZE_KNOB,
   );

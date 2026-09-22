@@ -40,7 +40,8 @@ import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamic
 import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
 import { ContextItemAddForm } from "@/features/scope-system/components/ContextItemAddForm";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import {
   fetchScopeTypes,
   selectScopeTypesByOrg,
@@ -61,7 +62,14 @@ const WindowPanel = dynamic(
 
 export function LiteWindowExamples() {
   const dispatch = useAppDispatch();
-  const orgId = useAppSelector(selectActiveOrganizationId) ?? "";
+  // 🚨 THREE STATES, NEVER A NULLABLE ID (check:org-three-states, 2026-09-22).
+  // This page used to read the active organization id and, whenever it was
+  // null, spell "Pick an organization in the header first" — which is the
+  // terminal refusal stated during boot, and stated again when the membership
+  // read FAILED. The gate tells checking, refused, failed and signed-out apart;
+  // the notice spells whichever one is true, with its own remedy.
+  const { organizationId, organizationState } = useOrganizationRequired();
+  const orgId = organizationState === "ready" ? (organizationId ?? "") : "";
   const typesLoaded = useAppSelector((s) =>
     orgId ? selectScopeTypesLoadedForOrg(s, orgId) : false,
   );
@@ -95,13 +103,13 @@ export function LiteWindowExamples() {
         </p>
       </header>
 
-      {!orgId && (
-        <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-          Pick an organization in the header first — every example below writes
-          into the organization you have active, and nothing here guesses one
-          for you.
-        </p>
-      )}
+      <OrganizationContextNotice
+        state={organizationState}
+        what="These window examples"
+        description="Pick an organization in the header — every example below writes into the organization you have active, and nothing here guesses one for you."
+        compact
+        className="rounded-md border border-border bg-muted/40"
+      />
 
       {/* ── A — a real form in a lightweight window ─────────────────────── */}
       <section className="space-y-2 rounded-lg border border-border p-4">

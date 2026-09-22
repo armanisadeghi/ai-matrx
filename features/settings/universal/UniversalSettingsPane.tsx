@@ -30,6 +30,8 @@ import {
   resolveViewerStanding,
 } from "@/lib/scoped-config/ladder";
 import type { KnobScopeKindName, ScopedKnob } from "@/lib/scoped-config/types";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { useActiveSettingsTabId } from "../components/SettingsTabHost";
 import { personalKnobHref, resolveConfigSection } from "./configTree";
 import { useUniversalSettings } from "./UniversalSettingsContext";
@@ -202,6 +204,15 @@ export function RegistryCoverage() {
 export default function UniversalSettingsPane() {
   const tabId = useActiveSettingsTabId();
   const settings = useUniversalSettings();
+  // 🚨 THREE STATES, NEVER A NULLABLE ID (check:org-three-states, 2026-09-22).
+  // "Pick an organization to see your settings" below used to be derived from
+  // `settings.organizationId` being falsy, which is the same value during boot,
+  // after boot settled on nothing, and after the membership read FAILED — so a
+  // person with organizations was told to choose one while we were still
+  // looking, and a person whose read threw was told the same thing with a
+  // remedy that could not help. The gate tells the states apart and the notice
+  // spells whichever one is true, with its own remedy.
+  const { organizationState } = useOrganizationRequired();
   const section = tabId ? resolveConfigSection(tabId, settings.domains) : null;
 
   if (settings.isLoading) {
@@ -277,12 +288,14 @@ export default function UniversalSettingsPane() {
         it is, and never in the sentence that closes the subject.
       */}
       {hasNoRegisteredControls && (
-        settings.editingContext !== "system" && !settings.organizationId ? (
-          <SettingsCallout tone="warning" title="Pick an organization to see your settings">
-            Your own settings are kept per organization, so this page needs to
-            know which one you mean. Choose one at the top of the page and these
-            controls appear.
-          </SettingsCallout>
+        settings.editingContext !== "system" && organizationState !== "ready" ? (
+          <OrganizationContextNotice
+            state={organizationState}
+            what="Your own settings"
+            title="Pick an organization to see your settings"
+            description="Your own settings are kept per organization, so this page needs to know which one you mean. Choose one at the top of the page and these controls appear."
+            compact
+          />
         ) : (
           <SettingsCallout tone="info" title="No controls are registered yet">
             This category is part of the product structure, but it does not have
