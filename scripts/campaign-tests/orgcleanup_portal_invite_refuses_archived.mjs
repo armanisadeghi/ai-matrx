@@ -32,6 +32,26 @@ const seatFor = async (email, password) => {
   if (error) throw new Error(`${email} sign-in refused: ${error.message}`);
   return [sb, data.user];
 };
+/**
+ * FIX-12: THE PAGE THE CLIENT ACTUALLY READS, FROM NO SEAT AT ALL.
+ *
+ * `custom.portal_invite_accept` has always refused an archived portal in its own
+ * sentence — and VERIFIER-12 proved on 2026-09-22 that the client never sees that
+ * sentence: she follows the link signed out, and the page reads
+ * `public.portal_share_peek`, which asked only `is_active`. `custom.portal_archive`
+ * sets `is_active = false` as well as `archived_at`, so every archive was reported
+ * to the client as "Rincon Plumbing Co has CLOSED this portal" — while the archive
+ * confirm had just promised the office that her link would say archived and could be
+ * restored. Archived is not closed (`custom.portal.archived_at`'s own comment says
+ * so), and the client is the one person who has to be told which.
+ */
+const anon = createClient(URL_, KEY, { auth: { persistSession: false } });
+const peek = async (token) => {
+  const { data, error } = await anon.rpc("portal_share_peek", { p_token: token });
+  if (error) throw new Error(`portal_share_peek refused: ${error.message}`);
+  return data;
+};
+
 const rpc = async (sb, fn, args) => {
   const { data, error } = await sb.schema("custom").rpc(fn, args);
   if (error) throw Object.assign(new Error(error.message), { code: error.code, hint: error.hint });
@@ -78,12 +98,17 @@ await rpc(admin, "portal_archive", {
 console.log("state: archived");
 const whileArchived = await say("following the link while ARCHIVED", () =>
   rpc(admin, "portal_invite_accept", { p_token: tokenA }));
+// AND THE SAME LINK, OPENED THE WAY THE CLIENT OPENS IT: no session at all.
+const peekArchived = await peek(tokenA);
+console.log(`signed out, while ARCHIVED: ${peekArchived.state} — ${peekArchived.say}`);
 
 // ── GREEN: the same token, the same person, the portal restored ───────────────────────────────
 await rpc(admin, "portal_restore", { p_organization_id: ORG, p_portal_id: PORTAL, p_confirm_title: TITLE });
 console.log("state: restored");
 const whileLive = await say("following the SAME link once RESTORED", () =>
   rpc(admin, "portal_invite_accept", { p_token: tokenA }));
+const peekRestored = await peek(tokenA);
+console.log(`signed out, once RESTORED: ${peekRestored.state} — ${peekRestored.say}`);
 
 // THE GREEN ARM, HONESTLY. Once restored, the same link gets PAST the archived gate and on to
 // the grant — where this particular caller is refused for a different and correct reason:
@@ -103,6 +128,11 @@ const verdict = {
   refusal_says_who_can_undo_it: /restore the portal/.test(whileArchived.e?.hint ?? ""),
   past_the_archived_gate_once_restored: pastTheGate,
   archived_sentence_gone_once_restored: !/archived this portal/.test(whileLive.e?.message ?? ""),
+  // FIX-12 — the client's own page, signed out, on the same token.
+  signed_out_page_says_archived: peekArchived.state === "portal_archived",
+  signed_out_page_never_says_closed: !/closed this portal/.test(peekArchived.say ?? ""),
+  signed_out_page_says_it_can_come_back: /brought back/.test(peekArchived.say ?? ""),
+  signed_out_page_is_usable_again_once_restored: peekRestored.state !== "portal_archived",
   live_portals_now: (await rpc(admin, "list_portals", { p_organization_id: ORG, p_archived: "active" })).length,
   archived_portals_now: (await rpc(admin, "list_portals", { p_organization_id: ORG, p_archived: "archived" })).length,
 };

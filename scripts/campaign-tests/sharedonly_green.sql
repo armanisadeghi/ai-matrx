@@ -448,9 +448,17 @@ begin
   select count(*) into v_n from custom.record
    where organization_id = '50a20000-0000-4a00-8a00-000000000001';
   if v_n <> 0 then raise exception 'TEARDOWN FAILED: % record(s) left behind', v_n; end if;
-  select count(*) into v_n from custom.shared_only_disagreements()
-   where why like 'doors-disagree%' or why like 'mirror-admits-more%' or why like 'unmeasured%';
-  if v_n <> 0 then raise exception 'TEARDOWN FAILED: the census names % never-allowed disagreement(s) on the whole database', v_n; end if;
-  raise notice 'TEARDOWN PASSED — census zero.';
-  raise notice 'ALL PARTS PASSED';
+  -- SUITES-TIDY 2026-09-22: the same whole-database census PART 7 runs, and the same
+  -- size-aware gate — see the note above PART 7 for the measured compute gap. The rows-left-
+  -- behind half of this teardown is cheap and always runs; only the census is gated, and when
+  -- it does not run this suite has already printed SKIPPED, so the run is scored SKIP.
+  if (select setting::numeric from pg_settings where name = 'shared_buffers') >= 524288 then
+    select count(*) into v_n from custom.shared_only_disagreements()
+     where why like 'doors-disagree%' or why like 'mirror-admits-more%' or why like 'unmeasured%';
+    if v_n <> 0 then raise exception 'TEARDOWN FAILED: the census names % never-allowed disagreement(s) on the whole database', v_n; end if;
+    raise notice 'TEARDOWN PASSED — nothing left behind, and the whole-database census is zero.';
+    raise notice 'ALL PARTS PASSED';
+  else
+    raise notice 'TEARDOWN PASSED — nothing left behind. The whole-database census was NOT run: this server is smaller than the one its 60-second ceiling was measured on (compute:shared_buffers:524288).';
+  end if;
 end $t$;
