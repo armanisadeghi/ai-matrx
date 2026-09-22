@@ -22,11 +22,12 @@
  *
  *   `outreach.platform_bring_up` — THE OPERATOR's steps. Rendered ONLY for
  *       super-admins, under an explicit "Platform setup" section: the Google
- *       Cloud reply pipe (Pub/Sub topic + push subscription + the two server
+ *       Cloud reply pipe (Pub/Sub topic + push subscription + the three server
  *       settings), the server actually listening, and the gmail.readonly
  *       grant (a separate restricted-scope campaign after the current ordinary
  *       Google review — platform work, nothing any org can act on). These read deployment env config
- *       (`GMAIL_INBOUND_PUBSUB_TOPIC` / `OUTREACH_INBOUND_PUSH_TOKEN`), the
+ *       (`GMAIL_INBOUND_PUBSUB_TOPIC`, `GMAIL_INBOUND_PUSH_AUDIENCE`, and
+ *       `GMAIL_INBOUND_PUSH_SERVICE_ACCOUNT_EMAIL`), the
  *       same for every org on the server.
  *
  * Machine-check everything checkable; copy-paste values for the rest — per
@@ -234,7 +235,7 @@ export const platformBringUpChecklist = registerChecklist<BringUpContext>({
       id: "reply_pipe",
       title: "Give Google a delivery pipe for replies",
       description:
-        "Google delivers replies by pushing them to us. That pipe (a Pub/Sub topic and push subscription in our Google Cloud project) is created once, in Google's console.",
+        "Google delivers replies through an authenticated Pub/Sub push subscription. The topic, OIDC identity, and audience are configured once in Google's console.",
       values: () => [
         {
           label: "Who may publish into the topic",
@@ -243,9 +244,8 @@ export const platformBringUpChecklist = registerChecklist<BringUpContext>({
         },
         {
           label: "Where the push subscription delivers",
-          value:
-            "https://server.app.matrxserver.com/outreach/inbound/gmail/<delivery-secret>",
-          hint: "Replace <delivery-secret> with the same secret you set as the server's delivery secret below.",
+          value: "https://server.app.matrxserver.com/outreach/inbound/gmail",
+          hint: "Use this exact URL as the push endpoint and OIDC audience. The endpoint verifies Google's OIDC token.",
         },
         {
           label: "Server setting: the topic's full name",
@@ -253,16 +253,21 @@ export const platformBringUpChecklist = registerChecklist<BringUpContext>({
           hint: "Set on every server, with the value projects/<your-project>/topics/<your-topic>.",
         },
         {
-          label: "Server setting: the delivery secret",
-          value: "OUTREACH_INBOUND_PUSH_TOKEN",
-          hint: "Set on every server. A long random value; it also goes into the delivery address above.",
+          label: "Server setting: the OIDC audience",
+          value: "GMAIL_INBOUND_PUSH_AUDIENCE",
+          hint: "Set on every server to the exact URL above.",
+        },
+        {
+          label: "Server setting: the push identity",
+          value: "GMAIL_INBOUND_PUSH_SERVICE_ACCOUNT_EMAIL",
+          hint: "Set on every server to the service account selected for authenticated Pub/Sub delivery.",
         },
       ],
       howTo: () => [
         "In Google Cloud, open Pub/Sub and create a topic (any name).",
         "On that topic, grant the service account above the Pub/Sub Publisher role.",
-        "Create a push subscription on the topic, delivering to the address above.",
-        "Set the two server settings on every server, then check the next step.",
+        "Create an authenticated push subscription on the topic, delivering to the address above with that OIDC audience and service account.",
+        "Set all three server settings on every server, then check the next step.",
       ],
       confirmLabel: "I've created the topic and subscription",
     },
@@ -278,12 +283,12 @@ export const platformBringUpChecklist = registerChecklist<BringUpContext>({
           const missing: string[] = [];
           if (!readiness.pubsub_topic_configured)
             missing.push("the topic's full name");
-          if (!readiness.push_token_configured)
-            missing.push("the delivery secret");
+          if (!readiness.push_auth_configured)
+            missing.push("the authenticated Pub/Sub push identity");
           if (missing.length > 0) {
             return {
               status: "fail",
-              reason: `The server doesn't have ${missing.join(" or ")} yet. Both settings from the previous step need to be set on every server.`,
+              reason: `The server doesn't have ${missing.join(" or ")} yet. Set the corresponding server settings from the previous step on every server.`,
               fix: { label: "Check again now", run: ctx.refreshReadiness },
             };
           }

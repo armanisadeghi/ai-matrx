@@ -20344,7 +20344,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/outreach/inbound/gmail/{token}": {
+    "/outreach/inbound/gmail": {
         parameters: {
             query?: never;
             header?: never;
@@ -20354,7 +20354,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Gmail Push */
-        post: operations["gmail_push_outreach_inbound_gmail__token__post"];
+        post: operations["gmail_push_outreach_inbound_gmail_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -51353,6 +51353,8 @@ export interface components {
             organization_id: string;
             /** Pubsub Topic Configured */
             pubsub_topic_configured: boolean;
+            /** Push Auth Configured */
+            push_auth_configured: boolean;
             /** Push Token Configured */
             push_token_configured: boolean;
             /** Hunter Key Present */
@@ -164106,13 +164108,11 @@ export interface operations {
             };
         };
     };
-    gmail_push_outreach_inbound_gmail__token__post: {
+    gmail_push_outreach_inbound_gmail_post: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                token: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -164124,15 +164124,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PushIngestResult"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

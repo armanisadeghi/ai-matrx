@@ -18253,6 +18253,15 @@ export type Database = {
         Args: { p_channel?: string; p_error_code: string }
         Returns: string
       }
+      dispatch_task_sms_snooze: {
+        Args: { p_claim_token: string; p_run_id: string; p_schedule_id: string }
+        Returns: {
+          blocked_reason: string
+          defer_until: string
+          notification_id: string
+          outcome: string
+        }[]
+      }
       enqueue_my_sms_assistant_test: {
         Args: {
           p_body: string
@@ -18299,6 +18308,23 @@ export type Database = {
           p_sms_conversation_id: string
         }
         Returns: string[]
+      }
+      enqueue_task_sms_reminder_for_user: {
+        Args: {
+          p_caller: string
+          p_event_key?: string
+          p_program_key: string
+          p_task_id: string
+        }
+        Returns: {
+          assist_id: string
+          blocked_reason: string
+          duplicate: boolean
+          notification_id: string
+          outbound_message_id: string
+          outcome: string
+          sms_conversation_id: string
+        }[]
       }
       enroll_verified_phone_for_assistant: {
         Args: {
@@ -18435,6 +18461,10 @@ export type Database = {
         }[]
       }
       has_exact_sms_task_done_offer: {
+        Args: { p_inbound_message_id: string }
+        Returns: boolean
+      }
+      has_exact_sms_task_reply_offer: {
         Args: { p_inbound_message_id: string }
         Returns: boolean
       }
@@ -18962,6 +18992,20 @@ export type Database = {
           recording_owner_id: string
         }[]
       }
+      schedule_task_sms_snooze: {
+        Args: {
+          p_actor_user_id: string
+          p_assist_id: string
+          p_idempotency_key: string
+          p_inbound_message_id: string
+          p_organization_id: string
+        }
+        Returns: {
+          due_at: string
+          duplicate: boolean
+          schedule_id: string
+        }[]
+      }
       set_my_sms_assistant_enabled: {
         Args: { p_enabled: boolean; p_program_key: string }
         Returns: {
@@ -19004,6 +19048,18 @@ export type Database = {
           p_worker_id: string
         }
         Returns: boolean
+      }
+      task_sms_person_timing_gate: {
+        Args: {
+          p_now?: string
+          p_organization_id: string
+          p_phone: string
+          p_user_id: string
+        }
+        Returns: {
+          defer_until: string
+          reason: string
+        }[]
       }
       voice_call_consent_persistence_readiness: {
         Args: { p_program_key?: string }

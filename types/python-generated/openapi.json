@@ -39861,24 +39861,13 @@
         }
       }
     },
-    "/outreach/inbound/gmail/{token}": {
+    "/outreach/inbound/gmail": {
       "post": {
         "tags": [
           "Outreach Inbound"
         ],
         "summary": "Gmail Push",
-        "operationId": "gmail_push_outreach_inbound_gmail__token__post",
-        "parameters": [
-          {
-            "name": "token",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Token"
-            }
-          }
-        ],
+        "operationId": "gmail_push_outreach_inbound_gmail_post",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -39886,16 +39875,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PushIngestResult"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -116048,6 +116027,10 @@
             "type": "boolean",
             "title": "Pubsub Topic Configured"
           },
+          "push_auth_configured": {
+            "type": "boolean",
+            "title": "Push Auth Configured"
+          },
           "push_token_configured": {
             "type": "boolean",
             "title": "Push Token Configured"
@@ -116082,6 +116065,7 @@
         "required": [
           "organization_id",
           "pubsub_topic_configured",
+          "push_auth_configured",
           "push_token_configured",
           "hunter_key_present",
           "prospeo_key_present",
