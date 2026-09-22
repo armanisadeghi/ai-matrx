@@ -29,7 +29,7 @@
  * reports all three; on the working tree it reports none.
  */
 import { readFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 
 const ROOT = join(__dirname, "..", "..", "..");
@@ -38,6 +38,10 @@ const ROOT = join(__dirname, "..", "..", "..");
  * Paths whose job IS the key. Each one is a prefix, and each one has a reason.
  */
 const KEY_IS_THE_SUBJECT: ReadonlyArray<readonly [string, string]> = [
+  [
+    "features/mandates/mandate-words.ts",
+    "THE primitive itself — the one sanctioned last resort when a key has no derivable segment",
+  ],
   [
     "features/mandates/admin/",
     "the mandates console — the key is the row's identity and lives in a mono chip",
@@ -48,11 +52,43 @@ const KEY_IS_THE_SUBJECT: ReadonlyArray<readonly [string, string]> = [
   ],
   [
     "features/mandates/authoring/",
-    "authoring a mandate that does not exist yet — the key is the thing being created",
+    "authoring a mandate that DOES NOT EXIST yet — there is no declaration to read a name from, and the key is the thing the reader must go create",
   ],
   [
     "features/mandates/workspace/",
     "one mandate's own workspace — the key is the page's subject",
+  ],
+  [
+    "features/mandates/components/MandateAgentPicker.tsx",
+    "the binding picker for ONE named mandate — an admin control, key as its heading",
+  ],
+  [
+    "features/bindings/",
+    "the binding console — an engineer's inventory of keys, holders and scopes",
+  ],
+  [
+    "features/window-panels/windows/mandates/",
+    "the mandate window — the key IS what the window is about",
+  ],
+  [
+    "features/window-panels/windows/agents/AgentConvertSystemWindow.tsx",
+    "the system-agent conversion window — a super-admin repair tool addressed by key",
+  ],
+  [
+    "features/agents/components/admin/",
+    "agent admin — same lane as the binding console",
+  ],
+  [
+    "features/agents/redux/execution-system/",
+    "telemetry and log fields, not screen text",
+  ],
+  [
+    "features/proof-runs/",
+    "the proof-run scoreboard — an engineering surface, key in a mono chip",
+  ],
+  [
+    "features/marketing/seo/value-system/settings/",
+    "the autonomy-mode settings editor — an admin knob screen, key as a mono link to the mandate",
   ],
   [
     "features/admin/",
@@ -65,6 +101,10 @@ const KEY_IS_THE_SUBJECT: ReadonlyArray<readonly [string, string]> = [
   [
     "features/surfaces/components/hub/",
     "the surfaces hub — an engineer's inventory, same as above",
+  ],
+  [
+    "app/(admin)/",
+    "the whole admin app — super-admin only, keys are its subject matter",
   ],
 ];
 
@@ -103,9 +143,12 @@ function exemptReason(path: string): string | null {
 export function findingsIn(path: string, source: string): string[] {
   const found: string[] = [];
   source.split("\n").forEach((line, index) => {
-    if (BARE_JSX_CHILD.test(line)) {
+    // A comment is not a screen. This class is quoted in the very docblocks that
+    // forbid it, so a scanner that cannot tell the two apart cries wolf forever.
+    const code = line.replace(/^\s*(?:\/\/|\*|\/\*).*$/, "");
+    if (BARE_JSX_CHILD.test(code)) {
       found.push(`${path}:${index + 1} — a mandate key rendered as a JSX child`);
-    } else if (KEY_AS_LABEL_FALLBACK.test(line)) {
+    } else if (KEY_AS_LABEL_FALLBACK.test(code)) {
       found.push(
         `${path}:${index + 1} — a mandate key used as the fallback for a name`,
       );
@@ -145,6 +188,5 @@ describe("no disclosure surface prints a mandate key", () => {
         // A stale exemption is a hole nobody can see.
       ).toBe(true);
     }
-    expect(relative(ROOT, ROOT)).toBe("");
   });
 });
