@@ -174,6 +174,8 @@ import {
   type ValidationRules,
 } from "@/features/data-tables/validation";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { columnRuleRefusal, type ColumnRuleRefusal } from "@/features/data-tables/validation-refusal";
+import { FieldRuleRefusal } from "@/features/data-tables/components/FieldRuleRefusal";
 import {
   isBulkOpError,
   isServiceFailure,
@@ -2877,6 +2879,32 @@ const UserTableViewer = ({
    * is asked whether to append them as new rows or skip them. Columns that
    * fall off the right edge are reported after the write lands.
    */
+  /**
+   * THE PASTE PREVIEW'S REFUSALS. Held in state rather than thrown at a toast so
+   * they can be READ: a paste refuses values by column, and a person needs to see
+   * which column and why before deciding whether the rest of the block is worth
+   * writing. `resolve` is the pending paste, waiting on their answer.
+   */
+  const [pasteRefusals, setPasteRefusals] = useState<{
+    refusals: ColumnRuleRefusal[];
+    remaining: number;
+  } | null>(null);
+  const pasteRefusalAnswer = useRef<((go: boolean) => void) | null>(null);
+  const answerPasteRefusals = useCallback((go: boolean) => {
+    const resolve = pasteRefusalAnswer.current;
+    pasteRefusalAnswer.current = null;
+    setPasteRefusals(null);
+    resolve?.(go);
+  }, []);
+  const askAboutRefusedPaste = useCallback(
+    (refusals: ColumnRuleRefusal[], remaining: number) =>
+      new Promise<boolean>((resolve) => {
+        pasteRefusalAnswer.current = resolve;
+        setPasteRefusals({ refusals, remaining });
+      }),
+    [],
+  );
+
   const handlePasteText = useCallback(
     async (anchor: CellAddress, text: string, targetCells?: CellAddress[]) => {
       if (isReadOnly) return;
@@ -2910,7 +2938,7 @@ const UserTableViewer = ({
       const ops: BulkOp[] = [];
       const priors = new Map<string, unknown>();
       let skippedComputed = 0;
-      const rejected: string[] = [];
+      const rejected: ColumnRuleRefusal[] = [];
       for (const cell of plan.cells) {
         const field = fieldByName.get(cell.fieldName);
         if (!field) continue;
@@ -2929,7 +2957,24 @@ const UserTableViewer = ({
             existingValues: existingValuesFor(cell.fieldName, cell.rowId),
           });
           if (!verdict.ok) {
-            rejected.push(`${field.display_name}: ${verdict.reason}`);
+            // ONE refusal shape for the whole platform — the same object the cell
+            // editor and the row modals build, so a pasted value and a typed value
+            // are refused in the same words.
+            if (
+              !rejected.some(
+                (r) =>
+                  r.fieldDisplayName === field.display_name &&
+                  r.reason === verdict.reason,
+              )
+            ) {
+              rejected.push(
+                columnRuleRefusal({
+                  fieldDisplayName: field.display_name,
+                  reason: verdict.reason,
+                  rules,
+                }),
+              );
+            }
             continue;
           }
         }
@@ -2942,6 +2987,17 @@ const UserTableViewer = ({
           value: next,
         });
         priors.set(`${cell.rowId}::${cell.fieldName}`, prior);
+      }
+
+      // 🚨 A PASTE THAT DROPPED VALUES USED TO SAY SO IN A TOAST, AFTER THE FACT
+      // (lane VALIDATION-REFUSAL, 2026-09-23). It named three of them, timed out,
+      // and by then the rest of the block was already written — so the person had
+      // half a paste and no way back to what was refused. The refusals are now put
+      // in front of them BEFORE anything is written, on the columns they belong to,
+      // through the one notice, and the paste is theirs to take or leave.
+      if (rejected.length > 0) {
+        const go = await askAboutRefusedPaste(rejected, ops.length);
+        if (!go) return;
       }
 
       let appended = 0;
@@ -3014,15 +3070,9 @@ const UserTableViewer = ({
             "A formula column computes its own values, so nothing can be pasted into it.",
         });
       }
-      if (rejected.length > 0) {
-        toast({
-          title: `${rejected.length} value${rejected.length === 1 ? "" : "s"} did not pass the column rules`,
-          description: [...new Set(rejected)].slice(0, 3).join(" · "),
-          variant: "destructive",
-        });
-      }
     },
     [
+      askAboutRefusedPaste,
       cellUndo,
       coerceForField,
       fieldNamesInOrder,
@@ -5462,6 +5512,45 @@ const UserTableViewer = ({
           </Pagination>
         </div>
       )}
+
+      {/* THE PASTE PREVIEW'S REFUSALS — before anything is written, never after. */}
+      <Dialog
+        open={pasteRefusals !== null}
+        onOpenChange={(open) => {
+          if (!open) answerPasteRefusals(false);
+        }}
+      >
+        <DialogContent className="sm:max-w-[36rem] max-h-[80dvh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {pasteRefusals
+                ? `${pasteRefusals.refusals.length} column${pasteRefusals.refusals.length === 1 ? "" : "s"} refused what you pasted`
+                : ""}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            {(pasteRefusals?.refusals ?? []).map((refusal) => (
+              <FieldRuleRefusal
+                key={`${refusal.fieldDisplayName}::${refusal.reason}`}
+                refusal={refusal}
+              />
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => answerPasteRefusals(false)}>
+              Cancel the paste
+            </Button>
+            <Button
+              onClick={() => answerPasteRefusals(true)}
+              disabled={(pasteRefusals?.remaining ?? 0) === 0}
+            >
+              {(pasteRefusals?.remaining ?? 0) === 0
+                ? "Nothing left to paste"
+                : `Paste the other ${pasteRefusals?.remaining} cell${pasteRefusals?.remaining === 1 ? "" : "s"}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Text Expansion Modal */}
       <Dialog

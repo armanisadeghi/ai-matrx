@@ -46,7 +46,6 @@ import { RefusalNotice } from "@ai-matrx/records-ui";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input, Popover, PopoverAnchor, PopoverContent } from "@ai-matrx/design-system";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 
 import { parseFieldInput } from "@/lib/field-formats/format";

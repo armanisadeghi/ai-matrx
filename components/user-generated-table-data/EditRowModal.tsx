@@ -46,6 +46,8 @@ import {
   parseValidationRules,
   validateCellValue,
 } from "@/features/data-tables/validation";
+import { columnRuleRefusal, type ColumnRuleRefusal } from "@/features/data-tables/validation-refusal";
+import { FieldRuleRefusal } from "@/features/data-tables/components/FieldRuleRefusal";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface TableField {
@@ -95,7 +97,7 @@ export default function EditRowModal({
    * single sentence at the top of the form: a form that says "something is
    * wrong" without saying WHERE is a dead end on a table with twenty columns.
    */
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, ColumnRuleRefusal>>({});
 
   // Initialize row data when modal opens
   useEffect(() => {
@@ -159,7 +161,7 @@ export default function EditRowModal({
     // Column validation rules, checked before anything is sent. `unique` is
     // skipped here on purpose: this form holds one row, not the table, and a
     // uniqueness claim made without the other rows would be a guess.
-    const nextErrors: Record<string, string> = {};
+    const nextErrors: Record<string, ColumnRuleRefusal> = {};
     for (const field of fields) {
       if (isComputedColumn(field)) continue;
       const verdict = validateCellValue({
@@ -168,7 +170,16 @@ export default function EditRowModal({
         format: resolveFieldFormat(field.data_type, field.metadata),
         value: rowData[field.field_name],
       });
-      if (!verdict.ok) nextErrors[field.field_name] = verdict.reason;
+      if (!verdict.ok) {
+        // THE ONE REFUSAL SHAPE. The bare red sentence this used to be said what
+        // was wrong and nothing about what to do, and it looked nothing like the
+        // refusal the same person meets on the grid two clicks away.
+        nextErrors[field.field_name] = columnRuleRefusal({
+          fieldDisplayName: field.display_name,
+          reason: verdict.reason,
+          rules: parseValidationRules(field.validation_rules),
+        });
+      }
     }
     if (Object.keys(nextErrors).length > 0) {
       setFieldErrors(nextErrors);
@@ -184,7 +195,7 @@ export default function EditRowModal({
       const broken = fields.filter((field) => nextErrors[field.field_name]);
       setError(
         broken.length === 1
-          ? `${broken[0].display_name}: ${nextErrors[broken[0].field_name]}`
+          ? `${broken[0].display_name}: ${nextErrors[broken[0].field_name]!.reason}`
           : `These columns need fixing: ${broken
               .map((field) => field.display_name)
               .join(", ")}`,
@@ -540,9 +551,9 @@ export default function EditRowModal({
                   </div>
                   {renderFieldInput(field)}
                   {fieldErrors[field.field_name] ? (
-                    <p className="text-xs text-destructive">
-                      {fieldErrors[field.field_name]}
-                    </p>
+                    <FieldRuleRefusal
+                      refusal={fieldErrors[field.field_name]!}
+                    />
                   ) : (
                     describeValidationRules(
                       parseValidationRules(field.validation_rules),

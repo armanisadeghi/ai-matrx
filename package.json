@@ -637,6 +637,9 @@
     "check:amend-idempotent:self-test": "tsx scripts/apply-migration.ts --amend-idempotent --self-test",
     "check:udt-label-census": "tsx scripts/check-udt-label-census.ts",
     "check:udt-label-census:self-test": "tsx scripts/check-udt-label-census.ts --self-test",
+    "check:validation-refusal-surfaces": "node scripts/check-validation-refusal-surfaces.mjs",
+    "check:validation-refusal-surfaces:self-test": "node scripts/check-validation-refusal-surfaces.mjs --self-test",
+    "test:validation-refusal": "jest features/data-tables/__tests__/a-column-rule-refusal-is-never-a-toast.test.tsx --no-coverage",
     "check:popover-sizing": "jest scripts/__tests__/popover-sizing-guard.test.ts --no-coverage"
   },
   "dependencies": {
