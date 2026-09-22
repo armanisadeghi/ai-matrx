@@ -172,10 +172,37 @@ comment on function custom.io_import_declare_columns(uuid, uuid, jsonb, jsonb) i
   'IMPORT-2: add the columns a file has and a table has not, as a step of its own BEFORE the rows are sent. Answers columns_added, the mapping the file should be written with, and one sentence a screen can show.';
 
 -- THE DECLARATION BEFORE THE GRANT — platform._ddl_guard sweeps an undeclared client grant.
-insert into platform.client_callable_door (schema_name, function_name, identity_args, declared_by, reason)
-values ('custom', 'io_import_declare_columns', 'p_organization_id uuid, p_table_id uuid, p_rows jsonb, p_mapping jsonb',
-        'IMPORT-2',
-        'The import wizard adds the columns a file needs as its own step, so the writing calls declare nothing and stay well under the client ceiling.')
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, declared_by, reason,
+   anonymous_callers, signed_in_callers, identity_argtypes, argument_rules)
+values
+  ('custom', 'io_import_declare_columns',
+   'p_organization_id uuid, p_table_id uuid, p_rows jsonb, p_mapping jsonb',
+   'IMPORT-2',
+   'IMPORT-2: the import wizard adds the columns a file has and the table has not as a step of its own, before any row is sent. It is the pre-pass FIX-10B put inside custom.io_import_rows, moved out so that the writing calls declare nothing and stay well under the ~8 s PostgREST ceiling, and so that a person can name one of the new columns as the duplicate key of the file. The store is switched per organization by custom/system_enabled and the body asks custom.assert_store_door first; membership and the ADMIN rung on the Table are decided by custom.assert_client_may_change for auth.uid() before anything is declared, which is the same rung custom.field_declare itself asks.',
+   false, true,
+   array[2950, 2950, 3802, 3802]::oid[],
+   jsonb_build_object(
+     'version', 1,
+     'arguments', jsonb_build_object(
+       'p_organization_id', jsonb_build_object(
+         'type', 'uuid', 'position', 1, 'optional', false, 'entity', null,
+         'check', 'the organization of the caller: it is handed to custom.assert_store_door and custom.assert_client_may_change, and every column declared is written into the Field kernel of that organization.',
+         'null_rule', jsonb_build_object('sqlstate', '22004'),
+         'entity_reason', 'It is an organization id and this door makes no access decision with it beyond handing it to the two predicates custom.field_declare already uses.'),
+       'p_table_id', jsonb_build_object(
+         'type', 'uuid', 'position', 2, 'optional', false, 'entity', null,
+         'check', 'the custom Table the columns are added to; it is handed to custom.assert_client_may_change, which is where the admin rung on the Table is decided.',
+         'null_rule', jsonb_build_object('sqlstate', '23503'),
+         'entity_reason', 'Access is decided by organization_id and the admin rung on this Table, asked before anything is declared; the id names the table the new Field documents point at.'),
+       'p_rows', jsonb_build_object(
+         'type', 'jsonb', 'position', 3, 'optional', false,
+         'check', 'the rows of the file, read ONLY for their header names and up to twelve sample values a column, so the store can infer what each new column holds. Nothing in them reaches an access decision and no row is written.',
+         'null_rule', jsonb_build_object('default', '[]')),
+       'p_mapping', jsonb_build_object(
+         'type', 'jsonb', 'position', 4, 'optional', true,
+         'check', 'headers the person has already mapped to columns by hand; a mapped header is never declared as a new column. It decides nothing but which headers are left over.',
+         'null_rule', jsonb_build_object('default', '{}')))))
 on conflict do nothing;
 
 grant execute on function custom.io_import_declare_columns(uuid, uuid, jsonb, jsonb) to authenticated;
@@ -234,6 +261,7 @@ declare
   v_ids     uuid[] := array[]::uuid[];
   v_id      uuid;
   v_fell    text := null;              -- why the batched statement was refused, if it was
+  v_failed  jsonb := '{}'::jsonb;      -- ord -> why THAT row could not be written on its own
   -- THE UNIQUE RULE, HELD INSIDE THE BATCH (see the migration header, (c)).
   v_uq      text[] := array[]::text[]; -- the keys of the columns carrying a unique rule
   v_uqlab   jsonb := '{}'::jsonb;      -- key -> the word a person reads
@@ -366,25 +394,6 @@ begin
       end;
     end if;
 
-    -- THE UNIQUE RULE, INSIDE THIS BATCH. custom._unique_rule_holds asks custom.record, and a
-    -- row written earlier in the SAME statement is not there to be found, so the door holds
-    -- the line for the batch with that trigger's own sentence and SQLSTATE. Anything this
-    -- batch cannot see — another session, an earlier batch, a record already here — is still
-    -- the trigger's to refuse.
-    if v_reason is null and cardinality(v_uq) > 0 then
-      foreach v_key in array v_uq loop
-        v_word := v_doc ->> v_key;
-        if v_word is null then continue; end if;
-        v_u := lower(btrim(v_word));
-        if v_u = '' then continue; end if;
-        if v_uqseen ? (v_key || '|' || v_u) then
-          v_reason := format('Another record here already has %s "%s", and %s has to be different on every record.',
-                             v_uqlab ->> v_key, btrim(v_word), v_uqlab ->> v_key);
-          exit;
-        end if;
-      end loop;
-    end if;
-
     if v_reason is not null then
       v_plan := v_plan || jsonb_build_array(jsonb_build_object(
                   'kind', 'refused', 'row', v_index, 'reason', v_reason, 'source', v_row));
@@ -403,6 +412,31 @@ begin
                     'hit', v_exist ->> v_word, 'doc', v_doc, 'values', v_values, 'source', v_row));
         continue;
       end if;
+    end if;
+
+    -- THE UNIQUE RULE, INSIDE THIS BATCH. custom._unique_rule_holds asks custom.record, and a
+    -- row written earlier in the SAME statement is not there to be found, so the door holds
+    -- the line for the batch with that trigger's own sentence and SQLSTATE. Anything this
+    -- batch cannot see — another session, an earlier batch, a record already here — is still
+    -- the trigger's to refuse.
+    if cardinality(v_uq) > 0 then
+      foreach v_key in array v_uq loop
+        v_word := v_doc ->> v_key;
+        if v_word is null then continue; end if;
+        v_u := lower(btrim(v_word));
+        if v_u = '' then continue; end if;
+        if v_uqseen ? (v_key || '|' || v_u) then
+          v_reason := format('Another record here already has %s "%s", and %s has to be different on every record.',
+                             v_uqlab ->> v_key, btrim(v_word), v_uqlab ->> v_key);
+          exit;
+        end if;
+      end loop;
+    end if;
+
+    if v_reason is not null then
+      v_plan := v_plan || jsonb_build_array(jsonb_build_object(
+                  'kind', 'refused', 'row', v_index, 'reason', v_reason, 'source', v_row));
+      continue;
     end if;
 
     v_ord  := v_ord + 1;
@@ -443,22 +477,15 @@ begin
   end if;
 
   if v_fell is not null then
-    for v_ord in 1..cardinality(v_ids) loop
-      v_ids[v_ord] := null;
-    end loop;
+    v_ids := array_fill(null::uuid, array[cardinality(v_ids)]);
     for v_entry in select value from jsonb_array_elements(v_plan) where value ->> 'kind' = 'write' loop
       v_ord := (v_entry ->> 'ord')::integer;
       begin
         v_ids[v_ord] := custom.record_write(p_organization_id, v_run.table_id, v_docs[v_ord]);
       exception when others then
         v_ids[v_ord] := null;
-        v_plan := jsonb_set(v_plan, array[((v_entry ->> 'ord')::integer)::text],
-                            v_entry, false);   -- placeholder; the reason is carried below
-        v_plan := (select coalesce(jsonb_agg(case
-                      when e ->> 'kind' = 'write' and (e ->> 'ord')::integer = v_ord
-                        then e || jsonb_build_object('failed', sqlerrm, 'sqlstate', sqlstate)
-                      else e end), '[]'::jsonb)
-                     from jsonb_array_elements(v_plan) e);
+        v_failed := v_failed || jsonb_build_object(v_ord::text,
+                      jsonb_build_object('reason', sqlerrm, 'sqlstate', sqlstate));
       end;
     end loop;
   end if;
@@ -482,11 +509,11 @@ begin
         v_bad := v_bad + 1;
         v_out := v_out || jsonb_build_array(jsonb_build_object(
                    'row', v_index, 'outcome', 'refused',
-                   'reason', coalesce(v_entry ->> 'failed', v_fell), 'source', v_entry -> 'source'));
+                   'reason', coalesce(v_failed -> v_ord::text ->> 'reason', v_fell), 'source', v_entry -> 'source'));
         if jsonb_array_length(v_ref) < c_keep then
           v_ref := v_ref || jsonb_build_array(jsonb_build_object(
                      'row', v_index, 'sqlstate', coalesce(v_entry ->> 'sqlstate', '22023'),
-                     'reason', coalesce(v_entry ->> 'failed', v_fell), 'source', v_entry -> 'source'));
+                     'reason', coalesce(v_failed -> v_ord::text ->> 'reason', v_fell), 'source', v_entry -> 'source'));
         end if;
       else
         v_landed := v_landed + 1;
