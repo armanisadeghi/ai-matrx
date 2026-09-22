@@ -63,6 +63,8 @@ export interface PortalSharePeek {
     | "accepted"
     | "revoked"
     | "expired"
+    // FIX-12: an archived portal is not a closed one, and the store says which.
+    | "portal_archived"
     | "portal_closed"
     | "lane_closed"
     | "unknown";

@@ -34,9 +34,9 @@
 -- `portal_archived`, and its own sentence — the same order `custom.portal_invite_accept`
 -- already uses. Nothing else about the function changes.
 --
--- based-on: public.portal_share_peek(text) 8344e950d90ca32cc2b9da387edb2abf (md5 of prosrc,
---   measured on the main database 2026-09-22; identical to
---   migrations/campaign/portalbind_a_withdrawn_link_says_so.sql)
+-- The live body this is written against was read off the main database on 2026-09-22 and is
+-- identical to migrations/campaign/portalbind_a_withdrawn_link_says_so.sql, byte for byte.
+-- based-on: public.portal_share_peek(text) 224d0fab62b73d4a285fb5bfa72a864c250dad6a46a3b7aa19c717884afa6941
 
 set lock_timeout = '4s';
 

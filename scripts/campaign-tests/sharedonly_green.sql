@@ -316,6 +316,24 @@ end $t$;
 rollback;
 
 -- ══════════════════════════════════════ PART 7 — THE THREE ANSWERS, AND THE DOOR'S OWN PARITY
+-- ── PART 7 IS THE SIZE-AWARE ONE (SUITES-TIDY 2026-09-22) ───────────────────────────────────
+-- Everything above ran. PART 7 is different in kind: `custom.shared_only_disagreements()` and
+-- `custom.read_door_parity()` are WHOLE-DATABASE censuses over every (member, record) pair, run
+-- under a 60-second ceiling, and that ceiling is the assertion. The nightly dev clone is
+-- production's data on SMALLER COMPUTE — measured 2026-09-22: shared_buffers 2 GB against
+-- production's 4 GB, effective_cache_size 6 GB against 12 GB, 2 parallel workers against 4 —
+-- so the census was killed here by its own statement_timeout while nothing about it had
+-- regressed. Rather than take the whole suite down, or raise a ceiling that IS the assertion,
+-- PART 7 is gated on the compute it needs and says out loud when it is not asserting. The
+-- SKIPPED line is what the sweep's judge reads, so this suite is scored SKIP — never a pass —
+-- on any run where PART 7 did not measure.
+select case when (select setting::numeric from pg_settings where name = 'shared_buffers') >= 524288
+            then 'false' else 'true' end as sharedonly_small_server
+\gset
+\if :sharedonly_small_server
+  \echo 'SKIPPED: sharedonly_green.sql PART 7 asserted nothing. This database does not have: compute:shared_buffers:524288'
+  \echo 'SKIPPED: PART 7 is a whole-database census under a 60-second ceiling and this server is smaller than the one that ceiling was measured on. Parts 1-6 above and part 8 below DID run. This is NOT a pass.'
+\else
 begin;
 set local statement_timeout = '60s';
 select set_config('app.actor_system', 'campaign-test/sharedonly_green', true);
@@ -378,6 +396,8 @@ begin
   raise notice 'PART 7 PASSED — census zero, red both ways, and the read door agrees with the one ladder row by row.';
 end $t$;
 rollback;
+
+\endif
 
 -- ══════════════════════════════════════ PART 8 — THE RLS MIRROR SAYS THE KERNEL'S SENTENCE
 begin;

@@ -19,7 +19,16 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'mirrorperf_red.sql'
-\set requires 'function:custom.visible_record_ids|function:custom.record_table'
+-- SUITES-TIDY 2026-09-22 — THE SIZE-AWARE CEILING. This suite measures a real query against
+-- production's real row counts under a ceiling in SECONDS. The nightly dev clone is production's
+-- data on SMALLER COMPUTE (measured 2026-09-22: shared_buffers 2 GB against production's 4 GB,
+-- effective_cache_size 6 GB against 12 GB, 2 parallel workers against 4), so a ceiling that is
+-- honest on production is a false alarm here — and on the clone this suite was killed by its own
+-- statement_timeout. It now DECLARES the compute it needs and SKIPS BY NAME on anything smaller,
+-- which the preamble prints as "this is NOT a pass", rather than reporting a query that has not
+-- regressed as a failure. Do not answer a skip here by raising the ceiling: the ceiling is the
+-- assertion.
+\set requires 'function:custom.visible_record_ids|function:custom.record_table|compute:shared_buffers:524288'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit

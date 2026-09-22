@@ -294,17 +294,26 @@ export default function AcceptPortalInvitationPage() {
     );
   }
 
-  // ── DEAD, AND IT SAYS WHICH. revoked · expired · portal_closed · lane_closed · unknown
+  // ── DEAD, AND IT SAYS WHICH.
+  // revoked · expired · portal_archived · portal_closed · lane_closed · unknown
+  //
+  // FIX-12: ARCHIVED IS NOT CLOSED, and this screen is the one place a client
+  // reads the word. VERIFIER-12 archived a portal whose confirm had promised
+  // "their invitation links will say this portal was archived and can be
+  // restored", and the client's page said "This portal has been closed". The
+  // store answers `portal_archived` in its own sentence now, and so does this.
   const deadTitle =
     peek.state === "revoked"
       ? "This invitation was taken back"
       : peek.state === "expired"
         ? "This invitation has run out"
-        : peek.state === "portal_closed"
-          ? "This portal has been closed"
-          : peek.state === "lane_closed"
-            ? "This business has closed its outside door"
-            : "This link cannot be opened";
+        : peek.state === "portal_archived"
+          ? "This portal has been archived"
+          : peek.state === "portal_closed"
+            ? "This portal has been closed"
+            : peek.state === "lane_closed"
+              ? "This business has closed its outside door"
+              : "This link cannot be opened";
 
   return shell(
     <div className="text-center">

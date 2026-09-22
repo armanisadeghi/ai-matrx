@@ -64,6 +64,23 @@
 --                                         row:platform.feature_knob:key = \'agents.x\'
 --     tablegrant:<role>:<schema>.<table>:<priv>   <role> holds <priv> on that table
 --     extension:<name>                    an installed extension
+--     compute:<pg_settings name>:<min>    THE SIZE-AWARE CEILING. The server's own
+--                                         `pg_settings.setting` for that name, as a number, is
+--                                         at least <min>. Added by SUITES-TIDY 2026-09-22 for
+--                                         the perf suites: they measure a real query against
+--                                         production's real row counts, and the nightly dev
+--                                         clone runs on SMALLER COMPUTE than production does.
+--                                         Measured 2026-09-22 — clone: shared_buffers 262144
+--                                         (2 GB), effective_cache_size 786432, max_connections
+--                                         160; production: 524288 (4 GB), 1572864, 240. A
+--                                         number measured on the clone is therefore not
+--                                         production's number, and a ceiling that is honest on
+--                                         production is a false alarm here. So a perf suite
+--                                         DECLARES the compute it needs and SKIPS BY NAME on a
+--                                         smaller server instead of failing as if the query
+--                                         had broken. `shared_buffers` is the setting to use:
+--                                         it is the one that moves with the instance class and
+--                                         nothing else sets it.
 --
 -- A token may be NEGATED with a leading `!`: `!tablegrant:authenticated:platform.associations:DELETE`
 -- means the suite needs that privilege to be ABSENT here. Production revokes a door's direct
@@ -253,6 +270,21 @@ begin
       end if;
     elsif v_kind = 'extension' then
       v_ok := exists (select 1 from pg_extension where extname = v_arg);
+    elsif v_kind = 'compute' then
+      -- compute:<pg_settings name>:<min>
+      v_pred := split_part(v_arg, ':', 1);                       -- the setting name
+      v_rel  := split_part(v_arg, ':', 2);                       -- the minimum, as a number
+      if v_rel !~ '^[0-9]+$' then
+        raise exception 'campaign preamble: compute:<setting>:<min> needs a whole number, and "%" is not one', v_tok;
+      end if;
+      begin
+        select (s.setting)::numeric >= v_rel::numeric into v_ok
+          from pg_settings s where s.name = v_pred;
+      exception when others then
+        -- a setting that is not a number is a BROKEN DECLARATION, not a small server.
+        raise exception 'campaign preamble: pg_settings."%" could not be read as a number here (%). Pick a numeric setting — shared_buffers is the one that moves with the instance class.', v_pred, sqlerrm;
+      end;
+      v_ok := coalesce(v_ok, false);
     elsif v_kind = 'row' then
       v_rel  := split_part(v_arg, ':', 1);
       v_pred := substr(v_arg, length(v_rel) + 2);
