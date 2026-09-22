@@ -3,7 +3,7 @@
   "_why": "A rung a registry row names and no screen offers is a promise the product cannot keep. These pairs were unreachable while this guard still called them 'addressed', because ADDRESSED was measured by reading a constant in features/settings/universal/ rather than by what any surface renders (V-57, 2026-09-13). They are printed on every run as KNOWN DEBT, tolerated only so the guard can hold the line against NEW ones.",
   "_how": "`pnpm check:settings-ladder-ui --write` removes pairs that became reachable. It CANNOT add one.",
   "_baselined": "2026-09-13",
-  "_ratcheted": "2026-09-14",
+  "_ratcheted": "2026-09-22",
   "rungs": {
     "employer_profile": {
       "owner": "The HR lane that owns each key's reader (DD-203 tail; the screen is done, the readers are not)",
@@ -165,10 +165,6 @@
         "hr.time_and_attendance pairing_code_ttl_minutes",
         "hr.time_and_attendance pin_lockout_minutes",
         "hr.time_and_attendance pin_max_failed_attempts",
-        "hr.time_and_attendance punch_enabled_worker_class_employee",
-        "hr.time_and_attendance punch_enabled_worker_class_intern",
-        "hr.time_and_attendance punch_enabled_worker_class_seasonal",
-        "hr.time_and_attendance punch_enabled_worker_class_volunteer",
         "hr.time_and_attendance punch_enabled_worker_classes",
         "hr.time_and_attendance remote_punch_allowed",
         "hr.time_and_attendance remote_worker_validation",
@@ -181,7 +177,6 @@
         "hr.time_and_attendance variance_warn_minutes",
         "hr.time_and_attendance web_punch_enabled",
         "hr.time_and_attendance web_punch_ip_allowlist",
-        "hr.time_and_attendance web_punch_ip_verification",
         "hr.time_and_attendance workday_start_local",
         "hr.time_and_attendance workweek_start_day",
         "hr.training mandate_generation_enabled",
@@ -199,7 +194,6 @@
         "hr.workflow inbox_show_waiting",
         "hr.workflow route_absent_approver_action",
         "hr.workflow sla_business_hours_only",
-        "hr.workflow tick_batch_max",
         "hr.workflow timeout_warning_lead_hours"
       ]
     },
@@ -363,10 +357,6 @@
         "hr.time_and_attendance pairing_code_ttl_minutes",
         "hr.time_and_attendance pin_lockout_minutes",
         "hr.time_and_attendance pin_max_failed_attempts",
-        "hr.time_and_attendance punch_enabled_worker_class_employee",
-        "hr.time_and_attendance punch_enabled_worker_class_intern",
-        "hr.time_and_attendance punch_enabled_worker_class_seasonal",
-        "hr.time_and_attendance punch_enabled_worker_class_volunteer",
         "hr.time_and_attendance punch_enabled_worker_classes",
         "hr.time_and_attendance remote_punch_allowed",
         "hr.time_and_attendance remote_worker_validation",
@@ -379,7 +369,6 @@
         "hr.time_and_attendance variance_warn_minutes",
         "hr.time_and_attendance web_punch_enabled",
         "hr.time_and_attendance web_punch_ip_allowlist",
-        "hr.time_and_attendance web_punch_ip_verification",
         "hr.time_and_attendance workday_start_local",
         "hr.time_and_attendance workweek_start_day",
         "hr.training mandate_generation_enabled",
@@ -397,7 +386,6 @@
         "hr.workflow inbox_show_waiting",
         "hr.workflow route_absent_approver_action",
         "hr.workflow sla_business_hours_only",
-        "hr.workflow tick_batch_max",
         "hr.workflow timeout_warning_lead_hours"
       ]
     },
@@ -561,10 +549,6 @@
         "hr.time_and_attendance pairing_code_ttl_minutes",
         "hr.time_and_attendance pin_lockout_minutes",
         "hr.time_and_attendance pin_max_failed_attempts",
-        "hr.time_and_attendance punch_enabled_worker_class_employee",
-        "hr.time_and_attendance punch_enabled_worker_class_intern",
-        "hr.time_and_attendance punch_enabled_worker_class_seasonal",
-        "hr.time_and_attendance punch_enabled_worker_class_volunteer",
         "hr.time_and_attendance punch_enabled_worker_classes",
         "hr.time_and_attendance remote_punch_allowed",
         "hr.time_and_attendance remote_worker_validation",
@@ -577,7 +561,6 @@
         "hr.time_and_attendance variance_warn_minutes",
         "hr.time_and_attendance web_punch_enabled",
         "hr.time_and_attendance web_punch_ip_allowlist",
-        "hr.time_and_attendance web_punch_ip_verification",
         "hr.time_and_attendance workday_start_local",
         "hr.time_and_attendance workweek_start_day",
         "hr.training mandate_generation_enabled",
@@ -595,7 +578,6 @@
         "hr.workflow inbox_show_waiting",
         "hr.workflow route_absent_approver_action",
         "hr.workflow sla_business_hours_only",
-        "hr.workflow tick_batch_max",
         "hr.workflow timeout_warning_lead_hours"
       ]
     }

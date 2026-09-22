@@ -3,7 +3,7 @@
   "_why": "A platform.feature_knob row no code reads is a control that lies. These namespaces were seeded SPEC-FIRST — mostly the HR program's hr.* and esign.* rows, written before their screens — and the unfinished-work alarm forbids deleting them. They are KNOWN DEBT with an owner, reported on every run, tolerated only so the guard can hold the line against NEW orphans. Each entry leaves when its consumer ships (common-docs/projects/unified-settings-platform/REGISTER.md).",
   "_how": "`pnpm check:settings-orphans --write` removes keys that gained a consumer or left the registry. It CANNOT add one: a new orphan must get a real reader, or be deleted from the registry.",
   "_baselined": "2026-09-13",
-  "_ratcheted": "2026-09-13",
+  "_ratcheted": "2026-09-22",
   "namespaces": {
     "commerce.market": {
       "owner": "marketing/commerce",
@@ -275,10 +275,6 @@
         "ot_preapproval_decision_sla_hours",
         "pin_lockout_minutes",
         "pin_max_failed_attempts",
-        "punch_enabled_worker_class_employee",
-        "punch_enabled_worker_class_intern",
-        "punch_enabled_worker_class_seasonal",
-        "punch_enabled_worker_class_volunteer",
         "remote_punch_allowed",
         "remote_worker_validation",
         "show_raw_alongside_rounded",
@@ -307,29 +303,6 @@
         "sla_business_hours_only"
       ]
     },
-    "mandate_honesty": {
-      "owner": "mandates/mandate-runtime",
-      "program": "seeded ahead of its consumer — the lane that wrote the row owes the read",
-      "keys": [
-        "change_claim_correction_turns"
-      ]
-    },
-    "masterwork": {
-      "owner": "masterwork/distillation",
-      "program": "seeded ahead of its consumer — the lane that wrote the row owes the read",
-      "keys": [
-        "rulebook_read_page_size"
-      ]
-    },
-    "orm.write_retry": {
-      "owner": "platform/orm-persistence",
-      "program": "seeded ahead of its consumer — the lane that wrote the row owes the read",
-      "keys": [
-        "deadlock_backoff_base_ms",
-        "deadlock_backoff_max_ms",
-        "deadlock_max_retries"
-      ]
-    },
     "records": {
       "owner": "platform/custom-data",
       "program": "seeded ahead of its consumer — the lane that wrote the row owes the read",
@@ -339,37 +312,6 @@
         "confirmation.list_hides_unconfirmed",
         "confirmation.outbound_requires_confirmed",
         "confirmation.rollup_includes_unconfirmed"
-      ]
-    },
-    "unfolding": {
-      "owner": "masterwork/distillation",
-      "program": "seeded ahead of its consumer — the lane that wrote the row owes the read",
-      "keys": [
-        "distill_window_steps",
-        "max_disclosure_steps",
-        "opening_steps"
-      ]
-    },
-    "workflow.checkpoint_write": {
-      "owner": "workflows/workflow-runtime",
-      "program": "seeded ahead of its consumer — the lane that wrote the row owes the read",
-      "keys": [
-        "max_retries",
-        "retry_backoff_ms",
-        "statement_timeout_ms",
-        "warn_bytes"
-      ]
-    },
-    "workflow.recovery": {
-      "owner": "workflows/workflow-runtime",
-      "program": "seeded ahead of its consumer — the lane that wrote the row owes the read",
-      "keys": [
-        "auto_resume_max_attempts",
-        "reconcile_interval_seconds",
-        "reconcile_max_batch",
-        "reconcile_window_seconds",
-        "shutdown_drain_seconds",
-        "stale_heartbeat_seconds"
       ]
     }
   }

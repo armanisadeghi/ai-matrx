@@ -2,7 +2,7 @@
   "_law": "THE ALLOWLIST ONLY SHRINKS. Growing it is the defect this guard exists to catch.",
   "_why": "CLAUDE.md law 6 — opinions become knobs. These are the knob-shaped constants that existed when check:settings-hardcoded was written; each one is a setting nobody can see or change. They are tolerated so the guard can hold the line against NEW ones, and they come off this list as the Unified Settings Platform migrates them (common-docs/projects/unified-settings-platform/REGISTER.md, USP-020).",
   "_how": "`pnpm check:settings-hardcoded --write` removes entries that no longer exist. It CANNOT add one: a new constant must be registered in platform.feature_knob, or the line must be argued for by a human editing this file by hand with a reason.",
-  "_baselined": "2026-09-13",
+  "_baselined": "2026-09-22",
   "entries": [
     {
       "file": "aidream/aidream/api/middleware/request_log.py",
@@ -1310,19 +1310,7 @@
     },
     {
       "file": "aidream/aidream/services/hindsight/types.py",
-      "name": "MAX_FINDINGS_PER_REVIEW"
-    },
-    {
-      "file": "aidream/aidream/services/hindsight/types.py",
       "name": "MAX_MESSAGE_CHARS"
-    },
-    {
-      "file": "aidream/aidream/services/hindsight/types.py",
-      "name": "MAX_REPLAY_FINDINGS_PER_REVIEW"
-    },
-    {
-      "file": "aidream/aidream/services/hindsight/types.py",
-      "name": "MAX_REPLAYS_PER_FINDING"
     },
     {
       "file": "aidream/aidream/services/hindsight/types.py",
@@ -4369,10 +4357,6 @@
       "name": "TOKEN_MINT_RETRY_MS"
     },
     {
-      "file": "matrx-frontend/app/api/sandbox/route.ts",
-      "name": "ACTIVE_LIMIT"
-    },
-    {
       "file": "matrx-frontend/components/admin/markdown-tester/useMarkdownAutosave.ts",
       "name": "AUTOSAVE_DEBOUNCE_MS"
     },
@@ -5937,10 +5921,6 @@
       "name": "TOAST_DEDUPE_MS"
     },
     {
-      "file": "matrx-frontend/features/organizations/hooks/useActiveOrganizationAutoSelect.ts",
-      "name": "PRIMARY_RESOLVE_GRACE_MS"
-    },
-    {
       "file": "matrx-frontend/features/organizations/peek/kinds/MessageTemplatePeek.tsx",
       "name": "MAX_PREVIEW"
     },
@@ -6695,10 +6675,6 @@
     {
       "file": "matrx-frontend/features/window-panels/persistence/windowSessionSerialization.ts",
       "name": "MAX_PERSISTED_WINDOW_SESSIONS"
-    },
-    {
-      "file": "matrx-frontend/features/window-panels/url-sync/UrlPanelManager.tsx",
-      "name": "OBSERVE_GRACE_MS"
     },
     {
       "file": "matrx-frontend/features/window-panels/WindowPersistenceCore.tsx",
