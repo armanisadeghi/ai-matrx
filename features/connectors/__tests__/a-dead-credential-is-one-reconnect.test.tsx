@@ -79,6 +79,7 @@ jest.mock("../google-adapter", () => ({
 }));
 
 import { ConnectedAccountHealth } from "../ConnectedAccountHealth";
+import { MANAGEMENT_ALLOWED } from "../shared-account-level";
 import { ConnectorConsentBody } from "../ConnectorConsentDialog";
 import { buildConsentPlan } from "../consent-plan";
 import {
@@ -237,6 +238,7 @@ describe("the settings card for a dead account", () => {
     const reconnectAccount = jest.fn();
     mount(
       <ConnectedAccountHealth
+        management={MANAGEMENT_ALLOWED}
         provider={provider}
         account={DEAD}
         health={accountHealth({ provider, account: DEAD, rollout: LIVE })}

@@ -29,6 +29,9 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import type { OrgRole } from "@/features/scopes/types";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { isGoogleAuthorizationCancelled } from "@/providers/google-provider/GoogleApiProvider";
 import { useDisconnectGoogle } from "@/features/marketing/google/hooks";
@@ -38,6 +41,11 @@ import {
   busyActionKey,
   type ConnectorBusyAction,
 } from "./ConnectedAccountHealth";
+import {
+  MANAGEMENT_ALLOWED,
+  SHARED_CONNECTOR_MEMBER_LEVEL_KNOB,
+  resolveSharedConnectorManagement,
+} from "./shared-account-level";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { ConsentFailureNotice } from "./ConsentFailureNotice";
@@ -48,6 +56,8 @@ import {
   accountRenewalProductKeys,
   anyProductConnected,
   revokeConsequence,
+  type ConnectorAccount,
+  type ConnectorProductHealth,
 } from "./health";
 import { buildConsentPlan, emptyPlanAnswer } from "./consent-plan";
 import {
@@ -309,27 +319,32 @@ function ProviderConnectorsPanel({
           }}
         />
       ) : (
-        state.accounts.map((account) => (
-          <ConnectedAccountHealth
-            key={account.id}
-            provider={provider}
-            account={account}
-            health={accountHealth({
-              provider,
-              account,
-              rollout: state.rollout,
-            })}
-            organizationName={
-              organizations.find((org) => org.id === account.organizationId)
-                ?.name ?? null
-            }
-            onReconnect={(productKey) => void reconnect(account.id, productKey)}
-            onReconnectAccount={() => reconnectAccount(account.id)}
-            onRevoke={() => void revoke(account.id)}
-            busy={busy}
-            revoking={revokingId === account.id}
-          />
-        ))
+        state.accounts.map((account) => {
+          const org = organizations.find(
+            (candidate) => candidate.id === account.organizationId,
+          );
+          return (
+            <AccountCard
+              key={account.id}
+              provider={provider}
+              account={account}
+              health={accountHealth({
+                provider,
+                account,
+                rollout: state.rollout,
+              })}
+              organizationName={org?.name ?? null}
+              orgRole={org?.role ?? null}
+              onReconnect={(productKey) =>
+                void reconnect(account.id, productKey)
+              }
+              onReconnectAccount={() => reconnectAccount(account.id)}
+              onRevoke={() => void revoke(account.id)}
+              busy={busy}
+              revoking={revokingId === account.id}
+            />
+          );
+        })
       )}
 
       <section
@@ -360,5 +375,75 @@ function ProviderConnectorsPanel({
         />
       </section>
     </div>
+  );
+}
+
+/**
+ * ONE ACCOUNT, WITH ITS ORGANIZATION'S ANSWER ABOUT IT.
+ *
+ * 🚨 The knob is read HERE, per card, for the account's OWN organization —
+ * never once for the active organization and reused. A person can hold a
+ * personal Google account and their employer's shared one on the same screen,
+ * and `connectors / shared_account.member_default_level` is organization-rung:
+ * resolving it against the wrong organization would be one organization's
+ * policy applied to another's credential. `useEffectiveKnob` de-duplicates the
+ * snapshot per organization, so N cards on one organization cost ONE fetch.
+ *
+ * A personal account passes `organizationId = null`, the hook answers
+ * `undefined` for it, and `resolveSharedConnectorManagement` never consults the
+ * value — a personal credential is the person's own.
+ */
+function AccountCard({
+  provider,
+  account,
+  health,
+  organizationName,
+  orgRole,
+  onReconnect,
+  onReconnectAccount,
+  onRevoke,
+  busy,
+  revoking,
+}: {
+  provider: ConnectorProviderConfig;
+  account: ConnectorAccount;
+  health: readonly ConnectorProductHealth[];
+  organizationName: string | null;
+  orgRole: OrgRole | null;
+  onReconnect: (productKey: string) => void;
+  onReconnectAccount: () => void;
+  onRevoke: () => void;
+  busy: readonly ConnectorBusyAction[];
+  revoking: boolean;
+}) {
+  const userId = useAppSelector(selectUserId);
+  const memberLevel = useEffectiveKnob(
+    account.organizationId,
+    userId,
+    SHARED_CONNECTOR_MEMBER_LEVEL_KNOB,
+  );
+  const management =
+    account.ownerKind === "organization"
+      ? resolveSharedConnectorManagement({
+          ownerKind: account.ownerKind,
+          organizationName,
+          orgRole,
+          knobValue: memberLevel,
+        })
+      : MANAGEMENT_ALLOWED;
+
+  return (
+    <ConnectedAccountHealth
+      provider={provider}
+      account={account}
+      health={health}
+      organizationName={organizationName}
+      onReconnect={onReconnect}
+      onReconnectAccount={onReconnectAccount}
+      onRevoke={onRevoke}
+      busy={busy}
+      revoking={revoking}
+      management={management}
+    />
   );
 }

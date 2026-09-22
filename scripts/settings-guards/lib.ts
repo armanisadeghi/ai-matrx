@@ -279,6 +279,45 @@ export function collectAidream(dirs: string[]): SourceFile[] | null {
   }));
 }
 
+/**
+ * aidream's TYPESCRIPT apps — `apps/workflow-studio`, `apps/dashboard` and
+ * anything beside them. `collectAidream` scans `.py` only, which is correct for
+ * the server but made every knob consumed ONLY by one of those front ends
+ * invisible to this guard: `workflow.studio / node_setup_wizard` was reported an
+ * orphan while
+ * `aidream/apps/workflow-studio/src/features/canvas/node-setup/use-node-setup-preference.ts`
+ * has resolved it on every add-a-step since it was built, and the wizard refuses
+ * to open automatically when it answers false. A guard that cannot see a whole
+ * language calls live code dead (LANE SETTINGS-3, 2026-09-22).
+ */
+export const AIDREAM_TS_SCAN_DIRS = ["apps"];
+
+/**
+ * The TS/TSX half of the aidream checkout. Separate from `collectAidream` on
+ * purpose: the hardcoded-constant and env-toggle guards grade SOURCE SHAPES and
+ * carry their own baselines, so widening their corpus is its own change with
+ * its own baseline run. Reading a knob is not a shape those guards grade, so
+ * the orphans guard takes these files today and the others may adopt them next.
+ *
+ * `null` for the same reason `collectAidream` returns it — no checkout.
+ */
+export function collectAidreamApps(
+  dirs: string[] = AIDREAM_TS_SCAN_DIRS,
+): SourceFile[] | null {
+  try {
+    if (!statSync(AIDREAM_DIR).isDirectory()) return null;
+  } catch {
+    return null;
+  }
+  const files: string[] = [];
+  for (const d of dirs) walk(join(AIDREAM_DIR, d), AIDREAM_DIR, "aidream", files, /\.(tsx?|mjs)$/);
+  return files.map((abs) => ({
+    abs,
+    rel: `aidream/${relative(AIDREAM_DIR, abs)}`,
+    text: readFileSync(abs, "utf8"),
+  }));
+}
+
 export const SANDBOX_SCAN_DIRS = ["orchestrator/orchestrator"];
 
 /**

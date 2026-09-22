@@ -47,6 +47,7 @@ import {
 import type { GoogleConnectionSummary } from "@/features/marketing/google/types";
 import { googleAccount } from "../google-adapter";
 import { ConnectedAccountHealth } from "../ConnectedAccountHealth";
+import { MANAGEMENT_ALLOWED } from "../shared-account-level";
 import { accountHealth, type ConnectorCapabilityRollout } from "../health";
 import { GOOGLE_CONNECTOR_PROVIDER } from "../provider-config";
 
@@ -198,6 +199,7 @@ describe("the settings card for an account that needs attention", () => {
     act(() =>
       mounted.render(
         <ConnectedAccountHealth
+          management={MANAGEMENT_ALLOWED}
           provider={provider}
           account={account}
           health={accountHealth({ provider, account, rollout: LIVE })}

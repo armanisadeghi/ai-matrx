@@ -20,6 +20,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { ConnectedAccountHealth } from "../ConnectedAccountHealth";
+import { MANAGEMENT_ALLOWED } from "../shared-account-level";
 import {
   accountHealth,
   type ConnectorAccount,
@@ -94,6 +95,7 @@ describe("a press on one account", () => {
   it("spins that account's control", () => {
     render(
       <ConnectedAccountHealth
+        management={MANAGEMENT_ALLOWED}
         provider={provider}
         account={account("acct-1", "one@aimatrx.com")}
         health={accountHealth({
@@ -113,6 +115,7 @@ describe("a press on one account", () => {
   it("leaves the SAME product alone on every other account", () => {
     render(
       <ConnectedAccountHealth
+        management={MANAGEMENT_ALLOWED}
         provider={provider}
         account={account("acct-2", "two@aimatrx.com")}
         health={accountHealth({

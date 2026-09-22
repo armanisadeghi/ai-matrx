@@ -74,6 +74,7 @@ import {
   addr,
   adminQuery,
   collectAidream,
+  collectAidreamApps,
   collectFrontend,
   collectSandbox,
   dbReaders,
@@ -173,7 +174,24 @@ async function main(): Promise<void> {
       `${C.yellow}${C.bold}[WARN] matrx-sandbox NOT scanned${C.reset} ${C.yellow}— ${sb.why}. Every infrastructure.sandbox row will read as an orphan this run.${C.reset}`,
     );
   }
-  const files: SourceFile[] = [...fe, ...ai, ...(sb.files ?? [])];
+  // aidream's TypeScript apps (apps/workflow-studio, apps/dashboard). `ai`
+  // above is the `.py` half only, and a knob whose ONLY reader is one of those
+  // front ends was reported dead by a guard that never opened a `.ts` file
+  // there — `workflow.studio / node_setup_wizard` was exactly that.
+  //
+  // 🚨 A GENERATED MIRROR OF THE REGISTER IS NOT A READER OF IT — the same law
+  // the frontend filter above states, one repo over.
+  // `aidream/apps/shared/records/src/store.generated.ts` is written by
+  // `pnpm records:generate` from the live store and quotes all 48 knobs it
+  // carries; counting it made 19 rows (every `masterwork.capture_plan` key, the
+  // four retired `custom` guards, `orm.write_retry`, `scheduler.lease`,
+  // `personal_staff`, and both rows this lane was fixing) read as consumed the
+  // moment the apps were scanned. It edits and mirrors settings; it does not
+  // honour them.
+  const aiApps = (collectAidreamApps() ?? []).filter(
+    (f) => !/\.generated\.tsx?$/.test(f.rel),
+  );
+  const files: SourceFile[] = [...fe, ...ai, ...aiApps, ...(sb.files ?? [])];
 
   // Tier 1 — resolvable (feature, key) call sites, through the ONE reader list
   // (registry-aware: the feature-map, template and key-first families need it).

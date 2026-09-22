@@ -16,6 +16,7 @@ import { googleAccount } from "../google-adapter";
 import { accountHealth, type ConnectorCapabilityRollout } from "../health";
 import { GOOGLE_CONNECTOR_PROVIDER } from "../provider-config";
 import { ConnectedAccountHealth } from "../ConnectedAccountHealth";
+import { MANAGEMENT_ALLOWED } from "../shared-account-level";
 import type { GoogleConnectionSummary } from "@/features/marketing/google/types";
 
 const provider = GOOGLE_CONNECTOR_PROVIDER;
@@ -99,6 +100,7 @@ describe("the account card, over the same row", () => {
     const health = accountHealth({ provider, account, rollout: LIVE });
     mount(
       <ConnectedAccountHealth
+        management={MANAGEMENT_ALLOWED}
         provider={provider}
         account={account}
         health={health}

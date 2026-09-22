@@ -44,7 +44,12 @@ jest.mock("@/lib/toast", () => ({
 }));
 
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: (selector: (state: unknown) => unknown) => selector({ appContext }),
+  // `userAuth` is here because the account card resolves the organization's
+  // `connectors / shared_account.member_default_level` for the signed-in
+  // person. Both accounts in this file are PERSONAL, so the knob is never
+  // consulted for them — the id only has to exist.
+  useAppSelector: (selector: (state: unknown) => unknown) =>
+    selector({ appContext, userAuth: { id: "user-1" } }),
   useAppDispatch: () => jest.fn(),
 }));
 

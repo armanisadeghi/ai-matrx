@@ -49,6 +49,7 @@ import type {
   ConnectorProductHealth,
 } from "./health";
 import { ProductPermissionsDisclosure, relativeTime } from "./ProductPermissions";
+import type { SharedConnectorManagement } from "./shared-account-level";
 
 const STATE_STYLE: Record<
   ConnectorProductHealth["state"],
@@ -124,6 +125,15 @@ export interface ConnectedAccountHealthProps {
    */
   busy?: readonly ConnectorBusyAction[] | null;
   revoking?: boolean;
+  /**
+   * 🚨 WHETHER THIS PERSON MAY TOUCH THE CREDENTIAL — the runtime answer of
+   * `connectors / shared_account.member_default_level`, resolved by
+   * `shared-account-level.ts`. Before it, every member of an organization was
+   * offered Disconnect on the organization's shared account. REQUIRED, and
+   * never defaulted here: a default in this component would be the code
+   * fallback the knob system exists to end.
+   */
+  management: SharedConnectorManagement;
   className?: string;
 }
 
@@ -137,6 +147,7 @@ export function ConnectedAccountHealth({
   onRevoke,
   busy = [],
   revoking = false,
+  management,
   className,
 }: ConnectedAccountHealthProps) {
   const connector = getConnector(provider.markConnectorId);
@@ -222,7 +233,7 @@ export function ConnectedAccountHealth({
                 pressed (destructive-and-expensive-actions.md: an expensive
                 click names its consequence), and it is the only Reconnect on
                 this card — the rows it covers show no press of their own. */}
-            {accountScoped.length > 0 ? (
+            {management.allowed && accountScoped.length > 0 ? (
               <div className="mt-1.5">
                 <Button
                   variant="outline"
@@ -247,6 +258,16 @@ export function ConnectedAccountHealth({
                 </p>
               </div>
             ) : null}
+            {/* 🚨 ABSENT OR HONEST, never dead (law 4). When the organization's
+                member level does not reach "admin" — or has not answered yet —
+                Reconnect and Disconnect are not rendered at all, and this line
+                says why instead of leaving a card whose controls silently
+                vanished. */}
+            {management.allowed ? null : (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {management.sentence}
+              </p>
+            )}
             {/* The account-level refusal, in the words the adapter translated it
                 into — and only when it adds something the status sentence above
                 has not already said, so one fact is stated once. */}
@@ -262,6 +283,7 @@ export function ConnectedAccountHealth({
               </p>
             )}
           </div>
+          {management.allowed ? (
           <Button
             variant="ghost"
             size="sm"
@@ -276,6 +298,7 @@ export function ConnectedAccountHealth({
             )}
             Disconnect
           </Button>
+          ) : null}
         </div>
 
       <ul>
@@ -289,8 +312,12 @@ export function ConnectedAccountHealth({
           });
           // A dead credential is repaired once, on the account above: repeating
           // the same press on every row would be nine windows for one repair.
+          // Re-authorizing one product re-authorizes the shared CREDENTIAL, so
+          // it is the same permission as the account-level repair below it.
           const productAction =
-            row.actionScope === "product" ? row.actionLabel : null;
+            management.allowed && row.actionScope === "product"
+              ? row.actionLabel
+              : null;
           const ActionIcon = productAction === "Connect" ? Plug : RefreshCw;
           return (
             <li
