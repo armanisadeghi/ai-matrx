@@ -324,7 +324,7 @@ export function useGridSelection(args: {
       if (
         target instanceof Element &&
         target.closest(
-          '[data-radix-popper-content-wrapper],[role="dialog"],[role="listbox"],[role="menu"],[data-sonner-toaster],[data-window-panel]',
+          '[data-radix-popper-content-wrapper],[role="dialog"],[role="listbox"],[role="menu"],[data-sonner-toaster],[data-window-panel-body-shell]',
         )
       ) {
         return;
