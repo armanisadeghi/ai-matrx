@@ -119,8 +119,18 @@ const KEY_IS_THE_SUBJECT: ReadonlyArray<readonly [string, string]> = [
  *   2. a `?? <key>` / `|| <key>` fallback, which is how a missing label turns
  *      into a printed key.
  */
-const BARE_JSX_CHILD =
-  /^\s*\{\s*(?:[A-Za-z_$][\w$]*(?:\?)?\.)*(?:mandateKey|mandate_key)\s*\}\s*$/;
+/** `mandateKey`, `mandate_key`, or a prop named plainly `mandate`. */
+const KEY_EXPR = "(?:[A-Za-z_$][\\w$]*(?:\\?)?\\.)*(?:mandateKey|mandate_key|mandate)";
+const BARE_JSX_CHILD = new RegExp(`^\\s*\\{\\s*${KEY_EXPR}\\s*\\}\\s*$`);
+/**
+ * The key wrapped in a mono/code element ON ONE LINE — how AnalysisMandateGate
+ * put `<code className="text-xs">{mandateKey}</code>` in the middle of a
+ * sentence. A mono chip is the key's honest home only on a surface whose
+ * subject IS the key; mid-prose it is the defect wearing a monospace font.
+ */
+const KEY_IN_INLINE_CODE = new RegExp(
+  `<(?:code|span)\\b[^>]*>\\s*\\{\\s*${KEY_EXPR}\\s*\\}\\s*</(?:code|span)>`,
+);
 const KEY_AS_LABEL_FALLBACK =
   /(\?\?|\|\|)\s*(?:[A-Za-z_$][\w$]*(?:\?)?\.)*(?:mandateKey|mandate_key)\b/;
 /** A per-line opt-out that must carry a reason. */
@@ -166,6 +176,10 @@ export function findingsIn(path: string, source: string): string[] {
       .replace(/\/\*[\s\S]*?\*\/\s*$/, "");
     if (BARE_JSX_CHILD.test(code)) {
       found.push(`${path}:${index + 1} — a mandate key rendered as a JSX child`);
+    } else if (KEY_IN_INLINE_CODE.test(code)) {
+      found.push(
+        `${path}:${index + 1} — a mandate key rendered inside a mono chip`,
+      );
     } else if (KEY_AS_LABEL_FALLBACK.test(code)) {
       found.push(
         `${path}:${index + 1} — a mandate key used as the fallback for a name`,
@@ -198,6 +212,10 @@ describe("no disclosure surface prints a mandate key", () => {
     expect(
       findingsIn("x.tsx", "  {row.mandateKey} // key-is-the-subject: it is\n"),
     ).toHaveLength(0);
+    expect(
+      findingsIn("x.tsx", '  <code className="x">{mandateKey}</code> mandate\n'),
+    ).toHaveLength(1);
+    expect(findingsIn("x.tsx", "        {mandate}\n")).toHaveLength(1);
     // The line above works too, which is where prettier puts a JSX comment.
     expect(
       findingsIn(
