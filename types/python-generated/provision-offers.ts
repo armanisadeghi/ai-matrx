@@ -2100,6 +2100,7 @@ export interface PersonalStaffEscalationOffer {
   escalation_reason?: string;
   channel?: string;
   person_display_name?: string;
+  person_context?: string;
 }
 
 /** Offered shape of provision `personal_staff.front_line` (kind `personal_staff.front_line.offer`). */
@@ -2111,6 +2112,7 @@ export interface PersonalStaffFrontLineOffer {
   person_display_name?: string;
   person_timezone?: string;
   organization_name?: string;
+  person_profile?: string;
 }
 
 /** Offered shape of provision `podcast.audience_adaptation` (kind `podcast.audience_adaptation.offer`). */
