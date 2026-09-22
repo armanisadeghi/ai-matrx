@@ -14,6 +14,13 @@ import {
 } from "@/components/ui/credenza-modal/credenza";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { createClient } from "@/utils/supabase/client";
@@ -29,8 +36,21 @@ import {
 } from "../vault-service";
 import { WEBSITE_LOGIN_DEFINITION_KEY, type VaultItem } from "../types";
 
-const CSV_PROFILE = "matrx_login_csv_v1" as const;
+const DEFAULT_CSV_PROFILE = "matrx_login_csv_v1" as const;
 const EXPORT_FILENAME = "matrx-login-export.csv";
+const CSV_PROFILES = [
+  {
+    value: "matrx_login_csv_v1",
+    label: "Matrx login CSV",
+    detail: "A compact Matrx login export with ordinary website-login fields.",
+  },
+  {
+    value: "nordpass_csv_v1",
+    label: "NordPass CSV",
+    detail:
+      "Targets NordPass's documented import template and carries ordinary login fields only.",
+  },
+] as const;
 
 function sameActor(
   left: VaultVerifiedExportActor,
@@ -66,6 +86,9 @@ export function VaultLoginExportDialog({
   const mounted = useRef(true);
   const expectedActor = useRef<VaultVerifiedExportActor | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [profile, setProfile] = useState<VaultLoginCsvPreviewResponse["profile"]>(
+    DEFAULT_CSV_PROFILE,
+  );
   const [preview, setPreview] = useState<VaultLoginCsvPreviewResponse | null>(null);
   const [identityConfirmation, setIdentityConfirmation] =
     useState<VaultVerifiedExportActor | null>(null);
@@ -91,6 +114,7 @@ export function VaultLoginExportDialog({
     cancelPending();
     expectedActor.current = null;
     passwordInput.current && (passwordInput.current.value = "");
+    setProfile(DEFAULT_CSV_PROFILE);
     setSelectedIds(new Set());
     setPreview(null);
     setIdentityConfirmation(null);
@@ -152,6 +176,16 @@ export function VaultLoginExportDialog({
     setPlaintextAcknowledged(false);
     setError(null);
   };
+  const updateProfile = (next: VaultLoginCsvPreviewResponse["profile"]) => {
+    cancelPending();
+    expectedActor.current = null;
+    setProfile(next);
+    setPreview(null);
+    setPlaintextAcknowledged(false);
+    setIdentityConfirmation(null);
+    setRunning(false);
+    setError(null);
+  };
 
   const handleExportError = (cause: unknown) => {
     if (cause instanceof DOMException && cause.name === "AbortError") return;
@@ -190,7 +224,7 @@ export function VaultLoginExportDialog({
       if (!isCurrent(operation)) return;
       expectedActor.current = actor;
       const nextPreview = await previewVaultLoginCsv(
-        { profile: CSV_PROFILE, item_ids: [...selectedIds] },
+        { profile, item_ids: [...selectedIds] },
         actor,
         request.signal,
       );
@@ -260,7 +294,7 @@ export function VaultLoginExportDialog({
     try {
       const blob = await downloadVaultLoginCsv(
         {
-          profile: CSV_PROFILE,
+          profile,
           item_ids: [...selectedIds],
           revision: preview.revision,
         },
@@ -334,6 +368,30 @@ export function VaultLoginExportDialog({
           ) : (
             <>
               <p className="text-sm text-muted-foreground">Choose the website logins to export. Showing {loginItems.length} website logins from {items.length} credentials currently loaded in Mine.</p>
+              <div className="space-y-1.5">
+                <Label htmlFor="vault-export-profile">CSV destination</Label>
+                <Select
+                  value={profile}
+                  onValueChange={(next) =>
+                    updateProfile(next as VaultLoginCsvPreviewResponse["profile"])
+                  }
+                  disabled={running}
+                >
+                  <SelectTrigger id="vault-export-profile">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CSV_PROFILES.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {CSV_PROFILES.find((option) => option.value === profile)?.detail}
+                </p>
+              </div>
               <div className="max-h-64 space-y-1 overflow-y-auto rounded-lg border border-border p-2" aria-label="Loaded website logins">
                 {loginItems.length === 0 && <p className="p-2 text-sm text-muted-foreground">No website logins are currently loaded.</p>}
                 {loginItems.map((item) => (

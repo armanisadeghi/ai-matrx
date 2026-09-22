@@ -21,6 +21,10 @@ let selectedOrganization = actor.organizationId;
 const signInWithPasswordMock = jest.fn();
 const getClaimsMock = jest.fn();
 
+if (!HTMLElement.prototype.scrollIntoView) {
+  HTMLElement.prototype.scrollIntoView = jest.fn();
+}
+
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => selectedOrganization,
 }));
@@ -80,6 +84,17 @@ function deferred<T>() {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((next) => { resolve = next; });
   return { promise, resolve };
+}
+
+async function selectNordPass(): Promise<void> {
+  const trigger = document.querySelector("#vault-export-profile");
+  if (!(trigger instanceof HTMLElement)) throw new Error("profile trigger missing");
+  await act(async () => trigger.click());
+  const option = [...document.querySelectorAll('[role="option"]')].find((node) =>
+    node.textContent?.includes("NordPass CSV"),
+  );
+  if (!(option instanceof HTMLElement)) throw new Error("NordPass option missing");
+  await act(async () => option.click());
 }
 
 describe("VaultLoginExportDialog", () => {
@@ -268,6 +283,26 @@ describe("VaultLoginExportDialog", () => {
     );
     expect(document.body.textContent).toContain("1 eligible of 1 selected");
     expect(button("Download CSV").disabled).toBe(true);
+  });
+
+  test("binds the NordPass destination to preview and clears a prior preview when changed", async () => {
+    await render();
+    const checkbox = document.querySelector('[role="checkbox"]');
+    if (!(checkbox instanceof HTMLElement)) throw new Error("selection missing");
+    await act(async () => checkbox.click());
+    await act(async () => button("Review selected logins").click());
+    expect(document.body.textContent).toContain("Export preview");
+    await selectNordPass();
+    expect(document.body.textContent).not.toContain("Export preview");
+    expect(document.body.textContent).toContain(
+      "Targets NordPass's documented import template and carries ordinary login fields only.",
+    );
+    await act(async () => button("Review selected logins").click());
+    expect(previewMock).toHaveBeenLastCalledWith(
+      { profile: "nordpass_csv_v1", item_ids: ["item-1"] },
+      actor,
+      expect.any(AbortSignal),
+    );
   });
 
   test("rechecks actor and revokes the object URL after download", async () => {

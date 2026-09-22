@@ -126259,7 +126259,7 @@ export interface components {
              * Profile
              * @constant
              */
-            profile: "matrx_login_csv_v1";
+            profile: "matrx_login_csv_v1" | "nordpass_csv_v1";
             /** Item Ids */
             item_ids: string[];
             /** Revision */
@@ -126286,7 +126286,7 @@ export interface components {
              * Profile
              * @constant
              */
-            profile: "matrx_login_csv_v1";
+            profile: "matrx_login_csv_v1" | "nordpass_csv_v1";
             /** Item Ids */
             item_ids: string[];
         };
@@ -126296,7 +126296,7 @@ export interface components {
              * Profile
              * @constant
              */
-            profile: "matrx_login_csv_v1";
+            profile: "matrx_login_csv_v1" | "nordpass_csv_v1";
             /** Revision */
             revision: string;
             /** Items */
