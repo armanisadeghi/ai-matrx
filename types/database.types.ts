@@ -70568,6 +70568,10 @@ export type Database = {
         }
         Returns: number
       }
+      feature_knob_default_set: {
+        Args: { p_default: Json; p_feature: string; p_key: string }
+        Returns: Json
+      }
       feature_knob_set: {
         Args: { p_feature: string; p_key: string; p_value: Json }
         Returns: Json
