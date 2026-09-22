@@ -47,20 +47,12 @@
       "reason": "Access-lane helper with no browser caller found in this census; the open question is why authenticated holds EXECUTE on the invoker function, and whether any RLS path reaches it. Not a DD-169 revoke. D321."
     },
     {
-      "key": "authenticated | client-executable invoker function | iam.verify_canonical(text, text, text, text) | iam.class_lanes",
-      "reason": "Canonical-certification tooling no browser session runs; the open question is why authenticated holds EXECUTE on the invoker tool at all, not whether the helper should reopen. Not a DD-169 revoke. D321."
-    },
-    {
       "key": "authenticated | column default on web.brand |  | platform.entity_default_visibility",
       "reason": "LIVE 42501 proven 2026-09-14: INSERT into web.brand as authenticated fails on the visibility column default. Not a DD-169 revoke (no revoke of it in any migration file). Whether a client inserts brands directly is UNPROVEN. D321."
     },
     {
       "key": "authenticated | column default on web.site |  | platform.entity_default_visibility",
       "reason": "LIVE 42501 proven 2026-09-14: INSERT into web.site as authenticated fails on the visibility column default. Not a DD-169 revoke (no revoke of it in any migration file). Whether a client inserts sites directly is UNPROVEN. D321."
-    },
-    {
-      "key": "authenticated | column default on platform.retention_policy |  | platform.retention_settling_interval",
-      "reason": "DD-169 batch 3 revoke with no client path: platform.retention_policy is a service-written policy ladder and no repo writes it from a browser, so a client INSERT is refused either way. Kept closed on purpose. D321."
     }
   ]
 }

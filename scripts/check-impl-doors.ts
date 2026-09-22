@@ -1102,6 +1102,26 @@ interface NullUnsafeRoleHelperRow {
 // is the only thing most reviewers ever read. So: the reason must contain `both ends`, and must not
 // contain a disclaimer that an end is ungated. A door that genuinely gates one end may not pass this
 // by rewording — it has to be fixed, and then the sentence is true. ABSOLUTE: no baseline.
+//
+// THE POPULATION IS THE DOORS A CLIENT CAN OPEN, and that is the whole population — not a
+// narrowing of it (GATES-2, 2026-09-22). `platform.client_callable_door` also carries rows for
+// functions NO client may reach: `signed_in_callers = false AND anonymous_callers = false`, which
+// the table's own `door_non_client_lane_is_declared` CHECK will not allow unless the row spells
+// out, in at least 40 characters, who really calls it. `platform.assoc_unset` is one — the internal
+// tombstoning chokepoint, holding no grant to `authenticated` or `anon`, declared:
+//
+//     "every caller must have decided its authority BEFORE calling this. It asks nothing about
+//      the caller on purpose, because the authority question differs per door — editor on the
+//      access-conveying container for assoc_remove, editor on both endpoints for the
+//      non-conveying case, the class owner for edu_class_unassign."
+//
+// Demanding "both ends" of THAT row is asking a lane to write a sentence it cannot make true: the
+// eleven doors above it gate the ends, five different ways, and that is exactly why it does not.
+// Reading it as an ungated association door named a live hole that does not exist while saying
+// nothing about the eleven that matter. The same predicate already scopes `check:store-doors-decide`
+// to real doors. NOTHING IS WAIVED BY THIS: `signed_in_callers` is held against the live grant by
+// D16a and `anonymous_callers` by D13, both ABSOLUTE — so the day anyone grants a client EXECUTE on
+// `assoc_unset`, the flag must flip to true in the same change and this arm judges it again.
 const ASSOC_DOOR_REASON_QUERY = `
   select d.schema_name || '.' || d.function_name as fn,
          d.identity_args as args,
@@ -1112,6 +1132,7 @@ const ASSOC_DOOR_REASON_QUERY = `
          end as problem
     from platform.client_callable_door d
    where d.function_name ~ '^assoc_'
+     and (d.signed_in_callers or d.anonymous_callers)
      and (d.reason !~* 'both ends' or d.reason ~* 'not gate the (anchor|other|far)')
    order by 1
 `;
