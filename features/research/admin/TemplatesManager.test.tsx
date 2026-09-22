@@ -1,5 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 import type { ResearchTemplate } from "../types";
 import {
   RESEARCH_TEMPLATE_COLUMNS,
@@ -72,11 +74,13 @@ describe("TemplatesManager canonical table contract", () => {
 
   it("retains explicit edit and delete action doors", () => {
     const markup = renderToStaticMarkup(
-      <TemplateRowActions
-        template={template}
-        onEdit={jest.fn()}
-        onDelete={jest.fn()}
-      />,
+      <TooltipProvider>
+        <TemplateRowActions
+          template={template}
+          onEdit={jest.fn()}
+          onDelete={jest.fn()}
+        />
+      </TooltipProvider>,
     );
 
     expect(markup).toContain('aria-label="Edit Scientific Research"');
