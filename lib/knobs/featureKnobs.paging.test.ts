@@ -63,6 +63,7 @@ function makeQuery(withCount: boolean) {
   };
   const query: Record<string, unknown> = {
     order: () => query,
+    is: () => query,
     range: (f: number, t: number) => {
       requestedRanges.push({ from: f, to: t });
       from = f;
@@ -84,6 +85,12 @@ const fakeClient = {
   }),
 };
 
+// 🚨 `.is("archived_at", null)` — the catalogue reader stopped serving
+// archived knobs (settings3, 2026-09-22) and four bespoke fakes of this one
+// builder did not grow the verb, so all four went red on
+// "…select(...).is is not a function". THE REAL DEBT IS FOUR FAKES OF ONE
+// DIALECT; until they are one shared fake, a verb added to
+// `lib/knobs/featureKnobs.ts` has to be added in four places.
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => fakeClient,
 }));
