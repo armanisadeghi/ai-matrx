@@ -109,6 +109,8 @@
 -- creation, and `iam._guard_governance_columns` calls rewriting `created_by` ownership
 -- transfer for exactly that reason.
 --
+-- `origin` is the one column the revive deliberately leaves alone; the SET list says why.
+--
 -- ONE BEHAVIOUR THAT DOES NOT COME BACK, NAMED RATHER THAN DISCOVERED LATER:
 -- `associations_propagate_plan_page_research_lineage` is AFTER **INSERT** only, so it does not
 -- fire on a revive. It did not fire before this change either (the statement errored), so
@@ -179,7 +181,14 @@ begin
          payload_kind      = coalesce(new.payload_kind,      a.payload_kind),
          payload           = coalesce(new.payload,           a.payload),
          relation_field_id = coalesce(new.relation_field_id, a.relation_field_id),
-         origin            = coalesce(new.origin,            a.origin),
+         -- `origin` is DELIBERATELY not carried, and not read here at all. Where an edge CAME
+         -- FROM is a fact about its creation, and a revive is not a creation — the office
+         -- putting a customer back on a job did not make that link, it un-made its removal.
+         -- Leaving it alone also keeps this body free of a column
+         -- `migrations/inverse/w1_rel_the_relation_columns_down.sql` legitimately drops, which
+         -- `pnpm check:inverses-leave-the-ground-standing` clause (d) exists to notice: an
+         -- inverse must never have to choose between undoing its own lane and breaking a body
+         -- somebody else adopted the column into.
          -- `metadata` is `not null default '{}'`, so `coalesce` can never choose the old row.
          -- Merged, so a caller that names nothing loses nothing and a caller that names a key
          -- gets it.
