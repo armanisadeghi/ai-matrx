@@ -36,6 +36,11 @@
 
 import { validateAgainstKind } from "@/features/content-ir/registry/validate-against-kind";
 import { getManifest } from "@/features/surfaces/manifests/registry";
+import {
+  isSurfaceWritePatch,
+  resolveSurfaceWritePatch,
+  type SurfaceWritePatch,
+} from "@/features/surfaces/runtime/surface-write-patch";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toast } from "@/lib/toast";
 
@@ -461,6 +466,26 @@ function fail(
 }
 
 /**
+ * An anchored edit could not be placed in the current text.
+ *
+ * Loud to the caller, quiet in the repair queue — like `failUnapplicable` and
+ * for the same reason. A missed anchor is almost always a stale read or an
+ * ambiguous pattern, which is the seam WORKING: it declined to guess where a
+ * change belonged. The one thing it must never be is silent, because a patch
+ * that quietly changed nothing reads exactly like a patch that worked.
+ */
+function failPatch(
+  message: string,
+  raw: Record<string, unknown>,
+): SurfaceWriteResult {
+  toast.error("That edit didn't fit the current text", {
+    description: message,
+  });
+  console.warn(`[surface-writeback] ${message}`, raw);
+  return { ok: false, error: message };
+}
+
+/**
  * The page the user is looking at cannot apply this write at all.
  *
  * Loud on screen WITH the remedy (the user is the only one who can move to a
@@ -496,9 +521,68 @@ function unapplicableMessage(targetName: string, detail: string): string {
  * Apply one value to one declared write target on the live page.
  * See the module header for resolution + safety semantics.
  */
+/**
+ * Turn an anchored edit into the whole value the rest of the seam expects.
+ *
+ * Everything this needs is already declared: `patchable` says the target
+ * accepts an edit, `updatesValue` says which SurfaceValue holds the text to
+ * edit, and the live runtime scope holds its current contents. Reading the
+ * LIVE scope (never the agent's context copy, which can be a minute stale) is
+ * what makes an anchor trustworthy — if the user typed in the editor since
+ * the agent last read the prompt, a stale anchor now misses and refuses
+ * instead of silently overwriting their sentence.
+ */
+async function resolveTargetPatch(
+  target: SurfaceWriteTarget,
+  runtime: SurfaceRuntimeValue,
+  patch: SurfaceWritePatch,
+): Promise<{ ok: true; value: string } | { ok: false; error: string }> {
+  if (!target.patchable) {
+    return {
+      ok: false,
+      error:
+        `"${target.label}" does not take an anchored edit — send the whole ` +
+        `value for this target instead.`,
+    };
+  }
+  const sourceName = target.updatesValue;
+  if (!sourceName) {
+    // Manifest defect, not a caller mistake. Say so in those words so the
+    // report names the repo and not the person typing.
+    return {
+      ok: false,
+      error:
+        `"${target.label}" is marked patchable but declares no updatesValue, ` +
+        `so there is no current text to edit. This is a defect in the ` +
+        `${runtime.surfaceName} manifest.`,
+    };
+  }
+  let current: unknown;
+  try {
+    const scope = await runtime.getScope();
+    current = scope[sourceName];
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        `Could not read the current "${target.label}" to edit it. Reopen the ` +
+        `editor and try again.` +
+        (error instanceof Error ? ` (${error.message})` : ""),
+    };
+  }
+  const outcome = resolveSurfaceWritePatch(current, patch);
+  if (!outcome.ok) {
+    return {
+      ok: false,
+      error: `"${target.label}": ${outcome.reason}`,
+    };
+  }
+  return { ok: true, value: outcome.next };
+}
+
 export async function applySurfaceWrite(
   targetName: string,
-  value: unknown,
+  rawValue: unknown,
   opts?: ApplySurfaceWriteOptions,
 ): Promise<SurfaceWriteResult> {
   const stack = getSurfaceRuntimeStack().filter(
@@ -530,6 +614,26 @@ export async function applySurfaceWrite(
         `Surface "${runtime.surfaceName}" declares write target "${targetName}" but registered no handler for it.`,
         { targetName, surfaceName: runtime.surfaceName },
       );
+    }
+
+    // AN ANCHORED EDIT BECOMES A WHOLE VALUE HERE, before anything else in
+    // this function looks at it. Resolving first is the whole design: the
+    // value contract, the approval card and the page's own handler each go
+    // on seeing one finished value, and no handler had to learn what a patch
+    // is. A patch that cannot be placed is REFUSED with the reason (never
+    // silently applied as "no change" — an edit that quietly did nothing is
+    // the one outcome a caller cannot detect).
+    let value: unknown = rawValue;
+    if (isSurfaceWritePatch(rawValue)) {
+      const resolved = await resolveTargetPatch(target, runtime, rawValue);
+      if (!resolved.ok) {
+        return failPatch(resolved.error, {
+          targetName: target.name,
+          surfaceName: runtime.surfaceName,
+          command: rawValue.command,
+        });
+      }
+      value = resolved.value;
     }
 
     // The declared value contract binds before anything else looks at the

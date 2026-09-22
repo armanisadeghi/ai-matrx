@@ -42,10 +42,7 @@ import {
   setAgentField,
   setAgentMessages,
 } from "@/features/agents/redux/agent-definition/slice";
-import {
-  extractAgentSystemInstruction,
-  withAgentSystemInstruction,
-} from "@/features/agents/utils/agent-system-instruction";
+import { withAgentSystemInstruction } from "@/features/agents/utils/agent-system-instruction";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import type { RootState } from "@/lib/redux/store";
 
@@ -138,20 +135,6 @@ export function useAgentBuilderWriteHandlers(
     return {
       system_instruction: (value: unknown) => {
         setSystemInstruction(requireText(value, "system_instruction"));
-      },
-
-      append_system_instruction: (value: unknown) => {
-        const addition = requireText(value, "append_system_instruction");
-        const state = store.getState();
-        const existing =
-          extractAgentSystemInstruction(
-            selectAgentMessages(state, agentId)?.find(
-              (m) => m.role === "system",
-            ),
-          ) ?? "";
-        setSystemInstruction(
-          existing.trim() ? `${existing.trimEnd()}\n\n${addition}` : addition,
-        );
       },
 
       agent_description: (value: unknown) => {
