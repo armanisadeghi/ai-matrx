@@ -166,6 +166,7 @@ select :'org1'::uuid, :'tbl1'::uuid, gen_random_uuid(), d
 \i migrations/campaign/writeperf4_the_wave_keeps_only_what_it_measured.sql
 \i migrations/campaign/writeperf4_the_fields_are_named_once_and_read_from_the_store.sql
 \i migrations/campaign/writeperf4_the_field_rows_go_back_in_the_memo.sql
+\i migrations/campaign/writeperf4_the_seat_is_the_caller_never_the_definer.sql
 
 \echo '###### AFTER B1 ######'
 explain (analyze, buffers, costs off, timing on)
@@ -188,6 +189,7 @@ select :'org2'::uuid, :'tbl2'::uuid, gen_random_uuid(), d
 \i migrations/campaign/writeperf4_the_wave_keeps_only_what_it_measured.sql
 \i migrations/campaign/writeperf4_the_fields_are_named_once_and_read_from_the_store.sql
 \i migrations/campaign/writeperf4_the_field_rows_go_back_in_the_memo.sql
+\i migrations/campaign/writeperf4_the_seat_is_the_caller_never_the_definer.sql
 
 \echo '###### AFTER B2 ######'
 explain (analyze, buffers, costs off, timing on)
