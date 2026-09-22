@@ -32,6 +32,31 @@
 > **unloaded**, plists kept as `.PAUSED-2026-09-22`. They write only the branch, but each takes a
 > ~7-minute `pg_dump --schema-only` of production (ACCESS SHARE on every table). Nothing of ours is
 > loaded on the Mac now. When these return, take the schema from the nightly clone, not production.
+>
+> ✅ **SUPERSEDED the same day (2026-09-22, lane BRANCH-REFRESH-2). They took the schema from the
+> clone, and they are back.** `branch-refresh.sh` no longer has a production code path — in any
+> mode, under any variable. Its only source is `night_assert_target clone`, so **Arman's "no
+> production reads tonight" ruling is honoured by construction, not by promise**: there is nothing
+> to set, no flag to pass and no env var to export that would make this job read production. A
+> production connection string handed to it is refused before the schema list is read, in live mode
+> *and* in rehearsal mode, naming what the server actually is. Everything else is unchanged — the
+> window guard (its reason restated: it now protects the **destructive branch write**, not a
+> production read), the `campaign_watch.build_lock`, the self-deleting plist, the ten-minute dump
+> cap, and the absence of any force switch.
+>
+> The clone's read is free, so `NIGHT_REHEARSE=1` now removes the **destruction** rather than the
+> source: a rehearsal reads the real clone and narrows the drop set to its own probe schema.
+>
+> Measured against the clone on 2026-09-22: dump **354 s · 20 MB · 20,878 CREATE · 9,961 GRANT**
+> (production's own dump was 409 s). Full run, refusals and numbers:
+> [`v5/PROGRESS-BRANCH-REFRESH.md`](/projects/data-doctrine-adoption/v5/PROGRESS-BRANCH-REFRESH.md).
+>
+> 🚨 **A password passed as `argv` is public.** The same session measured the clone's database
+> password sitting in `ps aux` for the whole ten minutes a dump ran, because the DSN was an
+> argument. `night_dsn_args` splits a DSN into `-h/-p/-U/-d` and hands the password through
+> `PGPASSWORD`; `branch-refresh.sh` uses it for the dump. **Every other night job still passes a DSN
+> to `psql` as an argument** — sub-second windows, the same hole, and the next job to add a
+> long-running command must use `night_dsn_args`.
 
 
 A night job is a **one-shot**: it fires once, on a calendar time, from a launchd user agent, and
@@ -142,7 +167,7 @@ Every refusal is shown RED before the job is trusted, and each one must end in
 |---|---|---|
 | `night-2026-09-22-row-versions-index.sh` | applied the `history.row_versions` org-latest index | **spent** — ran 2026-09-22 00:19:57Z, plist self-deleted. Kept as the worked example and the incident record |
 | `night-2026-09-22-suite-sweep.sh` | the serial sweep of every campaign suite against the MAIN database, 01:35–03:30 PT, hard stop with the remainder named | one-shot |
-| `branch-refresh.sh` | rebuilds the rehearsal branch from production's **schema** plus a curated reference seed, per `v5/BRANCH-DRIFT.md` §4(c). Production is READ ONLY (`pg_dump --schema-only`, `--lock-wait-timeout=5000`, aborts at 10 minutes); the branch is the only thing written, and it is written destructively. `NIGHT_REHEARSE=1` replaces the production read with a read of the branch's own catalog and narrows the drop set to one probe schema | **recurring** — armed as a one-shot for 2026-09-23 01:05 PT (`com.aimatrx.night-sweep.branch-refresh`, self-deleting) with a nightly twin at 01:05 (`com.aimatrx.night.branch-refresh-nightly`) that stays **disabled** until the one-shot's log shows a clean run |
+| `branch-refresh.sh` | rebuilds the rehearsal branch from the **nightly dev clone's** schema plus a curated reference seed, per `v5/BRANCH-DRIFT.md` §4(c). **It has no production code path at all** — `night_assert_target clone` is the only source it can ask for. The clone is READ ONLY (`pg_dump --schema-only`, `--lock-wait-timeout=5000`, aborts at 10 minutes); the branch is the only thing written, and it is written destructively. `NIGHT_REHEARSE=1` keeps the real clone read and narrows the drop set to one probe schema | **recurring** — armed as a one-shot for 2026-09-23 01:05 PT (`com.aimatrx.night-sweep.branch-refresh`, self-deleting) with a nightly twin at 01:05 (`com.aimatrx.night.branch-refresh-nightly`) that stays **disabled** until the one-shot's log shows a clean run |
 
 The plists live in [`plists/`](./plists/) so they are reviewable in the repo rather than only in
 `~/Library/LaunchAgents`. A recurring job's label must differ from any one-shot's, because
