@@ -71,7 +71,7 @@ export function MemberResourcesView({ orgId, organization, userId }: Props) {
         <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading resources…
       </div>
     );
-  if (error && !member)
+  if (!member)
     return (
       <div className="p-4 md:p-6">
         <Card className="mx-auto max-w-lg border-destructive/30 bg-destructive/5 p-6 text-center text-sm text-destructive">
