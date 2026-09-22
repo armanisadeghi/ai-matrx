@@ -35,6 +35,7 @@ begin;
 
 do $red$
 declare
+  v_answers   jsonb;
   v_org       constant uuid := '6069a466-1445-42df-a64e-cf37ecdc1b99';  -- Rincon Plumbing Co
   v_other_org constant uuid := '5531d39c-e863-467a-9e36-ad7f14b2faeb';  -- the Oxnard branch
   v_jobs      constant uuid := 'af3bfff6-a255-41e5-9ac2-879d53816163';
@@ -111,9 +112,32 @@ begin
       'records.changed', 'custom:table:' || p_table_id::text, true);
   end $body$;
 
+
+  -- ── THE JOBS BOARD'S OWN RULE (SUITES-TIDY 2026-09-22) ────────────────────────────────
+  -- Rincon's Jobs table carries a live table Rule, "New Job Request: every answer it asks for
+  -- is there" (REC-15 / DOOR-17): customer, service address, service type and scheduled date
+  -- must all be present. It was added to the board after this suite was written, so the insert
+  -- below was refused by it on the clone — correctly, and for a reason that has nothing to do
+  -- with what this suite asserts. The four answers are taken from a job already on the board
+  -- rather than invented.
+  select jsonb_build_object(
+           'customer',       x.data ->> 'customer',
+           'address',        x.data ->> 'address',
+           'service_type',   x.data ->> 'service_type',
+           'scheduled_date', x.data ->> 'scheduled_date')
+    into v_answers
+    from custom.record x
+   where x.organization_id = v_org and x.table_id = v_jobs and x.deleted_at is null
+     and x.data ? 'customer' and x.data ? 'address'
+     and x.data ? 'service_type' and x.data ? 'scheduled_date'
+   limit 1;
+  if v_answers is null then
+    raise exception 'the Rincon Jobs board has no job carrying all four answers its Rule asks for, so this fixture cannot be built from real data';
+  end if;
+
   insert into custom.record (id, organization_id, table_id, data_class, data, created_by)
   values (v_new_id, v_org, v_jobs, 'record',
-          jsonb_build_object('job_number', 'RPC-4418',
+          v_answers || jsonb_build_object('job_number', 'RPC-4418',
                              'address',    '2210 Ventura Ave, Ventura CA 93001',
                              'notes',      'Slab leak under the kitchen — locate and re-route.'),
           v_admin::uuid);

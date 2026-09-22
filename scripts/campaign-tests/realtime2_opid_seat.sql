@@ -49,6 +49,7 @@ begin;
 
 do $seat$
 declare
+  v_answers jsonb;
   v_org    constant uuid := '6069a466-1445-42df-a64e-cf37ecdc1b99';  -- Rincon Plumbing Co
   v_jobs   constant uuid := 'af3bfff6-a255-41e5-9ac2-879d53816163';  -- its Jobs table
   v_admin  constant text := '87a6e699-3622-4869-8843-d0867456c0dd';  -- admin@admin.com, the owner
@@ -77,8 +78,29 @@ begin
   end;
   raise notice '0  OK  seat taken: authenticated, and custom.record is unreadable from it';
 
+  -- ── THE JOBS BOARD'S OWN RULE (SUITES-TIDY 2026-09-22) ────────────────────────────────
+  -- Rincon's Jobs table carries a live table Rule, "New Job Request: every answer it asks for
+  -- is there" (REC-15 / DOOR-17): customer, service address, service type and scheduled date
+  -- must all be present. It was added to the board after this suite was written, so every
+  -- write below was refused by it on the clone — correctly. The four answers are taken from a
+  -- job that is already on the board rather than invented, so the fixture is a real call-out
+  -- and the Rule is satisfied the way a dispatcher satisfies it.
+  select jsonb_build_object(
+           'customer',       x.document ->> 'customer',
+           'address',        x.document ->> 'address',
+           'service_type',   x.document ->> 'service_type',
+           'scheduled_date', x.document ->> 'scheduled_date')
+    into v_answers
+    from custom.read_records(v_org, v_jobs, false, 200, 0) x
+   where x.document ? 'customer' and x.document ? 'address'
+     and x.document ? 'service_type' and x.document ? 'scheduled_date'
+   limit 1;
+  if v_answers is null then
+    raise exception 'the Rincon Jobs board has no job carrying all four answers its Rule asks for, so this fixture cannot be built from real data';
+  end if;
+
   -- ── PART 1: DANA ADDS FRIDAY'S CALL-OUT, DECLARING HER OWN OPERATION. ──────────────────
-  v_rec := custom.record_write(v_org, v_jobs, jsonb_build_object(
+  v_rec := custom.record_write(v_org, v_jobs, v_answers || jsonb_build_object(
              '_op_id',     v_op::text,
              'job_number', 'RPC-SEAT-' || substr(v_op::text, 1, 8),
              'address',    '118 Loma Vista Rd, Ventura CA 93001',
@@ -124,7 +146,7 @@ begin
 
   -- ── PART 4: A MALFORMED OP ID IS REFUSED BY NAME. ──────────────────────────────────────
   begin
-    perform custom.record_write(v_org, v_jobs, jsonb_build_object('_op_id', 'not-a-uuid', 'job_number', 'RPC-BAD'));
+    perform custom.record_write(v_org, v_jobs, v_answers || jsonb_build_object('_op_id', 'not-a-uuid', 'job_number', 'RPC-BAD'));
     raise exception '4: a malformed _op_id was accepted';
   exception when others then
     if sqlstate = 'P0001' and sqlerrm like '%_op_id was accepted%' then raise; end if;
@@ -140,8 +162,8 @@ begin
   -- never its own — the one way an echo filter loses a real change.
   begin
     perform custom.record_write_many(v_org, v_jobs, array[
-      jsonb_build_object('_op_id', v_op::text,  'job_number', 'RPC-BATCH-A'),
-      jsonb_build_object('_op_id', v_op2::text, 'job_number', 'RPC-BATCH-B')]);
+      v_answers || jsonb_build_object('_op_id', v_op::text,  'job_number', 'RPC-BATCH-A'),
+      v_answers || jsonb_build_object('_op_id', v_op2::text, 'job_number', 'RPC-BATCH-B')]);
     raise exception '5: a batch carrying two different _op_id values was accepted';
   exception when others then
     if sqlerrm like '%was accepted%' then raise; end if;
@@ -153,9 +175,9 @@ begin
 
   -- ── PART 6: A BATCH SHARING ONE OP ID WRITES, AND ANNOUNCES ITSELF ONCE. ───────────────
   v_ids := custom.record_write_many(v_org, v_jobs, array[
-             jsonb_build_object('_op_id', v_op2::text, 'job_number', 'RPC-BATCH-1', 'address', '2210 E Main St, Ventura CA 93001'),
-             jsonb_build_object('_op_id', v_op2::text, 'job_number', 'RPC-BATCH-2', 'address', '805 S Seaward Ave, Ventura CA 93001'),
-             jsonb_build_object('_op_id', v_op2::text, 'job_number', 'RPC-BATCH-3', 'address', '1701 Poli St, Ventura CA 93001')]);
+             v_answers || jsonb_build_object('_op_id', v_op2::text, 'job_number', 'RPC-BATCH-1', 'address', '2210 E Main St, Ventura CA 93001'),
+             v_answers || jsonb_build_object('_op_id', v_op2::text, 'job_number', 'RPC-BATCH-2', 'address', '805 S Seaward Ave, Ventura CA 93001'),
+             v_answers || jsonb_build_object('_op_id', v_op2::text, 'job_number', 'RPC-BATCH-3', 'address', '1701 Poli St, Ventura CA 93001')]);
   if coalesce(cardinality(v_ids), 0) <> 3 then
     raise exception '6: the batch wrote % records, not 3', coalesce(cardinality(v_ids), 0);
   end if;
@@ -216,7 +238,7 @@ begin
 
   -- ── PART 9: A WRITE THAT DECLARES NOTHING STILL WORKS, AND ANNOUNCES NO OP ID. ─────────
   -- Every agent tool and every server-side write is this case, and nothing about it changed.
-  v_rec := custom.record_write(v_org, v_jobs, jsonb_build_object(
+  v_rec := custom.record_write(v_org, v_jobs, v_answers || jsonb_build_object(
              'job_number', 'RPC-NO-OPID', 'address', '34 N Palm St, Ventura CA 93001'));
   perform set_config('role', v_boss, true);
   select m.payload into v_msg from realtime.messages m

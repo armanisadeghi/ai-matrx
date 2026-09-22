@@ -45,6 +45,7 @@ begin;
 
 do $red$
 declare
+  v_answers jsonb;
   v_org   constant uuid := '6069a466-1445-42df-a64e-cf37ecdc1b99';  -- Rincon Plumbing Co
   v_jobs  constant uuid := 'af3bfff6-a255-41e5-9ac2-879d53816163';  -- its Jobs table
   v_admin constant text := '87a6e699-3622-4869-8843-d0867456c0dd';
@@ -71,10 +72,33 @@ begin
   end;
   $bad$;
 
+
+  -- ── THE JOBS BOARD'S OWN RULE (SUITES-TIDY 2026-09-22) ────────────────────────────────
+  -- Rincon's Jobs table carries a live table Rule, "New Job Request: every answer it asks for
+  -- is there" (REC-15 / DOOR-17): customer, service address, service type and scheduled date
+  -- must all be present. It was added to the board after this suite was written, so every
+  -- write below was refused by it on the clone — correctly, and for a reason that has nothing
+  -- to do with what this twin is asserting. The four answers are taken from a job already on
+  -- the board rather than invented.
+  select jsonb_build_object(
+           'customer',       x.data ->> 'customer',
+           'address',        x.data ->> 'address',
+           'service_type',   x.data ->> 'service_type',
+           'scheduled_date', x.data ->> 'scheduled_date')
+    into v_answers
+    from custom.record x
+   where x.organization_id = v_org and x.table_id = v_jobs and x.deleted_at is null
+     and x.data ? 'customer' and x.data ? 'address'
+     and x.data ? 'service_type' and x.data ? 'scheduled_date'
+   limit 1;
+  if v_answers is null then
+    raise exception 'the Rincon Jobs board has no job carrying all four answers its Rule asks for, so this fixture cannot be built from real data';
+  end if;
+
   perform set_config('request.jwt.claims', json_build_object('sub', v_admin, 'role', 'authenticated')::text, true);
   set local role authenticated;
   v_op := gen_random_uuid();
-  v_rec := custom.record_write(v_org, v_jobs, jsonb_build_object(
+  v_rec := custom.record_write(v_org, v_jobs, v_answers || jsonb_build_object(
              '_op_id', v_op::text, 'job_number', 'RPC-RED-A',
              'address', '118 Loma Vista Rd, Ventura CA 93001'));
   v_doc := custom.read_record(v_org, v_rec, false);
@@ -126,7 +150,7 @@ begin
 
   set local role authenticated;
   v_op := gen_random_uuid();
-  v_rec := custom.record_write(v_org, v_jobs, jsonb_build_object(
+  v_rec := custom.record_write(v_org, v_jobs, v_answers || jsonb_build_object(
              '_op_id', v_op::text, 'job_number', 'RPC-RED-B',
              'address', '2210 E Main St, Ventura CA 93001'));
   perform set_config('role', v_boss, true);
@@ -149,8 +173,8 @@ begin
   set local role authenticated;
   begin
     perform custom.record_write_many(v_org, v_jobs, array[
-      jsonb_build_object('_op_id', gen_random_uuid()::text, 'job_number', 'RPC-RED-C1'),
-      jsonb_build_object('_op_id', gen_random_uuid()::text, 'job_number', 'RPC-RED-C2')]);
+      v_answers || jsonb_build_object('_op_id', gen_random_uuid()::text, 'job_number', 'RPC-RED-C1'),
+      v_answers || jsonb_build_object('_op_id', gen_random_uuid()::text, 'job_number', 'RPC-RED-C2')]);
     perform set_config('role', v_boss, true);
     raise exception 'c: a batch carrying two different op ids was ACCEPTED — the second writer would be told to drop an echo that was never its own, and a real change would be lost';
   exception when others then
