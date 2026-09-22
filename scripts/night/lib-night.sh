@@ -26,6 +26,7 @@ set -u
 FRONTEND=/Users/armanisadeghi/code/matrx-frontend
 AIDREAM=/Users/armanisadeghi/code/aidream
 BRANCH_REF_FILE=/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/plan/BRANCH-REF
+CLONE_REF_FILE=/Users/armanisadeghi/code/common-docs/operations/clone/CLONE-REF
 
 REHEARSE="${NIGHT_REHEARSE:-0}"
 
@@ -65,38 +66,104 @@ night_branch_dsn() {
   grep -m1 '^SUPABASE_BRANCH_DATABASE_URL=' "$FRONTEND/.env.local" | cut -d= -f2- | tr -d '"'
 }
 
-# night_assert_target branch|production <psql args…>
-# Asks the SERVER who it is. A rehearsal that has somehow been pointed at production, or a live
-# run pointed at the branch, is refused here — before a lock is taken and before anything runs.
+# The nightly dev clone's DSN. CLONE_DATABASE_URL wins; otherwise it is assembled from the
+# checked-in CLONE-REF (identities) plus the password file CLONE-REF names (never printed).
+night_clone_dsn() {
+  if [ -n "${CLONE_DATABASE_URL:-}" ]; then print -r -- "$CLONE_DATABASE_URL"; return 0; fi
+  local h p u d pf pw
+  h="$(night_ref_key "$CLONE_REF_FILE" pooler_host)"
+  p="$(night_ref_key "$CLONE_REF_FILE" pooler_port)"
+  u="$(night_ref_key "$CLONE_REF_FILE" pooler_user)"
+  d="$(night_ref_key "$CLONE_REF_FILE" database)"
+  pf="$(night_ref_key "$CLONE_REF_FILE" password_file)"
+  [ -n "$h" ] && [ -n "$u" ] && [ -r "$pf" ] || return 1
+  pw="$(tr -d '\n' < "$pf")"
+  print -r -- "postgresql://${u}:${pw}@${h}:${p:-6543}/${d:-postgres}"
+}
+
+# night_assert_target branch|production|clone <psql args…>
+#
+# 🚨 A SYSTEM IDENTIFIER IS NOT AN IDENTITY. A Supabase DATA branch (`with_data: true`) is a
+# PHYSICAL restore of production's cluster, so the nightly dev clone answers
+# `pg_control_system().system_identifier` with production's own number (measured 2026-09-22,
+# common-docs/operations/clone/CURRENT.md § the identity trap). Keyed on that number alone this
+# assertion said "target ok: production" while connected to the clone — and would have said it
+# just as happily the other way round.
+#
+# So the target is (system_identifier, PROJECT REF) TOGETHER, and the project ref comes from the
+# CONNECTION, not from the server: the Supabase pooler user is `postgres.<ref>` and the direct
+# host is `db.<ref>.supabase.co`. psql reports both back from libpq (\echo :USER / :HOST), which
+# works whether the caller passed a DSN string or -h/-p/-U/-d.
+#
+# Both halves are read from checked-in reference files — BRANCH-REF (branch + production) and
+# CLONE-REF (today's clone) — so a rebuilt branch or a fresh nightly clone needs no edit here.
+night_ref_key() {  # night_ref_key <file> <key>
+  [ -r "$1" ] || return 1
+  grep -m1 "^[[:space:]]*$2[[:space:]]*=" "$1" | sed -E 's/^[^=]*= *//' | tr -d ' \r'
+}
+
+# The project ref a psql connection is actually pointed at, from the connection itself.
+night_conn_ref() {  # night_conn_ref <psql args…>
+  local u h
+  u="$("$PSQL" "$@" -qAt -c '\echo :USER' 2>/dev/null | tail -1 | tr -d ' \r')"
+  h="$("$PSQL" "$@" -qAt -c '\echo :HOST' 2>/dev/null | tail -1 | tr -d ' \r')"
+  case "$u" in
+    *.*) print -r -- "${u#*.}"; return 0 ;;
+  esac
+  case "$h" in
+    db.*.supabase.co|db.*.supabase.com) h="${h#db.}"; print -r -- "${h%%.*}"; return 0 ;;
+    *.supabase.co|*.supabase.com)       print -r -- "${h%%.*}"; return 0 ;;
+  esac
+  print -r -- ""
+}
+
 night_assert_target() {
   local want="$1"; shift
-  local branch_id prod_id got
-  branch_id="$(grep -m1 '^system_identifier' "$BRANCH_REF_FILE" | sed -E 's/.*= *//' | tr -d ' ')"
-  prod_id="$(grep -m1 '^parent_system_identifier' "$BRANCH_REF_FILE" | sed -E 's/.*= *//' | tr -d ' ')"
-  if [ -z "$branch_id" ] || [ -z "$prod_id" ]; then
+  local branch_id prod_id clone_id branch_ref prod_ref clone_ref
+  local want_id want_ref got got_ref label
+  branch_id="$(night_ref_key "$BRANCH_REF_FILE" system_identifier)"
+  prod_id="$(night_ref_key "$BRANCH_REF_FILE" parent_system_identifier)"
+  branch_ref="$(night_ref_key "$BRANCH_REF_FILE" branch_ref)"
+  prod_ref="$(night_ref_key "$BRANCH_REF_FILE" parent_ref)"
+  if [ -z "$branch_id" ] || [ -z "$prod_id" ] || [ -z "$branch_ref" ] || [ -z "$prod_ref" ]; then
     say "REFUSED: BRANCH-REF is missing or unreadable ($BRANCH_REF_FILE). Nothing attempted."
     return 78
   fi
-  got="$("$PSQL" "$@" -qAt -c 'select system_identifier from pg_control_system()' 2>&1 | tr -d ' ')"
+
   case "$want" in
-    branch)
-      if [ "$got" != "$branch_id" ]; then
-        say "REFUSED: a rehearsal may only reach the rehearsal branch."
-        say "  expected the branch  $branch_id"
-        say "  the server answered  ${got:-(no answer)}$([ "$got" = "$prod_id" ] && print -n '  ← THIS IS PRODUCTION')"
-        say "  Nothing attempted."
+    branch)     want_id="$branch_id"; want_ref="$branch_ref"; label="the rehearsal branch" ;;
+    production) want_id="$prod_id";   want_ref="$prod_ref";   label="production" ;;
+    clone)
+      clone_id="$(night_ref_key "$CLONE_REF_FILE" system_identifier)"
+      clone_ref="$(night_ref_key "$CLONE_REF_FILE" clone_ref)"
+      if [ -z "$clone_id" ] || [ -z "$clone_ref" ]; then
+        say "REFUSED: CLONE-REF is missing or unreadable ($CLONE_REF_FILE). A connection that"
+        say "  cannot be PROVEN to be the clone is never treated as the clone. Nothing attempted."
         return 78
-      fi ;;
-    production)
-      if [ "$got" != "$prod_id" ]; then
-        say "REFUSED: this run intends production and the server is not production."
-        say "  expected  $prod_id   the server answered  ${got:-(no answer)}"
-        say "  Nothing attempted."
-        return 78
-      fi ;;
+      fi
+      want_id="$clone_id"; want_ref="$clone_ref"; label="the nightly dev clone" ;;
     *) say "REFUSED: night_assert_target got an unknown target '$want'."; return 78 ;;
   esac
-  say "target ok: $want (server system_identifier $got)"
+
+  got="$("$PSQL" "$@" -qAt -c 'select system_identifier from pg_control_system()' 2>&1 | tr -d ' ')"
+  got_ref="$(night_conn_ref "$@")"
+
+  if [ "$got" != "$want_id" ] || [ "$got_ref" != "$want_ref" ]; then
+    local what="an unknown database"
+    [ "$got" = "$prod_id" ]   && [ "$got_ref" = "$prod_ref" ]   && what="PRODUCTION"
+    [ "$got" = "$branch_id" ] && [ "$got_ref" = "$branch_ref" ] && what="the rehearsal branch"
+    [ -n "${clone_ref:-}" ] && [ "$got_ref" = "$clone_ref" ]    && what="the dev CLONE"
+    [ -z "${clone_ref:-}" ] && clone_ref="$(night_ref_key "$CLONE_REF_FILE" clone_ref)"
+    [ -n "$clone_ref" ] && [ "$got_ref" = "$clone_ref" ]        && what="the dev CLONE"
+    say "REFUSED: this run intends $label and the server is $what."
+    say "  a target is (system_identifier, project ref) TOGETHER — a data clone reports its"
+    say "  parent production system_identifier, so the number alone is not an identity."
+    say "  expected  $want_id / $want_ref"
+    say "  answered  ${got:-(no answer)} / ${got_ref:-(no project ref in the connection)}"
+    say "  Nothing attempted."
+    return 78
+  fi
+  say "target ok: $want (system_identifier $got, project ref $got_ref)"
   return 0
 }
 

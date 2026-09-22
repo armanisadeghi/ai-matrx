@@ -13,10 +13,26 @@
 -- all 191 suites against the rehearsal branch produced 4 passes and 94 self-refusals.
 --
 -- WHAT THIS FILE DOES INSTEAD.
---   1. Accepts the MAIN database OR the rehearsal branch, and REFUSES anything else by name.
---      The branch's identity is read from the checked-in plan file
---      common-docs/projects/data-doctrine-adoption/plan/BRANCH-REF — never typed in here, so a
---      rebuilt branch needs no edit to any suite. An unreadable BRANCH-REF is a refusal.
+--   1. Accepts the MAIN database, the rehearsal branch, OR the nightly dev clone, and REFUSES
+--      anything else by name. Every identity is read from a checked-in reference file — never
+--      typed in here, so a rebuilt branch or a fresh nightly clone needs no edit to any suite:
+--        common-docs/projects/data-doctrine-adoption/plan/BRANCH-REF   (branch + production)
+--        common-docs/operations/clone/CLONE-REF                        (the current dev clone)
+--      An unreadable reference file is a refusal, never a fallback.
+--
+--      🚨 THE IDENTITY TRAP, AND WHY `system_identifier` ALONE IS NOT AN IDENTITY.
+--      A Supabase DATA branch (`with_data: true`) is a PHYSICAL restore of production's cluster,
+--      so the nightly dev clone answers `pg_control_system().system_identifier` with
+--      production's own 7642734024280108049 (measured 2026-09-22). Keyed on that number alone,
+--      this preamble would have called the clone MAIN and every suite would have believed it was
+--      on production. So the target is identified by the CONNECTION as well: the Supabase pooler
+--      user carries the project ref (`postgres.<ref>`) and the direct host is
+--      `db.<ref>.supabase.co`. A database is MAIN / BRANCH / CLONE only when BOTH its
+--      system_identifier and its project ref match that target's checked-in pair.
+--
+--      A suite (or the runner around it) may also DECLARE which of the three it intends:
+--        \set expect 'clone'      -- one of: main | branch | clone
+--      and a server that is something else is refused even though it is a legal target.
 --   2. Says out loud which database the suite is about to run on. Nothing fails silently.
 --   3. Lets a suite DECLARE the production-only data and objects it depends on. When one is
 --      absent the suite SKIPS, naming exactly what it lacks, and exits 0 without asserting
@@ -57,11 +73,16 @@
 
 \set ON_ERROR_STOP on
 
--- The branch identity, read from BRANCH-REF by the checked-in helper. Relative paths resolve
--- from the repository root, which is where suites are run from.
-\set matrx_branch_sysid `sh scripts/campaign-tests/_branch-sysid.sh`
+-- The three legal targets, read from the checked-in reference files by the checked-in helper.
+-- Relative paths resolve from the repository root, which is where suites are run from.
+\set matrx_branch_sysid `sh scripts/campaign-tests/_branch-sysid.sh branch_sysid`
+\set matrx_branch_ref   `sh scripts/campaign-tests/_branch-sysid.sh branch_ref`
+\set matrx_prod_sysid   `sh scripts/campaign-tests/_branch-sysid.sh prod_sysid`
+\set matrx_prod_ref     `sh scripts/campaign-tests/_branch-sysid.sh prod_ref`
+\set matrx_clone_sysid  `sh scripts/campaign-tests/_branch-sysid.sh clone_sysid`
+\set matrx_clone_ref    `sh scripts/campaign-tests/_branch-sysid.sh clone_ref`
 
--- Defaults, so a suite that declares neither still works.
+-- Defaults, so a suite that declares none of these still works.
 \if :{?suite}
 \else
   \set suite 'campaign suite'
@@ -70,42 +91,107 @@
 \else
   \set requires ''
 \endif
+\if :{?expect}
+\else
+  \set expect ''
+\endif
+-- HOST/USER are set by psql from the CONNECTION itself (libpq's PQhost/PQuser), which is what
+-- makes them able to tell a physical clone from its parent. A connection with neither (a local
+-- socket with no user given) resolves to no project ref and is therefore refused, by design.
+\if :{?HOST}
+\else
+  \set HOST ''
+\endif
+\if :{?USER}
+\else
+  \set USER ''
+\endif
 
--- psql does NOT interpolate :variables inside dollar-quoted bodies, so the three values the
--- DO blocks below need are handed to the server as session settings first.
+-- 🚨 ONE EXPLICIT TRANSACTION AROUND THE WHOLE PREAMBLE. The Supabase pooler runs in
+-- TRANSACTION mode on port 6543: outside an explicit transaction every statement may land on a
+-- different backend, so a `set_config(..., false)` written by one statement is simply gone by the
+-- next — measured 2026-09-22 against production, where the identity block died with
+-- `unrecognized configuration parameter "matrx.conn_user"`. An explicit transaction pins one
+-- backend for its duration, so the session settings the DO blocks read are the ones just written.
+begin;
+
+-- psql does NOT interpolate :variables inside dollar-quoted bodies, so the values the DO blocks
+-- below need are handed to the server as session settings first.
 select set_config('matrx.suite_name',     :'suite',              false),
        set_config('matrx.branch_sysid',   :'matrx_branch_sysid', false),
-       set_config('matrx.suite_requires', :'requires',           false)
+       set_config('matrx.suite_requires', :'requires',           false),
+       set_config('matrx.conn_user',      :'USER',               false),
+       set_config('matrx.conn_host',      :'HOST',               false)
 \g (tuples_only=on format=unaligned) /dev/null
 
+-- The project ref of the server we are actually connected to, taken from the connection:
+--   pooler  → user  `postgres.<ref>`        (the suffix after the FIRST dot)
+--   direct  → host  `db.<ref>.supabase.co`  (or `<ref>.supabase.co`)
+-- Anything else yields the empty string, which matches no target and is therefore refused.
 select
-  (select system_identifier from pg_control_system())::text as matrx_sysid,
-  case (select system_identifier from pg_control_system())::text
-    when '7642734024280108049' then 'MAIN'
-    when :'matrx_branch_sysid'  then 'REHEARSAL BRANCH'
+  (select system_identifier from pg_control_system())::text                    as matrx_sysid,
+  case
+    when strpos(:'USER', '.') > 0 then split_part(:'USER', '.', 2)
+    when :'HOST' ~ '^db\.[a-z0-9]+\.supabase\.(co|com)$' then split_part(:'HOST', '.', 2)
+    when :'HOST' ~ '^[a-z0-9]+\.supabase\.(co|com)$'      then split_part(:'HOST', '.', 1)
+    else ''
+  end                                                                          as matrx_ref
+\gset
+
+select
+  case
+    when :'matrx_sysid' = :'matrx_prod_sysid'   and :'matrx_ref' = :'matrx_prod_ref'
+         and :'matrx_prod_ref'   not like '%UNREADABLE%' then 'MAIN'
+    when :'matrx_sysid' = :'matrx_branch_sysid' and :'matrx_ref' = :'matrx_branch_ref'
+         and :'matrx_branch_ref' not like '%UNREADABLE%' then 'REHEARSAL BRANCH'
+    when :'matrx_sysid' = :'matrx_clone_sysid'  and :'matrx_ref' = :'matrx_clone_ref'
+         and :'matrx_clone_ref'  not like '%UNREADABLE%' then 'DEV CLONE'
     else 'UNKNOWN'
-  end as matrx_db,
-  case when (select system_identifier from pg_control_system())::text
-         not in ('7642734024280108049', :'matrx_branch_sysid')
-       then 'true' else 'false' end as matrx_unknown
+  end as matrx_db
+\gset
+
+select case when :'matrx_db' = 'UNKNOWN' then 'true' else 'false' end as matrx_unknown,
+       case when :'expect' = '' then 'false'
+            when (:'expect' = 'main'   and :'matrx_db' = 'MAIN')
+              or (:'expect' = 'branch' and :'matrx_db' = 'REHEARSAL BRANCH')
+              or (:'expect' = 'clone'  and :'matrx_db' = 'DEV CLONE')
+            then 'false' else 'true' end as matrx_wrong_target
 \gset
 
 \echo '── suite:' :suite
-\echo '── database:' :matrx_db '(pg_control_system().system_identifier' :matrx_sysid ')'
+\echo '── database:' :matrx_db '(pg_control_system().system_identifier' :matrx_sysid '· project ref' :matrx_ref '· connected as' :USER 'at' :HOST ')'
 
 \if :matrx_unknown
-  \echo 'REFUSED: a campaign suite runs on the MAIN database or on the rehearsal branch named'
-  \echo 'REFUSED: in common-docs/projects/data-doctrine-adoption/plan/BRANCH-REF, and nowhere else.'
-  \echo 'REFUSED: expected MAIN 7642734024280108049 or BRANCH' :matrx_branch_sysid
-  \echo 'REFUSED: the server answered' :matrx_sysid
+  \echo 'REFUSED: a campaign suite runs on the MAIN database, on the rehearsal branch named in'
+  \echo 'REFUSED: common-docs/projects/data-doctrine-adoption/plan/BRANCH-REF, or on the dev clone'
+  \echo 'REFUSED: named in common-docs/operations/clone/CLONE-REF, and nowhere else.'
+  \echo 'REFUSED: a target is (system_identifier, project ref) TOGETHER — a data clone reports its'
+  \echo 'REFUSED: parent production system_identifier, so the number alone is not an identity.'
+  \echo 'REFUSED: expected MAIN' :matrx_prod_sysid '/' :matrx_prod_ref
+  \echo 'REFUSED:       BRANCH' :matrx_branch_sysid '/' :matrx_branch_ref
+  \echo 'REFUSED:     DEV CLONE' :matrx_clone_sysid '/' :matrx_clone_ref
+  \echo 'REFUSED: the server answered' :matrx_sysid '/' :matrx_ref
   do $matrx_refuse$
   begin
     raise exception
-      'REFUSED: % runs on the MAIN database (7642734024280108049) or the rehearsal branch (%) only, and this server is %. Nothing attempted.',
-      current_setting('matrx.suite_name'), current_setting('matrx.branch_sysid'),
-      (select system_identifier from pg_control_system());
+      'REFUSED: % runs on the MAIN database, the rehearsal branch or the dev clone only, identified by (system_identifier, project ref) together. This server is % / %. Nothing attempted.',
+      current_setting('matrx.suite_name'),
+      (select system_identifier from pg_control_system()),
+      nullif(current_setting('matrx.conn_user'), '');
   end
   $matrx_refuse$;
+\endif
+
+\if :matrx_wrong_target
+  \echo 'REFUSED: this run declared expect=' :expect 'and this server is' :matrx_db
+  \echo 'REFUSED: sysid' :matrx_sysid '· project ref' :matrx_ref '· Nothing attempted.'
+  do $matrx_wrong$
+  begin
+    raise exception
+      'REFUSED: % declared the target it intends and this server is not it. Nothing attempted.',
+      current_setting('matrx.suite_name');
+  end
+  $matrx_wrong$;
 \endif
 
 -- ── the declared dependencies ───────────────────────────────────────────────────────────────
@@ -196,6 +282,8 @@ select case when coalesce(current_setting('matrx.suite_missing', true), '') = ''
             then 'false' else 'true' end                      as matrx_skip,
        coalesce(current_setting('matrx.suite_missing', true), '') as matrx_missing
 \gset
+
+commit;
 
 \if :matrx_skip
   \echo 'SKIPPED:' :suite 'asserted nothing. This' :matrx_db 'database does not have:' :matrx_missing
