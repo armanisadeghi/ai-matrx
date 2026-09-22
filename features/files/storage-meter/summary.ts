@@ -26,6 +26,8 @@
  * sentence. {@link GRAIN_NOTE} is that second sentence.
  */
 
+import { formatFileSize } from "@ai-matrx/kit/format";
+
 /** The billing capability that carries the storage ceiling. */
 export const STORAGE_CAPABILITY = "platform.storage_bytes";
 
@@ -95,19 +97,6 @@ export type StorageMeter =
       offerMoreStorage: boolean;
     };
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  const units = ["KB", "MB", "GB", "TB", "PB"];
-  let value = bytes / 1024;
-  let unit = 0;
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024;
-    unit += 1;
-  }
-  const rounded = value >= 100 ? Math.round(value) : Number(value.toFixed(1));
-  return `${rounded} ${units[unit]}`;
-}
-
 /**
  * The whole meter, from the two reads. No `Date.now()`, no fetch, no fallback
  * ladder — if billing did not answer, the answer is `unreadable`.
@@ -143,7 +132,7 @@ export function summarizeOrgStorage(input: {
     };
 
   const limitBytes = plan.limitBytes;
-  const limitLabel = limitBytes === null ? null : formatBytes(limitBytes);
+  const limitLabel = limitBytes === null ? null : formatFileSize(limitBytes);
 
   if (usage.status === "unmeasured")
     return {
@@ -162,7 +151,7 @@ export function summarizeOrgStorage(input: {
     };
 
   const bytesUsed = usage.bytesUsed;
-  const usedLabel = formatBytes(bytesUsed);
+  const usedLabel = formatFileSize(bytesUsed);
 
   if (limitBytes === null)
     return {
@@ -196,7 +185,7 @@ export function summarizeOrgStorage(input: {
     planName: plan.planName,
     headline: `${usedLabel} of ${limitLabel}`,
     detail: over
-      ? `You are over the ${limitLabel} this plan includes by ${formatBytes(bytesUsed - limitBytes)}. Nothing has been deleted; add storage or move to a larger plan.`
+      ? `You are over the ${limitLabel} this plan includes by ${formatFileSize(bytesUsed - limitBytes)}. Nothing has been deleted; add storage or move to a larger plan.`
       : `${percent}% of the ${limitLabel} this plan includes.`,
     grain: GRAIN_NOTE,
     bytesUsed,

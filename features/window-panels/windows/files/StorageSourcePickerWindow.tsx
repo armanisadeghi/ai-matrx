@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@ai-matrx/design-system";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { SettingDoor } from "@/features/settings/doors/SettingDoor";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -491,7 +492,7 @@ export function StorageSourcePickerWindow({
                       {!isFolder ? <FileIcon className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
                       <span className="min-w-0 flex-1 truncate text-sm">{item.name}</span>
                       <span className="shrink-0 text-xs text-muted-foreground">
-                        {item.size === null || item.size === undefined ? "" : `${Math.ceil(item.size / 1024)} KB`}
+                        {formatFileSize(item.size, { fallback: "" })}
                       </span>
                     </button>
                   </div>

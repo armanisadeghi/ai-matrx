@@ -45,6 +45,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { config as loadEnv } from "dotenv";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import {
   isUserVisibleFilePath,
@@ -285,9 +286,7 @@ async function main(): Promise<void> {
   const started = Date.now();
   const verdictByPath = await verdicts(filesSchema, distinctPaths);
   console.log(
-    `B. ${distinctPaths.length} distinct path(s) judged by the database in ${
-      Math.round(Date.now() - started) / 1000
-    }s (batch ${PATH_BATCH})${
+    `B. ${distinctPaths.length} distinct path(s) judged by the database in ${formatDurationMs(Date.now() - started, { style: "compact" })} (batch ${PATH_BATCH})${
       bounded
         ? ` — BOUNDED RUN: PARITY_MAX_PATHS=${MAX_PATHS}, this is a SAMPLE, not the whole corpus`
         : ""
