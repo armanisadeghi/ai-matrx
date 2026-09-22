@@ -17,9 +17,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { TrendingDown, TrendingUp } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@ai-matrx/design-system";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { cn } from "@/lib/utils";
 
 import { getFindingEffectiveness } from "../api";
@@ -27,12 +27,14 @@ import type { FindingEffectiveness, UnitToken } from "../types";
 import { hasSignal } from "../types";
 import { KIND_COLOR, KIND_ICON, LEVER_LABEL } from "./tokens";
 
-function pct(value: number | null | undefined): string {
+export function effectivenessPercent(value: number | null | undefined): string {
   return hasSignal(value) ? `${Math.round(value * 100)}%` : "—";
 }
 
 /** Seconds → the coarsest unit that still reads honestly. */
-function duration(seconds: number | null | undefined): string {
+export function effectivenessDuration(
+  seconds: number | null | undefined,
+): string {
   if (!hasSignal(seconds)) return "—";
   if (seconds < 90) return `${Math.round(seconds)}s`;
   if (seconds < 5400) return `${Math.round(seconds / 60)}m`;
@@ -64,7 +66,11 @@ function CostDelta({ row }: { row: FindingEffectiveness }) {
       )}
       title={`Mean spend per request after the change minus before it, across ${row.cost_signal_findings} finding(s) with traffic on both versions.`}
     >
-      {cheaper ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
+      {cheaper ? (
+        <TrendingDown className="h-3 w-3" />
+      ) : (
+        <TrendingUp className="h-3 w-3" />
+      )}
       {cheaper ? "-" : "+"}${Math.abs(delta).toFixed(4)}
     </span>
   );
@@ -85,120 +91,188 @@ export function FindingEffectivenessPanel({
   const rows = effectiveness.data ?? [];
 
   return (
-    <Card className="p-3">
-      <header className="mb-3">
-        <h2 className="text-sm font-semibold">Is the advice any good?</h2>
-        <p className="max-w-2xl text-xs text-muted-foreground">
-          Per lever, per unit: what Hindsight proposed, what a human accepted,
-          and what a human <strong>undid</strong>. A dash means no signal yet —
-          never a measured zero.
-        </p>
-      </header>
-
+    <section className="space-y-2">
+      <p className="max-w-2xl text-xs text-muted-foreground">
+        Per lever, per unit: what Hindsight proposed, what a human accepted, and
+        what a human <strong>undid</strong>. A dash means no signal yet — never
+        a measured zero.
+      </p>
       {effectiveness.isLoading && <Skeleton className="h-32" />}
       {effectiveness.isError && (
-        <p className="text-sm text-red-600 dark:text-red-400">
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-2 text-sm text-red-600 dark:text-red-400"
+        >
           Could not load effectiveness: {(effectiveness.error as Error).message}
-        </p>
-      )}
-
-      {!effectiveness.isLoading && rows.length === 0 && (
-        <p className="py-6 text-center text-sm text-muted-foreground">
-          Nothing proposed yet — enroll something and let a review run.
-        </p>
-      )}
-
-      {rows.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead className="text-left text-muted-foreground">
-              <tr className="border-b border-border">
-                <th className="py-1.5 pr-3 font-medium">Unit</th>
-                <th className="py-1.5 pr-3 font-medium">Lever</th>
-                <th className="py-1.5 pr-3 text-right font-medium">Proposed</th>
-                <th className="py-1.5 pr-3 text-right font-medium">Applied</th>
-                <th className="py-1.5 pr-3 text-right font-medium">Rejected</th>
-                <th className="py-1.5 pr-3 text-right font-medium">Reverted</th>
-                <th className="py-1.5 pr-3 text-right font-medium">Accept</th>
-                <th className="py-1.5 pr-3 text-right font-medium">Revert rate</th>
-                <th className="py-1.5 pr-3 text-right font-medium">To decide</th>
-                <th className="py-1.5 text-right font-medium">Cost move</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {rows.map((row) => {
-                const Icon = KIND_ICON[row.unit_token];
-                // A lever whose applied changes get undone is the signal this
-                // table exists to surface — make it impossible to scroll past.
-                const alarming = hasSignal(row.revert_rate) && row.revert_rate > 0;
-                return (
-                  <tr key={row.id} data-testid="effectiveness-row">
-                    <td className="py-1.5 pr-3">
-                      <span className="inline-flex items-center gap-1.5">
-                        <span
-                          className={cn(
-                            "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded",
-                            KIND_COLOR[row.unit_token],
-                          )}
-                        >
-                          <Icon className="h-3 w-3" />
-                        </span>
-                        <span className="max-w-[220px] truncate">
-                          {row.unit_display_name ?? row.unit_id ?? "—"}
-                        </span>
-                      </span>
-                    </td>
-                    <td className="py-1.5 pr-3">
-                      <Badge variant="outline" className="text-[10px]">
-                        {LEVER_LABEL[row.lever]}
-                      </Badge>
-                    </td>
-                    <td className="py-1.5 pr-3 text-right tabular-nums">
-                      {row.findings_total}
-                    </td>
-                    <td className="py-1.5 pr-3 text-right tabular-nums">
-                      {row.applied_count}
-                    </td>
-                    <td className="py-1.5 pr-3 text-right tabular-nums">
-                      {row.rejected_count}
-                    </td>
-                    <td
-                      className={cn(
-                        "py-1.5 pr-3 text-right tabular-nums",
-                        alarming && "font-semibold text-amber-600 dark:text-amber-400",
-                      )}
-                    >
-                      {row.reverted_count}
-                    </td>
-                    <td className="py-1.5 pr-3 text-right tabular-nums">
-                      {pct(row.accept_rate)}
-                    </td>
-                    <td
-                      className={cn(
-                        "py-1.5 pr-3 text-right tabular-nums",
-                        alarming && "font-semibold text-amber-600 dark:text-amber-400",
-                      )}
-                      title={
-                        hasSignal(row.revert_rate)
-                          ? "Of the changes actually applied on this lever, the share a human undid."
-                          : "No signal: nothing has been applied on this lever yet."
-                      }
-                    >
-                      {pct(row.revert_rate)}
-                    </td>
-                    <td className="py-1.5 pr-3 text-right tabular-nums">
-                      {duration(row.time_to_decision_seconds_avg)}
-                    </td>
-                    <td className="py-1.5 text-right">
-                      <CostDelta row={row} />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <button
+            type="button"
+            className="underline"
+            onClick={() => void effectiveness.refetch()}
+          >
+            Retry
+          </button>
         </div>
       )}
-    </Card>
+      {!effectiveness.isLoading &&
+        (!effectiveness.isError || rows.length > 0) && (
+          <MatrxDataTable<FindingEffectiveness>
+            urlState={{
+              id: "hindsight-finding-effectiveness",
+            }}
+            tableId="hindsight/finding-effectiveness"
+            data={rows}
+            columns={FINDING_EFFECTIVENESS_COLUMNS}
+            getRowId={(row) => row.id}
+            toolbar={{
+              title: "Is the advice any good?",
+              search: true,
+              searchPlaceholder: "Search units and levers…",
+              refresh: { onRefresh: () => void effectiveness.refetch() },
+            }}
+            copy={false}
+            detail={{ enabled: false }}
+            cellClassName={(row, columnId) =>
+              hasSignal(row.revert_rate) &&
+              row.revert_rate > 0 &&
+              (columnId === "reverted" || columnId === "revert-rate")
+                ? "font-semibold text-amber-600 dark:text-amber-400"
+                : undefined
+            }
+            emptyState={{
+              title: "Nothing proposed yet",
+              description: "Enroll something and let a review run.",
+            }}
+          />
+        )}
+    </section>
   );
 }
+
+export const FINDING_EFFECTIVENESS_COLUMNS: MatrxColumnDef<FindingEffectiveness>[] =
+  [
+    {
+      id: "unit",
+      header: "Unit",
+      accessorFn: (row) => row.unit_display_name ?? row.unit_id ?? "",
+      filter: "text",
+      width: 240,
+      cell: (row) => {
+        const Icon = KIND_ICON[row.unit_token];
+        return (
+          <span className="inline-flex min-w-0 items-center gap-1.5">
+            <span
+              className={cn(
+                "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded",
+                KIND_COLOR[row.unit_token],
+              )}
+            >
+              <Icon className="h-3 w-3" />
+            </span>
+            <span className="truncate">
+              {row.unit_display_name ?? row.unit_id ?? "—"}
+            </span>
+          </span>
+        );
+      },
+    },
+    {
+      id: "lever",
+      header: "Lever",
+      accessorKey: "lever",
+      filter: "select",
+      width: 150,
+      cell: (row) => (
+        <span className="inline-flex rounded border px-1.5 py-0.5 text-[10px]">
+          {LEVER_LABEL[row.lever]}
+        </span>
+      ),
+    },
+    {
+      id: "proposed",
+      header: "Proposed",
+      accessorKey: "findings_total",
+      filter: "number",
+      width: 96,
+      className: "text-right tabular-nums",
+      cell: (row) => row.findings_total,
+    },
+    {
+      id: "applied",
+      header: "Applied",
+      accessorKey: "applied_count",
+      filter: "number",
+      width: 88,
+      className: "text-right tabular-nums",
+      cell: (row) => row.applied_count,
+    },
+    {
+      id: "rejected",
+      header: "Rejected",
+      accessorKey: "rejected_count",
+      filter: "number",
+      width: 96,
+      className: "text-right tabular-nums",
+      cell: (row) => row.rejected_count,
+    },
+    {
+      id: "reverted",
+      header: "Reverted",
+      accessorKey: "reverted_count",
+      filter: "number",
+      width: 96,
+      className: "text-right tabular-nums",
+      cell: (row) => row.reverted_count,
+    },
+    {
+      id: "accept-rate",
+      header: "Accept",
+      accessorFn: (row) =>
+        row.accept_rate === null || row.accept_rate === undefined
+          ? null
+          : row.accept_rate * 100,
+      filter: "number",
+      width: 88,
+      className: "text-right tabular-nums",
+      cell: (row) => effectivenessPercent(row.accept_rate),
+    },
+    {
+      id: "revert-rate",
+      header: "Revert rate",
+      accessorFn: (row) =>
+        row.revert_rate === null || row.revert_rate === undefined
+          ? null
+          : row.revert_rate * 100,
+      filter: "number",
+      width: 112,
+      className: "text-right tabular-nums",
+      cell: (row) => (
+        <span
+          title={
+            hasSignal(row.revert_rate)
+              ? "Of the changes actually applied on this lever, the share a human undid."
+              : "No signal: nothing has been applied on this lever yet."
+          }
+        >
+          {effectivenessPercent(row.revert_rate)}
+        </span>
+      ),
+    },
+    {
+      id: "time-to-decision",
+      header: "To decide",
+      accessorKey: "time_to_decision_seconds_avg",
+      filter: "number",
+      width: 104,
+      className: "text-right tabular-nums",
+      cell: (row) => effectivenessDuration(row.time_to_decision_seconds_avg),
+    },
+    {
+      id: "cost-move",
+      header: "Cost move",
+      accessorKey: "cost_delta_usd_avg",
+      filter: "number",
+      width: 118,
+      className: "text-right",
+      cell: (row) => <CostDelta row={row} />,
+    },
+  ];
