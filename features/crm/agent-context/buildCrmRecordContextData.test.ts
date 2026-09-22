@@ -124,4 +124,40 @@ describe("CRM record model-transfer boundary", () => {
       lastTouchAt: "2026-09-22T12:00:00+00:00",
     });
   });
+
+  it("removes ambiguous inbound email while keeping inbound calls and known non-Gmail mail", () => {
+    const ambiguousEmail = interaction({
+      id: "88888888-8888-4888-8888-888888888888",
+      channel_code: "email",
+      direction: "inbound",
+      provider: null,
+      attributes: {},
+      body: "Ambiguous inbound email body",
+    });
+    const inboundCall = interaction({
+      id: "99999999-9999-4999-8999-999999999999",
+      channel_code: "phone",
+      direction: "inbound",
+      provider: null,
+      body: "Harbor Dental called about intake scheduling.",
+    });
+    const outlookEmail = interaction({
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      channel_code: "email",
+      direction: "inbound",
+      provider: "microsoft_365",
+      body: "Known non-Gmail inbound email.",
+    });
+
+    const context = buildModelSafeInteractionContext([
+      ambiguousEmail,
+      inboundCall,
+      outlookEmail,
+    ]);
+
+    expect(context.interactions).toEqual([inboundCall, outlookEmail]);
+    expect(JSON.stringify(context)).not.toContain(
+      "Ambiguous inbound email body",
+    );
+  });
 });

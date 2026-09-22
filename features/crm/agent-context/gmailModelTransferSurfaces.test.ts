@@ -1,21 +1,95 @@
-import { readReplyProvenance } from "@/features/crm/inbox/attributes";
+import type { InteractionRow } from "@/features/crm/types";
 import { createCrmChaseboxScope } from "@/features/surfaces/manifests/crm-chasebox.manifest";
 import { createCrmInboxScope } from "@/features/surfaces/manifests/crm-inbox.manifest";
 
-describe("Gmail model-transfer surface boundaries", () => {
-  it("treats a partially malformed provider receipt as ambiguous", () => {
-    const reply = readReplyProvenance({
-      outreach_single_send: {
-        reply: {
-          model_transfer_provenance: "full_thread_checked_v1",
-          source_providers: ["microsoft_365", null],
-        },
-      },
-    });
+const BASE_INTERACTION = {
+  address_id: null,
+  approval_assist_id: null,
+  approved_at: null,
+  approved_by: null,
+  assigned_to: null,
+  attempt_number: null,
+  attributes: {},
+  body: null,
+  channel_code: "email",
+  channel_id: null,
+  contact_point_id: null,
+  created_at: "2026-09-22T08:00:00+00:00",
+  created_by: null,
+  custom_fields: {},
+  deal_id: null,
+  deleted_at: null,
+  direction: "inbound",
+  drafted_by_agent_id: null,
+  drafted_by_label: null,
+  drafted_by_run_id: null,
+  duration_seconds: null,
+  id: "11111111-1111-4111-8111-111111111111",
+  in_reply_to: null,
+  message_id: null,
+  metadata: {},
+  occurred_at: "2026-09-22T08:00:00+00:00",
+  organization_id: "22222222-2222-4222-8222-222222222222",
+  outcome_id: null,
+  outreach_list_id: "33333333-3333-4333-8333-333333333333",
+  party_id: "44444444-4444-4444-8444-444444444444",
+  performed_by: null,
+  program_key: null,
+  provider: null,
+  provider_account_id: null,
+  provider_interaction_id: null,
+  provider_recording_id: null,
+  provider_status: null,
+  provider_status_at: null,
+  provider_status_sequence: null,
+  recording_channels: null,
+  recording_custody_at: null,
+  recording_duration_seconds: null,
+  recording_file_id: null,
+  recording_owner_id: null,
+  recording_source: null,
+  recording_started_at: null,
+  recording_status: null,
+  recording_status_at: null,
+  recording_track: null,
+  recording_url: null,
+  scheduled_at: null,
+  status: "completed",
+  subject: null,
+  thread_key: null,
+  updated_at: "2026-09-22T08:00:00+00:00",
+  updated_by: null,
+  version: 1,
+} satisfies InteractionRow;
 
-    expect(reply?.sourceProviders).toEqual([]);
+function interaction(overrides: Partial<InteractionRow>): InteractionRow {
+  return { ...BASE_INTERACTION, ...overrides };
+}
+
+const REPLY = {
+  intent: "Answer their question",
+  grounded_on: ["They asked for a walkthrough [inbound_message]"],
+  answering_label: "interested",
+  thread_message_count: 2,
+  replying_to_interaction_id: BASE_INTERACTION.id,
+};
+
+function replyScope(sourceInteractions: InteractionRow[]) {
+  return createCrmChaseboxScope({
+    active_queue: "pending_drafts",
+    queue_counts: { pending_drafts: 1 },
+    total_items: 1,
+    visible_items: [],
+    draft_subject: "Re: intake workflow",
+    draft_body: "Here is the requested workflow.",
+    draft_personalization: [],
+    draft_reply: REPLY,
+    draft_reply_source_interactions: sourceInteractions,
+    draft_approved: false,
   });
+}
 
+describe("Gmail model-transfer surface boundaries", () => {
   it("keeps inbox view state but removes every Gmail reply row", () => {
     const scope = createCrmInboxScope({
       scope: "mine",
@@ -24,7 +98,7 @@ describe("Gmail model-transfer surface boundaries", () => {
       total_replies: 1,
       visible_replies: [
         {
-          id: "11111111-1111-4111-8111-111111111111",
+          id: BASE_INTERACTION.id,
           party_name: "Harbor Dental",
           employer_name: null,
           outreach_list_name: "Practice onboarding",
@@ -47,56 +121,50 @@ describe("Gmail model-transfer surface boundaries", () => {
     expect(JSON.stringify(scope)).not.toContain("Re: intake review");
   });
 
-  it("removes fresh-reply rows and an open Gmail-derived reply draft", () => {
-    const scope = createCrmChaseboxScope({
-      active_queue: "fresh_replies",
-      queue_counts: { fresh_replies: 1, stalled_sequences: 1 },
-      total_items: 2,
-      visible_items: [
-        {
-          id: "22222222-2222-4222-8222-222222222222",
-          queue: "fresh_replies",
-          party_name: "Harbor Dental",
-          outreach_list_name: "Practice onboarding",
-          step: 2,
-          problem_code: "reply_waiting",
-          problem_message: "A Gmail reply is waiting.",
-          problem_fix: "Review the reply.",
-          occurred_at: "2026-09-22T11:00:00+00:00",
-        },
-        {
-          id: "33333333-3333-4333-8333-333333333333",
-          queue: "stalled_sequences",
-          party_name: "Harbor Dental",
-          outreach_list_name: "Practice onboarding",
-          step: 3,
-          problem_code: "mailbox_paused",
-          problem_message: "The mailbox is paused.",
-          problem_fix: "Resume the mailbox.",
-          occurred_at: "2026-09-22T12:00:00+00:00",
-        },
-      ],
-      draft_subject: "Re: intake review",
-      draft_body: "Here is the requested walkthrough.",
-      draft_personalization: [],
-      draft_reply: {
-        intent: "Answer their question",
-        grounded_on: ["They asked for a walkthrough [inbound_message]"],
-        answering_label: "interested",
-        thread_message_count: 2,
-        model_transfer_provenance: null,
-        source_providers: [],
-      },
-      draft_approved: false,
-    });
+  it.each([
+    interaction({ provider: "google_workspace" }),
+    interaction({ provider: " google_workspace " }),
+    interaction({ provider: null, attributes: {} }),
+    interaction({
+      provider: "microsoft_365",
+      attributes: { outreach_inbound: { label: "interested" } },
+    }),
+  ])("refuses restricted or ambiguous raw reply-thread rows", (source) => {
+    const scope = replyScope([source]);
 
-    expect(scope.visible_items).toEqual([
-      expect.objectContaining({ queue: "stalled_sequences" }),
-    ]);
     expect(scope).not.toHaveProperty("draft_subject");
     expect(scope).not.toHaveProperty("draft_body");
     expect(scope).not.toHaveProperty("draft_reply");
-    expect(JSON.stringify(scope)).not.toContain("requested walkthrough");
+    expect(JSON.stringify(scope)).not.toContain("requested workflow");
+  });
+
+  it("refuses when an earlier raw thread row is Gmail-derived", () => {
+    const scope = replyScope([
+      interaction({
+        id: "55555555-5555-4555-8555-555555555555",
+        provider: "google_workspace",
+      }),
+      interaction({ provider: "microsoft_365" }),
+    ]);
+
+    expect(scope).not.toHaveProperty("draft_body");
+  });
+
+  it("keeps a reply draft whose canonical thread rows name a non-Gmail provider", () => {
+    const scope = replyScope([interaction({ provider: "microsoft_365" })]);
+
+    expect(scope).toMatchObject({
+      draft_subject: "Re: intake workflow",
+      draft_body: "Here is the requested workflow.",
+      draft_reply: REPLY,
+    });
+    expect(scope).not.toHaveProperty("draft_reply_source_interactions");
+  });
+
+  it("refuses a reply draft when the authoritative thread read is unavailable", () => {
+    const scope = replyScope([]);
+
+    expect(scope).not.toHaveProperty("draft_body");
   });
 
   it("keeps a non-reply CRM draft available for review", () => {
@@ -117,63 +185,4 @@ describe("Gmail model-transfer surface boundaries", () => {
       draft_approved: false,
     });
   });
-
-  it("keeps a reply draft with a server-issued non-Gmail transfer receipt", () => {
-    const scope = createCrmChaseboxScope({
-      active_queue: "pending_drafts",
-      queue_counts: { pending_drafts: 1 },
-      total_items: 1,
-      visible_items: [],
-      draft_subject: "Re: intake workflow",
-      draft_body: "Here is the requested workflow.",
-      draft_personalization: [],
-      draft_reply: {
-        intent: "Answer their question",
-        grounded_on: ["They asked in a CRM note [record]"],
-        answering_label: "interested",
-        thread_message_count: 2,
-        model_transfer_provenance: "full_thread_checked_v1",
-        source_providers: ["microsoft_365"],
-      },
-      draft_approved: false,
-    });
-
-    expect(scope).toMatchObject({
-      draft_subject: "Re: intake workflow",
-      draft_body: "Here is the requested workflow.",
-      draft_reply: {
-        model_transfer_provenance: "full_thread_checked_v1",
-        source_providers: ["microsoft_365"],
-      },
-    });
-  });
-
-  it.each<{ sourceProviders: string[] }>([
-    { sourceProviders: ["google_workspace"] },
-    { sourceProviders: ["unknown"] },
-    { sourceProviders: [] },
-  ])(
-    "refuses a reply draft whose full-thread providers are restricted or ambiguous",
-    ({ sourceProviders }) => {
-      const scope = createCrmChaseboxScope({
-        active_queue: "pending_drafts",
-        queue_counts: { pending_drafts: 1 },
-        total_items: 1,
-        visible_items: [],
-        draft_subject: "Restricted thread subject",
-        draft_body: "Restricted thread body",
-        draft_reply: {
-          intent: "Answer their question",
-          grounded_on: ["A restricted source [inbound_message]"],
-          answering_label: "interested",
-          thread_message_count: 3,
-          model_transfer_provenance: "full_thread_checked_v1",
-          source_providers: sourceProviders,
-        },
-      });
-
-      expect(JSON.stringify(scope)).not.toContain("Restricted thread");
-      expect(scope).not.toHaveProperty("draft_reply");
-    },
-  );
 });

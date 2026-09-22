@@ -79,12 +79,14 @@ function interaction(overrides: Partial<InteractionRow>): InteractionRow {
 describe("CRM Activity model-transfer boundary", () => {
   it.each([
     interaction({
+      channel_code: "email",
       direction: "inbound",
       provider: "google_workspace",
       subject: "Restricted subject",
       body: "Restricted Gmail body",
     }),
     interaction({
+      channel_code: "email",
       direction: "inbound",
       attributes: {
         outreach_inbound: {
@@ -95,6 +97,14 @@ describe("CRM Activity model-transfer boundary", () => {
       subject: "Historical restricted subject",
       body: "Historical restricted Gmail body",
     }),
+    interaction({
+      channel_code: "email",
+      direction: "inbound",
+      provider: null,
+      attributes: {},
+      subject: "Ambiguous inbound subject",
+      body: "Ambiguous inbound email body",
+    }),
   ])("refuses a Gmail-derived row payload", (row) => {
     expect(() => interactionAgentPayload(parent, row)).toThrow(
       "Gmail-derived activity",
@@ -104,6 +114,7 @@ describe("CRM Activity model-transfer boundary", () => {
   it("removes Gmail rows from a mixed Activity payload and keeps non-Gmail CRM activity", () => {
     const gmail = interaction({
       id: "44444444-4444-4444-8444-444444444444",
+      channel_code: "email",
       direction: "inbound",
       provider: "google_workspace",
       subject: "Restricted subject",
@@ -135,6 +146,26 @@ describe("CRM Activity model-transfer boundary", () => {
 
     expect(JSON.stringify(payload)).toContain(
       "Known-safe organization-authored email",
+    );
+  });
+
+  it.each([
+    interaction({
+      channel_code: "phone",
+      direction: "inbound",
+      provider: null,
+      body: "Known-safe inbound call notes",
+    }),
+    interaction({
+      channel_code: "email",
+      direction: "inbound",
+      provider: "microsoft_365",
+      body: "Known-safe Microsoft email",
+    }),
+  ])("keeps non-email and explicitly non-Gmail inbound activity", (row) => {
+    if (!row.body) throw new Error("fixture requires an activity body");
+    expect(JSON.stringify(interactionAgentPayload(parent, row))).toContain(
+      row.body,
     );
   });
 });

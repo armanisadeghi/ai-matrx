@@ -94,15 +94,27 @@ function readString(source: Record<string, unknown> | null, key: string): string
  * source stamp are still identifiable by the Gmail ingester's one
  * `attributes.outreach_inbound` block. Direction is part of the predicate so
  * an outbound message merely delivered through Google Workspace remains
- * ordinary organization-authored CRM content.
+ * ordinary organization-authored CRM content. An inbound email with neither
+ * canonical provider nor historical provenance is ambiguous and fails closed;
+ * calls, notes, and outbound organization content remain available.
  */
 export function isGmailDerivedInteraction(
-  interaction: Pick<InteractionRow, "attributes" | "direction" | "provider">,
+  interaction: Pick<
+    InteractionRow,
+    "attributes" | "channel_code" | "direction" | "provider"
+  >,
 ): boolean {
-  if (interaction.direction !== "inbound") return false;
+  if (
+    interaction.direction !== "inbound" ||
+    interaction.channel_code !== "email"
+  ) {
+    return false;
+  }
+  const provider = interaction.provider?.trim().toLowerCase() ?? "";
   return (
-    interaction.provider === "google_workspace" ||
-    readObject(interaction.attributes, "outreach_inbound") !== null
+    provider === "google_workspace" ||
+    readObject(interaction.attributes, "outreach_inbound") !== null ||
+    !provider
   );
 }
 
@@ -255,10 +267,6 @@ export interface ReplyProvenance {
   threadHash: string | null;
   version: string | null;
   generatedAt: string | null;
-  /** Full-thread provenance issued by the current reply writer. */
-  modelTransferProvenance: string | null;
-  /** Canonical providers observed on every inbound message in that thread. */
-  sourceProviders: string[];
 }
 
 /** Human-readable intents. An unknown intent renders as its raw name rather than
@@ -281,15 +289,6 @@ export function readReplyProvenance(attributes: unknown): ReplyProvenance | null
   const block = readObject(readObject(attributes, "outreach_single_send"), "reply");
   if (!block) return null;
   const count = block.thread_message_count;
-  const rawSourceProviders = block.source_providers;
-  const sourceProviders =
-    Array.isArray(rawSourceProviders) &&
-    rawSourceProviders.every(
-      (provider): provider is string =>
-        typeof provider === "string" && provider.trim().length > 0,
-    )
-      ? rawSourceProviders
-      : [];
   return {
     intent: readString(block, "intent"),
     groundedOn: Array.isArray(block.grounded_on)
@@ -303,8 +302,6 @@ export function readReplyProvenance(attributes: unknown): ReplyProvenance | null
     threadHash: readString(block, "thread_hash"),
     version: readString(block, "version"),
     generatedAt: readString(block, "generated_at"),
-    modelTransferProvenance: readString(block, "model_transfer_provenance"),
-    sourceProviders,
   };
 }
 
