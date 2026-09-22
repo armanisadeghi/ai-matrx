@@ -106,21 +106,31 @@ export default function UnifiedDataPage() {
               chat: (ctx) => <RecordScopedChat ctx={ctx} organizationId={organizationId} />,
             }}
           >
-            {/* WHAT IS WAITING ON THIS PERSON, above the tables — one inbox for
-                what they were assigned, what needs their approval and what an
-                agent has proposed (PRODUCTS.md row 6). It is the store's own
-                queue (`custom.work_inbox`), so an approval raised anywhere in
-                the platform arrives here. */}
-            <ActionInbox
-              className="mb-4 max-h-64"
-              onOpenRecord={(recordId, tableId) => router.push(`/data-v2/${tableId}?record=${recordId}`)}
-            />
             {/* THE ORGANIZATION'S HUB — every capability the record store has, each
                 read through the ONE door that answers for the whole organization,
                 with the lanes as filters and the tables list inside it. This is
                 /data-v2's landing; there is deliberately no second route family
                 for it. Lane DATA-HUB, 2026-09-22. */}
-            <OrganizationHub organizationId={organizationId!} dataSource={dataSource} />
+            <OrganizationHub
+              organizationId={organizationId!}
+              dataSource={dataSource}
+              /* WHAT IS WAITING ON THIS PERSON — one inbox for what they were
+                 assigned, what needs their approval and what an agent has
+                 proposed (PRODUCTS.md row 6), the store's own `custom.work_inbox`,
+                 so an approval raised anywhere in the platform arrives here.
+                 🚨 IT IS A SLOT ON THE HUB NOW, NOT A BLOCK ABOVE IT: rendered
+                 here it filled the whole first screen of the organization's
+                 front door with thirty-seven approval cards (VERIFIER-14 §3).
+                 The hub puts it under the listings. */
+              inbox={
+                <ActionInbox
+                  className="max-h-64"
+                  onOpenRecord={(recordId, tableId) =>
+                    router.push(`/data-v2/${tableId}?record=${recordId}`)
+                  }
+                />
+              }
+            />
           </RecordsMount>
         )}
       </div>

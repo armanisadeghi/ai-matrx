@@ -83,10 +83,43 @@ function byId(tables: readonly Table[]): Map<string, Table> {
   return new Map(tables.map((t) => [t.id, t]));
 }
 
+/**
+ * WHETHER THE STORE ITSELF SAYS THIS TABLE IS MACHINERY.
+ *
+ * 🚨 MEASURED ON RINCON PLUMBING CO, 2026-09-22 (VERIFIER-14 §5). Thirteen
+ * tables called "Crew choices" and fourteen called "Status choices" sat in the
+ * person's own Tables list — one per choice field, made by the store when a
+ * field of choices is declared. They are option-list machinery, and a hub that
+ * lists twenty-seven of them beside Jobs, Customers and Invoices is a hub whose
+ * front page is mostly not the business.
+ *
+ * The marker is the STORE'S OWN, not a guess from the name: the Table record
+ * carries `kept_by_the_app: true` in its document (`custom.record`, the Table
+ * kernel), and `tableList()` spreads the whole document onto the Table object.
+ * It is not in `@ai-matrx/records`' `Table` interface yet, which is why it is
+ * read through a narrow cast here and nowhere else — the day the package
+ * declares it, this helper's body is one property access and nothing above it
+ * changes. Sniffing the SLUG ("status_choices_<hex>") would have worked today
+ * and broken the first time the store named one differently.
+ */
+export function keptByTheApp(table: Table): boolean {
+  return (table as unknown as { kept_by_the_app?: unknown }).kept_by_the_app === true;
+}
+
+/**
+ * The lane of a TABLE. `laneFor` is the package's ONE lane decision and this
+ * does not second-guess it — it adds the one fact `laneFor` cannot see yet:
+ * a table the store keeps for the app belongs in the app's lane, exactly like
+ * the kernel tables `laneFor` already puts there.
+ */
+function laneOfTable(table: Table): TableLane {
+  return keptByTheApp(table) ? "app" : laneFor(table);
+}
+
 /** The lane of a thing is the lane of the table it belongs to (the ONE `laneFor`). */
 function laneOf(index: Map<string, Table>, tableId: string | null | undefined): TableLane {
   const table = tableId ? index.get(tableId) : undefined;
-  return table ? laneFor(table) : "organization";
+  return table ? laneOfTable(table) : "organization";
 }
 
 function nameOf(
@@ -126,12 +159,15 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     async read(ctx) {
       return {
         ok: true,
-        items: ctx.tables.map((table) => ({
+        // THE PERSON'S TABLES, AND ONLY THOSE. What the store keeps for itself
+        // is listed below under "Kept by the app" — same doors, same rows, one
+        // listing further down, so nothing is hidden and nothing is buried.
+        items: ctx.tables.filter((table) => !keptByTheApp(table)).map((table) => ({
           id: table.id,
           title: table.name ?? "(unnamed table)",
           tableId: table.id,
           tableName: table.name ?? null,
-          lane: laneFor(table),
+          lane: laneOfTable(table),
           // A SCREEN NEVER PRINTS THE MACHINE'S WORD. `table.type` is the
             // store's own token ("entity", "options", …) and it read as jargon on
             // every row of Rincon's list; the column count is the fact a person
@@ -420,7 +456,42 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
           // It is not in any of THIS organization's lanes; it was shared to the person.
           lane: "community" as TableLane,
           facts: [share.level_label, `from ${share.organization}`],
-          href: `/data-v2/${share.table_id}`,
+          // 🚨 THE LINK CARRIES THE ORGANIZATION THAT OWNS THE TABLE.
+          // VERIFIER-14 item 2: every row in this listing opened
+          // `/data-v2/<table>` and landed on "This table is not here. This
+          // table is not in the organization you are working in" — which is
+          // honest and is still a named thing that does not open. The table is
+          // not in the organization you are working in BY DEFINITION here: the
+          // whole listing is what somebody ELSE's organization shared with you.
+          // So the address says whose it is, the way
+          // `platform.link_carries_its_organization` makes every notification
+          // link name its own organization, and the table route opens it in
+          // that organization's context without moving the person's own
+          // organization out from under them.
+          href: `/data-v2/${share.table_id}?org=${share.organization_id}`,
+        })),
+      };
+    },
+  },
+
+  {
+    id: "kept-by-the-app",
+    title: "Kept by the app",
+    what: "Tables the store made for itself — the choice lists behind your dropdowns, and its own saved views.",
+    empty: "The store keeps nothing of its own here yet.",
+    door: "custom.read_records over the Table kernel",
+    changedByKind: "structure",
+    async read(ctx) {
+      return {
+        ok: true,
+        items: ctx.tables.filter(keptByTheApp).map((table) => ({
+          id: table.id,
+          title: table.name ?? "(unnamed table)",
+          tableId: table.id,
+          tableName: table.name ?? null,
+          lane: "app" as TableLane,
+          facts: [plural(table.fields?.length ?? 0, "column")],
+          href: `/data-v2/${table.id}`,
         })),
       };
     },

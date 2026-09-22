@@ -22,7 +22,7 @@
 // the lane of the TABLE it belongs to — which is what makes "my organization"
 // mean the same word on this page and on the tables list underneath it.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -65,9 +65,25 @@ export interface OrganizationHubProps {
    * installed `@ai-matrx/records` client (see `doors.ts`).
    */
   dataSource: RecordsDataSource;
+  /**
+   * WHAT IS WAITING ON THIS PERSON, RENDERED UNDER THE LISTINGS AND NOT OVER THEM.
+   *
+   * 🚨 IT USED TO BE THE FIRST THING ON THE ORGANIZATION'S FRONT DOOR
+   * (VERIFIER-14 §3, measured on Rincon Plumbing Co): an `Inbox 37` stack of
+   * approval cards filled the whole first screen at 1600 px and two screens at
+   * 390 px, so a person opening /data-v2 met somebody's field-proposal queue
+   * before they met the front door. The queue is not less important for being
+   * lower — it is one section among the organization's own, and it is still one
+   * scroll away with its own count on it.
+   *
+   * It is a slot rather than an import because the inbox is the package's
+   * `ActionInbox` and its Open must route through the host's router; the page
+   * above owns both.
+   */
+  inbox?: ReactNode | undefined;
 }
 
-export function OrganizationHub({ organizationId, dataSource }: OrganizationHubProps) {
+export function OrganizationHub({ organizationId, dataSource, inbox }: OrganizationHubProps) {
   const router = useRouter();
   const client = useRecordsClient();
   const tablesRead = useTables();
@@ -248,7 +264,13 @@ export function OrganizationHub({ organizationId, dataSource }: OrganizationHubP
                   >
                     {item.title}
                   </Link>
-                  <span className="ml-1 text-xs text-muted-foreground">{item.capability}</span>
+                  {/* THE NAME AND WHAT IT IS ARE TWO THINGS. Without a separator
+                      they set in the same size and flow, so "Jobs" followed by
+                      "Tables" read as one name — "Jobs Tables" (VERIFIER-14 §4).
+                      The middot is the one the rows already use between facts. */}
+                  <span className="ml-1.5 text-xs text-muted-foreground">
+                    <span aria-hidden>·</span> {item.capability}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -300,6 +322,9 @@ export function OrganizationHub({ organizationId, dataSource }: OrganizationHubP
           onOpenChange={(next) => setOpen((prev) => ({ ...prev, [capability.id]: next }))}
         />
       ))}
+
+      {/* THE QUEUE, UNDER THE FRONT DOOR RATHER THAN OVER IT. See `inbox` above. */}
+      {inbox}
 
       {/* ARCHIVED ITEMS — one click where you already are, closed by default,
           and the way back is on the row (the archived-items law, 2026-09-09). */}
