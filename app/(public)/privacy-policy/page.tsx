@@ -7,7 +7,7 @@ const PrivacyPolicyPage = () => {
       <article className="prose prose-neutral mx-auto max-w-3xl px-4 py-8 dark:prose-invert sm:px-6 sm:py-12">
         <h1>Privacy Policy</h1>
         <p>
-          <strong>Last updated:</strong> September 12, 2026
+          <strong>Last updated:</strong> September 22, 2026
         </p>
         <p>
           AI Matrx is a technology product owned and operated by{" "}
@@ -290,12 +290,22 @@ const PrivacyPolicyPage = () => {
           to perform the read or update action you request.
         </p>
         <p>
-          Reviewed Gmail sending is a separate, incremental feature. It uses
-          only
-          <code>gmail.send</code> to send the recipients, subject, and message
-          body visible to you after you affirmatively confirm the send. AI Matrx
-          does not request permission to read, search, delete, or organize your
-          Gmail.
+          Gmail sending uses <code>gmail.send</code> to send the recipients,
+          subject, and message body visible to you after you confirm the send.
+          Gmail reading is a separate, optional feature in internal testing. If
+          you grant <code>gmail.readonly</code>, AI Matrx can search your
+          mailbox when you request it, show message headers and snippets in the
+          results, and read the body of a message you select. That permission
+          does not let AI Matrx delete, organize, or send messages.
+        </p>
+        <p>
+          If you separately register a Gmail mailbox for outreach replies, AI
+          Matrx checks new messages in that mailbox to determine whether they
+          reply to your tracked outreach. This check reads message content
+          before it can determine whether a message matches. A matched reply may
+          be saved as a CRM interaction with its subject, message identifiers,
+          classification, and up to 20,000 characters of body text. Unmatched
+          messages are not saved as CRM interactions.
         </p>
         <p>
           Google Workspace content is used only to provide or improve the
@@ -330,13 +340,13 @@ const PrivacyPolicyPage = () => {
         <p>
           If you connect an Amazon selling account, AI Matrx accesses Amazon
           Selling Partner API data only after you authorize the connection
-          through Amazon&rsquo;s OAuth workflow. The initial integration uses the
-          Product Listing and Inventory and Order Tracking roles to create and
-          maintain your listings, synchronize quantities across channels, and
-          show non-restricted order information such as order identifiers, line
-          items, status, and totals. It does not request Restricted roles or
-          Restricted Data Tokens and does not obtain buyer names, addresses, or
-          contact details through other means.
+          through Amazon&rsquo;s OAuth workflow. The initial integration uses
+          the Product Listing and Inventory and Order Tracking roles to create
+          and maintain your listings, synchronize quantities across channels,
+          and show non-restricted order information such as order identifiers,
+          line items, status, and totals. It does not request Restricted roles
+          or Restricted Data Tokens and does not obtain buyer names, addresses,
+          or contact details through other means.
         </p>
         <p>
           Amazon Information is isolated to your organization and used only to
@@ -472,21 +482,23 @@ const PrivacyPolicyPage = () => {
           account identity plus <code>drive.file</code> may be held in browser
           memory while Google Picker is open; it is not written to browser
           storage. We store safe connection metadata and references for the
-          individual files you selected. The Google Workspace operation
-          endpoints do not persist document contents, spreadsheet cell values,
-          or Gmail message bodies.
+          individual files you selected. On-demand Google Workspace operations
+          do not save document contents, spreadsheet cell values, Gmail search
+          queries, or Gmail message bodies as records. The separately configured
+          outreach-reply feature saves matched replies as described in Section
+          2.9; that CRM copy remains after you disconnect Google until you
+          delete it or your account.
         </p>
 
         <h3>3.6 Amazon credentials and information</h3>
         <p>
           Amazon OAuth credentials are encrypted in AI Matrx&rsquo;s server-side
           credential vault. Amazon Information is processed by our contracted
-          infrastructure providers &mdash; AWS for application compute,
-          Supabase for managed database storage, and Vercel for the web
-          frontend &mdash; only as needed to operate AI Matrx. We do not place
-          Amazon credentials or Amazon Information in public repositories or
-          share them with advertisers, data brokers, or unrelated third
-          parties.
+          infrastructure providers &mdash; AWS for application compute, Supabase
+          for managed database storage, and Vercel for the web frontend &mdash;
+          only as needed to operate AI Matrx. We do not place Amazon credentials
+          or Amazon Information in public repositories or share them with
+          advertisers, data brokers, or unrelated third parties.
         </p>
 
         <h2>4. How we use the information</h2>
@@ -546,9 +558,12 @@ const PrivacyPolicyPage = () => {
             <strong>Google Workspace connection:</strong> encrypted credentials
             and selected-file references are kept until you disconnect Google or
             delete your account. Document contents, spreadsheet values, and
-            Gmail message bodies handled by the Workspace operation endpoints
-            are processed for the requested action and are not stored by those
-            endpoints.
+            Gmail message bodies handled by on-demand Workspace operations are
+            processed for the requested action and are not stored by those
+            endpoints. Matched outreach replies saved as CRM interactions are
+            retained until you delete the interaction or your account;
+            disconnecting Google stops future access but does not itself delete
+            those existing CRM interactions.
           </li>
           <li>
             <strong>Amazon Selling Partner connection:</strong> encrypted
@@ -586,8 +601,10 @@ const PrivacyPolicyPage = () => {
             <strong>Disconnect Google Workspace.</strong> Use the Google
             Workspace connection control in AI Matrx to revoke Google
             authorization and remove the saved server-side credential and
-            selected-file references. You can also revoke AI Matrx from your
-            Google Account permissions.
+            selected-file references. This does not delete any CRM interactions
+            previously saved from matched outreach replies; delete those
+            separately or request account deletion. You can also revoke AI Matrx
+            from your Google Account permissions.
           </li>
           <li>
             <strong>Disconnect Amazon.</strong> Use the Amazon connection
