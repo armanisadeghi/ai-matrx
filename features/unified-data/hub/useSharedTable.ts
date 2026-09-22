@@ -38,6 +38,7 @@
 import { useEffect, useState } from "react";
 import type { RecordsDataSource } from "@ai-matrx/records";
 
+import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import * as doors from "./doors";
 
 export type SharedTableContext =
@@ -75,6 +76,26 @@ export function useSharedTable(
     let alive = true;
     setAnswer({ state: "checking" });
     void (async () => {
+      // 🚨 THE SWITCH, ASKED OF THE ORGANIZATION WHOSE STORE WE ARE ABOUT TO
+      // READ, and asked here rather than only by the route above — this hook is
+      // the only thing that can open another organization's store on this page,
+      // so the gate belongs inside it and cannot be walked past by a host that
+      // forgot its own. `off` and `could not check` are different sentences and
+      // both are said; neither is ever spelled as "you have no share".
+      const gate = await UNIFIED_DATA_CAMPAIGN.check(askedOrganizationId);
+      if (!alive) return;
+      if (gate.state !== "on") {
+        setAnswer({
+          state: "not-shared",
+          why:
+            gate.state === "unavailable"
+              ? "The record store's switch could not be read for the organization that owns this " +
+                `table, so nothing was read — this is not an answer about your access. ${gate.cause}`
+              : "The organization that owns this table does not keep its data in the record store, " +
+                "so there is nothing here to show you.",
+        });
+        return;
+      }
       const answered = await doors.sharedWithMe(dataSource);
       if (!alive) return;
       if (!answered.ok) {
