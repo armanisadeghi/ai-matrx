@@ -1,20 +1,14 @@
 {
-  "_why": "THE CENSUS, NOT AN EXCUSE. Every entry is a client write the authenticated role genuinely cannot perform — it fails at run time with 42501, in the console. They were found by this checker on the day it was written (2026-09-18) and belong to lanes other than the one that wrote the guard, so they are recorded rather than silently fixed or silently ignored. This list ONLY SHRINKS: an entry that is no longer an offender fails the check too, so a fix cannot leave a stale excuse behind, and anything NEW is a hard failure with no entry available.",
+  "_why": "THE CENSUS, NOT AN EXCUSE. Every entry is a client write the authenticated role genuinely cannot perform \u2014 it fails at run time with 42501, in the console. They were found by this checker on the day it was written (2026-09-18) and belong to lanes other than the one that wrote the guard, so they are recorded rather than silently fixed or silently ignored. This list ONLY SHRINKS: an entry that is no longer an offender fails the check too, so a fix cannot leave a stale excuse behind, and anything NEW is a hard failure with no entry available.",
   "_how_to_clear_one": "Almost never by granting the client the privilege. A table the client may not write is a table the SERVER writes: move the call behind an aidream endpoint, the way /acquisition/blocks did in 2026-09-18's fix. Then delete the entry.",
   "offenders": [
     {
-      "file": "features/marketing/search-console/data-launch.ts",
-      "table": "seo.page",
+      "file": "features/surfaces/services/manifest-sync.service.ts",
+      "table": "platform.associations",
       "verb": "update",
-      "found": "2026-09-18",
-      "note": "authenticated holds no privilege at all on seo.page, so this update has never worked from the browser. Owner: the marketing/SEO lane."
-    },
-    {
-      "file": "features/tool-registry/lookups/services/lookups.service.ts",
-      "table": "tool.ui_surface",
-      "verb": "upsert",
-      "found": "2026-09-18",
-      "note": "authenticated holds no privilege at all on tool.ui_surface. Owner: the tool-registry lane."
+      "found": "2026-09-22",
+      "note": "The doors-only closure on schema platform withdrew UPDATE on platform.associations from authenticated; this remediation write has answered 42501 ever since. Owner: the surfaces/manifest-sync lane. The fix is the same one FIX-10A-ASSISTS used for platform.assists: a SECURITY DEFINER door registered in platform.client_callable_door, never a new grant."
     }
-  ]
+  ],
+  "_corrected_2026-09-22": "FIX-10A-ASSISTS removed two entries that were never real writes. The chain pattern used to walk across statement boundaries, so it read `.schema(\"seo\")` from one statement, `.from(\"page\")` from another and `.update(` from a third: features/marketing/search-console/data-launch.ts writes seo.page through authenticatedWebDb() with no .schema() in the chain at all, and features/tool-registry/lookups/services/lookups.service.ts has no tool.ui_surface upsert anywhere in it. Both names were invented by the gap. The gaps now stop at `;`. A write that carries no explicit .schema() is outside what this guard measures - that is a separate finding, not this one."
 }

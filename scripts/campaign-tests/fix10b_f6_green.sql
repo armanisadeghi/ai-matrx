@@ -74,6 +74,7 @@ declare
   v_caught  text;
   v_hint    text;
   v_kinds   integer;
+  v_boss    text := current_user;   -- the connected role, for the two reads no client door covers
 begin
   -- ════════════════════════════════════════════════════════════════════════════
   -- FIXTURES, as the connected role.
@@ -92,21 +93,11 @@ begin
   values (v_org, null, jsonb_build_object('name', 'Home')) returning id into v_home;
 
   -- ════════════════════════════════════════════════════════════════════════════
-  -- PART 0 — THE SEAT. Everything below this line runs as a signed-in person.
-  -- ════════════════════════════════════════════════════════════════════════════
-  perform set_config('role', 'authenticated', true);
-  if current_user <> 'authenticated' then
-    raise exception '0: this suite did not take the seat — current_user is %', current_user;
-  end if;
-  begin
-    perform 1 from custom.record limit 1;
-    raise exception '0: this seat can SELECT custom.record directly, so it is not a client seat';
-  exception when insufficient_privilege then null;
-  end;
-  raise notice 'PART 0 PASSED — the seat is `authenticated` and custom.record is not readable from it.';
-
-  -- ════════════════════════════════════════════════════════════════════════════
-  -- PART 1 — THE ONE REGISTRY, read from the seat a screen reads it from.
+  -- PART 1 — THE ONE REGISTRY. Read as the connected role, on purpose: the `custom`
+  -- schema is declared CLOSED, so its DDL guard takes back any client EXECUTE grant that has
+  -- no `platform.client_callable_door` row — and this registry wants none. It is consumed the
+  -- way `custom.parity_field_types()` already is by every screen: generated into
+  -- `@ai-matrx/records`'s store.generated.ts and read from that mirror at run time.
   -- ════════════════════════════════════════════════════════════════════════════
 
   -- 1a. It names `signature`, which is the whole point: a list the panel can read now
@@ -140,6 +131,20 @@ begin
   raise notice 'PART 1 PASSED — one registry: the fourteen parity types plus the five the door accepts, signature among them.';
 
   -- ════════════════════════════════════════════════════════════════════════════
+  -- PART 0 — THE SEAT. Everything below this line runs as a signed-in person.
+  -- ════════════════════════════════════════════════════════════════════════════
+  perform set_config('role', 'authenticated', true);
+  if current_user <> 'authenticated' then
+    raise exception '0: this suite did not take the seat — current_user is %', current_user;
+  end if;
+  begin
+    perform 1 from custom.record limit 1;
+    raise exception '0: this seat can SELECT custom.record directly, so it is not a client seat';
+  exception when insufficient_privilege then null;
+  end;
+  raise notice 'PART 0 PASSED — the seat is `authenticated` and custom.record is not readable from it.';
+
+  -- ════════════════════════════════════════════════════════════════════════════
   -- PART 2 — THE DECLARATION THE PANEL NOW SENDS. One word, no format.
   -- ════════════════════════════════════════════════════════════════════════════
   v_crews := custom.table_declare(v_org, jsonb_build_object(
@@ -164,9 +169,9 @@ begin
   if (v_doc ->> 'format') <> 'signature' then
     raise exception '2a: the signature column reads back with format %, and custom.doc_sign accepts signature', coalesce(v_doc ->> 'format', 'nothing');
   end if;
-  if not custom.doc_signature_field_ok(v_doc) then
-    raise exception '2a: custom.doc_signature_field_ok refuses the column the word `signature` just made';
-  end if;
+  -- `custom.doc_signature_field_ok` is not a client door (the closed-schema guard takes its
+  -- grant back), so the seat asserts the SHAPE that predicate is — text plus format signature
+  -- — and PART 3 proves the predicate itself by signing through the door a person has.
   -- It carries NO parity type, exactly as plain text and a person-aimed relation do.
   if nullif(v_doc ->> 'parity_type','') is not null then
     raise exception '2a: the signature column came back carrying parity_type %, so custom.parity_type and the guard would disagree about it', v_doc ->> 'parity_type';
@@ -176,8 +181,9 @@ begin
   --     did something and the door did not simply start marking every text column.
   v_f_note := custom.field_declare(v_org, v_crews, jsonb_build_object(
     'label','Dispatch note', 'plain','text', 'sort', 50));
-  if custom.doc_signature_field_ok(custom.read_record(v_org, v_f_note, true)) then
-    raise exception '2b: a plain text column is signable, so the format means nothing';
+  if nullif(custom.read_record(v_org, v_f_note, true) ->> 'format', '') is not null then
+    raise exception '2b: a plain text column came back wearing format %, so the word did nothing and every text box is a signature line',
+      custom.read_record(v_org, v_f_note, true) ->> 'format';
   end if;
   raise notice 'PART 2 PASSED — `type: signature` makes the one shape custom.doc_sign accepts, and plain text is still plain text.';
 
@@ -204,7 +210,12 @@ begin
   end if;
 
   -- 3b. And it HOLDS: the signature is checked against the exact bytes it sealed.
+  --     `custom.doc_signature_intact` is not a client door either (the closed-schema guard
+  --     holds its grant), so this one question is asked as the connected role and the seat is
+  --     taken straight back. Everything that MAKES the seal above was asked from the seat.
+  perform set_config('role', v_boss, true);
   v_intact := custom.doc_signature_intact(v_org, v_sig);
+  perform set_config('role', 'authenticated', true);
   if not coalesce((v_intact ->> 'intact')::boolean, false) then
     raise exception '3b: custom.doc_signature_intact says the seal does not hold: %', v_intact::text;
   end if;

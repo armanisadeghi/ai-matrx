@@ -63,6 +63,8 @@ interface Write {
   table: string;
   verb: string;
   privilege: string;
+  /** The identifier this name was guessed from, when `.from()` took a union. */
+  candidateFor?: string;
 }
 
 /**
@@ -72,7 +74,17 @@ interface Write {
  * requiring one expression on one line.
  */
 const WRITE_CHAIN =
-  /\.schema\(\s*["'`]([a-z_][a-z0-9_]*)["'`]\s*\)[\s\S]{0,400}?\.from\(\s*(["'`]?)([A-Za-z_$][A-Za-z0-9_$]*)\2\s*\)[\s\S]{0,400}?\.(insert|upsert|update|delete)\s*\(/g;
+  /\.schema\(\s*["'`]([a-z_][a-z0-9_]*)["'`]\s*\)[^;]{0,400}?\.from\(\s*(["'`]?)([A-Za-z_$][A-Za-z0-9_$]*)\2\s*\)[^;]{0,400}?\.(insert|upsert|update|delete)\s*\(/g;
+
+/*
+ * 🚨 A `;` ENDS THE CHAIN, AND WITHOUT THAT THE GUARD INVENTED AN OFFENDER.
+ * (FIX-10A-ASSISTS, 2026-09-22.) The gaps used to be `[\s\S]{0,400}`, which walked straight
+ * past the end of the statement: `lib/organizations/systemOrg.ts` reads
+ * `.schema("iam").from("system_orgs").select(...)` and, forty lines later, calls
+ * `inflight.delete(key)` on a JavaScript Map — and the guard reported a DELETE on
+ * `iam.system_orgs` that no line of that file makes. A false name in a security guard is
+ * how a real one gets ignored, so the gaps now stop at the statement terminator.
+ */
 
 /**
  * 🚨 `.from(TABLE)` IS A TABLE NAME, AND THE FIRST VERSION OF THIS GUARD COULD NOT SEE IT.
@@ -100,6 +112,27 @@ export function tableConstants(source: string): Map<string, string> {
     out.set(m[1], m[2]);
   }
   return out;
+}
+
+/**
+ * A TABLE NAMED BY A UNION IS STILL A SET OF TABLES.
+ *
+ * `features/surfaces/services/manifest-sync.service.ts` deletes from `.from(table)` where
+ * `table: MirrorTable` — a union derived from `const MIRROR_TABLES = [...] as const`. There
+ * is no single answer to "which table", and answering "unknown, therefore fine" is how the
+ * assists class survived. So every name in a module's `as const` string arrays becomes a
+ * CANDIDATE; the ones that really are tables in the named schema (the live catalog decides,
+ * never this regex) are each checked, and a call site with no candidate at all is reported
+ * UNRESOLVED rather than passed.
+ */
+export function constArrayLiterals(source: string): string[] {
+  const out = new Set<string>();
+  for (const block of source.matchAll(
+    /(?:const|let|var)\s+[A-Za-z_$][A-Za-z0-9_$]*\s*(?::[^=]{0,120})?=\s*\[([\s\S]{0,2000}?)\]\s*as\s+const/g,
+  )) {
+    for (const lit of block[1].matchAll(/["'`]([a-z_][a-z0-9_]*)["'`]/g)) out.add(lit[1]);
+  }
+  return [...out];
 }
 
 function* walk(dir: string): Generator<string> {
@@ -138,24 +171,31 @@ function findWrites(extraFiles: { path: string; source: string }[] = []): Write[
     let match: RegExpExecArray | null;
     while ((match = WRITE_CHAIN.exec(source)) !== null) {
       const [, schema, quote, rawTable, verb] = match;
-      const table = quote ? rawTable : (constants.get(rawTable) ?? null);
-      if (table === null) {
+      const line = source.slice(0, match.index).split("\n").length;
+      const direct = quote ? rawTable : constants.get(rawTable);
+      const names: { table: string; candidateFor?: string }[] = direct
+        ? [{ table: direct }]
+        : constArrayLiterals(source).map((t) => ({ table: t, candidateFor: rawTable }));
+      if (names.length === 0) {
         unresolved.push(
-          `${relative(ROOT, path)}:${source.slice(0, match.index).split("\n").length} — ` +
+          `${relative(ROOT, path)}:${line} — ` +
             `.schema("${schema}").from(${rawTable}).${verb}() names a table through the identifier ` +
-            `\`${rawTable}\`, which is not a string constant in this module. UNRESOLVED IS NOT PASSED: ` +
-            `name the table inline, or bind it to a module-level string constant.`,
+            `\`${rawTable}\`, and this module declares no string constant it could be. UNRESOLVED IS ` +
+            `NOT PASSED: name the table inline, or bind it to a module-level string constant.`,
         );
         continue;
       }
-      found.push({
-        file: relative(ROOT, path),
-        line: source.slice(0, match.index).split("\n").length,
-        schema,
-        table,
-        verb,
-        privilege: VERB_PRIVILEGE[verb],
-      });
+      for (const n of names) {
+        found.push({
+          file: relative(ROOT, path),
+          line,
+          schema,
+          table: n.table,
+          verb,
+          privilege: VERB_PRIVILEGE[verb],
+          candidateFor: n.candidateFor,
+        });
+      }
     }
   }
   return found;
@@ -202,7 +242,7 @@ async function main(): Promise<void> {
       ]
     : [];
 
-  const writes = findWrites(planted);
+  let writes = findWrites(planted);
 
   if (selfTest && !writes.some((w) => w.table === "acquisition_block")) {
     fail(
@@ -222,14 +262,6 @@ async function main(): Promise<void> {
     );
   }
 
-  if (unresolved.length > 0) {
-    fail(
-      `${unresolved.length} client write(s) name their table through an identifier this\n` +
-        `checker cannot resolve. UNMEASURED IS NOT PASSED:\n\n` +
-        unresolved.map((u) => `  ${u}`).join("\n"),
-    );
-  }
-
   const env = loadDbEnv();
   if ("missing" in env) {
     fail(
@@ -245,6 +277,47 @@ async function main(): Promise<void> {
   );
 
   try {
+    // A CANDIDATE IS NOT A TABLE UNTIL THE CATALOG SAYS SO. `.from(<union>)` produces one
+    // candidate per `as const` literal in the module, and most of them are ordinary words.
+    // The live catalog — never this file's regex — decides which ones name a real table;
+    // the rest are dropped, and a call site left with nothing is UNRESOLVED, not passed.
+    const candidateNames = [
+      ...new Set(
+        writes.filter((w) => w.candidateFor).map((w) => `${w.schema}.${w.table}`),
+      ),
+    ];
+    let live = writes;
+    if (candidateNames.length > 0) {
+      const { rows: realRows } = await client.query<{ tbl: string }>(
+        `select table_schema || '.' || table_name as tbl
+           from information_schema.tables
+          where table_schema || '.' || table_name = any($1::text[])`,
+        [candidateNames],
+      );
+      const real = new Set(realRows.map((r) => r.tbl));
+      live = writes.filter(
+        (w) => !w.candidateFor || real.has(`${w.schema}.${w.table}`),
+      );
+      const stillNamed = new Set(
+        live.filter((w) => w.candidateFor).map((w) => `${w.file}:${w.line}`),
+      );
+      for (const w of writes) {
+        if (!w.candidateFor || stillNamed.has(`${w.file}:${w.line}`)) continue;
+        const note =
+          `${w.file}:${w.line} — .schema("${w.schema}").from(${w.candidateFor}).${w.verb}() ` +
+          `names a table through the identifier \`${w.candidateFor}\`, and no string constant in ` +
+          `this module names a real table in schema \`${w.schema}\`. UNRESOLVED IS NOT PASSED.`;
+        if (!unresolved.includes(note)) unresolved.push(note);
+      }
+    }
+    if (unresolved.length > 0) {
+      fail(
+        `${unresolved.length} client write(s) name their table through an identifier this\n` +
+          `checker cannot resolve. UNMEASURED IS NOT PASSED:\n\n` +
+          unresolved.map((u) => `  ${u}`).join("\n"),
+      );
+    }
+    writes = live;
     const wanted = [...new Set(writes.map((w) => `${w.schema}.${w.table}`))];
     if (wanted.length === 0) {
       console.log("No schema-qualified client writes found. Nothing to check.");

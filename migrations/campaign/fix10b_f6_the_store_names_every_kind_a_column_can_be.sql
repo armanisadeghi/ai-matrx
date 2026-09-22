@@ -36,7 +36,7 @@
 -- answer to "which of the fourteen is this field", which is a different question from "what
 -- may somebody pick" — and this registry SELECTS from it rather than restating it, so the
 -- fifteenth parity type appears here the day it appears there and nobody has to remember.
-CREATE OR REPLACE FUNCTION custom.field_kinds()
+CREATE FUNCTION custom.field_kinds()
  RETURNS TABLE(kind text, behavior text, parity boolean, made_of text)
  LANGUAGE sql
  IMMUTABLE PARALLEL SAFE
@@ -54,12 +54,18 @@ AS $function$
   ) as extra(kind, behavior, parity, made_of);
 $function$;
 
-GRANT EXECUTE ON FUNCTION custom.field_kinds() TO authenticated;
+-- NO GRANT, DELIBERATELY. This registry is consumed the way `custom.parity_field_types()`
+-- already is by every screen: generated into `@ai-matrx/records`'s `store.generated.ts` by
+-- `pnpm records:generate`, which connects directly, and read from that mirror at run time.
+-- The `custom` schema revokes EXECUTE from PUBLIC by default, so nothing client-facing is
+-- widened here — the OFF switch's boundary IS the absence of a grant, and a campaign file
+-- that names production may not widen one. A runtime client reader, if one is ever wanted,
+-- is a chair step of its own with its own inverse.
 
 -- The refusal's sentence, built from the registry, so "there is no kind of column called X"
 -- can never again name a list that has moved on without it. Mirrors
 -- `custom._parity_types_sentence()` word for word, and is private in the same way.
-CREATE OR REPLACE FUNCTION custom._field_kinds_sentence()
+CREATE FUNCTION custom._field_kinds_sentence()
  RETURNS text
  LANGUAGE plpgsql
  STABLE
@@ -88,7 +94,9 @@ begin
 end;
 $function$;
 
-REVOKE ALL ON FUNCTION custom._field_kinds_sentence() FROM public;
+-- Private in the same way `custom._parity_types_sentence()` is, and by the same mechanism:
+-- the schema's default privileges, not a REVOKE this file has to widen its own allow-list for.
+-- Its only caller is `custom._field_document_for`, which runs inside a SECURITY DEFINER door.
 
 -- ── THE DOOR, WHICH NOW ANSWERS TO EVERY WORD IN THE REGISTRY ──────────────────────────
 CREATE OR REPLACE FUNCTION custom._field_document_for(p_organization_id uuid, p_table_id uuid, p_spec jsonb)
