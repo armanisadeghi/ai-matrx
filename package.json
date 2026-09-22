@@ -714,7 +714,7 @@
     "@radix-ui/react-tooltip": "latest",
     "@react-email/render": "^2.1.0",
     "@react-oauth/google": "^0.13.5",
-    "@react-three/fiber": "latest",
+    "@react-three/fiber": "9.8.0",
     "@reduxjs/toolkit": "latest",
     "@remirror/pm": "latest",
     "@remirror/react": "latest",
