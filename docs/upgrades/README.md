@@ -6,7 +6,7 @@
 
 **Owner:** The assigned frontend engineering lane commits and pushes its verified scope under the current `CLAUDE.md` completion policy. June ownership and phase rows below are historical.
 **Started:** 2026-06-29
-**Status:** September 21 compatible refresh in progress. See §5 for the current compatibility campaign. Older phase rows do not describe today's installed versions.
+**Status:** September 22 compatible refresh advances Supabase JS to 2.117.0 and Babel AST types to 8.0.6. See §5 for the remaining compatibility boundaries. Older phase rows do not describe today's installed versions.
 
 ---
 
@@ -135,13 +135,15 @@ all `@radix-ui/react-*` to latest 1.x/2.x within current major.
 
 ## 5. Major-version queue (priority order, per Arman)
 
-### September 21 compatibility campaign
+### September 22 compatibility campaign
 
-**Current evidence:** `pnpm outdated --format json` reports patch/minor drift,
-major migrations, and three deprecated direct packages. The pre-change
-`pnpm type-check` reports 16 diagnostics in eight files, including missing
-`@ai-matrx/records` exports used by concurrent booking/typed-answer work.
-This is the pre-change baseline, not a claim of a clean type check.
+**Current evidence:** the September 22 pre-change `pnpm type-check` passes.
+Supabase JS 2.117.0 is adopted. Babel AST types 8.0.6 require the existing
+Jest ESM transform allowlist to include `@babel`; without it the viewport
+breakpoint migration suite fails before running with "Must use import to load
+ES Module". With the loader fix, the migration and registry repaint suites
+plus three Supabase auth suites pass (42 tests). Babel core remains 7.29.7
+because installed `ts-jest` 29.4.12 explicitly peers `@babel/core <8`.
 
 **Installation admission:** `scripts/agent-harness/install-gate.cjs` implements
 the September 21 ruling that a live preview warns rather than refusing a primary
@@ -165,8 +167,11 @@ refreshed at execution time.
 - Utilities: `cron-parser`, `cronstrue`, `@upstash/ratelimit`, `@upstash/redis`,
   `@zip.js/zip.js`, `onnxruntime-web`, `unicode-regex`, `web-vitals`.
 - Coordinated patch families: `@ricky0123/vad-react` 0.0.36→0.0.37 and
-  `@ricky0123/vad-web` 0.0.30→0.0.31; `@univerjs/core` 0.25.1→0.25.2 only
-  after confirming compatibility with installed Univer presets.
+  `@ricky0123/vad-web` 0.0.30→0.0.31. Keep `@univerjs/core` at 0.25.1:
+  0.25.2 splits private `Plugin`/`Univer` class identity from preset 0.25.1,
+  producing TS2322 in `DocumentEditor.tsx` and `WorkbookEditor.tsx`.
+  The registry returns E404 for preset-docs-core/presets 0.25.2 on September 22;
+  update the family together after compatible presets publish.
 - `@ai-matrx/records` 0.44.1→0.46.0: upstream 0.45 adds the missing
   `coerceTypedAnswer`, `coerceTypedAnswers`, and `fieldKindFor` exports; 0.46 adds
   portal-table lookup. Read the package changelog before adoption.
@@ -184,14 +189,14 @@ The following are separate compatibility targets, not safe version-only bumps:
 
 | Target at inventory | Concrete boundary to migrate and verify |
 |---|---|
-| `@babel/core` 7.29.7→8.0.6; `@babel/types` 7.29.8→8.0.6 | Installed `ts-jest` 29.4.12 peers Babel core `<8`; coordinate the transformer graph before upgrading. Exercise `scripts/check-registry-repaint.ts` and `features/content-ir/sandbox/migrate-viewport-breakpoints.ts`. |
+| `@babel/core` 7.29.7→8.0.6 | Installed `ts-jest` 29.4.12 peers Babel core `<8`; coordinate the transformer graph before upgrading. Direct `@babel/types` 8.0.6 is adopted with the Jest ESM loader fix. Exercise `scripts/check-registry-repaint.ts` and `features/content-ir/sandbox/migrate-viewport-breakpoints.ts`. |
 | `@cartesia/cartesia-js` 2.2.9→4.2.0 | `lib/cartesia/connection.ts` and TTS hooks import removed/deep wrapper paths; migrate voice creation and streaming APIs while preserving audio bundle isolation. |
-| `@tsparticles/engine`, `@tsparticles/react`, `@tsparticles/slim` 3.x→4.4.0 | Upgrade together; React v4 peers the exact engine version. Migrate `components/ui/sparkles.tsx` initialization/options and verify rendering in localhost. |
+| `@tsparticles/engine`, `@tsparticles/react`, `@tsparticles/slim` 3.x→4.4.0 | Upgrade together; React v4 peers the exact engine version. Published 4.4.0 `index.d.ts` exports `ParticlesProvider`/`useParticlesProvider` instead of the `initParticlesEngine` imported by `components/ui/sparkles.tsx`; migrate initialization/options and verify rendering in localhost. |
 | `mcp-handler` 1.1.0→2.2.0 | v2 peers `@modelcontextprotocol/server ^2`; `app/api/mcp/[transport]/route.ts` uses SDK 1.30 auth types and handler signatures. Migrate authentication and transport together with refusal/positive controls. |
 | `mermaid` 11.17.2→12.0.0; `@mermaid-js/layout-elk` 0.2.3→1.0.0 | ELK 1 peers Mermaid 12. Verify layout registration, strict rendering, export, and the SVG ID assumptions in `components/mermaid/visual/svg-id-map.ts`. |
 | `react-day-picker` 9.14.0→10.0.1 | Migrate custom calendar class/component keys and selection handlers in both canonical date-picker wrappers; verify date/range interaction. |
 | `react-pdf` 10.5.0→11.0.0 | Adopt its matching `pdfjs-dist` worker through `scripts/copy-pdfjs-worker.ts`; verify actual multi-page PDF rendering in `features/pdf/components/viewer/PdfDocumentRenderer.tsx`. React 19 peer requirements are already met. |
-| `unsplash-js` 7.0.20→8.0.1 | Migrate renamed API groups and deep `dist/methods/*/types` consumers; verify `/api/unsplash` and the image-picker callers. |
+| `unsplash-js` 7.0.20→8.0.1 | Official v8 changelog replaces the client with generated openapi-fetch. Trial compile confirms `search`/`photos`/`collections`/`topics` groups and deep `dist/methods/*/types` imports no longer exist; migrate `/api/unsplash`, `hooks/images/unsplashClient.ts`, `useUnsplashGallery.ts`, and `StockSourcesView.tsx`, then verify image-picker callers. |
 | `dotenv` 17.4.2→18.0.1 | Check the scripts' `config({ quiet: true })` and namespace imports against the new API; preserve secret redaction and environment precedence. |
 | `@ai-matrx/messaging` 0.12.3→0.12.4 | Upstream changes user-visible Markdown rendering. Adopt with a real messaging surface check for formatting and raw-HTML safety, separately from this version-only batch. |
 
@@ -318,6 +323,7 @@ Per-package deep-dives produced by research agents. Each doc must contain: exact
 
 | Date | Change | By |
 |------|--------|-----|
+| 2026-09-22 | Adopted Supabase JS 2.117.0 and Babel types 8.0.6 with Jest ESM loading; retained Babel core for ts-jest's peer contract and recorded the reproduced Univer/Unsplash incompatibilities and published particles initialization change. | integration maintainer |
 | 2026-09-21 | Recorded the compatible update allowlist, deprecated-package cleanup, Node 24 typing decision, and exact remaining migration boundaries. Corrected the obsolete live-preview refusal claim against the current install gate. | integration maintainer |
 | 2026-09-08 | Refreshed registry dependencies, removed React override patch freezes, and repaired tooltip/Markdown/calendar consumers. Breaking SDK migrations remain explicitly tracked in §5; deployment acceptance is not claimed. | integration maintainer |
 | 2026-07-01 | **Type doctrine consolidated → `type-safety` Claude skill** (`.claude/skills/type-safety/` = SKILL.md doctrine + supabase-patterns.md); cursor skills `type-fixing-agent`/`supabase-type-safety` deleted; all pointers repointed. Doctrine core: real fixes change code + data, escalation-with-decision-brief over silencing, trace to the terminal consumer. | agent + Arman |

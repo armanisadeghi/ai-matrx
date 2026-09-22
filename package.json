@@ -700,7 +700,7 @@
     "@ricky0123/vad-web": "0.0.31",
     "@slack/web-api": "^8.1.1",
     "@supabase/ssr": "^0.12.7",
-    "@supabase/supabase-js": "^2.116.0",
+    "@supabase/supabase-js": "^2.117.0",
     "@tabler/icons-react": "latest",
     "@tanstack/react-query": "^5.103.2",
     "@tanstack/react-query-devtools": "^5.103.2",
@@ -846,7 +846,7 @@
   "devDependencies": {
     "@babel/core": "^7.29.7",
     "@babel/parser": "^7.29.9",
-    "@babel/types": "^7.29.8",
+    "@babel/types": "^8.0.6",
     "@iconify/react": "^6.0.2",
     "@next/bundle-analyzer": "^16.3.5",
     "@playwright/test": "1.63.0",
