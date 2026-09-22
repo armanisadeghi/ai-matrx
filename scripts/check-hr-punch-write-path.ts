@@ -128,7 +128,9 @@ const ARM: Arm = ((): Arm => {
   console.error(
     `check-hr-punch-write-path: --arm expects live|corpus|both, got ${JSON.stringify(v)}`,
   );
-  process.exit(2);
+  // DD-232: never a bare process.exit — it abandons whatever is still in the
+  // stdout pipe buffer, and a pipe is how the release gates read this guard.
+  exitAfterDrain(2);
 })();
 
 /**
