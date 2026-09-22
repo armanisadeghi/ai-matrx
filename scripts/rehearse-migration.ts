@@ -57,6 +57,7 @@ import {
   loadCloneRef,
   parseTargetFlag,
   readQuarantineFacts,
+  stripCommentsQuoteAware,
   TargetRefusal,
   topLevelStatements,
   INVERSE_DIRNAME,
@@ -106,9 +107,15 @@ function valueOf(argv: readonly string[], flag: string): string | null {
   return i >= 0 && argv[i + 1] && !argv[i + 1]!.startsWith("--") ? argv[i + 1]!.trim() : null;
 }
 
-/** Comments removed, so the statement splitter sees only code. */
-function stripForStatements(sql: string): string {
-  return sql.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/--[^\n]*/g, " ");
+/**
+ * Comments removed, so the statement splitter sees only code. THE ONE SHARED STRIPPER
+ * (POLICY-LOCK, commit 4622586263) - quote-aware, dollar-quote-tag-aware, block-comment-aware.
+ * This file used to carry its own naive dash-dash and block-comment regex strip that was not
+ * single-quote aware, so `comment on function x is 'says -- something';` died as "unterminated
+ * quoted string". Never a second copy of this logic.
+ */
+export function stripForStatements(sql: string): string {
+  return stripCommentsQuoteAware(sql);
 }
 
 /**
