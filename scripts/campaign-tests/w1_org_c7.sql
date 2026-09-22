@@ -286,7 +286,7 @@ begin
   insert into platform.custom_field_definition
     (target_kind, target_definition_id, field_key, display_name, field_type, organization_id)
   values ('custom_entity', v_defn, 'photo_url', 'Photo URL', 'url', v_org);
-  raise notice 'GREEN 5 — REC-30/31/39: a person as a value, a picture as a value and a per-person field (spelled AND declared) are each refused by their own rule; the same fields typed user_reference and file land, an unrelated text field lands, and with this organization'''s record store switched OFF the refused field lands untouched';
+  raise notice 'GREEN 5 — REC-30/31/39: a person as a value, a picture as a value and a per-person field (spelled AND declared) are each refused by their own rule; the same fields typed user_reference and file land, an unrelated text field lands, and with this organization''s record store switched OFF the refused field lands untouched';
 
   -- ============================================== 6. REC-63 — the work list and the one verb
   select count(*) into v_n from iam.legacy_column_worklist();
