@@ -6,9 +6,13 @@ import type {
 import {
   ERRORS_COVERAGE,
   ERROR_COLUMNS,
+  errorColumns,
   errorResolvedFilter,
+  errorTypeFilterOptions,
   errorSourceFilters,
   executionSourceFilters,
+  humanExecution,
+  scopedAppId,
   EXECUTIONS_COVERAGE,
   EXECUTION_COLUMNS,
   executionSuccessFilter,

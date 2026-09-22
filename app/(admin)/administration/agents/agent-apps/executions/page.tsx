@@ -34,6 +34,7 @@ import type {
 import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import { formatCount, formatDurationMs, formatUsd } from "@ai-matrx/kit/format";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { isUuidValue } from "@/components/official/entity-ref/doors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 import {
@@ -67,6 +68,10 @@ export const ERRORS_COVERAGE = {
   cap: LIMIT,
   answeredBy: "client" as const,
 };
+export function scopedAppId(rawAppId: string | null): string | null {
+  return isUuidValue(rawAppId) ? rawAppId : null;
+}
+
 export function executionSourceFilters(
   appId: string | null,
   outcome: "all" | "success" | "failed",
@@ -97,10 +102,17 @@ const ERROR_TYPE_LABELS: Record<string, string> = {
   rate_limit: "Rate Limit",
   other: "Other",
 };
+export function errorTypeFilterOptions(errorTypes: Iterable<string>) {
+  const values = new Set(Object.keys(ERROR_TYPE_LABELS));
+  for (const errorType of errorTypes) values.add(errorType);
+  return [...values]
+    .sort()
+    .map((value) => ({ value, label: ERROR_TYPE_LABELS[value] ?? value }));
+}
 
-function humanExecution(row: AgentAppExecutionRow) {
+export function humanExecution(row: AgentAppExecutionRow) {
   return [
-    `${row.app_name ?? row.app_id} — ${row.success ? "OK" : "Failed"}`,
+    `${row.app_name ?? row.app_id} — ${row.success === true ? "OK" : row.success === false ? "Failed" : "Pending"}`,
     `Task: ${row.task_id}`,
     row.error_message ? `Error: ${row.error_message}` : null,
     `Tokens: ${formatCount(row.tokens_used)} · Cost: ${formatUsd(row.cost, { digits: 4 })}`,
@@ -231,11 +243,7 @@ export const EXECUTION_COLUMNS: MatrxColumnDef<AgentAppExecutionRow>[] = [
     filter: "text",
     width: 180,
     cell: (row) => (
-      <MatrxUuidCell
-        value={row.task_id}
-        label="Client correlation ID"
-        forbidden
-      />
+      <MatrxUuidCell value={row.task_id} label="Client correlation ID" />
     ),
   },
   {
@@ -334,10 +342,7 @@ export const ERROR_COLUMNS: MatrxColumnDef<AgentAppErrorRow>[] = [
     header: "Type",
     accessorKey: "error_type",
     filter: "select",
-    filterOptions: Object.entries(ERROR_TYPE_LABELS).map(([value, label]) => ({
-      value,
-      label,
-    })),
+    filterOptions: errorTypeFilterOptions([]),
     width: 170,
     cell: (row) => (
       <Badge variant="outline" className="text-xs">
@@ -424,6 +429,14 @@ export const ERROR_COLUMNS: MatrxColumnDef<AgentAppErrorRow>[] = [
   },
 ];
 
+export function errorColumns(errorTypes: Iterable<string>) {
+  return ERROR_COLUMNS.map((column) =>
+    column.id === "type"
+      ? { ...column, filterOptions: errorTypeFilterOptions(errorTypes) }
+      : column,
+  );
+}
+
 function SurfaceScopeWhenActive({
   active,
   getScope,
@@ -456,7 +469,7 @@ export default function AgentAppsExecutionsAdminPage() {
 function AgentAppsExecutionsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const appId = searchParams.get("app");
+  const appId = scopedAppId(searchParams.get("app"));
   const [activeTab, setActiveTab] = useState<"executions" | "errors">(
     searchParams.get("tab") === "errors" ? "errors" : "executions",
   );
@@ -851,7 +864,7 @@ function ErrorsTable({
               onStateChange: tableQuery.onStateChange,
             }}
             data={rows}
-            columns={ERROR_COLUMNS}
+            columns={errorColumns(rows.map((row) => row.error_type))}
             getRowId={(row) => row.id}
             isLoading={loading}
             isFetching={refreshing}
