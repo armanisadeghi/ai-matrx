@@ -18824,7 +18824,7 @@ export type Database = {
         }
         Returns: {
           quiet_windows: Json
-          timezone: string | null
+          timezone: string
           timezone_source: string
         }[]
       }
@@ -64882,6 +64882,7 @@ export type Database = {
           agent_writable: boolean
           agent_write_notes: string | null
           allow_preview: boolean
+          anon_lane_pending_withdrawal_reason: string | null
           audit_class: string
           audit_class_reason: string | null
           base_tier: number
@@ -64942,6 +64943,7 @@ export type Database = {
           agent_writable?: boolean
           agent_write_notes?: string | null
           allow_preview?: boolean
+          anon_lane_pending_withdrawal_reason?: string | null
           audit_class?: string
           audit_class_reason?: string | null
           base_tier?: number
@@ -65006,6 +65008,7 @@ export type Database = {
           agent_writable?: boolean
           agent_write_notes?: string | null
           allow_preview?: boolean
+          anon_lane_pending_withdrawal_reason?: string | null
           audit_class?: string
           audit_class_reason?: string | null
           base_tier?: number
