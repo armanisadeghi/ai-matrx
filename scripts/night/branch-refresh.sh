@@ -264,6 +264,23 @@ if print -r -- "$DROPOUT" | grep -qE 'ERROR|FATAL'; then
 fi
 say "  dropped."
 
+# THE PURGE, HERE AND NOT LATER. `delete from auth.users` cascades into every dependent the
+# campaign schemas declare; the rehearsal died on `iam.memberships.user_id` NOT NULL for exactly
+# that reason. Run immediately after the drop, while nothing in the refresh set exists to
+# reference it, and the delete has nothing to cascade into. A rehearsal drops nothing, so it
+# does not run this at all and says why.
+if [ "$REHEARSE" = "1" ]; then
+  say "REHEARSAL: the auth.users purge is NOT run — this run dropped nothing, so the campaign"
+  say "  schemas still reference auth.users and the delete would cascade into them. On a live"
+  say "  run it happens here, after the drop, with nothing left to cascade into."
+else
+  say "purging copied identities: the branch holds $("$PSQL" "$BRANCH_DSN" -qAt -c 'select count(*) from auth.users' 2>&1) auth.users rows, 527 of which BRANCH-DRIFT.md measured as identical to production's"
+  POUT="$("$PSQL" "$BRANCH_DSN" -v ON_ERROR_STOP=1 -qAt -c \
+    "delete from auth.users where email is distinct from 'admin@admin.com' and email is distinct from 'test@test.com'" 2>&1)"
+  if print -r -- "$POUT" | grep -qE 'ERROR|FATAL'; then say "  purge FAILED: $(print -r -- "$POUT" | head -1)"
+  else say "  purged; $("$PSQL" "$BRANCH_DSN" -qAt -c 'select count(*) from auth.users' 2>&1) auth.users row(s) remain"; fi
+fi
+
 say "recreating the schemas and their extensions"
 { for s in "${DROP_SET[@]}"; do print -r -- "create schema if not exists \"$s\";"; done
   print -r -- "$EXTS" | while IFS='|' read -r e ns; do
@@ -284,11 +301,15 @@ say "restoring the schema dump onto the branch"
 RESTORE_START=$(date +%s)
 "$PSQL" "$BRANCH_DSN" -q -f "$WORK/schema.apply.sql" > "$WORK/restore.out" 2>&1
 RESTORE_SECS=$(( $(date +%s) - RESTORE_START ))
-RERR=$(grep -c '^ERROR:' "$WORK/restore.out")
-say "restore finished in ${RESTORE_SECS}s with $RERR ERROR line(s)"
+# psql writes `psql:<file>:<line>: ERROR:  …`, never a bare `ERROR:` at column 0. The first
+# cut of this line counted '^ERROR:' and reported ZERO of the rehearsal's 23,610 errors — a
+# green manufactured by a grep anchor. Match the text, never the column.
+RERR=$(grep -c 'ERROR:' "$WORK/restore.out")
+RDUP=$(grep -c 'already exists' "$WORK/restore.out")
+say "restore finished in ${RESTORE_SECS}s with $RERR ERROR line(s), of which $RDUP are 'already exists'"
 if [ "$RERR" -gt 0 ]; then
   say "first restore errors:"
-  grep '^ERROR:' "$WORK/restore.out" | head -20 | while read -r l; do say "    $l"; done
+  grep 'ERROR:' "$WORK/restore.out" | head -20 | while read -r l; do say "    ${l##*/}"; done
 fi
 
 if [ -n "$LEDGER" ] && [ "$REHEARSE" != "1" ]; then
@@ -300,8 +321,14 @@ else
 fi
 
 say "loading the curated seed"
+# `\copy … from` APPENDS. On a live run the table was just recreated empty by the restore, but
+# a partial run, a re-run, or a rehearsal leaves rows behind and every one of these five tables
+# then dies on its own primary key — which is exactly what the rehearsal showed. Empty the
+# table this job is about to refill, in the same statement, and say so.
 for t in "${SEED_OK[@]}"; do
   f="$WORK/seed_${t//./_}.tsv"
+  o="$("$PSQL" "$BRANCH_DSN" -qAt -c "truncate table $t cascade" 2>&1)"
+  if print -r -- "$o" | grep -qE 'ERROR|FATAL'; then say "  $t: could not empty it — $(print -r -- "$o" | head -1); skipping"; continue; fi
   o="$("$PSQL" "$BRANCH_DSN" -qAt -c "\copy $t from '$f'" 2>&1)"
   if print -r -- "$o" | grep -qE 'ERROR|FATAL'; then say "  $t: $(print -r -- "$o" | head -1)"
   else say "  $t: ${o:-loaded} ($("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) rows on the branch)"; fi
@@ -318,7 +345,6 @@ say "─── (2b) synthesizing identities and organizations (never copied) ─
 SEEDSQL="$WORK/identities.sql"
 {
 print -r -- "begin;"
-print -r -- "delete from auth.users where email is distinct from 'admin@admin.com' and email is distinct from 'test@test.com';"
 print -r -- "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data)"
 print -r -- "values ('00000000-0000-4000-a000-00000000ad31'::uuid, '00000000-0000-0000-0000-000000000000'::uuid, 'authenticated', 'authenticated', 'admin@admin.com', extensions.crypt(gen_random_uuid()::text, extensions.gen_salt('bf')), now(), now(), now(), '{\"provider\":\"email\",\"providers\":[\"email\"]}'::jsonb, '{\"full_name\":\"Matrx Admin\"}'::jsonb),"
 print -r -- "       ('00000000-0000-4000-a000-00000000e571'::uuid, '00000000-0000-0000-0000-000000000000'::uuid, 'authenticated', 'authenticated', 'test@test.com',  extensions.crypt(gen_random_uuid()::text, extensions.gen_salt('bf')), now(), now(), now(), '{\"provider\":\"email\",\"providers\":[\"email\"]}'::jsonb, '{\"full_name\":\"Matrx Tester\"}'::jsonb)"
@@ -376,25 +402,36 @@ say "─── (4) verification: pnpm check:branch-schema-drift ───"
 cd "$FRONTEND" || exit 78
 node node_modules/tsx/dist/cli.mjs scripts/check-branch-schema-drift.ts > "$WORK/drift.out" 2>&1
 DEXIT=$?
-DNUM="$(grep -m1 -E 'PRODUCTION HAS [0-9]+ OBJECT' "$WORK/drift.out" | grep -oE '[0-9]+' | head -1)"
+# THE NUMBER IS READ FROM A COLOURED LINE. `\e[31mPRODUCTION HAS 1375 OBJECT(S)…` — the
+# first cut took the first digits it saw and reported "31", the ANSI colour code, as the drift.
+# Strip the escapes first, then take the number that follows the words.
+sed -E $'s/\033\[[0-9;]*m//g' "$WORK/drift.out" > "$WORK/drift.plain"
+DNUM="$(sed -nE 's/.*PRODUCTION HAS ([0-9]+) OBJECT.*/\1/p' "$WORK/drift.plain" | head -1)"
 say "drift gate exit $DEXIT · production-only objects in the failing scope: ${DNUM:-0}"
-tail -25 "$WORK/drift.out" | while read -r l; do say "  | $l"; done
+tail -25 "$WORK/drift.plain" | while read -r l; do say "  | $l"; done
 
 say "─── (4) verification: 14 suites in rehearsal mode against the branch ───"
 export PGOPTIONS='-c statement_timeout=60000 -c lock_timeout=10000'
-VPASS=0 VFAIL=0
+VPASS=0 VFAIL=0 VSKIP=0
 for b in "${VERIFY_SUITES[@]}"; do
   f="$SUITES/$b"
   if [ ! -f "$f" ]; then say "  $(printf '%-56s %s' "$b" 'MISSING')"; continue; fi
   o="$(mktemp)"
   timeout 240 "$PSQL" "$BRANCH_DSN" -v ON_ERROR_STOP=1 -f "$f" > "$o" 2>&1
+  # A SUITE THAT SKIPS IS NOT A SUITE THAT PASSES. The campaign suites now answer a missing
+  # dependency with `SKIPPED: … this is NOT a pass` and exit 0 instead of raising — so the
+  # inherited "no ERROR line means PASS" rule scored 9 skips as passes in the rehearsal and
+  # reported 13/14 on a branch that still lacks `media`, `custom.organization_kernel_id()` and
+  # 162 knob keys. Read the suite's own word first.
   line="$(grep -m1 -E 'ERROR:|FATAL:' "$o")"
+  skip="$(grep -m1 -E '^SKIPPED:' "$o")"
   if [ -n "$line" ]; then VFAIL=$((VFAIL+1)); say "  $(printf '%-56s %-6s %s' "$b" FAIL "$(print -r -- "${line#psql:*: }" | cut -c1-110)")"
+  elif [ -n "$skip" ]; then VSKIP=$((VSKIP+1)); say "  $(printf '%-56s %-6s %s' "$b" SKIP "$(print -r -- "$skip" | cut -c1-110)")"
   else VPASS=$((VPASS+1)); say "  $(printf '%-56s %s' "$b" PASS)"; fi
 done
-say "suites: PASS $VPASS · FAIL $VFAIL  (was PASS 4 / FAIL 10 on 2026-09-22 before the refresh)"
+say "suites: PASS $VPASS · SKIP $VSKIP · FAIL $VFAIL  (was PASS 4 / FAIL 10 on 2026-09-22 before the refresh; a SKIP is the suite saying the branch still lacks its dependency)"
 
 say "───────── BRANCH-REFRESH RESULT ─────────"
-say "dump ${DUMP_SECS}s · restore ${RESTORE_SECS}s · restore errors $RERR · drift ${DNUM:-0} · suites $VPASS/$((VPASS+VFAIL))"
+say "dump ${DUMP_SECS}s · restore ${RESTORE_SECS}s · restore errors $RERR · drift ${DNUM:-0} · suites PASS $VPASS SKIP $VSKIP FAIL $VFAIL"
 say "work directory left in place for inspection: $WORK"
 exit 0
