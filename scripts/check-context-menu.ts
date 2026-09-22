@@ -895,6 +895,18 @@ function gradeItem(
   const onSelect = prop(obj, "onSelect");
   const onCheckedChange = prop(obj, "onCheckedChange");
   const href = prop(obj, "href");
+  // A THIRD ITEM MODEL, and the guard used to be blind to it (2026-09-22): the
+  // download rows of `CopyButtons`/`ItemMenu` are `ExportItem`s
+  // (`components/agent-copy/export.ts`), whose action is `build: () => ({
+  // content, extension, mime })` — the menu calls it at click time and
+  // downloads what it returns. An ExportItem carries NO `kind`, so a literal
+  // one graded as a bare item with no `onSelect` and the LAW section named
+  // three live CSV rows (crawls, backlink changes, coverage) as dead. Same
+  // shape of miss as `sections` vs `children` above, and the same remedy:
+  // learn the model instead of waiving its call sites. Deliberately narrow —
+  // only an object that declares no `kind` may be an ExportItem, so a real
+  // menu item can never buy its way out of the law with a `build` key.
+  const build = declared === null ? prop(obj, "build") : undefined;
   // TWO item models live here: v3's `ContextMenuExtraItem` nests a submenu
   // under `children`, the official `ItemMenu` nests it under `sections`.
   // Knowing only `children` graded every `ItemMenu` submenu as opening onto
@@ -907,7 +919,7 @@ function gradeItem(
   // The second net can hand us any object in an `items:` array. Require it to
   // look like a control before judging it.
   if (!declared && !label) return null;
-  if (!declared && !id && !onSelect && !onCheckedChange && !href) return null;
+  if (!declared && !id && !onSelect && !onCheckedChange && !href && !build) return null;
 
   // THE HONEST EXIT — `disabled: true` renders greyed; the screen is not lying.
   const disabled = prop(obj, "disabled");
@@ -931,7 +943,8 @@ function gradeItem(
     return null;
   }
   const handlerName = kind === "checkbox" ? "onCheckedChange" : "onSelect";
-  const handler = kind === "checkbox" ? onCheckedChange : onSelect;
+  const handler =
+    kind === "checkbox" ? onCheckedChange : (onSelect ?? (build as ts.Expression | undefined));
   if (!handler)
     return `it has no \`${handlerName}\`, no \`href\` and is not \`disabled\` — clicking it does nothing`;
   return deadHandlerReason(handler, locals);
@@ -1139,6 +1152,21 @@ function selfTest(): never {
       name: "waived with a written reason",
       src: `const s = { id: "x", items: [\n// context-menu: inert-ok — the parent row handles this\n{ kind: "item", id: "a", label: "Export", onSelect: () => {} }] };`,
       dead: false,
+    },
+    {
+      name: "an ExportItem's `build` is its action",
+      src: `const s = { id: "x", items: [{ id: "csv", label: "CSV (loaded rows)", build: () => ({ content: rowsToCsv(rows), extension: "csv", mime: "text/csv" }) }] };`,
+      dead: false,
+    },
+    {
+      name: "an ExportItem whose `build` does nothing is still dead",
+      src: `const s = { id: "x", items: [{ id: "csv", label: "CSV (loaded rows)", build: () => {} }] };`,
+      dead: true,
+    },
+    {
+      name: "`build` never excuses a declared menu item",
+      src: `const s = { id: "x", items: [{ kind: "item", id: "a", label: "Export", build: () => makeIt() }] };`,
+      dead: true,
     },
     {
       name: "spread-built item (provenance unknown)",
