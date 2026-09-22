@@ -35,3 +35,42 @@ describe("personal knob values", () => {
     expect(sameKnobValue("organization-value", "my-value")).toBe(false);
   });
 });
+
+/**
+ * The system destination edits the PLATFORM DEFAULT, not an override. Read as
+ * an override every admin row on /administration/users/limits opened with no
+ * value — the box then printed the em dash a sentence uses for "nothing", so
+ * clicking a field and typing 9 sent "—9" and the save refused. Found walking
+ * the register during the 2026-09-22 independent review.
+ */
+describe("system knob values", () => {
+  const systemKnob = {
+    effective_value: 8,
+    platform_default: 8,
+    org_override: null,
+  } as unknown as ScopedKnob;
+
+  it("starts a system draft from the platform default, never from an empty override", () => {
+    expect(
+      editableKnobValue("organization", undefined, systemKnob, undefined, true),
+    ).toBe(8);
+  });
+
+  it.each([false, 0])("keeps a falsy platform default %p rather than blanking it", (value) => {
+    expect(
+      editableKnobValue(
+        "organization",
+        undefined,
+        { ...systemKnob, platform_default: value } as unknown as ScopedKnob,
+        undefined,
+        true,
+      ),
+    ).toBe(value);
+  });
+
+  it("leaves every other destination reading its override exactly as before", () => {
+    expect(
+      editableKnobValue("organization", undefined, systemKnob, "org-value"),
+    ).toBe("org-value");
+  });
+});

@@ -17,6 +17,7 @@
 // third, disconnected place: the knowledge cost board and per-user usage.
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AccountAddonsPanel } from "./AccountAddonsPanel";
@@ -29,6 +30,11 @@ const SIBLING_SURFACES = [
 ] as const;
 
 export function LimitsAdminClient() {
+  // A `?knob=` deep link names a FEATURE KNOB, so it opens that tab. Landing on
+  // Plan allowances with an invisible filter applied one tab over is a link
+  // that half-works, which is worse than one that does not.
+  const searchParams = useSearchParams();
+  const defaultTab = searchParams?.get("knob") ? "knobs" : "allowances";
   return (
     <div className="space-y-6 p-6">
       <header>
@@ -53,7 +59,7 @@ export function LimitsAdminClient() {
           ))}
         </p>
       </header>
-      <Tabs defaultValue="allowances">
+      <Tabs defaultValue={defaultTab}>
         <TabsList className="h-auto max-w-full flex-wrap justify-start">
           <TabsTrigger className="shrink-0" value="allowances">Plan allowances</TabsTrigger>
           <TabsTrigger className="shrink-0" value="addons">Account add-ons</TabsTrigger>

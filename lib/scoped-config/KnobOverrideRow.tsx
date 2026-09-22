@@ -60,8 +60,16 @@ import {
 } from "@/components/ui/select";
 import type { KnobScopeKindName, ScopedKnob } from "./types";
 
+/**
+ * The text a row's editor STARTS IN. An absent value is an EMPTY box, never a
+ * printed em dash: the dash is how a sentence says "nothing", and seeding the
+ * input with it meant an admin who clicked a field and typed 9 sent "—9",
+ * which parses to nothing and refuses. The placeholder already carries what is
+ * in force, and an empty box keeps Save correctly disabled until something is
+ * typed. (Independent review of the limits register, 2026-09-22.)
+ */
 function valueText(value: unknown): string {
-  if (value === null || value === undefined) return "—";
+  if (value === null || value === undefined) return "";
   if (typeof value === "string") return value;
   return JSON.stringify(value);
 }
@@ -76,7 +84,14 @@ export function editableKnobValue(
   ladder: KnobLadder | undefined,
   knob: ScopedKnob,
   overrideValue: unknown,
+  /**
+   * The system destination does not edit an OVERRIDE at all — it edits the
+   * platform default itself, which always has a value. Read as an override it
+   * came back empty, so every one of the ~880 admin rows opened blank.
+   */
+  isSystem = false,
 ): unknown {
+  if (isSystem) return knob.platform_default;
   if (scopeKind !== "user") return overrideValue;
   return ladder?.value ?? knob.effective_value;
 }
@@ -271,6 +286,7 @@ export function KnobOverrideRow(props: {
     ladder,
     knob,
     overrideValue,
+    Boolean(system),
   );
   const overrideText = valueText(editableValue);
   // The ONE choice vocabulary for this row — the control and every sentence
