@@ -38,7 +38,7 @@ export function SmsNotificationPreferencesSettingsSection() {
             label="Task reminders"
             description={
               preference?.maskedPhone
-                ? `Send task reminders to ${preference.maskedPhone}. You can reply DONE to complete an offered non-recurring task.`
+                ? `Send task reminders to ${preference.maskedPhone}. Reply DONE to complete an offered non-recurring task, or SNOOZE 1H for one later reminder.`
                 : taskNotifications.loading
                   ? "Checking your verified mobile number and current choice."
                   : "Verify a mobile number above before enabling task reminder texts."

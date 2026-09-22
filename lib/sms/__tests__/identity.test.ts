@@ -12,8 +12,10 @@ describe("SMS identity contract", () => {
     expect(normalizeSmsEndpoint("+44 20 7946 0958")).toBe("+442079460958");
   });
 
-  test("admits only the exact DONE command candidate before agent readiness", () => {
+  test("admits only exact offered task command candidates before agent readiness", () => {
     expect(isSmsCommandCandidate("  done  ")).toBe(true);
+    expect(isSmsCommandCandidate("  snooze   1h ")).toBe(true);
+    expect(isSmsCommandCandidate("SNOOZE 2H")).toBe(false);
     expect(isSmsCommandCandidate("DONE task one")).toBe(false);
     expect(isSmsCommandCandidate("hello")).toBe(false);
   });

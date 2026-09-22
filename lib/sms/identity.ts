@@ -2,7 +2,7 @@ import { normalizeMediumValue } from "@/features/crm/normalize";
 
 export type SmsProvider = "twilio";
 
-const SMS_COMMAND_CANDIDATE_ALIASES = new Set(["DONE"]);
+const SMS_COMMAND_CANDIDATE_ALIASES = new Set(["DONE", "SNOOZE 1H"]);
 
 export interface SmsInboundContextInput {
   provider: SmsProvider;
