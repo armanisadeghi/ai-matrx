@@ -431,7 +431,7 @@ export function VaultCsvImportDialog({
         : parseCsvFile(file, limits));
       if (generation !== parseGeneration.current || cancelled.current) return;
       setPreview(parsed);
-      setMapping(suggestedCsvMapping(parsed.headers));
+      setMapping(suggestedCsvMapping(parsed.headers, source));
     } catch (cause) {
       if (generation === parseGeneration.current && !cancelled.current)
         setUnavailable(

@@ -1,4 +1,5 @@
 import {
+  hasAmbiguousCsvMapping,
   parseCsvText,
   prepareCsvImportRow,
   suggestedCsvMapping,
@@ -68,12 +69,13 @@ describe("NordPass CSV template compatibility", () => {
     ].join("\n");
 
     const preview = parseCsvText(csv, limits);
-    const mapping = suggestedCsvMapping(preview.headers);
+    const mapping = suggestedCsvMapping(preview.headers, "nordpass");
     expect(mapping).toEqual([
       "title", "url", "username", "password", "notes",
-      ...Array(8).fill("keep"), "username",
-      ...Array(5).fill("keep"), "otp", "keep",
+      ...Array(14).fill("keep"), "otp", "keep",
     ]);
+    expect(hasAmbiguousCsvMapping(mapping)).toBe(false);
+    expect(hasAmbiguousCsvMapping(suggestedCsvMapping(["username", "email"]))).toBe(true);
     const row = preview.rows[0];
     if (!row) throw new Error("missing NordPass login row");
 

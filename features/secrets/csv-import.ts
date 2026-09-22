@@ -202,7 +202,10 @@ export function safeDestination(raw: string): {
   }
 }
 
-export function suggestedCsvMapping(headers: string[]): CsvColumnRole[] {
+export function suggestedCsvMapping(
+  headers: string[],
+  source?: string,
+): CsvColumnRole[] {
   const aliases: Record<CsvColumnRole, ReadonlySet<string>> = {
     title: new Set(["name", "title", "label"]),
     username: new Set([
@@ -226,13 +229,17 @@ export function suggestedCsvMapping(headers: string[]): CsvColumnRole[] {
     otp: new Set(["otp", "totp", "otpauth", "onetimepassword", "onetimecode"]),
     keep: new Set(),
   };
+  let usernameAssigned = false;
   return headers.map((header) => {
     const key = header.trim().toLowerCase().replace(/[ _-]/g, "");
-    return (
+    if (source === "nordpass" && key === "email" && usernameAssigned)
+      return "keep";
+    const role =
       (Object.entries(aliases) as [CsvColumnRole, ReadonlySet<string>][]).find(
         ([, values]) => values.has(key),
-      )?.[0] ?? "keep"
-    );
+      )?.[0] ?? "keep";
+    if (role === "username") usernameAssigned = true;
+    return role;
   });
 }
 
