@@ -427,7 +427,7 @@ const claims: Claim[] = [
   },
   {
     id: "per-pr-ci",
-    claim: "per-PR CI runs Matrx-package freshness, the parse guard and its self-test, the marker law, the one-type law, the Kind Directives shim containment, the complete-list-read sweep and its self-test, the HR punch write-path strict lane, the migration slot-guard liveness lane, the realtime-publication guard and its self-test, the canonical-picker guard and its self-test, the Google one-window authorization gate and its self-test, the five HR nav/URL/envelope/mock/export guards, org context, type-check, and the content-IR + workflow-runtime suites",
+    claim: "per-PR CI runs Matrx-package freshness, the parse guard and its self-test, the marker law, the one-type law, the Kind Directives shim containment, the complete-list-read sweep and its self-test, the HR punch write-path live lane (its corpus lane is a job of its own, skipped without the direct-Postgres secret), the installed-@ai-matrx-dist integrity audit and its self-test, the migration slot-guard liveness lane, the realtime-publication guard and its self-test, the canonical-picker guard and its self-test, the Google one-window authorization gate and its self-test, the five HR nav/URL/envelope/mock/export guards, org context, type-check, and the content-IR + workflow-runtime suites",
     where: "CLAUDE.md § Repo doctrine (Nothing runs at commit time)",
     check: () => {
       // The claim in CLAUDE.md is now the opposite of what it used to be: for
@@ -470,11 +470,27 @@ const claims: Claim[] = [
         "run: pnpm check:archived-items-law:self-test\n",
         "check:kind-type-twins",
         "check:kind-types",
-        // The strict lane of the hr.punch write-path gate. release.sh runs the
-        // release gates `--advisory || true`, so this CI step is the ONLY
+        // The strict LIVE lane of the hr.punch write-path gate. release.sh runs
+        // the release gates `--advisory || true`, so this CI step is the ONLY
         // invocation that can actually fail — deleting it silently re-opens
-        // HRB-015 (a "blocking" gate invoked by nothing).
-        "check:hr-punch-write-path:strict",
+        // HRB-015 (a "blocking" gate invoked by nothing). Split from
+        // `:strict` on 2026-09-22 (CI-FIX-2): the gate's OTHER arm needs a
+        // direct-Postgres credential this repository does not hold, and sharing
+        // one exit code made a measured, passing gate red on every push. Both
+        // lanes are named here so neither can quietly disappear — the corpus
+        // lane's own job SKIPS when its secret is absent, which is not the same
+        // as its step being deleted.
+        "check:hr-punch-write-path:live",
+        "check:hr-punch-write-path:corpus",
+        // An installed @ai-matrx package IS the published one, byte for byte.
+        // Both lines required: the self-test is the half that can go red on
+        // demand (one changed byte in a shipped file), and the audit is what
+        // actually hashes the resolved copies against npm. A local build copied
+        // over node_modules keeps the version number, so every version-comparing
+        // guard stays green while the app compiles against code no deployed
+        // build has (2026-09-21, @ai-matrx/design-system).
+        "run: pnpm check:matrx-dist-integrity:self-test\n",
+        "run: pnpm check:matrx-dist-integrity:resolved\n",
         // Liveness for the BEFORE INSERT ROW trigger that refuses migration-number
         // collisions. The guard shipped 2026-08-29 with NOTHING asserting it was
         // still bound — dropped or disabled, the collisions resume in silence.
