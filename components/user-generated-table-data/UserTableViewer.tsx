@@ -4756,13 +4756,15 @@ const UserTableViewer = ({
                             what the system already does). The door opens the
                             schedule form with the "table change" trigger set to
                             this table; the schedule runs the agent when a row changes. */}
-                        <DropdownMenuItem asChild>
-                          <Link
-                            href={`/schedules/new?trigger=event&tableId=${encodeURIComponent(tableId)}&prompt=${encodeURIComponent(`A row in the table "${tableInfo?.table_name ?? "this table"}" changed. The event variable names the row and the columns that changed. `)}`}
-                          >
-                            <Zap className="mr-2 h-3.5 w-3.5" />
-                            When a row changes, run an agent…
-                          </Link>
+                        <DropdownMenuItem
+                          onSelect={() =>
+                            router.push(
+                              `/schedules/new?trigger=event&tableId=${encodeURIComponent(tableId)}&prompt=${encodeURIComponent(`A row in the table "${tableInfo?.table_name ?? "this table"}" changed. The event variable names the row and the columns that changed. `)}`,
+                            )
+                          }
+                        >
+                          <Zap className="mr-2 h-3.5 w-3.5" />
+                          When a row changes, run an agent…
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
