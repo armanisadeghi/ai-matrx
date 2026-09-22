@@ -18,8 +18,15 @@
 -- `platform.feature_knob_set(…, null)` returns it to. A ruling that moved only one of them
 -- would be undone by the next reset, so BOTH move, and both move through a door.
 --
--- TWO KNOBS, one ruling:
+-- THREE KNOBS, one ruling:
 --   * `custom` / `system_enabled`                       — the record store itself.
+--   * `custom` / `code_paths_enabled`                   — THE SAME SWITCH'S OTHER HALF, the
+--     one aidream's server kill switch reads. NAV-FIX ruled the store is ONE switch and
+--     FIX-11A gave the override table a trigger that keeps the two halves in step — but that
+--     trigger mirrors OVERRIDE ROWS and reconciles nothing at the platform default. Moving
+--     `system_enabled`'s default alone would put every organization with no override of its
+--     own into exactly the state FIX-11A found on Greenline Landscaping Crew: every screen
+--     saying on while the server refused. The one switch moves as one switch.
 --   * `data_tables.relation` / `relation_columns_enabled` — OLD-TABLES-2 shipped the older
 --     store's relation columns default FALSE as a rollout knob; the same ruling turns it on.
 --
@@ -63,7 +70,7 @@ begin
   if not public.is_admin()
      and not pg_catalog.pg_has_role(
        coalesce(nullif(pg_catalog.current_setting('role', true), 'none'),
-                pg_catalog.session_user)::name,
+                session_user)::name,
        (select c.relowner from pg_catalog.pg_class c
          where c.oid = 'platform.feature_knob'::regclass),
        'member') then
@@ -161,7 +168,7 @@ begin
   if not public.is_admin()
      and not pg_catalog.pg_has_role(
        coalesce(nullif(pg_catalog.current_setting('role', true), 'none'),
-                pg_catalog.session_user)::name,
+                session_user)::name,
        (select c.relowner from pg_catalog.pg_class c
          where c.oid = 'platform.feature_knob'::regclass),
        'member') then
@@ -235,11 +242,28 @@ begin
 end;
 $function$;
 
+-- THE DOOR IS DECLARED IN DATA, in this same transaction, because a SECURITY DEFINER
+-- function that reaches COMMIT without one is refused by `provision_shape_guard` (23514).
+-- No client role is granted EXECUTE on it, so it is a non-client lane and says so.
+INSERT INTO platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
+   non_client_lane, signed_in_callers, anonymous_callers)
+VALUES
+  ('platform', 'feature_knob_default_set', 'p_feature text, p_key text, p_default jsonb',
+   ARRAY['text','text','jsonb']::regtype[]::oid[],
+   'The knob register''s factory-reset door. It names no entity id: p_feature and p_key address a row of platform.feature_knob by its own primary key and p_default is the value that row''s reset returns it to, so there is nothing here to check a caller against. The gate is the same one platform.feature_knob_set carries — public.is_admin(), or the role that owns platform.feature_knob, read from the catalogue.',
+   'STORE-ON storeon_the_record_store_is_on_by_default.sql',
+   'server_only: no client role holds EXECUTE on this function and none ever will. A platform default is not one organization''s setting — the client door for what an organization chooses is platform.knob_override_set, and the client door for the live platform value is platform.feature_knob_set. This one moves the FACTORY value the whole platform falls back to, which only a migration lane and the database owner may do.',
+   false, false)
+ON CONFLICT (schema_name, function_name, identity_argtypes) DO NOTHING;
+
 COMMENT ON FUNCTION platform.feature_knob_default_set(text, text, jsonb) IS
   'The knob register''s factory-reset door: sets platform.feature_knob.default_value, the value platform.feature_knob_set(…, null) returns a knob to. Same gate as feature_knob_set — a platform admin, or the role that owns platform.feature_knob (the campaign''s migrations and the database owner). Added by STORE-ON 2026-09-23 so an owner ruling about what a knob''s DEFAULT is can be recorded through a door instead of a raw write.';
 
 -- ── THE RULING, THROUGH THE DOORS ────────────────────────────────────────────────────────
 SELECT platform.feature_knob_set('custom', 'system_enabled', 'true'::jsonb);
 SELECT platform.feature_knob_default_set('custom', 'system_enabled', 'true'::jsonb);
+SELECT platform.feature_knob_set('custom', 'code_paths_enabled', 'true'::jsonb);
+SELECT platform.feature_knob_default_set('custom', 'code_paths_enabled', 'true'::jsonb);
 SELECT platform.feature_knob_set('data_tables.relation', 'relation_columns_enabled', 'true'::jsonb);
 SELECT platform.feature_knob_default_set('data_tables.relation', 'relation_columns_enabled', 'true'::jsonb);

@@ -18,16 +18,6 @@
       "applied_at": "2026-09-21 05:09:11.240624+00",
       "tree": "4fff53e9e312038e777aea0579432e67c0e0dec134e5df157f791fae8534d326"
     },
-    "migrations/campaign/readperf_the_class_finds_its_row_without_a_scan.sql": {
-      "ledgered": "46552721cb5f56ffbb90daf630aeb997f98af1c6e2a84f35cf59f6dd901e8ee6",
-      "applied_at": "2026-09-20 00:59:51.012884+00",
-      "tree": "b8ee9aead73cfd5c7443f224949b69e9f0cd6249c7c046a23f8364dc4f883b57"
-    },
-    "migrations/campaign/readperf_the_page_scan_has_its_indexes.sql": {
-      "ledgered": "9b77b9bf47e0fa33533824b346cc50cf653d7589b64b9582538c4fc849f1020e",
-      "applied_at": "2026-09-20 00:50:44.822026+00",
-      "tree": "ee0d606ca4d55928727871425d5e4821ed8763d84b17e6473eddacc461d899b9"
-    },
     "migrations/campaign/redsuites2_a_new_organizations_first_migration_verb.sql": {
       "ledgered": "bc18fcdfd451cc4f45de508485239458ad432c79f767daf2f70db3b93b7e085f",
       "applied_at": "2026-09-22 00:19:57.914378+00",

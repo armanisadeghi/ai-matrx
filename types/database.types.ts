@@ -55872,6 +55872,10 @@ export type Database = {
         }[]
       }
       personal_org_id: { Args: { p_user_id: string }; Returns: string }
+      placeholder_in_a_name: {
+        Args: { p_name: string; p_slug?: string }
+        Returns: string
+      }
       platform_admin_read_prefix: { Args: { p_token: string }; Returns: string }
       policy_carries_a_plain_system_org_arm: {
         Args: { p_expr: string }
@@ -70617,6 +70621,10 @@ export type Database = {
           p_user_id?: string
         }
         Returns: Json
+      }
+      knob_live_readers: {
+        Args: { p_feature: string; p_key: string }
+        Returns: string
       }
       knob_override_count: {
         Args: { p_feature_prefix?: string }

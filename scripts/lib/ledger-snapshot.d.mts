@@ -42,6 +42,7 @@ export const TRAILER_KEY: string;
 export const GRANDFATHERED: Record<string, GrandfatheredRow>;
 
 export function sha256(bytes: string | Uint8Array): string;
+export function checksumsOf(bytes: string | Uint8Array): string[];
 export function isGuardedPath(relPath: string): boolean;
 export function readSnapshot(
   path?: string,

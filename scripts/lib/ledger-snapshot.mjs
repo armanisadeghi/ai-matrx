@@ -90,6 +90,29 @@ export function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
+/**
+ * THE LEDGER IS SHARED BY TWO RUNNERS THAT HASH DIFFERENTLY, AND BOTH ARE RIGHT.
+ *
+ * `public._schema_migrations` is ONE table on ONE database, written by matrx-frontend's
+ * `pnpm db:apply` and by aidream's `db/apply_migrations.py`. The TypeScript runner hashes
+ * the file's RAW BYTES. The Python runner hashes them with the EOF run of whitespace
+ * trimmed (`_checksum`, aidream 2026-09-15: an editor that adds or trims a final newline
+ * was producing a permanent, meaningless drift report on seven rows — a trailing newline
+ * executes nothing), and it still matches the old raw form for rows written before that.
+ *
+ * A guard that knew only one convention called every file the OTHER runner ledgered
+ * "drifted": measured 2026-09-22, 36 of aidream's 36 campaign rows, and 4 of
+ * matrx-frontend's 8 findings. So a file matches when EITHER hash matches — exactly the
+ * three-way comparison aidream's `_checksum_matches` already makes. This never loosens
+ * the rule: the two forms differ only in bytes that execute nothing.
+ */
+export function checksumsOf(bytes) {
+  const raw = sha256(bytes);
+  const text = Buffer.from(bytes).toString("utf8");
+  const trimmed = sha256(Buffer.from(text.replace(/\s+$/, ""), "utf8"));
+  return raw === trimmed ? [raw] : [raw, trimmed];
+}
+
 export function isGuardedPath(relPath) {
   const p = relPath.replace(/\\/g, "/");
   return p.endsWith(".sql") && GUARDED_DIRS.some((d) => p.startsWith(d));
@@ -198,11 +221,12 @@ export function judge(candidates, snapshot, message) {
       });
       continue;
     }
-    const got = sha256(bytes);
-    if (got === row.checksum) continue;
+    const forms = checksumsOf(bytes);
+    const got = forms[0];
+    if (forms.includes(row.checksum)) continue;
     const old = GRANDFATHERED[rel];
-    if (old && old.ledgered === row.checksum && old.tree === got) continue;
-    if (messageAllows(message, rel, got)) continue;
+    if (old && old.ledgered === row.checksum && forms.includes(old.tree)) continue;
+    if (forms.some((f) => messageAllows(message, rel, f))) continue;
     refusals.push({
       relPath: rel,
       ledgered: row.checksum,

@@ -1,6 +1,7 @@
+-- based-on: platform.feature_knob_set(text, text, jsonb) 576991d8595b32de3d82ca2433bb1db37ca2cdeb37cb0e277fe4698e6b75a870
 -- THE INVERSE of migrations/campaign/storeon_the_record_store_is_on_by_default.sql.
 --
--- It puts the two knobs' platform default AND their factory reset back to false — the state
+-- It puts the three knobs' platform default AND their factory reset back to false — the state
 -- the owner ruling of 2026-09-23 moved them off — and restores `platform.feature_knob_set` to
 -- the body that file declared in its `-- based-on:` line (sha256 52c2c697e386…), which is the
 -- admin-only gate without the register-owner arm.
@@ -20,6 +21,8 @@
 
 SELECT platform.feature_knob_default_set('data_tables.relation', 'relation_columns_enabled', 'false'::jsonb);
 SELECT platform.feature_knob_set('data_tables.relation', 'relation_columns_enabled', 'false'::jsonb);
+SELECT platform.feature_knob_default_set('custom', 'code_paths_enabled', 'false'::jsonb);
+SELECT platform.feature_knob_set('custom', 'code_paths_enabled', 'false'::jsonb);
 SELECT platform.feature_knob_default_set('custom', 'system_enabled', 'false'::jsonb);
 SELECT platform.feature_knob_set('custom', 'system_enabled', 'false'::jsonb);
 
