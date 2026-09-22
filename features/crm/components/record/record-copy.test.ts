@@ -52,7 +52,6 @@ describe("CRM record copy projections", () => {
         body: "Paragraph one\n\nParagraph two",
         classification: null,
         classification_evidence: null,
-        model_transfer_restricted: false,
       },
     ];
 
@@ -122,7 +121,7 @@ describe("CRM record copy projections", () => {
     expect(buildInteractionCopyView(row)).toEqual(views[0]);
     expect(interactionsAgentPayload(parent, [row]).attributes).toMatchObject({
       count: 1,
-      includes_bodies: true,
+      includes_bodies: false,
     });
   });
 

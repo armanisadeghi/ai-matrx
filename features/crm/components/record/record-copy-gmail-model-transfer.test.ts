@@ -1,6 +1,5 @@
 import type { InteractionRow } from "@/features/crm/types";
 import {
-  buildInteractionCopyView,
   interactionAgentPayload,
   interactionsAgentPayload,
   type CrmRecordCopyParent,
@@ -86,100 +85,54 @@ describe("CRM Activity model-transfer boundary", () => {
       body: "Restricted Gmail body",
     }),
     interaction({
-      channel_code: "email",
-      direction: "inbound",
-      provider: "gmail",
-      subject: "Restricted canonical Gmail subject",
-      body: "Restricted canonical Gmail body",
-    }),
-    interaction({
-      channel_code: "email",
-      direction: "inbound",
-      provider: "unverified_mail_provider",
-      subject: "Unverified provider subject",
-      body: "Unverified provider body",
-    }),
-    interaction({
-      channel_code: "email",
-      direction: "inbound",
-      attributes: {
-        outreach_inbound: {
-          label: "interested",
-          evidence: "Restricted classification evidence",
-        },
-      },
-      subject: "Historical restricted subject",
-      body: "Historical restricted Gmail body",
-    }),
-    interaction({
-      channel_code: "email",
-      direction: "inbound",
-      provider: null,
+      channel_code: "note",
+      direction: "outbound",
+      provider: "microsoft_365",
       attributes: {},
-      subject: "Ambiguous inbound subject",
-      body: "Ambiguous inbound email body",
+      subject: "Relabeled Gmail subject",
+      body: "Relabeled Gmail body",
     }),
-  ])("refuses a Gmail-derived row payload", (row) => {
-    expect(() => interactionAgentPayload(parent, row)).toThrow(
-      "Gmail-derived activity",
-    );
+  ])("reduces a single Activity payload to its opaque ID", (row) => {
+    const payload = interactionAgentPayload(parent, row);
+
+    expect(payload.data).toEqual({ id: row.id });
+    expect(payload.attributes).toEqual({
+      record_id: parent.id,
+      interaction_id: row.id,
+    });
+    expect(JSON.stringify(payload)).not.toContain(row.subject);
+    expect(JSON.stringify(payload)).not.toContain(row.body);
+    expect(JSON.stringify(payload)).not.toContain(row.provider);
   });
 
-  it("removes Gmail rows from a mixed Activity payload and keeps non-Gmail CRM activity", () => {
-    const gmail = interaction({
+  it("strips all interaction text from a mixed Activity payload while retaining IDs and count", () => {
+    const relabeledGmail = interaction({
       id: "44444444-4444-4444-8444-444444444444",
-      channel_code: "email",
-      direction: "inbound",
-      provider: "google_workspace",
-      subject: "Restricted subject",
-      body: "Restricted Gmail body",
+      channel_code: "phone",
+      direction: "outbound",
+      provider: "microsoft_365",
+      attributes: {},
+      subject: "Relabeled Gmail subject",
+      body: "Relabeled Gmail body",
     });
     const crmNote = interaction({
       id: "55555555-5555-4555-8555-555555555555",
       subject: "Implementation note",
-      body: "Known-safe CRM note",
+      body: "Known CRM note content",
     });
 
-    const payload = interactionsAgentPayload(parent, [gmail, crmNote]);
+    const payload = interactionsAgentPayload(parent, [relabeledGmail, crmNote]);
 
-    expect(payload.attributes).toMatchObject({ count: 1 });
-    expect(JSON.stringify(payload)).toContain("Known-safe CRM note");
-    expect(JSON.stringify(payload)).not.toContain("Restricted Gmail body");
-    expect(JSON.stringify(payload)).not.toContain("Restricted subject");
-  });
-
-  it("keeps organization-authored Gmail delivery available to Activity AI", () => {
-    const outbound = interaction({
-      direction: "outbound",
-      provider: "google_workspace",
-      subject: "Intake workflow",
-      body: "Known-safe organization-authored email",
+    expect(payload.data).toEqual([
+      { id: relabeledGmail.id },
+      { id: crmNote.id },
+    ]);
+    expect(payload.attributes).toMatchObject({
+      count: 2,
+      includes_bodies: false,
     });
-
-    const payload = interactionAgentPayload(parent, outbound);
-
-    expect(JSON.stringify(payload)).toContain(
-      "Known-safe organization-authored email",
-    );
-  });
-
-  it.each([
-    interaction({
-      channel_code: "phone",
-      direction: "inbound",
-      provider: null,
-      body: "Known-safe inbound call notes",
-    }),
-    interaction({
-      channel_code: "email",
-      direction: "inbound",
-      provider: "microsoft_365",
-      body: "Known-safe Microsoft email",
-    }),
-  ])("keeps non-email and explicitly non-Gmail inbound activity", (row) => {
-    if (!row.body) throw new Error("fixture requires an activity body");
-    expect(JSON.stringify(interactionAgentPayload(parent, row))).toContain(
-      row.body,
-    );
+    expect(JSON.stringify(payload)).not.toContain("Relabeled Gmail");
+    expect(JSON.stringify(payload)).not.toContain("Known CRM note content");
+    expect(JSON.stringify(payload)).not.toContain("microsoft_365");
   });
 });

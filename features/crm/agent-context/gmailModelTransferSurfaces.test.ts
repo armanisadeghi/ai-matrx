@@ -101,7 +101,7 @@ describe("Gmail model-transfer surface boundaries", () => {
     ]);
   });
 
-  it("keeps a non-reply CRM draft available for review", () => {
+  it("removes every draft field when the client-writable reply marker is absent", () => {
     const scope = createCrmChaseboxScope({
       active_queue: "pending_drafts",
       queue_counts: { pending_drafts: 1 },
@@ -113,10 +113,11 @@ describe("Gmail model-transfer surface boundaries", () => {
       draft_approved: false,
     });
 
-    expect(scope).toMatchObject({
-      draft_subject: "Harbor Dental intake workflow",
-      draft_body: "Would a workflow review be useful?",
-      draft_approved: false,
-    });
+    expect(scope).not.toHaveProperty("draft_subject");
+    expect(scope).not.toHaveProperty("draft_body");
+    expect(scope).not.toHaveProperty("draft_personalization");
+    expect(scope).not.toHaveProperty("draft_reply");
+    expect(scope).not.toHaveProperty("draft_approved");
+    expect(JSON.stringify(scope)).not.toContain("workflow review");
   });
 });

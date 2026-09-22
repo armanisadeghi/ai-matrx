@@ -254,16 +254,15 @@ export function createCrmChaseboxScope(values: {
       (item) => item.queue !== "fresh_replies",
     ),
   };
-  // Reply text may depend on any historical message in its thread. The client
-  // sees only an RLS-filtered subset, so it cannot authorize model transfer.
-  // Keep human review intact and fail closed until the server returns an
-  // authoritative whole-thread decision over current and tombstoned rows.
-  if (!draft_reply) {
-    safeScope.draft_subject = draft_subject;
-    safeScope.draft_body = draft_body;
-    safeScope.draft_personalization = draft_personalization;
-    safeScope.draft_reply = draft_reply;
-    safeScope.draft_approved = draft_approved;
-  }
+  // Every draft classifier and provenance field available here is writable by
+  // an authenticated editor. Omitting a reply marker therefore cannot prove a
+  // draft is a first touch. Human review keeps the full draft locally, while
+  // model scope excludes every open-draft field until the server supplies an
+  // authoritative decision over current and tombstoned history.
+  void draft_subject;
+  void draft_body;
+  void draft_personalization;
+  void draft_reply;
+  void draft_approved;
   return safeScope as SurfaceScopePayload;
 }

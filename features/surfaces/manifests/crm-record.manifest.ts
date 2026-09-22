@@ -519,7 +519,7 @@ const values: SurfaceValue[] = [
     name: "interactions",
     label: "Interactions",
     description:
-      "The recorded interaction timeline (calls, emails, meetings — planned and completed), newest first: kind, direction, subject, body, outcome, occurred_at.",
+      "Opaque IDs for the recorded interaction timeline. Interaction text stays local until the server supplies immutable provenance for model transfer.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 1500,
@@ -530,7 +530,7 @@ const values: SurfaceValue[] = [
     name: "last_touch_at",
     label: "Last touch",
     description:
-      "ISO timestamp of the most recent recorded interaction, derived from the timeline. Empty when there has never been one. This is deliberately NOT a stored column on the record.",
+      "Omitted from model context while interaction provenance is not authoritative.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 24,
@@ -769,7 +769,7 @@ REACHABILITY IS NOT A GUESS. Before you propose emailing or calling anyone, read
 
 NORMAL RECORD MAINTENANCE IS WRITABLE WITH APPROVAL. Use the declared write targets to update visible identity/classification fields, CRM roles and do-not-contact stance; add contact points, addresses, employment, interactions and notes; end an employment stint; or promote a discovered record into the contact list. Every target validates against the live page and writes through the same canonical path as its visible control. Party kind, organization/ownership, merge, delete, purge, removing historical rows, suppression overrides and candidate verdicts remain human-only.
 
-last_touch_at is derived from the timeline, not stored. If the timeline is empty there has been no recorded interaction — that is not the same as no relationship.
+Interaction content and last_touch_at are withheld from model context until the server supplies immutable provenance. The interaction ID list may still establish that activity exists; never treat missing text or time as proof that there has been no interaction.
 </surface_intro>`,
   groups,
   values,

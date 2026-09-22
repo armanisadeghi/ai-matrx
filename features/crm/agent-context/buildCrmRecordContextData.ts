@@ -26,7 +26,10 @@ import {
   CONTACT_BLOCK_REASON_LABELS,
   contactPointBlockReason,
 } from "../reachability";
-import { isGmailDerivedInteraction } from "../inbox/attributes";
+import {
+  buildModelSafeInteractionReference,
+  type ModelSafeInteractionReference,
+} from "../inbox/attributes";
 import type { InteractionRow, PartyDetail } from "../types";
 
 export interface BuildCrmRecordContextDataArgs {
@@ -40,34 +43,18 @@ export interface BuildCrmRecordContextDataArgs {
   notesLoadError?: string | null;
 }
 
-/** Newest-first interaction timestamp — `last_touch_at` is never stored. */
-function deriveLastTouch(
-  interactions: readonly InteractionRow[],
-): string | undefined {
-  let latest: string | undefined;
-  for (const interaction of interactions) {
-    const at = interaction.occurred_at;
-    if (!at) continue;
-    if (!latest || at > latest) latest = at;
-  }
-  return latest;
-}
-
-/**
- * The exact interaction context permitted to cross a model-provider boundary.
- * Gmail-derived rows fail closed until provider non-training compliance has
- * been demonstrated. Their derived last-touch timestamp is excluded with
- * them; non-Gmail CRM interactions remain available unchanged.
- */
+/** The exact non-content interaction context permitted across the model boundary. */
 export function buildModelSafeInteractionContext(
   interactions: readonly InteractionRow[],
-): { interactions: InteractionRow[]; lastTouchAt: string | undefined } {
-  const modelSafeInteractions = interactions.filter(
-    (interaction) => !isGmailDerivedInteraction(interaction),
-  );
+): {
+  interactions: ModelSafeInteractionReference[];
+  lastTouchAt: undefined;
+} {
   return {
-    interactions: modelSafeInteractions,
-    lastTouchAt: deriveLastTouch(modelSafeInteractions),
+    interactions: interactions.map(buildModelSafeInteractionReference),
+    // Even derived interaction metadata stays closed until provenance is
+    // authoritative; the reference list preserves count and IDs only.
+    lastTouchAt: undefined,
   };
 }
 
