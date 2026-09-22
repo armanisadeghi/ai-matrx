@@ -61,6 +61,26 @@ night_assert_target clone "$DSN" || exit $?
 export PGOPTIONS='-c statement_timeout=60000 -c lock_timeout=10000'
 say "PGOPTIONS: $PGOPTIONS"
 
+# 🚨 A CAPPED SUITE MUST NOT POISON THE NEXT ONE. `timeout` kills psql — the CLIENT. The server
+# backend keeps running its statement and keeps every lock it holds, so the suites that follow die
+# on `lock_timeout` and are scored FAIL for something they never did. Measured on the first clone
+# sweep, 2026-09-22: one 180s cap was followed by EIGHT consecutive lock-timeout "failures", and all
+# three re-run in isolation PASS. So every suite is tagged with its own application_name, and after a
+# cap we terminate that backend on the server and wait for the lock table to clear before moving on.
+sweep_reap() {  # sweep_reap <application_name>
+  local n killed i
+  killed="$("$PSQL" "$DSN" -qAt -c \
+    "select count(*) from (select pg_terminate_backend(pid) from pg_stat_activity
+       where application_name = '$1' and pid <> pg_backend_pid()) t" 2>&1)"
+  say "  reaped server backends for $1: ${killed:-?}"
+  for i in 1 2 3 4 5 6 7 8 9 10; do
+    n="$("$PSQL" "$DSN" -qAt -c 'select count(*) from pg_locks where not granted' 2>&1)"
+    [ "$n" = "0" ] && return 0
+    sleep 2
+  done
+  say "  WARNING: the lock table still shows ${n:-?} ungranted locks; the next suites may be scored unfairly"
+}
+
 cd "$FRONTEND" || exit 78
 TSV="${LOG%.log}.tsv"
 : > "$TSV"
@@ -75,14 +95,16 @@ for f in "${FILES[@]}"; do
   b="${f:t}"
   out="$(mktemp)"
   start=$(date +%s)
+  app="clone-sweep-$$-$b"
   # -v expect=clone makes every suite's own preamble assert the clone as well, so a suite can
   # never be talked onto another database by the connection it is handed.
-  timeout $PER_SUITE_CAP "$PSQL" "$DSN" -v ON_ERROR_STOP=1 -v expect=clone -f "$f" > "$out" 2>&1
+  PGAPPNAME="$app" timeout $PER_SUITE_CAP "$PSQL" "$DSN" -v ON_ERROR_STOP=1 -v expect=clone -f "$f" > "$out" 2>&1
   rc=$?
   dur=$(( $(date +%s) - start ))
   RAN=$((RAN+1))
   if [ $rc -eq 124 ]; then
     verdict=TIMEOUT; sentence="killed at the ${PER_SUITE_CAP}s wall-clock cap"
+    sweep_reap "$app"
   else
     line="$(grep -m1 -E 'ERROR:|FATAL:' "$out")"
     skipline="$(grep -m1 -E '^SKIPPED:' "$out")"
