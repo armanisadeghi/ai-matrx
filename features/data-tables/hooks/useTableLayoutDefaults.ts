@@ -22,7 +22,7 @@
 
 import { useEffect, useState } from "react";
 
-import { supabase } from "@/utils/supabase/client";
+import { ensureEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 
 import {
   parseLayoutMode,
@@ -44,28 +44,36 @@ export const SEEDED_TABLE_LAYOUT_DEFAULTS: TableLayoutDefaults = {
   rowHeight: "normal",
 };
 
-const FEATURE = "extensibility";
 const cache = new Map<string, Promise<TableLayoutDefaults>>();
 
-async function resolveOne(organizationId: string, key: string): Promise<unknown> {
-  const { data, error } = await supabase.schema("platform").rpc("knob_resolve", {
-    p_feature: FEATURE,
-    p_key: key,
-    p_organization_id: organizationId,
-  });
-  if (error) throw new Error(`${FEATURE}.${key}: ${error.message}`);
-  // knob_resolve answers either the bare value or an envelope carrying `value`.
-  if (data && typeof data === "object" && !Array.isArray(data) && "value" in data) {
-    return (data as { value: unknown }).value;
-  }
-  return data;
-}
-
+/**
+ * 🚨 THREE KNOBS, ONE ROUND TRIP. These used to be three `platform.knob_resolve`
+ * calls, one per value (check:knob-snapshot-adoption, 2026-09-22). Every read
+ * here now goes through `ensureEffectiveKnob`, which answers from the one cached
+ * `platform.knob_snapshot` for this organization — so the three below share a
+ * single request, the request is shared with every other knob any screen in this
+ * tab has already read, and adding a fourth layout knob costs nothing at run
+ * time. `userId` is null on purpose: a shared table looks the way its OWNERS set
+ * it up, so no personal rung may narrow it (the file header's precedence rule).
+ */
 async function load(organizationId: string): Promise<TableLayoutDefaults> {
+  // The three addresses are written out as string literals rather than built
+  // from a constant or a parameter: `every-knob-read-addresses-a-real-row.test.ts`
+  // matches every read in the repo against the declared seed rows, and an
+  // address it cannot read statically is one nothing checks.
   const [layout, fitMax, rowHeight] = await Promise.all([
-    resolveOne(organizationId, "user_tables.default_layout"),
-    resolveOne(organizationId, "user_tables.fit_max_columns"),
-    resolveOne(organizationId, "user_tables.default_row_height"),
+    ensureEffectiveKnob(organizationId, null, {
+      feature: "extensibility",
+      key: "user_tables.default_layout",
+    }),
+    ensureEffectiveKnob(organizationId, null, {
+      feature: "extensibility",
+      key: "user_tables.fit_max_columns",
+    }),
+    ensureEffectiveKnob(organizationId, null, {
+      feature: "extensibility",
+      key: "user_tables.default_row_height",
+    }),
   ]);
   const n = Number(fitMax);
   return {
