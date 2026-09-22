@@ -48,6 +48,7 @@ import { cn } from "@/lib/utils";
 
 import { parseFieldInput } from "@/lib/field-formats/format";
 import { getFieldFormat } from "@/lib/field-formats/registry";
+import { looksLikeRecordId } from "@/lib/field-formats/relation";
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
 
 import { ChoiceInput } from "./ChoiceInput";
@@ -637,6 +638,20 @@ export function EditableCell({
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 /**
+ * A value a relation column cannot store, refused before it is sent. It is a
+ * named class rather than a bare Error so a caller can tell "the person typed
+ * something this column cannot hold" from "the network died" and show the
+ * sentence instead of a generic failure.
+ */
+export class RelationCellValueError extends Error {
+  readonly kind = "relation_cell_value" as const;
+  constructor(message: string) {
+    super(message);
+    this.name = "RelationCellValueError";
+  }
+}
+
+/**
  * Coerce a raw editor value to what the column's `data_type` expects.
  *
  * Exported because the `matrx-user/data-tables` surface write target
@@ -647,9 +662,42 @@ export function EditableCell({
 export function normalizeCellValue(
   raw: unknown,
   dataType: FieldDataType | string,
+  format?: FieldFormatConfig | null,
 ): unknown {
   if (raw === "" || raw === undefined) return null;
   if (raw === null) return null;
+
+  // A RELATION COLUMN TAKES AN IDENTIFIER, NEVER A NAME — and this is the door
+  // a paste-from-Excel and a smart import come through, which is exactly how a
+  // customer's name ends up sitting in an id column. `data_type` cannot tell
+  // the difference: a relation column is a `string` column, so the old switch
+  // fell to `default` and stringified whatever it was handed.
+  //
+  // The database refuses this too (workbench.udt_relation_cells_take_ids), and
+  // that refusal is the boundary. This is the half that keeps a person from
+  // watching a paste half-land: it throws HERE, before the write is sent,
+  // naming the column and what it expected — the same sentence, one round trip
+  // earlier. It never coerces and never silently drops the value.
+  if (format?.id === "relation") {
+    const values = Array.isArray(raw) ? raw : [raw];
+    const max = format.options?.relation_max ?? 1;
+    if (max <= 1 && values.length > 1) {
+      throw new RelationCellValueError(
+        `This column points at one record, and it was given ${values.length}.`,
+      );
+    }
+    for (const v of values) {
+      const text = typeof v === "string" ? v.trim() : String(v ?? "");
+      if (text === "") continue;
+      if (!looksLikeRecordId(text)) {
+        throw new RelationCellValueError(
+          `This column points at a record, and it was given the text "${text.slice(0, 60)}". ` +
+            `Pick the record from the list — its name is shown, but what is stored is which record it is.`,
+        );
+      }
+    }
+    return Array.isArray(raw) ? values.map((v) => String(v).trim()).filter(Boolean) : String(raw).trim();
+  }
 
   switch (dataType) {
     case "number":

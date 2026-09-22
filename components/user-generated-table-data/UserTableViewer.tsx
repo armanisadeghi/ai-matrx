@@ -55,6 +55,7 @@ import {
 import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
 import { FormattedFieldValue } from "@/lib/field-formats/FormattedFieldValue";
 import { parseFieldInput, resolveFieldFormat } from "@/lib/field-formats/format";
+import type { FieldFormatConfig } from "@/lib/field-formats/types";
 import { formatDateCellDisplay } from "@/features/data-tables/format-date-cell";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import {
@@ -3025,7 +3026,11 @@ const UserTableViewer = ({
       const field = fields.find((f) => f.field_name === fieldName);
       // Coerce exactly the way a hand edit does — a second normalizer is how an
       // agent write and a bulk write end up storing different things.
-      const value = normalizeCellValue(rawValue, field?.data_type ?? "string");
+      const value = normalizeCellValue(
+        rawValue,
+        field?.data_type ?? "string",
+        (field?.metadata as { format?: FieldFormatConfig } | null)?.format ?? null,
+      );
       await applyBulkColumn(
         fieldName,
         buildSetColumnOps(

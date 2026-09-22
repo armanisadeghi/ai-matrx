@@ -811,6 +811,38 @@ const DEFS: FieldFormatDef[] = [
     parse: (raw) => FIELD_FORMATS.choice.parse(raw, {}),
   },
   {
+    // A RECORD OF ANOTHER TABLE. The cell stores that record's ID; the screen
+    // shows its WORDS. `person` is the precedent and the template — it has
+    // stored a user id and displayed a name through `choiceMap` since
+    // 2026-09-21 — so `relation` is a member of CHOICE_FORMAT_IDS and every
+    // one of the ten readers that print a cell resolves it through the path
+    // they already use for `person`. There is no eleventh place to remember.
+    //
+    // THREE STATES, THREE RENDERINGS, NO FOURTH (OLD-TABLES-CUTOVER §3.3):
+    //   resolved      the target's words
+    //   unresolvable  the amber fallback WITH the id, as an identifier — never
+    //                 a blank, and never the bare uuid as if it were text, so a
+    //                 person can act on it and support can trace it
+    //   withheld      platform.relation_withheld_label(), with NO id — a cell
+    //                 the reader may not see never leaks the identifier through
+    //                 the gap between the two stores' refusals
+    //
+    // `format` therefore returns null (the fallback law's "cannot interpret")
+    // for anything the resolver did not turn into words, and the renderer is
+    // what distinguishes unresolvable from withheld. It never prints a bare id.
+    id: "relation",
+    label: "Relation",
+    description: "A record of another table — pick it, and its name is shown",
+    group: "Choice",
+    base: "string",
+    alsoAccepts: ["array", "json"],
+    editor: "select",
+    rich: true,
+    optionKeys: ["relation_target", "relation_max", "on_delete", "display"],
+    format: (v, o) => FIELD_FORMATS.choice.format(v, o),
+    parse: (raw) => FIELD_FORMATS.choice.parse(raw, {}),
+  },
+  {
     id: "multi_choice",
     label: "Multi-choice",
     description: "Any number of values from a list of options",

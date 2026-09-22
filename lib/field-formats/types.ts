@@ -62,6 +62,20 @@ export type FieldFormatId =
   | "multi_choice"
   // a member of the table's organization — stored as the user id
   | "person"
+  // A RECORD OF ANOTHER TABLE — stored as that record's id, displayed as its
+  // words. The doctrine's rename table reads `reference` (field type) →
+  // `relation`, and `reference (as a link type)` is a RETIRED word, so this is
+  // `relation` and there is no second name for it: the context/scope system's
+  // markdown reference fence, the older data tables' label columns, and
+  // `platform.custom_field_definition`'s declared-but-unused reference columns
+  // all converge on this one field type.
+  //
+  // It carries `relation_max` rather than splitting into a singular and a
+  // plural id the way `choice` / `multi_choice` did: one field type with a
+  // cardinality is what `custom.field` already stores, so DD-031 carries the
+  // definition across instead of re-specifying it. Option keys are
+  // `custom.field`'s own: relation_target, relation_max, on_delete, display.
+  | "relation"
   // temporal
   | "date"
   | "datetime"
@@ -171,6 +185,27 @@ export type FieldFormatOptions = {
   suffix?: string;
   /** Text shown before the value. */
   prefix?: string;
+  /**
+   * `relation` — the table whose records this column points at.
+   *
+   * THE KEY NAMES ARE `custom.field`'s OWN, deliberately. The unified store
+   * already carries `relation_target`, `relation_max`, `on_delete` and
+   * `display` on a relation field, so DD-031's mover carries the definition
+   * across instead of translating it, and a column authored in the older
+   * estate arrives in the new store meaning exactly what it meant here.
+   */
+  relation_target?: string;
+  /**
+   * `relation` — how many records the cell may name. 1 (the default) is one
+   * record; greater than 1 is many. This is what `choice` / `multi_choice`
+   * needed two format ids to express, and the doctrine says one field type
+   * with a cardinality.
+   */
+  relation_max?: number;
+  /** `relation` — what happens to this cell when the record it names goes. */
+  on_delete?: "set_null" | "restrict" | "cascade";
+  /** `relation` — which of the target record's fields supplies the words. */
+  display?: string;
   /**
    * `choice` / `multi_choice` — the options offered inline. Ignored when
    * `structuredList` is set; that binding is the source of truth for options.

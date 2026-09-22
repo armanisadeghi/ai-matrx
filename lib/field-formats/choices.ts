@@ -44,16 +44,48 @@ import type {
   FieldFormatOptions,
 } from "./types";
 
-/** Format ids whose options come from this module. */
-export const CHOICE_FORMAT_IDS = ["choice", "multi_choice", "person"] as const;
+/**
+ * Format ids whose options come from this module — THE ONE LIST THAT MEANS
+ * "this column shows WORDS, not the value it stores".
+ *
+ * Ten different readers print the contents of a cell: the grid, formulas, the
+ * column filter checklist, copy/paste and export, the row label, sorting, what
+ * an agent is told about the table, `@table_cell`, the CMS export, and the
+ * server's distinct-values endpoint. For a column that stores an identifier,
+ * every one of them would show a customer a raw uuid. That is not ten fixes:
+ * `person` already stores a user id and displays a name through `choiceMap`,
+ * and `relation` joins it here, so every reader resolves through the path it
+ * already uses.
+ */
+export const CHOICE_FORMAT_IDS = [
+  "choice",
+  "multi_choice",
+  "person",
+  "relation",
+] as const;
 
 /** A choice column whose options come from OUTSIDE the field: the organization's members. */
 export function isPersonFormat(id: string | undefined | null): boolean {
   return id === "person";
 }
 
+/**
+ * A column whose cell holds an IDENTIFIER and whose screen shows WORDS —
+ * `person` (a user id) and `relation` (a record id). The distinction matters
+ * wherever a value is written, exported or compared rather than merely drawn.
+ */
+export function isIdentifierFormat(id: string | undefined | null): boolean {
+  return id === "person" || id === "relation";
+}
+
+/**
+ * DERIVED FROM THE LIST, DELIBERATELY. This predicate used to spell out
+ * `id === "choice" || id === "multi_choice" || id === "person"`, so adding a
+ * member to CHOICE_FORMAT_IDS changed nothing and the one-list fix was not
+ * actually one list. Every future member is now covered by construction.
+ */
 export function isChoiceFormat(id: string | undefined | null): boolean {
-  return id === "choice" || id === "multi_choice" || id === "person";
+  return (CHOICE_FORMAT_IDS as readonly string[]).includes(id ?? "");
 }
 
 /**

@@ -21,6 +21,7 @@
  * what was received, what was expected, and what to re-read.
  */
 
+import type { FieldFormatConfig } from "@/lib/field-formats/types";
 import { useMemo, type RefObject } from "react";
 
 import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -230,7 +231,14 @@ export function useDataTableWriteHandlers(
         }
 
         // Coerce exactly the way the user's own inline editing does.
-        const normalized = normalizeCellValue(raw, field.data_type);
+        // The FORMAT is passed, not just the storage type: a relation column is a
+        // `string` column, so without it an agent's write of a customer's NAME would
+        // be stringified straight into an id cell.
+        const normalized = normalizeCellValue(
+          raw,
+          field.data_type,
+          (field.metadata as { format?: FieldFormatConfig } | null)?.format ?? null,
+        );
 
         // normalizeCellValue is deliberately forgiving for a human who is still
         // typing — it hands NaN and unparsed strings on to the server to judge.

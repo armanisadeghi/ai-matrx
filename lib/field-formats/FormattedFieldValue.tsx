@@ -25,6 +25,12 @@ import {
 import { AttachmentChips } from "@/features/data-tables/components/AttachmentChips";
 
 import { choiceColorClass, isChoiceFormat } from "./choices";
+import {
+  RELATION_WITHHELD_LABEL,
+  relationCellState,
+  unresolvedRelationText,
+  unresolvedRelationTitle,
+} from "./relation";
 import { formatFieldValue } from "./format";
 import { getFieldFormat } from "./registry";
 import type { FieldChoice, FieldFormatConfig } from "./types";
@@ -70,6 +76,34 @@ export function FormattedFieldValue({
   }
 
   if (!result.ok) {
+    // A RELATION cell that did not resolve is its own case, and the one case
+    // where printing `result.text` would be wrong: the stored value is a record
+    // id, and a bare uuid in a grid reads as the cell's CONTENTS rather than as
+    // a reference that failed. Three states, three renderings, no fourth
+    // (OLD-TABLES-CUTOVER §3.3) — withheld says so and shows NO id; anything
+    // else shows the amber fallback WITH the id, marked as an identifier.
+    if (format?.id === "relation") {
+      const state = relationCellState(value, result.text);
+      if (state === "withheld") {
+        return (
+          <span
+            className={cn("text-muted-foreground italic", className)}
+            title={RELATION_WITHHELD_LABEL}
+          >
+            {RELATION_WITHHELD_LABEL}
+          </span>
+        );
+      }
+      return (
+        <span
+          className={cn(MISMATCH_CLASS, "font-mono text-[0.95em]", className)}
+          title={unresolvedRelationTitle(value)}
+        >
+          {unresolvedRelationText(value)}
+        </span>
+      );
+    }
+
     // A choice column's mismatch is the FEATURE, not a failure: declaring the
     // options is how a user finds the stray values already in their data. Say
     // so plainly instead of the generic type-mismatch reason.
@@ -285,10 +319,16 @@ function renderRich(
     }
     case "choice":
     case "person":
+    // A RESOLVED relation renders as a chip exactly like `person` does — the
+    // resolver put the target's words into `choices`, so this is the same code
+    // path, not a parallel one. The UNRESOLVED and WITHHELD states never reach
+    // here: `formatFieldValue` returns ok:false for them and the fallback arm
+    // above owns their rendering.
+    case "relation":
     case "multi_choice": {
       const declared = config?.options?.choices;
       const values =
-        id === "multi_choice"
+        id === "multi_choice" || (id === "relation" && Array.isArray(raw))
           ? Array.isArray(raw)
             ? raw.map((i) => String(i).trim()).filter(Boolean)
             : text.split(",").map((s) => s.trim()).filter(Boolean)
