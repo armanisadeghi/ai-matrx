@@ -44,7 +44,10 @@ const ACCESS_RANK: Record<AccessLevel, number> = {
 };
 
 /** True when `level` meets or exceeds `required` (none < view < edit < admin). */
-export function accessSatisfies(level: AccessLevel, required: AccessLevel): boolean {
+export function accessSatisfies(
+  level: AccessLevel,
+  required: AccessLevel,
+): boolean {
   return ACCESS_RANK[level] >= ACCESS_RANK[required];
 }
 
@@ -58,17 +61,28 @@ export function canViewAccess(level: AccessLevel): boolean {
   return accessSatisfies(level, "view");
 }
 
-export const NO_ACCESS: ResourceAccess = { level: "none", isOwner: false, exists: false };
+export const NO_ACCESS: ResourceAccess = {
+  level: "none",
+  isOwner: false,
+  exists: false,
+};
 
 function parseAccess(data: unknown): ResourceAccess | null {
   if (data && typeof data === "object" && !Array.isArray(data)) {
     const o = data as Record<string, unknown>;
     const level = o.level;
-    if (level === "view" || level === "edit" || level === "admin" || level === "none") {
+    if (
+      (level === "view" ||
+        level === "edit" ||
+        level === "admin" ||
+        level === "none") &&
+      typeof o.is_owner === "boolean" &&
+      typeof o.exists === "boolean"
+    ) {
       return {
         level,
-        isOwner: o.is_owner === true,
-        exists: o.exists !== false,
+        isOwner: o.is_owner,
+        exists: o.exists,
       };
     }
   }
