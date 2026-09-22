@@ -2,6 +2,8 @@
 --
 -- chair-step: the inverse of writeperf3b_the_outbox_asks_its_questions_once_per_statement.sql —
 --   it restores custom.io_record_changed_stmt_insert to the exact bytes that file replaced.
+--
+-- based-on: custom.io_record_changed_stmt_insert() 0f0134ec1bfef8a7e7108ddc1c75c5557c60af696a9668c9ad8d0d38051d71db
 
 CREATE OR REPLACE FUNCTION custom.io_record_changed_stmt_insert()
  RETURNS trigger

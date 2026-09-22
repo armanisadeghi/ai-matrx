@@ -2,6 +2,8 @@
 --
 -- chair-step: the inverse of writeperf3b_a_standard_tables_fields_are_read_once_per_statement.sql —
 --   it restores custom._entity_custom_fields_guard to the exact bytes that file replaced.
+--
+-- based-on: custom._entity_custom_fields_guard() 0de1d32bc2f6e800ac3e8a991d7fbd446e41d591cf49fb9a4ec7465dc93681da
 
 CREATE OR REPLACE FUNCTION custom._entity_custom_fields_guard()
  RETURNS trigger

@@ -2,6 +2,8 @@
 --
 -- chair-step: the inverse of writeperf3b_a_tables_declared_keys_are_read_once_per_statement.sql —
 --   it restores custom.undeclared_keys to the exact bytes that file replaced.
+--
+-- based-on: custom.undeclared_keys(uuid, uuid, jsonb) e9ad7405ce223bc80f5dffc962211bf9bfd40c173a922aae610b46511d31bf8a
 
 CREATE OR REPLACE FUNCTION custom.undeclared_keys(p_organization_id uuid, p_table_id uuid, p_data jsonb)
  RETURNS text[]

@@ -4,6 +4,9 @@
 --   it restores custom.record_relation_edges to the exact bytes that file replaced.
 --
 -- WRITE-PERF-3 — THE INVERSE. The relation fields go back to being read once per ROW.
+--
+-- based-on: custom.record_relation_edges(uuid, uuid, uuid, text, jsonb, timestamp with time zone) c2a8425790f84c5d7ddf233a8c8b36c88a8879a181c2f342878ab9a1f01333e5
+-- based-on: custom._relation_associations_stmt_insert() 69c85956d7f2fda696de7457ab268269a898b6a1c04afb9bf824f68af75e76cf
 
 CREATE OR REPLACE FUNCTION custom.record_relation_edges(p_organization_id uuid, p_id uuid, p_table_id uuid, p_data_class text, p_data jsonb, p_deleted_at timestamp with time zone)
  RETURNS TABLE(target_id uuid, edge_role text, field_id uuid, ord integer)
