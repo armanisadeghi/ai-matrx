@@ -4,9 +4,12 @@
 #
 # Arman, 2026-09-20: "there is no reason for ever having a worktree. Updates
 # should always be made to the single source of truth that is pushed live
-# every 30 minutes." Agents keep creating throwaway worktrees anyway (the
-# shared-checkout push recipe uses `mktemp -d` + `git worktree add`) and never
-# remove them; dozens accumulate per hour. This is the guard that removes them.
+# every 30 minutes." Agents kept creating throwaway worktrees anyway (until
+# 2026-09-21 the shared-checkout guard hook itself RECOMMENDED `mktemp -d` +
+# `git worktree add`; that recipe is gone and the hook now refuses `worktree
+# add`) and never removed them; dozens accumulated per hour. This is the sweep
+# that removes the leftovers; scripts/check-single-worktree.mjs is the guard
+# that fails the release while any remain.
 #
 # What it removes, silently:
 #   • a registered worktree whose tip is already an ancestor of origin/main and
@@ -274,31 +277,53 @@ run_janitor() {
 # ── Self-test ───────────────────────────────────────────────────────────────
 # Both modes must be proven: a clean throwaway at origin/main is removed, and a
 # throwaway carrying a dirty unique file is KEPT and named.
+#
+# The fixtures live in a SYNTHETIC repository under the temp dir — a bare
+# "origin" plus a primary clone — never in this checkout. Until 2026-09-21 this
+# self-test registered two worktrees in the real repo to test itself, which is
+# the exact state the janitor exists to end (Arman 2026-09-20: `git worktree
+# list` shows exactly one entry in every repo). The janitor is invoked from
+# inside the synthetic primary, so everything it lists, judges and removes
+# belongs to that repo alone.
 self_test() {
-    local failures=0 tmp janitor
+    local failures=0 tmp janitor origin primary
     janitor="$MAIN_WORKTREE/scripts/worktree-janitor.sh"
-    run_with_timeout 60 git fetch origin --quiet >/dev/null 2>&1 || true
-    if ! git rev-parse --verify --quiet origin/main >/dev/null; then
-        echo "SELF-TEST CANNOT RUN: this checkout has no origin/main."
-        return 1
-    fi
     tmp="$(mktemp -d "${TMPDIR:-/tmp}/worktree-janitor-selftest.XXXXXX")"
     tmp="$(cd "$tmp" && pwd -P)"
+    origin="$tmp/origin.git"
+    primary="$tmp/primary"
     echo "self-test scope: $tmp"
 
-    git worktree add --detach --quiet "$tmp/clean" origin/main >/dev/null 2>&1 \
+    git init -q --bare "$origin" \
+        || { echo "SELF-TEST FAIL: could not create the synthetic origin"; return 1; }
+    git init -q -b main "$primary" \
+        || { echo "SELF-TEST FAIL: could not create the synthetic primary"; return 1; }
+    git -C "$primary" config user.email janitor-self-test@example.invalid
+    git -C "$primary" config user.name "janitor self-test"
+    echo "synthetic" > "$primary/README.md"
+    git -C "$primary" add README.md >/dev/null 2>&1
+    git -C "$primary" commit -q -m "synthetic main" >/dev/null 2>&1
+    git -C "$primary" remote add origin "$origin"
+    git -C "$primary" push -q origin main >/dev/null 2>&1 \
+        || { echo "SELF-TEST FAIL: could not push the synthetic main to its origin"; return 1; }
+
+    git -C "$primary" worktree add --detach --quiet "$tmp/clean" origin/main >/dev/null 2>&1 \
         || { echo "SELF-TEST FAIL: could not create the clean throwaway worktree"; return 1; }
-    git worktree add --detach --quiet "$tmp/dirty" origin/main >/dev/null 2>&1 \
+    git -C "$primary" worktree add --detach --quiet "$tmp/dirty" origin/main >/dev/null 2>&1 \
         || { echo "SELF-TEST FAIL: could not create the dirty throwaway worktree"; return 1; }
     echo "a file no one else has" > "$tmp/dirty/janitor-self-test-unique.txt"
     git -C "$tmp/dirty" add janitor-self-test-unique.txt >/dev/null 2>&1
     # Missing-file and generated noise in the CLEAN tree must not save it.
     rm -f "$tmp/clean/README.md" 2>/dev/null || true
 
+    # The real repo must be untouched by the fixtures — that is the whole point.
+    git worktree list --porcelain | grep -q "^worktree $tmp/" \
+        && { echo "SELF-TEST FAIL: a fixture worktree registered itself in the REAL repo"; failures=$((failures + 1)); }
+
     echo
     echo "── dry run ──────────────────────────────────────────────────────────"
     local dry
-    dry="$(JANITOR_ONLY_PREFIX="$tmp" bash "$janitor" --dry-run)"
+    dry="$(cd "$primary" && JANITOR_ONLY_PREFIX="$tmp" bash "$janitor" --dry-run)"
     echo "$dry"
     grep -q "would remove: $tmp/clean" <<<"$dry" \
         || { echo "SELF-TEST FAIL: dry run did not offer to remove the clean worktree"; failures=$((failures + 1)); }
@@ -310,7 +335,7 @@ self_test() {
     echo
     echo "── real run ─────────────────────────────────────────────────────────"
     local real
-    real="$(JANITOR_ONLY_PREFIX="$tmp" bash "$janitor")"
+    real="$(cd "$primary" && JANITOR_ONLY_PREFIX="$tmp" bash "$janitor")"
     echo "$real"
     grep -q "removed: $tmp/clean" <<<"$real" \
         || { echo "SELF-TEST FAIL: real run did not report removing the clean worktree"; failures=$((failures + 1)); }
@@ -318,14 +343,12 @@ self_test() {
         || { echo "SELF-TEST FAIL: real run did not name the dirty worktree as kept"; failures=$((failures + 1)); }
     [[ -d "$tmp/clean" ]] \
         && { echo "SELF-TEST FAIL: the clean worktree is still on disk"; failures=$((failures + 1)); }
-    git worktree list --porcelain | grep -q "^worktree $tmp/clean$" \
+    git -C "$primary" worktree list --porcelain | grep -q "^worktree $tmp/clean$" \
         && { echo "SELF-TEST FAIL: the clean worktree is still registered with git"; failures=$((failures + 1)); }
     [[ -d "$tmp/dirty" && -f "$tmp/dirty/janitor-self-test-unique.txt" ]] \
         || { echo "SELF-TEST FAIL: the dirty worktree (or its unique file) was destroyed"; failures=$((failures + 1)); }
 
     echo
-    git worktree remove --force "$tmp/dirty" >/dev/null 2>&1 || true
-    git worktree prune >/dev/null 2>&1
     rm -rf -- "$tmp" >/dev/null 2>&1 || true
     echo "cleaned up $tmp"
 

@@ -138,26 +138,13 @@ const tableId = await call("table_declare", {
 });
 console.log(`table ${tableId}`);
 
-const opened = await call("io_import_begin", {
-  p_organization_id: ORG,
-  p_table_id: tableId,
-  p_format: "csv",
-  p_source_name: fileName,
-  p_source_columns: HEADERS,
-  p_file_hash: fileHash,
-  p_policy: { on_duplicate: "skip", unmapped: "create" },
-  p_dedupe_key: "job_number",
-  p_file_bytes: csv.length,
-  p_force: false,
-});
-console.log(`run ${opened.import_id}: ${opened.message}`);
-
-// ── 1. THE COLUMNS, AS THEIR OWN STEP.
+// ── 1. THE COLUMNS, AS THEIR OWN STEP — table-scoped, before a run is even opened, so the
+//      wizard can show "8 columns added" and then offer a duplicate key that names one of them.
 let declareMs = null;
 let declared = 0;
 if (!BASELINE) {
   const d = await timed("io_import_declare_columns", {
-    p_organization_id: ORG, p_import_id: opened.import_id, p_rows: rows, p_mapping: {},
+    p_organization_id: ORG, p_table_id: tableId, p_rows: rows, p_mapping: {},
   });
   if (d.err) throw d.err;
   declareMs = d.ms;
@@ -166,6 +153,20 @@ if (!BASELINE) {
   check(declared === 8, "the column step declares the eight columns the file has and this table has not",
         `${declared} created in ${declareMs} ms`);
 }
+
+const opened = await call("io_import_begin", {
+  p_organization_id: ORG,
+  p_table_id: tableId,
+  p_format: "csv",
+  p_source_name: fileName,
+  p_source_columns: HEADERS,
+  p_file_hash: fileHash,
+  p_policy: { on_duplicate: "skip", unmapped: "create" },
+  p_dedupe_key: null,
+  p_file_bytes: csv.length,
+  p_force: false,
+});
+console.log(`run ${opened.import_id}: ${opened.message}`);
 
 // ── 2. THE WRITING BATCHES.
 const times = [];
@@ -195,9 +196,8 @@ console.log(`  batches: ${times.join(" ms · ")} ms   worst ${worst} ms   total 
 
 check(worst < CEILING_MS, `every writing batch of ${BATCH} finishes under ${CEILING_MS} ms`, `worst ${worst} ms`);
 check(seen === 1000, "every row of the file was seen", `${seen} seen`);
-check(landed === 1000 - DUP_AT.length - BAD_AT.length, "every good row landed",
+check(landed === 1000 - BAD_AT.length, "every good row landed",
       `${landed} landed · ${dupes} already here · ${refused} refused`);
-check(dupes === DUP_AT.length, "the repeated ticket numbers are reported as duplicates, not written twice", `${dupes} duplicates`);
 check(refused === BAD_AT.length, "only the two mistyped rows were refused — a bad row does not take its batch with it",
       `${refused} refused: ${refusalReasons.map((s) => s.slice(0, 90)).join(" | ")}`);
 if (!BASELINE) {
@@ -209,6 +209,58 @@ const { data: page } = await client.schema("custom")
   .rpc("read_records", { p_organization_id: ORG, p_table_id: tableId, p_limit: 1, p_offset: 0 });
 if (Array.isArray(page) && page[0]) {
   console.log(`  a landed ticket: ${JSON.stringify(page[0].data ?? page[0]).slice(0, 260)}`);
+}
+
+// ── 3b. NEXT WEEK'S EXPORT, WITH THE OVERLAP. The dispatcher exports again and the file
+//      repeats 200 tickets she already imported plus 3 the office pasted twice inside ONE
+//      batch. The ticket number is the duplicate key and the policy is "leave them alone".
+//      THIS IS WHAT BATCHING MOST RISKS: the in-batch map that makes a ticket this very call
+//      just wrote count as "already here" used to be updated at write time, one row at a time.
+{
+  const followOn = [];
+  for (let i = 900; i < 1000; i += 1) followOn.push(rows[i]);          // 100 already here
+  for (let i = 1000; i < 1200; i += 1) {                              // 200 genuinely new
+    const day = new Date(Date.UTC(2026, 9, 1 + (i % 28)));
+    followOn.push({
+      "Job Number": `RPC-SEP-${41000 + i}`,
+      Customer: `${FIRST[i % FIRST.length]} ${LAST[(i * 7) % LAST.length]}`,
+      "Service Address": `${1200 + ((i * 13) % 4800)} ${STREETS[i % STREETS.length]}, ${CITIES[(i * 3) % CITIES.length]} CA`,
+      "Service Type": SERVICES[i % SERVICES.length],
+      "Scheduled Date": day.toISOString().slice(0, 10),
+      Crew: CREWS[i % CREWS.length],
+      Status: STATUSES[(i * 5) % STATUSES.length],
+      Notes: NOTES[(i * 3) % NOTES.length],
+    });
+  }
+  const IN_BATCH_REPEATS = [120, 180, 250];
+  for (const at of IN_BATCH_REPEATS) followOn[at] = { ...followOn[at - 1] };
+  const dupHash = createHash("sha256").update(`follow-on-${stamp}`).digest("hex");
+  const dOpen = await call("io_import_begin", {
+    p_organization_id: ORG, p_table_id: tableId, p_format: "csv",
+    p_source_name: "october-service-board.csv", p_source_columns: HEADERS,
+    p_file_hash: dupHash, p_policy: { on_duplicate: "skip", unmapped: "ignore" },
+    p_dedupe_key: "job_number", p_file_bytes: 0, p_force: false,
+  });
+  let dLanded = 0, dDupes = 0, dRefused = 0;
+  const dTimes = [];
+  for (let at = 0; at < followOn.length; at += BATCH) {
+    const r = await timed("io_import_rows", {
+      p_organization_id: ORG, p_import_id: dOpen.import_id,
+      p_rows: followOn.slice(at, at + BATCH), p_mapping: {},
+    });
+    dTimes.push(r.ms);
+    if (r.err) { failures.push(`follow-on batch threw: ${r.err.message}`); continue; }
+    dLanded += r.out.rows_written; dDupes += r.out.rows_duplicate; dRefused += r.out.rows_refused;
+  }
+  console.log(`  follow-on: ${dTimes.join(" ms · ")} ms — ${dLanded} landed · ${dDupes} already here · ${dRefused} refused`);
+  check(dDupes === 100 + IN_BATCH_REPEATS.length,
+        "the 100 tickets already on the board AND the 3 the office pasted twice inside one batch are all 'already here'",
+        `${dDupes} duplicates, expected ${100 + IN_BATCH_REPEATS.length}`);
+  check(dLanded === 200 - IN_BATCH_REPEATS.length,
+        "and only the genuinely new tickets were written", `${dLanded} landed, expected ${200 - IN_BATCH_REPEATS.length}`);
+  check(dLanded + dDupes + dRefused === followOn.length,
+        "every row of the follow-on file is accounted for", `${dLanded}+${dDupes}+${dRefused} of ${followOn.length}`);
+  check(Math.max(...dTimes) < CEILING_MS, `every follow-on batch finishes under ${CEILING_MS} ms`, `worst ${Math.max(...dTimes)} ms`);
 }
 
 // ── 4. THE UNIQUE RULE, INSIDE ONE BATCH. A batched INSERT cannot see its own earlier rows,
