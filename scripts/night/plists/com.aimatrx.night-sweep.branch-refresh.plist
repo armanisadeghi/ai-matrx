@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.aimatrx.night-sweep.branch-refresh</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>/Users/armanisadeghi/code/matrx-frontend/scripts/night/branch-refresh.sh</string>
+  </array>
+  <!-- ONE SHOT: a single calendar occurrence, 2026-09-23 01:05 America/Los_Angeles.
+       The job deletes this plist on its way out (night_self_destruct), so it can never
+       fire twice. RunAtLoad is false so bootstrapping it now does not run it now. -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Month</key><integer>9</integer>
+    <key>Day</key><integer>23</integer>
+    <key>Hour</key><integer>1</integer>
+    <key>Minute</key><integer>5</integer>
+  </dict>
+  <key>RunAtLoad</key><false/>
+  <key>AbandonProcessGroup</key><true/>
+  <key>StandardOutPath</key><string>/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/night-branch-refresh.log</string>
+  <key>StandardErrorPath</key><string>/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/night-branch-refresh.log</string>
+  <key>WorkingDirectory</key><string>/Users/armanisadeghi/code/matrx-frontend</string>
+</dict>
+</plist>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.aimatrx.night.branch-refresh-nightly</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>/Users/armanisadeghi/code/matrx-frontend/scripts/night/branch-refresh.sh</string>
+  </array>
+  <!-- RECURRING: every night at 01:05 America/Los_Angeles, inside the 0100-0330 window
+       the script itself enforces. LOADED BUT DISABLED. It stays disabled until the
+       one-shot's log shows a clean run; enabling it is one command:
+         launchctl enable  gui/$(id -u)/com.aimatrx.night.branch-refresh-nightly
+       Its label differs from the one-shot's on purpose: the script's self-destruct only
+       ever removes the one-shot's plist, so the nightly survives its own runs. -->
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>1</integer><key>Minute</key><integer>5</integer></dict>
+  <key>RunAtLoad</key><false/>
+  <key>Disabled</key><true/>
+  <key>AbandonProcessGroup</key><true/>
+  <key>StandardOutPath</key><string>/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/night-branch-refresh.log</string>
+  <key>StandardErrorPath</key><string>/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/night-branch-refresh.log</string>
+  <key>WorkingDirectory</key><string>/Users/armanisadeghi/code/matrx-frontend</string>
+</dict>
+</plist>
