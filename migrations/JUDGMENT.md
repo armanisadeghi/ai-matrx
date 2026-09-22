@@ -178,6 +178,28 @@ refuses on the CONNECTION's project ref (pooler user `postgres.<ref>`, direct ho
 Proof: `pnpm db:apply --clone-self-test` (four REDs then a GREEN), also chained from
 `--target-self-test`.
 
+🚨 **BOTH RUNNERS HAVE IT** (lane RUNNER-CLONE-PY, 2026-09-22). The Python runner takes
+`--target clone` with the same identity rule, the same refusals in both directions, the same
+judgement and the same `rehearsal_on` mark:
+
+```
+uv run python db/apply_migrations.py --only <file> --target clone --no-generate
+uv run python db/apply_migrations.py --clone-self-test     # the same four REDs, then GREEN
+```
+
+`pnpm check:migration-judgment` and `uv run python scripts/check_migration_judgment.py` now
+compare every fixture at **three** targets, so a clone rule that moves in one runner and not the
+other is a red test rather than a coin flip. A fixture states `branch=` and `production=`; its
+`clone=` is DERIVED from its production verdict by this section's rule and is written out only
+where the two genuinely differ (today: exactly one fixture,
+`a7-05-insert-entity-types.sql` — minting a live entity token is about PRODUCTION's release
+train, and a token minted in a copy the next refresh throws away does nothing to it).
+
+One difference that is the Python runner's alone, because production's rule is unchanged:
+`--source campaign` refuses `--rerun` at `branch` and `production` and ALLOWS it at
+`--target clone`, because rule 27's third leg is exactly "apply these same bytes again over the
+state the inverse left" and leg 1 has already ledgered them.
+
 ## 4. The ALLOW-LIST — a file whose header NAMES production
 
 Every statement must be one of these. Anything else is refused **with the statement quoted**
@@ -386,8 +408,25 @@ checks still agree line for line.
 - They are ledgered by BASENAME, like every file in `rehearsal/`, `inverse/` and `campaign/`.
 - Rule 27's loop: apply the up on the branch twice with the same result, run the inverse on the
   branch, re-apply the up — all with `--target branch`, all from the bytes production will see.
-- **On the dev clone the loop is ONE command:** `pnpm db:rehearse <file> --target clone`
-  (`scripts/rehearse-migration.ts`). It runs up → inverse → up, timing each leg, and before each
+- 🚨 **In aidream they live in `db/migrations/inverse/` and are named `inv_<up-name>.sql`, and
+  the name is the slot guard's doing, not taste.** `public.migration_slot()` reads
+  `0475_x_down.sql` as slot ` #0475` — the slot the UP already holds — so
+  `public._schema_migrations_slot_guard` (and `_refuse_occupied_slot`, which mirrors it before a
+  byte runs) refuses the very pairing that IS a down-migration; measured on the clone,
+  2026-09-22: `MIGRATION SLOT COLLISION`, nothing executed. `inv_0475_...sql` resolves to
+  `inv #0475` — the same number in its OWN series — so an inverse collides only with another
+  inverse of the same file. Neither guard is weakened. The frontend's `<name>_down.sql` form is
+  unchanged: those migrations carry no number series.
+- 🚨 **The Python runner reaches them through `--source inverse`, and through nothing else.**
+  Every glob in `db/apply_migrations.py` is non-recursive, so until 2026-09-22 `--only <name>`
+  answered *"no migration matches"* for anything in `migrations/inverse/` and the only route to
+  an aidream down-migration was `psql` by hand — no judgement, no refusals, no ledger row. The
+  selector is shaped exactly like `--source campaign`: one named file at a time, `--target`
+  must be NAMED, scanned by no sweep, check, `detect_applied.py` run or release.
+  `uv run python db/apply_migrations.py --source inverse --only <file>.sql --target clone`.
+- **On the dev clone the loop is ONE command, in either runner:**
+  `pnpm db:rehearse <file> --target clone` (`scripts/rehearse-migration.ts`) or
+  `uv run python db/rehearse_migration.py <file> --target clone` (`db/rehearse_migration.py`). It runs up → inverse → up, timing each leg, and before each
   of the first two it runs a MEASURE PASS — the statements one at a time inside one explicit
   transaction, `pg_locks` sampled from a second connection after each, then rolled back — so it
   prints the per-statement lock modes and flags every ACCESS EXCLUSIVE on a relation the file
@@ -395,6 +434,14 @@ checks still agree line for line.
   never writes outside its rolled-back measure pass. (`SET LOCAL application_name` goes INSIDE
   the transaction: the pooler runs in transaction mode and a name set outside can land on
   somebody else's backend — that mistake cost W1-ORG-PREP a whole measurement.)
+  The Python harness asks the clone's ledger which flag names each leg: an EXISTING migration
+  arrives already ledgered (the clone carries production's ledger), so its up runs through
+  `--rerun`; a brand-new one runs through `--only`. Leg 3 is always `--rerun`.
+  Proven end to end on `db/migrations/0475_files_owner_change_feed_index.sql` +
+  `db/migrations/inverse/inv_0475_files_owner_change_feed_index.sql`, 2026-09-22: up 7 128 ms →
+  inverse 5 652 ms → up again 6 906 ms, the index dropped and rebuilt, both ledger rows carrying
+  `rehearsal_on`, and the `DROP INDEX` measured taking ACCESS EXCLUSIVE on `files.files` (282 775
+  rows) — which is the number that belongs in the chair step's notes.
 
 ## 8. The refusal vocabulary
 
