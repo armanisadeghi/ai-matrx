@@ -1426,6 +1426,7 @@ export function WindowPanel({
   if (isMaximized) {
     const el = (
       <div
+        data-window-panel=""
         className={cn(
           "fixed inset-0 flex flex-col",
           "bg-card/98 backdrop-blur-md border border-border shadow-2xl",
@@ -1455,6 +1456,7 @@ export function WindowPanel({
   const el = (
     <div
       ref={fitContent ? fitContentRef : undefined}
+      data-window-panel=""
       className={cn(
         "fixed overflow-visible",
         motionStyles.enter,
@@ -2008,10 +2010,6 @@ function GreenTrafficLight({
   return (
     <div
       ref={containerRef}
-      // Stable marker for "a floating layer some other surface opened": a grid
-      // cell editor must not tear down when the user clicks inside the file
-      // picker window it opened (useGridSelection reads this).
-      data-window-panel=""
       className="relative"
       onMouseEnter={openDropdown}
       onMouseLeave={scheduleClose}
