@@ -81,6 +81,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import { connectDirect } from "./lib/direct-db";
 import { onceAsync, withBuildLockCleanup } from "./lib/build-lock-cleanup";
 import {
@@ -555,7 +556,7 @@ async function takeBuildLocks(
             refusal:
               `LOCK:${family} on the clone is held by ${C.bold}${row.heldBy}${C.reset} since ` +
               `${row.takenAt} (${row.held_for ?? "?"})${row.note ? ` — "${row.note}"` : ""}.\n` +
-              `  Waited ${LOCK_ATTEMPTS} x ${LOCK_WAIT_MS / 1000}s and it is still held, so NOTHING was ` +
+              `  Waited ${LOCK_ATTEMPTS} x ${formatDurationMs(LOCK_WAIT_MS, { style: "compact" })} and it is still held, so NOTHING was ` +
               `measured and nothing was applied.\n` +
               `  A measure pass that runs while ${row.heldBy} is mid-apply on ${family} measures ` +
               `${row.heldBy}, not this file — its statements would queue behind their locks and die at\n` +
@@ -567,7 +568,7 @@ async function takeBuildLocks(
         console.log(
           `${TAG.warn}LOCK:${family} is held by ${C.bold}${row.heldBy}${C.reset} since ` +
             `${row.takenAt}${row.note ? ` ("${row.note}")` : ""} — waiting ` +
-            `${LOCK_WAIT_MS / 1000}s (attempt ${attempt} of ${LOCK_ATTEMPTS})`,
+            `${formatDurationMs(LOCK_WAIT_MS, { style: "compact" })} (attempt ${attempt} of ${LOCK_ATTEMPTS})`,
         );
         await sleep(LOCK_WAIT_MS);
       }
