@@ -15,6 +15,7 @@
  * preview. Safe to paste into a chat with an agent.
  */
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import type { RootState } from "@/lib/redux/store";
 import type { MessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
 import { extractFlatText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
@@ -229,7 +230,7 @@ export function buildTranscriptIntegrityReport(
     const ageMs = now.getTime() - new Date(r.createdAt).getTime();
     if (requestSettled || ageMs > PENDING_STALE_MS) {
       anomalies.push(
-        `user row ${shortId(r.id)} is still a client-pending optimistic row after ${Math.round(ageMs / 1000)}s (request ${requestSettled ? "settled" : "open"}) — the server never acknowledged it with record_reserved`,
+        `user row ${shortId(r.id)} is still a client-pending optimistic row after ${formatDurationMs(ageMs, { style: "compact" })} (request ${requestSettled ? "settled" : "open"}) — the server never acknowledged it with record_reserved`,
       );
     }
   }

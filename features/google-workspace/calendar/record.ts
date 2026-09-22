@@ -12,6 +12,7 @@
  * the shared health strip's producer, since lane F-51.
  */
 
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import type { DetailField, DetailRow, DetailSourceHealth } from "@/lib/detail/types";
 
 import {
@@ -429,18 +430,13 @@ export function newestSyncedAt(events: readonly CalendarEventRow[]): string | nu
 export function refreshedPhrase(syncedAt: string | null, now: Date): string {
   const seconds = secondsSinceRefresh(syncedAt, now);
   if (seconds === null) return "Never refreshed from Google";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 1) return "Refreshed less than a minute ago from Google";
-  if (minutes === 1) return "Refreshed 1 minute ago from Google";
-  if (minutes < 60) return `Refreshed ${minutes} minutes ago from Google`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) {
-    return hours === 1
-      ? "Refreshed 1 hour ago from Google"
-      : `Refreshed ${hours} hours ago from Google`;
-  }
-  const days = Math.floor(hours / 24);
-  return days === 1 ? "Refreshed 1 day ago from Google" : `Refreshed ${days} days ago from Google`;
+  // Under a minute keeps its own words: "Refreshed 30 seconds ago" is a
+  // precision nobody asked a sync banner for.
+  if (seconds < 60) return "Refreshed less than a minute ago from Google";
+  return `Refreshed ${formatRelativeTime(syncedAt, {
+    style: "long",
+    now: now.getTime(),
+  })} from Google`;
 }
 
 // ─── Doors ──────────────────────────────────────────────────────────────────
