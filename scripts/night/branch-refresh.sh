@@ -184,8 +184,15 @@ DUMP="$WORK/schema.sql"
 # statement_timeout: no single catalog statement may sit on production for long.
 # timeout $DUMP_CAP: the whole dump aborts at ten minutes, as the brief requires.
 DUMP_START=$(date +%s)
+# 🚨 NOT --no-acl. The first cut carried it, and it strips EVERY GRANT from the dump — the
+# rehearsal's 16 MB file contained zero. Since step (3) DROPS these schemas, a grant-less dump
+# would have left the branch with no privileges at all: `EXECUTE on custom.table_declare to
+# authenticated` is what 39 suites skip on today, and a refresh that destroyed it would have
+# made the branch worse than the drift it was fixing. --no-owner stays (both databases connect
+# as `postgres`); the ACLs come across, which also levels the 25 EXECUTE grants BRANCH-DRIFT.md
+# measured the branch having and production not.
 PGOPTIONS='-c statement_timeout=600000' timeout $DUMP_CAP "$PGDUMP" "${SRC[@]}" \
-  --schema-only --no-owner --no-acl --no-comments --quote-all-identifiers \
+  --schema-only --no-owner --no-comments --quote-all-identifiers \
   --lock-wait-timeout=5000 "${DUMPARGS[@]}" -f "$DUMP" 2> "$WORK/dump.err"
 DRC=$?
 DUMP_SECS=$(( $(date +%s) - DUMP_START ))
@@ -198,7 +205,13 @@ if [ $DRC -ne 0 ] || [ ! -s "$DUMP" ]; then
   say "REFUSED: pg_dump failed after ${DUMP_SECS}s: $(head -3 "$WORK/dump.err" | tr '\n' ' ')"
   say "  Production was only ever READ. Nothing done."; exit 78
 fi
-say "dump ok: ${DUMP_SECS}s · $(du -h "$DUMP" | cut -f1) · $(grep -c '^CREATE ' "$DUMP") CREATE statements"
+say "dump ok: ${DUMP_SECS}s · $(du -h "$DUMP" | cut -f1) · $(grep -c '^CREATE ' "$DUMP") CREATE · $(grep -c '^GRANT ' "$DUMP") GRANT statements"
+# A dump with no GRANTs would destroy every privilege on the branch. Refuse before the drop.
+if [ "$(grep -c '^GRANT ' "$DUMP")" -eq 0 ]; then
+  say "REFUSED: the schema dump carries ZERO GRANT statements, so applying it would leave the"
+  say "  branch with no privileges at all. Nothing was written anywhere. Nothing done."
+  exit 78
+fi
 [ -s "$WORK/dump.err" ] && say "pg_dump stderr (first 3): $(head -3 "$WORK/dump.err" | tr '\n' ' ')"
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -410,6 +423,23 @@ DNUM="$(sed -nE 's/.*PRODUCTION HAS ([0-9]+) OBJECT.*/\1/p' "$WORK/drift.plain" 
 say "drift gate exit $DEXIT · production-only objects in the failing scope: ${DNUM:-0}"
 tail -25 "$WORK/drift.plain" | while read -r l; do say "  | $l"; done
 
+# SUITE-TARGET measured the two dependencies the campaign suites skip on most: EXECUTE on
+# custom.table_declare for `authenticated` (39 suites) and the knob row custom /
+# member_default_visibility (21). The refresh is supposed to bring both — the grant in the
+# dump's ACLs, the knob in the platform.feature_knob copy — so the job says out loud whether
+# it did, by name, instead of leaving it to be inferred from a suite count.
+say "─── (4) verification: the two dependencies SUITE-TARGET named ───"
+G="$("$PSQL" "$BRANCH_DSN" -qAt -c "select has_function_privilege('authenticated','custom.table_declare(text,text,jsonb)','EXECUTE')" 2>&1)"
+[ "$G" = "t" ] || G="$("$PSQL" "$BRANCH_DSN" -qAt -c "select bool_or(has_function_privilege('authenticated', p.oid, 'EXECUTE')) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='custom' and p.proname='table_declare'" 2>&1)"
+say "  exec:authenticated custom.table_declare  -> ${G:-(no answer)}   (39 suites skip without it)"
+K="$("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from platform.feature_knob where feature='custom' and key='member_default_visibility'" 2>&1)"
+say "  row platform.feature_knob custom/member_default_visibility -> ${K:-(no answer)} row(s)   (21 suites skip without it)"
+if [ "$G" != "t" ] || [ "${K:-0}" = "0" ]; then
+  say "  🚨 one of the two is still absent AFTER the refresh — the refresh did not bring it."
+  say "     A missing grant means the dump's ACLs did not carry it; a missing knob row means"
+  say "     production does not hold it either and it needs its own seeded row."
+fi
+
 say "─── (4) verification: 14 suites in rehearsal mode against the branch ───"
 export PGOPTIONS='-c statement_timeout=60000 -c lock_timeout=10000'
 VPASS=0 VFAIL=0 VSKIP=0
@@ -426,10 +456,20 @@ for b in "${VERIFY_SUITES[@]}"; do
   line="$(grep -m1 -E 'ERROR:|FATAL:' "$o")"
   skip="$(grep -m1 -E '^SKIPPED:' "$o")"
   if [ -n "$line" ]; then VFAIL=$((VFAIL+1)); say "  $(printf '%-56s %-6s %s' "$b" FAIL "$(print -r -- "${line#psql:*: }" | cut -c1-110)")"
-  elif [ -n "$skip" ]; then VSKIP=$((VSKIP+1)); say "  $(printf '%-56s %-6s %s' "$b" SKIP "$(print -r -- "$skip" | cut -c1-110)")"
+  elif [ -n "$skip" ]; then
+    VSKIP=$((VSKIP+1))
+    # _preamble.sql names the token it lacks after "does not have: ". Collect them, so the
+    # tally at the end says WHAT the refresh failed to bring, not merely how many skipped.
+    print -r -- "${skip##*does not have: }" >> "$WORK/missing-tokens.txt"
+    say "  $(printf '%-56s %-6s %s' "$b" SKIP "$(print -r -- "$skip" | cut -c1-110)")"
   else VPASS=$((VPASS+1)); say "  $(printf '%-56s %s' "$b" PASS)"; fi
 done
 say "suites: PASS $VPASS · SKIP $VSKIP · FAIL $VFAIL  (was PASS 4 / FAIL 10 on 2026-09-22 before the refresh; a SKIP is the suite saying the branch still lacks its dependency)"
+if [ -s "$WORK/missing-tokens.txt" ]; then
+  say "tokens the refresh did not bring, by how many of these suites named them:"
+  tr '|' '\n' < "$WORK/missing-tokens.txt" | sed 's/^ *//;s/ *$//' | sort | uniq -c | sort -rn \
+    | while read -r c t; do say "    $c × $t"; done
+fi
 
 say "───────── BRANCH-REFRESH RESULT ─────────"
 say "dump ${DUMP_SECS}s · restore ${RESTORE_SECS}s · restore errors $RERR · drift ${DNUM:-0} · suites PASS $VPASS SKIP $VSKIP FAIL $VFAIL"
