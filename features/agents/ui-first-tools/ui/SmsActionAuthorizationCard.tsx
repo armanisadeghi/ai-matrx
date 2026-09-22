@@ -4,12 +4,10 @@ import { useState } from "react";
 import { ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
 import { BackendApiError } from "@/lib/api/errors";
 import { apiPost, buildPath } from "@/lib/api/typed-client";
 import { submitToolResult } from "@/features/agents/api/submit-tool-results";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { supabase } from "@/utils/supabase/client";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import { AgentCardShell } from "./AgentCardShell";
 import type { PendingAsk } from "../redux/pending-asks.slice";
@@ -19,27 +17,22 @@ import {
 } from "../redux/pending-asks.slice";
 import { redactSmsActionArguments } from "../sms-action-authorization";
 
+// THE TEXT SERVICE NEVER VERIFIES (Arman, 2026-09-22: "Absolutely no
+// verifications is the RULE for this text service"). The person opened an
+// authenticated door and is signed in as themselves; that IS the approval. This
+// card therefore has exactly two outcomes, approve and decline, and no
+// re-authentication step of any kind. Until 2026-09-22 a 401 from the confirm
+// endpoint (its "recent sign-in" check) sent a Supabase email OTP — which
+// arrives as a magic link, not a code — and the person was stuck. A 401 is now
+// reported as what it is: a server-side defect, with the one honest remedy.
 export function SmsActionAuthorizationCard({ ask }: { ask: PendingAsk }) {
   const dispatch = useAppDispatch();
-  const email = useAppSelector((state) => state.userAuth.email);
   const authorization = ask.smsActionAuthorization;
   const [working, setWorking] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   if (!authorization) return null;
   const exactAuthorization = authorization;
-
-  async function confirmOnServer() {
-    return apiPost(
-      buildPath(
-        "/communications/sms/action-authorizations/{call_id}/confirm",
-        { call_id: ask.callId },
-      ),
-      { confirm: true },
-    );
-  }
 
   function finishApproval() {
     dispatch(
@@ -67,39 +60,22 @@ export function SmsActionAuthorizationCard({ ask }: { ask: PendingAsk }) {
     setWorking(true);
     setError(null);
     try {
-      await confirmOnServer();
+      await apiPost(
+        buildPath(
+          "/communications/sms/action-authorizations/{call_id}/confirm",
+          { call_id: ask.callId },
+        ),
+        { confirm: true },
+      );
       finishApproval();
     } catch (cause) {
-      if (cause instanceof BackendApiError && cause.status === 401 && email) {
-        const { error: otpError } = await supabase.auth.signInWithOtp({
-          email,
-          options: { shouldCreateUser: false },
-        });
-        if (otpError) setError(otpError.message);
-        else setOtpSent(true);
+      if (cause instanceof BackendApiError && cause.status === 401) {
+        setError(
+          "The server did not accept your signed-in session for this approval. Reload the page and tap Approve again. If it fails a second time, this is a defect on our side, not something you need to verify.",
+        );
       } else {
         setError(cause instanceof Error ? cause.message : "Approval failed");
       }
-    } finally {
-      setWorking(false);
-    }
-  }
-
-  async function verifyAndApprove() {
-    if (!email || !otp.trim()) return;
-    setWorking(true);
-    setError(null);
-    try {
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        email,
-        token: otp.trim(),
-        type: "email",
-      });
-      if (verifyError) throw verifyError;
-      await confirmOnServer();
-      finishApproval();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Verification failed");
     } finally {
       setWorking(false);
     }
@@ -124,15 +100,7 @@ export function SmsActionAuthorizationCard({ ask }: { ask: PendingAsk }) {
     );
   }
 
-  const actions = otpSent ? (
-    <Button
-      className="min-h-11 w-full sm:w-auto"
-      onClick={verifyAndApprove}
-      disabled={working || !otp.trim()}
-    >
-      Verify and approve
-    </Button>
-  ) : (
+  const actions = (
     <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
       <Button
         className="min-h-11 w-full sm:w-auto"
@@ -179,19 +147,6 @@ export function SmsActionAuthorizationCard({ ask }: { ask: PendingAsk }) {
         <StructuredValueView
           value={redactSmsActionArguments(ask.smsActionArguments ?? {})}
         />
-        {otpSent ? (
-          <div className="space-y-2">
-            <p>Enter the verification code sent to {email}.</p>
-            <Input
-              value={otp}
-              onChange={(event) => setOtp(event.target.value)}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              placeholder="Verification code"
-              className="min-h-11 text-base"
-            />
-          </div>
-        ) : null}
         {error ? <p className="text-destructive">{error}</p> : null}
       </div>
     </AgentCardShell>
