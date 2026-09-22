@@ -375,6 +375,18 @@ if $STRICT; then
         # three times in twelve hours, so a ratchet only read here is one the writer never meets.
         # This is that gate's RED-then-GREEN half. No database, no file written.
         "Inverse ground gate refuses before it ledgers (self-test)|pnpm check:migration-ground-gate:self-test"
+        # POLICY-LOCK, 2026-09-22. Two gates, and they answer different questions.
+        # The first needs no database: a campaign file that changes a policy carries nothing
+        # else, because every CREATE/ALTER/DROP POLICY freezes auth, storage and realtime for
+        # the length of its transaction (Supabase's supautils.policy_grants hook — not ours,
+        # not switchable) and this runner runs one file per transaction. RED-then-GREEN on
+        # bytes, no connection.
+        "Policy DDL never rides in a long file (self-test)|pnpm check:migration-policy-only:self-test"
+        # The second measures the lock set itself on the NIGHTLY DEV CLONE: a `create policy`
+        # takes its own table plus exactly the declared set and nothing more. It is green
+        # today; it goes red the day one of our event triggers starts escalating, or the day
+        # Supabase changes the list. Its red twin is scripts/campaign-tests/policylock_red.sql.
+        "POLICY-LOCK: a policy change locks nothing undeclared (clone)|pnpm check:policy-lock-set"
         # PARTITION RUNWAY stays ADVISORY even in strict mode. It is the only
         # gate whose subject is the CALENDAR, not the code: a release that has
         # nothing to do with history.row_versions must not be blocked because a

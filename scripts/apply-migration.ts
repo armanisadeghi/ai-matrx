@@ -75,6 +75,7 @@
  *   pnpm db:apply migrations/foo.sql --reapply  re-execute a file whose ledger
  *                                               row holds a DIFFERENT checksum
  *   pnpm db:apply migrations/foo.sql --statement-timeout=30min   raise the budget
+ *   pnpm db:apply --policy-only-self-test       prove the POLICY-LOCK policy-only rule RED then GREEN
  *   pnpm db:apply --ground-gate-self-test       prove the inverse ground gate RED then GREEN
  *                                               (no database, no file written)
  *   pnpm db:apply --self-test                   prove RED then GREEN against the
@@ -170,6 +171,8 @@ import {
   type CloneRef,
   TargetRefusal,
   type Target,
+  policyOnlyVerdict,
+  POLICY_MIXED_GRANDFATHERED,
 } from "./lib/migration-target";
 import { confirmChairStep } from "./lib/chair-step";
 import { basedOnCheck, findReplaceOccurrences, type Query } from "./migration-based-on";
@@ -974,6 +977,48 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         `      python db/apply_migrations.py --source ${SOURCE} --only ${filename}`,
     );
     return 1;
+  }
+
+  // ── POLICY-LOCK (2026-09-22): A POLICY CHANGE NEVER RIDES INSIDE A LONG FILE ──────────────
+  //
+  // Every CREATE/ALTER/DROP POLICY run as `postgres` takes ACCESS EXCLUSIVE on 23 `auth.*`,
+  // `storage.*` and `realtime.*` relations (Supabase's own `supautils.policy_grants` hook — not
+  // ours, not switchable, `sighup` from their configuration file) and PostgreSQL holds them
+  // until COMMIT. Nobody signs in, refreshes a token, reads a file or receives a realtime
+  // message for the duration. This runner owns the transaction and runs ONE FILE INSIDE IT, so
+  // THE LENGTH OF THE FILE IS THE LENGTH OF THE OUTAGE.
+  //
+  // So a campaign file that carries policy DDL carries nothing else: policy statements, the
+  // grants and comments that belong with them, and `set local`. A table creation, a backfill or
+  // a function replace goes in a second file. Refused here, on the bytes, before a connection
+  // exists, at every target — not softened by --dry-run or --reapply, because a dry run that
+  // passes a file the real run would refuse is how the rule gets discovered at 2 a.m.
+  if (inCampaign) {
+    const verdict = policyOnlyVerdict(sql);
+    if (verdict.policy.length > 0 && verdict.strangers.length > 0) {
+      if (POLICY_MIXED_GRANDFATHERED.includes(filename)) {
+        console.error(
+          `${TAG.warn}${filename} mixes policy DDL with other DDL and is on the POLICY-LOCK ` +
+            `grandfather list (written before the rule, bytes frozen). It is NOT a precedent: ` +
+            `a new file is split.`,
+        );
+      } else {
+        console.error(
+          `${TAG.fail}${filename} ${C.bold}changes a policy AND does other work in the same ` +
+            `transaction${C.reset}, and a policy change freezes sign-in, file reads and realtime ` +
+            `for as long as that transaction lasts.\n` +
+            `  The policy statement(s):\n` +
+            verdict.policy.map((p) => `    ${p.why}: ${p.stmt.slice(0, 110)}`).join("\n") +
+            `\n  May not ride with them (${verdict.strangers.length}):\n` +
+            verdict.strangers.map((t) => `    ${t.slice(0, 110)}`).join("\n") +
+            `\n  ${C.dim}Split it: one POLICY-ONLY file (policy/grant/comment/set local) and one ` +
+            `for the rest. Nothing was applied and no ledger row was written. Measured on the dev ` +
+            `clone 2026-09-22: one CREATE POLICY takes ACCESS EXCLUSIVE on 23 auth/storage/realtime ` +
+            `relations and holds them to COMMIT.${C.reset}`,
+        );
+        return 1;
+      }
+    }
   }
 
   // ── --target: WHICH database, refused BEFORE a connection exists ──────────
@@ -1958,6 +2003,93 @@ async function selfTest(statementTimeout: string): Promise<number> {
 // half already asserted its own.
 const TARGET_SELFTEST_SCRATCH_RE =
   /^zz_db_apply_(?:target|clone)_selftest_[0-9a-f]{12}\.sql$/;
+
+/**
+ * `pnpm db:apply --policy-only-self-test` — the RED-then-GREEN proof for the POLICY-LOCK rule.
+ *
+ * IT TOUCHES NO DATABASE AND WRITES NO FILE. It judges BYTES, three bodies:
+ *   RED    a `create policy` riding beside a `create table` and a backfill — refused, and the
+ *          strangers named, because that transaction's whole length is an outage.
+ *   RED-2  a `do $$ … perform iam.apply_rls(…) … $$` beside a function replace — the same
+ *          refusal for the regenerator call, which is what actually takes the locks.
+ *   GREEN  a policy-only body: drops, creates, a grant, a comment and a `set local` — clean.
+ *   GREEN-2 a file with NO policy DDL at all, doing plenty else — the rule does not fire, and
+ *          a rule that fired on every migration would simply be turned off.
+ */
+function policyOnlySelfTest(): number {
+  const red = `
+    set local lock_timeout = '2s';
+    create table demo.widget (id uuid primary key);
+    insert into demo.widget (id) values (gen_random_uuid());
+    drop policy std_select on demo.widget;
+    create policy std_select on demo.widget for select to authenticated using (true);
+  `;
+  const redVerdict = policyOnlyVerdict(red);
+  if (redVerdict.policy.length === 0 || redVerdict.strangers.length !== 2) {
+    console.error(
+      `${TAG.fail}--policy-only-self-test RED HALF FAILED: a create policy beside a create table ` +
+        `and an insert was judged ${redVerdict.policy.length} policy statement(s) and ` +
+        `${redVerdict.strangers.length} stranger(s); expected 2 policy statements and 2 strangers.`,
+    );
+    return 1;
+  }
+  console.log(
+    `${C.bold}policy-only RED${C.reset} ${C.dim}— ${redVerdict.strangers.length} statement(s) refused ` +
+      `beside ${redVerdict.policy.length} policy statement(s)${C.reset}`,
+  );
+
+  const red2 = `
+    create or replace function demo.f() returns void language sql as $$ select 1 $$;
+    do $$ begin perform iam.apply_rls('demo','widget','widget'); end $$;
+  `;
+  const red2Verdict = policyOnlyVerdict(red2);
+  if (red2Verdict.policy.length !== 1 || red2Verdict.strangers.length !== 1) {
+    console.error(
+      `${TAG.fail}--policy-only-self-test RED-2 FAILED: a DO block calling iam.apply_rls beside a ` +
+        `function replace was judged ${red2Verdict.policy.length} policy statement(s) / ` +
+        `${red2Verdict.strangers.length} stranger(s); expected 1 and 1.`,
+    );
+    return 1;
+  }
+  console.log(`${C.bold}policy-only RED-2${C.reset} ${C.dim}— a regenerator CALL counts as policy DDL${C.reset}`);
+
+  const green = `
+    set local lock_timeout = '2s';
+    drop policy std_select on demo.widget;
+    create policy std_select on demo.widget for select to authenticated using (created_by = auth.uid());
+    grant select on demo.widget to authenticated;
+    comment on table demo.widget is 'the widget';
+  `;
+  const greenVerdict = policyOnlyVerdict(green);
+  if (greenVerdict.policy.length === 0 || greenVerdict.strangers.length > 0) {
+    console.error(
+      `${TAG.fail}--policy-only-self-test GREEN HALF FAILED: a policy-only body was judged to carry ` +
+        `${greenVerdict.strangers.length} stranger(s): ${greenVerdict.strangers.join(" | ")}`,
+    );
+    return 1;
+  }
+  console.log(`${C.bold}policy-only GREEN${C.reset} ${C.dim}— policy/grant/comment/set local is clean${C.reset}`);
+
+  const green2 = `
+    create table demo.gadget (id uuid primary key);
+    create index gadget_id_idx on demo.gadget (id);
+    create or replace function demo.g() returns void language sql as $$ select 1 $$;
+  `;
+  const green2Verdict = policyOnlyVerdict(green2);
+  if (green2Verdict.policy.length > 0 || green2Verdict.strangers.length > 0) {
+    console.error(
+      `${TAG.fail}--policy-only-self-test GREEN-2 FAILED: a file with no policy DDL was judged by ` +
+        `the rule at all (${green2Verdict.policy.length} policy / ${green2Verdict.strangers.length} strangers).`,
+    );
+    return 1;
+  }
+  console.log(`${C.bold}policy-only GREEN-2${C.reset} ${C.dim}— the rule does not fire on an ordinary file${C.reset}`);
+  console.log(
+    `${TAG.ok}a campaign file that changes a policy carries nothing else, and the rule is silent ` +
+      `on every file that changes none.`,
+  );
+  return 0;
+}
 
 /**
  * `pnpm db:apply --ground-gate-self-test` — the RED-then-GREEN proof for the ground-standing
@@ -3305,6 +3437,7 @@ async function main(): Promise<number> {
     return amendIdempotent(resolve(ROOT, given), parseTargetFlag(argv), statementTimeout);
   }
 
+  if (argv.includes("--policy-only-self-test")) return policyOnlySelfTest();
   if (argv.includes("--ground-gate-self-test")) return groundGateSelfTest();
   if (argv.includes("--clone-self-test")) return cloneSelfTest(statementTimeout);
   if (argv.includes("--target-self-test")) return targetSelfTest(statementTimeout);

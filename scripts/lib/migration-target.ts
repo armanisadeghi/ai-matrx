@@ -980,6 +980,189 @@ export function topLevelStatements(strippedSql: string): string[] {
   return out.map((t) => t.replace(/\s+/g, " ").trim()).filter(Boolean);
 }
 
+// ── POLICY-LOCK (2026-09-22) — A POLICY CHANGE NEVER RIDES INSIDE A LONG FILE ─────────────
+//
+// THE FACT THIS IS BUILT ON, measured on the dev clone and confirmed on the main database:
+// Supabase's own `supautils` extension carries a `policy_grants` hook. Every
+// CREATE / ALTER / DROP POLICY run as `postgres` takes ACCESS EXCLUSIVE on the 23 `auth.*`,
+// `storage.*` and `realtime.*` relations named in `supautils.policy_grants` — and PostgreSQL
+// holds them until COMMIT. While they are held NOBODY can sign in, refresh a token, read a
+// file or receive a realtime message. The setting is `sighup`, read from Supabase's own
+// configuration file: `SET`, `SET LOCAL` and `ALTER ROLE … SET` are all refused, and
+// `postgres` is not superuser here. The hook costs no measurable time; the damage is entirely
+// that the locks are held to COMMIT, so THE FREEZE IS AS LONG AS THE TRANSACTION.
+//
+// The runner owns the transaction — one file, one transaction — so the length of a file
+// carrying policy DDL IS the length of the outage. A file that creates a table, backfills it,
+// replaces four functions AND touches one policy freezes the platform for all of it.
+//
+// So: a campaign file that contains policy DDL is POLICY-ONLY. Policy statements, the grants
+// and comments that belong to them, and `set local` — nothing else. Everything else goes in a
+// second file. The rule is mechanical and it is refused with a sentence, never a warning.
+
+/**
+ * The statement kinds that may sit beside policy DDL in one file.
+ *
+ * `platform.entity_types` is here on purpose and it is the ONLY table write that is: a lane
+ * declares a token's class or its anon lane and regenerates in the SAME transaction precisely
+ * so the declaration and the policies can never disagree, and one registry row costs
+ * microseconds. Every other write, every table or index, every function replace is a second
+ * file — those are the ones that turn a policy change into minutes of nobody being able to
+ * sign in.
+ */
+const POLICY_COMPANION_RES: readonly RegExp[] = [
+  /^(grant|revoke)\b/i,
+  /^comment\s+on\b/i,
+  /^(set|reset)\b/i,
+  /^alter\s+table\b[\s\S]*\brow\s+level\s+security\b/i,
+  /^(insert\s+into|update)\s+platform\.entity_types\b/i,
+];
+
+/**
+ * Comments stripped, QUOTE-AWARE — `'… nullable -- NULL names nobody …'` is prose inside a
+ * string literal, not a comment, and the naive stripper this file used to share eats the rest
+ * of that line, unbalances the quote and hands the splitter a statement that starts in the
+ * middle of an English sentence. Measured on
+ * `migrations/campaign/secsweep2_ops_system_error_user_id_is_the_caller.sql`, 2026-09-22.
+ */
+export function stripCommentsQuoteAware(sql: string): string {
+  let out = "";
+  let i = 0;
+  while (i < sql.length) {
+    const tag = /^\$([A-Za-z_]\w*)?\$/.exec(sql.slice(i));
+    if (tag) {
+      const close = sql.indexOf(tag[0], i + tag[0].length);
+      const end = close < 0 ? sql.length : close + tag[0].length;
+      out += sql.slice(i, end);
+      i = end;
+      continue;
+    }
+    const ch = sql[i]!;
+    if (ch === "'" || ch === '"') {
+      let j = i + 1;
+      while (j < sql.length) {
+        if (sql[j] === ch) {
+          if (sql[j + 1] === ch) { j += 2; continue; }
+          break;
+        }
+        j += 1;
+      }
+      out += sql.slice(i, Math.min(j + 1, sql.length));
+      i = j + 1;
+      continue;
+    }
+    if (ch === "-" && sql[i + 1] === "-") {
+      const nl = sql.indexOf("\n", i);
+      out += " ";
+      i = nl < 0 ? sql.length : nl;
+      continue;
+    }
+    if (ch === "/" && sql[i + 1] === "*") {
+      const close = sql.indexOf("*/", i + 2);
+      out += " ";
+      i = close < 0 ? sql.length : close + 2;
+      continue;
+    }
+    out += ch;
+    i += 1;
+  }
+  return out;
+}
+
+/** The functions whose call regenerates policies for one or many tables. */
+export const POLICY_REGENERATORS: readonly string[] = [
+  "iam.apply_rls",
+  "iam._apply_rls_unchecked",
+  "iam._rls_emit_policies",
+  "platform.reopen_declared_doors",
+];
+
+/**
+ * Why this ONE statement issues policy DDL, or null. A `CREATE OR REPLACE FUNCTION` whose
+ * BODY contains `create policy` is not a policy statement — replacing a body takes no lock;
+ * running it does. So the regenerator test only fires on a statement that CALLS one
+ * (`select`, `do`, `call`, `with`), which is exactly the statement that takes the locks.
+ */
+export function policyStatementReasonOf(stmt: string): string | null {
+  const t = stmt.trim();
+  const m = /^(create|alter|drop)\s+policy\b/i.exec(t);
+  if (m) return `${m[1].toUpperCase()} POLICY`;
+  if (/^(select|do|call|with|perform)\b/i.test(t)) {
+    for (const fn of POLICY_REGENERATORS) {
+      if (new RegExp(`\\b${fn.replace(/[.]/g, "\\.")}\\s*\\(`, "i").test(t)) {
+        return `a call to ${fn}(), which issues policy DDL`;
+      }
+    }
+  }
+  return null;
+}
+
+export interface PolicyOnlyVerdict {
+  /** The statements that issue policy DDL, with the reason each one does. */
+  readonly policy: Array<{ readonly stmt: string; readonly why: string }>;
+  /** The statements that may NOT ride with them — empty means the file is policy-only. */
+  readonly strangers: string[];
+}
+
+/**
+ * Judge the RAW bytes (it strips its own comments, quote-aware). When the body contains NO
+ * policy DDL the rule does not fire and
+ * `policy` is empty; when it does, every other statement must be a companion or it is named.
+ */
+export function policyOnlyVerdict(rawSql: string): PolicyOnlyVerdict {
+  const stmts = topLevelStatements(stripCommentsQuoteAware(rawSql));
+  const policy: Array<{ stmt: string; why: string }> = [];
+  const rest: string[] = [];
+  for (const stmt of stmts) {
+    const why = policyStatementReasonOf(stmt);
+    if (why) policy.push({ stmt, why });
+    else rest.push(stmt);
+  }
+  if (policy.length === 0) return { policy: [], strangers: [] };
+  const strangers = rest.filter((s) => !POLICY_COMPANION_RES.some((re) => re.test(s.trim())));
+  return { policy, strangers };
+}
+
+/**
+ * 🚨 THE GRANDFATHER LIST, AND IT NEVER GROWS. These campaign files were written before the
+ * rule existed and are ledgered history; their bytes are frozen and rewriting them is not a
+ * thing this campaign does (BUILD-BOOK rule: an already-ledgered file is never re-judged, and
+ * a NEW migration is the one remedy). The rule binds every file written from 2026-09-22.
+ * Census: lane POLICY-LOCK, 2026-09-22, over all 870 files in `migrations/campaign/` — 203
+ * contain policy DDL, and these 28 are the ones that also carry other work.
+ * ADDING A NAME HERE IS NOT A FIX. Split the file.
+ */
+export const POLICY_MIXED_GRANDFATHERED: readonly string[] = [
+  "deadkeys_feature_knob_has_no_signed_out_reader.sql",
+  "doorsonly3_batch_a_three_doors_for_three_tables.sql",
+  "doorsonly4_a_table_whose_doors_are_not_built_says_so.sql",
+  "doorsonly4_the_generator_stops_emitting_client_writes.sql",
+  "doorsonly5_categories_gets_its_doors.sql",
+  "doorsonly5_rulebook_gets_its_doors.sql",
+  "doorsonly5_rulebook_leaves_the_pending_register.sql",
+  "doorsonly5_saved_view_gets_its_doors.sql",
+  "doorsonly5_saved_view_leaves_the_pending_register.sql",
+  "fix7b_a_list_of_people_is_never_platform_content.sql",
+  "mergehist_a_compound_operation_signs_its_revision.sql",
+  "open_census_a_closed_schema_closes_itself.sql",
+  "orgarch_an_organization_is_archived_never_deleted.sql",
+  "realtime_INVERSE.sql",
+  "realtime_a_topic_is_admitted_by_its_owning_schema.sql",
+  "rls_reference_convert_catalogues.sql",
+  "rls_reference_variant.sql",
+  "storerel_a_carrying_link_has_a_door.sql",
+  "storerel_pruning_can_be_asked_for.sql",
+  "storerel_the_merge_answers_a_client.sql",
+  "w0_sync2_masterwork_source_and_definer_lint.sql",
+  "w0_sync_provisioner_and_shape_guard.sql",
+  "w1_org_billing_owner_columns_move_on_main.sql",
+  "w1_org_billing_owner_columns_move_to_the_organization.sql",
+  "w1_reg_virtual_tokens_and_the_partial_index.sql",
+  "w3_hist_retention_and_the_floor.sql",
+  "w3_hist_the_one_store.sql",
+  "w3_mig_the_ten_verbs.sql",
+] as const;
+
 /** Every function name a file declares it was written against (`-- based-on:`). */
 export function basedOnFunctionNames(rawSql: string): Set<string> {
   const out = new Set<string>();
