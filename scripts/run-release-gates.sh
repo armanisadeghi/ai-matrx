@@ -403,6 +403,14 @@ if $STRICT; then
         # scripts/campaign-tests/triggerlock_red.sql.
         "Trigger DDL on a partitioned parent is window-class (self-test)|pnpm check:migration-window-class:self-test"
         "TRIGGER-LOCK: trigger DDL locks nothing undeclared (clone)|pnpm check:trigger-lock-set"
+        # STORE-ON is the census behind the owner ruling of 2026-09-23: the record store's
+        # default is ON, and an organization is OFF only when it turned itself off and said
+        # why. It runs against the nightly dev clone, which carries production's own data, so
+        # the census is the real census. The defect it watches for is invisible from inside the
+        # organization it happens to: every screen simply has nothing in it. It also holds both
+        # halves of the one switch together and proves a brand-new organization is open at
+        # birth. Red twin: scripts/campaign-tests/storeon_red.sql (four armed failures).
+        "STORE-ON: no organization is dark by omission (clone)|pnpm check:store-on-by-default"
         # PARTITION RUNWAY stays ADVISORY even in strict mode. It is the only
         # gate whose subject is the CALENDAR, not the code: a release that has
         # nothing to do with history.row_versions must not be blocked because a

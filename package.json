@@ -210,6 +210,7 @@
     "check:branch-seed-list:self-test": "zsh scripts/night/branch-seed-census.sh --self-test",
     "db:apply:self-test": "tsx scripts/apply-migration.ts --self-test",
     "check:policy-lock-set": "./scripts/check-policy-lock-set.sh",
+    "check:store-on-by-default": "./scripts/check-store-on-by-default.sh",
     "check:trigger-lock-set": "./scripts/check-trigger-lock-set.sh",
     "check:migration-policy-only:self-test": "tsx scripts/apply-migration.ts --policy-only-self-test",
     "check:migration-window-class:self-test": "tsx scripts/apply-migration.ts --window-class-self-test",

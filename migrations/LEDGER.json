@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-22T17:40:16.697Z",
+  "generated_at": "2026-09-22T17:44:12.338Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -410,6 +410,12 @@
       "checksum": "ddee1dad7184331c4d219b81472a9d08091360f707b253078f91553f7f2442d2",
       "applied_at": "2026-09-20 07:10:06.752379+00"
     },
+    "migrations/campaign/cifix3_two_door_rows_say_what_is_true.sql": {
+      "source": "matrx-frontend",
+      "filename": "cifix3_two_door_rows_say_what_is_true.sql",
+      "checksum": "c66407c51fe889beff7bfb6dce9162aa9b7c2add14aa25f95f6dba3efdcb8d31",
+      "applied_at": "2026-09-22 17:43:57.685784+00"
+    },
     "migrations/campaign/contextfields_agent_context_has_a_knob.sql": {
       "source": "matrx-frontend",
       "filename": "contextfields_agent_context_has_a_knob.sql",
@@ -499,6 +505,12 @@
       "filename": "deadkeys_three_reasons_named_a_reader_that_can_never_get_a_row.sql",
       "checksum": "8e299576d3a574d2ea54738abdbcd20598d2ecc014ecebebd636548228a1a367",
       "applied_at": "2026-09-22 01:55:38.41933+00"
+    },
+    "migrations/campaign/definer7_seven_client_doors_decide_or_stop_being_doors.sql": {
+      "source": "matrx-frontend",
+      "filename": "definer7_seven_client_doors_decide_or_stop_being_doors.sql",
+      "checksum": "b644bec439bd990b75cb36c7f069cf53837435642c2bc9fef1edfec62c98983b",
+      "applied_at": "2026-09-22 17:44:11.300928+00"
     },
     "migrations/campaign/digests_a_saved_view_has_a_door.sql": {
       "source": "matrx-frontend",

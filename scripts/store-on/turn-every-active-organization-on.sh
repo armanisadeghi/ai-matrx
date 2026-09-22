@@ -29,15 +29,27 @@
 #
 #   ./scripts/store-on/turn-every-active-organization-on.sh            # counts only, changes nothing
 #   ./scripts/store-on/turn-every-active-organization-on.sh --apply
+#   ./scripts/store-on/turn-every-active-organization-on.sh --clone --apply
 #
-# The connection is the five `SUPABASE_MATRIX_*` variables every runner in this repo reads.
+# The connection is the five `SUPABASE_MATRIX_*` variables every runner in this repo reads, or,
+# with `--clone`, the nightly dev clone named by common-docs/operations/clone/CLONE-REF — which
+# is where you run it to bring a freshly restored copy level with the ruling before the release
+# gate reads it. `--clone` is checked against the clone's own identity by `night_assert_target`,
+# so it can never be pointed at the main database by accident.
 # ─────────────────────────────────────────────────────────────────────────────────────────────
 set -u
 setopt PIPE_FAIL 2>/dev/null || true
 
 ROOT=/Users/armanisadeghi/code/matrx-frontend
 APPLY=0
-[[ "${1:-}" == "--apply" ]] && APPLY=1
+CLONE=0
+for a in "$@"; do
+  case "$a" in
+    --apply) APPLY=1 ;;
+    --clone) CLONE=1 ;;
+    *) print -u2 "unknown argument: $a"; exit 2 ;;
+  esac
+done
 
 # admin@admin.com — the platform-admin seat this ruling is executed from. The door REQUIRES a
 # named actor (`auth.uid()` is null on a direct connection) and writes it into every override's
@@ -49,18 +61,32 @@ CHUNK=50
 PSQL="$(cd "$ROOT" && pnpm -s exec tsx scripts/lib/psql-path.ts --print 2>/dev/null)"
 [[ -x "$PSQL" ]] || PSQL="$(brew --prefix libpq)/bin/psql"
 
-envget() { grep -m1 "^$1=" /Users/armanisadeghi/code/aidream/.env | sed "s/^$1=//; s/^['\"]//; s/['\"]\$//"; }
-export PGUSER="$(envget SUPABASE_MATRIX_USER)"
-export PGPASSWORD="$(envget SUPABASE_MATRIX_PASSWORD)"
-export PGHOST="$(envget SUPABASE_MATRIX_HOST)"
-export PGPORT="$(envget SUPABASE_MATRIX_PORT)"
-export PGDATABASE="$(envget SUPABASE_MATRIX_DATABASE_NAME)"
-if [[ -z "$PGUSER" || -z "$PGHOST" ]]; then
-  print -u2 "REFUSED: the five SUPABASE_MATRIX_* variables could not be read, so nothing was attempted."
-  exit 78
+CLONE_DSN=""
+if (( CLONE )); then
+  source /Users/armanisadeghi/code/matrx-frontend/scripts/night/lib-night.sh
+  night_resolve_psql || exit $?
+  CLONE_DSN="$(night_clone_dsn)" || true
+  if [[ -z "$CLONE_DSN" ]]; then
+    print -u2 "REFUSED: the dev clone's connection could not be assembled, so nothing was attempted."
+    exit 78
+  fi
+  night_assert_target clone "$CLONE_DSN" || exit $?
+else
+  envget() { grep -m1 "^$1=" /Users/armanisadeghi/code/aidream/.env | sed "s/^$1=//; s/^['\"]//; s/['\"]\$//"; }
+  export PGUSER="$(envget SUPABASE_MATRIX_USER)"
+  export PGPASSWORD="$(envget SUPABASE_MATRIX_PASSWORD)"
+  export PGHOST="$(envget SUPABASE_MATRIX_HOST)"
+  export PGPORT="$(envget SUPABASE_MATRIX_PORT)"
+  export PGDATABASE="$(envget SUPABASE_MATRIX_DATABASE_NAME)"
+  if [[ -z "$PGUSER" || -z "$PGHOST" ]]; then
+    print -u2 "REFUSED: the five SUPABASE_MATRIX_* variables could not be read, so nothing was attempted."
+    exit 78
+  fi
 fi
 
-q() { "$PSQL" -X -q -v ON_ERROR_STOP=1 -tAc "$1"; }
+# ONE place decides which database every statement below reaches.
+pg() { if (( CLONE )); then "$PSQL" "$CLONE_DSN" "$@"; else "$PSQL" "$@"; fi }
+q() { pg -X -q -v ON_ERROR_STOP=1 -tAc "$1"; }
 
 BEFORE_ON=$(q "select count(*) from iam.organizations o where o.archived_at is null and platform.knob_resolve('custom','system_enabled',o.id,null,null) = 'true'::jsonb")
 ACTIVE=$(q "select count(*) from iam.organizations where archived_at is null")
@@ -83,15 +109,15 @@ BUF=()
 flush() {
   (( ${#BUF} == 0 )) && return 0
   local LIST="$(print -r -- "${(j:,:)BUF}")"
-  "$PSQL" -X -q -v ON_ERROR_STOP=1 <<SQL
+  pg -X -q -v ON_ERROR_STOP=1 <<SQL
 begin;
 set local lock_timeout = '2s';
 set local statement_timeout = '5min';
-select set_config('matrx.storeon_actor', '$ACTOR', true);
-select set_config('matrx.storeon_reason', \$reason\$$REASON\$reason\$, true);
 do \$chunk\$
 declare v_org uuid;
 begin
+  perform set_config('matrx.storeon_actor', '$ACTOR', true);
+  perform set_config('matrx.storeon_reason', \$reason\$$REASON\$reason\$, true);
   foreach v_org in array string_to_array('$LIST', ',')::uuid[] loop
     perform platform.unified_data_store_set(
       v_org, true,
