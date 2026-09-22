@@ -10,7 +10,8 @@
 --   R1  `custom.relation_words` does not exist at all — there is no per-field display door
 --   R2  `custom.relation_words_many` does not exist — no batch door, which is exactly what
 --       TAILS-2 wrote down ("there is still no batch door on the store")
---   R3  `custom._words_for` does not exist — the one resolver is not there
+--   R3  RETIRED 2026-09-22 — the inverse deliberately does not drop `custom._words_for`
+--       (later migrations adopted it), so this clause could never go red. See the block.
 --   R4  `custom.field_update` ACCEPTS a display spec, reports success, and changes NOTHING.
 --       This is the defect in its purest form: a door that quietly ignores what it was told.
 --   R5  `custom._field_document_for` drops a display spec on the floor when a column is
@@ -33,7 +34,32 @@
 \quit
 \endif
 
+-- SUITES-TIDY 2026-09-22: THE OWNER'S OWN DISPLAY SPEC, READ BEFORE ANYTHING IS TOUCHED.
+-- The teardown at the foot of this file asserts that jobs.customer is exactly as the owner
+-- left it. It used to assert "holds NO display spec", which was true when this suite was
+-- written and is not now: measured on the clone (production's own data) he has since set one
+-- through the product. The teardown compares against THIS value instead, so it stays a real
+-- check of "nothing left behind" whatever he has set.
+select coalesce((select (f.data -> 'display')::text
+                   from custom.record f
+                  where f.organization_id = '6069a466-1445-42df-a64e-cf37ecdc1b99'
+                    and f.id = '19afd7c8-5b3d-45f0-b4a9-238ec3248493'), '') as reldisp_owner_display
+\gset
+
 begin;
+
+-- ── THE RECORD-STORE SWITCH, BORROWED (SUITES-TIDY 2026-09-22) ──────────────────────────────
+-- `custom.system_enabled` defaults to FALSE and that is the DESIGN: the record store is opt-in
+-- per organization (STORE-OFF / FIX-11A). This suite takes a seat in an organization that has
+-- not opted in, so every write below was answered "This organization has not turned the record
+-- store on yet, so custom.<door> is not taking writes." — correctly. The knob's DEFAULT is not
+-- touched; the organization-scoped override is written inside THIS transaction and goes with
+-- the ROLLBACK at the end of the file. See _borrow_store_switch.sql for why that is a stronger
+-- borrow than scripts/lib/borrow-live-switch.sh, which a psql suite cannot source.
+-- Rincon Plumbing Co
+\set store_org '6069a466-1445-42df-a64e-cf37ecdc1b99'
+\i scripts/campaign-tests/_borrow_store_switch.sql
+
 
 -- ══ PUT THE OLD BYTES BACK, FOR REAL ═══════════════════════════════════════════════════
 \i migrations/inverse/reldisp_a_relation_says_which_words_it_shows_down.sql
@@ -46,6 +72,7 @@ declare
   v_jobs    constant uuid := 'af3bfff6-a255-41e5-9ac2-879d53816163';
   v_cust    uuid;
   v_doc     jsonb;
+  v_doc_before jsonb;
   v_red     integer := 0;
 begin
   perform set_config('app.actor_system', 'campaign-test/reldisp_red', true);
@@ -79,14 +106,28 @@ begin
   v_red := v_red + 1;
   raise notice 'R2 RED — custom.relation_words_many does not exist: no batch door, exactly as TAILS-2 recorded.';
 
-  if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-              where n.nspname = 'custom' and p.proname = '_words_for') then
-    raise exception 'R3 is not red: custom._words_for still exists on the old bytes';
-  end if;
-  v_red := v_red + 1;
-  raise notice 'R3 RED — custom._words_for does not exist: there is no one resolver to carry a spec.';
+  -- R3 RETIRED — SUITES-TIDY 2026-09-22. It asserted that `custom._words_for` is absent once
+  -- the old bytes are back. It cannot: the inverse this file runs
+  -- (migrations/inverse/reldisp_a_relation_says_which_words_it_shows_down.sql) says so in its
+  -- own words at its foot — "`custom._words_for`, `custom._display_spec_for` and
+  -- `custom._with_display` are deliberately NOT dropped here … later migrations adopted all
+  -- three". A red clause whose inverse no longer removes the thing has no job, and a clause
+  -- that can never go red is not a guard. R1 and R2 above still carry the class: the two
+  -- PUBLIC doors of this lane do go away with the old bytes, and R4/R5/R6 below prove the
+  -- behaviour, which is what the clause was ultimately about.
 
   -- ══ R4 — THE DOOR REPORTS SUCCESS AND CHANGES NOTHING ═════════════════════════════════
+  -- SUITES-TIDY 2026-09-22: this clause used to assert "no display key at all" after the call.
+  -- That held when the column carried none; measured on the clone (production's own data) the
+  -- owner has since set one through the product ({"columns":["customer_name","city"],
+  -- "separator":", "}), so "is not null" read HIS spec as the old door's doing. The claim is
+  -- and always was that the old door CHANGES NOTHING, so the clause now takes the before
+  -- value and asserts the after value is identical to it — which is a stronger statement and
+  -- does not depend on what the column happens to hold.
+  select f.document -> 'display' into v_doc_before
+    from custom.read_records(v_org, custom.field_kernel_id(), false, 500, 0) f
+   where f.id = v_f_cust;
+
   perform custom.field_update(v_org, v_f_cust,
             jsonb_build_object('display',
               jsonb_build_object('columns', jsonb_build_array('customer_name', 'city'),
@@ -95,11 +136,15 @@ begin
   select f.document -> 'display' into v_doc
     from custom.read_records(v_org, custom.field_kernel_id(), false, 500, 0) f
    where f.id = v_f_cust;
-  if v_doc is not null then
-    raise exception 'R4 is not red: the old field_update stored a display spec (%)', v_doc::text;
+  if v_doc is distinct from v_doc_before then
+    raise exception 'R4 is not red: the old field_update MOVED the display spec, from % to %',
+      coalesce(v_doc_before::text, '(nothing)'), coalesce(v_doc::text, '(nothing)');
+  end if;
+  if coalesce(v_doc ->> 'separator', '') = ' — ' then
+    raise exception 'R4 is not red: the separator this clause asked for is the one that came back';
   end if;
   v_red := v_red + 1;
-  raise notice 'R4 RED — custom.field_update took the display spec, returned the field id, said nothing, and the column holds no display key at all.';
+  raise notice 'R4 RED — custom.field_update took the display spec, returned the field id, said nothing, and the column still reads back exactly what it did before the call (%).', coalesce(v_doc::text, '(nothing)');
 
   -- ══ R6 — FROM THE SEAT THERE IS NO DOOR THAT RETURNS A RELATION'S WORDS AT ALL ════════
   -- This is the sharpest statement of the defect: on the old bytes a screen could not ask
@@ -157,8 +202,8 @@ begin
   perform set_config('role', 'authenticated', true);
 
   raise notice '';
-  raise notice '% of 7 BLOCKS ARE RED on the real inverse bytes', v_red;
-  if v_red <> 7 then
+  raise notice '% of 6 BLOCKS ARE RED on the real inverse bytes', v_red;
+  if v_red <> 6 then
     raise exception 'the red twin did not go red in every block';
   end if;
 end
@@ -167,6 +212,9 @@ $t$;
 rollback;
 
 -- ══ AND THE NEW BYTES ARE BACK, OUTSIDE THE TRANSACTION ══════════════════════════════════
+select set_config('matrx.reldisp_owner_display', :'reldisp_owner_display', false)
+\g (tuples_only=on format=unaligned) /dev/null
+
 do $t$
 declare
   c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
@@ -197,9 +245,12 @@ begin
    limit 1;
   select f.data -> 'display' into v_doc from custom.record f
    where f.organization_id = v_org and f.id = v_f_cust;
-  if v_doc is not null then
-    raise exception 'THE OWNER''S COLUMN WAS CHANGED: jobs.customer holds a display spec this lane left behind (%)', v_doc::text;
+  if coalesce(v_doc::text, '') is distinct from coalesce(current_setting('matrx.reldisp_owner_display', true), '') then
+    raise exception 'THE OWNER''S COLUMN WAS CHANGED: jobs.customer read "%" before this suite ran and reads "%" now',
+      coalesce(nullif(current_setting('matrx.reldisp_owner_display', true), ''), '(nothing)'),
+      coalesce(v_doc::text, '(nothing)');
   end if;
-  raise notice 'ROLLBACK VERIFIED — the three doors are back, the create door carries the spec again, and jobs.customer holds NO display spec: the owner''s column is exactly as he left it.';
+  raise notice 'ROLLBACK VERIFIED — the three doors are back, the create door carries the spec again, and jobs.customer reads exactly what it read before this suite started (%): the owner''s column is exactly as he left it.',
+    coalesce(nullif(current_setting('matrx.reldisp_owner_display', true), ''), '(no display spec)');
 end
 $t$;

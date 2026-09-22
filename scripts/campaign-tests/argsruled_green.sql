@@ -48,6 +48,22 @@
 
 begin;
 
+-- ── THE RECORD-STORE SWITCH, BORROWED (SUITES-TIDY 2026-09-22) ──────────────────────────────
+-- `custom.system_enabled` defaults to FALSE and that is the DESIGN: the record store is opt-in
+-- per organization (STORE-OFF / FIX-11A). This suite takes a seat in an organization that has
+-- not opted in, so every write below was answered "This organization has not turned the record
+-- store on yet, so custom.<door> is not taking writes." — correctly. The knob's DEFAULT is not
+-- touched; the organization-scoped override is written inside THIS transaction and goes with
+-- the ROLLBACK at the end of the file. See _borrow_store_switch.sql for why that is a stronger
+-- borrow than scripts/lib/borrow-live-switch.sh, which a psql suite cannot source.
+-- Rincon Plumbing Co
+\set store_org '6069a466-1445-42df-a64e-cf37ecdc1b99'
+\i scripts/campaign-tests/_borrow_store_switch.sql
+-- Calder Approvals
+\set store_org '235a6add-e8b5-43f9-883e-9dd0389c1759'
+\i scripts/campaign-tests/_borrow_store_switch.sql
+
+
 do $t$
 declare
   c_dana constant text := '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}';

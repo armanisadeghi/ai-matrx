@@ -34,6 +34,27 @@
 \quit
 \endif
 
+-- SUITES-TIDY 2026-09-22: this suite had NO explicit transaction, so everything it wrote to
+-- Ironclad Mobile Mechanic's live Invoices table stayed there. It now runs inside one that
+-- ends in ROLLBACK — which is also what makes the borrowed switch below safe to take.
+begin;
+
+-- ── THE RECORD-STORE SWITCH, BORROWED (SUITES-TIDY 2026-09-22) ──────────────────────────────
+-- `custom.system_enabled` defaults to FALSE and that is the DESIGN: the record store is opt-in
+-- per organization (STORE-OFF / FIX-11A). This suite takes a seat in an organization that has
+-- not opted in, so every write below was answered "This organization has not turned the record
+-- store on yet, so custom.<door> is not taking writes." — correctly. The knob's DEFAULT is not
+-- touched; the organization-scoped override is written inside THIS transaction and goes with
+-- the ROLLBACK at the end of the file. See _borrow_store_switch.sql for why that is a stronger
+-- borrow than scripts/lib/borrow-live-switch.sh, which a psql suite cannot source.
+-- Ironclad Mobile Mechanic
+\set store_org '0a751390-558e-4775-ba0e-3891bdf82d45'
+\i scripts/campaign-tests/_borrow_store_switch.sql
+-- Rincon Plumbing Co — clause 5 reads a record of ANOTHER organization through this door,
+-- and that read goes through the same store, so its switch is borrowed too.
+\set store_org '6069a466-1445-42df-a64e-cf37ecdc1b99'
+\i scripts/campaign-tests/_borrow_store_switch.sql
+
 do $green$
 declare
   c_admin   constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';   -- admin@admin.com
@@ -139,3 +160,5 @@ begin
   raise notice 'SHARE-OUT / item 2 GREEN: all five clauses passed from admin@admin.com''s seat.';
 end;
 $green$;
+
+rollback;
