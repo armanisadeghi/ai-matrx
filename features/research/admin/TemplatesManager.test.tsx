@@ -37,9 +37,15 @@ function column(id: string) {
 }
 
 describe("TemplatesManager canonical table contract", () => {
+  it("opens the named template through the registered record door", () => {
+    const markup = renderToStaticMarkup(<>{column("name").cell?.(template, 0)}</>);
+    expect(markup).toContain('href="/detail/research_template/template-1"');
+    expect(markup).toContain("Scientific Research");
+  });
   it("discloses unknown client-side source coverage", () => {
     expect(RESEARCH_TEMPLATES_COVERAGE).toEqual({
       noun: "research template",
+      cap: 1000,
       answeredBy: "client",
     });
   });

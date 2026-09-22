@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   Dialog,
   DialogContent,
@@ -109,9 +110,10 @@ const EMPTY_FORM: TemplateFormData = {
   metadata: {},
 };
 
-/** The query has no count or explicit cap receipt, so coverage stays client-unknown. */
+/** PostgREST bounds this receipt at 1,000; no exact source total is returned. */
 export const RESEARCH_TEMPLATES_COVERAGE = {
   noun: "research template",
+  cap: 1000,
   answeredBy: "client" as const,
 };
 
@@ -135,12 +137,7 @@ export const RESEARCH_TEMPLATE_COLUMNS: MatrxColumnDef<ResearchTemplate>[] = [
     filter: "text",
     width: 220,
     cell: (template) => (
-      <span
-        className="block truncate font-medium text-sm"
-        title={template.name}
-      >
-        {template.name}
-      </span>
+      <EntityRef token="research_template" id={template.id} name={template.name} />
     ),
   },
   {
