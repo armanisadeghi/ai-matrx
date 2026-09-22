@@ -2490,7 +2490,11 @@ async function restoreLedger(path: string, target: Target): Promise<number> {
       );
       return 1;
     }
-    const applied = note[1]!;
+    // A row amended TWICE records only the last step, so the note can name another amendment's
+    // output rather than the bytes that ran. `--applied-checksum=` names the true one; the file
+    // still has to hash to exactly it, so nothing is taken on trust.
+    const explicit = process.argv.find((a) => a.startsWith("--applied-checksum="));
+    const applied = explicit ? explicit.slice("--applied-checksum=".length).trim() : note[1]!;
     const now = sha256(current);
     if (now !== applied) {
       console.error(
