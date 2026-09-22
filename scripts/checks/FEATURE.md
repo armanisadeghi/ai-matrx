@@ -25,21 +25,24 @@ Does ONLY what makes the build, in this order:
    No applier or no `uv` = an ERROR finding; a failed or refused file = an ERROR
    finding. `--no-migrate` skips it.
 3. `git fetch origin main` — three tries, then the ONE honest stop.
-4. Move the persistent private worktree **`.wt/release`** to `origin/main`
-   (gitignored; created once, then `checkout --detach --force` + `reset --hard`).
-   The release commit is built there, so other lanes' uncommitted files, a
-   diverged branch or a half-done merge in this checkout cannot touch it.
-   Nothing is ever stashed (`test:release-ship-path` proves it).
-5. Merge this checkout's unpushed `main` commits into it. A conflict = ship
-   `origin/main` anyway + an ERROR finding naming the commit left behind. A
-   checkout parked on another branch contributes nothing (WARNING).
+4. Resolve the base tree on `origin/main` **with git plumbing, in the object
+   database — no worktree, no branch, no stash** (Arman 2026-09-20: local
+   worktrees and branches are forbidden; `git worktree list` shows exactly one
+   entry). The shared checkout's files are never touched, so other lanes'
+   uncommitted files, a diverged branch or a half-done merge cannot reach the
+   release (`test:release-ship-path` proves it; `check:single-worktree` fails
+   the release while any extra worktree or local branch exists anywhere).
+5. Merge this checkout's unpushed `main` commits into that tree with
+   `git merge-tree --write-tree`. A conflict = ship `origin/main` anyway + an
+   ERROR finding naming the commit left behind. A checkout parked on another
+   branch contributes nothing (WARNING).
 6. Wait for the migrations.
-7. Bump `package.json` in the worktree (skipping any tag already taken locally
-   or on origin), commit `-- package.json` with the Vercel prefix
-   (`release:` / `release-admin:` / `release-demos:` / `release-all:`), push
-   `HEAD:refs/heads/main`. A rejected push is a lost race only when `origin/main`
-   really moved: fetch, reset the worktree to the new main, re-merge, re-bump,
-   retry (up to `SHIP_PUSH_ATTEMPTS=5`). A push that fails without main moving
+7. Bump `package.json` in a temporary index (`GIT_INDEX_FILE` + `read-tree` +
+   `hash-object`; skipping any tag already taken locally or on origin),
+   `commit-tree` it with the Vercel prefix (`release:` / `release-admin:` /
+   `release-demos:` / `release-all:`), push `<sha>:refs/heads/main`. A rejected
+   push is a lost race only when `origin/main` really moved: fetch, re-resolve
+   the base tree, re-merge, re-bump, retry (up to `SHIP_PUSH_ATTEMPTS=5`). A push that fails without main moving
    is a network blip: pause and retry, it never counts as a race.
 8. Push the tag (lost tag = ERROR finding, the build already started),
    fast-forward this checkout when it can (WARNING otherwise), print
@@ -102,10 +105,10 @@ log, holding its own lock (`--with-checks` runs it in the foreground instead;
 ## Timings (sandbox, 2026-09-20, disk under heavy load)
 
 The sandbox guard ends with the tag on origin in ~60s wall on this machine with
-the disk saturated (the same run is a few seconds idle). Creating `.wt/release`
-for the FIRST time on the real repo took **17 minutes** under that load
-(`git worktree add` of the full tree); every later release moves it in seconds.
-It is created once and kept.
+the disk saturated (the same run is a few seconds idle). The plumbing ship path
+writes no working folder at all, so there is no first-run checkout cost: the
+earlier `.wt/release` worktree (17 minutes to create under load, 2026-09-20)
+is gone with the worktree ban, and `.wt/` is only ever a janitor target now.
 
 ## What this replaced (2026-09-20)
 
