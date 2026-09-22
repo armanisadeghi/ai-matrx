@@ -218,6 +218,40 @@ const surfaceSpecific: SurfaceValue[] = [
 
   // ── Resources & scopes ────────────────────────────────────────────────
   {
+    name: "selected_member_id",
+    label: "Selected member ID",
+    description:
+      "Member UUID whose org-scoped resources are open in the organization admin resource inventory. Absent outside that route.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 36,
+    sortOrder: 290,
+    group: "resources",
+  },
+  {
+    name: "member_resource_total",
+    label: "Selected member resource total",
+    description:
+      "Sum of the selected member's org-scoped resources across visible resource types. Absent outside the member resource inventory.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 4,
+    sortOrder: 295,
+    group: "resources",
+  },
+  {
+    name: "member_resources",
+    label: "Selected member resources",
+    description:
+      "Read-only per-type org-scoped inventory for the selected member: resource_type, display_label, schema_name, table_name, and count. Absent outside the member resource inventory.",
+    valueType: "array",
+    alwaysAvailable: false,
+    autoContext: false,
+    typicalCharCount: 1200,
+    sortOrder: 297,
+    group: "resources",
+  },
+  {
     name: "resource_total_count",
     label: "Total resources",
     description:
@@ -492,6 +526,15 @@ export function createOrganizationsScope(values: {
   can_manage?: boolean;
   member_count?: number;
   members_summary?: OrganizationsMemberEntry[];
+  selected_member_id?: string;
+  member_resource_total?: number;
+  member_resources?: Array<{
+    resource_type: string;
+    display_label: string;
+    schema_name: string;
+    table_name: string;
+    count: number;
+  }>;
   resource_total_count?: number;
   resource_counts?: Record<string, number | null>;
   scope_type_count?: number;

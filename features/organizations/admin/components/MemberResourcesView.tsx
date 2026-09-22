@@ -1,26 +1,20 @@
 "use client";
 
-/**
- * Per-member ORG-SCOPED resource inventory at
- * /organizations/[orgId]/admin/users/[userId]/resources.
- * Shows what the member owns within THIS org. Read-only: transferring another person's
- * resources is an audited action with its own door (DD-140), never a button on a list.
- */
-import React from "react";
+/** Read-only org-scoped resource inventory for one member. */
 import Link from "next/link";
-import { ArrowLeft, Loader2, Package } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ORGANIZATIONS_SURFACE_NAME,
+  createOrganizationsScope,
+} from "@/features/surfaces/manifests/organizations.manifest";
 import type { Organization } from "../../types";
+import type { OrgMemberResource } from "../types";
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { useOrgMemberDetail } from "../hooks";
 
@@ -30,18 +24,53 @@ interface Props {
   userId: string;
 }
 
+export const MEMBER_RESOURCE_COLUMNS: MatrxColumnDef<OrgMemberResource>[] = [
+  {
+    id: "type",
+    header: "Resource type",
+    accessorKey: "displayLabel",
+    filter: "text",
+    width: 240,
+    cell: (row) => (
+      <span className="font-medium text-foreground">{row.displayLabel}</span>
+    ),
+  },
+  {
+    id: "schema",
+    header: "Schema",
+    accessorKey: "schemaName",
+    filter: "text",
+    width: 150,
+    mobileHidden: true,
+  },
+  {
+    id: "table",
+    header: "Table",
+    accessorKey: "tableName",
+    filter: "text",
+    width: 180,
+    mobileHidden: true,
+  },
+  {
+    id: "count",
+    header: "Count",
+    accessorKey: "count",
+    filter: "number",
+    align: "right",
+    width: 100,
+    cell: (row) => formatCount(row.count),
+  },
+];
+
 export function MemberResourcesView({ orgId, organization, userId }: Props) {
-  const { member, loading, error } = useOrgMemberDetail(orgId, userId);
-
-
-  if (loading && !member) {
+  const { member, loading, error, refresh } = useOrgMemberDetail(orgId, userId);
+  if (loading && !member)
     return (
       <div className="flex items-center justify-center py-16 text-muted-foreground">
         <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading resources…
       </div>
     );
-  }
-  if (error || !member) {
+  if (error || !member)
     return (
       <div className="p-4 md:p-6">
         <Card className="mx-auto max-w-lg border-destructive/30 bg-destructive/5 p-6 text-center text-sm text-destructive">
@@ -49,63 +78,77 @@ export function MemberResourcesView({ orgId, organization, userId }: Props) {
         </Card>
       </div>
     );
-  }
 
   const label = member.displayName || member.email || "this member";
-  const total = member.resources.reduce((s, r) => s + r.count, 0);
+  const total = member.resources.reduce(
+    (sum, resource) => sum + resource.count,
+    0,
+  );
+  const getScope = () =>
+    createOrganizationsScope({
+      current_view: "workspace",
+      org_id: organization.id,
+      org_slug: organization.slug,
+      org_name: organization.name,
+      selected_member_id: userId,
+      member_resource_total: total,
+      member_resources: member.resources.map((resource) => ({
+        resource_type: resource.resourceType,
+        display_label: resource.displayLabel,
+        schema_name: resource.schemaName,
+        table_name: resource.tableName,
+        count: resource.count,
+      })),
+    });
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-4 p-4 md:p-6">
-      <Link
-        href={`/organizations/${organization.slug}/admin/users/${userId}`}
-        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-        {label}
-      </Link>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">Org-scoped resources</h1>
-          <p className="text-sm text-muted-foreground">
-            {total} resource{total === 1 ? "" : "s"} owned by {label} within {organization.name}.
-            Personal-org resources are not shown and are never affected.
-          </p>
+    <SurfaceRuntimeProvider
+      surfaceName={ORGANIZATIONS_SURFACE_NAME}
+      getScope={getScope}
+    >
+      <div className="flex h-full min-h-0 w-full flex-col gap-4 p-4 md:p-6">
+        <Link
+          href={`/organizations/${organization.slug}/admin/users/${userId}`}
+          className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          {label}
+        </Link>
+        <p className="shrink-0 text-sm text-muted-foreground">
+          {total} resource{total === 1 ? "" : "s"} owned by {label} within{" "}
+          {organization.name}. Personal-org resources are not shown and are
+          never affected.
+        </p>
+        <div className="min-h-0 flex-1">
+          <MatrxDataTable
+            tableId="organizations-admin-member-resources"
+            data={member.resources}
+            columns={MEMBER_RESOURCE_COLUMNS}
+            getRowId={(resource) => resource.resourceType}
+            isLoading={loading && !member}
+            isFetching={loading && Boolean(member)}
+            coverage={{
+              noun: "org-scoped resource type",
+              answeredBy: "client",
+              total: member.resources.length,
+            }}
+            toolbar={{
+              title: "Org-scoped resources",
+              searchPlaceholder: "Search resource types or locations…",
+              refresh: { onRefresh: async () => refresh() },
+            }}
+            detail={{ enabled: false }}
+            window={{ enabled: false }}
+            copy={false}
+            pageSize={25}
+            localPagination={{ mode: "progressive" }}
+            emptyState={{
+              title:
+                "This member owns no org-scoped resources in this organization.",
+            }}
+          />
         </div>
       </div>
-
-      {member.resources.length === 0 ? (
-        <Card className="flex flex-col items-center gap-2 p-10 text-center text-muted-foreground">
-          <Package className="h-8 w-8 opacity-50" />
-          <p className="text-sm">This member owns no org-scoped resources in {organization.name}.</p>
-        </Card>
-      ) : (
-        <Card className="overflow-hidden p-0">
-          <Table wrapperClassName="phone-stack">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Resource type</TableHead>
-                <TableHead className="w-[180px]">Location</TableHead>
-                <TableHead className="w-[90px] text-right">Count</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {member.resources.map((r) => (
-                <TableRow key={r.resourceType}>
-                  <TableCell data-phone="lead" className="font-medium text-foreground">{r.displayLabel}</TableCell>
-                  <TableCell data-label="Location" data-phone="inline" className="font-mono text-xs text-muted-foreground">
-                    {r.schemaName}.{r.tableName}
-                  </TableCell>
-                  <TableCell data-label="Count" data-phone="inline" className="text-right">
-                    <Badge variant="secondary">{r.count}</Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
-      )}
-
-    </div>
+    </SurfaceRuntimeProvider>
   );
 }
