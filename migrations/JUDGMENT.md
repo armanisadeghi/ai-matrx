@@ -122,10 +122,11 @@ the two named above.
 
 | header | meaning | notes |
 |---|---|---|
-| `-- target: branch` | rehearsal only | `--target production` refuses it. |
-| `-- target: production` | production only | `--target branch` refuses it. |
+| `-- target: branch` | rehearsal branch only | `--target production` AND `--target clone` both refuse it — it names one rehearsal database on purpose. |
+| `-- target: clone` | dev-clone rehearsal only | `--target branch` and `--target production` refuse it. Rarely needed: a file naming production already rehearses on the clone. |
+| `-- target: production` | production only | `--target branch` refuses it; `--target clone` ACCEPTS it, because the clone is production's own data (see §3a). |
 | `-- target: branch,production` | the campaign contract | Judged by the ALLOW-LIST **at both targets** — see §4. |
-| *(no `-- target:` line)* | production-only by AMNESTY | Every migration written before `--target` existed. Judged by the DENY-LIST at production; reaches the branch only with `-- chair-step:`. |
+| *(no `-- target:` line)* | production-only by AMNESTY | Every migration written before `--target` existed. Judged by the DENY-LIST at production **and at `--target clone`**; reaches the branch only with `-- chair-step:`. |
 | `-- additive: yes` | required by any header that names production | |
 | `-- guard: <feature>/<key>` | required by any header that names production | `platform.feature_knob`'s key is two columns, so the form is `feature/key`. A line that is only an identifier (`-- guard: custom`) is still this directive and is refused as malformed. A sentence that happens to start with "Guard:" — a test path, a witness command — is prose, not a directive, and is ignored. |
 | `-- seeds-guards: yes` | stands in for `-- guard:` for the ONE file that seeds the knob register | Bounded to `platform.feature_knob`, `platform.knob_override`, `platform.knob_rung_lock`; may not also carry `-- guard:`; may not create a trigger. |
@@ -149,6 +150,33 @@ rehearsing.
 
 An **already-ledgered** file is frozen history and is never re-judged on the header-less path.
 `--judge-only` always judges as `already_ledgered: false`, because a fixture has never run.
+
+### 3a. `--target clone` — the third target, and why its rules are production's
+
+The nightly dev clone (`common-docs/operations/clone/CLONE-REF`) is a Supabase DATA branch:
+a **physical restore of production's cluster**, quarantined and refreshed nightly. So it is
+judged as production is — allow-list, deny-list, guard-resolves-OFF, the inverse ground gate,
+the campaign directory rules — with exactly three differences, each of which exists because the
+clone is a *rehearsal* database and not because it is a *weaker* one:
+
+1. **Header agreement.** A file rehearses here when it NAMES `production` or `clone`, or when it
+   carries no `-- target:` line at all (production-only by definition). A `-- target: branch`
+   file is refused by name.
+2. **`-- chair-step:`** is ANNOUNCED here (reason + the whole body) but does not require
+   `--confirm-chair-step`; that confirmation stays production-only.
+3. **The ledger row is MARKED** `rehearsal_on`. The clone carries a physical copy of
+   production's `public._schema_migrations`, so an unmarked rehearsal row is indistinguishable
+   from a production apply — and the next nightly refresh restores production over it, which
+   the mark says out loud.
+
+🚨 **The identity is `(system_identifier, project ref)` TOGETHER.** A physical restore reports
+its PARENT's `pg_control_system().system_identifier`, so the check that separates `branch` from
+`production` cannot separate the clone from production in either direction. The runner therefore
+refuses on the CONNECTION's project ref (pooler user `postgres.<ref>`, direct host
+`db.<ref>.supabase.co`) before a socket opens, **and** on the server's own quarantine facts —
+`pg_net` absent and no active `pg_cron` job, in conjunction, which is never true of production.
+Proof: `pnpm db:apply --clone-self-test` (four REDs then a GREEN), also chained from
+`--target-self-test`.
 
 ## 4. The ALLOW-LIST — a file whose header NAMES production
 
@@ -358,6 +386,15 @@ checks still agree line for line.
 - They are ledgered by BASENAME, like every file in `rehearsal/`, `inverse/` and `campaign/`.
 - Rule 27's loop: apply the up on the branch twice with the same result, run the inverse on the
   branch, re-apply the up — all with `--target branch`, all from the bytes production will see.
+- **On the dev clone the loop is ONE command:** `pnpm db:rehearse <file> --target clone`
+  (`scripts/rehearse-migration.ts`). It runs up → inverse → up, timing each leg, and before each
+  of the first two it runs a MEASURE PASS — the statements one at a time inside one explicit
+  transaction, `pg_locks` sampled from a second connection after each, then rolled back — so it
+  prints the per-statement lock modes and flags every ACCESS EXCLUSIVE on a relation the file
+  does not name. Every apply still goes through `pnpm db:apply --target clone`; the harness
+  never writes outside its rolled-back measure pass. (`SET LOCAL application_name` goes INSIDE
+  the transaction: the pooler runs in transaction mode and a name set outside can land on
+  somebody else's backend — that mistake cost W1-ORG-PREP a whole measurement.)
 
 ## 8. The refusal vocabulary
 
@@ -366,7 +403,7 @@ The corpus compares codes; the prose is for the human at 3 a.m. and may differ.
 
 | code | when |
 |---|---|
-| `header-target-unknown` | `-- target:` names something that is not `branch`/`production` |
+| `header-target-unknown` | `-- target:` names something that is not `branch`/`clone`/`production` |
 | `header-guard-malformed` | `-- guard:` is not `<feature>/<key>` |
 | `header-allows-unknown` | an `-- allows:` clause that is not `revoke <schema>` |
 | `header-allows-revoke-protected` | the exemption names a protected schema |
@@ -385,6 +422,12 @@ The corpus compares codes; the prose is for the human at 3 a.m. and may differ.
 | `trigger-guard-unnamed` | a new trigger on a live table outside `custom` that never names its guard |
 | `revoke-exemption-unused` | `-- allows: revoke` with no `REVOKE` in the body |
 | `revoke-exemption-uncontained` | a `REVOKE` that leaves the named schema |
+| `clone-ref-missing` / `clone-ref-unreadable` / `clone-ref-incomplete` | `--target clone` with no readable `CLONE-REF` — a connection that cannot be PROVEN to be the clone is never treated as the clone |
+| `clone-configured-not-the-clone` | `--target clone` against a connection whose project ref is not the clone's (caught before a socket opens) |
+| `production-is-the-clone` | `--target production` against the clone's own connection — the server-side check cannot catch this one |
+| `clone-server-not-quarantined` | `--target clone` and the server has `pg_net` or an active `pg_cron` job, so it is production |
+| `production-server-is-quarantined` | `--target production` and the server is a quarantined copy |
+| `clone-dsn-not-the-clone` / `clone-dsn-malformed` / `clone-password-missing` | the clone's own connection variables (`CLONE_DATABASE_URL`, or `CLONE-REF` + its password file); there is no fallback to `SUPABASE_MATRIX_*` |
 
 ## 9. The corpus
 
