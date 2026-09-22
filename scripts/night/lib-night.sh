@@ -270,6 +270,60 @@ night_assert_target() {
   return 0
 }
 
+# ── a target this run only READS ─────────────────────────────────────────────
+# 🚨 SOME JOBS MUST READ PRODUCTION AND WRITE ONLY THE CLONE. The clone-catch-up step is the
+# first: it computes its work from production's OWN migration ledger and applies to the clone.
+# Asserting production with `night_assert_target` would record `production` in NIGHT_PROVEN and
+# so re-arm the maintenance window — correctly, for a job that might WRITE production, and
+# wrongly for one that cannot.
+#
+# "Cannot" is the operative word, and it is PROVEN, not promised. `night_readonly_psql` runs
+# every statement inside `begin read only; … ; commit;`, and `night_assert_target_readonly`
+# first makes the server itself demonstrate the refusal: it attempts a CREATE TABLE in exactly
+# that transaction shape and requires PostgreSQL to raise 25006 (`read_only_sql_transaction`).
+# Only then is the target recorded as `<target>(read-only)`, which the window guard reads as
+# "this run cannot write that database".
+#
+# NOTE ON THE POOLER, measured 2026-09-22: `PGOPTIONS='-c default_transaction_read_only=on'` is
+# SILENTLY DROPPED by Supavisor in transaction mode — `show default_transaction_read_only`
+# answers `off` on a connection that was handed that option. A session-level setting is not a
+# read-only proof here. An explicit `begin read only` is, because the refusal comes from the
+# server on the same transaction the job's own reads run in.
+night_readonly_psql() {  # night_readonly_psql <psql args…> --sql <one statement>
+  local -a args; args=()
+  while [ $# -gt 0 ] && [ "$1" != "--sql" ]; do args+=("$1"); shift; done
+  [ "$1" = "--sql" ] || { say "REFUSED: night_readonly_psql needs --sql <statement>."; return 78; }
+  shift
+  "$PSQL" "${args[@]}" -qAt -v ON_ERROR_STOP=1 -c "begin read only; $1; commit;"
+}
+
+night_assert_target_readonly() {  # night_assert_target_readonly <target> <psql args…>
+  local want="$1"; shift
+  local probe rc
+  probe="$("$PSQL" "$@" -qAt -v ON_ERROR_STOP=1 \
+    -c "begin read only; create table public.night_readonly_probe_$$ (i int); rollback;" 2>&1)"
+  rc=$?
+  if [ $rc -eq 0 ] || [[ "$probe" != *"read-only transaction"* ]]; then
+    say "REFUSED: this run intends to READ $want and nothing else, and the server did not"
+    say "  refuse a write in the transaction shape this job uses. A read-only claim that the"
+    say "  database does not enforce is a promise, and a promise is not a proof."
+    say "  the probe answered: ${probe:-(it succeeded)}"
+    say "  Nothing attempted."
+    return 78
+  fi
+  night_assert_target "$want" "$@" || return $?
+  # Re-label the entry night_assert_target just recorded: this run has proven WHICH database
+  # it is AND that it cannot write it. Only this function may write the read-only form.
+  local -a relabelled; relabelled=()
+  local t
+  for t in "${NIGHT_PROVEN[@]}"; do
+    [ "$t" = "$want" ] && relabelled+=("$want(read-only)") || relabelled+=("$t")
+  done
+  NIGHT_PROVEN=("${relabelled[@]}")
+  say "read-only proven: $want — the server refused a write in this job's own transaction shape"
+  return 0
+}
+
 # ── the inverse gate ─────────────────────────────────────────────────────────
 # night_inverse_gate <file> <sha256 proven on the branch by rule 27>
 night_inverse_gate() {

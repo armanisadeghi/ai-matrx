@@ -59,6 +59,60 @@
 > long-running command must use `night_dsn_args`.
 
 
+> ## 🚨 THE CLONE IS A DAY OLD, AND ITS LEDGER LIES ABOUT IT (lane CLONE-CATCHUP, 2026-09-22)
+>
+> The nightly dev clone is a PHYSICAL RESTORE taken once a day, and it carries production's own
+> `public._schema_migrations` **as it stood at the restore point** — so every migration
+> production ledgers after the snapshot is missing from the clone *and the clone's ledger says it
+> is applied*. There is no drift report, because nothing disagrees. That is how lane STORE-TXN's
+> whole suite PASSED on the clone and FAILED on main on 2026-09-22: `custom._relation_halves_agree`,
+> a DEFERRED trigger applied to production at 15:15:46Z, did not exist on a clone promoted at
+> 06:20Z (VERIFIER-13 item 4). Two lanes, each correct on its own bytes; the pair did not work.
+>
+> **[`clone-catchup.sh`](./clone-catchup.sh) is the nightly's FIRST step after the refresh.** It
+> reads both ledgers, computes the delta and applies it with the REAL runners at `--target clone`
+> — it owns no apply path of its own. `--dry-run` prints the delta and changes nothing;
+> `clone-catchup-plan.py --self-test` proves the delta rules on fixtures with no database.
+>
+> **The delta is three rules, not a timestamp** (`clone-catchup-plan.py`):
+> 1. a `(source, filename)` production has and the clone does not;
+> 2. the same pair with DIFFERENT checksums;
+> 3. the same pair with the SAME checksum where **the clone applied that file's INVERSE after
+>    it** — rule 27 is `up → inverse → up`, and a rehearsal interrupted after its inverse leaves
+>    a ledger row claiming "applied" while the objects are gone. That was the other half of why
+>    the item-4 trigger was missing, and it fired on live data again the same afternoon.
+>
+> And one subtraction: **a production inverse row that production itself superseded is HISTORY,
+> not state.** Production's ledger carries rule 27's churn as well as its outcome; replaying the
+> churn onto the clone is wrong, and the runner says so — an inverse's `-- based-on:` hash
+> describes a body that was live on PRODUCTION at that moment and never on the clone. Measured on
+> the first real run: `writeperf3b_a_standard_tables_fields_are_read_once_per_statement_down.sql`
+> declared `0de1d32bc2f6` and the clone's body was `38aad156881b`.
+>
+> **The bytes are checked against `origin/main`, not the working tree** — these are shared
+> checkouts — and a file whose committed bytes do not hash to production's ledgered checksum is
+> REFUSED BY NAME with nothing applied for it.
+>
+> **It never writes production.** The production connection is asserted read-only by
+> `night_assert_target_readonly`, which makes the SERVER refuse a write in the job's own
+> transaction shape before the first row is read. (`PGOPTIONS='-c default_transaction_read_only=on'`
+> is silently dropped by Supavisor in transaction mode — measured; `begin read only` is the proof.)
+> That is what earns the window exemption: `night_window_guard` grants it only once every database
+> the run can WRITE has been proven to be the clone. There is no flag here that removes the window.
+>
+> **A refusal is not a crash.** Both runners are transactional, so a refused file lands nothing
+> and writes no ledger row; the job names it, continues with the rest of the delta and exits
+> nonzero listing every one. Stopping at the first refusal carried 1 of 65 files, then 17 of 55.
+> A DD-220 `-- based-on:` refusal here is the runner protecting a body a REHEARSAL moved on the
+> clone (the clone is production's snapshot PLUS whatever lanes rehearsed on it) and is never
+> bypassed by this job.
+>
+> **First real run, 2026-09-22 16:23–16:37Z:** delta 65 → **56 files applied**, 2 refused (both
+> DD-220), converging to 5 (3 of them churn lanes created on the clone during the run). Armed as
+> the one-shot `com.aimatrx.night-sweep.clone-catchup` (2026-09-23 01:45 PT, after
+> `clone_refresh_nightly` at 01:00) plus `com.aimatrx.night.clone-catchup-nightly` (daily 01:45),
+> **loaded but disabled** until the one-shot's log is clean — the same way branch-refresh is armed.
+
 > 🚨 **THE POLICY-DDL WINDOW RULE (lane `POLICY-LOCK`, 2026-09-22) — it binds every job, every
 > migration and every lane, not just this directory.**
 >

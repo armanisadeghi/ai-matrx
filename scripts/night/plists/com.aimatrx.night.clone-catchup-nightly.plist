@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.aimatrx.night.clone-catchup-nightly</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>/Users/armanisadeghi/code/matrx-frontend/scripts/night/clone-catchup.sh</string>
+  </array>
+  <!-- THE RECURRING HALF (lane CLONE-CATCHUP, 2026-09-22). Every night at 01:45
+       America/Los_Angeles — 45 minutes after `clone_refresh_nightly` starts at 01:00, which is
+       longer than the measured 21-minute create->healthy time plus quarantine.
+
+       LOADED BUT DISABLED. It stays disabled until the one-shot's log
+       (common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/night-clone-catchup.log)
+       shows a clean run; enabling it is one command:
+         launchctl enable gui/$(id -u)/com.aimatrx.night.clone-catchup-nightly
+       Its label differs from the one-shot's on purpose, exactly as branch-refresh's two do.
+
+       NOT `<key>Disabled</key><true/>`: launchd refuses to bootstrap a plist carrying it
+       ("Bootstrap failed: 5: Input/output error"), so the job would not be registered at all.
+       The disable lives in launchd's own override database, which survives reboots:
+         launchctl disable gui/$(id -u)/com.aimatrx.night.clone-catchup-nightly
+       `launchctl print-disabled gui/$(id -u) | grep clone-catchup` is the proof. -->
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>1</integer><key>Minute</key><integer>45</integer></dict>
+  <key>RunAtLoad</key><false/>
+  <key>AbandonProcessGroup</key><true/>
+  <key>StandardOutPath</key><string>/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/night-clone-catchup.log</string>
+  <key>StandardErrorPath</key><string>/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/night-clone-catchup.log</string>
+  <key>WorkingDirectory</key><string>/Users/armanisadeghi/code/matrx-frontend</string>
+</dict>
+</plist>

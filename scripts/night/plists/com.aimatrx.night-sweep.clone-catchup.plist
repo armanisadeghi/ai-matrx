@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.aimatrx.night-sweep.clone-catchup</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>/Users/armanisadeghi/code/matrx-frontend/scripts/night/clone-catchup.sh</string>
+  </array>
+  <!-- THE NIGHTLY'S FIRST STEP AFTER THE CLONE IS REFRESHED (lane CLONE-CATCHUP, 2026-09-22).
+       The clone is a physical restore taken once a day, so everything production ledgered after
+       the snapshot is missing from it and its copy of production's ledger says otherwise. That
+       is what made STORE-TXN's suite pass on the clone and fail on main. This job reads both
+       ledgers, computes the delta and applies it with the real runners at `--target clone`.
+
+       IT NEVER WRITES PRODUCTION. The production connection is asserted read-only by making the
+       server itself refuse a write in the job's own transaction shape, so the maintenance-window
+       exemption is earned by proof, not by a flag.
+
+       TIMING: `clone_refresh_nightly` runs at 01:00 Pacific and the measured create->healthy
+       time is 21 minutes plus quarantine, so this starts at 01:45 — after the refresh, before
+       anything heavy runs against the clone.
+
+       ONE SHOT: a single calendar occurrence, 2026-09-23 01:45 America/Los_Angeles. The job
+       does NOT self-destruct (it holds no destructive write), so this plist is removed by hand
+       once the recurring one is enabled. RunAtLoad is false so bootstrapping it does not run it
+       now. -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Month</key><integer>9</integer>
+    <key>Day</key><integer>23</integer>
+    <key>Hour</key><integer>1</integer>
+    <key>Minute</key><integer>45</integer>
+  </dict>
+  <key>RunAtLoad</key><false/>
+  <key>AbandonProcessGroup</key><true/>
+  <key>StandardOutPath</key><string>/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/night-clone-catchup.log</string>
+  <key>StandardErrorPath</key><string>/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/night-clone-catchup.log</string>
+  <key>WorkingDirectory</key><string>/Users/armanisadeghi/code/matrx-frontend</string>
+</dict>
+</plist>
