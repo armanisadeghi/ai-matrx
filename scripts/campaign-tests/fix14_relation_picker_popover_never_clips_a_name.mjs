@@ -58,13 +58,21 @@ async function walk(label, width, height, shot) {
 
   await page.goto(`${ORIGIN}/?demo=grid`, { waitUntil: "domcontentloaded", timeout: 120000 });
   await page.waitForSelector("tbody tr", { timeout: 120000 });
-  await sleep(2500);
+  // The columns arrive after the rows do — the fields, the records and the relation
+  // words are three separate door calls against the live store, and a click fired
+  // before the last of them lands hits a skeleton.
+  await page.waitForFunction(
+    () => Array.from(document.querySelectorAll("thead th")).some((t) => /assignee/i.test(t.textContent ?? "")),
+    undefined,
+    { timeout: 120000 },
+  );
+  await sleep(6000);
 
   // The Assignee column is this table's relation onto the kernel Person table. A click on
   // the cell opens the cell EDITOR (Pick · Save · Cancel); the picker is behind Pick —
   // the two steps FIX-13 had to write down because a walk kept missing them.
   const headers = await page.$$eval("thead th", (ths) => ths.map((t) => (t.textContent ?? "").trim()));
-  const column = headers.findIndex((h) => h === "Assignee");
+  const column = headers.findIndex((h) => /^assignee$/i.test(h));
   if (column === -1) {
     fail(`${label}: the demo table has no Assignee relation column (headers: ${headers.join(", ")})`);
     await ctx.close();

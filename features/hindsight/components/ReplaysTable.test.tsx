@@ -1,10 +1,16 @@
 /** @jest-environment jsdom */
 
-import { act } from "react";
+import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
 
 import type { MatrxDataTableProps } from "@ai-matrx/design-system/data-table";
+
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+function renderToStaticMarkup(node: ReactNode) {
+  return renderMarkup(<TooltipProvider>{node}</TooltipProvider>);
+}
 
 import type { Replay } from "../types";
 import { ReplaysTable, replayColumns } from "./ReplaysTable";
@@ -171,7 +177,7 @@ describe("ReplaysTable canonical replay evidence", () => {
     expect(
       renderToStaticMarkup(<>{outcome.cell?.(completeReplay, 0)}</>),
     ).toContain(
-      'title="The replay used fewer tokens and preserved the answer."',
+      'The replay used fewer tokens and preserved the answer.',
     );
     expect(
       renderToStaticMarkup(<>{original.cell?.(completeReplay, 0)}</>),
