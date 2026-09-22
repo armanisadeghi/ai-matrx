@@ -52,6 +52,7 @@ import {
   type MandateIdentity,
 } from "@/features/mandates/service";
 import { MandateNotesPanel } from "@/features/mandates/components/MandateNotesPanel";
+import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 
 export interface SurfaceMandatesSectionProps {
@@ -170,12 +171,12 @@ export function SurfaceMandatesSection({
                     });
                     onOpened?.();
                   }}
-                  title={`Open ${row.mandateKey} — the agent, its instructions, your binding and its notes`}
+                  title={`Open ${mandateDisplayName(row.mandateKey, identity?.label)} — the agent, its instructions, your binding and its notes`}
                   className="group min-w-0 flex-1 rounded-md border border-border bg-card px-2 py-1 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
                 >
                   <span className="flex min-w-0 items-center gap-1">
                     <span className="truncate text-xs font-medium text-foreground">
-                      {identity?.label ?? row.mandateKey}
+                      {mandateDisplayName(row.mandateKey, identity?.label)}
                     </span>
                     {identity && !identity.isEnabled && (
                       <span className="shrink-0 rounded border border-amber-500/40 px-1 text-[9px] text-amber-600 dark:text-amber-400">
@@ -187,9 +188,15 @@ export function SurfaceMandatesSection({
                   <span className="block truncate text-[10px] text-muted-foreground">
                     {row.does}
                   </span>
-                  <span className="block truncate font-mono text-[9px] text-muted-foreground/70">
-                    {row.mandateKey}
-                  </span>
+                  {/* THE KEY IS AN ENGINEER'S HANDLE (cold walk 20). It keeps
+                      its mono sub-line for the admin who has to go find the
+                      declaration, and it is absent for everyone else — an
+                      Expert has nowhere to type it and nothing to do with it. */}
+                  {isAdmin && (
+                    <span className="block truncate font-mono text-[9px] text-muted-foreground/70">
+                      {row.mandateKey}
+                    </span>
+                  )}
                 </button>
                 {isAdmin && identity && (
                   <button

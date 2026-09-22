@@ -12,6 +12,7 @@ import { BrainCircuit } from "lucide-react";
 import { Card } from "@/components/official/PageTemplate";
 import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
+import { useMandateDisplayName } from "@/features/mandates/useMandateDisplayName";
 
 export function AnalysisMandateGate({
   mandateKey,
@@ -24,15 +25,19 @@ export function AnalysisMandateGate({
   /** The resolver's message, shown verbatim. */
   error: string;
 }) {
+  // THE SENTENCE NAMES THE JOB, NOT ITS KEY (cold walk 20, 2026-09-22). This
+  // gate printed `<code>scraper.fact_checker</code>` mid-sentence, which is the
+  // same class the Rulebook's Understudy card was carrying. The key still
+  // reaches the picker below, where it is an address, not a word.
+  const jobName = useMandateDisplayName(mandateKey);
   return (
     <Card title={`${title} — no agent assigned`}>
       <div className="flex flex-col gap-3 p-4">
         <p className="flex items-start gap-2 text-sm text-muted-foreground">
           <BrainCircuit className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/70" />
           <span>
-            {title} runs through the{" "}
-            <code className="text-xs">{mandateKey}</code> mandate, which has no
-            agent bound yet. Bind one to turn this tab on.
+            {title} runs through the {jobName} job, which has no agent bound
+            yet. Bind one to turn this tab on.
           </span>
         </p>
         <p className="text-xs text-destructive">{error}</p>
