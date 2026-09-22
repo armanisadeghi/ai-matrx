@@ -7,6 +7,7 @@
 
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { resolveInboundSmsOrganization } from "@/lib/sms/routingFailure";
+import type { TablesUpdate } from "@/types/database.types";
 import type { InboundSmsPayload, TwilioMediaAttachment } from "./types";
 import {
   normalizeSmsEndpoint,
@@ -446,7 +447,9 @@ export async function resolveSmsInboundContext(
     await supabase
       .schema("communication")
       .from("sms_conversations")
-      .select("id, chat_conversation_id")
+      .select(
+        "id, chat_conversation_id, identity_status, user_id, organization_id, party_id, contact_medium_id, contact_point_id",
+      )
       .eq("provider_account_id", input.providerAccountId)
       .eq("destination_identity_id", destination.id)
       .eq("external_phone_number", input.source)
@@ -496,7 +499,9 @@ export async function resolveSmsInboundContext(
         canonical_agent_version_id: null,
         identity_status: "resolved",
       })
-      .select("id, chat_conversation_id")
+      .select(
+        "id, chat_conversation_id, identity_status, user_id, organization_id, party_id, contact_medium_id, contact_point_id",
+      )
       .single();
     if (createError || !created) {
       throw new Error(
@@ -504,6 +509,82 @@ export async function resolveSmsInboundContext(
       );
     }
     conversation = created;
+  } else {
+    // 🚨 A MATCH IS AN IDENTIFICATION, AND IT MUST BE WRITTEN DOWN.
+    //
+    // Until 2026-09-22 `identity_status` was stamped `'resolved'` ONLY on the
+    // INSERT above. A thread created before the identity columns existed — or
+    // by any earlier path — kept whatever it was born with, forever, no matter
+    // how many times this resolver identified the sender afterwards.
+    //
+    // That is not cosmetic. `communication.claim_pending_sms_agent_turns`
+    // requires `c.identity_status = 'resolved'`, so a text on such a thread was
+    // written to `communication.sms_messages` with
+    // `ai_processing_status = 'pending'` and then NEVER CLAIMED. Measured live:
+    // Arman texted +14158059951 at 05:44:10Z on 2026-09-22, row
+    // e4de6a95-72ba-4190-b641-de37e62a22f9 landed pending, and his 2026-02-14
+    // transport thread dc4c0a69-b81a-483b-b0ca-241afa368f8e still said
+    // `not_found`. The message sat there, answered by nobody.
+    //
+    // So every match re-stamps what it just proved: the identification, the
+    // person, the tenant and the CRM binding. Only fields we actually resolved
+    // are written, and the write is skipped entirely when nothing drifted —
+    // this runs on every inbound message.
+    type ConversationIdentityPatch = Partial<
+      Pick<
+        TablesUpdate<{ schema: "communication" }, "sms_conversations">,
+        | "identity_status"
+        | "user_id"
+        | "organization_id"
+        | "party_id"
+        | "contact_medium_id"
+        | "contact_point_id"
+      >
+    >;
+    const drift: ConversationIdentityPatch = {};
+    if (conversation.identity_status !== "resolved") {
+      drift.identity_status = "resolved";
+    }
+    if (conversation.user_id !== preference.user_id) {
+      drift.user_id = preference.user_id;
+    }
+    if (conversation.organization_id !== preference.organization_id) {
+      drift.organization_id = preference.organization_id;
+    }
+    if (crmBinding.partyId && conversation.party_id !== crmBinding.partyId) {
+      drift.party_id = crmBinding.partyId;
+    }
+    if (
+      crmBinding.contactMediumId &&
+      conversation.contact_medium_id !== crmBinding.contactMediumId
+    ) {
+      drift.contact_medium_id = crmBinding.contactMediumId;
+    }
+    if (
+      crmBinding.contactPointId &&
+      conversation.contact_point_id !== crmBinding.contactPointId
+    ) {
+      drift.contact_point_id = crmBinding.contactPointId;
+    }
+    if (Object.keys(drift).length > 0) {
+      const { error: restampError } = await supabase
+        .schema("communication")
+        .from("sms_conversations")
+        .update(drift)
+        .eq("id", conversation.id);
+      if (restampError) {
+        // Loud, and NOT fatal: the message is still worth storing. What is
+        // fatal is doing this silently — an unstamped thread means the turn is
+        // never claimed, which is the defect above.
+        console.error(
+          `[sms-identity] could not re-stamp ${Object.keys(drift).join(", ")} on ` +
+            `sms_conversations ${conversation.id}: ${restampError.message}. ` +
+            `Until it is stamped identity_status='resolved', ` +
+            `communication.claim_pending_sms_agent_turns cannot reach this person's ` +
+            `messages and they will sit pending, unanswered.`,
+        );
+      }
+    }
   }
 
   if (!conversation.chat_conversation_id) {
