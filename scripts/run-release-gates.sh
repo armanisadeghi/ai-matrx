@@ -365,6 +365,11 @@ if $STRICT; then
         # or an empty/short result prints LIVE PULL FAILED and counts as a finding,
         # never as a pass. (SPEC-DATA-MODEL §18.5 / L3-80.)
         "HR punch write path (client-direct insert into hr.punch)|pnpm check:hr-punch-write-path:strict"
+        # The PRE-APPLY half of function_contracts_hold (GATES-2, 2026-09-22). The live
+        # clause can only speak after a re-emit has landed; this drives the same contract
+        # rows against the UNAPPLIED corpus, and is the half that can be shown going red
+        # on a bare re-emit. scripts/lib/function-contract-corpus.ts carries the doctrine.
+        "Function contracts survive a re-emit (self-test)|pnpm check:hr-punch-write-path:self-test"
         # PARTITION RUNWAY stays ADVISORY even in strict mode. It is the only
         # gate whose subject is the CALENDAR, not the code: a release that has
         # nothing to do with history.row_versions must not be blocked because a

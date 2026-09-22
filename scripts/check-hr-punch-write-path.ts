@@ -58,11 +58,18 @@
  *   1  findings, missing checks, or an unmeasured run AND --strict
  *   2  the script itself crashed
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import {
+  findContractGaps,
+  type ContractRow,
+  type CorpusFile,
+  type CorpusVerdict,
+} from "./lib/function-contract-corpus";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const RPC = "__hr_punch_write_path_conformance";
@@ -84,6 +91,7 @@ const TAG = {
 };
 
 const STRICT = process.argv.includes("--strict");
+const SELF_TEST = process.argv.includes("--self-test");
 
 /**
  * The checks the deployed function is contracted to return. A row that
@@ -440,7 +448,155 @@ function unmeasured(reason: string, hint: string): never {
   exitAfterDrain(STRICT ? 1 : 0);
 }
 
+
+/* ══════════════════════════════════════════════════════════════════════════════
+ * THE CORPUS ARM — the PRE-APPLY half of `function_contracts_hold`.
+ * Doctrine, scope and its stated limits: scripts/lib/function-contract-corpus.ts.
+ * ════════════════════════════════════════════════════════════════════════════ */
+
+const CORPUS_DIRS = ["migrations", "migrations/campaign"] as const;
+
+function readCorpus(applied: ReadonlySet<string>): CorpusFile[] {
+  const out: CorpusFile[] = [];
+  for (const d of CORPUS_DIRS) {
+    const dir = resolve(ROOT, d);
+    if (!existsSync(dir)) continue;
+    for (const f of readdirSync(dir)) {
+      if (!f.endsWith(".sql")) continue;
+      if (applied.has(f)) continue; // an applied file is judged live, on the real body
+      out.push({ file: f, sql: readFileSync(resolve(dir, f), "utf8") });
+    }
+  }
+  return out;
+}
+
+interface LiveContracts {
+  readonly contracts: ContractRow[];
+  readonly applied: Set<string>;
+}
+
+async function fetchLiveContracts(): Promise<LiveContracts | { failure: string }> {
+  const env = loadDbEnv();
+  if ("missing" in env) {
+    return { failure: `direct Postgres env incomplete: ${env.missing.join(", ")}` };
+  }
+  const client = await connectDirect(env, "check-hr-punch-write-path:corpus");
+  try {
+    const rows = await client.query<ContractRow>(
+      `select schema_name, function_name, home_migration, must_contain, reason
+         from hr.function_contract where is_active and cardinality(must_contain) > 0`,
+    );
+    const led = await client.query<{ filename: string }>(
+      `select filename from public._schema_migrations`,
+    );
+    return {
+      contracts: rows.rows,
+      applied: new Set(led.rows.map((r) => r.filename)),
+    };
+  } finally {
+    await client.end();
+  }
+}
+
+function printCorpus(v: CorpusVerdict): void {
+  for (const w of v.waivers) {
+    console.log(
+      `${TAG.info}contract waiver declared — ${C.bold}${w.file}${C.reset} re-creates ` +
+        `${C.bold}${w.qname}${C.reset}: ${C.dim}${w.why}${C.reset}`,
+    );
+  }
+  if (v.gaps.length === 0) {
+    console.log(
+      `${TAG.info}function contracts in the corpus: ${C.green}${v.recreationsExamined} contracted ` +
+        `re-creation(s) across ${v.filesRead} unapplied file(s), 0 gap(s)${C.reset}` +
+        `${v.waivers.length ? ` ${C.dim}(${v.waivers.length} declared waiver(s) above)${C.reset}` : ""}`,
+    );
+    return;
+  }
+  console.log("");
+  console.log(
+    `${TAG.fail}${C.bold}${C.red}A MIGRATION WOULD DISCARD A DECLARED INVARIANT — ` +
+      `${v.gaps.length} gap(s), before anything is applied${C.reset}`,
+  );
+  for (const g of v.gaps) {
+    console.log("");
+    console.log(
+      `  ${C.bold}${g.file}${C.reset} re-creates ${C.bold}${g.qname}${C.reset} ` +
+        `${C.dim}(contract from ${g.home_migration})${C.reset}`,
+    );
+    console.log(`      missing: ${g.missing.map((t) => JSON.stringify(t)).join(", ")}`);
+    console.log(`      ${C.dim}${g.reason}${C.reset}`);
+  }
+  console.log("");
+  console.log(
+    `  ${C.yellow}${C.bold}What to do${C.reset} ${C.dim}— carry the token, or say why not in the file itself:${C.reset}`,
+  );
+  console.log(`      ${C.dim}-- function-contract-ok: <schema>.<function> — <why, in a sentence>${C.reset}`);
+  console.log(
+    `  ${C.dim}A hoist into a shared body is a legitimate why, and it is what happened twice in${C.reset}`,
+  );
+  console.log(
+    `  ${C.dim}September 2026 — but then the contract moves WITH the invariant, in the same push.${C.reset}`,
+  );
+  console.log("");
+}
+
+/** The self-test drives the real contract rows with bytes written here. No mock, no fixture DB. */
+async function selfTest(): Promise<never> {
+  const live = await fetchLiveContracts();
+  if ("failure" in live) {
+    console.log(`${TAG.fail}self-test UNMEASURED: ${live.failure}`);
+    exitAfterDrain(1);
+  }
+  const victim = live.contracts.find((c) => c.must_contain.length > 0);
+  if (!victim) {
+    console.log(`${TAG.fail}self-test cannot run: no active contract carries a must_contain token`);
+    exitAfterDrain(1);
+  }
+  const qname = `${victim.schema_name}.${victim.function_name}`;
+  const bare = `create or replace function ${qname}() returns void language sql as $$ select 1 $$;`;
+
+  const red = findContractGaps([{ file: "zz_self_test_re_emit.sql", sql: bare }], live.contracts);
+  if (red.gaps.length === 0) {
+    console.log(
+      `${TAG.fail}self-test FAILED: a re-emit of ${qname} carrying NONE of its ` +
+        `${victim.must_contain.length} declared token(s) was not reported. The detector is blind.`,
+    );
+    exitAfterDrain(1);
+  }
+
+  const declared = `-- function-contract-ok: ${qname} — self-test declaration, long enough to count\n${bare}`;
+  const green = findContractGaps(
+    [{ file: "zz_self_test_re_emit.sql", sql: declared }],
+    live.contracts,
+  );
+  if (green.gaps.length !== 0 || green.waivers.length !== 1) {
+    console.log(
+      `${TAG.fail}self-test FAILED: the declaration did not waive the gap ` +
+        `(gaps=${green.gaps.length}, waivers=${green.waivers.length}).`,
+    );
+    exitAfterDrain(1);
+  }
+
+  const short = `-- function-contract-ok: ${qname} — nope\n${bare}`;
+  if (findContractGaps([{ file: "zz.sql", sql: short }], live.contracts).gaps.length === 0) {
+    console.log(`${TAG.fail}self-test FAILED: a waiver with no sentence still waived the gap.`);
+    exitAfterDrain(1);
+  }
+
+  const real = findContractGaps(readCorpus(live.applied), live.contracts);
+  printCorpus(real);
+  console.log(
+    `${TAG.info}${C.green}self-test OK${C.reset} — a bare re-emit of ${C.bold}${qname}${C.reset} ` +
+      `goes RED on ${red.gaps[0]!.missing.length} missing token(s), a declared one is waived and ` +
+      `printed, and a waiver with no sentence is refused.`,
+  );
+  exitAfterDrain(real.gaps.length > 0 && STRICT ? 1 : 0);
+}
+
 async function main(): Promise<void> {
+  if (SELF_TEST) await selfTest();
+
   const { rows, failure } = await fetchConformance();
 
   if (failure) {
@@ -465,12 +621,26 @@ async function main(): Promise<void> {
 
   const failed = returned.filter((r) => !r.ok);
 
+  const corpus = await fetchLiveContracts();
+  let corpusGaps = 0;
+  if ("failure" in corpus) {
+    console.log(
+      `${TAG.warn}the pre-apply corpus arm is UNMEASURED: ${corpus.failure} ` +
+        `${C.dim}(the live clause above still ran)${C.reset}`,
+    );
+    corpusGaps = STRICT ? 1 : 0;
+  } else {
+    const verdict = findContractGaps(readCorpus(corpus.applied), corpus.contracts);
+    printCorpus(verdict);
+    corpusGaps = verdict.gaps.length;
+  }
+
   if (failed.length === 0 && missing.length === 0) {
     console.log(
       `${TAG.info}HR punch write path: ${C.green}${returned.length}/${EXPECTED_CHECKS.length} conformance checks passed${C.reset} ` +
         `${C.dim}(no client-direct insert path into hr.punch)${C.reset}`,
     );
-    exitAfterDrain(0);
+    exitAfterDrain(corpusGaps > 0 && STRICT ? 1 : 0);
   }
 
   console.log("");
