@@ -449,8 +449,19 @@ $function$;
   end if;
 
   -- ══ RED 5 — THE CONTROL, WHICH MUST BE GREEN ═════════════════════════════════════
-  perform custom.io_import_begin(v_org, v_tbl, 'csv', 'red5.csv', '[]'::jsonb,
-            'red-hash-5', '{}'::jsonb, null, null, false);
+  -- SUITES-TIDY 2026-09-22: the control used to open the same file twice and never import a
+  -- row. `custom.io_import_begin` has since been NARROWED on purpose, and its own body says
+  -- why: a run that wrote nothing and matched nothing "is not the time this file was imported
+  -- — it is a run that FAILED", and remembering it turned a guard against DOUBLE writing into
+  -- a guard against ANY writing, so the file that created a table's columns on its first pass
+  -- could never be imported again. Under that rule the old control's first call is a failed
+  -- run and the second is correctly answered `already: false` — the control was asserting a
+  -- behaviour the platform deliberately removed. It now IMPORTS A ROW on the first pass,
+  -- which is what "this file was already imported" means, and then re-opens the same file.
+  v_imp := (custom.io_import_begin(v_org, v_tbl, 'csv', 'red5.csv', '[]'::jsonb,
+              'red-hash-5', '{}'::jsonb, null, null, false) ->> 'import_id')::uuid;
+  perform custom.io_import_rows(v_org, v_imp,
+            jsonb_build_array(jsonb_build_object('deal', 'Blue Ridge baler retrofit')), '{}'::jsonb);
   v_r := custom.io_import_begin(v_org, v_tbl, 'csv', 'red5.csv', '[]'::jsonb,
             'red-hash-5', '{}'::jsonb, null, null, false);
   if not (v_r ->> 'already')::boolean then

@@ -177,8 +177,23 @@ begin
   -- `authenticated`'s INSERT grant on this table. So the closure is TWO locks deep here -- the
   -- restrictive policy AND the withdrawn privilege -- and a differential that removes one and
   -- not the other proves nothing. It was measured, not assumed.
+  --
+  -- SUITES-TIDY 2026-09-22 — IT IS THREE LOCKS DEEP NOW, AND THE DIFFERENTIAL SAYS SO.
+  -- DOORS-ONLY-5 came after this file and did the tail of the write surface: it replaced the
+  -- permissive FOR ALL policy `platform_admin_all` with a SELECT-only twin
+  -- (`platform_admin_all_select`) and added restrictive `platform_admin_insert_only` /
+  -- `_update_only` / `_delete_only`. Measured on the dev clone (production's own data)
+  -- 2026-09-22, `authenticated` now holds NO PERMISSIVE INSERT POLICY on this table at all —
+  -- so even with the grant restored and this lane's restrictive refusal dropped, RLS denies
+  -- the row and step 5 reported "step 4 proved nothing", which was not true: step 4 proved
+  -- MORE than it used to. The differential therefore takes off all three locks, and the third
+  -- one has to be ADDED BACK rather than merely dropped, because a table with no permissive
+  -- policy refuses everything by definition. Everything here rolls back.
   grant insert on platform.org_change_policy to authenticated;
   drop policy if exists org_change_policy_client_insert_refused on platform.org_change_policy;
+  drop policy if exists platform_admin_insert_only on platform.org_change_policy;
+  create policy doorsonly3_differential_insert on platform.org_change_policy
+    for insert to authenticated with check (true);
   begin
     set local role authenticated;
     insert into platform.org_change_policy
@@ -186,11 +201,11 @@ begin
     values (v_org, 'adjust_model_settings', 'review_with_timeout', 120, 'hold');
     reset role;
     v_passes := v_passes + 1;
-    raise notice '  PASS 5  THE DIFFERENTIAL: with the restrictive policy dropped AND the withdrawn grant restored, the identical row lands. Step 4 was the closure, not the fixture -- and the closure is two locks deep.';
+    raise notice '  PASS 5  THE DIFFERENTIAL: with this lane''s restrictive refusal dropped, the withdrawn grant restored AND a permissive INSERT policy put back in place of the one DOORS-ONLY-5 turned into a SELECT-only twin, the identical row lands. Step 4 was the closure, not the fixture -- and the closure is THREE locks deep.';
   exception when others then
     get stacked diagnostics v_state = returned_sqlstate;
     reset role;
-    raise exception '5: with BOTH the refusal and the withdrawn grant put back, the same row STILL failed (%) -- so step 4 proved nothing about the policy.', v_state;
+    raise exception '5: with all THREE locks off -- this lane''s restrictive refusal, the withdrawn INSERT grant and a permissive INSERT policy -- the same row STILL failed (%). Either the row is wrong or there is a fourth lock nobody has named.', v_state;
   end;
 
   if v_passes <> 5 then

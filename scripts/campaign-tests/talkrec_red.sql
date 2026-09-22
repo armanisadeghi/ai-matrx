@@ -490,26 +490,34 @@ begin
     raise notice 'RED 1g: io_export leaked';
   else raise exception 'RED 1g DID NOT FLIP'; end if;
 
-  -- R6 (green 2d) — opening the same record's chat twice raised a sentence about ON CONFLICT.
-  perform set_config('request.jwt.claims', c_admin_j, true);
-  -- The defect is the REVIVE: binding away and back reaches a tombstoned edge, which
-  -- `trg_associations_revive_tombstone` brings back INSIDE the insert, so the old body's
-  -- `ON CONFLICT … DO UPDATE` then touched the same row a second time.
-  perform custom.conversation_scope_bind(v_org, v_conv, v_acme);
-  perform custom.conversation_scope_bind(v_org, v_conv, v_beta);
-  v_caught := null;
-  begin
-    perform custom.conversation_scope_bind(v_org, v_conv, v_acme);
-  exception when others then v_caught := sqlstate || ' ' || sqlerrm;
-  end;
-  if coalesce(v_caught,'') like '%21000%' or coalesce(v_caught,'') ilike '%ON CONFLICT%' then
-    v_red := v_red + 1;
-    raise notice 'RED 2d: re-binding raised %', v_caught;
-  else raise exception 'RED 2d DID NOT FLIP — re-binding answered % instead', coalesce(v_caught,'nothing');
-  end if;
+  -- R6 (green 2d) — RETIRED, SUITES-TIDY 2026-09-22.
+  --
+  -- WHAT IT ASSERTED. Opening the same record's chat twice raised `21000 ON CONFLICT DO UPDATE
+  -- command cannot affect row a second time`: the pre-fix `custom.conversation_scope_bind`
+  -- body this file plants ends in `on conflict … do update`, and binding away and back reaches
+  -- a TOMBSTONED edge which `trg_associations_revive_tombstone` brought back INSIDE the same
+  -- INSERT — so the ON CONFLICT arm then touched that row a second time.
+  --
+  -- WHY IT CANNOT GO RED ANY MORE. The collision was closed at the TRIGGER, not at the
+  -- function body this file plants. `platform.revive_tombstoned_association` now performs the
+  -- revive as an UPDATE and `return null`s — "NEVER A SECOND ROW IN THE SAME STATEMENT. The
+  -- insert is skipped because the write it was going to make has already been made, in place,
+  -- on the row that was always this edge." With the insert skipped there is no conflict for
+  -- any ON CONFLICT arm to hit, so restoring the old FUNCTION cannot reproduce the defect;
+  -- only restoring the old TRIGGER could, and this file's inverse does not touch it.
+  -- Measured on the dev clone (production's own data) 2026-09-22: the third bind raised
+  -- nothing at all.
+  --
+  -- WHAT GUARDS THE CLASS NOW: talkrec_green.sql clause 2d, which binds a conversation away
+  -- and back and asserts it simply works. Fixing lane: the associations revive-tombstone work
+  -- that made the trigger return null (see the function's own header on the live database).
+  --
+  -- The five blocks above are untouched and still go red.
 
-  if v_red <> 6 then raise exception 'only % of 6 blocks went red', v_red; end if;
-  raise notice 'ALL 6 BLOCKS RED';
+  -- SUITES-TIDY 2026-09-22: 5, not 6 — R6 is retired above and asserts nothing.
+  if v_red <> 5 then raise exception 'only % of 5 blocks went red', v_red; end if;
+  raise notice 'ALL 5 BLOCKS RED (R6 retired: its defect was closed at the trigger, which this inverse does not touch)';
+  raise notice 'ALL CLAUSES PASSED';
   raise exception 'talkrec_red.sql: rolling back, as designed';
 end;
 $t$;
