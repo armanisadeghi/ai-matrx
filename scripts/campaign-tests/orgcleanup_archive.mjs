@@ -78,6 +78,23 @@ export const UNCLASSIFIED = [
 const CLASSIFICATION =
   "ORG-CLEANUP 2026-09-22 — created by admin@admin.com with admin@admin.com as its only member";
 
+// The two identities that are allowed to be the whole population of an organization before
+// this script will touch it. Shared by `classify-and-archive` and by `sweep`, because a
+// second copy of this set is the one thing that could let the sweep archive a real crew.
+const SEATS = new Set([
+  "87a6e699-3622-4869-8843-d0867456c0dd", // admin@admin.com
+  "4060701e-706a-4c76-b3ca-0bbc69fa5a14", // test@test.com
+]);
+
+const SWEEP_CLASSIFICATION =
+  "ORG-CLEANUP-2 2026-09-23 — minted by a package suite against the live database; " +
+  "created by a test seat with no member outside the test seats";
+
+const SWEEP_REASON =
+  "ORG-CLEANUP-2 2026-09-23 — throwaway organization minted per run by an aidream " +
+  "matrx-records suite. The suites now reuse one named fixture organization per use case " +
+  "instead of minting one. Nothing deleted; restorable.";
+
 async function seat() {
   const sb = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -149,10 +166,6 @@ if (cmd === "list") {
       .eq("organization_id", id)
       .is("deleted_at", null);
     if (memErr) throw new Error(`could not read members of ${id}: ${memErr.message}`);
-    const SEATS = new Set([
-      "87a6e699-3622-4869-8843-d0867456c0dd", // admin@admin.com
-      "4060701e-706a-4c76-b3ca-0bbc69fa5a14", // test@test.com
-    ]);
     const strangers = members.filter((m) => !SEATS.has(m.user_id));
     if (strangers.length > 0 || !SEATS.has(before.created_by)) {
       console.log(`LEFT ALONE ${id}  ${name} — a person outside the test seats made it or is in it`);
@@ -173,7 +186,72 @@ if (cmd === "list") {
     console.log(`CLASSIFIED+${r.changed ? "ARCHIVED" : "already "} ${id}  ${name}`);
   }
   console.log(`\n${classified} tagged with settings.test_fixture = true through public.org_update, ${archived} newly archived.`);
+} else if (cmd === "sweep") {
+  // ORG-CLEANUP-2 (2026-09-23). The nineteen and the sixteen were a NAMED census taken
+  // by hand. A named census cannot answer for rows a test suite mints while the census is
+  // being written, and by this morning 48 more were live. So the sweep FINDS them itself,
+  // by the owner's own banned-name patterns, and then runs the SAME evidence test round 2
+  // ran before it touches anything: created by a test seat, and no live member outside the
+  // test seats. Anything else is printed for Arman and left exactly as it is.
+  const DRY = process.argv.includes("--dry");
+  const { data: live, error: liveErr } = await sb
+    .schema("iam")
+    .from("organizations")
+    .select("id, name, slug, settings, created_by, is_personal, is_system")
+    .is("archived_at", null);
+  if (liveErr) throw new Error(`could not read the live organizations: ${liveErr.message}`);
+
+  const JUNK = /zz+[\s_-]|throwaway|placeholder|test-only|\blorem\b/i;
+  const candidates = live.filter((o) => JUNK.test(o.name ?? "") || JUNK.test(o.slug ?? ""));
+  console.log(`${live.length} live organizations; ${candidates.length} carry a banned name or slug.`);
+
+  const forArman = [];
+  let classified = 0;
+  let archived = 0;
+  for (const org of candidates.sort((a, b) => a.name.localeCompare(b.name))) {
+    if (org.is_personal || org.is_system) {
+      forArman.push([org, "personal or system organization — the door refuses it by design"]);
+      continue;
+    }
+    const { data: members, error: memErr } = await sb
+      .schema("iam")
+      .from("memberships")
+      .select("user_id")
+      .eq("organization_id", org.id)
+      .is("deleted_at", null);
+    if (memErr) throw new Error(`could not read members of ${org.id}: ${memErr.message}`);
+    const strangers = members.filter((m) => !SEATS.has(m.user_id));
+    if (strangers.length > 0 || !SEATS.has(org.created_by)) {
+      forArman.push([org, `a person outside the test seats made it or is in it (${strangers.length} stranger member(s))`]);
+      continue;
+    }
+    if (DRY) {
+      console.log(`would classify+archive  ${org.id}  ${org.name}`);
+      continue;
+    }
+    if (!(org.settings ?? {}).test_fixture) {
+      const settings = { ...(org.settings ?? {}), test_fixture: SWEEP_CLASSIFICATION };
+      const { error: updErr } = await sb.rpc("org_update", { p_org_id: org.id, p_patch: { settings } });
+      if (updErr) throw new Error(`org_update refused ${org.id}: ${updErr.message}`);
+      classified += 1;
+    }
+    const r = await call(sb, "organization_archive", {
+      p_org: org.id,
+      p_confirm_name: org.name,
+      p_reason: SWEEP_REASON,
+    });
+    if (r.changed) archived += 1;
+    console.log(`${r.changed ? "ARCHIVED " : "already  "} ${org.id}  ${org.name}`);
+  }
+
+  console.log(`\n${classified} newly classified test_fixture through public.org_update, ${archived} newly archived.`);
+  if (forArman.length === 0) {
+    console.log("FOR ARMAN: nothing. Every banned-name organization was a test artifact by evidence.");
+  } else {
+    console.log(`FOR ARMAN — ${forArman.length} organization(s) carry a banned name but are NOT test artifacts by evidence; nothing was done to them:`);
+    for (const [org, why] of forArman) console.log(`  ${org.id}  ${org.name} — ${why}`);
+  }
 } else {
-  console.log("usage: orgcleanup_archive.mjs list|archive|classify-and-archive|roundtrip <org-id>");
+  console.log("usage: orgcleanup_archive.mjs list|archive|classify-and-archive|sweep [--dry]|roundtrip <org-id>");
   process.exit(1);
 }
