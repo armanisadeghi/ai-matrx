@@ -1,6 +1,6 @@
 {
   "_comment": "Verified generated-contract shadow debt. Declaration ids may only be removed. `pnpm check:generated-contracts:accept` refuses to add new ids.",
-  "verifiedAt": "2026-08-21T22:24:21.824Z",
+  "verifiedAt": "2026-09-22T08:48:29.814Z",
   "findings": [
     "app/api/cms/_lib/validateContent.ts::CmsFieldValidationReport::CmsFieldValidationReport",
     "app/api/cms/_lib/validateContent.ts::CmsValidationFinding::CmsValidationFinding",
@@ -30,7 +30,6 @@
     "features/files/types.ts::AssetVariant::AssetVariant",
     "features/files/types.ts::BulkResponse::BulkResponse",
     "features/files/types.ts::BulkResultItem::BulkResultItem",
-    "features/files/types.ts::CopyFileRequest::CopyFileRequest",
     "features/files/types.ts::RenameFileRequest::RenameFileRequest",
     "features/files/types.ts::SearchFilesResponse::SearchFilesResponse",
     "features/files/types.ts::StorageUsageResponse::StorageUsageResponse",
@@ -43,7 +42,6 @@
     "features/marketing/authority/types.ts::AuthorityRouterResult::AuthorityRouterResult",
     "features/marketing/bing/types.ts::BingSiteBinding::BingSiteBinding",
     "features/marketing/competitors/data.ts::CompetitorLookupResult::CompetitorLookupResult",
-    "features/marketing/competitors/landscapeBrief.ts::ServiceLine::ServiceLine",
     "features/marketing/components/pages/cards/PagePerformanceCharts.tsx::GscPoint::GscDailyPoint",
     "features/marketing/components/pages/usePageAnalyzer.ts::PageAnalysisResult::PageAnalysisResult",
     "features/marketing/components/ranks/types.ts::AddRankTargetInput::RankTargetAddBody",
@@ -66,7 +64,6 @@
     "features/marketing/search-console/intake/intake-service.ts::IntakeAnswer::IntakeAnswer",
     "features/marketing/search-console/intake/intake-service.ts::IntakeKeywordRuling::IntakeKeywordRuling",
     "features/marketing/seo/ai-visibility/panels/service.ts::PanelPrompt::PanelPrompt",
-    "features/marketing/seo/dataforseo/types.ts::BacklinkEnrichmentBody::BacklinkEnrichmentBody",
     "features/marketing/seo/dataforseo/types.ts::BacklinkEnrichmentItemResult::BacklinkEnrichmentItemResult",
     "features/marketing/seo/dataforseo/types.ts::BacklinkEnrichmentResult::BacklinkEnrichmentResult",
     "features/marketing/seo/dataforseo/types.ts::BacklinkRefreshBody::BacklinkRefreshBody",

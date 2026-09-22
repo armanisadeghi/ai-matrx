@@ -54,22 +54,16 @@ const KNOWN_SOURCES: readonly string[] = [
  * One kind of thing a connection lets a person attach to a conversation.
  *
  * THE GENERATED TYPE IS THE TRUTH: this is `AttachableKindInfo` from the
- * OpenAPI contract, carrying `resource_type`, `source`, `label` and the
- * provider's own `add_more` wording. Never re-declare it here.
+ * OpenAPI contract, carrying `resource_type`, `source`, `label`, the provider's
+ * own `add_more` wording and `record_table`. Never re-declare it here.
+ *
+ * `record_table` used to be a hand-added member on an intersection, because the
+ * DTO dropped the field the registry had declared since F-62 — so it was always
+ * undefined in the browser and the Record-backed "add more" sentence never
+ * rendered at all. Both aidream DTOs now carry it and the contract is
+ * regenerated, so the extension is gone (check:generated-contracts, 2026-09-22).
  */
-export type AttachableResource = components["schemas"]["AttachableKindInfo"] & {
-  /**
-   * The Record table this kind is backed by (`communication.calendar_event`),
-   * when the server has one — F-62's `AttachableKind.record_table`, declared on
-   * the KIND row itself (aidream 3eb799d51d, the contract pin's floor). The
-   * generated `AttachableKindInfo` does not carry it until `pnpm sync-types`
-   * is regenerated against that server, so it is the ONE client-side narrowing
-   * of the generated type: delete this member the day the generated row has
-   * it, never re-derive "is this kind Record-backed" from a visible candidate
-   * (F-73) — a search filter or an empty list must never hide it.
-   */
-  record_table?: string | null;
-};
+export type AttachableResource = components["schemas"]["AttachableKindInfo"];
 
 /**
  * The availability row as the server sends it. `attachable` is optional and

@@ -106287,6 +106287,17 @@
               }
             ],
             "title": "Add More"
+          },
+          "record_table": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Table"
           }
         },
         "type": "object",
@@ -106322,6 +106333,17 @@
               }
             ],
             "title": "Add More"
+          },
+          "record_table": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Table"
           }
         },
         "type": "object",

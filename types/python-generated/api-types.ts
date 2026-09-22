@@ -46815,6 +46815,8 @@ export interface components {
             label: string;
             /** Add More */
             add_more?: string | null;
+            /** Record Table */
+            record_table?: string | null;
         };
         /** AttachableKindPayload */
         AttachableKindPayload: {
@@ -46826,6 +46828,8 @@ export interface components {
             label: string;
             /** Add More */
             add_more?: string | null;
+            /** Record Table */
+            record_table?: string | null;
         };
         /**
          * AttentiveServiceStatus
