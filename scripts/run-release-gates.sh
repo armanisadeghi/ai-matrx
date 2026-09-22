@@ -200,6 +200,13 @@ if $STRICT; then
         # thing that makes it safe is the proof that it refuses any change the database could
         # tell apart from what it already ran. RED then GREEN, no database needed.
         "Ledger amendment refuses anything but idempotency|pnpm check:amend-idempotent:self-test"
+        # A MIGRATION PRODUCTION HAS ALREADY RUN IS FROZEN HISTORY. The pre-commit hook
+        # (scripts/githooks, installed by pnpm install:githooks) refuses the edit at commit
+        # time; this is the same predicate read at release time, so a commit made with
+        # --no-verify, or on a checkout where nobody ran the installer, still cannot ship.
+        # It reads the checked-in migrations/LEDGER.json — no database, no credential.
+        "Ledgered migration files are unedited|pnpm check:ledgered-files-unedited"
+        "…and that guard can still fail|pnpm check:ledgered-files-unedited:self-test"
         "TypeScript type-check|pnpm type-check"
         "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts --strict"
         "Doc claims vs live config|pnpm exec tsx scripts/check-doc-claims.ts --strict"
@@ -851,6 +858,13 @@ else
         # thing that makes it safe is the proof that it refuses any change the database could
         # tell apart from what it already ran. RED then GREEN, no database needed.
         "Ledger amendment refuses anything but idempotency|pnpm check:amend-idempotent:self-test"
+        # A MIGRATION PRODUCTION HAS ALREADY RUN IS FROZEN HISTORY. The pre-commit hook
+        # (scripts/githooks, installed by pnpm install:githooks) refuses the edit at commit
+        # time; this is the same predicate read at release time, so a commit made with
+        # --no-verify, or on a checkout where nobody ran the installer, still cannot ship.
+        # It reads the checked-in migrations/LEDGER.json — no database, no credential.
+        "Ledgered migration files are unedited|pnpm check:ledgered-files-unedited"
+        "…and that guard can still fail|pnpm check:ledgered-files-unedited:self-test"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts"
         # Blocking in --strict (see the strict list above); loud and exit-0 here,
         # like every other gate in the advisory list.

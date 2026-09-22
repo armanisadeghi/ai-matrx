@@ -112,10 +112,31 @@ if ((await notice.count()) === 0) {
     const r = el.getBoundingClientRect();
     const copy = el.cloneNode(true);
     for (const hidden of copy.querySelectorAll("[data-for-engineers], .sr-only, [aria-hidden='true']")) hidden.remove();
-    return { text: (copy.textContent ?? "").replace(/\s+/g, " ").trim(), width: Math.round(r.width), height: Math.round(r.height) };
+    const cx = Math.round(r.left + r.width / 2);
+    const cy = Math.round(r.top + r.height / 2);
+    const at = document.elementFromPoint(cx, cy);
+    return {
+      text: (copy.textContent ?? "").replace(/\s+/g, " ").trim(),
+      width: Math.round(r.width),
+      height: Math.round(r.height),
+      insideTheTable: el.closest("table") !== null,
+      hitTestable: at !== null && (el === at || el.contains(at)),
+      centre: `${cx},${cy}`,
+      box: `${Math.round(r.left)}…${Math.round(r.right)} x ${Math.round(r.top)}…${Math.round(r.bottom)} of ${window.innerWidth}x${window.innerHeight}`,
+      fullyOnScreen: r.left >= -1 && r.top >= -1 && r.right <= window.innerWidth + 1 && r.bottom <= window.innerHeight + 1,
+    };
   });
   if (seen.width > 0 && seen.height > 0) ok(`the refusal is drawn on the cell (${seen.width}x${seen.height})`);
   else fail(`the refusal is in the DOM with no geometry (${JSON.stringify(seen)})`);
+  // 🚨 FIX-13's clause: drawn is not the same as REACHABLE. The first build of this
+  // notice lived inside the cell and the table's scroll container clipped it to a red
+  // sliver. A notice the table can clip is a notice nobody reads.
+  if (seen.insideTheTable) fail("the refusal is drawn INSIDE the table, where a column width or a scroll can clip it");
+  else ok("the refusal is portalled out of the table — no column width or scroll can clip it");
+  if (seen.hitTestable) ok(`its own centre hit-tests to itself (${seen.centre})`);
+  else fail(`nothing is at its own centre — it is clipped or covered (${seen.centre})`);
+  if (seen.fullyOnScreen) ok(`the whole notice is inside the viewport (${seen.box})`);
+  else fail(`the notice runs outside the viewport (${seen.box})`);
   if (/relation|identifier|points at/i.test(seen.text)) ok(`it is the store's own sentence: "${seen.text.slice(0, 220)}"`);
   else fail(`the notice does not carry the store's sentence: "${seen.text.slice(0, 220)}"`);
   // A screen never prints the machine's word at a person.

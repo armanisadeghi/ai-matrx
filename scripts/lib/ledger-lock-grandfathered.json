@@ -1,0 +1,47 @@
+{
+  "note": "THE EIGHT THAT PREDATE THE LOCK. Frozen 2026-09-22 by lane LEDGER-LOCK, the moment the guard was first run against origin/main. Each of these is a real post-apply edit a lane made to a file production had already run \u2014 the KNOB-GUARD class \u2014 and each landed BEFORE anything refused it at commit time. They are recorded here rather than repaired because the one legal repair (pnpm db:apply --amend-idempotent) proves the edit is keyword-only, and NONE of these is: they add DO-blocks, change message text a person reads, and rewrite an inverse's body. Repairing them means a NEW migration that supersedes the live body, which is a lane's work, not a guard's.",
+  "the_rule": "A name here exempts EXACTLY the bytes named here and nothing else. The entry binds BOTH the production checksum AND the tree checksum, so the very next edit to one of these files is refused like any other. ADDING A NAME HERE IS NOT A FIX \u2014 it is the same sentence the DDL-lock census carries about WINDOW_CLASS_GRANDFATHERED, for the same reason.",
+  "frozen_at": "2026-09-22T17:29:36.503034+00:00",
+  "files": {
+    "migrations/campaign/argsruled_the_second_id_lives_in_the_same_organization.sql": {
+      "ledgered": "53e52cf3fab6081595e954634c22d704ba416447feef5372a7177efc18e33723",
+      "applied_at": "2026-09-21 22:51:00.977029+00",
+      "tree": "224ec276ebc708750238208679e5154352ea65777a2f4b483f1b4cf2991d4a5c"
+    },
+    "migrations/campaign/capture_a_sheet_a_crew_fills_on_a_phone.sql": {
+      "ledgered": "f544f9e7521bd3ac462deb5bd9c8a4bb51a1d12d941c155dda8934fe335a321b",
+      "applied_at": "2026-09-20 19:31:19.10771+00",
+      "tree": "ff80451fb253769fead3541ac1b17368d7c07de61b588d2afe7c6529d38f2fb4"
+    },
+    "migrations/campaign/invitedelivery_the_invitation_reaches_the_person.sql": {
+      "ledgered": "db617c528b057fe6194ce5888d5190ddb3b22c942cab94746a65e0da5c45162a",
+      "applied_at": "2026-09-21 05:09:11.240624+00",
+      "tree": "4fff53e9e312038e777aea0579432e67c0e0dec134e5df157f791fae8534d326"
+    },
+    "migrations/campaign/readperf_the_class_finds_its_row_without_a_scan.sql": {
+      "ledgered": "46552721cb5f56ffbb90daf630aeb997f98af1c6e2a84f35cf59f6dd901e8ee6",
+      "applied_at": "2026-09-20 00:59:51.012884+00",
+      "tree": "b8ee9aead73cfd5c7443f224949b69e9f0cd6249c7c046a23f8364dc4f883b57"
+    },
+    "migrations/campaign/readperf_the_page_scan_has_its_indexes.sql": {
+      "ledgered": "9b77b9bf47e0fa33533824b346cc50cf653d7589b64b9582538c4fc849f1020e",
+      "applied_at": "2026-09-20 00:50:44.822026+00",
+      "tree": "ee0d606ca4d55928727871425d5e4821ed8763d84b17e6473eddacc461d899b9"
+    },
+    "migrations/campaign/redsuites2_a_new_organizations_first_migration_verb.sql": {
+      "ledgered": "bc18fcdfd451cc4f45de508485239458ad432c79f767daf2f70db3b93b7e085f",
+      "applied_at": "2026-09-22 00:19:57.914378+00",
+      "tree": "480b0140f6da027623061c5e129bc947983e9477cf7aaf545126546ad942febc"
+    },
+    "migrations/inverse/share_a_reason_that_names_nothing_down.sql": {
+      "ledgered": "eb4e785a365c2c57a85be4f9bbf58310010efa5c9ae265b76aaf33376b785726",
+      "applied_at": "2026-09-19 19:03:59.815425+00",
+      "tree": "c6d573ead7245e358fe3ea5032075887a7d5a9aece57823906aa2af68dbdfc58"
+    },
+    "migrations/inverse/share_the_store_has_a_share_door_down.sql": {
+      "ledgered": "22fc40a34e5fde890a17d66dcfb871909b50dcfaf7dcf90c23fac628a65f7122",
+      "applied_at": "2026-09-19 19:00:55.886336+00",
+      "tree": "2f9d3015e76fada571c1a9c6915751aa780cad2c8363218d10f8f76d94c76ec3"
+    }
+  }
+}

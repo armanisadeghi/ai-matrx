@@ -339,6 +339,21 @@ while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner sele
     >/dev/null 2>&1 || say "  (note: could not mark the ledger row rehearsal_on=catchup)"
 done < "$WORK/plan.tsv"
 
+# THE CHECKED-IN LEDGER SNAPSHOT IS REFRESHED HERE, WHOLE (lane LEDGER-LOCK, 2026-09-22).
+# `pnpm db:apply` keeps migrations/LEDGER.json current for applies made from THIS machine;
+# only a full read of production can carry applies made from aidream's runner, another
+# checkout, or another machine. The commit-time guard and the `check:ledgered-files-unedited`
+# release gate both judge against this file, so it is refreshed every night, unconditionally —
+# including on a run where the delta was empty. READ-ONLY on production: one SELECT.
+# A failure here never fails the catch-up (the clone is already caught up) but it is named.
+say "refreshing the checked-in production ledger snapshot (migrations/LEDGER.json)"
+if ( cd "$FRONTEND" && node node_modules/tsx/dist/cli.mjs scripts/refresh-ledger-snapshot.ts ); then
+  say "  ledger snapshot refreshed — commit it if git reports it changed."
+else
+  say "  NOTE: could not refresh migrations/LEDGER.json. The commit guard and the release gate"
+  say "  are judging against yesterday's snapshot until someone runs pnpm refresh:ledger-snapshot."
+fi
+
 say "parity repairs made: $REPAIRED; superseded on production: $SUPERSEDED"
 for n in "${SUPERSEDED_NAMES[@]:-}"; do [ -n "$n" ] && say "  superseded, not carried: $n"; done
 for n in "${FAILED_NAMES[@]:-}"; do [ -n "$n" ] && say "  did not land: $n"; done

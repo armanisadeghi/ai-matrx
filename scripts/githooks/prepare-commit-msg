@@ -1,0 +1,22 @@
+#!/bin/sh
+# Versioned prepare-commit-msg hook for matrx-frontend.
+#
+# ONE JOB: turn the receipt `pnpm db:apply --amend-idempotent` left in the git dir into
+# the `amend-idempotent: <path> <sha256>` trailer on this commit, then consume it. That
+# is what makes "the commit carries a trailer THE RUNNER WROTE" a mechanical fact rather
+# than a sentence a lane can type: the receipt only exists because the runner proved the
+# edit was keyword-only and moved the production ledger onto the new bytes.
+set -u
+MSG_FILE="$1"
+RECEIPT="$(git rev-parse --git-common-dir)/matrx-amend-idempotent"
+[ -f "$RECEIPT" ] || exit 0
+
+while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    grep -qF -- "$line" "$MSG_FILE" && continue
+    printf '\n%s\n' "$line" >> "$MSG_FILE"
+done < "$RECEIPT"
+
+# Consumed: a receipt is good for ONE commit. Left lying around it would exempt the next
+# edit to the same file, which is the whole thing this guard exists to refuse.
+rm -f "$RECEIPT"

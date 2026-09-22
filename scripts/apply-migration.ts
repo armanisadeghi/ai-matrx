@@ -194,6 +194,12 @@ import {
   POLICY_MIXED_GRANDFATHERED,
 } from "./lib/migration-target";
 import { confirmChairStep } from "./lib/chair-step";
+import {
+  recordAppliedRow,
+  receiptPath,
+  trailerLine,
+  SNAPSHOT_REL as LEDGER_SNAPSHOT_REL,
+} from "./lib/ledger-snapshot.mjs";
 import { basedOnCheck, findReplaceOccurrences, type Query } from "./migration-based-on";
 import { judgeTexts as judgeKernelPairing } from "./check-kernel-rerecord-pairing";
 import { judgeOneInverse } from "./check-inverses-leave-the-ground-standing";
@@ -1741,6 +1747,42 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       `${TAG.ok}Applied and ledgered — checksum ${checksum} == sha256 of the executed bytes ` +
         `${C.dim}(${elapsed} ms, applied_at ${after.applied_at})${C.reset}`,
     );
+
+    // THE CHECKED-IN SNAPSHOT IS WRITTEN BY THE RUNNER, HERE, ON THE ONE PATH THAT CAN
+    // KNOW (lane LEDGER-LOCK, 2026-09-22). `migrations/LEDGER.json` is what the pre-commit
+    // hook and the `check:ledgered-files-unedited` release gate judge a staged migration
+    // against, so it must never be older than the last apply made from this machine — a
+    // guard reading a stale snapshot would wave through an edit to a file production ran
+    // ten minutes ago. Production applies only: a rehearsal row is not evidence that
+    // anything landed, and the next nightly refresh throws it away.
+    if (target === "production" && !rehearsalMark) {
+      try {
+        const recorded = recordAppliedRow({
+          relPath: relative(ROOT, path),
+          source: SOURCE,
+          filename,
+          checksum,
+          appliedAt: after.applied_at,
+        });
+        if (recorded) {
+          console.log(
+            `${TAG.info}${LEDGER_SNAPSHOT_REL} updated for ${recorded} ` +
+              `${C.dim}(commit it with the file — the pre-commit hook and ` +
+              `check:ledgered-files-unedited read it)${C.reset}`,
+          );
+        }
+      } catch (err) {
+        // NEVER silent, and never fatal: the database is already correct and the ledger row
+        // is committed. A snapshot this runner could not write is a snapshot the nightly
+        // catch-up will rebuild — but the operator hears about it now, with the remedy.
+        console.error(
+          `${TAG.warn}Applied and ledgered, but ${LEDGER_SNAPSHOT_REL} could not be updated ` +
+            `(${(err as Error)?.message ?? String(err)}). Run ${C.white}pnpm refresh:ledger-snapshot` +
+            `${C.reset} before committing, or the commit guard will judge these bytes against a ` +
+            `stale snapshot.`,
+        );
+      }
+    }
     if (rehearsalMark) {
       console.log(
         `${TAG.info}This ledger row is MARKED \`rehearsal_on\` — it records a rehearsal on the dev ` +
@@ -3980,6 +4022,52 @@ async function amendIdempotent(path: string, target: Target, statementTimeout: s
         `are now idempotent; checksum ${row.checksum.slice(0, 12)} -> ${newChecksum.slice(0, 12)}. ` +
         `NOTHING WAS EXECUTED, and the ledger row says so forever.`,
     );
+
+    // THE AMEND IS THE ONE LEGAL EDIT TO A LEDGERED FILE, SO IT IS THE ONE THING THAT MAY
+    // OPEN THE COMMIT GUARD (lane LEDGER-LOCK, 2026-09-22). Two writes, both the runner's:
+    //   · the snapshot moves onto the new bytes, exactly as production's ledger just did —
+    //     which is by itself enough for the hook and the release gate; and
+    //   · a RECEIPT in the git dir, which `prepare-commit-msg` turns into the commit's
+    //     `amend-idempotent:` trailer and then consumes. The trailer is what makes the
+    //     exemption auditable in history and impossible for a lane to type for itself: it
+    //     names this exact path AND this exact SHA-256, and a receipt is good for ONE commit.
+    if (target === "production") {
+      try {
+        recordAppliedRow({
+          relPath: rel,
+          source: SOURCE,
+          filename,
+          checksum: newChecksum,
+          appliedAt: row.applied_at,
+        });
+      } catch (err) {
+        console.error(
+          `${TAG.warn}${LEDGER_SNAPSHOT_REL} could not be updated ` +
+            `(${(err as Error)?.message ?? String(err)}); run pnpm refresh:ledger-snapshot.`,
+        );
+      }
+    }
+    try {
+      const gitDir = execFileSync("git", ["rev-parse", "--git-common-dir"], {
+        cwd: ROOT,
+        encoding: "utf8",
+      }).trim();
+      const receipt = receiptPath(resolve(ROOT, gitDir));
+      const line = trailerLine(rel, newChecksum);
+      const already = existsSync(receipt) ? readFileSync(receipt, "utf8") : "";
+      if (!already.includes(line)) writeFileSync(receipt, `${already}${line}\n`, "utf8");
+      console.log(
+        `${TAG.info}Commit receipt written — the next commit in this checkout carries ` +
+          `${C.white}${line}${C.reset}${C.dim} and is the only one this file's new bytes may ` +
+          `enter.${C.reset}`,
+      );
+    } catch (err) {
+      console.error(
+        `${TAG.warn}Could not write the amend receipt ` +
+          `(${(err as Error)?.message ?? String(err)}). The snapshot was still moved, so the ` +
+          `commit guard will pass on the bytes alone.`,
+      );
+    }
     return 0;
   } finally {
     await client.end().catch(() => {});

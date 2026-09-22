@@ -1,0 +1,29 @@
+#!/bin/sh
+# Versioned pre-commit hook for matrx-frontend. Activated by scripts/install_githooks.sh
+# (git config core.hooksPath scripts/githooks), the same mechanism aidream already uses.
+# Review before changing.
+#
+# ONE JOB: a migration file production has already run may not enter a commit.
+# See scripts/lib/ledger-snapshot.mjs for why this is a COMMIT-time guard and not
+# another release-time report.
+set -u
+HOOK_DIR=$(cd "$(dirname "$0")" && pwd)
+ROOT=$(cd "$HOOK_DIR/../.." && pwd)
+
+# Setting core.hooksPath disables .git/hooks; keep any local hook of the same name running.
+LOCAL_HOOK="$(git rev-parse --git-common-dir)/hooks/pre-commit"
+if [ -x "$LOCAL_HOOK" ]; then
+    "$LOCAL_HOOK" "$@" || exit $?
+fi
+
+if ! command -v node >/dev/null 2>&1; then
+    echo "COMMIT REFUSED: the ledgered-migration guard needs node on PATH and could not find it." >&2
+    exit 1
+fi
+
+# --message-file: git has not written the message yet at pre-commit, so the runner's
+# receipt is what carries the exemption here (prepare-commit-msg turns it into the
+# trailer that ends up in the commit). Both are the runner's, never a lane's sentence.
+RECEIPT="$(git rev-parse --git-common-dir)/matrx-amend-idempotent"
+exec node "$ROOT/scripts/check-ledgered-files-unedited.mjs" --staged --root "$ROOT" \
+    --message-file "$RECEIPT"

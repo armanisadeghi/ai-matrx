@@ -44,7 +44,7 @@ import type { RecordsError } from "@ai-matrx/records";
 import { RefusalNotice } from "@ai-matrx/records-ui";
 
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Popover, PopoverAnchor, PopoverContent } from "@ai-matrx/design-system";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
@@ -406,33 +406,52 @@ export function EditableCell({
             <Loader2 className="size-3 animate-spin text-muted-foreground" />
           </div>
         )}
-        {/* THE REFUSAL, ON THE CELL IT IS ABOUT. Drawn over the rows below rather
-            than inside the cell's own height, because a cell in a grid has no room
-            for three lines and a row that grew by 60px would shove the whole table
-            down. It sits until it is dismissed — a refusal on a timer is a refusal
-            nobody read. */}
-        {refusal ? (
-          <div
-            data-matrx-cell-refusal=""
-            className="absolute left-0 top-full z-50 mt-1 w-[22rem] max-w-[80vw]"
-            onClick={(e) => e.stopPropagation()}
-            onDoubleClick={(e) => e.stopPropagation()}
-          >
-            <RefusalNotice
-              error={refusal}
-              className="bg-background shadow-lg"
-              actions={
-                <button
-                  type="button"
-                  className="mt-1 rounded border px-2 py-0.5 text-xs hover:bg-muted"
-                  onClick={() => setRefusal(null)}
-                >
-                  Dismiss
-                </button>
-              }
-            />
-          </div>
-        ) : null}
+        {/* THE REFUSAL, ON THE CELL IT IS ABOUT — AND PORTALLED OUT OF THE TABLE.
+            🚨 FIX-13's lesson, re-learned here the hard way: an absolutely positioned
+            notice inside the cell is CLIPPED by the table's own scroll container, so
+            the first build of this showed a red sliver under the cell and none of the
+            sentence. A grid cell has no room for three lines, and a row that grew by
+            60px would shove the whole table down, so the notice cannot live inside the
+            cell either. It is anchored to the cell and drawn in a portal, which no
+            column width, scroll position or row height can reach. It sits until it is
+            dismissed — a refusal on a timer is a refusal nobody read. */}
+        <Popover
+          open={refusal !== null}
+          onOpenChange={(next) => {
+            if (!next) setRefusal(null);
+          }}
+        >
+          <PopoverAnchor asChild>
+            <span aria-hidden="true" className="pointer-events-none absolute inset-0" />
+          </PopoverAnchor>
+          {refusal ? (
+            <PopoverContent
+              data-matrx-cell-refusal=""
+              align="start"
+              side="bottom"
+              sizing="content"
+              className="p-2"
+              // The person is answering the refusal by editing the cell again, so a
+              // press inside the notice must never reach the grid underneath it.
+              onClick={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => e.stopPropagation()}
+            >
+              <RefusalNotice
+                error={refusal}
+                className="border-0 p-0"
+                actions={
+                  <button
+                    type="button"
+                    className="mt-1 rounded border px-2 py-0.5 text-xs hover:bg-muted"
+                    onClick={() => setRefusal(null)}
+                  >
+                    Dismiss
+                  </button>
+                }
+              />
+            </PopoverContent>
+          ) : null}
+        </Popover>
       </div>
     );
   }
