@@ -71,8 +71,11 @@ async function run(seat) {
   );
   const tablePages = [...new Set([href, NAMED_TABLE].filter(Boolean))];
   for (const path of tablePages) {
-    await page.goto(`${ORIGIN}${path}`, { waitUntil: "networkidle", timeout: 120000 });
-    await sleep(6000);
+    // NOT `networkidle`. A real table page keeps a realtime subscription open and
+    // this one holds 1,399 records, so the network is never idle and a wait for
+    // it times out on a page that loaded perfectly well.
+    await page.goto(`${ORIGIN}${path}`, { waitUntil: "domcontentloaded", timeout: 120000 });
+    await sleep(10000);
   }
   const tablePage = tablePages.join(" + ");
   await browser.close();

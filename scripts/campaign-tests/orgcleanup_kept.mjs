@@ -37,19 +37,21 @@ for (const [name, slug] of CREWS) {
   await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
   await sleep(3500);
   const how = slug ? await setOrganizationBySlug(page, name, slug) : await setOrganization(page, name);
-  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
-  await sleep(5000);
-  const seen = await page.evaluate(() => {
-    const t = document.body.innerText;
+  await page.goto(`${ORIGIN}/data-v2/try-everything`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await sleep(12000);
+  const seen = await page.evaluate((wanted) => {
+    const main = document.querySelector("main") ?? document.body;
+    const t = main.innerText;
+    const strip = t.slice(0, 600);
     return {
-      names: (t.match(/[A-Za-z0-9&'’ .\-—]+/g) ?? []).length > 0,
+      organization_on_the_strip: t.includes(wanted),
       blocked: /pick an organization|choose an organization/i.test(t),
       error: /something went wrong at our end/i.test(t),
-      tables: (t.match(/\b(Jobs|Customers|Invoices|Crews|Parts|quotes|Members|Classes|Donors|Pledges|Campaigns|Service calls|Vehicles)\b/g) ?? []).filter((v, i, a) => a.indexOf(v) === i),
+      tables_you_can_see: (strip.match(/On — (\d+) tables? you can see/) ?? [])[1] ?? null,
+      sections_working: (t.match(/\bWorking\b/g) ?? []).length,
       chars: t.length,
-      head: t.slice(0, 400),
     };
-  });
+  }, name);
   const row = { name, slug, how, ...seen };
   report.push(row);
   console.log(JSON.stringify(row));

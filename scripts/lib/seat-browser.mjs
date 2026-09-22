@@ -200,3 +200,48 @@ export async function setOrganization(page, organizationName) {
   await sleep(1500);
   return "after clearing the filter";
 }
+
+/**
+ * PICK AN ORGANIZATION WHEN TWO CARRY THE SAME NAME — by the web address the picker prints
+ * under the name, which is the ONLY thing that tells them apart on screen.
+ *
+ * `setOrganization` clicks the first leaf whose text is exactly the name, so on a duplicated
+ * name it lands on whichever copy was drawn first — that is how the GUIDE lane spent an
+ * afternoon on the wrong Birchwood (the one with one quote and no board). Asked for by
+ * PROGRESS-GUIDE.md on 2026-09-21; moved here by ORG-CLEANUP on 2026-09-22.
+ */
+export async function setOrganizationBySlug(page, organizationName, slug) {
+  await openOrganizationGroup(page);
+  await revealTestOrganizations(page);
+  await sleep(1200);
+
+  const clicked = await until(
+    `the "${organizationName}" whose address reads ${slug}`,
+    () =>
+      page.evaluate(
+        ({ name, address }) => {
+          // ONLY things a person can click. The picker draws each row as an <li> wrapping a
+          // <button role="option">; the <li> carries the same text and swallows a dispatched
+          // click silently, which is how this helper's first run "picked" five crews and
+          // stayed on the first one the whole time.
+          const rows = Array.from(
+            document.querySelectorAll("button[role='option'], button, [role='menuitem'], a"),
+          ).filter((el) => {
+            const t = (el.textContent ?? "").trim();
+            return t.includes(name) && t.includes(address) && t.length < name.length + address.length + 80;
+          });
+          // The innermost match is the row itself, not a list wrapping every row.
+          const row = rows.sort((a, b) => (a.textContent ?? "").length - (b.textContent ?? "").length)[0];
+          if (!row) return false;
+          row.scrollIntoView({ block: "center" });
+          row.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
+          return true;
+        },
+        { name: organizationName, address: slug },
+      ),
+    30000,
+  );
+  if (!clicked.v) throw new Error(`no "${organizationName}" row printed the address ${slug}`);
+  await sleep(1500);
+  return `by address ${slug}`;
+}
