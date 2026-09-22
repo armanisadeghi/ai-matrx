@@ -50,8 +50,29 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CORPUS_DIR = resolve(ROOT, "migrations", "judgment-corpus");
-const TARGETS = ["branch", "production"] as const;
+/**
+ * 🚨 `clone` IS COMPARED TOO (lane RUNNER-CLONE-PY, 2026-09-22). `--target clone` exists in
+ * both runners now, and a target that is not in this list is a target where "both runners
+ * agree" has been proven of nothing. The clone is the ONE rehearsal database that holds
+ * production's rows, indexes and locks, so a divergence there is a divergence about what
+ * will happen to production.
+ */
+const TARGETS = ["branch", "production", "clone"] as const;
 type Target = (typeof TARGETS)[number];
+
+/**
+ * THE TARGETS A FIXTURE MUST STATE FOR ITSELF.
+ *
+ * `clone` is DERIVED, not stated: `migrations/JUDGMENT.md` §3a says the clone is judged
+ * EXACTLY as production is, so a fixture's production expectation IS its clone expectation
+ * unless the fixture writes `clone=…` on purpose. Deriving it from the RULE — not from what
+ * a runner printed — is what keeps this a forcing function: if a clone verdict ever stops
+ * matching production's for a file that does not state one, this goes red without anybody
+ * having to touch 69 fixtures first. Today exactly one fixture states its own
+ * (`a7-05-insert-entity-types.sql`, where the refusal is about production's release train
+ * and the clone is a rehearsal database), and it says why in the file.
+ */
+const STATED_TARGETS = ["branch", "production"] as const;
 
 const C = process.stdout.isTTY
   ? { dim: "[2m", red: "[31m", green: "[32m", yellow: "[33m", bold: "[1m", reset: "[0m" }
@@ -157,9 +178,12 @@ function expectationOf(file: string): Expectation {
           `statement detector (${DETECTORS.join(", ")}).`,
       );
   }
-  for (const t of TARGETS)
+  for (const t of STATED_TARGETS)
     if (!targets[t])
       throw new Error(`${basename(file)}: the \`-- expect:\` line says nothing about --target ${t}.`);
+  // The clone is production's physical copy and is judged exactly as production is, so its
+  // expectation IS production's unless the fixture states one deliberately.
+  if (!targets.clone) targets.clone = targets.production!;
   return { targets: targets as Record<Target, string>, detectors };
 }
 

@@ -1,4 +1,4 @@
--- expect: branch=accept production=refuse:not-additive
+-- expect: branch=accept production=refuse:not-additive clone=accept
 -- target: branch,production
 -- additive: yes
 -- guard: custom/system_enabled
@@ -7,5 +7,11 @@
 -- rehearsal fixture; on production it MINTS A LIVE ENTITY TOKEN, which reds
 -- pnpm check:entity-types (halting the frontend release train) and which W1-REG's own
 -- `must not touch` cell forbids.
+--
+-- AND THE DEV CLONE IS A REHEARSAL DATABASE, so it states `clone=accept` deliberately: the
+-- refusal is about what a token does to PRODUCTION's release train, and a token minted in a
+-- physical copy that the next nightly refresh throws away does nothing to it. This is the one
+-- fixture in the corpus where the clone's verdict is not production's; every other file
+-- derives its clone expectation from its production one, which is what JUDGMENT.md §3a says.
 --
 insert into platform.entity_types (token, rls_variant) values ('custom:zz', 'entity');
