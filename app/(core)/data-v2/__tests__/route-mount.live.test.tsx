@@ -243,17 +243,46 @@ describeLive("/data-v2 — the route files bind the store, live main database", 
     await mount(<UnifiedDataPage />, (text) => text.includes("Community"));
 
     const text = container.textContent ?? "";
-    // THE FORCING ASSERTION. These four headings only render after `tableList`
-    // answered, which is `custom.table_kernel_id` + `custom.read_records`. With
-    // the schema dropped they were asked of `public` and the page showed
-    // "The store is not being served … PGRST202" instead.
+    // The lane headings and the create affordance are the page's CHROME. They
+    // are `LANE_TITLE` in `@ai-matrx/records-ui`'s `TablesHome` — four string
+    // constants that render whether or not the store ever answered, each above
+    // its own `LANE_EMPTY` sentence. This block used to call them "THE FORCING
+    // ASSERTION"; they are not one, and a store that answers nothing at all
+    // satisfies every line of it (proved 2026-09-22 by replacing
+    // `recordsDataSource` with one that returns no rows — this test still
+    // passed, while the table-route test below correctly failed).
     for (const lane of ["Mine", "My organization", "System", "Community"]) {
       expect(text).toContain(lane);
     }
+    expect(text).toContain("New table");
+    // These two ARE load-bearing: they are the exact screen the dropped schema
+    // produced, when the doors were asked of `public` instead of `custom`.
     expect(text).not.toContain("PGRST202");
     expect(text).not.toContain("The store is not being served");
-    // The one create affordance the page owns.
-    expect(text).toContain("New table");
+
+    // THE FORCING ASSERTION, and it is this one: a table the LIVE store hands
+    // back, asked for independently through the store's own door, has to be on
+    // the screen the page drew. Chrome cannot satisfy it — an empty or stubbed
+    // data source leaves the lanes standing but the name absent.
+    const { createRecordsClient } = require("@ai-matrx/records/core");
+    const { personActor, recordsDataSource } = require("@ai-matrx/records-ui");
+    const client = createRecordsClient({
+      dataSource: recordsDataSource(authedClient),
+      actor: personActor(userId),
+      organizationId: SWITCH_ON_ORG,
+    });
+    const tables = await client.tableList();
+    if (!tables.ok) throw new Error(`tableList refused: ${tables.error.message}`);
+    const named = tables.data.find(
+      (t: { name?: string | null }) => typeof t.name === "string" && t.name.trim().length > 0,
+    );
+    if (!named) {
+      throw new Error(
+        "the live store handed back no named table for this person, so this test " +
+          "cannot prove the page drew one — declare a table in admin's Workspace and re-run.",
+      );
+    }
+    expect(text).toContain(named.name);
   }, 300_000);
 
   it("names the organization gap instead of a blank page when nobody has picked one", async () => {
