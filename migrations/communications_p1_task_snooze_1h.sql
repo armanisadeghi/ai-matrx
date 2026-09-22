@@ -2,6 +2,9 @@
 -- Keep the cross-organization task/transport boundary from communications_p1_cross_org_task_sms_reminder.sql.
 -- based-on: communication.enqueue_my_task_sms_reminder(uuid, text) a0c862db16039174517709205d0bd3d84354be612e5f15328c6378f58d17a6ec
 -- based-on: communication.admit_pending_sms_command_turn(uuid) 0696f23f82690a8b4f895d7086789bcc3d4f5f273b6e01932bf7bd2bdad806e0
+-- based-on: communication.claim_pending_sms_command_turns(text, integer, integer) 793324a5f0beea9127396a721e8a168a6d5243b575de08ea6afa9dd56a87899e
+-- based-on: communication.claim_recoverable_sms_command_turns(text, integer, integer) c6766db4f7d041d17333d2ead0eab49362e55015d372acc366d4a168b1f5b6b1
+-- chair-step: Replaces worker logic and resets the two worker door rows atomically; live catalog review found no dependents and unchanged return shapes, but the required DELETE and REVOKE operations are non-additive.
 
 create or replace function communication.task_sms_person_timing_gate(
   p_user_id uuid, p_organization_id uuid, p_phone text,
@@ -884,16 +887,14 @@ comment on function communication.admit_pending_sms_command_turn(uuid) is
   'Atomically admits a skipped exact task reply candidate only after one correlated task offer is proven; unmatched, ambiguous, and malformed offers remain terminally skipped.';
 
 
--- These two functions change their return shape. Clear their prior door rows
--- before DROP/CREATE so a guarded rehearsal reapply can recreate them with
--- default client EXECUTE cleared at birth, then declare the new door below.
+-- The live return shapes stay unchanged. Refresh these two door rows in the
+-- same transaction so both worker RPCs remain internal-only after the rewrite.
 delete from platform.client_callable_door
 where schema_name = 'communication'
   and function_name in (
     'claim_pending_sms_command_turns', 'claim_recoverable_sms_command_turns'
   );
-drop function if exists communication.claim_pending_sms_command_turns(text, integer, integer);
-create function communication.claim_pending_sms_command_turns(
+create or replace function communication.claim_pending_sms_command_turns(
   p_worker_id text,
   p_limit integer default 10,
   p_lease_seconds integer default 120
@@ -993,8 +994,7 @@ comment on function communication.claim_pending_sms_command_turns(text, integer,
   'Claims only fresh pending offered task reply turns with one exact correlated task offer; command execution does not require or fabricate an assistant-agent binding.';
 
 
-drop function if exists communication.claim_recoverable_sms_command_turns(text, integer, integer);
-create function communication.claim_recoverable_sms_command_turns(
+create or replace function communication.claim_recoverable_sms_command_turns(
   p_worker_id text,
   p_limit integer default 10,
   p_lease_seconds integer default 900

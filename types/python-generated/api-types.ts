@@ -7050,6 +7050,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/google-integrations/gmail/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Gmail Search */
+        post: operations["gmail_search_google_integrations_gmail_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/gmail/message": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Gmail Message */
+        post: operations["gmail_message_google_integrations_gmail_message_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/google-integrations/calendar/agenda": {
         parameters: {
             query?: never;
@@ -74993,6 +75027,81 @@ export interface components {
              */
             held_by_this_record?: boolean;
         };
+        /** GmailMessageDetail */
+        GmailMessageDetail: {
+            /** Id */
+            id: string;
+            /** Thread Id */
+            thread_id: string | null;
+            /** Subject */
+            subject: string;
+            /** From Address */
+            from_address: string;
+            /** To Address */
+            to_address: string;
+            /** Date */
+            date: string;
+            /** Snippet */
+            snippet: string;
+            /** Text Body */
+            text_body: string;
+            /** Truncated */
+            truncated: boolean;
+            /**
+             * Access Mode
+             * @default on_demand_read_only
+             * @constant
+             */
+            access_mode?: "on_demand_read_only";
+        };
+        /** GmailMessageRequest */
+        GmailMessageRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Message Id */
+            message_id: string;
+        };
+        /** GmailMessageSummary */
+        GmailMessageSummary: {
+            /** Id */
+            id: string;
+            /** Thread Id */
+            thread_id: string | null;
+            /** Subject */
+            subject: string;
+            /** From Address */
+            from_address: string;
+            /** To Address */
+            to_address: string;
+            /** Date */
+            date: string;
+            /** Snippet */
+            snippet: string;
+        };
+        /** GmailSearchRequest */
+        GmailSearchRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Query */
+            query: string;
+        };
+        /** GmailSearchResult */
+        GmailSearchResult: {
+            /** Messages */
+            messages: components["schemas"]["GmailMessageSummary"][];
+            /** Has More */
+            has_more: boolean;
+            /**
+             * Access Mode
+             * @default on_demand_read_only
+             * @constant
+             */
+            access_mode?: "on_demand_read_only";
+        };
         /** Go1ServiceStatus */
         Go1ServiceStatus: {
             /**
@@ -75218,7 +75327,7 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
+            key: "analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
             /** Title */
             title: string;
             /** User Outcome */
@@ -75256,7 +75365,7 @@ export interface components {
              * Provider Classification
              * @enum {string}
              */
-            provider_classification: "non_sensitive" | "verified_sensitive";
+            provider_classification: "non_sensitive" | "restricted" | "verified_sensitive";
         };
         /** GoogleConnectionCredentialResponse */
         GoogleConnectionCredentialResponse: {
@@ -75302,14 +75411,14 @@ export interface components {
             /** Capability Key */
             capability_key?: ("calendar" | "contacts" | "tag_manager" | "tasks" | "youtube_analytics") | null;
             /** Capability Keys */
-            capability_keys?: ("analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[] | null;
+            capability_keys?: ("analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[] | null;
         };
         /** GoogleExchangeResponse */
         GoogleExchangeResponse: {
             /** Connection Id */
             connection_id: string;
             /** Connected Capability Keys */
-            connected_capability_keys?: ("analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[];
+            connected_capability_keys?: ("analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[];
             /** Refused Capability Keys */
             refused_capability_keys?: components["schemas"]["GoogleProductRefusal"][];
         };
@@ -75396,7 +75505,7 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
+            key: "analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
             /** Error */
             error: string;
             /** Message */
@@ -145972,6 +146081,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GoogleCapabilityMetadata"][];
+                };
+            };
+        };
+    };
+    gmail_search_google_integrations_gmail_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GmailSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GmailSearchResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    gmail_message_google_integrations_gmail_message_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GmailMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GmailMessageDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -21,12 +21,12 @@ import { History, Loader2, Save } from "lucide-react";
 
 import {
   createUniver,
-  defaultTheme,
   LocaleType,
   merge,
   type FUniver,
 } from "@univerjs/presets";
 import type { IDocumentData, Univer } from "@univerjs/core";
+import { defaultTheme } from "@univerjs/themes";
 import { UniverDocsCorePreset } from "@univerjs/preset-docs-core";
 import docsCoreEnUS from "@univerjs/preset-docs-core/locales/en-US";
 import {

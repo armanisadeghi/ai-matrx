@@ -18071,6 +18071,88 @@
         }
       }
     },
+    "/google-integrations/gmail/search": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Gmail Search",
+        "operationId": "gmail_search_google_integrations_gmail_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GmailSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GmailSearchResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/gmail/message": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Gmail Message",
+        "operationId": "gmail_message_google_integrations_gmail_message_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GmailMessageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GmailMessageDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/google-integrations/calendar/agenda": {
       "post": {
         "tags": [
@@ -171903,6 +171985,213 @@
         "title": "GmailCcAttribution",
         "description": "Whose address each copied-to recipient is, as the client's ONE integrity\nprimitive decided (`features/crm/gmail/recipient-integrity.ts`).\n\nStored verbatim on the row so a Cc on a Person's timeline says whose address\nit is (VERIFY-B1-B2-R2 N9). The server does not re-decide it and does not\ninvent it — but it DOES gate every one of these addresses, which is the part\nthat was missing."
       },
+      "GmailMessageDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thread Id"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "from_address": {
+            "type": "string",
+            "title": "From Address"
+          },
+          "to_address": {
+            "type": "string",
+            "title": "To Address"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "snippet": {
+            "type": "string",
+            "title": "Snippet"
+          },
+          "text_body": {
+            "type": "string",
+            "title": "Text Body"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          },
+          "access_mode": {
+            "type": "string",
+            "const": "on_demand_read_only",
+            "title": "Access Mode",
+            "default": "on_demand_read_only"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "thread_id",
+          "subject",
+          "from_address",
+          "to_address",
+          "date",
+          "snippet",
+          "text_body",
+          "truncated"
+        ],
+        "title": "GmailMessageDetail"
+      },
+      "GmailMessageRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "message_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Message Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "message_id"
+        ],
+        "title": "GmailMessageRequest"
+      },
+      "GmailMessageSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thread Id"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "from_address": {
+            "type": "string",
+            "title": "From Address"
+          },
+          "to_address": {
+            "type": "string",
+            "title": "To Address"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "snippet": {
+            "type": "string",
+            "title": "Snippet"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "thread_id",
+          "subject",
+          "from_address",
+          "to_address",
+          "date",
+          "snippet"
+        ],
+        "title": "GmailMessageSummary"
+      },
+      "GmailSearchRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "query": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Query"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "query"
+        ],
+        "title": "GmailSearchRequest"
+      },
+      "GmailSearchResult": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/GmailMessageSummary"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More"
+          },
+          "access_mode": {
+            "type": "string",
+            "const": "on_demand_read_only",
+            "title": "Access Mode",
+            "default": "on_demand_read_only"
+          }
+        },
+        "type": "object",
+        "required": [
+          "messages",
+          "has_more"
+        ],
+        "title": "GmailSearchResult"
+      },
       "Go1ServiceStatus": {
         "properties": {
           "__kind": {
@@ -172338,6 +172627,7 @@
               "contacts",
               "docs",
               "drive_files",
+              "gmail_read",
               "gmail_send",
               "search_console",
               "sheets",
@@ -172444,6 +172734,7 @@
             "type": "string",
             "enum": [
               "non_sensitive",
+              "restricted",
               "verified_sensitive"
             ],
             "title": "Provider Classification"
@@ -172606,6 +172897,7 @@
                     "contacts",
                     "docs",
                     "drive_files",
+                    "gmail_read",
                     "gmail_send",
                     "search_console",
                     "sheets",
@@ -172649,6 +172941,7 @@
                 "contacts",
                 "docs",
                 "drive_files",
+                "gmail_read",
                 "gmail_send",
                 "search_console",
                 "sheets",
@@ -172962,6 +173255,7 @@
               "contacts",
               "docs",
               "drive_files",
+              "gmail_read",
               "gmail_send",
               "search_console",
               "sheets",

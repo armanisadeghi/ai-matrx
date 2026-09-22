@@ -24,12 +24,12 @@ import { Download, History, Loader2, Save } from "lucide-react";
 
 import {
   createUniver,
-  defaultTheme,
   LocaleType,
   merge,
   type FUniver,
 } from "@univerjs/presets";
 import type { IWorkbookData, Univer } from "@univerjs/core";
+import { defaultTheme } from "@univerjs/themes";
 import { UniverSheetsCorePreset } from "@univerjs/preset-sheets-core";
 import sheetsCoreEnUS from "@univerjs/preset-sheets-core/locales/en-US";
 import "@univerjs/preset-sheets-core/lib/index.css";
