@@ -404,7 +404,7 @@ export async function startClassCheckout(
   classId: string,
   returnTo?: string,
 ): Promise<ClassCheckoutResult> {
-  const res = await fetch("/api/stripe/class-checkout", {
+  const res = await fetchWithOrganization("/api/stripe/class-checkout", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ classId, returnTo }),
@@ -433,6 +433,13 @@ export async function startClassCheckout(
 
 import type { ClassCodePreview } from "./types";
 import { emailErrorMessage } from "@/lib/email/error-message";
+// REC-62 (W1-ORG-APPLY, 2026-09-22): a Stripe customer, subscription and payout
+// account belong to an ORGANIZATION, and nothing on the server picks one. These
+// calls therefore go through `fetchWithOrganization`, which carries the person's
+// selected organization in `X-Organization-Id` and — when the server answers the
+// standard organization_required envelope — opens the picker, waits for their
+// answer and replays the call once. Cancelling leaves nothing written.
+import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
 
 /** The class join-code page URL a teacher pastes anywhere. */
 export function classJoinUrl(code: string): string {

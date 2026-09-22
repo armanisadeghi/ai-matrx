@@ -8,10 +8,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { getStripe, isStripeConfigured } from "@/lib/stripe/server";
-import { getConnectAccountByUser } from "@/features/entitlements/stripe/connect";
+import { getConnectAccount } from "@/features/entitlements/stripe/connect";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import {
+  billingOwnerRef,
+  readRequestOrganizationId,
+} from "@/features/entitlements/stripe/billingOwner";
+import {
+  billingOrganizationRequiredResponse,
+  isBillingOrganizationRequiredError,
+} from "@/features/entitlements/stripe/billingOwnerRoute";
 
-export async function POST(_request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     if (!isStripeConfigured()) {
       return NextResponse.json(
@@ -28,7 +36,21 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const account = await getConnectAccountByUser(user.id);
+    // REC-62: the payout account belongs to the ORGANIZATION. Nothing picks one.
+    let owner;
+    try {
+      owner = await billingOwnerRef({
+        userId: user.id,
+        organizationId: readRequestOrganizationId(request),
+      });
+    } catch (err) {
+      if (isBillingOrganizationRequiredError(err)) {
+        return billingOrganizationRequiredResponse(supabase, err);
+      }
+      throw err;
+    }
+
+    const account = await getConnectAccount(owner);
     if (!account) {
       return NextResponse.json(
         { error: "No connected account. Finish onboarding first." },

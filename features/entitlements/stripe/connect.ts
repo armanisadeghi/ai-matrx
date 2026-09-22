@@ -9,9 +9,22 @@
 import type Stripe from "stripe";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { getStripe } from "@/lib/stripe/server";
+import {
+  asRowBag,
+  billingOwnerRef,
+  billingOwnerRefFromRow,
+  ownerEq,
+  ownerPayload,
+  type BillingOwnerRef,
+} from "./billingOwner";
 
 export interface ConnectAccountRow {
-  userId: string;
+  /**
+   * REC-62: the owner of the payout account — the ORGANIZATION after the column
+   * move, the person before it. Opaque, so a caller passes it straight back into
+   * `upsertConnectAccount` without learning which era it is in.
+   */
+  owner: BillingOwnerRef;
   stripeAccountId: string;
   chargesEnabled: boolean;
   payoutsEnabled: boolean;
@@ -65,81 +78,84 @@ function readRequirements(account: Stripe.Account): ConnectRequirements {
   };
 }
 
-/** The caller's connect_account row (admin read), or null if never connected. */
-export async function getConnectAccountByUser(
-  userId: string,
+/** The owner's connect_account row (admin read), or null if never connected. */
+export async function getConnectAccount(
+  owner: BillingOwnerRef,
 ): Promise<ConnectAccountRow | null> {
   const admin = createAdminClient();
-  const { data } = await admin
-    .schema("billing")
-    .from("connect_account")
-    .select(
-      "user_id, stripe_account_id, charges_enabled, payouts_enabled, details_submitted, country, default_currency, onboarded_at",
-    )
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (!data) return null;
+  const { data } = await ownerEq(
+    admin.schema("billing").from("connect_account").select("*"),
+    owner,
+  ).maybeSingle();
+  const row = asRowBag(data);
+  if (!row) return null;
   return {
-    userId: data.user_id,
-    stripeAccountId: data.stripe_account_id,
-    chargesEnabled: data.charges_enabled,
-    payoutsEnabled: data.payouts_enabled,
-    detailsSubmitted: data.details_submitted,
-    country: data.country,
-    defaultCurrency: data.default_currency,
-    onboardedAt: data.onboarded_at,
+    owner,
+    stripeAccountId: row["stripe_account_id"] as string,
+    chargesEnabled: Boolean(row["charges_enabled"]),
+    payoutsEnabled: Boolean(row["payouts_enabled"]),
+    detailsSubmitted: Boolean(row["details_submitted"]),
+    country: (row["country"] as string | null) ?? null,
+    defaultCurrency: (row["default_currency"] as string | null) ?? null,
+    onboardedAt: (row["onboarded_at"] as string | null) ?? null,
   };
 }
 
-/** The app user that owns a Stripe connected account id (reverse lookup). */
-export async function userIdForConnectAccount(
+/** The OWNER of a Stripe connected account id (reverse lookup, webhook path). */
+export async function billingOwnerForConnectAccount(
   stripeAccountId: string,
-): Promise<string | null> {
+): Promise<BillingOwnerRef | null> {
   const admin = createAdminClient();
   const { data } = await admin
     .schema("billing")
     .from("connect_account")
-    .select("user_id")
+    .select("*")
     .eq("stripe_account_id", stripeAccountId)
     .maybeSingle();
-  return data?.user_id ?? null;
+  return billingOwnerRefFromRow(asRowBag(data));
 }
 
 /**
- * Ensure a Stripe Express connected account exists for a creator and its mapping
- * row is stored. Returns the stripe_account_id. Reuses an existing account (never
- * mints a duplicate). Requires Connect to be enabled on the platform account.
+ * Ensure a Stripe Express connected account exists for the ORGANIZATION the creator
+ * is acting in and its mapping row is stored. Returns the stripe_account_id. Reuses
+ * an existing account (never mints a duplicate). Requires Connect to be enabled on
+ * the platform account.
+ *
+ * REC-62: the payout account belongs to the organization. `billingOwnerRef` refuses
+ * rather than substituting one once the column has moved.
  */
-export async function ensureConnectAccount(
-  userId: string,
-  email: string | null,
-): Promise<string> {
-  const existing = await getConnectAccountByUser(userId);
+export async function ensureConnectAccount(input: {
+  userId: string;
+  organizationId?: string | null;
+  email: string | null;
+}): Promise<string> {
+  const owner = await billingOwnerRef(input);
+  const existing = await getConnectAccount(owner);
   if (existing) return existing.stripeAccountId;
 
   const stripe = getStripe();
   const account = await stripe.accounts.create({
     type: "express",
-    email: email ?? undefined,
+    email: input.email ?? undefined,
     capabilities: { transfers: { requested: true } },
     business_type: "individual",
-    metadata: { user_id: userId },
+    metadata: { [owner.column]: owner.value, acting_user_id: input.userId },
   });
 
-  await upsertConnectAccount(userId, account);
+  await upsertConnectAccount(owner, account);
   return account.id;
 }
 
 /**
  * Upsert the local mirror of a Stripe account's onboarding state. Sets
- * onboarded_at the first time charges are enabled. Idempotent on user_id.
+ * onboarded_at the first time charges are enabled. Idempotent on the owner column.
  */
 export async function upsertConnectAccount(
-  userId: string,
+  owner: BillingOwnerRef,
   account: Stripe.Account,
 ): Promise<void> {
   const admin = createAdminClient();
-  const prior = await getConnectAccountByUser(userId);
+  const prior = await getConnectAccount(owner);
   const nowCharges = account.charges_enabled ?? false;
   const onboardedAt =
     prior?.onboardedAt ?? (nowCharges ? new Date().toISOString() : null);
@@ -148,8 +164,7 @@ export async function upsertConnectAccount(
     .schema("billing")
     .from("connect_account")
     .upsert(
-      {
-        user_id: userId,
+      ownerPayload(owner, {
         stripe_account_id: account.id,
         charges_enabled: nowCharges,
         payouts_enabled: account.payouts_enabled ?? false,
@@ -158,8 +173,8 @@ export async function upsertConnectAccount(
         default_currency: account.default_currency ?? null,
         onboarded_at: onboardedAt,
         updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" },
+      }),
+      { onConflict: owner.column },
     );
 }
 
@@ -174,13 +189,13 @@ export async function upsertConnectAccount(
  * waiting for, which is the difference between a dead end and a next step.
  */
 export async function refreshConnectAccount(
-  userId: string,
+  owner: BillingOwnerRef,
 ): Promise<ConnectAccountStatus | null> {
-  const row = await getConnectAccountByUser(userId);
+  const row = await getConnectAccount(owner);
   if (!row) return null;
   const account = await getStripe().accounts.retrieve(row.stripeAccountId);
-  await upsertConnectAccount(userId, account);
-  const fresh = await getConnectAccountByUser(userId);
+  await upsertConnectAccount(owner, account);
+  const fresh = await getConnectAccount(owner);
   if (!fresh) return null;
   return { row: fresh, requirements: readRequirements(account) };
 }

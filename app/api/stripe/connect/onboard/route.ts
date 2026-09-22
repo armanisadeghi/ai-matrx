@@ -16,6 +16,11 @@ import { isStripeConfigured } from "@/lib/stripe/server";
 import { getStripe } from "@/lib/stripe/server";
 import { ensureConnectAccount } from "@/features/entitlements/stripe/connect";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { readRequestOrganizationId } from "@/features/entitlements/stripe/billingOwner";
+import {
+  billingOrganizationRequiredResponse,
+  isBillingOrganizationRequiredError,
+} from "@/features/entitlements/stripe/billingOwnerRoute";
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,8 +45,17 @@ export async function POST(request: NextRequest) {
 
     let accountId: string;
     try {
-      accountId = await ensureConnectAccount(user.id, user.email ?? null);
+      // REC-62: the payout account belongs to the ORGANIZATION the creator is
+      // acting in. Nothing here picks one.
+      accountId = await ensureConnectAccount({
+        userId: user.id,
+        organizationId: readRequestOrganizationId(request),
+        email: user.email ?? null,
+      });
     } catch (err) {
+      if (isBillingOrganizationRequiredError(err)) {
+        return billingOrganizationRequiredResponse(supabase, err);
+      }
       // Connect not enabled on the platform (or account-creation rejected).
       const message = err instanceof Error ? err.message : "Could not create account";
       const connectDisabled = message.toLowerCase().includes("connect");

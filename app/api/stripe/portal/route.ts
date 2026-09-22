@@ -11,6 +11,16 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { getStripe, isStripeConfigured } from "@/lib/stripe/server";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import {
+  billingOwnerRef,
+  ownerEq,
+  readRequestOrganizationId,
+  asRowBag,
+} from "@/features/entitlements/stripe/billingOwner";
+import {
+  billingOrganizationRequiredResponse,
+  isBillingOrganizationRequiredError,
+} from "@/features/entitlements/stripe/billingOwnerRoute";
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,23 +39,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
+    // REC-62: the Stripe customer belongs to the ORGANIZATION the person is acting
+    // in. `billingOwnerRef` names whichever column is live and refuses rather than
+    // substituting an organization once the move has landed.
+    let owner;
+    try {
+      owner = await billingOwnerRef({
+        userId: user.id,
+        organizationId: readRequestOrganizationId(request),
+      });
+    } catch (err) {
+      if (isBillingOrganizationRequiredError(err)) {
+        return billingOrganizationRequiredResponse(supabase, err);
+      }
+      throw err;
+    }
+
     const admin = createAdminClient();
-    const { data: customer } = await admin
-      .schema("billing")
-      .from("customer")
-      .select("stripe_customer_id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!customer?.stripe_customer_id) {
+    const { data } = await ownerEq(
+      admin.schema("billing").from("customer").select("*"),
+      owner,
+    ).maybeSingle();
+    const stripeCustomerId = asRowBag(data)?.["stripe_customer_id"];
+    if (typeof stripeCustomerId !== "string" || !stripeCustomerId) {
       return NextResponse.json(
-        { error: "No billing account for this user" },
+        { error: "No billing account for this organization" },
         { status: 404 },
       );
     }
 
     const stripe = getStripe();
     const session = await stripe.billingPortal.sessions.create({
-      customer: customer.stripe_customer_id,
+      customer: stripeCustomerId,
       return_url: `${request.nextUrl.origin}/pricing`,
     });
 

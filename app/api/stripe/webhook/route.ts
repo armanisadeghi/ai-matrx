@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { verifyStripeWebhook } from "@/lib/stripe/server";
+import { billingOwnerRefFromRow } from "@/features/entitlements/stripe/billingOwner";
 import {
   hasProcessedStripeEvent,
   recordStripeEvent,
@@ -22,7 +23,7 @@ import {
   fulfillClassPurchase,
   revokeClassPurchaseByPaymentIntent,
   upsertConnectAccount,
-  userIdForConnectAccount,
+  billingOwnerForConnectAccount,
 } from "@/features/entitlements/stripe/connect";
 
 // Stripe requires the raw request body for signature verification — never parse
@@ -112,10 +113,14 @@ export async function POST(request: NextRequest) {
       case "account.updated": {
         // Keep the creator's Connect onboarding state fresh (charges_enabled, …).
         const account = event.data.object as Stripe.Account;
-        const ownerId =
-          (account.metadata?.user_id as string | undefined) ??
-          (await userIdForConnectAccount(account.id));
-        if (ownerId) await upsertConnectAccount(ownerId, account);
+        // REC-62: the owner is read back off our own mirror row, so this path
+        // never has to know whether the column has moved yet. The Stripe metadata
+        // fallback carries the same opaque pair `ensureConnectAccount` stamped.
+        const owner =
+          billingOwnerRefFromRow(
+            account.metadata as Record<string, unknown> | null,
+          ) ?? (await billingOwnerForConnectAccount(account.id));
+        if (owner) await upsertConnectAccount(owner, account);
         break;
       }
       default:

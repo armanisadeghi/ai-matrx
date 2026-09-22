@@ -12,6 +12,11 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 import { getStripe, isStripeConfigured } from "@/lib/stripe/server";
 import { ensureStripeCustomer } from "@/features/entitlements/stripe/sync";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { readRequestOrganizationId } from "@/features/entitlements/stripe/billingOwner";
+import {
+  billingOrganizationRequiredResponse,
+  isBillingOrganizationRequiredError,
+} from "@/features/entitlements/stripe/billingOwnerRoute";
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,7 +60,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const customerId = await ensureStripeCustomer(user.id, user.email ?? null);
+    // REC-62: the subscription and its Stripe customer belong to the ORGANIZATION.
+    let customerId: string;
+    try {
+      customerId = await ensureStripeCustomer({
+        userId: user.id,
+        organizationId: readRequestOrganizationId(request),
+        email: user.email ?? null,
+      });
+    } catch (err) {
+      if (isBillingOrganizationRequiredError(err)) {
+        return billingOrganizationRequiredResponse(supabase, err);
+      }
+      throw err;
+    }
     const origin = request.nextUrl.origin;
 
     const stripe = getStripe();
@@ -70,7 +88,7 @@ export async function POST(request: NextRequest) {
       success_url:
         body.successUrl ?? `${origin}/pricing?checkout=success`,
       cancel_url: body.cancelUrl ?? `${origin}/pricing?checkout=cancelled`,
-      metadata: { user_id: user.id },
+      metadata: { acting_user_id: user.id },
     });
 
     return NextResponse.json({ url: session.url });

@@ -12,6 +12,14 @@ import { createClient } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
 import type { CreatorProfileMine, FeaturedItem, CreatorLink } from "./types";
 
+// REC-62 (W1-ORG-APPLY, 2026-09-22): a Stripe customer, subscription and payout
+// account belong to an ORGANIZATION, and nothing on the server picks one. These
+// calls therefore go through `fetchWithOrganization`, which carries the person's
+// selected organization in `X-Organization-Id` and — when the server answers the
+// standard organization_required envelope — opens the picker, waits for their
+// answer and replays the call once. Cancelling leaves nothing written.
+import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
+
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 /**
  * The handle RPCs are the ONE place a DB message is written FOR the user:
@@ -189,7 +197,7 @@ function coerceRequirements(value: unknown): ConnectRequirements | null {
  * different answers and only one of them is the creator's to act on.
  */
 export async function getConnectStatus(): Promise<ConnectStatus> {
-  const res = await fetch("/api/stripe/connect/status", { method: "GET" });
+  const res = await fetchWithOrganization("/api/stripe/connect/status", { method: "GET" });
   const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {
     throw new Error(
@@ -215,7 +223,7 @@ export async function getConnectStatus(): Promise<ConnectStatus> {
  * their behalf, so it is the checklist's `auto` step. Idempotent server-side.
  */
 export async function ensureConnectAccount(): Promise<void> {
-  const res = await fetch("/api/stripe/connect/account", { method: "POST" });
+  const res = await fetchWithOrganization("/api/stripe/connect/account", { method: "POST" });
   if (res.ok) return;
   const json = (await res.json().catch(() => ({}))) as { error?: string };
   throw new Error(json.error ?? "Could not set up your payouts account.");
@@ -223,7 +231,7 @@ export async function ensureConnectAccount(): Promise<void> {
 
 /** Start (or resume) Connect Express onboarding — returns a hosted onboarding URL. */
 export async function startConnectOnboarding(): Promise<{ url?: string; error?: string; connectDisabled?: boolean }> {
-  const res = await fetch("/api/stripe/connect/onboard", { method: "POST" });
+  const res = await fetchWithOrganization("/api/stripe/connect/onboard", { method: "POST" });
   const json = (await res.json().catch(() => ({}))) as { url?: string; error?: string; connectDisabled?: boolean };
   if (!res.ok) return { error: json.error ?? "Could not start onboarding.", connectDisabled: json.connectDisabled };
   return { url: json.url };
@@ -231,7 +239,7 @@ export async function startConnectOnboarding(): Promise<{ url?: string; error?: 
 
 /** Open the creator's Stripe Express dashboard (Stripe hosts the payout UI). */
 export async function openConnectDashboard(): Promise<{ url?: string; error?: string }> {
-  const res = await fetch("/api/stripe/connect/dashboard", { method: "POST" });
+  const res = await fetchWithOrganization("/api/stripe/connect/dashboard", { method: "POST" });
   const json = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
   if (!res.ok) return { error: json.error ?? "Could not open your payout dashboard." };
   return { url: json.url };

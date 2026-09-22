@@ -17,7 +17,7 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 import { getStripe, isStripeConfigured } from "@/lib/stripe/server";
 import { ensureStripeCustomer } from "@/features/entitlements/stripe/sync";
 import {
-  getConnectAccountByUser,
+  getConnectAccount,
   recordPendingPurchase,
 } from "@/features/entitlements/stripe/connect";
 import {
@@ -27,6 +27,14 @@ import {
 } from "@/lib/stripe/connect";
 import { isJsonObject } from "@/types/json";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import {
+  billingOwnerRef,
+  readRequestOrganizationId,
+} from "@/features/entitlements/stripe/billingOwner";
+import {
+  billingOrganizationRequiredResponse,
+  isBillingOrganizationRequiredError,
+} from "@/features/entitlements/stripe/billingOwnerRoute";
 
 /** Only accept an in-app relative return path (no open redirect). */
 function safePath(p: unknown, fallback: string): string {
@@ -119,7 +127,31 @@ export async function POST(request: NextRequest) {
     }
 
     // The creator must be onboarded with charges enabled to receive the transfer.
-    const connect = await getConnectAccountByUser(ownerId);
+    //
+    // REC-62: the creator's payout account belongs to the creator's ORGANIZATION,
+    // and the class scope already names it — so this route reads the owner off the
+    // CLASS, never off a default organization and never off the buyer's own.
+    let creatorOwner;
+    try {
+      creatorOwner = await billingOwnerRef({
+        userId: ownerId,
+        organizationId: scope.organization_id,
+      });
+    } catch (err) {
+      if (isBillingOrganizationRequiredError(err)) {
+        return NextResponse.json(
+          {
+            error:
+              "This class is not attached to an organization, so there is nobody to pay. " +
+              "Ask the creator to move it into their organization.",
+            creatorNotReady: true,
+          },
+          { status: 409 },
+        );
+      }
+      throw err;
+    }
+    const connect = await getConnectAccount(creatorOwner);
     if (!connect || !connect.chargesEnabled) {
       return NextResponse.json(
         {
@@ -135,7 +167,21 @@ export async function POST(request: NextRequest) {
     const feeAmount = platformFeeAmount(priceCents);
     const creatorNet = creatorAmount(priceCents);
 
-    const customerId = await ensureStripeCustomer(user.id, user.email ?? null);
+    // The BUYER's Stripe customer belongs to the organization the buyer is acting
+    // in — a different organization from the creator's, and neither is guessed.
+    let customerId: string;
+    try {
+      customerId = await ensureStripeCustomer({
+        userId: user.id,
+        organizationId: readRequestOrganizationId(request),
+        email: user.email ?? null,
+      });
+    } catch (err) {
+      if (isBillingOrganizationRequiredError(err)) {
+        return billingOrganizationRequiredResponse(supabase, err);
+      }
+      throw err;
+    }
     const origin = request.nextUrl.origin;
     const returnTo = safePath(body.returnTo, `/education/classes/${scope.id}`);
     const sep = returnTo.includes("?") ? "&" : "?";

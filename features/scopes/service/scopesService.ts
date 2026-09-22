@@ -88,6 +88,7 @@ import type {
   UpdateScopeTypeParams,
 } from "@/features/scopes/types";
 import type { EntityTypeToken } from "@ai-matrx/associations";
+import { readTemplateIsPersonal } from "./templateAudience";
 
 // One denormalized scope row for tags: which entity, which scope, plus the
 // scope's name and its type's singular label (sidebar grouping).
@@ -873,7 +874,7 @@ export const scopesService = {
       const query = contextDb(supabase)
         .from("templates")
         .select(
-          `id, key, name, description, category, icon, is_active, is_personal, sort_order,
+          `id, key, name, description, category, icon, is_active, sort_order,
            template_scope_types (
              id, key, icon, label_singular, label_plural, sort_order,
              max_assignments_per_entity, parent_template_type_id,
@@ -886,6 +887,13 @@ export const scopesService = {
         ? await query.eq("is_active", true)
         : await query;
       if (error) return err(...mapPgErrorPair(error));
+
+      // REC-64: the audience is a WORD now (`context.templates.audience`), and this
+      // is the one place that reads the table directly rather than through
+      // `public.list_templates`, which keeps emitting the derived boolean. The
+      // reader asks for the word and falls back to the old boolean, so this works
+      // on both sides of the migration — see ./templateAudience.ts.
+      const isPersonalById = await readTemplateIsPersonal(supabase);
 
       const templates: ContextTemplate[] = (data ?? []).map((row) => {
         const scopeTypes = row.template_scope_types ?? [];
@@ -922,7 +930,7 @@ export const scopesService = {
           category: row.category ?? "",
           icon: row.icon ?? "",
           is_active: !!row.is_active,
-          is_personal: !!row.is_personal,
+          is_personal: isPersonalById?.get(row.id) ?? false,
           sort_order: row.sort_order ?? 0,
           scope_type_count: scope_types.length,
           context_item_count,

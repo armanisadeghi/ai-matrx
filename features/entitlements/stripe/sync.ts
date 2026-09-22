@@ -10,6 +10,14 @@ import type Stripe from "stripe";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { getStripe } from "@/lib/stripe/server";
 import type { Database } from "@/types/database.types";
+import {
+  asRowBag,
+  billingOwnerRef,
+  billingOwnerRefFromRow,
+  ownerEq,
+  ownerPayload,
+  type BillingOwnerRef,
+} from "./billingOwner";
 
 type SubStatus = Database["billing"]["Enums"]["subscription_status"];
 type Tier = Database["billing"]["Enums"]["tier"];
@@ -26,49 +34,58 @@ function iso(unixSeconds: number | null | undefined): string | null {
 }
 
 /**
- * Ensure a Stripe customer exists for a user and the mapping row is stored.
- * Returns the stripe_customer_id.
+ * Ensure a Stripe customer exists for the ORGANIZATION this person is acting in,
+ * and the mapping row is stored. Returns the stripe_customer_id.
+ *
+ * REC-62: the mapping belongs to the organization, not to the person — see
+ * `billingOwner.ts` for why the column is resolved at call time rather than named
+ * here, and why nothing substitutes an organization when the caller omits one.
  */
-export async function ensureStripeCustomer(
-  userId: string,
-  email: string | null,
-): Promise<string> {
+export async function ensureStripeCustomer(input: {
+  userId: string;
+  organizationId?: string | null;
+  email: string | null;
+}): Promise<string> {
+  const owner = await billingOwnerRef(input);
   const admin = createAdminClient();
-  const { data: existing } = await admin
-    .schema("billing")
-    .from("customer")
-    .select("stripe_customer_id")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (existing?.stripe_customer_id) return existing.stripe_customer_id;
+  const { data: existing } = await ownerEq(
+    admin.schema("billing").from("customer").select("*"),
+    owner,
+  ).maybeSingle();
+  const existingId = asRowBag(existing)?.["stripe_customer_id"];
+  if (typeof existingId === "string" && existingId) return existingId;
 
   const stripe = getStripe();
   const customer = await stripe.customers.create({
-    email: email ?? undefined,
-    metadata: { user_id: userId },
+    email: input.email ?? undefined,
+    // The organization is what owns this customer; the person is who acted.
+    metadata: { [owner.column]: owner.value, acting_user_id: input.userId },
   });
   await admin
     .schema("billing")
     .from("customer")
-    .upsert(
-      { user_id: userId, stripe_customer_id: customer.id },
-      { onConflict: "user_id" },
-    );
+    .upsert(ownerPayload(owner, { stripe_customer_id: customer.id }), {
+      onConflict: owner.column,
+    });
   return customer.id;
 }
 
-/** Find the app user for a Stripe customer id (via the mapping table). */
-export async function userIdForCustomer(
+/**
+ * The OWNER of a Stripe customer id, read back off the mapping table — an
+ * organization after REC-62, a person before it. Opaque on purpose: the webhook
+ * path has no header and no person, only the row.
+ */
+export async function billingOwnerForCustomer(
   customerId: string,
-): Promise<string | null> {
+): Promise<BillingOwnerRef | null> {
   const admin = createAdminClient();
   const { data } = await admin
     .schema("billing")
     .from("customer")
-    .select("user_id")
+    .select("*")
     .eq("stripe_customer_id", customerId)
     .maybeSingle();
-  return data?.user_id ?? null;
+  return billingOwnerRefFromRow(asRowBag(data));
 }
 
 /** Resolve our price row + product tier for a Stripe price id. */
@@ -124,15 +141,27 @@ export async function syncSubscription(
   const customerId =
     typeof sub.customer === "string" ? sub.customer : sub.customer.id;
 
-  // Resolve the app user; fall back to metadata, then scream (a paid customer
+  // Resolve the OWNER through the customer mapping, then scream (a paid customer
   // with no owner grants premium to nobody — a defect, per the loud-recovery rule).
-  let userId = await userIdForCustomer(customerId);
-  if (!userId) userId = (sub.metadata?.user_id as string | undefined) ?? null;
-  if (!userId) {
+  //
+  // REC-62: before the column move that owner is the person and the column on
+  // `billing.subscription` is `user_id`; after it, the owner is the organization and
+  // the column is `organization_id` (the legacy `org_id` converges into it and the
+  // per-person column is gone). Both eras are the SAME ref, because the mapping row
+  // this reads is keyed the same way the subscription is — which is exactly why the
+  // owner is resolved once, opaquely, instead of being named twice here.
+  //
+  // The metadata fallback follows the mapping: `ensureStripeCustomer` stamps the
+  // owner on the Stripe customer under whichever name is live, so a subscription
+  // whose mapping row is missing can still be attributed.
+  let owner = await billingOwnerForCustomer(customerId);
+  if (!owner) owner = billingOwnerRefFromRow(sub.metadata as Record<string, unknown> | null);
+  if (!owner) {
     console.error(
       `[stripe/sync] LOUD: subscription ${sub.id} (customer ${customerId}) has no ` +
-        `resolvable app user — premium will grant to nobody. Check billing.customer mapping.`,
+        `resolvable owner — premium will grant to nobody. Check billing.customer mapping.`,
     );
+    return;
   }
 
   // Period fields live on the subscription ITEM in Stripe SDK v22, not the
@@ -145,9 +174,8 @@ export async function syncSubscription(
     .schema("billing")
     .from("subscription")
     .upsert(
-      {
+      ownerPayload(owner, {
         stripe_subscription_id: sub.id,
-        user_id: userId,
         price_id: localPriceId,
         status: mapStatus(sub.status),
         tier: sub.status === "trialing" ? "trial" : tier,
@@ -161,7 +189,7 @@ export async function syncSubscription(
           ? new Date(eventCreatedUnix * 1000).toISOString()
           : new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      },
+      }),
       { onConflict: "stripe_subscription_id" },
     );
 }

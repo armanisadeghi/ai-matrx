@@ -17,6 +17,11 @@ import { getStripe, isStripeConfigured } from "@/lib/stripe/server";
 import { ensureStripeCustomer } from "@/features/entitlements/stripe/sync";
 import { COPPA_VERIFICATION_PURPOSE } from "@/features/education/compliance/consent/verificationSync";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { readRequestOrganizationId } from "@/features/entitlements/stripe/billingOwner";
+import {
+  billingOrganizationRequiredResponse,
+  isBillingOrganizationRequiredError,
+} from "@/features/entitlements/stripe/billingOwnerRoute";
 
 export async function POST(request: NextRequest) {
   try {
@@ -105,7 +110,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const customerId = await ensureStripeCustomer(user.id, user.email ?? null);
+    // REC-62: the billing.customer mapping this reuses belongs to the ORGANIZATION
+    // the guardian is acting in. The consent itself is still between two people —
+    // only the Stripe customer moves.
+    let customerId: string;
+    try {
+      customerId = await ensureStripeCustomer({
+        userId: user.id,
+        organizationId: readRequestOrganizationId(request),
+        email: user.email ?? null,
+      });
+    } catch (err) {
+      if (isBillingOrganizationRequiredError(err)) {
+        return billingOrganizationRequiredResponse(supabase, err);
+      }
+      throw err;
+    }
     const origin = request.nextUrl.origin;
 
     const stripe = getStripe();

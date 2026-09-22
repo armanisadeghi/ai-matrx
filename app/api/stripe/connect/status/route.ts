@@ -14,16 +14,24 @@
 // `requirements: null` means WE COULD NOT ASK STRIPE. It is not "nothing is
 // due" — the checklist renders it as its neutral unknown, never as a pass.
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { isStripeConfigured } from "@/lib/stripe/server";
 import {
-  getConnectAccountByUser,
+  getConnectAccount,
   refreshConnectAccount,
 } from "@/features/entitlements/stripe/connect";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import {
+  billingOwnerRef,
+  readRequestOrganizationId,
+} from "@/features/entitlements/stripe/billingOwner";
+import {
+  billingOrganizationRequiredResponse,
+  isBillingOrganizationRequiredError,
+} from "@/features/entitlements/stripe/billingOwnerRoute";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const {
@@ -37,13 +45,28 @@ export async function GET() {
       return NextResponse.json({ connected: false, configured: false });
     }
 
-    const existing = await getConnectAccountByUser(user.id);
+    // REC-62: the payout account belongs to the ORGANIZATION the creator is acting
+    // in. Nothing here picks one.
+    let owner;
+    try {
+      owner = await billingOwnerRef({
+        userId: user.id,
+        organizationId: readRequestOrganizationId(request),
+      });
+    } catch (err) {
+      if (isBillingOrganizationRequiredError(err)) {
+        return billingOrganizationRequiredResponse(supabase, err);
+      }
+      throw err;
+    }
+
+    const existing = await getConnectAccount(owner);
     if (!existing) {
       return NextResponse.json({ connected: false, configured: true });
     }
 
     // Refresh from Stripe (best-effort — fall back to the mirror on error).
-    const live = await refreshConnectAccount(user.id).catch((err: unknown) => {
+    const live = await refreshConnectAccount(owner).catch((err: unknown) => {
       console.error("[stripe/connect/status] could not reach Stripe", err);
       return null;
     });

@@ -16,6 +16,14 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
+
+// REC-62 (W1-ORG-APPLY, 2026-09-22): a Stripe customer, subscription and payout
+// account belong to an ORGANIZATION, and nothing on the server picks one. These
+// calls therefore go through `fetchWithOrganization`, which carries the person's
+// selected organization in `X-Organization-Id` and — when the server answers the
+// standard organization_required envelope — opens the picker, waits for their
+// answer and replays the call once. Cancelling leaves nothing written.
+import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
 import {
   ArrowRight,
   Check,
@@ -64,7 +72,7 @@ export function EducationPricing({
     if (!pricing.premium) return;
     setCheckingOut(true);
     try {
-      const res = await fetch("/api/stripe/checkout", {
+      const res = await fetchWithOrganization("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ priceId: pricing.premium.priceId }),

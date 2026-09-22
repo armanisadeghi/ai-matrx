@@ -12,13 +12,18 @@
 // is idempotent (it returns the existing account id), so this is safe to call
 // as often as the checklist re-checks.
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { isStripeConfigured } from "@/lib/stripe/server";
 import { ensureConnectAccount } from "@/features/entitlements/stripe/connect";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { readRequestOrganizationId } from "@/features/entitlements/stripe/billingOwner";
+import {
+  billingOrganizationRequiredResponse,
+  isBillingOrganizationRequiredError,
+} from "@/features/entitlements/stripe/billingOwnerRoute";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     if (!isStripeConfigured()) {
       return NextResponse.json(
@@ -36,8 +41,17 @@ export async function POST() {
     }
 
     try {
-      await ensureConnectAccount(user.id, user.email ?? null);
+      // REC-62: the payout account belongs to the ORGANIZATION the creator is
+      // acting in. Nothing here picks one.
+      await ensureConnectAccount({
+        userId: user.id,
+        organizationId: readRequestOrganizationId(request),
+        email: user.email ?? null,
+      });
     } catch (err) {
+      if (isBillingOrganizationRequiredError(err)) {
+        return billingOrganizationRequiredResponse(supabase, err);
+      }
       // Connect not enabled on the platform account (or creation rejected).
       // Same honest split /onboard makes — a 409 the surface can word properly.
       const message = err instanceof Error ? err.message : "Could not create account";
