@@ -195,19 +195,14 @@ export interface SurfaceConfigBundle {
 // column then reads as "does not exist" (15 errors here, 2026-09-18). So the
 // two reads below branch the QUERY and each passes one literal.
 //
-// DD-230: `user_id` and `organization_id` are identity columns `anon` may not
-// read, so a GUEST asking for them got 42501 for the whole query and this
-// bundle threw — the guest surface config never arrived (measured: ten such
-// 401s on production in 24 h). A guest can only ever see global rows, where
-// both are null, so the guest read omits them and fills them in as null.
+// DD-230 kept a second, GUEST literal here because `user_id` and `organization_id` are identity
+// columns `anon` may not read. Lane DEAD-KEYS (2026-09-22) removed both guest literals instead:
+// a guest tier cannot exist in these tables at all (see GUEST_TIER_IS_EMPTY below), so the only
+// select list left is the signed-in one and there is nothing for the parser to union.
 const PREF_COLUMNS_SIGNED_IN =
   "id, surface_name, role_name, agent_id, kind, position, settings, user_id, organization_id, scope_id, updated_at";
-const PREF_COLUMNS_GUEST =
-  "id, surface_name, role_name, agent_id, kind, position, settings, scope_id, updated_at";
 const CONFIG_COLUMNS_SIGNED_IN =
   "id, surface_name, namespace, config, user_id, organization_id, scope_id, updated_at";
-const CONFIG_COLUMNS_GUEST =
-  "id, surface_name, namespace, config, scope_id, updated_at";
 
 type UiPrefRow = Database["ui"]["Tables"]["ui_surface_agent_pref"]["Row"];
 type UiConfigRow = Database["ui"]["Tables"]["ui_surface_config"]["Row"];
@@ -280,6 +275,38 @@ const mineOrShared =
 
 type SurfaceConfigClient = ReturnType<typeof createClient>;
 
+/**
+ * 🚨 A GUEST HAS NO TIER HERE, AND ASKING THE DATABASE FOR ONE IS THE LIE (DD-249, lane
+ * DEAD-KEYS, 2026-09-22).
+ *
+ * DD-230 fixed the guest read's COLUMN list — it had been asking for `user_id` and
+ * `organization_id`, taking 42501 for the whole query, and the comment beside it promised that
+ * "a genuine guest still receives the public surface config". That promise was never keepable:
+ *
+ *   - MEASURED on the main database, 2026-09-22: `ui.ui_surface_config` (34 rows) and
+ *     `ui.ui_surface_agent_pref` (4 rows) hold ZERO rows with `user_id IS NULL AND
+ *     organization_id IS NULL`, and every row is `visibility = 'internal'`. `scopeInsertColumns`
+ *     above is why: EVERY write path stamps an owning `organization_id`, so a global, world-
+ *     readable row cannot be created by any code we ship.
+ *   - `anon` held a SELECT column grant on both tables and NO SELECT-capable policy reached it —
+ *     a key with no door. The read answered `200 []`, forever, by construction.
+ *   - It was not theoretical traffic: 24 h of edge_logs showed real signed-out browsers on
+ *     www.appmatrx.com and demos.aimatrx.com issuing exactly this guest read and receiving
+ *     nothing.
+ *
+ * So the honest answer for a visitor with no session is the EMPTY TIER, returned here, and the
+ * defaults a guest actually sees come from the surface MANIFEST — code, shipped in the bundle —
+ * which is where they always came from. The dead keys were withdrawn by the generator in
+ * `migrations/campaign/deadkeys_the_two_guest_reads_never_had_a_row.sql`; after that this read
+ * would have thrown 42501 and taken the whole bundle with it, which is the second reason it is
+ * gone rather than merely tolerated.
+ *
+ * If a platform-owned, guest-visible surface tier is ever wanted, it is a DECLARED anonymous lane
+ * (platform.entity_types.client_anonymous_public_read) on rows marked `visibility = 'public'`,
+ * plus a writer that can create one — not a read that hopes.
+ */
+const GUEST_TIER_IS_EMPTY: never[] = [];
+
 async function fetchPrefRows(
   client: SurfaceConfigClient,
   surfaceName: string,
@@ -296,14 +323,7 @@ async function fetchPrefRows(
     if (error) throw error;
     return (data ?? []).map(toPrefRow).filter(keep);
   }
-  const { data, error } = await client
-    .schema("ui")
-    .from("ui_surface_agent_pref")
-    .select(PREF_COLUMNS_GUEST)
-    .is("deleted_at", null)
-    .eq("surface_name", surfaceName);
-  if (error) throw error;
-  return (data ?? []).map(toPrefRow).filter(keep);
+  return GUEST_TIER_IS_EMPTY;
 }
 
 async function fetchConfigRows(
@@ -322,14 +342,7 @@ async function fetchConfigRows(
     if (error) throw error;
     return (data ?? []).map(toConfigRow).filter(keep);
   }
-  const { data, error } = await client
-    .schema("ui")
-    .from("ui_surface_config")
-    .select(CONFIG_COLUMNS_GUEST)
-    .is("deleted_at", null)
-    .eq("surface_name", surfaceName);
-  if (error) throw error;
-  return (data ?? []).map(toConfigRow).filter(keep);
+  return GUEST_TIER_IS_EMPTY;
 }
 
 export async function fetchSurfaceConfigBundle(

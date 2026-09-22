@@ -710,17 +710,6 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       + "relation and for the eight below.",
   },
   {
-    relation: "extend.wbx_capture",
-    columns: [
-      "id", "url", "captured_at", "title",
-    ],
-    why:
-      "The Chrome extension, which holds the publishable key and has no account until its user "
-      + "signs in. MEASURED 2026-09-14 on production: `select=id,url,captured_at,title` from a real "
-      + "browser with no JWT and no referer, looking a capture up by URL. DD-230 cut eleven columns — "
-      + "including `soup` and `markdown`, the captured page's own body.",
-  },
-  {
     relation: "extend.wbx_recipe",
     columns: [
       "recipe_key", "label", "description", "hosts", "routes", "kind",
@@ -858,41 +847,22 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
 "matrx-extend asks for name+description before login to build its tool descriptions (src/lib/tools/descriptions.ts).",
   },
   {
-    relation: "ui.ui_surface_agent_pref",
-    columns: [
-      "id", "surface_name", "role_name", "agent_id", "kind", "position",
-      "settings", "scope_id", "updated_at", "deleted_at",
-    ],
-    why:
-      "The same guest bundle's second query, plus its deleted_at / surface_name filters. 🚨 "
-      + "MEASURED 2026-09-14: that query was BROKEN for guests — it asked for user_id and "
-      + "organization_id, identity columns `anon` may not select, so the whole bundle answered 42501 "
-      + "and the guest surface config its own comment promises never arrived (ten such 401s on "
-      + "production in 24 h). The guest branch now omits both; a guest can only ever see rows where "
-      + "they are null. DD-230 also cut created_at and visibility.",
-  },
-  {
     relation: "ui.ui_surface_agent_role",
     columns: [
       "surface_name", "name", "label", "description", "kind", "default_agent_id",
       "max_agents", "allow_custom", "auto_run", "sort_order", "mandate_key",
     ],
     why:
-      "features/surfaces/services/surface-config.service.ts#fetchSurfaceConfigBundle, which awaits "
-      + "getUser() and then reads DELIBERATELY as a guest — its own comment: \"a genuine guest still "
-      + "receives the public surface config\". Its .select() names ten; `surface_name` is the eleventh "
-      + "because PostgREST cannot filter on a column the role may not select. DD-230 cut id, "
-      + "visibility, created_at, updated_at and synced_from.",
-  },
-  {
-    relation: "ui.ui_surface_config",
-    columns: [
-      "id", "surface_name", "namespace", "config", "scope_id", "updated_at",
-      "deleted_at",
-    ],
-    why:
-      "The same guest bundle's third query — broken for guests in exactly the same way (another ten "
-      + "401s in 24 h) and fixed the same way. DD-230 also cut created_at and visibility.",
+      "features/surfaces/services/surface-config.service.ts#fetchSurfaceConfigBundle, whose ROLE "
+      + "read is unbranched — a signed-out visitor gets it on the same select list as everyone "
+      + "else — and it is the one part of that bundle a guest can actually be served: 278 rows are "
+      + "`visibility = 'public'` behind a live `pub_read` lane, written by manifest-sync from code. "
+      + "Its .select() names ten; `surface_name` is the eleventh because PostgREST cannot filter on "
+      + "a column the role may not select. DD-230 cut id, visibility, created_at, updated_at and "
+      + "synced_from. (The sentence here used to quote that bundle's \"a genuine guest still "
+      + "receives the public surface config\" comment; lane DEAD-KEYS deleted that comment on "
+      + "2026-09-22 — the PREF and CONFIG halves of the same bundle could never serve a guest and "
+      + "no longer ask. This half always could.)",
   },
   {
     relation: "workbench.heatmap_saves",
@@ -901,11 +871,17 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "updated_at", "deleted_at", "visibility",
     ],
     why:
-      "/free/zip-code-heatmap/[id] — an app/(public) route that reads this table directly with the "
-      + "SSR client, which carries no cookie for a signed-out visitor. DD-230 (2026-09-14) replaced "
-      + "DD-186's unevidenced census sentence. Measured caveat: the grant answers 200 but no row "
-      + "currently sits on the public side of the gate, so the READER is named from code, not from a "
-      + "rendered page.",
+      "/free/zip-code-heatmap/[id] — an app/(public) route that reads this table with the browser "
+      + "client (and, for the page title and OG description, the SSR client, which carries no cookie "
+      + "for a signed-out visitor). DD-230's caveat — \"the READER is named from code, not from a "
+      + "rendered page\" — was the thread lane DEAD-KEYS pulled on 2026-09-22: the grant was live and "
+      + "NO policy reached `anon`, so every link SaveHeatmapModal calls public answered \"heatmap "
+      + "unavailable\" to a signed-out visitor. The R12 anonymous lane is now declared "
+      + "(migrations/campaign/deadkeys_the_public_heatmap_link_gets_its_rule.sql) and the reader is "
+      + "named from a rendered page: a signed-out headless browser on www.aimatrx.com renders the "
+      + "shared heatmap, one 200 to db.matrxserver.com, zero console errors "
+      + "(common-docs/operations/for-arman/2026-09-22/deadkeys-heatmap-public-link-signed-out.png). "
+      + "These nine columns are unchanged by that declaration.",
   },
   {
     relation: "workbench.notes",

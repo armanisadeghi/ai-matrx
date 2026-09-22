@@ -1,3 +1,10 @@
+// `withClaims` is used at MODULE LOAD, in the `client` literal below, so its import must sit
+// above that literal. ts-jest transpiles an `import` into a `require` WHERE THE STATEMENT IS, not
+// at the top, so an import written further down left `supabase_auth_1` uninitialised and this
+// whole suite failed to run ("Cannot access 'supabase_auth_1' before initialization") — zero
+// tests, silently, rather than a red assertion. Found and fixed by lane DEAD-KEYS, 2026-09-22.
+import { withClaims } from "@/test-utils/supabase-auth";
+
 const fetchMandatePins = jest.fn(async () => ({
   "podcast.producer": {
     mandateKey: "podcast.producer",
@@ -11,6 +18,8 @@ const fetchMandatePins = jest.fn(async () => ({
 jest.mock("@/features/mandates/service", () => ({ fetchMandatePins }));
 
 let userId: string | null = null;
+/** Every `schema.table` this bundle actually asks PostgREST for, in order. */
+let tablesAddressed: string[] = [];
 
 function query(data: unknown[]) {
   const result = { data, error: null };
@@ -37,6 +46,7 @@ const client = {
   }),
   schema: (schema: string) => ({
     from: (table: string) => {
+      tablesAddressed.push(`${schema}.${table}`);
       if (schema === "ui" && table === "ui_surface_agent_role") {
         return query([
           {
@@ -61,10 +71,10 @@ const client = {
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => client }));
 
 import { fetchSurfaceConfigBundle } from "../surface-config.service";
-import { withClaims } from "@/test-utils/supabase-auth";
 
 beforeEach(() => {
   userId = null;
+  tablesAddressed = [];
   fetchMandatePins.mockClear();
   client.auth.getUser.mockClear();
 });
@@ -85,5 +95,28 @@ describe("surface config mandate authentication boundary", () => {
 
     expect(fetchMandatePins).toHaveBeenCalledWith(["podcast.producer"]);
     expect(bundle.dbRoles[0]?.mandateAgentId).toBe("agent-1");
+  });
+
+  // 🚨 DD-249, lane DEAD-KEYS (2026-09-22). `ui.ui_surface_agent_pref` and `ui.ui_surface_config`
+  // have no guest tier and cannot get one: every write path stamps an owning organization_id, and
+  // measured on the main database both tables hold ZERO rows with user_id and organization_id
+  // null. The guest read therefore asked for something that could not exist, got 200 [] off an
+  // `anon` column grant NO policy reached, and the code beside it promised "a genuine guest still
+  // receives the public surface config". The grant is withdrawn, so the same read would now 42501
+  // and throw the whole bundle. This is the guard: a visitor with no session must not address
+  // those two tables at all. It fails if anyone re-adds a guest read.
+  it("asks the database for no per-user tier when nobody is signed in", async () => {
+    userId = null;
+
+    const bundle = await fetchSurfaceConfigBundle("matrx-user/podcast");
+
+    expect(tablesAddressed).not.toContain("ui.ui_surface_agent_pref");
+    expect(tablesAddressed).not.toContain("ui.ui_surface_config");
+    expect(bundle.prefs).toEqual([]);
+    expect(bundle.configRows).toEqual([]);
+    // The ROLE half is a real anonymous lane (278 public rows behind `pub_read`) and a guest is
+    // still served by it — this guard must not be satisfied by the bundle reading nothing at all.
+    expect(tablesAddressed).toContain("ui.ui_surface_agent_role");
+    expect(bundle.dbRoles).toHaveLength(1);
   });
 });
