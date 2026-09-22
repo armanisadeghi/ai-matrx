@@ -130,6 +130,30 @@ function consumeNonce(presented: string, hostname: string): boolean {
  * the user id and email and nothing else. The route no longer requires that
  * vigilance to be correct either way.
  */
+/**
+ * WHICH ACCOUNTS THIS DOOR MAY SIGN IN, and why it is a closed list.
+ *
+ * The route used to be hardcoded to `AI_ADMIN_USERNAME`. A non-admin walk —
+ * "does a plain member see what a plain member should see" — therefore had no
+ * door at all, and the designated non-admin test account `test@test.com` has no
+ * password anywhere on this machine or in any env file (checked 2026-09-21).
+ *
+ * 🚨 THIS IS A CLOSED LIST, NOT A PARAMETER. `?as=` selects FROM it and can
+ * never introduce an address: a dev door that signs in whoever you name is an
+ * impersonation primitive, and the fact that it is localhost-only and dev-only
+ * is not a reason to build one. Every entry must be an account that exists
+ * SOLELY to be tested with — never a real person, and never `TEST_USER_EMAIL`,
+ * which on this machine is Arman's own personal account.
+ *
+ * `test@test.com` is signed in through the service-role magic-link path this
+ * route already carries as its password fallback. No password is created, read,
+ * or entered for it — there is none to create.
+ */
+const DEV_LOGIN_ACCOUNTS: readonly string[] = [
+  (process.env.AI_ADMIN_USERNAME ?? "").trim().toLowerCase(),
+  "test@test.com",
+].filter(Boolean);
+
 export async function GET(request: NextRequest) {
   if (process.env.NODE_ENV === "production") {
     return NextResponse.json(
@@ -216,14 +240,34 @@ export async function GET(request: NextRequest) {
 
   const supabase = await createClient();
 
-  const email = process.env.AI_ADMIN_USERNAME;
-  const password = process.env.AI_ADMIN_PASSWORD;
-  if (!email || !password) {
+  const defaultEmail = process.env.AI_ADMIN_USERNAME;
+  if (!defaultEmail) {
     return NextResponse.json(
-      { error: "AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD not configured" },
+      { error: "AI_ADMIN_USERNAME not configured" },
       { status: 500 },
     );
   }
+  // `?as=` picks FROM the closed list above. Anything else is refused by name,
+  // with the list, so a lane that guessed learns the rule instead of a mystery.
+  const requested = (url.searchParams.get("as") ?? defaultEmail).trim().toLowerCase();
+  if (!DEV_LOGIN_ACCOUNTS.includes(requested)) {
+    return NextResponse.json(
+      {
+        error:
+          `dev-login will not sign in '${requested}'. This door signs in DESIGNATED TEST ` +
+          "ACCOUNTS only, from a closed list in the route — it is not an impersonation " +
+          `primitive. Allowed: ${DEV_LOGIN_ACCOUNTS.join(", ")}.`,
+      },
+      { status: 403 },
+    );
+  }
+  const email = requested;
+  // Only the admin account has a password on this machine; the other designated
+  // accounts have none and go straight to the service-role magic link.
+  const password =
+    email === (defaultEmail ?? "").trim().toLowerCase()
+      ? process.env.AI_ADMIN_PASSWORD
+      : undefined;
 
   const {
     data: { user },
@@ -254,18 +298,21 @@ export async function GET(request: NextRequest) {
   // is carried in `attempts` so the reason a lane reads is the real one.
   // Full WHY: ./authTransport.ts.
   const attempts: TransportAttempt[] = [];
-  const { error } = await retryTransport(
-    "signInWithPassword",
-    () => supabase.auth.signInWithPassword({ email, password }),
-    attempts,
-  );
-  if (!error) {
-    if (attempts.length) {
-      console.warn(
-        `[dev-login] signed in after a transport retry — ${formatAttempts(attempts)}`,
-      );
+  let error: unknown = null;
+  if (password) {
+    ({ error } = await retryTransport(
+      "signInWithPassword",
+      () => supabase.auth.signInWithPassword({ email, password }),
+      attempts,
+    ));
+    if (!error) {
+      if (attempts.length) {
+        console.warn(
+          `[dev-login] signed in after a transport retry — ${formatAttempts(attempts)}`,
+        );
+      }
+      return NextResponse.redirect(destination);
     }
-    return NextResponse.redirect(destination);
   }
 
   // The auth host never answered. Saying "your password is stale" here — and
@@ -332,7 +379,10 @@ export async function GET(request: NextRequest) {
 
   // Past this line the auth host DID answer and the answer was no — a real
   // credential drift, which is the only case the OTP fallback was built for.
-  const credentialReason = describeFailure(error);
+  const credentialReason = password
+    ? describeFailure(error as Parameters<typeof describeFailure>[0])
+    : "no password is configured for this designated test account — the magic link " +
+      "is its only door, and that is deliberate";
   const serviceKey = process.env.SUPABASE_SECRET_KEY;
   if (!serviceKey) {
     return NextResponse.json(
@@ -343,8 +393,10 @@ export async function GET(request: NextRequest) {
     );
   }
   console.warn(
-    `[dev-login] AI_ADMIN_PASSWORD is stale for ${email} (${credentialReason}); ` +
-      "falling back to a service-role OTP. Refresh the env value when convenient.",
+    password
+      ? `[dev-login] AI_ADMIN_PASSWORD is stale for ${email} (${credentialReason}); ` +
+        "falling back to a service-role OTP. Refresh the env value when convenient."
+      : `[dev-login] signing ${email} in through the service-role magic link (${credentialReason}).`,
   );
   const { createClient: createServiceClient } = await import("@supabase/supabase-js");
   const service = createServiceClient(

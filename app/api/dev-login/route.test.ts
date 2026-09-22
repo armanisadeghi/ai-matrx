@@ -324,3 +324,52 @@ describe("a transport failure is retried, and never called a bad credential", ()
     expect(body.error ?? "").not.toMatch(/stale/i);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// `?as=` IS A SELECTION FROM A CLOSED LIST, NOT A PARAMETER.
+//
+// The route grew a second designated account (`test@test.com`) because a
+// non-admin walk had no door: that account has no password anywhere on this
+// machine. The danger the moment such a switch exists is that it becomes an
+// impersonation primitive — "sign me in as anybody" behind a localhost guard.
+// These arms are what stops that being true later.
+// ─────────────────────────────────────────────────────────────────────────────
+describe("dev-login signs in designated test accounts ONLY", () => {
+  it("refuses an address that is not on the list, and says what is", async () => {
+    writeFileSync(NONCE_FILE, "0123456789abcdef0123456789abcdef\n");
+    const response = await GET(
+      get("?nonce=0123456789abcdef0123456789abcdef&as=arman@allgreenrecycling.com"),
+    );
+    const body = (await response.json()) as { error?: string };
+    expect(response.status).toBe(403);
+    expect(body.error ?? "").toMatch(/DESIGNATED TEST ACCOUNTS/);
+    expect(body.error ?? "").toMatch(/not an impersonation/i);
+    expect(signInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it("refuses a real person even when the nonce is perfectly valid", async () => {
+    writeFileSync(NONCE_FILE, "0123456789abcdef0123456789abcdef\n");
+    const response = await GET(
+      get("?nonce=0123456789abcdef0123456789abcdef&as=somebody@real-company.com"),
+    );
+    expect(response.status).toBe(403);
+    expect(signInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it("still defaults to the admin account when ?as= is absent", async () => {
+    writeFileSync(NONCE_FILE, "0123456789abcdef0123456789abcdef\n");
+    const response = await GET(get("?nonce=0123456789abcdef0123456789abcdef"));
+    expect(response.status).toBeGreaterThanOrEqual(300);
+    expect(response.status).toBeLessThan(400);
+    expect(signInWithPassword).toHaveBeenCalled();
+  });
+
+  it("NEVER tries a password for an account that has none", async () => {
+    // test@test.com has no password anywhere; attempting one would be a
+    // credential guess against the auth host, and the magic link is its door.
+    writeFileSync(NONCE_FILE, "0123456789abcdef0123456789abcdef\n");
+    signInWithPassword.mockClear();
+    await GET(get("?nonce=0123456789abcdef0123456789abcdef&as=test@test.com"));
+    expect(signInWithPassword).not.toHaveBeenCalled();
+  });
+});
