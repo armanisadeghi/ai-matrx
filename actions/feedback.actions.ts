@@ -33,6 +33,7 @@ import {
   type TriageBatchData,
 } from "@/types/feedback-row-mapper";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { readAllRows } from "@ai-matrx/data/db";
 
 type UserFeedbackUpdate =
   Database["users"]["Tables"]["user_feedback"]["Update"];
@@ -691,19 +692,20 @@ export async function getAllFeedback(): Promise<{
       return { success: false, error: "Admin access required" };
     }
 
-    const { data, error } = await supabase
-      .schema("users")
-      .from("user_feedback")
-      .select("*")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
+    const data = await readAllRows(
+      ({ from, to }) =>
+        supabase
+          .schema("users")
+          .from("user_feedback")
+          .select("*")
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(from, to),
+      { label: "users.user_feedback admin list", pageSize: 1000 },
+    );
 
-    if (error) {
-      console.error("Error fetching all feedback:", error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data: mapUserFeedbackRows(data ?? []) };
+    return { success: true, data: mapUserFeedbackRows(data) };
   } catch (error: unknown) {
     console.error("Error in getAllFeedback:", error);
     return {

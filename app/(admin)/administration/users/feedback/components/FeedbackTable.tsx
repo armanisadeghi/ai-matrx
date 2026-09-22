@@ -794,7 +794,7 @@ export default function FeedbackTable() {
             `${r.id} ${r.description} ${r.username ?? ""} ${r.route}`
           }
           coverage={{
-            cap: 1000,
+            total: failed ? undefined : rows.length,
             answeredBy: "client",
             noun: "feedback item",
           }}
@@ -815,11 +815,11 @@ export default function FeedbackTable() {
                     value: item.key,
                     label: failed
                       ? `${item.label} —`
-                      : `${item.label} ${counts[item.key]} loaded`,
+                      : `${item.label} ${counts[item.key]}`,
                   })),
                   {
                     value: "all",
-                    label: failed ? "All —" : `All ${rows.length} loaded`,
+                    label: failed ? "All —" : `All ${rows.length}`,
                   },
                 ],
                 onChange: (value) => setStage(value as Stage),
