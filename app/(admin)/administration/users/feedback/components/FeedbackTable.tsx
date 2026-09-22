@@ -69,6 +69,7 @@ import {
 } from "@/types/feedback.types";
 import FeedbackDetailDialog from "./FeedbackDetailDialog";
 import { feedbackBrief, feedbackRowSummary } from "../format";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 
 const TABLE_ID = "admin-feedback";
 const DONE: FeedbackStatus[] = ["resolved", "closed", "wont_fix", "deferred"];
@@ -142,6 +143,10 @@ const stages: Array<{
   },
   { key: "done", label: "Done", match: (r) => DONE.includes(r.status) },
 ];
+function getItemStage(row: UserFeedback): Exclude<Stage, "all"> {
+  const matched = stages.find((stage) => stage.match(row));
+  return matched && matched.key !== "all" ? matched.key : "done";
+}
 const tabs: Record<Stage, string> = {
   untriaged: "submission",
   decision: "decision",
@@ -224,6 +229,7 @@ export default function FeedbackTable() {
   const [categories, setCategories] = useState<FeedbackCategory[]>([]);
   const [admins, setAdmins] = useState<FeedbackAssignableAdmin[]>([]);
   const [stage, setStage] = useState<Stage>("untriaged");
+  const initialStageSet = useRef(false);
   const [category, setCategory] = useState("all");
   const [assignee, setAssignee] = useState("all");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -267,7 +273,9 @@ export default function FeedbackTable() {
         fetch("/api/admin/feedback/assignable-admins"),
       ]);
       if (!categoriesResponse.ok || !adminsResponse.ok) {
-        throw new Error("Feedback categories or assignable admins could not load.");
+        throw new Error(
+          "Feedback categories or assignable admins could not load.",
+        );
       }
       const [categoryPayload, adminPayload]: [
         { categories?: FeedbackCategory[] },
@@ -287,6 +295,12 @@ export default function FeedbackTable() {
     void load();
     void loadReferenceData();
   }, [load, loadReferenceData]);
+  useEffect(() => {
+    if (initialStageSet.current || rows.length === 0) return;
+    initialStageSet.current = true;
+    const firstNonEmpty = stages.find((item) => rows.some(item.match));
+    if (firstNonEmpty) setStage(firstNonEmpty.key);
+  }, [rows]);
   const setLink = useCallback(
     (id: string | null) => {
       const next = new URLSearchParams(params.toString());
@@ -334,7 +348,10 @@ export default function FeedbackTable() {
   const counts = useMemo(
     () =>
       Object.fromEntries(
-        stages.map((item) => [item.key, rows.filter(item.match).length]),
+        stages.map((item) => [
+          item.key,
+          rows.filter((row) => getItemStage(row) === item.key).length,
+        ]),
       ) as Record<Stage, number>,
     [rows],
   );
@@ -738,8 +755,14 @@ export default function FeedbackTable() {
       ) : null}
       {referenceError ? (
         <div className="mb-3 flex items-center justify-between gap-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
-          <span>{referenceError} Category and assignee filtering may be incomplete.</span>
-          <Button variant="outline" size="sm" onClick={() => void loadReferenceData()}>
+          <span>
+            {referenceError} Category and assignee filtering may be incomplete.
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void loadReferenceData()}
+          >
             Retry filters
           </Button>
         </div>
@@ -771,7 +794,7 @@ export default function FeedbackTable() {
             `${r.id} ${r.description} ${r.username ?? ""} ${r.route}`
           }
           coverage={{
-            total: failed ? undefined : rows.length,
+            cap: 1000,
             answeredBy: "client",
             noun: "feedback item",
           }}
@@ -792,11 +815,11 @@ export default function FeedbackTable() {
                     value: item.key,
                     label: failed
                       ? `${item.label} —`
-                      : `${item.label} ${counts[item.key]}`,
+                      : `${item.label} ${counts[item.key]} loaded`,
                   })),
                   {
                     value: "all",
-                    label: failed ? "All —" : `All ${rows.length}`,
+                    label: failed ? "All —" : `All ${rows.length} loaded`,
                   },
                 ],
                 onChange: (value) => setStage(value as Stage),
@@ -886,26 +909,14 @@ export default function FeedbackTable() {
             ],
             export: (visible, all) => ({
               items: [
-                {
-                  id: "json-all",
-                  label: "JSON (all loaded feedback)",
-                  build: () => ({
-                    content: JSON.stringify(all, null, 2),
-                    extension: "json",
-                    mime: "application/json",
-                    filename: "feedback.json",
-                  }),
-                },
-                {
-                  id: "csv-view",
-                  label: "CSV (this view)",
-                  build: () => ({
-                    content: visible.map(feedbackRowSummary).join("\\n"),
-                    extension: "csv",
-                    mime: "text/csv",
-                    filename: "feedback.csv",
-                  }),
-                },
+                jsonExportItem(() => all, "JSON (all loaded feedback)"),
+                csvExportItem(
+                  () =>
+                    visible.map(feedbackBrief) as unknown as Array<
+                      Record<string, unknown>
+                    >,
+                  "CSV (this view)",
+                ),
               ],
             }),
           }}
