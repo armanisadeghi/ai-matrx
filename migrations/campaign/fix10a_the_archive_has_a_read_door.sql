@@ -89,6 +89,24 @@ $function$;
 comment on function custom.record_archiver(uuid, uuid) is
   'WHO ARCHIVED THIS RECORD. The SOFT_DELETE version''s actor in history.row_versions — the same capture custom.record_history reads to say "deleted" on the timeline — falling back to custom.record.updated_by, which is the archiver by construction because archiving is the last write a record takes. Null when neither is known, and a screen says so in a sentence rather than printing nobody. Internal to custom.read_records_archived; it makes no access decision of its own and is not client-callable.';
 
+-- ITS ACCESS DECISION, DECLARED IN DATA. `provision_shape_guard` refused this file at
+-- COMMIT the first time it ran (SQLSTATE 23514): a SECURITY DEFINER function runs as
+-- `postgres` with BYPASSRLS, so SOMEBODY has to say, in data rather than in a comment,
+-- who may call it. This one is not a door at all — it is read from inside
+-- `custom.read_records_archived`, which has already decided the caller may be here —
+-- so it is declared as a NON-CLIENT LANE, reachable by no browser at any level.
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
+   non_client_lane, signed_in_callers, anonymous_callers)
+values
+  ('custom', 'record_archiver',
+   'p_organization_id uuid, p_record_id uuid',
+   ARRAY['uuid'::regtype, 'uuid'::regtype]::oid[],
+   'Answers WHO archived one record and nothing else: the SOFT_DELETE version''s actor in history.row_versions, falling back to custom.record.updated_by. It makes NO access decision of its own and must not be reachable from a browser — p_organization_id and p_record_id are both taken on trust, because its only caller is custom.read_records_archived, which has already run custom.assert_may_know_table, custom.effective_level and custom.visible_predicate_sql for that exact organization and table before it asks. Null for either argument yields null, never a row from another organization.',
+   'fix10a_the_archive_has_a_read_door.sql',
+   'server_only: read from inside custom.read_records_archived, after that door has decided the caller may see the record it is naming the archiver of. No client lane calls it and none ever should — it takes its organization and record ids on trust, so a browser able to call it directly could learn who last touched any record id it could guess.',
+   false, false);
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 2. THE DOOR.
 -- ─────────────────────────────────────────────────────────────────────────────
