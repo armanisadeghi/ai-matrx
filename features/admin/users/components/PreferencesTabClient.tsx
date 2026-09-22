@@ -28,13 +28,6 @@ import { AdminUserRef } from "./AdminUserRef";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAdminUserMenuSection } from "./admin-user-menu-section";
 import { USERS_ADMIN_LOCATION } from "../constants";
-import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE,
-  MOBILE_TABLE_CELL,
-  MOBILE_TABLE_FROZEN_CELL,
-  MOBILE_TABLE_FROZEN_HEAD,
-} from "@/components/official/mobile-table/mobileTable";
 import { pushAppHref } from "@/lib/deployment/navigate";
 
 // ── drift dashboard ────────────────────────────────────────────────────────
@@ -101,6 +94,62 @@ function DriftDashboard() {
   }, [load]);
 
   const clean = report && report.drifted === 0;
+
+  const columns = useMemo((): MatrxColumnDef<DriftRow>[] => {
+    return [
+      {
+        id: "user_id",
+        accessorKey: "user_id",
+        header: "User",
+        // Preserve the report's identity door. AdminUserRef carries the
+        // user-aware admin link rather than reducing this identity to UUID text.
+        cell: (row) => <AdminUserRef userId={row.user_id} />,
+        width: 220,
+        className: "max-sm:min-w-[9rem]",
+        headerClassName: "max-sm:min-w-[9rem]",
+      },
+      {
+        id: "organization_id",
+        accessorKey: "organization_id",
+        header: "Organization",
+        cell: (row) =>
+          row.organization_id ? (
+            <MatrxUuidCell
+              value={row.organization_id}
+              label="Organization"
+              token="organization"
+            />
+          ) : (
+            <span className="text-muted-foreground/40">—</span>
+          ),
+        width: 180,
+      },
+      {
+        id: "drifted_fields",
+        accessorKey: "drifted_fields",
+        header: "Drifted fields",
+        cell: (row) => (
+          <span className="text-amber-600 dark:text-amber-400">
+            {row.drifted_fields}
+          </span>
+        ),
+        width: 280,
+      },
+      {
+        id: "updated_at",
+        accessorKey: "updated_at",
+        header: "Updated",
+        cell: (row) => (
+          <span className="text-muted-foreground">
+            {row.updated_at
+              ? new Date(row.updated_at).toLocaleString()
+              : "—"}
+          </span>
+        ),
+        width: 190,
+      },
+    ];
+  }, []);
 
   return (
     <div className="h-full overflow-y-auto p-6 space-y-6">
@@ -213,7 +262,9 @@ function DriftDashboard() {
               ?.closest("[data-row-id]")
               ?.getAttribute("data-row-id");
             const row = id
-              ? (report.rows.find((r) => r.user_id === id) ?? null)
+              ? (report.rows.find(
+                  (r) => `${r.user_id}:${r.organization_id ?? "none"}` === id,
+                ) ?? null)
               : null;
             setClickedRow(row);
             if (!row) return null;
@@ -223,95 +274,51 @@ function DriftDashboard() {
             buildAdminUserMenuSection(clickedRow ? { id: clickedRow.user_id } : null),
           ]}
         >
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <table className={cn("text-sm", MOBILE_TABLE)}>
-            <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
-              <tr>
-                <th
-                  className={cn(
-                    "px-3 py-2 font-medium",
-                    MOBILE_TABLE_FROZEN_HEAD,
-                    "max-sm:min-w-[9rem]",
-                  )}
-                >
-                  User
-                </th>
-                <th className="px-3 py-2 font-medium">Organization</th>
-                <th className="px-3 py-2 font-medium">Drifted fields</th>
-                <th className={cn("px-3 py-2 font-medium", MOBILE_TABLE_CELL)}>
-                  Updated
-                </th>
-                <th className="px-3 py-2 font-medium" />
-              </tr>
-            </thead>
-            <tbody>
-              {report.rows.map((r) => (
-                <tr
-                  key={`${r.user_id}:${r.organization_id}`}
-                  data-row-id={r.user_id}
-                  className="border-t border-border"
-                >
-                  {/* Main added the mobile frozen/wrapping classes; this
-                      branch replaced the raw user_id with a door and added the
-                      Organization column. Both survive — `font-mono text-xs`
-                      is dropped because this cell now renders a NAME, not a
-                      uuid. */}
-                  <td
-                    className={cn(
-                      "px-3 py-2",
-                      MOBILE_TABLE_FROZEN_CELL,
-                      "max-sm:min-w-[9rem]",
-                    )}
-                  >
-                    <AdminUserRef userId={r.user_id} />
-                  </td>
-                  <td className="px-3 py-2">
-                    {r.organization_id ? (
-                      <MatrxUuidCell
-                        value={r.organization_id}
-                        label="Organization"
-                        token="organization"
-                      />
-                    ) : (
-                      <span className="text-muted-foreground/40">—</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-amber-600 dark:text-amber-400 break-words max-sm:min-w-[11rem]">
-                    {r.drifted_fields}
-                  </td>
-                  <td
-                    className={cn(
-                      "px-3 py-2 text-muted-foreground",
-                      MOBILE_TABLE_CELL,
-                    )}
-                  >
-                    {r.updated_at
-                      ? new Date(r.updated_at).toLocaleString()
-                      : "—"}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    {/* The row names a user whose preferences this same page
-                        can focus (`?user=` is read at the `focusUser` line
-                        below — verified, not assumed). An anchor, so the row
-                        can be opened in a new tab beside the current list. */}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      asChild
-                      className="h-6 text-xs"
-                    >
-                      <AppLink
-                        href={`/administration/users/preferences?user=${r.user_id}`}
-                      >
-                        View
-                      </AppLink>
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <MatrxDataTable
+          urlState={{ id: "preference-drift-report" }}
+          data={report.rows}
+          columns={columns}
+          getRowId={(row) => `${row.user_id}:${row.organization_id ?? "none"}`}
+          searchText={(row) =>
+            [row.user_id, row.organization_id, row.drifted_fields]
+              .filter(Boolean)
+              .join(" ")
+          }
+          detail={{ enabled: false }}
+          pageSize={50}
+          emptyState={{ title: "No drifted preference rows" }}
+          toolbar={{
+            search: true,
+            searchPlaceholder: "Search user, organization, or field…",
+          }}
+          copy={{
+            label: "Drifted preference row",
+            listLabel: "Drifted preference rows (this report)",
+            location: USERS_ADMIN_LOCATION,
+            rowKind: "drifted-preference-row",
+            listKind: "drifted-preference-rows",
+            humanRow: (row) =>
+              `user_id=${row.user_id}\norganization_id=${row.organization_id ?? "none"}\ndrifted_fields=${row.drifted_fields}\nupdated_at=${row.updated_at ?? "unknown"}`,
+            agentRow: (row) => row,
+            // This is an admin report. The source provides its own total and
+            // drift counts above; table copy must describe this complete
+            // report collection rather than imply source-side filtering.
+            listAttributes: (rows) => ({
+              report_rows: rows.length,
+              report_total: report.total,
+              report_drifted: report.drifted,
+            }),
+          }}
+          rowActions={(row) => (
+            <Button size="sm" variant="ghost" asChild className="h-6 text-xs">
+              <AppLink
+                href={`/administration/users/preferences?user=${row.user_id}`}
+              >
+                View
+              </AppLink>
+            </Button>
+          )}
+        />
         </NonEditableContextMenu>
       ) : null}
     </div>
