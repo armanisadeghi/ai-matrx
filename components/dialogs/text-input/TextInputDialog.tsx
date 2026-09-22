@@ -118,12 +118,25 @@ export function TextInputDialog({
    * Every other outside click still dismisses, as it should.
    */
   const openerRef = React.useRef<HTMLElement | null>(null);
-  const wasOpenRef = React.useRef(open);
-  if (open && !wasOpenRef.current) {
-    const active = typeof document !== "undefined" ? document.activeElement : null;
-    openerRef.current = active instanceof HTMLElement ? active : null;
-  }
-  wasOpenRef.current = open;
+  const lastPointerTargetRef = React.useRef<HTMLElement | null>(null);
+
+  // The opener cannot be read as `document.activeElement` once the dialog is
+  // open — Radix has already pulled focus into the field — so the last
+  // pointer-down target is remembered continuously and frozen the moment the
+  // dialog opens.
+  React.useEffect(() => {
+    const remember = (event: Event) => {
+      const target = event.target;
+      lastPointerTargetRef.current =
+        target instanceof HTMLElement ? target.closest("button") ?? target : null;
+    };
+    document.addEventListener("pointerdown", remember, true);
+    return () => document.removeEventListener("pointerdown", remember, true);
+  }, []);
+
+  React.useEffect(() => {
+    if (open) openerRef.current = lastPointerTargetRef.current;
+  }, [open]);
 
   const pointIsOnOpener = React.useCallback(
     (event: Event) =>
