@@ -16,13 +16,13 @@
  */
 import "server-only";
 import { forbidden, redirect } from "next/navigation";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import {
   resolveResourceAccess,
   accessSatisfies,
   type AccessLevel,
   type ResourceAccess,
+  type ResolveResourceAccessOptions,
 } from "./access-core";
 
 export interface RequireAccessOptions {
@@ -54,19 +54,25 @@ export interface RequireAccessOptions {
   forbid?: boolean;
 }
 
+export type ResolveAccessOptions = ResolveResourceAccessOptions;
+
 /**
  * Resolve the current caller's access to a resource on the server.
  * Never redirects — use it when you want to branch in the page yourself.
+ * By default, access-service failures resolve to no access; use `strict` for
+ * an SSR reader that should let its route error boundary offer a retry.
  */
 export async function resolveAccess(
   resourceType: string,
   resourceId: string,
+  options: ResolveAccessOptions = {},
 ): Promise<ResourceAccess> {
   const supabase = await createClient();
   return resolveResourceAccess(
-    supabase as unknown as SupabaseClient,
+    supabase,
     resourceType,
     resourceId,
+    options,
   );
 }
 

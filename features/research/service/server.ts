@@ -5,11 +5,12 @@ import type { ResearchTopic, ResearchProgress, ResearchIntent } from '../types';
 import { rowToResearchTopic, researchProgressFromJson } from '../types';
 
 export async function getTopicServer(topicId: string): Promise<ResearchTopic | null> {
-    // `rs_topic` has an admin-inspection RLS lane, while the product access
-    // resolver deliberately refuses a stranger's personal topic. Gate before
-    // reading so the layout can render AccessGate and metadata cannot disclose
-    // a title that the ordinary product access model denies.
-    const access = await resolveAccess('research_topic', topicId);
+  // `rs_topic` has an admin-inspection RLS lane, while ordinary product access
+  // can refuse an out-of-scope topic. Gate before reading so the layout can
+  // render AccessGate and metadata cannot disclose a title that the ordinary
+  // product access model denies. Strict failures reach the route error
+  // boundary, whose retry can recover a transient access-service outage.
+  const access = await resolveAccess('research_topic', topicId, { strict: true });
     if (!accessSatisfies(access.level, 'view')) return null;
 
     const supabase = await createClient();

@@ -90,7 +90,7 @@ describe('getTopicServer product access gate', () => {
       name: 'Allowed research topic',
     });
 
-    expect(mockResolveAccess).toHaveBeenCalledWith('research_topic', TOPIC_ID);
+    expect(mockResolveAccess).toHaveBeenCalledWith('research_topic', TOPIC_ID, { strict: true });
     expect(schema).toHaveBeenCalledWith('research');
     expect(from).toHaveBeenCalledWith('rs_topic');
     expect(select).toHaveBeenCalledWith('*');
@@ -110,17 +110,11 @@ describe('getTopicServer product access gate', () => {
     expect(mockCreateClient).not.toHaveBeenCalled();
   });
 
-  it('treats an access-resolution failure as no access so AccessGate can remediate it', async () => {
-    // resolveResourceAccess deliberately converts RPC/transport failures to
-    // NO_ACCESS. The layout receives null and asks AccessGate for the real
-    // state; this server reader must never fall through to private content.
-    mockResolveAccess.mockResolvedValue({
-      level: 'none',
-      isOwner: false,
-      exists: false,
-    });
+  it('propagates an access-resolution failure to the route error boundary', async () => {
+    const failure = new Error('get_resource_access temporarily unavailable');
+    mockResolveAccess.mockRejectedValue(failure);
 
-    await expect(getTopicServer(TOPIC_ID)).resolves.toBeNull();
+    await expect(getTopicServer(TOPIC_ID)).rejects.toBe(failure);
 
     expect(mockCreateClient).not.toHaveBeenCalled();
   });

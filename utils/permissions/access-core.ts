@@ -14,6 +14,8 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+type ResourceAccessClient = Pick<SupabaseClient, "rpc">;
+
 /** The four access tiers, ordered `none < view < edit < admin`. */
 export type AccessLevel = "none" | "view" | "edit" | "admin";
 
@@ -24,6 +26,14 @@ export interface ResourceAccess {
   isOwner: boolean;
   /** False when the resource id doesn't exist or the type isn't registered. */
   exists: boolean;
+}
+
+export interface ResolveResourceAccessOptions {
+  /**
+   * Propagate an access-RPC failure to the caller. Use this for server readers
+   * that must distinguish an unavailable access service from denied access.
+   */
+  strict?: boolean;
 }
 
 const ACCESS_RANK: Record<AccessLevel, number> = {
@@ -50,7 +60,7 @@ export function canViewAccess(level: AccessLevel): boolean {
 
 export const NO_ACCESS: ResourceAccess = { level: "none", isOwner: false, exists: false };
 
-function parseAccess(data: unknown): ResourceAccess {
+function parseAccess(data: unknown): ResourceAccess | null {
   if (data && typeof data === "object" && !Array.isArray(data)) {
     const o = data as Record<string, unknown>;
     const level = o.level;
@@ -62,19 +72,22 @@ function parseAccess(data: unknown): ResourceAccess {
       };
     }
   }
-  return NO_ACCESS;
+  return null;
 }
 
 /**
  * Resolve the current caller's access to a resource using the given Supabase
- * client (browser or SSR). Never throws — failures resolve to no-access.
- * Callers usually reach this via `useAccess` (client) or `requireAccess`/
- * `resolveAccess` (server) rather than directly.
+ * client (browser or SSR). By default, failures resolve to no-access. Set
+ * `options.strict` when a caller must surface access-service failures instead
+ * of rendering an access-denied state. Callers usually reach this via
+ * `useAccess` (client) or `requireAccess`/`resolveAccess` (server) rather than
+ * directly.
  */
 export async function resolveResourceAccess(
-  client: SupabaseClient,
+  client: ResourceAccessClient,
   resourceType: string,
   resourceId: string,
+  options: ResolveResourceAccessOptions = {},
 ): Promise<ResourceAccess> {
   if (!resourceType || !resourceId) return NO_ACCESS;
   try {
@@ -82,9 +95,20 @@ export async function resolveResourceAccess(
       p_resource_type: resourceType,
       p_resource_id: resourceId,
     });
-    if (error) return NO_ACCESS;
-    return parseAccess(data);
-  } catch {
+    if (error) {
+      if (options.strict) throw error;
+      return NO_ACCESS;
+    }
+    const access = parseAccess(data);
+    if (!access) {
+      if (options.strict) {
+        throw new Error("get_resource_access returned a malformed response");
+      }
+      return NO_ACCESS;
+    }
+    return access;
+  } catch (error) {
+    if (options.strict) throw error;
     return NO_ACCESS;
   }
 }
