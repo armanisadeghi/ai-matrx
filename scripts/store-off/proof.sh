@@ -13,6 +13,12 @@
 #   3. turning the switch ON through the settings door makes the same link open the form;
 #   4. turning it back OFF restores the sentence — and the org ends exactly as it started.
 #
+# V11-A (2026-09-22): clause 4 used to write a HARDCODED `false`. Rincon's store was ON,
+# so "restored" switched a live crew off and left 401 records, 36 tables, 10 portals and
+# the published form dark. The flip now goes through scripts/lib/borrow-live-switch.sh,
+# which locks this organization, reads what it actually had, and puts THAT back from a
+# trap on every exit path — including the failure paths this script never reached.
+#
 #   scripts/store-off/proof.sh
 set -e
 ENVF=/Users/armanisadeghi/code/aidream/.env
@@ -23,6 +29,8 @@ export PGPORT=$(grep -m1 '^SUPABASE_MATRIX_PORT=' $ENVF | cut -d= -f2-)
 export PGDATABASE=$(grep -m1 '^SUPABASE_MATRIX_DATABASE_NAME=' $ENVF | cut -d= -f2-)
 # zsh does not word-split an unquoted variable, so the runner is a function.
 q() { /opt/homebrew/opt/libpq/bin/psql -v ON_ERROR_STOP=1 -Atc "$1"; }
+PSQL_BIN=/opt/homebrew/opt/libpq/bin/psql
+source "${0:a:h}/../lib/borrow-live-switch.sh"
 
 ORG=6069a466-1445-42df-a64e-cf37ecdc1b99          # Rincon Plumbing Co
 FORM=640dc5c3-4f2f-4df6-afad-a086b0c3f92b         # "New Job Request"
@@ -38,6 +46,13 @@ m=re.search(r'<main.*?</main>',t,flags=re.S)
 print(' '.join(html.unescape(re.sub(r'<[^>]+>',' ',m.group(0) if m else '')).split())[:400])
 "; }
 code() { curl -s -o /dev/null -w '%{http_code}' "$BASE/f/$FORM" --max-time 90; }
+
+# THE BORROW. It locks this organization's switch against every other proof, reads what
+# the crew actually has, and arms the trap that puts exactly that back on every exit path.
+borrow_store_switch "$ORG" "$ADMIN" "STORE-OFF proof"
+
+echo "── 0. the store put where this proof needs to start: off"
+set_store_switch false
 
 echo "── 1. the publish door, as admin@admin.com, while the store is off"
 q "
@@ -55,13 +70,16 @@ echo "   HTTP $(code)"
 echo "   says: $(page)"
 
 echo "── 3. the switch turned ON through the settings door"
-q "select platform.unified_data_store_set('$ORG'::uuid, true, '$ADMIN'::uuid, 'STORE-OFF proof') is not null" >/dev/null
+set_store_switch true
 echo "   store_is_open: $(q "select custom.store_is_open('$ORG'::uuid)")"
 echo "   HTTP $(code)"
 echo "   says: $(page)"
 
-echo "── 4. the switch put back OFF, exactly as it was found"
-q "select platform.unified_data_store_set('$ORG'::uuid, false, '$ADMIN'::uuid, 'STORE-OFF proof — restored') is not null" >/dev/null
+echo "── 4. the switch put back OFF, and the sentence restored with it"
+set_store_switch false
 echo "   store_is_open: $(q "select custom.store_is_open('$ORG'::uuid)")"
 echo "   HTTP $(code)"
 echo "   says: $(page)"
+
+# NOTHING IS WRITTEN BACK BY HAND HERE. The borrow's trap returns this organization to
+# whatever it had before line one — on success, on a failed clause, and on Ctrl-C.
