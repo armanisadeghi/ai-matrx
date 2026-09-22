@@ -23,8 +23,10 @@
 # to turn off, and the only lever we own is how long the transaction lasts. File 4
 # creates twelve policies, so its ~7 seconds are seven seconds in which nobody on the
 # platform can sign in, refresh a token, read a file or receive a realtime message.
-# That belongs inside the 1-4 AM Pacific window and nowhere else. 02:05 is after the
-# 01:05 branch refresh so the two never contend.
+# That belongs inside the 1-4 AM Pacific window and nowhere else. 02:05 sits after the
+# 01:05 branch refresh so the two never contend IF that job is armed — measured when this
+# was armed, it is not (both branch-refresh plists are renamed `.PAUSED-2026-09-22`), and
+# nothing here depends on it either way.
 #
 # 🚨 FILE 3 IS EXPECTED TO FAIL AND RETRY, AND THAT IS THE DESIGN WORKING. It sets
 # `lock_timeout = '5s'`, so when it cannot get ACCESS EXCLUSIVE on `auth.users` it
