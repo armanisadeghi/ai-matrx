@@ -170,19 +170,29 @@ describe("the transient-layer wait", () => {
 });
 
 describe("a confirm that cannot be shown", () => {
-  it("GUARD 4 — throws instead of hanging when no host is mounted", async () => {
+  it("GUARD 4 — ANNOUNCES itself and answers `false`, instead of hanging or vanishing", async () => {
     // No host rendered at all. The kit would queue this call forever by
     // design; the app wrapper must refuse rather than leave the caller pending.
+    //
+    // 🚨 IT MUST NOT THROW EITHER (FIX-11A/F7, 2026-09-22). The ordinary shape
+    // of a confirm-gated control is `onClick={() => void (async () => …)()}`,
+    // a FLOATING promise: a rejection out of it reaches no catch and shows the
+    // person nothing, which is a dead button. So the primitive says so out
+    // loud and answers `false` — which every caller already handles as "not
+    // confirmed, do nothing".
+    const said: string[] = [];
+    const spy = jest.spyOn(console, "error").mockImplementation((...args) => {
+      said.push(args.join(" "));
+    });
     jest.useFakeTimers({ doNotFake: ["performance"] });
     try {
       const answer = confirm({ title: "Delete everything?" });
-      const failure = expect(answer).rejects.toThrow(
-        /no <ConfirmDialogHost \/> is mounted/,
-      );
       await jest.advanceTimersByTimeAsync(CONFIRM_HOST_WAIT_MS + 1000);
-      await failure;
+      await expect(answer).resolves.toBe(false);
+      expect(said.join(" ")).toMatch(/no <ConfirmDialogHost \/> is mounted/);
     } finally {
       jest.useRealTimers();
+      spy.mockRestore();
     }
   });
 });
