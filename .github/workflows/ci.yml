@@ -139,6 +139,44 @@ jobs:
             echo "::warning title=UNMEASURED — the honest-state parity guard did NOT run::MATRX_LOCAL_REPO_TOKEN is not configured for this repository. The sync engine GENERATES the honest-state vocabulary into armanisadeghi/matrx-local (crates/matrx-sync/contracts/honest_states.json), a different repository this workflow's default GITHUB_TOKEN cannot read, so the checkout returns 'Not Found' and the job is SKIPPED, not passed. The desktop app, the tray and the browser's Devices & sync page must say the SAME sentence about the same condition; nothing is currently checking that they do, so a state added or reworded in the engine will render in the browser as an unrecognised value or, worse, as a stale sentence. Fix: add a repository secret named MATRX_LOCAL_REPO_TOKEN holding a fine-grained personal access token with Contents:Read on armanisadeghi/matrx-local."
           fi
   # ---------------------------------------------------------------------------
+  # matrx-dist-integrity — an installed @ai-matrx package IS the published one,
+  # byte for byte (CI-FIX-2, 2026-09-22).
+  #
+  # On 2026-09-21 somebody built @ai-matrx/design-system locally and copied the
+  # result over `node_modules/@ai-matrx/design-system/dist` in the shared
+  # checkout. The version number never moved, so `check:matrx-packages` — which
+  # compares VERSIONS — stayed green; the lockfile's integrity hash is only
+  # verified on FETCH, and nothing was fetched. A screen was then written against
+  # a prop the shipped package never reads: it worked on that machine, and
+  # expanding a research template did nothing in every deployed build.
+  #
+  # The ratchet here is different from the one a developer machine needs. CI
+  # installs from the lockfile, so its virtual store is clean by construction and
+  # the audit runs `--resolved-only` (the copies this app actually compiles),
+  # which is ~20 tarballs rather than ~90. A developer runs the full graph with
+  # `pnpm check:matrx-dist-integrity`. Falsifiability is the script's own
+  # `--self-test`, which builds a real install tree from a real tarball, proves
+  # GREEN, changes one byte of one shipped file, proves RED naming that file,
+  # deletes a shipped file, proves RED again, and restores to GREEN.
+  # ---------------------------------------------------------------------------
+  matrx-dist-integrity:
+    name: an installed @ai-matrx package is the published one
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: The guard goes RED on an overwritten dist
+        run: pnpm check:matrx-dist-integrity:self-test
+      - name: Every resolved @ai-matrx dist matches its npm tarball
+        run: pnpm check:matrx-dist-integrity:resolved
+
+  # ---------------------------------------------------------------------------
   # marker-law — the cheapest and most load-bearing gate in the repo. `__kind`
   # is part of the data (KINDS_EVERYWHERE_PLAN §4.2); stripping it outside the
   # three lawful doors is what made the workflow engine validate against shapes
