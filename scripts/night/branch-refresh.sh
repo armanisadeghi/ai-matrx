@@ -44,10 +44,12 @@
 #     schemas are dropped and recreated from the clone's dump. That is deliberate — the
 #     branch is disposable by design, and a differential that hand-patches 1,400 objects a
 #     night is the thing W0-SYNC proved does not survive this rate of change.
-#   · THE WINDOW NOW EXISTS FOR THE DESTRUCTIVE BRANCH WRITE, not for the source read. The
-#     source read costs nothing now (it is a clone). What still must not happen at 2 p.m. is
-#     dropping 79 schemas out from under a lane that is mid-rehearsal on the branch. So the
-#     window guard STAYS, with a new reason, and there is still no switch that removes it.
+#   · THE WINDOW DOES NOT APPLY TO THIS JOB ANY MORE (chair ruling 2026-09-22). The window
+#     exists to protect PRODUCTION; a run that reads the clone and writes the branch touches
+#     production nowhere, so it may run at any hour and says so in its log. The exemption is
+#     earned ONLY by the two assertions passing — it is not a flag, a variable or an argument,
+#     and a run that has proven nothing, or that has proven production, gets the window
+#     enforced exactly as before. night_window_guard is therefore called AFTER the assertions.
 #   · The ten-minute dump cap stays as a sanity bound on a run that would otherwise sit on the
 #     lock for the whole night; an abort writes nothing anywhere.
 #
@@ -137,8 +139,6 @@ PGDUMP="${PSQL:h}/pg_dump"
 if [ ! -x "$PGDUMP" ]; then say "REFUSED: no pg_dump beside $PSQL. Nothing attempted."; exit 78; fi
 say "pg_dump: $PGDUMP ($("$PGDUMP" --version))"
 
-night_window_guard $OPEN $CLOSE || exit $?
-
 # ── THE TARGETS ──────────────────────────────────────────────────────────────
 # The branch is the ONLY database this job writes, in every mode, and it is asserted first.
 BRANCH_DSN="$(night_branch_dsn)"
@@ -169,6 +169,14 @@ SRC=("$SRC_DSN")
 SRC_NAME="the nightly dev clone (READ ONLY) — production is not contacted in any mode"
 say "source: $SRC_NAME"
 say "clone register: $(night_ref_key "$CLONE_REF_FILE" clone_name) · ref $(night_ref_key "$CLONE_REF_FILE" clone_ref) · promoted $(night_ref_key "$CLONE_REF_FILE" promoted)"
+
+# ── THE WINDOW, ASKED ONLY NOW ───────────────────────────────────────────────
+# Deliberately AFTER both assertions. The chair ruled on 2026-09-22 that the window exists to
+# protect PRODUCTION, and this run has just PROVEN that the only databases it touches are the
+# clone (read) and the branch (write) — so the window protects nothing here and does not apply.
+# The exemption is earned by that proof and by nothing else: had either assertion named
+# production, or had neither run, night_window_guard would enforce 0100-0330 exactly as before.
+night_window_guard $OPEN $CLOSE || exit $?
 
 cleanup() {
   local rc=$?

@@ -44,17 +44,41 @@ night_resolve_psql() {
 
 # ── the window ───────────────────────────────────────────────────────────────
 # night_window_guard <open HHMM> <close HHMM>
-# A REHEARSAL still prints the window it would have obeyed, and is allowed through it, because a
-# rehearsal never touches the live database — the target assertion is what makes that true.
+#
+# 🚨 CHAIR RULING 2026-09-22: THE WINDOW GUARD EXISTS TO PROTECT PRODUCTION. A job whose only
+# read is the CLONE and whose only write is the BRANCH touches production nowhere, so it is
+# EXEMPT from the 01:00-03:30 window and may run at any hour. It says so in its log.
+#
+# THIS IS NOT A FORCE SWITCH, and it cannot be turned into one — there is no flag, no variable
+# and no argument that grants the exemption. The ONLY way to earn it is to have PROVEN, through
+# `night_assert_target`, that every database this run will touch is the clone or the branch,
+# each by (system identifier, project ref) together. So:
+#   · production among the proven targets  -> the window is ENFORCED;
+#   · NOTHING proven yet                   -> the window is ENFORCED (fail closed: a run that
+#                                             has not identified its databases cannot claim to
+#                                             be off production);
+#   · every proven target is clone/branch  -> exempt, and the log names them.
+# A job that wants the exemption therefore calls night_window_guard AFTER its assertions, which
+# is the correct order anyway: you cannot know you are off production before you have checked.
+typeset -ga NIGHT_PROVEN; NIGHT_PROVEN=()
+
 night_window_guard() {
   local open="$1" close="$2"
   local hhmm="$(TZ=America/Los_Angeles date +%H%M)" today="$(TZ=America/Los_Angeles date +%F)"
   if [ "$REHEARSE" = "1" ]; then
-    say "REHEARSAL: window $open-$close Pacific not enforced (this run can only reach the branch)"
+    say "REHEARSAL: window $open-$close Pacific not enforced (this run cannot write production)"
+    return 0
+  fi
+  if [ ${#NIGHT_PROVEN[@]} -gt 0 ] && [[ " ${NIGHT_PROVEN[*]} " != *" production "* ]]; then
+    say "window $open-$close Pacific NOT ENFORCED, and here is why it does not apply: every"
+    say "  database this run has proven is off production — ${(j:, :)NIGHT_PROVEN} — so the"
+    say "  window, which exists to keep heavy work off the live instance, protects nothing here."
+    say "  Local Pacific time is $today $hhmm. (Chair ruling 2026-09-22; earned only by proof.)"
     return 0
   fi
   if [ "$hhmm" -lt "$open" ] || [ "$hhmm" -gt "$close" ]; then
     say "REFUSED: local Pacific time is $today $hhmm, outside $open-$close. Nothing attempted."
+    [ ${#NIGHT_PROVEN[@]} -eq 0 ] && say "  (No target has been proven yet, so the clone-to-branch exemption cannot apply.)"
     return 75
   fi
   say "window ok: Pacific $today $hhmm (window $open-$close)"
@@ -240,6 +264,9 @@ night_assert_target() {
     return 78
   fi
   say "target ok: $want (system_identifier $got, project ref $got_ref)"
+  # Remembered so night_window_guard can tell a clone->branch run from one that touches the live
+  # instance. ONLY a passing assertion writes here; nothing else may.
+  [[ " ${NIGHT_PROVEN[*]} " == *" $want "* ]] || NIGHT_PROVEN+=("$want")
   return 0
 }
 
@@ -286,6 +313,53 @@ night_release_lock() {
   if [ "$out" = "$LOCK_LANE" ]; then say "lock released: $LOCK_NAME / $LOCK_LANE"
   else say "lock release returned: ${out:-(0 rows — not the holder)}"; fi
   LOCK_TAKEN=0
+}
+
+# ── several locks at once ────────────────────────────────────────────────────
+# A job that applies files across MORE THAN ONE schema holds one object-scoped lock
+# per schema, because that is what the runners check and what another lane reads to
+# know which objects are being worked on. `night_take_lock` carries ONE name in its
+# state, so a job that needed three was re-implementing the take and the release in
+# its own file — exactly what this library exists to stop (W1-ORG-APPLY, 2026-09-22).
+#
+# ALL OR NOTHING. If the second of three locks is held by another lane, the first is
+# released again before the refusal returns: a job that cannot do its work must not
+# leave a lock behind that stops the lane which can.
+NIGHT_LOCKS_TAKEN=()
+night_take_locks() {  # night_take_locks <lane> <note> <lock> [<lock> …]
+  local lane="$1" note="$2"; shift 2
+  local lock
+  typeset -ga NIGHT_LOCKS_TAKEN; NIGHT_LOCKS_TAKEN=()
+  # The lane is recorded BEFORE the first take, not after the last: the partial-release
+  # path runs when take number two fails, and it needs to know whose rows to delete.
+  # Set it afterwards and a refused job strands the lock it did get — measured here on
+  # the first cut, W1-ORG-APPLY 2026-09-22, which left `context` held by a job that had
+  # already refused.
+  NIGHT_LOCKS_LANE="$lane"
+  for lock in "$@"; do
+    if ! night_take_lock "$lock" "$lane" "$note"; then
+      say "REFUSED: could not take every lock this job needs; releasing the ones it had."
+      night_release_locks
+      return 75
+    fi
+    NIGHT_LOCKS_TAKEN+=("$lock")
+    LOCK_TAKEN=0   # the plural form owns the release from here
+  done
+  say "locks taken: ${NIGHT_LOCKS_TAKEN[*]} / $lane"
+  return 0
+}
+
+night_release_locks() {
+  [ -n "${NIGHT_LOCKS_LANE:-}" ] || return 0
+  [ "${#NIGHT_LOCKS_TAKEN[@]}" -gt 0 ] || return 0
+  local lock out dsn; dsn="$(night_branch_dsn)"
+  for lock in "${NIGHT_LOCKS_TAKEN[@]}"; do
+    out="$("$PSQL" "$dsn" -qAt -c \
+      "delete from campaign_watch.build_lock where lock_name = '$lock' and held_by = '$NIGHT_LOCKS_LANE' returning held_by" 2>&1)"
+    if [ "$out" = "$NIGHT_LOCKS_LANE" ]; then say "lock released: $lock / $NIGHT_LOCKS_LANE"
+    else say "lock release returned for $lock: ${out:-(0 rows — not the holder)}"; fi
+  done
+  NIGHT_LOCKS_TAKEN=()
 }
 
 # ── self-destruct ────────────────────────────────────────────────────────────
