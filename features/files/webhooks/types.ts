@@ -103,4 +103,12 @@ export const WEBHOOK_EVENT_CATALOGUE: ReadonlyArray<{
   { group: "Permissions", value: "permission.revoked", label: "Permission revoked" },
   { group: "Jobs", value: "run.completed", label: "Long-running job finished" },
   { group: "Jobs", value: "run.failed", label: "Long-running job failed" },
+  // Data tables — one event per row change (entity_type `user_table_row`,
+  // metadata carries table_id / table_name / changed_fields). Producer:
+  // migrations/udt_row_change_events.sql.
+  { group: "Data tables", value: "row.created", label: "Table row added" },
+  { group: "Data tables", value: "row.updated", label: "Table row changed" },
+  { group: "Data tables", value: "row.archived", label: "Table row archived" },
+  { group: "Data tables", value: "row.restored", label: "Table row restored" },
+  { group: "Data tables", value: "row.deleted", label: "Table row deleted" },
 ];
