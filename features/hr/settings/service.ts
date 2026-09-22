@@ -346,6 +346,13 @@ export async function fetchHrKnobMetadata(): Promise<HrResult<HrKnobMetadata[]>>
     .select(
       "feature, key, value_type, unit, min_value, max_value, allowed_values, label, description, basis, review_due",
     )
+    // archived-items-law-exempt: this returns LABELS for the HR controls that
+    // are rendered, not a list of knobs a person browses; a retired knob renders
+    // no control, so there is nothing here to reveal.
+    // An ARCHIVED knob has no live description to show (THE ARCHIVED-ITEMS LAW):
+    // this read exists to label the controls that ARE rendered, and a retired
+    // knob renders no control.
+    .is("archived_at", null)
     .like("feature", "hr.%")
     .order("feature", { ascending: true })
     .order("key", { ascending: true });

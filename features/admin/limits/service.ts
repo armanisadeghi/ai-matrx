@@ -53,6 +53,17 @@ export async function fetchFeatureKnobs(): Promise<FeatureKnob[]> {
           "feature, key, value, default_value, value_type, unit, min_value, max_value, allowed_values, label, description, set_by, basis, review_due, overridable_by, override_direction, bound_value, ui, taxonomy_node_id, propagation",
           { count: "exact" },
         )
+        // archived-items-law-exempt: the admin limits board is not a browsable
+        // list of knobs — it DERIVES the platform tier from the complete
+        // register, and an archived knob is not a live limit. Archiving and
+        // un-archiving a knob is done on the settings surface that owns the
+        // register, which carries the control.
+        // An ARCHIVED knob is not a live setting (THE ARCHIVED-ITEMS LAW,
+        // 2026-09-09; platform.feature_knob gained archived_at). Nothing here is
+        // a browsable list of knobs a person archives and un-archives — it is the
+        // register the platform tier is computed from — so the honest reading is
+        // that a retired knob simply is not in it.
+        .is("archived_at", null)
         // (feature, key) is the PK, so the paginated order is stable.
         .order("feature")
         .order("key")

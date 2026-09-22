@@ -65,6 +65,16 @@ async function loadAll(): Promise<Map<string, KnobValue>> {
         .schema("platform")
         .from("feature_knob")
         .select("feature, key, value", { count: "exact" })
+        // archived-items-law-exempt: this is the VALUE RESOLVER, not a list —
+        // nothing is rendered from it, so there is no screen on which archived
+        // rows could be revealed.
+        // 🚨 AN ARCHIVED KNOB IS NOT A VALUE (THE ARCHIVED-ITEMS LAW, 2026-09-09).
+        // This is the resolver every knob read goes through, so an archived row
+        // left in here would keep deciding behaviour after somebody retired it —
+        // silently, because nothing on screen would say the knob still exists.
+        // A retired knob is absent, and its readers RAISE, which is the visible
+        // failure the register is designed to produce.
+        .is("archived_at", null)
         .order("feature", { ascending: true })
         .order("key", { ascending: true })
         .range(from, to),
