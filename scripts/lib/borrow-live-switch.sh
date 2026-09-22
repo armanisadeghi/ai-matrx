@@ -20,8 +20,10 @@
 #   1. READ FIRST — what gets put back is what was there, never a constant.
 #   2. RESTORE IN A TRAP — on EXIT, INT and TERM, so EVERY exit path restores.
 #   3. ONE PROOF PER ORGANIZATION — an object-scoped row in campaign_watch.build_lock
-#      named `store-switch:<organization>`. A peer holding it means you wait; if it is
-#      still held the borrow REFUSES and touches nothing, rather than racing it.
+#      named `store-switch:<organization>`, taken through THE ONE take path
+#      (`campaign_watch.lock_take`). A LIVE peer holding it means the borrow REFUSES and
+#      touches nothing, rather than racing it. A row whose 15-minute lease has lapsed is
+#      EXPIRED — the take evicts it and names its former holder and its age.
 #
 # USE IT LIKE THIS, from any zsh proof (PG* already exported):
 #
@@ -55,28 +57,23 @@ borrow_store_switch() {
   fi
   _BORROW_LOCK="store-switch:$_BORROW_ORG"
 
-  # 3. THE LOCK, FIRST — object-scoped, one row per organization. A lock older than
-  #    fifteen minutes belonged to a proof that died; it is taken over and said so.
-  local took
-  took=$(_borrow_q "
-    with cleared as (
-      delete from campaign_watch.build_lock
-       where lock_name = '$_BORROW_LOCK' and taken_at < now() - interval '15 minutes'
-      returning held_by
-    ), tried as (
-      insert into campaign_watch.build_lock (lock_name, held_by, note)
-      values ('$_BORROW_LOCK', '$_BORROW_WHO', '$why')
-      on conflict (lock_name) do nothing
-      returning 1
-    )
-    select case when exists (select 1 from tried) then 'took'
-                else 'held_by:' || coalesce((select held_by from campaign_watch.build_lock where lock_name='$_BORROW_LOCK'), '?')
-           end;")
-  if [[ "$took" != "took" ]]; then
-    echo "borrow_store_switch: another proof is holding this organization's record-store switch ($took). NOTHING was touched — wait for it, or take it over once its lock is fifteen minutes old." >&2
+  # 3. THE LOCK, FIRST — object-scoped, one row per organization, through THE ONE take path
+  #    (`campaign_watch.lock_take`, lane LOCK-HYGIENE 2026-09-22). This script used to carry its
+  #    own "delete anything older than fifteen minutes" clause: the right idea, in one file, for
+  #    one lock-name shape, while every other caller waited forever on dead rows. That rule now
+  #    lives in the TABLE — a row carries `expires_at`, an expired row is evicted by the take and
+  #    the database builds the sentence naming its former holder and its age — so this script
+  #    prints that sentence and invents nothing.
+  local outcome message
+  outcome=$(_borrow_q "select outcome || '|' || message from campaign_watch.lock_take('$_BORROW_LOCK', '$_BORROW_WHO', '$why')")
+  message="${outcome#*|}"
+  outcome="${outcome%%|*}"
+  if [[ "$outcome" != "took" && "$outcome" != "taken" && "$outcome" != "evicted" && "$outcome" != "renewed" ]]; then
+    echo "borrow_store_switch: another proof is holding this organization's record-store switch. NOTHING was touched. $message" >&2
     _BORROW_ORG=""
     return 3
   fi
+  echo "   $message"
 
   # 1. READ FIRST. This is the value the trap will put back, whatever it is.
   # psql prints a boolean as `t`/`f`, and `t` is not SQL this can hand back to the door.
@@ -107,7 +104,10 @@ set_store_switch() {
 
 _borrow_release_lock() {
   [[ -z "$_BORROW_LOCK" ]] && return 0
-  _borrow_q "delete from campaign_watch.build_lock where lock_name = '$_BORROW_LOCK' and held_by = '$_BORROW_WHO'" >/dev/null 2>&1
+  # The same holder-scoped release every other caller uses. And if this process dies before it
+  # runs, the row's lease lapses on its own within fifteen minutes and the next take evicts it —
+  # which is the whole reason the lease exists.
+  _borrow_q "select campaign_watch.lock_release('$_BORROW_LOCK', '$_BORROW_WHO')" >/dev/null 2>&1
   _BORROW_LOCK=""
   return 0
 }

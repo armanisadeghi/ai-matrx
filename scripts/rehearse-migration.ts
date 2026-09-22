@@ -75,6 +75,19 @@
  *   - A row already held by THIS lane is not taken and is never released here: it belongs to the
  *     apply that took it, and stealing it back at the end of a rehearsal is how a lane loses a
  *     lock it still believes it holds.
+ *
+ * -- AND A LOCK ROW IS A LEASE (lane LOCK-HYGIENE, 2026-09-22) ---------------------------
+ *
+ * The bullet above says the release is a trap and not a last line, which is true and was still
+ * not enough: a trap needs a process, and a lane that is SIGKILLed, unplugged or simply reported
+ * DONE and walked away has none. Three rows leaked on 2026-09-22 alone. So every row now carries
+ * `expires_at`, a bounded 15-minute lease, and `campaign_watch.lock_take()` EVICTS a row whose
+ * lease has lapsed instead of waiting on it — naming the former holder and its age in the
+ * sentence it hands back. A LIVE row still blocks for the full five attempts, unchanged. The
+ * take, the renew and the release are the database's, called through `scripts/lib/build-lock.ts`,
+ * so this runner, `pnpm db:apply`, `scripts/night/lib-night.sh` and
+ * `scripts/lib/borrow-live-switch.sh` share ONE path and print ONE sentence. `pnpm locks:sweep`
+ * lists the estate.
  */
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -85,6 +98,7 @@ import { formatDurationMs } from "@ai-matrx/kit/format";
 import { connectDirect } from "./lib/direct-db";
 import { functionsTouched, openProductionReadOnly, parityDrift } from "./lib/clone-parity";
 import { onceAsync, withBuildLockCleanup } from "./lib/build-lock-cleanup";
+import { takeBuildLock, releaseBuildLock, type LockQuery } from "./lib/build-lock";
 import {
   cloneRefOverride,
   loadCloneDbEnv,
@@ -476,13 +490,6 @@ export function locksNeededBy(
   return { families: [...families], from: `the schemas the up and the inverse name` };
 }
 
-interface HeldLock {
-  lockName: string;
-  heldBy: string;
-  takenAt: string;
-  note: string | null;
-}
-
 const LOCK_ATTEMPTS = 5;
 const LOCK_WAIT_MS = 15_000;
 
@@ -516,59 +523,50 @@ async function takeBuildLocks(
 ): Promise<{ refusal: string | null }> {
   const client = await connectDirect({ ...env }, "db:rehearse (build_lock)");
   try {
+    const q: LockQuery = async (sql, params) => (await client.query(sql, params as never)).rows;
+    const where = "the clone";
     for (const family of [...LOCK_FAMILIES].filter((f) => families.includes(f))) {
       let got = false;
       for (let attempt = 1; attempt <= LOCK_ATTEMPTS && !got; attempt += 1) {
-        const ins = await client.query<HeldLock>(
-          `insert into campaign_watch.build_lock (lock_name, held_by, note)
-           values ($1, $2, $3)
-           on conflict (lock_name) do nothing
-           returning lock_name as "lockName", held_by as "heldBy", taken_at::text as "takenAt", note`,
-          [family, heldBy, note],
-        );
-        if (ins.rows.length === 1) {
+        // ONE take path (scripts/lib/build-lock.ts, lane LOCK-HYGIENE 2026-09-22): the database
+        // evicts a row whose lease has lapsed and builds the sentence that names its former
+        // holder and its age, so this runner, `pnpm db:apply`, lib-night.sh and
+        // borrow-live-switch.sh all print the same one and none of them can invent a new rule.
+        const take = await takeBuildLock(q, family, heldBy, note, where);
+        if (take.outcome === "taken" || take.outcome === "evicted") {
           got = true;
           acquired.push(family);
           console.log(
-            `${TAG.ok}LOCK:${family} taken on the clone by ${C.bold}${heldBy}${C.reset} ` +
+            `${take.outcome === "evicted" ? TAG.warn : TAG.ok}${take.message} ` +
               `${C.dim}(attempt ${attempt})${C.reset}`,
           );
           break;
         }
-        const cur = await client.query<HeldLock>(
-          `select lock_name as "lockName", held_by as "heldBy", taken_at::text as "takenAt", note,
-                  (now() - taken_at)::text as held_for
-             from campaign_watch.build_lock where lock_name = $1`,
-          [family],
-        );
-        const row = cur.rows[0] as (HeldLock & { held_for?: string }) | undefined;
-        if (!row) continue; // released between the insert and the read — try again at once.
-        if (row.heldBy === heldBy) {
+        if (take.outcome === "renewed") {
+          // Ours already — it belongs to the apply that took it. Not acquired here, never
+          // released here; the renew only stops that apply's own lease lapsing under it.
           console.log(
-            `${TAG.ok}LOCK:${family} is ALREADY held by ${C.bold}${heldBy}${C.reset} ` +
-              `${C.dim}(since ${row.takenAt}) — this rehearsal did not take it and will not release ` +
-              `it; it belongs to the apply that did.${C.reset}`,
+            `${TAG.ok}${take.message} ${C.dim}This rehearsal did not take it and will not ` +
+              `release it.${C.reset}`,
           );
           got = true;
           break;
         }
+        if (!take.heldBy) continue; // changed hands mid-take — try again at once.
         if (attempt === LOCK_ATTEMPTS) {
           return {
             refusal:
-              `LOCK:${family} on the clone is held by ${C.bold}${row.heldBy}${C.reset} since ` +
-              `${row.takenAt} (${row.held_for ?? "?"})${row.note ? ` — "${row.note}"` : ""}.\n` +
-              `  Waited ${LOCK_ATTEMPTS} x ${formatDurationMs(LOCK_WAIT_MS, { style: "compact" })} and it is still held, so NOTHING was ` +
+              `${take.message}\n` +
+              `  Waited ${LOCK_ATTEMPTS} x ${formatDurationMs(LOCK_WAIT_MS, { style: "compact" })} and it is still LIVE, so NOTHING was ` +
               `measured and nothing was applied.\n` +
-              `  A measure pass that runs while ${row.heldBy} is mid-apply on ${family} measures ` +
-              `${row.heldBy}, not this file — its statements would queue behind their locks and die at\n` +
-              `  the 5s lock_timeout with no name attached. Re-run when the row is gone:\n` +
-              `    select lock_name, held_by, taken_at, now() - taken_at as held_for\n` +
-              `      from campaign_watch.build_lock;`,
+              `  A measure pass that runs while ${take.heldBy} is mid-apply on ${family} measures ` +
+              `${take.heldBy}, not this file — its statements would queue behind their locks and die at\n` +
+              `  the 5s lock_timeout with no name attached. Look at the estate:\n` +
+              `    pnpm locks:sweep --target clone`,
           };
         }
         console.log(
-          `${TAG.warn}LOCK:${family} is held by ${C.bold}${row.heldBy}${C.reset} since ` +
-            `${row.takenAt}${row.note ? ` ("${row.note}")` : ""} — waiting ` +
+          `${TAG.warn}${take.message} — waiting ` +
             `${formatDurationMs(LOCK_WAIT_MS, { style: "compact" })} (attempt ${attempt} of ${LOCK_ATTEMPTS})`,
         );
         await sleep(LOCK_WAIT_MS);
@@ -599,19 +597,20 @@ async function releaseBuildLocks(
     console.error(
       `${TAG.fail}COULD NOT CONNECT TO RELEASE ${acquired.map((f) => `LOCK:${f}`).join(", ")} on the ` +
         `clone: ${err instanceof Error ? err.message : String(err)}\n` +
-        `  Those rows are still there and every lane that needs them is now waiting. Delete them:\n` +
-        `    delete from campaign_watch.build_lock where held_by = '${heldBy}';`,
+        `  Those rows are still there. Since the LEASE (lane LOCK-HYGIENE) they free themselves\n` +
+        `  within one lease (15 minutes) and the next lane's take evicts them by name, so this is a\n` +
+        `  delay and no\n` +
+        `  longer a night. To clear them now:\n` +
+        `    select campaign_watch.lock_release(lock_name, '${heldBy}') from campaign_watch.build_lock\n` +
+        `     where held_by = '${heldBy}';`,
     );
     return;
   }
   try {
+    const q: LockQuery = async (sql, params) => (await client!.query(sql, params as never)).rows;
     for (const family of acquired) {
-      const out = await client
-        .query<{ heldBy: string }>(
-          `delete from campaign_watch.build_lock
-            where lock_name = $1 and held_by = $2 returning held_by as "heldBy"`,
-          [family, heldBy],
-        )
+      const out = await releaseBuildLock(q, family, heldBy, "the clone")
+        .then((ok) => ({ rows: ok ? [1] : [] }))
         .catch((e: unknown) => ({ rows: [], err: e }) as { rows: never[]; err: unknown });
       if (out.rows.length === 1) {
         console.log(`${TAG.ok}LOCK:${family} released ${C.dim}(held_by ${heldBy})${C.reset}`);
@@ -620,7 +619,7 @@ async function releaseBuildLocks(
           `${TAG.fail}LOCK:${family} did NOT release — no row matched (lock_name = '${family}' and ` +
             `held_by = '${heldBy}').\n` +
             `  Either somebody deleted it already or somebody else now holds it. Look, do not guess:\n` +
-            `    select * from campaign_watch.build_lock where lock_name = '${family}';`,
+            `    pnpm locks:sweep --target clone`,
         );
       }
     }

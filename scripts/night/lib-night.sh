@@ -343,28 +343,60 @@ night_inverse_gate() {
 
 # ── the lock ─────────────────────────────────────────────────────────────────
 # The lock row always lives on the REHEARSAL BRANCH — that is what the runners check.
+#
+# A LOCK ROW IS A LEASE (lane LOCK-HYGIENE, 2026-09-22). Three rows leaked on 2026-09-22:
+# FIX-10A held `custom` for 20 minutes after its DONE report, STORE-TXN-3 held `platform` after
+# its final report, and earlier the TAILS lane held `custom` for 18 hours — every one of them an
+# hour of the next lane's night spent waiting on a lock nobody was using. A trap in the HOLDER
+# cannot fix that, because a job that is SIGKILLed has no code left to run. So the TAKE and the
+# RELEASE are now `campaign_watch.lock_take()` / `campaign_watch.lock_release()` — the same two
+# functions `pnpm db:apply`, `pnpm db:rehearse` and `scripts/lib/borrow-live-switch.sh` call.
+# A row whose 15-minute lease has lapsed is EXPIRED: the take evicts it and says whose it was
+# and how old it was, in the database's own sentence, which is why this file prints that sentence
+# instead of writing its own. A LIVE row still refuses, exactly as before.
+#
+# The functions ARE the contract: if they are absent (the lease migration has not landed on that
+# database) the take fails loudly rather than falling back to a bare insert, because a lock with
+# no lease is the defect wearing the fix's name.
 LOCK_TAKEN=0
 night_take_lock() {
-  local lock="$1" lane="$2" note="$3" dsn take holder
+  local lock="$1" lane="$2" note="$3" dsn outcome message
   dsn="$(night_branch_dsn)"
-  take="$("$PSQL" "$dsn" -qAt -c \
-    "insert into campaign_watch.build_lock (lock_name, held_by, note) values ('$lock', '$lane', '$note') on conflict (lock_name) do nothing returning held_by" 2>&1)"
-  if [ "$take" != "$lane" ]; then
-    holder="$("$PSQL" "$dsn" -qAt -c "select held_by||' since '||taken_at from campaign_watch.build_lock where lock_name='$lock'" 2>&1)"
-    say "REFUSED: could not take lock '$lock' — held by ${holder:-unknown}. Nothing done."
-    return 75
-  fi
+  outcome="$("$PSQL" "$dsn" -qAt -F'|' -c \
+    "select outcome, message from campaign_watch.lock_take('$lock', '$lane', '$note')" 2>&1)"
+  message="${outcome#*|}"
+  outcome="${outcome%%|*}"
+  case "$outcome" in
+    taken|evicted|renewed) : ;;
+    *)
+      say "REFUSED: could not take lock '$lock' — ${message:-$outcome}. Nothing done."
+      return 75
+      ;;
+  esac
   LOCK_TAKEN=1; LOCK_NAME="$lock"; LOCK_LANE="$lane"
-  say "lock taken: $lock / $lane"
+  say "$message"
   return 0
+}
+
+# Push this job's lease forward. A long job calls it between steps; a job shorter than the lease
+# never needs it. Returns non-zero — LOUDLY — when this job is no longer the holder, because that
+# means somebody evicted or released the row while the work was running.
+night_renew_lock() {
+  [ "${LOCK_TAKEN:-0}" = "1" ] || return 0
+  local out
+  out="$("$PSQL" "$(night_branch_dsn)" -qAt -c \
+    "select campaign_watch.lock_renew('$LOCK_NAME', '$LOCK_LANE')" 2>&1)"
+  if [ "$out" = "t" ]; then return 0; fi
+  say "WARNING: the lease for '$LOCK_NAME' renewed NOTHING — $LOCK_LANE is no longer the holder (${out:-0 rows})."
+  return 1
 }
 
 night_release_lock() {
   [ "${LOCK_TAKEN:-0}" = "1" ] || return 0
   local out
   out="$("$PSQL" "$(night_branch_dsn)" -qAt -c \
-    "delete from campaign_watch.build_lock where lock_name = '$LOCK_NAME' and held_by = '$LOCK_LANE' returning held_by" 2>&1)"
-  if [ "$out" = "$LOCK_LANE" ]; then say "lock released: $LOCK_NAME / $LOCK_LANE"
+    "select campaign_watch.lock_release('$LOCK_NAME', '$LOCK_LANE')" 2>&1)"
+  if [ "$out" = "t" ]; then say "lock released: $LOCK_NAME / $LOCK_LANE"
   else say "lock release returned: ${out:-(0 rows — not the holder)}"; fi
   LOCK_TAKEN=0
 }
@@ -409,8 +441,8 @@ night_release_locks() {
   local lock out dsn; dsn="$(night_branch_dsn)"
   for lock in "${NIGHT_LOCKS_TAKEN[@]}"; do
     out="$("$PSQL" "$dsn" -qAt -c \
-      "delete from campaign_watch.build_lock where lock_name = '$lock' and held_by = '$NIGHT_LOCKS_LANE' returning held_by" 2>&1)"
-    if [ "$out" = "$NIGHT_LOCKS_LANE" ]; then say "lock released: $lock / $NIGHT_LOCKS_LANE"
+      "select campaign_watch.lock_release('$lock', '$NIGHT_LOCKS_LANE')" 2>&1)"
+    if [ "$out" = "t" ]; then say "lock released: $lock / $NIGHT_LOCKS_LANE"
     else say "lock release returned for $lock: ${out:-(0 rows — not the holder)}"; fi
   done
   NIGHT_LOCKS_TAKEN=()
