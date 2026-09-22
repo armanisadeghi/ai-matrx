@@ -1,9 +1,21 @@
--- WRITE-PERF-3 (second run) — WHERE THE 2,894 ms OF A 250-ROW BATCH GO, TRIGGER BY TRIGGER.
+-- WRITE-PERF-4 WAVE 1 — THE 1,000-ROW PASTE, BEFORE AND AFTER, THROUGH THE REAL DOOR.
 --
--- IMPORT-2 measured a 250-row batched insert into `custom.record` at 2,894 ms: 1,930 ms in the
--- BEFORE-ROW guards and 871 ms in the three after-STATEMENT triggers. This file re-measures that
--- on the MAIN database with `EXPLAIN (ANALYZE, BUFFERS)`, which names EVERY trigger's own time
--- and call count, inside ONE transaction that ROLLS BACK. It writes nothing that survives.
+-- `custom.record_write_many` four times over, 250 rows a call, from the seat `authenticated` —
+-- the paste a person actually performs, not a hand-written INSERT. Interleaved A,B,A,B for the
+-- same reason `writeperf4_ab.sql` is: measured A,A,B,B this suite's two halves differ by 34%
+-- with IDENTICAL code on both sides, because the first call of the transaction pays for planning
+-- the whole trigger cascade.
+--
+-- THE GATE (v5/WRITE-PERF-CAMPAIGN.md rev 2, wave 1): the 250-row A/B must improve by >= 600 ms,
+-- which is well clear of the +/-132 ms noise floor the control below measures. Below 600 ms the
+-- wave is reverted, not argued.
+--
+-- HOW IT IS MEASURED. Four identical fixtures are built. Slots 1 and 2 are measured with the
+-- BODIES-ONLY INVERSE applied (the exact bytes wave 1 replaced); slots 3 and 4 are measured with
+-- wave 1's real bytes applied. Everything happens inside ONE transaction which ROLLS BACK, so
+-- both halves run in the same seat, the same snapshot, the same backend and the same cache state.
+-- `scripts/campaign-tests/writeperf4_ab_control.sql` is this file with NOTHING applied between the
+-- halves: it is the no-change control and it prints the drift these numbers have to beat.
 --
 -- THE REAL USE CASE (2026-09-21 law — no fake test data). Northgate Auto Glass is a mobile
 -- windshield shop in Tacoma. Its dispatcher keeps one work order per vehicle: the insurer's
@@ -12,9 +24,9 @@
 -- morning it imports the carriers' overnight assignment files — a few hundred jobs at a time —
 -- which is exactly the 250-row batch this file profiles.
 --
--- Run: binlocal/p.sh -f scripts/campaign-tests/writeperf3b_guards_still_fire.sql
+-- Run: binlocal/p.sh -f scripts/campaign-tests/writeperf4_paste_1000.sql
 \set ON_ERROR_STOP on
-\set suite 'writeperf3b_guards_still_fire.sql'
+\set suite 'writeperf4_paste_1000.sql'
 \set requires 'grant:authenticated:custom.person_kernel_id'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
@@ -22,7 +34,7 @@
 \endif
 
 begin;
-set local statement_timeout = '30s';
+set local statement_timeout = '600s';
 set local lock_timeout = '2s';
 set local track_functions = 'all';
 set local stats_fetch_consistency = 'none';
@@ -138,134 +150,112 @@ select v as tbl3 from wp3b_fx where slot=3 and k='tbl' \gset
 select v as org4 from wp3b_fx where slot=4 and k='org' \gset
 select v as tbl4 from wp3b_fx where slot=4 and k='tbl' \gset
 
+-- INTERLEAVED, so that whatever drifts across one transaction drifts across BOTH columns.
+-- WRITE-PERF-3 measured the second half of a transaction 4.8% slower than the first with
+-- nothing changed, and measuring A,A,B,B hands that whole drift to the B column as if it
+-- were a saving. A,B,A,B does not: each pair is adjacent, and the four fixtures are
+-- identical, so slot order and DDL-invalidation cost fall on both columns equally.
 
--- THE FOUR GUARDS THIS LANE'S FILES TOUCH, EACH SHOWN REFUSING BY NAME — after the change.
+\echo '###### -> PRE-WAVE-1 BODIES ######'
+\i migrations/inverse/writeperf4_a_fact_about_the_table_is_read_once_down.sql
+
 do $t$
-declare v_org uuid; v_tbl uuid; v_id uuid; v_msg text; v_n int; v_hit int := 0;
+declare b int; t0 timestamptz; t1 timestamptz; v_org uuid; v_tbl uuid; n int := 0;
 begin
   select v::uuid into v_org from wp3b_fx where slot=1 and k='org';
   select v::uuid into v_tbl from wp3b_fx where slot=1 and k='tbl';
   perform set_config('request.jwt.claims',
     jsonb_build_object('sub','87a6e699-3622-4869-8843-d0867456c0dd','role','authenticated')::text, true);
   perform set_config('role','authenticated', true);
-
-  -- 1. THE UNDECLARED KEY GUARD (custom.undeclared_keys, replaced by this lane).
-  begin
-    perform custom.record_write(v_org, v_tbl, jsonb_build_object(
-      'claim','NAG-2026-90001', 'tint_shade','limo'));
-    raise exception '1 FAILED: a column nobody declared was written';
-  exception when others then
-    get stacked diagnostics v_msg = message_text;
-    if v_msg like '%1 FAILED%' then raise; end if;
-    v_hit := v_hit + 1;
-    raise notice '1 GUARD FIRES — %', v_msg;
-  end;
-
-  -- 2. A DECLARED KEY STILL LANDS (the guard did not simply refuse everything).
-  v_id := custom.record_write(v_org, v_tbl, jsonb_build_object(
-    'claim','NAG-2026-90002','vehicle','2020 Honda CR-V','status','Assigned'));
-  if v_id is null then raise exception '2 FAILED: a declared column was refused'; end if;
-  v_hit := v_hit + 1;
-  raise notice '2 A DECLARED COLUMN STILL LANDS — %', v_id;
-
-  -- 3. THE RELATION EDGE IS WRITTEN, WITH ITS FIELD ON IT (custom.record_relation_edges).
-  declare v_car uuid; v_wo uuid; v_role text; v_fid uuid;
-  begin
-    select (string_to_array(v, ','))[3]::uuid into v_car from wp3b_fx where slot=1 and k='cars';
-    v_wo := custom.record_write(v_org, v_tbl, jsonb_build_object(
-      'claim','NAG-2026-90003','carrier', v_car::text));
-    select a.role, a.relation_field_id into v_role, v_fid
-      from platform.associations a
-     where a.source_type='record' and a.source_id=v_wo and a.target_id=v_car and a.deleted_at is null;
-    if v_role is distinct from 'carrier' or v_fid is null then
-      raise exception '3 FAILED: the edge is missing or carries no Field (role=%, field=%)', v_role, v_fid;
-    end if;
-    v_hit := v_hit + 1;
-    raise notice '3 THE RELATION EDGE ARRIVES WITH ITS FIELD — role %, field %', v_role, v_fid;
-
-    -- 4. The outbox and history are read below, from the owner's seat: they are not client
-    -- tables and `authenticated` is right to be refused them. The two ids are carried out.
-    insert into wp3b_fx values (9, 'rec1', v_id::text), (9, 'rec2', v_wo::text);
-    v_hit := v_hit + 1;
-  end;
-
-  v_hit := v_hit + 1;   -- clause 5 runs below, from the owner's seat (see there).
-
-  -- 6. THE MEMO DOES NOT GO STALE INSIDE ITS OWN TRANSACTION — the whole risk this lane took.
-  -- `custom.undeclared_keys` and `custom.record_relation_edges` now remember a Table's declared
-  -- keys and its relation Fields for the life of the transaction. Clauses 1 to 3 above have
-  -- already WARMED both memos for this Table. A column declared NOW, after that, must be
-  -- visible to the very next write — which is only true because `custom.record` carries the
-  -- BEFORE-ROW `_aa_memo_clear`. Without it this clause refuses with clause 1's own sentence,
-  -- which is what `writeperf3_red.sql` RED 0 shows by reverting that trigger.
-  perform custom.field_declare(v_org, v_tbl,
-    jsonb_build_object('label','Tint shade','key','tint_shade','type','text'));
-  if custom.record_write(v_org, v_tbl, jsonb_build_object(
-       'claim','NAG-2026-90004','tint_shade','limo')) is null then
-    raise exception '6 FAILED: the column declared a moment ago was refused';
-  end if;
-  v_hit := v_hit + 1;
-  raise notice '6 A COLUMN DECLARED AFTER THE MEMO WAS WARMED IS VISIBLE TO THE NEXT WRITE.';
-
-  -- 7. AND CLAUSE 6 IS NOT VACUOUS: THE MEMO REALLY IS BEING USED, AND THE DECLARATION REALLY
-  -- DOES EMPTY IT. (WRITE-PERF-4 wave 1 moved the declared-key answer out of the shared
-  -- `mx_memo.b` blob into its own slot, so this clause reads `platform.memo_k_get`; the relation
-  -- Fields still live in `mx_memo.s` and are still read there. Nothing else about the clause
-  -- changed, and it still fails if either half stops being true.) Without both halves clause 6 would pass for the wrong reason. So: warm the
-  -- memo with a write, prove the key is THERE; declare a column, prove the key is GONE.
-  perform custom.record_write(v_org, v_tbl, jsonb_build_object('claim','NAG-2026-90005'));
-  if platform.memo_k_get('udk:' || v_org::text || ':' || v_tbl::text) is null then
-    raise exception '7 FAILED: a write left no declared-key memo — clause 6 proves nothing';
-  end if;
-  if platform.memo_s_get('rre:' || v_org::text || ':' || v_tbl::text) is null then
-    raise exception '7 FAILED: a write left no relation-field memo — clause 6 proves nothing';
-  end if;
-  perform custom.field_declare(v_org, v_tbl,
-    jsonb_build_object('label','Deductible','key','deductible','type','currency','unit','USD'));
-  if platform.memo_k_get('udk:' || v_org::text || ':' || v_tbl::text) is not null
-     or platform.memo_s_get('rre:' || v_org::text || ':' || v_tbl::text) is not null then
-    raise exception '7 FAILED: declaring a column did NOT empty the memo — a stale answer is reachable';
-  end if;
-  v_hit := v_hit + 1;
-  raise notice '7 THE MEMO IS REALLY FILLED BY A WRITE AND REALLY EMPTIED BY A DECLARATION.';
-
-  if v_hit <> 7 then raise exception 'only % of 7 clauses ran', v_hit; end if;
-  raise notice 'writeperf3b_guards_still_fire: clauses 1, 2, 3, 6 and 7 PASSED from the seat `authenticated`.';
+  t0 := clock_timestamp();
+  for b in 0..3 loop
+    n := n + coalesce(array_length(custom.record_write_many(v_org, v_tbl, pg_temp.docs(1, b*250+1, b*250+250)), 1), 0);
+  end loop;
+  t1 := clock_timestamp();
+  raise notice 'PASTE BEFORE 1: %s rows = %s ms = %s ms/row', n::text,
+    round(extract(epoch from (t1-t0))*1000)::text,
+    round((extract(epoch from (t1-t0))*1000/greatest(n,1))::numeric, 2)::text;
 end;
 $t$;
 reset role;
 
--- 4. THE OUTBOX AND history.row_versions SAW EVERY ONE OF THEM — read as the owner, because
--- neither is a client table and the seat above is right to be refused both.
+\echo '###### -> WAVE 1 ######'
+\i migrations/campaign/writeperf4_a_fact_about_the_table_is_read_once.sql
+\i migrations/campaign/writeperf4_a_memo_slot_costs_what_a_guc_costs.sql
+\i migrations/campaign/writeperf4_the_wave_keeps_only_what_it_measured.sql
+\i migrations/campaign/writeperf4_the_fields_are_named_once_and_read_from_the_store.sql
+\i migrations/campaign/writeperf4_the_field_rows_go_back_in_the_memo.sql
+\i migrations/campaign/writeperf4_the_seat_is_the_caller_never_the_definer.sql
+
 do $t$
-declare v_id uuid; v_wo uuid; v_n int;
+declare b int; t0 timestamptz; t1 timestamptz; v_org uuid; v_tbl uuid; n int := 0;
 begin
-  select v::uuid into v_id from wp3b_fx where slot=9 and k='rec1';
-  select v::uuid into v_wo from wp3b_fx where slot=9 and k='rec2';
-  select count(*) into v_n from custom.io_outbox o
-   where o.record_id in (v_id, v_wo) and o.operation = 'created';
-  if v_n <> 2 then raise exception '4 FAILED: the outbox has % of 2 created events', v_n; end if;
-  select count(*) into v_n from history.row_versions h
-   where h.row_id::text in (v_id::text, v_wo::text);
-  if v_n < 2 then raise exception '4 FAILED: history has % of 2 versions', v_n; end if;
-  raise notice '4 THE OUTBOX AND history.row_versions BOTH SAW THEM — 2 created events, % versions', v_n;
-  -- 5. THE CUSTOM-FIELDS GUARD STILL REFUSES A MALFORMED BLOCK
-  -- (custom._entity_custom_fields_guard, replaced by this lane). It must be asked from the
-  -- OWNER's seat: `authenticated` is refused a direct UPDATE on custom.record by the door long
-  -- before any guard is reached, so asking it there proves nothing about this guard.
-  declare v_msg text;
-  begin
-    begin
-      update custom.record set custom_fields = '"not an object"'::jsonb where id = v_id;
-      raise exception '5 FAILED: custom_fields took a string';
-    exception when others then
-      get stacked diagnostics v_msg = message_text;
-      if v_msg like '%5 FAILED%' then raise; end if;
-      raise notice '5 GUARD FIRES — %', v_msg;
-    end;
-  end;
-  raise notice 'writeperf3b_guards_still_fire: ALL 7 CLAUSES PASSED.';
+  select v::uuid into v_org from wp3b_fx where slot=3 and k='org';
+  select v::uuid into v_tbl from wp3b_fx where slot=3 and k='tbl';
+  perform set_config('request.jwt.claims',
+    jsonb_build_object('sub','87a6e699-3622-4869-8843-d0867456c0dd','role','authenticated')::text, true);
+  perform set_config('role','authenticated', true);
+  t0 := clock_timestamp();
+  for b in 0..3 loop
+    n := n + coalesce(array_length(custom.record_write_many(v_org, v_tbl, pg_temp.docs(3, b*250+1, b*250+250)), 1), 0);
+  end loop;
+  t1 := clock_timestamp();
+  raise notice 'PASTE AFTER  1: %s rows = %s ms = %s ms/row', n::text,
+    round(extract(epoch from (t1-t0))*1000)::text,
+    round((extract(epoch from (t1-t0))*1000/greatest(n,1))::numeric, 2)::text;
 end;
 $t$;
+reset role;
+
+\echo '###### -> PRE-WAVE-1 BODIES ######'
+\i migrations/inverse/writeperf4_a_fact_about_the_table_is_read_once_down.sql
+
+do $t$
+declare b int; t0 timestamptz; t1 timestamptz; v_org uuid; v_tbl uuid; n int := 0;
+begin
+  select v::uuid into v_org from wp3b_fx where slot=2 and k='org';
+  select v::uuid into v_tbl from wp3b_fx where slot=2 and k='tbl';
+  perform set_config('request.jwt.claims',
+    jsonb_build_object('sub','87a6e699-3622-4869-8843-d0867456c0dd','role','authenticated')::text, true);
+  perform set_config('role','authenticated', true);
+  t0 := clock_timestamp();
+  for b in 0..3 loop
+    n := n + coalesce(array_length(custom.record_write_many(v_org, v_tbl, pg_temp.docs(2, b*250+1, b*250+250)), 1), 0);
+  end loop;
+  t1 := clock_timestamp();
+  raise notice 'PASTE BEFORE 2: %s rows = %s ms = %s ms/row', n::text,
+    round(extract(epoch from (t1-t0))*1000)::text,
+    round((extract(epoch from (t1-t0))*1000/greatest(n,1))::numeric, 2)::text;
+end;
+$t$;
+reset role;
+
+\echo '###### -> WAVE 1 ######'
+\i migrations/campaign/writeperf4_a_fact_about_the_table_is_read_once.sql
+\i migrations/campaign/writeperf4_a_memo_slot_costs_what_a_guc_costs.sql
+\i migrations/campaign/writeperf4_the_wave_keeps_only_what_it_measured.sql
+\i migrations/campaign/writeperf4_the_fields_are_named_once_and_read_from_the_store.sql
+\i migrations/campaign/writeperf4_the_field_rows_go_back_in_the_memo.sql
+\i migrations/campaign/writeperf4_the_seat_is_the_caller_never_the_definer.sql
+
+do $t$
+declare b int; t0 timestamptz; t1 timestamptz; v_org uuid; v_tbl uuid; n int := 0;
+begin
+  select v::uuid into v_org from wp3b_fx where slot=4 and k='org';
+  select v::uuid into v_tbl from wp3b_fx where slot=4 and k='tbl';
+  perform set_config('request.jwt.claims',
+    jsonb_build_object('sub','87a6e699-3622-4869-8843-d0867456c0dd','role','authenticated')::text, true);
+  perform set_config('role','authenticated', true);
+  t0 := clock_timestamp();
+  for b in 0..3 loop
+    n := n + coalesce(array_length(custom.record_write_many(v_org, v_tbl, pg_temp.docs(4, b*250+1, b*250+250)), 1), 0);
+  end loop;
+  t1 := clock_timestamp();
+  raise notice 'PASTE AFTER  2: %s rows = %s ms = %s ms/row', n::text,
+    round(extract(epoch from (t1-t0))*1000)::text,
+    round((extract(epoch from (t1-t0))*1000/greatest(n,1))::numeric, 2)::text;
+end;
+$t$;
+reset role;
 
 rollback;

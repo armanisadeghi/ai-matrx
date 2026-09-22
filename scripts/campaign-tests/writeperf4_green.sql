@@ -32,30 +32,42 @@ set local lock_timeout = '10s';
 do $t$
 declare
   v_same text;
-  v_after text;
-  v_cleared text;
 begin
-  -- one statement: put and get, so the epoch cannot have moved between them
-  select platform.memo_k_get('wp4:probe')
-    into v_same
-    from (select platform.memo_k_put('wp4:probe', 'Cascade Dental Lab') as p) s;
+  -- ONE top-level statement: `statement_timestamp()` is the CLIENT statement's clock, so every
+  -- SPI query inside this block shares one epoch. That is the design — the memo is scoped to the
+  -- statement a person or a door actually issued, however many function calls it makes.
+  v_same := platform.memo_k_get('wp4:probe')
+              from (select platform.memo_k_put('wp4:probe', 'Cascade Dental Lab') as p) s;
   if v_same is distinct from 'Cascade Dental Lab' then
     raise exception 'CLAUSE 1 FAILED: a slot written and read in the SAME statement answered %', coalesce(v_same, '<null>');
   end if;
+  raise notice 'CLAUSE 1a a slot answers inside the statement that wrote it.';
+end;
+$t$;
 
-  v_after := platform.memo_k_get('wp4:probe');          -- a NEW statement
+do $t$
+declare
+  v_after text := platform.memo_k_get('wp4:probe');
+begin
+  -- A NEW top-level statement. The stamp's statement term has moved, so the slot written by the
+  -- statement above must not answer this one.
   if v_after is not null then
-    raise exception 'CLAUSE 1 FAILED: a slot from a previous statement still answered "%" — the statement term of the stamp is not doing its job', v_after;
+    raise exception 'CLAUSE 1 FAILED: a slot from the previous statement still answered "%" — the statement term of the stamp is not doing its job', v_after;
   end if;
+  raise notice 'CLAUSE 1b and never outside it.';
+end;
+$t$;
 
-  select platform.memo_k_get('wp4:probe2')
-    into v_cleared
-    from (select platform.memo_k_put('wp4:probe2','x') as p,
-                 platform.memo_clear() as c) s;
+do $t$
+declare
+  v_cleared text;
+begin
+  v_cleared := platform.memo_k_get('wp4:probe2')
+                 from (select platform.memo_k_put('wp4:probe2','x') as p,
+                              platform.memo_clear() as c) s;
   if v_cleared is not null then
     raise exception 'CLAUSE 2 FAILED: platform.memo_clear() did not empty the per-key slot — it still answered "%"', v_cleared;
   end if;
-  raise notice 'CLAUSE 1  a slot answers inside its own statement and never outside it.';
   raise notice 'CLAUSE 2  platform.memo_clear() empties every per-key slot at once.';
 end;
 $t$;
@@ -115,10 +127,13 @@ begin
   perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Practice','key','practice','type','text'));
   perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Restoration','key','restoration','type','text'));
   perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Shade','key','shade','type','text'));
-  perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Due','key','due','type','date'));
+  perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Due','key','due','type','datetime'));
   perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Case status','key','status','type','select',
     'options', jsonb_build_array('Received','Model poured','Waxed','Cast','Glazed','Shipped')));
 
+  -- read as the owner: `custom.record` is not a client table, and the seat above is right to be
+  -- refused it. The lab's own writes below all go back through the door.
+  reset role;
   select (f.data -> 'config' ->> 'options_table_id')::uuid into v_opts
     from custom.record f
    where f.organization_id = v_org
@@ -151,7 +166,7 @@ begin
   perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Technician','key','technician','type','text'));
   v_rec := custom.record_write(v_org, v_cases, jsonb_build_object(
              'case_no','CDL-2026-0411','practice','Alder Street Dental','restoration','Zirconia crown #14',
-             'shade','A2','due','2026-09-29','status','Waxed','technician','Bench 3 — waxer'));
+             'shade','A2','due','2026-09-29T09:00:00','status','Waxed','technician','Bench 3 — waxer'));
   if v_rec is null then
     raise exception 'CLAUSE 4 FAILED: the write returned nothing';
   end if;
@@ -176,16 +191,21 @@ begin
                      jsonb_build_object('sub','87a6e699-3622-4869-8843-d0867456c0dd','role','authenticated')::text, true);
   perform set_config('role','authenticated', true);
   -- warm the options memo for this options table first, so the test is about STALENESS
-  perform custom.choice_field_map(v_org, v_cases);
-  -- ONE statement: the new status goes in, then the case that uses it. The subquery runs first,
-  -- so the order is the lab's own order and not the planner's taste.
+  -- ONE top-level statement, three writes in the lab's own order — a case on an existing status
+  -- (which is what FILLS the options slot), then the new status, then a case that uses it. The
+  -- subqueries run inside out, so the order is the lab's and not the planner's taste. The memo's
+  -- statement term cannot save this: all three share one `statement_timestamp()`.
   select custom.record_write(v_org, v_cases, jsonb_build_object(
            'case_no','CDL-2026-0412','practice','Sellwood Family Dentistry',
-           'restoration','PFM bridge #19-21','shade','B1','due','2026-10-02',
+           'restoration','PFM bridge #19-21','shade','B1','due','2026-10-02T09:00:00',
            'status','Remake requested'))
     into v_rec
     from (select custom.record_write(v_org, v_opts,
-                   jsonb_build_object('title','Remake requested')) as o) s;
+                   jsonb_build_object('title','Remake requested')) as o
+            from (select custom.record_write(v_org, v_cases, jsonb_build_object(
+                           'case_no','CDL-2026-0410','practice','Alder Street Dental',
+                           'restoration','Emax veneer #8','shade','A1',
+                           'due','2026-09-30T09:00:00','status','Waxed')) as a) t) s;
   if v_rec is null then
     raise exception 'CLAUSE 5 FAILED: the case write returned nothing';
   end if;
@@ -202,6 +222,8 @@ declare
   v_cases uuid := (select v::uuid from wp4_fx where k='cases');
   v_msg text;
 begin
+  -- ONE statement: the owner's yes is cached, then a stranger takes the seat. A memo slot lives
+  -- for the statement that wrote it, so this has to be one block or it proves nothing.
   reset role;
   perform set_config('request.jwt.claims', '', true);
   perform custom.assert_client_may_reach(v_org, 'writeperf4_green');   -- the owner's yes, cached
@@ -210,8 +232,9 @@ begin
                      jsonb_build_object('sub', gen_random_uuid(), 'role','authenticated')::text, true);
   perform set_config('role','authenticated', true);
   begin
-    perform custom.assert_client_may_reach(v_org, 'writeperf4_green');
-    raise exception 'CLAUSE 6 FAILED: a stranger reached the organization — the owner''s cached yes was handed to another seat';
+    -- through the client door, because `custom.assert_client_may_reach` is not a client function
+    perform custom.record_write(v_org, v_cases, jsonb_build_object('case_no','CDL-2026-0413'));
+    raise exception 'CLAUSE 6 FAILED: a stranger wrote into the organization — the owner''s cached yes was handed to another seat';
   exception when others then
     get stacked diagnostics v_msg = message_text;
     if v_msg like 'CLAUSE 6 FAILED%' then raise; end if;

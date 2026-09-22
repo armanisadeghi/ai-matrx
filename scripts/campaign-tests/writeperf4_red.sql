@@ -84,10 +84,13 @@ begin
   perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Practice','key','practice','type','text'));
   perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Restoration','key','restoration','type','text'));
   perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Shade','key','shade','type','text'));
-  perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Due','key','due','type','date'));
+  perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Due','key','due','type','datetime'));
   perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Case status','key','status','type','select',
     'options', jsonb_build_array('Received','Model poured','Waxed','Cast','Glazed','Shipped')));
 
+  -- read as the owner: `custom.record` is not a client table, and the seat above is right to be
+  -- refused it. The lab's own writes below all go back through the door.
+  reset role;
   select (f.data -> 'config' ->> 'options_table_id')::uuid into v_opts
     from custom.record f
    where f.organization_id = v_org
@@ -115,15 +118,18 @@ begin
   perform set_config('request.jwt.claims',
                      jsonb_build_object('sub','87a6e699-3622-4869-8843-d0867456c0dd','role','authenticated')::text, true);
   perform set_config('role','authenticated', true);
-  perform custom.choice_field_map(v_org, v_cases);        -- warm the options memo
   begin
     select custom.record_write(v_org, v_cases, jsonb_build_object(
              'case_no','CDL-2026-0412','practice','Sellwood Family Dentistry',
-             'restoration','PFM bridge #19-21','shade','B1','due','2026-10-02',
+             'restoration','PFM bridge #19-21','shade','B1','due','2026-10-02T09:00:00',
              'status','Remake requested'))
       into v_rec
       from (select custom.record_write(v_org, v_opts,
-                     jsonb_build_object('title','Remake requested')) as o) s;
+                     jsonb_build_object('title','Remake requested')) as o
+              from (select custom.record_write(v_org, v_cases, jsonb_build_object(
+                             'case_no','CDL-2026-0410','practice','Alder Street Dental',
+                             'restoration','Emax veneer #8','shade','A1',
+                             'due','2026-09-30T09:00:00','status','Waxed')) as a) t) s;
     raise exception 'RED FAILED: the case was accepted WITHOUT the one-key drop, so this block proves nothing about it';
   exception when others then
     get stacked diagnostics v_msg = message_text;
@@ -177,10 +183,13 @@ begin
   perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Practice','key','practice','type','text'));
   perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Restoration','key','restoration','type','text'));
   perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Shade','key','shade','type','text'));
-  perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Due','key','due','type','date'));
+  perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Due','key','due','type','datetime'));
   perform custom.field_declare(v_org, v_cases, jsonb_build_object('label','Case status','key','status','type','select',
     'options', jsonb_build_array('Received','Model poured','Waxed','Cast','Glazed','Shipped')));
 
+  -- read as the owner: `custom.record` is not a client table, and the seat above is right to be
+  -- refused it. The lab's own writes below all go back through the door.
+  reset role;
   select (f.data -> 'config' ->> 'options_table_id')::uuid into v_opts
     from custom.record f
    where f.organization_id = v_org
@@ -207,14 +216,17 @@ begin
   perform set_config('request.jwt.claims',
                      jsonb_build_object('sub','87a6e699-3622-4869-8843-d0867456c0dd','role','authenticated')::text, true);
   perform set_config('role','authenticated', true);
-  perform custom.choice_field_map(v_org, v_cases);        -- warm the options memo
   select custom.record_write(v_org, v_cases, jsonb_build_object(
            'case_no','CDL-2026-0412','practice','Sellwood Family Dentistry',
-           'restoration','PFM bridge #19-21','shade','B1','due','2026-10-02',
+           'restoration','PFM bridge #19-21','shade','B1','due','2026-10-02T09:00:00',
            'status','Remake requested'))
     into v_rec
     from (select custom.record_write(v_org, v_opts,
-                   jsonb_build_object('title','Remake requested')) as o) s;
+                   jsonb_build_object('title','Remake requested')) as o
+            from (select custom.record_write(v_org, v_cases, jsonb_build_object(
+                           'case_no','CDL-2026-0410','practice','Alder Street Dental',
+                           'restoration','Emax veneer #8','shade','A1',
+                           'due','2026-09-30T09:00:00','status','Waxed')) as a) t) s;
   if v_rec is null then
     raise exception 'GREEN FAILED: the case write returned nothing';
   end if;
