@@ -25,11 +25,21 @@ import { setFieldFormat } from '@/features/data-tables/service';
 import { FormulaExpressionEditor } from '@/features/data-tables/components/FormulaExpressionEditor';
 import { isServiceFailure } from '@/features/data-tables/types';
 import { FieldFormatPicker } from '@/lib/field-formats/FieldFormatPicker';
+import {
+  offerFormatWhereRelationIs,
+  useRelationColumnsEnabled,
+} from "@/features/data-tables/relation-knob";
 import { defaultFormatForBase } from '@/lib/field-formats/registry';
 import type { FieldFormatConfig } from '@/lib/field-formats/types';
 
 interface AddColumnModalProps {
   tableId: string;
+  /**
+   * The organization this table belongs to. It decides which column types this
+   * picker offers — `data_tables.relation.relation_columns_enabled` is an
+   * organization's own setting (OLD-TABLES-CUTOVER rev 2, W6), default off.
+   */
+  organizationId?: string | null;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
@@ -43,7 +53,8 @@ interface AddColumnModalProps {
   siblingFields?: { field_name: string; display_name: string }[];
 }
 
-export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess, insertAtOrder, siblingFields = [] }: AddColumnModalProps) {
+export default function AddColumnModal({ tableId, organizationId, isOpen, onClose, onSuccess, insertAtOrder, siblingFields = [] }: AddColumnModalProps) {
+  const relationEnabled = useRelationColumnsEnabled(organizationId);
   const [displayName, setDisplayName] = useState('');
   const [fieldName, setFieldName] = useState('');
   const [dataType, setDataType] = useState('string');
@@ -207,6 +218,7 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess, in
               dataType={dataType}
               value={format}
               onChange={setFormat}
+              offerFormat={offerFormatWhereRelationIs(relationEnabled)}
               onDataTypeChange={(base, next) => {
                 setDataType(base);
                 setFormat(next);

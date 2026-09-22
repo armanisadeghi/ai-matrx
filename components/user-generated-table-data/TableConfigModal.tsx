@@ -13,6 +13,10 @@ import {
 } from "@/features/data-tables/service";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { FieldFormatPicker } from "@/lib/field-formats/FieldFormatPicker";
+import {
+  offerFormatWhereRelationIs,
+  useRelationColumnsEnabled,
+} from "@/features/data-tables/relation-knob";
 import { ColumnValidationEditor } from "@/features/data-tables/components/ColumnValidationEditor";
 import { FormulaExpressionEditor } from "@/features/data-tables/components/FormulaExpressionEditor";
 import {
@@ -157,6 +161,9 @@ export default function TableConfigModal({
 
   // Table metadata state
   const [tableInfo, setTableInfo] = useState<TableInfo>(initialTableInfo);
+  const relationEnabled = useRelationColumnsEnabled(
+    (tableInfo as { organization_id?: string | null }).organization_id ?? null,
+  );
 
   // Fields state
   const [fields, setFields] = useState<TableField[]>([]);
@@ -873,6 +880,7 @@ export default function TableConfigModal({
                       </div>
 
                       <FieldFormatPicker
+                        offerFormat={offerFormatWhereRelationIs(relationEnabled)}
                         label="Shows as"
                         className="col-start-3 row-start-2 min-w-0 space-y-0 lg:col-start-4 lg:row-start-1"
                         optionsPresentation="popover"

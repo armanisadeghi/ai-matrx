@@ -487,6 +487,7 @@ export default function TableToolbar({
         <>
           <AddColumnModal
             tableId={tableId}
+            organizationId={(tableInfo as { organization_id?: string | null } | null)?.organization_id ?? null}
             isOpen={showAddColumnModal}
             onClose={() => setShowAddColumnModal(false)}
             insertAtOrder={addColumnInsertAtOrder}

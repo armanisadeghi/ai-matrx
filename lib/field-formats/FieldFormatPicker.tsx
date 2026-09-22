@@ -83,6 +83,25 @@ export type FieldFormatPickerProps = {
    * kinds of data, not storage types, so a kind must be one pick away.
    */
   onDataTypeChange?: (base: FieldBaseType, format: FieldFormatConfig) => void;
+  /**
+   * WHICH FORMATS THIS SEAT MAY PICK. Every format is offered by default; a
+   * caller that knows an organization's settings narrows the list.
+   *
+   * It is a PREDICATE and not a list because this picker is a platform
+   * primitive that knows nothing about organizations, and the caller — a
+   * data-table column editor, which holds the table and therefore the
+   * organization — is the one place that does. The first user is
+   * `data_tables.relation.relation_columns_enabled` (OLD-TABLES-CUTOVER rev 2,
+   * W6): a column that points at another table is an organization's own
+   * decision, default off.
+   *
+   * A format the predicate refuses is ABSENT, never present-and-disabled: a
+   * control that is there and dead is exactly what "a screen never lies"
+   * forbids. A column that ALREADY holds a refused format keeps it — the
+   * predicate gates what can be picked, never what can be read (the active
+   * format is always listed, so a picker never hides the value it is showing).
+   */
+  offerFormat?: (formatId: string) => boolean;
 };
 
 const BASE_LABELS: Record<string, string> = {
@@ -124,11 +143,20 @@ export function FieldFormatPicker({
   optionsClassName,
   triggerClassName,
   onDataTypeChange,
+  offerFormat,
 }: FieldFormatPickerProps) {
-  const groups = groupedFormatsForBase(dataType);
+  // The active format is always offered, so a picker can never hide the value
+  // it is currently showing — a column created before an organization turned a
+  // format off must still say what it is.
+  const mayOffer = (id: string): boolean =>
+    !offerFormat || id === value?.id || offerFormat(id);
+  const groups = groupedFormatsForBase(dataType)
+    .map((g) => ({ ...g, formats: g.formats.filter((f) => mayOffer(f.id)) }))
+    .filter((g) => g.formats.length > 0);
   const otherKinds = onDataTypeChange
     ? Object.values(FIELD_FORMATS).filter(
         (d) =>
+          mayOffer(d.id) &&
           !groups.some((g) => g.formats.some((f) => f.id === d.id)) &&
           // Computed formats and the two raw structural formats are not
           // "kinds of data" one retypes into; Tags and Attachments are.

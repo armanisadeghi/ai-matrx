@@ -4205,6 +4205,7 @@ const UserTableViewer = ({
           if (!open) setSettingsFieldName(null);
         }}
         tableId={tableId}
+        organizationId={tableInfo?.organization_id ?? null}
         field={fields.find((f) => f.field_name === settingsFieldName) ?? null}
         fields={fields}
         tableMetadata={tableInfo?.metadata}

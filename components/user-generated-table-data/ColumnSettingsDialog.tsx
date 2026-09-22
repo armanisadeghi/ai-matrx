@@ -44,6 +44,10 @@ import { unwrapUserTableMutation } from "@/utils/user-tables-rpc";
 import type { TableField } from "@/utils/user-table-utls/table-utils";
 
 import { FieldFormatPicker } from "@/lib/field-formats/FieldFormatPicker";
+import {
+  offerFormatWhereRelationIs,
+  useRelationColumnsEnabled,
+} from "@/features/data-tables/relation-knob";
 import { resolveFieldFormat } from "@/lib/field-formats/format";
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
 import { ColumnValidationEditor } from "@/features/data-tables/components/ColumnValidationEditor";
@@ -85,6 +89,8 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tableId: string;
+  /** The organization this table belongs to — it decides which column types are offered. */
+  organizationId?: string | null;
   /** The column being edited; `null` renders nothing. */
   field: TableField | null;
   fields: readonly TableField[];
@@ -114,6 +120,7 @@ export function ColumnSettingsDialog(props: Props) {
 function ColumnSettingsForm({
   onOpenChange,
   tableId,
+  organizationId,
   field,
   fields,
   tableMetadata,
@@ -124,6 +131,7 @@ function ColumnSettingsForm({
   onHide,
   onDelete,
 }: Omit<Props, "field" | "open"> & { field: TableField }) {
+  const relationEnabled = useRelationColumnsEnabled(organizationId);
   const isLabel = useMemo(
     () => isRowLabelField(field.field_name, tableMetadata, fields),
     [field, tableMetadata, fields],
@@ -274,6 +282,7 @@ function ColumnSettingsForm({
               dataType={dataType}
               value={format ?? resolveFieldFormat(dataType, null)}
               onChange={setFormat}
+              offerFormat={offerFormatWhereRelationIs(relationEnabled)}
               onDataTypeChange={(base, next) => {
                 setDataType(base as FieldDataType);
                 setRules({});
