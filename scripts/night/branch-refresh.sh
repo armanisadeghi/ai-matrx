@@ -108,6 +108,117 @@ typeset -a SEED_TABLES
 SEED_TABLES=(platform.taxonomy_node platform.entity_types platform.feature_knob
              platform.client_callable_door platform.provision_spec)
 
+# 🚨 ONE ORGANIZATION IS COPIED, AND IT IS NOT A CUSTOMER. Measured on the clone 2026-09-22: every
+# organization_id in platform.taxonomy_node (241 of 241 rows) and platform.provision_spec points at
+# a SINGLE row — `Matrx System`, `is_system = true`. It is platform infrastructure, the same class
+# of thing as the knobs and the doors, and without it every reference table fails its foreign key,
+# which is exactly what happened on the first live run. The filter is `is_system` and nothing else:
+# no personal organization and no customer organization can come across this wire.
+# ── THE PLATFORM LOOKUP TABLES, DERIVED FROM THE CATALOG RATHER THAN HAND-LISTED ─────────────
+# The five hand-listed reference tables were not the whole dependency. Measured on the refreshed
+# branch 2026-09-22: 58 `platform` tables were populated on the clone and EMPTY here, and among
+# them were the little registries every write depends on — `knob_scope_kind` (10 rows) alone made
+# EVERY `platform.knob_override` insert fail, which is eight of the fourteen verdict suites, and it
+# had been read for weeks as "the knob rows are missing".
+#
+# A hand-list rots. This derives the set: a `platform` table that ANOTHER table's foreign key
+# points at, holding fewer than 2,000 rows, is a lookup table by construction and is seeded. New
+# ones are picked up automatically the night they appear.
+LOOKUP_DERIVE_SQL="select n.nspname||'.'||c.relname
+  from pg_class c join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'platform' and c.relkind = 'r'
+    and exists (select 1 from pg_constraint fk where fk.confrelid = c.oid and fk.contype = 'f')
+    and c.reltuples between 0 and 2000
+  order by 1"
+
+# The derivation catches foreign keys. It CANNOT catch a registry the code validates in
+# application logic with no FK behind it — `platform.association_types` has zero referencing
+# constraints and yet `custom.record` refuses every relation with "Unknown association type:
+# record -> record. Register it in platform.association_types". Those are named here, each because
+# a suite or a door actually raised on it, and the list stays short on purpose.
+typeset -a NAMED_REGISTRIES
+NAMED_REGISTRIES=(platform.association_types platform.metadata_reserved_keys
+                  platform.provision_rule_message platform.domain_classification
+                  platform.retention_policy)
+
+# 🚨 NO CUSTOMER ROWS COME ACROSS THIS WIRE. Every platform table carries `organization_id` (the
+# platform's own law), so "it has no org column" is not a safety filter here — the filter is the
+# VALUE: a row is copied only when its organization_id is NULL or the ONE `is_system`
+# organization. A customer's row cannot satisfy that, whatever table it sits in.
+SYSTEM_ORG_SQL="select * from iam.organizations where is_system is true"
+
+# ── the tolerant seed loader ─────────────────────────────────────────────────
+# 🚨 ONE REFUSED ROW MUST NOT TAKE THE OTHER N WITH IT. `\copy … from` is a single statement: the
+# first row a guard or a foreign key rejects aborts the whole load. Measured on the first live run
+# (2026-09-22 14:57Z): all five reference tables and the entire 4,861-row runner ledger loaded ZERO
+# rows, each on one bad row — the branch came out of a "refresh" with no knobs and no ledger at
+# all, which is worse than the drift the job exists to fix.
+#
+# So every row gets its own subtransaction, and the count of refusals is REPORTED WITH ITS FIRST
+# REASON rather than swallowed. A partial load that says exactly what it dropped is honest; an
+# all-or-nothing load that says "ERROR" and leaves the table empty is not.
+# An optional third argument is SQL run against the staged rows BEFORE they are inserted — the one
+# legitimate edit is re-pointing an authorship column at an identity that exists on this branch,
+# because the source's `created_by` names a production user the purge deliberately removed.
+seed_load() {  # seed_load <schema.table> <tsv file> [<fixup sql on _seed_stage>] -> "loaded=N refused=M first=…"
+  local t="$1" f="$2" fix="${3:-}" out
+  out="$("$PSQL" "$BRANCH_DSN" -qAt 2>&1 <<SQL
+begin;
+create temp table _seed_stage (like $t including defaults) on commit drop;
+create temp table _seed_done (c tid primary key) on commit drop;
+\\copy _seed_stage from '$f'
+${fix:+$fix;}
+-- 🚨 IMMEDIATE, so a per-row handler can actually see the refusal. platform.client_callable_door
+-- carries DEFERRED constraint triggers (the §6d-4 definer/access-decision guards). Deferred, they
+-- fire at COMMIT, long after the per-row subtransactions have closed: the load reported
+-- "loaded=1692 refused=43" and then left ZERO rows behind, because one row's commit-time refusal
+-- rolled the whole transaction back (measured 2026-09-22). Made immediate, each bad row is caught,
+-- counted and named where it happens, and the good 1,692 survive.
+set constraints all immediate;
+do \$SEEDLOAD\$
+declare r record; ok int := 0; bad int := 0; pass int := 0; moved int; first_err text;
+begin
+  -- REPEATED PASSES UNTIL ONE MOVES NOTHING. platform.taxonomy_node has a self-referencing
+  -- parent_id, so a child staged before its parent is refused on the first pass and accepted on
+  -- the next. A single pass lost 75 of its 241 rows, and every table keyed on those nodes lost
+  -- rows behind it (measured 2026-09-22). Reaching a fixed point costs a few seconds and is the
+  -- difference between a seeded branch and a half-seeded one.
+  loop
+    pass := pass + 1; moved := 0;
+    for r in select ctid as c from _seed_stage
+             where ctid not in (select c from _seed_done) loop
+      begin
+        -- Addressed by ctid, NOT by a record parameter: a row from a temp table is a generic
+        -- \`record\` and \`insert … select (\$1).*\` on one answers "record type has not been registered".
+        execute format('insert into %s select * from _seed_stage where ctid = %L', '$t', r.c);
+        insert into _seed_done values (r.c);
+        ok := ok + 1; moved := moved + 1;
+      exception when others then
+        if pass > 1 and first_err is null then first_err := left(sqlerrm, 160); end if;
+      end;
+    end loop;
+    exit when moved = 0 or pass >= 8;
+  end loop;
+  bad := (select count(*) from _seed_stage) - ok;
+  if bad > 0 and first_err is null then first_err := '(no reason captured)'; end if;
+  raise notice 'SEEDLOAD loaded=% refused=% passes=% first=%', ok, bad, pass, coalesce(first_err, '(none)');
+end
+\$SEEDLOAD\$;
+commit;
+SQL
+)"
+  # The SEEDLOAD notice is what the DO block believed; an ERROR after it is the COMMIT disagreeing,
+  # and the second must never be hidden by the first — `client_callable_door` reported loaded=1692
+  # and left ZERO rows behind because a commit-time refusal was being swallowed (2026-09-22).
+  local note err
+  note="$(print -r -- "$out" | grep -m1 'SEEDLOAD')"
+  err="$(print -r -- "$out" | grep -m1 -E 'ERROR:|FATAL:')"
+  if [ -n "$note" ] && [ -n "$err" ]; then print -r -- "${note#NOTICE:  } — BUT THE TRANSACTION THEN FAILED: ${err}"
+  elif [ -n "$note" ]; then print -r -- "${note#NOTICE:  }"
+  elif [ -n "$err" ]; then print -r -- "$err"
+  else print -r -- "(no answer)"; fi
+}
+
 # Step (4)'s verdict set: the 4 suites that passed on the branch on 2026-09-22, and 10 that
 # died on drift — one per failure shape (missing schema, missing platform function, missing
 # custom relation/function/type, missing public door, and three knob_override_knob_fkey).
@@ -278,6 +389,49 @@ for t in "${SEED_TABLES[@]}"; do
 done
 say "seed tables read: ${#SEED_OK[@]} of ${#SEED_TABLES[@]}"
 
+# The lookup/registry set, read from the same source in the same window.
+typeset -a LOOKUP_OK
+LOOKUPS="$("$PSQL" "${SRC[@]}" -qAt -c "$LOOKUP_DERIVE_SQL" 2>/dev/null)"
+typeset -a LOOKUP_SET; LOOKUP_SET=("${(@f)LOOKUPS}"); [ "$LOOKUP_SET[1]" = "" ] && LOOKUP_SET=()
+for r in "${NAMED_REGISTRIES[@]}"; do
+  [[ " ${LOOKUP_SET[*]} " == *" $r "* ]] || LOOKUP_SET+=("$r")
+done
+# The five explicitly curated tables are loaded by the block below in their own FK order; drop
+# them from the derived set so they are not read or loaded twice.
+typeset -a LOOKUP_FINAL; LOOKUP_FINAL=()
+for t in "${LOOKUP_SET[@]}"; do
+  [[ " ${SEED_TABLES[*]} " == *" $t "* ]] || LOOKUP_FINAL+=("$t")
+done
+say "  lookup/registry tables derived from the catalog: ${#LOOKUP_FINAL[@]}"
+SYSORG_ID="$("$PSQL" "${SRC[@]}" -qAt -c "select id from iam.organizations where is_system is true limit 1" 2>/dev/null | tr -d ' ')"
+if [ -z "$SYSORG_ID" ]; then
+  say "  the system organization id could not be read; the lookup tables will be skipped rather than copied unfiltered"
+  LOOKUP_FINAL=()
+fi
+for t in "${LOOKUP_FINAL[@]}"; do
+  f="$WORK/lookup_${t//./_}.tsv"
+  HASORG="$("$PSQL" "${SRC[@]}" -qAt -c "select count(*) from information_schema.columns where table_schema='${t%%.*}' and table_name='${t#*.}' and column_name='organization_id'" 2>/dev/null)"
+  if [ "$HASORG" = "1" ]; then SEL="select * from $t where organization_id is null or organization_id = '$SYSORG_ID'"
+  else                         SEL="select * from $t"; fi
+  o="$("$PSQL" "${SRC[@]}" -qAt -c "\copy ($SEL) to '$f'" 2>&1)"
+  if [ -f "$f" ] && ! print -r -- "$o" | grep -qE 'ERROR|FATAL'; then
+    n="$(wc -l < "$f" | tr -d ' ')"
+    [ "$n" = "0" ] || { LOOKUP_OK+=("$t"); say "    $t: $n platform-owned row(s)"; }
+  else
+    say "    $t: NOT READ — $(print -r -- "$o" | head -1)"
+  fi
+done
+say "  lookup tables with platform-owned rows: ${#LOOKUP_OK[@]}"
+
+SYSORG="$WORK/seed_system_org.tsv"
+SOUT="$("$PSQL" "${SRC[@]}" -qAt -c "\copy ($SYSTEM_ORG_SQL) to '$SYSORG'" 2>&1)"
+if [ -f "$SYSORG" ] && ! print -r -- "$SOUT" | grep -qE 'ERROR|FATAL'; then
+  say "  the system organization(s): $(wc -l < "$SYSORG" | tr -d ' ') row(s) — is_system only, never a customer"
+else
+  say "  the system organization: NOT READ — $(print -r -- "$SOUT" | head -1). Every reference table will fail its foreign key."
+  SYSORG=""
+fi
+
 say "─── (2) the runner ledger, read from the source ───"
 LEDGER="$WORK/ledger.tsv"
 LOUT="$("$PSQL" "${SRC[@]}" -qAt -c "\copy (select * from public._schema_migrations) to '$LEDGER'" 2>&1)"
@@ -437,25 +591,17 @@ fi
 
 if [ -n "$LEDGER" ] && [ "$REHEARSE" != "1" ]; then
   say "re-seeding the runner ledger from the source, so '--target branch' judges 'already applied' correctly"
-  LIN="$("$PSQL" "$BRANCH_DSN" -qAt -c "\copy public._schema_migrations from '$LEDGER'" 2>&1)"
-  say "  ledger: ${LIN:-loaded}; branch now holds $("$PSQL" "$BRANCH_DSN" -qAt -c 'select count(*) from public._schema_migrations' 2>&1) rows"
+  # 🚨 ROW BY ROW, because the ledger carries a trigger that RAISES. `_schema_migrations_slot_guard`
+  # refuses a file whose migration NUMBER is already held by a different filename, and the clone's
+  # own ledger contains such a pair (`aidream/0002_cld_files_realtime.sql` vs
+  # `0002_rag_organization_retrofit.sql`). As one `\copy` that single row aborted all 4,861 and the
+  # branch ledger came out EMPTY (measured 2026-09-22 14:57:22Z). The refused rows are counted and
+  # their first reason printed; a ledger missing a handful of collided rows is a usable ledger, an
+  # empty one is not.
+  say "  ledger: $(seed_load public._schema_migrations "$LEDGER"); branch now holds $("$PSQL" "$BRANCH_DSN" -qAt -c 'select count(*) from public._schema_migrations' 2>&1) rows"
 else
   say "ledger re-seed skipped ($([ "$REHEARSE" = 1 ] && print -n 'rehearsal — the branch ledger is not rewritten' || print -n 'the ledger could not be read'))"
 fi
-
-say "loading the curated seed"
-# `\copy … from` APPENDS. On a live run the table was just recreated empty by the restore, but
-# a partial run, a re-run, or a rehearsal leaves rows behind and every one of these five tables
-# then dies on its own primary key — which is exactly what the rehearsal showed. Empty the
-# table this job is about to refill, in the same statement, and say so.
-for t in "${SEED_OK[@]}"; do
-  f="$WORK/seed_${t//./_}.tsv"
-  o="$("$PSQL" "$BRANCH_DSN" -qAt -c "truncate table $t cascade" 2>&1)"
-  if print -r -- "$o" | grep -qE 'ERROR|FATAL'; then say "  $t: could not empty it — $(print -r -- "$o" | head -1); skipping"; continue; fi
-  o="$("$PSQL" "$BRANCH_DSN" -qAt -c "\copy $t from '$f'" 2>&1)"
-  if print -r -- "$o" | grep -qE 'ERROR|FATAL'; then say "  $t: $(print -r -- "$o" | head -1)"
-  else say "  $t: ${o:-loaded} ($("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) rows on the branch)"; fi
-done
 
 # ── The identities: SYNTHESIZED, NEVER COPIED ────────────────────────────────
 # The owner's law, 2026-09-21: never real people; never a row copied from customers or
@@ -471,7 +617,12 @@ print -r -- "begin;"
 print -r -- "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data)"
 print -r -- "values ('00000000-0000-4000-a000-00000000ad31'::uuid, '00000000-0000-0000-0000-000000000000'::uuid, 'authenticated', 'authenticated', 'admin@admin.com', extensions.crypt(gen_random_uuid()::text, extensions.gen_salt('bf')), now(), now(), now(), '{\"provider\":\"email\",\"providers\":[\"email\"]}'::jsonb, '{\"full_name\":\"Matrx Admin\"}'::jsonb),"
 print -r -- "       ('00000000-0000-4000-a000-00000000e571'::uuid, '00000000-0000-0000-0000-000000000000'::uuid, 'authenticated', 'authenticated', 'test@test.com',  extensions.crypt(gen_random_uuid()::text, extensions.gen_salt('bf')), now(), now(), now(), '{\"provider\":\"email\",\"providers\":[\"email\"]}'::jsonb, '{\"full_name\":\"Matrx Tester\"}'::jsonb)"
-print -r -- "on conflict (id) do nothing;"
+# 🚨 `on conflict do nothing` WITHOUT a target. The purge deliberately KEEPS admin@admin.com and
+# test@test.com, so those rows are normally already present — and `on conflict (id)` covers only the
+# primary key, so the insert died on `users_email_partial_key` and took the whole transaction, and
+# every organization below it, with it (measured 2026-09-22 14:57:31Z). Targetless DO NOTHING
+# covers every unique constraint on the table, which is exactly the intent: keep whoever is there.
+print -r -- "on conflict do nothing;"
 # One organization per registered use case, named for the real business it describes.
 for f in "$USE_CASES"/*.ts; do
   b="${f:t:r}"
@@ -484,7 +635,7 @@ for f in "$USE_CASES"/*.ts; do
   abbr="$(print -r -- "$name" | awk '{for(i=1;i<=NF&&i<=4;i++) printf "%s", toupper(substr($i,1,1))}')"
   sn="${name//\'/\'\'}"
   print -r -- "insert into iam.organizations (name, slug, abbreviation, description, is_personal, is_system, created_by, updated_by, settings)"
-  print -r -- "values ('$sn', '$id', '$abbr', '${ind//\'/\'\'}', false, false, '00000000-0000-4000-a000-00000000ad31'::uuid, '00000000-0000-4000-a000-00000000ad31'::uuid, jsonb_build_object('cleanupTag','$tag','test_fixture',true,'useCaseId','$id'))"
+  print -r -- "select '$sn', '$id', '$abbr', '${ind//\'/\'\'}', false, false, u.id, u.id, jsonb_build_object('cleanupTag','$tag','test_fixture',true,'useCaseId','$id') from auth.users u where u.email = 'admin@admin.com'"
   print -r -- "on conflict do nothing;"
 done
 print -r -- "commit;"
@@ -510,6 +661,32 @@ else
     say "  identities: $("$PSQL" "$BRANCH_DSN" -qAt -c 'select count(*) from auth.users' 2>&1) auth.users, $("$PSQL" "$BRANCH_DSN" -qAt -c 'select count(*) from iam.organizations' 2>&1) organizations — all synthesized"
   fi
 fi
+
+say "loading the curated seed"
+# 🚨 ORDER: the system organization, then the tables that reference it. On the first live run the
+# seed ran BEFORE the identities and every table died on `*_organization_id_fkey` — the rows all
+# point at one `is_system` organization that nothing had put back yet.
+if [ -n "$SYSORG" ] && [ "$REHEARSE" != "1" ]; then
+  # Its created_by/updated_by name a production user this job purged, so they are re-pointed at
+  # the branch's own admin identity. Nothing else about the row is touched.
+  say "  iam.organizations (is_system only): $(seed_load iam.organizations "$SYSORG" "update _seed_stage set created_by = (select id from auth.users where email = 'admin@admin.com'), updated_by = (select id from auth.users where email = 'admin@admin.com')")"
+fi
+for t in "${SEED_OK[@]}"; do
+  f="$WORK/seed_${t//./_}.tsv"
+  o="$("$PSQL" "$BRANCH_DSN" -qAt -c "truncate table $t cascade" 2>&1)"
+  if print -r -- "$o" | grep -qE 'ERROR:|FATAL:'; then say "  $t: could not empty it — $(print -r -- "$o" | grep -m1 -E 'ERROR:|FATAL:'); skipping"; continue; fi
+  say "  $t: $(seed_load "$t" "$f")  -> $("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) rows on the branch"
+done
+
+# The derived lookup/registry tables, after the curated five (feature_knob and taxonomy_node are
+# what several of them key on). Each is emptied first: `\copy`-style appends die on their own
+# primary key when a run is repeated.
+for t in "${LOOKUP_OK[@]}"; do
+  f="$WORK/lookup_${t//./_}.tsv"
+  o="$("$PSQL" "$BRANCH_DSN" -qAt -c "truncate table $t cascade" 2>&1)"
+  if print -r -- "$o" | grep -qE 'ERROR:|FATAL:'; then say "  $t: could not empty it — $(print -r -- "$o" | grep -m1 -E 'ERROR:|FATAL:'); skipping"; continue; fi
+  say "  $t: $(seed_load "$t" "$f")  -> $("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) rows on the branch"
+done
 
 # BRANCH-REF re-point. Same database, so the identifier must NOT have moved; if it has,
 # something is very wrong and this job says so rather than rewriting the file.
