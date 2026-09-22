@@ -16,6 +16,20 @@ _(none)_
 
 ## Blocked
 
+### TASK-W1-ORG-CUTOVER: Repair rejected REC-61/REC-64 production migrations
+- **Status:** blocked (2026-09-22) — current production files are committed but must not be applied
+- **Source:** senior chair review of commit `5c917eac385540b7bc636c21dae51b1bf178f260`
+
+**Current evidence**
+
+- `w1_org_audience_is_a_word_on_main.sql` would drop `context.templates.is_personal`, but AI Dream still declares it as a required ORM field in `db/models/context.py`; strict startup schema checking covers this table and would fail after the drop.
+- `w1_org_is_personal_is_deprecated_on_main.sql` would drop `iam.organizations_one_personal_per_creator`, but live signup still calls `ensure_personal_organization` and relies on that uniqueness invariant for concurrent creation. Existing archival and membership readers also still treat `is_personal` as authoritative.
+- East read-only proof at 2026-09-22 11:39 UTC: 34 templates/7 personal, `is_personal` present and `audience` absent; 632 organizations/468 personal; uniqueness index present; neither migration ledgered. West was not addressed.
+
+**Next concrete step**
+
+Coordinate the AI Dream ORM contract change before the audience cutover, and prove replacement signup concurrency plus migrate the remaining authoritative `is_personal` readers before removing the unique index. Re-run the chair review against fresh East evidence; do not infer authorization from the static migration judge's `chair_step: true` verdict.
+
 ### TASK-B4-1: Retire the two legacy shortcut editors (census #45/#46) — NOT a repoint
 - **Status:** blocked (2026-08-31) — needs a build lane of its own, and Arman's ruling on the capability list
 - **Created:** 2026-08-31 by the one-binding-UI step-7 lane
