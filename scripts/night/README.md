@@ -108,3 +108,8 @@ Every refusal is shown RED before the job is trusted, and each one must end in
 |---|---|---|
 | `night-2026-09-22-row-versions-index.sh` | applied the `history.row_versions` org-latest index | **spent** — ran 2026-09-22 00:19:57Z, plist self-deleted. Kept as the worked example and the incident record |
 | `night-2026-09-22-suite-sweep.sh` | the serial sweep of every campaign suite against the MAIN database, 01:35–03:30 PT, hard stop with the remainder named | one-shot |
+| `branch-refresh.sh` | rebuilds the rehearsal branch from production's **schema** plus a curated reference seed, per `v5/BRANCH-DRIFT.md` §4(c). Production is READ ONLY (`pg_dump --schema-only`, `--lock-wait-timeout=5000`, aborts at 10 minutes); the branch is the only thing written, and it is written destructively. `NIGHT_REHEARSE=1` replaces the production read with a read of the branch's own catalog and narrows the drop set to one probe schema | **recurring** — armed as a one-shot for 2026-09-23 01:05 PT (`com.aimatrx.night-sweep.branch-refresh`, self-deleting) with a nightly twin at 01:05 (`com.aimatrx.night.branch-refresh-nightly`) that stays **disabled** until the one-shot's log shows a clean run |
+
+The plists live in [`plists/`](./plists/) so they are reviewable in the repo rather than only in
+`~/Library/LaunchAgents`. A recurring job's label must differ from any one-shot's, because
+`night_self_destruct` removes the plist named by the job's own `LABEL`.
