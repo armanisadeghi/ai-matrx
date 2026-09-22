@@ -26,7 +26,7 @@ export function TaskSmsReminderButton({ taskId }: { taskId: string }) {
     const approved = await confirm({
       title: "Text this task reminder?",
       description:
-        "AI Matrx will text your verified phone. You can reply DONE to complete this non-recurring task.",
+        "AI Matrx will text your verified phone. Reply DONE to complete this non-recurring task, or SNOOZE 1H for another reminder in one hour, subject to your texting settings. Snoozing the text does not change the task's due date.",
       confirmLabel: "Text reminder",
     });
     if (!approved) return;

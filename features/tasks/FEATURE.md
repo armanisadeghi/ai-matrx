@@ -2,7 +2,7 @@
 
 **Status:** `active` — both features in production
 **Tier:** `2`
-**Last updated:** `2026-09-13`
+**Last updated:** `2026-09-22`
 
 > Combined doc. **Projects and Tasks are first-class _containers_** (like orgs and scopes): nearly every resource table carries both a `project_id` and a `task_id` column, so "what belongs to this project/task" is a direct FK query — the same shape as the org workspace's `organization_id`. Tasks nest under projects (`project_id`) and under each other (`parent_task_id`). They share the org-scoped architecture documented in [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
 
@@ -75,7 +75,7 @@ Org-scoped project management. Projects group work within an organization; tasks
 - **Per-user notification state** — `workspace.task_user_state` (`seen_at`/`acknowledged_at`/`snoozed_until`/`dismissed_at`/`pinned_at`, PK `(task_id,user_id)`, RLS own-rows). Client chokepoint `features/tasks/services/taskUserStateService.ts`; hydrated into `taskUiSlice.userState` by `loadTaskUserStateThunk` on /tasks mount. Snoozed tasks vanish from attention views until expiry; pinned tasks float to the top. UI: `TaskSnoozeButton`. Snooze expiry (and every other "now" derivation — overdue, Today/Upcoming windows) re-evaluates within ~60s via the `tasksUi.nowMinute` selector input, ticked by `useNowMinuteTick` (mounted in `TasksDesktopShell`) — never by capturing `new Date()` inside a memoized selector.
 - **Smart views** — Inbox / Today / Upcoming / Overdue / Assigned to me / Created by me / Completed, declared ONCE in `features/tasks/constants/smartViews.ts` (predicate registry) and consumed by the desktop sidebar, mobile overflow, live counts (`selectSmartViewCounts`, org-context-scoped), and `selectFilteredTasks` (`taskUiSlice.smartView`). Selecting a view widens to all projects; drilling into a project resets the view. The retired mobile `all | incomplete | overdue` filter is not a second view system. Sidebar targets stay compact at desktop widths and grow to 44px through tablet widths; mobile overflow items are also 44px.
 - **Reminder delivery** — Vercel cron (`vercel.json` → `/api/cron/due-date-reminders`, daily 15:00 UTC, `CRON_SECRET`-gated) emails due-today/overdue/upcoming via `lib/email/notificationService.sendDueDateReminderEmail`, respecting per-user snooze/dismiss and a 3-emails-per-user-per-run cap.
-- **Owner-triggered SMS reminder** — `TaskSmsReminderButton` calls the typed direct-Supabase `communication.enqueue_my_task_sms_reminder` RPC. It accepts any open, non-recurring task the caller can edit, resolves exactly one caller+program SMS enrollment independently of the task workspace, and writes the notification, queued SMS intent, and exact `DONE` offer under that enrollment organization after opt-in, quiet-hours, suppression, and rate-limit gates. Zero/multiple enrollments create no durable intent. SMS completion reuses the canonical channel-neutral task command executor; no task-local executor or transport table exists.
+- **Owner-triggered SMS reminder** — `TaskSmsReminderButton` calls the typed direct-Supabase `communication.enqueue_my_task_sms_reminder` RPC. It accepts any open, non-recurring task the caller can edit, resolves exactly one caller+program SMS enrollment independently of the task workspace, and writes the notification, queued SMS intent, and an exact `DONE` / `SNOOZE 1H` offer under that enrollment organization after opt-in, quiet-hours, suppression, and rate-limit gates. Zero/multiple enrollments create no durable intent. SMS completion reuses the canonical channel-neutral task command executor. `SNOOZE 1H` queues a later reminder through the shared scheduler, subject to current texting eligibility; it changes neither `due_date` nor the separate attention-view `task_user_state.snoozed_until`. The confirmation explains both replies. No task-local executor or transport table exists.
 - **Hydration** — `get_user_full_context` emits the new fields at thin-list level and includes closed tasks from the last 90 days (the Completed view is client-side). Editors never initialize from that incomplete row: `useEnsureTaskLoaded` upgrades it to full data first, and the mobile `/tasks` detail shows a geometry-matched loading state or retryable `StaleDataNotice` until the upgrade succeeds.
 - **Project membership + invites** → canonical `iam.memberships` / `iam.invitations`, reached only via `membershipsService` (`mbr_*` RPCs) / `invitationsService` (`inv_*` RPCs) in `features/organizations/service/`. The legacy `ctx_project_members` / `ctx_project_invitations` junctions are no longer read by app code (2026-06-25 cutover).
 - **Comments** → `platform.comments` (canonical, threaded; the `cmt_*` RPCs via `@ai-matrx/associations` — host wiring `features/scopes/service/commentsService.ts`; the UI is the package `CommentThread`). The legacy `ctx_task_comments` junction is no longer read by app code.
@@ -151,7 +151,7 @@ Org-scoped project management. Projects group work within an organization; tasks
 
 ## Notifications — channels and placement (deliberate decision)
 
-Three channels, all frontend-side because ALL delivery infra (Resend email in `lib/email/`, DM inserts, preference tables) lives here; aidream has no notification service. Revisit (move firing onto aidream's `sch_*` spine) only if that changes or reminders need sub-daily granularity.
+The legacy task email/DM producers below remain frontend-side. Shared notification dispatch and delayed SMS execution live in aidream; extend that shared service for new channels and timed delivery. Cross-repo contracts: `/Users/armanisadeghi/code/common-docs/systems/communications/STATE.md`.
 
 1. **Email** — `lib/email/notificationService.ts`, preference-gated (`users.user_email_preferences.task_notifications`).
 2. **In-app DM** (canonical in-app channel) — `lib/services/system-dm.ts` `sendDm()` (sender = user or the Matrx System bot `system@aimatrx.com`); action chips via `features/messaging/actions/messageActionRegistry.tsx` `task_reminder` kind (Open / Complete — recurrence-aware / Snooze 1d, all inline). Senders: task assignment (`app/api/notifications/task-assigned`), the reminder cron (ONE volume-aware DM per user per run: single task → actionable chips; several → digest + `open_link` to /tasks).
@@ -160,6 +160,8 @@ Three channels, all frontend-side because ALL delivery infra (Resend email in `l
 Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tasks-world-class.md).
 
 ## Change log
+
+- `2026-09-22` — The task text confirmation describes `DONE` and `SNOOZE 1H`, including texting-policy delays and unchanged task due date. Corrected the obsolete claim that aidream has no notification service.
 
 - `2026-09-18` — **F-89 (V-22, NEW-1): the import control stops telling people
   to pick an organization they already picked.** F-75 gave
