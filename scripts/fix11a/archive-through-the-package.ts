@@ -13,7 +13,6 @@
  */
 import { createRecordsClient } from "../../../aidream/apps/shared/records/src/core/client";
 import { supabaseDataSource } from "../../../aidream/apps/shared/records/src/core/supabase";
-// @ts-expect-error — the shared sign-in helper is plain ESM with no types.
 import { signedInClient } from "../campaign-tests/use-cases/_client.mjs";
 
 const positional = process.argv.slice(2).filter((a) => !a.startsWith("--"));
@@ -33,7 +32,10 @@ async function main() {
   const { client: supabase, userId } = await signedInClient();
   const records = createRecordsClient({
     dataSource: supabaseDataSource(supabase),
-    actor: { userId },
+    // `RecordsActor` names the acting KIND and carries the person's id under the
+    // store's own key. `userId` was silently dropped, so this script ran with no
+    // actor mirror at all — the opposite of driving the screen's own sequence.
+    actor: { actor: "user", user_id: userId },
     organizationId: org as string,
   });
 
