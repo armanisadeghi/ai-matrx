@@ -403,6 +403,17 @@ if $STRICT; then
         # scripts/campaign-tests/triggerlock_red.sql.
         "Trigger DDL on a partitioned parent is window-class (self-test)|pnpm check:migration-window-class:self-test"
         "TRIGGER-LOCK: trigger DDL locks nothing undeclared (clone)|pnpm check:trigger-lock-set"
+        # STORE-TXN-4, 2026-09-22. The other two above measure a RULE, which is the same on any
+        # copy. This one measures ROWS on the LIVE database, read-only (the server itself refuses
+        # a write in the job's own transaction shape before the target is accepted): does any
+        # record hold a relation VALUE with no association beside it, or a relation ASSOCIATION
+        # with no value? Either way `custom._relation_halves_agree` refuses the NEXT write to
+        # that record, so a number above zero is a person about to be refused for a defect
+        # somebody else wrote. 32 such halves over 22 records existed this morning and were
+        # repaired through `custom.relation_halves_repair`; the ratchet is ZERO with no baseline
+        # and no allow-list. Red twin: scripts/campaign-tests/relhalvescensus_red.sql, which
+        # plants one half in each direction and passes only when the census names it.
+        "STORE-TXN-4: no relation half disagrees with its other half (live)|pnpm check:relation-halves-agree"
         # STORE-ON is the census behind the owner ruling of 2026-09-23: the record store's
         # default is ON, and an organization is OFF only when it turned itself off and said
         # why. It runs against the nightly dev clone, which carries production's own data, so
@@ -854,6 +865,14 @@ else
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts"
         # See the strict lane above for why this class is a shipped-code hazard.
         "Unified-data campaign entry points are registered and gated|pnpm check:campaign-entry-points"
+        # In BOTH lists on purpose, for the reason stated twice above: the release's own
+        # after-phase runner takes its rows from `--list`, which is this (non-strict) branch, so
+        # STORE-TXN-4's live census would otherwise never run on a release. It reads the MAIN
+        # database and writes nothing — the server itself refuses a write in the job's own
+        # transaction shape before the target is accepted — and its ratchet is ZERO: any relation
+        # half that disagrees with its other half is a person about to be refused at COMMIT for a
+        # defect written before they arrived.
+        "STORE-TXN-4: no relation half disagrees with its other half (live)|pnpm check:relation-halves-agree"
         # In BOTH lists on purpose: the release's own after-phase runner takes its rows
         # from `--list`, which is this (non-strict) branch, so a gate that lived only in the
         # strict list would never run on a release at all. An inverse puts a DEFECT back; it
